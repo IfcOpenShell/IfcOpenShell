@@ -20,6 +20,8 @@
 
 #include "Panel.h"
 
+#include "Commands.h"
+
 #include "../../ViewerSettings.h"
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
@@ -30,8 +32,6 @@
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
 #include <QHeaderView>
-#include <QInputDialog>
-#include <QLineEdit>
 #include <QMenu>
 #include <QMimeData>
 #include <QDropEvent>
@@ -205,12 +205,6 @@ private:
     }
 };
 
-QString promptGroupName(QWidget* parent, const QString& title, const QString& label, const QString& value) {
-    bool ok = false;
-    const QString name = QInputDialog::getText(parent, title, label, QLineEdit::Normal, value, &ok);
-    return ok ? name.trimmed() : QString();
-}
-
 QString itemId(QTreeWidgetItem* item) {
     return item ? item->data(0, Qt::UserRole + 1).toString() : QString();
 }
@@ -229,8 +223,12 @@ QList<QTreeWidgetItem*> selectedItemsOfKind(QTreeWidget* tree, ItemKind kind) {
 
 } // namespace
 
-ModelsPanel::ModelsPanel(QWidget* parent)
+ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
+                         ViewportWindow* viewport,
+                         QWidget* parent)
     : components::Panel("Models", nullptr, parent, true)
+    , session_state_(session_state)
+    , viewport_(viewport)
 {
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
     section->setBodyExpanding(true);
@@ -254,19 +252,17 @@ ModelsPanel::ModelsPanel(QWidget* parent)
     tree_->header()->resizeSection(1, 28);
     tree_->header()->hide();
     tree->on_model_drop = [this](const QStringList& ids, const QString& target_group_id) {
-        emit moveModelsRequested(ids, target_group_id);
+        commands::moveModels(*session_state_, ids, target_group_id);
     };
     tree->on_group_drop = [this](const QString& id, const QString& target_group_id) {
-        emit moveGroupRequested(id, target_group_id);
+        commands::moveGroup(*session_state_, id, target_group_id);
     };
     section->addBodyWidget(tree_);
     addBodyWidget(section);
 
     connect(tree_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
         if (!item || column != 1) return;
-        emit visibilityToggleRequested(
-            static_cast<ItemKind>(item->data(0, Qt::UserRole).toInt()),
-            item->data(0, Qt::UserRole + 1).toString());
+        commands::toggleVisibility(*session_state_, itemKind(item), itemId(item));
     });
 
     connect(tree_, &QTreeWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
@@ -276,10 +272,7 @@ ModelsPanel::ModelsPanel(QWidget* parent)
             QAction* add_group_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "Add Group");
             connect(add_group_action, &QAction::triggered, this, [this]() {
-                const QString name = promptGroupName(this, "New Group", "Group name:", "Group");
-                if (!name.isEmpty()) {
-                    emit addGroupRequested(QString(), name);
-                }
+                commands::addGroup(*session_state_, *this, QString());
             });
             menu.exec(tree_->viewport()->mapToGlobal(pos));
             return;
@@ -291,59 +284,41 @@ ModelsPanel::ModelsPanel(QWidget* parent)
         QAction* toggle_visibility_action = menu.addAction(
             components::icons::makeSvgIcon(":/icons/eye.svg"), "Toggle Visibility");
         connect(toggle_visibility_action, &QAction::triggered, this, [this, kind, id]() {
-            emit visibilityToggleRequested(kind, id);
+            commands::toggleVisibility(*session_state_, kind, id);
         });
 
         if (kind == ItemKind::Group) {
             QAction* add_group_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "New Subgroup");
             connect(add_group_action, &QAction::triggered, this, [this, id]() {
-                const QString name = promptGroupName(this, "New Group", "Group name:", "Group");
-                if (!name.isEmpty()) {
-                    emit addGroupRequested(id, name);
-                }
+                commands::addGroup(*session_state_, *this, id);
             });
             QAction* rename_group_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder.svg"), "Rename Group");
-            connect(rename_group_action, &QAction::triggered, this, [this, item, id]() {
-                const QString name = promptGroupName(
-                    this, "Rename Group", "Group name:", item->text(0));
-                if (!name.isEmpty()) emit renameGroupRequested(id, name);
+            connect(rename_group_action, &QAction::triggered, this, [this, id]() {
+                commands::renameGroup(*session_state_, *this, id);
             });
+
             QMenu* move_menu = menu.addMenu("Move to Parent");
             QAction* move_root_action = move_menu->addAction("(Root)");
             connect(move_root_action, &QAction::triggered, this, [this, id]() {
-                emit moveGroupRequested(id, QString());
+                commands::moveGroup(*session_state_, id, QString());
             });
             move_menu->addSeparator();
-            QList<QTreeWidgetItem*> stack;
-            for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
-                stack.push_back(tree_->topLevelItem(i));
+            const QList<GroupOption> targets =
+                group_list_provider_ ? group_list_provider_(id) : QList<GroupOption>{};
+            for (const auto& target : targets) {
+                QAction* action = move_menu->addAction(target.display_name);
+                const QString target_id = target.id;
+                connect(action, &QAction::triggered, this, [this, id, target_id]() {
+                    commands::moveGroup(*session_state_, id, target_id);
+                });
             }
-            while (!stack.isEmpty()) {
-                QTreeWidgetItem* candidate = stack.takeFirst();
-                if (candidate != item && itemKind(candidate) == ItemKind::Group) {
-                    bool would_cycle = false;
-                    for (QTreeWidgetItem* cur = candidate; cur != nullptr; cur = cur->parent()) {
-                        if (cur == item) {
-                            would_cycle = true;
-                            break;
-                        }
-                    }
-                    auto* action = move_menu->addAction(candidate->text(0));
-                    action->setEnabled(!would_cycle && candidate != item->parent());
-                    connect(action, &QAction::triggered, this, [this, id, candidate]() {
-                        emit moveGroupRequested(id, itemId(candidate));
-                    });
-                }
-                for (int i = 0; i < candidate->childCount(); ++i) {
-                    stack.push_back(candidate->child(i));
-                }
-            }
+
             QAction* remove_group_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-minus.svg"), "Remove Group");
             connect(remove_group_action, &QAction::triggered, this, [this, id]() {
-                emit removeGroupRequested(id);
+                commands::removeGroup(*session_state_, *this, id);
             });
         } else {
             QString parent_group_id;
@@ -356,10 +331,7 @@ ModelsPanel::ModelsPanel(QWidget* parent)
             QAction* add_group_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "New Group");
             connect(add_group_action, &QAction::triggered, this, [this, parent_group_id]() {
-                const QString name = promptGroupName(this, "New Group", "Group name:", "Group");
-                if (!name.isEmpty()) {
-                    emit addGroupRequested(parent_group_id, name);
-                }
+                commands::addGroup(*session_state_, *this, parent_group_id);
             });
 
             QStringList selected_model_ids;
@@ -376,33 +348,30 @@ ModelsPanel::ModelsPanel(QWidget* parent)
             QMenu* move_menu = menu.addMenu("Move to Group");
             QAction* move_root_action = move_menu->addAction("(Root)");
             connect(move_root_action, &QAction::triggered, this, [this, selected_model_ids]() {
-                emit moveModelsRequested(selected_model_ids, QString());
+                commands::moveModels(*session_state_, selected_model_ids, QString());
             });
             move_menu->addSeparator();
-            QList<QTreeWidgetItem*> stack;
-            for (int i = 0; i < tree_->topLevelItemCount(); ++i) {
-                stack.push_back(tree_->topLevelItem(i));
+            const QList<GroupOption> targets =
+                group_list_provider_ ? group_list_provider_(QString()) : QList<GroupOption>{};
+            for (const auto& target : targets) {
+                QAction* action = move_menu->addAction(target.display_name);
+                const QString target_id = target.id;
+                connect(action, &QAction::triggered, this, [this, selected_model_ids, target_id]() {
+                    commands::moveModels(*session_state_, selected_model_ids, target_id);
+                });
             }
-            while (!stack.isEmpty()) {
-                QTreeWidgetItem* candidate = stack.takeFirst();
-                if (itemKind(candidate) == ItemKind::Group) {
-                    const QString group_id = itemId(candidate);
-                    QAction* action = move_menu->addAction(candidate->text(0));
-                    connect(action, &QAction::triggered, this, [this, selected_model_ids, group_id]() {
-                        emit moveModelsRequested(selected_model_ids, group_id);
-                    });
-                }
-                for (int i = 0; i < candidate->childCount(); ++i) {
-                    stack.push_back(candidate->child(i));
-                }
-            }
+
             QAction* remove_model_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/minus-square.svg"), "Remove Model");
             connect(remove_model_action, &QAction::triggered, this, [this, id]() {
-                emit removeModelRequested(id);
+                commands::removeModel(*session_state_, *viewport_, *this, id);
             });
         }
         menu.exec(tree_->viewport()->mapToGlobal(pos));
+    });
+
+    connect(this, &components::Panel::settingsRequested, this, [this]() {
+        commands::openSettings(*session_state_, *this);
     });
 }
 
@@ -416,6 +385,10 @@ void ModelsPanel::setNodes(const QList<TreeNode>& nodes) {
         addNode(tree_->invisibleRootItem(), node);
     }
     tree_->expandAll();
+}
+
+void ModelsPanel::setGroupListProvider(GroupListProvider provider) {
+    group_list_provider_ = std::move(provider);
 }
 
 void ModelsPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {

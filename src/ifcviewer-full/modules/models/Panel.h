@@ -25,31 +25,42 @@
 
 #include "../../components/Panel.h"
 
+#include <functional>
+
 class QTreeWidget;
 class QTreeWidgetItem;
+class ViewportWindow;
+namespace ifcviewerfull { class SessionState; }
 
 namespace ifcviewerfull::modules::models {
 
+// The widget for the Models dock. Owns no domain state; its click handlers
+// call commands directly. The View tells it what to render (setNodes) and
+// supplies derived data for the right-click menu (setGroupListProvider).
 class ModelsPanel : public components::Panel {
     Q_OBJECT
 public:
-    explicit ModelsPanel(QWidget* parent = nullptr);
+    // Returns the groups a move operation may target. If exclude_subtree_root
+    // is non-empty, that group + its descendants are excluded so a group can't
+    // be moved into its own subtree. For model moves the panel passes an empty
+    // string and gets every group back.
+    using GroupListProvider =
+        std::function<QList<GroupOption>(const QString& exclude_subtree_root)>;
+
+    explicit ModelsPanel(ifcviewerfull::SessionState* session_state,
+                         ViewportWindow* viewport,
+                         QWidget* parent = nullptr);
 
     void setNodes(const QList<TreeNode>& nodes);
-
-signals:
-    void visibilityToggleRequested(ItemKind kind, const QString& id);
-    void addGroupRequested(const QString& parent_group_id, const QString& name);
-    void renameGroupRequested(const QString& id, const QString& name);
-    void moveGroupRequested(const QString& id, const QString& parent_group_id);
-    void moveModelsRequested(const QStringList& ids, const QString& parent_group_id);
-    void removeGroupRequested(const QString& id);
-    void removeModelRequested(const QString& id);
+    void setGroupListProvider(GroupListProvider provider);
 
 private:
     void addNode(QTreeWidgetItem* parent, const TreeNode& node);
 
+    ifcviewerfull::SessionState* session_state_ = nullptr;
+    ViewportWindow* viewport_ = nullptr;
     QTreeWidget* tree_ = nullptr;
+    GroupListProvider group_list_provider_;
 };
 
 } // namespace ifcviewerfull::modules::models

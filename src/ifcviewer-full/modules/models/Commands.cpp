@@ -18,14 +18,13 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Controller.h"
+#include "Commands.h"
 
+#include "AddModelDialog.h"
 #include "SettingsDialog.h"
-#include "Panel.h"
 
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
-#include "AddModelDialog.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/HeadlessSidecarBuilder.h"
 #include "../../../ifcviewer/LodBuilder.h"
@@ -42,6 +41,8 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QInputDialog>
+#include <QLineEdit>
 #include <QListView>
 #include <QMessageBox>
 #include <QProgressDialog>
@@ -56,125 +57,144 @@
 
 #include <memory>
 
-namespace ifcviewerfull::modules::models {
+namespace ifcviewerfull::modules::models::commands {
 
-ModelsPanelController::ModelsPanelController(QWidget* host,
-                                             ModelsPanel* widget,
-                                             ifcviewerfull::SessionState* session_state,
-                                             ViewportWindow* viewport,
-                                             QObject* parent)
-    : QObject(parent)
-    , host_(host)
-    , widget_(widget)
-    , session_state_(session_state)
-    , viewport_(viewport)
-{
-    connect(widget_, &ModelsPanel::visibilityToggleRequested, this,
-            [this](ItemKind kind, const QString& id) {
-        Federation* federation = session_state_->federation();
-        if (kind == ItemKind::Group) {
-            if (const Federation::Group* group = federation->findGroupById(id)) {
-                federation->setGroupVisible(id, !group->visible);
-                session_state_->notifyVisibilityChanged();
-                session_state_->setStatusMessage("Models", group->visible ? "Group hidden" : "Group shown");
-            }
-        } else {
-            if (const Federation::Model* model = federation->findById(id)) {
-                federation->setModelVisible(id, !model->visible);
-                session_state_->notifyVisibilityChanged();
-                session_state_->setStatusMessage("Models", model->visible ? "Model hidden" : "Model shown");
-            }
-        }
-    });
-    connect(widget_, &ModelsPanel::addGroupRequested, this,
-            [this](const QString& parent_group_id, const QString& name) {
-        session_state_->federation()->addGroup(name, parent_group_id);
-        session_state_->notifyFederationStructureChanged();
-        session_state_->setStatusMessage("Models", "Group added");
-    });
-    connect(widget_, &ModelsPanel::renameGroupRequested, this,
-            [this](const QString& id, const QString& name) {
-        session_state_->federation()->setGroupName(id, name);
-        session_state_->notifyFederationStructureChanged();
-        session_state_->setStatusMessage("Models", "Group renamed");
-    });
-    connect(widget_, &ModelsPanel::moveGroupRequested, this,
-            [this](const QString& id, const QString& parent_group_id) {
-        session_state_->federation()->setGroupParent(id, parent_group_id);
-        session_state_->notifyFederationStructureChanged();
-        session_state_->setStatusMessage("Models", parent_group_id.isEmpty() ? "Group moved to root"
-                                                                               : "Group moved");
-    });
-    connect(widget_, &ModelsPanel::moveModelsRequested, this,
-            [this](const QStringList& ids, const QString& parent_group_id) {
-        for (const auto& id : ids) {
-            session_state_->federation()->setModelGroup(id, parent_group_id);
-        }
-        session_state_->notifyFederationStructureChanged();
-        session_state_->setStatusMessage("Models", parent_group_id.isEmpty() ? "Model(s) moved to root"
-                                                                              : "Model(s) moved");
-    });
-    connect(widget_, &ModelsPanel::removeGroupRequested, this,
-            [this](const QString& id) {
-        session_state_->federation()->removeGroup(id);
-        session_state_->notifyFederationStructureChanged();
-        session_state_->setStatusMessage("Models", "Group removed");
-    });
-    connect(widget_, &ModelsPanel::removeModelRequested, this,
-            [this](const QString& id) {
-        removeLoadedModel(id);
-        session_state_->setStatusMessage("Models", "Model removed");
-    });
-    connect(widget_, &components::Panel::settingsRequested, this, [this]() {
-        openSettings();
-    });
+namespace {
+
+QString formatElapsed(qint64 ms) {
+    return (ms >= 1000)
+        ? QString::number(ms / 1000.0, 'f', 2) + " s"
+        : QString::number(ms) + " ms";
 }
 
-void ModelsPanelController::bindLoader(SceneLoader* loader) {
-    connect(loader, &SceneLoader::loadStarted, this,
-            [this](uint32_t /*mid*/, const QString& display_name) {
-        session_state_->setStatusMessage("Loading", display_name);
-    });
-    connect(loader, &SceneLoader::loadedFromSidecar, this,
-            [this, loader](uint32_t mid, qint64 elapsed_ms) {
-        session_state_->setStatusMessage(
-            "Loaded",
-            QString("%1 from cache in %2")
-                .arg(loader->displayName(mid))
-                .arg(formatElapsed(elapsed_ms)));
-    });
-    connect(loader, &SceneLoader::loadedFromStream, this,
-            [this, loader](uint32_t mid, qint64 elapsed_ms) {
-        writeSidecarForModel(loader, mid);
-        session_state_->setStatusMessage(
-            "Loaded",
-            QString("%1 streamed in %2")
-                .arg(loader->displayName(mid))
-                .arg(formatElapsed(elapsed_ms)));
-    });
-    connect(loader, &SceneLoader::loadCancelled, this,
-            [this, loader](uint32_t mid) {
-        session_state_->setStatusMessage("Cancelled", loader->displayName(mid));
-    });
-    connect(loader, &SceneLoader::loadError, this,
-            [this, host = host_](uint32_t /*mid*/, const QString& message) {
-        session_state_->setStatusMessage("Error", message);
-        QMessageBox::warning(host, "IfcViewer", message);
-    });
-    connect(loader, &SceneLoader::allLoadsFinished, this,
-            [this, loader]() {
-        session_state_->setStatusMessage("Loaded", QString("%1 model(s)").arg(loader->modelCount()));
-    });
+} // namespace
+
+void toggleVisibility(SessionState& s, ItemKind kind, const QString& id) {
+    Federation* fed = s.federation();
+    if (kind == ItemKind::Group) {
+        const Federation::Group* group = fed->findGroupById(id);
+        if (!group) return;
+        fed->setGroupVisible(id, !group->visible);
+        s.notifyVisibilityChanged();
+        s.setStatusMessage("Models", group->visible ? "Group hidden" : "Group shown");
+    } else {
+        const Federation::Model* model = fed->findById(id);
+        if (!model) return;
+        fed->setModelVisible(id, !model->visible);
+        s.notifyVisibilityChanged();
+        s.setStatusMessage("Models", model->visible ? "Model hidden" : "Model shown");
+    }
 }
 
-void ModelsPanelController::addFiles() {
-    modules::models::AddModelDialog dialog(host_);
+void addGroup(SessionState& s, QWidget& host, const QString& parent_group_id) {
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        &host, "New Group", "Group name:", QLineEdit::Normal, "Group", &ok);
+    if (!ok) return;
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) return;
+
+    s.federation()->addGroup(trimmed, parent_group_id);
+    s.notifyFederationChanged();
+    s.setStatusMessage("Models", "Group added");
+}
+
+void renameGroup(SessionState& s, QWidget& host, const QString& group_id) {
+    const Federation::Group* group = s.federation()->findGroupById(group_id);
+    if (!group) return;
+
+    bool ok = false;
+    const QString name = QInputDialog::getText(
+        &host, "Rename Group", "Group name:", QLineEdit::Normal, group->display_name, &ok);
+    if (!ok) return;
+    const QString trimmed = name.trimmed();
+    if (trimmed.isEmpty()) return;
+
+    s.federation()->setGroupName(group_id, trimmed);
+    s.notifyFederationChanged();
+    s.setStatusMessage("Models", "Group renamed");
+}
+
+void moveGroup(SessionState& s, const QString& id, const QString& parent_group_id) {
+    s.federation()->setGroupParent(id, parent_group_id);
+    s.notifyFederationChanged();
+    s.setStatusMessage("Models", parent_group_id.isEmpty() ? "Group moved to root" : "Group moved");
+}
+
+void moveModels(SessionState& s, const QStringList& ids, const QString& parent_group_id) {
+    for (const auto& id : ids) {
+        s.federation()->setModelGroup(id, parent_group_id);
+    }
+    s.notifyFederationChanged();
+    s.setStatusMessage("Models", parent_group_id.isEmpty() ? "Model(s) moved to root" : "Model(s) moved");
+}
+
+void removeGroup(SessionState& s, QWidget& host, const QString& group_id) {
+    const Federation::Group* group = s.federation()->findGroupById(group_id);
+    if (!group) return;
+
+    const auto choice = QMessageBox::question(
+        &host, "Remove Group",
+        QString("Remove group '%1'? Models inside it will move to the parent.").arg(group->display_name),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (choice != QMessageBox::Yes) return;
+
+    s.federation()->removeGroup(group_id);
+    s.notifyFederationChanged();
+    s.setStatusMessage("Models", "Group removed");
+}
+
+void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QString& fed_id) {
+    const Federation::Model* model = s.federation()->findById(fed_id);
+    const QString label = model ? model->display_name : fed_id;
+    const auto choice = QMessageBox::question(
+        &host, "Remove Model",
+        QString("Remove model '%1' from the federation?").arg(label),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+    if (choice != QMessageBox::Yes) return;
+
+    const uint32_t mid = s.modelIdForFedId(fed_id);
+    if (mid == 0) {
+        s.federation()->removeModel(fed_id);
+        s.notifyFederationChanged();
+        s.setStatusMessage("Models", "Model removed");
+        return;
+    }
+    if (s.loader()->isLoadingModel(mid)) return;
+
+    vp.setSelectedObjectId(0);
+    s.setSelectedObjectId(0);
+    s.federation()->removeModel(fed_id);
+    vp.removeModel(mid);
+    s.loader()->removeModel(mid);
+    s.elementRegistry()->removeModel(mid);
+    s.removeModelMappingByFedId(fed_id);
+    s.notifySelectionChanged();
+    s.notifyModelsChanged();
+    s.setStatusMessage("Models", "Model removed");
+}
+
+namespace detail {
+
+void loadModels(SessionState& s, const QStringList& paths, const QStringList& fed_ids) {
+    if (paths.isEmpty()) return;
+
+    const auto ids = s.loader()->addFiles(paths);
+    for (int i = 0; i < paths.size() && i < static_cast<int>(ids.size()) && i < fed_ids.size(); ++i) {
+        s.setModelMapping(fed_ids[i], ids[i]);
+    }
+}
+
+} // namespace detail
+
+void addModel(SessionState& s, QWidget& host) {
+    AddModelDialog dialog(&host);
     if (dialog.exec() != QDialog::Accepted) return;
 
     QStringList paths;
     switch (dialog.selectedMode()) {
-    case modules::models::SourceMode::IfcFile: {
-        QFileDialog file_dialog(host_, "Add IFC Files");
+    case SourceMode::IfcFile: {
+        QFileDialog file_dialog(&host, "Add IFC Files");
         file_dialog.setFileMode(QFileDialog::ExistingFiles);
         file_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
         file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
@@ -183,8 +203,8 @@ void ModelsPanelController::addFiles() {
         }
         break;
     }
-    case modules::models::SourceMode::IfcDatabase: {
-        QFileDialog database_dialog(host_, "Add IFC Databases");
+    case SourceMode::IfcDatabase: {
+        QFileDialog database_dialog(&host, "Add IFC Databases");
         database_dialog.setFileMode(QFileDialog::Directory);
         database_dialog.setOption(QFileDialog::ShowDirsOnly, true);
         database_dialog.setOption(QFileDialog::DontResolveSymlinks, true);
@@ -200,8 +220,8 @@ void ModelsPanelController::addFiles() {
         }
         break;
     }
-    case modules::models::SourceMode::GeometryOnly: {
-        QFileDialog file_dialog(host_, "Add Geometry Only");
+    case SourceMode::GeometryOnly: {
+        QFileDialog file_dialog(&host, "Add Geometry Only");
         file_dialog.setFileMode(QFileDialog::ExistingFiles);
         file_dialog.setNameFilter("IFC Viewer Cache (*.ifcview);;All Files (*)");
         file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
@@ -210,21 +230,30 @@ void ModelsPanelController::addFiles() {
         }
         break;
     }
-    case modules::models::SourceMode::ConvertToDatabase:
-        convertIfcToDatabase();
+    case SourceMode::ConvertToDatabase:
+        convertIfcToDatabase(s, host);
         return;
-    case modules::models::SourceMode::ExportGeometryDatabase:
-        exportGeometryDatabase();
+    case SourceMode::ExportGeometryDatabase:
+        exportGeometryDatabase(s, host);
         return;
-    case modules::models::SourceMode::None:
+    case SourceMode::None:
         return;
     }
 
-    addFiles(paths);
+    QStringList accepted_paths;
+    QStringList accepted_fed_ids;
+    for (const auto& path : paths) {
+        const QString fed_id = s.federation()->addModel(path);
+        if (fed_id.isEmpty()) continue;
+        accepted_paths << path;
+        accepted_fed_ids << fed_id;
+    }
+    detail::loadModels(s, accepted_paths, accepted_fed_ids);
+    s.notifyModelsChanged();
 }
 
-void ModelsPanelController::convertIfcToDatabase() {
-    QFileDialog input_dialog(host_, "Select IFC File to Convert");
+void convertIfcToDatabase(SessionState& s, QWidget& host) {
+    QFileDialog input_dialog(&host, "Select IFC File to Convert");
     input_dialog.setFileMode(QFileDialog::ExistingFile);
     input_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
     input_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
@@ -236,7 +265,7 @@ void ModelsPanelController::convertIfcToDatabase() {
     const QFileInfo input_info(input_path);
     const QString default_output = input_info.absoluteDir().filePath(input_info.completeBaseName() + ".rdb");
 
-    QFileDialog output_dialog(host_, "Save IFC Database As");
+    QFileDialog output_dialog(&host, "Save IFC Database As");
     output_dialog.setAcceptMode(QFileDialog::AcceptSave);
     output_dialog.setFileMode(QFileDialog::AnyFile);
     output_dialog.setNameFilter("IFC Database (*.rdb);;All Files (*)");
@@ -255,17 +284,13 @@ void ModelsPanelController::convertIfcToDatabase() {
     const QFileInfo output_info(output_path);
     if (output_info.exists()) {
         const QString message = QString("'%1' already exists. Overwrite?").arg(output_info.fileName());
-        if (QMessageBox::question(host_, "Convert IFC to Database", message,
+        if (QMessageBox::question(&host, "Convert IFC to Database", message,
                                   QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) {
             return;
         }
     }
 
-    runIfcToDatabaseConversion(input_path, output_path);
-}
-
-void ModelsPanelController::runIfcToDatabaseConversion(const QString& input_path, const QString& output_path) {
-    auto* progress = new QProgressDialog(host_);
+    auto* progress = new QProgressDialog(&host);
     progress->setWindowTitle("Convert IFC to Database");
     progress->setLabelText(QString("Converting %1 to %2…")
                                .arg(QFileInfo(input_path).fileName(),
@@ -278,7 +303,7 @@ void ModelsPanelController::runIfcToDatabaseConversion(const QString& input_path
     progress->setAutoReset(false);
     progress->show();
 
-    session_state_->setStatusMessage("Converting",
+    s.setStatusMessage("Converting",
         QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
 
     auto timer = std::make_shared<QElapsedTimer>();
@@ -312,8 +337,8 @@ void ModelsPanelController::runIfcToDatabaseConversion(const QString& input_path
         }
     });
 
-    connect(thread, &QThread::finished, this,
-            [this, thread, progress, timer, error_message, input_path, output_path]() {
+    QObject::connect(thread, &QThread::finished, &host,
+            [&s, host_ptr = &host, thread, progress, timer, error_message, input_path, output_path]() {
         const qint64 elapsed = timer->elapsed();
 
         progress->close();
@@ -321,27 +346,27 @@ void ModelsPanelController::runIfcToDatabaseConversion(const QString& input_path
         thread->deleteLater();
 
         if (!error_message->isEmpty()) {
-            session_state_->setStatusMessage("Error", *error_message);
-            QMessageBox::warning(host_, "Convert IFC to Database",
+            s.setStatusMessage("Error", *error_message);
+            QMessageBox::warning(host_ptr, "Convert IFC to Database",
                                  QString("Conversion failed:\n%1").arg(*error_message));
             return;
         }
 
-        session_state_->setStatusMessage(
+        s.setStatusMessage(
             "Converted",
             QString("%1 → %2 in %3")
                 .arg(QFileInfo(input_path).fileName(),
                      QFileInfo(output_path).fileName(),
                      formatElapsed(elapsed)));
-        QMessageBox::information(host_, "Convert IFC to Database",
+        QMessageBox::information(host_ptr, "Convert IFC to Database",
                                  QString("Database written to:\n%1").arg(output_path));
     });
 
     thread->start();
 }
 
-void ModelsPanelController::exportGeometryDatabase() {
-    QFileDialog input_dialog(host_, "Select IFC File to Export");
+void exportGeometryDatabase(SessionState& s, QWidget& host) {
+    QFileDialog input_dialog(&host, "Select IFC File to Export");
     input_dialog.setFileMode(QFileDialog::ExistingFile);
     input_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
     input_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
@@ -353,7 +378,7 @@ void ModelsPanelController::exportGeometryDatabase() {
     const QFileInfo input_info(input_path);
     const QString default_output = input_info.absoluteDir().filePath(input_info.completeBaseName() + ".rdbview");
 
-    QFileDialog output_dialog(host_, "Save Geometry Database As");
+    QFileDialog output_dialog(&host, "Save Geometry Database As");
     output_dialog.setAcceptMode(QFileDialog::AcceptSave);
     output_dialog.setFileMode(QFileDialog::AnyFile);
     output_dialog.setNameFilter("Geometry Database (*.rdbview);;All Files (*)");
@@ -368,11 +393,7 @@ void ModelsPanelController::exportGeometryDatabase() {
         output_path += ".rdbview";
     }
 
-    runGeometryDatabaseExport(input_path, output_path);
-}
-
-void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path, const QString& output_path) {
-    auto* progress = new QProgressDialog(host_);
+    auto* progress = new QProgressDialog(&host);
     progress->setWindowTitle("Export Geometry Database");
     progress->setLabelText(QString("Exporting %1 to %2…")
                                .arg(QFileInfo(input_path).fileName(),
@@ -385,7 +406,7 @@ void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path,
     progress->setAutoReset(false);
     progress->show();
 
-    session_state_->setStatusMessage("Exporting",
+    s.setStatusMessage("Exporting",
         QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
 
     auto timer = std::make_shared<QElapsedTimer>();
@@ -407,7 +428,6 @@ void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path,
         const QString tmp_rdb_dir  = QDir(tmp_root).filePath("model.rdb");
 
         try {
-            // Step 1: lossy RDB with IfcRepresentationItem stripped.
             ifcopenshell::serializers::document_serializer_context context;
             context.file = nullptr;
             context.input_filename  = input_path.toStdString();
@@ -429,7 +449,6 @@ void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path,
             serializer->finalize();
             serializer.reset();
 
-            // Step 2: .ifcview sidecar via the headless builder.
             HeadlessSidecarBuilder builder;
             if (!builder.build(input_path, tmp_anchor)) {
                 throw ifcopenshell::exception(
@@ -440,7 +459,6 @@ void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path,
                     ("Sidecar build reported success but " + tmp_sidecar + " is missing").toStdString());
             }
 
-            // Step 3: zip the sidecar + RDB directory into the .rdbview.
             // Write to a sibling `.tmp` then rename so a partial file never
             // appears at the destination (matters for cloud-sync folders).
             const QString tmp_zip = output_path + ".tmp";
@@ -498,8 +516,8 @@ void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path,
         QDir(tmp_root).removeRecursively();
     });
 
-    connect(thread, &QThread::finished, this,
-            [this, thread, progress, timer, error_message, input_path, output_path]() {
+    QObject::connect(thread, &QThread::finished, &host,
+            [&s, host_ptr = &host, thread, progress, timer, error_message, input_path, output_path]() {
         const qint64 elapsed = timer->elapsed();
 
         progress->close();
@@ -507,83 +525,36 @@ void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path,
         thread->deleteLater();
 
         if (!error_message->isEmpty()) {
-            session_state_->setStatusMessage("Error", *error_message);
-            QMessageBox::warning(host_, "Export Geometry Database",
+            s.setStatusMessage("Error", *error_message);
+            QMessageBox::warning(host_ptr, "Export Geometry Database",
                                  QString("Export failed:\n%1").arg(*error_message));
             return;
         }
 
-        session_state_->setStatusMessage(
+        s.setStatusMessage(
             "Exported",
             QString("%1 → %2 in %3")
                 .arg(QFileInfo(input_path).fileName(),
                      QFileInfo(output_path).fileName(),
                      formatElapsed(elapsed)));
-        QMessageBox::information(host_, "Export Geometry Database",
+        QMessageBox::information(host_ptr, "Export Geometry Database",
                                  QString("Geometry database written to:\n%1").arg(output_path));
     });
 
     thread->start();
 }
 
-void ModelsPanelController::addFiles(const QStringList& paths) {
-    QStringList accepted_paths;
-    QStringList accepted_fed_ids;
-    for (const auto& path : paths) {
-        const QString fed_id = session_state_->federation()->addModel(path);
-        if (fed_id.isEmpty()) continue;
-        accepted_paths << path;
-        accepted_fed_ids << fed_id;
-    }
-
-    loadModels(accepted_paths, accepted_fed_ids);
-}
-
-void ModelsPanelController::loadModels(const QStringList& paths, const QStringList& fed_ids) {
-    if (paths.isEmpty()) return;
-
-    const auto ids = session_state_->loader()->addFiles(paths);
-    for (int i = 0; i < paths.size() && i < static_cast<int>(ids.size()) && i < fed_ids.size(); ++i) {
-        session_state_->setModelMapping(fed_ids[i], ids[i]);
-    }
-    session_state_->notifyModelsChanged();
-}
-
-void ModelsPanelController::removeLoadedModel(const QString& fed_id) {
-    const uint32_t mid = session_state_->modelIdForFedId(fed_id);
-    if (mid == 0) {
-        session_state_->federation()->removeModel(fed_id);
-        return;
-    }
-    if (session_state_->loader()->isLoadingModel(mid)) return;
-
-    viewport_->setSelectedObjectId(0);
-    session_state_->setSelectedObjectId(0);
-    session_state_->federation()->removeModel(fed_id);
-    viewport_->removeModel(mid);
-    session_state_->loader()->removeModel(mid);
-    session_state_->elementRegistry()->removeModel(mid);
-    session_state_->removeModelMappingByFedId(fed_id);
-    session_state_->notifySelectionChanged();
-    session_state_->notifyModelsChanged();
-}
-
-void ModelsPanelController::openSettings() {
-    SettingsDialog dialog(session_state_, host_);
+void openSettings(SessionState& s, QWidget& host) {
+    SettingsDialog dialog(&s, &host);
     dialog.exec();
 }
 
-QString ModelsPanelController::formatElapsed(qint64 ms) const {
-    return (ms >= 1000)
-        ? QString::number(ms / 1000.0, 'f', 2) + " s"
-        : QString::number(ms) + " ms";
-}
-
-void ModelsPanelController::writeSidecarForModel(SceneLoader* loader, uint32_t mid) const {
-    if (!loader || !viewport_ || !session_state_) return;
+void writeSidecarForLoadedModel(SessionState& s, ViewportWindow& vp, uint32_t mid) {
+    SceneLoader* loader = s.loader();
+    if (!loader) return;
 
     SidecarData sidecar_data;
-    if (!viewport_->snapshotModel(mid, sidecar_data)) return;
+    if (!vp.snapshotModel(mid, sidecar_data)) return;
 
     if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
         sidecar_data.has_coordinate_operation = georef->has_coordinate_operation ? 1 : 0;
@@ -593,8 +564,7 @@ void ModelsPanelController::writeSidecarForModel(SceneLoader* loader, uint32_t m
         sidecar_data.map_unit_to_meters = georef->units.map_unit_to_meters;
     }
 
-    auto* element_registry = session_state_->elementRegistry();
-    if (element_registry) {
+    if (auto* element_registry = s.elementRegistry()) {
         for (const auto& info : element_registry->basicElementInfoForModel(mid)) {
             PackedElementInfo packed;
             packed.object_id = info.object_id;
@@ -631,7 +601,7 @@ void ModelsPanelController::writeSidecarForModel(SceneLoader* loader, uint32_t m
            lod_stats.meshes_with_lod1, lod_stats.meshes_total,
            lod_stats.tris_lod0_for_lod1, lod_stats.tris_lod1);
 
-    viewport_->applyLodExtension(mid, sidecar_data);
+    vp.applyLodExtension(mid, sidecar_data);
 
     QElapsedTimer sidecar_timer;
     sidecar_timer.start();
@@ -639,4 +609,4 @@ void ModelsPanelController::writeSidecarForModel(SceneLoader* loader, uint32_t m
     qDebug("  Sidecar write: %lld ms (%s)", sidecar_timer.elapsed(), ok ? "ok" : "FAILED");
 }
 
-} // namespace ifcviewerfull::modules::models
+} // namespace ifcviewerfull::modules::models::commands

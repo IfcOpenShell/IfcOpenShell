@@ -18,11 +18,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Controller.h"
+#include "View.h"
 
 #include "../../ViewerSettings.h"
 #include "../../SessionState.h"
-#include "../../../ifcviewer/AppSettings.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/ViewportWindow.h"
@@ -36,68 +35,30 @@
 
 namespace ifcviewerfull::modules::viewport {
 
-ViewportController::ViewportController(ifcviewerfull::SessionState* session_state,
-                                       ViewportWindow* viewport,
-                                       QObject* parent)
+ViewportView::ViewportView(ifcviewerfull::SessionState* session_state,
+                           ViewportWindow* viewport,
+                           QObject* parent)
     : QObject(parent)
     , session_state_(session_state)
     , viewport_(viewport)
     , area_measurement_(std::make_unique<AreaMeasurement>())
     , length_measurement_(std::make_unique<LengthMeasurement>())
 {
-    Federation* federation = session_state_->federation();
-    SceneLoader* loader = session_state_->loader();
-    connect(&ifcviewerfull::ViewerSettings::instance(),
-            &ifcviewerfull::ViewerSettings::themeChanged,
-            this, [this]() {
-        viewport_->setBackgroundColor(QColor(ifcviewerfull::ViewerSettings::instance().color("viewport_background")));
+    auto& settings = ifcviewerfull::ViewerSettings::instance();
+    connect(&settings, &ifcviewerfull::ViewerSettings::themeChanged, this, [this]() {
+        viewport_->setBackgroundColor(
+            QColor(ifcviewerfull::ViewerSettings::instance().color("viewport_background")));
     });
-    viewport_->setBackgroundColor(QColor(ifcviewerfull::ViewerSettings::instance().color("viewport_background")));
-    connect(federation, &Federation::federatedFalseOriginChanged,
-            this, &ViewportController::applyFederatedFalseOrigin);
-    connect(federation, &Federation::configChanged, this, [this]() {
-        applyFederatedFalseOrigin();
-        for (uint32_t mid : session_state_->modelIds()) {
-            applyModelTransformation(mid);
-        }
-    });
-    connect(federation, &Federation::modelTransformationChanged,
-            this, [this](const QString& fed_id) {
-        const uint32_t mid = session_state_->modelIdForFedId(fed_id);
-        if (mid != 0) applyModelTransformation(mid);
-    });
-    connect(federation, &Federation::modelVisibilityChanged,
-            this, [this](const QString& fed_id, bool /*visible*/) {
-        const uint32_t mid = session_state_->modelIdForFedId(fed_id);
-        if (mid != 0) applyModelVisibility(mid);
-    });
-    connect(federation, &Federation::modelGroupChanged,
-            this, [this](const QString& fed_id, const QString& /*group_id*/) {
-        const uint32_t mid = session_state_->modelIdForFedId(fed_id);
-        if (mid != 0) applyModelVisibility(mid);
-    });
-    connect(federation, &Federation::groupVisibilityChanged,
-            this, [this](const QString&, bool /*visible*/) {
-        for (uint32_t mid : session_state_->modelIds()) {
-            applyModelVisibility(mid);
-        }
-    });
-    connect(loader, &SceneLoader::loadedFromSidecar, this,
-            [this](uint32_t mid, qint64 /*elapsed_ms*/) {
-        applyCoordinateOperation(mid);
-        applyModelVisibility(mid);
-        maybeGuessFederatedFalseOrigin(mid);
-    });
-    connect(loader, &SceneLoader::dataSourceReady, this,
-            [this](uint32_t mid) {
-        applyCoordinateOperation(mid);
-    });
-    connect(loader, &SceneLoader::loadedFromStream, this,
-            [this](uint32_t mid, qint64 /*elapsed_ms*/) {
-        applyCoordinateOperation(mid);
-        applyModelVisibility(mid);
-        maybeGuessFederatedFalseOrigin(mid);
-    });
+    viewport_->setBackgroundColor(QColor(settings.color("viewport_background")));
+
+    connect(session_state_, &SessionState::projectReset,           this, &ViewportView::refresh);
+    connect(session_state_, &SessionState::projectOpened,          this, [this](const QString&) { refresh(); });
+    connect(session_state_, &SessionState::modelsChanged,          this, &ViewportView::refresh);
+    connect(session_state_, &SessionState::federationChanged, this, &ViewportView::refresh);
+    connect(session_state_, &SessionState::visibilityChanged,     this, &ViewportView::refresh);
+    connect(session_state_, &SessionState::modelGeometryReady,    this, [this](uint32_t) { refresh(); });
+
+    // Measurement tools — input-driven, share the View's lifetime.
     connect(viewport_, &ViewportWindow::surfacePickedInTool, this,
             [this](int x, int y, int modifiers) {
         const bool alt = (modifiers & Qt::AltModifier) != 0;
@@ -148,11 +109,25 @@ ViewportController::ViewportController(ifcviewerfull::SessionState* session_stat
     connect(viewport_, &ViewportWindow::objectPicked, this, [this](uint32_t) {
         updateVolumeReadout();
     });
+
+    refresh();
 }
 
-ViewportController::~ViewportController() = default;
+ViewportView::~ViewportView() = default;
 
-void ViewportController::applyCoordinateOperation(uint32_t mid) {
+void ViewportView::refresh() {
+    Federation* federation = session_state_->federation();
+    viewport_->setFederatedFalseOrigin(
+        composeFederatedFalseOrigin(federation->federatedFalseOrigin(), federation->config()));
+
+    for (uint32_t mid : session_state_->modelIds()) {
+        applyCoordinateOperation(mid);
+        applyModelVisibility(mid);
+        maybeGuessFederatedFalseOrigin(mid);
+    }
+}
+
+void ViewportView::applyCoordinateOperation(uint32_t mid) {
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
     if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
@@ -164,7 +139,7 @@ void ViewportController::applyCoordinateOperation(uint32_t mid) {
     applyModelTransformation(mid);
 }
 
-void ViewportController::applyModelTransformation(uint32_t mid) {
+void ViewportView::applyModelTransformation(uint32_t mid) {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
@@ -186,7 +161,7 @@ void ViewportController::applyModelTransformation(uint32_t mid) {
     viewport_->setModelTransformation(mid, matrix);
 }
 
-void ViewportController::applyModelVisibility(uint32_t mid) {
+void ViewportView::applyModelVisibility(uint32_t mid) {
     Federation* federation = session_state_->federation();
     const QString fed_id = session_state_->fedIdForModelId(mid);
     if (fed_id.isEmpty()) return;
@@ -198,90 +173,27 @@ void ViewportController::applyModelVisibility(uint32_t mid) {
     }
 }
 
-void ViewportController::applyFederatedFalseOrigin() {
+void ViewportView::maybeGuessFederatedFalseOrigin(uint32_t mid) {
     Federation* federation = session_state_->federation();
-    viewport_->setFederatedFalseOrigin(
-        composeFederatedFalseOrigin(federation->federatedFalseOrigin(), federation->config()));
+    SceneLoader* loader = session_state_->loader();
+    if (!federation->filePath().isEmpty()) return;
+
+    const FederatedFalseOrigin& current = federation->federatedFalseOrigin();
+    const FederatedFalseOrigin defaults;
+    if (current.xyz != defaults.xyz || current.rz_deg != defaults.rz_deg) return;
+
+    const Eigen::Matrix4d* placement = loader->firstPlacement(mid);
+    const ModelGeoref* georef = loader->modelGeoref(mid);
+    if (placement == nullptr || georef == nullptr) return;
+
+    federation->setFederatedFalseOrigin(guessFederatedFalseOrigin(
+        *placement, *georef, federation->config()));
+    // The federation mutation above will emit its own signal, but to keep
+    // views off the Federation bus we re-emit through SessionState.
+    session_state_->notifyFederationChanged();
 }
 
-void ViewportController::setHomeView() {
-    auto camera = viewport_->cameraState();
-    Federation::HomeView home_view;
-    home_view.target = camera.target;
-    home_view.distance = camera.distance;
-    home_view.yaw = camera.yaw;
-    home_view.pitch = camera.pitch;
-    session_state_->federation()->setHomeView(home_view);
-    session_state_->setStatusMessage("Camera", "Home view updated");
-}
-
-void ViewportController::goHomeView() {
-    Federation* federation = session_state_->federation();
-    if (!federation->hasHomeView()) {
-        session_state_->setStatusMessage("Camera", "No home view set for this project");
-        return;
-    }
-
-    const auto& home_view = federation->homeView();
-    viewport_->setCamera(
-        home_view.target.x(), home_view.target.y(), home_view.target.z(),
-        home_view.distance, home_view.yaw, home_view.pitch);
-    session_state_->setStatusMessage("Camera", "Home view restored");
-}
-
-void ViewportController::setFlyMode() {
-    viewport_->requestActivate();
-    viewport_->enterFpsMode();
-    session_state_->setStatusMessage("Mode", "Fly mode active");
-}
-
-void ViewportController::toggleSectionMode() {
-    viewport_->toggleSectionTool();
-    if (viewport_->sectionToolActive()) {
-        session_state_->setStatusMessage("Section", "Section tool active");
-    } else {
-        session_state_->setStatusMessage("Section", "Section tool off");
-    }
-}
-
-void ViewportController::clearSectionPlanes() {
-    viewport_->clearSectionPlanes();
-    session_state_->setStatusMessage("Section", "Section planes cleared");
-}
-
-void ViewportController::toggleDistanceMode() {
-    viewport_->toggleLengthTool();
-}
-
-void ViewportController::toggleAreaMode() {
-    viewport_->toggleAreaTool();
-}
-
-void ViewportController::toggleVolumeMode() {
-    viewport_->toggleVolumeTool();
-}
-
-void ViewportController::focusSelectedObject() {
-    viewport_->focusOnSelectedObject();
-}
-
-void ViewportController::hideSelectedElements() {
-    viewport_->hideSelectedElements();
-}
-
-void ViewportController::isolateSelectedElements() {
-    viewport_->isolateSelectedElements();
-}
-
-void ViewportController::showAllElements() {
-    viewport_->showAllElements();
-}
-
-void ViewportController::invertSelection() {
-    viewport_->invertElementVisibility();
-}
-
-void ViewportController::updateVolumeReadout() {
+void ViewportView::updateVolumeReadout() {
     if (viewport_->toolMode() != ViewportWindow::ToolMode::Volume) return;
 
     const auto& sel = viewport_->selection().selectionIds();
@@ -315,23 +227,6 @@ void ViewportController::updateVolumeReadout() {
         .arg(per_obj.size())
         .arg(per_obj.size() == 1 ? "" : "s"));
     viewport_->setOverlayLabels(labels);
-}
-
-void ViewportController::maybeGuessFederatedFalseOrigin(uint32_t mid) {
-    Federation* federation = session_state_->federation();
-    SceneLoader* loader = session_state_->loader();
-    if (!federation->filePath().isEmpty()) return;
-
-    const FederatedFalseOrigin& current = federation->federatedFalseOrigin();
-    const FederatedFalseOrigin defaults;
-    if (current.xyz != defaults.xyz || current.rz_deg != defaults.rz_deg) return;
-
-    const Eigen::Matrix4d* placement = loader->firstPlacement(mid);
-    const ModelGeoref* georef = loader->modelGeoref(mid);
-    if (placement == nullptr || georef == nullptr) return;
-
-    federation->setFederatedFalseOrigin(guessFederatedFalseOrigin(
-        *placement, *georef, federation->config()));
 }
 
 } // namespace ifcviewerfull::modules::viewport

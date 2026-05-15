@@ -18,56 +18,31 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
-#define IFCINTERFACE_PANELS_VIEWPORT_CONTROLLER_H
+#ifndef IFCINTERFACE_MODULES_VIEWPORT_COMMANDS_H
+#define IFCINTERFACE_MODULES_VIEWPORT_COMMANDS_H
 
-#include <QObject>
-#include <memory>
-
-namespace ifcviewerfull { class SessionState; }
 class ViewportWindow;
-class AreaMeasurement;
-class LengthMeasurement;
+namespace ifcviewerfull { class SessionState; }
 
-namespace ifcviewerfull::modules::viewport {
+namespace ifcviewerfull::modules::viewport::commands {
 
-class ViewportController : public QObject {
-    Q_OBJECT
+void setHome(SessionState& session, ViewportWindow& vp);
+void goHome(SessionState& session, ViewportWindow& vp);
+void viewSelected(ViewportWindow& vp);
 
-public:
-    explicit ViewportController(ifcviewerfull::SessionState* session_state,
-                                ViewportWindow* viewport,
-                                QObject* parent = nullptr);
-    ~ViewportController() override;
+void fly(SessionState& session, ViewportWindow& vp);
+void toggleSection(SessionState& session, ViewportWindow& vp);
+void clearSection(SessionState& session, ViewportWindow& vp);
 
-    void applyFederatedFalseOrigin();
-    void setHomeView();
-    void goHomeView();
-    void setFlyMode();
-    void toggleSectionMode();
-    void clearSectionPlanes();
-    void toggleDistanceMode();
-    void toggleAreaMode();
-    void toggleVolumeMode();
-    void focusSelectedObject();
-    void hideSelectedElements();
-    void isolateSelectedElements();
-    void showAllElements();
-    void invertSelection();
+void toggleDistance(ViewportWindow& vp);
+void toggleArea(ViewportWindow& vp);
+void toggleVolume(ViewportWindow& vp);
 
-private:
-    void applyCoordinateOperation(uint32_t mid);
-    void applyModelTransformation(uint32_t mid);
-    void applyModelVisibility(uint32_t mid);
-    void maybeGuessFederatedFalseOrigin(uint32_t mid);
-    void updateVolumeReadout();
+void hideSelected(ViewportWindow& vp);
+void isolateSelected(ViewportWindow& vp);
+void showAll(ViewportWindow& vp);
+void invertVisibility(ViewportWindow& vp);
 
-    ifcviewerfull::SessionState* session_state_ = nullptr;
-    ViewportWindow* viewport_ = nullptr;
-    std::unique_ptr<AreaMeasurement> area_measurement_;
-    std::unique_ptr<LengthMeasurement> length_measurement_;
-};
-
-} // namespace ifcviewerfull::modules::viewport
+} // namespace ifcviewerfull::modules::viewport::commands
 
 #endif

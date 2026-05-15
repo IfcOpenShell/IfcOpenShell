@@ -475,6 +475,9 @@ void SettingsDialog::onAccepted() {
             xf.pivot = parseVector3(row.pivot->text());
             federation_->setModelTransformation(row.fed_id, xf);
         }
+        if (session_state_) {
+            session_state_->notifyFederationChanged();
+        }
     }
     accept();
 }

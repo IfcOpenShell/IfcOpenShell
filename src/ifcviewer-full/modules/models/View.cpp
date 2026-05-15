@@ -54,31 +54,44 @@ TreeNode makeGroupNode(const Federation* federation, const Federation::Group* gr
     return node;
 }
 
+// Walks the federation's group tree, appending every group except those under
+// exclude_subtree_root (used to prevent a group from being moved into itself).
+void collectGroupsRecursive(const Federation::Group* group,
+                            const QString& exclude_subtree_root,
+                            QList<GroupOption>& out) {
+    if (group->id == exclude_subtree_root) return;
+    out.append({group->id, group->display_name});
+    for (const auto& child : group->children) {
+        collectGroupsRecursive(child.get(), exclude_subtree_root, out);
+    }
+}
+
 } // namespace
 
 ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
                                  ifcviewerfull::SessionState* session_state,
                                  QObject* parent)
-    : QObject(parent), widget_(widget), session_state_(session_state)
+    : QObject(parent)
+    , widget_(widget)
+    , session_state_(session_state)
 {
-    connect(session_state_, &ifcviewerfull::SessionState::modelsChanged,
-            this, [this]() { reload(); });
-    connect(session_state_, &ifcviewerfull::SessionState::federationStructureChanged,
-            this, [this]() { reload(); });
-    connect(session_state_, &ifcviewerfull::SessionState::visibilityChanged,
-            this, [this]() { reload(); });
-    connect(session_state_, &ifcviewerfull::SessionState::projectReset,
-            this, [this]() { reload(); });
-    connect(session_state_, &ifcviewerfull::SessionState::projectOpened,
-            this, [this](const QString&) { reload(); });
+    connect(session_state_, &SessionState::modelsChanged,     this, &ModelsPanelView::refresh);
+    connect(session_state_, &SessionState::federationChanged, this, &ModelsPanelView::refresh);
+    connect(session_state_, &SessionState::visibilityChanged, this, &ModelsPanelView::refresh);
+    connect(session_state_, &SessionState::projectReset,      this, &ModelsPanelView::refresh);
+    connect(session_state_, &SessionState::projectOpened,     this, [this](const QString&) { refresh(); });
     connect(&ifcviewerfull::ViewerSettings::instance(),
             &ifcviewerfull::ViewerSettings::themeChanged,
-            this, [this]() { reload(); });
+            this, &ModelsPanelView::refresh);
 
-    reload();
+    widget_->setGroupListProvider([this](const QString& exclude_subtree_root) {
+        return groupListForMove(exclude_subtree_root);
+    });
+
+    refresh();
 }
 
-void ModelsPanelView::reload() {
+void ModelsPanelView::refresh() {
     Federation* federation = session_state_->federation();
     QList<TreeNode> nodes;
     for (const auto& root_group : federation->rootGroups()) {
@@ -95,6 +108,14 @@ void ModelsPanelView::reload() {
         });
     }
     widget_->setNodes(nodes);
+}
+
+QList<GroupOption> ModelsPanelView::groupListForMove(const QString& exclude_subtree_root) const {
+    QList<GroupOption> out;
+    for (const auto& root : session_state_->federation()->rootGroups()) {
+        collectGroupsRecursive(root.get(), exclude_subtree_root, out);
+    }
+    return out;
 }
 
 } // namespace ifcviewerfull::modules::models

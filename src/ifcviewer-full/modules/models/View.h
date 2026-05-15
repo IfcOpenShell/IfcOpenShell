@@ -31,6 +31,9 @@ namespace ifcviewerfull::modules::models {
 
 class ModelsPanel;
 
+// Subscribes to SessionState and re-derives panel state (tree nodes, valid
+// move targets) from the federation. The panel calls commands directly for
+// input, so this object is purely state→view; it has no command knowledge.
 class ModelsPanelView : public QObject {
     Q_OBJECT
 public:
@@ -39,7 +42,8 @@ public:
                              QObject* parent = nullptr);
 
 private:
-    void reload();
+    void refresh();
+    QList<GroupOption> groupListForMove(const QString& exclude_subtree_root) const;
 
     ModelsPanel* widget_ = nullptr;
     ifcviewerfull::SessionState* session_state_ = nullptr;

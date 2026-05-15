@@ -22,8 +22,7 @@
 
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
-#include "../models/Controller.h"
-#include "../viewport/Controller.h"
+#include "../models/Commands.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/ViewportWindow.h"
@@ -35,21 +34,13 @@
 namespace ifcviewerfull::modules::project {
 
 ProjectController::ProjectController(QWidget* host,
-                                     Federation* federation,
                                      ifcviewerfull::SessionState* session_state,
-                                     ifcviewerfull::ElementRegistry* element_registry,
                                      ViewportWindow* viewport,
-                                     ifcviewerfull::modules::models::ModelsPanelController* models_controller,
-                                     ifcviewerfull::modules::viewport::ViewportController* viewport_controller,
                                      QObject* parent)
     : QObject(parent)
     , host_(host)
-    , federation_(federation)
     , session_state_(session_state)
-    , element_registry_(element_registry)
     , viewport_(viewport)
-    , models_controller_(models_controller)
-    , viewport_controller_(viewport_controller)
 {
 }
 
@@ -64,8 +55,7 @@ bool ProjectController::newProject() {
     if (!confirmDiscardIfDirty()) return false;
 
     clearScene();
-    federation_->clear();
-    viewport_controller_->applyFederatedFalseOrigin();
+    session_state_->federation()->clear();
     session_state_->setStatusMessage("Project", "Untitled");
     session_state_->notifyProjectReset();
     return true;
@@ -95,7 +85,7 @@ bool ProjectController::openProject(const QString& path) {
 
     QStringList warnings;
     QString err;
-    if (!federation_->load(path, &warnings, &err)) {
+    if (!session_state_->federation()->load(path, &warnings, &err)) {
         QMessageBox::warning(host_, "Open Project",
                              QString("Could not open project:\n%1").arg(err));
         return false;
@@ -105,7 +95,7 @@ bool ProjectController::openProject(const QString& path) {
 
     QStringList paths;
     QStringList fed_ids;
-    for (const auto& model : federation_->models()) {
+    for (const auto& model : session_state_->federation()->models()) {
         if (model.source_kind != "local") continue;
         if (!QFileInfo::exists(model.source_path)) {
             warnings << QString("Source not found, kept in project: %1").arg(model.source_path);
@@ -114,17 +104,16 @@ bool ProjectController::openProject(const QString& path) {
         paths << model.source_path;
         fed_ids << model.id;
     }
-    models_controller_->loadModels(paths, fed_ids);
+    ifcviewerfull::modules::models::commands::detail::loadModels(*session_state_, paths, fed_ids);
 
     if (!warnings.isEmpty()) {
         QMessageBox::warning(host_, "Open Project",
                              "Project opened with warnings:\n\n" + warnings.join("\n"));
     }
 
-    federation_->markClean();
-    viewport_controller_->applyFederatedFalseOrigin();
-    if (federation_->hasHomeView()) {
-        const auto& hv = federation_->homeView();
+    session_state_->federation()->markClean();
+    if (session_state_->federation()->hasHomeView()) {
+        const auto& hv = session_state_->federation()->homeView();
         viewport_->setCamera(
             hv.target.x(), hv.target.y(), hv.target.z(), hv.distance, hv.yaw, hv.pitch);
     }
@@ -134,21 +123,21 @@ bool ProjectController::openProject(const QString& path) {
 }
 
 bool ProjectController::saveProject() {
-    if (federation_->filePath().isEmpty()) return saveProjectAs();
+    if (session_state_->federation()->filePath().isEmpty()) return saveProjectAs();
 
     QString err;
-    if (!federation_->save(federation_->filePath(), &err)) {
+    if (!session_state_->federation()->save(session_state_->federation()->filePath(), &err)) {
         QMessageBox::warning(host_, "Save Project",
                              QString("Could not save project:\n%1").arg(err));
         return false;
     }
-    session_state_->setStatusMessage("Project", QFileInfo(federation_->filePath()).fileName());
-    session_state_->notifyProjectSaved(federation_->filePath());
+    session_state_->setStatusMessage("Project", QFileInfo(session_state_->federation()->filePath()).fileName());
+    session_state_->notifyProjectSaved(session_state_->federation()->filePath());
     return true;
 }
 
 bool ProjectController::saveProjectAs() {
-    QString suggested = federation_->filePath();
+    QString suggested = session_state_->federation()->filePath();
     if (suggested.isEmpty()) suggested = "project.ifcfed";
 
     QFileDialog file_dialog(host_, "Save Project As", suggested);
@@ -166,7 +155,7 @@ bool ProjectController::saveProjectAs() {
 
 bool ProjectController::saveProjectAs(const QString& path) {
     QString err;
-    if (!federation_->save(path, &err)) {
+    if (!session_state_->federation()->save(path, &err)) {
         QMessageBox::warning(host_, "Save Project",
                              QString("Could not save project:\n%1").arg(err));
         return false;
@@ -177,23 +166,20 @@ bool ProjectController::saveProjectAs(const QString& path) {
 }
 
 void ProjectController::clearScene() {
+    // Helper for newProject / openProject. Does not emit any notifies; the
+    // caller emits projectReset / projectOpened once at the end of its flow.
     viewport_->setSelectedObjectId(0);
     session_state_->setSelectedObjectId(0);
-    session_state_->notifySelectionChanged();
-
-    const auto model_ids = session_state_->modelIds();
-    for (uint32_t mid : model_ids) {
+    for (uint32_t mid : session_state_->modelIds()) {
         viewport_->removeModel(mid);
         session_state_->loader()->removeModel(mid);
     }
-
     session_state_->clearModelMappings();
-    element_registry_->clear();
-    session_state_->notifyModelsChanged();
+    session_state_->elementRegistry()->clear();
 }
 
 bool ProjectController::confirmDiscardIfDirty() {
-    if (!federation_->isDirty()) return true;
+    if (!session_state_->federation()->isDirty()) return true;
     const auto result = QMessageBox::question(
         host_, "Unsaved Project",
         "The current project has unsaved changes. Save before continuing?",

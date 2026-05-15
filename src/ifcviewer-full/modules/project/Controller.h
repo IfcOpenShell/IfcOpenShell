@@ -24,12 +24,8 @@
 #include <QObject>
 
 class QWidget;
-class Federation;
 class ViewportWindow;
-namespace ifcviewerfull { class ElementRegistry; }
 namespace ifcviewerfull { class SessionState; }
-namespace ifcviewerfull::modules::models { class ModelsPanelController; }
-namespace ifcviewerfull::modules::viewport { class ViewportController; }
 
 namespace ifcviewerfull::modules::project {
 
@@ -38,12 +34,8 @@ class ProjectController : public QObject {
 
 public:
     explicit ProjectController(QWidget* host,
-                               Federation* federation,
                                ifcviewerfull::SessionState* session_state,
-                               ifcviewerfull::ElementRegistry* element_registry,
                                ViewportWindow* viewport,
-                               ifcviewerfull::modules::models::ModelsPanelController* models_controller,
-                               ifcviewerfull::modules::viewport::ViewportController* viewport_controller,
                                QObject* parent = nullptr);
 
     bool newProject();
@@ -58,12 +50,8 @@ private:
     bool confirmDiscardIfDirty();
 
     QWidget* host_ = nullptr;
-    Federation* federation_ = nullptr;
     ifcviewerfull::SessionState* session_state_ = nullptr;
-    ifcviewerfull::ElementRegistry* element_registry_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
-    ifcviewerfull::modules::models::ModelsPanelController* models_controller_ = nullptr;
-    ifcviewerfull::modules::viewport::ViewportController* viewport_controller_ = nullptr;
 };
 
 } // namespace ifcviewerfull::modules::project

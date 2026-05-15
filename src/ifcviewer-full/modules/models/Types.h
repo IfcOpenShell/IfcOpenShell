@@ -39,6 +39,13 @@ struct TreeNode {
     QList<TreeNode> children;
 };
 
+// One entry in a "move to..." menu. Computed by the View from federation state
+// and passed into the Panel so menu construction has no domain knowledge.
+struct GroupOption {
+    QString id;
+    QString display_name;
+};
+
 struct SelectedModelGeorefState {
     QString georef_present;
     QString coordinate_operation_type;

@@ -20,25 +20,63 @@
 
 #include "SessionState.h"
 
+#include "ElementRegistry.h"
 #include "../ifcviewer/Federation.h"
+#include "../ifcviewer/SceneLoader.h"
 
 namespace ifcviewerfull {
 
 SessionState::SessionState(QObject* parent)
     : QObject(parent)
+    , federation_(new Federation(this))
+    , element_registry_(new ElementRegistry(this))
 {
 }
 
-void SessionState::bindFederation(Federation* federation) {
-    federation_ = federation;
-}
+void SessionState::createLoader(ViewportWindow* viewport) {
+    Q_ASSERT(!loader_);
+    loader_ = new SceneLoader(viewport, this);
+    element_registry_->bindLoader(loader_);
 
-void SessionState::bindLoader(SceneLoader* loader) {
-    loader_ = loader;
-}
+    auto format_elapsed = [](qint64 ms) {
+        return (ms >= 1000)
+            ? QString::number(ms / 1000.0, 'f', 2) + " s"
+            : QString::number(ms) + " ms";
+    };
 
-void SessionState::bindElementRegistry(ElementRegistry* element_registry) {
-    element_registry_ = element_registry;
+    // Translate low-level loader events into session-level signals + status
+    // text so views don't need to subscribe to the loader directly.
+    connect(loader_, &SceneLoader::loadStarted, this,
+            [this](uint32_t, const QString& display_name) {
+        setStatusMessage("Loading", display_name);
+    });
+    connect(loader_, &SceneLoader::loadedFromSidecar, this,
+            [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
+        setStatusMessage("Loaded",
+            QString("%1 from cache in %2")
+                .arg(loader_->displayName(mid))
+                .arg(format_elapsed(elapsed_ms)));
+        emit modelGeometryReady(mid);
+    });
+    connect(loader_, &SceneLoader::loadedFromStream, this,
+            [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
+        setStatusMessage("Loaded",
+            QString("%1 streamed in %2")
+                .arg(loader_->displayName(mid))
+                .arg(format_elapsed(elapsed_ms)));
+        emit modelGeometryReady(mid);
+    });
+    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t mid) {
+        setStatusMessage("Cancelled", loader_->displayName(mid));
+    });
+    connect(loader_, &SceneLoader::loadError, this,
+            [this](uint32_t, const QString& message) {
+        setStatusMessage("Error", message);
+        emit loadError(message);
+    });
+    connect(loader_, &SceneLoader::allLoadsFinished, this, [this]() {
+        setStatusMessage("Loaded", QString("%1 model(s)").arg(loader_->modelCount()));
+    });
 }
 
 void SessionState::setSelectedObjectId(uint32_t object_id) {
@@ -88,12 +126,16 @@ void SessionState::notifyModelsChanged() {
     emit modelsChanged();
 }
 
-void SessionState::notifyFederationStructureChanged() {
-    emit federationStructureChanged();
+void SessionState::notifyFederationChanged() {
+    emit federationChanged();
 }
 
 void SessionState::notifyVisibilityChanged() {
     emit visibilityChanged();
+}
+
+void SessionState::notifyModelGeometryReady(uint32_t model_id) {
+    emit modelGeometryReady(model_id);
 }
 
 void SessionState::notifyProjectOpened(const QString& path) {

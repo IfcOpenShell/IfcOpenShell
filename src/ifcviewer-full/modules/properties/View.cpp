@@ -38,6 +38,9 @@ PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
     connect(session_state_, &ifcviewerfull::SessionState::projectReset, this, [this]() {
         refresh(0);
     });
+    connect(session_state_, &ifcviewerfull::SessionState::projectOpened, this, [this](const QString&) {
+        refresh(0);
+    });
     refresh(0);
 }
 

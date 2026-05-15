@@ -24,13 +24,12 @@
 #include "../ifcviewer/Federation.h"
 #include "../ifcviewer/SceneLoader.h"
 #include "../ifcviewer/ViewportWindow.h"
-#include "ElementRegistry.h"
 #include "SessionState.h"
 #include "components/Buttons.h"
 #include "components/Panel.h"
 #include "components/Style.h"
 #include "components/Tabs.h"
-#include "modules/models/Controller.h"
+#include "modules/models/Commands.h"
 #include "modules/todo/Panel.h"
 #include "modules/models/View.h"
 #include "modules/models/Panel.h"
@@ -40,8 +39,9 @@
 #include "modules/settings/Dialog.h"
 #include "modules/spatial_hierarchy/View.h"
 #include "modules/spatial_hierarchy/Panel.h"
-#include "modules/viewport/Controller.h"
+#include "modules/viewport/Commands.h"
 #include "modules/viewport/Panel.h"
+#include "modules/viewport/View.h"
 
 #include <QDockWidget>
 #include <QFileInfo>
@@ -62,23 +62,20 @@ namespace ifcviewerfull::shell {
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
 {
-    federation_ = new Federation(this);
-    element_registry_ = new ifcviewerfull::ElementRegistry(this);
     session_state_ = new ifcviewerfull::SessionState(this);
-    session_state_->bindFederation(federation_);
-    session_state_->bindElementRegistry(element_registry_);
-    connect(federation_, &Federation::dirtyChanged, this, [this](bool dirty) {
-        setWindowModified(dirty);
+    auto on_mutated = [this]() {
+        setWindowModified(true);
         updateWindowTitle();
-    });
-    connect(session_state_, &ifcviewerfull::SessionState::modelsChanged,
-            this, &MainWindow::updateWindowTitle);
-    connect(session_state_, &ifcviewerfull::SessionState::projectOpened,
-            this, [this](const QString&) { updateWindowTitle(); });
-    connect(session_state_, &ifcviewerfull::SessionState::projectSaved,
-            this, [this](const QString&) { updateWindowTitle(); });
-    connect(session_state_, &ifcviewerfull::SessionState::projectReset,
-            this, &MainWindow::updateWindowTitle);
+    };
+    auto on_clean_state = [this]() {
+        setWindowModified(false);
+        updateWindowTitle();
+    };
+    connect(session_state_, &ifcviewerfull::SessionState::federationChanged, this, on_mutated);
+    connect(session_state_, &ifcviewerfull::SessionState::modelsChanged,     this, on_mutated);
+    connect(session_state_, &ifcviewerfull::SessionState::projectReset,      this, on_clean_state);
+    connect(session_state_, &ifcviewerfull::SessionState::projectOpened,     this, on_clean_state);
+    connect(session_state_, &ifcviewerfull::SessionState::projectSaved,      this, on_clean_state);
     setupChrome();
     setupViewport();
     setupPanels();
@@ -100,31 +97,31 @@ void MainWindow::setupChrome() {
         connect(shortcut, &QShortcut::activated, this, fn);
     };
     bind_shortcut(QKeySequence("Ctrl+Shift+L"), [this]() {
-        viewport_controller_->toggleDistanceMode();
+        modules::viewport::commands::toggleDistance(*viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence("Ctrl+Shift+A"), [this]() {
-        viewport_controller_->toggleAreaMode();
+        modules::viewport::commands::toggleArea(*viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence("Ctrl+Shift+V"), [this]() {
-        viewport_controller_->toggleVolumeMode();
+        modules::viewport::commands::toggleVolume(*viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_F), [this]() {
-        viewport_controller_->setFlyMode();
+        modules::viewport::commands::fly(*session_state_, *viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence(Qt::Key_K), [this]() {
-        viewport_controller_->toggleSectionMode();
+        modules::viewport::commands::toggleSection(*session_state_, *viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_K), [this]() {
-        viewport_controller_->clearSectionPlanes();
+        modules::viewport::commands::clearSection(*session_state_, *viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence(Qt::Key_H), [this]() {
-        viewport_controller_->hideSelectedElements();
+        modules::viewport::commands::hideSelected(*viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence(Qt::SHIFT | Qt::Key_H), [this]() {
-        viewport_controller_->isolateSelectedElements();
+        modules::viewport::commands::isolateSelected(*viewport_widget_->viewport());
     });
     bind_shortcut(QKeySequence(Qt::ALT | Qt::Key_H), [this]() {
-        viewport_controller_->showAllElements();
+        modules::viewport::commands::showAll(*viewport_widget_->viewport());
     });
     updateWindowTitle();
 }
@@ -178,7 +175,7 @@ QWidget* MainWindow::buildHomeRibbonPage() {
 
     auto* add_model = components::buttons::makeButton("Add Model", ":/icons/cube.svg", this);
     connect(add_model, &QToolButton::clicked, this, [this]() {
-        models_controller_->addFiles();
+        modules::models::commands::addModel(*session_state_, *this);
     });
     auto* sync_models = components::buttons::makeButton("Sync Models", ":/icons/refresh-double.svg", this);
     connect(sync_models, &QToolButton::clicked, this, [this]() {
@@ -207,11 +204,11 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
 
     auto* set_home = components::buttons::makeButton("Set Home", ":/icons/home.svg", this);
     connect(set_home, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->setHomeView();
+        modules::viewport::commands::setHome(*session_state_, *viewport_widget_->viewport());
     });
     auto* go_home = components::buttons::makeButton("Go Home", ":/icons/home-alt.svg", this);
     connect(go_home, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->goHomeView();
+        modules::viewport::commands::goHome(*session_state_, *viewport_widget_->viewport());
     });
     auto* view_all = components::buttons::makeButton("View All", ":/icons/cube-scan.svg", this);
     connect(view_all, &QToolButton::clicked, this, [this]() {
@@ -219,7 +216,7 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
     });
     auto* view_selected = components::buttons::makeButton("View Selected", ":/icons/cube-scan-solid.svg", this);
     connect(view_selected, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->focusSelectedObject();
+        modules::viewport::commands::viewSelected(*viewport_widget_->viewport());
     });
 
     auto* plan_view = components::buttons::makeButton("Plan", ":/icons/planimetry.svg", this);
@@ -248,11 +245,11 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
 
     auto* fly_mode = components::buttons::makeButton("Fly", ":/icons/drone.svg", this);
     connect(fly_mode, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->setFlyMode();
+        modules::viewport::commands::fly(*session_state_, *viewport_widget_->viewport());
     });
     auto* section_mode = components::buttons::makeButton("Section", ":/icons/cube-cut-with-curve.svg", this);
     connect(section_mode, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->toggleSectionMode();
+        modules::viewport::commands::toggleSection(*session_state_, *viewport_widget_->viewport());
     });
 
     row->addWidget(components::buttons::makeButtonGroup("CAMERA", {set_home, go_home, view_all, view_selected}, this));
@@ -271,32 +268,32 @@ QWidget* MainWindow::buildInspectRibbonPage() {
 
     auto* hide_selected = components::buttons::makeButton("Hide", ":/icons/eye-closed.svg", this);
     connect(hide_selected, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->hideSelectedElements();
+        modules::viewport::commands::hideSelected(*viewport_widget_->viewport());
     });
     auto* isolate_selected = components::buttons::makeButton("Isolate", ":/icons/eye-solid.svg", this);
     connect(isolate_selected, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->isolateSelectedElements();
+        modules::viewport::commands::isolateSelected(*viewport_widget_->viewport());
     });
     auto* show_all = components::buttons::makeButton("Show All", ":/icons/eye.svg", this);
     connect(show_all, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->showAllElements();
+        modules::viewport::commands::showAll(*viewport_widget_->viewport());
     });
     auto* invert_selection = components::buttons::makeButton("Invert", ":/icons/intersect.svg", this);
     connect(invert_selection, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->invertSelection();
+        modules::viewport::commands::invertVisibility(*viewport_widget_->viewport());
     });
 
     auto* distance = components::buttons::makeButton("Distance", ":/icons/select-edge3d.svg", this);
     connect(distance, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->toggleDistanceMode();
+        modules::viewport::commands::toggleDistance(*viewport_widget_->viewport());
     });
     auto* area = components::buttons::makeButton("Area", ":/icons/select-face3d.svg", this);
     connect(area, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->toggleAreaMode();
+        modules::viewport::commands::toggleArea(*viewport_widget_->viewport());
     });
     auto* volume = components::buttons::makeButton("Volume", ":/icons/select-point3d.svg", this);
     connect(volume, &QToolButton::clicked, this, [this]() {
-        viewport_controller_->toggleVolumeMode();
+        modules::viewport::commands::toggleVolume(*viewport_widget_->viewport());
     });
 
     row->addWidget(components::buttons::makeButtonGroup("SELECTION", {hide_selected, isolate_selected, show_all, invert_selection}, this));
@@ -374,12 +371,11 @@ void MainWindow::setupViewport() {
 }
 
 void MainWindow::setupPanels() {
-    models_panel_ = new modules::models::ModelsPanel(this);
+    models_panel_ = new modules::models::ModelsPanel(
+        session_state_, viewport_widget_->viewport(), this);
     spatial_panel_ = new modules::spatial_hierarchy::SpatialHierarchyPanel(this);
     properties_panel_ = new modules::properties::PropertiesPanel(this);
 
-    models_controller_ = new modules::models::ModelsPanelController(
-        this, models_panel_, session_state_, viewport_widget_->viewport(), this);
     models_view_ = new modules::models::ModelsPanelView(models_panel_, session_state_, this);
     spatial_view_ = new modules::spatial_hierarchy::SpatialHierarchyPanelView(spatial_panel_, session_state_, this);
     properties_view_ = new modules::properties::PropertiesPanelView(properties_panel_, session_state_, this);
@@ -457,44 +453,40 @@ void MainWindow::setupStatus() {
 }
 
 void MainWindow::setupLoader() {
-    loader_ = new SceneLoader(viewport_widget_->viewport(), this);
-    element_registry_->bindLoader(loader_);
-    session_state_->bindLoader(loader_);
-    models_controller_->bindLoader(loader_);
-    viewport_controller_ = new modules::viewport::ViewportController(
+    session_state_->createLoader(viewport_widget_->viewport());
+    auto* loader = session_state_->loader();
+    viewport_view_ = new modules::viewport::ViewportView(
         session_state_, viewport_widget_->viewport(), this);
     project_controller_ = new modules::project::ProjectController(
-        this, federation_, session_state_, element_registry_,
-        viewport_widget_->viewport(), models_controller_, viewport_controller_, this);
+        this, session_state_, viewport_widget_->viewport(), this);
 
-    connect(loader_, &SceneLoader::loadStarted, this,
-            [this](uint32_t /*mid*/, const QString& /*display_name*/) {
+    // Progress bar — tightly coupled to loader by nature, fine to subscribe direct.
+    connect(loader, &SceneLoader::loadStarted, this,
+            [this](uint32_t, const QString&) {
         status_progress_bar_->setValue(0);
         status_progress_bar_->setVisible(true);
     });
-    connect(loader_, &SceneLoader::progressChanged, this,
-            [this](int percent) {
-        status_progress_bar_->setValue(percent);
-    });
+    connect(loader, &SceneLoader::progressChanged, this,
+            [this](int percent) { status_progress_bar_->setValue(percent); });
 
-    auto hide_progress = [this]() {
+    auto hide_progress = [this]() { status_progress_bar_->setVisible(false); };
+    connect(loader, &SceneLoader::loadedFromSidecar, this,
+            [hide_progress](uint32_t, qint64) { hide_progress(); });
+    connect(loader, &SceneLoader::loadedFromStream, this,
+            [this, hide_progress](uint32_t mid, qint64) {
+        modules::models::commands::writeSidecarForLoadedModel(
+            *session_state_, *viewport_widget_->viewport(), mid);
+        hide_progress();
+    });
+    connect(loader, &SceneLoader::loadCancelled, this,
+            [hide_progress](uint32_t) { hide_progress(); });
+
+    // Load errors surface through SessionState as a session-level signal; the
+    // status text is already set there, we only show the modal here.
+    connect(session_state_, &ifcviewerfull::SessionState::loadError, this,
+            [this](const QString& message) {
         status_progress_bar_->setVisible(false);
-    };
-    connect(loader_, &SceneLoader::loadedFromSidecar, this,
-            [hide_progress](uint32_t /*mid*/, qint64 /*elapsed_ms*/) {
-        hide_progress();
-    });
-    connect(loader_, &SceneLoader::loadedFromStream, this,
-            [hide_progress](uint32_t /*mid*/, qint64 /*elapsed_ms*/) {
-        hide_progress();
-    });
-    connect(loader_, &SceneLoader::loadCancelled, this,
-            [hide_progress](uint32_t /*mid*/) {
-        hide_progress();
-    });
-    connect(loader_, &SceneLoader::loadError, this,
-            [hide_progress](uint32_t /*mid*/, const QString& /*message*/) {
-        hide_progress();
+        QMessageBox::warning(this, "IfcViewer", message);
     });
 
     connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
@@ -518,8 +510,9 @@ void MainWindow::setupLoader() {
 }
 
 void MainWindow::updateWindowTitle() {
-    const QString project_path = federation_ ? federation_->filePath() : QString();
-    if (project_path.isEmpty() && (!federation_ || federation_->models().empty())) {
+    auto* federation = session_state_->federation();
+    const QString project_path = federation->filePath();
+    if (project_path.isEmpty() && federation->models().empty()) {
         setWindowTitle("IfcOpenShell Interface");
     } else if (project_path.isEmpty()) {
         setWindowTitle("untitled[*] - IfcOpenShell Interface");

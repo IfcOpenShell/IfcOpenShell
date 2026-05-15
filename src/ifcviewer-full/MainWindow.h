@@ -30,12 +30,8 @@ class QDockWidget;
 class QProgressBar;
 class QStackedWidget;
 class QToolButton;
-class Federation;
-class SceneLoader;
-namespace ifcviewerfull { class ElementRegistry; }
 namespace ifcviewerfull { class SessionState; }
 namespace ifcviewerfull::components { class TabBar; }
-namespace ifcviewerfull::modules::models { class ModelsPanelController; }
 namespace ifcviewerfull::modules::models { class ModelsPanel; }
 namespace ifcviewerfull::modules::models { class ModelsPanelView; }
 namespace ifcviewerfull::modules::project { class ProjectController; }
@@ -43,7 +39,7 @@ namespace ifcviewerfull::modules::spatial_hierarchy { class SpatialHierarchyPane
 namespace ifcviewerfull::modules::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcviewerfull::modules::properties { class PropertiesPanel; }
 namespace ifcviewerfull::modules::properties { class PropertiesPanelView; }
-namespace ifcviewerfull::modules::viewport { class ViewportController; }
+namespace ifcviewerfull::modules::viewport { class ViewportView; }
 namespace ifcviewerfull::modules::viewport { class ViewportPanel; }
 
 namespace ifcviewerfull::shell {
@@ -68,7 +64,6 @@ private:
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
 
 private:
-    Federation* federation_ = nullptr;
     QLabel* status_mode_label_ = nullptr;
     QLabel* status_selection_label_ = nullptr;
     QLabel* status_perf_label_ = nullptr;
@@ -76,9 +71,7 @@ private:
     ifcviewerfull::components::TabBar* ribbon_tabs_ = nullptr;
     QStackedWidget* ribbon_pages_ = nullptr;
     ifcviewerfull::modules::viewport::ViewportPanel* viewport_widget_ = nullptr;
-    ifcviewerfull::modules::viewport::ViewportController* viewport_controller_ = nullptr;
-    SceneLoader* loader_ = nullptr;
-    ifcviewerfull::ElementRegistry* element_registry_ = nullptr;
+    ifcviewerfull::modules::viewport::ViewportView* viewport_view_ = nullptr;
     ifcviewerfull::SessionState* session_state_ = nullptr;
     ifcviewerfull::modules::models::ModelsPanel* models_panel_ = nullptr;
     ifcviewerfull::modules::spatial_hierarchy::SpatialHierarchyPanel* spatial_panel_ = nullptr;
@@ -90,7 +83,6 @@ private:
     QDockWidget* audit_panel_ = nullptr;
     QDockWidget* clash_panel_ = nullptr;
     QDockWidget* issues_panel_ = nullptr;
-    ifcviewerfull::modules::models::ModelsPanelController* models_controller_ = nullptr;
     ifcviewerfull::modules::models::ModelsPanelView* models_view_ = nullptr;
     ifcviewerfull::modules::project::ProjectController* project_controller_ = nullptr;
     ifcviewerfull::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;

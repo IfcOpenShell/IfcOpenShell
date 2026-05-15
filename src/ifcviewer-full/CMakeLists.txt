@@ -58,8 +58,8 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsView.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Types.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Controller.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Commands.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/View.cpp
@@ -82,8 +82,10 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/View.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Panel.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/View.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/viewport/View.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ifcviewer_full_resources.qrc
 )
 

@@ -27,6 +27,7 @@
 
 class Federation;
 class SceneLoader;
+class ViewportWindow;
 
 namespace ifcviewerfull {
 
@@ -38,9 +39,9 @@ class SessionState : public QObject {
 public:
     explicit SessionState(QObject* parent = nullptr);
 
-    void bindFederation(Federation* federation);
-    void bindLoader(SceneLoader* loader);
-    void bindElementRegistry(ElementRegistry* element_registry);
+    // Owned by SessionState once it can be tied to a viewport. Wires
+    // loader → element registry signals internally. Call exactly once.
+    void createLoader(ViewportWindow* viewport);
 
     Federation* federation() const { return federation_; }
     SceneLoader* loader() const { return loader_; }
@@ -61,8 +62,9 @@ public:
 
     void notifySelectionChanged();
     void notifyModelsChanged();
-    void notifyFederationStructureChanged();
+    void notifyFederationChanged();
     void notifyVisibilityChanged();
+    void notifyModelGeometryReady(uint32_t model_id);
     void notifyProjectOpened(const QString& path);
     void notifyProjectSaved(const QString& path);
     void notifyProjectReset();
@@ -72,8 +74,19 @@ signals:
     void projectSaved(const QString& path);
     void projectReset();
     void modelsChanged();
-    void federationStructureChanged();
+    // Fires whenever a command has mutated the federation (groups, transforms,
+    // origin, config). Always implies the project is now dirty; callers do not
+    // emit this on save/load/reset — projectSaved/Opened/Reset cover those.
+    void federationChanged();
     void visibilityChanged();
+    // Fires when a model's geometry has been pushed to the viewport. SessionState
+    // emits this internally in response to SceneLoader signals — callers should
+    // not need to fire it themselves.
+    void modelGeometryReady(uint32_t model_id);
+    // Fires when SceneLoader reports a load failure. SessionState turns the
+    // raw loader signal into a session-level one so views (e.g. the MessageBox)
+    // can subscribe without touching the loader directly.
+    void loadError(const QString& message);
     void selectionChanged(uint32_t object_id);
     void statusMessageChanged(const QString& mode, const QString& detail);
 

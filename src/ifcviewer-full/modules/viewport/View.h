@@ -18,54 +18,50 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_MODELSPANELCONTROLLER_H
-#define IFCINTERFACE_PANELS_MODELSPANELCONTROLLER_H
-
-#include "Types.h"
+#ifndef IFCINTERFACE_MODULES_VIEWPORT_VIEW_H
+#define IFCINTERFACE_MODULES_VIEWPORT_VIEW_H
 
 #include <QObject>
-#include <QStringList>
+#include <memory>
 
-class QWidget;
 namespace ifcviewerfull { class SessionState; }
 class ViewportWindow;
-class SceneLoader;
+class AreaMeasurement;
+class LengthMeasurement;
 
-namespace ifcviewerfull::modules::models {
+namespace ifcviewerfull::modules::viewport {
 
-class ModelsPanel;
-
-class ModelsPanelController : public QObject {
+// Renders SessionState into the OpenGL viewport. Subscribes to session-level
+// signals only; on each one it calls refresh() to re-derive viewport state
+// (false origin, per-model coord op + transformation + visibility) from
+// SessionState idempotently.
+//
+// Also owns the stateful measurement tools and subscribes to viewport input
+// events for them. That's a distinct concern from the state-render side but
+// kept here to avoid a second tiny QObject.
+class ViewportView : public QObject {
     Q_OBJECT
 
 public:
-    explicit ModelsPanelController(QWidget* host,
-                                   ModelsPanel* widget,
-                                   ifcviewerfull::SessionState* session_state,
-                                   ViewportWindow* viewport,
-                                   QObject* parent = nullptr);
-
-    void bindLoader(SceneLoader* loader);
-    void addFiles();
-    void addFiles(const QStringList& paths);
-    void loadModels(const QStringList& paths, const QStringList& fed_ids);
-    void removeLoadedModel(const QString& fed_id);
-    void openSettings();
-    void convertIfcToDatabase();
-    void exportGeometryDatabase();
+    explicit ViewportView(ifcviewerfull::SessionState* session_state,
+                          ViewportWindow* viewport,
+                          QObject* parent = nullptr);
+    ~ViewportView() override;
 
 private:
-    QString formatElapsed(qint64 ms) const;
-    void writeSidecarForModel(SceneLoader* loader, uint32_t mid) const;
-    void runIfcToDatabaseConversion(const QString& input_path, const QString& output_path);
-    void runGeometryDatabaseExport(const QString& input_path, const QString& output_path);
+    void refresh();
+    void applyCoordinateOperation(uint32_t mid);
+    void applyModelTransformation(uint32_t mid);
+    void applyModelVisibility(uint32_t mid);
+    void maybeGuessFederatedFalseOrigin(uint32_t mid);
+    void updateVolumeReadout();
 
-    QWidget* host_ = nullptr;
-    ModelsPanel* widget_ = nullptr;
     ifcviewerfull::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
+    std::unique_ptr<AreaMeasurement> area_measurement_;
+    std::unique_ptr<LengthMeasurement> length_measurement_;
 };
 
-} // namespace ifcviewerfull::modules::models
+} // namespace ifcviewerfull::modules::viewport
 
 #endif
