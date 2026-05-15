@@ -55,6 +55,14 @@ class ProductAssignmentsData:
         element = tool.Ifc.get_entity(bpy.context.active_object)
         if not element or not element.is_a("IfcAnnotation"):
             return
+        # Document-reference annotations link to an IfcDocumentInformation, not a product.
+        if tool.Drawing.is_document_reference(element):
+            for rel in element.HasAssociations:
+                if rel.is_a("IfcRelAssociatesDocument"):
+                    doc = rel.RelatingDocument
+                    if doc.is_a("IfcDocumentInformation"):
+                        return doc.Name or "Unnamed"
+            return None
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 name = rel.RelatingProduct.Name or "Unnamed"
@@ -312,6 +320,9 @@ class DecoratorData:
             "StartArrowSymbol": "",
             "ShowEndArrow": True,
             "EndArrowSymbol": "",
+            "BorderOffset": 8.0,
+            "AutoStartPosition": "",
+            "AutoEndPosition": "",
         }
         obj_pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Section") or {}
         pset_data.update(obj_pset_data)
@@ -331,6 +342,9 @@ class DecoratorData:
                 "symbol": end_symbol or "section-arrow",
             },
             "connect_markers": pset_data["HasConnectedSectionLine"],
+            "border_offset": float(pset_data["BorderOffset"]),
+            "auto_start_position": pset_data["AutoStartPosition"] or "",
+            "auto_end_position": pset_data["AutoEndPosition"] or "",
         }
 
         cls.data[obj.name] = display_data
