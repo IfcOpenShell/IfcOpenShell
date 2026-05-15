@@ -53,6 +53,11 @@ struct SERIALIZERS_API document_serializer_context {
 	std::string schema_name;
 	bool stream = false;
 	int dialect = 0;
+	// Supertype names to skip when streaming entities into the serializer.
+	// Currently only honoured by the RocksDB serializer; consumers building
+	// lossy/read-only databases pass e.g. {"IfcRepresentationItem"} to drop
+	// geometry definitions.
+	std::vector<std::string> skip_supertypes;
 };
 
 class SERIALIZERS_API document_serializer_registry {

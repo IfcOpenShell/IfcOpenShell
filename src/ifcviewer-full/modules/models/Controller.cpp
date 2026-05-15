@@ -27,6 +27,7 @@
 #include "../../SessionState.h"
 #include "AddModelDialog.h"
 #include "../../../ifcviewer/Federation.h"
+#include "../../../ifcviewer/HeadlessSidecarBuilder.h"
 #include "../../../ifcviewer/LodBuilder.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/SidecarCache.h"
@@ -35,14 +36,21 @@
 #include "../../../serializers/document_serializer_plugin.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QDirIterator>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QListView>
 #include <QMessageBox>
 #include <QProgressDialog>
+#include <QStandardPaths>
 #include <QThread>
 #include <QTreeView>
+#include <QUuid>
+
+#include <QtCore/private/qzipwriter_p.h>
 
 #include <Eigen/Dense>
 
@@ -205,6 +213,9 @@ void ModelsPanelController::addFiles() {
     case modules::models::SourceMode::ConvertToDatabase:
         convertIfcToDatabase();
         return;
+    case modules::models::SourceMode::ExportGeometryDatabase:
+        exportGeometryDatabase();
+        return;
     case modules::models::SourceMode::None:
         return;
     }
@@ -324,6 +335,192 @@ void ModelsPanelController::runIfcToDatabaseConversion(const QString& input_path
                      formatElapsed(elapsed)));
         QMessageBox::information(host_, "Convert IFC to Database",
                                  QString("Database written to:\n%1").arg(output_path));
+    });
+
+    thread->start();
+}
+
+void ModelsPanelController::exportGeometryDatabase() {
+    QFileDialog input_dialog(host_, "Select IFC File to Export");
+    input_dialog.setFileMode(QFileDialog::ExistingFile);
+    input_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
+    input_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    if (input_dialog.exec() != QDialog::Accepted) return;
+    const QStringList inputs = input_dialog.selectedFiles();
+    if (inputs.isEmpty()) return;
+    const QString input_path = inputs.first();
+
+    const QFileInfo input_info(input_path);
+    const QString default_output = input_info.absoluteDir().filePath(input_info.completeBaseName() + ".rdbview");
+
+    QFileDialog output_dialog(host_, "Save Geometry Database As");
+    output_dialog.setAcceptMode(QFileDialog::AcceptSave);
+    output_dialog.setFileMode(QFileDialog::AnyFile);
+    output_dialog.setNameFilter("Geometry Database (*.rdbview);;All Files (*)");
+    output_dialog.setDefaultSuffix("rdbview");
+    output_dialog.selectFile(default_output);
+    output_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    if (output_dialog.exec() != QDialog::Accepted) return;
+    const QStringList outputs = output_dialog.selectedFiles();
+    if (outputs.isEmpty()) return;
+    QString output_path = outputs.first();
+    if (!output_path.endsWith(".rdbview", Qt::CaseInsensitive)) {
+        output_path += ".rdbview";
+    }
+
+    runGeometryDatabaseExport(input_path, output_path);
+}
+
+void ModelsPanelController::runGeometryDatabaseExport(const QString& input_path, const QString& output_path) {
+    auto* progress = new QProgressDialog(host_);
+    progress->setWindowTitle("Export Geometry Database");
+    progress->setLabelText(QString("Exporting %1 to %2…")
+                               .arg(QFileInfo(input_path).fileName(),
+                                    QFileInfo(output_path).fileName()));
+    progress->setRange(0, 0);
+    progress->setCancelButton(nullptr);
+    progress->setMinimumDuration(0);
+    progress->setWindowModality(Qt::ApplicationModal);
+    progress->setAutoClose(false);
+    progress->setAutoReset(false);
+    progress->show();
+
+    session_state_->setStatusMessage("Exporting",
+        QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
+
+    auto timer = std::make_shared<QElapsedTimer>();
+    timer->start();
+    auto error_message = std::make_shared<QString>();
+
+    QThread* thread = QThread::create([input_path, output_path, error_message]() {
+        // Scratch dir holds the intermediate .ifcview and .rdb directory
+        // until they're zipped into the .rdbview.  RAII-like cleanup at the
+        // bottom of this lambda; on early exception we leak it (cheap
+        // tradeoff to keep the failure log around for the user).
+        const QString tmp_root = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                     .filePath(QString("ifcviewer-export-%1")
+                                                   .arg(QUuid::createUuid().toString(QUuid::Id128)));
+        QDir().mkpath(tmp_root);
+
+        const QString tmp_anchor   = QDir(tmp_root).filePath("model.ifc");
+        const QString tmp_sidecar  = QDir(tmp_root).filePath("model.ifcview");
+        const QString tmp_rdb_dir  = QDir(tmp_root).filePath("model.rdb");
+
+        try {
+            // Step 1: lossy RDB with IfcRepresentationItem stripped.
+            ifcopenshell::serializers::document_serializer_context context;
+            context.file = nullptr;
+            context.input_filename  = input_path.toStdString();
+            context.output_filename = tmp_rdb_dir.toStdString();
+            context.stream = true;
+            context.skip_supertypes = { "IfcRepresentationItem" };
+
+            auto& registry = ifcopenshell::serializers::document_serializer_registry_instance();
+            const auto* info = registry.find("rdb");
+            if (!info) {
+                throw ifcopenshell::exception(
+                    "No 'rdb' document serializer is registered. The RocksDB serializer plugin may not be installed.");
+            }
+            if (!info->supports_input_filename) {
+                throw ifcopenshell::exception("RDB serializer does not support streaming from an input filename");
+            }
+
+            boost::shared_ptr<Serializer> serializer = registry.create("rdb", context);
+            serializer->finalize();
+            serializer.reset();
+
+            // Step 2: .ifcview sidecar via the headless builder.
+            HeadlessSidecarBuilder builder;
+            if (!builder.build(input_path, tmp_anchor)) {
+                throw ifcopenshell::exception(
+                    ("Sidecar build failed: " + builder.lastError()).toStdString());
+            }
+            if (!QFileInfo::exists(tmp_sidecar)) {
+                throw ifcopenshell::exception(
+                    ("Sidecar build reported success but " + tmp_sidecar + " is missing").toStdString());
+            }
+
+            // Step 3: zip the sidecar + RDB directory into the .rdbview.
+            // Write to a sibling `.tmp` then rename so a partial file never
+            // appears at the destination (matters for cloud-sync folders).
+            const QString tmp_zip = output_path + ".tmp";
+            QFile::remove(tmp_zip);
+            {
+                QZipWriter writer(tmp_zip);
+                if (writer.status() != QZipWriter::NoError) {
+                    throw ifcopenshell::exception(
+                        ("Failed to open " + tmp_zip + " for writing").toStdString());
+                }
+                writer.setCompressionPolicy(QZipWriter::AutoCompress);
+
+                {
+                    QFile sf(tmp_sidecar);
+                    if (!sf.open(QIODevice::ReadOnly)) {
+                        throw ifcopenshell::exception(
+                            ("Failed to read sidecar " + tmp_sidecar).toStdString());
+                    }
+                    writer.addFile("model.ifcview", sf.readAll());
+                }
+
+                QDirIterator it(tmp_rdb_dir, QDir::Files | QDir::NoDotAndDotDot,
+                                QDirIterator::Subdirectories);
+                const QDir rdb_root(tmp_rdb_dir);
+                while (it.hasNext()) {
+                    const QString file_path = it.next();
+                    const QString rel = rdb_root.relativeFilePath(file_path);
+                    QFile f(file_path);
+                    if (!f.open(QIODevice::ReadOnly)) {
+                        throw ifcopenshell::exception(
+                            ("Failed to read " + file_path + " for zip").toStdString());
+                    }
+                    writer.addFile(QString("model.rdb/%1").arg(rel), f.readAll());
+                }
+
+                writer.close();
+                if (writer.status() != QZipWriter::NoError) {
+                    throw ifcopenshell::exception(
+                        ("Failed to finalize " + tmp_zip).toStdString());
+                }
+            }
+
+            QFile::remove(output_path);
+            if (!QFile::rename(tmp_zip, output_path)) {
+                QFile::remove(tmp_zip);
+                throw ifcopenshell::exception(
+                    ("Failed to move " + tmp_zip + " to " + output_path).toStdString());
+            }
+        } catch (const std::exception& e) {
+            *error_message = QString::fromUtf8(e.what());
+        } catch (...) {
+            *error_message = "Unknown error during geometry database export";
+        }
+
+        QDir(tmp_root).removeRecursively();
+    });
+
+    connect(thread, &QThread::finished, this,
+            [this, thread, progress, timer, error_message, input_path, output_path]() {
+        const qint64 elapsed = timer->elapsed();
+
+        progress->close();
+        progress->deleteLater();
+        thread->deleteLater();
+
+        if (!error_message->isEmpty()) {
+            session_state_->setStatusMessage("Error", *error_message);
+            QMessageBox::warning(host_, "Export Geometry Database",
+                                 QString("Export failed:\n%1").arg(*error_message));
+            return;
+        }
+
+        session_state_->setStatusMessage(
+            "Exported",
+            QString("%1 → %2 in %3")
+                .arg(QFileInfo(input_path).fileName(),
+                     QFileInfo(output_path).fileName(),
+                     formatElapsed(elapsed)));
+        QMessageBox::information(host_, "Export Geometry Database",
+                                 QString("Geometry database written to:\n%1").arg(output_path));
     });
 
     thread->start();

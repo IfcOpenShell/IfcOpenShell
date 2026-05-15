@@ -52,11 +52,13 @@ public:
     void removeLoadedModel(const QString& fed_id);
     void openSettings();
     void convertIfcToDatabase();
+    void exportGeometryDatabase();
 
 private:
     QString formatElapsed(qint64 ms) const;
     void writeSidecarForModel(SceneLoader* loader, uint32_t mid) const;
     void runIfcToDatabaseConversion(const QString& input_path, const QString& output_path);
+    void runGeometryDatabaseExport(const QString& input_path, const QString& output_path);
 
     QWidget* host_ = nullptr;
     ModelsPanel* widget_ = nullptr;

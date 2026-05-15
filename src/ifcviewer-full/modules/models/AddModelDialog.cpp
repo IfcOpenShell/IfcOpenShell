@@ -129,8 +129,18 @@ void AddModelDialog::setupUi() {
         "Convert IFC files to databases for smaller filesizes, reduced memory, and faster access. No data is lost.",
         default_description));
 
+    auto* export_geometry_database = components::buttons::makeButton("Export Geometry\nDatabase", ":/icons/database-restore.svg", choices);
+    connect(export_geometry_database, &QToolButton::clicked, this, [this]() {
+        selected_mode_ = SourceMode::ExportGeometryDatabase;
+        accept();
+    });
+    export_geometry_database->installEventFilter(new HoverDescriptionFilter(
+        description,
+        "Convert IFC files to a read-only geometry database for smaller filesizes, reduced memory, and faster access. Ideal for cloud read-only coordination workflows. Only parametric geometry editing capabilities are lost.",
+        default_description));
+
     row->addWidget(components::buttons::makeButtonGroup("ADD", {add_ifc, add_database, add_geometry}, choices, true, 8));
-    row->addWidget(components::buttons::makeButtonGroup("TOOLS", {convert_database}, choices, false, 8));
+    row->addWidget(components::buttons::makeButtonGroup("TOOLS", {convert_database, export_geometry_database}, choices, false, 8));
     choices_section->addBodyWidget(choices);
 
     addBodyWidget(description_section);

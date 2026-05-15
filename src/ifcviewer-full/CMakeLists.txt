@@ -21,7 +21,7 @@
 message("Running CMakeLists.txt in /src/ifcviewer-full")
 
 set(QT_VERSION 6 CACHE STRING "Qt version")
-find_package(Qt${QT_VERSION} COMPONENTS Core Gui Widgets Svg REQUIRED PATHS ${QT_DIR})
+find_package(Qt${QT_VERSION} COMPONENTS Core CorePrivate Gui Widgets Svg REQUIRED PATHS ${QT_DIR})
 
 set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
@@ -99,6 +99,7 @@ set_target_properties(IfcViewerFull PROPERTIES
 target_link_libraries(IfcViewerFull PRIVATE
     IfcViewer
     Qt${QT_VERSION}::Core
+    Qt${QT_VERSION}::CorePrivate
     Qt${QT_VERSION}::Gui
     Qt${QT_VERSION}::Svg
     Qt${QT_VERSION}::Widgets

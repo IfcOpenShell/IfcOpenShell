@@ -1,4 +1,3 @@
-// This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
  * This file is part of IfcOpenShell.                                           *
@@ -18,35 +17,44 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_ADDMODELDIALOG_H
-#define IFCINTERFACE_PANELS_ADDMODELDIALOG_H
+#ifndef HEADLESSSIDECARBUILDER_H
+#define HEADLESSSIDECARBUILDER_H
 
-#include "../../components/Dialog.h"
+#include "InstancedGeometry.h"
+#include "SidecarCache.h"
 
-namespace ifcviewerfull::modules::models {
+#include <QObject>
+#include <QString>
 
-enum class SourceMode {
-    None,
-    IfcFile,
-    IfcDatabase,
-    GeometryOnly,
-    ConvertToDatabase,
-    ExportGeometryDatabase,
-};
-
-class AddModelDialog : public components::Dialog {
+// Produces a .ifcview sidecar from an IFC file without touching the
+// ViewportWindow or any GL state.  Mirrors the data path that
+// SceneLoader + ViewportWindow + ModelsPanelController.writeSidecarForModel
+// take for live loads, but does the vertex quantization and SidecarData
+// assembly entirely on the CPU.
+//
+// Threading: call ::build() from a non-GUI worker thread that has a Qt
+// event dispatcher (e.g. the thread spawned by QThread::create).  build()
+// spins a local QEventLoop until the streamer's worker thread completes.
+class HeadlessSidecarBuilder : public QObject {
     Q_OBJECT
 public:
-    explicit AddModelDialog(QWidget* parent = nullptr);
+    explicit HeadlessSidecarBuilder(QObject* parent = nullptr);
 
-    SourceMode selectedMode() const { return selected_mode_; }
+    // `anchor_path` is fed to writeSidecar(), which normalises it to
+    // `<stem(anchor_path)>.ifcview`.  Pass either the IFC path itself
+    // (sidecar lands beside it) or a temp path whose stem you control.
+    bool build(const QString& ifc_path,
+               const QString& anchor_path,
+               int num_threads = 0);
+
+    const QString& lastError() const { return last_error_; }
 
 private:
-    void setupUi();
+    void onMeshReady(const MeshChunk& chunk);
+    void onInstanceReady(const InstanceChunk& chunk);
 
-    SourceMode selected_mode_ = SourceMode::None;
+    SidecarData sidecar_data_;
+    QString     last_error_;
 };
 
-} // namespace ifcviewerfull::modules::models
-
-#endif
+#endif // HEADLESSSIDECARBUILDER_H

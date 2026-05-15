@@ -31,7 +31,7 @@ boost::shared_ptr<Serializer> create_serializer(const ifcopenshell::serializers:
 	if (context.input_filename.empty()) {
 		throw ifcopenshell::exception("RocksDB document serializer requires an input filename");
 	}
-	return boost::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename);
+	return boost::make_shared<RocksDbSerializer>(context.input_filename, context.output_filename, context.skip_supertypes);
 }
 
 }
