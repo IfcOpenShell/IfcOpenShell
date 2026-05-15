@@ -719,11 +719,13 @@ class DimensionDecorator(BaseDecorator):
         if not dimension_data:
             return
         show_description_only = dimension_data["show_description_only"]
+        is_ordinate = dimension_data["is_ordinate"]
         text_prefix = dimension_data["text_prefix"]
         text_suffix = dimension_data["text_suffix"]
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         text_offset_value = viewportDrawingScale * 3
 
+        ordinate_total = 0.0
         for i0, i1 in indices:
             v0 = Vector(vertices[i0])
             v1 = Vector(vertices[i1])
@@ -742,10 +744,13 @@ class DimensionDecorator(BaseDecorator):
                 "multiline": True,
                 "text_dir": text_dir,
             }
-            base_pos = p0 + text_dir * 0.5
+            base_pos = p1 if is_ordinate else p0 + text_dir * 0.5
 
             if not show_description_only:
-                length = (v1 - v0).length
+                segment_length = (v1 - v0).length
+                if is_ordinate:
+                    ordinate_total += segment_length
+                length = ordinate_total if is_ordinate else segment_length
                 units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
                 parts = [
                     self.format_value(
@@ -768,15 +773,18 @@ class DimensionDecorator(BaseDecorator):
 
             self.draw_label(
                 text=text,
-                pos=base_pos + text_offset,
-                box_alignment="bottom-middle",
+                pos=base_pos + text_offset + (Vector((0, text_offset_value)) if is_ordinate else Vector((0, 0))),
+                box_alignment="bottom-right" if is_ordinate else "bottom-middle",
                 multiline_to_bottom=False,
                 **common_label_attrs,
             )
 
             if not show_description_only and description:
                 self.draw_label(
-                    text=description, pos=base_pos - text_offset, box_alignment="top-middle", **common_label_attrs
+                    text=description,
+                    pos=base_pos - text_offset + (Vector((0, text_offset_value)) if is_ordinate else Vector((0, 0))),
+                    box_alignment="top-right" if is_ordinate else "top-middle",
+                    **common_label_attrs,
                 )
 
 
