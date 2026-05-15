@@ -745,12 +745,17 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                text = self.format_value(
-                    context,
-                    length,
-                    suppress_zero_inches=dimension_data["suppress_zero_inches"],
-                    custom_unit=dimension_data["custom_unit"],
-                )
+                units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
+                parts = [
+                    self.format_value(
+                        context,
+                        length,
+                        suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                        custom_unit=unit,
+                    )
+                    for unit in units_to_format
+                ]
+                text = dimension_data["separator"].join(str(p) for p in parts)
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix
@@ -965,7 +970,9 @@ class RadiusDecorator(BaseDecorator):
 
         def get_text():
             length = (spline_points[-1] - spline_points[-2]).length
-            return "R" + self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
+            units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
+            parts = [self.format_value(context, length, custom_unit=unit) for unit in units_to_format]
+            return "R" + dimension_data["separator"].join(str(p) for p in parts)
 
         self.draw_dimension_text(
             context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"
