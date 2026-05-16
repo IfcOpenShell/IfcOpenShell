@@ -123,18 +123,24 @@ def depsgraph_update_post_handler(scene, depsgraph):
     if not file:
         return
 
-    # Collect GUIDs of IFC objects whose transform changed this update.
+    # Collect GUIDs of IFC objects whose transform or geometry changed.
+    # is_updated_geometry fires on Edit Mode exit after Bonsai has already
+    # serialised the new mesh back to IFC via update_representation, so the
+    # tessellation will reflect the edited shape.
     moved_guids: set = set()
     for update in depsgraph.updates:
         obj = update.id
         if not isinstance(obj, bpy.types.Object):
             continue
-        if not update.is_updated_transform:
+        if not (update.is_updated_transform or update.is_updated_geometry):
             continue
         element = tool.Ifc.get_entity(obj)
         if element is None or not hasattr(element, "GlobalId"):
             continue
         moved_guids.add(element.GlobalId)
+        # Geometry edits invalidate the cached tessellation for this element.
+        if update.is_updated_geometry:
+            _dim_shape_cache.pop(element.id(), None)
 
     if not moved_guids:
         return

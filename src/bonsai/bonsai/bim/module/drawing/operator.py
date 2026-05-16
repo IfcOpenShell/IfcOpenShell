@@ -68,6 +68,8 @@ import bonsai.core.drawing as core
 import bonsai.core.geometry
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.drawing.data import DecoratorData, ElementValuesData
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.prop import (
@@ -5565,6 +5567,229 @@ class ShowElementValuesInstructions(bpy.types.Operator):
 # ---------------------------------------------------------------------------
 # Parametric dimension operators
 # ---------------------------------------------------------------------------
+
+
+class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    """Draw a parametric dimension string anchored to IFC element geometry.
+
+    Click on IFC element faces to place dimension vertices one by one using the
+    same snap system as wall and slab drawing.  Each confirmed point is stored
+    as a parametric anchor in ``BBIM_DimensionTarget`` so the dimension
+    recomputes automatically when the referenced elements move.
+
+    RMB or ENTER to finish; ESC to cancel without creating an annotation.
+    """
+
+    bl_idname = "bim.draw_parametric_dimension"
+    bl_label = "Draw Parametric Dimension"
+    bl_options = {"REGISTER", "UNDO"}
+
+    if TYPE_CHECKING:
+        _anchors: list
+        _shape_cache: dict
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        if not context.scene.camera or not tool.Ifc.get_entity(context.scene.camera):
+            cls.poll_message_set("No active drawing.")
+            return False
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        self._anchors = []
+        self._shape_cache = {}
+
+    # ------------------------------------------------------------------
+    # Snap → anchor bridge
+
+    def _snap_to_anchor(self, snap: dict) -> dict:
+        """Convert a PolylineOperator snap candidate to a BBIM_DimensionTarget anchor dict."""
+        import ifcopenshell.api.drawing as drawing_api
+
+        obj = snap.get("object")
+        element = tool.Ifc.get_entity(obj) if obj else None
+        pt_world = snap["point"]
+
+        if element and hasattr(element, "GlobalId") and obj.data and hasattr(obj.data, "polygons"):
+            hit_m = (float(pt_world.x), float(pt_world.y), float(pt_world.z))
+
+            face_index = snap.get("face_index")
+            if face_index is not None and face_index < len(obj.data.polygons):
+                normal_local = obj.data.polygons[face_index].normal
+            else:
+                # Vertex / edge snap: find the closest face for a proper normal.
+                local_pt = obj.matrix_world.inverted() @ pt_world
+                ok, _loc, normal_local, face_index = obj.closest_point_on_mesh(local_pt)
+                if not ok:
+                    normal_local = Vector((0.0, 0.0, 1.0))
+
+            normal_world = (obj.matrix_world.to_3x3() @ normal_local).normalized()
+            normal_m = (float(normal_world.x), float(normal_world.y), float(normal_world.z))
+            placement_override = {element.id(): np.array(obj.matrix_world)}
+
+            return drawing_api.build_anchor_from_hit(
+                tool.Ifc.get(), element, hit_m, normal_m,
+                shape_cache=self._shape_cache,
+                placement_override=placement_override,
+            )
+
+        # Axis / plane snap, or non-IFC object: store a free world point.
+        import ifcopenshell.api.drawing as drawing_api
+        return drawing_api.make_world_anchor([float(pt_world.x), float(pt_world.y), float(pt_world.z)])
+
+    # ------------------------------------------------------------------
+    # Point insertion — capture anchor in sync with polyline point
+
+    def handle_inserting_polyline(self, context, event):
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        count_before = len(polyline_data[0].polyline_points) if polyline_data else 0
+
+        # Capture snap state BEFORE super() so we have it even if event processing clears it.
+        snap = self.snapping_points[0] if self.snapping_points else None
+        is_mouse_click = (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type == "LEFTMOUSE"
+        )
+
+        super().handle_inserting_polyline(context, event)
+
+        if not polyline_data:
+            return
+        count_after = len(polyline_data[0].polyline_points)
+
+        if count_after > count_before:
+            # A point was inserted — build its anchor.
+            if is_mouse_click and snap and snap.get("type") not in {"Axis", "Plane"}:
+                self._anchors.append(self._snap_to_anchor(snap))
+            else:
+                # Keyboard-typed coordinate or close-loop: world anchor at the stored point.
+                import ifcopenshell.api.drawing as drawing_api
+                pt = polyline_data[0].polyline_points[-1]
+                self._anchors.append(drawing_api.make_world_anchor([float(pt.x), float(pt.y), float(pt.z)]))
+        elif count_after < count_before and self._anchors:
+            # BACKSPACE removed a point.
+            self._anchors.pop()
+
+    # ------------------------------------------------------------------
+    # Finalize: create IfcAnnotation + BBIM_DimensionTarget pset
+
+    def _create_dimension_from_polyline(self, context) -> None:
+        import ifcopenshell.api.drawing as drawing_api
+
+        polyline_props = tool.Model.get_polyline_props()
+        polyline_data = polyline_props.insertion_polyline
+        if not polyline_data or len(polyline_data[0].polyline_points) < 2:
+            self.report({"WARNING"}, "Need at least 2 points for a dimension.")
+            return
+
+        polyline_points = list(polyline_data[0].polyline_points)
+
+        dprops = tool.Drawing.get_document_props()
+        drawing = dprops.get_active_drawing()
+        if not drawing:
+            self.report({"WARNING"}, "No active drawing.")
+            return
+
+        props = tool.Drawing.get_annotation_props()
+        relating_type = (
+            tool.Ifc.get().by_id(int(props.relating_type_id))
+            if props.relating_type_id and props.relating_type_id != "0"
+            else None
+        )
+
+        obj = core.add_annotation(
+            tool.Ifc, tool.Collector, tool.Drawing,
+            drawing=drawing,
+            object_type="DIMENSION",
+            relating_type=relating_type,
+            enable_editing=False,
+        )
+        if not obj:
+            return
+
+        annotation = tool.Ifc.get_entity(obj)
+        if not annotation:
+            return
+
+        # World-space metres points straight from the polyline.
+        resolved_pts_m = [(pt.x, pt.y, pt.z) for pt in polyline_points]
+
+        # Update Blender curve spline AND the IFC IfcIndexedPolyCurve/IfcPolyline.
+        _update_blender_curve(annotation, resolved_pts_m)
+
+        # Pad anchors to match point count (e.g. if first point was keyboard-typed
+        # before any snap data was available).
+        anchors = list(self._anchors)
+        while len(anchors) < len(resolved_pts_m):
+            anchors.append(drawing_api.make_world_anchor(list(resolved_pts_m[len(anchors)])))
+
+        file = tool.Ifc.get()
+        ifcopenshell.api.run("pset.add_pset", file, product=annotation, name="BBIM_DimensionTarget")
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_DimensionTarget")
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": json.dumps(anchors)})
+
+        from bonsai.bim.module.drawing import handler as _drawing_handler
+        _drawing_handler.invalidate_dim_index()
+
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        context.view_layer.objects.active = obj
+
+    # ------------------------------------------------------------------
+    # Modal loop — same pattern as DrawPolylineWall
+
+    def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_mouse_move(context, event)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self._create_dimension_from_polyline(context)
+            self.tool_state.plane_method = None
+            PolylineDecorator.uninstall()
+            tool.Polyline.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+        self.handle_inserting_polyline(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
+        super().invoke(context, event)
+        return {"RUNNING_MODAL"}
 
 
 class SetDimensionAnchor(bpy.types.Operator):

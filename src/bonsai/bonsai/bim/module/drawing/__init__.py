@@ -111,6 +111,7 @@ classes = (
     operator.ToggleDrawingCategorySelection,
     operator.OpenDocumentationWebUi,
     operator.FilterSelectedObjectsIfIntersectedByCamera,
+    operator.DrawParametricDimension,
     operator.SetDimensionAnchor,
     operator.RegenerateDimensions,
     prop.Variable,
