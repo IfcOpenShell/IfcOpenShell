@@ -403,12 +403,6 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
     // Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
     settings.set("no-wire-intersection-check", true);
 
-    // @todo parallel mapping on RocksDB-backed files still races somewhere
-    // outside the instance cache, producing inconsistent shape counts. Force
-    // serial iteration for RocksDB until the read path is fully thread-safe.
-    const bool is_rocksdb = std::holds_alternative<ifcopenshell::impl::rocks_db_file_storage>(ifc_file_->storage_);
-    const int effective_threads = is_rocksdb ? 1 : num_threads;
-
     // Mirror bonsai's IfcImporter.process_element_filter: walk IfcElement
     // (plus IfcProxy on IFC2X3/IFC4), drop IfcFeatureElement except
     // IfcSurfaceFeature, pick up spatial elements, and split elements
@@ -527,7 +521,7 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     ifc_file_.get(), geometry_library, iter_settings);
                 iterator = std::make_unique<IfcGeom::Iterator>(
                     std::move(kernel), iter_settings, ifc_file_.get(),
-                    filters, effective_threads);
+                    filters, num_threads);
             } catch (const std::exception& e) {
                 emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
                 return false;
