@@ -33,7 +33,7 @@ import bonsai.tool as tool
 _dim_guid_index: dict = {}
 # Persistent tessellation cache for the depsgraph handler (element id → shape).
 _dim_shape_cache: dict = {}
-# Set True whenever BBIM_DimensionTarget anchors change or a new file loads.
+# Set True whenever BBIM_Dimension anchors change or a new file loads.
 _dim_index_dirty: bool = True
 # Re-entry guard so curve updates don't trigger a second handler call.
 _dim_handler_running: bool = False
@@ -52,7 +52,7 @@ def _rebuild_dim_guid_index(file) -> None:
 
     _dim_guid_index = {}
     for annotation in file.by_type("IfcAnnotation"):
-        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_DimensionTarget")
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
         if not pset_data or not pset_data.get("Anchors"):
             continue
         try:
@@ -169,7 +169,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
             except Exception:
                 continue
 
-            pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_DimensionTarget")
+            pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
             if not pset:
                 continue
 

@@ -248,6 +248,11 @@ class AnnotationToolUI:
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
+        _DIMENSION_TYPES = {"DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"}
+        if object_type in _DIMENSION_TYPES:
+            row = cls.layout.row(align=True)
+            row.prop(cls.props, "force_perpendicular_to_face", toggle=True)
+
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
             row.label(text="", icon="DRIVER_ROTATIONAL_DIFFERENCE")

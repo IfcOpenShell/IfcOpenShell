@@ -88,6 +88,51 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
         props.active_pset_type = "-"
 
 
+def _regenerate_parametric_dimension(file, annotation):
+    """Regenerate a single parametric dimension annotation after a pset edit."""
+    print(f"[regen_dim] called for annotation={annotation.id()} {annotation.is_a()}")
+    try:
+        import json
+        import numpy as np
+        import ifcopenshell.util.element
+        import ifcopenshell.api.drawing as drawing_api
+        import bonsai.tool as _tool
+        from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+        print(f"[regen_dim] pset_data keys={list(pset_data.keys()) if pset_data else None}")
+        if not pset_data or not pset_data.get("Anchors"):
+            print("[regen_dim] no Anchors — skipping")
+            return
+
+        anchors = json.loads(pset_data["Anchors"])
+        print(f"[regen_dim] {len(anchors)} anchors")
+        placement_override = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = _tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+                    print(f"[regen_dim]   placement_override added for {elem.is_a()} id={elem.id()}")
+            except Exception as e:
+                print(f"[regen_dim]   placement_override error: {e}")
+
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, annotation, placement_override=placement_override
+        )
+        print(f"[regen_dim] resolved_pts={resolved_pts}")
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
+            print("[regen_dim] _update_blender_curve done")
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+
 class EditPset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_pset"
     bl_label = "Edit Pset"
@@ -150,7 +195,15 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
             )
             if tool.Cost.has_schedules():
                 tool.Cost.update_cost_items(pset=pset)
+        print(f"[edit_pset] pset_name='{props.active_pset_name}'  element={element.is_a()}  before disable_pset_editing")
+        is_bbim_dimension = props.active_pset_name == "BBIM_Dimension" and element.is_a("IfcAnnotation")
+
         bpy.ops.bim.disable_pset_editing(obj=self.obj, obj_type=self.obj_type)
+
+        print(f"[edit_pset] pset_name after disable='{props.active_pset_name}'  is_bbim_dimension={is_bbim_dimension}")
+        if is_bbim_dimension:
+            _regenerate_parametric_dimension(self.file, element)
+
         tool.Blender.update_viewport()
 
 
