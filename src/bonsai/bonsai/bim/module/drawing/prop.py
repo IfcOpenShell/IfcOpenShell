@@ -986,6 +986,62 @@ def update_sheet_data(self, context):
     SheetsData.is_loaded = False
 
 
+def _update_force_perpendicular(self, context):
+    """Apply ForcePerpendicularToFace to all selected dimension annotations and regenerate them."""
+    import json
+    import numpy as np
+    import ifcopenshell.util.element
+    import ifcopenshell.api.pset
+    import ifcopenshell.api.drawing as drawing_api
+    import bonsai.tool as tool
+
+    file = tool.Ifc.get()
+    if not file:
+        return
+
+    new_value = self.force_perpendicular_to_face
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+
+    targets = []
+    for obj in context.selected_objects:
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            continue
+        if ifcopenshell.util.element.get_predefined_type(element) not in _DIM_TYPES:
+            continue
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset_data:
+            continue
+        targets.append((obj, element, pset_data))
+
+    if not targets:
+        return
+
+    from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+    for obj, element, pset_data in targets:
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties={"ForcePerpendicularToFace": new_value})
+
+        anchors = json.loads(pset_data.get("Anchors") or "[]")
+        placement_override = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+
+        resolved_pts = drawing_api.regenerate_dimension(file, element, placement_override=placement_override)
+        if resolved_pts:
+            _update_blender_curve(element, resolved_pts)
+
+
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(
         name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
@@ -1001,8 +1057,9 @@ class BIMAnnotationProperties(PropertyGroup):
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
     force_perpendicular_to_face: bpy.props.BoolProperty(
         name="Force ⊥ to Face",
-        description="Constrain subsequent dimension vertices to lie on the line through the first vertex along its face normal",
+        description="Constrain dimension vertices to the face normal of the first anchor. When dimensions are selected, toggling this updates them all.",
         default=False,
+        update=_update_force_perpendicular,
     )
     tag_rotation_mode: bpy.props.EnumProperty(
         name="Tag Rotation Mode",

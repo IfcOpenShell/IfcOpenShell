@@ -221,10 +221,23 @@ class AnnotationToolUI:
         props = tool.Drawing.get_document_props()
         row.prop(props, "should_draw_decorations", text="Viewport Annotations")
 
+    _DIMENSION_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+
     @classmethod
     def draw_edit_object_interface(cls, context):
         if DecoratorData.get_text_data(bpy.context.active_object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if element and element.is_a("IfcAnnotation"):
+            ptype = ifcopenshell.util.element.get_predefined_type(element)
+            if ptype in cls._DIMENSION_TYPES:
+                cls.layout.separator()
+                row = cls.layout.row(align=True)
+                row.operator("bim.set_dimension_anchor", icon="PIVOT_CURSOR")
+                op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
+                op.active_only = True
 
     @classmethod
     def draw_type_selection_interface(cls):
@@ -251,7 +264,7 @@ class AnnotationToolUI:
         _DIMENSION_TYPES = {"DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"}
         if object_type in _DIMENSION_TYPES:
             row = cls.layout.row(align=True)
-            row.prop(cls.props, "force_perpendicular_to_face", toggle=True)
+            row.prop(cls.props, "force_perpendicular_to_face")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
