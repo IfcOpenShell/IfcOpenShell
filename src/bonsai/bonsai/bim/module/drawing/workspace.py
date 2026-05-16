@@ -333,8 +333,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if created_objects:
             bpy.context.view_layer.objects.active = created_objects[-1]
 
+    _PARAMETRIC_DIMENSION_TYPES = frozenset(
+        ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL")
+    )
+
     def hotkey_S_A(self):
-        if bpy.ops.bim.add_annotation.poll():
+        props = tool.Drawing.get_annotation_props()
+        if props.object_type in self._PARAMETRIC_DIMENSION_TYPES:
+            if bpy.ops.bim.draw_parametric_dimension.poll():
+                bpy.ops.bim.draw_parametric_dimension("INVOKE_DEFAULT")
+        elif bpy.ops.bim.add_annotation.poll():
             bpy.ops.bim.add_annotation()
 
     def hotkey_S_E(self):
