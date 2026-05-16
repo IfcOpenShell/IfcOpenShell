@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Regenerate a parametric dimension annotation from its BBIM_DimensionTarget anchors.
+"""Regenerate a parametric dimension annotation from its BBIM_Dimension anchors.
 
 This module operates purely on IFC data.  It:
-  1. Reads the ``Anchors`` JSON array from the ``BBIM_DimensionTarget`` pset on an
+  1. Reads the ``Anchors`` JSON array from the ``BBIM_Dimension`` pset on an
      ``IfcAnnotation``.
   2. Resolves each anchor to a world-space point (IFC project units) using
      ``resolve_anchor``.
@@ -48,7 +48,7 @@ import ifcopenshell.util.element
 from .resolve_anchor import resolve_anchor
 
 
-_PSET_NAME = "BBIM_DimensionTarget"
+_PSET_NAME = "BBIM_Dimension"
 _METRIC_INTENT_PREFIX = "PARAMETRIC_DIMENSION_SEG_"
 
 
@@ -61,12 +61,12 @@ def regenerate_dimension(
 ) -> list[tuple[float, float, float]]:
     """Regenerate a parametric dimension from its stored anchor references.
 
-    Resolves every anchor in ``BBIM_DimensionTarget.Anchors``, updates the
+    Resolves every anchor in ``BBIM_Dimension.Anchors``, updates the
     per-segment ``IfcMetric`` values (creating them when absent), and returns
     the resolved world-space points in metres.
 
     :param file: The open IFC file.
-    :param annotation: An ``IfcAnnotation`` with a ``BBIM_DimensionTarget`` pset.
+    :param annotation: An ``IfcAnnotation`` with a ``BBIM_Dimension`` pset.
     :param settings: Geometry settings for tessellation (shared across calls).
     :param shape_cache: Shape cache dict (shared across calls for performance).
     :param placement_override: Optional dict mapping element STEP id → 4×4 numpy
@@ -99,6 +99,25 @@ def regenerate_dimension(
         resolved.append(pt)
         anchor["pt"] = list(pt)
 
+    # ForcePerpendicularToFace: project vertices 1…n onto the line through
+    # pt[0] in the direction of anchor[0]'s face normal, so the polyline is
+    # constrained perpendicular to the face the first vertex is anchored to.
+    if pset_data.get("ForcePerpendicularToFace") and len(resolved) >= 2 and resolved[0] is not None:
+        normal = _get_anchor_face_normal_world(file, anchors[0], placement_override)
+        if normal:
+            base = resolved[0]
+            for i in range(1, len(resolved)):
+                if resolved[i] is None:
+                    continue
+                pt = resolved[i]
+                t = ((pt[0] - base[0]) * normal[0]
+                     + (pt[1] - base[1]) * normal[1]
+                     + (pt[2] - base[2]) * normal[2])
+                resolved[i] = (base[0] + t * normal[0],
+                                base[1] + t * normal[1],
+                                base[2] + t * normal[2])
+                anchors[i]["pt"] = list(resolved[i])
+
     pset_entity_id = pset_data.get("id")
     if pset_entity_id:
         pset_entity = file.by_id(pset_entity_id)
@@ -122,7 +141,7 @@ def get_dimension_segment_lengths(
 ) -> list[float]:
     """Return the segment lengths for a parametric dimension from stored anchor pts.
 
-    Distances are computed from the cached ``pt`` fields in ``BBIM_DimensionTarget.Anchors``
+    Distances are computed from the cached ``pt`` fields in ``BBIM_Dimension.Anchors``
     (in metres, matching ifcopenshell.geom output).  Returns an empty list if the pset
     is absent or malformed.
     """
@@ -236,3 +255,39 @@ def _sync_segment_metrics(
 
 def _dist(a: tuple, b: tuple) -> float:
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
+
+
+def _get_anchor_face_normal_world(
+    file: ifcopenshell.file,
+    anchor: dict,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    """Return the world-space unit face normal stored in a FACE anchor, or None.
+
+    Prefers ``normal_local`` (element-local, rotation-invariant) transformed by
+    the current element placement.  Falls back to the stored world-space normal.
+    """
+    if anchor.get("type") != "FACE":
+        return None
+    guid = anchor.get("guid")
+    if not guid:
+        return None
+    fp = (anchor.get("addr") or {}).get("fingerprint") or {}
+
+    normal_local = fp.get("normal_local")
+    if normal_local:
+        try:
+            element = file.by_guid(guid)
+        except Exception:
+            return None
+        from .resolve_anchor import _rotate_local_to_world
+        n = _rotate_local_to_world(element, normal_local, placement_override)
+        mag = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
+        return (n[0] / mag, n[1] / mag, n[2] / mag) if mag > 1e-12 else None
+
+    normal_world = fp.get("normal")
+    if normal_world:
+        mag = math.sqrt(sum(x * x for x in normal_world))
+        return tuple(x / mag for x in normal_world) if mag > 1e-12 else None  # type: ignore[return-value]
+
+    return None

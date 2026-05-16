@@ -1051,6 +1051,11 @@ class BIMAnnotationProperties(PropertyGroup):
     )
     is_adding_type: bpy.props.BoolProperty(default=False)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+    force_perpendicular_to_face: bpy.props.BoolProperty(
+        name="Force ⊥ to Face",
+        description="Constrain subsequent dimension vertices to lie on the line through the first vertex along its face normal",
+        default=False,
+    )
     tag_rotation_mode: bpy.props.EnumProperty(
         name="Tag Rotation Mode",
         description="How to orient the tag relative to the tagged object",
