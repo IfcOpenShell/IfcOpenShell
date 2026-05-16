@@ -5560,3 +5560,521 @@ class ShowElementValuesInstructions(bpy.types.Operator):
 
     def execute(self, context):
         return {"FINISHED"}
+
+
+# ---------------------------------------------------------------------------
+# Parametric dimension operators
+# ---------------------------------------------------------------------------
+
+
+class SetDimensionAnchor(bpy.types.Operator):
+    """Interactively anchor dimension vertices to IFC element faces.
+
+    Two-phase modal workflow (all in Object Mode, no Tab required):
+      1. Run the operator with a dimension annotation selected.
+      2. Click a vertex ON the dimension line to select it.
+      3. Click an IFC element face to anchor that vertex to it.
+         ALT+click sets a free world-point anchor instead.
+      4. Repeat steps 2-3 for more vertices.
+      5. RMB or ESC to finish.
+    """
+
+    bl_idname = "bim.set_dimension_anchor"
+    bl_label = "Set Dimension Anchor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    if TYPE_CHECKING:
+        pass
+
+    _annotation: Optional[ifcopenshell.entity_instance] = None
+    _annotation_obj: Optional[bpy.types.Object] = None
+    _phase: str = "PICK_VERTEX"   # "PICK_VERTEX" | "PICK_FACE"
+    _active_vertex_idx: int = -1
+    _shape_cache: dict
+
+    _VERTEX_PICK_RADIUS_PX = 20  # pixels — how close the click must be to a vertex
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        obj = context.active_object
+        if not obj:
+            cls.poll_message_set("No active object.")
+            return False
+        if context.mode != "OBJECT":
+            cls.poll_message_set("Must be in Object Mode.")
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            cls.poll_message_set("Active object must be an IfcAnnotation.")
+            return False
+        ptype = ifcopenshell.util.element.get_predefined_type(element)
+        if ptype not in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"):
+            cls.poll_message_set("Annotation must be a dimension type.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        obj = context.active_object
+        self._annotation = tool.Ifc.get_entity(obj)
+        self._annotation_obj = obj
+        self._phase = "PICK_VERTEX"
+        self._active_vertex_idx = -1
+        self._shape_cache = {}
+        self._set_status(context)
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        if event.type == "ESC" or (event.type == "RIGHTMOUSE" and event.value == "PRESS"):
+            context.workspace.status_text_set(None)
+            return {"FINISHED"}  # keep any anchors already written
+
+        if event.type == "LEFTMOUSE" and event.value == "PRESS":
+            if self._phase == "PICK_VERTEX":
+                self._handle_vertex_pick(context, event)
+            else:
+                self._handle_face_pick(context, event)
+            self._set_status(context)
+            return {"RUNNING_MODAL"}
+
+        return {"PASS_THROUGH"}
+
+    # ------------------------------------------------------------------
+    # Status bar
+
+    def _set_status(self, context):
+        if self._phase == "PICK_VERTEX":
+            context.workspace.status_text_set(
+                "Click a dimension vertex  |  RMB / ESC: Finish"
+            )
+        else:
+            context.workspace.status_text_set(
+                f"Vertex {self._active_vertex_idx} selected  —  "
+                "Click element face to anchor  |  ALT+Click: free world point  |  RMB / ESC: Finish"
+            )
+
+    # ------------------------------------------------------------------
+    # Phase 1: pick a vertex on the dimension curve
+
+    def _handle_vertex_pick(self, context, event):
+        from bpy_extras import view3d_utils
+
+        region = context.region
+        rv3d = context.region_data
+        if not region or not rv3d:
+            return
+
+        coord = (event.mouse_region_x, event.mouse_region_y)
+        obj = self._annotation_obj
+
+        best_idx = None
+        best_dist_sq = self._VERTEX_PICK_RADIUS_PX ** 2
+
+        if obj.data and hasattr(obj.data, "splines"):
+            for spline in obj.data.splines:
+                for i, pt in enumerate(spline.points):
+                    world_co = obj.matrix_world @ pt.co.xyz
+                    screen_co = view3d_utils.location_3d_to_region_2d(region, rv3d, world_co)
+                    if screen_co is None:
+                        continue
+                    dist_sq = (screen_co.x - coord[0]) ** 2 + (screen_co.y - coord[1]) ** 2
+                    if dist_sq < best_dist_sq:
+                        best_dist_sq = dist_sq
+                        best_idx = i
+
+        if best_idx is None:
+            self.report({"WARNING"}, f"Click closer to a dimension vertex (within {self._VERTEX_PICK_RADIUS_PX}px)")
+            return
+
+        self._active_vertex_idx = best_idx
+        self._phase = "PICK_FACE"
+
+    # ------------------------------------------------------------------
+    # Phase 2: pick a face on an IFC element
+
+    def _handle_face_pick(self, context, event):
+        from bpy_extras import view3d_utils
+
+        region = context.region
+        rv3d = context.region_data
+        if not region or not rv3d:
+            return
+
+        coord = (event.mouse_region_x, event.mouse_region_y)
+
+        # ALT+click → free world-point anchor at the cursor 3D location
+        if event.alt:
+            origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+            direction = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+            hit, location, *_ = context.scene.ray_cast(context.view_layer.depsgraph, origin, direction)
+            pt_m = tuple(location) if hit else tuple(origin + direction * 5.0)
+
+            import ifcopenshell.api.drawing as drawing_api
+            anchor = drawing_api.make_world_anchor(list(pt_m))
+            self._write_anchor(anchor, self._active_vertex_idx)
+            self.report({"INFO"}, f"Vertex {self._active_vertex_idx} → free world point")
+            self._phase = "PICK_VERTEX"
+            return
+
+        # Normal click → raycast for IFC element face
+        origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, coord)
+        direction = view3d_utils.region_2d_to_vector_3d(region, rv3d, coord)
+
+        hit, location, normal, face_index, hit_obj, _ = context.scene.ray_cast(
+            context.view_layer.depsgraph, origin, direction
+        )
+
+        if not hit or hit_obj is None:
+            self.report({"WARNING"}, "Nothing under cursor — click on a model element")
+            return
+
+        if hit_obj == self._annotation_obj:
+            self.report({"WARNING"}, "Click on an element, not the dimension line itself")
+            return
+
+        element = tool.Ifc.get_entity(hit_obj)
+        if not element:
+            self.report({"WARNING"}, f"'{hit_obj.name}' is not an IFC element")
+            return
+
+        file = tool.Ifc.get()
+        hit_m = (float(location.x), float(location.y), float(location.z))
+        normal_m = (float(normal.x), float(normal.y), float(normal.z))
+
+        # Pass the Blender matrix_world so face-group matching uses current position.
+        placement_override = {element.id(): np.array(hit_obj.matrix_world)}
+
+        import ifcopenshell.api.drawing as drawing_api
+        anchor = drawing_api.build_anchor_from_hit(
+            file, element, hit_m, normal_m,
+            shape_cache=self._shape_cache,
+            placement_override=placement_override,
+        )
+
+        self._write_anchor(anchor, self._active_vertex_idx)
+        self.report(
+            {"INFO"},
+            f"Vertex {self._active_vertex_idx} → {element.is_a()}/{element.Name or element.GlobalId}",
+        )
+        self._phase = "PICK_VERTEX"
+
+    # ------------------------------------------------------------------
+    # Pset write (shared by both face and free-point paths)
+
+    def _write_anchor(self, new_anchor: dict, vertex_index: int) -> None:
+        file = tool.Ifc.get()
+        annotation = self._annotation
+
+        pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_DimensionTarget")
+
+        if pset_data and pset_data.get("Anchors"):
+            try:
+                anchors: list = json.loads(pset_data["Anchors"])
+            except Exception:
+                anchors = []
+        else:
+            anchors = _anchors_from_spline(self._annotation_obj, file)
+
+        while len(anchors) <= vertex_index:
+            obj = self._annotation_obj
+            idx = len(anchors)
+            if obj and obj.data and hasattr(obj.data, "splines") and obj.data.splines:
+                pts = obj.data.splines[0].points
+                if idx < len(pts):
+                    co = obj.matrix_world @ pts[idx].co.xyz
+                    import ifcopenshell.api.drawing as drawing_api
+                    anchors.append(drawing_api.make_world_anchor([float(co.x), float(co.y), float(co.z)]))
+                    continue
+            import ifcopenshell.api.drawing as drawing_api
+            anchors.append(drawing_api.make_world_anchor([0.0, 0.0, 0.0]))
+
+        anchors[vertex_index] = new_anchor
+        anchors_json = json.dumps(anchors)
+
+        if pset_data:
+            pset_entity = file.by_id(pset_data["id"])
+            ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": anchors_json})
+        else:
+            ifcopenshell.api.run("pset.add_pset", file, product=annotation, name="BBIM_DimensionTarget")
+            pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_DimensionTarget")
+            pset_entity = file.by_id(pset_data["id"])
+            ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": anchors_json})
+
+        from bonsai.bim.module.drawing import handler as _drawing_handler
+        _drawing_handler.invalidate_dim_index()
+
+
+class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
+    """Regenerate all parametric dimension annotations in the project.
+
+    For every IfcAnnotation that has a BBIM_DimensionTarget pset, resolve all
+    anchor references from live element geometry and update the annotation's
+    curve vertices and linked IfcMetric values.
+    """
+
+    bl_idname = "bim.regenerate_dimensions"
+    bl_label = "Regenerate Dimensions"
+    bl_description = (
+        "Recompute all parametric dimension annotations from current element geometry.\n"
+        "Updates curve vertex positions and IfcMetric segment values."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    active_only: bpy.props.BoolProperty(
+        name="Active Only",
+        description="Only regenerate the currently selected dimension annotation",
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        active_only: bool
+
+    @classmethod
+    def poll(cls, context):
+        return bool(tool.Ifc.get())
+
+    def _execute(self, context):
+        import ifcopenshell.api.drawing as drawing_api
+        import ifcopenshell.geom
+
+        file = tool.Ifc.get()
+
+        geom_settings = ifcopenshell.geom.settings()
+        geom_settings.set("APPLY_DEFAULT_MATERIALS", False)
+        shape_cache: dict = {}
+
+        if self.active_only:
+            obj = context.active_object
+            if not obj:
+                self.report({"WARNING"}, "No active object.")
+                return
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.is_a("IfcAnnotation"):
+                self.report({"WARNING"}, "Active object is not an IfcAnnotation.")
+                return
+            candidates = [element]
+        else:
+            candidates = [
+                a for a in file.by_type("IfcAnnotation")
+                if ifcopenshell.util.element.get_pset(a, "BBIM_DimensionTarget")
+            ]
+
+        updated = 0
+        for annotation in candidates:
+            pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_DimensionTarget")
+            if not pset:
+                continue
+
+            # Build a placement override from each referenced element's current
+            # Blender matrix_world.  Bonsai only syncs ObjectPlacement to the IFC
+            # file when the user explicitly clicks "Edit Object Placement" — so the
+            # IFC entity may be stale after a viewport G-move.  Using matrix_world
+            # ensures we always see the current element position.
+            placement_override: dict[int, "np.ndarray"] = {}
+            try:
+                anchors_raw = json.loads(pset.get("Anchors") or "[]")
+                for anchor in anchors_raw:
+                    guid = anchor.get("guid")
+                    if not guid:
+                        continue
+                    try:
+                        elem = file.by_guid(guid)
+                        elem_id = elem.id()
+                        if elem_id in placement_override:
+                            continue
+                        elem_obj = tool.Ifc.get_object(elem)
+                        if elem_obj:
+                            placement_override[elem_id] = np.array(elem_obj.matrix_world)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            resolved_pts = drawing_api.regenerate_dimension(
+                file, annotation,
+                settings=geom_settings,
+                shape_cache=shape_cache,
+                placement_override=placement_override,
+            )
+            if not resolved_pts:
+                continue
+
+            _update_blender_curve(annotation, resolved_pts)
+            updated += 1
+
+        self.report({"INFO"}, f"Regenerated {updated} parametric dimension(s).")
+
+
+# ---------------------------------------------------------------------------
+# Helpers for dimension operators
+# ---------------------------------------------------------------------------
+
+
+def _anchors_from_spline(obj: bpy.types.Object, file: ifcopenshell.file) -> list:
+    """Build a list of WORLD anchors from the current spline points of obj.
+
+    Coordinates are stored in metres (Blender world space), which matches the
+    output of ifcopenshell.geom.create_shape regardless of IFC project unit.
+    """
+    import ifcopenshell.api.drawing as drawing_api
+
+    anchors = []
+    if not obj or not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+        return anchors
+
+    for pt in obj.data.splines[0].points:
+        world_co = obj.matrix_world @ pt.co.xyz
+        # Store in metres (Blender world space)
+        pt_m = [float(world_co.x), float(world_co.y), float(world_co.z)]
+        anchors.append(drawing_api.make_world_anchor(pt_m))
+
+    return anchors
+
+
+def _update_blender_curve(
+    annotation: ifcopenshell.entity_instance,
+    resolved_pts_m: list,
+) -> None:
+    """Update a Blender curve object's spline points AND the backing IFC IfcPolyline.
+
+    :param resolved_pts_m: Points in metres (Blender world space).
+
+    Both the Blender curve data and the IFC representation are updated so that
+    entering Edit Mode (which reloads geometry from IFC via import_representation_items)
+    does not reset the curve back to pre-regeneration positions.
+    """
+    obj = tool.Ifc.get_object(annotation)
+    if not obj or not obj.data or not hasattr(obj.data, "splines"):
+        return
+
+    curve_data: bpy.types.Curve = obj.data
+    inv_world = obj.matrix_world.inverted()
+    n = len(resolved_pts_m)
+
+    if not curve_data.splines:
+        spline = curve_data.splines.new("POLY")
+        spline.points.add(n - 1)
+    else:
+        spline = curve_data.splines[0]
+        if len(spline.points) != n:
+            curve_data.splines.remove(spline)
+            spline = curve_data.splines.new("POLY")
+            spline.points.add(n - 1)
+
+    is_2d = _annotation_is_2d(annotation)
+
+    for i, pt_m in enumerate(resolved_pts_m):
+        blender_world = Vector((float(pt_m[0]), float(pt_m[1]), float(pt_m[2])))
+        local_pt = inv_world @ blender_world
+        # For 2D (plan-view) annotations, project onto the annotation plane by
+        # zeroing local Z — matching the Annotator.add_line_to_annotation pattern.
+        if is_2d:
+            spline.points[i].co = (local_pt.x, local_pt.y, 0.0, 1.0)
+        else:
+            spline.points[i].co = (*local_pt, 1.0)
+
+    # Also update the IFC IfcPolyline so Edit Mode reloads reflect the new positions.
+    _update_ifc_polyline(tool.Ifc.get(), annotation, obj, resolved_pts_m)
+
+
+def _annotation_is_2d(annotation: ifcopenshell.entity_instance) -> bool:
+    """Return True if the annotation's representation uses 2D coordinates (plan view)."""
+    if not getattr(annotation, "Representation", None):
+        return False
+    for rep in annotation.Representation.Representations:
+        curve = _find_curve_item(rep)
+        if curve is None:
+            continue
+        if curve.is_a("IfcIndexedPolyCurve"):
+            return curve.Points.is_a("IfcCartesianPointList2D")
+        if curve.is_a("IfcPolyline") and curve.Points:
+            return len(curve.Points[0].Coordinates) == 2
+    return False
+
+
+def _update_ifc_polyline(
+    file: ifcopenshell.file,
+    annotation: ifcopenshell.entity_instance,
+    obj: bpy.types.Object,
+    resolved_pts_m: list,
+) -> None:
+    """Update the curve coordinates in the annotation's IFC representation.
+
+    Converts world-space metres points → annotation-local IFC project units and
+    writes them into the existing IfcIndexedPolyCurve or IfcPolyline entities.
+    Handles both 2D (IfcCartesianPointList2D) and 3D representations.
+    """
+    if not resolved_pts_m or not getattr(annotation, "Representation", None):
+        return
+
+    import ifcopenshell.util.unit as ifc_unit
+
+    unit_scale = ifc_unit.calculate_unit_scale(file)
+    inv_world = obj.matrix_world.inverted()
+
+    def _to_ifc_local(pt_m: tuple) -> tuple:
+        blender_local = inv_world @ Vector((float(pt_m[0]), float(pt_m[1]), float(pt_m[2])))
+        return (
+            float(blender_local.x) / unit_scale,
+            float(blender_local.y) / unit_scale,
+            float(blender_local.z) / unit_scale,
+        )
+
+    new_coords = [_to_ifc_local(pt) for pt in resolved_pts_m]
+
+    for rep in annotation.Representation.Representations:
+        curve = _find_curve_item(rep)
+        if curve is None:
+            continue
+
+        if curve.is_a("IfcIndexedPolyCurve"):
+            pts_list = curve.Points  # IfcCartesianPointList2D or 3D
+            n_dims = 2 if pts_list.is_a("IfcCartesianPointList2D") else 3
+            pts_list.CoordList = tuple(coords[:n_dims] for coords in new_coords)
+            # Rebuild Segments to cover all consecutive pairs.  Bonsai creates
+            # explicit IfcLineIndex entries per segment; leaving a stale Segments
+            # list (e.g. [IfcLineIndex([1,2])]) after adding a 3rd point means
+            # the extra point is silently ignored on geometry reload.
+            n_pts = len(new_coords)
+            if n_pts >= 2:
+                curve.Segments = [file.createIfcLineIndex([i + 1, i + 2]) for i in range(n_pts - 1)]
+            else:
+                curve.Segments = None
+            return
+
+        if curve.is_a("IfcPolyline"):
+            existing = list(curve.Points)
+            if len(existing) == len(new_coords):
+                for ifc_pt, coords in zip(existing, new_coords):
+                    n_dims = len(ifc_pt.Coordinates)
+                    ifc_pt.Coordinates = coords[:n_dims]
+            else:
+                dim = len(existing[0].Coordinates) if existing else 3
+                curve.Points = [
+                    file.create_entity("IfcCartesianPoint", Coordinates=coords[:dim])
+                    for coords in new_coords
+                ]
+            return
+
+
+def _find_curve_item(rep: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
+    """Return the first IfcPolyline or IfcIndexedPolyCurve in a shape representation."""
+    for item in rep.Items:
+        result = _find_curve_in_item(item)
+        if result is not None:
+            return result
+    return None
+
+
+def _find_curve_in_item(item: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
+    if item.is_a("IfcPolyline") or item.is_a("IfcIndexedPolyCurve"):
+        return item
+    if item.is_a("IfcGeometricCurveSet"):
+        for element in item.Elements:
+            result = _find_curve_in_item(element)
+            if result is not None:
+                return result
+    return None
