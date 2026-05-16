@@ -250,6 +250,17 @@ class AnnotationToolUI:
                 op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
                 op.active_only = True
 
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if element and element.is_a("IfcAnnotation"):
+            ptype = ifcopenshell.util.element.get_predefined_type(element)
+            if ptype in cls._DIMENSION_TYPES:
+                cls.layout.separator()
+                row = cls.layout.row(align=True)
+                row.operator("bim.set_dimension_anchor", icon="PIVOT_CURSOR")
+                op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
+                op.active_only = True
+
     @classmethod
     def draw_type_selection_interface(cls):
         # shared by both sidebar and header
