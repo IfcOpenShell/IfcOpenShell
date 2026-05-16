@@ -39,6 +39,8 @@ MinimalWindow::MinimalWindow(QWidget* parent)
     statusBar()->addPermanentWidget(stats_label_);
 
     loader_ = new SceneLoader(viewport_, this);
+    loader_->setShouldReadSidecar(true);
+    loader_->setShouldWriteSidecar(true);
     connect(loader_, &SceneLoader::loadStarted,
             this, &MinimalWindow::onLoadStarted);
     connect(loader_, &SceneLoader::loadedFromSidecar,

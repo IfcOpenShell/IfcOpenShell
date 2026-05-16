@@ -47,17 +47,6 @@ void convertIfcToDatabase(SessionState& s, QWidget& host);
 void exportGeometryDatabase(SessionState& s, QWidget& host);
 void openSettings(SessionState& s, QWidget& host);
 
-// Snapshots the in-memory geometry + element registry for a freshly streamed
-// model and persists it as a sidecar next to the source IFC. Called after
-// SceneLoader::loadedFromStream so subsequent loads can skip the stream phase.
-void writeSidecarForLoadedModel(SessionState& s, ViewportWindow& vp, uint32_t mid);
-
-// Persistent post-load handler. Call once at app startup. Whenever the
-// session reports a model was streamed (not loaded from cache), persists a
-// sidecar so the next load skips the stream phase. Connection lifetime is
-// tied to `context`.
-void addHandlers(SessionState& s, ViewportWindow& vp, QObject& context);
-
 // Internal building blocks shared by commands here and by ProjectController.
 // These NEVER call notify*() — the caller is responsible for emitting once
 // at the end of its execution.

@@ -29,6 +29,14 @@
 #include <optional>
 #include <utility>
 
+void SceneLoader::setShouldReadSidecar(bool enabled) {
+    should_read_sidecar_ = enabled;
+}
+
+void SceneLoader::setShouldWriteSidecar(bool enabled) {
+    should_write_sidecar_ = enabled;
+}
+
 SceneLoader::SceneLoader(ViewportWindow* viewport, QObject* parent)
     : QObject(parent), viewport_(viewport)
 {
@@ -169,6 +177,14 @@ void SceneLoader::startNextLoad() {
     const bool is_sidecar_source =
         QFileInfo(model.file_path).suffix().compare("ifcview", Qt::CaseInsensitive) == 0;
 
+    // No sidecar read probe when caching is off (and the user didn't pick a
+    // .ifcview file directly). Skip the background thread and go straight
+    // to a stream load.
+    if (!is_sidecar_source && !should_read_sidecar_) {
+        startStreamLoadFor(mid);
+        return;
+    }
+
     // Sidecar read on a background thread so the UI stays responsive.
     joinSidecarThread();
     sidecar_read_thread_ = std::thread([this, ifc_path, mid, is_sidecar_source]() {
@@ -195,13 +211,26 @@ void SceneLoader::startNextLoad() {
                 return;
             }
 
-            auto& m = it->second;
-            connectStreamer(m.streamer);
-            element_poll_timer_.start();
-            m.streamer->loadFile(
-                m.file_path.toStdString(), next_object_id_, loading_model_id_);
+            startStreamLoadFor(mid);
         }, Qt::QueuedConnection);
     });
+}
+
+void SceneLoader::startStreamLoadFor(uint32_t mid) {
+    auto it = models_.find(mid);
+    if (it == models_.end()) return;
+    auto& m = it->second;
+    // Accumulate sidecar data alongside the GPU upload so the first load
+    // naturally produces a cache for the next one — no GPU readback at
+    // finish time. Skipped when caching writes are off.
+    if (should_write_sidecar_) {
+        m.sidecar_builder = std::make_unique<SidecarBuilder>();
+        m.streamed_elements.clear();
+    }
+    connectStreamer(m.streamer);
+    element_poll_timer_.start();
+    m.streamer->loadFile(
+        m.file_path.toStdString(), next_object_id_, loading_model_id_);
 }
 
 void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
@@ -314,16 +343,27 @@ void SceneLoader::onStreamerProgressChanged(int percent) {
 
 void SceneLoader::onStreamerMeshReady(MeshChunk chunk) {
     viewport_->uploadMeshChunk(chunk);
+    if (loading_model_id_ != 0) {
+        auto it = models_.find(loading_model_id_);
+        if (it != models_.end() && it->second.sidecar_builder) {
+            it->second.sidecar_builder->onMeshReady(chunk);
+        }
+    }
 }
 
 void SceneLoader::onStreamerInstanceReady(InstanceChunk chunk) {
     if (loading_model_id_ != 0) {
         auto it = models_.find(loading_model_id_);
-        if (it != models_.end() && !it->second.has_first_placement) {
-            using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
-            it->second.first_placement =
-                Eigen::Map<const Mat4fCol>(chunk.transform).cast<double>();
-            it->second.has_first_placement = true;
+        if (it != models_.end()) {
+            if (!it->second.has_first_placement) {
+                using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+                it->second.first_placement =
+                    Eigen::Map<const Mat4fCol>(chunk.transform).cast<double>();
+                it->second.has_first_placement = true;
+            }
+            if (it->second.sidecar_builder) {
+                it->second.sidecar_builder->onInstanceReady(chunk);
+            }
         }
     }
     viewport_->uploadInstanceChunk(chunk);
@@ -335,9 +375,15 @@ void SceneLoader::onElementPollTick() {
     if (it == models_.end()) return;
 
     auto batch = it->second.streamer->drainElements();
-    if (!batch.empty()) {
-        emit streamedElementsReady(loading_model_id_, std::move(batch));
+    if (batch.empty()) return;
+
+    // Mirror into the per-model accumulator so finalize() has the full set
+    // without re-draining (the streamer's queue is consumed by this drain).
+    if (it->second.sidecar_builder) {
+        auto& buf = it->second.streamed_elements;
+        buf.insert(buf.end(), batch.begin(), batch.end());
     }
+    emit streamedElementsReady(loading_model_id_, std::move(batch));
 }
 
 void SceneLoader::onStreamerFinished() {
@@ -348,10 +394,29 @@ void SceneLoader::onStreamerFinished() {
     if (mid != 0) {
         auto it = models_.find(mid);
         if (it != models_.end()) {
-            next_object_id_ = it->second.streamer->lastObjectId();
+            auto& m = it->second;
+            next_object_id_ = m.streamer->lastObjectId();
             viewport_->finalizeModel(mid);
 
-            qint64 ms = it->second.load_timer.elapsed();
+            // Sidecar finalize + LOD application + disk write. Runs on the
+            // GUI thread so applyLodExtension's GL touches are safe.
+            if (m.sidecar_builder) {
+                ModelGeoref georef;
+                if (auto* file = m.streamer->ifcFile()) {
+                    georef = computeModelGeoref(file);
+                }
+                QElapsedTimer wt; wt.start();
+                SidecarData data = m.sidecar_builder->finalize(georef, m.streamed_elements);
+                viewport_->applyLodExtension(mid, data);
+                const bool ok = writeSidecar(m.file_path.toStdString(), data);
+                qDebug("  Sidecar finalize + write: %lld ms (%s)",
+                       wt.elapsed(), ok ? "ok" : "FAILED");
+                m.sidecar_builder.reset();
+                m.streamed_elements.clear();
+                m.streamed_elements.shrink_to_fit();
+            }
+
+            qint64 ms = m.load_timer.elapsed();
             emit loadedFromStream(mid, ms);
         }
     }

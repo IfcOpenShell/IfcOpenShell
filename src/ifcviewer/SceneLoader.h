@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <deque>
 #include <map>
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
@@ -36,6 +37,7 @@
 #include "Federation.h"
 #include "ViewportWindow.h"
 #include "GeometryStreamer.h"
+#include "SidecarBuilder.h"
 #include "SidecarCache.h"
 
 // Drives IFC file loading into a ViewportWindow.  Owns the per-model
@@ -45,14 +47,26 @@
 //
 // Consumers (MainWindow, MinimalWindow) observe progress through signals
 // and never touch the streamer, sidecar thread, or queue directly.
-// Sidecar *writes* are intentionally left to the consumer: they need the
-// consumer's element metadata (guid/name/type strings) which SceneLoader
-// does not retain.
+// Sidecar *writes* happen automatically as a side effect of stream loads —
+// the SidecarBuilder accumulates from the streamer chunks alongside the
+// viewport upload, and SceneLoader finalizes + writes the result when the
+// stream finishes. No GPU readback involved.
 class SceneLoader : public QObject {
     Q_OBJECT
 public:
     explicit SceneLoader(ViewportWindow* viewport, QObject* parent = nullptr);
     ~SceneLoader();
+
+    // Sidecar cache use is opt-in per direction. Embedders that don't care
+    // about .ifcview can leave both off (default) and SceneLoader will never
+    // probe for or produce one. Toggles only affect *subsequent* loads;
+    // a load already in flight finishes with whatever was set when it
+    // started. Opening a `.ifcview` file directly always reads it,
+    // regardless of these flags.
+    void setShouldReadSidecar(bool enabled);
+    void setShouldWriteSidecar(bool enabled);
+    bool shouldReadSidecar() const { return should_read_sidecar_; }
+    bool shouldWriteSidecar() const { return should_write_sidecar_; }
 
     // Returns the model_ids assigned to the enqueued paths, in order.
     // Callers can use these to set up per-model UI state (tree roots, etc.)
@@ -146,9 +160,18 @@ private:
         // streamer's first InstanceChunk.
         Eigen::Matrix4d first_placement     = Eigen::Matrix4d::Identity();
         bool            has_first_placement = false;
+
+        // Live-load sidecar accumulator. Constructed at the start of a
+        // stream load when shouldWriteSidecar is on; null otherwise.
+        std::unique_ptr<SidecarBuilder> sidecar_builder;
+        // Element batches accumulated as the streamer yields, mirrored from
+        // what's emitted via streamedElementsReady so finalize() has the
+        // full set without re-draining.
+        std::vector<ElementInfo> streamed_elements;
     };
 
     void startNextLoad();
+    void startStreamLoadFor(uint32_t mid);
     void connectStreamer(GeometryStreamer* streamer);
     void joinSidecarThread();
     void joinDataSourceThreads();
@@ -156,6 +179,8 @@ private:
     void startDataSourceLoad(uint32_t mid);
 
     ViewportWindow* viewport_ = nullptr;
+    bool should_read_sidecar_ = false;
+    bool should_write_sidecar_ = false;
     std::map<uint32_t, Model> models_;
     std::deque<uint32_t> load_queue_;
     uint32_t next_model_id_ = 1;

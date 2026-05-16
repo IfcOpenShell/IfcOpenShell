@@ -470,8 +470,6 @@ void MainWindow::setupLoader() {
     session_state_->createLoader(viewport_widget_->viewport());
     viewport_view_ = new modules::viewport::ViewportView(
         session_state_, viewport_widget_->viewport(), this);
-    modules::models::commands::addHandlers(
-        *session_state_, *viewport_widget_->viewport(), *this);
 
     // Load errors surface through SessionState as a session-level signal; the
     // status text + progress are already cleared there, we only show the modal.

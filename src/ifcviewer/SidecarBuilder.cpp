@@ -17,10 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "HeadlessSidecarBuilder.h"
+#include "SidecarBuilder.h"
 
 #include "Federation.h"
-#include "GeometryStreamer.h"
 #include "LodBuilder.h"
 #include "SidecarCache.h"
 #include "VertexQuantization.h"
@@ -31,13 +30,14 @@
 
 #include <cstring>
 #include <limits>
+#include <utility>
 
-HeadlessSidecarBuilder::HeadlessSidecarBuilder(QObject* parent)
+SidecarBuilder::SidecarBuilder(QObject* parent)
     : QObject(parent)
 {
 }
 
-void HeadlessSidecarBuilder::onMeshReady(const MeshChunk& chunk) {
+void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
     if (chunk.vertices.empty() || chunk.indices.empty()) return;
 
     // Streamer format: 7 floats/vertex (pos3 + normal3 + color-as-float).
@@ -45,7 +45,7 @@ void HeadlessSidecarBuilder::onMeshReady(const MeshChunk& chunk) {
 
     // Recompute a tight local AABB from the actual vertex positions, same
     // way ViewportWindow::uploadMeshChunk does so the .ifcview byte layout
-    // matches the GPU-readback path.
+    // matches the live-render path.
     float bmin[3] = {  std::numeric_limits<float>::infinity(),
                        std::numeric_limits<float>::infinity(),
                        std::numeric_limits<float>::infinity() };
@@ -98,7 +98,7 @@ void HeadlessSidecarBuilder::onMeshReady(const MeshChunk& chunk) {
     sidecar_data_.meshes[chunk.local_mesh_id] = info;
 }
 
-void HeadlessSidecarBuilder::onInstanceReady(const InstanceChunk& chunk) {
+void SidecarBuilder::onInstanceReady(const InstanceChunk& chunk) {
     InstanceCpu inst;
     inst.mesh_id              = chunk.local_mesh_id;
     inst.object_id            = chunk.object_id;
@@ -121,44 +121,8 @@ void HeadlessSidecarBuilder::onInstanceReady(const InstanceChunk& chunk) {
     sidecar_data_.instances.push_back(inst);
 }
 
-bool HeadlessSidecarBuilder::build(const QString& ifc_path,
-                                   const QString& anchor_path,
-                                   int num_threads) {
-    sidecar_data_ = SidecarData{};
-    last_error_.clear();
-
-    // Streamer lives on the calling thread; its worker_thread_ is its own
-    // internal QThread.  AutoConnection routes meshReady/instanceReady
-    // through our local event loop.
-    GeometryStreamer streamer;
-
-    QEventLoop loop;
-    bool failed = false;
-
-    connect(&streamer, &GeometryStreamer::meshReady,
-            this, &HeadlessSidecarBuilder::onMeshReady);
-    connect(&streamer, &GeometryStreamer::instanceReady,
-            this, &HeadlessSidecarBuilder::onInstanceReady);
-    connect(&streamer, &GeometryStreamer::finished,
-            &loop, &QEventLoop::quit);
-    connect(&streamer, &GeometryStreamer::cancelled,
-            &loop, &QEventLoop::quit);
-    connect(&streamer, &GeometryStreamer::errorOccurred, this,
-            [&](const QString& msg) {
-        last_error_ = msg;
-        failed = true;
-        loop.quit();
-    });
-
-    streamer.loadFile(ifc_path.toStdString(),
-                      /*start_object_id*/ 1,
-                      /*model_id*/ 1,
-                      num_threads);
-
-    loop.exec();
-
-    if (failed) return false;
-
+SidecarData SidecarBuilder::finalize(const ModelGeoref& georef,
+                                     const std::vector<ElementInfo>& elements) {
     // Per-mesh instance_count, matching ViewportWindow::finalizeModel.
     for (auto& mesh : sidecar_data_.meshes) {
         mesh.first_instance = 0;
@@ -170,18 +134,13 @@ bool HeadlessSidecarBuilder::build(const QString& ifc_path,
         }
     }
 
-    // CoordinateOperation cache from the IFC the streamer just parsed.
-    if (auto* file = streamer.ifcFile()) {
-        ModelGeoref georef = computeModelGeoref(file);
-        sidecar_data_.has_coordinate_operation = georef.has_coordinate_operation ? 1 : 0;
-        Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(
-            sidecar_data_.coordinate_operation_meters) = georef.coordinate_operation_meters;
-        sidecar_data_.project_length_to_meters = georef.units.project_length_to_meters;
-        sidecar_data_.map_unit_to_meters       = georef.units.map_unit_to_meters;
-    }
+    sidecar_data_.has_coordinate_operation = georef.has_coordinate_operation ? 1 : 0;
+    Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(
+        sidecar_data_.coordinate_operation_meters) = georef.coordinate_operation_meters;
+    sidecar_data_.project_length_to_meters = georef.units.project_length_to_meters;
+    sidecar_data_.map_unit_to_meters       = georef.units.map_unit_to_meters;
 
-    // Element metadata accumulated by the streamer's worker thread.
-    for (const auto& info : streamer.drainElements()) {
+    for (const auto& info : elements) {
         PackedElementInfo packed;
         packed.object_id = info.object_id;
         packed.model_id  = info.model_id;
@@ -205,7 +164,51 @@ bool HeadlessSidecarBuilder::build(const QString& ifc_path,
 
     buildLods(sidecar_data_);
 
-    if (!writeSidecar(anchor_path.toStdString(), sidecar_data_)) {
+    return std::exchange(sidecar_data_, SidecarData{});
+}
+
+bool SidecarBuilder::build(const QString& ifc_path,
+                           const QString& anchor_path,
+                           int num_threads) {
+    sidecar_data_ = SidecarData{};
+    last_error_.clear();
+
+    GeometryStreamer streamer;
+    QEventLoop loop;
+    bool failed = false;
+
+    connect(&streamer, &GeometryStreamer::meshReady,
+            this, &SidecarBuilder::onMeshReady);
+    connect(&streamer, &GeometryStreamer::instanceReady,
+            this, &SidecarBuilder::onInstanceReady);
+    connect(&streamer, &GeometryStreamer::finished,
+            &loop, &QEventLoop::quit);
+    connect(&streamer, &GeometryStreamer::cancelled,
+            &loop, &QEventLoop::quit);
+    connect(&streamer, &GeometryStreamer::errorOccurred, this,
+            [&](const QString& msg) {
+        last_error_ = msg;
+        failed = true;
+        loop.quit();
+    });
+
+    streamer.loadFile(ifc_path.toStdString(),
+                      /*start_object_id*/ 1,
+                      /*model_id*/ 1,
+                      num_threads);
+
+    loop.exec();
+
+    if (failed) return false;
+
+    ModelGeoref georef;
+    if (auto* file = streamer.ifcFile()) {
+        georef = computeModelGeoref(file);
+    }
+
+    SidecarData data = finalize(georef, streamer.drainElements());
+
+    if (!writeSidecar(anchor_path.toStdString(), data)) {
         last_error_ = "writeSidecar failed";
         return false;
     }

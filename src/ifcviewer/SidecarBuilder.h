@@ -17,44 +17,63 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef HEADLESSSIDECARBUILDER_H
-#define HEADLESSSIDECARBUILDER_H
+#ifndef SIDECARBUILDER_H
+#define SIDECARBUILDER_H
 
+#include "Federation.h"
+#include "GeometryStreamer.h"
 #include "InstancedGeometry.h"
 #include "SidecarCache.h"
 
 #include <QObject>
 #include <QString>
 
-// Produces a .ifcview sidecar from an IFC file without touching the
-// ViewportWindow or any GL state.  Mirrors the data path that
-// SceneLoader + ViewportWindow + ModelsPanelController.writeSidecarForModel
-// take for live loads, but does the vertex quantization and SidecarData
-// assembly entirely on the CPU.
+#include <vector>
+
+// Assembles a .ifcview SidecarData from streamer output, then finalizes it
+// (LOD build, georef, packed elements) ready for writeSidecar() and/or
+// ViewportWindow::applyLodExtension(). Two use modes:
 //
-// Threading: call ::build() from a non-GUI worker thread that has a Qt
-// event dispatcher (e.g. the thread spawned by QThread::create).  build()
-// spins a local QEventLoop until the streamer's worker thread completes.
-class HeadlessSidecarBuilder : public QObject {
+//   1. Live load — host (SceneLoader) drives its own GeometryStreamer and
+//      forwards meshReady/instanceReady chunks via onMeshReady/onInstanceReady
+//      while the viewport also consumes them. When the stream finishes the
+//      host calls finalize(georef, elements) and writeSidecar() with the
+//      returned data. No GPU readback involved.
+//
+//   2. Offline — build() owns a streamer, runs it on a non-GUI worker thread,
+//      and writes the sidecar to disk. Used by the .rdbview export path.
+class SidecarBuilder : public QObject {
     Q_OBJECT
 public:
-    explicit HeadlessSidecarBuilder(QObject* parent = nullptr);
+    explicit SidecarBuilder(QObject* parent = nullptr);
 
-    // `anchor_path` is fed to writeSidecar(), which normalises it to
-    // `<stem(anchor_path)>.ifcview`.  Pass either the IFC path itself
-    // (sidecar lands beside it) or a temp path whose stem you control.
+    // Convenience for the offline path: construct an internal streamer,
+    // accumulate, finalize, and write to disk. anchor_path is normalised to
+    // <stem>.ifcview by writeSidecar. Call from a non-GUI worker thread with
+    // a Qt event dispatcher; build() spins a local QEventLoop until the
+    // streamer's worker thread completes.
     bool build(const QString& ifc_path,
                const QString& anchor_path,
                int num_threads = 0);
 
-    const QString& lastError() const { return last_error_; }
-
-private:
+    // Accumulator interface. Safe to call repeatedly from the same thread the
+    // streamer signals are delivered to.
     void onMeshReady(const MeshChunk& chunk);
     void onInstanceReady(const InstanceChunk& chunk);
 
+    // Finishes assembly using the georef + element batch the host collected
+    // during streaming. Returns the assembled SidecarData by move; the
+    // builder's internal state is left empty so the same instance can be
+    // reused for another load.
+    SidecarData finalize(const ModelGeoref& georef,
+                         const std::vector<ElementInfo>& elements);
+
+    const QString& lastError() const { return last_error_; }
+
+private:
     SidecarData sidecar_data_;
     QString     last_error_;
 };
 
-#endif // HEADLESSSIDECARBUILDER_H
+#endif // SIDECARBUILDER_H
+

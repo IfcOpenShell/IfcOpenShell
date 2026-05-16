@@ -26,10 +26,8 @@
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
-#include "../../../ifcviewer/HeadlessSidecarBuilder.h"
-#include "../../../ifcviewer/LodBuilder.h"
 #include "../../../ifcviewer/SceneLoader.h"
-#include "../../../ifcviewer/SidecarCache.h"
+#include "../../../ifcviewer/SidecarBuilder.h"
 #include "../../../ifcviewer/ViewportWindow.h"
 #include "../../../ifcgeom/Serializer.h"
 #include "../../../serializers/document_serializer_plugin.h"
@@ -171,11 +169,6 @@ void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QStri
     s.notifySelectionChanged();
     s.notifyModelsChanged();
     s.setStatusMessage("Models", "Model removed");
-}
-
-void addHandlers(SessionState& s, ViewportWindow& vp, QObject& context) {
-    QObject::connect(&s, &SessionState::modelGeometryStreamed, &context,
-        [&s, &vp](uint32_t mid) { writeSidecarForLoadedModel(s, vp, mid); });
 }
 
 namespace detail {
@@ -432,7 +425,7 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
             serializer->finalize();
             serializer.reset();
 
-            HeadlessSidecarBuilder builder;
+            SidecarBuilder builder;
             if (!builder.build(input_path, tmp_anchor)) {
                 throw ifcopenshell::exception(
                     ("Sidecar build failed: " + builder.lastError()).toStdString());
@@ -529,66 +522,6 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
 void openSettings(SessionState& s, QWidget& host) {
     SettingsDialog dialog(&s, &host);
     dialog.exec();
-}
-
-void writeSidecarForLoadedModel(SessionState& s, ViewportWindow& vp, uint32_t mid) {
-    SceneLoader* loader = s.loader();
-    if (!loader) return;
-
-    SidecarData sidecar_data;
-    if (!vp.snapshotModel(mid, sidecar_data)) return;
-
-    if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
-        sidecar_data.has_coordinate_operation = georef->has_coordinate_operation ? 1 : 0;
-        Eigen::Map<Eigen::Matrix<double, 4, 4, Eigen::ColMajor>>(
-            sidecar_data.coordinate_operation_meters) = georef->coordinate_operation_meters;
-        sidecar_data.project_length_to_meters = georef->units.project_length_to_meters;
-        sidecar_data.map_unit_to_meters = georef->units.map_unit_to_meters;
-    }
-
-    if (auto* element_registry = s.elementRegistry()) {
-        for (const auto& info : element_registry->basicElementInfoForModel(mid)) {
-            PackedElementInfo packed;
-            packed.object_id = info.object_id;
-            packed.model_id = info.model_id;
-            packed.ifc_id = info.ifc_id;
-            packed.parent_id = info.parent_id;
-
-            const std::string guid = info.guid.toStdString();
-            packed.guid_offset = static_cast<uint32_t>(sidecar_data.string_table.size());
-            packed.guid_length = static_cast<uint32_t>(guid.size());
-            sidecar_data.string_table += guid;
-
-            const std::string name = info.name.toStdString();
-            packed.name_offset = static_cast<uint32_t>(sidecar_data.string_table.size());
-            packed.name_length = static_cast<uint32_t>(name.size());
-            sidecar_data.string_table += name;
-
-            const std::string type = info.type.toStdString();
-            packed.type_offset = static_cast<uint32_t>(sidecar_data.string_table.size());
-            packed.type_length = static_cast<uint32_t>(type.size());
-            sidecar_data.string_table += type;
-
-            sidecar_data.elements.push_back(packed);
-        }
-    }
-
-    QElapsedTimer lod_timer;
-    lod_timer.start();
-    buildLods(sidecar_data);
-    const LodStats lod_stats = summariseLods(sidecar_data);
-    qDebug("  LOD build: %lld ms — %u/%u meshes got LOD1 "
-           "(%u tris -> %u tris for those meshes)",
-           lod_timer.elapsed(),
-           lod_stats.meshes_with_lod1, lod_stats.meshes_total,
-           lod_stats.tris_lod0_for_lod1, lod_stats.tris_lod1);
-
-    vp.applyLodExtension(mid, sidecar_data);
-
-    QElapsedTimer sidecar_timer;
-    sidecar_timer.start();
-    const bool ok = writeSidecar(loader->filePath(mid).toStdString(), sidecar_data);
-    qDebug("  Sidecar write: %lld ms (%s)", sidecar_timer.elapsed(), ok ? "ok" : "FAILED");
 }
 
 } // namespace ifcviewerfull::modules::models::commands

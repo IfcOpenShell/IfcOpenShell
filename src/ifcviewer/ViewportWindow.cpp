@@ -1187,28 +1187,6 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
            m.ssbo_capacity / (1024.0*1024.0));
 }
 
-bool ViewportWindow::snapshotModel(uint32_t model_id, SidecarData& out) const {
-    auto it = models_gpu_.find(model_id);
-    if (!gl_ || it == models_gpu_.end()) return false;
-    const auto& m = it->second;
-    if (!m.finalized) return false;
-
-    // GPU readback of the packed VBO/EBO ranges actually in use.  VBO is
-    // raw bytes at the quantized layout.
-    if (m.vbo_used > 0) {
-        out.vertices.resize(m.vbo_used);
-        gl_->glGetNamedBufferSubData(m.vbo, 0, m.vbo_used, out.vertices.data());
-    }
-    if (m.ebo_used > 0) {
-        out.indices.resize(m.ebo_used / sizeof(uint32_t));
-        gl_->glGetNamedBufferSubData(m.ebo, 0, m.ebo_used, out.indices.data());
-    }
-
-    out.meshes    = m.meshes;
-    out.instances = m.instances;
-    return true;
-}
-
 void ViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     if (!gl_initialized_) {
         PendingOperation op;

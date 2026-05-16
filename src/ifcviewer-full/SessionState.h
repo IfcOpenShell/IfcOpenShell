@@ -90,10 +90,6 @@ signals:
     // for both sidecar-cache and stream loads; subscribers that just need to
     // re-derive view state (e.g. ViewportView::refresh) listen to this.
     void modelGeometryReady(uint32_t model_id);
-    // Fires only after a stream load — i.e. when no sidecar cache existed
-    // yet. The sidecar-write subscriber listens to this so it doesn't
-    // re-persist a cache that was just read from disk.
-    void modelGeometryStreamed(uint32_t model_id);
     // Fires when SceneLoader reports a load failure. SessionState turns the
     // raw loader signal into a session-level one so views (e.g. the MessageBox)
     // can subscribe without touching the loader directly.

@@ -36,6 +36,8 @@ SessionState::SessionState(QObject* parent)
 void SessionState::createLoader(ViewportWindow* viewport) {
     Q_ASSERT(!loader_);
     loader_ = new SceneLoader(viewport, this);
+    loader_->setShouldReadSidecar(true);
+    loader_->setShouldWriteSidecar(true);
     element_registry_->bindLoader(loader_);
 
     auto format_elapsed = [](qint64 ms) {
@@ -69,7 +71,6 @@ void SessionState::createLoader(ViewportWindow* viewport) {
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
         emit modelGeometryReady(mid);
-        emit modelGeometryStreamed(mid);
     });
     connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t mid) {
         setStatusMessage("Cancelled", loader_->displayName(mid));
