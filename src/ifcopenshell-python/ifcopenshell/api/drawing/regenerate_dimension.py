@@ -58,6 +58,7 @@ def regenerate_dimension(
     settings: Optional[ifcopenshell.geom.settings] = None,
     shape_cache: Optional[dict] = None,
     placement_override: Optional[dict] = None,
+    camera_dir: Optional[tuple[float, float, float]] = None,
 ) -> list[tuple[float, float, float]]:
     """Regenerate a parametric dimension from its stored anchor references.
 
@@ -136,11 +137,10 @@ def regenerate_dimension(
     # horizontal offset axis (perpendicular to the dimension direction).  Applied after
     # the pset write so anchor["pt"] always stores the true geometry surface hit.
     # Because it is absolute, the dimension line stays put even if the geometry moves.
-    # Only active when ForcePerpendicularToFace is also set — the two are semantically coupled.
     line_position = pset_data.get("LinePosition")
-    if line_position is not None and pset_data.get("ForcePerpendicularToFace") and resolved:
+    if line_position is not None and resolved:
         face_normal = _get_anchor_face_normal_world(file, anchors[0], placement_override)
-        offset_dir = _get_line_offset_direction(face_normal, [pt for pt in resolved if pt is not None])
+        offset_dir = _get_line_offset_direction(face_normal, [pt for pt in resolved if pt is not None], camera_dir)
         if offset_dir:
             resolved = [
                 _project_to_line_position(pt, offset_dir, float(line_position)) if pt is not None else None
@@ -339,36 +339,47 @@ def _get_anchor_face_normal_world(
 def _get_line_offset_direction(
     face_normal: Optional[tuple[float, float, float]],
     resolved_pts: list[tuple],
+    camera_dir: Optional[tuple[float, float, float]] = None,
 ) -> Optional[tuple[float, float, float]]:
-    """Return the direction to apply LineOffset — parallel to the first face.
+    """Return the direction to slide the dimension line (perpendicular to it, in-view).
 
-    Uses cross(world_Z, dim_direction) to get the horizontal direction
-    perpendicular to the dimension line, which slides the line sideways
-    (parallel to the face) rather than into/out of it.
+    For plan views (camera mostly vertical) uses cross(world_Z, dim_dir) —
+    unchanged from the original behaviour, so existing stored LinePosition
+    values continue to work.
+
+    For section/elevation views (camera mostly horizontal) uses
+    cross(camera_dir, dim_dir) so the offset lies in the camera's view plane.
+    This makes dragging the gizmo move the line visually up/down (or
+    left/right) rather than in/out of the screen.
 
     Falls back to cross(face_normal, world_Z) when the dimension line is
-    nearly vertical (e.g. elevation dimensions).
+    nearly parallel to the reference vector (e.g. vertical elevation dims).
     """
     world_z = (0.0, 0.0, 1.0)
 
-    # Primary: use the dimension line direction (anchor[0] → anchor[1])
+    # In section/elevation (camera mostly horizontal) use camera_dir as the
+    # reference so the offset axis lies in the view plane.
+    cam_is_plan = camera_dir is None or abs(camera_dir[2]) > 0.7
+    ref = world_z if cam_is_plan else camera_dir
+
+    # Primary: cross(ref, dim_dir)
     if len(resolved_pts) >= 2:
         a, b = resolved_pts[0], resolved_pts[1]
         dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
         dim_mag = math.sqrt(dx * dx + dy * dy + dz * dz)
         if dim_mag > 1e-10:
             dim_dir = (dx / dim_mag, dy / dim_mag, dz / dim_mag)
-            # cross(world_Z, dim_dir) — horizontal direction perp to dimension
             d = (
-                world_z[1] * dim_dir[2] - world_z[2] * dim_dir[1],
-                world_z[2] * dim_dir[0] - world_z[0] * dim_dir[2],
-                world_z[0] * dim_dir[1] - world_z[1] * dim_dir[0],
+                ref[1] * dim_dir[2] - ref[2] * dim_dir[1],
+                ref[2] * dim_dir[0] - ref[0] * dim_dir[2],
+                ref[0] * dim_dir[1] - ref[1] * dim_dir[0],
             )
             mag = math.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)
             if mag > 1e-6:
                 return (d[0] / mag, d[1] / mag, d[2] / mag)
 
-    # Fallback for vertical dims: cross(face_normal, world_Z)
+    # Fallback for dims parallel to ref (e.g. vertical dims in plan):
+    # cross(face_normal, world_Z)
     if face_normal:
         n = face_normal
         d = (
