@@ -571,6 +571,19 @@ class BIM_PT_product_assignments(Panel):
             col.operator("bim.select_assigned_product", icon="RESTRICT_SELECT_OFF", text="")
             col.enabled = bool(ProductAssignmentsData.data["relating_product"])
 
+        # Parametric dimension controls
+        element = tool.Ifc.get_entity(obj)
+        if element:
+            import ifcopenshell.util.element
+            ptype = ifcopenshell.util.element.get_predefined_type(element)
+            if ptype in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"):
+                self.layout.separator()
+                self.layout.label(text="Parametric Dimension", icon="CONSTRAINT")
+                row = self.layout.row(align=True)
+                row.operator("bim.set_dimension_anchor", icon="PIVOT_CURSOR")
+                op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
+                op.active_only = True
+
 
 
 def get_category_icon(category_name):

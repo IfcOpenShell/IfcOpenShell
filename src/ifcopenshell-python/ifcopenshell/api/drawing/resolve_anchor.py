@@ -131,6 +131,11 @@ def resolve_anchor(
             pt = _resolve_profile_vert_anchor(file, element, addr, placement_override)
         elif method == "PROFILE_EDGE":
             pt = _resolve_profile_edge_anchor(file, element, addr, placement_override)
+        elif method == "LOCAL_POINT":
+            lx = addr.get("local_x_m")
+            ly = addr.get("local_y_m")
+            lz = addr.get("local_z_m")
+            pt = _local_to_world_m(file, element, (lx, ly, lz), placement_override) if None not in (lx, ly, lz) else None
         else:
             pt = None
         return pt if pt is not None else _pt_or_none(anchor.get("pt"))
@@ -233,6 +238,40 @@ def make_world_anchor(pt_ifc: tuple[float, float, float]) -> dict:
         "addr": None,
         "hint": None,
         "pt": list(pt_ifc),
+    }
+
+
+def build_anchor_from_local_point(
+    element: ifcopenshell.entity_instance,
+    snap_kind: str,
+    world_pos: tuple,
+    local_pos_m: tuple,
+) -> dict:
+    """Build a VERTEX/EDGE anchor using element-local coordinates (metres).
+
+    Used as a fallback for tessellated elements (IfcFacetedBrep, etc.) that have
+    no IfcExtrudedAreaSolid.  The stored ``local_m`` is resolved back to world
+    space via ``_local_to_world_m`` so the anchor follows the element through
+    moves and rotations.
+
+    :param element: The IFC element the snap landed on.
+    :param snap_kind: ``"VERTEX"`` or ``"EDGE"``.
+    :param world_pos: Current world-space snap position in metres (stored as hint/pt).
+    :param local_pos_m: Element-local position in metres (rotation-invariant).
+    :return: Anchor dict ready for JSON serialisation.
+    """
+    return {
+        "guid": element.GlobalId,
+        "type": snap_kind,
+        "addr": {
+            "method": "LOCAL_POINT",
+            "local_x_m": float(local_pos_m[0]),
+            "local_y_m": float(local_pos_m[1]),
+            "local_z_m": float(local_pos_m[2]),
+            "snap": snap_kind,
+        },
+        "hint": list(world_pos),
+        "pt": list(world_pos),
     }
 
 
