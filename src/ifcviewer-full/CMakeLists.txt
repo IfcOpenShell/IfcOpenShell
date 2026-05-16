@@ -60,6 +60,8 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Types.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Commands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/FederationItemModel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/FederationItemModel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/Panel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/View.cpp
@@ -71,8 +73,8 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/Panel.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Controller.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Controller.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Types.h

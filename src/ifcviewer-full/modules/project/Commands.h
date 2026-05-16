@@ -18,42 +18,25 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_PROJECT_CONTROLLER_H
-#define IFCINTERFACE_PANELS_PROJECT_CONTROLLER_H
+#ifndef IFCINTERFACE_MODULES_PROJECT_COMMANDS_H
+#define IFCINTERFACE_MODULES_PROJECT_COMMANDS_H
 
-#include <QObject>
+#include <QString>
 
 class QWidget;
 class ViewportWindow;
 namespace ifcviewerfull { class SessionState; }
 
-namespace ifcviewerfull::modules::project {
+namespace ifcviewerfull::modules::project::commands {
 
-class ProjectController : public QObject {
-    Q_OBJECT
+// User-facing commands. Each owns its own dialogs and confirmations; each
+// emits exactly one notify() at the end (projectReset / projectOpened /
+// projectSaved) so views refresh once per command.
+bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+bool saveProject(SessionState& s, QWidget& host);
+bool saveProjectAs(SessionState& s, QWidget& host);
 
-public:
-    explicit ProjectController(QWidget* host,
-                               ifcviewerfull::SessionState* session_state,
-                               ViewportWindow* viewport,
-                               QObject* parent = nullptr);
-
-    bool newProject();
-    bool openProject();
-    bool saveProject();
-    bool saveProjectAs();
-
-private:
-    bool openProject(const QString& path);
-    bool saveProjectAs(const QString& path);
-    void clearScene();
-    bool confirmDiscardIfDirty();
-
-    QWidget* host_ = nullptr;
-    ifcviewerfull::SessionState* session_state_ = nullptr;
-    ViewportWindow* viewport_ = nullptr;
-};
-
-} // namespace ifcviewerfull::modules::project
+} // namespace ifcviewerfull::modules::project::commands
 
 #endif

@@ -25,42 +25,34 @@
 
 #include "../../components/Panel.h"
 
-#include <functional>
-
-class QTreeWidget;
-class QTreeWidgetItem;
+class QTreeView;
 class ViewportWindow;
 namespace ifcviewerfull { class SessionState; }
 
 namespace ifcviewerfull::modules::models {
 
-// The widget for the Models dock. Owns no domain state; its click handlers
-// call commands directly. The View tells it what to render (setNodes) and
-// supplies derived data for the right-click menu (setGroupListProvider).
+class FederationItemModel;
+
+// The widget for the Models dock. Owns no domain state; click handlers call
+// commands directly. The QTreeView reads from a FederationItemModel which
+// subscribes to Federation's granular signals — view state (expansion,
+// selection, scroll) is preserved across mutations automatically.
 class ModelsPanel : public components::Panel {
     Q_OBJECT
 public:
-    // Returns the groups a move operation may target. If exclude_subtree_root
-    // is non-empty, that group + its descendants are excluded so a group can't
-    // be moved into its own subtree. For model moves the panel passes an empty
-    // string and gets every group back.
-    using GroupListProvider =
-        std::function<QList<GroupOption>(const QString& exclude_subtree_root)>;
-
     explicit ModelsPanel(ifcviewerfull::SessionState* session_state,
                          ViewportWindow* viewport,
                          QWidget* parent = nullptr);
 
-    void setNodes(const QList<TreeNode>& nodes);
-    void setGroupListProvider(GroupListProvider provider);
+    // Owned externally (the View constructs and owns the model). The panel
+    // assigns it to the tree view; same model can outlive setModel calls.
+    void setModel(FederationItemModel* model);
 
 private:
-    void addNode(QTreeWidgetItem* parent, const TreeNode& node);
-
     ifcviewerfull::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
-    QTreeWidget* tree_ = nullptr;
-    GroupListProvider group_list_provider_;
+    QTreeView* tree_ = nullptr;
+    FederationItemModel* model_ = nullptr;
 };
 
 } // namespace ifcviewerfull::modules::models

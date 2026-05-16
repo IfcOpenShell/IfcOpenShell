@@ -21,25 +21,24 @@
 #include "Panel.h"
 
 #include "Commands.h"
+#include "FederationItemModel.h"
+#include "View.h"
 
-#include "../../ViewerSettings.h"
+#include "../../SessionState.h"
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
+#include "../../../ifcviewer/Federation.h"
 
-#include <QBrush>
-#include <QColor>
 #include <QDataStream>
+#include <QDrag>
 #include <QDragEnterEvent>
 #include <QDragMoveEvent>
+#include <QDropEvent>
 #include <QHeaderView>
 #include <QMenu>
 #include <QMimeData>
-#include <QDropEvent>
 #include <QSizePolicy>
-#include <QTreeWidget>
-#include <QTreeWidgetItem>
-
-#include <functional>
+#include <QTreeView>
 
 namespace ifcviewerfull::modules::models {
 
@@ -47,38 +46,75 @@ namespace {
 
 constexpr auto kDragMimeType = "application/x-ifcviewerfull-model-items";
 
-class ModelsTreeWidget : public QTreeWidget {
-public:
-    explicit ModelsTreeWidget(QWidget* parent = nullptr) : QTreeWidget(parent) {}
+QString idOf(const QModelIndex& index) {
+    return index.sibling(index.row(), 0).data(FederationItemModel::IdRole).toString();
+}
 
-    std::function<void(const QStringList&, const QString&)> on_model_drop;
-    std::function<void(const QString&, const QString&)> on_group_drop;
+ItemKind kindOf(const QModelIndex& index) {
+    return static_cast<ItemKind>(
+        index.sibling(index.row(), 0).data(FederationItemModel::KindRole).toInt());
+}
+
+QStringList selectedModelIdsAt(QTreeView* tree, const QModelIndex& clicked_index) {
+    QStringList ids;
+    const QModelIndexList selection = tree->selectionModel()->selectedRows(0);
+    bool clicked_in_selection = false;
+    for (const QModelIndex& index : selection) {
+        if (index == clicked_index.sibling(clicked_index.row(), 0)) {
+            clicked_in_selection = true;
+            break;
+        }
+    }
+    if (clicked_in_selection) {
+        for (const QModelIndex& index : selection) {
+            if (kindOf(index) == ItemKind::Model) {
+                ids << idOf(index);
+            }
+        }
+        ids.removeDuplicates();
+    } else {
+        ids << idOf(clicked_index);
+    }
+    return ids;
+}
+
+constexpr int kVisibilityColumnWidth = 28;
+
+// QTreeView subclass that handles drag-and-drop. Drop logic dispatches
+// through commands (not directly into the model) so notifications + status
+// messages happen the same way as menu-driven moves.
+class ModelsTreeView : public QTreeView {
+public:
+    explicit ModelsTreeView(ifcviewerfull::SessionState* session_state, QWidget* parent)
+        : QTreeView(parent), session_state_(session_state) {}
 
 protected:
-    QStringList mimeTypes() const override {
-        return {QString::fromUtf8(kDragMimeType)};
+    void resizeEvent(QResizeEvent* event) override {
+        QTreeView::resizeEvent(event);
+        if (model() && model()->columnCount() >= 2) {
+            const int vw = viewport()->width();
+            setColumnWidth(0, std::max(40, vw - kVisibilityColumnWidth));
+            setColumnWidth(1, kVisibilityColumnWidth);
+        }
     }
 
-    QMimeData* mimeData(const QList<QTreeWidgetItem*>& items) const override {
-        Q_UNUSED(items);
-        const QList<QTreeWidgetItem*> selected = selectedItems();
-        if (selected.isEmpty()) return nullptr;
+    void startDrag(Qt::DropActions actions) override {
+        const QModelIndexList selection = selectionModel()->selectedRows(0);
+        if (selection.isEmpty()) return;
 
-        const int first_kind = selected.first()->data(0, Qt::UserRole).toInt();
-        if (first_kind == static_cast<int>(ItemKind::Group) && selected.size() != 1) {
-            return nullptr;
-        }
+        const auto first_kind = kindOf(selection.first());
+        if (first_kind == ItemKind::Group && selection.size() != 1) return;
 
         QByteArray payload;
         QDataStream stream(&payload, QIODevice::WriteOnly);
-        stream << first_kind;
-        if (first_kind == static_cast<int>(ItemKind::Group)) {
-            stream << selected.first()->data(0, Qt::UserRole + 1).toString();
+        stream << static_cast<int>(first_kind);
+        if (first_kind == ItemKind::Group) {
+            stream << idOf(selection.first());
         } else {
             QStringList ids;
-            for (QTreeWidgetItem* item : selected) {
-                if (item->data(0, Qt::UserRole).toInt() != first_kind) return nullptr;
-                ids.push_back(item->data(0, Qt::UserRole + 1).toString());
+            for (const QModelIndex& index : selection) {
+                if (kindOf(index) != first_kind) return;
+                ids.push_back(idOf(index));
             }
             ids.removeDuplicates();
             stream << ids;
@@ -86,11 +122,9 @@ protected:
 
         auto* mime = new QMimeData();
         mime->setData(QString::fromUtf8(kDragMimeType), payload);
-        return mime;
-    }
-
-    Qt::DropActions supportedDropActions() const override {
-        return Qt::MoveAction;
+        auto* drag = new QDrag(this);
+        drag->setMimeData(mime);
+        drag->exec(actions);
     }
 
     void dragEnterEvent(QDragEnterEvent* event) override {
@@ -98,128 +132,99 @@ protected:
             event->acceptProposedAction();
             return;
         }
-        QTreeWidget::dragEnterEvent(event);
+        QTreeView::dragEnterEvent(event);
     }
 
     void dragMoveEvent(QDragMoveEvent* event) override {
         if (!event->mimeData()->hasFormat(QString::fromUtf8(kDragMimeType))) {
-            QTreeWidget::dragMoveEvent(event);
+            QTreeView::dragMoveEvent(event);
             return;
         }
-
-        QString group_id;
-        if (!decodeDropTarget(event->position().toPoint(), group_id)) {
+        QString target_group_id;
+        if (!decodeTargetGroup(event->position().toPoint(), target_group_id) ||
+            !canAcceptDrop(event->mimeData(), indexAt(event->position().toPoint()), target_group_id)) {
             event->ignore();
             return;
         }
-
-        if (canAcceptDrop(event->mimeData(), itemAt(event->position().toPoint()), group_id)) {
-            event->acceptProposedAction();
-        } else {
-            event->ignore();
-        }
+        event->acceptProposedAction();
     }
 
     void dropEvent(QDropEvent* event) override {
         if (!event->mimeData()->hasFormat(QString::fromUtf8(kDragMimeType))) {
-            QTreeWidget::dropEvent(event);
+            QTreeView::dropEvent(event);
             return;
         }
 
         QString target_group_id;
-        if (!decodeDropTarget(event->position().toPoint(), target_group_id)) {
-            event->ignore();
-            return;
-        }
-
-        QTreeWidgetItem* target_item = itemAt(event->position().toPoint());
-        if (!canAcceptDrop(event->mimeData(), target_item, target_group_id)) {
+        if (!decodeTargetGroup(event->position().toPoint(), target_group_id) ||
+            !canAcceptDrop(event->mimeData(), indexAt(event->position().toPoint()), target_group_id)) {
             event->ignore();
             return;
         }
 
         QByteArray payload = event->mimeData()->data(QString::fromUtf8(kDragMimeType));
         QDataStream stream(&payload, QIODevice::ReadOnly);
-        int kind = 0;
-        stream >> kind;
-        if (kind == static_cast<int>(ItemKind::Group)) {
+        int kind_int = 0;
+        stream >> kind_int;
+        const auto kind = static_cast<ItemKind>(kind_int);
+        if (kind == ItemKind::Group) {
             QString group_id;
             stream >> group_id;
-            if (on_group_drop) on_group_drop(group_id, target_group_id);
-        } else if (kind == static_cast<int>(ItemKind::Model)) {
+            commands::moveGroup(*session_state_, group_id, target_group_id);
+        } else {
             QStringList ids;
             stream >> ids;
             ids.removeDuplicates();
-            if (!ids.isEmpty() && on_model_drop) on_model_drop(ids, target_group_id);
-        } else {
-            event->ignore();
-            return;
+            if (!ids.isEmpty()) commands::moveModels(*session_state_, ids, target_group_id);
         }
-
         event->acceptProposedAction();
     }
 
 private:
-    bool decodeDropTarget(const QPoint& pos, QString& target_group_id) const {
-        target_group_id.clear();
-        QTreeWidgetItem* target_item = itemAt(pos);
-        if (!target_item) return true;
-
-        const int kind = target_item->data(0, Qt::UserRole).toInt();
-        if (kind != static_cast<int>(ItemKind::Group)) return false;
-
-        target_group_id = target_item->data(0, Qt::UserRole + 1).toString();
+    bool decodeTargetGroup(const QPoint& pos, QString& out) const {
+        out.clear();
+        const QModelIndex index = indexAt(pos);
+        if (!index.isValid()) return true;
+        if (kindOf(index) != ItemKind::Group) return false;
+        out = idOf(index);
         return true;
     }
 
     bool canAcceptDrop(const QMimeData* mime,
-                       QTreeWidgetItem* target_item,
+                       const QModelIndex& target_index,
                        const QString& target_group_id) const {
         QByteArray payload = mime->data(QString::fromUtf8(kDragMimeType));
         QDataStream stream(&payload, QIODevice::ReadOnly);
-        int kind = 0;
-        stream >> kind;
+        int kind_int = 0;
+        stream >> kind_int;
+        const auto kind = static_cast<ItemKind>(kind_int);
 
-        if (kind == static_cast<int>(ItemKind::Group)) {
+        if (kind == ItemKind::Group) {
             QString group_id;
             stream >> group_id;
             if (group_id.isEmpty()) return false;
-            if (!target_item) return true;
-            if (target_item->data(0, Qt::UserRole).toInt() != static_cast<int>(ItemKind::Group)) return false;
+            if (!target_index.isValid()) return true;
+            if (kindOf(target_index) != ItemKind::Group) return false;
             if (group_id == target_group_id) return false;
-            for (QTreeWidgetItem* cur = target_item; cur != nullptr; cur = cur->parent()) {
-                if (cur->data(0, Qt::UserRole + 1).toString() == group_id) return false;
+            for (QModelIndex cur = target_index; cur.isValid(); cur = cur.parent()) {
+                if (idOf(cur) == group_id) return false;
             }
             return true;
         }
 
-        if (kind == static_cast<int>(ItemKind::Model)) {
+        if (kind == ItemKind::Model) {
             QStringList ids;
             stream >> ids;
             ids.removeDuplicates();
             if (ids.isEmpty()) return false;
-            return target_item == nullptr || !target_group_id.isNull();
+            return !target_index.isValid() || !target_group_id.isNull();
         }
 
         return false;
     }
+
+    ifcviewerfull::SessionState* session_state_;
 };
-
-QString itemId(QTreeWidgetItem* item) {
-    return item ? item->data(0, Qt::UserRole + 1).toString() : QString();
-}
-
-ItemKind itemKind(QTreeWidgetItem* item) {
-    return static_cast<ItemKind>(item->data(0, Qt::UserRole).toInt());
-}
-
-QList<QTreeWidgetItem*> selectedItemsOfKind(QTreeWidget* tree, ItemKind kind) {
-    QList<QTreeWidgetItem*> matches;
-    for (QTreeWidgetItem* item : tree->selectedItems()) {
-        if (itemKind(item) == kind) matches.push_back(item);
-    }
-    return matches;
-}
 
 } // namespace
 
@@ -232,11 +237,9 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
 {
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
     section->setBodyExpanding(true);
-    auto* tree = new ModelsTreeWidget(section);
-    tree_ = tree;
+
+    tree_ = new ModelsTreeView(session_state_, section);
     tree_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    tree_->setColumnCount(2);
-    tree_->setHeaderLabels({"Model", ""});
     tree_->setIconSize(QSize(16, 16));
     tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
     tree_->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -246,29 +249,23 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
     tree_->setDragDropMode(QAbstractItemView::DragDrop);
     tree_->setDefaultDropAction(Qt::MoveAction);
     tree_->setUniformRowHeights(true);
-    tree_->header()->setStretchLastSection(false);
-    tree_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    tree_->header()->setSectionResizeMode(1, QHeaderView::Fixed);
-    tree_->header()->resizeSection(1, 28);
+    tree_->setExpandsOnDoubleClick(false);
+    tree_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     tree_->header()->hide();
-    tree->on_model_drop = [this](const QStringList& ids, const QString& target_group_id) {
-        commands::moveModels(*session_state_, ids, target_group_id);
-    };
-    tree->on_group_drop = [this](const QString& id, const QString& target_group_id) {
-        commands::moveGroup(*session_state_, id, target_group_id);
-    };
+
     section->addBodyWidget(tree_);
     addBodyWidget(section);
 
-    connect(tree_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
-        if (!item || column != 1) return;
-        commands::toggleVisibility(*session_state_, itemKind(item), itemId(item));
+    connect(tree_, &QTreeView::clicked, this, [this](const QModelIndex& index) {
+        if (!index.isValid() || index.column() != 1) return;
+        commands::toggleVisibility(*session_state_, kindOf(index), idOf(index));
     });
 
-    connect(tree_, &QTreeWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
-        auto* item = tree_->itemAt(pos);
+    connect(tree_, &QTreeView::customContextMenuRequested, this, [this](const QPoint& pos) {
+        const QModelIndex index = tree_->indexAt(pos);
         QMenu menu(tree_);
-        if (!item) {
+
+        if (!index.isValid()) {
             QAction* add_group_action = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "Add Group");
             connect(add_group_action, &QAction::triggered, this, [this]() {
@@ -278,36 +275,34 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
             return;
         }
 
-        const auto kind = itemKind(item);
-        const QString id = itemId(item);
+        const auto kind = kindOf(index);
+        const QString id = idOf(index);
 
-        QAction* toggle_visibility_action = menu.addAction(
+        QAction* toggle_action = menu.addAction(
             components::icons::makeSvgIcon(":/icons/eye.svg"), "Toggle Visibility");
-        connect(toggle_visibility_action, &QAction::triggered, this, [this, kind, id]() {
+        connect(toggle_action, &QAction::triggered, this, [this, kind, id]() {
             commands::toggleVisibility(*session_state_, kind, id);
         });
 
         if (kind == ItemKind::Group) {
-            QAction* add_group_action = menu.addAction(
+            QAction* add_subgroup = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "New Subgroup");
-            connect(add_group_action, &QAction::triggered, this, [this, id]() {
+            connect(add_subgroup, &QAction::triggered, this, [this, id]() {
                 commands::addGroup(*session_state_, *this, id);
             });
-            QAction* rename_group_action = menu.addAction(
+            QAction* rename = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder.svg"), "Rename Group");
-            connect(rename_group_action, &QAction::triggered, this, [this, id]() {
+            connect(rename, &QAction::triggered, this, [this, id]() {
                 commands::renameGroup(*session_state_, *this, id);
             });
 
             QMenu* move_menu = menu.addMenu("Move to Parent");
-            QAction* move_root_action = move_menu->addAction("(Root)");
-            connect(move_root_action, &QAction::triggered, this, [this, id]() {
+            QAction* move_root = move_menu->addAction("(Root)");
+            connect(move_root, &QAction::triggered, this, [this, id]() {
                 commands::moveGroup(*session_state_, id, QString());
             });
             move_menu->addSeparator();
-            const QList<GroupOption> targets =
-                group_list_provider_ ? group_list_provider_(id) : QList<GroupOption>{};
-            for (const auto& target : targets) {
+            for (const auto& target : validMoveTargets(*session_state_->federation(), id)) {
                 QAction* action = move_menu->addAction(target.display_name);
                 const QString target_id = target.id;
                 connect(action, &QAction::triggered, this, [this, id, target_id]() {
@@ -315,45 +310,33 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
                 });
             }
 
-            QAction* remove_group_action = menu.addAction(
+            QAction* remove = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-minus.svg"), "Remove Group");
-            connect(remove_group_action, &QAction::triggered, this, [this, id]() {
+            connect(remove, &QAction::triggered, this, [this, id]() {
                 commands::removeGroup(*session_state_, *this, id);
             });
         } else {
             QString parent_group_id;
-            if (auto* parent_item = item->parent()) {
-                if (itemKind(parent_item) == ItemKind::Group) {
-                    parent_group_id = itemId(parent_item);
-                }
+            const QModelIndex parent_index = index.parent();
+            if (parent_index.isValid() && kindOf(parent_index) == ItemKind::Group) {
+                parent_group_id = idOf(parent_index);
             }
 
-            QAction* add_group_action = menu.addAction(
+            QAction* add_group = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/folder-plus.svg"), "New Group");
-            connect(add_group_action, &QAction::triggered, this, [this, parent_group_id]() {
+            connect(add_group, &QAction::triggered, this, [this, parent_group_id]() {
                 commands::addGroup(*session_state_, *this, parent_group_id);
             });
 
-            QStringList selected_model_ids;
-            const QList<QTreeWidgetItem*> selected_models = selectedItemsOfKind(tree_, ItemKind::Model);
-            if (selected_models.contains(item)) {
-                for (QTreeWidgetItem* selected : selected_models) {
-                    selected_model_ids.push_back(itemId(selected));
-                }
-                selected_model_ids.removeDuplicates();
-            } else {
-                selected_model_ids = {id};
-            }
+            const QStringList selected_model_ids = selectedModelIdsAt(tree_, index);
 
             QMenu* move_menu = menu.addMenu("Move to Group");
-            QAction* move_root_action = move_menu->addAction("(Root)");
-            connect(move_root_action, &QAction::triggered, this, [this, selected_model_ids]() {
+            QAction* move_root = move_menu->addAction("(Root)");
+            connect(move_root, &QAction::triggered, this, [this, selected_model_ids]() {
                 commands::moveModels(*session_state_, selected_model_ids, QString());
             });
             move_menu->addSeparator();
-            const QList<GroupOption> targets =
-                group_list_provider_ ? group_list_provider_(QString()) : QList<GroupOption>{};
-            for (const auto& target : targets) {
+            for (const auto& target : validMoveTargets(*session_state_->federation(), QString())) {
                 QAction* action = move_menu->addAction(target.display_name);
                 const QString target_id = target.id;
                 connect(action, &QAction::triggered, this, [this, selected_model_ids, target_id]() {
@@ -361,9 +344,9 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
                 });
             }
 
-            QAction* remove_model_action = menu.addAction(
+            QAction* remove = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/minus-square.svg"), "Remove Model");
-            connect(remove_model_action, &QAction::triggered, this, [this, id]() {
+            connect(remove, &QAction::triggered, this, [this, id]() {
                 commands::removeModel(*session_state_, *viewport_, *this, id);
             });
         }
@@ -375,46 +358,17 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
     });
 }
 
-void ModelsPanel::setNodes(const QList<TreeNode>& nodes) {
-    tree_->clear();
-    const bool has_hierarchy = std::any_of(nodes.begin(), nodes.end(), [](const TreeNode& node) {
-        return !node.children.isEmpty() || node.kind == ItemKind::Group;
-    });
-    tree_->setRootIsDecorated(has_hierarchy);
-    for (const auto& node : nodes) {
-        addNode(tree_->invisibleRootItem(), node);
-    }
+void ModelsPanel::setModel(FederationItemModel* model) {
+    model_ = model;
+    tree_->setModel(model);
+    // Columns are sized by ModelsTreeView::resizeEvent — header is hidden so
+    // there's no user-facing resize affordance, and Stretch mode on
+    // non-last sections proved unreliable here. Manual sizing is simpler.
+    tree_->header()->setMinimumSectionSize(16);
+    tree_->header()->setStretchLastSection(false);
+    tree_->setColumnWidth(0, std::max(40, tree_->viewport()->width() - kVisibilityColumnWidth));
+    tree_->setColumnWidth(1, kVisibilityColumnWidth);
     tree_->expandAll();
-}
-
-void ModelsPanel::setGroupListProvider(GroupListProvider provider) {
-    group_list_provider_ = std::move(provider);
-}
-
-void ModelsPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
-    auto* item = new QTreeWidgetItem(parent, {node.name, ""});
-    item->setData(0, Qt::UserRole, static_cast<int>(node.kind));
-    item->setData(0, Qt::UserRole + 1, node.id);
-    item->setSizeHint(0, QSize(0, 24));
-
-    if (node.kind == ItemKind::Group) {
-        item->setIcon(0, components::icons::makeSvgIcon(":/icons/folder.svg"));
-        item->setIcon(1, components::icons::makeSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
-    } else {
-        item->setIcon(0, components::icons::makeSvgIcon(":/icons/cube.svg"));
-        item->setIcon(1, components::icons::makeSvgIcon(node.visible ? ":/icons/eye-solid.svg" : ":/icons/eye-closed.svg"));
-    }
-
-    if (!node.visible) {
-        const QBrush disabled_brush(
-            QColor(ifcviewerfull::ViewerSettings::instance().color("disabled_text")));
-        item->setForeground(0, disabled_brush);
-        item->setForeground(1, disabled_brush);
-    }
-
-    for (const auto& child : node.children) {
-        addNode(item, child);
-    }
 }
 
 } // namespace ifcviewerfull::modules::models

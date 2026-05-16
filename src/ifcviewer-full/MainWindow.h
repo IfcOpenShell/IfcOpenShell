@@ -34,7 +34,6 @@ namespace ifcviewerfull { class SessionState; }
 namespace ifcviewerfull::components { class TabBar; }
 namespace ifcviewerfull::modules::models { class ModelsPanel; }
 namespace ifcviewerfull::modules::models { class ModelsPanelView; }
-namespace ifcviewerfull::modules::project { class ProjectController; }
 namespace ifcviewerfull::modules::spatial_hierarchy { class SpatialHierarchyPanel; }
 namespace ifcviewerfull::modules::spatial_hierarchy { class SpatialHierarchyPanelView; }
 namespace ifcviewerfull::modules::properties { class PropertiesPanel; }
@@ -84,7 +83,6 @@ private:
     QDockWidget* clash_panel_ = nullptr;
     QDockWidget* issues_panel_ = nullptr;
     ifcviewerfull::modules::models::ModelsPanelView* models_view_ = nullptr;
-    ifcviewerfull::modules::project::ProjectController* project_controller_ = nullptr;
     ifcviewerfull::modules::spatial_hierarchy::SpatialHierarchyPanelView* spatial_view_ = nullptr;
     ifcviewerfull::modules::properties::PropertiesPanelView* properties_view_ = nullptr;
 };

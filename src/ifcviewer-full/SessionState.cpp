@@ -44,18 +44,21 @@ void SessionState::createLoader(ViewportWindow* viewport) {
             : QString::number(ms) + " ms";
     };
 
-    // Translate low-level loader events into session-level signals + status
-    // text so views don't need to subscribe to the loader directly.
+    // Translate low-level loader events into session-level signals, status
+    // text, and progress so views don't need to subscribe to the loader.
     connect(loader_, &SceneLoader::loadStarted, this,
             [this](uint32_t, const QString& display_name) {
         setStatusMessage("Loading", display_name);
+        beginProgress(display_name);
     });
+    connect(loader_, &SceneLoader::progressChanged, this, &SessionState::setProgress);
     connect(loader_, &SceneLoader::loadedFromSidecar, this,
             [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 from cache in %2")
                 .arg(loader_->displayName(mid))
                 .arg(format_elapsed(elapsed_ms)));
+        endProgress();
         emit modelGeometryReady(mid);
     });
     connect(loader_, &SceneLoader::loadedFromStream, this,
@@ -64,14 +67,18 @@ void SessionState::createLoader(ViewportWindow* viewport) {
             QString("%1 streamed in %2")
                 .arg(loader_->displayName(mid))
                 .arg(format_elapsed(elapsed_ms)));
+        endProgress();
         emit modelGeometryReady(mid);
+        emit modelGeometryStreamed(mid);
     });
     connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t mid) {
         setStatusMessage("Cancelled", loader_->displayName(mid));
+        endProgress();
     });
     connect(loader_, &SceneLoader::loadError, this,
             [this](uint32_t, const QString& message) {
         setStatusMessage("Error", message);
+        endProgress();
         emit loadError(message);
     });
     connect(loader_, &SceneLoader::allLoadsFinished, this, [this]() {
@@ -87,6 +94,18 @@ void SessionState::setStatusMessage(const QString& mode, const QString& detail) 
     status_mode_ = mode;
     status_detail_ = detail;
     emit statusMessageChanged(status_mode_, status_detail_);
+}
+
+void SessionState::beginProgress(const QString& label) {
+    emit progressBegan(label);
+}
+
+void SessionState::setProgress(int percent) {
+    emit progressChanged(percent);
+}
+
+void SessionState::endProgress() {
+    emit progressEnded();
 }
 
 void SessionState::setModelMapping(const QString& fed_id, uint32_t model_id) {

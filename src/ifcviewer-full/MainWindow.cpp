@@ -22,7 +22,6 @@
 
 #include "../ifcviewer/AppSettings.h"
 #include "../ifcviewer/Federation.h"
-#include "../ifcviewer/SceneLoader.h"
 #include "../ifcviewer/ViewportWindow.h"
 #include "SessionState.h"
 #include "components/Buttons.h"
@@ -33,7 +32,7 @@
 #include "modules/todo/Panel.h"
 #include "modules/models/View.h"
 #include "modules/models/Panel.h"
-#include "modules/project/Controller.h"
+#include "modules/project/Commands.h"
 #include "modules/properties/View.h"
 #include "modules/properties/Panel.h"
 #include "modules/settings/Dialog.h"
@@ -150,11 +149,13 @@ QWidget* MainWindow::buildHomeRibbonPage() {
 
     auto* new_project = components::buttons::makeButton("New Project", ":/icons/plus-square.svg", this);
     connect(new_project, &QToolButton::clicked, this, [this]() {
-        project_controller_->newProject();
+        modules::project::commands::newProject(
+            *session_state_, *this, *viewport_widget_->viewport());
     });
     auto* open_project = components::buttons::makeButton("Open Project", ":/icons/download-square.svg", this);
     connect(open_project, &QToolButton::clicked, this, [this]() {
-        project_controller_->openProject();
+        modules::project::commands::openProject(
+            *session_state_, *this, *viewport_widget_->viewport());
     });
     auto* open_cloud = components::buttons::makeButton("Open Cloud", ":/icons/cloud-square.svg", this);
     connect(open_cloud, &QToolButton::clicked, this, [this]() {
@@ -166,11 +167,11 @@ QWidget* MainWindow::buildHomeRibbonPage() {
     });
     auto* save_project = components::buttons::makeButton("Save Project", ":/icons/floppy-disk.svg", this);
     connect(save_project, &QToolButton::clicked, this, [this]() {
-        project_controller_->saveProject();
+        modules::project::commands::saveProject(*session_state_, *this);
     });
     auto* save_project_as = components::buttons::makeButton("Save As", ":/icons/floppy-disk-arrow-in.svg", this);
     connect(save_project_as, &QToolButton::clicked, this, [this]() {
-        project_controller_->saveProjectAs();
+        modules::project::commands::saveProjectAs(*session_state_, *this);
     });
 
     auto* add_model = components::buttons::makeButton("Add Model", ":/icons/cube.svg", this);
@@ -449,43 +450,33 @@ void MainWindow::setupStatus() {
         status_mode_label_->setText(mode);
         status_selection_label_->setText(detail);
     });
+    connect(session_state_, &ifcviewerfull::SessionState::progressBegan, this, [this](const QString&) {
+        // Start in indeterminate mode (spinning bar). The first concrete
+        // setProgress(...) call below switches it to a determinate 0-100 bar.
+        status_progress_bar_->setRange(0, 0);
+        status_progress_bar_->setVisible(true);
+    });
+    connect(session_state_, &ifcviewerfull::SessionState::progressChanged, this, [this](int percent) {
+        if (status_progress_bar_->maximum() == 0) status_progress_bar_->setRange(0, 100);
+        status_progress_bar_->setValue(percent);
+    });
+    connect(session_state_, &ifcviewerfull::SessionState::progressEnded, this, [this]() {
+        status_progress_bar_->setVisible(false);
+    });
     session_state_->setStatusMessage("Ready", "No selection");
 }
 
 void MainWindow::setupLoader() {
     session_state_->createLoader(viewport_widget_->viewport());
-    auto* loader = session_state_->loader();
     viewport_view_ = new modules::viewport::ViewportView(
         session_state_, viewport_widget_->viewport(), this);
-    project_controller_ = new modules::project::ProjectController(
-        this, session_state_, viewport_widget_->viewport(), this);
-
-    // Progress bar — tightly coupled to loader by nature, fine to subscribe direct.
-    connect(loader, &SceneLoader::loadStarted, this,
-            [this](uint32_t, const QString&) {
-        status_progress_bar_->setValue(0);
-        status_progress_bar_->setVisible(true);
-    });
-    connect(loader, &SceneLoader::progressChanged, this,
-            [this](int percent) { status_progress_bar_->setValue(percent); });
-
-    auto hide_progress = [this]() { status_progress_bar_->setVisible(false); };
-    connect(loader, &SceneLoader::loadedFromSidecar, this,
-            [hide_progress](uint32_t, qint64) { hide_progress(); });
-    connect(loader, &SceneLoader::loadedFromStream, this,
-            [this, hide_progress](uint32_t mid, qint64) {
-        modules::models::commands::writeSidecarForLoadedModel(
-            *session_state_, *viewport_widget_->viewport(), mid);
-        hide_progress();
-    });
-    connect(loader, &SceneLoader::loadCancelled, this,
-            [hide_progress](uint32_t) { hide_progress(); });
+    modules::models::commands::addHandlers(
+        *session_state_, *viewport_widget_->viewport(), *this);
 
     // Load errors surface through SessionState as a session-level signal; the
-    // status text is already set there, we only show the modal here.
+    // status text + progress are already cleared there, we only show the modal.
     connect(session_state_, &ifcviewerfull::SessionState::loadError, this,
             [this](const QString& message) {
-        status_progress_bar_->setVisible(false);
         QMessageBox::warning(this, "IfcViewer", message);
     });
 

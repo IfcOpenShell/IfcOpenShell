@@ -284,6 +284,8 @@ signals:
     // to dirtyChanged from the corresponding setters.
     void configChanged();
     void federatedFalseOriginChanged();
+    void modelAdded(const QString& fed_id);
+    void modelRemoved(const QString& fed_id);
     void modelTransformationChanged(const QString& fed_id);
     void modelVisibilityChanged(const QString& fed_id, bool visible);
     void modelGroupChanged(const QString& fed_id, const QString& group_id);

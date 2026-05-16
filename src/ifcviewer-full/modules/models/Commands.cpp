@@ -45,7 +45,6 @@
 #include <QLineEdit>
 #include <QListView>
 #include <QMessageBox>
-#include <QProgressDialog>
 #include <QStandardPaths>
 #include <QThread>
 #include <QTreeView>
@@ -174,6 +173,11 @@ void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QStri
     s.setStatusMessage("Models", "Model removed");
 }
 
+void addHandlers(SessionState& s, ViewportWindow& vp, QObject& context) {
+    QObject::connect(&s, &SessionState::modelGeometryStreamed, &context,
+        [&s, &vp](uint32_t mid) { writeSidecarForLoadedModel(s, vp, mid); });
+}
+
 namespace detail {
 
 void loadModels(SessionState& s, const QStringList& paths, const QStringList& fed_ids) {
@@ -290,19 +294,9 @@ void convertIfcToDatabase(SessionState& s, QWidget& host) {
         }
     }
 
-    auto* progress = new QProgressDialog(&host);
-    progress->setWindowTitle("Convert IFC to Database");
-    progress->setLabelText(QString("Converting %1 to %2…")
-                               .arg(QFileInfo(input_path).fileName(),
-                                    QFileInfo(output_path).fileName()));
-    progress->setRange(0, 0);
-    progress->setCancelButton(nullptr);
-    progress->setMinimumDuration(0);
-    progress->setWindowModality(Qt::ApplicationModal);
-    progress->setAutoClose(false);
-    progress->setAutoReset(false);
-    progress->show();
-
+    s.beginProgress(QString("Converting %1 to %2…")
+                        .arg(QFileInfo(input_path).fileName(),
+                             QFileInfo(output_path).fileName()));
     s.setStatusMessage("Converting",
         QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
 
@@ -338,11 +332,10 @@ void convertIfcToDatabase(SessionState& s, QWidget& host) {
     });
 
     QObject::connect(thread, &QThread::finished, &host,
-            [&s, host_ptr = &host, thread, progress, timer, error_message, input_path, output_path]() {
+            [&s, host_ptr = &host, thread, timer, error_message, input_path, output_path]() {
         const qint64 elapsed = timer->elapsed();
 
-        progress->close();
-        progress->deleteLater();
+        s.endProgress();
         thread->deleteLater();
 
         if (!error_message->isEmpty()) {
@@ -393,19 +386,9 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
         output_path += ".rdbview";
     }
 
-    auto* progress = new QProgressDialog(&host);
-    progress->setWindowTitle("Export Geometry Database");
-    progress->setLabelText(QString("Exporting %1 to %2…")
-                               .arg(QFileInfo(input_path).fileName(),
-                                    QFileInfo(output_path).fileName()));
-    progress->setRange(0, 0);
-    progress->setCancelButton(nullptr);
-    progress->setMinimumDuration(0);
-    progress->setWindowModality(Qt::ApplicationModal);
-    progress->setAutoClose(false);
-    progress->setAutoReset(false);
-    progress->show();
-
+    s.beginProgress(QString("Exporting %1 to %2…")
+                        .arg(QFileInfo(input_path).fileName(),
+                             QFileInfo(output_path).fileName()));
     s.setStatusMessage("Exporting",
         QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
 
@@ -517,11 +500,10 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
     });
 
     QObject::connect(thread, &QThread::finished, &host,
-            [&s, host_ptr = &host, thread, progress, timer, error_message, input_path, output_path]() {
+            [&s, host_ptr = &host, thread, timer, error_message, input_path, output_path]() {
         const qint64 elapsed = timer->elapsed();
 
-        progress->close();
-        progress->deleteLater();
+        s.endProgress();
         thread->deleteLater();
 
         if (!error_message->isEmpty()) {

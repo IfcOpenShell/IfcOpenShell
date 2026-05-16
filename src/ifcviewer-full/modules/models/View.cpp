@@ -20,6 +20,7 @@
 
 #include "View.h"
 
+#include "FederationItemModel.h"
 #include "Panel.h"
 
 #include "../../ViewerSettings.h"
@@ -30,32 +31,6 @@ namespace ifcviewerfull::modules::models {
 
 namespace {
 
-TreeNode makeGroupNode(const Federation* federation, const Federation::Group* group) {
-    TreeNode node;
-    node.id = group->id;
-    node.name = group->display_name;
-    node.kind = ItemKind::Group;
-    node.visible = group->visible;
-
-    for (const auto& child_group : group->children) {
-        node.children.append(makeGroupNode(federation, child_group.get()));
-    }
-
-    for (const auto& model : federation->models()) {
-        if (model.group_id != group->id) continue;
-        node.children.append({
-            model.id,
-            model.display_name,
-            ItemKind::Model,
-            federation->isModelEffectivelyVisible(model.id),
-            {}
-        });
-    }
-    return node;
-}
-
-// Walks the federation's group tree, appending every group except those under
-// exclude_subtree_root (used to prevent a group from being moved into itself).
 void collectGroupsRecursive(const Federation::Group* group,
                             const QString& exclude_subtree_root,
                             QList<GroupOption>& out) {
@@ -68,54 +43,33 @@ void collectGroupsRecursive(const Federation::Group* group,
 
 } // namespace
 
+QList<GroupOption> validMoveTargets(const Federation& federation,
+                                    const QString& exclude_subtree_root) {
+    QList<GroupOption> out;
+    for (const auto& root : federation.rootGroups()) {
+        collectGroupsRecursive(root.get(), exclude_subtree_root, out);
+    }
+    return out;
+}
+
 ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
                                  ifcviewerfull::SessionState* session_state,
                                  QObject* parent)
     : QObject(parent)
     , widget_(widget)
     , session_state_(session_state)
+    , model_(new FederationItemModel(session_state->federation(), this))
 {
-    connect(session_state_, &SessionState::modelsChanged,     this, &ModelsPanelView::refresh);
-    connect(session_state_, &SessionState::federationChanged, this, &ModelsPanelView::refresh);
-    connect(session_state_, &SessionState::visibilityChanged, this, &ModelsPanelView::refresh);
-    connect(session_state_, &SessionState::projectReset,      this, &ModelsPanelView::refresh);
-    connect(session_state_, &SessionState::projectOpened,     this, [this](const QString&) { refresh(); });
+    widget_->setModel(model_);
+
+    // Coarse signals: full rebuild + re-style. The granular Federation
+    // signals are handled inside FederationItemModel and don't reach here.
+    auto rebuild = [this]() { model_->rebuildAll(); };
+    connect(session_state_, &SessionState::projectReset,  this, rebuild);
+    connect(session_state_, &SessionState::projectOpened, this, rebuild);
     connect(&ifcviewerfull::ViewerSettings::instance(),
             &ifcviewerfull::ViewerSettings::themeChanged,
-            this, &ModelsPanelView::refresh);
-
-    widget_->setGroupListProvider([this](const QString& exclude_subtree_root) {
-        return groupListForMove(exclude_subtree_root);
-    });
-
-    refresh();
-}
-
-void ModelsPanelView::refresh() {
-    Federation* federation = session_state_->federation();
-    QList<TreeNode> nodes;
-    for (const auto& root_group : federation->rootGroups()) {
-        nodes.append(makeGroupNode(federation, root_group.get()));
-    }
-    for (const auto& model : federation->models()) {
-        if (!model.group_id.isEmpty()) continue;
-        nodes.append({
-            model.id,
-            model.display_name,
-            ItemKind::Model,
-            federation->isModelEffectivelyVisible(model.id),
-            {}
-        });
-    }
-    widget_->setNodes(nodes);
-}
-
-QList<GroupOption> ModelsPanelView::groupListForMove(const QString& exclude_subtree_root) const {
-    QList<GroupOption> out;
-    for (const auto& root : session_state_->federation()->rootGroups()) {
-        collectGroupsRecursive(root.get(), exclude_subtree_root, out);
-    }
-    return out;
+            this, rebuild);
 }
 
 } // namespace ifcviewerfull::modules::models

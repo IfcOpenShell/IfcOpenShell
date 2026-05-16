@@ -483,8 +483,10 @@ QString Federation::addModel(const QString& source_path,
     m.source_kind = "local";
     m.source_path = QDir::cleanPath(QFileInfo(source_path).absoluteFilePath());
     models_.push_back(std::move(m));
+    const QString new_id = models_.back().id;
     setDirty(true);
-    return models_.back().id;
+    emit modelAdded(new_id);
+    return new_id;
 }
 
 void Federation::removeModel(const QString& fed_id) {
@@ -492,6 +494,7 @@ void Federation::removeModel(const QString& fed_id) {
         if (it->id == fed_id) {
             models_.erase(it);
             setDirty(true);
+            emit modelRemoved(fed_id);
             return;
         }
     }

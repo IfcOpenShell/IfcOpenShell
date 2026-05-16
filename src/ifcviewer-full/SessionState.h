@@ -53,6 +53,13 @@ public:
     uint32_t selectedObjectId() const { return selected_object_id_; }
     void setStatusMessage(const QString& mode, const QString& detail);
 
+    // Generic progress reporting for any long-running operation (load,
+    // convert, export, ...). Subscribers (the status bar) react to the
+    // signals; they do not need to know which operation is running.
+    void beginProgress(const QString& label);
+    void setProgress(int percent);
+    void endProgress();
+
     void setModelMapping(const QString& fed_id, uint32_t model_id);
     void removeModelMappingByFedId(const QString& fed_id);
     void clearModelMappings();
@@ -79,16 +86,23 @@ signals:
     // emit this on save/load/reset — projectSaved/Opened/Reset cover those.
     void federationChanged();
     void visibilityChanged();
-    // Fires when a model's geometry has been pushed to the viewport. SessionState
-    // emits this internally in response to SceneLoader signals — callers should
-    // not need to fire it themselves.
+    // Fires when a model's geometry has been pushed to the viewport. Fires
+    // for both sidecar-cache and stream loads; subscribers that just need to
+    // re-derive view state (e.g. ViewportView::refresh) listen to this.
     void modelGeometryReady(uint32_t model_id);
+    // Fires only after a stream load — i.e. when no sidecar cache existed
+    // yet. The sidecar-write subscriber listens to this so it doesn't
+    // re-persist a cache that was just read from disk.
+    void modelGeometryStreamed(uint32_t model_id);
     // Fires when SceneLoader reports a load failure. SessionState turns the
     // raw loader signal into a session-level one so views (e.g. the MessageBox)
     // can subscribe without touching the loader directly.
     void loadError(const QString& message);
     void selectionChanged(uint32_t object_id);
     void statusMessageChanged(const QString& mode, const QString& detail);
+    void progressBegan(const QString& label);
+    void progressChanged(int percent);
+    void progressEnded();
 
 private:
     Federation* federation_ = nullptr;

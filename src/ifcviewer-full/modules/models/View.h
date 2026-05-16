@@ -25,15 +25,26 @@
 
 #include <QObject>
 
+class Federation;
 namespace ifcviewerfull { class SessionState; }
 
 namespace ifcviewerfull::modules::models {
 
+class FederationItemModel;
 class ModelsPanel;
 
-// Subscribes to SessionState and re-derives panel state (tree nodes, valid
-// move targets) from the federation. The panel calls commands directly for
-// input, so this object is purely state→view; it has no command knowledge.
+// Pure derivation used by ModelsPanel when building its "move to..." menus.
+// Walks the federation's group tree and returns every group except those in
+// the subtree rooted at exclude_subtree_root (skip a group's own subtree to
+// prevent a cyclic move). Pass an empty exclude_subtree_root to get every
+// group back.
+QList<GroupOption> validMoveTargets(const Federation& federation,
+                                    const QString& exclude_subtree_root);
+
+// Owns the FederationItemModel, hands it to the panel, and listens to the
+// coarse session signals (project open/reset, theme change) — those are the
+// "rebuild from scratch" cases the model itself doesn't subscribe to.
+// Granular Federation events are handled inside the model.
 class ModelsPanelView : public QObject {
     Q_OBJECT
 public:
@@ -42,11 +53,9 @@ public:
                              QObject* parent = nullptr);
 
 private:
-    void refresh();
-    QList<GroupOption> groupListForMove(const QString& exclude_subtree_root) const;
-
     ModelsPanel* widget_ = nullptr;
     ifcviewerfull::SessionState* session_state_ = nullptr;
+    FederationItemModel* model_ = nullptr;
 };
 
 } // namespace ifcviewerfull::modules::models
