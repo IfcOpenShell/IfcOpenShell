@@ -132,6 +132,21 @@ def regenerate_dimension(
         existing_metrics = _get_segment_metrics(file, annotation)
         _sync_segment_metrics(file, annotation, resolved, existing_metrics)
 
+    # LinePosition: project all points to a fixed absolute world coordinate along the
+    # horizontal offset axis (perpendicular to the dimension direction).  Applied after
+    # the pset write so anchor["pt"] always stores the true geometry surface hit.
+    # Because it is absolute, the dimension line stays put even if the geometry moves.
+    # Only active when ForcePerpendicularToFace is also set — the two are semantically coupled.
+    line_position = pset_data.get("LinePosition")
+    if line_position is not None and pset_data.get("ForcePerpendicularToFace") and resolved:
+        face_normal = _get_anchor_face_normal_world(file, anchors[0], placement_override)
+        offset_dir = _get_line_offset_direction(face_normal, [pt for pt in resolved if pt is not None])
+        if offset_dir:
+            resolved = [
+                _project_to_line_position(pt, offset_dir, float(line_position)) if pt is not None else None
+                for pt in resolved
+            ]
+
     return [pt for pt in resolved if pt is not None]
 
 
@@ -257,6 +272,23 @@ def _dist(a: tuple, b: tuple) -> float:
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
 
 
+def _project_to_line_position(
+    pt: tuple, offset_dir: tuple, target: float
+) -> tuple[float, float, float]:
+    """Shift *pt* along *offset_dir* so its projection onto that axis equals *target*.
+
+    Keeps every other component of the point unchanged, so only the dimension line
+    is repositioned — the measured length stays the same.
+    """
+    current = pt[0] * offset_dir[0] + pt[1] * offset_dir[1] + pt[2] * offset_dir[2]
+    delta = target - current
+    return (
+        pt[0] + delta * offset_dir[0],
+        pt[1] + delta * offset_dir[1],
+        pt[2] + delta * offset_dir[2],
+    )
+
+
 def _get_anchor_face_normal_world(
     file: ifcopenshell.file,
     anchor: dict,
@@ -289,5 +321,52 @@ def _get_anchor_face_normal_world(
     if normal_world:
         mag = math.sqrt(sum(x * x for x in normal_world))
         return tuple(x / mag for x in normal_world) if mag > 1e-12 else None  # type: ignore[return-value]
+
+    return None
+
+
+def _get_line_offset_direction(
+    face_normal: Optional[tuple[float, float, float]],
+    resolved_pts: list[tuple],
+) -> Optional[tuple[float, float, float]]:
+    """Return the direction to apply LineOffset — parallel to the first face.
+
+    Uses cross(world_Z, dim_direction) to get the horizontal direction
+    perpendicular to the dimension line, which slides the line sideways
+    (parallel to the face) rather than into/out of it.
+
+    Falls back to cross(face_normal, world_Z) when the dimension line is
+    nearly vertical (e.g. elevation dimensions).
+    """
+    world_z = (0.0, 0.0, 1.0)
+
+    # Primary: use the dimension line direction (anchor[0] → anchor[1])
+    if len(resolved_pts) >= 2:
+        a, b = resolved_pts[0], resolved_pts[1]
+        dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+        dim_mag = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if dim_mag > 1e-10:
+            dim_dir = (dx / dim_mag, dy / dim_mag, dz / dim_mag)
+            # cross(world_Z, dim_dir) — horizontal direction perp to dimension
+            d = (
+                world_z[1] * dim_dir[2] - world_z[2] * dim_dir[1],
+                world_z[2] * dim_dir[0] - world_z[0] * dim_dir[2],
+                world_z[0] * dim_dir[1] - world_z[1] * dim_dir[0],
+            )
+            mag = math.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)
+            if mag > 1e-6:
+                return (d[0] / mag, d[1] / mag, d[2] / mag)
+
+    # Fallback for vertical dims: cross(face_normal, world_Z)
+    if face_normal:
+        n = face_normal
+        d = (
+            n[1] * world_z[2] - n[2] * world_z[1],
+            n[2] * world_z[0] - n[0] * world_z[2],
+            n[0] * world_z[1] - n[1] * world_z[0],
+        )
+        mag = math.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)
+        if mag > 1e-6:
+            return (d[0] / mag, d[1] / mag, d[2] / mag)
 
     return None
