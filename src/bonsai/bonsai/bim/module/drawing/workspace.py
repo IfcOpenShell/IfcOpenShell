@@ -262,7 +262,6 @@ class AnnotationToolUI:
                     row.prop(ann_props, "line_position")
                 cls.layout.separator()
                 row = cls.layout.row(align=True)
-                row.operator("bim.set_dimension_anchor", icon="PIVOT_CURSOR")
                 op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
                 op.active_only = True
 
