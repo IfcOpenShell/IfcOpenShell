@@ -151,6 +151,7 @@ classes = (
     gizmos.UglyDotGizmo,
     gizmos.ExtrusionGuidesGizmo,
     gizmos.ExtrusionWidget,
+    gizmos.DimensionLinePositionWidget,
     workspace.LaunchAnnotationTypeManager,
     workspace.Hotkey,
 )
