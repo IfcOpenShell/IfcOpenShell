@@ -256,6 +256,11 @@ class AnnotationToolUI:
             ptype = ifcopenshell.util.element.get_predefined_type(element)
             if ptype in cls._DIMENSION_TYPES:
                 cls.layout.separator()
+                ann_props = tool.Drawing.get_annotation_props()
+                if ann_props.force_perpendicular_to_face:
+                    row = cls.layout.row(align=True)
+                    row.prop(ann_props, "line_position")
+                cls.layout.separator()
                 row = cls.layout.row(align=True)
                 row.operator("bim.set_dimension_anchor", icon="PIVOT_CURSOR")
                 op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
