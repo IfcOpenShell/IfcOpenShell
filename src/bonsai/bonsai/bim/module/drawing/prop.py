@@ -1094,6 +1094,104 @@ def _update_force_perpendicular(self, context):
             _update_blender_curve(element, resolved_pts)
 
 
+def _get_line_position(self) -> float:
+    """Return LinePosition from the active annotation's BBIM_Dimension pset.
+
+    Falls back to the natural anchor projection when LinePosition has not been
+    explicitly set, so the field always shows a meaningful value.
+    """
+    import math
+    import json
+    try:
+        import bpy as _bpy
+        import ifcopenshell.util.element as _ue
+        import bonsai.tool as _tool
+        obj = getattr(_bpy.context, "active_object", None)
+        if obj:
+            element = _tool.Ifc.get_entity(obj)
+            if element and element.is_a("IfcAnnotation"):
+                pset = _ue.get_pset(element, "BBIM_Dimension")
+                if pset:
+                    stored = pset.get("LinePosition")
+                    if stored is not None:
+                        return float(stored)
+                    raw = pset.get("Anchors")
+                    if raw:
+                        anchors = json.loads(raw)
+                        if len(anchors) >= 2 and anchors[0].get("pt") and anchors[1].get("pt"):
+                            a, b = anchors[0]["pt"], anchors[1]["pt"]
+                            dx, dy, dz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+                            m = math.sqrt(dx * dx + dy * dy + dz * dz)
+                            if m > 1e-10:
+                                ddx, ddy, ddz = dx / m, dy / m, dz / m
+                                # cross(world_Z=(0,0,1), dim_dir) = (-ddy, ddx, 0)
+                                ox, oy, oz = -ddy, ddx, 0.0
+                                om = math.sqrt(ox * ox + oy * oy)
+                                if om > 1e-6:
+                                    od = (ox / om, oy / om, 0.0)
+                                    pt = anchors[0]["pt"]
+                                    return float(pt[0] * od[0] + pt[1] * od[1])
+    except Exception:
+        pass
+    return 0.0
+
+
+def _set_line_position(self, value: float) -> None:
+    """Write LinePosition to all selected dimension annotations and regenerate."""
+    import json
+    import numpy as np
+    import ifcopenshell.util.element
+    import ifcopenshell.api.pset
+    import ifcopenshell.api.drawing as drawing_api
+    import bonsai.tool as tool
+
+    file = tool.Ifc.get()
+    if not file:
+        return
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+
+    targets = []
+    import bpy as _bpy
+    for obj in getattr(_bpy.context, "selected_objects", []):
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            continue
+        if ifcopenshell.util.element.get_predefined_type(element) not in _DIM_TYPES:
+            continue
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset_data:
+            continue
+        targets.append((obj, element, pset_data))
+
+    if not targets:
+        return
+
+    from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+    for obj, element, pset_data in targets:
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties={"LinePosition": value})
+
+        anchors = json.loads(pset_data.get("Anchors") or "[]")
+        placement_override = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+
+        resolved_pts = drawing_api.regenerate_dimension(file, element, placement_override=placement_override)
+        if resolved_pts:
+            _update_blender_curve(element, resolved_pts)
+
+
 class BIMAnnotationProperties(PropertyGroup):
     object_type: bpy.props.EnumProperty(
         name="Annotation Object Type", items=annotation_classes, default="TEXT", update=update_annotation_object_type
@@ -1112,6 +1210,13 @@ class BIMAnnotationProperties(PropertyGroup):
         description="Constrain dimension vertices to the face normal of the first anchor. When dimensions are selected, toggling this updates them all.",
         default=False,
         update=_update_force_perpendicular,
+    )
+    line_position: bpy.props.FloatProperty(
+        name="Line Position",
+        description="Absolute world position of the dimension line along the horizontal axis perpendicular to the dimension. The line is held at this fixed global coordinate even when the measured geometry moves. Updates all selected dimensions.",
+        unit="LENGTH",
+        get=_get_line_position,
+        set=_set_line_position,
     )
     tag_rotation_mode: bpy.props.EnumProperty(
         name="Tag Rotation Mode",
