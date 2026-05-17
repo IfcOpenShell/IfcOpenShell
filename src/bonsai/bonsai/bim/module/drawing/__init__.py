@@ -114,6 +114,8 @@ classes = (
     operator.DrawParametricDimension,
     operator.SetDimensionAnchor,
     operator.RegenerateDimensions,
+    operator.ClickNearestDimensionAnchor,
+    operator.DebugDimensionClicks,
     prop.Variable,
     prop.Drawing,
     prop.Document,
@@ -175,10 +177,15 @@ classes = (
     gizmos.UglyDotGizmo,
     gizmos.ExtrusionGuidesGizmo,
     gizmos.ExtrusionWidget,
+    gizmos.GizmoAnchorHandle,
+    gizmos.DimensionAnchorWidget,
     gizmos.DimensionLinePositionWidget,
     workspace.LaunchAnnotationTypeManager,
     workspace.Hotkey,
 )
+
+
+_keymaps = []
 
 
 def menu_func(self, context):
@@ -204,6 +211,15 @@ def register():
     bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
     bpy.types.VIEW3D_MT_object_context_menu.append(menu_func)
 
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new(
+            "bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS"
+        )
+        _keymaps.append((km, kmi))
+
 
 def unregister():
     if not bpy.app.background:
@@ -217,5 +233,9 @@ def unregister():
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.remove(handler.depsgraph_update_pre_handler)
     bpy.app.handlers.depsgraph_update_post.remove(handler.depsgraph_update_post_handler)
+
+    for km, kmi in _keymaps:
+        km.keymap_items.remove(kmi)
+    _keymaps.clear()
     bpy.types.VIEW3D_MT_image_add.remove(ui.add_object_button)
     bpy.types.VIEW3D_MT_object_context_menu.remove(menu_func)
