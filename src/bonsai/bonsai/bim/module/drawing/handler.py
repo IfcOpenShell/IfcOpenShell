@@ -108,6 +108,80 @@ def set_active_camera_resolution(scene: bpy.types.Scene) -> None:
         scene_render.resolution_y = raster_y
 
 
+def _sync_dimension_anchors_to_curve(file, annotation, obj) -> bool:
+    """Sync BBIM_Dimension.Anchors length to match the curve's spline point count.
+
+    Called when the user adds or removes vertices from a dimension annotation in
+    Edit Mode.  New vertices get a free WORLD-type anchor at their current world
+    position; removed tail vertices simply lose their anchor entries.
+
+    Returns True if the pset was changed.
+    """
+    import ifcopenshell.util.element
+    import ifcopenshell.api.pset
+
+    if not obj.data or not getattr(obj.data, "splines", None) or not obj.data.splines:
+        return False
+
+    pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+    if not pset_data or not pset_data.get("Anchors"):
+        return False
+
+    try:
+        anchors: list = json.loads(pset_data["Anchors"])
+    except Exception:
+        return False
+
+    spline = obj.data.splines[0]
+    spline_world = [obj.matrix_world @ p.co.to_3d() for p in spline.points]
+    n_pts = len(spline_world)
+    n_anchors = len(anchors)
+
+    print(f"[sync_anchors] obj={obj.name}  spline_pts={n_pts}  anchors={n_anchors}")
+
+    if n_pts == n_anchors:
+        print("[sync_anchors] counts match — no change needed")
+        return False
+
+    # Match each spline point to the nearest unused anchor by proximity.
+    # This handles insertions (subdivide) and deletions correctly regardless
+    # of where in the polyline the edit happened.
+    _MATCH_THRESH_SQ = 1e-4  # 1 cm² — distinguishes existing pts from new midpoints
+    used: set = set()
+    new_anchors: list = []
+
+    for pt in spline_world:
+        best_idx, best_sq = None, float("inf")
+        for i, anc in enumerate(anchors):
+            if i in used:
+                continue
+            stored = anc.get("pt")
+            if not stored:
+                continue
+            dx, dy, dz = stored[0] - pt.x, stored[1] - pt.y, stored[2] - pt.z
+            sq = dx * dx + dy * dy + dz * dz
+            if sq < best_sq:
+                best_sq, best_idx = sq, i
+        if best_idx is not None and best_sq < _MATCH_THRESH_SQ:
+            new_anchors.append(anchors[best_idx])
+            used.add(best_idx)
+        else:
+            new_anchors.append({
+                "guid": None,
+                "type": "WORLD",
+                "addr": {},
+                "hint": None,
+                "pt": [pt.x, pt.y, pt.z],
+            })
+
+    print(f"[sync_anchors] rebuilt {len(new_anchors)} anchors (was {n_anchors})")
+
+    pset_entity = file.by_id(pset_data["id"])
+    ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties={"Anchors": json.dumps(new_anchors)})
+    invalidate_dim_index()
+    return True
+
+
 @persistent
 def depsgraph_update_post_handler(scene, depsgraph):
     """Auto-regenerate parametric dimensions when referenced elements are moved."""
@@ -125,6 +199,8 @@ def depsgraph_update_post_handler(scene, depsgraph):
     # serialised the new mesh back to IFC via update_representation, so the
     # tessellation will reflect the edited shape.
     moved_guids: set = set()
+    edited_annotation_ids: set = set()
+
     for update in depsgraph.updates:
         obj = update.id
         if not isinstance(obj, bpy.types.Object):
@@ -134,18 +210,28 @@ def depsgraph_update_post_handler(scene, depsgraph):
         element = tool.Ifc.get_entity(obj)
         if element is None or not hasattr(element, "GlobalId"):
             continue
+
+        # If the dimension annotation curve itself was edited (vertex added/removed),
+        # sync the anchor list before regenerating.
+        if update.is_updated_geometry and obj.type == "CURVE" and element.is_a("IfcAnnotation"):
+            import ifcopenshell.util.element as _ue
+            ptype = _ue.get_predefined_type(element)
+            print(f"[handler] dimension curve geometry updated: {obj.name}  ptype={ptype}  is_updated_geometry={update.is_updated_geometry}")
+            if ptype in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"):
+                _sync_dimension_anchors_to_curve(file, element, obj)
+                edited_annotation_ids.add(element.id())
+                continue
+
         moved_guids.add(element.GlobalId)
         # Geometry edits invalidate the cached tessellation for this element.
         if update.is_updated_geometry:
             _dim_shape_cache.pop(element.id(), None)
 
-    if not moved_guids:
-        return
-
     if _dim_index_dirty:
         _rebuild_dim_guid_index(file)
 
-    annotation_ids: set = set()
+    print(f"[handler] edited_annotation_ids={edited_annotation_ids}  moved_guids={moved_guids}")
+    annotation_ids: set = set(edited_annotation_ids)
     for guid in moved_guids:
         for ann_id in _dim_guid_index.get(guid, []):
             annotation_ids.add(ann_id)
@@ -193,6 +279,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
             except Exception:
                 pass
 
+            print(f"[handler] regenerating ann_id={ann_id}  anchors_in_pset={len(json.loads(pset.get('Anchors') or '[]'))}")
             resolved_pts = drawing_api.regenerate_dimension(
                 file,
                 annotation,
@@ -200,7 +287,13 @@ def depsgraph_update_post_handler(scene, depsgraph):
                 shape_cache=_dim_shape_cache,
                 placement_override=placement_override,
             )
+            print(f"[handler] resolved_pts count={len(resolved_pts)}  pts={[(round(p[0],3),round(p[1],3),round(p[2],3)) for p in resolved_pts]}")
             if resolved_pts:
+                obj = tool.Ifc.get_object(annotation)
+                if obj:
+                    print(f"[handler] curve spline pts before update={len(obj.data.splines[0].points) if obj.data.splines else 0}")
                 _update_blender_curve(annotation, resolved_pts)
+                if obj:
+                    print(f"[handler] curve spline pts after update={len(obj.data.splines[0].points) if obj.data.splines else 0}")
     finally:
         _dim_handler_running = False

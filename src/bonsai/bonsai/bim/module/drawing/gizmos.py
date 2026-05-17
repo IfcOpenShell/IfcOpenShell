@@ -1789,6 +1789,19 @@ DISC = (
     (1.0, 0.0, 0),
 )
 
+# Anchor index currently being edited by SetDimensionAnchor (-1 = none).
+_active_anchor_idx: int = -1
+# The annotation curve object being edited (kept so the gizmo group stays
+# visible even when SetDimensionAnchor temporarily changes the active object).
+_editing_annotation_obj = None
+
+
+def set_active_anchor(idx: int, annotation_obj=None) -> None:
+    global _active_anchor_idx, _editing_annotation_obj
+    _active_anchor_idx = idx
+    _editing_annotation_obj = annotation_obj if idx >= 0 else None
+
+
 X3DISC = (
     (0.0, 0.0, 0.0),
     (1.0, 0.0, 0),
@@ -2121,6 +2134,152 @@ class ExtrusionWidget(types.GizmoGroup):
         self.guides.target_set_prop("depth", prop, "value")
 
 
+class GizmoAnchorHandle(bpy.types.Gizmo):
+    """Dot gizmo positioned at one vertex of a parametric dimension curve.
+
+    Clicking it invokes ``bim.set_dimension_anchor`` pre-scoped to that vertex
+    index, skipping the manual vertex-pick phase of the operator.
+    """
+
+    bl_idname = "BIM_GT_anchor_handle"
+
+    __slots__ = ("anchor_index", "custom_shape", "custom_shape_select")
+
+    def setup(self):
+        self.anchor_index = 0
+        self.custom_shape = self.new_custom_shape(type="TRIS", verts=X3DISC)
+        # 4× scaled version used only for hit-detection — bigger target, same visual size.
+        _sel = tuple((x * 4.0, y * 4.0, z) for x, y, z in X3DISC)
+        self.custom_shape_select = self.new_custom_shape(type="TRIS", verts=_sel)
+
+    def draw(self, context):
+        self.draw_custom_shape(self.custom_shape)
+
+    def draw_select(self, context, select_id):
+        self.draw_custom_shape(self.custom_shape_select, select_id=select_id)
+
+    def invoke(self, context, event):
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event, tweak):
+        anchor_index = self.anchor_index
+
+        def _launch():
+            try:
+                bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=anchor_index)
+            except Exception as e:
+                print(f"[DimensionAnchorWidget] {e}")
+            return None
+
+        bpy.app.timers.register(_launch, first_interval=0.0)
+        return {"FINISHED"}
+
+
+class DimensionAnchorWidget(types.GizmoGroup):
+    """Anchor handle gizmos at each vertex of the active parametric dimension.
+
+    Green dots indicate vertices that are anchored to an IFC element face;
+    orange dots are free world-point anchors.  Clicking any dot fires
+    ``bim.set_dimension_anchor`` pre-targeted at that vertex index.
+    """
+
+    bl_idname = "BIM_GGT_dimension_anchors"
+    bl_label = "Dimension Anchor Handles"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+    _MAX_ANCHORS = 16
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if not tool.Ifc.get():
+            return False
+        # Stay visible while SetDimensionAnchor is running (active obj may be a temp element).
+        if _active_anchor_idx >= 0 and _editing_annotation_obj is not None:
+            return True
+        obj = context.active_object
+        if not obj or obj.type != "CURVE":
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        import ifcopenshell.util.element as _ue
+        if _ue.get_predefined_type(element) not in cls._DIM_TYPES:
+            return False
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        return bool(pset and pset.get("Anchors"))
+
+    def setup(self, context: bpy.types.Context) -> None:
+        self._handles: list = []
+        for _ in range(self._MAX_ANCHORS):
+            gz = self.gizmos.new("BIM_GT_anchor_handle")
+            gz.scale_basis = 0.18
+            gz.select_bias = -32.0
+            gz.use_draw_modal = True
+            gz.hide = True
+            self._handles.append(gz)
+
+    def refresh(self, context: bpy.types.Context) -> None:
+        import json
+        import ifcopenshell.util.element as _ue
+
+        obj = _editing_annotation_obj if _active_anchor_idx >= 0 and _editing_annotation_obj else context.active_object
+        if not obj or not obj.data or not getattr(obj.data, "splines", None):
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        try:
+            anchors = json.loads(pset["Anchors"])
+        except Exception:
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        spline = obj.data.splines[0]
+        n = min(len(spline.points), len(anchors), self._MAX_ANCHORS)
+
+        for i in range(n):
+            gz = self._handles[i]
+            world_co = obj.matrix_world @ spline.points[i].co.to_3d()
+            gz.matrix_basis = Matrix.Translation(world_co)
+            gz.anchor_index = i
+            if i == _active_anchor_idx and obj is _editing_annotation_obj:
+                print(f"[refresh] setting anchor[{i}] BLUE  (obj={obj.name}  editing={_editing_annotation_obj.name if _editing_annotation_obj else None})")
+                gz.color = (0.2, 0.7, 1.0)
+                gz.color_highlight = (0.4, 0.85, 1.0)
+            elif anchors[i].get("guid"):
+                gz.color = (0.2, 0.85, 0.2)
+                gz.color_highlight = (0.4, 1.0, 0.4)
+            else:
+                gz.color = (0.9, 0.6, 0.1)
+                gz.color_highlight = (1.0, 0.85, 0.2)
+            gz.alpha = 0.85
+            gz.alpha_highlight = 1.0
+            gz.hide = False
+
+        for i in range(n, self._MAX_ANCHORS):
+            self._handles[i].hide = True
+
+    def draw_prepare(self, context: bpy.types.Context) -> None:
+        print(f"[draw_prepare] DimensionAnchorWidget  _active_anchor_idx={_active_anchor_idx}")
+        self.refresh(context)
+
+
 class DimensionLinePositionWidget(types.GizmoGroup):
     """Drag handle for the LinePosition of a parametric dimension annotation.
 
@@ -2224,6 +2383,7 @@ class DimensionLinePositionWidget(types.GizmoGroup):
         return self._midpoint(obj).dot(od)
 
     def _set_pos(self, value: float) -> None:
+        bpy.ops.ed.undo_push(message="Set Line Position")
         import json
         import numpy as np
         import ifcopenshell.util.element as _ue

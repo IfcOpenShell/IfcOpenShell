@@ -5715,8 +5715,10 @@ class SetDimensionAnchor(bpy.types.Operator):
     bl_label = "Set Dimension Anchor"
     bl_options = {"REGISTER", "UNDO"}
 
+    anchor_index: bpy.props.IntProperty(default=-1)  # -1 = begin with vertex-pick phase
+
     if TYPE_CHECKING:
-        pass
+        anchor_index: int
 
     _annotation: Optional[ifcopenshell.entity_instance] = None
     _annotation_obj: Optional[bpy.types.Object] = None
@@ -5761,9 +5763,15 @@ class SetDimensionAnchor(bpy.types.Operator):
         obj = context.active_object
         self._annotation = tool.Ifc.get_entity(obj)
         self._annotation_obj = obj
-        self._phase = "PICK_VERTEX"
-        self._active_vertex_idx = -1
         self._shape_cache = {}
+        if self.anchor_index >= 0:
+            self._phase = "PICK_FACE"
+            self._active_vertex_idx = self.anchor_index
+            from bonsai.bim.module.drawing.gizmos import set_active_anchor
+            set_active_anchor(self.anchor_index, obj)
+        else:
+            self._phase = "PICK_VERTEX"
+            self._active_vertex_idx = -1
         self._hover_candidates = []
         self._hover_index = 0
         self._hover_last_px = (-9999, -9999)
@@ -5790,6 +5798,8 @@ class SetDimensionAnchor(bpy.types.Operator):
         if event.type == "ESC" or (event.type == "RIGHTMOUSE" and event.value == "PRESS"):
             self._clear_hover_highlight(context)
             context.workspace.status_text_set(None)
+            from bonsai.bim.module.drawing.gizmos import set_active_anchor
+            set_active_anchor(-1)
             return {"FINISHED"}  # keep any anchors already written
 
         # Hover — recompute candidates as cursor moves (PICK_FACE phase only)
@@ -5865,6 +5875,8 @@ class SetDimensionAnchor(bpy.types.Operator):
 
         self._active_vertex_idx = best_idx
         self._phase = "PICK_FACE"
+        from bonsai.bim.module.drawing.gizmos import set_active_anchor
+        set_active_anchor(best_idx, obj)
 
     # ------------------------------------------------------------------
     # Phase 2: pick a face on an IFC element
@@ -5907,6 +5919,8 @@ class SetDimensionAnchor(bpy.types.Operator):
             self._write_anchor(anchor, self._active_vertex_idx)
             self.report({"INFO"}, f"Vertex {self._active_vertex_idx} → free world point")
             self._phase = "PICK_VERTEX"
+            from bonsai.bim.module.drawing.gizmos import set_active_anchor
+            set_active_anchor(-1)
             return
 
         # Normal click — use whichever candidate is currently highlighted.
@@ -5957,6 +5971,8 @@ class SetDimensionAnchor(bpy.types.Operator):
         self._phase = "PICK_VERTEX"
         self._hover_candidates = []
         self._hover_index = 0
+        from bonsai.bim.module.drawing.gizmos import set_active_anchor
+        set_active_anchor(-1)
 
     # ------------------------------------------------------------------
     # Hover / cycle helpers
@@ -6254,11 +6270,19 @@ class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
                 if ifcopenshell.util.element.get_pset(a, "BBIM_Dimension")
             ]
 
+        from bonsai.bim.module.drawing.handler import _sync_dimension_anchors_to_curve
+
         updated = 0
         for annotation in candidates:
             pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
             if not pset:
                 continue
+
+            # Sync anchor count to curve vertex count in case the user added or
+            # removed vertices in Edit Mode since the last regeneration.
+            ann_obj = tool.Ifc.get_object(annotation)
+            if ann_obj and ann_obj.type == "CURVE":
+                _sync_dimension_anchors_to_curve(file, annotation, ann_obj)
 
             # Build a placement override from each referenced element's current
             # Blender matrix_world.  Bonsai only syncs ObjectPlacement to the IFC
@@ -6470,3 +6494,169 @@ def _find_curve_in_item(item: ifcopenshell.entity_instance) -> Optional[ifcopens
             if result is not None:
                 return result
     return None
+
+
+class ClickNearestDimensionAnchor(bpy.types.Operator):
+    """LMB handler: fire SetDimensionAnchor when cursor is within RADIUS pixels of an anchor dot.
+
+    Registered as a keymap item so it runs before Blender's object-selection handler.
+    Returns PASS_THROUGH when the cursor is not near any anchor, so normal viewport
+    clicks are unaffected.
+    """
+
+    bl_idname = "bim.click_nearest_dimension_anchor"
+    bl_label = "Click Nearest Dimension Anchor"
+
+    RADIUS_PX = 120
+
+    def invoke(self, context, event):
+        from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+        print(f"[AnchorClick] invoke called")
+
+        if not tool.Ifc.get():
+            print(f"[AnchorClick] PASS_THROUGH — no IFC file")
+            return {"PASS_THROUGH"}
+
+        obj = context.active_object
+        if not obj or obj.type != "CURVE":
+            print(f"[AnchorClick] PASS_THROUGH — active obj is {obj} type={getattr(obj,'type',None)}")
+            return {"PASS_THROUGH"}
+
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            print(f"[AnchorClick] PASS_THROUGH — not an IfcAnnotation: {element}")
+            return {"PASS_THROUGH"}
+
+        import ifcopenshell.util.element as _ue
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            print(f"[AnchorClick] PASS_THROUGH — no BBIM_Dimension pset or Anchors")
+            return {"PASS_THROUGH"}
+
+        if not obj.data.splines:
+            print(f"[AnchorClick] PASS_THROUGH — no splines")
+            return {"PASS_THROUGH"}
+
+        # Always use the 3D viewport WINDOW region — context.region may be a header,
+        # sidebar, or toolbar depending on where the click landed in the area.
+        region = None
+        rv3d = None
+        for area in context.screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            for r in area.regions:
+                if r.type == "WINDOW":
+                    region = r
+                    break
+            if region:
+                for space in area.spaces:
+                    if space.type == "VIEW_3D":
+                        rv3d = space.region_3d
+                        break
+                break
+
+        if not region or not rv3d:
+            print(f"[AnchorClick] PASS_THROUGH — no 3D region")
+            return {"PASS_THROUGH"}
+
+        # Convert absolute mouse position to WINDOW region-local coordinates.
+        cx = event.mouse_x - region.x
+        cy = event.mouse_y - region.y
+
+        r2 = self.RADIUS_PX ** 2
+        best_idx = -1
+        best_dist_sq = float("inf")
+        for i, pt in enumerate(obj.data.splines[0].points):
+            world_pos = obj.matrix_world @ pt.co.to_3d()
+            sp = location_3d_to_region_2d(region, rv3d, world_pos)
+            if not sp:
+                continue
+            dx, dy = cx - sp.x, cy - sp.y
+            d2 = dx * dx + dy * dy
+            print(f"[AnchorClick] click=({cx},{cy})  anchor[{i}]=({sp.x:.0f},{sp.y:.0f})  dist={d2**0.5:.1f}px  radius={self.RADIUS_PX}px")
+            if d2 < r2 and d2 < best_dist_sq:
+                best_dist_sq = d2
+                best_idx = i
+
+        if best_idx < 0:
+            print(f"[AnchorClick] MISS — no anchor within {self.RADIUS_PX}px")
+            return {"PASS_THROUGH"}
+
+        print(f"[AnchorClick] HIT anchor[{best_idx}]  dist={best_dist_sq**0.5:.1f}px")
+        from bonsai.bim.module.drawing.gizmos import set_active_anchor
+        set_active_anchor(best_idx, obj)
+        # Force viewport redraw so gizmo colors update before the modal starts.
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+                break
+        bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=best_idx)
+        return {"FINISHED"}
+
+
+class DebugDimensionClicks(bpy.types.Operator):
+    """Debug modal: logs every LMB click in the 3D viewport vs anchor gizmo positions.
+
+    Run from the Python console:
+        bpy.ops.bim.debug_dimension_clicks('INVOKE_DEFAULT')
+    Press ESC or RMB to stop.
+    """
+
+    bl_idname = "bim.debug_dimension_clicks"
+    bl_label = "Debug Dimension Clicks"
+
+    def modal(self, context, event):
+        if event.type == "LEFTMOUSE" and event.value == "PRESS":
+            # Use absolute window coords — mouse_region_x/y is relative to whichever
+            # region caught the event, which may differ from the 3D viewport region.
+            click_x = event.mouse_x
+            click_y = event.mouse_y
+
+            # Find the 3D viewport region — context.region_data is None in modal.
+            region = None
+            rv3d = None
+            for area in context.screen.areas:
+                if area.type != "VIEW_3D":
+                    continue
+                for r in area.regions:
+                    if r.type == "WINDOW":
+                        region = r
+                        break
+                if region:
+                    for space in area.spaces:
+                        if space.type == "VIEW_3D":
+                            rv3d = space.region_3d
+                            break
+                    break
+
+            obj = context.active_object
+            if obj and obj.type == "CURVE" and obj.data and obj.data.splines and region and rv3d:
+                from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+                print(f"[ClickDebug] LMB at abs ({click_x}, {click_y})  region_offset=({region.x},{region.y})")
+                for i, pt in enumerate(obj.data.splines[0].points):
+                    world_pos = obj.matrix_world @ pt.co.to_3d()
+                    screen_pos = location_3d_to_region_2d(region, rv3d, world_pos)
+                    if screen_pos:
+                        # Convert region-local pos to absolute window coords for comparison.
+                        abs_x = screen_pos.x + region.x
+                        abs_y = screen_pos.y + region.y
+                        dist = ((click_x - abs_x) ** 2 + (click_y - abs_y) ** 2) ** 0.5
+                        print(f"  anchor[{i}]  abs={abs_x:.0f},{abs_y:.0f}  dist={dist:.1f}px")
+                    else:
+                        print(f"  anchor[{i}]  (off screen)")
+            else:
+                print(f"[ClickDebug] LMB at abs ({click_x}, {click_y}) — no active curve or no 3D region")
+            return {"PASS_THROUGH"}
+
+        if event.type in {"ESC", "RIGHTMOUSE"}:
+            print("[ClickDebug] Stopped.")
+            return {"CANCELLED"}
+
+        return {"PASS_THROUGH"}
+
+    def invoke(self, context, event):
+        context.window_manager.modal_handler_add(self)
+        print("[ClickDebug] Dimension click logger started. Click near anchor dots; press ESC to stop.")
+        return {"RUNNING_MODAL"}
