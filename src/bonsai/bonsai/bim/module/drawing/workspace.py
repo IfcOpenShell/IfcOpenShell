@@ -114,7 +114,11 @@ class AnnotationTool(WorkSpaceTool):
     bl_description = "Gives you Annotation related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.annotation")
     bl_widget = None
-    bl_keymap = tool.Blender.get_default_selection_keypmap() + (
+    bl_keymap = (
+        # Before view3d.select: tool keymaps take priority over the addon keymap
+        # where ClickNearestDimensionAnchor is also registered.
+        ("bim.click_nearest_dimension_anchor", {"type": "LEFTMOUSE", "value": "PRESS"}, None),
+    ) + tool.Blender.get_default_selection_keypmap() + (
         ("bim.annotation_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.annotation_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.annotation_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
