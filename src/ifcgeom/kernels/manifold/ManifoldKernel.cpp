@@ -1066,9 +1066,9 @@ namespace {
 			return std::nullopt;
 		}
 		if (solid) {
-			return Part{ solid->GetMeshGL64(), solid };
+            return *solid;
 		}
-		return Part{ mesh, std::nullopt };
+		return mesh;
 	}
 
 	std::optional<Part> part_from_shell(const taxonomy::shell::ptr& shell, double precision, double dilation, manifold::Manifold::Error* status_ptr = nullptr) {
@@ -1544,7 +1544,7 @@ bool ManifoldKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::Con
 	results.emplace_back(IfcGeom::ConversionResult(
 		solid->instance.id(),
 		solid->matrix,
-		new ifcopenshell::geometry::ManifoldShape(Part{ result.GetMeshGL64(), result }),
+		new ifcopenshell::geometry::ManifoldShape(result),
 		solid->surface_style));
 	return true;
 }
@@ -1622,7 +1622,7 @@ bool ManifoldKernel::convert_impl(const taxonomy::boolean_result::ptr br, IfcGeo
 	results.emplace_back(IfcGeom::ConversionResult(
 		br->instance.id(),
 		br->matrix,
-		new ifcopenshell::geometry::ManifoldShape(Part{ result->GetMeshGL64(), *result }),
+		new ifcopenshell::geometry::ManifoldShape(*result),
 		br->surface_style ? br->surface_style : style));
 	return true;
 }
@@ -1671,7 +1671,7 @@ bool ManifoldKernel::convert_openings(const express::Base&, const std::vector<st
 		auto result = *operand - opening_union;
 		cut_shapes.emplace_back(IfcGeom::ConversionResult(
 			entity_shape.ItemId(),
-			new ifcopenshell::geometry::ManifoldShape(Part{ result.GetMeshGL64(), result }),
+			new ifcopenshell::geometry::ManifoldShape(result),
 			entity_shape.StylePtr()));
 	}
 	return !cut_shapes.empty();

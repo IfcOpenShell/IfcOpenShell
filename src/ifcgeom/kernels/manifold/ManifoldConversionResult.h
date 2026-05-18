@@ -14,12 +14,24 @@ namespace geometry {
 struct IFC_GEOMLIBRARY_API ManifoldPart {
 	manifold::MeshGL64 mesh;
 	std::optional<manifold::Manifold> solid;
+
+	ManifoldPart(const manifold::Manifold& s) {
+        auto copy = s;
+        copy.CalculateNormals(3);
+        mesh = copy.GetMeshGL64();
+        solid = s;	
+	}
+
+	ManifoldPart(const manifold::MeshGL64& s) : mesh(s) {}
+
+	ManifoldPart(const manifold::MeshGL64& s, const manifold::Manifold& m) : mesh(s), solid(m) {}
 };
 
 class IFC_GEOMLIBRARY_API ManifoldShape : public IfcGeom::ConversionResultShape {
 public:
 	ManifoldShape() = default;
-	explicit ManifoldShape(const ManifoldPart& part);
+    explicit ManifoldShape(const manifold::Manifold& part);
+    explicit ManifoldShape(const ManifoldPart& part);
 	explicit ManifoldShape(ManifoldPart&& part);
 	explicit ManifoldShape(const std::vector<ManifoldPart>& parts);
 	explicit ManifoldShape(std::vector<ManifoldPart>&& parts);

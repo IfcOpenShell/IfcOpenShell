@@ -180,6 +180,12 @@ namespace {
 	}
 }
 
+ifcopenshell::geometry::ManifoldShape::ManifoldShape(const manifold::Manifold& solid) {
+    auto copy = solid;
+    auto with_normals = copy.CalculateNormals(3);
+    parts_.push_back({with_normals.GetMeshGL64(), solid});
+}
+
 ifcopenshell::geometry::ManifoldShape::ManifoldShape(const ManifoldPart& part)
 	: parts_{ part } {}
 
@@ -221,6 +227,12 @@ void ifcopenshell::geometry::ManifoldShape::Triangulate(ifcopenshell::geometry::
 				mesh.vertProperties[i * mesh.numProp + 0],
 				mesh.vertProperties[i * mesh.numProp + 1],
 				mesh.vertProperties[i * mesh.numProp + 2]);
+            if (mesh.numProp == 6) {
+				t->addNormal(
+					mesh.vertProperties[i * mesh.numProp + 3],
+					mesh.vertProperties[i * mesh.numProp + 4],
+					mesh.vertProperties[i * mesh.numProp + 5]);
+            }
 		}
 		auto edges = count_edges(mesh);
 		for (size_t i = 0; i < mesh.NumTri(); ++i) {
@@ -499,7 +511,7 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::moved(ifcopenshell
 		if (part.solid && !solid) {
 			throw std::runtime_error("Failed to transform shape");
 		}
-		moved_parts.push_back({ std::move(mesh), std::move(solid) });
+		moved_parts.emplace_back(mesh, *solid);
 	}
 	return new ManifoldShape(std::move(moved_parts));
 }
