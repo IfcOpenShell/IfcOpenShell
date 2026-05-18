@@ -19,32 +19,51 @@
 """Resolve a parametric dimension anchor to a world-space coordinate in metres.
 
 NOTE ON COORDINATE SPACE
-ifcopenshell.geom.create_shape() always outputs geometry in **metres** (its
-internal unit), regardless of the IFC project's declared length unit (feet, mm,
-etc.).  All anchor coordinates (``pt``, ``hint``, fingerprint ``centroid``) are
-therefore stored in metres, which is also Blender world space.  The IFC
-project's unit_scale is NOT applied here.  Callers that need IFC project units
-must divide by ``ifcopenshell.util.unit.calculate_unit_scale(file)`` themselves.
+All anchor coordinates (``pt``, ``hint``) are stored in metres (= Blender world
+space).  Profile vertex positions computed from IFC attributes are converted to
+metres via ``ifcopenshell.util.unit.calculate_unit_scale``.
 
 Anchor schema (JSON-serialisable dict stored in BBIM_Dimension.Anchors):
 
   {
     "guid":  str | None,   # element GlobalId; None → WORLD type (free point)
-    "type":  str,          # "FACE" | "CIRCLE_CENTER" | "WORLD"
+    "type":  str,          # "FACE" | "EDGE" | "VERTEX" | "WORLD"
     "addr":  {
-      "method":      str,  # "ANALYTIC" | "TESS_INDEX" | "TESS_FINGERPRINT"
-      "repr_id":     int,  # STEP id of representation item (ANALYTIC / TESS_INDEX)
-      "repr_type":   str,  # IFC class of representation item
-      "face_role":   str,  # "TOP" | "BOTTOM" | "SIDE_<n>" (IfcExtrudedAreaSolid only)
-      "tess_index":  int,  # coplanar face-group index (-1 = skip)
-      "fingerprint": {
-        "normal":    [x, y, z],  # world-space unit normal (IFC project units)
-        "area":      float,      # total face area
-        "centroid":  [x, y, z]   # area-weighted centroid
-      }
+      # FACE_NORMAL — face identified by element-local unit normal (platform-agnostic).
+      # Rotation-invariant: moving/rotating the element does not invalidate the anchor.
+      "method":       "FACE_NORMAL",
+      "normal_local": [float, float, float],  # element-local unit normal
+
+      # PROFILE_LOCAL — point in IfcExtrudedAreaSolid profile-local space.
+      # profile_x_m / profile_y_m are in the profile's 2-D local frame, metres.
+      # extrusion_z_m is distance along the normalized ExtrudedDirection, metres.
+      # snap: "VERTEX" → re-snap to nearest profile vertex on resolution,
+      #        "EDGE"  → use coords directly (midpoint between two vertices).
+      "method":        "PROFILE_LOCAL",
+      "profile_x_m":   float,
+      "profile_y_m":   float,
+      "extrusion_z_m": float,
+      "snap":          "VERTEX" | "EDGE",
+
+      # LAYER_BOUNDARY — face/boundary of a material layer (platform-agnostic).
+      # Resolution tiers (first match wins):
+      #   layer_id            → IfcMaterialLayer STEP id  (stable in NativeBIM)
+      #   layer_material_id   → IfcMaterial STEP id
+      #   layer_material_name → IfcMaterial.Name
+      #   layer_category      → IfcMaterialLayer.Category (IFC4)
+      #   layer_index         → 0-based position in layer set
+      #   offset_from_ref_m   → proximity to nearest boundary (geometric fallback)
+      "method":             "LAYER_BOUNDARY",
+      "layer_id":           int,
+      "layer_material_id":  int,
+      "layer_material_name": str,
+      "layer_category":     str,
+      "layer_index":        int,
+      "face":               "start" | "end",
+      "offset_from_ref_m":  float,
     } | None,
-    "hint":  [x, y, z] | None,  # original click position for disambiguation
-    "pt":    [x, y, z]           # last resolved position — used as fallback
+    "hint":  [x, y, z] | None,
+    "pt":    [x, y, z]          # cached world position; universal static fallback
   }
 """
 
@@ -75,9 +94,9 @@ def resolve_anchor(
 
     Resolution order:
       1. WORLD / null guid → return stored ``pt`` directly.
-      2. ANALYTIC for IfcExtrudedAreaSolid → analytical TOP/BOTTOM face centre.
-      3. TESS_INDEX → centroid of a pre-recorded face group by index.
-      4. TESS_FINGERPRINT → best face group matched by normal + centroid proximity.
+      2. PROFILE_LOCAL → analytically resolve via IfcExtrudedAreaSolid profile coords.
+      3. PROFILE_VERT / PROFILE_EDGE → legacy index-based resolution (backwards compat).
+      4. FACE_NORMAL → match face group by element-local normal (rotation-invariant).
       5. Fallback → stored ``pt``.
 
     :param file: The open IFC file.
@@ -103,15 +122,26 @@ def resolve_anchor(
         return _pt_or_none(anchor.get("pt"))
 
     addr = anchor.get("addr") or {}
-    method = addr.get("method", "TESS_FINGERPRINT")
 
-    # --- 1. Analytical path (fast, exact) ---
-    if method == "ANALYTIC" and addr.get("repr_type") == "IfcExtrudedAreaSolid":
-        pt = _resolve_extruded_area_solid_analytic(file, element, addr, placement_override)
-        if pt is not None:
-            return pt
+    if anchor_type in ("VERTEX", "EDGE"):
+        method = addr.get("method", "")
+        if method == "PROFILE_LOCAL":
+            pt = _resolve_profile_local_anchor(file, element, addr, placement_override)
+        elif method == "PROFILE_VERT":
+            pt = _resolve_profile_vert_anchor(file, element, addr, placement_override)
+        elif method == "PROFILE_EDGE":
+            pt = _resolve_profile_edge_anchor(file, element, addr, placement_override)
+        else:
+            pt = None
+        return pt if pt is not None else _pt_or_none(anchor.get("pt"))
 
-    # --- 2 & 3. Tessellation path (universal) ---
+    # FACE anchor — check method first; LAYER_BOUNDARY does not need tessellation.
+    method = addr.get("method", "FACE_NORMAL")
+    if method == "LAYER_BOUNDARY":
+        pt = _resolve_layer_boundary_anchor(file, element, addr, placement_override)
+        return pt if pt is not None else _pt_or_none(anchor.get("pt"))
+
+    # FACE_NORMAL — match by element-local normal (rotation-invariant).
     shape = _get_shape(file, element, settings, shape_cache)
     if shape is None:
         return _pt_or_none(anchor.get("pt"))
@@ -122,10 +152,6 @@ def resolve_anchor(
 
     groups = _group_coplanar_tris(verts, tris)
     group_props = [_face_group_props(g, verts, tris) for g in groups]
-
-    # group_props centroids/normals are in LOCAL metres (no USE_WORLD_COORDS).
-    # Build world-space equivalents using placement_override (Blender matrix_world)
-    # when available, otherwise fall back to element.ObjectPlacement from IFC.
     world_group_props = [
         {
             "centroid": _local_to_world_m(file, element, gp["centroid"], placement_override),
@@ -135,33 +161,11 @@ def resolve_anchor(
         for gp in group_props
     ]
 
-    fingerprint = addr.get("fingerprint")
+    # Support both new FACE_NORMAL (addr.normal_local) and legacy fingerprint field.
+    normal_local = addr.get("normal_local") or (addr.get("fingerprint") or {}).get("normal_local")
     hint = anchor.get("hint")
-    fp_normal_local = fingerprint.get("normal_local") if fingerprint else None
-
-    # TESS_INDEX fast path — only accept when the local fingerprint normal still
-    # matches at that index, guarding against face-group reordering after any
-    # geometry edit or profile change.
-    tess_index = addr.get("tess_index", -1)
-    if 0 <= tess_index < len(groups):
-        candidate_local = group_props[tess_index]
-        if fp_normal_local is None or _dot(candidate_local["normal"], fp_normal_local) >= 1.0 - _NORMAL_MATCH_THRESHOLD:
-            return world_group_props[tess_index]["centroid"]
-        # Local-normal mismatch — face groups reordered; fall through to fingerprint.
-
-    # TESS_FINGERPRINT — match by element-local normal (rotation-invariant).
-    if fp_normal_local:
-        pt = _find_by_local_normal(group_props, world_group_props, fp_normal_local, hint)
-        if pt is not None:
-            return pt
-    elif fingerprint:
-        # Legacy anchors built before normal_local was stored: fall back to
-        # world-space normal matching (not rotation-invariant, but best we can do).
-        pt = _find_by_fingerprint(world_group_props, fingerprint, hint)
-        if pt is not None:
-            return pt
-
-    return _pt_or_none(anchor.get("pt"))
+    pt = _find_by_local_normal(group_props, world_group_props, normal_local, hint) if normal_local else None
+    return pt if pt is not None else _pt_or_none(anchor.get("pt"))
 
 
 def build_anchor_from_hit(
@@ -173,11 +177,11 @@ def build_anchor_from_hit(
     shape_cache: Optional[dict] = None,
     placement_override: Optional[dict] = None,
 ) -> dict:
-    """Build an anchor dict from a viewport ray-cast hit.
+    """Build a FACE/FACE_NORMAL anchor dict from a viewport ray-cast hit.
 
-    Tessellates the element, finds the best-matching face group for the hit
-    normal/location, computes the fingerprint, and optionally detects an
-    IfcExtrudedAreaSolid face role (TOP/BOTTOM) for the analytical path.
+    Tessellates the element, finds the best-matching face group, and stores the
+    element-local unit normal.  The local normal is rotation-invariant: moving or
+    rotating the element does not invalidate the anchor.
 
     :param file: The open IFC file.
     :param element: The IFC element that was hit.
@@ -190,13 +194,7 @@ def build_anchor_from_hit(
     :return: Anchor dict ready for JSON serialisation into BBIM_Dimension.
     """
     shape = _get_shape(file, element, settings, shape_cache)
-
-    tess_index = -1
-    fingerprint: dict = {
-        "normal": list(hit_normal_ifc),
-        "area": 0.0,
-        "centroid": list(hit_location_ifc),
-    }
+    normal_local: list = list(hit_normal_ifc)  # fallback: world normal as approximation
 
     if shape is not None:
         verts, tris = _extract_mesh(shape)
@@ -212,31 +210,15 @@ def build_anchor_from_hit(
         ]
         best = _best_group(world_group_props, hit_normal_ifc, hit_location_ifc)
         if best is not None:
-            tess_index, props = best
-            fingerprint = {
-                # normal_local: element-local normal — rotation-invariant primary key.
-                "normal_local": list(local_group_props[tess_index]["normal"]),
-                # world-space fields kept for legacy / disambiguation.
-                "normal": list(props["normal"]),
-                "area": props["area"],
-                "centroid": list(props["centroid"]),
-            }
-
-    repr_type, repr_id, face_role = _detect_extruded_face(
-        file, element, hit_location_ifc, hit_normal_ifc, placement_override
-    )
-    method = "ANALYTIC" if repr_type == "IfcExtrudedAreaSolid" else "TESS_FINGERPRINT"
+            best_idx, _ = best
+            normal_local = list(local_group_props[best_idx]["normal"])
 
     return {
         "guid": element.GlobalId,
         "type": "FACE",
         "addr": {
-            "method": method,
-            "repr_id": repr_id,
-            "repr_type": repr_type,
-            "face_role": face_role,
-            "tess_index": tess_index,
-            "fingerprint": fingerprint,
+            "method": "FACE_NORMAL",
+            "normal_local": normal_local,
         },
         "hint": list(hit_location_ifc),
         "pt": list(hit_location_ifc),
@@ -252,6 +234,673 @@ def make_world_anchor(pt_ifc: tuple[float, float, float]) -> dict:
         "hint": None,
         "pt": list(pt_ifc),
     }
+
+
+def build_anchor_from_profile_vert(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    snap: dict,
+) -> dict:
+    """Build a VERTEX/PROFILE_LOCAL anchor from a profile snap candidate.
+
+    :param snap: Dict from ``get_profile_snap_candidates`` with keys
+        ``snap_world``, ``profile_x_m``, ``profile_y_m``, ``extrusion_z_m``.
+    :return: Anchor dict ready for JSON serialisation.
+    """
+    world_pos = snap["snap_world"]
+    return {
+        "guid": element.GlobalId,
+        "type": "VERTEX",
+        "addr": {
+            "method": "PROFILE_LOCAL",
+            "profile_x_m": snap["profile_x_m"],
+            "profile_y_m": snap["profile_y_m"],
+            "extrusion_z_m": snap["extrusion_z_m"],
+            "snap": "VERTEX",
+        },
+        "hint": list(world_pos),
+        "pt": list(world_pos),
+    }
+
+
+def build_anchor_from_profile_edge(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    snap: dict,
+) -> dict:
+    """Build an EDGE/PROFILE_LOCAL anchor from a profile snap candidate.
+
+    :param snap: Dict from ``get_profile_snap_candidates`` with keys
+        ``snap_world``, ``profile_x_m``, ``profile_y_m``, ``extrusion_z_m``.
+    :return: Anchor dict ready for JSON serialisation.
+    """
+    world_pos = snap["snap_world"]
+    return {
+        "guid": element.GlobalId,
+        "type": "EDGE",
+        "addr": {
+            "method": "PROFILE_LOCAL",
+            "profile_x_m": snap["profile_x_m"],
+            "profile_y_m": snap["profile_y_m"],
+            "extrusion_z_m": snap["extrusion_z_m"],
+            "snap": "EDGE",
+        },
+        "hint": list(world_pos),
+        "pt": list(world_pos),
+    }
+
+
+def get_layer_snap_candidates(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    placement_override: Optional[dict] = None,
+) -> list[dict]:
+    """Return one snap candidate per IfcMaterialLayer boundary in the element.
+
+    Each candidate dict has:
+      - ``type``:             ``"VERTEX"``
+      - ``snap_world``:       mid-height world position on the boundary, metres
+      - ``v0``, ``v1``:       base and top endpoints of the boundary line (for GPU draw)
+      - ``layer``:            the IfcMaterialLayer entity
+      - ``layer_index``:      0-based index in the layer set
+      - ``face``:             ``"start"`` or ``"end"``
+      - ``offset_from_ref_m``: signed offset from element origin along thickness axis
+
+    Returns [] when the element has no IfcMaterialLayerSetUsage or IfcExtrudedAreaSolid.
+    """
+    import ifcopenshell.util.element as ifc_elem
+
+    material = ifc_elem.get_material(element, should_inherit=True)
+    if not material or not material.is_a("IfcMaterialLayerSetUsage"):
+        return []
+
+    usage = material
+    layers = usage.ForLayerSet.MaterialLayers
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+
+    solid = _get_extrusion_solid(file, element)
+    if solid is None:
+        return []
+
+    depth_m = float(solid.Depth) * unit_scale
+    profile_pts_ifc = _get_profile_points_ifc(solid.SweptArea)
+    centroid_x_m = 0.0
+    centroid_y_m = 0.0
+    x_min_m = x_max_m = 0.0
+    y_min_m = y_max_m = 0.0
+    if profile_pts_ifc:
+        xs = [float(p[0]) * unit_scale for p in profile_pts_ifc]
+        ys = [float(p[1]) * unit_scale for p in profile_pts_ifc]
+        centroid_x_m = sum(xs) / len(xs)
+        centroid_y_m = sum(ys) / len(ys)
+        x_min_m, x_max_m = min(xs), max(xs)
+        y_min_m, y_max_m = min(ys), max(ys)
+
+    ref_m = float(usage.OffsetFromReferenceLine) * unit_scale
+    direction_sense = (getattr(usage, "DirectionSense", None) or "POSITIVE")
+    thickness_axis = (getattr(usage, "LayerSetDirection", None) or "AXIS2")
+    sense = 1.0 if direction_sense == "POSITIVE" else -1.0
+
+    # Collect unique boundary offsets (adjacent layers share a boundary)
+    boundaries: list[tuple] = []  # (layer_index, layer, face, offset_m)
+    seen_offsets: set = set()
+    cumulative_m = ref_m
+
+    for i, layer in enumerate(layers):
+        thickness_m = float(layer.LayerThickness) * unit_scale
+        start_m = cumulative_m
+        end_m = cumulative_m + sense * thickness_m
+        for face_label, offset_m in (("start", start_m), ("end", end_m)):
+            key = round(offset_m, 6)
+            if key not in seen_offsets:
+                seen_offsets.add(key)
+                boundaries.append((i, layer, face_label, offset_m))
+        cumulative_m = end_m
+
+    def _w(px, py, pz):
+        return _profile_coords_to_world_m(file, element, solid, px, py, pz, placement_override)
+
+    candidates: list[dict] = []
+    for layer_idx, layer, face, offset_m in boundaries:
+        if thickness_axis == "AXIS3":
+            # Boundary is a horizontal plane at z = offset_m; span full profile XY extent.
+            c0 = _w(x_min_m, y_min_m, offset_m)
+            c1 = _w(x_max_m, y_min_m, offset_m)
+            c2 = _w(x_max_m, y_max_m, offset_m)
+            c3 = _w(x_min_m, y_max_m, offset_m)
+            wp_mid = _w(centroid_x_m, centroid_y_m, offset_m)
+        elif thickness_axis == "AXIS1":
+            # Boundary is a plane at profile_x = offset_m; span full Y extent and Z depth.
+            c0 = _w(offset_m, y_min_m, 0.0)
+            c1 = _w(offset_m, y_max_m, 0.0)
+            c2 = _w(offset_m, y_max_m, depth_m)
+            c3 = _w(offset_m, y_min_m, depth_m)
+            wp_mid = _w(offset_m, centroid_y_m, depth_m * 0.5)
+        else:  # AXIS2
+            # Boundary is a plane at profile_y = offset_m; span full X extent and Z depth.
+            c0 = _w(x_min_m, offset_m, 0.0)
+            c1 = _w(x_max_m, offset_m, 0.0)
+            c2 = _w(x_max_m, offset_m, depth_m)
+            c3 = _w(x_min_m, offset_m, depth_m)
+            wp_mid = _w(centroid_x_m, offset_m, depth_m * 0.5)
+
+        if wp_mid is None:
+            continue
+        seam_corners = [c for c in (c0, c1, c2, c3) if c is not None]
+        candidates.append({
+            "type": "VERTEX",
+            "snap_world": wp_mid,
+            "seam_corners": seam_corners,
+            "layer": layer,
+            "layer_index": layer_idx,
+            "face": face,
+            "offset_from_ref_m": offset_m,
+        })
+
+    return candidates
+
+
+def build_anchor_from_layer_boundary(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    snap: dict,
+) -> dict:
+    """Build a FACE/LAYER_BOUNDARY anchor from a layer snap candidate.
+
+    :param snap: Dict from ``get_layer_snap_candidates`` with keys
+        ``snap_world``, ``layer``, ``layer_index``, ``face``, ``offset_from_ref_m``.
+    :return: Anchor dict ready for JSON serialisation into BBIM_Dimension.
+    """
+    world_pos = snap["snap_world"]
+    layer = snap["layer"]
+    mat = getattr(layer, "Material", None)
+    return {
+        "guid": element.GlobalId,
+        "type": "FACE",
+        "addr": {
+            "method": "LAYER_BOUNDARY",
+            "layer_id": layer.id(),
+            "layer_material_id": mat.id() if mat else None,
+            "layer_material_name": mat.Name if mat else None,
+            "layer_category": getattr(layer, "Category", None),
+            "layer_index": snap["layer_index"],
+            "face": snap["face"],
+            "offset_from_ref_m": snap["offset_from_ref_m"],
+        },
+        "hint": list(world_pos),
+        "pt": list(world_pos),
+    }
+
+
+def get_profile_snap_candidates(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    placement_override: Optional[dict] = None,
+) -> list[dict]:
+    """Return snap candidates derived from an element's IfcExtrudedAreaSolid profile.
+
+    Each candidate dict has:
+      - ``type``: ``"VERTEX"`` or ``"EDGE"``
+      - ``snap_world``: world-space snap position in metres
+      - ``profile_x_m``, ``profile_y_m``: position in profile-local 2-D space, metres
+      - ``extrusion_z_m``: distance along ExtrudedDirection, metres
+      - ``snap``: ``"VERTEX"`` or ``"EDGE"`` (resolution hint)
+      - For EDGE candidates: ``v0``, ``v1`` world-space endpoints (for GPU indicator)
+
+    Returns ``[]`` when the element has no IfcExtrudedAreaSolid representation.
+
+    Candidates generated:
+      - Base vertices    — each profile vertex at extrusion_z_m = 0
+      - Top vertices     — each profile vertex at extrusion_z_m = depth_m
+      - Base horiz edges — adjacent profile vertex pairs at extrusion_z_m = 0
+      - Top horiz edges  — adjacent profile vertex pairs at extrusion_z_m = depth_m
+      - Vertical edges   — same profile vertex at z=0 and z=depth_m (mid z)
+    """
+    solid = _get_extrusion_solid(file, element)
+    if solid is None:
+        return []
+
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+    profile_pts_ifc = _get_profile_points_ifc(solid.SweptArea)
+    if not profile_pts_ifc:
+        return []
+
+    depth_m = float(solid.Depth) * unit_scale
+    n = len(profile_pts_ifc)
+    pts_m = [(float(p[0]) * unit_scale, float(p[1]) * unit_scale) for p in profile_pts_ifc]
+    candidates: list[dict] = []
+
+    def world_pos(pt_idx: int, z_m: float):
+        return _profile_vert_to_world_m(file, element, solid, pt_idx, z_m, placement_override)
+
+    def midpoint(pa, pb):
+        return ((pa[0] + pb[0]) * 0.5, (pa[1] + pb[1]) * 0.5, (pa[2] + pb[2]) * 0.5)
+
+    for z_m in (0.0, depth_m):
+        for i, (px_m, py_m) in enumerate(pts_m):
+            wp = world_pos(i, z_m)
+            if wp is None:
+                continue
+            candidates.append({
+                "type": "VERTEX", "snap_world": wp,
+                "profile_x_m": px_m, "profile_y_m": py_m,
+                "extrusion_z_m": z_m, "snap": "VERTEX",
+            })
+
+            j = (i + 1) % n
+            wpb = world_pos(j, z_m)
+            if wpb is not None:
+                jpx_m, jpy_m = pts_m[j]
+                candidates.append({
+                    "type": "EDGE",
+                    "snap_world": midpoint(wp, wpb),
+                    "v0": wp, "v1": wpb,
+                    "profile_x_m": (px_m + jpx_m) * 0.5,
+                    "profile_y_m": (py_m + jpy_m) * 0.5,
+                    "extrusion_z_m": z_m, "snap": "EDGE",
+                })
+
+    for i, (px_m, py_m) in enumerate(pts_m):
+        wpa = world_pos(i, 0.0)
+        wpb = world_pos(i, depth_m)
+        if wpa is not None and wpb is not None:
+            candidates.append({
+                "type": "EDGE",
+                "snap_world": midpoint(wpa, wpb),
+                "v0": wpa, "v1": wpb,
+                "profile_x_m": px_m, "profile_y_m": py_m,
+                "extrusion_z_m": depth_m * 0.5, "snap": "EDGE",
+            })
+
+    return candidates
+
+
+# ---------------------------------------------------------------------------
+# Profile anchor resolution
+# ---------------------------------------------------------------------------
+
+
+def _get_extrusion_solid(file: ifcopenshell.file, element: ifcopenshell.entity_instance):
+    """Return the first IfcExtrudedAreaSolid found in the element's representations."""
+    if not hasattr(element, "Representation") or not element.Representation:
+        return None
+    for rep in element.Representation.Representations:
+        for item in rep.Items:
+            solid = _unwrap_to_solid(item)
+            if solid is not None and solid.is_a("IfcExtrudedAreaSolid"):
+                return solid
+    return None
+
+
+def _unwrap_to_solid(item):
+    """Recursively unwrap IfcMappedItem / IfcBooleanResult to find the underlying solid."""
+    if item.is_a("IfcMappedItem"):
+        items = item.MappingSource.MappedRepresentation.Items
+        return _unwrap_to_solid(items[0]) if items else None
+    if item.is_a("IfcBooleanResult"):
+        return _unwrap_to_solid(item.FirstOperand)
+    return item
+
+
+def _get_profile_points_ifc(profile) -> list[tuple[float, float]]:
+    """Return list of (x, y) profile vertices in IFC project units.
+
+    Supports IfcRectangleProfileDef (derives 4 corners) and
+    IfcArbitraryClosedProfileDef with IfcIndexedPolyCurve or IfcPolyline outer curves.
+    """
+    if profile.is_a("IfcRectangleProfileDef"):
+        xd = float(profile.XDim)
+        yd = float(profile.YDim)
+        hx, hy = xd / 2.0, yd / 2.0
+        cx, cy = 0.0, 0.0
+        if hasattr(profile, "Position") and profile.Position and profile.Position.Location:
+            loc = profile.Position.Location.Coordinates
+            cx, cy = float(loc[0]), float(loc[1])
+        return [(cx - hx, cy - hy), (cx + hx, cy - hy), (cx + hx, cy + hy), (cx - hx, cy + hy)]
+
+    if profile.is_a("IfcArbitraryClosedProfileDef"):
+        outer = profile.OuterCurve
+        if outer.is_a("IfcIndexedPolyCurve"):
+            coord_list = outer.Points.CoordList
+            return [(float(c[0]), float(c[1])) for c in coord_list]
+        if outer.is_a("IfcPolyline"):
+            pts = [(float(p.Coordinates[0]), float(p.Coordinates[1])) for p in outer.Points]
+            if len(pts) > 1 and pts[0] == pts[-1]:
+                pts = pts[:-1]
+            return pts
+
+    return []
+
+
+def _apply_axis2placement3d_m(
+    file: ifcopenshell.file,
+    placement,
+    pt_m: tuple[float, float, float],
+) -> tuple[float, float, float]:
+    """Apply an IfcAxis2Placement3D to a point that is already in metres.
+
+    Location.Coordinates are in IFC project units and are scaled by unit_scale.
+    Rotation basis vectors (Axis, RefDirection) are dimensionless.
+    """
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+    loc = placement.Location.Coordinates
+    ox = float(loc[0]) * unit_scale
+    oy = float(loc[1]) * unit_scale
+    oz = float(loc[2]) * unit_scale
+
+    if placement.Axis:
+        zr = placement.Axis.DirectionRatios
+        zm = math.sqrt(zr[0] ** 2 + zr[1] ** 2 + zr[2] ** 2)
+        zx, zy, zz = (zr[0] / zm, zr[1] / zm, zr[2] / zm) if zm > 1e-12 else (0.0, 0.0, 1.0)
+    else:
+        zx, zy, zz = 0.0, 0.0, 1.0
+
+    if placement.RefDirection:
+        xr = placement.RefDirection.DirectionRatios
+        xm = math.sqrt(xr[0] ** 2 + xr[1] ** 2 + xr[2] ** 2)
+        xx, xy, xz = (xr[0] / xm, xr[1] / xm, xr[2] / xm) if xm > 1e-12 else (1.0, 0.0, 0.0)
+    else:
+        xx, xy, xz = 1.0, 0.0, 0.0
+
+    yx = zy * xz - zz * xy
+    yy = zz * xx - zx * xz
+    yz = zx * xy - zy * xx
+
+    px, py, pz = pt_m
+    return (
+        ox + px * xx + py * yx + pz * zx,
+        oy + px * xy + py * yy + pz * zy,
+        oz + px * xz + py * yz + pz * zz,
+    )
+
+
+def _profile_vert_to_world_m(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    solid,
+    pt_idx: int,
+    extrusion_z_m: float,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    """Convert a profile vertex index + extrusion distance to world-space metres.
+
+    Coordinate flow (all in metres after unit_scale):
+      1. Profile 2D point  → scale IFC coords by unit_scale
+      2. Add extrusion offset along normalized ExtrudedDirection
+      3. Apply solid.Position (IfcAxis2Placement3D) → element-local metres
+      4. Apply element ObjectPlacement → world metres
+    """
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+
+    profile_pts_ifc = _get_profile_points_ifc(solid.SweptArea)
+    if not profile_pts_ifc or pt_idx < 0 or pt_idx >= len(profile_pts_ifc):
+        return None
+
+    px_m = float(profile_pts_ifc[pt_idx][0]) * unit_scale
+    py_m = float(profile_pts_ifc[pt_idx][1]) * unit_scale
+
+    dr = solid.ExtrudedDirection.DirectionRatios
+    mag = math.sqrt(sum(d * d for d in dr))
+    if mag < 1e-12:
+        return None
+    ex, ey, ez = dr[0] / mag, dr[1] / mag, dr[2] / mag
+
+    pt_solid_m = (
+        px_m + ex * float(extrusion_z_m),
+        py_m + ey * float(extrusion_z_m),
+        ez * float(extrusion_z_m),
+    )
+
+    if solid.Position:
+        pt_elem_m = _apply_axis2placement3d_m(file, solid.Position, pt_solid_m)
+    else:
+        pt_elem_m = pt_solid_m
+
+    return _local_to_world_m(file, element, pt_elem_m, placement_override)
+
+
+def _profile_coords_to_world_m(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    solid,
+    px_m: float,
+    py_m: float,
+    extrusion_z_m: float,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    """Convert profile-local coordinates (metres) + extrusion distance to world-space metres.
+
+    Identical coordinate flow to ``_profile_vert_to_world_m`` but takes the
+    profile 2-D position directly instead of a CoordList index.
+    """
+    dr = solid.ExtrudedDirection.DirectionRatios
+    mag = math.sqrt(sum(d * d for d in dr))
+    if mag < 1e-12:
+        return None
+    ex, ey, ez = dr[0] / mag, dr[1] / mag, dr[2] / mag
+
+    pt_solid_m = (
+        px_m + ex * float(extrusion_z_m),
+        py_m + ey * float(extrusion_z_m),
+        ez * float(extrusion_z_m),
+    )
+
+    if solid.Position:
+        pt_elem_m = _apply_axis2placement3d_m(file, solid.Position, pt_solid_m)
+    else:
+        pt_elem_m = pt_solid_m
+
+    return _local_to_world_m(file, element, pt_elem_m, placement_override)
+
+
+def _resolve_profile_local_anchor(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    addr: dict,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    """Resolve a PROFILE_LOCAL anchor to world-space metres.
+
+    For VERTEX snap type, re-snaps to the nearest current profile vertex so that
+    the anchor tracks correctly even when CoordList ordering changes after an
+    ``update_representation`` call.  For EDGE snap type the stored midpoint
+    coordinates are used directly (the midpoint is already between two vertices
+    and is unambiguous after reordering).
+    """
+    profile_x_m = addr.get("profile_x_m")
+    profile_y_m = addr.get("profile_y_m")
+    extrusion_z_m = addr.get("extrusion_z_m")
+    snap_type = addr.get("snap", "VERTEX")
+
+    if profile_x_m is None or profile_y_m is None or extrusion_z_m is None:
+        return None
+
+    solid = _get_extrusion_solid(file, element)
+    if solid is None:
+        return None
+
+    if snap_type == "VERTEX":
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+        profile_pts = _get_profile_points_ifc(solid.SweptArea)
+        if profile_pts:
+            best_px, best_py, best_d2 = profile_x_m, profile_y_m, float("inf")
+            for pt in profile_pts:
+                px = float(pt[0]) * unit_scale
+                py = float(pt[1]) * unit_scale
+                d2 = (px - profile_x_m) ** 2 + (py - profile_y_m) ** 2
+                if d2 < best_d2:
+                    best_d2, best_px, best_py = d2, px, py
+            profile_x_m, profile_y_m = best_px, best_py
+
+    return _profile_coords_to_world_m(
+        file, element, solid, profile_x_m, profile_y_m, extrusion_z_m, placement_override
+    )
+
+
+def _resolve_profile_vert_anchor(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    addr: dict,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    pt_idx = addr.get("pt_idx")
+    extrusion_z_m = addr.get("extrusion_z_m")
+    if pt_idx is None or extrusion_z_m is None:
+        return None
+    solid = _get_extrusion_solid(file, element)
+    if solid is None:
+        return None
+    return _profile_vert_to_world_m(file, element, solid, pt_idx, extrusion_z_m, placement_override)
+
+
+def _resolve_profile_edge_anchor(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    addr: dict,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    """Resolve a PROFILE_EDGE anchor to the world-space midpoint of the stored edge."""
+    pt_idx_a = addr.get("pt_idx_a")
+    extrusion_z_m_a = addr.get("extrusion_z_m_a")
+    pt_idx_b = addr.get("pt_idx_b")
+    extrusion_z_m_b = addr.get("extrusion_z_m_b")
+    if any(v is None for v in (pt_idx_a, extrusion_z_m_a, pt_idx_b, extrusion_z_m_b)):
+        return None
+    solid = _get_extrusion_solid(file, element)
+    if solid is None:
+        return None
+    pa = _profile_vert_to_world_m(file, element, solid, pt_idx_a, extrusion_z_m_a, placement_override)
+    pb = _profile_vert_to_world_m(file, element, solid, pt_idx_b, extrusion_z_m_b, placement_override)
+    if pa is None or pb is None:
+        return None
+    return ((pa[0] + pb[0]) * 0.5, (pa[1] + pb[1]) * 0.5, (pa[2] + pb[2]) * 0.5)
+
+
+# ---------------------------------------------------------------------------
+# Layer boundary anchor resolution
+# ---------------------------------------------------------------------------
+
+
+def _get_material_layer_usage(element: ifcopenshell.entity_instance):
+    """Return the IfcMaterialLayerSetUsage for an element, or None."""
+    import ifcopenshell.util.element as ifc_elem
+    mat = ifc_elem.get_material(element, should_inherit=True)
+    return mat if (mat and mat.is_a("IfcMaterialLayerSetUsage")) else None
+
+
+def _resolve_layer_boundary_anchor(
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    addr: dict,
+    placement_override: Optional[dict] = None,
+) -> Optional[tuple[float, float, float]]:
+    """Resolve a LAYER_BOUNDARY anchor to world-space metres via a 6-tier fallback stack.
+
+    Resolution tiers (first match wins):
+      1. layer_id            → IfcMaterialLayer STEP id (most stable)
+      2. layer_material_id   → IfcMaterial STEP id
+      3. layer_material_name → IfcMaterial.Name
+      4. layer_category      → IfcMaterialLayer.Category (IFC4)
+      5. layer_index         → 0-based position in layer set
+      6. Geometric fallback  → caller uses stored ``pt``
+    """
+    usage = _get_material_layer_usage(element)
+    if usage is None:
+        return None
+
+    layers = list(usage.ForLayerSet.MaterialLayers)
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+
+    # --- Identify target layer via tier stack ---
+    target_idx: Optional[int] = None
+
+    layer_id = addr.get("layer_id")
+    if layer_id is not None and target_idx is None:
+        for i, layer in enumerate(layers):
+            if layer.id() == layer_id:
+                target_idx = i
+                break
+
+    if target_idx is None:
+        layer_material_id = addr.get("layer_material_id")
+        if layer_material_id is not None:
+            for i, layer in enumerate(layers):
+                mat = getattr(layer, "Material", None)
+                if mat and mat.id() == layer_material_id:
+                    target_idx = i
+                    break
+
+    if target_idx is None:
+        layer_material_name = addr.get("layer_material_name")
+        if layer_material_name:
+            for i, layer in enumerate(layers):
+                mat = getattr(layer, "Material", None)
+                if mat and mat.Name == layer_material_name:
+                    target_idx = i
+                    break
+
+    if target_idx is None:
+        layer_category = addr.get("layer_category")
+        if layer_category:
+            for i, layer in enumerate(layers):
+                if getattr(layer, "Category", None) == layer_category:
+                    target_idx = i
+                    break
+
+    if target_idx is None:
+        stored_idx = addr.get("layer_index")
+        if stored_idx is not None and 0 <= stored_idx < len(layers):
+            target_idx = stored_idx
+
+    if target_idx is None:
+        return None  # tier 6: caller will use stored pt
+
+    # --- Compute boundary offset along thickness axis ---
+    ref_m = float(usage.OffsetFromReferenceLine) * unit_scale
+    direction_sense = (getattr(usage, "DirectionSense", None) or "POSITIVE")
+    thickness_axis = (getattr(usage, "LayerSetDirection", None) or "AXIS2")
+    sense = 1.0 if direction_sense == "POSITIVE" else -1.0
+
+    cumulative_m = ref_m
+    target_offset_m: Optional[float] = None
+    for i, layer in enumerate(layers):
+        thickness_m = float(layer.LayerThickness) * unit_scale
+        if i == target_idx:
+            face = addr.get("face", "start")
+            target_offset_m = cumulative_m if face == "start" else cumulative_m + sense * thickness_m
+            break
+        cumulative_m += sense * thickness_m
+
+    if target_offset_m is None:
+        return None
+
+    # --- Convert to world position at profile centroid, mid-extrusion ---
+    solid = _get_extrusion_solid(file, element)
+    if solid is None:
+        return None
+
+    depth_m = float(solid.Depth) * unit_scale
+    profile_pts_ifc = _get_profile_points_ifc(solid.SweptArea)
+    centroid_x_m = 0.0
+    centroid_y_m = 0.0
+    if profile_pts_ifc:
+        xs = [float(p[0]) * unit_scale for p in profile_pts_ifc]
+        ys = [float(p[1]) * unit_scale for p in profile_pts_ifc]
+        centroid_x_m = sum(xs) / len(xs)
+        centroid_y_m = sum(ys) / len(ys)
+
+    if thickness_axis == "AXIS3":
+        return _profile_coords_to_world_m(
+            file, element, solid, centroid_x_m, centroid_y_m, target_offset_m, placement_override
+        )
+    elif thickness_axis == "AXIS1":
+        return _profile_coords_to_world_m(
+            file, element, solid, target_offset_m, centroid_y_m, depth_m * 0.5, placement_override
+        )
+    else:  # AXIS2
+        return _profile_coords_to_world_m(
+            file, element, solid, centroid_x_m, target_offset_m, depth_m * 0.5, placement_override
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -338,35 +987,6 @@ def _rotate_local_to_world(
         float(m[1][0] * x + m[1][1] * y + m[1][2] * z),
         float(m[2][0] * x + m[2][1] * y + m[2][2] * z),
     )
-
-
-def _world_normal_to_elem_local(
-    file: ifcopenshell.file,
-    element: ifcopenshell.entity_instance,
-    world_normal: tuple,
-    placement_override: Optional[dict] = None,
-) -> tuple[float, float, float]:
-    """Rotate a world-space direction into element-local space (rotation only, no translation).
-
-    Uses placement_override (Blender matrix_world) when available so that
-    elements moved/rotated in the viewport are handled correctly.
-    """
-    x, y, z = float(world_normal[0]), float(world_normal[1]), float(world_normal[2])
-    if placement_override is not None and element.id() in placement_override:
-        m = placement_override[element.id()]
-        # Inverse rotation = transpose of the 3×3 rotation block.
-        lx = float(m[0][0]) * x + float(m[1][0]) * y + float(m[2][0]) * z
-        ly = float(m[0][1]) * x + float(m[1][1]) * y + float(m[2][1]) * z
-        lz = float(m[0][2]) * x + float(m[1][2]) * y + float(m[2][2]) * z
-    else:
-        m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        lx = float(m[0][0]) * x + float(m[1][0]) * y + float(m[2][0]) * z
-        ly = float(m[0][1]) * x + float(m[1][1]) * y + float(m[2][1]) * z
-        lz = float(m[0][2]) * x + float(m[1][2]) * y + float(m[2][2]) * z
-    mag = math.sqrt(lx * lx + ly * ly + lz * lz)
-    if mag > 1e-12:
-        return (lx / mag, ly / mag, lz / mag)
-    return (x, y, z)
 
 
 def _extract_mesh(shape) -> tuple[list[tuple], list[tuple]]:
@@ -490,7 +1110,7 @@ def _face_group_props(group: list[int], verts: list, tris: list) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Fingerprint matching
+# Face group matching
 # ---------------------------------------------------------------------------
 
 _NORMAL_MATCH_THRESHOLD = 0.02    # max dot-product deviation for normal match
@@ -499,41 +1119,6 @@ _CENTROID_MAX_DIST = 10.0         # max IFC-unit distance for centroid proximity
 
 def _dist(a, b) -> float:
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2)
-
-
-def _find_by_fingerprint(
-    group_props: list[dict],
-    fingerprint: dict,
-    hint: Optional[list],
-) -> Optional[tuple[float, float, float]]:
-    """Return the centroid of the best-matching face group."""
-    fp_normal = fingerprint["normal"]
-    fp_centroid = fingerprint["centroid"]
-
-    best_score = -1.0
-    best_centroid = None
-
-    for props in group_props:
-        dot_val = _dot(props["normal"], fp_normal)
-        if dot_val < 1.0 - _NORMAL_MATCH_THRESHOLD:
-            continue  # wrong-facing face
-
-        # Score: prefer face whose centroid is closest to stored fingerprint centroid,
-        # then to the original click hint.
-        centroid_dist = _dist(props["centroid"], fp_centroid)
-        if centroid_dist > _CENTROID_MAX_DIST:
-            continue
-
-        score = dot_val - centroid_dist / _CENTROID_MAX_DIST * 0.3
-        if hint:
-            hint_dist = _dist(props["centroid"], hint)
-            score -= hint_dist / _CENTROID_MAX_DIST * 0.1
-
-        if score > best_score:
-            best_score = score
-            best_centroid = props["centroid"]
-
-    return best_centroid
 
 
 def _best_group(
@@ -584,319 +1169,6 @@ def _find_by_local_normal(
             best_centroid = world_group_props[i]["centroid"]
 
     return best_centroid
-
-
-# ---------------------------------------------------------------------------
-# Analytical resolution — IfcExtrudedAreaSolid TOP / BOTTOM / SIDE_*
-# ---------------------------------------------------------------------------
-
-
-def _resolve_extruded_area_solid_analytic(
-    file: ifcopenshell.file,
-    element: ifcopenshell.entity_instance,
-    addr: dict,
-    placement_override: Optional[dict] = None,
-) -> Optional[tuple[float, float, float]]:
-    """Analytically resolve a face centre of an IfcExtrudedAreaSolid.
-
-    Handles TOP, BOTTOM, and SIDE_PLUS_X / SIDE_MINUS_X / SIDE_PLUS_Y / SIDE_MINUS_Y
-    roles.  Side-face roles are only supported for IfcRectangleProfileDef; other
-    profile types fall back to tessellation fingerprint matching.
-    """
-    face_role = addr.get("face_role", "")
-    _top_bottom = ("TOP", "BOTTOM")
-    _sides = ("SIDE_PLUS_X", "SIDE_MINUS_X", "SIDE_PLUS_Y", "SIDE_MINUS_Y")
-    if face_role not in _top_bottom + _sides:
-        return None
-
-    repr_id = addr.get("repr_id")
-    if not repr_id:
-        return None
-
-    try:
-        solid = file.by_id(repr_id)
-    except Exception:
-        return None
-
-    if not solid.is_a("IfcExtrudedAreaSolid"):
-        return None
-
-    try:
-        profile = solid.SweptArea
-        dir_ratios = solid.ExtrudedDirection.DirectionRatios
-        depth = float(solid.Depth)
-
-        mag = math.sqrt(sum(d * d for d in dir_ratios))
-        if mag < 1e-12:
-            return None
-        dir_vec = tuple(d / mag for d in dir_ratios)
-
-        if face_role in _top_bottom:
-            profile_centroid_local = _profile_centroid(profile)
-            scale = depth if face_role == "TOP" else 0.0
-            px = profile_centroid_local[0] + dir_vec[0] * scale
-            py = profile_centroid_local[1] + dir_vec[1] * scale
-            pz = dir_vec[2] * scale
-
-        else:  # SIDE_* — only for IfcRectangleProfileDef
-            if not profile.is_a("IfcRectangleProfileDef"):
-                return None
-
-            x_dim = float(profile.XDim)
-            y_dim = float(profile.YDim)
-            half_depth = depth / 2.0
-
-            # Profile centre and local axes (from profile.Position 2D placement).
-            cx, cy = 0.0, 0.0
-            px_axis = (1.0, 0.0)  # profile X in profile 2D
-            if hasattr(profile, "Position") and profile.Position:
-                loc = profile.Position.Location
-                cx = float(loc.Coordinates[0])
-                cy = float(loc.Coordinates[1])
-                if profile.Position.RefDirection:
-                    pr = profile.Position.RefDirection.DirectionRatios
-                    pm = math.sqrt(pr[0] ** 2 + pr[1] ** 2)
-                    if pm > 1e-12:
-                        px_axis = (pr[0] / pm, pr[1] / pm)
-            py_axis = (-px_axis[1], px_axis[0])  # 90° rotation
-
-            half_x = x_dim / 2.0
-            half_y = y_dim / 2.0
-
-            if face_role == "SIDE_PLUS_X":
-                fx = cx + half_x * px_axis[0]
-                fy = cy + half_x * px_axis[1]
-            elif face_role == "SIDE_MINUS_X":
-                fx = cx - half_x * px_axis[0]
-                fy = cy - half_x * px_axis[1]
-            elif face_role == "SIDE_PLUS_Y":
-                fx = cx + half_y * py_axis[0]
-                fy = cy + half_y * py_axis[1]
-            else:  # SIDE_MINUS_Y
-                fx = cx - half_y * py_axis[0]
-                fy = cy - half_y * py_axis[1]
-
-            # Lift from profile 2D to solid-local 3D at mid-extrusion depth.
-            px = fx + dir_vec[0] * half_depth
-            py = fy + dir_vec[1] * half_depth
-            pz = dir_vec[2] * half_depth
-
-        if solid.Position:
-            local_pt = _apply_axis2placement3d(solid.Position, (px, py, pz))
-        else:
-            local_pt = (px, py, pz)
-
-        # Apply element placement — use placement_override (Blender matrix_world, metres)
-        # when available so that unsync'd viewport moves are reflected.
-        return _local_to_world_m(file, element, local_pt, placement_override)
-    except Exception:
-        return None
-
-
-def _profile_centroid(profile) -> tuple[float, float]:
-    """Return (x, y) centroid of a profile def in its local 2D space."""
-    if profile.is_a("IfcRectangleProfileDef"):
-        pos = profile.Position
-        if pos:
-            loc = pos.Location
-            return (loc.Coordinates[0], loc.Coordinates[1])
-        return (0.0, 0.0)
-    if profile.is_a("IfcCircleProfileDef"):
-        pos = profile.Position
-        if pos:
-            loc = pos.Location
-            return (loc.Coordinates[0], loc.Coordinates[1])
-        return (0.0, 0.0)
-    # Fallback for arbitrary profiles — use position location if available
-    if hasattr(profile, "Position") and profile.Position:
-        loc = profile.Position.Location
-        return (loc.Coordinates[0], loc.Coordinates[1])
-    return (0.0, 0.0)
-
-
-def _apply_axis2placement3d(placement, pt: tuple) -> tuple[float, float, float]:
-    """Apply an IfcAxis2Placement3D to a local point."""
-    loc = placement.Location.Coordinates
-    ox, oy, oz = float(loc[0]), float(loc[1]), float(loc[2])
-
-    # Z axis (extrusion direction in placement space)
-    if placement.Axis:
-        zr = placement.Axis.DirectionRatios
-        zx, zy, zz = float(zr[0]), float(zr[1]), float(zr[2])
-    else:
-        zx, zy, zz = 0.0, 0.0, 1.0
-
-    # X axis (ref direction)
-    if placement.RefDirection:
-        xr = placement.RefDirection.DirectionRatios
-        xx, xy, xz = float(xr[0]), float(xr[1]), float(xr[2])
-    else:
-        xx, xy, xz = 1.0, 0.0, 0.0
-
-    # Y axis = Z × X
-    yx = zy * xz - zz * xy
-    yy = zz * xx - zx * xz
-    yz = zx * xy - zy * xx
-
-    px, py, pz = pt
-    return (
-        ox + px * xx + py * yx + pz * zx,
-        oy + px * xy + py * yy + pz * zy,
-        oz + px * xz + py * yz + pz * zz,
-    )
-
-
-def _mat_apply(m, pt: tuple) -> tuple[float, float, float]:
-    """Apply a 4×4 numpy placement matrix to a point."""
-    x, y, z = float(pt[0]), float(pt[1]), float(pt[2])
-    return (
-        float(m[0][0] * x + m[0][1] * y + m[0][2] * z + m[0][3]),
-        float(m[1][0] * x + m[1][1] * y + m[1][2] * z + m[1][3]),
-        float(m[2][0] * x + m[2][1] * y + m[2][2] * z + m[2][3]),
-    )
-
-
-# ---------------------------------------------------------------------------
-# IfcExtrudedAreaSolid face role detection
-# ---------------------------------------------------------------------------
-
-
-def _detect_extruded_face(
-    file: ifcopenshell.file,
-    element: ifcopenshell.entity_instance,
-    hit_location: tuple,
-    hit_normal: tuple,
-    placement_override: Optional[dict] = None,
-) -> tuple[str, int, str]:
-    """Identify if the hit face is a face of an IfcExtrudedAreaSolid.
-
-    Returns (repr_type, repr_id, face_role).
-    face_role is one of: 'TOP', 'BOTTOM', 'SIDE_PLUS_X', 'SIDE_MINUS_X',
-    'SIDE_PLUS_Y', 'SIDE_MINUS_Y', or '' (not recognized).
-    Side roles are only returned for IfcRectangleProfileDef.
-    """
-    if not hasattr(element, "Representation") or not element.Representation:
-        return ("", -1, "")
-
-    # Transform hit_normal from world → element-local for accurate role classification.
-    hit_normal_elem = _world_normal_to_elem_local(file, element, hit_normal, placement_override)
-
-    for rep in element.Representation.Representations:
-        for item in rep.Items:
-            solid = _unwrap_mapped(item)
-            if not solid or not solid.is_a("IfcExtrudedAreaSolid"):
-                continue
-            role = _extruded_face_role(solid, hit_normal_elem)
-            if role:
-                return ("IfcExtrudedAreaSolid", solid.id(), role)
-
-    return ("", -1, "")
-
-
-def _unwrap_mapped(item):
-    """Unwrap IfcMappedItem to its underlying representation item (first item)."""
-    if item.is_a("IfcMappedItem"):
-        items = item.MappingSource.MappedRepresentation.Items
-        return items[0] if items else None
-    return item
-
-
-def _apply_axis2placement3d_rotation_inv(placement, vec: tuple) -> tuple[float, float, float]:
-    """Apply the inverse rotation of an IfcAxis2Placement3D to a direction.
-
-    Transforms a direction from element-local space into solid-local space.
-    The rotation matrix R = [x_axis | y_axis | z_axis]; its inverse for an
-    orthogonal matrix is R^T, computed here by dotting with each basis vector.
-    """
-    if placement is None:
-        return vec
-
-    x, y, z = float(vec[0]), float(vec[1]), float(vec[2])
-
-    if placement.Axis:
-        zr = placement.Axis.DirectionRatios
-        zm = math.sqrt(zr[0] ** 2 + zr[1] ** 2 + zr[2] ** 2)
-        zx, zy, zz = (zr[0] / zm, zr[1] / zm, zr[2] / zm) if zm > 1e-12 else (0.0, 0.0, 1.0)
-    else:
-        zx, zy, zz = 0.0, 0.0, 1.0
-
-    if placement.RefDirection:
-        xr = placement.RefDirection.DirectionRatios
-        xm = math.sqrt(xr[0] ** 2 + xr[1] ** 2 + xr[2] ** 2)
-        xx, xy, xz = (xr[0] / xm, xr[1] / xm, xr[2] / xm) if xm > 1e-12 else (1.0, 0.0, 0.0)
-    else:
-        xx, xy, xz = 1.0, 0.0, 0.0
-
-    # Y = Z × X
-    yx = zy * xz - zz * xy
-    yy = zz * xx - zx * xz
-    yz = zx * xy - zy * xx
-
-    # R^T: dot input with each column of R (= each basis axis of the placement).
-    inv_x = xx * x + xy * y + xz * z
-    inv_y = yx * x + yy * y + yz * z
-    inv_z = zx * x + zy * y + zz * z
-
-    mag = math.sqrt(inv_x ** 2 + inv_y ** 2 + inv_z ** 2)
-    if mag > 1e-12:
-        return (inv_x / mag, inv_y / mag, inv_z / mag)
-    return vec
-
-
-def _extruded_face_role(solid, hit_normal_elem_local: tuple) -> str:
-    """Classify the hit face role on an IfcExtrudedAreaSolid.
-
-    Returns 'TOP', 'BOTTOM', 'SIDE_PLUS_X', 'SIDE_MINUS_X', 'SIDE_PLUS_Y',
-    'SIDE_MINUS_Y', or ''.  Side roles require IfcRectangleProfileDef.
-
-    :param hit_normal_elem_local: Face normal in element-local space.
-    """
-    try:
-        # Map from element-local to solid-local via solid.Position inverse rotation.
-        hit_normal_solid = _apply_axis2placement3d_rotation_inv(solid.Position, hit_normal_elem_local)
-
-        dr = solid.ExtrudedDirection.DirectionRatios
-        mag = math.sqrt(sum(d * d for d in dr))
-        if mag < 1e-12:
-            return ""
-        extrude_dir = tuple(d / mag for d in dr)
-
-        dot_extrude = _dot(extrude_dir, hit_normal_solid)
-        if dot_extrude > 0.99:
-            return "TOP"
-        if dot_extrude < -0.99:
-            return "BOTTOM"
-
-        # Side face detection — only supported for IfcRectangleProfileDef.
-        if not solid.SweptArea.is_a("IfcRectangleProfileDef"):
-            return ""
-
-        profile = solid.SweptArea
-
-        # Profile X axis in solid-local 2D (from profile.Position.RefDirection).
-        px_axis = (1.0, 0.0)
-        if hasattr(profile, "Position") and profile.Position and profile.Position.RefDirection:
-            pr = profile.Position.RefDirection.DirectionRatios
-            pm = math.sqrt(pr[0] ** 2 + pr[1] ** 2)
-            if pm > 1e-12:
-                px_axis = (pr[0] / pm, pr[1] / pm)
-        py_axis = (-px_axis[1], px_axis[0])  # 90° CCW
-
-        # Lift 2D profile axes to solid-local 3D (profile is in the solid XY plane).
-        px_3d = (px_axis[0], px_axis[1], 0.0)
-        py_3d = (py_axis[0], py_axis[1], 0.0)
-
-        dot_x = _dot(hit_normal_solid, px_3d)
-        dot_y = _dot(hit_normal_solid, py_3d)
-
-        if abs(dot_x) > 0.99:
-            return "SIDE_PLUS_X" if dot_x > 0 else "SIDE_MINUS_X"
-        if abs(dot_y) > 0.99:
-            return "SIDE_PLUS_Y" if dot_y > 0 else "SIDE_MINUS_Y"
-
-    except Exception:
-        pass
-    return ""
 
 
 # ---------------------------------------------------------------------------

@@ -26,7 +26,7 @@ from .. import wrap_usecases
 from .assign_product import assign_product
 from .edit_text_literal import edit_text_literal
 from .regenerate_dimension import regenerate_dimension, get_dimension_segment_lengths
-from .resolve_anchor import build_anchor_from_hit, make_world_anchor, resolve_anchor
+from .resolve_anchor import build_anchor_from_hit, build_anchor_from_layer_boundary, build_anchor_from_profile_vert, build_anchor_from_profile_edge, get_layer_snap_candidates, get_profile_snap_candidates, make_world_anchor, resolve_anchor
 from .unassign_product import unassign_product
 
 wrap_usecases(__path__, __name__)
@@ -34,8 +34,13 @@ wrap_usecases(__path__, __name__)
 __all__ = [
     "assign_product",
     "build_anchor_from_hit",
+    "build_anchor_from_layer_boundary",
+    "build_anchor_from_profile_edge",
+    "build_anchor_from_profile_vert",
     "edit_text_literal",
     "get_dimension_segment_lengths",
+    "get_layer_snap_candidates",
+    "get_profile_snap_candidates",
     "make_world_anchor",
     "regenerate_dimension",
     "resolve_anchor",
