@@ -2952,14 +2952,19 @@ class DimensionLinePositionWidget(types.GizmoGroup):
             return
 
         mid = self._midpoint(obj)
+        # Lift each cone off the dimension line so the arrow base doesn't
+        # overlap anchor dots.  0.3 m gives clear separation at typical zoom.
+        _GAP = 0.15
+        fwd_origin = mid + _GAP * od
+        rev_origin = mid - _GAP * od
 
-        self.gz_fwd.matrix_basis = self._basis(mid, od)
+        self.gz_fwd.matrix_basis = self._basis(fwd_origin, od)
         self.gz_fwd.axis = od.copy()
         self.gz_fwd.hide = False
 
         # Reverse cone: visually points in -od; same drag axis so both cones
         # respond identically — drag toward either tip to move the line.
-        self.gz_rev.matrix_basis = self._basis(mid, -od)
+        self.gz_rev.matrix_basis = self._basis(rev_origin, -od)
         self.gz_rev.axis = od.copy()
         self.gz_rev.hide = False
 
