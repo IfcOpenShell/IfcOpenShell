@@ -2135,44 +2135,25 @@ class ExtrusionWidget(types.GizmoGroup):
 
 
 class GizmoAnchorHandle(bpy.types.Gizmo):
-    """Dot gizmo positioned at one vertex of a parametric dimension curve.
+    """Visual-only dot at a parametric dimension vertex.
 
-    Clicking it invokes ``bim.set_dimension_anchor`` pre-scoped to that vertex
-    index, skipping the manual vertex-pick phase of the operator.
+    No draw_select/invoke — any draw_select entry puts the gizmo in Blender's
+    select buffer, which causes the gizmo system to consume the click even
+    without an explicit invoke.  All click handling is done by the
+    bim.click_nearest_dimension_anchor keymap operator.
     """
 
     bl_idname = "BIM_GT_anchor_handle"
 
-    __slots__ = ("anchor_index", "custom_shape", "custom_shape_select")
+    __slots__ = ("anchor_index", "custom_shape")
 
     def setup(self):
         self.anchor_index = 0
         self.custom_shape = self.new_custom_shape(type="TRIS", verts=X3DISC)
-        # 4× scaled version used only for hit-detection — bigger target, same visual size.
-        _sel = tuple((x * 4.0, y * 4.0, z) for x, y, z in X3DISC)
-        self.custom_shape_select = self.new_custom_shape(type="TRIS", verts=_sel)
 
     def draw(self, context):
         self.draw_custom_shape(self.custom_shape)
 
-    def draw_select(self, context, select_id):
-        self.draw_custom_shape(self.custom_shape_select, select_id=select_id)
-
-    def invoke(self, context, event):
-        return {"RUNNING_MODAL"}
-
-    def modal(self, context, event, tweak):
-        anchor_index = self.anchor_index
-
-        def _launch():
-            try:
-                bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=anchor_index)
-            except Exception as e:
-                print(f"[DimensionAnchorWidget] {e}")
-            return None
-
-        bpy.app.timers.register(_launch, first_interval=0.0)
-        return {"FINISHED"}
 
 
 class DimensionAnchorWidget(types.GizmoGroup):
@@ -2196,11 +2177,21 @@ class DimensionAnchorWidget(types.GizmoGroup):
     def poll(cls, context: bpy.types.Context) -> bool:
         if not tool.Ifc.get():
             return False
-        # Stay visible while SetDimensionAnchor is running (active obj may be a temp element).
+        # Stay visible while SetDimensionAnchor is running (active obj may temporarily
+        # be an IFC element in the face-picking phase rather than the annotation).
         if _active_anchor_idx >= 0 and _editing_annotation_obj is not None:
-            return True
+            active = context.active_object
+            if active is _editing_annotation_obj:
+                return True  # annotation still active
+            if active is not None and tool.Ifc.get_entity(active) is not None:
+                return True  # face-picking phase: active obj is a target element
+            # Active object is None or a non-IFC object — the modal ended without
+            # calling set_active_anchor(-1).  Reset stale state and fall through.
+            set_active_anchor(-1)
         obj = context.active_object
         if not obj or obj.type != "CURVE":
+            return False
+        if not obj.select_get():
             return False
         element = tool.Ifc.get_entity(obj)
         if not element or not element.is_a("IfcAnnotation"):
@@ -2215,8 +2206,7 @@ class DimensionAnchorWidget(types.GizmoGroup):
         self._handles: list = []
         for _ in range(self._MAX_ANCHORS):
             gz = self.gizmos.new("BIM_GT_anchor_handle")
-            gz.scale_basis = 0.18
-            gz.select_bias = -32.0
+            gz.scale_basis = 0.2
             gz.use_draw_modal = True
             gz.hide = True
             self._handles.append(gz)
@@ -2255,11 +2245,11 @@ class DimensionAnchorWidget(types.GizmoGroup):
 
         for i in range(n):
             gz = self._handles[i]
-            world_co = obj.matrix_world @ spline.points[i].co.to_3d()
+            raw_co = spline.points[i].co
+            world_co = obj.matrix_world @ raw_co.to_3d()
             gz.matrix_basis = Matrix.Translation(world_co)
             gz.anchor_index = i
             if i == _active_anchor_idx and obj is _editing_annotation_obj:
-                print(f"[refresh] setting anchor[{i}] BLUE  (obj={obj.name}  editing={_editing_annotation_obj.name if _editing_annotation_obj else None})")
                 gz.color = (0.2, 0.7, 1.0)
                 gz.color_highlight = (0.4, 0.85, 1.0)
             elif anchors[i].get("guid"):
@@ -2276,7 +2266,6 @@ class DimensionAnchorWidget(types.GizmoGroup):
             self._handles[i].hide = True
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
-        print(f"[draw_prepare] DimensionAnchorWidget  _active_anchor_idx={_active_anchor_idx}")
         self.refresh(context)
 
 

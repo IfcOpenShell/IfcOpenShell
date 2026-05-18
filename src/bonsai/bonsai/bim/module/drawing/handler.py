@@ -70,6 +70,84 @@ def _rebuild_dim_guid_index(file) -> None:
     _dim_index_dirty = False
 
 
+def regenerate_dims_for_layer(file, layer) -> None:
+    """Regenerate all parametric dimensions anchored to elements that use *layer*."""
+    global _dim_shape_cache, _dim_index_dirty, _dim_guid_index
+
+    if _dim_index_dirty:
+        _rebuild_dim_guid_index(file)
+
+    affected_guids: set = set()
+    for layer_set in file.get_inverse(layer):
+        if not layer_set.is_a("IfcMaterialLayerSet"):
+            continue
+        for inv in file.get_inverse(layer_set):
+            if inv.is_a("IfcRelAssociatesMaterial"):
+                rels = [inv]
+            elif inv.is_a("IfcMaterialLayerSetUsage"):
+                rels = [r for r in file.get_inverse(inv) if r.is_a("IfcRelAssociatesMaterial")]
+            else:
+                continue
+            for rel in rels:
+                for element in rel.RelatedObjects:
+                    if hasattr(element, "GlobalId"):
+                        affected_guids.add(element.GlobalId)
+                        _dim_shape_cache.pop(element.id(), None)
+
+    if not affected_guids:
+        return
+
+    annotation_ids: set = set()
+    for guid in affected_guids:
+        for ann_id in _dim_guid_index.get(guid, []):
+            annotation_ids.add(ann_id)
+
+    if not annotation_ids:
+        return
+
+    import ifcopenshell.util.element
+    import ifcopenshell.api.drawing as drawing_api
+    import ifcopenshell.geom
+    from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+    geom_settings = ifcopenshell.geom.settings()
+    geom_settings.set("APPLY_DEFAULT_MATERIALS", False)
+
+    for ann_id in annotation_ids:
+        try:
+            annotation = file.by_id(ann_id)
+        except Exception:
+            continue
+        pset = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+        if not pset:
+            continue
+        placement_override: dict = {}
+        try:
+            anchors_raw = json.loads(pset.get("Anchors") or "[]")
+            for anchor in anchors_raw:
+                guid = anchor.get("guid")
+                if not guid:
+                    continue
+                try:
+                    elem = file.by_guid(guid)
+                    elem_obj = tool.Ifc.get_object(elem)
+                    if elem_obj:
+                        placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        resolved_pts = drawing_api.regenerate_dimension(
+            file,
+            annotation,
+            settings=geom_settings,
+            shape_cache=_dim_shape_cache,
+            placement_override=placement_override,
+        )
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
+
+
 @persistent
 def load_post(*args):
     invalidate_dim_index()
@@ -137,10 +215,7 @@ def _sync_dimension_anchors_to_curve(file, annotation, obj) -> bool:
     n_pts = len(spline_world)
     n_anchors = len(anchors)
 
-    print(f"[sync_anchors] obj={obj.name}  spline_pts={n_pts}  anchors={n_anchors}")
-
     if n_pts == n_anchors:
-        print("[sync_anchors] counts match — no change needed")
         return False
 
     # Match each spline point to the nearest unused anchor by proximity.
@@ -174,7 +249,6 @@ def _sync_dimension_anchors_to_curve(file, annotation, obj) -> bool:
                 "pt": [pt.x, pt.y, pt.z],
             })
 
-    print(f"[sync_anchors] rebuilt {len(new_anchors)} anchors (was {n_anchors})")
 
     pset_entity = file.by_id(pset_data["id"])
     ifcopenshell.api.pset.edit_pset(file, pset=pset_entity, properties={"Anchors": json.dumps(new_anchors)})
@@ -194,10 +268,11 @@ def depsgraph_update_post_handler(scene, depsgraph):
     if not file:
         return
 
-    # Collect GUIDs of IFC objects whose transform or geometry changed.
-    # is_updated_geometry fires on Edit Mode exit after Bonsai has already
-    # serialised the new mesh back to IFC via update_representation, so the
-    # tessellation will reflect the edited shape.
+    if _dim_index_dirty:
+        _rebuild_dim_guid_index(file)
+
+    import ifcopenshell.util.element
+
     moved_guids: set = set()
     edited_annotation_ids: set = set()
 
@@ -211,26 +286,20 @@ def depsgraph_update_post_handler(scene, depsgraph):
         if element is None or not hasattr(element, "GlobalId"):
             continue
 
-        # If the dimension annotation curve itself was edited (vertex added/removed),
-        # sync the anchor list before regenerating.
+
         if update.is_updated_geometry and obj.type == "CURVE" and element.is_a("IfcAnnotation"):
             import ifcopenshell.util.element as _ue
             ptype = _ue.get_predefined_type(element)
-            print(f"[handler] dimension curve geometry updated: {obj.name}  ptype={ptype}  is_updated_geometry={update.is_updated_geometry}")
             if ptype in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"):
-                _sync_dimension_anchors_to_curve(file, element, obj)
-                edited_annotation_ids.add(element.id())
+                changed = _sync_dimension_anchors_to_curve(file, element, obj)
+                if changed:
+                    edited_annotation_ids.add(element.id())
                 continue
 
         moved_guids.add(element.GlobalId)
-        # Geometry edits invalidate the cached tessellation for this element.
         if update.is_updated_geometry:
             _dim_shape_cache.pop(element.id(), None)
 
-    if _dim_index_dirty:
-        _rebuild_dim_guid_index(file)
-
-    print(f"[handler] edited_annotation_ids={edited_annotation_ids}  moved_guids={moved_guids}")
     annotation_ids: set = set(edited_annotation_ids)
     for guid in moved_guids:
         for ann_id in _dim_guid_index.get(guid, []):
@@ -241,7 +310,6 @@ def depsgraph_update_post_handler(scene, depsgraph):
 
     import ifcopenshell.api.drawing as drawing_api
     import ifcopenshell.geom
-    import ifcopenshell.util.element
     from bonsai.bim.module.drawing.operator import _update_blender_curve
 
     geom_settings = ifcopenshell.geom.settings()
@@ -279,7 +347,6 @@ def depsgraph_update_post_handler(scene, depsgraph):
             except Exception:
                 pass
 
-            print(f"[handler] regenerating ann_id={ann_id}  anchors_in_pset={len(json.loads(pset.get('Anchors') or '[]'))}")
             resolved_pts = drawing_api.regenerate_dimension(
                 file,
                 annotation,
@@ -287,13 +354,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
                 shape_cache=_dim_shape_cache,
                 placement_override=placement_override,
             )
-            print(f"[handler] resolved_pts count={len(resolved_pts)}  pts={[(round(p[0],3),round(p[1],3),round(p[2],3)) for p in resolved_pts]}")
             if resolved_pts:
-                obj = tool.Ifc.get_object(annotation)
-                if obj:
-                    print(f"[handler] curve spline pts before update={len(obj.data.splines[0].points) if obj.data.splines else 0}")
                 _update_blender_curve(annotation, resolved_pts)
-                if obj:
-                    print(f"[handler] curve spline pts after update={len(obj.data.splines[0].points) if obj.data.splines else 0}")
     finally:
         _dim_handler_running = False
