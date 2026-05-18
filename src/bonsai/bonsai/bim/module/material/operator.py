@@ -834,6 +834,8 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
             )
             slab.DumbSlabPlaner().regenerate_from_layer(layer)
             wall.DumbWallPlaner().regenerate_from_layer(layer)
+            from bonsai.bim.module.drawing.handler import regenerate_dims_for_layer
+            regenerate_dims_for_layer(self.file, layer)
         elif material.is_a("IfcMaterialProfileSet"):
             profile_def = None
             if mprops.profiles:

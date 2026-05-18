@@ -215,9 +215,7 @@ def register():
     kc = wm.keyconfigs.addon
     if kc:
         km = kc.keymaps.new(name="3D View", space_type="VIEW_3D")
-        kmi = km.keymap_items.new(
-            "bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS"
-        )
+        kmi = km.keymap_items.new("bim.click_nearest_dimension_anchor", "LEFTMOUSE", "PRESS")
         _keymaps.append((km, kmi))
 
 

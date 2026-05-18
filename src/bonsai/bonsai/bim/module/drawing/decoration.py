@@ -2146,4 +2146,8 @@ class DecorationsHandler:
 
         object_decorators = DecoratorData.data.get("object_decorators", [])
         for obj, decorator in object_decorators:
-            decorator.decorate(context, obj)
+            try:
+                decorator.decorate(context, obj)
+            except ReferenceError:
+                DecoratorData.is_loaded = False
+                break

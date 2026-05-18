@@ -296,33 +296,44 @@ def _get_anchor_face_normal_world(
 ) -> Optional[tuple[float, float, float]]:
     """Return the world-space unit face normal stored in a FACE anchor, or None.
 
-    Prefers ``normal_local`` (element-local, rotation-invariant) transformed by
-    the current element placement.  Falls back to the stored world-space normal.
+    Reads ``normal_local`` (element-local, rotation-invariant) from the anchor
+    addr and rotates it to world space via the current element placement.
+    Also accepts the legacy ``addr.fingerprint.normal_local`` format.
     """
     if anchor.get("type") != "FACE":
         return None
     guid = anchor.get("guid")
     if not guid:
         return None
-    fp = (anchor.get("addr") or {}).get("fingerprint") or {}
+    try:
+        element = file.by_guid(guid)
+    except Exception:
+        return None
 
-    normal_local = fp.get("normal_local")
-    if normal_local:
-        try:
-            element = file.by_guid(guid)
-        except Exception:
+    addr = anchor.get("addr") or {}
+    from .resolve_anchor import _rotate_local_to_world
+
+    if addr.get("method") == "LAYER_BOUNDARY":
+        import ifcopenshell.util.element as _ifc_elem
+        usage = _ifc_elem.get_material(element, should_inherit=True)
+        if not usage or not usage.is_a("IfcMaterialLayerSetUsage"):
             return None
-        from .resolve_anchor import _rotate_local_to_world
-        n = _rotate_local_to_world(element, normal_local, placement_override)
-        mag = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
-        return (n[0] / mag, n[1] / mag, n[2] / mag) if mag > 1e-12 else None
+        axis = (getattr(usage, "LayerSetDirection", None) or "AXIS2")
+        if axis == "AXIS1":
+            normal_local: tuple = (1.0, 0.0, 0.0)
+        elif axis == "AXIS3":
+            normal_local = (0.0, 0.0, 1.0)
+        else:
+            normal_local = (0.0, 1.0, 0.0)
+    else:
+        # FACE_NORMAL: normal_local stored in addr (new) or addr.fingerprint (legacy).
+        normal_local = addr.get("normal_local") or (addr.get("fingerprint") or {}).get("normal_local")
+        if not normal_local:
+            return None
 
-    normal_world = fp.get("normal")
-    if normal_world:
-        mag = math.sqrt(sum(x * x for x in normal_world))
-        return tuple(x / mag for x in normal_world) if mag > 1e-12 else None  # type: ignore[return-value]
-
-    return None
+    n = _rotate_local_to_world(element, normal_local, placement_override)
+    mag = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
+    return (n[0] / mag, n[1] / mag, n[2] / mag) if mag > 1e-12 else None
 
 
 def _get_line_offset_direction(
