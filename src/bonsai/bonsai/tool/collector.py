@@ -28,6 +28,9 @@ class Collector(bonsai.core.tool.Collector):
     @classmethod
     def assign(cls, obj: bpy.types.Object, should_clean_users_collection=True) -> None:
         """Links an object to an appropriate Blender collection."""
+        if not obj:
+            return
+
         if should_clean_users_collection:
             for users_collection in obj.users_collection:
                 if tool.Blender.get_object_bim_props(obj).collection == users_collection:

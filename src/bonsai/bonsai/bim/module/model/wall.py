@@ -468,7 +468,11 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
 
-                    profiles = extrusion.SweptArea.Profiles if extrusion.SweptArea.is_a("IfcCompositeProfileDef") else [extrusion.SweptArea]
+                    profiles = []
+                    if extrusion.SweptArea.is_a("IfcArbitraryClosedProfileDef"):
+                        profiles = [extrusion.SweptArea]
+                    elif extrusion.SweptArea.is_a("IfcCompositeProfileDef"):
+                        profiles = [p for p in extrusion.SweptArea.Profiles if p.is_a("IfcArbitraryClosedProfileDef")]
                     for profile in profiles:
                         coord_list = builder.get_polyline_coords(profile.OuterCurve)
                         coord_list = [
