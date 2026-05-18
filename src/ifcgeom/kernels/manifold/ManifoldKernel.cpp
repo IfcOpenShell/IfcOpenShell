@@ -1244,13 +1244,32 @@ namespace {
 	std::optional<Part> part_from_halfspace_solid(HalfspaceBuildState& state, const taxonomy::solid::ptr& solid, const taxonomy::face::ptr& face,const manifold::Box& reference_box, double precision, double dilation) {
 		
         auto plane = taxonomy::cast<taxonomy::plane>(face->basis);
-        // @todo verify order
+
+		// @todo verify order
         const auto transform = matrix_or_identity(solid->matrix) * matrix_or_identity(plane->matrix);
+        const auto extrusion_dir = matrix_or_identity(solid->matrix).col(2).head<3>().eval();
         
 		Eigen::Vector3d x = transform.col(0).head<3>();
         Eigen::Vector3d y = transform.col(1).head<3>();
         Eigen::Vector3d normal = transform.col(2).head<3>();
         Eigen::Vector3d origin = transform.col(3).head<3>();
+
+		auto project_along_global_z = [&](const Eigen::Vector3d& p)
+            -> std::optional<LoopPoint> {
+            Eigen::Vector3d hit;
+
+            if (std::abs(normal.z()) > precision) {
+                const double t = normal.dot(origin - p) / normal.z();
+                hit = p + Eigen::Vector3d(0., 0., t);
+            } else {
+                return std::nullopt;
+            }
+
+            const auto delta = hit - origin;
+            return std::make_optional(LoopPoint{
+                hit,
+                manifold::vec2(delta.dot(x), delta.dot(y))});
+        };
 
 		const auto inside_sign = face->orientation.value_or(false) ? +1. : -1.;
 		double u_min = std::numeric_limits<double>::infinity();
@@ -1262,13 +1281,18 @@ namespace {
 			const auto delta = corner - origin;
 			const auto u = delta.dot(x);
 			const auto v = delta.dot(y);
-			const auto w = delta.dot(normal);
+			
 			u_min = std::min(u_min, u);
 			u_max = std::max(u_max, u);
 			v_min = std::min(v_min, v);
 			v_max = std::max(v_max, v);
-            max_depth = std::max(max_depth, inside_sign * w);
-		}
+
+			// Keep in mind that extrusion direction is not necessarily parallel to plane normal, so we need to project corner onto plane along global z and measure distance along extrusion direction
+			if (auto proj = project_along_global_z(corner)) {
+                auto w = (corner - proj->xyz).dot(extrusion_dir);
+                max_depth = std::max(max_depth, inside_sign * w);
+            }
+        }
 		state.depth = max_depth;
 		if (max_depth <= precision * 20. || max_depth <= 0.00002) {
 			state.unchanged = true;
@@ -1285,24 +1309,6 @@ namespace {
 				{ origin + x * (u_min - margin) + y * (v_max + margin), manifold::vec2(u_min - margin, v_max + margin) }
 			};
         } else {
-            auto project_along_global_z = [&](const Eigen::Vector3d& p)
-                -> std::optional<LoopPoint> {
-                Eigen::Vector3d hit;
-
-                if (std::abs(normal.z()) > precision) {
-                    const double t = normal.dot(origin - p) / normal.z();
-                    hit = p + Eigen::Vector3d(0., 0., t);
-                } else {
-                    return std::nullopt;
-                }
-
-                const auto delta = hit - origin;
-                return std::make_optional(LoopPoint{
-                    hit,
-                    manifold::vec2(delta.dot(x), delta.dot(y))
-                });
-            };
-
             auto& loop = face->children.front();
             for (auto& e : loop->children) {
                 if (auto point = explicit_point(e)) {
@@ -1317,7 +1323,8 @@ namespace {
 				}
 			}
 		}
-		return part_from_polygon_extrusion({ std::move(polygon) }, 0, normal, normal * inside_sign, max_depth + margin, precision, dilation);
+
+		return part_from_polygon_extrusion({std::move(polygon)}, 0, normal, extrusion_dir * -inside_sign, max_depth + margin, precision, dilation);
 	}
 
 	std::optional<Part> part_from_extrusion(const taxonomy::extrusion::ptr& extrusion, double precision, double dilation, int circle_segments) {
