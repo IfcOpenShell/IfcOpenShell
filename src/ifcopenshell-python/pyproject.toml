@@ -21,6 +21,7 @@ dependencies = [
     "isodate",
     "python-dateutil",
     "lark",
+    "pyparsing",
     "typing-extensions",
 ]
 
