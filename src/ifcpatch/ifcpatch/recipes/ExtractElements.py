@@ -33,7 +33,7 @@ class Patcher(ifcpatch.BasePatcher):
         file: ifcopenshell.file,
         logger: Union[Logger, None] = None,
         query: str = "IfcWall",
-        assume_asset_uniqueness_by_name: bool = True,
+        assume_asset_uniqueness_by_name: bool = False,
     ):
         """Extract certain elements into a new model
 
