@@ -707,37 +707,83 @@ class BIM_PT_external_parametric_geometry(bpy.types.Panel):
 
 def draw_door_properties(layout: bpy.types.UILayout, props: module_prop.BIMDoorProperties) -> None:
     """Draw door properties UI (shared between properties panel and preferences)."""
+    try:
+        from bonsai.bim.module.bexpeng import draw_bexpeng_buttons, get_binding, is_integration_active
+
+        _bexpeng_active = is_integration_active()
+    except Exception:
+        _bexpeng_active = False
+
+    obj_suffix = ""
+    if _bexpeng_active:
+        active_obj = bpy.context.active_object
+        if active_obj:
+            obj_suffix = f"::{active_obj.name}"
+
     # General properties
     general_props = props.get_general_kwargs()
     for prop in general_props:
-        layout.prop(props, prop)
+        row = layout.row(align=True)
+        row.prop(props, prop)
+        if _bexpeng_active and props.bl_rna.properties[prop].type == "FLOAT":
+            binding_key = tool.Blender.get_full_data_path(props, prop) + obj_suffix
+            draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
     # Lining properties
     layout.label(text="Lining Properties")
     lining_props = props.get_lining_kwargs()
     for prop in lining_props:
-        layout.prop(props, prop)
+        row = layout.row(align=True)
+        row.prop(props, prop)
+        if _bexpeng_active:
+            binding_key = tool.Blender.get_full_data_path(props, prop) + obj_suffix
+            draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
     # Panel properties
     layout.label(text="Panel Properties")
     panel_props = props.get_panel_kwargs()
     for prop in panel_props:
-        layout.prop(props, prop)
+        row = layout.row(align=True)
+        row.prop(props, prop)
+        if _bexpeng_active and props.bl_rna.properties[prop].type == "FLOAT":
+            binding_key = tool.Blender.get_full_data_path(props, prop) + obj_suffix
+            draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
 
 def draw_window_properties(layout: bpy.types.UILayout, props: module_prop.BIMWindowProperties) -> None:
     """Draw window properties UI (shared between properties panel and preferences)."""
     number_of_panels, panels_data = props.window_types_panels[props.window_type]
 
+    try:
+        from bonsai.bim.module.bexpeng import draw_bexpeng_buttons, get_binding, is_integration_active
+
+        _bexpeng_active = is_integration_active()
+    except Exception:
+        _bexpeng_active = False
+
+    obj_suffix = ""
+    if _bexpeng_active:
+        active_obj = bpy.context.active_object
+        if active_obj:
+            obj_suffix = f"::{active_obj.name}"
+
     # General and lining properties
     general_props = props.get_general_kwargs()
     for prop in general_props:
-        layout.prop(props, prop)
+        row = layout.row(align=True)
+        row.prop(props, prop)
+        if _bexpeng_active and props.bl_rna.properties[prop].type == "FLOAT":
+            binding_key = tool.Blender.get_full_data_path(props, prop) + obj_suffix
+            draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
     layout.label(text="Lining Properties")
     lining_props = props.get_lining_kwargs()
     for prop in lining_props:
-        layout.prop(props, prop)
+        row = layout.row(align=True)
+        row.prop(props, prop)
+        if _bexpeng_active:
+            binding_key = tool.Blender.get_full_data_path(props, prop) + obj_suffix
+            draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
     # Panel properties (special layout for multiple panels)
     panel_props = props.get_panel_kwargs()
@@ -758,7 +804,13 @@ def draw_window_properties(layout: bpy.types.UILayout, props: module_prop.BIMWin
     for prop in panel_props:
         cols[0].label(text=f"{props.bl_rna.properties[prop].name}")
         for panel_i in range(number_of_panels):
-            cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
+            if _bexpeng_active:
+                r = cols[panel_i + 1].row(align=True)
+                r.prop(props, prop, index=panel_i, text="")
+                binding_key = f"{tool.Blender.get_full_data_path(props, prop)}[{panel_i}]{obj_suffix}"
+                draw_bexpeng_buttons(r, binding_key, "float", get_binding(binding_key))
+            else:
+                cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
 
 def draw_railing_properties(layout: bpy.types.UILayout, props: module_prop.BIMRailingProperties) -> None:

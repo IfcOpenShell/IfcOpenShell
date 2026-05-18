@@ -24,6 +24,7 @@ import bpy
 from bpy.types import Panel, UIList
 
 import bonsai.tool as tool
+from bonsai.bim.module.bexpeng import draw_bexpeng_buttons, get_binding, is_integration_active
 from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 
 if TYPE_CHECKING:
@@ -306,7 +307,28 @@ class BIM_UL_containers_manager(UIList):
                 row = split.row(align=True)
                 self.draw_hierarchy(row, item)
                 row.prop(item, "name", emboss=False, text="", icon=icon)
-            split.prop(item, "elevation", emboss=False, text="")
+            elev_row = split.row(align=True)
+            if item.ifc_class != "IfcProject":
+                if is_integration_active():
+                    ifc_id = item.ifc_definition_id
+                    scene_name = bpy.context.scene.name
+                    binding_key = (
+                        f"next(c for c in bpy.data.scenes[{scene_name!r}]"
+                        f".BIMSpatialDecompositionProperties.containers"
+                        f" if c.ifc_definition_id == {ifc_id}).elevation"
+                    )
+                    param_name = get_binding(binding_key)
+                    if param_name:
+                        sub = elev_row.row(align=True)
+                        sub.enabled = False
+                        sub.prop(item, "elevation", emboss=False, text="")
+                    else:
+                        elev_row.prop(item, "elevation", emboss=False, text="")
+                    draw_bexpeng_buttons(elev_row, binding_key, "string", param_name, show_bulk=False)
+                else:
+                    elev_row.prop(item, "elevation", emboss=False, text="")
+            else:
+                elev_row.prop(item, "elevation", emboss=False, text="")
 
     def draw_hierarchy(self, row: bpy.types.UILayout, item: BIMContainer) -> None:
         if item.level_index:

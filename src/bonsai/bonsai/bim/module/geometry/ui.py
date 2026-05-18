@@ -483,8 +483,26 @@ class BIM_PT_placement(Panel):
             row.label(text="No Object Placement Found")
             return
 
-        row = self.layout.row()
-        row.prop(context.active_object, "location", text="Location")
+        try:
+            from bonsai.bim.module.bexpeng import (
+                is_integration_active,
+                get_binding,
+                draw_bexpeng_buttons,
+            )
+
+            _bexpeng_active = is_integration_active()
+        except Exception:
+            _bexpeng_active = False
+
+        if _bexpeng_active:
+            for i, label in enumerate(("X", "Y", "Z")):
+                row = self.layout.row(align=True)
+                row.prop(obj, "location", index=i, text=f"Location {label}")
+                binding_key = f"bpy.data.objects['{obj.name}'].location[{i}]"
+                draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
+        else:
+            row = self.layout.row()
+            row.prop(context.active_object, "location", text="Location")
         row = self.layout.row()
         row.prop(context.active_object, "rotation_euler", text="Rotation")
 

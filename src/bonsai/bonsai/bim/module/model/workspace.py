@@ -27,6 +27,7 @@ from bpy.types import Menu, WorkSpaceTool
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.helper import draw_attribute, prop_with_search
+from bonsai.bim.module.bexpeng import draw_bexpeng_buttons, get_binding, is_integration_active
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.model.prop import get_ifc_class
 from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
@@ -779,11 +780,21 @@ class EditObjectUI:
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
             op = row.operator("bim.change_extrusion_depth", icon="FILE_REFRESH", text="")
             op.depth = cls.props.extrusion_depth
+            if is_integration_active():
+                binding_key = tool.Blender.get_full_data_path(cls.props, "extrusion_depth")
+                if context.active_object:
+                    binding_key = f"{binding_key}::{context.active_object.name}"
+                draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="length", text="Length" if ui_context != "TOOL_HEADER" else "L")
             op = row.operator("bim.change_layer_length", icon="FILE_REFRESH", text="")
             op.length = cls.props.length
+            if is_integration_active():
+                binding_key = tool.Blender.get_full_data_path(cls.props, "length")
+                if context.active_object:
+                    binding_key = f"{binding_key}::{context.active_object.name}"
+                draw_bexpeng_buttons(row, binding_key, "float", get_binding(binding_key))
 
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.prop(data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A")

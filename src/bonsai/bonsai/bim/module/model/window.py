@@ -544,6 +544,55 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
+class ApplyWindowBexpeng(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.apply_window_bexpeng"
+    bl_label = "Apply Window BExpEng"
+    bl_description = "Apply BExpEng parameter values to window and save to IFC"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        obj = context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        props = tool.Model.get_window_props(obj)
+
+        ifc_data = ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data")
+        if ifc_data:
+            data = json.loads(ifc_data)
+            data.update(data.pop("lining_properties"))
+            data.update(data.pop("panel_properties"))
+            data.update(tool.Model.get_constituents_props_data(element))
+            props.set_props_kwargs_from_ifc_data(data)
+
+        try:
+            from bonsai.bim.module import bexpeng as bexpengmod
+
+            if bexpengmod.is_integration_active():
+                bexpengmod._write_window_bindings(obj)
+        except Exception:
+            pass
+
+        # 3. Rebuild IFC representation from merged props and persist.
+        window_data = props.get_general_kwargs(convert_to_project_units=True)
+        lining_props = props.get_lining_kwargs(convert_to_project_units=True)
+        panel_props = props.get_panel_kwargs(convert_to_project_units=True)
+        window_data["lining_properties"] = lining_props
+        window_data["panel_properties"] = panel_props
+
+        update_window_modifier_representation(context)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            tool.Model.mark_thumbnail_for_update(element_type)
+
+        pset = tool.Pset.get_element_pset(element, "BBIM_Window")
+        window_ifc_text = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": window_ifc_text})
+        with bpy.context.temp_override(selected_objects=[obj]):
+            bpy.ops.bim.recalculate_fill()
+        return {"FINISHED"}
+
+
 class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_window"
     bl_label = "Enable Editing Window"
@@ -565,6 +614,16 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
 
         props.is_editing = True
+
+        # Re-apply any active bexpeng bindings so parametric values survive the IFC reload.
+        try:
+            from bonsai.bim.module import bexpeng as bexpengmod
+
+            if bexpengmod.is_integration_active():
+                bexpengmod._write_window_bindings(obj)
+        except Exception:
+            pass
+
         return {"FINISHED"}
 
 
