@@ -1183,7 +1183,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False
     ) -> set["rna_enums.OperatorReturnItems"]:
         # Deep magick from the dawn of time
-        if tool.Ifc.get():
+        if tool.Ifc.get() and tool.Model.has_selected_ifc_objects(include_active=False):
             IfcStore.execute_ifc_operator(operator, context)
             return {"FINISHED"}
 
@@ -1286,6 +1286,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
                             part_obj = tool.Ifc.get_object(part)
                             if part_obj:
                                 all_objects_to_select.add(part_obj)
+
+        # Non-IFC duplicates aren't tracked in old_to_new but are left selected by duplicate_ifc_objects
+        all_objects_to_select.update(
+            obj for obj in context.selected_objects if not tool.Ifc.get_entity(obj)
+        )
 
         # Deselect everything first
         bpy.ops.object.select_all(action="DESELECT")
