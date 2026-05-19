@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "Federation.h"
+#include "Geolocation.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -455,6 +456,25 @@ TEST_CASE("composeFederatedFalseOrigin scales by federation unit",
     Eigen::Matrix4d M = composeFederatedFalseOrigin(org, cfg);
     // Translation column should be -1 ft = -0.3048 m.
     REQUIRE(std::abs(M(0, 3) - (-0.3048)) < 1e-9);
+}
+
+TEST_CASE("helmert metres transform consumes Scale through map unit scale",
+          "[federation][georef]") {
+    HelmertTransformation params;
+    params.e = 500000.0;
+    params.n = 7000000.0;
+    params.scale = 0.001;  // project mm -> map numeric metres
+
+    const double project_length_to_meters = 0.001;
+    const double map_unit_to_meters = project_length_to_meters / params.scale;
+    Eigen::Matrix4d M = helmertMetersFromParameters(params, map_unit_to_meters);
+
+    Eigen::Vector4d local_m(10.0, 20.0, 0.0, 1.0);
+    Eigen::Vector4d global_m = M * local_m;
+
+    REQUIRE(std::abs(map_unit_to_meters - 1.0) < 1e-12);
+    REQUIRE(std::abs(global_m.x() - 500010.0) < 1e-9);
+    REQUIRE(std::abs(global_m.y() - 7000020.0) < 1e-9);
 }
 
 TEST_CASE("addGroup creates a top-level group; addGroup with parent nests it",

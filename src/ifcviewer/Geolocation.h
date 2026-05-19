@@ -81,9 +81,11 @@ Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
 //     [ R_z(theta) · diag(fx, fy, fz)  | (e, n, h) · u_m ]
 //     [ 0                               | 1               ]
 //
-// `map_unit_to_meters` is the SI scale of IfcProjectedCRS.MapUnit (or the
-// project's LENGTHUNIT scale if MapUnit is absent).  The caller composes any
-// IfcGeometricRepresentationContext WCS on the right:
+// `map_unit_to_meters` is derived by the caller from the IFC project length
+// unit and the authoritative IfcMapConversion.Scale.  Since this matrix takes
+// meter inputs from the geometry iterator, Scale is represented by that unit
+// conversion and is not applied again in the linear block.  The caller composes
+// any IfcGeometricRepresentationContext WCS on the right:
 //     G = helmertMetersFromParameters(...) · inv(wcs_meters)
 // (where wcs_meters has its translation column converted from project units
 // to meters via calculateUnitScale).
@@ -96,8 +98,9 @@ Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& params,
 
 // IfcCoordinateOperation.TargetCRS.MapUnit (the IfcNamedUnit), if present.
 // Returns nullopt for IFC2X3, models without an IfcCoordinateOperation, or
-// when MapUnit is absent on the IfcProjectedCRS.  Callers fall back to
-// calculateUnitScale(file, "LENGTHUNIT") in that case.
+// when MapUnit is absent on the IfcProjectedCRS.  This is retained for UI /
+// metadata inspection; transform composition derives map unit scale from
+// IfcMapConversion.Scale instead.
 std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file);
 
 // "How do I rotate project east to get to grid east?" — i.e. -atan2(xao, xaa)

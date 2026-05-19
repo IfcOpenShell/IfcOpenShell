@@ -63,7 +63,9 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       InstanceChunk carries the streamer placement as double[16].  This keeps
 //       large IFC placements exact until CoordinateOperation / FederatedFalseOrigin
 //       composition has reduced them to viewport-local float-sized values.
-static constexpr uint32_t SIDECAR_VERSION = 12;
+// v13 = Map unit scale in cached ModelGeoref is derived from
+//       IfcMapConversion.Scale, not IfcProjectedCRS.MapUnit.
+static constexpr uint32_t SIDECAR_VERSION = 13;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs

@@ -100,10 +100,11 @@ struct ModelTransformation {
     Eigen::Vector3d pivot    = Eigen::Vector3d::Zero();   // federation unit
 };
 
-// Per-model unit scales captured at load time.  project_length_to_meters
-// comes from calculateUnitScale(file, "LENGTHUNIT"); map_unit_to_meters from
-// siScaleFromNamedUnit(getMapUnit(file)) and falls back to the project length
-// scale when the model has no MapUnit.
+// Per-model unit scales captured at load time.  project_length_to_meters comes
+// from calculateUnitScale(file, "LENGTHUNIT").  map_unit_to_meters is derived
+// from IfcMapConversion.Scale as project_length_to_meters / Scale; the
+// IfcProjectedCRS.MapUnit named unit is metadata and does not affect the
+// transform composition.
 struct ModelUnits {
     double project_length_to_meters = 1.0;
     double map_unit_to_meters       = 1.0;

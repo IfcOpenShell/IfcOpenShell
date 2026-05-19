@@ -105,18 +105,9 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file) {
     out.units.project_length_to_meters =
         calculateUnitScale(ifc_file, "LENGTHUNIT");
 
-    if (auto map_unit = getMapUnit(ifc_file)) {
-        if (auto s = siScaleFromNamedUnit(*map_unit)) {
-            out.units.map_unit_to_meters = *s;
-        } else {
-            out.units.map_unit_to_meters = out.units.project_length_to_meters;
-        }
-    } else {
-        // No MapUnit on the IfcProjectedCRS — fall back to project length unit.
-        out.units.map_unit_to_meters = out.units.project_length_to_meters;
-    }
-
     auto params = getHelmertTransformationParameters(ifc_file);
+    const double scale = (params && params->scale != 0.0) ? params->scale : 1.0;
+    out.units.map_unit_to_meters = out.units.project_length_to_meters / scale;
     if (!params) return out;
 
     Eigen::Matrix4d helmert =
