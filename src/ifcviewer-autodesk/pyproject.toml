@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcviewer-autodesk"
+version = "0.1.0"
+description = "Autodesk cloud connector for IfcViewer"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "customtkinter>=5.2",
+  "httpx>=0.27",
+  "keyring>=25.2"
+]
+
+[project.optional-dependencies]
+build = ["pyinstaller>=6.0"]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[project.scripts]
+ifcviewer-autodesk = "ifcviewer_autodesk.__main__:main"

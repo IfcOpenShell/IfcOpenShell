@@ -128,3 +128,7 @@ src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
 *.claude
 *.py.tmp*
 *.json.tmp*
+
+# ifcviewer-autodesk connector build artifacts
+/src/ifcviewer-autodesk/build/
+/src/ifcviewer-autodesk/dist/
