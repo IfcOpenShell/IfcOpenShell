@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
@@ -24,6 +23,7 @@ import test.bootstrap
 import ifcopenshell.api.root
 
 import ifcopenshell.util.cost as subject
+
 
 class TestGetCostItemForProduct(test.bootstrap.IFC4):
     def test_run(self):
@@ -40,7 +40,7 @@ class TestGetCostItemForProduct(test.bootstrap.IFC4):
         cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
         item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
         ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=item1)
-        ifcopenshell.api.cost.remove_cost_item(model, cost_item = item1)
+        ifcopenshell.api.cost.remove_cost_item(model, cost_item=item1)
         assert list(subject.get_cost_items_for_product(element)) == []
 
     def test_no_assigned_cost_items(self):
@@ -49,4 +49,3 @@ class TestGetCostItemForProduct(test.bootstrap.IFC4):
         cost_schedule = ifcopenshell.api.cost.add_cost_schedule(model)
         item1 = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=cost_schedule)
         assert list(subject.get_cost_items_for_product(element)) == []
-
