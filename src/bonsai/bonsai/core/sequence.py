@@ -17,11 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
-    import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
@@ -422,7 +423,7 @@ def edit_task_calendar(
     task: ifcopenshell.entity_instance,
     work_calendar: ifcopenshell.entity_instance,
 ) -> None:
-    ifc.run("control.assign_control", relating_control=work_calendar, related_object=task)
+    ifc.run("control.assign_control", relating_control=work_calendar, related_objects=[task])
     ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 
@@ -433,7 +434,7 @@ def remove_task_calendar(
     task: ifcopenshell.entity_instance,
     work_calendar: ifcopenshell.entity_instance,
 ) -> None:
-    ifc.run("control.unassign_control", relating_control=work_calendar, related_object=task)
+    ifc.run("control.unassign_control", relating_control=work_calendar, related_objects=[task])
     ifc.run("sequence.cascade_schedule", task=task)
     sequence.load_task_properties()
 

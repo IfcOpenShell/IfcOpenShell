@@ -17,11 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
     operator.ExecuteIfcTester,
+    operator.StartIfcTesterWebapp,
+    operator.StopIfcTesterWebapp,
+    operator.OpenIfcTesterWebapp,
     operator.SelectRequirement,
+    operator.ColorSpecefication,
     operator.SelectFailedEntities,
     operator.ExportBcf,
     prop.FailedEntities,

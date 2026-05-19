@@ -9,6 +9,10 @@ namespace ifcopenshell {
 		struct profile_point {
 			std::array<double, 2> xy;
 			boost::optional<double> radius;
+
+			profile_point(const std::array<double, 2>& p, const boost::optional<double>& r = boost::none)
+				: xy(p), radius(r) {
+			}
 		};
 
 		struct profile_point_with_edges {

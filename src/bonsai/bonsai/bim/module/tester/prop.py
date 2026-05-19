@@ -19,19 +19,17 @@
 from typing import TYPE_CHECKING
 
 import bpy
-from bonsai.bim.module.tester.data import TesterData
-from bonsai.bim.prop import StrProperty, MultipleFileSelect
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
+from bpy.types import PropertyGroup
+
+from bonsai.bim.module.tester.data import TesterData
+from bonsai.bim.prop import MultipleFileSelect
 
 
 def update_active_specification_index(self: "IfcTesterProperties", context: bpy.types.Context) -> None:
@@ -71,12 +69,18 @@ class IfcTesterProperties(PropertyGroup):
     generate_ods_report: BoolProperty(default=False, name="Generate ODS report", options=set())
     flag: BoolProperty(default=False, name="Flag Failed Entities", options=set())
     active_specification_index: IntProperty(name="Active Specification Index", update=update_active_specification_index)
+    active_requirement_index: IntProperty(name="Active Requirement Index")
+
     old_index: IntProperty(name="", default=0)
     active_failed_entity_index: IntProperty(name="Active Failed Entity Index")
     specifications: CollectionProperty(name="Specifications", type=Specification)
     failed_entities: CollectionProperty(name="FailedEntities", type=FailedEntities)
     has_entities: BoolProperty(default=False, name="")
     n_entities: IntProperty(name="", default=0)
+    webapp_server_port: IntProperty(name="Webapp Server Port", default=0)
+    webapp_is_running: BoolProperty(default=False, name="Webapp Is Running", options=set())
+    websocket_server_port: IntProperty(name="WebSocket Server Port", default=0)
+    hide_skipped_specs: BoolProperty(default=False, name="Hide skipped Specifications", options=set())
 
     if TYPE_CHECKING:
         specs: MultipleFileSelect
@@ -86,9 +90,13 @@ class IfcTesterProperties(PropertyGroup):
         generate_ods_report: bool
         flag: bool
         active_specification_index: int
+        active_requirement_index: int
         old_index: int
         active_failed_entity_index: int
         specifications: bpy.types.bpy_prop_collection_idprop[Specification]
         failed_entities: bpy.types.bpy_prop_collection_idprop[FailedEntities]
         has_entities: bool
         n_entities: int
+        webapp_server_port: int
+        webapp_is_running: bool
+        websocket_server_port: int

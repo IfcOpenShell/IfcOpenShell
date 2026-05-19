@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.validate
-import json
+
 from bimtester.lang import _
 
 

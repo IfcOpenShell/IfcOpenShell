@@ -32,6 +32,13 @@ csv2ifc.execute()
 ```
 
 See example files as a CSV file format reference:
+- Ex1 - BoQ without query.csv (a simple Bill of Quantities)
+- Ex2 - SoR.csv (a simple Schedule of Rates)
+- Ex3 - BoQ with query.csv (a simple BoQ with the query function)
+- Ex4 - BoQ with description.csv (a simple BoQ with description column)
+- Ex5 - SoR_with_description.csv (a simple SoR with description column)
+- Ex6 - BoQ with categories.csv (a simple BoQ with categories columns)
+- Ex7 - BoQ with Rates.csv (a simple BoQ that connect to an existing SoR. It needs an already loaded SoR.)
 - `sample_cost_schedule_house_FR.csv` / `.ods`
 - `schedule.csv`, `rates.csv` (schedule of rates example)
 
@@ -96,11 +103,11 @@ writer.write()
 ### CLI app for converting IFC files to CSV, ODS or XLSX format.
 
 Usage:
-    python ifc5Dspreadsheet.py input_file output_file [-l log_file] [-f format_type]
+    python ifc5Dspreadsheet.py input_file output_dir [-l log_file] [-f format_type]
 
 Arguments:
     input_file (str): The path to the input IFC file to process.
-    output_file (str): The output directory for CSV or filename for other formats.
+    output_dir (str): The output directory.
 
 Options:
     -l, --log log_file (str): The path to the file where errors should be logged. Default is process.log.

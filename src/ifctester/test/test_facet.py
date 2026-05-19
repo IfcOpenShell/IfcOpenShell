@@ -18,13 +18,14 @@
 
 
 import uuid
+
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.classification
 import ifcopenshell.api.group
 import ifcopenshell.api.material
 import ifcopenshell.api.nest
+import ifcopenshell.api.owner.settings
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
@@ -32,8 +33,18 @@ import ifcopenshell.api.type
 import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.pset
+
 import ifctester.facet
-from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
+import ifctester.ids
+from ifctester.facet import (
+    Attribute,
+    Classification,
+    Entity,
+    Material,
+    PartOf,
+    Property,
+    Restriction,
+)
 
 
 def set_facet(facet):
@@ -171,10 +182,10 @@ class TestEntity:
         facet = Entity(name="IFCWALL", predefinedType="USERDEFINED")
         ifc = ifcopenshell.file()
         run(
-            "A predefined type must always specify a meaningful type, not USERDEFINED itself",
+            "A predefined type may specify USERDEFINED itself",
             facet=facet,
             inst=ifc.createIfcWall(PredefinedType="USERDEFINED", ObjectType="WALDO"),
-            expected=False,
+            expected=True,
         )
 
         ifc = ifcopenshell.file()
@@ -228,6 +239,57 @@ class TestEntity:
         ifc = ifcopenshell.file()
         wall3 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", predefined_type="BAZFOO")
         run("Restrictions an be specified for the predefined type 3/3", facet=facet, inst=wall3, expected=False)
+
+    def test_ifc2x3_occurrence_type_mapping(self):
+        set_facet("entity")
+
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        application = ifcopenshell.api.owner.add_application(ifc)
+        person = ifcopenshell.api.owner.add_person(
+            ifc, identification="LPARTEE", family_name="Partee", given_name="Leeable"
+        )
+        organisation = ifcopenshell.api.owner.add_organisation(
+            ifc, identification="AWB", name="Architects Without Ballpens"
+        )
+        user = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organisation)
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
+
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcFlowTerminal")
+        element_type = ifcopenshell.api.root.create_entity(ifc, "IfcAirTerminalType")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=element_type)
+        facet = Entity(name="IFCAIRTERMINAL")
+        assert facet.filter(ifc) == [element]
+        run("In IFC2X3 the type class is checked instead 1/2", facet=facet, inst=element, expected=True)
+
+        facet = Entity(name="IFCELECTRICAPPLIANCE")
+        assert facet.filter(ifc) == []
+        run("In IFC2X3 the type class is checked instead 2/2", facet=facet, inst=element, expected=False)
+
+    def test_to_string_required_applicability(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=1, maxOccurs="unbounded")
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("applicability", spec) == "All IFCWALL data"
+
+    def test_to_string_optional_applicability(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs="unbounded")
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("applicability", spec) == "All IFCWALL data"
+
+    def test_to_string_prohibited_applicability(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs=0)
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("applicability", spec) == "Shall not be IFCWALL data"
+
+    def test_to_string_ignored_requirement(self):
+        spec = ifctester.ids.Specification(name="Foo", minOccurs=0, maxOccurs=0)
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("requirement", spec) == "The requirement is not applicable"
+
+    def test_to_string_required_requirement(self):
+        spec = ifctester.ids.Specification(name="Foo")
+        facet = Entity(name="IFCWALL")
+        assert facet.to_string("requirement", spec) == "Shall be IFCWALL data"
 
 
 class TestAttribute:
@@ -895,8 +957,11 @@ class TestProperty:
         pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"AnotherProperty": "AnotherValue"})
         run("Elements with a matching pset but no property also fail", facet=facet, inst=element, expected=False)
-        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"AnotherProperty": None})
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": None}, should_purge=False)
         run("Properties with a null value fail", facet=facet, inst=element, expected=False)
+        restriction = Restriction(options={"pattern": "Fo.*"})
+        facet = Property(propertySet="Foo_Bar", baseName=restriction, dataType="IFCLABEL")
+        run("Pattern matched properties with a null value fail", facet=facet, inst=element, expected=False)
         ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": "Bar"})
         run("A name check will match any property with any string value", facet=facet, inst=element, expected=True)
 
@@ -1261,6 +1326,27 @@ class TestProperty:
         run("Properties can be overriden by an occurrence 1/2", facet=facet, inst=wall, expected=True)
         run("Properties can be overriden by an occurrence 2/2", facet=facet, inst=wall_type, expected=False)
 
+        ifc = self.setup_ifc()
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo_Bar")
+        prop = ifc.create_entity(
+            "IfcPropertySingleValue", Name="Foo", NominalValue=ifc.create_entity("IfcMassMeasure", 6.0)
+        )
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": prop})
+        restriction = Restriction(options={"minExclusive": 5.0}, base="double")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value=restriction, dataType="IfcMassMeasure")
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=True)
+        prop.NominalValue = ifc.create_entity("IfcMassMeasure", 4.0)
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=False)
+
+        # add Gram as Unit to force conversion
+        gram_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT")
+        prop.Unit = gram_unit
+        prop.NominalValue = ifc.create_entity("IfcMassMeasure", 6000.0)
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=True)
+        prop.NominalValue = ifc.create_entity("IfcMassMeasure", 6.0)
+        run("MASSUNIT uses Kg instead of g", facet=facet, inst=element, expected=False)
+
     def setup_ifc(self):
         ifc = ifcopenshell.file()
         ifc.createIfcProject()
@@ -1269,7 +1355,8 @@ class TestProperty:
         areaunit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="AREAUNIT", prefix="MILLI")
         volumeunit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="VOLUMEUNIT", prefix="MILLI")
         timeunit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="TIMEUNIT")
-        ifcopenshell.api.unit.assign_unit(ifc, units=[lengthunit, areaunit, volumeunit, timeunit])
+        mass_unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="MASSUNIT", prefix="KILO")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[lengthunit, areaunit, volumeunit, timeunit, mass_unit])
         return ifc
 
 

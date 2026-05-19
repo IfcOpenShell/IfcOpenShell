@@ -340,8 +340,12 @@ In IFC, meshes may be stored as **Faceted BReps**, **Tessellations**, or
 
     # These vertices and faces represent a 2m square 1m high pyramid in SI units.
     # Note how they are nested lists. Each nested list represents a "mesh". There may be multiple meshes.
-    vertices = [[(0.,0.,0.), (0.,2.,0.), (2.,2.,0.), (2.,0.,0.), (1.,1.,1.)]]
-    faces = [[(0,1,2,3), (0,4,1), (1,4,2), (2,4,3), (3,4,0)]]
+    vertices = [
+        [(0.,0.,0.), (0.,2.,0.), (2.,2.,0.), (2.,0.,0.), (1.,1.,1.)] # A single mesh
+    ]
+    faces = [
+        [(0,1,2,3), (0,4,1), (1,4,2), (2,4,3), (3,4,0)] # A single mesh
+    ]
     representation = ifcopenshell.api.geometry.add_mesh_representation(model, context=body, vertices=vertices, faces=faces)
 
 .. image:: images/mesh-representation.png
@@ -771,3 +775,52 @@ responsibility to make sure the geometry is correct.
 
     # Assign our new body geometry back to our beam
     ifcopenshell.api.geometry.assign_representation(model, product=beam, representation=representation)
+
+Moving assemblies
+-----------------
+
+When moving an assembly and you want all children to follow, pass
+``should_transform_children=True``. The default (``False``) rewrites each
+child's local placement to preserve its world position, so the parent moves
+but the children stay where they are.
+
+.. code-block:: python
+
+    matrix = numpy.eye(4)
+    matrix[:,3][0:3] = (0, 0, 6)
+
+    # Move the assembly; children travel with it.
+    ifcopenshell.api.geometry.edit_object_placement(model,
+        product=assembly, matrix=matrix, is_si=True,
+        should_transform_children=True)
+
+Clipping normals convention
+---------------------------
+
+The ``normal`` passed to :func:`geometry.clip_solid`,
+:func:`geometry.clip_solid_bounded`, and the ``clippings`` parameter of
+:func:`geometry.add_wall_representation` points toward the **removed**
+material (the discarded side), not toward the kept material.
+
+.. code-block:: python
+
+    # Clip the top of a wall to a lean-to slope.
+    # normal points upward into the wedge that will be removed.
+    bcr = ifcopenshell.api.geometry.clip_solid(model,
+        item=extrusion,
+        location=[0.0, 0.0, 3.26],
+        normal=[0.419, 0.0, 0.908])
+    shape_representation.RepresentationType = "Clipping"
+
+Opening lifecycle
+-----------------
+
+``feature.remove_feature`` permanently deletes the feature entity from the
+model. Any fillings (windows, doors) that occupied the opening become
+orphaned and must be separately removed via ``root.remove_product``.
+
+.. code-block:: python
+
+    # Remove a window and its opening from a wall.
+    ifcopenshell.api.root.remove_product(model, product=window)
+    ifcopenshell.api.feature.remove_feature(model, feature=opening)

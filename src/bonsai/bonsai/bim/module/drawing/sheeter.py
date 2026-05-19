@@ -16,20 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import uuid
-import shutil
 import ntpath
-import pystache
+import os
+import re
+import shutil
 import urllib.parse
+import uuid
 import xml.etree.ElementTree as ET
-import bonsai.tool as tool
-import ifcopenshell.util.geolocation
 from pathlib import Path
 from xml.dom import minidom
+
+import ifcopenshell.util.geolocation
+import pystache
 from mathutils import Vector
-import re
+
+import bonsai.tool as tool
 
 VIEW_TITLE_OFFSET_Y = 5
 DRAWING_PADDING = 10
@@ -46,6 +47,7 @@ class SheetBuilder:
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
+        root.attrib["xmlns:sodipodi"] = "http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
         root.attrib["id"] = "root"
         root.attrib["version"] = "1.1"
 
@@ -65,6 +67,7 @@ class SheetBuilder:
         view_height = self.convert_to_mm(view_root.attrib["height"])
         view = ET.SubElement(root, "g")
         view.attrib["data-type"] = "titleblock"
+        view.attrib["sodipodi:insensitive"] = "true"
         titleblock = ET.SubElement(view, "image")
         titleblock.attrib["xlink:href"] = Path(os.path.relpath(titleblock_path, sheet_dir)).as_posix()
         titleblock.attrib["x"] = "0"
@@ -339,17 +342,29 @@ class SheetBuilder:
         assert style_data is not None
         text = ""
         brackets_level = 0
+        selector_buffer = ""  # Buffer to accumulate selectors across lines
+
         for l in style_data:
             if l == "{":
                 if brackets_level == 0:
-                    cur_line = text.splitlines()[-1]
-                    text = text[: -len(cur_line)]
+                    # Get all accumulated selector text (may span multiple lines)
+                    # Find where the last rule ended (after last }) or start of text
+                    last_close = text.rfind("}")
+                    if last_close == -1:
+                        selector_text = text
+                        text = ""
+                    else:
+                        selector_text = text[last_close + 1 :]
+                        text = text[: last_close + 1]
+
+                    # Process all selectors (split by comma)
                     css_selectors = []
-                    # making sure cases like "text, tspan" will be
-                    # converted to "text.prefix, tspan.prefix"
-                    for css_selector in cur_line.split(","):
-                        css_selector = f"{css_selector.strip()}.{prefix}"
-                        css_selectors.append(css_selector)
+                    for css_selector in selector_text.split(","):
+                        css_selector = css_selector.strip()
+                        if css_selector:  # Only process non-empty selectors
+                            css_selector = f"{css_selector}.{prefix}"
+                            css_selectors.append(css_selector)
+
                     text += ", ".join(css_selectors) + " "
                 brackets_level += 1
             elif l == "}":

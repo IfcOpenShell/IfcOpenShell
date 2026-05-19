@@ -496,6 +496,9 @@ namespace {
 		for (auto& rel : *rels) {
 			if (rel->declaration().is("IfcRelDefinesByProperties")) {
 				auto pset = ((IfcUtil::IfcBaseClass*) ((IfcUtil::IfcBaseEntity*) rel)->get("RelatingPropertyDefinition"))->as<IfcUtil::IfcBaseEntity>();
+				if (!pset->declaration().is("IfcPropertySet")) {
+					continue;
+                }
 				std::string pset_name;
 				if (!pset->get("Name").isNull()) {
 					pset_name = (std::string) pset->get("Name");
@@ -508,7 +511,7 @@ namespace {
                             continue;
                         }
 						IfcUtil::IfcBaseClass* v = ((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
-						auto value = v->data().get_attribute_value(0);
+						auto value = v->get_attribute_value(0);
 						if (value.type() == IfcUtil::Argument_STRING) {
 							std::string v_str = value;
 							*output_it++ = string_property{ pset_name, name, v_str };
@@ -646,6 +649,8 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			view_box_3d_.emplace();
 			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
 #endif
+		} else {
+			Logger::Error("Failed to box or edge from drawing annotation");
 		}
 
 		std::vector<string_property> props;

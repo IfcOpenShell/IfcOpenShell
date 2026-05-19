@@ -19,7 +19,8 @@
 # pyright: reportAttributeAccessIssue=false
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
     operator.AddAnimationCamera,
@@ -38,6 +39,7 @@ classes = (
     operator.AssignProduct,
     operator.AssignRecurrencePattern,
     operator.AssignSuccessor,
+    operator.AssignStatus,
     operator.AssignWorkSchedule,
     operator.Bonsai_DatePicker,
     operator.CalculateTaskDuration,
@@ -104,6 +106,7 @@ classes = (
     operator.RemoveWorkTime,
     operator.ReorderTask,
     operator.SaveAnimationColorScheme,
+    operator.SelectTaskElements,
     operator.SelectTaskRelatedInputs,
     operator.SelectTaskRelatedProducts,
     operator.SelectUnassignedWorkScheduleProducts,

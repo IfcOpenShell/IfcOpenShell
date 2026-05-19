@@ -22,7 +22,7 @@
 
 #ifdef IFC_SHARED_BUILD
   #ifdef _WIN32
-    #ifdef Serializers_EXPORTS
+    #ifdef SERIALIZERS_EXPORTS
       #define SERIALIZERS_API __declspec(dllexport)
     #else
       #define SERIALIZERS_API __declspec(dllimport)

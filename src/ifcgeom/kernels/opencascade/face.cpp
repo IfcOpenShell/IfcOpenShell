@@ -599,6 +599,8 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::ConversionResults& results) {
+    return handle_occt_exception([&]() -> bool {
+
 	TopoDS_Shape shape;
 	if (!convert(face, shape)) {
 		return false;
@@ -609,4 +611,6 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::Co
 		face->surface_style
 	));
 	return true;
+
+	});
 }

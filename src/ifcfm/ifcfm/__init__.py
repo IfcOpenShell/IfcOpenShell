@@ -16,14 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import re
+from __future__ import annotations
+
 import csv
 import importlib
-import ifcopenshell.util.selector
-from pathlib import Path
+import os
+import re
 from collections import defaultdict
-from typing import Literal, Union, Any, Callable
+from collections.abc import Callable
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import ifcopenshell.util.selector
 
 try:
     from openpyxl import Workbook
@@ -35,7 +39,7 @@ try:
     import odf.namespaces as odf_ns
     from odf.opendocument import OpenDocumentSpreadsheet
     from odf.style import Style, TableCellProperties, TableProperties
-    from odf.table import Table, TableRow, TableCell
+    from odf.table import Table, TableCell, TableRow
     from odf.text import P
 except:
     pass  # No ODF support
@@ -45,6 +49,9 @@ try:
     import pandas as pd
 except:
     pass  # No Pandas support
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 __version__ = version = "0.0.0"
 

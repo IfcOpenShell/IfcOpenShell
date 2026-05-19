@@ -16,20 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api.alignment
-import math
 
 import numpy as np
 
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.guid
-import ifcopenshell.template
-from ifcopenshell import entity_instance
-from ifcopenshell import ifcopenshell_wrapper
-import ifcopenshell.util
-import ifcopenshell.util.alignment
+from ifcopenshell import entity_instance, ifcopenshell_wrapper
 
 
 def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:
@@ -162,3 +154,12 @@ def print_composite_curve_deep(curve):
         print(" " * 4, segment.Placement)
         print(" " * 4, segment.Placement.Location)
         print(" " * 4, segment.Placement.RefDirection)
+
+
+def print_positioned_products(file: ifcopenshell.file):
+    referents = file.by_type("IfcReferent")
+    for referent in referents:
+        print(referent)
+        for rel in referent.Positions:
+            for product in rel.RelatedProducts:
+                print(" " * 2, product)

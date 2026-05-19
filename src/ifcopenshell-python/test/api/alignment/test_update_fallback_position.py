@@ -17,7 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+
 import ifcopenshell.api.alignment
+import ifcopenshell.api.context
+import ifcopenshell.api.unit
 
 
 def test_update_fallback_position():

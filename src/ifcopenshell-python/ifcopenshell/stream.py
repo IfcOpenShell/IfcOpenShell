@@ -21,15 +21,16 @@ from __future__ import annotations
 try:
     import os
     import re
+    from typing import Any, NoReturn, Optional, Union
+
+    from lark import Lark, Transformer
 
     import ifcopenshell.util.attribute
     import ifcopenshell.util.schema
-    from .file import file
+
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
-
-    from lark import Lark, Transformer
-    from typing import Any, NoReturn, Union, Optional
+    from .file import file
 
     class StreamTransformer(Transformer):
         file: file
@@ -87,10 +88,7 @@ try:
             return (int(items[0]), str(items[1]), items[2])
 
     class stream(file):
-        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4"
-
         def __init__(self, filepath: str):
-            self.wrapped_data = None
             self.history_size = 64
             self.history = []
             self.future = []
@@ -109,9 +107,9 @@ try:
             # common.INT doesn't support negative integers.
             grammar = r"""
                 start: "#" NUMBER "=" TYPE "(" args ")" ";"
-    
+
                 args: arg ("," arg)*
-    
+
                 arg: STRING        -> string
                     | FLOAT        -> float
                     | IFCINT       -> ifcint
@@ -121,21 +119,21 @@ try:
                     | REFERENCE    -> reference
                     | list         -> list
                     | inline_type  -> inline_type
-    
+
                 list: "(" arg? ("," arg)* ")"
                 inline_type: TYPE "(" arg ")"
                 REFERENCE: "#" /[0-9]+/
-    
+
                 TYPE: CNAME
                 NUMBER: INT
-    
+
                 STRING: "'" /([^']|'')*/ "'"
                 IFCINT: /-?[0-9]+/
                 FLOAT: /-?[0-9]+\.[0-9]*([Ee]-?[0-9]+)?/
                 NULL: "$"
                 DERIVED: "*"
                 ENUM: "." CNAME "."
-    
+
                 %import common.INT
                 %import common.CNAME
             """
@@ -176,7 +174,7 @@ try:
                     self.class_map.setdefault(ifc_class, []).append(step_id)
                     self.id_offset[step_id] = offset
                 elif line.startswith("FILE_SCHEMA"):
-                    self.schema = line.split("'")[1]
+                    self._schema = line.split("'")[1]
                     self.ifc_schema = ifcopenshell.schema_by_name(self.schema)
                     for ifc_class in exclude_classes:
                         declaration = self.ifc_schema.declaration_by_name(ifc_class)
@@ -289,6 +287,26 @@ try:
         def __del__(self) -> None:
             # Override to avoid clean up unrelated to stream file.
             pass
+
+        @property
+        def wrapped_data(self) -> NoReturn:  # pyright: ignore[reportIncompatibleVariableOverride]
+            class_name = type(self).__name__
+            raise Exception(
+                f"No `wrapped_data` for {class_name}. `ifcopenshell.{class_name}` is probably confused with `ifcopenshell.file`."
+            )
+
+        @property
+        def header(self) -> NoReturn:
+            raise NotImplementedError("`stream.header` is not implemented yet.")
+
+        @property
+        def schema(self) -> ifcopenshell.util.schema.IFC_SCHEMA:
+            return self._schema
+
+        @property
+        def schema_identifier(self) -> str:
+            # The best option we've got for mimicing `file.schema_identifier`.
+            return self._schema
 
     class stream_entity(entity_instance):
         stream_wrapper: stream_wrapper

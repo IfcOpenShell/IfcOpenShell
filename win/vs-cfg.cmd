@@ -35,8 +35,13 @@
 ::   "vs2019-x86-v141_xp" => cmake -G "Visual Studio 16 2019" -A Win32 -T v141_xp
 ::
 :: NOTE: The delayed environment variable expansion needs to be enabled before calling this.
+::
+:: Output variables:
+:: - VC_VER - e.g. "14.5"
+:: - VS_VER - e.g. "2026"
+:: - BOOST_BOOTSTRAP_VER - e.g. "vc145"
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 
 set GENERATOR=%1
 
@@ -46,7 +51,8 @@ set GENERATORS[2]="Visual Studio 14 2015"
 set GENERATORS[3]="Visual Studio 15 2017"
 set GENERATORS[4]="Visual Studio 16 2019"
 set GENERATORS[5]="Visual Studio 17 2022"
-set LAST_GENERATOR_IDX=5
+set GENERATORS[6]="Visual Studio 18 2026"
+set LAST_GENERATOR_IDX=6
 
 :: Is generator shorthand used?
 set GEN_SHORTHAND=!GENERATOR:vs=!
@@ -104,6 +110,9 @@ IF "!GENERATOR!"=="" IF NOT "%VisualStudioVersion%"=="" (
             GOTO :GeneratorValid
         )
     )
+    call utils\cecho.cmd 0 12 ^
+        "Generator is not provided and VisualStudioVersion='%VisualStudioVersion%' is not supported - cannot proceed."
+    exit /b 1
 )
 
 :: Check that the used CMake version supports the chosen generator
@@ -157,6 +166,7 @@ IF %VS_VER%==2015 ( set "VC_VER=14.0" )
 IF %VS_VER%==2017 ( set "VC_VER=14.1" )
 IF %VS_VER%==2019 ( set "VC_VER=14.2" )
 IF %VS_VER%==2022 ( set "VC_VER=14.3" )
+IF %VS_VER%==2026 ( set "VC_VER=14.5" )
 
 :: determine the argument for Boost bootstrap
 set BOOST_BOOTSTRAP_VER=vc%VC_VER%

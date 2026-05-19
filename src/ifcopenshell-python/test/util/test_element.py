@@ -16,32 +16,36 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.profile
 import pytest
-import test.bootstrap
+
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.classification
+import ifcopenshell.api.context
+import ifcopenshell.api.control
+import ifcopenshell.api.cost
+import ifcopenshell.api.document
 import ifcopenshell.api.feature
-import ifcopenshell.api.pset
-import ifcopenshell.api.root
-import ifcopenshell.api.type
-import ifcopenshell.api.nest
-import ifcopenshell.api.style
+import ifcopenshell.api.geometry
+import ifcopenshell.api.group
 import ifcopenshell.api.layer
 import ifcopenshell.api.library
-import ifcopenshell.api.context
-import ifcopenshell.api.spatial
-import ifcopenshell.api.geometry
-import ifcopenshell.api.sequence
-import ifcopenshell.api.classification
 import ifcopenshell.api.material
-import ifcopenshell.api.document
-import ifcopenshell.api.aggregate
-import ifcopenshell.api.group
+import ifcopenshell.api.nest
+import ifcopenshell.api.profile
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
+import ifcopenshell.api.spatial
+import ifcopenshell.api.style
+import ifcopenshell.api.type
+import ifcopenshell.api.feature
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
-class TestIFC2X3MaterialProfilePsts(test.bootstrap.IFC2X3):
+class TestIFC2X3MaterialProfilePsets(test.bootstrap.IFC2X3):
     def test_get_profile_pset(self):
         profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcRectangleProfileDef")
         pset = ifcopenshell.api.pset.add_pset(self.file, profile, "")
@@ -157,6 +161,15 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         assert subject.get_pset(self.file.create_entity("IfcPerson"), "name") is None
         assert subject.get_pset(self.file.create_entity("IfcPerson"), "name", "a") is None
 
+    def test_getting_predefined_psets(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoorType")
+        pset = self.file.create_entity("IfcDoorLiningProperties", ifcopenshell.guid.new())
+        pset.Name = "My Lining"
+        pset.LiningDepth = 42
+        element.HasPropertySets = [pset]
+        assert subject.get_pset(element, "My Lining") == {"LiningDepth": 42, "id": pset.id()}
+        assert subject.get_pset(element, "My Lining", psets_only=True) == {"LiningDepth": 42, "id": pset.id()}
+
 
 class TestGetPsetsIFC4(test.bootstrap.IFC4):
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
@@ -220,6 +233,15 @@ class TestGetPsetsIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"x": 42})
         assert subject.get_psets(element, qtos_only=True) == {"qto": {"x": 42, "id": qto.id()}}
 
+    def test_getting_predefined_psets(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoorType")
+        pset = self.file.create_entity("IfcDoorLiningProperties", ifcopenshell.guid.new())
+        pset.Name = "My Lining"
+        pset.LiningDepth = 42
+        element.HasPropertySets = [pset]
+        assert subject.get_psets(element) == {"My Lining": {"LiningDepth": 42, "id": pset.id()}}
+        assert subject.get_psets(element, psets_only=True) == {"My Lining": {"LiningDepth": 42, "id": pset.id()}}
+
 
 class TestGetPropertyDefinitionIFC4(test.bootstrap.IFC4):
     def test_getting_the_properties_of_a_pset(self):
@@ -282,6 +304,35 @@ class TestGetPropertiesIFC4(test.bootstrap.IFC4):
                 "id": 4,
                 "type": "IfcComplexProperty",
                 "properties": {"a": "b"},
+            }
+        }
+
+    def test_getting_complex_properties_verbose(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="pset")
+        complex_property = self.file.create_entity("IfcComplexProperty", Name="prop", UsageName="usage_name")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=complex_property, properties={"a": "b"})
+        pset.HasProperties = [complex_property]
+        properties = subject.get_properties(pset.HasProperties, verbose=True)
+        prop_value = properties["prop"]["value"]
+        nested_prop = prop_value["properties"]["a"]
+        assert properties == {
+            "prop": {
+                "id": complex_property.id(),
+                "class": "IfcComplexProperty",
+                "value": {
+                    "UsageName": "usage_name",
+                    "id": complex_property.id(),
+                    "type": "IfcComplexProperty",
+                    "properties": {
+                        "a": {
+                            "id": nested_prop["id"],
+                            "class": "IfcPropertySingleValue",
+                            "value": "b",
+                            "value_type": "IfcLabel",
+                        }
+                    },
+                },
             }
         }
 
@@ -365,6 +416,65 @@ class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element_type.PredefinedType = "NOTDEFINED"
         assert subject.get_predefined_type(element_type) == "NOTDEFINED"
+
+
+class TestIsUserdefinedTypeIFC4(test.bootstrap.IFC4):
+    def test_getting_a_predefined_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element)
+
+    def test_getting_an_element_userdefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.PredefinedType = "USERDEFINED"
+        element.ObjectType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_element_type_without_a_predefined_type_attribute(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcAnnotation")
+        element.ObjectType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_inherited_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element)
+
+    def test_getting_an_inherited_userdefined_type_for_an_element_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ElementType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_overriden_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "NOTDEFINED"
+        element.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element)
+
+    def test_getting_an_inherited_userdefined_type_for_a_process_type(self):
+        element = ifcopenshell.api.sequence.add_task(self.file)
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTaskType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        element_type.PredefinedType = "USERDEFINED"
+        element_type.ProcessType = "FOOBAR"
+        assert subject.is_userdefined_type(element)
+
+    def test_getting_an_element_type_predefined_type(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "PARTITIONING"
+        assert not subject.is_userdefined_type(element_type)
+
+    def test_getting_an_element_type_null_predefined_type(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "NOTDEFINED"
+        assert not subject.is_userdefined_type(element_type)
 
 
 class TestGetTypeIFC4(test.bootstrap.IFC4):
@@ -811,6 +921,35 @@ class TestGetlayers(test.bootstrap.IFC4, TestGetlayersIFC2X3):
         assert subject.get_layers(self.file, element) == [layer]
 
 
+class TestGetParentIFC4(test.bootstrap.IFC4):
+    def test_getting_the_parent_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=building)
+        assert subject.get_parent(element) == building
+
+    def test_getting_the_specific_parent_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_parent(element, ifc_class="IfcBuilding") == building
+        assert subject.get_parent(element, ifc_class="IfcSite") == None
+
+    def test_getting_the_specific_parent_of_an_element_via_voiding(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=building)
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=window)
+        assert subject.get_parent(window, ifc_class="IfcWall") == wall
+        assert subject.get_parent(window, ifc_class="IfcBuilding") == building
+        assert subject.get_parent(window, ifc_class="IfcSite") == None
+
+
 class TestGetContainerIFC4(test.bootstrap.IFC4):
     def test_getting_the_spatial_container_of_an_element(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -923,6 +1062,23 @@ class TestGetGroupsIFC4(test.bootstrap.IFC4):
 
 
 class TestGetGroupsIFC2X3(test.bootstrap.IFC2X3, TestGetGroupsIFC4):
+    pass
+
+
+class TestGetControls(test.bootstrap.IFC2X3):
+    def test_run(self):
+        model = self.file
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        control = ifcopenshell.api.cost.add_cost_schedule(model)
+        ifcopenshell.api.control.assign_control(model, related_objects=[element], relating_control=control)
+        assert list(subject.get_controls(element)) == [control]
+
+
+class TestGetControlsIFC4(test.bootstrap.IFC4, TestGetControls):
+    pass
+
+
+class TestGetControlsIFC4X3(test.bootstrap.IFC4X3, TestGetControls):
     pass
 
 

@@ -16,20 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
+
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
 from ifcopenshell import entity_instance
-
-import math
-from collections.abc import Sequence
 
 
 def _create_offset_curve_representation(
     file: ifcopenshell.file, alignment: entity_instance, offsets: Sequence[entity_instance]
 ) -> None:
     """
-    Create geometric representation for the alignment based on an IfcPolyline
+    Create geometric representation for the alignment based on an IfcOffsetByDistances curve
 
     :param alignment: The alignment for which the representation is being created
     :return: None
@@ -37,6 +36,11 @@ def _create_offset_curve_representation(
     expected_type = "IfcAlignment"
     if not alignment.is_a(expected_type):
         raise TypeError(f"Expected {expected_type} but got {alignment.is_a()}")
+
+    expected_type = "IfcPointByDistanceExpression"
+    for offset in offsets:
+        if not offset.is_a(expected_type):
+            raise TypeError(f"Expected {expected_type} but got {offset.is_a()}")
 
     axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
 

@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import gpu
 from typing import Literal
+
+import gpu
 
 
 class DecorationShader:
@@ -57,15 +58,13 @@ class DecorationShader:
             "PLANAR LOAD",
         }
         if pattern not in valid_patterns:
-            raise ValueError(
-                """pattern must be one of:
+            raise ValueError("""pattern must be one of:
                              PERPENDICULAR DISTRIBUTED FORCE
                              PARALLEL DISTRIBUTED FORCE,
                              DISTRIBUTED MOMENT,
                              SINGLE FORCE,
                              SINGLE MOMENT,
-                             PLANAR LOAD"""
-            )
+                             PLANAR LOAD""")
         if "DISTRIBUTED" in pattern.upper():
             shader = self.get_linear_shader(pattern)
             return shader

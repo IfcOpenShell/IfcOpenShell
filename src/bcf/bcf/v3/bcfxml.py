@@ -1,6 +1,7 @@
 """BCF XML V3 handlers."""
 
 from __future__ import annotations
+
 import uuid
 import warnings
 import zipfile

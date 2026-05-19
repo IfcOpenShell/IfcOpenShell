@@ -17,9 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
+
 import bonsai.tool as tool
-from bpy.types import WorkSpaceTool
 from bonsai.bim.module.project.data import LinksData
 
 
@@ -38,9 +39,13 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         ("bim.explore_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
         ("bim.explore_hotkey", {"type": "M", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_M")]}),
+        ("bim.explore_hotkey", {"type": "S", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_S")]}),
+        ("bim.explore_hotkey", {"type": "H", "value": "PRESS"}, {"properties": [("hotkey", "H")]}),
+        ("bim.explore_hotkey", {"type": "H", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_H")]}),
+        ("bim.explore_hotkey", {"type": "H", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_H")]}),
     )
 
-    def draw_settings(context, layout, ws_tool):
+    def draw_settings(context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool) -> None:
         row = layout.row(align=True)
         row.label(text="Query Object", icon="MOUSE_RMB")
         row = layout.row(align=True)
@@ -59,23 +64,40 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
 
+        row = layout.row(align=True)
+        row.operator("bim.hide_queried_linked_element", text="Hide Queried Element", icon="EVENT_H")
+
         prop = tool.Project.get_measure_tool_settings()
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_M")
-        row = layout.row(align=True)
         op = row.operator("bim.explore_hotkey", text="Measure Tool", icon="CON_DISTLIMIT")
         op.hotkey = "S_M"
         row = layout.row(align=True)
         row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
-        row = layout.row(align=True)
         op = row.operator("bim.clear_measurement", text="", icon="X")
+
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_S")
+        op = row.operator("bim.explore_hotkey", text="Image Scaling Tool", icon="IMAGE_PLANE")
+        op.hotkey = "S_S"
+        op.description = (
+            "Scale Image Annotation.\n\n"
+            "Allows to scale an IfcReferenceImage.\n\n"
+            "Select image, select tool. "
+            "Check lower left corner instructions to select two points and provide real distance between them"
+        )
+
+        row = layout.row(align=True)
+        row.operator("bim.generate_uv_map", icon="UV")
 
 
 class ExploreHotkey(bpy.types.Operator):
     bl_idname = "bim.explore_hotkey"
     bl_label = ""
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
@@ -110,3 +132,29 @@ class ExploreHotkey(bpy.types.Operator):
             bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
         else:
             bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)
+
+    def hotkey_S_S(self):
+        active_obj = bpy.context.active_object
+        selected_objects = tool.Blender.get_selected_objects()
+        element = tool.Ifc.get_entity(active_obj) if active_obj else None
+
+        if (
+            not active_obj
+            or not element
+            or not element.is_a("IfcAnnotation")
+            or len(selected_objects) != 1
+            or not tool.Drawing.is_annotation_object_type(element, "IMAGE")
+        ):
+            self.report({"ERROR"}, "Please select one image annotation first.")
+            return
+
+        bpy.ops.bim.image_scaling_tool("INVOKE_DEFAULT")
+
+    def hotkey_H(self) -> None:
+        bpy.ops.bim.hide_queried_linked_element()
+
+    def hotkey_S_H(self) -> None:
+        bpy.ops.bim.hide_queried_linked_element(hide_all_except=True)
+
+    def hotkey_A_H(self) -> None:
+        bpy.ops.bim.hide_queried_linked_element(unhide_all=True)

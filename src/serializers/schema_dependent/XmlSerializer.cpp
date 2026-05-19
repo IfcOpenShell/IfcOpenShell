@@ -107,7 +107,7 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 			IfcUtil::IfcBaseClass* e = argument;
 			if (!e->declaration().as_entity()) {
 				IfcUtil::IfcBaseType* f = e->as<IfcUtil::IfcBaseType>();
-				value = format_attribute(mapping, f->data().get_attribute_value(0), f->data().get_attribute_value(0).type(), argument_name);
+				value = format_attribute(mapping, f->get_attribute_value(0), f->get_attribute_value(0).type(), argument_name);
 			} else if (e->declaration().is(IfcSchema::IfcSIUnit::Class()) || e->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 				// Some string concatenation to have a unit name as a XML attribute.
 
@@ -155,12 +155,12 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 	const unsigned n = instance->declaration().as_entity()->attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
-		    instance->data().get_attribute_value(i);
+		    instance->get_attribute_value(i);
 		} catch (const std::exception&) {
 		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
 		}		
-		auto argument = instance->data().get_attribute_value(i);
+		auto argument = instance->get_attribute_value(i);
 		if (argument.isNull()) continue;
 
 		std::string argument_name = instance->declaration().as_entity()->attribute_by_index(i)->name();
@@ -169,7 +169,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		if (argument_name_it != POSTFIX_SCHEMA(argument_name_map).end()) {
 			argument_name = argument_name_it->second;
 		}
-		const IfcUtil::ArgumentType argument_type = instance->data().get_attribute_value(i).type();
+		const IfcUtil::ArgumentType argument_type = instance->get_attribute_value(i).type();
 
 		const std::string qualified_name = instance->declaration().name() + "." + argument_name;
 		boost::optional<std::string> value;
@@ -570,20 +570,20 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	};
 
 	// Write the SPF header as XML nodes.
-	BOOST_FOREACH(const std::string & s, catch_exceptions([this]() { return file->header().file_description().description(); })) {
+	BOOST_FOREACH(const std::string & s, catch_exceptions([this]() { return file->header().file_description()->description(); })) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name().author(); })) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name()->author(); })) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name().organization(); })) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name()->organization(); })) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_schema().schema_identifiers(); })) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_schema()->schema_identifiers(); })) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	try {
-		header.put("file_description.implementation_level", file->header().file_description().implementation_level());
+		header.put("file_description.implementation_level", file->header().file_description()->implementation_level());
 	}
 	catch (const IfcParse::IfcException& ex) {
 		std::stringstream ss;
@@ -591,7 +591,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 		Logger::Message(Logger::LOG_ERROR, ss.str());
 	}
 	try {
-		header.put("file_name.name", file->header().file_name().name());
+		header.put("file_name.name", file->header().file_name()->name());
 	}
 	catch (const IfcParse::IfcException& ex) {
 		std::stringstream ss;
@@ -599,7 +599,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 		Logger::Message(Logger::LOG_ERROR, ss.str());
 	}
     try {
-        header.put("file_name.time_stamp", file->header().file_name().time_stamp());
+        header.put("file_name.time_stamp", file->header().file_name()->time_stamp());
     }
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
@@ -607,7 +607,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
         Logger::Message(Logger::LOG_ERROR, ss.str());
     }
     try {
-        header.put("file_name.preprocessor_version", file->header().file_name().preprocessor_version());
+        header.put("file_name.preprocessor_version", file->header().file_name()->preprocessor_version());
     }
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
@@ -615,7 +615,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
         Logger::Message(Logger::LOG_ERROR, ss.str());
     }
     try {
-        header.put("file_name.originating_system", file->header().file_name().originating_system());
+        header.put("file_name.originating_system", file->header().file_name()->originating_system());
     }
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
@@ -623,7 +623,8 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
         Logger::Message(Logger::LOG_ERROR, ss.str());
     }
     try {
-        header.put("file_name.authorization", file->header().file_name().authorization());
+		// @nb inconsistent spelling
+        header.put("file_name.authorization", file->header().file_name()->authorization());
     }
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;

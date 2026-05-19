@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util.unit
+from typing import Optional, TypeVar
+
 import numpy as np
 import numpy.typing as npt
-from ifcopenshell.util.shape_builder import ShapeBuilder, SequenceOfVectors, VectorType
-from typing import Optional, TypeVar
+
+import ifcopenshell.util.unit
+from ifcopenshell.util.shape_builder import SequenceOfVectors, ShapeBuilder, VectorType
 
 T = TypeVar("T")
 COORD_3D = tuple[float, float, float]

@@ -57,7 +57,7 @@ Scenario: Add one type from the Construction Type Browser
 
 Scenario: Add grid
     Given an empty IFC project
-    When I press "mesh.add_grid"
+    When I press "bim.add_grid"
     Then the object "IfcGrid/Grid" is an "IfcGrid"
     And the object "IfcGridAxis/A" is an "IfcGridAxis"
     And the object "IfcGridAxis/B" is an "IfcGridAxis"
@@ -395,6 +395,44 @@ Scenario: Add a slab
     And the object "IfcSlab/Slab" dimensions are "1,1,0.2"
     And the object "IfcSlab/Slab" bottom left corner is at "0,0,0"
     And the object "IfcSlab/Slab" top right corner is at "1,1,0.2"
+
+Scenario: Extend walls to underside
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcSlab/Slab" is moved to "0,0,2.5"
+    When the object "IfcWall/Wall" is selected
+    And additionally the object "IfcSlab/Slab" is selected
+    And I look at the tool header
+    And I click "Extend To Underside"
+    Then the object "IfcWall/Wall" dimensions are "1,0.1,2.5"
+
+Scenario: Extend walls to underside - extending to a tessellated gable roof
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    # Create gable roof: a cube turned into a prism with a ridge.
+    And I add a cube of size "1" at "0.5,0.05,3"
+    And the object "Cube" is selected
+    And I evaluate expression "obj = bpy.context.active_object; [setattr(v.co, 'y', 0) for v in obj.data.vertices if v.co.z > 0]"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcRoof"
+    And I press "bim.assign_class"
+    When the object "IfcWall/Wall" is selected
+    And additionally the object "IfcRoof/Cube" is selected
+    And I look at the tool header
+    And I click "Extend To Underside"
+    Then the object "IfcWall/Wall" dimensions are "1,0.1,2.5"
 
 Scenario: Enable editing a slab profile
     Given an empty IFC project
@@ -755,3 +793,48 @@ Scenario: Generate a space from cursor location
     And I press "bim.generate_space"
     Then the object "IfcSpace/Space" exists
     And the object "IfcSpace/Space" dimensions are "1,0.8,3"
+
+Scenario: Add and edit parametric stair
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcStairFlight"
+    And I click "Assign IFC Class"
+    And I look at the "Stair" panel
+    And I click "ADD"
+    And I look at the "Stair" panel
+    And I click "GREASEPENCIL"
+    And I look at the "Stair" panel
+    And I click "CHECKMARK"
+
+Scenario: Add and edit parametric window
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWindow"
+    And I click "Assign IFC Class"
+    And I look at the "BIM_PT_window" panel
+    And I click "ADD"
+    And I look at the "BIM_PT_window" panel
+    And I click "GREASEPENCIL"
+    And I look at the "BIM_PT_window" panel
+    And I click "CHECKMARK"
+
+Scenario: Add and edit parametric door
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcDoor"
+    And I click "Assign IFC Class"
+    And I look at the "Door" panel
+    And I click "ADD"
+    And I look at the "Door" panel
+    And I click "GREASEPENCIL"
+    And I look at the "Door" panel
+    And I click "CHECKMARK"

@@ -16,19 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import bonsai.tool as tool
-import ifcopenshell.util.file
-from bonsai.bim.ifc import IfcStore
-from pathlib import Path
 from collections import defaultdict
-from typing import Union, Any
+from pathlib import Path
+from typing import Any, Union
+
+import ifcopenshell.util.file
+
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 def refresh():
     ProjectData.is_loaded = False
     LinksData.is_loaded = False
+    ProjectLibraryData.is_loaded = False
 
 
 class ProjectData:
@@ -43,6 +44,7 @@ class ProjectData:
             "library_file": cls.library_file(),
             "last_saved": cls.last_saved(),
             "total_elements": cls.total_elements(),
+            "header_info": cls.header_info(),
         }
         # After export_schema.
         cls.data["template_file"] = cls.template_file()
@@ -95,7 +97,7 @@ class ProjectData:
         if not ifc:
             return ""
         try:
-            save_datetime = ifc.wrapped_data.header.file_name.time_stamp
+            save_datetime = ifc.header.file_name.time_stamp
             save_date, save_time = save_datetime.split("T")
             return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
         except:
@@ -106,6 +108,12 @@ class ProjectData:
         if ifc := tool.Ifc.get():
             return len(ifc.by_type("IfcElement"))
         return 0
+
+    @classmethod
+    def header_info(cls) -> Union[tool.Project.HeaderData, None]:
+        if not tool.Ifc.get():
+            return None
+        return tool.Project.get_header_data()
 
 
 class ProjectLibraryData:
@@ -162,6 +170,6 @@ class ProjectLibraryData:
 
 
 class LinksData:
-    linked_data = {}
+    linked_data: dict[str, Any] = {}
     enable_culling = False
     is_loaded = False

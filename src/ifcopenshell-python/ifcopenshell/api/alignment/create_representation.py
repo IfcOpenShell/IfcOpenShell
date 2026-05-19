@@ -19,9 +19,10 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._create_geometric_representation import _create_geometric_representation
 from ifcopenshell.api.alignment._add_segment_to_curve import _add_segment_to_curve
+from ifcopenshell.api.alignment._create_geometric_representation import (
+    _create_geometric_representation,
+)
 
 
 def create_representation(
@@ -50,5 +51,6 @@ def create_representation(
     layouts = ifcopenshell.api.alignment.get_alignment_layouts(alignment)
     for layout in layouts:
         curve = ifcopenshell.api.alignment.get_layout_curve(layout)
-        for segment in layout.IsNestedBy[0].RelatedObjects:
+        layout_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
+        for segment in layout_nest.RelatedObjects:
             _add_segment_to_curve(file, segment, curve)

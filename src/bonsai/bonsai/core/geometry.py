@@ -17,12 +17,14 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union
+
 from collections.abc import Sequence
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
@@ -115,33 +117,19 @@ def switch_representation(
     geometry: type[tool.Geometry],
     obj: bpy.types.Object,
     representation: ifcopenshell.entity_instance,
-    should_reload: bool = True,
-    is_global: bool = True,
-    should_sync_changes_first: bool = False,
     apply_openings: bool = True,
 ) -> None:
-    """Function can switch to representation that wasn't yet assigned to that object. See #2766.
-
-    :param should_sync_changes_first: sync ifc representation with current state of `obj.data`
-    :param should_reload: reload `obj.data` from ifc representation
-    :param is_global: replace mesh data for all users of `obj.data`, not just `obj`
-
-    """
-    if should_sync_changes_first and ifc.is_edited(obj) and not geometry.is_box_representation(representation):
-        representation_id = geometry.get_representation_id(representation)
-        geometry.run_geometry_update_representation(obj=obj)
-        if not geometry.does_representation_id_exist(representation_id):
-            return
-
+    """Switch obj representation (even if not yet assigned to that object. See #2766.)"""
     if not geometry.get_object_data(obj) and geometry.is_text_literal(representation):
         return
 
+    element = ifc.get_entity(obj)
+    assert element
+    geometry.clear_cache(element)
     geometry.reimport_element_representations(obj, representation, apply_openings=apply_openings)
 
 
-def get_representation_ifc_parameters(
-    geometry: type[tool.Geometry], obj: bpy.types.Object, should_sync_changes_first: bool = False
-) -> None:
+def get_representation_ifc_parameters(geometry: type[tool.Geometry], obj: bpy.types.Object) -> None:
     geometry.import_representation_parameters(geometry.get_object_data(obj))
 
 
@@ -161,7 +149,7 @@ def remove_representation(
     assert element
     element_type = geometry.get_element_type(element)
     data = None
-    has_switched_from_data = False
+    data_removed_by_switch_representation = False
     if element_type and (geometry.is_mapped_representation(representation) or geometry.is_type_product(element)):
         representation = geometry.resolve_mapped_representation(representation)
         data = geometry.get_representation_data(representation)
@@ -169,7 +157,7 @@ def remove_representation(
             for element in geometry.get_elements_of_type(element_type):
                 obj = ifc.get_object(element)
                 if obj:
-                    has_switched_from_data = True
+                    data_removed_by_switch_representation = True
                     geometry.switch_from_representation(obj, representation)
             obj = ifc.get_object(element_type)
             if obj:
@@ -178,12 +166,13 @@ def remove_representation(
     else:
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
-            has_switched_from_data = True
+            data_removed_by_switch_representation = True
             geometry.switch_from_representation(obj, representation)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
 
     ifc.run("geometry.remove_representation", representation=representation)
-    if data and not has_switched_from_data:
+
+    if data and not data_removed_by_switch_representation:
         geometry.delete_data(data)
 
 

@@ -19,15 +19,15 @@
 # fmt: off
 # pylint: skip-file
 
-import ifcopenshell
+from math import pi
+from pathlib import Path
+
+import boltspy as bolts  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 import ifcopenshell.api
 import ifcopenshell.api.material
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
-import boltspy as bolts  # pyright: ignore[reportMissingImports]
-from math import cos, pi
-from pathlib import Path
 from ifcopenshell.util.shape_builder import ShapeBuilder, V, ifc_safe_vector_type
 
 

@@ -30,8 +30,8 @@
 // Disable warnings coming from IfcOpenShell
 #pragma warning(disable : 4018 4267 4250 4984 4985)
 
-#include "../ifcparse/Ifc4x3_add2.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "ifcparse/Ifc4x3_add2.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 #include <boost/math/constants/constants.hpp>
 #include <fstream>
@@ -46,7 +46,7 @@ double to_radian(double deg) { return PI * deg / 180; }
 Schema::IfcProject* setup_project(IfcHierarchyHelper<Schema>& file) {
     std::vector<std::string> file_description;
     file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
-    file.header().file_description().description(file_description);
+    file.header().file_description()->setdescription(file_description);
 
     auto project = file.addProject();
     project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
@@ -489,6 +489,6 @@ int main() {
     }
 
     // That's it - save the model to a file
-    std::ofstream ofs("FHWA_Bridge_Geometry_Alignment_Example.ifc");
+    std::ofstream ofs("IfcAlignment.ifc");
     ofs << file;
 }

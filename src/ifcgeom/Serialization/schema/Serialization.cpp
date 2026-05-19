@@ -537,7 +537,7 @@ int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advance
 			return 0;
 		}
 		IfcSchema::IfcFaceBound* bnd;
-		if (outer == f) {
+		if (outer == exp.Current()) {
 			bnd = new IfcSchema::IfcFaceOuterBound(loop, true);
 		} else {
 			bnd = new IfcSchema::IfcFaceBound(loop, true);

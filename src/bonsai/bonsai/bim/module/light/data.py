@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
 import ifcopenshell.util.geolocation
-from mathutils import Vector
+
+import bonsai.tool as tool
 
 
 def refresh():
@@ -41,7 +40,7 @@ class SolarData:
 
     @classmethod
     def sun_position(cls):
-        return tool.Blender.get_sun_position_addon()
+        return tool.Blender.get_addon("sun_position")
 
     @classmethod
     def sites(cls):

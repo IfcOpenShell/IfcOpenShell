@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
+import ifcopenshell.api.control
 import ifcopenshell.api.cost
 import ifcopenshell.api.root
-import ifcopenshell.api.control
+import test.bootstrap
 
 
 class TestAddCostItemQuantity(test.bootstrap.IFC4):
@@ -30,7 +30,7 @@ class TestAddCostItemQuantity(test.bootstrap.IFC4):
         schedule = ifcopenshell.api.cost.add_cost_schedule(self.file)
         item = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.control.assign_control(self.file, relating_control=item, related_object=wall)
+        ifcopenshell.api.control.assign_control(self.file, relating_control=item, related_objects=[wall])
 
         quantities = []
         for quantity_type in quantity_types:

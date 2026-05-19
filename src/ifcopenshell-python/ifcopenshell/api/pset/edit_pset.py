@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.pset
-from typing import Optional, Any, Union
 
 
 def edit_pset(
@@ -446,6 +448,11 @@ class Usecase:
                 return "IfcBoolean"
             elif isinstance(new_value, int):
                 return "IfcInteger"
+            # @nb datetime is also a date, so needs to be checked first
+            elif isinstance(new_value, datetime.datetime):
+                return "IfcDateTime"
+            elif isinstance(new_value, datetime.date):
+                return "IfcDate"
 
     def cast_value_to_primary_measure_type(self, value, primary_measure_type):
         type_str = self.file.create_entity(primary_measure_type).attribute_type(0)
@@ -464,6 +471,8 @@ class Usecase:
             return [float(i) for i in value]
         elif type_str == "AGGREGATE OF INT":
             return [int(i) for i in value]
+        elif isinstance(value, (datetime.date, datetime.datetime)):
+            return value.isoformat()
         return type_fn(value)
 
     @staticmethod

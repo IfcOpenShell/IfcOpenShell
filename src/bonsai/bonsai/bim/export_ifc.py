@@ -17,25 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
-import json
+
 import datetime
-import zipfile
+import json
+import os
 import tempfile
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.placement
-import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.core.geometry
-import bonsai.core.aggregate
-import bonsai.core.spatial
-import bonsai.core.style
-from bonsai.bim.ifc import IfcStore
-from mathutils import Vector
-from typing import Union
+import zipfile
 from logging import Logger
+from typing import Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
+
+import bonsai.core.geometry
+import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 
 
 class IfcExporter:
@@ -47,7 +45,6 @@ class IfcExporter:
         self.set_header()
         IfcStore.update_cache()
         self.sync_all_objects()
-        tool.Project.save_linked_models_to_ifc()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
@@ -74,12 +71,10 @@ class IfcExporter:
                     json.dump(jsonData, outfile, indent=None if self.ifc_export_settings.json_compact else 4)
 
     def set_header(self):
-        self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
-        self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.utcnow().replace(tzinfo=datetime.UTC).astimezone().replace(microsecond=0).isoformat()
-        )
-        self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
-        self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
+        self.file.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
+        self.file.header.file_name.time_stamp = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()
+        self.file.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
+        self.file.header.file_name.originating_system = "{} {}".format(
             self.get_application_name(), tool.Blender.get_bonsai_version()
         )
 
@@ -104,7 +99,16 @@ class IfcExporter:
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(tool.Blender.get_object_bim_props(obj).ifc_definition_id)
-        if tool.Geometry.is_scaled(obj):
+        # Handle camera scales specially
+        if obj.type == "CAMERA":
+            # Check if this is a reflected ceiling plan camera
+            camera = tool.Ifc.get_entity(obj)
+            if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
+                # Ensure reflected ceiling cameras have the correct scale
+                if obj.scale != (-1, -1, -1):
+                    obj.scale = (-1, -1, -1)
+            # Skip all other scale handling for cameras
+        elif tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             # update_representation might not apply scale if the object has openings
             # reset it, so let user know that the scale wasn't saved.

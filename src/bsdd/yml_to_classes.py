@@ -1,8 +1,8 @@
-import yaml
 import sys
 from pathlib import Path
 from typing import Any
 
+import yaml
 
 type_to_python_type = {
     "string": "str",

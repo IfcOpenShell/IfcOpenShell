@@ -17,19 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import os
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, final
+
 import bpy
-import numpy as np
 import ifcopenshell.api
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-import bonsai.core.tool
+import numpy as np
+
 import bonsai.bim.handler
+import bonsai.bim.schema
+import bonsai.core.tool
 import bonsai.tool as tool
-from pathlib import Path
-from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from typing import Optional, Union, Any, final, Literal, TYPE_CHECKING
+from bonsai.bim.ifc import IFC_CONNECTED_TYPE, IfcStore
 
 if TYPE_CHECKING:
     from bpy.stub_internal import rna_enums
@@ -61,10 +65,16 @@ class Ifc(bonsai.core.tool.Ifc):
     @classmethod
     def set(cls, ifc: ifcopenshell.file) -> None:
         IfcStore.file = ifc
+        cls.after_file_loaded()
 
     @classmethod
     def get(cls) -> ifcopenshell.file:
         return IfcStore.get_file()
+
+    @classmethod
+    def after_file_loaded(cls) -> None:
+        assert IfcStore.file
+        bonsai.bim.schema.reload(IfcStore.file.schema_identifier)
 
     @classmethod
     def set_path(cls, value: str) -> None:
@@ -79,8 +89,8 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_schema(cls) -> ifcopenshell.util.schema.IFC_SCHEMA:
-        if IfcStore.get_file():
-            return IfcStore.get_file().schema
+        if ifc_file := IfcStore.get_file():
+            return ifc_file.schema
 
     @classmethod
     def clear_history(cls) -> None:
@@ -103,12 +113,19 @@ class Ifc(bonsai.core.tool.Ifc):
         oprops = tool.Blender.get_object_bim_props(obj)
         if not oprops.location_checksum:
             return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(oprops.location_checksum))
-        loc_real = np.array(obj.matrix_world.translation).flatten()
+
+        # Handle both old float64 and new float32 checksums for version compatibility
+        loc_checksum_bytes: bytes = eval(oprops.location_checksum)
+        loc_check = tool.Blender.np_frombuffer_legacy(loc_checksum_bytes, 3)
+        loc_real = tool.Blender.np_array_legacy(obj.matrix_world.translation)
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             return True
-        rot_check = np.frombuffer(eval(oprops.rotation_checksum)).reshape(3, 3)
-        rot_real = np.array(obj.matrix_world.to_3x3())
+
+        # Handle both old float64 and new float32 checksums for version compatibility
+        rot_checksum_bytes: bytes = eval(oprops.rotation_checksum)
+        rot_check = tool.Blender.np_frombuffer_legacy(rot_checksum_bytes, 9)
+        rot_check = rot_check.reshape(3, 3)
+        rot_real = tool.Blender.np_array_legacy(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
         if angle_rad > 0.0017453292519943296:  # 0.1 degrees
@@ -180,11 +197,15 @@ class Ifc(bonsai.core.tool.Ifc):
         if not cls.get():
             return
 
+        # Clear all per-object msgbus subscriptions at once using the dedicated
+        # owner.  After undo/redo, per-object Python wrappers have new
+        # identities so clearing by individual obj would miss stale
+        # subscriptions registered with the old wrappers.
+        bpy.msgbus.clear_by_owner(bonsai.bim.handler.object_subscription_owner)
+
         for obj in bpy.data.objects:
             if obj.library:
                 continue
-
-            bpy.msgbus.clear_by_owner(obj)
 
             element = cls.get_entity(obj)
             if not element:
@@ -199,8 +220,6 @@ class Ifc(bonsai.core.tool.Ifc):
         for obj in bpy.data.materials:
             if obj.library:
                 continue
-
-            bpy.msgbus.clear_by_owner(obj)
 
             style = cls.get_entity(obj)
             if not style:
@@ -241,7 +260,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
         Marking object as edited is an optimization mechanism - instead of saving
         changed geometry to IFC, we mark it as changed and then it's saved later
-        (typically during project save or switch_representation(should_sync_changes_first=True)).
+        (typically during project save).
 
         Other caveat of using edited objects is that it won't have an effect for objects with openings,
         since we can't deduce non-openings representation from edited representation with openings.

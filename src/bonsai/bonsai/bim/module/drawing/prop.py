@@ -16,39 +16,38 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
-import json
 import enum
+import json
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.core.drawing as core
-import bonsai.bim.module.drawing.annotation as annotation
-import bonsai.bim.module.drawing.decoration as decoration
-from mathutils import Matrix
-from bonsai.bim.prop import BIMFilterGroup
-from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
-from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
-from pathlib import Path
-from bonsai.bim.prop import Attribute, StrProperty
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-    BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, get_args, Union
-from collections.abc import Callable
+from bpy.types import PropertyGroup
+from mathutils import Matrix
 
+import bonsai.bim.module.drawing.decoration as decoration
+import bonsai.core.drawing as core
+import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import (
+    AnnotationData,
+    DrawingsData,
+    ElementValuesData,
+    SheetsData,
+)
+from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
+from bonsai.bim.prop import Attribute, BIMFilterGroup
 
 diagram_scales_enum = []
 
@@ -267,12 +266,6 @@ def update_titleblocks(self, context):
 def update_should_draw_decorations(self, context: bpy.types.Context) -> None:
     if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
-        collection = tool.Blender.get_object_bim_props(context.scene.camera).collection
-        for obj in collection.objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                continue
-            tool.Drawing.update_text_value(obj)
         refresh_drawing_data()
         if bpy.app.background:
             return
@@ -398,9 +391,23 @@ RASTER_STYLE_PROPERTIES_EXCLUDE = ("scene.render.filepath",)
 
 
 class DocProperties(PropertyGroup):
-    should_use_underlay_cache: BoolProperty(name="Use Underlay Cache", default=False)
-    should_use_linework_cache: BoolProperty(name="Use Linework Cache", default=False)
-    should_use_annotation_cache: BoolProperty(name="Use Annotation Cache", default=False)
+    # Note that options are global in descriptions to prevent confusion,
+    # as options are available through Active Drawing UI, but they're actually global.
+    should_use_underlay_cache: BoolProperty(
+        name="Use Underlay Cache", description="Global option for all drawings.", default=False
+    )
+    should_use_linework_cache: BoolProperty(
+        name="Use Linework Cache", description="Global option for all drawings.", default=False
+    )
+    should_use_annotation_cache: BoolProperty(
+        name="Use Annotation Cache", description="Global option for all drawings.", default=False
+    )
+    should_draw_linked_projects: BoolProperty(
+        name="Draw Linked Projects",
+        description=("Whether to draw all currently loaded linked projects.\n\nGlobal option for all drawings."),
+        default=True,
+        options=set(),
+    )
     is_editing_drawings: BoolProperty(name="Is Editing Drawings", default=False)
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
@@ -430,6 +437,7 @@ class DocProperties(PropertyGroup):
         should_use_underlay_cache: bool
         should_use_linework_cache: bool
         should_use_annotation_cache: bool
+        should_draw_linked_projects: bool
         is_editing_drawings: bool
         is_editing_schedules: bool
         is_editing_references: bool
@@ -455,6 +463,12 @@ class DocProperties(PropertyGroup):
         if drawing_id == 0:
             return None
         return tool.Ifc.get().by_id(drawing_id)
+
+    def get_active_target_view(self) -> Union[str, None]:
+        active_drawing = self.get_active_drawing()
+        if not active_drawing:
+            return None
+        return tool.Drawing.get_drawing_target_view(active_drawing)
 
 
 def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
@@ -482,6 +496,9 @@ class BIMCameraProperties(PropertyGroup):
         default="OPENCASCADE",
         name="Linework Mode",
         update=get_update_layer_callback("linework_mode", "LineworkMode"),
+    )
+    generate_material_layers: bpy.props.BoolProperty(
+        name="Generate Material Layers", description="Generate material layer linework in drawings", default=True
     )
     fill_mode: EnumProperty(
         items=[
@@ -655,72 +672,204 @@ class BIMCameraProperties(PropertyGroup):
         return ortho_scale, aspect_ratio
 
 
-DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2
-BOX_ALIGNMENT_POSITIONS = [
-    "top-left",
-    "top-middle",
-    "top-right",
-    "middle-left",
-    "center",
-    "middle-right",
-    "bottom-left",
-    "bottom-middle",
-    "bottom-right",
-]
+class ElementValueRow(PropertyGroup):
+    """Represents a single element value row with category, key, and formatted value"""
+
+    category: EnumProperty(
+        name="Category",
+        items=[
+            ("Basic", "Basic", "Basic element information"),
+            ("Attributes", "Attributes", "IFC Attributes"),
+            ("Property Sets", "Property Sets", "Property Sets"),
+            ("Quantity Sets", "Quantity Sets", "Quantity Sets"),
+            ("Type", "Type", "Type information"),
+            ("Spatial", "Spatial", "Spatial relationships"),
+            ("Parent", "Parent", "Parent relationships"),
+            ("Classification", "Classification", "Classifications"),
+            ("Groups", "Groups", "Group assignments"),
+            ("Systems", "Systems", "System assignments"),
+            ("Zones", "Zones", "Zone assignments"),
+            ("Material", "Material", "Material information"),
+            ("Styles", "Styles", "Style information"),
+            ("Profiles", "Profiles", "Profile information"),
+            ("Coordinates", "Coordinates", "Coordinate information"),
+            ("Custom String", "Custom String", "Custom text (no element key)"),
+        ],
+        default="Basic",
+    )
+
+    element_key: StringProperty(
+        name="Element Key",
+        description="The element value key (e.g., 'id', 'Name', 'Pset_WallCommon.Reference')",
+        default="",
+    )
+
+    formatted_value: StringProperty(
+        name="Formatted Value",
+        description="The formatted value string with selector syntax (e.g., '{{id}}' or '``upper({{Name}})``')",
+        default="",
+    )
+
+    separator: StringProperty(
+        name="Separator",
+        description="Text to insert before this value when concatenating (e.g., ' - ', ', ', '\\n')",
+        default=" - ",
+    )
+
+    if TYPE_CHECKING:
+        category: str
+        element_key: str
+        formatted_value: str
+        separator: str
+
+
+def get_category_items_with_counts(self, context):
+    """Generate category items with counts dynamically"""
+    category_metadata = [
+        ("Basic", "Basic", "Basic element information", "OBJECT_DATA"),
+        ("Attributes", "Attributes", "IFC Attributes", "PROPERTIES"),
+        ("Property Sets", "Property Sets", "Property Sets", "ALIGN_JUSTIFY"),
+        ("Quantity Sets", "Quantity Sets", "Quantity Sets", "SNAP_VOLUME"),
+        ("Type", "Type", "Type information", "FILE_VOLUME"),
+        ("Spatial", "Spatial", "Spatial relationships", "HOME"),
+        ("Parent", "Parent", "Parent relationships", "FILE_PARENT"),
+        ("Classification", "Classification", "Classifications", "BOOKMARKS"),
+        ("Groups", "Groups", "Group assignments", "OUTLINER_COLLECTION"),
+        ("Systems", "Systems", "System assignments", "SYSTEM"),
+        ("Zones", "Zones", "Zone assignments", "MESH_CIRCLE"),
+        ("Material", "Material", "Material information", "MATERIAL"),
+        ("Styles", "Styles", "Style information", "COLOR"),
+        ("Profiles", "Profiles", "Profile information", "OUTLINER_DATA_CURVES"),
+        ("Coordinates", "Coordinates", "Coordinate information", "EMPTY_ARROWS"),
+        ("Custom String", "Custom String", "Add custom text (no element key)", "SMALL_CAPS"),
+    ]
+
+    obj = context.active_object
+
+    if obj and tool.Ifc.get_entity(obj):
+        try:
+            element = tool.Ifc.get_entity(obj)
+            text_element = element
+
+            if hasattr(self, "product_used"):
+                if self.product_used:
+                    element = tool.Ifc.get_entity(self.product_used)
+                else:
+                    assigned = tool.Drawing.get_assigned_product(text_element)
+                    if assigned:
+                        element = assigned
+
+            available_keys = ElementValuesData.get_available_element_value_keys(element)
+            items = []
+            for i, (identifier, base_name, description, icon) in enumerate(category_metadata):
+                count = len(available_keys.get(identifier, []))
+                display_name = f"{base_name} ({count})" if count > 0 else base_name
+                items.append((identifier, display_name, description, icon, i))
+
+            return items
+        except Exception as e:
+            pass
+
+    return [(id, name, desc, icon, i) for i, (id, name, desc, icon) in enumerate(category_metadata)]
 
 
 class LiteralProps(PropertyGroup):
-    def set_box_alignment(self, new_value):
-        markers = new_value.count(True)
-        if not markers:
-            return
-
-        if markers > 1:
-            prev_value = self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
-            # looking for the first value changed to positive
-            first_changed_value = next((i for i in range(9) if new_value[i] and new_value[i] != prev_value[i]), None)
-
-            # if nothing have changed we just keep the previous value
-            if first_changed_value is None:
-                return
-            new_value = [False] * 9
-            new_value[first_changed_value] = True
-
-        self["box_alignment"] = new_value
-        position_string = BOX_ALIGNMENT_POSITIONS[next(i for i in range(9) if new_value[i])]
-        self.attributes["BoxAlignment"].set_value(position_string)
-
-    def get_box_alignment(self):
-        return self.get("box_alignment", DEFAULT_BOX_ALIGNMENT)
-
     attributes: CollectionProperty(name="Attributes", type=Attribute)
-    # Current text value with evaluated expressions stored in `value`.
-    # The original (Literal) value stored in `attributes['Literal']`
-    # and can be accessed with `get_text()`
-    value: StringProperty(name="Value", default="TEXT")
-    box_alignment: BoolVectorProperty(
-        name="Box alignment", size=9, set=set_box_alignment, get=get_box_alignment, default=DEFAULT_BOX_ALIGNMENT
-    )
     ifc_definition_id: IntProperty(name="IFC definition ID", default=0)
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
+    )
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
+    )
 
-    def get_literal_edited_data(self):
+    def get_box_alignment(self) -> str:
+        alignment = self.align_vertical + "-" + self.align_horizontal
+        if alignment == "middle-middle":
+            alignment = "center"
+        return alignment
+
+    def get_literal_edited_data(self) -> dict[str, str]:
         text_data = {
             "CurrentValue": self.attributes["Literal"].string_value,
             "Literal": self.attributes["Literal"].string_value,
-            "BoxAlignment": self.attributes["BoxAlignment"].string_value,
+            "BoxAlignment": self.get_box_alignment(),
         }
         return text_data
+
+    show_element_values: bpy.props.BoolProperty(
+        name="Show Element Values", description="Show/hide the element values panel", default=False
+    )
+
+    expanded_category: bpy.props.StringProperty(
+        name="Expanded Category", description="Currently expanded category in the element values panel", default=""
+    )
+
+    element_values_filter: bpy.props.StringProperty(
+        name="Element Values Filter", description="Search filter for element values", default=""
+    )
+
+    product_used: PointerProperty(
+        name="Product Used",
+        type=bpy.types.Object,
+        description="Object to use for fetching element values. If empty, uses assigned product",
+    )
+
+    element_value_rows: CollectionProperty(
+        name="Element Value Rows",
+        type=ElementValueRow,
+        description="Collection of element value rows for building the literal value",
+    )
+
+    category_for_adding: EnumProperty(
+        name="Category for Adding",
+        items=get_category_items_with_counts,
+        default=0,
+        description="Category to use when adding a new element value row",
+    )
 
     if TYPE_CHECKING:
         attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
         value: str
-        box_alignment: str
         ifc_definition_id: int
+        align_horizontal: str
+        align_vertical: str
+        element_value_rows: bpy.types.bpy_prop_collection_idprop[ElementValueRow]
+        category_for_adding: str
+
+
+def update_text_alignment(self, context):
+    for literal_props in self.literals:
+        literal_props.align_horizontal = self.align_horizontal
+        literal_props.align_vertical = self.align_vertical
 
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     literals: CollectionProperty(name="Literals", type=LiteralProps)
+    newline_at: IntProperty(name="Newline At")
+    symbol: EnumProperty(
+        name="Symbol",
+        description="Symbol from symbols.svg to use for this text.",
+        items=[(s, s, "") for s in ["NO SYMBOL", "CUSTOM SYMBOL"] + tool.Drawing.DEFAULT_SYMBOLS],
+        default="NO SYMBOL",
+    )
+    custom_symbol: StringProperty(
+        name="Custom Symbol",
+        description="Non-default symbol to use for this text.",
+    )
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),
@@ -732,13 +881,55 @@ class BIMTextProperties(PropertyGroup):
         default="2.5",
         name="Font Size",
     )
-    newline_at: IntProperty(name="Newline At")
+    align_horizontal: EnumProperty(
+        items=[
+            ("left", "Left", "", "ALIGN_LEFT", 0),
+            ("middle", "Middle", "", "ALIGN_CENTER", 1),
+            ("right", "Right", "", "ALIGN_RIGHT", 2),
+        ],
+        default="left",
+        name="Horizontal Alignment",
+        update=update_text_alignment,
+    )
+    align_vertical: EnumProperty(
+        items=[
+            ("top", "Top", "", "ALIGN_TOP", 0),
+            ("middle", "Middle", "", "ALIGN_MIDDLE", 1),
+            ("bottom", "Bottom", "", "ALIGN_BOTTOM", 2),
+        ],
+        default="middle",
+        name="Vertical Alignment",
+        update=update_text_alignment,
+    )
 
     if TYPE_CHECKING:
         is_editing: bool
         literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
-        font_size: str
         newline_at: int
+        symbol: Union[str, Literal["NO SYMBOL", "CUSTOM SYMBOL"]]
+        custom_symbol: str
+        font_size: str
+        align_horizontal: str
+        align_vertical: str
+
+    def get_symbol(self) -> Union[str, None]:
+        if self.symbol == "NO SYMBOL":
+            return None
+        elif self.symbol == "CUSTOM SYMBOL":
+            return self.custom_symbol or None
+        else:
+            return self.symbol
+
+    def set_symbol(self, symbol: Union[str, None]):
+        if not symbol:
+            self.property_unset("symbol")
+            self.property_unset("custom_symbol")
+        elif symbol in tool.Drawing.DEFAULT_SYMBOLS:
+            self.symbol = symbol
+            self.property_unset("custom_symbol")
+        else:
+            self.symbol = "CUSTOM SYMBOL"
+            self.custom_symbol = symbol
 
     def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`
@@ -753,6 +944,7 @@ class BIMTextProperties(PropertyGroup):
             "Literals": literals_data,
             "FontSize": float(self.font_size),
             "Newline_At": int(self.newline_at),
+            "Symbol": self.get_symbol(),
         }
         return text_data
 
@@ -807,6 +999,19 @@ class BIMAnnotationProperties(PropertyGroup):
     )
     is_adding_type: bpy.props.BoolProperty(default=False)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+    tag_rotation_mode: bpy.props.EnumProperty(
+        name="Tag Rotation Mode",
+        description="How to orient the tag relative to the tagged object",
+        items=[
+            ("NONE", "No Rotation", "Keep tag in default orientation"),
+            ("LOCAL_X", "Local X Axis", "Align tag with object's local X axis"),
+            ("LOCAL_Y", "Local Y Axis", "Align tag with object's local Y axis"),
+            ("LOCAL_Z", "Local Z Axis", "Align tag with object's local Z axis"),
+            ("CAMERA_Horizontal", "Camera Horizontal", "Align tag with camera X axis"),
+            ("CAMERA_Vertical", "Camera Vertical", "Align tag with camera Y axis"),
+        ],
+        default="NONE",
+    )
 
     if TYPE_CHECKING:
         object_type: str

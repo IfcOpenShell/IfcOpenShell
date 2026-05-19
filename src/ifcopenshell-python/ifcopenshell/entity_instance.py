@@ -18,19 +18,19 @@
 
 
 from __future__ import annotations
+
 import functools
 import importlib
-import numbers
 import itertools
+import numbers
 import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, TypeVar, overload, TYPE_CHECKING, cast, NoReturn
 from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Any, NoReturn, TypeVar, Union, cast, overload
 
-from . import ifcopenshell_wrapper
-from . import settings
+from . import ifcopenshell_wrapper, settings
 
 if TYPE_CHECKING:
     import ifcopenshell
@@ -466,8 +466,7 @@ class entity_instance:
     def is_entity(self) -> bool:
         """Tests whether the instance is an entity type as opposed to a simple data type.
 
-        Returns:
-            bool: True if the instance is an entity
+        :return: True if the instance is an entity
         """
         schema_name = self.wrapped_data.is_a(True).split(".")[0]
         decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
@@ -499,13 +498,11 @@ class entity_instance:
             return op(a, b)
         TypeError: '<' not supported between instances of 'int' and 'str'
 
-        Args:
-            other (_type_): Right hand side (or lhs when reverse = True)
-            op (_type_): The comparison operator (likely from the operator module)
-            reverse (bool, optional): When true swaps lhs and rhs. Defaults to False.
+        :param other: Right hand side (or lhs when reverse = True)
+        :param op: The comparison operator (likely from the operator module)
+        :param reverse: When true swaps lhs and rhs. Defaults to False.
 
-        Returns:
-            bool: The comparison predicate applied to self and other
+        :return: bool: The comparison predicate applied to self and other
         """
 
         if isinstance(other, entity_instance):

@@ -15,8 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Literal
+
 import ifcopenshell
-from typing import Optional, Literal
 
 
 def create_grid_axis(

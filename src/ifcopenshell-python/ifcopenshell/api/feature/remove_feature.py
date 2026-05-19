@@ -16,17 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.root
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 
 
 def remove_feature(file: ifcopenshell.file, feature: ifcopenshell.entity_instance) -> None:
-    """Remove a feature
+    """Permanently delete a feature element and its void or projection relationship.
 
-    Fillings are retained as orphans. Featured elements remain. Features
-    cannot exist by themselves, so not only is the relationship removed, the
-    feature is also removed.
+    The feature entity (e.g. IfcOpeningElement) is removed from the model
+    along with its IfcRelVoidsElement or IfcRelProjectsElement relationship.
+    The host element (wall, slab, etc.) is unaffected. Any fillings (windows,
+    doors) that occupied the opening become orphaned and must be separately
+    deleted via root.remove_product.
 
     :param feature: The IfcFeatureElement to remove.
 

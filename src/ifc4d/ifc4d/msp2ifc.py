@@ -17,15 +17,15 @@
 # along with Ifc4D.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-from datetime import timedelta, date
+import xml.etree.ElementTree as ET
+from datetime import timedelta
+
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
-import xml.etree.ElementTree as ET
 
 
 class MSP2Ifc:
@@ -263,7 +263,7 @@ class MSP2Ifc:
             ifcopenshell.api.control.assign_control(
                 self.file,
                 relating_control=calendar,
-                related_object=task["ifc"],
+                related_objects=[task["ifc"]],
             )
 
         ifcopenshell.api.sequence.edit_task(

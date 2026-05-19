@@ -17,7 +17,6 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from behave import step
-
 from bimtester.ifc import IfcStore
 from bimtester.lang import _
 
@@ -59,7 +58,7 @@ def step_impl(context, version):
 )
 def step_impl(context, header_file_description):
 
-    is_header_file_description = IfcStore.file.wrapped_data.header.file_description.description
+    is_header_file_description = IfcStore.file.header.file_description.description
     assert (
         str(is_header_file_description) == header_file_description
     ), "The file was not exported by the new ifc exporter in Allplan. File description header: {}".format(

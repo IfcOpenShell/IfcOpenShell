@@ -17,6 +17,7 @@
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
 import json
 import os
 import subprocess

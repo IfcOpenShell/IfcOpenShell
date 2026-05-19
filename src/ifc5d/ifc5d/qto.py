@@ -16,24 +16,25 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc5D.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+import itertools
+import json
+import multiprocessing
 import os
 import types
-import json
+from collections import defaultdict
+from collections.abc import Iterable
+from typing import Any, Literal, NamedTuple, Union, get_args
+
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
-import ifcopenshell.util.representation
-import ifcopenshell.util.type
-import multiprocessing
-from collections import defaultdict
-from typing import Any, Literal, get_args, Union, NamedTuple
-from collections.abc import Iterable
+import ifcopenshell.util.unit
 
 
 class Function(NamedTuple):
@@ -58,6 +59,23 @@ for name in get_args(RULE_SET):
         rules[name] = json.load(f)
 
 
+@functools.cache
+def lower_case_entity_names(schema_iden: str):
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden)
+    return set(n.name().lower() for n in schema.entities())
+
+
+@functools.cache
+def entity_supertypes(schema_iden: str, entity_name: str):
+    def visit(decl):
+        yield decl.name().lower()
+        if ty := decl.supertype():
+            yield from visit(ty)
+
+    decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_iden).declaration_by_name(entity_name)
+    return list(visit(decl))
+
+
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
     """Quantify elements from a rules using preset quantification rules
 
@@ -73,10 +91,39 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
+        # Cache schema entity names once per file
+        schema_entity_names = lower_case_entity_names(ifc_file.schema_identifier)
+
+        # Fast path: all queries are simple entity names
+        if not set(m.lower() for m in queries.keys()) - schema_entity_names:
+            casenorm = {k.lower(): k for k in queries.keys()}
+            pred = lambda inst: inst.is_a().lower()
+
+            for ty, group in itertools.groupby(sorted(elements, key=pred), key=pred):
+                group_elements = list(group)
+                # check entity type and its supertypes for matching QTO rules
+                for sty in entity_supertypes(ifc_file.schema_identifier, ty):
+                    if qtos := queries.get(casenorm.get(sty)):
+                        calculator.calculate(ifc_file, group_elements, qtos, results)
+            continue  # Skip general path to avoid duplicate calculations
+
+        # Fallback: per-query evaluation
         for query, qtos in queries.items():
-            filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
+            # Simple entity name: use by_type but restrict to incoming elements
+            if query.lower() in schema_entity_names:
+                by_type_all = ifc_file.by_type(query)
+                # ensure we don't expand beyond provided elements subset
+                if isinstance(elements, set):
+                    filtered_elements = [e for e in by_type_all if e in elements]
+                else:
+                    elements_set = set(elements)
+                    filtered_elements = [e for e in by_type_all if e in elements_set]
+            else:
+                filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
+
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
+
     return results
 
 
@@ -497,8 +544,8 @@ class Blender(QtoCalculator):
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
-        import bonsai.tool as tool
         import bonsai.bim.module.qto.calculator as calculator
+        import bonsai.tool as tool
 
         unit_converter = SI2ProjectUnitConverter(ifc_file)
         formula_functions: dict[str, types.FunctionType] = {}

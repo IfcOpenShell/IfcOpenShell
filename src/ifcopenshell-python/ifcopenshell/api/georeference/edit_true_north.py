@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional, Union
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
-from typing import Union, Optional
 
 
 def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[float, float], float]] = 0.0) -> None:

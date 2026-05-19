@@ -16,18 +16,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
+from math import pi
+
 import numpy as np
+
 import ifcopenshell.api.context
-import ifcopenshell.api.unit
-import ifcopenshell.api.root
 import ifcopenshell.api.georeference
 import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit as subject
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from math import pi
 
 
 class TestCacheUnits(test.bootstrap.IFC4):
@@ -241,6 +243,8 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
         unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")
+        # there was some renumbering bug in the rocksdb rewrite this statement is to test for that
+        assert max(i.id() for i in output) == len(output.wrapped_data.entity_names()) + 1
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
 
     def test_attribute_conversion(self):

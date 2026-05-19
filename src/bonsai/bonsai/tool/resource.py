@@ -19,25 +19,31 @@
 # ############################################################################ #
 
 from __future__ import annotations
-import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
-import bonsai.bim.helper
+
 import json
 import time
-import isodate
 from datetime import datetime
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell.api.pset
 import ifcopenshell.api.resource
-import ifcopenshell.util.date as ifcdateutils
-import ifcopenshell.util.cost
-import ifcopenshell.util.resource
 import ifcopenshell.util.constraint
-from typing import Any, Union, TYPE_CHECKING, Literal
+import ifcopenshell.util.cost
+import ifcopenshell.util.date as ifcdateutils
+import ifcopenshell.util.resource
+import isodate
+
+import bonsai.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.resource.prop import (
+        BIMResourceProductivity,
+        BIMResourceProperties,
+    )
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.resource.prop import BIMResourceProperties, BIMResourceProductivity
 
 
 class Resource(bonsai.core.tool.Resource):

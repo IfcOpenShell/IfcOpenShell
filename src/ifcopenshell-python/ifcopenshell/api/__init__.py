@@ -38,19 +38,37 @@ Also see how to `create a simple model from scratch
 <https://docs.ifcopenshell.org/ifcopenshell-python/code_examples.html#create-a-simple-model-from-scratch>`_.
 """
 
-import json
-import numpy
-import inspect
 import importlib
+import inspect
+import json
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, Optional
+
+import numpy
+
 import ifcopenshell
-from typing import Callable, Any, Optional, TYPE_CHECKING
-from functools import partial
 
 if TYPE_CHECKING:
     import ifcopenshell.api
 
 pre_listeners: dict[str, dict] = {}
 post_listeners: dict[str, dict] = {}
+
+
+def batching_argument_deprecation(
+    usecase_path: str, settings: dict, prev_argument: str, new_argument: str, replace_usecase: Optional[str] = None
+) -> tuple[str, dict]:
+    if replace_usecase is not None:
+        print(f"WARNING. `{usecase_path}` api method is deprecated and should be replaced with `{replace_usecase}`.")
+
+    if prev_argument in settings:
+        print(
+            f"WARNING. `{prev_argument}` argument is deprecated for API method "
+            f'"{usecase_path}" and should be replaced with `{new_argument}`.'
+        )
+        settings = settings | {new_argument: [settings[prev_argument]]}
+        settings.pop(prev_argument)
+    return (replace_usecase or usecase_path, settings)
 
 
 def renamed_arguments_deprecation(
@@ -166,8 +184,8 @@ def remove_all_listeners():
 
 
 def extract_docs(module: str, usecase: str) -> dict[str, Any]:
-    import typing
     import collections
+    import typing
 
     inputs = collections.OrderedDict()
 
@@ -283,8 +301,8 @@ def wrap_usecase(usecase_path, usecase):
 
 def wrap_usecases(path, name):
     """This developer feature wraps an API module's usecases with listeners."""
-    import sys
     import pkgutil
+    import sys
 
     module_name = name.split(".")[-1]
     module = sys.modules[name]

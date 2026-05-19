@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections import namedtuple
+from collections.abc import Callable, Generator, Sequence
+from typing import Any, Literal, Optional, Union, overload
+
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload
-from collections.abc import Generator, Sequence
-from collections import namedtuple
-
 
 MATERIAL_TYPE = Literal[
     "IfcMaterial",
@@ -34,6 +34,9 @@ MATERIAL_TYPE = Literal[
     "IfcMaterialProfileSetUsage",
     "IfcMaterialList",
 ]
+
+PrioritisedLayer = namedtuple("PrioritisedLayer", "priority material thickness")
+PrioritisedProfile = namedtuple("PrioritisedProfile", "priority material profile")
 
 
 def get_pset(
@@ -117,6 +120,7 @@ def get_pset(
         if (
             psets_only
             and not pset.is_a("IfcPropertySet")
+            and not pset.is_a("IfcPreDefinedPropertySet")
             and not (is_ifc2x3 and pset.is_a("IfcExtendedMaterialProperties"))
         ):
             pset = None
@@ -126,7 +130,11 @@ def get_pset(
     if type_pset is not None and not prop:
         if psets_only or qtos_only:
             type_pset_element = element.file.by_id(type_pset["id"])
-            if psets_only and not type_pset_element.is_a("IfcPropertySet"):
+            if (
+                psets_only
+                and not type_pset_element.is_a("IfcPropertySet")
+                and not type_pset_element.is_a("IfcPreDefinedPropertySet")
+            ):
                 type_pset = None
             elif qtos_only and not type_pset_element.is_a("IfcElementQuantity"):
                 type_pset = None
@@ -177,7 +185,7 @@ def get_psets(
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
-            if psets_only and not definition.is_a("IfcPropertySet"):
+            if psets_only and not definition.is_a("IfcPropertySet") and not definition.is_a("IfcPreDefinedPropertySet"):
                 continue
             if qtos_only and not definition.is_a("IfcElementQuantity"):
                 continue
@@ -213,7 +221,11 @@ def get_psets(
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
-                if psets_only and not definition.is_a("IfcPropertySet"):
+                if (
+                    psets_only
+                    and not definition.is_a("IfcPropertySet")
+                    and not definition.is_a("IfcPreDefinedPropertySet")
+                ):
                     continue
                 if qtos_only and not definition.is_a("IfcElementQuantity"):
                     continue
@@ -457,7 +469,7 @@ def get_properties(
             del data["HasProperties"]
             results[prop_name] = data
             if verbose:
-                results[prop_name] = {"id": data["id"], "class": data["class"], "value": results[prop_name]}
+                results[prop_name] = {"id": data["id"], "class": data["type"], "value": results[prop_name]}
     return results
 
 
@@ -465,7 +477,7 @@ def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell
     """Retrieve the elements (or element types) that are using the provided property set."""
     is_ifc2x3 = pset.file.schema == "IFC2X3"
     elements = set()
-    if pset.is_a("IfcPropertySet") or pset.is_a("IfcElementQuantity"):
+    if pset.is_a("IfcPropertySet") or pset.is_a("IfcPreDefinedPropertySet") or pset.is_a("IfcElementQuantity"):
         rels = pset.PropertyDefinitionOf if is_ifc2x3 else pset.DefinesOccurrence
         for rel in rels:
             elements.update(rel.RelatedObjects)
@@ -563,6 +575,40 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> Union[str, Non
     if predefined_type == "USERDEFINED" or not predefined_type:
         predefined_type = getattr(element, "ObjectType", None)
     return predefined_type
+
+
+def is_userdefined_type(element: ifcopenshell.entity_instance) -> bool:
+    """Checks if the predefined type is userdefined
+
+    :param element: The IFC Element entity
+    :return: True if userdefined
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcWall")[0]
+        is_userdefined_type = ifcopenshell.util.element.is_userdefined_type(element)
+    """
+    if element_type := get_type(element):
+        predefined_type = getattr(element_type, "PredefinedType", None)
+        if predefined_type == "USERDEFINED":
+            return True
+        elif not predefined_type:
+            predefined_type = getattr(element_type, "ElementType", ...)
+            if predefined_type == ...:
+                predefined_type = getattr(element_type, "ProcessType", None)
+            if predefined_type:
+                return True
+        if predefined_type and predefined_type != "NOTDEFINED":
+            return False
+
+    predefined_type = getattr(element, "PredefinedType", None)
+    if predefined_type == "USERDEFINED":
+        return True
+    elif not predefined_type:
+        return bool(getattr(element, "ObjectType", None))
+    return False
 
 
 def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -1169,7 +1215,28 @@ def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     return groups
 
 
-def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+def get_controls(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance]:
+    """
+    Retrieves the controls of an element.
+
+    :param element: The IFC element
+    :return: Generator of IfcControl elements assigned to the element.
+
+    Example:
+
+    .. code:: python
+
+        task = file.by_type("IfcTask")[0]
+        control = ifcopenshell.util.element.get_controls(task)[0]
+    """
+    for rel in element.HasAssignments:
+        if rel.is_a("IfcRelAssignsToControl"):
+            yield rel.RelatingControl
+
+
+def get_parent(
+    element: ifcopenshell.entity_instance, ifc_class: Optional[str] = None
+) -> Union[ifcopenshell.entity_instance, None]:
     """Get the parent in the spatial heirarchy
 
     IFC features a spatial hierarchy tree of all objects. Each spatial element
@@ -1186,6 +1253,8 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
     - Voiding: the opening voids another physical element, such as a hole in a wall
 
     :param element: Any physical or spatial element in the tree
+    :param ifc_class: Optionally filter the type of parent you're after. For
+        example, you may be after the storey, not a space.
     :return: Its parent. This must exist for any valid file, or None if we've reached the IfcProject.
 
     Example:
@@ -1195,13 +1264,23 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
         element = file.by_type("IfcWall")[0]
         parent = ifcopenshell.util.element.get_parent(element)
     """
-    return (
+    parent = (
         get_container(element, should_get_direct=True)
         or get_aggregate(element)
         or get_nest(element)
         or get_filled_void(element)
         or get_voided_element(element)
     )
+
+    if not ifc_class:
+        return parent
+
+    while parent:
+        if parent.is_a(ifc_class):
+            return parent
+        parent = get_parent(parent)
+
+    return None
 
 
 def get_filled_void(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -1783,3 +1862,48 @@ def has_openings(element: ifcopenshell.entity_instance) -> bool:
     :return: True if element has openings.
     """
     return bool(next(get_openings(element), False))
+
+
+def get_material_layers(element: ifcopenshell.entity_instance) -> list[PrioritisedLayer]:
+    """
+    Retrieves all material layers assigned to an element.
+    :param element: The IFC element
+    :return: A list of IfcMaterialLayer entities
+
+    Example:
+    .. code:: python
+        element = ifcopenshell.by_type("IfcWall")[0]
+        material_layers = ifcopenshell.util.element.get_material_layers(element)
+    """
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if not material or not material.is_a("IfcMaterialLayerSet"):
+        return []
+    return [
+        PrioritisedLayer(getattr(layer, "Priority", 0) or 0, layer.Material, layer.LayerThickness)
+        for layer in material.MaterialLayers
+    ]
+
+
+def get_material_profiles(element: ifcopenshell.entity_instance) -> list[PrioritisedProfile]:
+    """
+    Retrieves all material profiles assigned to an element.
+
+    :param element: The IFC element
+    :return: A list of IfcMaterialProfile entities
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcBeam")[0]
+        material_profiles = ifcopenshell.util.element.get_material_profiles(element)
+    """
+    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+    if not material or not material.is_a("IfcMaterialProfileSet"):
+        return []
+    return [
+        PrioritisedProfile(
+            getattr(material_profile, "Priority", 0) or 0, material_profile.Material, material_profile.Profile
+        )
+        for material_profile in material.MaterialProfiles
+    ]

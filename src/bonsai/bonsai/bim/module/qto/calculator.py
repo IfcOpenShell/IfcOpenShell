@@ -16,21 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
+from typing import Literal, Optional, Union, assert_never
+
 import bmesh
-import mathutils
-import bonsai.tool as tool
+import bpy
+import ifc5d.qto
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
-import ifc5d.qto
-from mathutils import Vector, Matrix
+import mathutils
+from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import Literal, Union, Optional, assert_never
 
+import bonsai.tool as tool
 
 AxisType = Literal["x", "y", "z"]
 VectorTuple = tuple[float, float, float]
@@ -320,7 +321,7 @@ def get_gross_perimeter(o: bpy.types.Object) -> float:
     return gross_perimeter
 
 
-def get_space_net_perimeter(obj: bpy.types.Object) -> float:
+def get_space_net_perimeter(obj: bpy.types.Object) -> None:
     pass
 
 
@@ -859,8 +860,23 @@ def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
 
                 entity = ifc.by_guid(opening_id)
                 open_obj = tool.Ifc.get_object(entity)
-                assert isinstance(open_obj, bpy.types.Object)
-                opening_area += get_net_top_area(open_obj, angle=angle)
+
+                # Check if the opening has a Blender object representation
+                if open_obj is None:
+                    # If no Blender object exists, create a temporary mesh from the IFC geometry
+                    try:
+                        mesh = get_gross_element_mesh(entity)
+                        temp_obj = bpy.data.objects.new("TempOpening", mesh)
+                        opening_area += get_net_top_area(temp_obj, angle=angle)
+                        delete_obj(temp_obj)
+                        delete_mesh(mesh)
+                    except Exception as e:
+                        # If we can't create geometry, skip this opening
+                        print(f"Warning: Could not calculate opening area for {opening_id}: {e}")
+                        continue
+                else:
+                    # Opening has a Blender representation, use it directly
+                    opening_area += get_net_top_area(open_obj, angle=angle)
             else:
                 continue
 

@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.root
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.util.shape_builder
+import test.bootstrap
 
 
 class TestAddBoolean(test.bootstrap.IFC4):
@@ -42,7 +42,7 @@ class TestAddBoolean(test.bootstrap.IFC4):
         assert boolean.FirstOperand == first
         assert boolean.SecondOperand == second
         assert boolean.Operator == "DIFFERENCE"
-        assert set(rep.Items) == {boolean}
+        assert set(rep.Items) == {boolean, second}
 
     def test_adding_multiple_booleans_from_three_top_level_items(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -58,13 +58,14 @@ class TestAddBoolean(test.bootstrap.IFC4):
 
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first, [second1, second2])
         assert len(booleans) == 2
-        assert len(rep.Items) == 1
-        assert rep.Items[0].FirstOperand.is_a("IfcBooleanResult")
-        assert rep.Items[0].SecondOperand == second2
-        assert rep.Items[0].Operator == "DIFFERENCE"
-        assert rep.Items[0].FirstOperand.FirstOperand == first
-        assert rep.Items[0].FirstOperand.SecondOperand == second1
-        assert rep.Items[0].FirstOperand.Operator == "DIFFERENCE"
+        final_boolean = booleans[-1]
+        assert final_boolean.FirstOperand.is_a("IfcBooleanResult")
+        assert final_boolean.SecondOperand == second2
+        assert final_boolean.Operator == "DIFFERENCE"
+        assert final_boolean.FirstOperand.FirstOperand == first
+        assert final_boolean.FirstOperand.SecondOperand == second1
+        assert final_boolean.FirstOperand.Operator == "DIFFERENCE"
+        assert set(rep.Items) == {final_boolean, second1, second2}
 
     def test_adding_a_boolean_to_an_existing_operand_from_a_top_level_item(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -78,14 +79,16 @@ class TestAddBoolean(test.bootstrap.IFC4):
         second2 = builder.block()
         rep = builder.get_representation(body, [first, second1])
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first, [second1])
+        # second1 stays in Items, add second2 as well
         rep.Items = list(rep.Items) + [second2]
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first, [second2])
         assert len(booleans) == 1
-        assert len(rep.Items) == 1
-        assert rep.Items[0].FirstOperand.is_a("IfcBooleanResult")
-        assert rep.Items[0].SecondOperand == second2
-        assert rep.Items[0].FirstOperand.FirstOperand == first
-        assert rep.Items[0].FirstOperand.SecondOperand == second1
+        final_boolean = booleans[0]
+        assert final_boolean.FirstOperand.is_a("IfcBooleanResult")
+        assert final_boolean.SecondOperand == second2
+        assert final_boolean.FirstOperand.FirstOperand == first
+        assert final_boolean.FirstOperand.SecondOperand == second1
+        assert set(rep.Items) == {final_boolean, second1, second2}
 
     def test_adding_a_boolean_to_an_existing_operand_from_another_operand(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -104,7 +107,7 @@ class TestAddBoolean(test.bootstrap.IFC4):
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first1, [second2])
 
         assert len(booleans) == 1
-        assert len(rep.Items) == 2
+        assert len(rep.Items) == 4
 
         assert self.file.get_total_inverses(first1) == 1
         result = next(iter(self.file.get_inverse(first1)))
@@ -132,14 +135,15 @@ class TestAddBoolean(test.bootstrap.IFC4):
         rep = builder.get_representation(body, [first, second])
         ifcopenshell.api.geometry.add_boolean(self.file, first, [second])
         ifcopenshell.api.geometry.add_boolean(self.file, first, [second])
-        assert len(rep.Items) == 1
-        assert rep.Items[0].FirstOperand == first
-        assert rep.Items[0].SecondOperand == second
+        assert set(rep.Items) == {self.file.by_type("IfcBooleanResult")[0], second}
+        boolean = self.file.by_type("IfcBooleanResult")[0]
+        assert boolean.FirstOperand == first
+        assert boolean.SecondOperand == second
         ifcopenshell.api.geometry.add_boolean(self.file, second, [second])
         ifcopenshell.api.geometry.add_boolean(self.file, second, [first])
-        assert len(rep.Items) == 1
-        assert rep.Items[0].FirstOperand == first
-        assert rep.Items[0].SecondOperand == second
+        assert set(rep.Items) == {boolean, second}
+        assert boolean.FirstOperand == first
+        assert boolean.SecondOperand == second
         assert len(self.file.by_type("IfcBooleanResult")) == 1
 
 

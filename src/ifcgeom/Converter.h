@@ -13,20 +13,19 @@
 
 namespace ifcopenshell { namespace geometry {
 
-	class Converter {
+	class IFC_GEOM_API Converter {
 	public:
 		typedef boost::shared_ptr<IfcGeom::Representation::BRep> brep_ptr;
 	private:
-		std::string geometry_library_;
 		ifcopenshell::geometry::abstract_mapping* mapping_;
-		ifcopenshell::geometry::kernels::AbstractKernel* kernel_;
+		std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel> kernel_;
 		ifcopenshell::geometry::Settings settings_;
 		std::map<ifcopenshell::geometry::taxonomy::ptr, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
 
 	public:
-		ifcopenshell::geometry::kernels::AbstractKernel* kernel() { return kernel_; }
+		ifcopenshell::geometry::kernels::AbstractKernel* kernel() { return &*kernel_; }
 
-		Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
+		Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
 		
 		~Converter();
 

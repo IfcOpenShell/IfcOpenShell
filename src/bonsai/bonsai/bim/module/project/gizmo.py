@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import bpy
-import bonsai.tool as tool
 from bpy.types import GizmoGroup
 from mathutils import Matrix
+
+import bonsai.tool as tool
 
 
 class ClippingPlane(GizmoGroup):

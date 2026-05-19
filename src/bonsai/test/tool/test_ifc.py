@@ -16,14 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import ifcopenshell
-import test.bim.bootstrap
-import bonsai.core.tool
-import bonsai.tool as tool
-import pytest
+import os
 import tempfile
 from pathlib import Path
+
+import bpy
+import ifcopenshell
+import pytest
+
+import bonsai.core.tool
+import bonsai.tool as tool
+import test.bim.bootstrap
 from bonsai.tool.ifc import Ifc as subject
 
 
@@ -318,8 +321,10 @@ class TestUri(test.bim.bootstrap.NewFile):
 
     def test_normalize_path(self):
         # Posix format.
-        path = r"test\test.txt"
-        assert subject.normalize_path(path) == "test/test.txt"
+        if os.name == "nt":
+            # Limit to windows (#7348)
+            path = r"test\test.txt"
+            assert subject.normalize_path(path) == "test/test.txt"
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             base_path = Path(tmp_dir)

@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Union
+
 import ifcopenshell
 import ifcopenshell.util.classification
 import ifcopenshell.util.date
@@ -23,7 +25,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.fm
 import ifcopenshell.util.placement
 import ifcopenshell.util.system
-from typing import Any, Union, Optional
 
 
 def get_facilities(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:

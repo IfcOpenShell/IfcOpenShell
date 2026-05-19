@@ -16,17 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from collections.abc import Sequence
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
-import ifcopenshell.api.alignment
-import ifcopenshell.api.nest
-import ifcopenshell.util.alignment
-
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._create_offset_curve_representation import _create_offset_curve_representation
-
-from collections.abc import Sequence
+from ifcopenshell.api.alignment._create_offset_curve_representation import (
+    _create_offset_curve_representation,
+)
 
 
 def create_as_offset_curve(
@@ -42,7 +39,7 @@ def create_as_offset_curve(
 
     :param file:
     :param name: name assigned to IfcAlignment.Name
-    :param offsets: offsets from the basis curve that defines the offset curve, expected to be IfcOffsetCurveByDistances.
+    :param offsets: offsets from the basis curve that defines the offset curve, expected to be IfcPointByDistanceExpression.
     :param start_station: station value at the start of the alignment
     :return: Returns an IfcAlignment
     """
@@ -52,11 +49,6 @@ def create_as_offset_curve(
     )
 
     _create_offset_curve_representation(file, alignment, offsets)
-
-    # define stationing
-    # name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-    # referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name)
-    # ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

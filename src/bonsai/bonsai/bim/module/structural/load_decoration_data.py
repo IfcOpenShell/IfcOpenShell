@@ -16,20 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
-import numpy as np
+from collections.abc import Iterable
 from math import sin
-from mathutils import Vector
+from typing import Literal, TypedDict
+
+import bmesh
+import bpy
 import ifcopenshell
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
+import numpy as np
+import numpy.typing as npt
+from mathutils import Vector
+
 import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader
-from typing import Literal, TypedDict
-from collections.abc import Iterable
 
 
 class MemberInfo(TypedDict):
@@ -476,7 +479,7 @@ class ShaderInfo:
         """get the args to the point shader"""
         location = np.array(location)
         indices = []
-        direction_dict = {
+        direction_dict: dict[str, tuple[npt.NDArray, ...]] = {
             "fx": (np.array((1, 0, 0)), np.array((0, 1, 0)), np.array((0, 0, 1))),
             "fy": (np.array((0, 1, 0)), np.array((1, 0, 0)), np.array((0, 0, 1))),
             "fz": (np.array((0, 0, 1)), np.array((0, 1, 0)), np.array((1, 0, 0))),

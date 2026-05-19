@@ -22,8 +22,10 @@ from typing import TYPE_CHECKING
 
 import bpy
 from bpy.types import Panel, UIList
+
 import bonsai.tool as tool
 from bonsai.bim.module.tester.data import TesterData
+from bonsai.bim.ui import draw_multiline_text
 
 if TYPE_CHECKING:
     from bonsai.bim.module.tester.prop import (
@@ -60,7 +62,8 @@ class BIM_PT_tester(Panel):
         row.prop(props, "generate_ods_report")
         row = self.layout.row()
         row.prop(props, "flag")
-
+        row = self.layout.row()
+        row.prop(props, "hide_skipped_specs")
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
             props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
@@ -70,6 +73,20 @@ class BIM_PT_tester(Panel):
 
         row = self.layout.row()
         row.operator("bim.execute_ifc_tester")
+
+        self.layout.separator()
+
+        # IfcTester Webapp controls
+        if props.webapp_is_running:
+            row = self.layout.row()
+            row.label(text=f"Webapp: {props.webapp_server_port} | Server: {props.websocket_server_port}")
+
+            row = self.layout.row(align=True)
+            row.operator("bim.stop_ifc_tester_webapp")
+            row.operator("bim.open_ifc_tester_webapp", icon="URL", text="")
+        else:
+            row = self.layout.row()
+            row.operator("bim.start_ifc_tester_webapp")
 
         if TesterData.data["has_report"]:
             self.layout.template_list(
@@ -81,13 +98,16 @@ class BIM_PT_tester(Panel):
                 "active_specification_index",
             )
 
-            self.draw_editable_ui()
+            self.draw_editable_ui(context)
             row = self.layout.row()
             row.operator("bim.export_bcf", text="Export BCF", icon="EXPORT")
 
-    def draw_editable_ui(self) -> None:
+    def draw_editable_ui(self, context: bpy.types.Context) -> None:
         props = tool.Tester.get_tester_props()
         specification = TesterData.data["specification"]
+        is_skipped = specification["total_checks"] == 0 and specification["cardinality"] == "optional"
+        if props.hide_skipped_specs and is_skipped:
+            return
 
         n_requirements = len(specification["requirements"])
 
@@ -97,7 +117,17 @@ class BIM_PT_tester(Panel):
             text=f'Passed: {specification["total_checks_pass"]}/{specification["total_checks"]} ({specification["percent_checks_pass"]}%)'
         )
         row = self.layout.row()
+        if specification.get("instructions"):
+            row.label(text="Instructions:")
+            box = self.layout.box()
+            column = box.column(align=True)
+            draw_multiline_text(column, specification.get("instructions"), context=context)
+
+        row = self.layout.row()
         row.label(text=f"Requirements ({n_requirements}):")
+        if props.flag:
+            op = row.operator("bim.color_specification", text="", icon="COLOR")
+            op.spec_index = props.active_specification_index
         box = self.layout.box()
         for i, requirement in enumerate(specification["requirements"]):
             row = box.row(align=True)
@@ -115,6 +145,16 @@ class BIM_PT_tester(Panel):
             and props.n_entities > 0
             and len(props.failed_entities) > 0
         ):
+
+            requirement = specification["requirements"][props.active_requirement_index]
+            metadata = requirement.get("metadata")
+            if metadata and metadata.get("@instructions"):
+                row = self.layout.row()
+                row.label(text="Instructions:")
+                box = self.layout.box()
+                column = box.column(align=True)
+                draw_multiline_text(column, metadata.get("@instructions"), context=context)
+
             row = self.layout.row()
             row.label(text=f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
@@ -142,6 +182,34 @@ class BIM_UL_tester_specifications(UIList):
             row = layout.split(factor=0.3, align=True)
             row.label(text=item.name, icon="CHECKMARK" if item.status else "CANCEL")
             row.label(text=item.description)
+
+    def filter_items(self, context: bpy.types.Context, data: IfcTesterProperties, propname: str):
+        items = getattr(data, propname)
+        filter_flags = [self.bitflag_filter_item] * len(items)
+
+        props = tool.Tester.get_tester_props()
+        if props.hide_skipped_specs:
+            for idx, item in enumerate(items):
+                report = tool.Tester.report[idx]
+                if report["total_checks"] != 0:
+                    filter_flags[idx] |= self.bitflag_filter_item
+                else:
+                    filter_flags[idx] &= ~self.bitflag_filter_item
+
+        filter_name = self.filter_name
+        if filter_name:
+            name_filtered = bpy.types.UI_UL_list.filter_items_by_name(
+                filter_name,
+                self.bitflag_filter_item,
+                items,
+                "name",
+            )
+            if len(name_filtered) == len(filter_flags):
+                for idx, flag in enumerate(name_filtered):
+                    if flag == 0:
+                        filter_flags[idx] &= ~self.bitflag_filter_item
+
+        return filter_flags, []
 
 
 class BIM_UL_tester_failed_entities(UIList):

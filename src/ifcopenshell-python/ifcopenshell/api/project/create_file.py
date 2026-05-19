@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+
 import ifcopenshell
 import ifcopenshell.util.schema
 
@@ -51,12 +52,10 @@ def create_file(version: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4") -> ifcope
         # ... and off we go!
     """
     file = ifcopenshell.file(schema=version)
-    file.wrapped_data.header.file_name.name = "/dev/null"  # Hehehe
-    file.wrapped_data.header.file_name.time_stamp = (
-        datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone().replace(microsecond=0).isoformat()
-    )
-    file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
-    file.wrapped_data.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
-    file.wrapped_data.header.file_name.authorization = "Nobody"
-    file.wrapped_data.header.file_description.description = ("ViewDefinition[DesignTransferView]",)
+    file.header.file_name.name = "/dev/null"  # Hehehe
+    file.header.file_name.time_stamp = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()
+    file.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
+    file.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
+    file.header.file_name.authorization = "Nobody"
+    file.header.file_description.description = ("ViewDefinition[DesignTransferView]",)
     return file

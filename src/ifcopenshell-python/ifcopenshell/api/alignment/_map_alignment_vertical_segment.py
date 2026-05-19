@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-from ifcopenshell import ifcopenshell_wrapper
-from ifcopenshell import entity_instance
-from collections.abc import Sequence
 import math
+from collections.abc import Sequence
+
+import ifcopenshell
+from ifcopenshell import entity_instance
 
 
 def _polynomial_length(A: float, B: float, C: float, L: float) -> float:
@@ -143,6 +143,9 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     end_angle = math.atan(end_gradient)
     dx = math.cos(start_angle)
     dy = math.sin(start_angle)
+
+    # start and end angles are for the curve tangents
+    # convert them to be angles of the radii lines
     if start_angle < end_angle:
         radius = horizontal_length / (math.sin(end_angle) - math.sin(start_angle))
         x = -radius * math.sin(start_angle)
@@ -163,8 +166,6 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
         ),
         Radius=radius,
     )
-
-    segment_curve_length = radius * math.fabs(end_angle - start_angle)
 
     curve_segment = file.create_entity(
         type="IfcCurveSegment",

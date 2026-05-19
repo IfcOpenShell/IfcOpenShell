@@ -17,16 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.util.representation
+import pytest
+from ifcopenshell.util.shape_builder import ShapeBuilder
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
 from bonsai.tool.style import Style as subject
-from ifcopenshell.util.shape_builder import ShapeBuilder
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -37,12 +40,16 @@ class TestImplementsTool(NewFile):
 class TestCanSupportRenderingStyle(NewFile):
     def test_anything_with_nodes_can_support_a_rendering_style(self):
         obj = bpy.data.materials.new("Material")
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         assert subject.can_support_rendering_style(obj) is True
 
+    @pytest.mark.skipif(
+        tool.Blender.BLENDER_5,
+        reason="Since Blender 5.0 `use_nodes` are always `True` and deprecated.",
+    )
     def test_without_nodes_we_do_not_support_rendering(self):
         obj = bpy.data.materials.new("Material")
-        obj.use_nodes = False
+        tool.Style.set_use_nodes(obj, False)
         assert subject.can_support_rendering_style(obj) is False
 
 
@@ -125,7 +132,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_different_surface_and_diffuse_colours_from_a_principled_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         assert node
         node.inputs["Alpha"].default_value = 0.8
@@ -153,7 +160,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_rendering_styles_from_a_glossy_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         assert obj.node_tree and node
@@ -185,7 +192,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_rendering_styles_from_a_diffuse_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         assert obj.node_tree and node and output
@@ -217,7 +224,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_rendering_styles_from_a_glass_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         assert obj.node_tree and node and output
@@ -249,7 +256,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_rendering_styles_from_a_emission_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         assert obj.node_tree and node and output
@@ -280,7 +287,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
     def test_other_unsupported_bsdfs_copy_the_rendering_style_from_the_shading_colours_as_a_fallback(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
-        obj.use_nodes = True
+        tool.Style.set_use_nodes(obj, True)
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         assert obj.node_tree and node and output

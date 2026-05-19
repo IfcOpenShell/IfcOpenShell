@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util.element
 import ifcopenshell.api.cost
+import ifcopenshell.util.element
 
 
 def copy_cost_item_values(

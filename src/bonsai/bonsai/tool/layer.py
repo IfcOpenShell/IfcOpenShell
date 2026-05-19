@@ -17,10 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
+
 from typing import TYPE_CHECKING
+
+import bpy
+
+import bonsai.core.tool
 
 if TYPE_CHECKING:
     from bonsai.bim.module.layer.prop import BIMLayerProperties

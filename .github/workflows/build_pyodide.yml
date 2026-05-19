@@ -9,41 +9,75 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           path: IfcOpenShell
 
-      - name: Checkout Pyodide
-        uses: actions/checkout@v3
+      - name: Checkout Build Repository
+        uses: actions/checkout@v6
         with:
-          submodules: recursive
-          repository: pyodide/pyodide
-          ref: '0.28.0a3'
+          repository: IfcOpenShell/build-outputs
+          path: ifcopenshell_build
+          ref: wasm
+          lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
-          path: pyodide
+
+      - name: Unpack Dependencies
+        run: |
+          cd ifcopenshell_build
+          python ../IfcOpenShell/nix/cache_dependencies.py unpack
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+        with:
+          key: ubuntu-22.04-${{ runner.arch }}
 
       - name: Build
         run: |
-          VERSION=`cat IfcOpenShell/VERSION`
-          sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/meta.yaml
-          sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/setup.py
-          echo '#!/usr/bin/bash' > script.sh
-          echo 'cd pyodide' >> script.sh
-          echo 'make' >> script.sh
-          echo 'cd ..' >> script.sh
-          echo 'mkdir -p packages/ifcopenshell' >> script.sh
-          echo 'cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell' >> script.sh
-          echo 'PYODIDE_ROOT=/src/pyodide \' >> script.sh
-          echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/22.16.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
-          echo 'pyodide build-recipes ifcopenshell --install' >> script.sh
-          chmod +x script.sh
-          sed -i s/--tty// pyodide/run_docker
-          pyodide/run_docker ./script.sh
-          mv dist/ifcopenshell-$VERSION-py3-none-any.whl dist/ifcopenshell-$VERSION+${GITHUB_SHA:0:7}-cp313-cp313-emscripten_4_0_9_wasm32.whl
+          ./IfcOpenShell/pyodide/build_pyodide.sh
+          FILE=`echo dist/ifcopenshell-*.whl`
+          NEW_FILE=`echo $FILE | sed "s/-/+${GITHUB_SHA:0:7}-/2"`
+          mv $FILE $NEW_FILE
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs-pyodide
+          path: |
+            ifcopenshell_build/*/*/logs/*.log
+          retention-days: 30
+
+      - name: Run wheel tests
+        run: |
+          cp -r IfcOpenShell/pyodide/test test
+          # venv set up in build_pyodide.sh.
+          source .venv/bin/activate
+          uv pip install pytest-pyodide
+          PYODIDE_ROOT_DIST=`pyodide config get pyodide_root`/dist
+          # `pytest-pyodide` requires pyodide in 'pyodide' directory in cwd, when running `pytest`.
+          cp -r $PYODIDE_ROOT_DIST test/pyodide
+          cp dist/ifcopenshell-*.whl test/pyodide
+          cd test
+          pytest --capture=no
+
+      - name: Pack Dependencies
+        run: |
+          cd ifcopenshell_build
+          python ../IfcOpenShell/nix/cache_dependencies.py pack
+
+      - name: Commit and Push Changes to Build Repository
+        run: |
+          cd ifcopenshell_build
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add */*/install/cache-*.tar.gz
+          git commit -m "Update build artifacts [skip ci]" || echo "No changes to commit"
+          git push || echo "Push failed"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}

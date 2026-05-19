@@ -46,6 +46,16 @@ a {
     background: #70ba35;
 }
 
+.blockbutton a.download code {
+    background: none !important;
+    border: none !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-weight: bold; /* optional */
+    padding: 0 !important;
+}
+
 .highlight .hll {
     background-color: #ffc2;
 }

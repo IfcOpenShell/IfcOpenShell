@@ -16,31 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
+import json
+import os
+from math import pi, radians
+from typing import TYPE_CHECKING, Literal, Union
+
 import bpy
 import pytz
 import tzfpy
-import json
-import datetime
-import bonsai.tool as tool
-from typing import TYPE_CHECKING, Literal, Union
-from math import radians, pi
-from mathutils import Euler, Vector, Matrix, Quaternion
 from bpy.props import (
-    IntProperty,
-    StringProperty,
+    BoolProperty,
+    CollectionProperty,
     EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    BoolProperty,
-    CollectionProperty,
+    IntProperty,
     PointerProperty,
+    StringProperty,
 )
-import os
 from bpy.types import PropertyGroup
+from mathutils import Euler, Matrix, Quaternion, Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
 from bonsai.bim.module.light.decorator import SolarDecorator
 
-sun_position = tool.Blender.get_sun_position_addon()
+sun_position = tool.Blender.get_addon("sun_position")
 now = datetime.datetime.now()
 
 with open(os.path.join(os.path.dirname(__file__), "spectraldb.json"), "r") as f:
@@ -96,11 +98,12 @@ def update_shadow_mode(self: "BIMSolarProperties", context: bpy.types.Context) -
         sun_props = tool.Blender.get_sun_props()
         assert sun_props
         if sun_props.sun_object is None:
-            bpy.ops.object.light_add(type="SUN", radius=1, align="WORLD", location=(0, 0, 0), scale=(1, 1, 1))
-            bpy.ops.object.move_to_collection(collection_index=0)
-            sun_props.sun_object = bpy.context.active_object
+            light = bpy.data.lights.new(name="Sun", type="SUN")
+            sun = bpy.data.objects.new("Sun", light)
+            context.scene.collection.objects.link(sun)
+            sun_props.sun_object = sun
         update_sun_path(self)
-        context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+        context.scene.render.engine = tool.Blender.get_eevee_name()
         assert context.scene.display
         assert context.scene.display.shading
         context.scene.display.shading.light = "FLAT"
@@ -317,7 +320,7 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     def get_subcategories(self, context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-        global SUBCATEGORIES_ENUM_ITEMS
+        global SUBCATEGORIES_ENUM_ITEMS  # ty: ignore[unresolved-global]
         if self.category in spectraldb:
             SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
         else:

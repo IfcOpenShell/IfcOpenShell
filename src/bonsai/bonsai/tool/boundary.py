@@ -17,16 +17,22 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
+
 import bpy
 import mathutils
+from mathutils import Matrix, Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from mathutils import Matrix, Vector
-from typing import Any, TYPE_CHECKING
-from collections.abc import Sequence
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.boundary.prop import BIMBoundaryProperties, BIMObjectBoundaryProperties
+    from bonsai.bim.module.boundary.prop import (
+        BIMBoundaryProperties,
+        BIMObjectBoundaryProperties,
+    )
 
 
 class Boundary(bonsai.core.tool.Boundary):

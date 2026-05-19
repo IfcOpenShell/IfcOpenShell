@@ -17,8 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import test.bootstrap
+
 import ifcopenshell.api.sequence
+import test.bootstrap
 
 
 # NOTE: IfcWorkTime was introduced in IFC4

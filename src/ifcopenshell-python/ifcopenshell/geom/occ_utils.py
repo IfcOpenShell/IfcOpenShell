@@ -18,23 +18,41 @@
 
 
 from __future__ import annotations
-import random
+
+import inspect
 import operator
+import random
 import warnings
+from collections.abc import Iterable
+from typing import NamedTuple, Union
+
+import OCC  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+from typing_extensions import assert_never
+
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
-from typing import NamedTuple, Any, Union
-from typing_extensions import assert_never
-from collections.abc import Iterable
-
-import OCC
-
 try:
-    from OCC.Core import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    from OCC.Core import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        AIS,
+        BRepTools,
+        Graphic3d,
+        Quantity,
+        TopoDS,
+        V3d,
+        gp,
+    )
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import V3d, TopoDS, gp, AIS, Quantity, BRepTools, Graphic3d
+    from OCC import (  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        AIS,
+        BRepTools,
+        Graphic3d,
+        Quantity,
+        TopoDS,
+        V3d,
+        gp,
+    )
 
     USE_OCCT_HANDLE = True
 
@@ -66,7 +84,7 @@ DEFAULT_STYLES = {
 
 
 def initialize_display():
-    import OCC.Display.SimpleGui
+    import OCC.Display.SimpleGui  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     global handle, main_loop, add_menu, add_function_to_menu
     handle, main_loop, add_menu, add_function_to_menu = OCC.Display.SimpleGui.init_display()
@@ -225,10 +243,24 @@ def serialize_shape(shape):
     shapes.SetFormatNb(2)
 
     shapes.Add(shape)
+
+    # Check if WriteToString method exists and has the correct signature
+    # In PythonOCC >= 7.8.0, WriteToString signature changed and requires additional arguments
     if hasattr(shapes, "WriteToString"):
-        return shapes.WriteToString()
-    else:
-        return shapes.Write()
+        try:
+            # Try to get the method signature
+            sig = inspect.signature(shapes.WriteToString)
+            # If WriteToString has no parameters (just self), use it
+            # This works for PythonOCC < 7.8.0
+            if len(sig.parameters) == 0:
+                return shapes.WriteToString()
+        except (ValueError, TypeError):
+            # If signature inspection fails, fall through to Write() method
+            pass
+
+    # Fall back to Write() method for newer PythonOCC versions (>= 7.8.0)
+    # or when WriteToString is not available/compatible
+    return shapes.Write()
 
 
 def create_shape_from_serialization(

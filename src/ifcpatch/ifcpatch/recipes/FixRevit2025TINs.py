@@ -16,13 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+import logging
+from typing import Optional, TYPE_CHECKING
+
 
 import ifcopenshell
-import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
-import ifcopenshell.util.unit
-import logging
-from typing import Optional
+
+if TYPE_CHECKING:
+    import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
 
 class Patcher:
@@ -110,12 +114,14 @@ class Patcher:
         self.should_create_edges = should_create_edges
 
     def patch(self) -> None:
-        import bpy
-        import bmesh
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
-        import ifcopenshell.util.shape_builder
+        import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        import ifcopenshell.util.schema
+        import ifcopenshell.util.unit
 
-        bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
+        props = tool.Project.get_project_props()
+        props.should_use_native_meshes = True
         bpy.ops.bim.load_project(filepath=self.filepath)
 
         old_history_size = tool.Ifc.get().history_size
@@ -126,7 +132,7 @@ class Patcher:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id or not obj.data:
+            if not tool.Blender.get_ifc_definition_id(obj) or not obj.data:
                 continue
             if not obj.data.polygons:
                 continue
@@ -160,16 +166,14 @@ class Patcher:
 
         self.file = tool.Ifc.get()
 
-    def create_edges(self, obj):
-        import bpy
-        import bmesh
+    def create_edges(self, obj: bpy.types.Object) -> None:
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
-        import ifcopenshell.util.element
-        import ifcopenshell.util.representation
-        import ifcopenshell.api.root
-        import ifcopenshell.api.type
-        import ifcopenshell.api.spatial
+        import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import ifcopenshell.api.geometry
+        import ifcopenshell.api.root
+        import ifcopenshell.util.representation
+        import ifcopenshell.util.schema
 
         element = tool.Ifc.get_entity(obj)
         data = obj.data
@@ -227,18 +231,16 @@ class Patcher:
         ifcopenshell.util.schema.reassign_class(tool.Ifc.get(), element2, "IfcVirtualElement")
         bm.free()
 
-    def create_face_sampleable_object(self, obj):
+    def create_face_sampleable_object(self, obj: bpy.types.Object) -> None:
         # No sharp faces
-        import bpy
-        import bmesh
-        import bonsai.tool as tool
-        import ifcopenshell.util.element
-        import ifcopenshell.util.representation
-        import ifcopenshell.api.root
-        import ifcopenshell.api.type
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.geometry
         from math import degrees
+
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        import bonsai.tool as tool
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.root
+        import ifcopenshell.util.representation
+        import ifcopenshell.util.shape_builder
 
         print("working on ", obj.name)
         element = tool.Ifc.get_entity(obj)
@@ -276,19 +278,17 @@ class Patcher:
 
         bm.free()
 
-    def create_edge_sampleable_object(self, obj):
+    def create_edge_sampleable_object(self, obj: bpy.types.Object) -> None:
         # This is crazy but we need a sharp face per island
-        import bpy
-        import bmesh
-        import bonsai.tool as tool
-        import ifcopenshell.util.element
-        import ifcopenshell.util.representation
-        import ifcopenshell.api.root
-        import ifcopenshell.api.type
-        import ifcopenshell.api.spatial
-        import ifcopenshell.api.geometry
         from math import degrees, radians, sin
-        from mathutils import Matrix
+
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
+        import bonsai.tool as tool
+        import ifcopenshell.api.geometry
+        import ifcopenshell.api.root
+        import ifcopenshell.util.representation
+        import ifcopenshell.util.shape_builder
+        from mathutils import Matrix  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         # Get the active object (assumed to have a mesh)
         mesh = obj.data
@@ -437,7 +437,6 @@ class Patcher:
         bm.free()
 
         print("Added a triangle to", islands_count, "mesh island(s).")
-        return
 
     def create_curves_from_curve_ifc2x3(
         self, is_2d: bool = False, curve_object_data=None

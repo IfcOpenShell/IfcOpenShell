@@ -11,7 +11,7 @@ jobs:
       matrix:
         include:
           - os: macos
-            runner: macos-13
+            runner: macos-14
             arch: x64
             oldarch: 
           - os: macos
@@ -21,12 +21,12 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
@@ -34,16 +34,14 @@ jobs:
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-        
       - name: Install Dependencies
         run: |
           brew update
-          brew install git bison autoconf automake libffi cmake findutils
+          # preinstalled: xz, cmake
+          brew install git bison autoconf automake libffi findutils
           echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
+          # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
+          echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
 
       - name: Install aws cli
         run: |
@@ -51,27 +49,53 @@ jobs:
 
       - name: Unpack Dependencies
         run: |
-          install_root=$(find ./build -maxdepth 4 -name install)
-          find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \;
+          cd build
+          python ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
-          key: ${GITHUB_WORKFLOW}-${{ matrix.os }}
+          key: mac-${{ matrix.arch }}
 
       - name: Run Build Script
+        shell: bash
         run: |
           if [ "${{ matrix.os }}" == "macos" ]; then
             DARWIN_C_SOURCE=-D_DARWIN_C_SOURCE
           fi
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release python3 ./nix/build-all.py --diskcleanup
+          if [ "${{ matrix.arch }}" == "x64" ]; then
+            arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            MAC_INTEL=-mac-cross-compile-intel
+            # We don't use gmpcxx, but it comes preinstalled on macos runner as arm64 bottle
+            # and CGAL detects it and breaks cross compilation.
+            brew uninstall --ignore-dependencies gmp
+            # Otherwise Python will fallback to use arm64 `pkg-config`,
+            # will pick up arm64 libraries ('zstd' in particular),
+            # and break the build.
+            /usr/local/bin/brew install pkg-config
+            # Required by Python.
+            /usr/local/bin/brew install gettext openssl
+          fi
+          set -o pipefail
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
+            python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
+            | tee build.log
+
+      - name: Upload Build Logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-logs-osx-${{ matrix.arch }}
+          path: |
+            build.log
+            build/*/*/*/logs/*.log
+            build/*/*/*/build/ifcopenshell/**/CMakeCache.txt
+          retention-days: 30
 
       - name: Pack Dependencies
         run: |
           cd build
-          for install_dir in $(find $(find . -maxdepth 4 -name install) -mindepth 1 -maxdepth 1 -type d); do
-            test -f $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz || tar -czf $(dirname "$install_dir")/cache-$(basename "$install_dir").tar.gz -C $(dirname "$install_dir") $(basename "$install_dir");
-          done
+          python ../nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |
@@ -85,7 +109,7 @@ jobs:
       - name: Package .zip archives
         run: |
           VERSION=v`cat VERSION`
-          cd ./build/`uname`/*/10.9/install/ifcopenshell
+          cd ./build/`uname`/*/10.15/install/ifcopenshell
           mkdir ~/output
 
           ls -d python-* | while read py_version; do
@@ -115,7 +139,7 @@ jobs:
           cd ..
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_UPLOAD_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_UPLOAD_SECRET_ACCESS_KEY }}

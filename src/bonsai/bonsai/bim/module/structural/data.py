@@ -17,8 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bonsai.tool as tool
 import ifcopenshell.util.doc
+
+import bonsai.tool as tool
 
 
 def refresh():

@@ -17,15 +17,17 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import re
+
 import builtins
-import ifcopenshell.util.unit
-import ifcopenshell.util.element
-import ifcopenshell.util.classification
+import re
 from functools import lru_cache
-from xmlschema.validators import identities
-from typing import Union, Optional, Any, Literal, TYPE_CHECKING, TypedDict
 from logging import Logger
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypedDict, Union
+
+import ifcopenshell.util.classification
+import ifcopenshell.util.element
+import ifcopenshell.util.unit
+from xmlschema.validators import identities
 
 if TYPE_CHECKING:
     from .ids import Specification
@@ -126,14 +128,17 @@ class Facet:
     ) -> str:
         if clause_type == "applicability":
             templates = self.applicability_templates
-        elif clause_type == "requirement":
-            is_prohibited = False
             if specification and specification.maxOccurs == 0:
-                is_prohibited = not is_prohibited
-            if requirement and requirement.cardinality == "prohibited":
-                is_prohibited = not is_prohibited
-            templates = self.prohibited_templates if is_prohibited else self.requirement_templates
-            if requirement and requirement.cardinality == "optional":
+                templates = self.prohibited_templates
+        elif clause_type == "requirement":
+            if specification and specification.maxOccurs == 0:
+                return "The requirement is not applicable"
+            if (not requirement) or isinstance(requirement, Entity) or requirement.cardinality == "required":
+                templates = self.requirement_templates
+            elif requirement.cardinality == "prohibited":
+                templates = self.prohibited_templates
+            elif requirement.cardinality == "optional":
+                templates = self.requirement_templates
                 templates = [
                     t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
                 ]
@@ -203,6 +208,12 @@ class Entity(Facet):
             except:
                 # If the user has specified a class that doesn't exist in the version
                 results = []
+                if not self.name.endswith("TYPE"):
+                    try:
+                        for element_type in ifc_file.by_type(f"{self.name}Type"):
+                            results.extend(ifcopenshell.util.element.get_types(element_type))
+                    except:
+                        pass
         else:
             results = []
             ifc_classes = [t for t in ifc_file.wrapped_data.types() if t.upper() == self.name]
@@ -220,12 +231,25 @@ class Entity(Facet):
         is_pass = inst.is_a().upper() == self.name
         reason = None
 
-        if not is_pass:
+        if (
+            not is_pass
+            and inst.file.schema == "IFC2X3"
+            and not self.name.endswith("TYPE")
+            and (element_type := ifcopenshell.util.element.get_type(inst))
+        ):
+            is_pass = element_type.is_a().upper() == f"{self.name}TYPE"
+            reason = {"type": "NAME", "actual": element_type.is_a().upper()[:-4]}
+        elif not is_pass:
             reason = {"type": "NAME", "actual": inst.is_a().upper()}
 
         if is_pass and self.predefinedType:
-            predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
-            is_pass = predefined_type == self.predefinedType
+            if self.predefinedType == "USERDEFINED":
+                is_pass = ifcopenshell.util.element.is_userdefined_type(inst)
+                if not is_pass:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+            else:
+                predefined_type = ifcopenshell.util.element.get_predefined_type(inst)
+                is_pass = predefined_type == self.predefinedType
 
             if not is_pass:
                 reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
@@ -685,7 +709,9 @@ class Property(Facet):
                     elif prop is not None and prop != "":
                         props[pset_name][self.baseName] = prop
                 else:
-                    props[pset_name] = {k: v for k, v in pset_props.items() if k == self.baseName}
+                    props[pset_name] = {
+                        k: v for k, v in pset_props.items() if k == self.baseName and v is not None and v != ""
+                    }
 
                 if not bool(props[pset_name]):
                     if self.cardinality == "optional":
@@ -714,11 +740,12 @@ class Property(Facet):
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit and getattr(unit, "Name", None):
                             # TODO support unnamed derived units
+                            output_prefix = "KILO" if unit.UnitType == "MASSUNIT" else None
                             props[pset_name][prop_entity.Name] = ifcopenshell.util.unit.convert(
                                 prop_entity.NominalValue.wrappedValue,
                                 getattr(unit, "Prefix", None),
                                 unit.Name,
-                                None,
+                                output_prefix,
                                 ifcopenshell.util.unit.si_type_names[unit.UnitType],
                             )
                     elif prop_entity.is_a("IfcPhysicalSimpleQuantity"):

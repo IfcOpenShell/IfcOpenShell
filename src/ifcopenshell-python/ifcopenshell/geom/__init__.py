@@ -33,14 +33,14 @@ def _has_occ():
     # Previous versions (pythonocc<=0.17.3) are using just OCC.
 
     try:
-        import OCC.Core.BRepTools
+        import OCC.Core.BRepTools  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         return True
     except ImportError:
         pass
 
     try:
-        import OCC.BRepTools
+        import OCC.BRepTools  # noqa: F401  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         return True
     except ImportError:
@@ -52,6 +52,6 @@ def _has_occ():
 has_occ = _has_occ()
 
 if has_occ:
-    from . import occ_utils as utils
+    from . import occ_utils as utils  # noqa: F401
 
 from .main import *

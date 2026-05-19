@@ -17,10 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bonsai.tool as tool
-import bonsai.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from bonsai.bim.helper import prop_with_search
+
+import bonsai.bim.module.type.prop as type_prop
+import bonsai.tool as tool
+from bonsai.bim.helper import get_display_value, prop_with_search
 from bonsai.bim.module.type.data import TypeData
 
 
@@ -34,14 +35,11 @@ class BIM_PT_type(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        element = tool.Ifc.get_entity(context.active_object)
-        if not element:
-            return False
-        if not element.is_a("IfcProduct") and not element.is_a("IfcTypeProduct"):
-            return True
-        return True
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and (element.is_a("IfcObject") or element.is_a("IfcTypeObject"))
+        )
 
     def draw(self, context):
         if not TypeData.is_loaded:
@@ -79,7 +77,14 @@ class BIM_PT_type(Panel):
 
             row.prop(props, "relating_type_class", text="")
             if type_prop.get_relating_type(None, context):
-                prop_with_search(row, props, "relating_type", text="")
+                prop_with_search(
+                    row,
+                    props,
+                    "relating_type",
+                    text="",
+                    enable_relating_type_suggestions=True,
+                    search_threshold=0,
+                )
                 row.operator("bim.assign_type", icon="CHECKMARK", text="")
                 row_object.prop(props, "relating_type_object", icon="COPYDOWN")
             else:
@@ -92,11 +97,61 @@ class BIM_PT_type(Panel):
                 op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
                 op.relating_type = 0  # will only select the relating types of only the selected objects
                 row.operator("bim.select_similar_type", icon="RESTRICT_SELECT_OFF", text="")
+                # Add duplicate button here with assign_selected_objects enabled
+                op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
+                op.element = TypeData.data["relating_type"]["id"]
+                op.assign_selected_objects = True
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
                 row.operator("bim.unassign_type", icon="X", text="")
             else:
                 row.label(text="No Relating Type")
                 row.operator("bim.enable_editing_type", icon="GREASEPENCIL", text="")
+
+
+class BIM_PT_type_attributes(Panel):
+    bl_label = "Type Attributes"
+    bl_idname = "BIM_PT_type_attributes"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_parent_id = "BIM_PT_type"
+
+    @classmethod
+    def poll(cls, context):
+        if not TypeData.is_loaded:
+            TypeData.load()
+        return bool(TypeData.data.get("is_product") and TypeData.data.get("relating_type"))
+
+    def draw(self, context):
+        if not TypeData.is_loaded:
+            TypeData.load()
+
+        assert (layout := self.layout)
+        assert (obj := context.active_object)
+
+        if not TypeData.data.get("relating_type"):
+            layout.label(text="No Relating Type", icon="INFO")
+            return
+
+        props = tool.Type.get_object_type_props(obj)
+
+        if props.is_editing_type_attributes:
+            row = layout.row(align=True)
+            row.operator("bim.edit_type_attributes", icon="CHECKMARK", text="Save Attributes")
+            row.operator("bim.disable_editing_type_attributes", icon="CANCEL", text="")
+
+            import bonsai.bim.helper
+
+            bonsai.bim.helper.draw_attributes(props.type_attributes, layout)
+        else:
+            row = layout.row()
+            row.operator("bim.enable_editing_type_attributes", icon="GREASEPENCIL", text="Edit")
+
+            for attribute in TypeData.data["relating_type_attributes"]:
+                row = layout.row(align=True)
+                row.label(text=attribute["name"])
+                value = get_display_value(attribute["value"])
+                row.label(text=value)
 
 
 def add_object_button(self, context):

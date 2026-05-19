@@ -17,12 +17,15 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel, UIList
+
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.group.prop import BIMGroupProperties, Group
@@ -44,7 +47,8 @@ class BIM_PT_groups(Panel):
     def draw(self, context):
         if not GroupsData.is_loaded:
             GroupsData.load()
-        self.props = tool.Blender.get_group_props()
+        self.props = tool.Group.get_group_props()
+        assert self.layout
 
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")
@@ -105,7 +109,7 @@ class BIM_PT_object_groups(Panel):
         if not ObjectGroupsData.is_loaded:
             ObjectGroupsData.load()
         assert self.layout
-        self.props = tool.Blender.get_group_props()
+        self.props = tool.Group.get_group_props()
 
         for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
@@ -138,7 +142,7 @@ class BIM_UL_groups(UIList):
                 op = row.operator(
                     "bim.toggle_group", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
                 )
+                op.group_type = "IfcGroup"
                 op.ifc_definition_id = item.ifc_definition_id
-                op.index = index
-                op.option = "Collapse" if item.is_expanded else "Expand"
+                op.option = "COLLAPSE" if item.is_expanded else "EXPAND"
             row.prop(item, "name", text="", emboss=False)

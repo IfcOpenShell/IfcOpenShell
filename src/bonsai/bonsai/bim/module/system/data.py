@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Union
+
 import bpy
-import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
+
 import bonsai.tool as tool
-from typing import Any, Union
 
 
 def refresh():
@@ -57,9 +58,9 @@ class SystemData:
 
         # We're only interested in systems for services. Not sure why IFC groups these together.
         return [
-            (c, c, get_entity_doc(version, c).get("description", ""))
-            for c in sorted([d.name() for d in declarations])
-            if c not in ("IfcStructuralAnalysisModel")
+            (c, c, get_entity_doc(version, c).get("description", ""), tool.System.SYSTEM_ICONS[c], i)
+            for i, c in enumerate(sorted([d.name() for d in declarations]))
+            if c != "IfcStructuralAnalysisModel"
         ]
 
     @classmethod

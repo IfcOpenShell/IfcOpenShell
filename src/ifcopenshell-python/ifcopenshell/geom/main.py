@@ -18,21 +18,17 @@
 
 
 from __future__ import annotations
-import os
-import sys
-import operator
 
-from .. import ifcopenshell_wrapper
-from ..file import file
+from collections.abc import Generator, Iterable
+from typing import TYPE_CHECKING, Any, Literal, Optional, TypeVar, Union, cast, overload
+
+from .. import ifcopenshell_wrapper, open
 from ..entity_instance import entity_instance
-
+from ..file import file
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Any, Literal, overload, TYPE_CHECKING, cast
-from collections.abc import Generator, Iterable
-
 if TYPE_CHECKING:
-    from OCC.Core import TopoDS
+    from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     IteratorOutput = Union["ShapeElementType", "utils.shape_tuple"]
 
@@ -51,9 +47,9 @@ if has_occ:
     from . import occ_utils as utils
 
     try:
-        from OCC.Core import TopoDS
+        from OCC.Core import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
     except ImportError:
-        from OCC import TopoDS
+        from OCC import TopoDS  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
     def wrap_shape_creation(settings: settings, shape: ifcopenshell_wrapper.Element):
         if getattr(settings, "use_python_opencascade", False):
@@ -65,10 +61,12 @@ if has_occ:
 SETTING = Literal[
     "angle-unit",
     "apply-default-materials",
+    "apply-offset",
     "boolean-attempt-2d",
     "building-local-placement",
     "cache-shapes",
     "cgal-original-edges",
+    "cgal-smooth-angle-degrees",
     "circle-segments",
     "compute-curvature",
     "context-identifiers",
@@ -76,6 +74,7 @@ SETTING = Literal[
     "context-types",
     "convert-back-units",
     "debug",
+    "defer-processing-first-element",
     "dimensionality",
     "disable-boolean-result",
     "disable-opening-subtractions",
@@ -90,6 +89,9 @@ SETTING = Literal[
     "keep-bounding-boxes",
     "layerset-first",
     "length-unit",
+    "make-volume",
+    "max-offset-deviation",
+    "max-offset",
     "mesher-angular-deflection",
     "mesher-linear-deflection",
     "model-offset",
@@ -123,6 +125,7 @@ SERIALIZER_SETTING = Literal[
     "ecef",
     "digits",
     "wkt-use-section",
+    "separate-z-up-node",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
@@ -302,10 +305,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
             self.file = file
             file_or_filename = file_or_filename.wrapped_data
         else:
-            # @todo?
-            self.file = None
-            # Makes sure people are able to use python's platform agnostic paths
-            file_or_filename = os.path.abspath(file_or_filename)
+            file_or_filename = self.file = open(file_or_filename)
 
         if include is not None and exclude is not None:
             raise ValueError("include and exclude cannot be specified simultaneously")
@@ -337,7 +337,9 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 geometry_library, self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
             )
         else:
-            ifcopenshell_wrapper.Iterator.__init__(self, geometry_library, settings, file_or_filename, num_threads)
+            self.this = ifcopenshell_wrapper.construct_iterator(
+                geometry_library, self.settings, file_or_filename, num_threads
+            )
 
     if has_occ:
 
@@ -668,7 +670,7 @@ class serializers:
     # so no wrap_buffer_creation() for these serializers
     xml = ifcopenshell_wrapper.XmlSerializer
     buffer = ifcopenshell_wrapper.buffer
-    # gltf and hdf5 availability depend on IfcOpenShell configuration settings
+    # gltf, hdf5, collada and json availability depend on IfcOpenShell configuration settings
     try:
         gltf = ifcopenshell_wrapper.GltfSerializer
     except:
@@ -679,6 +681,10 @@ class serializers:
         pass
     try:
         collada = ifcopenshell_wrapper.ColladaSerializer
+    except:
+        pass
+    try:
+        json = ifcopenshell_wrapper.JsonSerializer
     except:
         pass
     # ttl is always available since it doesn't depend on any C++ libraries,

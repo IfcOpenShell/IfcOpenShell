@@ -16,16 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+from typing import Any, Union
+
 import bpy
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.doc
-import ifcopenshell.util.schema
+import ifcopenshell.util.element
+from natsort import natsorted
+
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from typing import Any, Union
-from natsort import natsorted
 
 
 def refresh():
@@ -102,7 +102,6 @@ class MaterialsData:
             if (style_name := s.Name) is not None
         ]
         results = natsorted(results, key=lambda i: i[1])
-        results.insert(0, ("-", "No Surface Style", ""))
         return results
 
     @classmethod
@@ -176,6 +175,7 @@ class ObjectMaterialData:
         cls.data["active_material_constituents"] = cls.active_material_constituents()
         # after material_name and type_material
         cls.data["is_type_material_overridden"] = cls.is_type_material_overridden()
+        cls.data["bbim_material_layer_pset"] = cls.bbim_material_layer_pset()
 
         cls.is_loaded = True
 
@@ -323,20 +323,23 @@ class ObjectMaterialData:
 
     @classmethod
     def total_thickness(cls):
-        if cls.material:
-            layers = []
-            if cls.material.is_a("IfcMaterialLayerSetUsage"):
-                layers = cls.material.ForLayerSet.MaterialLayers
-            elif cls.material.is_a("IfcMaterialLayerSet"):
-                layers = cls.material.MaterialLayers
-            thickness = sum([l.LayerThickness for l in layers or []])
-            prefs = tool.Blender.get_addon_preferences()
-            assert bpy.context.scene
-            unit_system = bpy.context.scene.unit_settings.system
-            precision = None
-            if unit_system == "IMPERIAL":
-                precision = prefs.doc.imperial_precision
-            return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
+        if not cls.material:
+            return
+        layers = []
+        if cls.material.is_a("IfcMaterialLayerSetUsage"):
+            layers = cls.material.ForLayerSet.MaterialLayers
+        elif cls.material.is_a("IfcMaterialLayerSet"):
+            layers = cls.material.MaterialLayers
+        if not layers:
+            return
+        thickness = sum([l.LayerThickness for l in layers or []])
+        prefs = tool.Blender.get_addon_preferences()
+        assert bpy.context.scene
+        unit_system = bpy.context.scene.unit_settings.system
+        precision = None
+        if unit_system == "IMPERIAL":
+            precision = prefs.doc.imperial_precision
+        return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
     def set_item_name(cls) -> Union[str, None]:
@@ -404,7 +407,7 @@ class ObjectMaterialData:
         material = cls.material
         if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []
-        return [m.Name for m in material.MaterialConstituents if m.Name]
+        return [m.Name for m in material.MaterialConstituents or [] if m.Name]
 
     @classmethod
     def is_type_material_overridden(cls) -> bool:
@@ -423,3 +426,35 @@ class ObjectMaterialData:
         # so we check occurrence material explicitly
         occurrence_material = ifcopenshell.util.element.get_material(cls.element, should_inherit=False)
         return bool(occurrence_material)
+
+    @classmethod
+    def bbim_material_layer_pset(cls) -> Union[dict[str, Any], None]:
+        """Load BBIM_MaterialLayer pset data for display in UI."""
+        if not cls.element:
+            return None
+
+        pset_data = ifcopenshell.util.element.get_pset(cls.element, "BBIM_MaterialLayer")
+        if not pset_data or not pset_data.get("UseCustomOffset", False):
+            return None
+
+        # Keep offset in SI units - format_distance will handle conversion
+        custom_offset_si = pset_data.get("CustomOffset", 0.0)
+
+        # Get the appropriate reference based on usage type
+        usage_type = tool.Model.get_usage_type(cls.element)
+        custom_reference = None
+        reference_label = None
+
+        if usage_type == "LAYER2":
+            custom_reference = pset_data.get("CustomWallReference", "")
+            reference_label = "Wall Reference"
+        elif usage_type == "LAYER3":
+            custom_reference = pset_data.get("CustomSlabReference", "")
+            reference_label = "Slab Reference"
+
+        return {
+            "use_custom_offset": pset_data.get("UseCustomOffset", False),
+            "custom_offset": custom_offset_si,  # Store in SI units
+            "custom_reference": custom_reference,
+            "reference_label": reference_label,
+        }

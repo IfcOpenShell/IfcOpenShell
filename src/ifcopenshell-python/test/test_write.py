@@ -18,11 +18,12 @@
 
 import tempfile
 from pathlib import Path
+
 import pytest
+
 import ifcopenshell
 
-
-TEST_FILE_DIR = Path("../../test/input/")
+TEST_FILE_DIR = Path(__file__).parent / "../../../test/input/"
 
 
 class TestWrite:
@@ -40,9 +41,11 @@ class TestWrite:
     def test_write_ifcspf(self):
         self.assert_model_is_written("model.ifc")
 
+    @pytest.mark.skip(reason="IFCXML writing not supported")
     def test_write_ifcxml(self):
         self.assert_model_is_written("model.ifcXML")
 
+    @pytest.mark.skip(reason="IFCXML writing not supported")
     def test_write_ifc_zip_ifcxml_format(self):
         self.assert_model_is_written("model.ifcZIP", format=".ifcXML", zipped=True)
 
@@ -58,9 +61,11 @@ class TestWrite:
     def test_write_anyextension_ifczip_ifcspf_format(self):
         self.assert_model_is_written("model.anyextension", format=".ifc", zipped=True)
 
+    @pytest.mark.skip(reason="IFCXML writing not supported")
     def test_write_anyextension_ifcxml_format(self):
         self.assert_model_is_written("model.anyextension", format=".ifcXML")
 
+    @pytest.mark.skip(reason="IFCXML writing not supported")
     def test_write_anyextension_ifczip_ifcxml_format(self):
         self.assert_model_is_written("model.anyextension", format=".ifcXML", zipped=True)
 

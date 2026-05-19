@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
@@ -45,12 +45,15 @@ def test_name_segments():
         file, "TestAlignment", coordinates, radii, vpoints, lengths
     )
 
-    for rel in alignment.IsNestedBy:
-        for a in rel.RelatedObjects:
-            if a.is_a("IfcLinearElement"):
-                ifcopenshell.api.alignment.name_segments("Q", a)
-                i = 1
-                for sr in a.IsNestedBy:
-                    for s in sr.RelatedObjects:
-                        assert f"Q{i}" == s.Name
-                        i += 1
+    layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
+    for layout in layout_nest.RelatedObjects:
+        assert layout.is_a("IfcLinearElement")
+        ifcopenshell.api.alignment.name_segments("Q", layout)
+        segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
+        i = 1
+        for segment in segment_nest.RelatedObjects:
+            assert f"Q{i}" == segment.Name
+            i += 1
+
+
+test_name_segments()

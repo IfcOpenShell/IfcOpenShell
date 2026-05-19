@@ -16,24 +16,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+import multiprocessing
 import os
 import sys
 import time
-import operator
-import functools
-import multiprocessing
+
 import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
-    from OCC.Core import AIS
+    from OCC.Core import AIS  # noqa: F401
 
     USE_OCCT_HANDLE = False
 except ImportError:
-    from OCC import AIS
 
     USE_OCCT_HANDLE = True
 
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
 
 try:
@@ -55,7 +54,6 @@ from .code_editor_pane import code_edit
 try:
     from OCC.Display.pyqt5Display import qtViewer3d
 except BaseException:
-    import OCC.Display
 
     try:
         import OCC.Display.backend
@@ -69,11 +67,10 @@ except BaseException:
 
     from OCC.Display.qtDisplay import qtViewer3d
 
-from .main import settings, iterator
-from .occ_utils import display_shape
-
 from .. import open as open_ifc_file
 from .. import version as ifcopenshell_version
+from .main import iterator, settings
+from .occ_utils import display_shape
 
 if ifcopenshell_version < "0.6":
     # not yet ported
@@ -148,8 +145,7 @@ class configuration:
             config.set(
                 "snippets",
                 "print all wall ids",
-                self.config_encode(
-                    """
+                self.config_encode("""
 ###########################################################################
 # A simple script that iterates over all walls in the current model       #
 # and prints their Globally unique IDs (GUIDS) to the console window      #
@@ -157,15 +153,13 @@ class configuration:
 
 for wall in model.by_type("IfcWall"):
     print ("wall with global id: "+str(wall.GlobalId))
-""".lstrip()
-                ),
+""".lstrip()),
             )
 
             config.set(
                 "snippets",
                 "print properties of current selection",
-                self.config_encode(
-                    """
+                self.config_encode("""
 ###########################################################################
 # A simple script that iterates over all IfcPropertySets of the currently #
 # selected object and prints them to the console                          #
@@ -183,8 +177,7 @@ if selection:
              for prop in relDefinesByProperties.RelatingPropertyDefinition.HasProperties:
                  print ("{:<20} :{}".format(prop.Name,prop.NominalValue.wrappedValue))
          print ("\\n")
-""".lstrip()
-                ),
+""".lstrip()),
             )
             with open(conf_file, "w") as configfile:
                 config.write(configfile)

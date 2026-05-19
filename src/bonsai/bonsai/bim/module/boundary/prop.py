@@ -16,21 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-from bpy.types import PropertyGroup
-from bonsai.bim.prop import ObjProperty
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-import bonsai.tool as tool
 from typing import TYPE_CHECKING, Union
+
+import bpy
+from bpy.props import (
+    BoolProperty,
+    EnumProperty,
+    PointerProperty,
+)
+from bpy.types import PropertyGroup
+
+import bonsai.tool as tool
+from bonsai.bim.prop import ObjProperty
 
 
 def space_filter(self: "BIMObjectBoundaryProperties", object: bpy.types.Object) -> bool:
@@ -54,12 +51,43 @@ def element_filter(self: "BIMObjectBoundaryProperties", object: bpy.types.Object
     return False
 
 
+def get_internal_or_external_items(
+    self: "BIMObjectBoundaryProperties", context: bpy.types.Context | None
+) -> list[tuple[str, str, str]]:
+    items = [
+        ("INTERNAL", "Internal", ""),
+        ("EXTERNAL", "External", ""),
+    ]
+    ifc = tool.Ifc.get()
+    if not ifc or ifc.schema != "IFC2X3":
+        items += [
+            ("EXTERNAL_EARTH", "External Earth", ""),
+            ("EXTERNAL_WATER", "External Water", ""),
+            ("EXTERNAL_FIRE", "External Fire", ""),
+        ]
+    items.append(("NOTDEFINED", "Not Defined", ""))
+    return items
+
+
 class BIMObjectBoundaryProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_space: PointerProperty(name="RelatingSpace", type=bpy.types.Object, poll=space_filter)
     related_building_element: PointerProperty(name="RelatedBuildingElement", type=bpy.types.Object, poll=element_filter)
     parent_boundary: PointerProperty(name="ParentBoundary", type=bpy.types.Object, poll=boundary_filter)
     corresponding_boundary: PointerProperty(name="CorrespondingBoundary", type=bpy.types.Object, poll=boundary_filter)
+    physical_or_virtual: EnumProperty(
+        name="PhysicalOrVirtualBoundary",
+        items=[
+            ("PHYSICAL", "Physical", ""),
+            ("VIRTUAL", "Virtual", ""),
+            ("NOTDEFINED", "Not Defined", ""),
+        ],
+        default="NOTDEFINED",
+    )
+    internal_or_external: EnumProperty(
+        name="InternalOrExternalBoundary",
+        items=get_internal_or_external_items,
+    )
 
     if TYPE_CHECKING:
         is_editing: bool
@@ -67,6 +95,8 @@ class BIMObjectBoundaryProperties(PropertyGroup):
         related_building_element: Union[bpy.types.Object, None]
         parent_boundary: Union[bpy.types.Object, None]
         corresponding_boundary: Union[bpy.types.Object, None]
+        physical_or_virtual: str
+        internal_or_external: str  # values depend on schema: IFC2X3 omits EXTERNAL_EARTH/WATER/FIRE
 
 
 class BIMBoundaryProperties(PropertyGroup):

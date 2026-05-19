@@ -24,7 +24,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcBoundingBox* inst) {
 	if (!settings_.get<settings::KeepBoundingBoxes>().get()) {
-		// @todo make sure it doesn't log.
+		failed_on_purpose_.insert(inst);
 		return nullptr;
 	}
 

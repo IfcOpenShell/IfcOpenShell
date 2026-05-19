@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
-from bpy.app.handlers import persistent
 import ifcopenshell.util.element
-import math
+from bpy.app.handlers import persistent
+
+from . import operator, prop, ui
 
 classes = (
     operator.AddCurvelikeItem,
@@ -30,6 +30,7 @@ classes = (
     operator.AddSweptAreaSolidItem,
     operator.AssignRepresentationLayer,
     operator.CopyRepresentation,
+    operator.DirectProfileEdit,
     operator.DisableEditingRepresentationItemShapeAspect,
     operator.DisableEditingRepresentationItemStyle,
     operator.DisableEditingRepresentationItems,
@@ -109,8 +110,9 @@ def block_scale(scene: bpy.types.Scene) -> None:
             if obj.type == "CAMERA":
                 camera = tool.Ifc.get_entity(obj)
                 if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
-                    obj.scale = (-1, -1, -1)
-                    obj.rotation_euler = (0.0, 0.0, math.radians(180))
+                    # Only update if scale isn't already (-1, -1, -1)
+                    if obj.scale != (-1, -1, -1):
+                        obj.scale = (-1, -1, -1)
             else:
                 if obj.scale != (1, 1, 1):
                     obj.scale = (1, 1, 1)
@@ -159,6 +161,8 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_mode_set_edit", "TAB", "PRESS")
         addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.direct_profile_edit", "SPACE", "PRESS")
+        addon_keymaps.append((km, kmi))
         # Deletion.
         kmi = km.keymap_items.new("bim.override_object_delete", "X", "PRESS")
         addon_keymaps.append((km, kmi))
@@ -176,6 +180,8 @@ def register():
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
         kmi.properties.should_save = True
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.direct_profile_edit", "SPACE", "PRESS")
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("wm.call_menu", "P", "PRESS")
         kmi.properties.name = ui.BIM_MT_hotkey_separate.bl_idname

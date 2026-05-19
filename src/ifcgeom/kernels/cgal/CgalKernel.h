@@ -47,6 +47,7 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/kernels/cgal/CgalConversionResult.h"
+#include "../../../ifcgeom/kernels/ifc_geomlibrary_api.h"
 
 #include <CGAL/Polygon_2.h>
 
@@ -55,20 +56,20 @@ if ( it != cache.T.end() ) { e = it->second; return true; }
 namespace ifcopenshell {
 	namespace geometry {
 		namespace utils {
-			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
-			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
-			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false);
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false);
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-			IFC_GEOM_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
-			IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
-			IFC_GEOM_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
 #endif
 		}
 
 		namespace kernels {
 
-			class IFC_GEOM_API CgalKernel : public AbstractKernel {
+			class IFC_GEOMLIBRARY_API CgalKernel : public AbstractKernel {
 			private:
 #ifndef IFOPSH_SIMPLE_KERNEL
 				enum boolean_operand_preprocess { 
@@ -93,6 +94,18 @@ namespace ifcopenshell {
 				CgalKernel(const Settings& settings)
 					: AbstractKernel("cgal", settings)
 				{}
+
+				virtual AbstractKernel* clone() const {
+					return new CgalKernel(settings());
+				}
+
+				virtual bool supports_boolean_operations() const {
+#ifndef IFOPSH_SIMPLE_KERNEL
+					return true;
+#else
+					return false;
+#endif
+				}
 
 				bool convert(const taxonomy::extrusion::ptr, cgal_shape_t&);
 				bool convert(const taxonomy::face::ptr, std::list<cgal_face_t>&);

@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Optional, Union
+
 import ifcopenshell
-import ifcopenshell.api.owner
 import ifcopenshell.api.control
+import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
 import ifcopenshell.guid
-import ifcopenshell.util.element
 import ifcopenshell.util.sequence
-import ifcopenshell.util.system
-from typing import Optional, Union
 
 
 def create_baseline(
@@ -79,7 +78,7 @@ class Usecase:
             assert isinstance(res, list)
             current, duplicate = res
             ifcopenshell.api.control.assign_control(
-                self.file, relating_control=baseline_work_schedule, related_object=duplicate[0]
+                self.file, relating_control=baseline_work_schedule, related_objects=[duplicate[0]]
             )
             for i, task in enumerate(current):
                 self.create_baseline_reference(task, duplicate[i])

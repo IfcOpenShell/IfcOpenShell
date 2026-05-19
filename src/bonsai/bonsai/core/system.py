@@ -17,11 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
-    import bpy
     import ifcopenshell
+
     import bonsai.tool as tool
 
 
@@ -36,8 +37,18 @@ def disable_system_editing_ui(system: type[tool.System]) -> None:
     system.disable_system_editing_ui()
 
 
-def add_system(ifc: type[tool.Ifc], system: type[tool.System], ifc_class: str) -> None:
-    ifc.run("system.add_system", ifc_class=ifc_class)
+def add_system(
+    ifc: type[tool.Ifc],
+    group: type[tool.Group],
+    system: type[tool.System],
+    ifc_class: str,
+    parent_system: Union[ifcopenshell.entity_instance, None],
+) -> None:
+    new_system = ifc.run("system.add_system", ifc_class=ifc_class)
+    if parent_system:
+        ifc.run("group.assign_group", products=[new_system], group=parent_system)
+        group.toggle_group(parent_system, "IfcSystem", "EXPAND")
+
     system.import_systems()
 
 
@@ -48,9 +59,15 @@ def edit_system(ifc: type[tool.Ifc], system_tool: type[tool.System], system: ifc
     system_tool.import_systems()
 
 
-def remove_system(ifc: type[tool.Ifc], system_tool: type[tool.System], system: ifcopenshell.entity_instance) -> None:
+def remove_system(
+    ifc: type[tool.Ifc],
+    group: type[tool.Group],
+    system_tool: type[tool.System],
+    system: ifcopenshell.entity_instance,
+) -> None:
     ifc.run("system.remove_system", system=system)
     system_tool.import_systems()
+    group.update_uilist_index("IfcSystem")
 
 
 def enable_editing_system(system_tool: type[tool.System], system: ifcopenshell.entity_instance) -> None:
@@ -107,9 +124,8 @@ def hide_ports(ifc: type[tool.Ifc], system: type[tool.System], element: ifcopens
 
 def add_port(ifc: type[tool.Ifc], system: type[tool.System], element: ifcopenshell.entity_instance) -> None:
     system.load_ports(element, system.get_ports(element))
-    obj = system.create_empty_at_cursor_with_element_orientation(element)
-    port = system.run_root_assign_class(obj=obj, ifc_class="IfcDistributionPort", should_add_representation=False)
-    ifc.run("system.assign_port", element=element, port=port)
+    port = system.create_port_at_cursor(element)
+    system.load_ports(element, [port])
 
 
 def remove_port(ifc: type[tool.Ifc], system: type[tool.System], port: ifcopenshell.entity_instance) -> None:
@@ -117,8 +133,13 @@ def remove_port(ifc: type[tool.Ifc], system: type[tool.System], port: ifcopenshe
     ifc.run("root.remove_product", product=port)
 
 
-def connect_port(ifc: type[tool.Ifc], port1: ifcopenshell.entity_instance, port2: ifcopenshell.entity_instance) -> None:
-    ifc.run("system.connect_port", port1=port1, port2=port2)
+def connect_port(
+    ifc: type[tool.Ifc],
+    port1: ifcopenshell.entity_instance,
+    port2: ifcopenshell.entity_instance,
+    direction: str = "NOTDEFINED",
+) -> None:
+    ifc.run("system.connect_port", port1=port1, port2=port2, direction=direction)
 
 
 def disconnect_port(ifc: type[tool.Ifc], port: ifcopenshell.entity_instance) -> None:

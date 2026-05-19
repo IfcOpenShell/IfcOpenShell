@@ -26,3 +26,9 @@ Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools]
 py-modules = ["ifccsv"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+lint.select = [
+  "F401",  # unused imports
+]

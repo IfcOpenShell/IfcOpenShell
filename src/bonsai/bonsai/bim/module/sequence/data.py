@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+from typing import Any
+
 import bpy
-import bonsai.tool as tool
-import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.date
 from ifcopenshell.util.doc import get_predefined_type_doc
-import json
-from typing import Any
+
+import bonsai.tool as tool
 
 
 def refresh():
@@ -32,6 +33,7 @@ def refresh():
     TaskICOMData.is_loaded = False
     WorkScheduleData.is_loaded = False
     AnimationColorSchemeData.is_loaded = False
+    StatusData.is_loaded = False
 
 
 class SequenceData:
@@ -242,6 +244,9 @@ class SequenceData:
             data["NestingIndex"] = None
             for rel in task.Nests or []:
                 data["NestingIndex"] = rel.RelatedObjects.index(task)
+            data["TotalInputs"] = len(tool.Sequence.get_task_inputs(task))
+            data["TotalOutputs"] = len(tool.Sequence.get_task_outputs(task))
+            data["TotalElements"] = data["TotalInputs"] + data["TotalOutputs"]
             cls.data["tasks"][task.id()] = data
 
     @classmethod
@@ -421,3 +426,32 @@ class AnimationColorSchemeData:
             except:
                 pass
         return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
+
+
+class StatusData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.is_loaded = True
+        cls.data = {
+            "statuses_with_elements": cls.statuses_with_elements(),
+            "active_element_status": cls.active_element_status(),
+        }
+
+    @classmethod
+    def statuses_with_elements(cls) -> set[str]:
+        statuses = ["No Status"]
+        statuses.extend(tool.Sequence.ELEMENT_STATUSES)
+        statuses_used: set[str] = set()
+        for status in statuses:
+            if tool.Sequence.get_elements_by_status(status):
+                statuses_used.add(status)
+        return statuses_used
+
+    @classmethod
+    def active_element_status(cls) -> set[str]:
+        if not (obj := bpy.context.active_object) or not (element := tool.Ifc.get_entity(obj)):
+            return set()
+        return tool.Sequence.get_element_status(element)

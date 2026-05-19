@@ -76,8 +76,8 @@ void aggregate_of_instance::push(const aggregate_of_instance::ptr& instance) {
         }
     }
 }
-unsigned int aggregate_of_instance::size() const { return (unsigned int)list_.size(); }
-void aggregate_of_instance::reserve(unsigned capacity) { list_.reserve((size_t)capacity); }
+size_t aggregate_of_instance::size() const { return list_.size(); }
+void aggregate_of_instance::reserve(size_t capacity) { list_.reserve(capacity); }
 aggregate_of_instance::it aggregate_of_instance::begin() { return list_.begin(); }
 aggregate_of_instance::it aggregate_of_instance::end() { return list_.end(); }
 IfcUtil::IfcBaseClass* aggregate_of_instance::operator[](int i) {
@@ -209,7 +209,7 @@ IfcUtil::IfcBaseEntity::IfcBaseEntity(IfcEntityInstanceData&& data)
 void IfcUtil::IfcBaseEntity::populate_derived() {
     for (auto it = declaration().as_entity()->derived().begin(); it != declaration().as_entity()->derived().end(); ++it) {
         if (*it) {
-            this->data().storage_.set(
+            set_attribute_value(
                 std::distance(declaration().as_entity()->derived().begin(), it),
                 Derived{}
             );
@@ -224,7 +224,7 @@ AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
     size_t idx = 0;
     for (; iter != attrs.end(); ++iter, ++idx) {
         if ((*iter)->name() == name) {
-            return data().get_attribute_value(idx);
+            return get_attribute_value(idx);
         }
     }
     throw IfcParse::IfcException(name + " not found on " + declaration().name());

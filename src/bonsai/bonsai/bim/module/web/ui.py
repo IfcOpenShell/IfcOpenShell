@@ -17,6 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
+
+import bonsai.tool as tool
 from bonsai.bim.module.web.data import WebData
 
 
@@ -34,10 +36,10 @@ class BIM_PT_webui(Panel):
         if not WebData.is_loaded:
             WebData.load()
 
+        assert self.layout
         layout = self.layout
 
-        scene = context.scene
-        props = scene.WebProperties
+        props = tool.Web.get_web_props()
 
         row = layout.row()
         row.prop(props, "webserver_port", text="Websocket server Port")

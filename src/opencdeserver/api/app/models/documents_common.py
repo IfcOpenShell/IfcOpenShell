@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, constr
 from typing import Optional
 
+from pydantic import BaseModel, Field, constr
 
 # This file contains models used in both requests and responses during upload and download of documents.
 

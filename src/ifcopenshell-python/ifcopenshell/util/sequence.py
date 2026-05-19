@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+from collections.abc import Generator
+from functools import cache
+from math import floor
+from typing import Literal, Optional, Union
+
 import ifcopenshell.util.date
 import ifcopenshell.util.element
-from math import floor
-from functools import cache
-from typing import Union, Literal, Optional
-from collections.abc import Generator
-
 
 DURATION_TYPE = Literal["ELAPSEDTIME", "WORKTIME", "NOTDEFINED"]
 RECURRENCE_TYPE = Literal[
@@ -329,61 +329,28 @@ def guess_date_range(work_schedule: ifcopenshell.entity_instance):
     return earliest, latest
 
 
-def get_direct_task_outputs(task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    return [rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")]
+def get_task_outputs(
+    task: ifcopenshell.entity_instance, is_recursive: bool = False
+) -> set[ifcopenshell.entity_instance]:
+    if is_recursive:
+        return {o for subtask in [task] + list(get_all_nested_tasks(task)) for o in get_task_outputs(subtask)}
+    return {rel.RelatingProduct for rel in task.HasAssignments if rel.is_a("IfcRelAssignsToProduct")}
 
 
-def get_task_outputs(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
-    if not is_deep:
-        return get_direct_task_outputs(task)
-    else:
-        return [output for nested_task in get_all_nested_tasks(task) for output in get_direct_task_outputs(nested_task)]
+def get_task_inputs(
+    task: ifcopenshell.entity_instance, is_recursive: bool = False
+) -> set[ifcopenshell.entity_instance]:
+    if is_recursive:
+        return {o for subtask in [task] + list(get_all_nested_tasks(task)) for o in get_task_inputs(subtask)}
+    return {o for rel in task.OperatesOn for o in rel.RelatedObjects if o.is_a("IfcProduct")}
 
 
-def get_task_inputs(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
-    if not is_deep:
-        return [
-            object
-            for rel in task.OperatesOn
-            if rel.is_a("IfcRelAssignsToProcess")
-            for object in rel.RelatedObjects
-            if object.is_a("IfcProduct")
-        ]
-    else:
-        return [
-            output
-            for nested_task in get_all_nested_tasks(task)
-            for output in [
-                object
-                for rel in nested_task.OperatesOn
-                if rel.is_a("IfcRelAssignsToProcess")
-                for object in rel.RelatedObjects
-                if object.is_a("IfcProduct")
-            ]
-        ]
-
-
-def get_task_resources(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
-    if not is_deep:
-        return [
-            object
-            for rel in task.OperatesOn
-            if rel.is_a("IfcRelAssignsToProcess")
-            for object in rel.RelatedObjects
-            if object.is_a("IfcResource")
-        ]
-    else:
-        return [
-            resource
-            for nested_task in get_all_nested_tasks(task)
-            for resource in [
-                object
-                for rel in nested_task.OperatesOn
-                if rel.is_a("IfcRelAssignsToProcess")
-                for object in rel.RelatedObjects
-                if object.is_a("IfcResource")
-            ]
-        ]
+def get_task_resources(
+    task: ifcopenshell.entity_instance, is_recursive: bool = False
+) -> set[ifcopenshell.entity_instance]:
+    if is_recursive:
+        return {r for subtask in [task] + list(get_all_nested_tasks(task)) for r in get_task_resources(subtask)}
+    return {o for rel in task.OperatesOn for o in rel.RelatedObjects if o.is_a("IfcResource")}
 
 
 def has_task_outputs(task: ifcopenshell.entity_instance) -> bool:
@@ -400,14 +367,12 @@ def get_tasks_for_product(
     """
     Get all tasks assigned to or referenced by the given product.
 
-    Args:
-        product: An object that is assigned tasks or references tasks.
-        schedule: An optional string representing the schedule name to filter tasks by.
+    :param product: An object that is assigned tasks or references tasks.
+    :param schedule: An optional string representing the schedule name to filter tasks by.
 
-    Returns:
-        A tuple of two lists:
-        - The first list contains all tasks assigned to the product.
-        - The second list contains all tasks referenced by the product that are part of the given schedule.
+    :return: A tuple of two lists:
+    - The first list contains all tasks assigned to the product.
+    - The second list contains all tasks referenced by the product that are part of the given schedule.
     """
     inputs = [
         assignement.RelatingProcess

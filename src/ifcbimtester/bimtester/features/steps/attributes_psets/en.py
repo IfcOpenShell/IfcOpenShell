@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
-from behave import step
-from behave import use_step_matcher
-
+from behave import step, use_step_matcher
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.lang import _
@@ -48,6 +46,7 @@ def step_impl(context, ifc_class, property_path):
 )
 def step_impl(context, ifc_class, property_path, pattern):
     import re
+
     from ifcopenshell.util.element import get_psets
 
     pset_name, property_name = property_path.split(".")

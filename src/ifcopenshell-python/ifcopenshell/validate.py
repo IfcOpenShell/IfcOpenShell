@@ -25,45 +25,42 @@ Can be used to run validation on IFC file from the command line:
 
     python -m ifcopenshell.validate /path/to/model.ifc --rules
 
-```
-$ python -m ifcopenshell.validate -h
-usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
+.. code-block:: console
 
-positional arguments:
-  files       The IFC file to validate.
+    python -m ifcopenshell.validate -h
 
-options:
-  -h, --help  show this help message and exit
-  --rules     Run express rules.
-  --json      Output in JSON format.
-  --fields    Output more detailed information about failed entities (only with --json).
-  --spf       Output entities in SPF format (only with --json).
-```
+    usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
+
+    positional arguments:
+      files       The IFC file to validate.
+
+    options:
+      -h, --help  show this help message and exit
+      --rules     Run express rules.
+      --json      Output in JSON format.
+      --fields    Output more detailed information about failed entities (only with --json).
+      --spf       Output entities in SPF format (only with --json).
 
 """
 
 from __future__ import annotations
+
+import argparse
+import functools
+import itertools
+import json
 import os
 import sys
-import json
-import functools
 import types
-import argparse
-
 from collections import namedtuple
-from typing import Union, Any, Optional, TYPE_CHECKING
 from collections.abc import Iterator
-from logging import Logger, Handler
-
-if sys.version_info >= (3, 10):
-    from types import EllipsisType
-else:
-    EllipsisType = type(...)
+from logging import Handler, Logger
+from types import EllipsisType
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import ifcopenshell
-import ifcopenshell.ifcopenshell_wrapper
-import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
+import ifcopenshell.ifcopenshell_wrapper
 
 if TYPE_CHECKING:
     import ifcopenshell.simple_spf
@@ -119,7 +116,7 @@ simple_type_python_mapping = {
 
 
 def annotate_inst_attr_pos(
-    inst: Union[ifcopenshell.entity_instance, W.HeaderEntity],
+    inst: ifcopenshell.entity_instance,
     pos: Union[int, tuple[int, ...]],
     entity_str: str = "",
 ) -> str:
@@ -311,24 +308,31 @@ def assert_valid(
         return True
 
 
-def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Union[Logger, json_logger]) -> None:
-    import re
+def log_internal_cpp_errors(
+    f: Optional[ifcopenshell.file], filename: str, logger: Union[Logger, json_logger], log_content: Optional[str] = None
+) -> None:
     import bisect
+    import re
 
     chr_offset_re = re.compile(r"at offset (\d+)\s*")
     for_instance_re = re.compile(r"\s*for instance #(\d+)\s*")
+    for_header_ent_re = re.compile(r"\s*for header entity (\w+)")
 
-    log = ifcopenshell.get_log()
-    msgs = list(map(json.loads, filter(None, log.split("\n"))))
+    if log_content is None:
+        log_content = ifcopenshell.get_log()
+    msgs = list(map(json.loads, filter(None, log_content.split("\n"))))
     chr_offsets = [chr_offset_re.findall(m["message"]) for m in msgs]
-    if chr_offsets:
+    instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
+    header_messages = [for_header_ent_re.findall(m["message"]) for m in msgs]
+
+    if any(chr_offsets) or (any(instance_messages) and f is None):
         # The file is opened in binary mode, in order
         # to correspond with the offsets reported by
         # IfcOpenShell C++
         lines = list(open(filename, "rb"))
         lengths = list(map(len, lines))
         cumsum = 0
-        cs = [cumsum := cumsum + x for x in lengths]
+        cs = list(itertools.accumulate(lengths))
 
         for offsets, msg in zip(chr_offsets, msgs):
             if offsets:
@@ -342,15 +346,25 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Union[L
                 else:
                     logger.error("For instance:\n    %s\n%s", line, m)
 
-    instance_messages = [for_instance_re.findall(m["message"]) for m in msgs]
-    if instance_messages:
+    if any(instance_messages):
         for instid, msg in zip(instance_messages, msgs):
             if instid:
                 m = for_instance_re.sub("", msg["message"])
-                try:
-                    inst = f[int(instid[0])]
-                except:
-                    inst = None
+                if f is not None:
+                    try:
+                        inst = f[int(instid[0])]
+                    except:
+                        inst = None
+                else:
+                    inst = next(
+                        (
+                            l.decode("ascii", errors="ignore").strip()
+                            for l in lines
+                            if l.strip().startswith(f"#{instid[0]}".encode("ascii"))
+                            and re.sub(r"\s+".encode("ascii"), b"", l).startswith(f"#{instid[0]}=".encode("ascii"))
+                        ),
+                        None,
+                    )
                 if isinstance(logger, json_logger):
                     logger.set_state("instance", inst)
                     logger.set_state("attribute", None)
@@ -359,6 +373,12 @@ def log_internal_cpp_errors(f: ifcopenshell.file, filename: str, logger: Union[L
                     logger.error("For instance:\n    %s\n%s", inst, m)
                 else:
                     logger.error(m)
+
+    if any(header_messages):
+        for hent, msg in zip(header_messages, msgs):
+            if hent:
+                m = msg["message"]
+                logger.error(m)
 
 
 entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute, ...]]] = {}
@@ -427,7 +447,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
 
         filename = f
         try:
-            f = ifcopenshell.open(f)
+            f = ifcopenshell.open(f, readonly=True)
         except ifcopenshell.SchemaError as e:
             current_dir_files = {fn.lower(): fn for fn in os.listdir(".")}
             schema_name = str(e).split(" ")[-1].lower()
@@ -616,9 +636,9 @@ def validate_guid(guid: str) -> Union[str, None]:
 def to_string_header_entity(header_entity):
     """Recreate IFC header string representation, like FILE_NAME(...)"""
 
-    # Prefer native .toString() if available (native IfcOpenShell wrapper)
-    if isinstance(header_entity, W.HeaderEntity):
-        return header_entity.toString()
+    # Prefer native .to_string() if available (native IfcOpenShell wrapper)
+    if isinstance(header_entity, ifcopenshell.entity_instance):
+        return header_entity.to_string(True)
     elif hasattr(header_entity, "_fields"):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
@@ -629,12 +649,19 @@ def to_string_header_entity(header_entity):
 def validate_ifc_header(
     f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Union[Logger, json_logger]
 ) -> None:
-    header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
+    # @todo now that we have the header schema compiled into ifcopenshell, and the
+    # header instances being conventional entity instances, this specific logic should
+    # not be necessary anymore.
+    header: Union[ifcopenshell.entity_instance, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
     def log_error(
-        header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str
+        header_entity: Union[ifcopenshell.entity_instance, tuple],
+        name: str,
+        index: int,
+        expected_type: str,
+        provided_type: str,
     ) -> None:
         logger.error(
             (
@@ -649,7 +676,9 @@ def validate_ifc_header(
             provided_type,
         )
 
-    def validate_attribute(header_entity: W.HeaderEntity, name: str, index: int, *, aggregate: bool = False) -> None:
+    def validate_attribute(
+        header_entity: ifcopenshell.entity_instance, name: str, index: int, *, aggregate: bool = False
+    ) -> None:
         try:
             value = getattr(header_entity, name)
         except RuntimeError as _:
@@ -676,10 +705,10 @@ def validate_ifc_header(
             log_error(header_entity, name, index, STRING_TYPE, type(value).__name__)
 
     # Ignore header.file_schema as file won't load to IfcOpenShell with invalid file_schema.
-    file_description: W.FileDescription = header.file_description
+    file_description = header.file_description
     validate_attribute(file_description, "description", 0, aggregate=True)
     validate_attribute(file_description, "implementation_level", 1)
-    file_name: W.FileName = header.file_name
+    file_name = header.file_name
     validate_attribute(file_name, "name", 0)
     validate_attribute(file_name, "time_stamp", 1)
     validate_attribute(file_name, "author", 2, aggregate=True)
@@ -746,8 +775,8 @@ class LogDetectionHandler(Handler):
 
 
 if __name__ == "__main__":
-    import sys
     import logging
+    import sys
 
     def handle_exception(exc_type, exc_value, exc_traceback):
         import traceback
@@ -765,6 +794,12 @@ if __name__ == "__main__":
     parser.add_argument("--rules", action="store_true", help="Run express rules.")
     parser.add_argument("--json", action="store_true", help="Output in JSON format.")
     parser.add_argument(
+        "--recursion-limit",
+        type=int,
+        default=-1,
+        help="Override sys.getrecursionlimit to process express rules on deeply nested structures (e.g 10000)",
+    )
+    parser.add_argument(
         "--fields",
         action="store_true",
         help="Output more detailed information about failed entities (only with --json).",
@@ -774,6 +809,9 @@ if __name__ == "__main__":
 
     filenames: list[str] = args.files
     some_file_is_invalid = False
+
+    if args.recursion_limit > 0:
+        sys.setrecursionlimit(args.recursion_limit)
 
     for fn in filenames:
         handler = None

@@ -17,26 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import re
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import bpy
 import ifcopenshell.api.geometry
 import ifcopenshell.api.system
 import ifcopenshell.util.element
 import ifcopenshell.util.system
+from mathutils import Matrix, Vector
+
 import bonsai.bim.helper
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
-import re
-from math import pi, cos, sin
-from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from enum import Enum
-from typing import TYPE_CHECKING, Optional, Any, Union
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):
@@ -47,6 +49,16 @@ class System(bonsai.core.tool.System):
     @classmethod
     def get_zone_props(cls) -> BIMZoneProperties:
         return bpy.context.scene.BIMZoneProperties
+
+    SYSTEM_ICONS = {
+        "IfcSystem": "EXTERNAL_DRIVE",
+        "IfcDistributionSystem": "NETWORK_DRIVE",
+        "IfcDistributionCircuit": "DRIVER",
+        "IfcBuildingSystem": "MOD_BUILD",
+        "IfcBuiltSystem": "MOD_BUILD",
+        "IfcZone": "CUBE",
+    }
+    SYSTEM_ICONS["IfcElectricalCircuit"] = SYSTEM_ICONS["IfcDistributionCircuit"]
 
     @classmethod
     def add_ports(
@@ -90,12 +102,33 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def create_empty_at_cursor_with_element_orientation(cls, element: ifcopenshell.entity_instance) -> bpy.types.Object:
+        # Is this necessary anymore?
         element_obj = tool.Ifc.get_object(element)
         obj = bpy.data.objects.new("Port", None)
         obj.matrix_world = element_obj.matrix_world
         obj.matrix_world.translation = bpy.context.scene.cursor.matrix.translation
         bpy.context.scene.collection.objects.link(obj)
         return obj
+
+    @classmethod
+    def create_port_at_cursor(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        element_obj = tool.Ifc.get_object(element)
+
+        port = ifcopenshell.api.system.add_port(ifc_file, element=element)
+        port.FlowDirection = "NOTDEFINED"
+        port.PredefinedType = "USERDEFINED"
+
+        systems = ifcopenshell.util.system.get_element_systems(element)
+        system = systems[0] if systems else None
+        port.SystemType = getattr(system, "PredefinedType", None) or "USERDEFINED"
+
+        matrix = element_obj.matrix_world.copy()
+        matrix.translation = bpy.context.scene.cursor.matrix.translation
+
+        ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=port, matrix=matrix, is_si=True)
+
+        return port
 
     @classmethod
     def delete_element_objects(cls, elements: list[ifcopenshell.entity_instance]) -> None:
@@ -161,15 +194,7 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def import_systems(cls) -> None:
-        props = cls.get_system_props()
-        props.systems.clear()
-        for system in cls.get_systems():
-            if system.is_a() in ["IfcStructuralAnalysisModel"]:
-                continue
-            new = props.systems.add()
-            new.ifc_definition_id = system.id()
-            new["name"] = system.Name or "Unnamed"
-            new.ifc_class = system.is_a()
+        tool.Group.import_groups("IfcSystem")
 
     @classmethod
     def load_ports(cls, element: ifcopenshell.entity_instance, ports: list[ifcopenshell.entity_instance]) -> None:
@@ -190,11 +215,22 @@ class System(bonsai.core.tool.System):
         ifc_importer.process_context_filter()
         ifc_importer.create_generic_elements(set(ports_to_create))
 
-        container = ifcopenshell.util.element.get_container(element)
-        if container:
-            collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
-            ifc_importer.collections[container.GlobalId] = collection
-        ifc_importer.place_objects_in_collections()
+        if element.is_a("IfcTypeProduct"):
+            target_collection = None
+            for collection in obj.users_collection:
+                target_collection = collection
+                break
+
+            if target_collection:
+                for port_obj in ifc_importer.added_data.values():
+                    if isinstance(port_obj, bpy.types.Object):
+                        tool.Collector.link_collection_object_safe(target_collection, port_obj)
+        else:
+            container = ifcopenshell.util.element.get_container(element)
+            if container:
+                collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
+                ifc_importer.collections[container.GlobalId] = collection
+            ifc_importer.place_objects_in_collections()
 
         for port_obj in ifc_importer.added_data.values():
             assert isinstance(port_obj, bpy.types.Object)
@@ -438,10 +474,8 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
-        from bonsai.bim.module.system.ui import SYSTEM_ICONS
-
         row = layout.row(align=True)
-        row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+        row.label(text=system_name, icon=cls.SYSTEM_ICONS[system_class])
         op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
         op.system = system_id
         op = row.operator("bim.unassign_system", text="", icon="X")

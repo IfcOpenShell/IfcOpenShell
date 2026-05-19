@@ -34,6 +34,9 @@
         }
         body { font-family: 'Arial', sans-serif; padding: 10px 40px; }
         section { padding: 15px; border-radius: 5px; border: 1px solid #eee; margin-bottom: 15px; }
+        {{#hide_skipped}}
+        .specification.is-skipped { display: none; }
+        {{/hide_skipped}}
         section>h2 { margin-top: 0px; }
         span.time { color: #999; font-style: italic; float: right; }
         span.step-time { float: right; color: #555; font-size: 0.8em; font-style: italic; }
@@ -96,7 +99,7 @@
     </p>
     <hr>
     {{#specifications}}
-    <section style="clear: both; overflow: hidden;">
+    <section class="specification{{#is_skipped}} is-skipped{{/is_skipped}}" style="clear: both; overflow: hidden;">
         <div class="info">
             <h2>{{name}}</h2>
             {{#description}}
@@ -107,16 +110,26 @@
             {{/instructions}}
 
             <div class="container">
-                <div class="{{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}} percent" style="width: {{^total_checks}}100{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}{{/total_checks}}%;">{{^total_checks}}Skipped{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}%{{/total_checks}}</div>
+                <div class="
+                {{#is_skipped}}skipped{{/is_skipped}}
+                {{^is_skipped}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/is_skipped}}
+                percent" style="width: {{^total_checks}}100{{/total_checks}}{{#total_checks}}{{percent_checks_pass}}{{/total_checks}}%;">{{#is_skipped}}Skipped{{/is_skipped}}{{^is_skipped}}{{percent_checks_pass}}%{{/is_skipped}}</div>
             </div>
             <p>
-                <span class="item {{^total_checks}}skipped{{/total_checks}}{{#total_checks}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/total_checks}}">{{^total_checks}}Skipped{{/total_checks}}{{#total_checks}}{{#status}}Pass{{/status}}{{^status}}Fail{{/status}}{{/total_checks}}</span>
+                <span class="item {{#is_skipped}}skipped{{/is_skipped}}{{^is_skipped}}{{#status}}pass{{/status}}{{^status}}fail{{/status}}{{/is_skipped}}">{{#is_skipped}}Optional: Skipped{{/is_skipped}}{{^is_skipped}}{{#status}}{{cardinality}}: Pass{{/status}}{{^status}}{{cardinality}}: Fail{{/status}}{{/is_skipped}}</span>
+                {{#is_prohibited}}
+                <span class="item">
+                    Elements matched: <strong>{{total_applicable}}</strong>
+                </span>
+                {{/is_prohibited}}
+                {{^is_prohibited}}
                 <span class="item">
                     Checks passed: <strong>{{total_checks_pass}}</strong> / <strong>{{total_checks}}</strong>
                 </span>
                 <span class="item">
                     Elements passed: <strong>{{total_applicable_pass}}</strong> / <strong>{{total_applicable}}</strong>
                 </span>
+                {{/is_prohibited}}
             </p>
             {{^is_ifc_version}}
             <p>
@@ -135,6 +148,7 @@
                 <li>{{.}}</li>
                 {{/applicability}}
             </ul>
+            {{#has_requirements}}
             <p>
                 <strong>Requirements</strong>
             </p>
@@ -145,6 +159,14 @@
                         <summary>
                             {{description}}
                         </summary>
+                        {{#instructions}}
+                        <div class="instructions">
+                            <p>
+                                <strong>Instructions</strong>
+                            </p>
+                            {{instructions}}
+                        </div>
+                        {{/instructions}}
                         {{#total_ckecks}}
                         <table class="skipped">
                             <thead>
@@ -229,6 +251,45 @@
                 </li>
                 {{/requirements}}
             </ol>
+            {{/has_requirements}}
+            {{#is_prohibited}}
+            {{#total_applicable}}
+            <table class="fail">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>PredefinedType</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>GlobalId</th>
+                        <th>Tag</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{#applicable_entities}}
+                    <tr>
+                        <td>{{class}}</td>
+                        <td>{{predefined_type}}</td>
+                        <td>{{name}}</td>
+                        <td>{{description}}</td>
+                        <td>{{global_id}}</td>
+                        <td>{{tag}}</td>
+                    </tr>
+                    {{#extra_of_type}}
+                    <tr>
+                        <td colspan="7">... {{extra_of_type}} more of the same element type ({{type_name}} with Tag {{type_tag}} and GlobalId {{type_global_id}}) not shown ...</td>
+                    </tr>
+                    {{/extra_of_type}}
+                    {{/applicable_entities}}
+                    {{#has_omitted_applicable}}
+                    <tr>
+                        <td colspan="7"> ... {{total_omitted_applicable}} more failing elements not shown out of {{total_applicable}} total ...</td>
+                    </tr>
+                    {{/has_omitted_applicable}}
+                </tbody>
+            </table>
+            {{/total_applicable}}
+            {{/is_prohibited}}
         </div>
     </section>
     {{/specifications}}

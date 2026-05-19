@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.root
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
+import test.bootstrap
 
 
 class TestConnectPath(test.bootstrap.IFC4):
@@ -32,6 +32,18 @@ class TestConnectPath(test.bootstrap.IFC4):
         assert rel.RelatingConnectionType == "ATSTART"
         assert rel.RelatedConnectionType == "ATEND"
         assert rel.Description == "MITRE"
+
+    def test_storing_connection_geometry(self):
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        geometry = self.file.create_entity("IfcConnectionPointGeometry")
+        rel = ifcopenshell.api.geometry.connect_path(
+            self.file,
+            relating_element=wall1,
+            related_element=wall2,
+            connection_geometry=geometry,
+        )
+        assert rel.ConnectionGeometry == geometry
 
     def test_doing_nothing_if_the_element_is_already_connected(self):
         wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

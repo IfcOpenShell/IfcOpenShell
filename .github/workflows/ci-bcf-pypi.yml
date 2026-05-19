@@ -19,8 +19,8 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v2 # https://github.com/actions/checkout
-      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+      - uses: actions/checkout@v6 # https://github.com/actions/checkout
+      - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
         with:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
@@ -34,7 +34,7 @@ jobs:
           cd src/bcf &&
           make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
-        uses: ortega2247/pypi-upload-action@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}

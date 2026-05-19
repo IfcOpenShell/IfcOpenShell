@@ -16,13 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Union
+
 import numpy as np
 import numpy.typing as npt
+
 import ifcopenshell.api.owner
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from typing import Optional, Union, Any
+import ifcopenshell.util.unit
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 NPArrayOfFloats = npt.NDArray[np.float64]
 
@@ -49,10 +52,11 @@ def edit_object_placement(
     :param is_si: If True, the matrix is given in SI units. If false, in
         project units.
     :param should_transform_children: A child element is a nested element,
-        opening, filling, etc. If true, child elements will move along with the
-        parent. If false, child elements will stay where they are. Because most
-        placements in IFC are relative, this means that if a child moves, we
-        actually don't change their placement.
+        opening, filling, etc. If True, child elements move along with the
+        parent; pass True when moving an assembly (roof, furniture group, etc.)
+        and you want all children to follow. If False (default), child elements
+        keep their current world positions; their local placements are rewritten
+        to compensate for the parent move.
     :return: The new or updated IfcLocalPlacement entity
     """
     usecase = Usecase()
@@ -74,6 +78,7 @@ class Usecase:
         if not hasattr(self.settings["product"], "ObjectPlacement"):
             return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        self.builder = ShapeBuilder(self.file)
 
         if not self.settings["is_si"]:
             self.convert_matrix_to_si(self.settings["matrix"])
@@ -183,24 +188,11 @@ class Usecase:
         o = np.array((m[0][3], m[1][3], m[2][3]))
         object_matrix = ifcopenshell.util.placement.a2p(o, z, x)
         relative_placement_matrix = np.linalg.inv(relating_object_matrix) @ object_matrix
-        return self.create_ifc_axis_2_placement_3d(
-            relative_placement_matrix[:, 3][0:3],
+        return self.builder.create_axis2_placement_3d(
+            self.convert_si_to_unit(relative_placement_matrix[:, 3][0:3]),
             relative_placement_matrix[:, 2][0:3],
             relative_placement_matrix[:, 0][0:3],
         )
-
-    def create_ifc_axis_2_placement_3d(
-        self, point: NPArrayOfFloats, up: NPArrayOfFloats, forward: NPArrayOfFloats
-    ) -> ifcopenshell.entity_instance:
-        return self.file.createIfcAxis2Placement3D(
-            self.create_cartesian_point(point),
-            self.file.createIfcDirection(up.tolist()),
-            self.file.createIfcDirection(forward.tolist()),
-        )
-
-    def create_cartesian_point(self, co: NPArrayOfFloats) -> ifcopenshell.entity_instance:
-        co = self.convert_si_to_unit(co)
-        return self.file.createIfcCartesianPoint(co.tolist())
 
     def convert_si_to_unit(self, co: NPArrayOfFloats) -> NPArrayOfFloats:
         return co / self.unit_scale

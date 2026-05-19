@@ -37,19 +37,21 @@ if sys.platform not in available_platforms:
 REPO_PATH = r""
 
 # BLENDER_PATH: Path to Blender's configuration folder.
-# Usually don't need to change, just ensure Blender version matches.
+# User will be prompted for the Blender version.
+BLENDER_VERSION = input("Enter your Blender version (e.g., 4.5, 4.2, 3.6): ").strip()
+
 if sys.platform == "win32":
-    BLENDER_PATH = Path.home() / "AppData/Roaming/Blender Foundation/Blender/4.5"
+    BLENDER_PATH = Path.home() / f"AppData/Roaming/Blender Foundation/Blender/{BLENDER_VERSION}"
 elif sys.platform == "darwin":
-    BLENDER_PATH = Path.home() / "Library/Application Support/Blender/4.5"
+    BLENDER_PATH = Path.home() / f"Library/Application Support/Blender/{BLENDER_VERSION}"
 elif sys.platform == "linux":
-    BLENDER_PATH = Path.home() / ".config/blender/4.5"
+    BLENDER_PATH = Path.home() / f".config/blender/{BLENDER_VERSION}"
 else:
-    assert False
+    raise RuntimeError(f"Unsupported platform: {sys.platform}")
 
 
 BONSAI_PATH_CANDIDATES = (
-    # Installed from Bonsai Unstalble Repo.
+    # Installed from Bonsai Unstable Repo.
     BLENDER_PATH / r"extensions/raw_githubusercontent_com/bonsai",
     # Installed via offline installation.
     BLENDER_PATH / r"extensions/user_default/bonsai",
@@ -76,7 +78,8 @@ BONSAI_PATH = find_bonsai_path()
 # ---------------------------
 
 # Never changed by user.
-PACKAGE_PATH = BLENDER_PATH / r"extensions/.local/lib/python3.11/site-packages"
+PYTHON_VERSION = "3.13" if BLENDER_VERSION == "5.1" else "3.11"
+PACKAGE_PATH = BLENDER_PATH / rf"extensions/.local/lib/python{PYTHON_VERSION}/site-packages"
 
 
 def main() -> None:
@@ -191,7 +194,7 @@ def main() -> None:
         print(f"Downloading {url} -> {filepath}")
         urllib.request.urlretrieve(url, filepath)
 
-    input("Dev environment is all set. 🎉🎉\nPress Enter to continue..." "")
+    input("Dev environment is all set!! \nPress Enter to continue...")
 
 
 if __name__ == "__main__":

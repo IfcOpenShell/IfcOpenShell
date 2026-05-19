@@ -16,28 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
-import bonsai.bim.schema
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
-import ifcopenshell.util.element
-import bonsai.tool as tool
-from bonsai.bim.prop import Attribute, StrProperty
-from bonsai.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
-from bonsai.bim.module.material.data import ObjectMaterialData
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
-from typing import Union, Literal, TYPE_CHECKING, get_args, Literal
+from bpy.types import PropertyGroup
+
+import bonsai.bim.schema
+import bonsai.tool as tool
+from bonsai.bim.module.material.data import ObjectMaterialData
+from bonsai.bim.module.pset.data import (
+    AddEditCustomPropertiesData,
+    MaterialPsetsData,
+    ObjectPsetsData,
+    PsetsGeneralData,
+)
+from bonsai.bim.prop import Attribute
 
 psetnames = {}
 qtonames = {}
@@ -84,22 +89,15 @@ def get_pset_name(self: "PsetProperties", context: bpy.types.Context) -> tool.Bl
     elif prop_type == "ZonePsetProperties":
         results = get_zone_pset_names(self, context)
 
+    if not PsetsGeneralData.is_loaded:
+        PsetsGeneralData.load()
+
     items: list[tool.Blender.BLENDER_ENUM_ITEM]
     items = [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template.")]
-    bprops = tool.Bsdd.get_bsdd_props()
-    dictionaries = [(d.uri, f"bSDD: {d.name}", "") for d in bprops.dictionaries if d.is_active]
-    if dictionaries:
-        items.extend(
-            [
-                None,
-                (
-                    "BBIM_BSDD",
-                    "All Data Dictionaries",
-                    "Manage properties from all active buildingSMART Data Dictionaries",
-                ),
-            ]
-        )
-        items.extend(dictionaries)
+    bsdd_items = PsetsGeneralData.data["bsdd_enum_items"]
+    if bsdd_items:
+        items.append(None)
+        items.extend(bsdd_items)
     items.append(None)
     items.extend(results)
     return items
@@ -370,9 +368,9 @@ class GlobalPsetProperties(PropertyGroup):
     qto_filter: StringProperty(name="Qto Filter", options={"TEXTEDIT_UPDATE"})
 
     # Bulk operations.
-    psets_to_delete: CollectionProperty(type=DeletePsetEntry)  # pyright: ignore[reportRedeclaration]
-    psets_to_rename: CollectionProperty(type=RenamePropertyEntry)  # pyright: ignore[reportRedeclaration]
-    psets_to_add_edit: CollectionProperty(type=AddEditPropertyEntry)  # pyright: ignore[reportRedeclaration]
+    psets_to_delete: CollectionProperty(type=DeletePsetEntry)
+    psets_to_rename: CollectionProperty(type=RenamePropertyEntry)
+    psets_to_add_edit: CollectionProperty(type=AddEditPropertyEntry)
 
     if TYPE_CHECKING:
         pset_filter: str

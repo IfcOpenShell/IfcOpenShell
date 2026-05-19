@@ -22,9 +22,9 @@
 namespace po = boost::program_options;
 
 namespace std {
-	istream& operator>>(istream& in, set<int>& ints);
-	istream& operator>>(istream& in, set<string>& ints);
-	istream& operator>>(istream& in, vector<double>& vs);
+	IFC_GEOM_API istream& operator>>(istream& in, set<int>& ints);
+	IFC_GEOM_API istream& operator>>(istream& in, set<string>& ints);
+	IFC_GEOM_API istream& operator>>(istream& in, vector<double>& vs);
 }
 #endif
 
@@ -84,8 +84,9 @@ namespace ifcopenshell {
 						}
 						if constexpr (HasDefault<Derived>()) {
 							return Derived::defaultvalue;
+						} else {
+						    throw std::runtime_error("Setting not set");
 						}
-						throw std::runtime_error("Setting not set");
 					}
 				}
 
@@ -249,7 +250,7 @@ namespace ifcopenshell {
 				CURVES_SURFACES_AND_SOLIDS
 			};
 
-			std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
 
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
 				static constexpr const char* const name = "dimensionality";
@@ -266,7 +267,7 @@ namespace ifcopenshell {
 				SERIALIZED
 			};
 
-			std::istream& operator>>(std::istream& in, IteratorOutputOptions& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, IteratorOutputOptions& ioo);
 
 			struct IteratorOutput : public SettingBase<IteratorOutput, IteratorOutputOptions> {
 				static constexpr const char* const name = "iterator-output";
@@ -364,6 +365,12 @@ namespace ifcopenshell {
 				static constexpr int defaultvalue = 16;
 			};
 
+			struct CgalSmoothAngleDegrees : public SettingBase<CgalSmoothAngleDegrees, double> {
+				static constexpr const char* const name = "cgal-smooth-angle-degrees";
+				static constexpr const char* const description = "Angle in degrees under which adjacent facets will have averaged vertex normals in CGAL output. NB irrespective of original IFC geometry types. Defaults to -1 to disable smoothing.";
+				static constexpr double defaultvalue = -1.;
+			};
+
 			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
 				static constexpr const char* const name = "keep-bounding-boxes";
 				static constexpr const char* const description =
@@ -389,7 +396,7 @@ namespace ifcopenshell {
 				MAXSTEPSIZE,
 				MINSTEPS };
 
-			std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
 
          struct FunctionStepType : public SettingBase<FunctionStepType, FunctionStepMethod> {
                static constexpr const char* const name = "function-step-type";
@@ -419,7 +426,7 @@ namespace ifcopenshell {
 				POLYHEDRON_WITH_HOLES
 			};
 
-			std::istream& operator>>(std::istream& in, TriangulationMethod& ioo);
+			IFC_GEOM_API std::istream& operator>>(std::istream& in, TriangulationMethod& ioo);
 
 			struct TriangulationType : public SettingBase<TriangulationType, TriangulationMethod> {
 				static constexpr const char* const name = "triangulation-type";
@@ -444,6 +451,12 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Experimental as not all topology hash functions fully implemented";
 				static constexpr bool defaultvalue = false;
 			};
+
+			struct MakeVolume : public SettingBase<MakeVolume, bool> {
+                static constexpr const char* const name = "make-volume";
+                static constexpr const char* const description = "Try to isolate and fix a valid volume from non-manifold elements prior to opening subtraction";
+                static constexpr bool defaultvalue = false;
+            };
 
 			struct DeferProcessingFirstElement : public SettingBase<DeferProcessingFirstElement, bool, true> {
 				static constexpr const char* const name = "defer-processing-first-element";
@@ -530,7 +543,7 @@ namespace ifcopenshell {
 		}
 
 		template <typename settings_t>
-		class IFC_GEOM_API SettingsContainer {
+		class SettingsContainer {
 		public:
          typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
 		private:
@@ -639,8 +652,8 @@ namespace ifcopenshell {
 			}
 		};
 
-		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset>
+		class Settings : public SettingsContainer<
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }
@@ -648,22 +661,32 @@ namespace ifcopenshell {
 
 // @todo find a place
 namespace IfcGeom {
-	class IFC_GEOM_API geometry_exception : public std::exception {
+
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable: 4275)
+#endif
+
+	class IFC_GEOM_API geometry_exception : public std::runtime_error {
 	protected:
 		std::string message;
 	public:
 		geometry_exception(const std::string& m)
-			: message(m) {}
-		virtual ~geometry_exception() throw () {}
-		virtual const char* what() const throw() {
-			return message.c_str();
-		}
+			: std::runtime_error(m)
+		{}
+		~geometry_exception() override;
 	};
 
 	class IFC_GEOM_API too_many_faces_exception : public geometry_exception {
 	public:
 		too_many_faces_exception()
 			: geometry_exception("Too many faces for operation") {}
+		~too_many_faces_exception() override;
 	};
 }
+
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
+
 #endif

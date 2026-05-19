@@ -17,16 +17,28 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import bmesh
-import struct
+
 import hashlib
 import logging
-import numpy as np
-import numpy.typing as npt
 import multiprocessing
+import struct
+from collections import defaultdict
+from collections.abc import Generator, Iterable, Iterator
+from math import pi, radians
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypeGuard,
+    Union,
+    cast,
+    get_args,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
@@ -37,6 +49,7 @@ import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -44,37 +57,30 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
-import bonsai.core.tool
+import numpy as np
+import numpy.typing as npt
+from mathutils import Matrix, Vector
+from mathutils.bvhtree import BVHTree
+from typing_extensions import TypeIs
+
+import bonsai.bim.helper
+import bonsai.bim.import_ifc
 import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.style
 import bonsai.core.system
+import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.helper
-import bonsai.bim.import_ifc
-from collections import defaultdict
-from math import radians, pi
-from mathutils import Vector, Matrix
-from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
-from typing import (
-    Union,
-    Optional,
-    Literal,
-    TYPE_CHECKING,
-    get_args,
-    cast,
-    TypeGuard,
-    Any,
-)
-from collections.abc import Iterable, Iterator, Generator
-from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute, BIMMeshProperties
-    from bonsai.bim.module.geometry.prop import BIMObjectGeometryProperties, BIMGeometryProperties
+    from bonsai.bim.module.geometry.prop import (
+        BIMGeometryProperties,
+        BIMObjectGeometryProperties,
+    )
+    from bonsai.bim.prop import BIMMeshProperties
 
 
 class Geometry(bonsai.core.tool.Geometry):
@@ -102,6 +108,10 @@ class Geometry(bonsai.core.tool.Geometry):
         if getattr(old_data, "is_editmode", None):
             raise Exception("user_remap is not supported for meshes in EDIT mode")
         old_data.user_remap(new_data)
+
+    @classmethod
+    def get_cache(cls) -> Union[ifcopenshell.geom.serializers.hdf5, None]:
+        return IfcStore.get_cache()
 
     @classmethod
     def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
@@ -228,20 +238,20 @@ class Geometry(bonsai.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-            return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+        elif element.is_a("IfcAnnotation"):
+            if element.ObjectType == "DRAWING":
+                return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
+            elif tool.Drawing.is_auto_annotation(element):
+                return  # For now, these are special referenced objects and cannot be deleted. Exclude instead.
         elif element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.boundary.remove_boundary(ifc_file, boundary=element)
             tool.Boundary.undecorate_boundary(obj)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGridAxis"):
-            is_last_axis = False
             # Deleting the last W axis is OK
             if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
                 (grid := element.PartOfV) and len(grid[0].VAxes) == 1
             ):
-                is_last_axis = True
-            if is_last_axis:
                 return
             ifcopenshell.api.grid.remove_grid_axis(ifc_file, axis=element)
             return bpy.data.objects.remove(obj)
@@ -879,6 +889,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if iterator and iterator.initialize():
             while True:
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 element = tool.Ifc.get().by_id(shape.id)
                 if obj := tool.Ifc.get_object(element):
                     # It's possible that there will be multiple shapes for the same context,
@@ -1140,8 +1151,8 @@ class Geometry(bonsai.core.tool.Geometry):
     def record_object_position(cls, obj: bpy.types.Object) -> None:
         # These are recorded separately because they have different numerical tolerances
         props = tool.Blender.get_object_bim_props(obj)
-        props.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
-        props.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        props.location_checksum = repr(tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes())
+        props.rotation_checksum = repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
     def remove_connection(cls, connection: ifcopenshell.entity_instance) -> None:
@@ -1255,7 +1266,7 @@ class Geometry(bonsai.core.tool.Geometry):
         if tool.Ifc.get().schema == "IFC2X3":
             return False
         for slot in obj.material_slots:
-            if slot.material and slot.material.use_nodes:
+            if slot.material and tool.Style.get_use_nodes(slot.material):
                 for node in slot.material.node_tree.nodes:
                     if node.type == "TEX_COORD" and node.outputs["UV"].links:
                         return True
@@ -1344,9 +1355,6 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Geometry,
             obj=obj,
             representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
             apply_openings=True,
         )
 
@@ -1356,6 +1364,8 @@ class Geometry(bonsai.core.tool.Geometry):
 
         If no other representation present, will replace object with an empty.
         Method assumes that `obj` does have a current representation (it could be not `representation`).
+
+        Will clean up old ``obj.data`` if no other users exist.
         """
         element = tool.Ifc.get_entity(obj)
         assert element
@@ -1374,7 +1384,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
         # `representation` is the only representation for object.
         if new_representation is None:
+            old_data = obj.data
+            assert old_data is not None
             cls.recreate_object_with_data(obj, None)
+            if not cls.has_data_users(old_data):
+                cls.delete_data(old_data)
             return
 
         bonsai.core.geometry.switch_representation(
@@ -1382,9 +1396,6 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Geometry,
             obj=obj,
             representation=new_representation,
-            should_reload=False,
-            should_sync_changes_first=False,
-            is_global=True,
         )
 
     @classmethod
@@ -1396,8 +1407,6 @@ class Geometry(bonsai.core.tool.Geometry):
         :param representation_item: item to remove.
         :param element: item's element. Is used to unmark manual booleans.
         """
-        # NOTE: we assume it's not the last representation item
-        # otherwise we probably would need to remove representation too
         # NOTE: a lot of shared code with `geometry.remove_representation`
         ifc_file = tool.Ifc.get()
         shape_aspects: list[ifcopenshell.entity_instance] = []
@@ -1456,7 +1465,10 @@ class Geometry(bonsai.core.tool.Geometry):
             cls.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
 
         if representation:
-            representation.Items = tuple(set(representation.Items) - {representation_item})
+            new_items = tuple(set(representation.Items) - {representation_item})
+            if not new_items:
+                return
+            representation.Items = new_items
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
@@ -1790,6 +1802,10 @@ class Geometry(bonsai.core.tool.Geometry):
     def import_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_mesh_props(obj.data)
         props.item_attributes.clear()
+        element = tool.Ifc.get_entity(tool.Geometry.get_geometry_props().representation_obj)
+        if tool.Model.get_usage_type(element) == "LAYER3":
+            return  # All LAYER3 attributes are parametrically determined from the IfcMaterialLayerSet
+
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         allowed_attributes = [
             a.name()
@@ -1896,6 +1912,28 @@ class Geometry(bonsai.core.tool.Geometry):
                 obj.matrix_world = item_matrix
                 obj.data.transform(transformation_i)
             cls.record_object_position(obj)
+
+        # ADD THIS AT THE END - Store initial vertex order for annotations
+        if rep_obj and (element := tool.Ifc.get_entity(rep_obj)):
+            if element.is_a("IfcAnnotation") and element.ObjectType in {
+                "TEXT_LEADER",
+                "DIMENSION",
+                "RADIUS",
+                "DIAMETER",
+                "ANGLE",
+                "FALL",
+                "SLOPE_ANGLE",
+                "SLOPE_FRACTION",
+                "SLOPE_PERCENT",
+                "STAIR_ARROW",
+                "PLAN_LEVEL",
+                "SECTION_LEVEL",
+                "SECTION",
+                "ELEVATION",
+            }:
+                # Store the initial first vertex position
+                if isinstance(obj.data, bpy.types.Mesh) and obj.data.vertices:
+                    obj.data["bonsai_first_vert_co"] = obj.data.vertices[0].co[:]
 
     @classmethod
     def disable_item_mode(cls) -> None:
@@ -2020,7 +2058,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     continue
                 if not (style := tool.Ifc.get_entity(material)):
                     style = ifcopenshell.api.style.add_style(ifc_file, name=material.name)
-                    if material.use_nodes:
+                    if tool.Style.get_use_nodes(material):
                         ifc_class = "IfcSurfaceStyleRendering"
                         attributes = tool.Style.get_surface_rendering_attributes(material)
                     else:
@@ -2077,6 +2115,14 @@ class Geometry(bonsai.core.tool.Geometry):
         active_object: Optional[bpy.types.Object] = None,
         linked: bool = False,
     ) -> tuple[dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]], Union[bpy.types.Object, None]]:
+        """Duplicate IFC objects
+
+        Duplication is surprisingly complicated because you might only select
+        part of a group of related items.
+
+        TODO: write some tests and figure out how to make this function
+        actually understandable.
+        """
         # Handle arrays
         objects_to_duplicate = set(objects_to_duplicate)
         arrays_to_duplicate, array_children = cls.process_arrays_for_duplication(objects_to_duplicate)
@@ -2089,6 +2135,7 @@ class Geometry(bonsai.core.tool.Geometry):
         decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
         connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
         old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
+        old_obj_name_to_new_obj_name: dict[str, str] = {}
 
         for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
@@ -2140,6 +2187,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 collection.objects.link(new_obj)
             obj.select_set(False)
             new_obj.select_set(True)
+            old_obj_name_to_new_obj_name[obj.name] = new_obj.name
 
             if not element:
                 continue
@@ -2171,6 +2219,19 @@ class Geometry(bonsai.core.tool.Geometry):
                 old_to_new[element] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
+
+        # Remap Blender parent relationships for duplicated objects
+        for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():
+            new_obj = bpy.data.objects.get(new_obj_name)
+            if new_obj and new_obj.parent and new_obj.parent.name in old_obj_name_to_new_obj_name:
+                # Store world matrix before reparenting to preserve transform
+                world_matrix = new_obj.matrix_world.copy()
+                new_parent_name = old_obj_name_to_new_obj_name[new_obj.parent.name]
+                new_parent = bpy.data.objects.get(new_parent_name)
+                if new_parent:
+                    new_obj.parent = new_parent
+                    # Restore world transform by setting matrix_world
+                    new_obj.matrix_world = world_matrix
 
         # Recreate aggregate relationship
         for old in old_to_new.keys():
@@ -2318,3 +2379,94 @@ class Geometry(bonsai.core.tool.Geometry):
                 continue
             objects.add(obj)
         return objects
+
+    @classmethod
+    def ensure_annotation_vertex_order(cls, obj: bpy.types.Object) -> None:
+        """
+        Ensure vertices form a continuous path from start to end.
+        Uses the original first vertex position as a reference point.
+        """
+        mesh = obj.data
+        if not isinstance(mesh, bpy.types.Mesh):
+            return
+
+        # Get the original first vertex position from custom properties
+        if "bonsai_first_vert_co" in mesh:
+            original_first_co = Vector(mesh["bonsai_first_vert_co"])
+        else:
+            # Store it for next time
+            if mesh.vertices:
+                original_first_co = Vector(mesh.vertices[0].co)
+                mesh["bonsai_first_vert_co"] = original_first_co[:]
+            else:
+                return
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+
+        if len(bm.verts) == 0:
+            bm.free()
+            return
+
+        # Find endpoints (vertices with only one connected edge)
+        endpoints = [v for v in bm.verts if len(v.link_edges) == 1]
+
+        # Choose the endpoint closest to the original first vertex position
+        if len(endpoints) == 0:
+            # Closed loop - pick any vertex as start
+            start_vert = bm.verts[0]
+        elif len(endpoints) == 1:
+            # Single endpoint
+            start_vert = endpoints[0]
+        else:
+            # Choose endpoint closest to where the original first vertex was
+            start_vert = min(endpoints, key=lambda v: (v.co - original_first_co).length)
+
+        # Build ordered vertex list by following edges
+        ordered_verts = [start_vert]
+        current_vert = start_vert
+        visited_edges = set()
+
+        while True:
+            # Find next unvisited edge
+            next_edge = None
+            for edge in current_vert.link_edges:
+                if edge not in visited_edges:
+                    next_edge = edge
+                    break
+
+            if not next_edge:
+                break
+
+            visited_edges.add(next_edge)
+            next_vert = next_edge.other_vert(current_vert)
+
+            # Avoid going back on ourselves
+            if next_vert not in ordered_verts:
+                ordered_verts.append(next_vert)
+
+            current_vert = next_vert
+
+        # Store vertex coordinates in the correct order
+        new_verts_co = [v.co.copy() for v in ordered_verts]
+
+        # Update the stored first vertex position to the new first vertex
+        mesh["bonsai_first_vert_co"] = new_verts_co[0][:]
+
+        # Clear and rebuild mesh with correct vertex order
+        bm.clear()
+
+        # Create new vertices in order
+        new_verts = [bm.verts.new(co) for co in new_verts_co]
+        bm.verts.ensure_lookup_table()
+
+        # Create edges connecting consecutive vertices
+        for i in range(len(new_verts) - 1):
+            bm.edges.new([new_verts[i], new_verts[i + 1]])
+
+        # Write back to mesh
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.update()

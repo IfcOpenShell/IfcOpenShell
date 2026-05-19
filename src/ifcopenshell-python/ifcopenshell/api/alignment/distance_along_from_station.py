@@ -43,6 +43,6 @@ def distance_along_from_station(file: ifcopenshell.file, alignment: entity_insta
         print(dist_along) # 100.00
     """
 
-    start_station = ifcopenshell.api.alignment.get_alignment_station(file, alignment)
+    start_station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
     dist_along = station - start_station
     return dist_along

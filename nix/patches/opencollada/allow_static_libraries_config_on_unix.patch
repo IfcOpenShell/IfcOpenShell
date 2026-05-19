@@ -1,0 +1,13 @@
+diff --git a/OpenCOLLADAConfig.cmake.in b/OpenCOLLADAConfig.cmake.in
+index d765b108..6800c2a7 100644
+--- a/OpenCOLLADAConfig.cmake.in
++++ b/OpenCOLLADAConfig.cmake.in
+@@ -31,7 +31,7 @@ set(OPENCOLLADA_INCLUDE_DIRS
+ include("@PACKAGE_OPENCOLLADA_INST_CMAKECONFIG@/OpenCOLLADATargets.cmake")
+ 
+ # Set the library variable
+-if(UNIX)
++if(0)
+ 	set(OPENCOLLADA_LIBRARIES
+ 		ftoa_shared
+ 		buffer_shared

@@ -3,13 +3,7 @@ Feature: Drawing
 
 Scenario: Duplicate drawing
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I look at the "Class" panel
-    And I set the "Products" property to "IfcElement"
-    And I set the "Class" property to "IfcWall"
-    And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -27,7 +21,7 @@ Scenario: Duplicate drawing - without duplicating annotations
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -50,7 +44,7 @@ Scenario: Duplicate drawing - with duplicating annotations
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -73,7 +67,7 @@ Scenario: Create drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -93,7 +87,7 @@ Scenario: Create drawing after deleting a duplicated object
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
     And I duplicate the selected objects
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -112,7 +106,7 @@ Scenario: Activate drawing preserves visibility for non-ifc objects
     And I add a cube
     And the object "Cube" is visible
     And the object "Cube.001" is not visible
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -126,7 +120,7 @@ Scenario: Activate drawing preserves selection
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -143,12 +137,13 @@ Scenario: Remove drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
     And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the collection "IfcAnnotation/PLAN_VIEW" exists
     When I press "bim.remove_drawing(drawing={drawing})"
@@ -156,13 +151,16 @@ Scenario: Remove drawing
 
 Scenario: Remove drawing - via object deletion
     Given an empty IFC project
+    And I save IFC project
     And I add a cube
     And the object "Cube" is selected
     And I look at the "Class" panel
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I press "bim.add_drawing"
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     And the collection "IfcAnnotation/PLAN_VIEW" exists
     And the object "IfcAnnotation/PLAN_VIEW" is selected
@@ -177,7 +175,7 @@ Scenario: Remove drawing - deleting active drawing
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -192,7 +190,7 @@ Scenario: Add annotation - text
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -206,7 +204,7 @@ Scenario: Add annotation - auto create context if it doesn't exist
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I save sample test files
+    And I save IFC project
     And I look at the "Geometric Representation Contexts" panel
     And I see "Plan"
     And I click the "X" after the text "Plan"
@@ -227,7 +225,7 @@ Scenario: Create drawing - using shapely fill mode
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I set the "location_hint" property to "My Storey"
@@ -243,7 +241,7 @@ Scenario: Create drawing - using shapely fill mode
 
 Scenario: Add sheet
     Given an empty IFC project
-    And I save sample test files
+    And I save IFC project
     And I look at the "Sheets" panel
     And I click "IMPORT"
     When I click "ADD"
@@ -252,7 +250,7 @@ Scenario: Add sheet
 
 Scenario: Create sheet
     Given an empty IFC project
-    And I save sample test files
+    And I save IFC project
     And I look at the "Sheets" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -269,7 +267,7 @@ Scenario: Add drawing to sheet
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -294,7 +292,7 @@ Scenario: Create sheet - with a drawing added to it
     And I set the "Products" property to "IfcElement"
     And I set the "Class" property to "IfcWall"
     And I click "Assign IFC Class"
-    And I save sample test files
+    And I save IFC project
     And I look at the "Drawings" panel
     And I click "IMPORT"
     And I click "ADD"
@@ -311,3 +309,130 @@ Scenario: Create sheet - with a drawing added to it
     And I click "IMAGE_PLANE"
     When I click "OUTPUT"
     Then the file "{ifc_dir}/sheets/A01 - UNTITLED.svg" should contain "IfcWall"
+
+Scenario: Enable editing text
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    When I click "Enable Editing Text"
+    Then I see "Literals:"
+    And I don't see "FontSize"
+
+Scenario: Disable editing text
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    When I click "CANCEL"
+    Then I see "FontSize"
+    And I don't see "Literals:"
+
+Scenario: Edit text - no changes
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    When I click "Edit Text"
+    Then I see "FontSize"
+    And I don't see "Literals:"
+
+Scenario: Edit text - change literal
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    And I set the "Literal" property to "Hello World"
+    When I click "Edit Text"
+    Then I see "Hello World"
+
+Scenario: Add text literal
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    And I click the "ADD" after the text "Literals:"
+    And I set the "2nd Literal" property to "New Literal"
+    When I click "Edit Text"
+    Then I see "New Literal"
+
+Scenario: Remove text literal
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    And I set the "Literal" property to "Keep This"
+    And I click the "ADD" after the text "Literals:"
+    And I set the "2nd Literal" property to "Remove This"
+    And I click "Edit Text"
+    And I click "Enable Editing Text"
+    When I click the "2nd" "X"
+    And I click "Edit Text"
+    Then I see "Keep This"
+    And I don't see "Remove This"
+
+Scenario: Add reference image
+    Given an empty IFC project
+    And I save IFC project
+    When I press "bim.add_reference_image(filepath='{cwd}/test/files/image.jpg', x_length=1, y_length=0.565)"
+    Then the object "IfcAnnotation/image" exists
+    And the object "IfcAnnotation/image" dimensions are "1.0,0.565,0."

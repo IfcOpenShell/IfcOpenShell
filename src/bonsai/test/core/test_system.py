@@ -18,7 +18,7 @@
 
 
 import bonsai.core.system as subject
-from test.core.bootstrap import ifc, system, spatial
+from test.core.bootstrap import group, ifc, spatial, system
 
 
 class TestLoadSystems:
@@ -37,10 +37,17 @@ class TestDisableSystemEditingUI:
 
 
 class TestAddSystem:
-    def test_run(self, ifc, system):
+    def test_run(self, ifc, group, system):
         ifc.run("system.add_system", ifc_class="ifc_class").should_be_called()
         system.import_systems().should_be_called()
-        subject.add_system(ifc, system, ifc_class="ifc_class")
+        subject.add_system(ifc, group, system, ifc_class="ifc_class", parent_system=None)
+
+    def test_run_with_parent_system(self, ifc, group, system):
+        ifc.run("system.add_system", ifc_class="ifc_class").should_be_called().will_return("new_system")
+        ifc.run("group.assign_group", products=["new_system"], group="parent_system").should_be_called()
+        group.toggle_group("parent_system", "IfcSystem", "EXPAND").should_be_called()
+        system.import_systems().should_be_called()
+        subject.add_system(ifc, group, system, ifc_class="ifc_class", parent_system="parent_system")
 
 
 class TestEditSystem:
@@ -53,10 +60,11 @@ class TestEditSystem:
 
 
 class TestRemoveSystem:
-    def test_run(self, ifc, system):
+    def test_run(self, ifc, group, system):
         ifc.run("system.remove_system", system="system").should_be_called()
         system.import_systems().should_be_called()
-        subject.remove_system(ifc, system, system="system")
+        group.update_uilist_index("IfcSystem").should_be_called()
+        subject.remove_system(ifc, group, system, system="system")
 
 
 class TestEnableEditingSystem:
@@ -145,11 +153,10 @@ class TestAddPort:
     def test_run(self, ifc, system):
         system.get_ports("element").should_be_called().will_return(["port"])
         system.load_ports("element", ["port"]).should_be_called()
-        system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
-        system.run_root_assign_class(
-            obj="obj", ifc_class="IfcDistributionPort", should_add_representation=False
-        ).should_be_called().will_return("port")
-        ifc.run("system.assign_port", element="element", port="port").should_be_called()
+        # system.create_empty_at_cursor_with_element_orientation("element").should_be_called().will_return("obj")
+        # system.run_root_assign_class(obj="obj", ifc_class="IfcDistributionPort", should_add_representation=False).should_be_called().will_return("port")
+        system.create_port_at_cursor("element").should_be_called().will_return("port")
+        system.load_ports("element", ["port"]).should_be_called()
         subject.add_port(ifc, system, element="element")
 
 

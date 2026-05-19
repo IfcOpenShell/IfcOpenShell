@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
@@ -39,14 +39,14 @@ def test_add_stationing_to_alignment():
 
     alignment = ifcopenshell.api.alignment.create(file, "TestAlignment", start_station=2000.0)
 
-    for rel in alignment.IsNestedBy:
-        for referent in rel.RelatedObjects:
-            if referent.is_a("IfcReferent"):
-                assert referent.PredefinedType == "STATION"
-                assert referent.Name == "2+000.000"
-                assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing")
-                assert (
-                    ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station")
-                    == 2000.0
-                )
-                assert referent.ObjectPlacement != None
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    referent = referent_nest.RelatedObjects[0]
+
+    assert referent.PredefinedType == "STATION"
+    assert referent.Name == "2+000.000"
+    assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing")
+    assert ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station") == 2000.0
+    assert referent.ObjectPlacement != None
+
+
+test_add_stationing_to_alignment()

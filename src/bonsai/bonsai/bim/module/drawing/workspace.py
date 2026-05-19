@@ -18,18 +18,20 @@
 
 
 import os
+from functools import partial
+
 import bpy
 import ifcopenshell.api.group
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
+from bpy.types import WorkSpaceTool
+
+import bonsai.core.drawing as core
 import bonsai.core.geometry
 import bonsai.core.type
-import bonsai.core.drawing as core
 import bonsai.tool as tool
-import ifcopenshell.util.representation
-from bonsai.bim.module.drawing.data import DecoratorData, AnnotationData
 from bonsai.bim.helper import prop_with_search
-from bpy.types import WorkSpaceTool
-from functools import partial
+from bonsai.bim.module.drawing.data import AnnotationData, DecoratorData
 
 
 class LaunchAnnotationTypeManager(bpy.types.Operator):
@@ -166,7 +168,7 @@ def create_annotation_occurrence(context):
     )
     assert element
 
-    bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+    bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
     ifcopenshell.api.group.assign_group(ifc_file, group=tool.Drawing.get_drawing_group(drawing), products=[element])
     tool.Collector.assign(obj)
@@ -180,9 +182,6 @@ def create_annotation_occurrence(context):
             tool.Geometry,
             obj=obj,
             representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
         )
 
     if obj.data and not relating_type_rep:
@@ -231,19 +230,28 @@ class AnnotationToolUI:
     def draw_type_selection_interface(cls):
         # shared by both sidebar and header
         object_type = cls.props.object_type
-
         row = cls.layout.row(align=True)
         row.label(text="", icon="FILE_VOLUME")
         prop_with_search(row, cls.props, "object_type", text="")
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="FILE_3D")
-        prop_with_search(row, cls.props, "relating_type_id", text="")
+        prop_with_search(
+            row,
+            cls.props,
+            "relating_type_id",
+            text="",
+            enable_relating_type_suggestions=True,
+            search_threshold=0,
+        )
         row.operator("bim.launch_annotation_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="DRIVER_ROTATIONAL_DIFFERENCE")
+            row.prop(cls.props, "tag_rotation_mode", text="")
             add_layout_hotkey_operator(
                 cls.layout,
                 "Bulk Tag",
@@ -253,6 +261,9 @@ class AnnotationToolUI:
             add_layout_hotkey_operator(
                 cls.layout, "Readjust", "S_G", "Readjust tags based on the products they are assigned to"
             )
+            row = cls.layout.row(align=True)
+            props = tool.Drawing.get_document_props()
+            row.operator("bim.filter_selected_objects_if_intersected_by_camera", text="Filter by Camera")
 
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
@@ -295,6 +306,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         related_objects = bpy.context.selected_objects
+        created_objects = []
+
         for related_object in related_objects:
             obj = core.add_annotation(
                 tool.Ifc,
@@ -307,7 +320,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 ),
                 enable_editing=False,
             )
-            tool.Drawing.setup_annotation_object(obj, object_type, related_object)
+            tool.Drawing.setup_annotation_object(obj, object_type, related_object, props.tag_rotation_mode)
+            created_objects.append(obj)
+
+        # Select the created annotation objects
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in created_objects:
+            obj.select_set(True)
+        if created_objects:
+            bpy.context.view_layer.objects.active = created_objects[-1]
 
     def hotkey_S_A(self):
         if bpy.ops.bim.add_annotation.poll():
@@ -337,4 +358,5 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             related_object = tool.Ifc.get_object(related_product)
 
-            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object)
+            rotation_mode = tool.Drawing.get_annotation_props().tag_rotation_mode
+            tool.Drawing.setup_annotation_object(obj, annotation_type, related_object, rotation_mode)

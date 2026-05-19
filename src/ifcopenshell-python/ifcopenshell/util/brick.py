@@ -16,14 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import json
+import os
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.system
-from typing import Union
-
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -53,6 +53,8 @@ def get_brick_type(element: ifcopenshell.entity_instance) -> Union[str, None]:
             if not result:
                 result = ifc4_to_brick_map.get(ifc_type_class, None)
     if result:
+        if result.startswith("http"):
+            return result
         return f"https://brickschema.org/schema/Brick#{result}"
     # Generic fallback
     if element.is_a("IfcDistributionElement"):

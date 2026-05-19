@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner
+import ifcopenshell.api.spatial
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union
 
 
 def assign_object(
@@ -136,7 +139,10 @@ def assign_object(
     if not objects_to_change:
         return is_nested_by
 
-    # NOTE: An object can both be nested and assigned to a container or an aggregate.
+    # Can be either only nested, aggregated, or contained at the same time.
+    possibly_contained = [o for o in objects_without_nests if hasattr(o, "ContainedInStructure")]
+    ifcopenshell.api.spatial.unassign_container(file, products=possibly_contained)
+    ifcopenshell.api.aggregate.unassign_object(file, products=objects_without_nests)
 
     # unassign elements from previous nests
     for nests in previous_nests_rels:

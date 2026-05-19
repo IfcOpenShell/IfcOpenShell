@@ -25,6 +25,7 @@
 #include "../../../ifcgeom/IfcGeomElement.h"
 #include "../../../ifcgeom/Iterator.h"
 #include "OpenCascadeConversionResult.h"
+#include "OpenCascadeKernel.h"
 #include "base_utils.h"
 
 #include <NCollection_UBTree.hxx>
@@ -1365,8 +1366,10 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> select(const IfcGeom::BRepElement* elem, bool completely_within = false, double extend = -1.e-5) const {
-				auto shp = elem->geometry().as_compound();
-				auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape();
+				auto shp = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
+				TopoDS_Shape compound(std::move(((ifcopenshell::geometry::OpenCascadeShape*)shp)->shape()));
+				delete shp;
+
 				const auto& m = elem->transformation().data()->ccomponents();
 				gp_Trsf tr;
 				tr.SetValues(
@@ -1501,7 +1504,7 @@ namespace IfcGeom {
 			settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
 			settings_.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
 
-			IfcGeom::Iterator it(settings_, &f, {}, 1);
+			IfcGeom::Iterator it(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(new OpenCascadeKernel(settings_)), settings_, &f, {}, 1);
 
 			add_file(it);
 		}
@@ -1789,6 +1792,10 @@ namespace IfcGeom {
                 auto& vs = elem->geometry().verts();
                 auto& fs = elem->geometry().faces();
 
+                if (vs.empty() || fs.empty()) {
+                    return;
+                }
+
                 gp_Trsf tr;
                 tr.SetValues(
                     m(0, 0), m(0, 1), m(0, 2), m(0, 3),
@@ -1856,22 +1863,35 @@ namespace IfcGeom {
                     candidates.push_back({ std::abs(Z.Dot(ref)), ref });
                 }
 
-                if (candidates.empty()) {
-                    {
-                        gp_XYZ ref(0, 0, 1);
-                        candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                gp_Ax3 ax3;
+                gp_Trsf trsf2;
+                
+                for (size_t attempt = 0; attempt < 2; ++attempt) {
+
+                    if (candidates.empty() || attempt == 1) {
+                        {
+                            gp_XYZ ref(0, 0, 1);
+                            candidates.push_back({std::abs(Z.Dot(ref)), ref});
+                        }
+                        {
+                            gp_XYZ ref(1, 0, 0);
+                            candidates.push_back({std::abs(Z.Dot(ref)), ref});
+                        }
                     }
+
+                    auto X = std::min_element(candidates.begin(), candidates.end(), [](auto& p1, auto& p2) { return p1.first < p2.first; })->second;
+
                     {
-                        gp_XYZ ref(1, 0, 0);
-                        candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                        try {
+                            ax3 = gp_Ax3(gp::Origin(), Z, X);
+                            trsf2.SetTransformation(gp::XOY(), ax3);
+                        } catch (Standard_ConstructionError&) {
+                            // Try again, likely we have all identical normals in candidates so
+                            // we cannot find a suitable candidate and need the two default axes
+                            continue;
+                        }
                     }
                 }
-
-                auto X = std::min_element(candidates.begin(), candidates.end(), [](auto& p1, auto& p2) { return p1.first < p2.first; })->second;
-
-                gp_Trsf trsf2;
-                gp_Ax3 ax3(gp::Origin(), Z, X);
-                trsf2.SetTransformation(gp::XOY(), ax3);
 
                 Bnd_Box tmp;
 
@@ -1956,8 +1976,9 @@ namespace IfcGeom {
 				return;
 			}
 
-			auto compound_generic = elem->geometry().as_compound();
-			auto compound = ((ifcopenshell::geometry::OpenCascadeShape*)compound_generic)->shape();
+			auto compound_generic = (ifcopenshell::geometry::OpenCascadeShape*)elem->geometry().as_compound();
+			TopoDS_Shape compound(std::move(compound_generic->shape()));
+            delete compound_generic;
 			
 			const auto& m = elem->transformation().data()->ccomponents();
 			gp_Trsf tr;

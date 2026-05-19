@@ -16,21 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+from typing import TYPE_CHECKING, Any, Literal, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.guid
 import ifcopenshell.util.element
+
 import bonsai.bim.helper
-import bonsai.tool as tool
 import bonsai.core.attribute as core
 import bonsai.core.spatial
-from typing import TYPE_CHECKING, Any, Union, Literal
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     import bpy.stub_internal.rna_enums as rna_enums
+
+    from bonsai.bim.prop import Attribute
 
 
 def get_objs_for_operation(
@@ -292,13 +295,13 @@ class ExplorerShowUIPopup(bpy.types.Operator):
     bl_description = "Show Explorer UI to select element as attribute value or edit it."
     bl_options = {"REGISTER", "UNDO"}
 
-    ifc_class: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    ifc_class: bpy.props.StringProperty()
     """Element IFC class."""
-    attribute_name: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    attribute_name: bpy.props.StringProperty()
     """IFC class attribute name."""
-    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    data_path: bpy.props.StringProperty()
     """Full data path"""
-    preselect_ifc_id: bpy.props.IntProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    preselect_ifc_id: bpy.props.IntProperty(options={"SKIP_SAVE"})
     """IFC id to preselect in the popup."""
 
     if TYPE_CHECKING:

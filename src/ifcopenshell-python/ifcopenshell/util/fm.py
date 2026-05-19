@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Literal
+
+from typing_extensions import assert_never
+
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
-from typing import Literal
-from typing_extensions import assert_never
 
 # COBie actually uses an exclusion list, but this inclusion list is equivalent.
 cobie_type_classes = [

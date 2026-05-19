@@ -88,7 +88,7 @@ Here is a minimal example of how to use IfcPatch as a library:
 Alternatively, there is a less dynamic way to use IfcPatch
 that allows seeing available arguments, their descriptions, types, default values, etc.
 
-..code-block:: python
+.. code-block:: python
 
     import ifcopenshell
     import ifcpatch
@@ -100,6 +100,7 @@ that allows seeing available arguments, their descriptions, types, default value
     )
     patcher.patch()
     ifcpatch.write(patcher.get_output(), "output.ifc")
+
 
 Patch recipes
 -------------

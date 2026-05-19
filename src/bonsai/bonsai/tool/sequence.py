@@ -17,34 +17,32 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import re
-import bpy
+
 import json
-import base64
-import ifcopenshell.api.sequence
-import pystache
-import mathutils
-import webbrowser
-import isodate
-import ifcopenshell
-import ifcopenshell.api.group
-import ifcopenshell.ifcopenshell_wrapper as W
-import ifcopenshell.util.date
-import ifcopenshell.util.selector
-import ifcopenshell.util.sequence
-import bonsai.core.tool
-import bonsai.tool as tool
-import bonsai.bim.helper
-from dateutil import parser
+import re
+from collections.abc import Iterable
 from datetime import datetime
 from datetime import time as datetime_time
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING
-from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.api.group
+import ifcopenshell.api.sequence
+import ifcopenshell.util.date
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import ifcopenshell.util.sequence
+import isodate
+import mathutils
+from dateutil import parser
 from mathutils import Color
 
+import bonsai.bim.helper
+import bonsai.core.tool
+import bonsai.tool as tool
+
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.sequence.prop import (
         BIMAnimationProperties,
         BIMStatusProperties,
@@ -53,6 +51,7 @@ if TYPE_CHECKING:
         BIMWorkPlanProperties,
         BIMWorkScheduleProperties,
     )
+    from bonsai.bim.prop import Attribute
 
 
 class Sequence(bonsai.core.tool.Sequence):
@@ -511,14 +510,12 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_task_inputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         props = cls.get_work_schedule_props()
-        is_deep = props.show_nested_inputs
-        return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
+        return ifcopenshell.util.sequence.get_task_inputs(task, is_recursive=props.show_nested_inputs)
 
     @classmethod
     def get_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         props = cls.get_work_schedule_props()
-        is_deep = props.show_nested_outputs
-        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
+        return ifcopenshell.util.sequence.get_task_outputs(task, is_recursive=props.show_nested_outputs)
 
     @classmethod
     def are_entities_same_class(cls, entities: list[ifcopenshell.entity_instance]) -> bool:
@@ -539,8 +536,7 @@ class Sequence(bonsai.core.tool.Sequence):
         if not task:
             return
         props = cls.get_work_schedule_props()
-        is_deep = props.show_nested_resources
-        return ifcopenshell.util.sequence.get_task_resources(task, is_deep)
+        return ifcopenshell.util.sequence.get_task_resources(task, props.show_nested_resources)
 
     @classmethod
     def load_task_inputs(cls, inputs: list[ifcopenshell.entity_instance]) -> None:
@@ -567,14 +563,6 @@ class Sequence(bonsai.core.tool.Sequence):
         props = cls.get_work_schedule_props()
         if len(tasks) and len(tasks) > props.active_task_index:
             return tool.Ifc.get().by_id(tasks[props.active_task_index].ifc_definition_id)
-
-    @classmethod
-    def get_direct_nested_tasks(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.sequence.get_nested_tasks(task)
-
-    @classmethod
-    def get_direct_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return ifcopenshell.util.sequence.get_direct_task_outputs(task)
 
     @classmethod
     def enable_editing_work_calendar_times(cls, work_calendar: ifcopenshell.entity_instance) -> None:
@@ -1022,7 +1010,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         def set_material(name, r, g, b):
             material = bpy.data.materials.new(name)
-            material.use_nodes = True
+            tool.Style.set_use_nodes(material, True)
             tool.Blender.get_material_node(material, "BSDF_PRINCIPLED").inputs[0].default_value = (r, g, b, 1.0)
             return material
 
@@ -1581,7 +1569,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def create_new_task_json(cls, task, json, type_map=None, baseline_schedule=None):
         task_time = task.TaskTime
-        resources = ifcopenshell.util.sequence.get_task_resources(task, is_deep=False)
+        resources = ifcopenshell.util.sequence.get_task_resources(task, is_recursive=False)
 
         string_resources = ""
         resources_usage = ""
@@ -1650,7 +1638,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def generate_gantt_browser_chart(
         cls, task_json: list[dict[str, Any]], work_schedule: ifcopenshell.entity_instance
     ) -> None:
-        if not bpy.context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="sequencing")
         gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
         tool.Web.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
@@ -1688,8 +1676,8 @@ class Sequence(bonsai.core.tool.Sequence):
     ) -> list[ifcopenshell.entity_instance]:
         products = []
         for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_deep=True))
-            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_deep=True))
+            products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_recursive=True))
+            products.extend(ifcopenshell.util.sequence.get_task_outputs(task, is_recursive=True))
         return products
 
     @classmethod
@@ -1789,6 +1777,16 @@ class Sequence(bonsai.core.tool.Sequence):
         cls.load_task_resources(task)
 
     @classmethod
+    def select_active_task_elements(cls, task):
+        if not task:
+            return
+        bpy.ops.object.select_all(action="DESELECT")
+        props = cls.get_work_schedule_props()
+        for element in cls.get_task_inputs(task) | cls.get_task_outputs(task):
+            if obj := tool.Ifc.get_object(element):
+                obj.select_set(True)
+
+    @classmethod
     def refresh_task_resources(cls):
         task = cls.get_highlighted_task()
         if not task:
@@ -1840,15 +1838,29 @@ class Sequence(bonsai.core.tool.Sequence):
             return isodate.datetime_isoformat(datetime_)
         return isodate.date_isoformat(datetime_)
 
+    ElementStatus = Literal["NEW", "EXISTING", "DEMOLISH", "TEMPORARY", "OTHER", "NOTKNOWN", "UNSET"]
+    ElementStatusUI = Union[ElementStatus, Literal["No Status"], str]
+    """Also allows UserDefinedStatus from EPset."""
+
+    ELEMENT_STATUSES = ("NEW", "EXISTING", "DEMOLISH", "TEMPORARY", "OTHER", "NOTKNOWN", "UNSET")
+
+    @classmethod
+    def get_status_query(cls, status: ElementStatusUI) -> str:
+        if status == "No Status":
+            return f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
+        return f"IfcProduct, /Pset_.*Common/.Status={status} + IfcProduct, EPset_Status.Status={status}"
+
+    @classmethod
+    def get_elements_by_status(cls, status: ElementStatusUI) -> set[ifcopenshell.entity_instance]:
+        query = cls.get_status_query(status)
+        return ifcopenshell.util.selector.filter_elements(tool.Ifc.get(), query)
+
     @classmethod
     def set_visibility_by_status(cls, visible_statuses: set[str]) -> None:
         assert bpy.context.view_layer
         query = []
         for name in visible_statuses:
-            if name == "No Status":
-                q = f"IfcProduct, /Pset_.*Common/.Status=NULL, EPset_Status.Status=NULL"
-            else:
-                q = f"IfcProduct, /Pset_.*Common/.Status={name} + IfcProduct, EPset_Status.Status={name}"
+            q = cls.get_status_query(name)
             query.append(q)
         query = " + ".join(query)
 
@@ -1865,3 +1877,14 @@ class Sequence(bonsai.core.tool.Sequence):
         ifc_file = tool.Ifc.get()
         new_schedule = ifcopenshell.api.sequence.copy_work_schedule(ifc_file, work_schedule)
         new_schedule.Name = (new_schedule.Name or "Unnamed") + " Copy"
+
+    @classmethod
+    def get_element_status(cls, element: ifcopenshell.entity_instance) -> set[str]:
+        psets = ifcopenshell.util.element.get_psets(element)
+        statuses: set[str] = set()
+        for pset_name, pset_data in psets.items():
+            if pset_name == "EPset_Status" or (pset_name.startswith("Pset_") and pset_name.endswith("Common")):
+                if pset_statuses := pset_data.get("Status", None):
+                    assert isinstance(pset_statuses, list)
+                    statuses.update(pset_statuses)
+        return statuses

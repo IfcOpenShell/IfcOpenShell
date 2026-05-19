@@ -94,3 +94,7 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Tri
 	}
 	return in;
 }
+
+IfcGeom::geometry_exception::~geometry_exception() = default;
+
+IfcGeom::too_many_faces_exception::~too_many_faces_exception() = default;

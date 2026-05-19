@@ -17,26 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Literal, Optional, assert_never
+
 import bpy
-import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.helper import prop_with_search, get_display_value, draw_attribute
+
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, get_display_value, prop_with_search
+from bonsai.bim.module.material.data import ObjectMaterialData
 from bonsai.bim.module.pset.data import (
-    ObjectPsetsData,
-    ObjectQtosData,
+    GroupPsetData,
+    GroupQtosData,
     MaterialPsetsData,
     MaterialSetItemPsetsData,
-    TaskQtosData,
-    ResourceQtosData,
-    ResourcePsetsData,
-    GroupQtosData,
-    GroupPsetData,
+    ObjectPsetsData,
+    ObjectQtosData,
     ProfilePsetsData,
+    ResourcePsetsData,
+    ResourceQtosData,
+    TaskQtosData,
     WorkSchedulePsetsData,
     ZonePsetsData,
 )
-from bonsai.bim.module.material.data import ObjectMaterialData
-from typing import Any, Optional, TYPE_CHECKING, assert_never, Literal
 
 if TYPE_CHECKING:
     from bonsai.bim.module.pset.prop import IfcProperty, PsetProperties
@@ -242,26 +245,26 @@ class BIM_PT_object_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not (obj := context.active_object):
-            return False
-        ifc_id = tool.Blender.get_ifc_definition_id(obj)
-        if not ifc_id:
-            return False
-        if not tool.Ifc.get_object_by_identifier(ifc_id):
-            return False
-        return True
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcObjectDefinition")
+        )
 
     def draw(self, context):
         if not ObjectPsetsData.is_loaded:
             ObjectPsetsData.load()
 
-        props = context.active_object.PsetProperties
+        assert (obj := context.active_object)
+        props = tool.Pset.get_pset_props(obj.name, "Object")
         self.bprops = tool.Bsdd.get_bsdd_props()
+        assert self.layout
+
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
-        if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url):
+        if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url()):
             op = row.operator("bim.add_pset", icon="ADD", text="")
-            op.obj = context.active_object.name
+            op.obj = obj.name
             op.obj_type = "Object"
         else:
             row = self.layout.row(align=True)
@@ -269,7 +272,7 @@ class BIM_PT_object_psets(Panel):
             if self.bprops.property_filter_mode == "CLASS":
                 row.prop(self.bprops, "should_filter_ifc_class", text="", icon="FILTER")
                 op = row.operator("bim.import_bsdd_classes", text="", icon="FILE_REFRESH")
-                op.obj = context.active_object.name
+                op.obj = obj.name
                 op.obj_type = "Object"
 
                 if len(self.bprops.classes):
@@ -299,7 +302,7 @@ class BIM_PT_object_psets(Panel):
             elif self.bprops.property_filter_mode == "KEYWORD":
                 row.prop(self.bprops, "keyword", text="")
                 op = row.operator("bim.search_bsdd_properties", text="", icon="VIEWZOOM")
-                op.obj = context.active_object.name
+                op.obj = obj.name
                 op.obj_type = "Object"
 
                 if len(self.bprops.properties):
@@ -322,7 +325,7 @@ class BIM_PT_object_psets(Panel):
 
             row = self.layout.row()
             op = row.operator("bim.add_bsdd_properties", icon="ADD")
-            op.obj = context.active_object.name
+            op.obj = obj.name
             op.obj_type = "Object"
 
         global_props = tool.Pset.get_global_pset_props()
@@ -385,24 +388,24 @@ class BIM_PT_object_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not (obj := context.active_object):
-            return False
-        ifc_id = tool.Blender.get_ifc_definition_id(obj)
-        if not ifc_id:
-            return False
-        if not tool.Ifc.get_object_by_identifier(ifc_id):
-            return False
-        return True
+        return (
+            (obj := tool.Blender.get_active_object())
+            and (element := tool.Ifc.get_entity(obj))
+            and element.is_a("IfcObjectDefinition")
+        )
 
     def draw(self, context):
         if not ObjectQtosData.is_loaded:
             ObjectQtosData.load()
 
-        props = context.active_object.PsetProperties
+        assert (obj := context.active_object)
+        props = tool.Pset.get_pset_props(obj.name, "Object")
+        assert self.layout
+
         row = self.layout.row(align=True)
         prop_with_search(row, props, "qto_name", text="")
         op = row.operator("bim.add_qto", icon="ADD", text="")
-        op.obj = context.active_object.name
+        op.obj = obj.name
         op.obj_type = "Object"
 
         global_props = tool.Pset.get_global_pset_props()
@@ -661,7 +664,7 @@ class BIM_PT_group_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         return bool(props.active_group)
 
     def draw(self, context):
@@ -693,7 +696,7 @@ class BIM_PT_group_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         return bool(props.active_group)
 
     def draw(self, context):

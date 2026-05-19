@@ -17,26 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
+from collections.abc import Generator
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, assert_never
+
+import aud
 import bpy
-import bonsai.core.tool
-import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.api.cost
 import ifcopenshell.api.document
 import ifcopenshell.api.nest
-import ifcopenshell.util.element
-import ifcopenshell.util.date
 import ifcopenshell.util.cost
+import ifcopenshell.util.date
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
+
 import bonsai.bim.helper
-import json
-from pathlib import Path
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING, assert_never
-from collections.abc import Generator
+import bonsai.core.tool
+import bonsai.tool as tool
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import Attribute
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
+    from bonsai.bim.prop import Attribute
 
 
 class Cost(bonsai.core.tool.Cost):
@@ -140,25 +144,18 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def play_sound(cls) -> None:
-        if tool.Blender.get_addon_preferences().should_play_chaching_sound:
+        # Save ears for those running the tests in background mode.
+        if tool.Blender.get_addon_preferences().should_play_chaching_sound and not bpy.app.background:
             cls.play_chaching_sound()  # lol
 
     @classmethod
     def play_chaching_sound(cls) -> None:
         # TODO: make pitch higher as costs rise
-        try:
-            import aud
-
-            device = aud.Device()
-            # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
-            handle = device.play(sound)
-            sound_buffered = aud.Sound.buffer(sound)
-            handle_buffered = device.play(sound_buffered)
-            handle.stop()
-            handle_buffered.stop()
-        except:
-            pass  # ah well
+        device = aud.Device()
+        # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
+        filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
+        sound = aud.Sound(filepath)  # ty:ignore[too-many-positional-arguments]
+        device.play(sound)
 
     @classmethod
     def load_cost_schedule_tree(cls) -> None:
@@ -273,18 +270,16 @@ class Cost(bonsai.core.tool.Cost):
                 return
         props = cls.get_cost_props()
         props.cost_item_type_products.clear()
-        # TODO implement process and resource types
-        # props.cost_item_processes.clear()
-        # props.cost_item_resources.clear()
+        props.cost_item_processes.clear()
+        props.cost_item_resources.clear()
         for rel in cost_item.Controls or []:
             for related_object in rel.RelatedObjects:
                 if related_object.is_a("IfcTypeProduct"):
                     new = props.cost_item_type_products.add()
-                # TODO implement process and resource types
-                # elif related_object.is_a("IfcProcess"):
-                #    new = props.cost_item_processes.add()
-                # elif related_object.is_a("IfcResource"):
-                #    new = props.cost_item_resources.add()
+                elif related_object.is_a("IfcProcess"):
+                    new = props.cost_item_processes.add()
+                elif related_object.is_a("IfcResource"):
+                    new = props.cost_item_resources.add()
                 new.ifc_definition_id = related_object.id()
                 new.name = related_object.Name or "Unnamed"
 
@@ -583,8 +578,9 @@ class Cost(bonsai.core.tool.Cost):
     ) -> ifcopenshell.entity_instance:
         if not file_path:
             return
-        from ifc5d.csv2ifc import Csv2Ifc
         import time
+
+        from ifc5d.csv2ifc import Csv2Ifc
 
         start = time.time()
 
@@ -806,8 +802,8 @@ class Cost(bonsai.core.tool.Cost):
         format: Literal["CSV", "ODS", "XLSX"],
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ) -> Union[str, None]:
-        import subprocess
         import os
+        import subprocess
         import sys
 
         if dirpath:
@@ -991,7 +987,8 @@ class Cost(bonsai.core.tool.Cost):
     def disable_editing_cost_item_parent(cls) -> None:
         props = cls.get_cost_props()
         props.active_cost_item_id = 0
-        props.change_cost_item_parent = False
+        if props.change_cost_item_parent == True:
+            props.change_cost_item_parent = False
 
     @classmethod
     def load_cost_item_quantities(cls, cost_item: Optional[ifcopenshell.entity_instance] = None) -> None:
@@ -1085,8 +1082,8 @@ class Cost(bonsai.core.tool.Cost):
             return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
-    def generate_cost_schedule_browser(cls, cost_chedule) -> None:
-        if not bpy.context.scene.WebProperties.is_connected:
+    def generate_cost_schedule_browser(cls, cost_chedule: ifcopenshell.entity_instance) -> None:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="costing")
         tool.Web.load_cost_schedule_web_ui(cost_chedule)
 

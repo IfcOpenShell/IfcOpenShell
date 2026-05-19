@@ -16,24 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING, Union
+
 import bpy
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    IntProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
 import bonsai.bim.handler
+import bonsai.bim.module.system.decorator as decorator
 import bonsai.tool as tool
 from bonsai.bim.module.system.data import SystemData
-import bonsai.bim.module.system.decorator as decorator
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from typing import TYPE_CHECKING, Union
+from bonsai.bim.prop import Attribute
 
 
 def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -54,11 +53,17 @@ class System(PropertyGroup):
     name: StringProperty(name="Name", update=update_system_name)
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    has_children: BoolProperty(name="Has Children")
+    tree_depth: IntProperty(name="Tree Depth")
+    is_expanded: BoolProperty(name="Is Expanded")
 
     if TYPE_CHECKING:
         name: str
         ifc_class: str
         ifc_definition_id: int
+        has_children: bool
+        tree_depth: int
+        is_expanded: bool
 
 
 def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
@@ -86,17 +91,47 @@ def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) 
         decorator.SystemDecorator.uninstall()
 
 
+def get_available_ports_for_connection(
+    self: "BIMSystemProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
+    items = []
+    active_object_ports = set(tool.System.get_ports(tool.Ifc.get_entity(context.active_object)))
+
+    ifc_file = tool.Ifc.get()
+    for ifc_port in ifc_file.by_type("IfcDistributionPort"):
+        port = tool.Ifc.get_object(ifc_port)
+        if not port:
+            continue
+
+        if tool.System.get_connected_port(ifc_port) is not None or ifc_port in active_object_ports:
+            continue
+
+        port_object = tool.Ifc.get_object(tool.System.get_port_relating_element(ifc_port))
+        suggestion = f"{port_object.name} > {port.name}"
+        items.append((port.name, suggestion, ""))
+
+    return items if items else [("NONE", "Ports are hidden or not available", "")]
+
+
 class BIMSystemProperties(PropertyGroup):
     system_attributes: CollectionProperty(name="System Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_adding: BoolProperty(name="Is Adding", default=False)
     systems: CollectionProperty(name="Systems", type=System)
-    active_system_index: IntProperty(name="Active System Index")
+    expanded_groups_json: StringProperty(name="Expanded Systems JSON", default="[]")
+    """See `expanded_groups_json`. We name it "groups" for compatibility with Group UI code."""
+    # Named not as `active_system_index` to match `BIMGroupProperties`.
+    active_group_index: IntProperty(name="Active System Index")
     active_system_id: IntProperty(name="Active System Id")
     edited_system_id: IntProperty(name="Edited System Id")
     system_class: EnumProperty(items=get_system_class, name="Class")
     should_draw_decorations: BoolProperty(
         name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
+    )
+    related_port: EnumProperty(
+        name="Connect To Port",
+        description="Select a port to connect to",
+        items=get_available_ports_for_connection,
     )
 
     if TYPE_CHECKING:
@@ -104,15 +139,17 @@ class BIMSystemProperties(PropertyGroup):
         is_editing: bool
         is_adding: bool
         systems: bpy.types.bpy_prop_collection_idprop[System]
-        active_system_index: int
+        expanded_groups_json: str
+        active_group_index: int
         active_system_id: int
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
+        related_port: str
 
     @property
     def active_system_ui_item(self) -> Union[System, None]:
-        return tool.Blender.get_active_uilist_element(self.systems, self.active_system_index)
+        return tool.Blender.get_active_uilist_element(self.systems, self.active_group_index)
 
 
 def update_active_zone_index(self: "BIMZoneProperties", context: object) -> None:

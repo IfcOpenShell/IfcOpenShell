@@ -35,6 +35,7 @@
 #include <GCPnts_QuasiUniformDeflection.hxx>
 
 #include "../../../ifcgeom/ConversionResult.h"
+#include "../../../ifcgeom/kernels/ifc_geomlibrary_api.h"
 
 namespace ifcopenshell {
 	namespace geometry {
@@ -42,10 +43,12 @@ namespace ifcopenshell {
 		using IfcGeom::OpaqueCoordinate;
 		using IfcGeom::OpaqueNumber;
 
-		class OpenCascadeShape : public IfcGeom::ConversionResultShape {
+		class IFC_GEOMLIBRARY_API OpenCascadeShape : public IfcGeom::ConversionResultShape {
 		public:
 			OpenCascadeShape(const TopoDS_Shape& shape)
 				: shape_(shape) {}
+			OpenCascadeShape(TopoDS_Shape&& shape)
+				: shape_(std::move(shape)) {}
 
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }
@@ -87,6 +90,7 @@ namespace ifcopenshell {
 			virtual ConversionResultShape* halfspaces();
 			virtual ConversionResultShape* solid();
 			virtual ConversionResultShape* box();
+			virtual ConversionResultShape* wrap_in_compound();
 
 			virtual std::vector<ConversionResultShape*> vertices();
 			virtual std::vector<ConversionResultShape*> edges();
@@ -95,10 +99,13 @@ namespace ifcopenshell {
 			virtual ConversionResultShape* add(ConversionResultShape*);
 			virtual ConversionResultShape* subtract(ConversionResultShape*);
 			virtual ConversionResultShape* intersect(ConversionResultShape*);
+			virtual ConversionResultShape* concat(ConversionResultShape*);
 
 			virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
 			virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 			virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+
+			virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
 		private:
 			TopoDS_Shape shape_;
 		};

@@ -16,13 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import ifcopenshell.util.unit
-import ifcpatch
+import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.placement
 import numpy as np
+
+import ifcpatch
+import test.bootstrap
 
 
 class TestSetFalseOrigin(test.bootstrap.IFC4):

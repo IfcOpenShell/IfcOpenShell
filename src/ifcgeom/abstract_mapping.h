@@ -1,3 +1,22 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
 #ifndef ABSTRACT_MAPPING_H
 #define ABSTRACT_MAPPING_H
 
@@ -16,7 +35,7 @@ namespace ifcopenshell {
 
 namespace geometry {
 
-	struct geometry_conversion_task {
+	struct IFC_GEOM_API geometry_conversion_task {
 		int index;
 		IfcUtil::IfcBaseEntity* representation;
 		aggregate_of_instance::ptr products;
@@ -24,7 +43,7 @@ namespace geometry {
 
 	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;
     
-    class abstract_mapping {
+    class IFC_GEOM_API abstract_mapping {
 	protected:
 		Settings settings_;
 
@@ -58,14 +77,14 @@ namespace geometry {
 	namespace impl {
 		typedef boost::function2<abstract_mapping*, IfcParse::IfcFile*, Settings&> mapping_fn;
 
-		class MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
+		class IFC_GEOM_API MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);
 			abstract_mapping* construct(IfcParse::IfcFile*, Settings&);
 		};
 
-		MappingFactoryImplementation& mapping_implementations();
+		IFC_GEOM_API MappingFactoryImplementation& mapping_implementations();
 	}
     
 }

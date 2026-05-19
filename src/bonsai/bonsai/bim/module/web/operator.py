@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+
 import bpy
+
 import bonsai.core.web as core
 import bonsai.tool as tool
 
@@ -29,11 +30,12 @@ class ConnectToWebsocketServer(bpy.types.Operator):
     page: bpy.props.StringProperty(default="")
 
     def execute(self, context):
-        port = context.scene.WebProperties.webserver_port
+        props = tool.Web.get_web_props()
+        port = props.webserver_port
         if port == 0:
-            context.scene.WebProperties.webserver_port = core.generate_port_number(tool.Web)
+            props.webserver_port = core.generate_port_number(tool.Web)
 
-        port = context.scene.WebProperties.webserver_port
+        port = props.webserver_port
         core.connect_websocket_server(tool.Web, port, self.page)
         return {"FINISHED"}
 
@@ -65,6 +67,6 @@ class OpenWebBrowser(bpy.types.Operator):
     page: bpy.props.StringProperty(default="")
 
     def execute(self, context):
-        port = context.scene.WebProperties.webserver_port
+        port = tool.Web.get_web_props().webserver_port
         core.open_web_browser(tool.Web, port, self.page)
         return {"FINISHED"}

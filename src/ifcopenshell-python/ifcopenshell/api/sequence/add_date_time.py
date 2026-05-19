@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util.date
 from datetime import datetime
 from typing import Union
+
+import ifcopenshell.util.date
 
 
 def add_date_time(file: ifcopenshell.file, dt: datetime) -> Union[str, ifcopenshell.entity_instance]:

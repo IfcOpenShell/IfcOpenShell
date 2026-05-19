@@ -51,14 +51,29 @@
 
 #include "../../../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
-#include "../../../ifcgeom/ifc_geom_api.h"
+#include "../../../ifcgeom/kernels/ifc_geomlibrary_api.h"
 
 #include "../../../ifcgeom/taxonomy.h"
 #include "../../../ifcgeom/ConversionSettings.h"
 
+namespace {
+template <typename Fn>
+bool handle_occt_exception(Fn&& fn) {
+    try {
+        return std::forward<Fn>(fn)();
+    } catch (const Standard_Failure& e) {
+        if (e.GetMessageString() && strlen(e.GetMessageString())) {
+            throw std::runtime_error(e.GetMessageString());
+		} else {
+            throw std::runtime_error("Unknown error creating geometry");
+		}
+    }
+}
+}
+
 namespace IfcGeom {
 
-class IFC_GEOM_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
+class IFC_GEOMLIBRARY_API OpenCascadeKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
 private:
 
 	/*
@@ -102,6 +117,12 @@ public:
 		, faceset_helper_(nullptr)
 		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
 	{}
+
+	virtual AbstractKernel* clone() const {
+		return new OpenCascadeKernel(settings());
+	}
+
+	virtual bool supports_boolean_operations() const { return true; }
 
 	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);

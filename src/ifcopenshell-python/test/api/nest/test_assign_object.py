@@ -17,11 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
-import test.bootstrap
+
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.nest
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
+import test.bootstrap
 
 
 class TestAssignObject(test.bootstrap.IFC4):
@@ -81,6 +83,24 @@ class TestAssignObject(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
         ifcopenshell.api.nest.assign_object(self.file, related_objects=subelements[2:3], relating_object=element2)
         assert rel.RelatedObjects == tuple(subelements[:2] + subelements[3:])
+
+    def test_nesting_removes_spatial_containment(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[subelement], relating_structure=storey)
+        assert ifcopenshell.util.element.get_container(subelement) == storey
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[subelement], relating_object=element)
+        assert ifcopenshell.util.element.get_container(subelement) is None
+
+    def test_nesting_removes_aggregate(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        assembly = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=assembly)
+        assert ifcopenshell.util.element.get_aggregate(subelement) == assembly
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[subelement], relating_object=element)
+        assert ifcopenshell.util.element.get_aggregate(subelement) is None
 
 
 class TestAssignObjectIFC2X3(test.bootstrap.IFC2X3, TestAssignObject):

@@ -16,17 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import bmesh
-import mathutils
-import bpy_extras
-import bonsai.tool as tool
-from mathutils import Vector, Matrix
-from math import pi, radians, sin, cos, sqrt
-import ifcopenshell.util.unit
-from typing import Union
+from math import pi, sqrt
 
+import bmesh
+import bpy
+import bpy_extras
+import mathutils
+from mathutils import Matrix, Vector
+
+import bonsai.tool as tool
 
 messages = {
     "SHARED_VERTEX": "Shared Vertex, no intersection possible",
@@ -38,6 +37,7 @@ messages = {
 class CadTrimExtend(bpy.types.Operator):
     bl_idname = "bim.cad_trim_extend"
     bl_label = "CAD Trim / Extend"
+    bl_description = "Extends/reduces element to 3D cursor"
 
     @classmethod
     def poll(cls, context):
@@ -83,6 +83,7 @@ class CadTrimExtend(bpy.types.Operator):
 class CadMitre(bpy.types.Operator):
     bl_idname = "bim.cad_mitre"
     bl_label = "CAD Mitre"
+    bl_description = "Joins two non-parallel paths at their intersection"
 
     @classmethod
     def poll(cls, context):

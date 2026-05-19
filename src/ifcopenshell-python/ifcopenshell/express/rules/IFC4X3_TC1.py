@@ -1,5 +1,8 @@
 import ifcopenshell
 
+def is_indeterminate(v):
+    return v is None or type(v).__name__ == 'indeterminate_type'
+
 def exists(v):
     if callable(v):
         try:
@@ -7,10 +10,10 @@ def exists(v):
         except IndexError as e:
             return False
     else:
-        return v is not None
+        return not is_indeterminate(v)
 
 def nvl(v, default):
-    return v if v is not None else default
+    return v if not is_indeterminate(v) else default
 
 def is_entity(inst):
     if isinstance(inst, ifcopenshell.entity_instance):
@@ -22,13 +25,13 @@ def is_entity(inst):
 def express_len(v):
     if isinstance(v, ifcopenshell.entity_instance) and (not is_entity(v)):
         v = v[0]
-    elif v is None or v is INDETERMINATE:
+    elif is_indeterminate(v):
         return INDETERMINATE
     return len(v)
 old_range = range
 
 def range(*args):
-    if INDETERMINATE in args:
+    if any(map(is_indeterminate, args)):
         return
     yield from old_range(*args)
 sizeof = express_len
@@ -80,6 +83,13 @@ def express_getitem(aggr, idx, default):
         return aggr[idx]
     except IndexError as e:
         return None
+
+def express_getattr(aggr, name, default):
+    v = getattr(aggr, name, default)
+    if v is None:
+        return default
+    else:
+        return v
 EXPRESS_ONE_BASED_INDEXING = 1
 
 def typeof(inst):
@@ -140,2363 +150,2363 @@ INDETERMINATE = indeterminate_type()
 class enum_namespace:
 
     def __getattr__(self, k):
-        return getattr(k, 'upper', INDETERMINATE)()
+        return express_getattr(k, 'upper', INDETERMINATE)()
 IfcActionRequestTypeEnum = enum_namespace()
-email = getattr(IfcActionRequestTypeEnum, 'EMAIL', INDETERMINATE)
-fax = getattr(IfcActionRequestTypeEnum, 'FAX', INDETERMINATE)
-phone = getattr(IfcActionRequestTypeEnum, 'PHONE', INDETERMINATE)
-post = getattr(IfcActionRequestTypeEnum, 'POST', INDETERMINATE)
-verbal = getattr(IfcActionRequestTypeEnum, 'VERBAL', INDETERMINATE)
-userdefined = getattr(IfcActionRequestTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcActionRequestTypeEnum, 'NOTDEFINED', INDETERMINATE)
+email = IfcActionRequestTypeEnum.EMAIL
+fax = IfcActionRequestTypeEnum.FAX
+phone = IfcActionRequestTypeEnum.PHONE
+post = IfcActionRequestTypeEnum.POST
+verbal = IfcActionRequestTypeEnum.VERBAL
+userdefined = IfcActionRequestTypeEnum.USERDEFINED
+notdefined = IfcActionRequestTypeEnum.NOTDEFINED
 IfcActionSourceTypeEnum = enum_namespace()
-brakes = getattr(IfcActionSourceTypeEnum, 'BRAKES', INDETERMINATE)
-buoyancy = getattr(IfcActionSourceTypeEnum, 'BUOYANCY', INDETERMINATE)
-completion_g1 = getattr(IfcActionSourceTypeEnum, 'COMPLETION_G1', INDETERMINATE)
-creep = getattr(IfcActionSourceTypeEnum, 'CREEP', INDETERMINATE)
-current = getattr(IfcActionSourceTypeEnum, 'CURRENT', INDETERMINATE)
-dead_load_g = getattr(IfcActionSourceTypeEnum, 'DEAD_LOAD_G', INDETERMINATE)
-earthquake_e = getattr(IfcActionSourceTypeEnum, 'EARTHQUAKE_E', INDETERMINATE)
-erection = getattr(IfcActionSourceTypeEnum, 'ERECTION', INDETERMINATE)
-fire = getattr(IfcActionSourceTypeEnum, 'FIRE', INDETERMINATE)
-ice = getattr(IfcActionSourceTypeEnum, 'ICE', INDETERMINATE)
-impact = getattr(IfcActionSourceTypeEnum, 'IMPACT', INDETERMINATE)
-impulse = getattr(IfcActionSourceTypeEnum, 'IMPULSE', INDETERMINATE)
-lack_of_fit = getattr(IfcActionSourceTypeEnum, 'LACK_OF_FIT', INDETERMINATE)
-live_load_q = getattr(IfcActionSourceTypeEnum, 'LIVE_LOAD_Q', INDETERMINATE)
-prestressing_p = getattr(IfcActionSourceTypeEnum, 'PRESTRESSING_P', INDETERMINATE)
-propping = getattr(IfcActionSourceTypeEnum, 'PROPPING', INDETERMINATE)
-rain = getattr(IfcActionSourceTypeEnum, 'RAIN', INDETERMINATE)
-settlement_u = getattr(IfcActionSourceTypeEnum, 'SETTLEMENT_U', INDETERMINATE)
-shrinkage = getattr(IfcActionSourceTypeEnum, 'SHRINKAGE', INDETERMINATE)
-snow_s = getattr(IfcActionSourceTypeEnum, 'SNOW_S', INDETERMINATE)
-system_imperfection = getattr(IfcActionSourceTypeEnum, 'SYSTEM_IMPERFECTION', INDETERMINATE)
-temperature_t = getattr(IfcActionSourceTypeEnum, 'TEMPERATURE_T', INDETERMINATE)
-transport = getattr(IfcActionSourceTypeEnum, 'TRANSPORT', INDETERMINATE)
-wave = getattr(IfcActionSourceTypeEnum, 'WAVE', INDETERMINATE)
-wind_w = getattr(IfcActionSourceTypeEnum, 'WIND_W', INDETERMINATE)
-userdefined = getattr(IfcActionSourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcActionSourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+brakes = IfcActionSourceTypeEnum.BRAKES
+buoyancy = IfcActionSourceTypeEnum.BUOYANCY
+completion_g1 = IfcActionSourceTypeEnum.COMPLETION_G1
+creep = IfcActionSourceTypeEnum.CREEP
+current = IfcActionSourceTypeEnum.CURRENT
+dead_load_g = IfcActionSourceTypeEnum.DEAD_LOAD_G
+earthquake_e = IfcActionSourceTypeEnum.EARTHQUAKE_E
+erection = IfcActionSourceTypeEnum.ERECTION
+fire = IfcActionSourceTypeEnum.FIRE
+ice = IfcActionSourceTypeEnum.ICE
+impact = IfcActionSourceTypeEnum.IMPACT
+impulse = IfcActionSourceTypeEnum.IMPULSE
+lack_of_fit = IfcActionSourceTypeEnum.LACK_OF_FIT
+live_load_q = IfcActionSourceTypeEnum.LIVE_LOAD_Q
+prestressing_p = IfcActionSourceTypeEnum.PRESTRESSING_P
+propping = IfcActionSourceTypeEnum.PROPPING
+rain = IfcActionSourceTypeEnum.RAIN
+settlement_u = IfcActionSourceTypeEnum.SETTLEMENT_U
+shrinkage = IfcActionSourceTypeEnum.SHRINKAGE
+snow_s = IfcActionSourceTypeEnum.SNOW_S
+system_imperfection = IfcActionSourceTypeEnum.SYSTEM_IMPERFECTION
+temperature_t = IfcActionSourceTypeEnum.TEMPERATURE_T
+transport = IfcActionSourceTypeEnum.TRANSPORT
+wave = IfcActionSourceTypeEnum.WAVE
+wind_w = IfcActionSourceTypeEnum.WIND_W
+userdefined = IfcActionSourceTypeEnum.USERDEFINED
+notdefined = IfcActionSourceTypeEnum.NOTDEFINED
 IfcActionTypeEnum = enum_namespace()
-extraordinary_a = getattr(IfcActionTypeEnum, 'EXTRAORDINARY_A', INDETERMINATE)
-permanent_g = getattr(IfcActionTypeEnum, 'PERMANENT_G', INDETERMINATE)
-variable_q = getattr(IfcActionTypeEnum, 'VARIABLE_Q', INDETERMINATE)
-userdefined = getattr(IfcActionTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcActionTypeEnum, 'NOTDEFINED', INDETERMINATE)
+extraordinary_a = IfcActionTypeEnum.EXTRAORDINARY_A
+permanent_g = IfcActionTypeEnum.PERMANENT_G
+variable_q = IfcActionTypeEnum.VARIABLE_Q
+userdefined = IfcActionTypeEnum.USERDEFINED
+notdefined = IfcActionTypeEnum.NOTDEFINED
 IfcActuatorTypeEnum = enum_namespace()
-electricactuator = getattr(IfcActuatorTypeEnum, 'ELECTRICACTUATOR', INDETERMINATE)
-handoperatedactuator = getattr(IfcActuatorTypeEnum, 'HANDOPERATEDACTUATOR', INDETERMINATE)
-hydraulicactuator = getattr(IfcActuatorTypeEnum, 'HYDRAULICACTUATOR', INDETERMINATE)
-pneumaticactuator = getattr(IfcActuatorTypeEnum, 'PNEUMATICACTUATOR', INDETERMINATE)
-thermostaticactuator = getattr(IfcActuatorTypeEnum, 'THERMOSTATICACTUATOR', INDETERMINATE)
-userdefined = getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcActuatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+electricactuator = IfcActuatorTypeEnum.ELECTRICACTUATOR
+handoperatedactuator = IfcActuatorTypeEnum.HANDOPERATEDACTUATOR
+hydraulicactuator = IfcActuatorTypeEnum.HYDRAULICACTUATOR
+pneumaticactuator = IfcActuatorTypeEnum.PNEUMATICACTUATOR
+thermostaticactuator = IfcActuatorTypeEnum.THERMOSTATICACTUATOR
+userdefined = IfcActuatorTypeEnum.USERDEFINED
+notdefined = IfcActuatorTypeEnum.NOTDEFINED
 IfcAddressTypeEnum = enum_namespace()
-distributionpoint = getattr(IfcAddressTypeEnum, 'DISTRIBUTIONPOINT', INDETERMINATE)
-home = getattr(IfcAddressTypeEnum, 'HOME', INDETERMINATE)
-office = getattr(IfcAddressTypeEnum, 'OFFICE', INDETERMINATE)
-site = getattr(IfcAddressTypeEnum, 'SITE', INDETERMINATE)
-userdefined = getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE)
+distributionpoint = IfcAddressTypeEnum.DISTRIBUTIONPOINT
+home = IfcAddressTypeEnum.HOME
+office = IfcAddressTypeEnum.OFFICE
+site = IfcAddressTypeEnum.SITE
+userdefined = IfcAddressTypeEnum.USERDEFINED
 IfcAirTerminalBoxTypeEnum = enum_namespace()
-constantflow = getattr(IfcAirTerminalBoxTypeEnum, 'CONSTANTFLOW', INDETERMINATE)
-variableflowpressuredependant = getattr(IfcAirTerminalBoxTypeEnum, 'VARIABLEFLOWPRESSUREDEPENDANT', INDETERMINATE)
-variableflowpressureindependant = getattr(IfcAirTerminalBoxTypeEnum, 'VARIABLEFLOWPRESSUREINDEPENDANT', INDETERMINATE)
-userdefined = getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAirTerminalBoxTypeEnum, 'NOTDEFINED', INDETERMINATE)
+constantflow = IfcAirTerminalBoxTypeEnum.CONSTANTFLOW
+variableflowpressuredependant = IfcAirTerminalBoxTypeEnum.VARIABLEFLOWPRESSUREDEPENDANT
+variableflowpressureindependant = IfcAirTerminalBoxTypeEnum.VARIABLEFLOWPRESSUREINDEPENDANT
+userdefined = IfcAirTerminalBoxTypeEnum.USERDEFINED
+notdefined = IfcAirTerminalBoxTypeEnum.NOTDEFINED
 IfcAirTerminalTypeEnum = enum_namespace()
-diffuser = getattr(IfcAirTerminalTypeEnum, 'DIFFUSER', INDETERMINATE)
-grille = getattr(IfcAirTerminalTypeEnum, 'GRILLE', INDETERMINATE)
-louvre = getattr(IfcAirTerminalTypeEnum, 'LOUVRE', INDETERMINATE)
-register = getattr(IfcAirTerminalTypeEnum, 'REGISTER', INDETERMINATE)
-userdefined = getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAirTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+diffuser = IfcAirTerminalTypeEnum.DIFFUSER
+grille = IfcAirTerminalTypeEnum.GRILLE
+louvre = IfcAirTerminalTypeEnum.LOUVRE
+register = IfcAirTerminalTypeEnum.REGISTER
+userdefined = IfcAirTerminalTypeEnum.USERDEFINED
+notdefined = IfcAirTerminalTypeEnum.NOTDEFINED
 IfcAirToAirHeatRecoveryTypeEnum = enum_namespace()
-fixedplatecounterflowexchanger = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATECOUNTERFLOWEXCHANGER', INDETERMINATE)
-fixedplatecrossflowexchanger = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATECROSSFLOWEXCHANGER', INDETERMINATE)
-fixedplateparallelflowexchanger = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'FIXEDPLATEPARALLELFLOWEXCHANGER', INDETERMINATE)
-heatpipe = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'HEATPIPE', INDETERMINATE)
-rotarywheel = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'ROTARYWHEEL', INDETERMINATE)
-runaroundcoilloop = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'RUNAROUNDCOILLOOP', INDETERMINATE)
-thermosiphoncoiltypeheatexchangers = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONCOILTYPEHEATEXCHANGERS', INDETERMINATE)
-thermosiphonsealedtubeheatexchangers = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'THERMOSIPHONSEALEDTUBEHEATEXCHANGERS', INDETERMINATE)
-twintowerenthalpyrecoveryloops = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'TWINTOWERENTHALPYRECOVERYLOOPS', INDETERMINATE)
-userdefined = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAirToAirHeatRecoveryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+fixedplatecounterflowexchanger = IfcAirToAirHeatRecoveryTypeEnum.FIXEDPLATECOUNTERFLOWEXCHANGER
+fixedplatecrossflowexchanger = IfcAirToAirHeatRecoveryTypeEnum.FIXEDPLATECROSSFLOWEXCHANGER
+fixedplateparallelflowexchanger = IfcAirToAirHeatRecoveryTypeEnum.FIXEDPLATEPARALLELFLOWEXCHANGER
+heatpipe = IfcAirToAirHeatRecoveryTypeEnum.HEATPIPE
+rotarywheel = IfcAirToAirHeatRecoveryTypeEnum.ROTARYWHEEL
+runaroundcoilloop = IfcAirToAirHeatRecoveryTypeEnum.RUNAROUNDCOILLOOP
+thermosiphoncoiltypeheatexchangers = IfcAirToAirHeatRecoveryTypeEnum.THERMOSIPHONCOILTYPEHEATEXCHANGERS
+thermosiphonsealedtubeheatexchangers = IfcAirToAirHeatRecoveryTypeEnum.THERMOSIPHONSEALEDTUBEHEATEXCHANGERS
+twintowerenthalpyrecoveryloops = IfcAirToAirHeatRecoveryTypeEnum.TWINTOWERENTHALPYRECOVERYLOOPS
+userdefined = IfcAirToAirHeatRecoveryTypeEnum.USERDEFINED
+notdefined = IfcAirToAirHeatRecoveryTypeEnum.NOTDEFINED
 IfcAlarmTypeEnum = enum_namespace()
-bell = getattr(IfcAlarmTypeEnum, 'BELL', INDETERMINATE)
-breakglassbutton = getattr(IfcAlarmTypeEnum, 'BREAKGLASSBUTTON', INDETERMINATE)
-light = getattr(IfcAlarmTypeEnum, 'LIGHT', INDETERMINATE)
-manualpullbox = getattr(IfcAlarmTypeEnum, 'MANUALPULLBOX', INDETERMINATE)
-railwaycrocodile = getattr(IfcAlarmTypeEnum, 'RAILWAYCROCODILE', INDETERMINATE)
-railwaydetonator = getattr(IfcAlarmTypeEnum, 'RAILWAYDETONATOR', INDETERMINATE)
-siren = getattr(IfcAlarmTypeEnum, 'SIREN', INDETERMINATE)
-whistle = getattr(IfcAlarmTypeEnum, 'WHISTLE', INDETERMINATE)
-userdefined = getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAlarmTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bell = IfcAlarmTypeEnum.BELL
+breakglassbutton = IfcAlarmTypeEnum.BREAKGLASSBUTTON
+light = IfcAlarmTypeEnum.LIGHT
+manualpullbox = IfcAlarmTypeEnum.MANUALPULLBOX
+railwaycrocodile = IfcAlarmTypeEnum.RAILWAYCROCODILE
+railwaydetonator = IfcAlarmTypeEnum.RAILWAYDETONATOR
+siren = IfcAlarmTypeEnum.SIREN
+whistle = IfcAlarmTypeEnum.WHISTLE
+userdefined = IfcAlarmTypeEnum.USERDEFINED
+notdefined = IfcAlarmTypeEnum.NOTDEFINED
 IfcAlignmentCantSegmentTypeEnum = enum_namespace()
-blosscurve = getattr(IfcAlignmentCantSegmentTypeEnum, 'BLOSSCURVE', INDETERMINATE)
-constantcant = getattr(IfcAlignmentCantSegmentTypeEnum, 'CONSTANTCANT', INDETERMINATE)
-cosinecurve = getattr(IfcAlignmentCantSegmentTypeEnum, 'COSINECURVE', INDETERMINATE)
-helmertcurve = getattr(IfcAlignmentCantSegmentTypeEnum, 'HELMERTCURVE', INDETERMINATE)
-lineartransition = getattr(IfcAlignmentCantSegmentTypeEnum, 'LINEARTRANSITION', INDETERMINATE)
-sinecurve = getattr(IfcAlignmentCantSegmentTypeEnum, 'SINECURVE', INDETERMINATE)
-viennesebend = getattr(IfcAlignmentCantSegmentTypeEnum, 'VIENNESEBEND', INDETERMINATE)
+blosscurve = IfcAlignmentCantSegmentTypeEnum.BLOSSCURVE
+constantcant = IfcAlignmentCantSegmentTypeEnum.CONSTANTCANT
+cosinecurve = IfcAlignmentCantSegmentTypeEnum.COSINECURVE
+helmertcurve = IfcAlignmentCantSegmentTypeEnum.HELMERTCURVE
+lineartransition = IfcAlignmentCantSegmentTypeEnum.LINEARTRANSITION
+sinecurve = IfcAlignmentCantSegmentTypeEnum.SINECURVE
+viennesebend = IfcAlignmentCantSegmentTypeEnum.VIENNESEBEND
 IfcAlignmentHorizontalSegmentTypeEnum = enum_namespace()
-blosscurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'BLOSSCURVE', INDETERMINATE)
-circulararc = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'CIRCULARARC', INDETERMINATE)
-clothoid = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'CLOTHOID', INDETERMINATE)
-cosinecurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'COSINECURVE', INDETERMINATE)
-cubic = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'CUBIC', INDETERMINATE)
-helmertcurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'HELMERTCURVE', INDETERMINATE)
-line = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'LINE', INDETERMINATE)
-sinecurve = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'SINECURVE', INDETERMINATE)
-viennesebend = getattr(IfcAlignmentHorizontalSegmentTypeEnum, 'VIENNESEBEND', INDETERMINATE)
+blosscurve = IfcAlignmentHorizontalSegmentTypeEnum.BLOSSCURVE
+circulararc = IfcAlignmentHorizontalSegmentTypeEnum.CIRCULARARC
+clothoid = IfcAlignmentHorizontalSegmentTypeEnum.CLOTHOID
+cosinecurve = IfcAlignmentHorizontalSegmentTypeEnum.COSINECURVE
+cubic = IfcAlignmentHorizontalSegmentTypeEnum.CUBIC
+helmertcurve = IfcAlignmentHorizontalSegmentTypeEnum.HELMERTCURVE
+line = IfcAlignmentHorizontalSegmentTypeEnum.LINE
+sinecurve = IfcAlignmentHorizontalSegmentTypeEnum.SINECURVE
+viennesebend = IfcAlignmentHorizontalSegmentTypeEnum.VIENNESEBEND
 IfcAlignmentTypeEnum = enum_namespace()
-userdefined = getattr(IfcAlignmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAlignmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcAlignmentTypeEnum.USERDEFINED
+notdefined = IfcAlignmentTypeEnum.NOTDEFINED
 IfcAlignmentVerticalSegmentTypeEnum = enum_namespace()
-circulararc = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CIRCULARARC', INDETERMINATE)
-clothoid = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CLOTHOID', INDETERMINATE)
-constantgradient = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'CONSTANTGRADIENT', INDETERMINATE)
-parabolicarc = getattr(IfcAlignmentVerticalSegmentTypeEnum, 'PARABOLICARC', INDETERMINATE)
+circulararc = IfcAlignmentVerticalSegmentTypeEnum.CIRCULARARC
+clothoid = IfcAlignmentVerticalSegmentTypeEnum.CLOTHOID
+constantgradient = IfcAlignmentVerticalSegmentTypeEnum.CONSTANTGRADIENT
+parabolicarc = IfcAlignmentVerticalSegmentTypeEnum.PARABOLICARC
 IfcAnalysisModelTypeEnum = enum_namespace()
-in_plane_loading_2d = getattr(IfcAnalysisModelTypeEnum, 'IN_PLANE_LOADING_2D', INDETERMINATE)
-loading_3d = getattr(IfcAnalysisModelTypeEnum, 'LOADING_3D', INDETERMINATE)
-out_plane_loading_2d = getattr(IfcAnalysisModelTypeEnum, 'OUT_PLANE_LOADING_2D', INDETERMINATE)
-userdefined = getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAnalysisModelTypeEnum, 'NOTDEFINED', INDETERMINATE)
+in_plane_loading_2d = IfcAnalysisModelTypeEnum.IN_PLANE_LOADING_2D
+loading_3d = IfcAnalysisModelTypeEnum.LOADING_3D
+out_plane_loading_2d = IfcAnalysisModelTypeEnum.OUT_PLANE_LOADING_2D
+userdefined = IfcAnalysisModelTypeEnum.USERDEFINED
+notdefined = IfcAnalysisModelTypeEnum.NOTDEFINED
 IfcAnalysisTheoryTypeEnum = enum_namespace()
-first_order_theory = getattr(IfcAnalysisTheoryTypeEnum, 'FIRST_ORDER_THEORY', INDETERMINATE)
-full_nonlinear_theory = getattr(IfcAnalysisTheoryTypeEnum, 'FULL_NONLINEAR_THEORY', INDETERMINATE)
-second_order_theory = getattr(IfcAnalysisTheoryTypeEnum, 'SECOND_ORDER_THEORY', INDETERMINATE)
-third_order_theory = getattr(IfcAnalysisTheoryTypeEnum, 'THIRD_ORDER_THEORY', INDETERMINATE)
-userdefined = getattr(IfcAnalysisTheoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAnalysisTheoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+first_order_theory = IfcAnalysisTheoryTypeEnum.FIRST_ORDER_THEORY
+full_nonlinear_theory = IfcAnalysisTheoryTypeEnum.FULL_NONLINEAR_THEORY
+second_order_theory = IfcAnalysisTheoryTypeEnum.SECOND_ORDER_THEORY
+third_order_theory = IfcAnalysisTheoryTypeEnum.THIRD_ORDER_THEORY
+userdefined = IfcAnalysisTheoryTypeEnum.USERDEFINED
+notdefined = IfcAnalysisTheoryTypeEnum.NOTDEFINED
 IfcAnnotationTypeEnum = enum_namespace()
-asbuiltarea = getattr(IfcAnnotationTypeEnum, 'ASBUILTAREA', INDETERMINATE)
-asbuiltline = getattr(IfcAnnotationTypeEnum, 'ASBUILTLINE', INDETERMINATE)
-asbuiltpoint = getattr(IfcAnnotationTypeEnum, 'ASBUILTPOINT', INDETERMINATE)
-assumedarea = getattr(IfcAnnotationTypeEnum, 'ASSUMEDAREA', INDETERMINATE)
-assumedline = getattr(IfcAnnotationTypeEnum, 'ASSUMEDLINE', INDETERMINATE)
-assumedpoint = getattr(IfcAnnotationTypeEnum, 'ASSUMEDPOINT', INDETERMINATE)
-non_physical_signal = getattr(IfcAnnotationTypeEnum, 'NON_PHYSICAL_SIGNAL', INDETERMINATE)
-superelevationevent = getattr(IfcAnnotationTypeEnum, 'SUPERELEVATIONEVENT', INDETERMINATE)
-widthevent = getattr(IfcAnnotationTypeEnum, 'WIDTHEVENT', INDETERMINATE)
-userdefined = getattr(IfcAnnotationTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAnnotationTypeEnum, 'NOTDEFINED', INDETERMINATE)
+asbuiltarea = IfcAnnotationTypeEnum.ASBUILTAREA
+asbuiltline = IfcAnnotationTypeEnum.ASBUILTLINE
+asbuiltpoint = IfcAnnotationTypeEnum.ASBUILTPOINT
+assumedarea = IfcAnnotationTypeEnum.ASSUMEDAREA
+assumedline = IfcAnnotationTypeEnum.ASSUMEDLINE
+assumedpoint = IfcAnnotationTypeEnum.ASSUMEDPOINT
+non_physical_signal = IfcAnnotationTypeEnum.NON_PHYSICAL_SIGNAL
+superelevationevent = IfcAnnotationTypeEnum.SUPERELEVATIONEVENT
+widthevent = IfcAnnotationTypeEnum.WIDTHEVENT
+userdefined = IfcAnnotationTypeEnum.USERDEFINED
+notdefined = IfcAnnotationTypeEnum.NOTDEFINED
 IfcArithmeticOperatorEnum = enum_namespace()
-add = getattr(IfcArithmeticOperatorEnum, 'ADD', INDETERMINATE)
-divide = getattr(IfcArithmeticOperatorEnum, 'DIVIDE', INDETERMINATE)
-multiply = getattr(IfcArithmeticOperatorEnum, 'MULTIPLY', INDETERMINATE)
-subtract = getattr(IfcArithmeticOperatorEnum, 'SUBTRACT', INDETERMINATE)
+add = IfcArithmeticOperatorEnum.ADD
+divide = IfcArithmeticOperatorEnum.DIVIDE
+multiply = IfcArithmeticOperatorEnum.MULTIPLY
+subtract = IfcArithmeticOperatorEnum.SUBTRACT
 IfcAssemblyPlaceEnum = enum_namespace()
-factory = getattr(IfcAssemblyPlaceEnum, 'FACTORY', INDETERMINATE)
-site = getattr(IfcAssemblyPlaceEnum, 'SITE', INDETERMINATE)
-notdefined = getattr(IfcAssemblyPlaceEnum, 'NOTDEFINED', INDETERMINATE)
+factory = IfcAssemblyPlaceEnum.FACTORY
+site = IfcAssemblyPlaceEnum.SITE
+notdefined = IfcAssemblyPlaceEnum.NOTDEFINED
 IfcAudioVisualApplianceTypeEnum = enum_namespace()
-amplifier = getattr(IfcAudioVisualApplianceTypeEnum, 'AMPLIFIER', INDETERMINATE)
-camera = getattr(IfcAudioVisualApplianceTypeEnum, 'CAMERA', INDETERMINATE)
-communicationterminal = getattr(IfcAudioVisualApplianceTypeEnum, 'COMMUNICATIONTERMINAL', INDETERMINATE)
-display = getattr(IfcAudioVisualApplianceTypeEnum, 'DISPLAY', INDETERMINATE)
-microphone = getattr(IfcAudioVisualApplianceTypeEnum, 'MICROPHONE', INDETERMINATE)
-player = getattr(IfcAudioVisualApplianceTypeEnum, 'PLAYER', INDETERMINATE)
-projector = getattr(IfcAudioVisualApplianceTypeEnum, 'PROJECTOR', INDETERMINATE)
-receiver = getattr(IfcAudioVisualApplianceTypeEnum, 'RECEIVER', INDETERMINATE)
-recordingequipment = getattr(IfcAudioVisualApplianceTypeEnum, 'RECORDINGEQUIPMENT', INDETERMINATE)
-speaker = getattr(IfcAudioVisualApplianceTypeEnum, 'SPEAKER', INDETERMINATE)
-switcher = getattr(IfcAudioVisualApplianceTypeEnum, 'SWITCHER', INDETERMINATE)
-telephone = getattr(IfcAudioVisualApplianceTypeEnum, 'TELEPHONE', INDETERMINATE)
-tuner = getattr(IfcAudioVisualApplianceTypeEnum, 'TUNER', INDETERMINATE)
-userdefined = getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcAudioVisualApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+amplifier = IfcAudioVisualApplianceTypeEnum.AMPLIFIER
+camera = IfcAudioVisualApplianceTypeEnum.CAMERA
+communicationterminal = IfcAudioVisualApplianceTypeEnum.COMMUNICATIONTERMINAL
+display = IfcAudioVisualApplianceTypeEnum.DISPLAY
+microphone = IfcAudioVisualApplianceTypeEnum.MICROPHONE
+player = IfcAudioVisualApplianceTypeEnum.PLAYER
+projector = IfcAudioVisualApplianceTypeEnum.PROJECTOR
+receiver = IfcAudioVisualApplianceTypeEnum.RECEIVER
+recordingequipment = IfcAudioVisualApplianceTypeEnum.RECORDINGEQUIPMENT
+speaker = IfcAudioVisualApplianceTypeEnum.SPEAKER
+switcher = IfcAudioVisualApplianceTypeEnum.SWITCHER
+telephone = IfcAudioVisualApplianceTypeEnum.TELEPHONE
+tuner = IfcAudioVisualApplianceTypeEnum.TUNER
+userdefined = IfcAudioVisualApplianceTypeEnum.USERDEFINED
+notdefined = IfcAudioVisualApplianceTypeEnum.NOTDEFINED
 IfcBSplineCurveForm = enum_namespace()
-circular_arc = getattr(IfcBSplineCurveForm, 'CIRCULAR_ARC', INDETERMINATE)
-elliptic_arc = getattr(IfcBSplineCurveForm, 'ELLIPTIC_ARC', INDETERMINATE)
-hyperbolic_arc = getattr(IfcBSplineCurveForm, 'HYPERBOLIC_ARC', INDETERMINATE)
-parabolic_arc = getattr(IfcBSplineCurveForm, 'PARABOLIC_ARC', INDETERMINATE)
-polyline_form = getattr(IfcBSplineCurveForm, 'POLYLINE_FORM', INDETERMINATE)
-unspecified = getattr(IfcBSplineCurveForm, 'UNSPECIFIED', INDETERMINATE)
+circular_arc = IfcBSplineCurveForm.CIRCULAR_ARC
+elliptic_arc = IfcBSplineCurveForm.ELLIPTIC_ARC
+hyperbolic_arc = IfcBSplineCurveForm.HYPERBOLIC_ARC
+parabolic_arc = IfcBSplineCurveForm.PARABOLIC_ARC
+polyline_form = IfcBSplineCurveForm.POLYLINE_FORM
+unspecified = IfcBSplineCurveForm.UNSPECIFIED
 IfcBSplineSurfaceForm = enum_namespace()
-conical_surf = getattr(IfcBSplineSurfaceForm, 'CONICAL_SURF', INDETERMINATE)
-cylindrical_surf = getattr(IfcBSplineSurfaceForm, 'CYLINDRICAL_SURF', INDETERMINATE)
-generalised_cone = getattr(IfcBSplineSurfaceForm, 'GENERALISED_CONE', INDETERMINATE)
-plane_surf = getattr(IfcBSplineSurfaceForm, 'PLANE_SURF', INDETERMINATE)
-quadric_surf = getattr(IfcBSplineSurfaceForm, 'QUADRIC_SURF', INDETERMINATE)
-ruled_surf = getattr(IfcBSplineSurfaceForm, 'RULED_SURF', INDETERMINATE)
-spherical_surf = getattr(IfcBSplineSurfaceForm, 'SPHERICAL_SURF', INDETERMINATE)
-surf_of_linear_extrusion = getattr(IfcBSplineSurfaceForm, 'SURF_OF_LINEAR_EXTRUSION', INDETERMINATE)
-surf_of_revolution = getattr(IfcBSplineSurfaceForm, 'SURF_OF_REVOLUTION', INDETERMINATE)
-toroidal_surf = getattr(IfcBSplineSurfaceForm, 'TOROIDAL_SURF', INDETERMINATE)
-unspecified = getattr(IfcBSplineSurfaceForm, 'UNSPECIFIED', INDETERMINATE)
+conical_surf = IfcBSplineSurfaceForm.CONICAL_SURF
+cylindrical_surf = IfcBSplineSurfaceForm.CYLINDRICAL_SURF
+generalised_cone = IfcBSplineSurfaceForm.GENERALISED_CONE
+plane_surf = IfcBSplineSurfaceForm.PLANE_SURF
+quadric_surf = IfcBSplineSurfaceForm.QUADRIC_SURF
+ruled_surf = IfcBSplineSurfaceForm.RULED_SURF
+spherical_surf = IfcBSplineSurfaceForm.SPHERICAL_SURF
+surf_of_linear_extrusion = IfcBSplineSurfaceForm.SURF_OF_LINEAR_EXTRUSION
+surf_of_revolution = IfcBSplineSurfaceForm.SURF_OF_REVOLUTION
+toroidal_surf = IfcBSplineSurfaceForm.TOROIDAL_SURF
+unspecified = IfcBSplineSurfaceForm.UNSPECIFIED
 IfcBeamTypeEnum = enum_namespace()
-beam = getattr(IfcBeamTypeEnum, 'BEAM', INDETERMINATE)
-cornice = getattr(IfcBeamTypeEnum, 'CORNICE', INDETERMINATE)
-diaphragm = getattr(IfcBeamTypeEnum, 'DIAPHRAGM', INDETERMINATE)
-edgebeam = getattr(IfcBeamTypeEnum, 'EDGEBEAM', INDETERMINATE)
-girder_segment = getattr(IfcBeamTypeEnum, 'GIRDER_SEGMENT', INDETERMINATE)
-hatstone = getattr(IfcBeamTypeEnum, 'HATSTONE', INDETERMINATE)
-hollowcore = getattr(IfcBeamTypeEnum, 'HOLLOWCORE', INDETERMINATE)
-joist = getattr(IfcBeamTypeEnum, 'JOIST', INDETERMINATE)
-lintel = getattr(IfcBeamTypeEnum, 'LINTEL', INDETERMINATE)
-piercap = getattr(IfcBeamTypeEnum, 'PIERCAP', INDETERMINATE)
-spandrel = getattr(IfcBeamTypeEnum, 'SPANDREL', INDETERMINATE)
-t_beam = getattr(IfcBeamTypeEnum, 'T_BEAM', INDETERMINATE)
-userdefined = getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBeamTypeEnum, 'NOTDEFINED', INDETERMINATE)
+beam = IfcBeamTypeEnum.BEAM
+cornice = IfcBeamTypeEnum.CORNICE
+diaphragm = IfcBeamTypeEnum.DIAPHRAGM
+edgebeam = IfcBeamTypeEnum.EDGEBEAM
+girder_segment = IfcBeamTypeEnum.GIRDER_SEGMENT
+hatstone = IfcBeamTypeEnum.HATSTONE
+hollowcore = IfcBeamTypeEnum.HOLLOWCORE
+joist = IfcBeamTypeEnum.JOIST
+lintel = IfcBeamTypeEnum.LINTEL
+piercap = IfcBeamTypeEnum.PIERCAP
+spandrel = IfcBeamTypeEnum.SPANDREL
+t_beam = IfcBeamTypeEnum.T_BEAM
+userdefined = IfcBeamTypeEnum.USERDEFINED
+notdefined = IfcBeamTypeEnum.NOTDEFINED
 IfcBearingTypeEnum = enum_namespace()
-cylindrical = getattr(IfcBearingTypeEnum, 'CYLINDRICAL', INDETERMINATE)
-disk = getattr(IfcBearingTypeEnum, 'DISK', INDETERMINATE)
-elastomeric = getattr(IfcBearingTypeEnum, 'ELASTOMERIC', INDETERMINATE)
-guide = getattr(IfcBearingTypeEnum, 'GUIDE', INDETERMINATE)
-pot = getattr(IfcBearingTypeEnum, 'POT', INDETERMINATE)
-rocker = getattr(IfcBearingTypeEnum, 'ROCKER', INDETERMINATE)
-roller = getattr(IfcBearingTypeEnum, 'ROLLER', INDETERMINATE)
-spherical = getattr(IfcBearingTypeEnum, 'SPHERICAL', INDETERMINATE)
-userdefined = getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBearingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cylindrical = IfcBearingTypeEnum.CYLINDRICAL
+disk = IfcBearingTypeEnum.DISK
+elastomeric = IfcBearingTypeEnum.ELASTOMERIC
+guide = IfcBearingTypeEnum.GUIDE
+pot = IfcBearingTypeEnum.POT
+rocker = IfcBearingTypeEnum.ROCKER
+roller = IfcBearingTypeEnum.ROLLER
+spherical = IfcBearingTypeEnum.SPHERICAL
+userdefined = IfcBearingTypeEnum.USERDEFINED
+notdefined = IfcBearingTypeEnum.NOTDEFINED
 IfcBenchmarkEnum = enum_namespace()
-equalto = getattr(IfcBenchmarkEnum, 'EQUALTO', INDETERMINATE)
-greaterthan = getattr(IfcBenchmarkEnum, 'GREATERTHAN', INDETERMINATE)
-greaterthanorequalto = getattr(IfcBenchmarkEnum, 'GREATERTHANOREQUALTO', INDETERMINATE)
-includedin = getattr(IfcBenchmarkEnum, 'INCLUDEDIN', INDETERMINATE)
-includes = getattr(IfcBenchmarkEnum, 'INCLUDES', INDETERMINATE)
-lessthan = getattr(IfcBenchmarkEnum, 'LESSTHAN', INDETERMINATE)
-lessthanorequalto = getattr(IfcBenchmarkEnum, 'LESSTHANOREQUALTO', INDETERMINATE)
-notequalto = getattr(IfcBenchmarkEnum, 'NOTEQUALTO', INDETERMINATE)
-notincludedin = getattr(IfcBenchmarkEnum, 'NOTINCLUDEDIN', INDETERMINATE)
-notincludes = getattr(IfcBenchmarkEnum, 'NOTINCLUDES', INDETERMINATE)
+equalto = IfcBenchmarkEnum.EQUALTO
+greaterthan = IfcBenchmarkEnum.GREATERTHAN
+greaterthanorequalto = IfcBenchmarkEnum.GREATERTHANOREQUALTO
+includedin = IfcBenchmarkEnum.INCLUDEDIN
+includes = IfcBenchmarkEnum.INCLUDES
+lessthan = IfcBenchmarkEnum.LESSTHAN
+lessthanorequalto = IfcBenchmarkEnum.LESSTHANOREQUALTO
+notequalto = IfcBenchmarkEnum.NOTEQUALTO
+notincludedin = IfcBenchmarkEnum.NOTINCLUDEDIN
+notincludes = IfcBenchmarkEnum.NOTINCLUDES
 IfcBoilerTypeEnum = enum_namespace()
-steam = getattr(IfcBoilerTypeEnum, 'STEAM', INDETERMINATE)
-water = getattr(IfcBoilerTypeEnum, 'WATER', INDETERMINATE)
-userdefined = getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBoilerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+steam = IfcBoilerTypeEnum.STEAM
+water = IfcBoilerTypeEnum.WATER
+userdefined = IfcBoilerTypeEnum.USERDEFINED
+notdefined = IfcBoilerTypeEnum.NOTDEFINED
 IfcBooleanOperator = enum_namespace()
-difference = getattr(IfcBooleanOperator, 'DIFFERENCE', INDETERMINATE)
-intersection = getattr(IfcBooleanOperator, 'INTERSECTION', INDETERMINATE)
-union = getattr(IfcBooleanOperator, 'UNION', INDETERMINATE)
+difference = IfcBooleanOperator.DIFFERENCE
+intersection = IfcBooleanOperator.INTERSECTION
+union = IfcBooleanOperator.UNION
 IfcBridgePartTypeEnum = enum_namespace()
-abutment = getattr(IfcBridgePartTypeEnum, 'ABUTMENT', INDETERMINATE)
-deck = getattr(IfcBridgePartTypeEnum, 'DECK', INDETERMINATE)
-deck_segment = getattr(IfcBridgePartTypeEnum, 'DECK_SEGMENT', INDETERMINATE)
-foundation = getattr(IfcBridgePartTypeEnum, 'FOUNDATION', INDETERMINATE)
-pier = getattr(IfcBridgePartTypeEnum, 'PIER', INDETERMINATE)
-pier_segment = getattr(IfcBridgePartTypeEnum, 'PIER_SEGMENT', INDETERMINATE)
-pylon = getattr(IfcBridgePartTypeEnum, 'PYLON', INDETERMINATE)
-substructure = getattr(IfcBridgePartTypeEnum, 'SUBSTRUCTURE', INDETERMINATE)
-superstructure = getattr(IfcBridgePartTypeEnum, 'SUPERSTRUCTURE', INDETERMINATE)
-surfacestructure = getattr(IfcBridgePartTypeEnum, 'SURFACESTRUCTURE', INDETERMINATE)
-userdefined = getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBridgePartTypeEnum, 'NOTDEFINED', INDETERMINATE)
+abutment = IfcBridgePartTypeEnum.ABUTMENT
+deck = IfcBridgePartTypeEnum.DECK
+deck_segment = IfcBridgePartTypeEnum.DECK_SEGMENT
+foundation = IfcBridgePartTypeEnum.FOUNDATION
+pier = IfcBridgePartTypeEnum.PIER
+pier_segment = IfcBridgePartTypeEnum.PIER_SEGMENT
+pylon = IfcBridgePartTypeEnum.PYLON
+substructure = IfcBridgePartTypeEnum.SUBSTRUCTURE
+superstructure = IfcBridgePartTypeEnum.SUPERSTRUCTURE
+surfacestructure = IfcBridgePartTypeEnum.SURFACESTRUCTURE
+userdefined = IfcBridgePartTypeEnum.USERDEFINED
+notdefined = IfcBridgePartTypeEnum.NOTDEFINED
 IfcBridgeTypeEnum = enum_namespace()
-arched = getattr(IfcBridgeTypeEnum, 'ARCHED', INDETERMINATE)
-cable_stayed = getattr(IfcBridgeTypeEnum, 'CABLE_STAYED', INDETERMINATE)
-cantilever = getattr(IfcBridgeTypeEnum, 'CANTILEVER', INDETERMINATE)
-culvert = getattr(IfcBridgeTypeEnum, 'CULVERT', INDETERMINATE)
-framework = getattr(IfcBridgeTypeEnum, 'FRAMEWORK', INDETERMINATE)
-girder = getattr(IfcBridgeTypeEnum, 'GIRDER', INDETERMINATE)
-suspension = getattr(IfcBridgeTypeEnum, 'SUSPENSION', INDETERMINATE)
-truss = getattr(IfcBridgeTypeEnum, 'TRUSS', INDETERMINATE)
-userdefined = getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBridgeTypeEnum, 'NOTDEFINED', INDETERMINATE)
+arched = IfcBridgeTypeEnum.ARCHED
+cable_stayed = IfcBridgeTypeEnum.CABLE_STAYED
+cantilever = IfcBridgeTypeEnum.CANTILEVER
+culvert = IfcBridgeTypeEnum.CULVERT
+framework = IfcBridgeTypeEnum.FRAMEWORK
+girder = IfcBridgeTypeEnum.GIRDER
+suspension = IfcBridgeTypeEnum.SUSPENSION
+truss = IfcBridgeTypeEnum.TRUSS
+userdefined = IfcBridgeTypeEnum.USERDEFINED
+notdefined = IfcBridgeTypeEnum.NOTDEFINED
 IfcBuildingElementPartTypeEnum = enum_namespace()
-apron = getattr(IfcBuildingElementPartTypeEnum, 'APRON', INDETERMINATE)
-armourunit = getattr(IfcBuildingElementPartTypeEnum, 'ARMOURUNIT', INDETERMINATE)
-insulation = getattr(IfcBuildingElementPartTypeEnum, 'INSULATION', INDETERMINATE)
-precastpanel = getattr(IfcBuildingElementPartTypeEnum, 'PRECASTPANEL', INDETERMINATE)
-safetycage = getattr(IfcBuildingElementPartTypeEnum, 'SAFETYCAGE', INDETERMINATE)
-userdefined = getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBuildingElementPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
+apron = IfcBuildingElementPartTypeEnum.APRON
+armourunit = IfcBuildingElementPartTypeEnum.ARMOURUNIT
+insulation = IfcBuildingElementPartTypeEnum.INSULATION
+precastpanel = IfcBuildingElementPartTypeEnum.PRECASTPANEL
+safetycage = IfcBuildingElementPartTypeEnum.SAFETYCAGE
+userdefined = IfcBuildingElementPartTypeEnum.USERDEFINED
+notdefined = IfcBuildingElementPartTypeEnum.NOTDEFINED
 IfcBuildingElementProxyTypeEnum = enum_namespace()
-complex = getattr(IfcBuildingElementProxyTypeEnum, 'COMPLEX', INDETERMINATE)
-element = getattr(IfcBuildingElementProxyTypeEnum, 'ELEMENT', INDETERMINATE)
-partial = getattr(IfcBuildingElementProxyTypeEnum, 'PARTIAL', INDETERMINATE)
-provisionforspace = getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORSPACE', INDETERMINATE)
-provisionforvoid = getattr(IfcBuildingElementProxyTypeEnum, 'PROVISIONFORVOID', INDETERMINATE)
-userdefined = getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBuildingElementProxyTypeEnum, 'NOTDEFINED', INDETERMINATE)
+complex = IfcBuildingElementProxyTypeEnum.COMPLEX
+element = IfcBuildingElementProxyTypeEnum.ELEMENT
+partial = IfcBuildingElementProxyTypeEnum.PARTIAL
+provisionforspace = IfcBuildingElementProxyTypeEnum.PROVISIONFORSPACE
+provisionforvoid = IfcBuildingElementProxyTypeEnum.PROVISIONFORVOID
+userdefined = IfcBuildingElementProxyTypeEnum.USERDEFINED
+notdefined = IfcBuildingElementProxyTypeEnum.NOTDEFINED
 IfcBuildingSystemTypeEnum = enum_namespace()
-fenestration = getattr(IfcBuildingSystemTypeEnum, 'FENESTRATION', INDETERMINATE)
-foundation = getattr(IfcBuildingSystemTypeEnum, 'FOUNDATION', INDETERMINATE)
-loadbearing = getattr(IfcBuildingSystemTypeEnum, 'LOADBEARING', INDETERMINATE)
-outershell = getattr(IfcBuildingSystemTypeEnum, 'OUTERSHELL', INDETERMINATE)
-shading = getattr(IfcBuildingSystemTypeEnum, 'SHADING', INDETERMINATE)
-transport = getattr(IfcBuildingSystemTypeEnum, 'TRANSPORT', INDETERMINATE)
-userdefined = getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBuildingSystemTypeEnum, 'NOTDEFINED', INDETERMINATE)
+fenestration = IfcBuildingSystemTypeEnum.FENESTRATION
+foundation = IfcBuildingSystemTypeEnum.FOUNDATION
+loadbearing = IfcBuildingSystemTypeEnum.LOADBEARING
+outershell = IfcBuildingSystemTypeEnum.OUTERSHELL
+shading = IfcBuildingSystemTypeEnum.SHADING
+transport = IfcBuildingSystemTypeEnum.TRANSPORT
+userdefined = IfcBuildingSystemTypeEnum.USERDEFINED
+notdefined = IfcBuildingSystemTypeEnum.NOTDEFINED
 IfcBuiltSystemTypeEnum = enum_namespace()
-erosionprevention = getattr(IfcBuiltSystemTypeEnum, 'EROSIONPREVENTION', INDETERMINATE)
-fenestration = getattr(IfcBuiltSystemTypeEnum, 'FENESTRATION', INDETERMINATE)
-foundation = getattr(IfcBuiltSystemTypeEnum, 'FOUNDATION', INDETERMINATE)
-loadbearing = getattr(IfcBuiltSystemTypeEnum, 'LOADBEARING', INDETERMINATE)
-mooring = getattr(IfcBuiltSystemTypeEnum, 'MOORING', INDETERMINATE)
-outershell = getattr(IfcBuiltSystemTypeEnum, 'OUTERSHELL', INDETERMINATE)
-prestressing = getattr(IfcBuiltSystemTypeEnum, 'PRESTRESSING', INDETERMINATE)
-railwayline = getattr(IfcBuiltSystemTypeEnum, 'RAILWAYLINE', INDETERMINATE)
-railwaytrack = getattr(IfcBuiltSystemTypeEnum, 'RAILWAYTRACK', INDETERMINATE)
-reinforcing = getattr(IfcBuiltSystemTypeEnum, 'REINFORCING', INDETERMINATE)
-shading = getattr(IfcBuiltSystemTypeEnum, 'SHADING', INDETERMINATE)
-trackcircuit = getattr(IfcBuiltSystemTypeEnum, 'TRACKCIRCUIT', INDETERMINATE)
-transport = getattr(IfcBuiltSystemTypeEnum, 'TRANSPORT', INDETERMINATE)
-userdefined = getattr(IfcBuiltSystemTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBuiltSystemTypeEnum, 'NOTDEFINED', INDETERMINATE)
+erosionprevention = IfcBuiltSystemTypeEnum.EROSIONPREVENTION
+fenestration = IfcBuiltSystemTypeEnum.FENESTRATION
+foundation = IfcBuiltSystemTypeEnum.FOUNDATION
+loadbearing = IfcBuiltSystemTypeEnum.LOADBEARING
+mooring = IfcBuiltSystemTypeEnum.MOORING
+outershell = IfcBuiltSystemTypeEnum.OUTERSHELL
+prestressing = IfcBuiltSystemTypeEnum.PRESTRESSING
+railwayline = IfcBuiltSystemTypeEnum.RAILWAYLINE
+railwaytrack = IfcBuiltSystemTypeEnum.RAILWAYTRACK
+reinforcing = IfcBuiltSystemTypeEnum.REINFORCING
+shading = IfcBuiltSystemTypeEnum.SHADING
+trackcircuit = IfcBuiltSystemTypeEnum.TRACKCIRCUIT
+transport = IfcBuiltSystemTypeEnum.TRANSPORT
+userdefined = IfcBuiltSystemTypeEnum.USERDEFINED
+notdefined = IfcBuiltSystemTypeEnum.NOTDEFINED
 IfcBurnerTypeEnum = enum_namespace()
-userdefined = getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcBurnerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcBurnerTypeEnum.USERDEFINED
+notdefined = IfcBurnerTypeEnum.NOTDEFINED
 IfcCableCarrierFittingTypeEnum = enum_namespace()
-bend = getattr(IfcCableCarrierFittingTypeEnum, 'BEND', INDETERMINATE)
-connector = getattr(IfcCableCarrierFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-cross = getattr(IfcCableCarrierFittingTypeEnum, 'CROSS', INDETERMINATE)
-junction = getattr(IfcCableCarrierFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-reducer = getattr(IfcCableCarrierFittingTypeEnum, 'REDUCER', INDETERMINATE)
-tee = getattr(IfcCableCarrierFittingTypeEnum, 'TEE', INDETERMINATE)
-transition = getattr(IfcCableCarrierFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCableCarrierFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bend = IfcCableCarrierFittingTypeEnum.BEND
+connector = IfcCableCarrierFittingTypeEnum.CONNECTOR
+cross = IfcCableCarrierFittingTypeEnum.CROSS
+junction = IfcCableCarrierFittingTypeEnum.JUNCTION
+reducer = IfcCableCarrierFittingTypeEnum.REDUCER
+tee = IfcCableCarrierFittingTypeEnum.TEE
+transition = IfcCableCarrierFittingTypeEnum.TRANSITION
+userdefined = IfcCableCarrierFittingTypeEnum.USERDEFINED
+notdefined = IfcCableCarrierFittingTypeEnum.NOTDEFINED
 IfcCableCarrierSegmentTypeEnum = enum_namespace()
-cablebracket = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLEBRACKET', INDETERMINATE)
-cableladdersegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLELADDERSEGMENT', INDETERMINATE)
-cabletraysegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLETRAYSEGMENT', INDETERMINATE)
-cabletrunkingsegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CABLETRUNKINGSEGMENT', INDETERMINATE)
-catenarywire = getattr(IfcCableCarrierSegmentTypeEnum, 'CATENARYWIRE', INDETERMINATE)
-conduitsegment = getattr(IfcCableCarrierSegmentTypeEnum, 'CONDUITSEGMENT', INDETERMINATE)
-dropper = getattr(IfcCableCarrierSegmentTypeEnum, 'DROPPER', INDETERMINATE)
-userdefined = getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCableCarrierSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cablebracket = IfcCableCarrierSegmentTypeEnum.CABLEBRACKET
+cableladdersegment = IfcCableCarrierSegmentTypeEnum.CABLELADDERSEGMENT
+cabletraysegment = IfcCableCarrierSegmentTypeEnum.CABLETRAYSEGMENT
+cabletrunkingsegment = IfcCableCarrierSegmentTypeEnum.CABLETRUNKINGSEGMENT
+catenarywire = IfcCableCarrierSegmentTypeEnum.CATENARYWIRE
+conduitsegment = IfcCableCarrierSegmentTypeEnum.CONDUITSEGMENT
+dropper = IfcCableCarrierSegmentTypeEnum.DROPPER
+userdefined = IfcCableCarrierSegmentTypeEnum.USERDEFINED
+notdefined = IfcCableCarrierSegmentTypeEnum.NOTDEFINED
 IfcCableFittingTypeEnum = enum_namespace()
-connector = getattr(IfcCableFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-entry = getattr(IfcCableFittingTypeEnum, 'ENTRY', INDETERMINATE)
-exit = getattr(IfcCableFittingTypeEnum, 'EXIT', INDETERMINATE)
-fanout = getattr(IfcCableFittingTypeEnum, 'FANOUT', INDETERMINATE)
-junction = getattr(IfcCableFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-transition = getattr(IfcCableFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCableFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+connector = IfcCableFittingTypeEnum.CONNECTOR
+entry = IfcCableFittingTypeEnum.ENTRY
+exit = IfcCableFittingTypeEnum.EXIT
+fanout = IfcCableFittingTypeEnum.FANOUT
+junction = IfcCableFittingTypeEnum.JUNCTION
+transition = IfcCableFittingTypeEnum.TRANSITION
+userdefined = IfcCableFittingTypeEnum.USERDEFINED
+notdefined = IfcCableFittingTypeEnum.NOTDEFINED
 IfcCableSegmentTypeEnum = enum_namespace()
-busbarsegment = getattr(IfcCableSegmentTypeEnum, 'BUSBARSEGMENT', INDETERMINATE)
-cablesegment = getattr(IfcCableSegmentTypeEnum, 'CABLESEGMENT', INDETERMINATE)
-conductorsegment = getattr(IfcCableSegmentTypeEnum, 'CONDUCTORSEGMENT', INDETERMINATE)
-contactwiresegment = getattr(IfcCableSegmentTypeEnum, 'CONTACTWIRESEGMENT', INDETERMINATE)
-coresegment = getattr(IfcCableSegmentTypeEnum, 'CORESEGMENT', INDETERMINATE)
-fibersegment = getattr(IfcCableSegmentTypeEnum, 'FIBERSEGMENT', INDETERMINATE)
-fibertube = getattr(IfcCableSegmentTypeEnum, 'FIBERTUBE', INDETERMINATE)
-opticalcablesegment = getattr(IfcCableSegmentTypeEnum, 'OPTICALCABLESEGMENT', INDETERMINATE)
-stitchwire = getattr(IfcCableSegmentTypeEnum, 'STITCHWIRE', INDETERMINATE)
-wirepairsegment = getattr(IfcCableSegmentTypeEnum, 'WIREPAIRSEGMENT', INDETERMINATE)
-userdefined = getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCableSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+busbarsegment = IfcCableSegmentTypeEnum.BUSBARSEGMENT
+cablesegment = IfcCableSegmentTypeEnum.CABLESEGMENT
+conductorsegment = IfcCableSegmentTypeEnum.CONDUCTORSEGMENT
+contactwiresegment = IfcCableSegmentTypeEnum.CONTACTWIRESEGMENT
+coresegment = IfcCableSegmentTypeEnum.CORESEGMENT
+fibersegment = IfcCableSegmentTypeEnum.FIBERSEGMENT
+fibertube = IfcCableSegmentTypeEnum.FIBERTUBE
+opticalcablesegment = IfcCableSegmentTypeEnum.OPTICALCABLESEGMENT
+stitchwire = IfcCableSegmentTypeEnum.STITCHWIRE
+wirepairsegment = IfcCableSegmentTypeEnum.WIREPAIRSEGMENT
+userdefined = IfcCableSegmentTypeEnum.USERDEFINED
+notdefined = IfcCableSegmentTypeEnum.NOTDEFINED
 IfcCaissonFoundationTypeEnum = enum_namespace()
-caisson = getattr(IfcCaissonFoundationTypeEnum, 'CAISSON', INDETERMINATE)
-well = getattr(IfcCaissonFoundationTypeEnum, 'WELL', INDETERMINATE)
-userdefined = getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCaissonFoundationTypeEnum, 'NOTDEFINED', INDETERMINATE)
+caisson = IfcCaissonFoundationTypeEnum.CAISSON
+well = IfcCaissonFoundationTypeEnum.WELL
+userdefined = IfcCaissonFoundationTypeEnum.USERDEFINED
+notdefined = IfcCaissonFoundationTypeEnum.NOTDEFINED
 IfcChangeActionEnum = enum_namespace()
-added = getattr(IfcChangeActionEnum, 'ADDED', INDETERMINATE)
-deleted = getattr(IfcChangeActionEnum, 'DELETED', INDETERMINATE)
-modified = getattr(IfcChangeActionEnum, 'MODIFIED', INDETERMINATE)
-nochange = getattr(IfcChangeActionEnum, 'NOCHANGE', INDETERMINATE)
-notdefined = getattr(IfcChangeActionEnum, 'NOTDEFINED', INDETERMINATE)
+added = IfcChangeActionEnum.ADDED
+deleted = IfcChangeActionEnum.DELETED
+modified = IfcChangeActionEnum.MODIFIED
+nochange = IfcChangeActionEnum.NOCHANGE
+notdefined = IfcChangeActionEnum.NOTDEFINED
 IfcChillerTypeEnum = enum_namespace()
-aircooled = getattr(IfcChillerTypeEnum, 'AIRCOOLED', INDETERMINATE)
-heatrecovery = getattr(IfcChillerTypeEnum, 'HEATRECOVERY', INDETERMINATE)
-watercooled = getattr(IfcChillerTypeEnum, 'WATERCOOLED', INDETERMINATE)
-userdefined = getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcChillerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+aircooled = IfcChillerTypeEnum.AIRCOOLED
+heatrecovery = IfcChillerTypeEnum.HEATRECOVERY
+watercooled = IfcChillerTypeEnum.WATERCOOLED
+userdefined = IfcChillerTypeEnum.USERDEFINED
+notdefined = IfcChillerTypeEnum.NOTDEFINED
 IfcChimneyTypeEnum = enum_namespace()
-userdefined = getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcChimneyTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcChimneyTypeEnum.USERDEFINED
+notdefined = IfcChimneyTypeEnum.NOTDEFINED
 IfcCoilTypeEnum = enum_namespace()
-dxcoolingcoil = getattr(IfcCoilTypeEnum, 'DXCOOLINGCOIL', INDETERMINATE)
-electricheatingcoil = getattr(IfcCoilTypeEnum, 'ELECTRICHEATINGCOIL', INDETERMINATE)
-gasheatingcoil = getattr(IfcCoilTypeEnum, 'GASHEATINGCOIL', INDETERMINATE)
-hydroniccoil = getattr(IfcCoilTypeEnum, 'HYDRONICCOIL', INDETERMINATE)
-steamheatingcoil = getattr(IfcCoilTypeEnum, 'STEAMHEATINGCOIL', INDETERMINATE)
-watercoolingcoil = getattr(IfcCoilTypeEnum, 'WATERCOOLINGCOIL', INDETERMINATE)
-waterheatingcoil = getattr(IfcCoilTypeEnum, 'WATERHEATINGCOIL', INDETERMINATE)
-userdefined = getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCoilTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dxcoolingcoil = IfcCoilTypeEnum.DXCOOLINGCOIL
+electricheatingcoil = IfcCoilTypeEnum.ELECTRICHEATINGCOIL
+gasheatingcoil = IfcCoilTypeEnum.GASHEATINGCOIL
+hydroniccoil = IfcCoilTypeEnum.HYDRONICCOIL
+steamheatingcoil = IfcCoilTypeEnum.STEAMHEATINGCOIL
+watercoolingcoil = IfcCoilTypeEnum.WATERCOOLINGCOIL
+waterheatingcoil = IfcCoilTypeEnum.WATERHEATINGCOIL
+userdefined = IfcCoilTypeEnum.USERDEFINED
+notdefined = IfcCoilTypeEnum.NOTDEFINED
 IfcColumnTypeEnum = enum_namespace()
-column = getattr(IfcColumnTypeEnum, 'COLUMN', INDETERMINATE)
-pierstem = getattr(IfcColumnTypeEnum, 'PIERSTEM', INDETERMINATE)
-pierstem_segment = getattr(IfcColumnTypeEnum, 'PIERSTEM_SEGMENT', INDETERMINATE)
-pilaster = getattr(IfcColumnTypeEnum, 'PILASTER', INDETERMINATE)
-standcolumn = getattr(IfcColumnTypeEnum, 'STANDCOLUMN', INDETERMINATE)
-userdefined = getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcColumnTypeEnum, 'NOTDEFINED', INDETERMINATE)
+column = IfcColumnTypeEnum.COLUMN
+pierstem = IfcColumnTypeEnum.PIERSTEM
+pierstem_segment = IfcColumnTypeEnum.PIERSTEM_SEGMENT
+pilaster = IfcColumnTypeEnum.PILASTER
+standcolumn = IfcColumnTypeEnum.STANDCOLUMN
+userdefined = IfcColumnTypeEnum.USERDEFINED
+notdefined = IfcColumnTypeEnum.NOTDEFINED
 IfcCommunicationsApplianceTypeEnum = enum_namespace()
-antenna = getattr(IfcCommunicationsApplianceTypeEnum, 'ANTENNA', INDETERMINATE)
-automaton = getattr(IfcCommunicationsApplianceTypeEnum, 'AUTOMATON', INDETERMINATE)
-computer = getattr(IfcCommunicationsApplianceTypeEnum, 'COMPUTER', INDETERMINATE)
-fax = getattr(IfcCommunicationsApplianceTypeEnum, 'FAX', INDETERMINATE)
-gateway = getattr(IfcCommunicationsApplianceTypeEnum, 'GATEWAY', INDETERMINATE)
-intelligentperipheral = getattr(IfcCommunicationsApplianceTypeEnum, 'INTELLIGENTPERIPHERAL', INDETERMINATE)
-ipnetworkequipment = getattr(IfcCommunicationsApplianceTypeEnum, 'IPNETWORKEQUIPMENT', INDETERMINATE)
-linesideelectronicunit = getattr(IfcCommunicationsApplianceTypeEnum, 'LINESIDEELECTRONICUNIT', INDETERMINATE)
-modem = getattr(IfcCommunicationsApplianceTypeEnum, 'MODEM', INDETERMINATE)
-networkappliance = getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKAPPLIANCE', INDETERMINATE)
-networkbridge = getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKBRIDGE', INDETERMINATE)
-networkhub = getattr(IfcCommunicationsApplianceTypeEnum, 'NETWORKHUB', INDETERMINATE)
-opticallineterminal = getattr(IfcCommunicationsApplianceTypeEnum, 'OPTICALLINETERMINAL', INDETERMINATE)
-opticalnetworkunit = getattr(IfcCommunicationsApplianceTypeEnum, 'OPTICALNETWORKUNIT', INDETERMINATE)
-printer = getattr(IfcCommunicationsApplianceTypeEnum, 'PRINTER', INDETERMINATE)
-radioblockcenter = getattr(IfcCommunicationsApplianceTypeEnum, 'RADIOBLOCKCENTER', INDETERMINATE)
-repeater = getattr(IfcCommunicationsApplianceTypeEnum, 'REPEATER', INDETERMINATE)
-router = getattr(IfcCommunicationsApplianceTypeEnum, 'ROUTER', INDETERMINATE)
-scanner = getattr(IfcCommunicationsApplianceTypeEnum, 'SCANNER', INDETERMINATE)
-telecommand = getattr(IfcCommunicationsApplianceTypeEnum, 'TELECOMMAND', INDETERMINATE)
-telephonyexchange = getattr(IfcCommunicationsApplianceTypeEnum, 'TELEPHONYEXCHANGE', INDETERMINATE)
-transitioncomponent = getattr(IfcCommunicationsApplianceTypeEnum, 'TRANSITIONCOMPONENT', INDETERMINATE)
-transponder = getattr(IfcCommunicationsApplianceTypeEnum, 'TRANSPONDER', INDETERMINATE)
-transportequipment = getattr(IfcCommunicationsApplianceTypeEnum, 'TRANSPORTEQUIPMENT', INDETERMINATE)
-userdefined = getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCommunicationsApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+antenna = IfcCommunicationsApplianceTypeEnum.ANTENNA
+automaton = IfcCommunicationsApplianceTypeEnum.AUTOMATON
+computer = IfcCommunicationsApplianceTypeEnum.COMPUTER
+fax = IfcCommunicationsApplianceTypeEnum.FAX
+gateway = IfcCommunicationsApplianceTypeEnum.GATEWAY
+intelligentperipheral = IfcCommunicationsApplianceTypeEnum.INTELLIGENTPERIPHERAL
+ipnetworkequipment = IfcCommunicationsApplianceTypeEnum.IPNETWORKEQUIPMENT
+linesideelectronicunit = IfcCommunicationsApplianceTypeEnum.LINESIDEELECTRONICUNIT
+modem = IfcCommunicationsApplianceTypeEnum.MODEM
+networkappliance = IfcCommunicationsApplianceTypeEnum.NETWORKAPPLIANCE
+networkbridge = IfcCommunicationsApplianceTypeEnum.NETWORKBRIDGE
+networkhub = IfcCommunicationsApplianceTypeEnum.NETWORKHUB
+opticallineterminal = IfcCommunicationsApplianceTypeEnum.OPTICALLINETERMINAL
+opticalnetworkunit = IfcCommunicationsApplianceTypeEnum.OPTICALNETWORKUNIT
+printer = IfcCommunicationsApplianceTypeEnum.PRINTER
+radioblockcenter = IfcCommunicationsApplianceTypeEnum.RADIOBLOCKCENTER
+repeater = IfcCommunicationsApplianceTypeEnum.REPEATER
+router = IfcCommunicationsApplianceTypeEnum.ROUTER
+scanner = IfcCommunicationsApplianceTypeEnum.SCANNER
+telecommand = IfcCommunicationsApplianceTypeEnum.TELECOMMAND
+telephonyexchange = IfcCommunicationsApplianceTypeEnum.TELEPHONYEXCHANGE
+transitioncomponent = IfcCommunicationsApplianceTypeEnum.TRANSITIONCOMPONENT
+transponder = IfcCommunicationsApplianceTypeEnum.TRANSPONDER
+transportequipment = IfcCommunicationsApplianceTypeEnum.TRANSPORTEQUIPMENT
+userdefined = IfcCommunicationsApplianceTypeEnum.USERDEFINED
+notdefined = IfcCommunicationsApplianceTypeEnum.NOTDEFINED
 IfcComplexPropertyTemplateTypeEnum = enum_namespace()
-p_complex = getattr(IfcComplexPropertyTemplateTypeEnum, 'P_COMPLEX', INDETERMINATE)
-q_complex = getattr(IfcComplexPropertyTemplateTypeEnum, 'Q_COMPLEX', INDETERMINATE)
+p_complex = IfcComplexPropertyTemplateTypeEnum.P_COMPLEX
+q_complex = IfcComplexPropertyTemplateTypeEnum.Q_COMPLEX
 IfcCompressorTypeEnum = enum_namespace()
-booster = getattr(IfcCompressorTypeEnum, 'BOOSTER', INDETERMINATE)
-dynamic = getattr(IfcCompressorTypeEnum, 'DYNAMIC', INDETERMINATE)
-hermetic = getattr(IfcCompressorTypeEnum, 'HERMETIC', INDETERMINATE)
-opentype = getattr(IfcCompressorTypeEnum, 'OPENTYPE', INDETERMINATE)
-reciprocating = getattr(IfcCompressorTypeEnum, 'RECIPROCATING', INDETERMINATE)
-rollingpiston = getattr(IfcCompressorTypeEnum, 'ROLLINGPISTON', INDETERMINATE)
-rotary = getattr(IfcCompressorTypeEnum, 'ROTARY', INDETERMINATE)
-rotaryvane = getattr(IfcCompressorTypeEnum, 'ROTARYVANE', INDETERMINATE)
-scroll = getattr(IfcCompressorTypeEnum, 'SCROLL', INDETERMINATE)
-semihermetic = getattr(IfcCompressorTypeEnum, 'SEMIHERMETIC', INDETERMINATE)
-singlescrew = getattr(IfcCompressorTypeEnum, 'SINGLESCREW', INDETERMINATE)
-singlestage = getattr(IfcCompressorTypeEnum, 'SINGLESTAGE', INDETERMINATE)
-trochoidal = getattr(IfcCompressorTypeEnum, 'TROCHOIDAL', INDETERMINATE)
-twinscrew = getattr(IfcCompressorTypeEnum, 'TWINSCREW', INDETERMINATE)
-weldedshellhermetic = getattr(IfcCompressorTypeEnum, 'WELDEDSHELLHERMETIC', INDETERMINATE)
-userdefined = getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCompressorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+booster = IfcCompressorTypeEnum.BOOSTER
+dynamic = IfcCompressorTypeEnum.DYNAMIC
+hermetic = IfcCompressorTypeEnum.HERMETIC
+opentype = IfcCompressorTypeEnum.OPENTYPE
+reciprocating = IfcCompressorTypeEnum.RECIPROCATING
+rollingpiston = IfcCompressorTypeEnum.ROLLINGPISTON
+rotary = IfcCompressorTypeEnum.ROTARY
+rotaryvane = IfcCompressorTypeEnum.ROTARYVANE
+scroll = IfcCompressorTypeEnum.SCROLL
+semihermetic = IfcCompressorTypeEnum.SEMIHERMETIC
+singlescrew = IfcCompressorTypeEnum.SINGLESCREW
+singlestage = IfcCompressorTypeEnum.SINGLESTAGE
+trochoidal = IfcCompressorTypeEnum.TROCHOIDAL
+twinscrew = IfcCompressorTypeEnum.TWINSCREW
+weldedshellhermetic = IfcCompressorTypeEnum.WELDEDSHELLHERMETIC
+userdefined = IfcCompressorTypeEnum.USERDEFINED
+notdefined = IfcCompressorTypeEnum.NOTDEFINED
 IfcCondenserTypeEnum = enum_namespace()
-aircooled = getattr(IfcCondenserTypeEnum, 'AIRCOOLED', INDETERMINATE)
-evaporativecooled = getattr(IfcCondenserTypeEnum, 'EVAPORATIVECOOLED', INDETERMINATE)
-watercooled = getattr(IfcCondenserTypeEnum, 'WATERCOOLED', INDETERMINATE)
-watercooledbrazedplate = getattr(IfcCondenserTypeEnum, 'WATERCOOLEDBRAZEDPLATE', INDETERMINATE)
-watercooledshellcoil = getattr(IfcCondenserTypeEnum, 'WATERCOOLEDSHELLCOIL', INDETERMINATE)
-watercooledshelltube = getattr(IfcCondenserTypeEnum, 'WATERCOOLEDSHELLTUBE', INDETERMINATE)
-watercooledtubeintube = getattr(IfcCondenserTypeEnum, 'WATERCOOLEDTUBEINTUBE', INDETERMINATE)
-userdefined = getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCondenserTypeEnum, 'NOTDEFINED', INDETERMINATE)
+aircooled = IfcCondenserTypeEnum.AIRCOOLED
+evaporativecooled = IfcCondenserTypeEnum.EVAPORATIVECOOLED
+watercooled = IfcCondenserTypeEnum.WATERCOOLED
+watercooledbrazedplate = IfcCondenserTypeEnum.WATERCOOLEDBRAZEDPLATE
+watercooledshellcoil = IfcCondenserTypeEnum.WATERCOOLEDSHELLCOIL
+watercooledshelltube = IfcCondenserTypeEnum.WATERCOOLEDSHELLTUBE
+watercooledtubeintube = IfcCondenserTypeEnum.WATERCOOLEDTUBEINTUBE
+userdefined = IfcCondenserTypeEnum.USERDEFINED
+notdefined = IfcCondenserTypeEnum.NOTDEFINED
 IfcConnectionTypeEnum = enum_namespace()
-atend = getattr(IfcConnectionTypeEnum, 'ATEND', INDETERMINATE)
-atpath = getattr(IfcConnectionTypeEnum, 'ATPATH', INDETERMINATE)
-atstart = getattr(IfcConnectionTypeEnum, 'ATSTART', INDETERMINATE)
-notdefined = getattr(IfcConnectionTypeEnum, 'NOTDEFINED', INDETERMINATE)
+atend = IfcConnectionTypeEnum.ATEND
+atpath = IfcConnectionTypeEnum.ATPATH
+atstart = IfcConnectionTypeEnum.ATSTART
+notdefined = IfcConnectionTypeEnum.NOTDEFINED
 IfcConstraintEnum = enum_namespace()
-advisory = getattr(IfcConstraintEnum, 'ADVISORY', INDETERMINATE)
-hard = getattr(IfcConstraintEnum, 'HARD', INDETERMINATE)
-soft = getattr(IfcConstraintEnum, 'SOFT', INDETERMINATE)
-userdefined = getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcConstraintEnum, 'NOTDEFINED', INDETERMINATE)
+advisory = IfcConstraintEnum.ADVISORY
+hard = IfcConstraintEnum.HARD
+soft = IfcConstraintEnum.SOFT
+userdefined = IfcConstraintEnum.USERDEFINED
+notdefined = IfcConstraintEnum.NOTDEFINED
 IfcConstructionEquipmentResourceTypeEnum = enum_namespace()
-demolishing = getattr(IfcConstructionEquipmentResourceTypeEnum, 'DEMOLISHING', INDETERMINATE)
-earthmoving = getattr(IfcConstructionEquipmentResourceTypeEnum, 'EARTHMOVING', INDETERMINATE)
-erecting = getattr(IfcConstructionEquipmentResourceTypeEnum, 'ERECTING', INDETERMINATE)
-heating = getattr(IfcConstructionEquipmentResourceTypeEnum, 'HEATING', INDETERMINATE)
-lighting = getattr(IfcConstructionEquipmentResourceTypeEnum, 'LIGHTING', INDETERMINATE)
-paving = getattr(IfcConstructionEquipmentResourceTypeEnum, 'PAVING', INDETERMINATE)
-pumping = getattr(IfcConstructionEquipmentResourceTypeEnum, 'PUMPING', INDETERMINATE)
-transporting = getattr(IfcConstructionEquipmentResourceTypeEnum, 'TRANSPORTING', INDETERMINATE)
-userdefined = getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcConstructionEquipmentResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+demolishing = IfcConstructionEquipmentResourceTypeEnum.DEMOLISHING
+earthmoving = IfcConstructionEquipmentResourceTypeEnum.EARTHMOVING
+erecting = IfcConstructionEquipmentResourceTypeEnum.ERECTING
+heating = IfcConstructionEquipmentResourceTypeEnum.HEATING
+lighting = IfcConstructionEquipmentResourceTypeEnum.LIGHTING
+paving = IfcConstructionEquipmentResourceTypeEnum.PAVING
+pumping = IfcConstructionEquipmentResourceTypeEnum.PUMPING
+transporting = IfcConstructionEquipmentResourceTypeEnum.TRANSPORTING
+userdefined = IfcConstructionEquipmentResourceTypeEnum.USERDEFINED
+notdefined = IfcConstructionEquipmentResourceTypeEnum.NOTDEFINED
 IfcConstructionMaterialResourceTypeEnum = enum_namespace()
-aggregates = getattr(IfcConstructionMaterialResourceTypeEnum, 'AGGREGATES', INDETERMINATE)
-concrete = getattr(IfcConstructionMaterialResourceTypeEnum, 'CONCRETE', INDETERMINATE)
-drywall = getattr(IfcConstructionMaterialResourceTypeEnum, 'DRYWALL', INDETERMINATE)
-fuel = getattr(IfcConstructionMaterialResourceTypeEnum, 'FUEL', INDETERMINATE)
-gypsum = getattr(IfcConstructionMaterialResourceTypeEnum, 'GYPSUM', INDETERMINATE)
-masonry = getattr(IfcConstructionMaterialResourceTypeEnum, 'MASONRY', INDETERMINATE)
-metal = getattr(IfcConstructionMaterialResourceTypeEnum, 'METAL', INDETERMINATE)
-plastic = getattr(IfcConstructionMaterialResourceTypeEnum, 'PLASTIC', INDETERMINATE)
-wood = getattr(IfcConstructionMaterialResourceTypeEnum, 'WOOD', INDETERMINATE)
-userdefined = getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcConstructionMaterialResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+aggregates = IfcConstructionMaterialResourceTypeEnum.AGGREGATES
+concrete = IfcConstructionMaterialResourceTypeEnum.CONCRETE
+drywall = IfcConstructionMaterialResourceTypeEnum.DRYWALL
+fuel = IfcConstructionMaterialResourceTypeEnum.FUEL
+gypsum = IfcConstructionMaterialResourceTypeEnum.GYPSUM
+masonry = IfcConstructionMaterialResourceTypeEnum.MASONRY
+metal = IfcConstructionMaterialResourceTypeEnum.METAL
+plastic = IfcConstructionMaterialResourceTypeEnum.PLASTIC
+wood = IfcConstructionMaterialResourceTypeEnum.WOOD
+userdefined = IfcConstructionMaterialResourceTypeEnum.USERDEFINED
+notdefined = IfcConstructionMaterialResourceTypeEnum.NOTDEFINED
 IfcConstructionProductResourceTypeEnum = enum_namespace()
-assembly = getattr(IfcConstructionProductResourceTypeEnum, 'ASSEMBLY', INDETERMINATE)
-formwork = getattr(IfcConstructionProductResourceTypeEnum, 'FORMWORK', INDETERMINATE)
-userdefined = getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcConstructionProductResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+assembly = IfcConstructionProductResourceTypeEnum.ASSEMBLY
+formwork = IfcConstructionProductResourceTypeEnum.FORMWORK
+userdefined = IfcConstructionProductResourceTypeEnum.USERDEFINED
+notdefined = IfcConstructionProductResourceTypeEnum.NOTDEFINED
 IfcControllerTypeEnum = enum_namespace()
-floating = getattr(IfcControllerTypeEnum, 'FLOATING', INDETERMINATE)
-multiposition = getattr(IfcControllerTypeEnum, 'MULTIPOSITION', INDETERMINATE)
-programmable = getattr(IfcControllerTypeEnum, 'PROGRAMMABLE', INDETERMINATE)
-proportional = getattr(IfcControllerTypeEnum, 'PROPORTIONAL', INDETERMINATE)
-twoposition = getattr(IfcControllerTypeEnum, 'TWOPOSITION', INDETERMINATE)
-userdefined = getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcControllerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+floating = IfcControllerTypeEnum.FLOATING
+multiposition = IfcControllerTypeEnum.MULTIPOSITION
+programmable = IfcControllerTypeEnum.PROGRAMMABLE
+proportional = IfcControllerTypeEnum.PROPORTIONAL
+twoposition = IfcControllerTypeEnum.TWOPOSITION
+userdefined = IfcControllerTypeEnum.USERDEFINED
+notdefined = IfcControllerTypeEnum.NOTDEFINED
 IfcConveyorSegmentTypeEnum = enum_namespace()
-beltconveyor = getattr(IfcConveyorSegmentTypeEnum, 'BELTCONVEYOR', INDETERMINATE)
-bucketconveyor = getattr(IfcConveyorSegmentTypeEnum, 'BUCKETCONVEYOR', INDETERMINATE)
-chuteconveyor = getattr(IfcConveyorSegmentTypeEnum, 'CHUTECONVEYOR', INDETERMINATE)
-screwconveyor = getattr(IfcConveyorSegmentTypeEnum, 'SCREWCONVEYOR', INDETERMINATE)
-userdefined = getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcConveyorSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+beltconveyor = IfcConveyorSegmentTypeEnum.BELTCONVEYOR
+bucketconveyor = IfcConveyorSegmentTypeEnum.BUCKETCONVEYOR
+chuteconveyor = IfcConveyorSegmentTypeEnum.CHUTECONVEYOR
+screwconveyor = IfcConveyorSegmentTypeEnum.SCREWCONVEYOR
+userdefined = IfcConveyorSegmentTypeEnum.USERDEFINED
+notdefined = IfcConveyorSegmentTypeEnum.NOTDEFINED
 IfcCooledBeamTypeEnum = enum_namespace()
-active = getattr(IfcCooledBeamTypeEnum, 'ACTIVE', INDETERMINATE)
-passive = getattr(IfcCooledBeamTypeEnum, 'PASSIVE', INDETERMINATE)
-userdefined = getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCooledBeamTypeEnum, 'NOTDEFINED', INDETERMINATE)
+active = IfcCooledBeamTypeEnum.ACTIVE
+passive = IfcCooledBeamTypeEnum.PASSIVE
+userdefined = IfcCooledBeamTypeEnum.USERDEFINED
+notdefined = IfcCooledBeamTypeEnum.NOTDEFINED
 IfcCoolingTowerTypeEnum = enum_namespace()
-mechanicalforceddraft = getattr(IfcCoolingTowerTypeEnum, 'MECHANICALFORCEDDRAFT', INDETERMINATE)
-mechanicalinduceddraft = getattr(IfcCoolingTowerTypeEnum, 'MECHANICALINDUCEDDRAFT', INDETERMINATE)
-naturaldraft = getattr(IfcCoolingTowerTypeEnum, 'NATURALDRAFT', INDETERMINATE)
-userdefined = getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCoolingTowerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+mechanicalforceddraft = IfcCoolingTowerTypeEnum.MECHANICALFORCEDDRAFT
+mechanicalinduceddraft = IfcCoolingTowerTypeEnum.MECHANICALINDUCEDDRAFT
+naturaldraft = IfcCoolingTowerTypeEnum.NATURALDRAFT
+userdefined = IfcCoolingTowerTypeEnum.USERDEFINED
+notdefined = IfcCoolingTowerTypeEnum.NOTDEFINED
 IfcCostItemTypeEnum = enum_namespace()
-userdefined = getattr(IfcCostItemTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCostItemTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcCostItemTypeEnum.USERDEFINED
+notdefined = IfcCostItemTypeEnum.NOTDEFINED
 IfcCostScheduleTypeEnum = enum_namespace()
-budget = getattr(IfcCostScheduleTypeEnum, 'BUDGET', INDETERMINATE)
-costplan = getattr(IfcCostScheduleTypeEnum, 'COSTPLAN', INDETERMINATE)
-estimate = getattr(IfcCostScheduleTypeEnum, 'ESTIMATE', INDETERMINATE)
-pricedbillofquantities = getattr(IfcCostScheduleTypeEnum, 'PRICEDBILLOFQUANTITIES', INDETERMINATE)
-scheduleofrates = getattr(IfcCostScheduleTypeEnum, 'SCHEDULEOFRATES', INDETERMINATE)
-tender = getattr(IfcCostScheduleTypeEnum, 'TENDER', INDETERMINATE)
-unpricedbillofquantities = getattr(IfcCostScheduleTypeEnum, 'UNPRICEDBILLOFQUANTITIES', INDETERMINATE)
-userdefined = getattr(IfcCostScheduleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCostScheduleTypeEnum, 'NOTDEFINED', INDETERMINATE)
+budget = IfcCostScheduleTypeEnum.BUDGET
+costplan = IfcCostScheduleTypeEnum.COSTPLAN
+estimate = IfcCostScheduleTypeEnum.ESTIMATE
+pricedbillofquantities = IfcCostScheduleTypeEnum.PRICEDBILLOFQUANTITIES
+scheduleofrates = IfcCostScheduleTypeEnum.SCHEDULEOFRATES
+tender = IfcCostScheduleTypeEnum.TENDER
+unpricedbillofquantities = IfcCostScheduleTypeEnum.UNPRICEDBILLOFQUANTITIES
+userdefined = IfcCostScheduleTypeEnum.USERDEFINED
+notdefined = IfcCostScheduleTypeEnum.NOTDEFINED
 IfcCourseTypeEnum = enum_namespace()
-armour = getattr(IfcCourseTypeEnum, 'ARMOUR', INDETERMINATE)
-ballastbed = getattr(IfcCourseTypeEnum, 'BALLASTBED', INDETERMINATE)
-core = getattr(IfcCourseTypeEnum, 'CORE', INDETERMINATE)
-filter = getattr(IfcCourseTypeEnum, 'FILTER', INDETERMINATE)
-pavement = getattr(IfcCourseTypeEnum, 'PAVEMENT', INDETERMINATE)
-protection = getattr(IfcCourseTypeEnum, 'PROTECTION', INDETERMINATE)
-userdefined = getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCourseTypeEnum, 'NOTDEFINED', INDETERMINATE)
+armour = IfcCourseTypeEnum.ARMOUR
+ballastbed = IfcCourseTypeEnum.BALLASTBED
+core = IfcCourseTypeEnum.CORE
+filter = IfcCourseTypeEnum.FILTER
+pavement = IfcCourseTypeEnum.PAVEMENT
+protection = IfcCourseTypeEnum.PROTECTION
+userdefined = IfcCourseTypeEnum.USERDEFINED
+notdefined = IfcCourseTypeEnum.NOTDEFINED
 IfcCoveringTypeEnum = enum_namespace()
-ceiling = getattr(IfcCoveringTypeEnum, 'CEILING', INDETERMINATE)
-cladding = getattr(IfcCoveringTypeEnum, 'CLADDING', INDETERMINATE)
-coping = getattr(IfcCoveringTypeEnum, 'COPING', INDETERMINATE)
-flooring = getattr(IfcCoveringTypeEnum, 'FLOORING', INDETERMINATE)
-insulation = getattr(IfcCoveringTypeEnum, 'INSULATION', INDETERMINATE)
-membrane = getattr(IfcCoveringTypeEnum, 'MEMBRANE', INDETERMINATE)
-molding = getattr(IfcCoveringTypeEnum, 'MOLDING', INDETERMINATE)
-roofing = getattr(IfcCoveringTypeEnum, 'ROOFING', INDETERMINATE)
-skirtingboard = getattr(IfcCoveringTypeEnum, 'SKIRTINGBOARD', INDETERMINATE)
-sleeving = getattr(IfcCoveringTypeEnum, 'SLEEVING', INDETERMINATE)
-topping = getattr(IfcCoveringTypeEnum, 'TOPPING', INDETERMINATE)
-wrapping = getattr(IfcCoveringTypeEnum, 'WRAPPING', INDETERMINATE)
-userdefined = getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCoveringTypeEnum, 'NOTDEFINED', INDETERMINATE)
+ceiling = IfcCoveringTypeEnum.CEILING
+cladding = IfcCoveringTypeEnum.CLADDING
+coping = IfcCoveringTypeEnum.COPING
+flooring = IfcCoveringTypeEnum.FLOORING
+insulation = IfcCoveringTypeEnum.INSULATION
+membrane = IfcCoveringTypeEnum.MEMBRANE
+molding = IfcCoveringTypeEnum.MOLDING
+roofing = IfcCoveringTypeEnum.ROOFING
+skirtingboard = IfcCoveringTypeEnum.SKIRTINGBOARD
+sleeving = IfcCoveringTypeEnum.SLEEVING
+topping = IfcCoveringTypeEnum.TOPPING
+wrapping = IfcCoveringTypeEnum.WRAPPING
+userdefined = IfcCoveringTypeEnum.USERDEFINED
+notdefined = IfcCoveringTypeEnum.NOTDEFINED
 IfcCrewResourceTypeEnum = enum_namespace()
-office = getattr(IfcCrewResourceTypeEnum, 'OFFICE', INDETERMINATE)
-site = getattr(IfcCrewResourceTypeEnum, 'SITE', INDETERMINATE)
-userdefined = getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCrewResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+office = IfcCrewResourceTypeEnum.OFFICE
+site = IfcCrewResourceTypeEnum.SITE
+userdefined = IfcCrewResourceTypeEnum.USERDEFINED
+notdefined = IfcCrewResourceTypeEnum.NOTDEFINED
 IfcCurtainWallTypeEnum = enum_namespace()
-userdefined = getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcCurtainWallTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcCurtainWallTypeEnum.USERDEFINED
+notdefined = IfcCurtainWallTypeEnum.NOTDEFINED
 IfcCurveInterpolationEnum = enum_namespace()
-linear = getattr(IfcCurveInterpolationEnum, 'LINEAR', INDETERMINATE)
-log_linear = getattr(IfcCurveInterpolationEnum, 'LOG_LINEAR', INDETERMINATE)
-log_log = getattr(IfcCurveInterpolationEnum, 'LOG_LOG', INDETERMINATE)
-notdefined = getattr(IfcCurveInterpolationEnum, 'NOTDEFINED', INDETERMINATE)
+linear = IfcCurveInterpolationEnum.LINEAR
+log_linear = IfcCurveInterpolationEnum.LOG_LINEAR
+log_log = IfcCurveInterpolationEnum.LOG_LOG
+notdefined = IfcCurveInterpolationEnum.NOTDEFINED
 IfcDamperTypeEnum = enum_namespace()
-backdraftdamper = getattr(IfcDamperTypeEnum, 'BACKDRAFTDAMPER', INDETERMINATE)
-balancingdamper = getattr(IfcDamperTypeEnum, 'BALANCINGDAMPER', INDETERMINATE)
-blastdamper = getattr(IfcDamperTypeEnum, 'BLASTDAMPER', INDETERMINATE)
-controldamper = getattr(IfcDamperTypeEnum, 'CONTROLDAMPER', INDETERMINATE)
-firedamper = getattr(IfcDamperTypeEnum, 'FIREDAMPER', INDETERMINATE)
-firesmokedamper = getattr(IfcDamperTypeEnum, 'FIRESMOKEDAMPER', INDETERMINATE)
-fumehoodexhaust = getattr(IfcDamperTypeEnum, 'FUMEHOODEXHAUST', INDETERMINATE)
-gravitydamper = getattr(IfcDamperTypeEnum, 'GRAVITYDAMPER', INDETERMINATE)
-gravityreliefdamper = getattr(IfcDamperTypeEnum, 'GRAVITYRELIEFDAMPER', INDETERMINATE)
-reliefdamper = getattr(IfcDamperTypeEnum, 'RELIEFDAMPER', INDETERMINATE)
-smokedamper = getattr(IfcDamperTypeEnum, 'SMOKEDAMPER', INDETERMINATE)
-userdefined = getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDamperTypeEnum, 'NOTDEFINED', INDETERMINATE)
+backdraftdamper = IfcDamperTypeEnum.BACKDRAFTDAMPER
+balancingdamper = IfcDamperTypeEnum.BALANCINGDAMPER
+blastdamper = IfcDamperTypeEnum.BLASTDAMPER
+controldamper = IfcDamperTypeEnum.CONTROLDAMPER
+firedamper = IfcDamperTypeEnum.FIREDAMPER
+firesmokedamper = IfcDamperTypeEnum.FIRESMOKEDAMPER
+fumehoodexhaust = IfcDamperTypeEnum.FUMEHOODEXHAUST
+gravitydamper = IfcDamperTypeEnum.GRAVITYDAMPER
+gravityreliefdamper = IfcDamperTypeEnum.GRAVITYRELIEFDAMPER
+reliefdamper = IfcDamperTypeEnum.RELIEFDAMPER
+smokedamper = IfcDamperTypeEnum.SMOKEDAMPER
+userdefined = IfcDamperTypeEnum.USERDEFINED
+notdefined = IfcDamperTypeEnum.NOTDEFINED
 IfcDataOriginEnum = enum_namespace()
-measured = getattr(IfcDataOriginEnum, 'MEASURED', INDETERMINATE)
-predicted = getattr(IfcDataOriginEnum, 'PREDICTED', INDETERMINATE)
-simulated = getattr(IfcDataOriginEnum, 'SIMULATED', INDETERMINATE)
-userdefined = getattr(IfcDataOriginEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDataOriginEnum, 'NOTDEFINED', INDETERMINATE)
+measured = IfcDataOriginEnum.MEASURED
+predicted = IfcDataOriginEnum.PREDICTED
+simulated = IfcDataOriginEnum.SIMULATED
+userdefined = IfcDataOriginEnum.USERDEFINED
+notdefined = IfcDataOriginEnum.NOTDEFINED
 IfcDerivedUnitEnum = enum_namespace()
-accelerationunit = getattr(IfcDerivedUnitEnum, 'ACCELERATIONUNIT', INDETERMINATE)
-angularvelocityunit = getattr(IfcDerivedUnitEnum, 'ANGULARVELOCITYUNIT', INDETERMINATE)
-areadensityunit = getattr(IfcDerivedUnitEnum, 'AREADENSITYUNIT', INDETERMINATE)
-compoundplaneangleunit = getattr(IfcDerivedUnitEnum, 'COMPOUNDPLANEANGLEUNIT', INDETERMINATE)
-curvatureunit = getattr(IfcDerivedUnitEnum, 'CURVATUREUNIT', INDETERMINATE)
-dynamicviscosityunit = getattr(IfcDerivedUnitEnum, 'DYNAMICVISCOSITYUNIT', INDETERMINATE)
-heatfluxdensityunit = getattr(IfcDerivedUnitEnum, 'HEATFLUXDENSITYUNIT', INDETERMINATE)
-heatingvalueunit = getattr(IfcDerivedUnitEnum, 'HEATINGVALUEUNIT', INDETERMINATE)
-integercountrateunit = getattr(IfcDerivedUnitEnum, 'INTEGERCOUNTRATEUNIT', INDETERMINATE)
-ionconcentrationunit = getattr(IfcDerivedUnitEnum, 'IONCONCENTRATIONUNIT', INDETERMINATE)
-isothermalmoisturecapacityunit = getattr(IfcDerivedUnitEnum, 'ISOTHERMALMOISTURECAPACITYUNIT', INDETERMINATE)
-kinematicviscosityunit = getattr(IfcDerivedUnitEnum, 'KINEMATICVISCOSITYUNIT', INDETERMINATE)
-linearforceunit = getattr(IfcDerivedUnitEnum, 'LINEARFORCEUNIT', INDETERMINATE)
-linearmomentunit = getattr(IfcDerivedUnitEnum, 'LINEARMOMENTUNIT', INDETERMINATE)
-linearstiffnessunit = getattr(IfcDerivedUnitEnum, 'LINEARSTIFFNESSUNIT', INDETERMINATE)
-linearvelocityunit = getattr(IfcDerivedUnitEnum, 'LINEARVELOCITYUNIT', INDETERMINATE)
-luminousintensitydistributionunit = getattr(IfcDerivedUnitEnum, 'LUMINOUSINTENSITYDISTRIBUTIONUNIT', INDETERMINATE)
-massdensityunit = getattr(IfcDerivedUnitEnum, 'MASSDENSITYUNIT', INDETERMINATE)
-massflowrateunit = getattr(IfcDerivedUnitEnum, 'MASSFLOWRATEUNIT', INDETERMINATE)
-massperlengthunit = getattr(IfcDerivedUnitEnum, 'MASSPERLENGTHUNIT', INDETERMINATE)
-modulusofelasticityunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFELASTICITYUNIT', INDETERMINATE)
-modulusoflinearsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFLINEARSUBGRADEREACTIONUNIT', INDETERMINATE)
-modulusofrotationalsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFROTATIONALSUBGRADEREACTIONUNIT', INDETERMINATE)
-modulusofsubgradereactionunit = getattr(IfcDerivedUnitEnum, 'MODULUSOFSUBGRADEREACTIONUNIT', INDETERMINATE)
-moisturediffusivityunit = getattr(IfcDerivedUnitEnum, 'MOISTUREDIFFUSIVITYUNIT', INDETERMINATE)
-molecularweightunit = getattr(IfcDerivedUnitEnum, 'MOLECULARWEIGHTUNIT', INDETERMINATE)
-momentofinertiaunit = getattr(IfcDerivedUnitEnum, 'MOMENTOFINERTIAUNIT', INDETERMINATE)
-phunit = getattr(IfcDerivedUnitEnum, 'PHUNIT', INDETERMINATE)
-planarforceunit = getattr(IfcDerivedUnitEnum, 'PLANARFORCEUNIT', INDETERMINATE)
-rotationalfrequencyunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALFREQUENCYUNIT', INDETERMINATE)
-rotationalmassunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALMASSUNIT', INDETERMINATE)
-rotationalstiffnessunit = getattr(IfcDerivedUnitEnum, 'ROTATIONALSTIFFNESSUNIT', INDETERMINATE)
-sectionareaintegralunit = getattr(IfcDerivedUnitEnum, 'SECTIONAREAINTEGRALUNIT', INDETERMINATE)
-sectionmodulusunit = getattr(IfcDerivedUnitEnum, 'SECTIONMODULUSUNIT', INDETERMINATE)
-shearmodulusunit = getattr(IfcDerivedUnitEnum, 'SHEARMODULUSUNIT', INDETERMINATE)
-soundpowerlevelunit = getattr(IfcDerivedUnitEnum, 'SOUNDPOWERLEVELUNIT', INDETERMINATE)
-soundpowerunit = getattr(IfcDerivedUnitEnum, 'SOUNDPOWERUNIT', INDETERMINATE)
-soundpressurelevelunit = getattr(IfcDerivedUnitEnum, 'SOUNDPRESSURELEVELUNIT', INDETERMINATE)
-soundpressureunit = getattr(IfcDerivedUnitEnum, 'SOUNDPRESSUREUNIT', INDETERMINATE)
-specificheatcapacityunit = getattr(IfcDerivedUnitEnum, 'SPECIFICHEATCAPACITYUNIT', INDETERMINATE)
-temperaturegradientunit = getattr(IfcDerivedUnitEnum, 'TEMPERATUREGRADIENTUNIT', INDETERMINATE)
-temperaturerateofchangeunit = getattr(IfcDerivedUnitEnum, 'TEMPERATURERATEOFCHANGEUNIT', INDETERMINATE)
-thermaladmittanceunit = getattr(IfcDerivedUnitEnum, 'THERMALADMITTANCEUNIT', INDETERMINATE)
-thermalconductanceunit = getattr(IfcDerivedUnitEnum, 'THERMALCONDUCTANCEUNIT', INDETERMINATE)
-thermalexpansioncoefficientunit = getattr(IfcDerivedUnitEnum, 'THERMALEXPANSIONCOEFFICIENTUNIT', INDETERMINATE)
-thermalresistanceunit = getattr(IfcDerivedUnitEnum, 'THERMALRESISTANCEUNIT', INDETERMINATE)
-thermaltransmittanceunit = getattr(IfcDerivedUnitEnum, 'THERMALTRANSMITTANCEUNIT', INDETERMINATE)
-torqueunit = getattr(IfcDerivedUnitEnum, 'TORQUEUNIT', INDETERMINATE)
-vaporpermeabilityunit = getattr(IfcDerivedUnitEnum, 'VAPORPERMEABILITYUNIT', INDETERMINATE)
-volumetricflowrateunit = getattr(IfcDerivedUnitEnum, 'VOLUMETRICFLOWRATEUNIT', INDETERMINATE)
-warpingconstantunit = getattr(IfcDerivedUnitEnum, 'WARPINGCONSTANTUNIT', INDETERMINATE)
-warpingmomentunit = getattr(IfcDerivedUnitEnum, 'WARPINGMOMENTUNIT', INDETERMINATE)
-userdefined = getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)
+accelerationunit = IfcDerivedUnitEnum.ACCELERATIONUNIT
+angularvelocityunit = IfcDerivedUnitEnum.ANGULARVELOCITYUNIT
+areadensityunit = IfcDerivedUnitEnum.AREADENSITYUNIT
+compoundplaneangleunit = IfcDerivedUnitEnum.COMPOUNDPLANEANGLEUNIT
+curvatureunit = IfcDerivedUnitEnum.CURVATUREUNIT
+dynamicviscosityunit = IfcDerivedUnitEnum.DYNAMICVISCOSITYUNIT
+heatfluxdensityunit = IfcDerivedUnitEnum.HEATFLUXDENSITYUNIT
+heatingvalueunit = IfcDerivedUnitEnum.HEATINGVALUEUNIT
+integercountrateunit = IfcDerivedUnitEnum.INTEGERCOUNTRATEUNIT
+ionconcentrationunit = IfcDerivedUnitEnum.IONCONCENTRATIONUNIT
+isothermalmoisturecapacityunit = IfcDerivedUnitEnum.ISOTHERMALMOISTURECAPACITYUNIT
+kinematicviscosityunit = IfcDerivedUnitEnum.KINEMATICVISCOSITYUNIT
+linearforceunit = IfcDerivedUnitEnum.LINEARFORCEUNIT
+linearmomentunit = IfcDerivedUnitEnum.LINEARMOMENTUNIT
+linearstiffnessunit = IfcDerivedUnitEnum.LINEARSTIFFNESSUNIT
+linearvelocityunit = IfcDerivedUnitEnum.LINEARVELOCITYUNIT
+luminousintensitydistributionunit = IfcDerivedUnitEnum.LUMINOUSINTENSITYDISTRIBUTIONUNIT
+massdensityunit = IfcDerivedUnitEnum.MASSDENSITYUNIT
+massflowrateunit = IfcDerivedUnitEnum.MASSFLOWRATEUNIT
+massperlengthunit = IfcDerivedUnitEnum.MASSPERLENGTHUNIT
+modulusofelasticityunit = IfcDerivedUnitEnum.MODULUSOFELASTICITYUNIT
+modulusoflinearsubgradereactionunit = IfcDerivedUnitEnum.MODULUSOFLINEARSUBGRADEREACTIONUNIT
+modulusofrotationalsubgradereactionunit = IfcDerivedUnitEnum.MODULUSOFROTATIONALSUBGRADEREACTIONUNIT
+modulusofsubgradereactionunit = IfcDerivedUnitEnum.MODULUSOFSUBGRADEREACTIONUNIT
+moisturediffusivityunit = IfcDerivedUnitEnum.MOISTUREDIFFUSIVITYUNIT
+molecularweightunit = IfcDerivedUnitEnum.MOLECULARWEIGHTUNIT
+momentofinertiaunit = IfcDerivedUnitEnum.MOMENTOFINERTIAUNIT
+phunit = IfcDerivedUnitEnum.PHUNIT
+planarforceunit = IfcDerivedUnitEnum.PLANARFORCEUNIT
+rotationalfrequencyunit = IfcDerivedUnitEnum.ROTATIONALFREQUENCYUNIT
+rotationalmassunit = IfcDerivedUnitEnum.ROTATIONALMASSUNIT
+rotationalstiffnessunit = IfcDerivedUnitEnum.ROTATIONALSTIFFNESSUNIT
+sectionareaintegralunit = IfcDerivedUnitEnum.SECTIONAREAINTEGRALUNIT
+sectionmodulusunit = IfcDerivedUnitEnum.SECTIONMODULUSUNIT
+shearmodulusunit = IfcDerivedUnitEnum.SHEARMODULUSUNIT
+soundpowerlevelunit = IfcDerivedUnitEnum.SOUNDPOWERLEVELUNIT
+soundpowerunit = IfcDerivedUnitEnum.SOUNDPOWERUNIT
+soundpressurelevelunit = IfcDerivedUnitEnum.SOUNDPRESSURELEVELUNIT
+soundpressureunit = IfcDerivedUnitEnum.SOUNDPRESSUREUNIT
+specificheatcapacityunit = IfcDerivedUnitEnum.SPECIFICHEATCAPACITYUNIT
+temperaturegradientunit = IfcDerivedUnitEnum.TEMPERATUREGRADIENTUNIT
+temperaturerateofchangeunit = IfcDerivedUnitEnum.TEMPERATURERATEOFCHANGEUNIT
+thermaladmittanceunit = IfcDerivedUnitEnum.THERMALADMITTANCEUNIT
+thermalconductanceunit = IfcDerivedUnitEnum.THERMALCONDUCTANCEUNIT
+thermalexpansioncoefficientunit = IfcDerivedUnitEnum.THERMALEXPANSIONCOEFFICIENTUNIT
+thermalresistanceunit = IfcDerivedUnitEnum.THERMALRESISTANCEUNIT
+thermaltransmittanceunit = IfcDerivedUnitEnum.THERMALTRANSMITTANCEUNIT
+torqueunit = IfcDerivedUnitEnum.TORQUEUNIT
+vaporpermeabilityunit = IfcDerivedUnitEnum.VAPORPERMEABILITYUNIT
+volumetricflowrateunit = IfcDerivedUnitEnum.VOLUMETRICFLOWRATEUNIT
+warpingconstantunit = IfcDerivedUnitEnum.WARPINGCONSTANTUNIT
+warpingmomentunit = IfcDerivedUnitEnum.WARPINGMOMENTUNIT
+userdefined = IfcDerivedUnitEnum.USERDEFINED
 IfcDirectionSenseEnum = enum_namespace()
-negative = getattr(IfcDirectionSenseEnum, 'NEGATIVE', INDETERMINATE)
-positive = getattr(IfcDirectionSenseEnum, 'POSITIVE', INDETERMINATE)
+negative = IfcDirectionSenseEnum.NEGATIVE
+positive = IfcDirectionSenseEnum.POSITIVE
 IfcDiscreteAccessoryTypeEnum = enum_namespace()
-anchorplate = getattr(IfcDiscreteAccessoryTypeEnum, 'ANCHORPLATE', INDETERMINATE)
-birdprotection = getattr(IfcDiscreteAccessoryTypeEnum, 'BIRDPROTECTION', INDETERMINATE)
-bracket = getattr(IfcDiscreteAccessoryTypeEnum, 'BRACKET', INDETERMINATE)
-cablearranger = getattr(IfcDiscreteAccessoryTypeEnum, 'CABLEARRANGER', INDETERMINATE)
-elastic_cushion = getattr(IfcDiscreteAccessoryTypeEnum, 'ELASTIC_CUSHION', INDETERMINATE)
-expansion_joint_device = getattr(IfcDiscreteAccessoryTypeEnum, 'EXPANSION_JOINT_DEVICE', INDETERMINATE)
-filler = getattr(IfcDiscreteAccessoryTypeEnum, 'FILLER', INDETERMINATE)
-flashing = getattr(IfcDiscreteAccessoryTypeEnum, 'FLASHING', INDETERMINATE)
-insulator = getattr(IfcDiscreteAccessoryTypeEnum, 'INSULATOR', INDETERMINATE)
-lock = getattr(IfcDiscreteAccessoryTypeEnum, 'LOCK', INDETERMINATE)
-panel_strengthening = getattr(IfcDiscreteAccessoryTypeEnum, 'PANEL_STRENGTHENING', INDETERMINATE)
-pointmachinemountingdevice = getattr(IfcDiscreteAccessoryTypeEnum, 'POINTMACHINEMOUNTINGDEVICE', INDETERMINATE)
-point_machine_locking_device = getattr(IfcDiscreteAccessoryTypeEnum, 'POINT_MACHINE_LOCKING_DEVICE', INDETERMINATE)
-railbrace = getattr(IfcDiscreteAccessoryTypeEnum, 'RAILBRACE', INDETERMINATE)
-railpad = getattr(IfcDiscreteAccessoryTypeEnum, 'RAILPAD', INDETERMINATE)
-rail_lubrication = getattr(IfcDiscreteAccessoryTypeEnum, 'RAIL_LUBRICATION', INDETERMINATE)
-rail_mechanical_equipment = getattr(IfcDiscreteAccessoryTypeEnum, 'RAIL_MECHANICAL_EQUIPMENT', INDETERMINATE)
-shoe = getattr(IfcDiscreteAccessoryTypeEnum, 'SHOE', INDETERMINATE)
-slidingchair = getattr(IfcDiscreteAccessoryTypeEnum, 'SLIDINGCHAIR', INDETERMINATE)
-soundabsorption = getattr(IfcDiscreteAccessoryTypeEnum, 'SOUNDABSORPTION', INDETERMINATE)
-tensioningequipment = getattr(IfcDiscreteAccessoryTypeEnum, 'TENSIONINGEQUIPMENT', INDETERMINATE)
-userdefined = getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDiscreteAccessoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anchorplate = IfcDiscreteAccessoryTypeEnum.ANCHORPLATE
+birdprotection = IfcDiscreteAccessoryTypeEnum.BIRDPROTECTION
+bracket = IfcDiscreteAccessoryTypeEnum.BRACKET
+cablearranger = IfcDiscreteAccessoryTypeEnum.CABLEARRANGER
+elastic_cushion = IfcDiscreteAccessoryTypeEnum.ELASTIC_CUSHION
+expansion_joint_device = IfcDiscreteAccessoryTypeEnum.EXPANSION_JOINT_DEVICE
+filler = IfcDiscreteAccessoryTypeEnum.FILLER
+flashing = IfcDiscreteAccessoryTypeEnum.FLASHING
+insulator = IfcDiscreteAccessoryTypeEnum.INSULATOR
+lock = IfcDiscreteAccessoryTypeEnum.LOCK
+panel_strengthening = IfcDiscreteAccessoryTypeEnum.PANEL_STRENGTHENING
+pointmachinemountingdevice = IfcDiscreteAccessoryTypeEnum.POINTMACHINEMOUNTINGDEVICE
+point_machine_locking_device = IfcDiscreteAccessoryTypeEnum.POINT_MACHINE_LOCKING_DEVICE
+railbrace = IfcDiscreteAccessoryTypeEnum.RAILBRACE
+railpad = IfcDiscreteAccessoryTypeEnum.RAILPAD
+rail_lubrication = IfcDiscreteAccessoryTypeEnum.RAIL_LUBRICATION
+rail_mechanical_equipment = IfcDiscreteAccessoryTypeEnum.RAIL_MECHANICAL_EQUIPMENT
+shoe = IfcDiscreteAccessoryTypeEnum.SHOE
+slidingchair = IfcDiscreteAccessoryTypeEnum.SLIDINGCHAIR
+soundabsorption = IfcDiscreteAccessoryTypeEnum.SOUNDABSORPTION
+tensioningequipment = IfcDiscreteAccessoryTypeEnum.TENSIONINGEQUIPMENT
+userdefined = IfcDiscreteAccessoryTypeEnum.USERDEFINED
+notdefined = IfcDiscreteAccessoryTypeEnum.NOTDEFINED
 IfcDistributionBoardTypeEnum = enum_namespace()
-consumerunit = getattr(IfcDistributionBoardTypeEnum, 'CONSUMERUNIT', INDETERMINATE)
-dispatchingboard = getattr(IfcDistributionBoardTypeEnum, 'DISPATCHINGBOARD', INDETERMINATE)
-distributionboard = getattr(IfcDistributionBoardTypeEnum, 'DISTRIBUTIONBOARD', INDETERMINATE)
-distributionframe = getattr(IfcDistributionBoardTypeEnum, 'DISTRIBUTIONFRAME', INDETERMINATE)
-motorcontrolcentre = getattr(IfcDistributionBoardTypeEnum, 'MOTORCONTROLCENTRE', INDETERMINATE)
-switchboard = getattr(IfcDistributionBoardTypeEnum, 'SWITCHBOARD', INDETERMINATE)
-userdefined = getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDistributionBoardTypeEnum, 'NOTDEFINED', INDETERMINATE)
+consumerunit = IfcDistributionBoardTypeEnum.CONSUMERUNIT
+dispatchingboard = IfcDistributionBoardTypeEnum.DISPATCHINGBOARD
+distributionboard = IfcDistributionBoardTypeEnum.DISTRIBUTIONBOARD
+distributionframe = IfcDistributionBoardTypeEnum.DISTRIBUTIONFRAME
+motorcontrolcentre = IfcDistributionBoardTypeEnum.MOTORCONTROLCENTRE
+switchboard = IfcDistributionBoardTypeEnum.SWITCHBOARD
+userdefined = IfcDistributionBoardTypeEnum.USERDEFINED
+notdefined = IfcDistributionBoardTypeEnum.NOTDEFINED
 IfcDistributionChamberElementTypeEnum = enum_namespace()
-formedduct = getattr(IfcDistributionChamberElementTypeEnum, 'FORMEDDUCT', INDETERMINATE)
-inspectionchamber = getattr(IfcDistributionChamberElementTypeEnum, 'INSPECTIONCHAMBER', INDETERMINATE)
-inspectionpit = getattr(IfcDistributionChamberElementTypeEnum, 'INSPECTIONPIT', INDETERMINATE)
-manhole = getattr(IfcDistributionChamberElementTypeEnum, 'MANHOLE', INDETERMINATE)
-meterchamber = getattr(IfcDistributionChamberElementTypeEnum, 'METERCHAMBER', INDETERMINATE)
-sump = getattr(IfcDistributionChamberElementTypeEnum, 'SUMP', INDETERMINATE)
-trench = getattr(IfcDistributionChamberElementTypeEnum, 'TRENCH', INDETERMINATE)
-valvechamber = getattr(IfcDistributionChamberElementTypeEnum, 'VALVECHAMBER', INDETERMINATE)
-userdefined = getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDistributionChamberElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+formedduct = IfcDistributionChamberElementTypeEnum.FORMEDDUCT
+inspectionchamber = IfcDistributionChamberElementTypeEnum.INSPECTIONCHAMBER
+inspectionpit = IfcDistributionChamberElementTypeEnum.INSPECTIONPIT
+manhole = IfcDistributionChamberElementTypeEnum.MANHOLE
+meterchamber = IfcDistributionChamberElementTypeEnum.METERCHAMBER
+sump = IfcDistributionChamberElementTypeEnum.SUMP
+trench = IfcDistributionChamberElementTypeEnum.TRENCH
+valvechamber = IfcDistributionChamberElementTypeEnum.VALVECHAMBER
+userdefined = IfcDistributionChamberElementTypeEnum.USERDEFINED
+notdefined = IfcDistributionChamberElementTypeEnum.NOTDEFINED
 IfcDistributionPortTypeEnum = enum_namespace()
-cable = getattr(IfcDistributionPortTypeEnum, 'CABLE', INDETERMINATE)
-cablecarrier = getattr(IfcDistributionPortTypeEnum, 'CABLECARRIER', INDETERMINATE)
-duct = getattr(IfcDistributionPortTypeEnum, 'DUCT', INDETERMINATE)
-pipe = getattr(IfcDistributionPortTypeEnum, 'PIPE', INDETERMINATE)
-wireless = getattr(IfcDistributionPortTypeEnum, 'WIRELESS', INDETERMINATE)
-userdefined = getattr(IfcDistributionPortTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDistributionPortTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cable = IfcDistributionPortTypeEnum.CABLE
+cablecarrier = IfcDistributionPortTypeEnum.CABLECARRIER
+duct = IfcDistributionPortTypeEnum.DUCT
+pipe = IfcDistributionPortTypeEnum.PIPE
+wireless = IfcDistributionPortTypeEnum.WIRELESS
+userdefined = IfcDistributionPortTypeEnum.USERDEFINED
+notdefined = IfcDistributionPortTypeEnum.NOTDEFINED
 IfcDistributionSystemEnum = enum_namespace()
-airconditioning = getattr(IfcDistributionSystemEnum, 'AIRCONDITIONING', INDETERMINATE)
-audiovisual = getattr(IfcDistributionSystemEnum, 'AUDIOVISUAL', INDETERMINATE)
-catenary_system = getattr(IfcDistributionSystemEnum, 'CATENARY_SYSTEM', INDETERMINATE)
-chemical = getattr(IfcDistributionSystemEnum, 'CHEMICAL', INDETERMINATE)
-chilledwater = getattr(IfcDistributionSystemEnum, 'CHILLEDWATER', INDETERMINATE)
-communication = getattr(IfcDistributionSystemEnum, 'COMMUNICATION', INDETERMINATE)
-compressedair = getattr(IfcDistributionSystemEnum, 'COMPRESSEDAIR', INDETERMINATE)
-condenserwater = getattr(IfcDistributionSystemEnum, 'CONDENSERWATER', INDETERMINATE)
-control = getattr(IfcDistributionSystemEnum, 'CONTROL', INDETERMINATE)
-conveying = getattr(IfcDistributionSystemEnum, 'CONVEYING', INDETERMINATE)
-data = getattr(IfcDistributionSystemEnum, 'DATA', INDETERMINATE)
-disposal = getattr(IfcDistributionSystemEnum, 'DISPOSAL', INDETERMINATE)
-domesticcoldwater = getattr(IfcDistributionSystemEnum, 'DOMESTICCOLDWATER', INDETERMINATE)
-domestichotwater = getattr(IfcDistributionSystemEnum, 'DOMESTICHOTWATER', INDETERMINATE)
-drainage = getattr(IfcDistributionSystemEnum, 'DRAINAGE', INDETERMINATE)
-earthing = getattr(IfcDistributionSystemEnum, 'EARTHING', INDETERMINATE)
-electrical = getattr(IfcDistributionSystemEnum, 'ELECTRICAL', INDETERMINATE)
-electroacoustic = getattr(IfcDistributionSystemEnum, 'ELECTROACOUSTIC', INDETERMINATE)
-exhaust = getattr(IfcDistributionSystemEnum, 'EXHAUST', INDETERMINATE)
-fireprotection = getattr(IfcDistributionSystemEnum, 'FIREPROTECTION', INDETERMINATE)
-fixedtransmissionnetwork = getattr(IfcDistributionSystemEnum, 'FIXEDTRANSMISSIONNETWORK', INDETERMINATE)
-fuel = getattr(IfcDistributionSystemEnum, 'FUEL', INDETERMINATE)
-gas = getattr(IfcDistributionSystemEnum, 'GAS', INDETERMINATE)
-hazardous = getattr(IfcDistributionSystemEnum, 'HAZARDOUS', INDETERMINATE)
-heating = getattr(IfcDistributionSystemEnum, 'HEATING', INDETERMINATE)
-lighting = getattr(IfcDistributionSystemEnum, 'LIGHTING', INDETERMINATE)
-lightningprotection = getattr(IfcDistributionSystemEnum, 'LIGHTNINGPROTECTION', INDETERMINATE)
-mobilenetwork = getattr(IfcDistributionSystemEnum, 'MOBILENETWORK', INDETERMINATE)
-monitoringsystem = getattr(IfcDistributionSystemEnum, 'MONITORINGSYSTEM', INDETERMINATE)
-municipalsolidwaste = getattr(IfcDistributionSystemEnum, 'MUNICIPALSOLIDWASTE', INDETERMINATE)
-oil = getattr(IfcDistributionSystemEnum, 'OIL', INDETERMINATE)
-operational = getattr(IfcDistributionSystemEnum, 'OPERATIONAL', INDETERMINATE)
-operationaltelephonysystem = getattr(IfcDistributionSystemEnum, 'OPERATIONALTELEPHONYSYSTEM', INDETERMINATE)
-overhead_contactline_system = getattr(IfcDistributionSystemEnum, 'OVERHEAD_CONTACTLINE_SYSTEM', INDETERMINATE)
-powergeneration = getattr(IfcDistributionSystemEnum, 'POWERGENERATION', INDETERMINATE)
-rainwater = getattr(IfcDistributionSystemEnum, 'RAINWATER', INDETERMINATE)
-refrigeration = getattr(IfcDistributionSystemEnum, 'REFRIGERATION', INDETERMINATE)
-return_circuit = getattr(IfcDistributionSystemEnum, 'RETURN_CIRCUIT', INDETERMINATE)
-security = getattr(IfcDistributionSystemEnum, 'SECURITY', INDETERMINATE)
-sewage = getattr(IfcDistributionSystemEnum, 'SEWAGE', INDETERMINATE)
-signal = getattr(IfcDistributionSystemEnum, 'SIGNAL', INDETERMINATE)
-stormwater = getattr(IfcDistributionSystemEnum, 'STORMWATER', INDETERMINATE)
-telephone = getattr(IfcDistributionSystemEnum, 'TELEPHONE', INDETERMINATE)
-tv = getattr(IfcDistributionSystemEnum, 'TV', INDETERMINATE)
-vacuum = getattr(IfcDistributionSystemEnum, 'VACUUM', INDETERMINATE)
-vent = getattr(IfcDistributionSystemEnum, 'VENT', INDETERMINATE)
-ventilation = getattr(IfcDistributionSystemEnum, 'VENTILATION', INDETERMINATE)
-wastewater = getattr(IfcDistributionSystemEnum, 'WASTEWATER', INDETERMINATE)
-watersupply = getattr(IfcDistributionSystemEnum, 'WATERSUPPLY', INDETERMINATE)
-userdefined = getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDistributionSystemEnum, 'NOTDEFINED', INDETERMINATE)
+airconditioning = IfcDistributionSystemEnum.AIRCONDITIONING
+audiovisual = IfcDistributionSystemEnum.AUDIOVISUAL
+catenary_system = IfcDistributionSystemEnum.CATENARY_SYSTEM
+chemical = IfcDistributionSystemEnum.CHEMICAL
+chilledwater = IfcDistributionSystemEnum.CHILLEDWATER
+communication = IfcDistributionSystemEnum.COMMUNICATION
+compressedair = IfcDistributionSystemEnum.COMPRESSEDAIR
+condenserwater = IfcDistributionSystemEnum.CONDENSERWATER
+control = IfcDistributionSystemEnum.CONTROL
+conveying = IfcDistributionSystemEnum.CONVEYING
+data = IfcDistributionSystemEnum.DATA
+disposal = IfcDistributionSystemEnum.DISPOSAL
+domesticcoldwater = IfcDistributionSystemEnum.DOMESTICCOLDWATER
+domestichotwater = IfcDistributionSystemEnum.DOMESTICHOTWATER
+drainage = IfcDistributionSystemEnum.DRAINAGE
+earthing = IfcDistributionSystemEnum.EARTHING
+electrical = IfcDistributionSystemEnum.ELECTRICAL
+electroacoustic = IfcDistributionSystemEnum.ELECTROACOUSTIC
+exhaust = IfcDistributionSystemEnum.EXHAUST
+fireprotection = IfcDistributionSystemEnum.FIREPROTECTION
+fixedtransmissionnetwork = IfcDistributionSystemEnum.FIXEDTRANSMISSIONNETWORK
+fuel = IfcDistributionSystemEnum.FUEL
+gas = IfcDistributionSystemEnum.GAS
+hazardous = IfcDistributionSystemEnum.HAZARDOUS
+heating = IfcDistributionSystemEnum.HEATING
+lighting = IfcDistributionSystemEnum.LIGHTING
+lightningprotection = IfcDistributionSystemEnum.LIGHTNINGPROTECTION
+mobilenetwork = IfcDistributionSystemEnum.MOBILENETWORK
+monitoringsystem = IfcDistributionSystemEnum.MONITORINGSYSTEM
+municipalsolidwaste = IfcDistributionSystemEnum.MUNICIPALSOLIDWASTE
+oil = IfcDistributionSystemEnum.OIL
+operational = IfcDistributionSystemEnum.OPERATIONAL
+operationaltelephonysystem = IfcDistributionSystemEnum.OPERATIONALTELEPHONYSYSTEM
+overhead_contactline_system = IfcDistributionSystemEnum.OVERHEAD_CONTACTLINE_SYSTEM
+powergeneration = IfcDistributionSystemEnum.POWERGENERATION
+rainwater = IfcDistributionSystemEnum.RAINWATER
+refrigeration = IfcDistributionSystemEnum.REFRIGERATION
+return_circuit = IfcDistributionSystemEnum.RETURN_CIRCUIT
+security = IfcDistributionSystemEnum.SECURITY
+sewage = IfcDistributionSystemEnum.SEWAGE
+signal = IfcDistributionSystemEnum.SIGNAL
+stormwater = IfcDistributionSystemEnum.STORMWATER
+telephone = IfcDistributionSystemEnum.TELEPHONE
+tv = IfcDistributionSystemEnum.TV
+vacuum = IfcDistributionSystemEnum.VACUUM
+vent = IfcDistributionSystemEnum.VENT
+ventilation = IfcDistributionSystemEnum.VENTILATION
+wastewater = IfcDistributionSystemEnum.WASTEWATER
+watersupply = IfcDistributionSystemEnum.WATERSUPPLY
+userdefined = IfcDistributionSystemEnum.USERDEFINED
+notdefined = IfcDistributionSystemEnum.NOTDEFINED
 IfcDocumentConfidentialityEnum = enum_namespace()
-confidential = getattr(IfcDocumentConfidentialityEnum, 'CONFIDENTIAL', INDETERMINATE)
-personal = getattr(IfcDocumentConfidentialityEnum, 'PERSONAL', INDETERMINATE)
-public = getattr(IfcDocumentConfidentialityEnum, 'PUBLIC', INDETERMINATE)
-restricted = getattr(IfcDocumentConfidentialityEnum, 'RESTRICTED', INDETERMINATE)
-userdefined = getattr(IfcDocumentConfidentialityEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDocumentConfidentialityEnum, 'NOTDEFINED', INDETERMINATE)
+confidential = IfcDocumentConfidentialityEnum.CONFIDENTIAL
+personal = IfcDocumentConfidentialityEnum.PERSONAL
+public = IfcDocumentConfidentialityEnum.PUBLIC
+restricted = IfcDocumentConfidentialityEnum.RESTRICTED
+userdefined = IfcDocumentConfidentialityEnum.USERDEFINED
+notdefined = IfcDocumentConfidentialityEnum.NOTDEFINED
 IfcDocumentStatusEnum = enum_namespace()
-draft = getattr(IfcDocumentStatusEnum, 'DRAFT', INDETERMINATE)
-final = getattr(IfcDocumentStatusEnum, 'FINAL', INDETERMINATE)
-finaldraft = getattr(IfcDocumentStatusEnum, 'FINALDRAFT', INDETERMINATE)
-revision = getattr(IfcDocumentStatusEnum, 'REVISION', INDETERMINATE)
-notdefined = getattr(IfcDocumentStatusEnum, 'NOTDEFINED', INDETERMINATE)
+draft = IfcDocumentStatusEnum.DRAFT
+final = IfcDocumentStatusEnum.FINAL
+finaldraft = IfcDocumentStatusEnum.FINALDRAFT
+revision = IfcDocumentStatusEnum.REVISION
+notdefined = IfcDocumentStatusEnum.NOTDEFINED
 IfcDoorPanelOperationEnum = enum_namespace()
-double_acting = getattr(IfcDoorPanelOperationEnum, 'DOUBLE_ACTING', INDETERMINATE)
-fixedpanel = getattr(IfcDoorPanelOperationEnum, 'FIXEDPANEL', INDETERMINATE)
-folding = getattr(IfcDoorPanelOperationEnum, 'FOLDING', INDETERMINATE)
-revolving = getattr(IfcDoorPanelOperationEnum, 'REVOLVING', INDETERMINATE)
-rollingup = getattr(IfcDoorPanelOperationEnum, 'ROLLINGUP', INDETERMINATE)
-sliding = getattr(IfcDoorPanelOperationEnum, 'SLIDING', INDETERMINATE)
-swinging = getattr(IfcDoorPanelOperationEnum, 'SWINGING', INDETERMINATE)
-userdefined = getattr(IfcDoorPanelOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDoorPanelOperationEnum, 'NOTDEFINED', INDETERMINATE)
+double_acting = IfcDoorPanelOperationEnum.DOUBLE_ACTING
+fixedpanel = IfcDoorPanelOperationEnum.FIXEDPANEL
+folding = IfcDoorPanelOperationEnum.FOLDING
+revolving = IfcDoorPanelOperationEnum.REVOLVING
+rollingup = IfcDoorPanelOperationEnum.ROLLINGUP
+sliding = IfcDoorPanelOperationEnum.SLIDING
+swinging = IfcDoorPanelOperationEnum.SWINGING
+userdefined = IfcDoorPanelOperationEnum.USERDEFINED
+notdefined = IfcDoorPanelOperationEnum.NOTDEFINED
 IfcDoorPanelPositionEnum = enum_namespace()
-left = getattr(IfcDoorPanelPositionEnum, 'LEFT', INDETERMINATE)
-middle = getattr(IfcDoorPanelPositionEnum, 'MIDDLE', INDETERMINATE)
-right = getattr(IfcDoorPanelPositionEnum, 'RIGHT', INDETERMINATE)
-notdefined = getattr(IfcDoorPanelPositionEnum, 'NOTDEFINED', INDETERMINATE)
+left = IfcDoorPanelPositionEnum.LEFT
+middle = IfcDoorPanelPositionEnum.MIDDLE
+right = IfcDoorPanelPositionEnum.RIGHT
+notdefined = IfcDoorPanelPositionEnum.NOTDEFINED
 IfcDoorTypeEnum = enum_namespace()
-boom_barrier = getattr(IfcDoorTypeEnum, 'BOOM_BARRIER', INDETERMINATE)
-door = getattr(IfcDoorTypeEnum, 'DOOR', INDETERMINATE)
-gate = getattr(IfcDoorTypeEnum, 'GATE', INDETERMINATE)
-trapdoor = getattr(IfcDoorTypeEnum, 'TRAPDOOR', INDETERMINATE)
-turnstile = getattr(IfcDoorTypeEnum, 'TURNSTILE', INDETERMINATE)
-userdefined = getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDoorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+boom_barrier = IfcDoorTypeEnum.BOOM_BARRIER
+door = IfcDoorTypeEnum.DOOR
+gate = IfcDoorTypeEnum.GATE
+trapdoor = IfcDoorTypeEnum.TRAPDOOR
+turnstile = IfcDoorTypeEnum.TURNSTILE
+userdefined = IfcDoorTypeEnum.USERDEFINED
+notdefined = IfcDoorTypeEnum.NOTDEFINED
 IfcDoorTypeOperationEnum = enum_namespace()
-double_door_double_swing = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_DOUBLE_SWING', INDETERMINATE)
-double_door_folding = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_FOLDING', INDETERMINATE)
-double_door_lifting_vertical = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_LIFTING_VERTICAL', INDETERMINATE)
-double_door_single_swing = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING', INDETERMINATE)
-double_door_single_swing_opposite_left = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT', INDETERMINATE)
-double_door_single_swing_opposite_right = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT', INDETERMINATE)
-double_door_sliding = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_DOOR_SLIDING', INDETERMINATE)
-double_swing_left = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_SWING_LEFT', INDETERMINATE)
-double_swing_right = getattr(IfcDoorTypeOperationEnum, 'DOUBLE_SWING_RIGHT', INDETERMINATE)
-folding_to_left = getattr(IfcDoorTypeOperationEnum, 'FOLDING_TO_LEFT', INDETERMINATE)
-folding_to_right = getattr(IfcDoorTypeOperationEnum, 'FOLDING_TO_RIGHT', INDETERMINATE)
-lifting_horizontal = getattr(IfcDoorTypeOperationEnum, 'LIFTING_HORIZONTAL', INDETERMINATE)
-lifting_vertical_left = getattr(IfcDoorTypeOperationEnum, 'LIFTING_VERTICAL_LEFT', INDETERMINATE)
-lifting_vertical_right = getattr(IfcDoorTypeOperationEnum, 'LIFTING_VERTICAL_RIGHT', INDETERMINATE)
-revolving = getattr(IfcDoorTypeOperationEnum, 'REVOLVING', INDETERMINATE)
-revolving_vertical = getattr(IfcDoorTypeOperationEnum, 'REVOLVING_VERTICAL', INDETERMINATE)
-rollingup = getattr(IfcDoorTypeOperationEnum, 'ROLLINGUP', INDETERMINATE)
-single_swing_left = getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_LEFT', INDETERMINATE)
-single_swing_right = getattr(IfcDoorTypeOperationEnum, 'SINGLE_SWING_RIGHT', INDETERMINATE)
-sliding_to_left = getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_LEFT', INDETERMINATE)
-sliding_to_right = getattr(IfcDoorTypeOperationEnum, 'SLIDING_TO_RIGHT', INDETERMINATE)
-swing_fixed_left = getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_LEFT', INDETERMINATE)
-swing_fixed_right = getattr(IfcDoorTypeOperationEnum, 'SWING_FIXED_RIGHT', INDETERMINATE)
-userdefined = getattr(IfcDoorTypeOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDoorTypeOperationEnum, 'NOTDEFINED', INDETERMINATE)
+double_door_double_swing = IfcDoorTypeOperationEnum.DOUBLE_DOOR_DOUBLE_SWING
+double_door_folding = IfcDoorTypeOperationEnum.DOUBLE_DOOR_FOLDING
+double_door_lifting_vertical = IfcDoorTypeOperationEnum.DOUBLE_DOOR_LIFTING_VERTICAL
+double_door_single_swing = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SINGLE_SWING
+double_door_single_swing_opposite_left = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT
+double_door_single_swing_opposite_right = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT
+double_door_sliding = IfcDoorTypeOperationEnum.DOUBLE_DOOR_SLIDING
+double_swing_left = IfcDoorTypeOperationEnum.DOUBLE_SWING_LEFT
+double_swing_right = IfcDoorTypeOperationEnum.DOUBLE_SWING_RIGHT
+folding_to_left = IfcDoorTypeOperationEnum.FOLDING_TO_LEFT
+folding_to_right = IfcDoorTypeOperationEnum.FOLDING_TO_RIGHT
+lifting_horizontal = IfcDoorTypeOperationEnum.LIFTING_HORIZONTAL
+lifting_vertical_left = IfcDoorTypeOperationEnum.LIFTING_VERTICAL_LEFT
+lifting_vertical_right = IfcDoorTypeOperationEnum.LIFTING_VERTICAL_RIGHT
+revolving = IfcDoorTypeOperationEnum.REVOLVING
+revolving_vertical = IfcDoorTypeOperationEnum.REVOLVING_VERTICAL
+rollingup = IfcDoorTypeOperationEnum.ROLLINGUP
+single_swing_left = IfcDoorTypeOperationEnum.SINGLE_SWING_LEFT
+single_swing_right = IfcDoorTypeOperationEnum.SINGLE_SWING_RIGHT
+sliding_to_left = IfcDoorTypeOperationEnum.SLIDING_TO_LEFT
+sliding_to_right = IfcDoorTypeOperationEnum.SLIDING_TO_RIGHT
+swing_fixed_left = IfcDoorTypeOperationEnum.SWING_FIXED_LEFT
+swing_fixed_right = IfcDoorTypeOperationEnum.SWING_FIXED_RIGHT
+userdefined = IfcDoorTypeOperationEnum.USERDEFINED
+notdefined = IfcDoorTypeOperationEnum.NOTDEFINED
 IfcDuctFittingTypeEnum = enum_namespace()
-bend = getattr(IfcDuctFittingTypeEnum, 'BEND', INDETERMINATE)
-connector = getattr(IfcDuctFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-entry = getattr(IfcDuctFittingTypeEnum, 'ENTRY', INDETERMINATE)
-exit = getattr(IfcDuctFittingTypeEnum, 'EXIT', INDETERMINATE)
-junction = getattr(IfcDuctFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-obstruction = getattr(IfcDuctFittingTypeEnum, 'OBSTRUCTION', INDETERMINATE)
-transition = getattr(IfcDuctFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDuctFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bend = IfcDuctFittingTypeEnum.BEND
+connector = IfcDuctFittingTypeEnum.CONNECTOR
+entry = IfcDuctFittingTypeEnum.ENTRY
+exit = IfcDuctFittingTypeEnum.EXIT
+junction = IfcDuctFittingTypeEnum.JUNCTION
+obstruction = IfcDuctFittingTypeEnum.OBSTRUCTION
+transition = IfcDuctFittingTypeEnum.TRANSITION
+userdefined = IfcDuctFittingTypeEnum.USERDEFINED
+notdefined = IfcDuctFittingTypeEnum.NOTDEFINED
 IfcDuctSegmentTypeEnum = enum_namespace()
-flexiblesegment = getattr(IfcDuctSegmentTypeEnum, 'FLEXIBLESEGMENT', INDETERMINATE)
-rigidsegment = getattr(IfcDuctSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
-userdefined = getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDuctSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+flexiblesegment = IfcDuctSegmentTypeEnum.FLEXIBLESEGMENT
+rigidsegment = IfcDuctSegmentTypeEnum.RIGIDSEGMENT
+userdefined = IfcDuctSegmentTypeEnum.USERDEFINED
+notdefined = IfcDuctSegmentTypeEnum.NOTDEFINED
 IfcDuctSilencerTypeEnum = enum_namespace()
-flatoval = getattr(IfcDuctSilencerTypeEnum, 'FLATOVAL', INDETERMINATE)
-rectangular = getattr(IfcDuctSilencerTypeEnum, 'RECTANGULAR', INDETERMINATE)
-round = getattr(IfcDuctSilencerTypeEnum, 'ROUND', INDETERMINATE)
-userdefined = getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcDuctSilencerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+flatoval = IfcDuctSilencerTypeEnum.FLATOVAL
+rectangular = IfcDuctSilencerTypeEnum.RECTANGULAR
+round = IfcDuctSilencerTypeEnum.ROUND
+userdefined = IfcDuctSilencerTypeEnum.USERDEFINED
+notdefined = IfcDuctSilencerTypeEnum.NOTDEFINED
 IfcEarthworksCutTypeEnum = enum_namespace()
-base_excavation = getattr(IfcEarthworksCutTypeEnum, 'BASE_EXCAVATION', INDETERMINATE)
-cut = getattr(IfcEarthworksCutTypeEnum, 'CUT', INDETERMINATE)
-dredging = getattr(IfcEarthworksCutTypeEnum, 'DREDGING', INDETERMINATE)
-excavation = getattr(IfcEarthworksCutTypeEnum, 'EXCAVATION', INDETERMINATE)
-overexcavation = getattr(IfcEarthworksCutTypeEnum, 'OVEREXCAVATION', INDETERMINATE)
-pavementmilling = getattr(IfcEarthworksCutTypeEnum, 'PAVEMENTMILLING', INDETERMINATE)
-stepexcavation = getattr(IfcEarthworksCutTypeEnum, 'STEPEXCAVATION', INDETERMINATE)
-topsoilremoval = getattr(IfcEarthworksCutTypeEnum, 'TOPSOILREMOVAL', INDETERMINATE)
-trench = getattr(IfcEarthworksCutTypeEnum, 'TRENCH', INDETERMINATE)
-userdefined = getattr(IfcEarthworksCutTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEarthworksCutTypeEnum, 'NOTDEFINED', INDETERMINATE)
+base_excavation = IfcEarthworksCutTypeEnum.BASE_EXCAVATION
+cut = IfcEarthworksCutTypeEnum.CUT
+dredging = IfcEarthworksCutTypeEnum.DREDGING
+excavation = IfcEarthworksCutTypeEnum.EXCAVATION
+overexcavation = IfcEarthworksCutTypeEnum.OVEREXCAVATION
+pavementmilling = IfcEarthworksCutTypeEnum.PAVEMENTMILLING
+stepexcavation = IfcEarthworksCutTypeEnum.STEPEXCAVATION
+topsoilremoval = IfcEarthworksCutTypeEnum.TOPSOILREMOVAL
+trench = IfcEarthworksCutTypeEnum.TRENCH
+userdefined = IfcEarthworksCutTypeEnum.USERDEFINED
+notdefined = IfcEarthworksCutTypeEnum.NOTDEFINED
 IfcEarthworksFillTypeEnum = enum_namespace()
-backfill = getattr(IfcEarthworksFillTypeEnum, 'BACKFILL', INDETERMINATE)
-counterweight = getattr(IfcEarthworksFillTypeEnum, 'COUNTERWEIGHT', INDETERMINATE)
-embankment = getattr(IfcEarthworksFillTypeEnum, 'EMBANKMENT', INDETERMINATE)
-slopefill = getattr(IfcEarthworksFillTypeEnum, 'SLOPEFILL', INDETERMINATE)
-subgrade = getattr(IfcEarthworksFillTypeEnum, 'SUBGRADE', INDETERMINATE)
-subgradebed = getattr(IfcEarthworksFillTypeEnum, 'SUBGRADEBED', INDETERMINATE)
-transitionsection = getattr(IfcEarthworksFillTypeEnum, 'TRANSITIONSECTION', INDETERMINATE)
-userdefined = getattr(IfcEarthworksFillTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEarthworksFillTypeEnum, 'NOTDEFINED', INDETERMINATE)
+backfill = IfcEarthworksFillTypeEnum.BACKFILL
+counterweight = IfcEarthworksFillTypeEnum.COUNTERWEIGHT
+embankment = IfcEarthworksFillTypeEnum.EMBANKMENT
+slopefill = IfcEarthworksFillTypeEnum.SLOPEFILL
+subgrade = IfcEarthworksFillTypeEnum.SUBGRADE
+subgradebed = IfcEarthworksFillTypeEnum.SUBGRADEBED
+transitionsection = IfcEarthworksFillTypeEnum.TRANSITIONSECTION
+userdefined = IfcEarthworksFillTypeEnum.USERDEFINED
+notdefined = IfcEarthworksFillTypeEnum.NOTDEFINED
 IfcElectricApplianceTypeEnum = enum_namespace()
-dishwasher = getattr(IfcElectricApplianceTypeEnum, 'DISHWASHER', INDETERMINATE)
-electriccooker = getattr(IfcElectricApplianceTypeEnum, 'ELECTRICCOOKER', INDETERMINATE)
-freestandingelectricheater = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGELECTRICHEATER', INDETERMINATE)
-freestandingfan = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGFAN', INDETERMINATE)
-freestandingwatercooler = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERCOOLER', INDETERMINATE)
-freestandingwaterheater = getattr(IfcElectricApplianceTypeEnum, 'FREESTANDINGWATERHEATER', INDETERMINATE)
-freezer = getattr(IfcElectricApplianceTypeEnum, 'FREEZER', INDETERMINATE)
-fridge_freezer = getattr(IfcElectricApplianceTypeEnum, 'FRIDGE_FREEZER', INDETERMINATE)
-handdryer = getattr(IfcElectricApplianceTypeEnum, 'HANDDRYER', INDETERMINATE)
-kitchenmachine = getattr(IfcElectricApplianceTypeEnum, 'KITCHENMACHINE', INDETERMINATE)
-microwave = getattr(IfcElectricApplianceTypeEnum, 'MICROWAVE', INDETERMINATE)
-photocopier = getattr(IfcElectricApplianceTypeEnum, 'PHOTOCOPIER', INDETERMINATE)
-refrigerator = getattr(IfcElectricApplianceTypeEnum, 'REFRIGERATOR', INDETERMINATE)
-tumbledryer = getattr(IfcElectricApplianceTypeEnum, 'TUMBLEDRYER', INDETERMINATE)
-vendingmachine = getattr(IfcElectricApplianceTypeEnum, 'VENDINGMACHINE', INDETERMINATE)
-washingmachine = getattr(IfcElectricApplianceTypeEnum, 'WASHINGMACHINE', INDETERMINATE)
-userdefined = getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dishwasher = IfcElectricApplianceTypeEnum.DISHWASHER
+electriccooker = IfcElectricApplianceTypeEnum.ELECTRICCOOKER
+freestandingelectricheater = IfcElectricApplianceTypeEnum.FREESTANDINGELECTRICHEATER
+freestandingfan = IfcElectricApplianceTypeEnum.FREESTANDINGFAN
+freestandingwatercooler = IfcElectricApplianceTypeEnum.FREESTANDINGWATERCOOLER
+freestandingwaterheater = IfcElectricApplianceTypeEnum.FREESTANDINGWATERHEATER
+freezer = IfcElectricApplianceTypeEnum.FREEZER
+fridge_freezer = IfcElectricApplianceTypeEnum.FRIDGE_FREEZER
+handdryer = IfcElectricApplianceTypeEnum.HANDDRYER
+kitchenmachine = IfcElectricApplianceTypeEnum.KITCHENMACHINE
+microwave = IfcElectricApplianceTypeEnum.MICROWAVE
+photocopier = IfcElectricApplianceTypeEnum.PHOTOCOPIER
+refrigerator = IfcElectricApplianceTypeEnum.REFRIGERATOR
+tumbledryer = IfcElectricApplianceTypeEnum.TUMBLEDRYER
+vendingmachine = IfcElectricApplianceTypeEnum.VENDINGMACHINE
+washingmachine = IfcElectricApplianceTypeEnum.WASHINGMACHINE
+userdefined = IfcElectricApplianceTypeEnum.USERDEFINED
+notdefined = IfcElectricApplianceTypeEnum.NOTDEFINED
 IfcElectricDistributionBoardTypeEnum = enum_namespace()
-consumerunit = getattr(IfcElectricDistributionBoardTypeEnum, 'CONSUMERUNIT', INDETERMINATE)
-distributionboard = getattr(IfcElectricDistributionBoardTypeEnum, 'DISTRIBUTIONBOARD', INDETERMINATE)
-motorcontrolcentre = getattr(IfcElectricDistributionBoardTypeEnum, 'MOTORCONTROLCENTRE', INDETERMINATE)
-switchboard = getattr(IfcElectricDistributionBoardTypeEnum, 'SWITCHBOARD', INDETERMINATE)
-userdefined = getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricDistributionBoardTypeEnum, 'NOTDEFINED', INDETERMINATE)
+consumerunit = IfcElectricDistributionBoardTypeEnum.CONSUMERUNIT
+distributionboard = IfcElectricDistributionBoardTypeEnum.DISTRIBUTIONBOARD
+motorcontrolcentre = IfcElectricDistributionBoardTypeEnum.MOTORCONTROLCENTRE
+switchboard = IfcElectricDistributionBoardTypeEnum.SWITCHBOARD
+userdefined = IfcElectricDistributionBoardTypeEnum.USERDEFINED
+notdefined = IfcElectricDistributionBoardTypeEnum.NOTDEFINED
 IfcElectricFlowStorageDeviceTypeEnum = enum_namespace()
-battery = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'BATTERY', INDETERMINATE)
-capacitor = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'CAPACITOR', INDETERMINATE)
-capacitorbank = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'CAPACITORBANK', INDETERMINATE)
-compensator = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'COMPENSATOR', INDETERMINATE)
-harmonicfilter = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'HARMONICFILTER', INDETERMINATE)
-inductor = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'INDUCTOR', INDETERMINATE)
-inductorbank = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'INDUCTORBANK', INDETERMINATE)
-recharger = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'RECHARGER', INDETERMINATE)
-ups = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'UPS', INDETERMINATE)
-userdefined = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricFlowStorageDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+battery = IfcElectricFlowStorageDeviceTypeEnum.BATTERY
+capacitor = IfcElectricFlowStorageDeviceTypeEnum.CAPACITOR
+capacitorbank = IfcElectricFlowStorageDeviceTypeEnum.CAPACITORBANK
+compensator = IfcElectricFlowStorageDeviceTypeEnum.COMPENSATOR
+harmonicfilter = IfcElectricFlowStorageDeviceTypeEnum.HARMONICFILTER
+inductor = IfcElectricFlowStorageDeviceTypeEnum.INDUCTOR
+inductorbank = IfcElectricFlowStorageDeviceTypeEnum.INDUCTORBANK
+recharger = IfcElectricFlowStorageDeviceTypeEnum.RECHARGER
+ups = IfcElectricFlowStorageDeviceTypeEnum.UPS
+userdefined = IfcElectricFlowStorageDeviceTypeEnum.USERDEFINED
+notdefined = IfcElectricFlowStorageDeviceTypeEnum.NOTDEFINED
 IfcElectricFlowTreatmentDeviceTypeEnum = enum_namespace()
-electronicfilter = getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'ELECTRONICFILTER', INDETERMINATE)
-userdefined = getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+electronicfilter = IfcElectricFlowTreatmentDeviceTypeEnum.ELECTRONICFILTER
+userdefined = IfcElectricFlowTreatmentDeviceTypeEnum.USERDEFINED
+notdefined = IfcElectricFlowTreatmentDeviceTypeEnum.NOTDEFINED
 IfcElectricGeneratorTypeEnum = enum_namespace()
-chp = getattr(IfcElectricGeneratorTypeEnum, 'CHP', INDETERMINATE)
-enginegenerator = getattr(IfcElectricGeneratorTypeEnum, 'ENGINEGENERATOR', INDETERMINATE)
-standalone = getattr(IfcElectricGeneratorTypeEnum, 'STANDALONE', INDETERMINATE)
-userdefined = getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricGeneratorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+chp = IfcElectricGeneratorTypeEnum.CHP
+enginegenerator = IfcElectricGeneratorTypeEnum.ENGINEGENERATOR
+standalone = IfcElectricGeneratorTypeEnum.STANDALONE
+userdefined = IfcElectricGeneratorTypeEnum.USERDEFINED
+notdefined = IfcElectricGeneratorTypeEnum.NOTDEFINED
 IfcElectricMotorTypeEnum = enum_namespace()
-dc = getattr(IfcElectricMotorTypeEnum, 'DC', INDETERMINATE)
-induction = getattr(IfcElectricMotorTypeEnum, 'INDUCTION', INDETERMINATE)
-polyphase = getattr(IfcElectricMotorTypeEnum, 'POLYPHASE', INDETERMINATE)
-reluctancesynchronous = getattr(IfcElectricMotorTypeEnum, 'RELUCTANCESYNCHRONOUS', INDETERMINATE)
-synchronous = getattr(IfcElectricMotorTypeEnum, 'SYNCHRONOUS', INDETERMINATE)
-userdefined = getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricMotorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dc = IfcElectricMotorTypeEnum.DC
+induction = IfcElectricMotorTypeEnum.INDUCTION
+polyphase = IfcElectricMotorTypeEnum.POLYPHASE
+reluctancesynchronous = IfcElectricMotorTypeEnum.RELUCTANCESYNCHRONOUS
+synchronous = IfcElectricMotorTypeEnum.SYNCHRONOUS
+userdefined = IfcElectricMotorTypeEnum.USERDEFINED
+notdefined = IfcElectricMotorTypeEnum.NOTDEFINED
 IfcElectricTimeControlTypeEnum = enum_namespace()
-relay = getattr(IfcElectricTimeControlTypeEnum, 'RELAY', INDETERMINATE)
-timeclock = getattr(IfcElectricTimeControlTypeEnum, 'TIMECLOCK', INDETERMINATE)
-timedelay = getattr(IfcElectricTimeControlTypeEnum, 'TIMEDELAY', INDETERMINATE)
-userdefined = getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElectricTimeControlTypeEnum, 'NOTDEFINED', INDETERMINATE)
+relay = IfcElectricTimeControlTypeEnum.RELAY
+timeclock = IfcElectricTimeControlTypeEnum.TIMECLOCK
+timedelay = IfcElectricTimeControlTypeEnum.TIMEDELAY
+userdefined = IfcElectricTimeControlTypeEnum.USERDEFINED
+notdefined = IfcElectricTimeControlTypeEnum.NOTDEFINED
 IfcElementAssemblyTypeEnum = enum_namespace()
-abutment = getattr(IfcElementAssemblyTypeEnum, 'ABUTMENT', INDETERMINATE)
-accessory_assembly = getattr(IfcElementAssemblyTypeEnum, 'ACCESSORY_ASSEMBLY', INDETERMINATE)
-arch = getattr(IfcElementAssemblyTypeEnum, 'ARCH', INDETERMINATE)
-beam_grid = getattr(IfcElementAssemblyTypeEnum, 'BEAM_GRID', INDETERMINATE)
-braced_frame = getattr(IfcElementAssemblyTypeEnum, 'BRACED_FRAME', INDETERMINATE)
-cross_bracing = getattr(IfcElementAssemblyTypeEnum, 'CROSS_BRACING', INDETERMINATE)
-deck = getattr(IfcElementAssemblyTypeEnum, 'DECK', INDETERMINATE)
-dilatationpanel = getattr(IfcElementAssemblyTypeEnum, 'DILATATIONPANEL', INDETERMINATE)
-entranceworks = getattr(IfcElementAssemblyTypeEnum, 'ENTRANCEWORKS', INDETERMINATE)
-girder = getattr(IfcElementAssemblyTypeEnum, 'GIRDER', INDETERMINATE)
-grid = getattr(IfcElementAssemblyTypeEnum, 'GRID', INDETERMINATE)
-mast = getattr(IfcElementAssemblyTypeEnum, 'MAST', INDETERMINATE)
-pier = getattr(IfcElementAssemblyTypeEnum, 'PIER', INDETERMINATE)
-pylon = getattr(IfcElementAssemblyTypeEnum, 'PYLON', INDETERMINATE)
-rail_mechanical_equipment_assembly = getattr(IfcElementAssemblyTypeEnum, 'RAIL_MECHANICAL_EQUIPMENT_ASSEMBLY', INDETERMINATE)
-reinforcement_unit = getattr(IfcElementAssemblyTypeEnum, 'REINFORCEMENT_UNIT', INDETERMINATE)
-rigid_frame = getattr(IfcElementAssemblyTypeEnum, 'RIGID_FRAME', INDETERMINATE)
-shelter = getattr(IfcElementAssemblyTypeEnum, 'SHELTER', INDETERMINATE)
-signalassembly = getattr(IfcElementAssemblyTypeEnum, 'SIGNALASSEMBLY', INDETERMINATE)
-slab_field = getattr(IfcElementAssemblyTypeEnum, 'SLAB_FIELD', INDETERMINATE)
-sumpbuster = getattr(IfcElementAssemblyTypeEnum, 'SUMPBUSTER', INDETERMINATE)
-supportingassembly = getattr(IfcElementAssemblyTypeEnum, 'SUPPORTINGASSEMBLY', INDETERMINATE)
-suspensionassembly = getattr(IfcElementAssemblyTypeEnum, 'SUSPENSIONASSEMBLY', INDETERMINATE)
-trackpanel = getattr(IfcElementAssemblyTypeEnum, 'TRACKPANEL', INDETERMINATE)
-traction_switching_assembly = getattr(IfcElementAssemblyTypeEnum, 'TRACTION_SWITCHING_ASSEMBLY', INDETERMINATE)
-traffic_calming_device = getattr(IfcElementAssemblyTypeEnum, 'TRAFFIC_CALMING_DEVICE', INDETERMINATE)
-truss = getattr(IfcElementAssemblyTypeEnum, 'TRUSS', INDETERMINATE)
-turnoutpanel = getattr(IfcElementAssemblyTypeEnum, 'TURNOUTPANEL', INDETERMINATE)
-userdefined = getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcElementAssemblyTypeEnum, 'NOTDEFINED', INDETERMINATE)
+abutment = IfcElementAssemblyTypeEnum.ABUTMENT
+accessory_assembly = IfcElementAssemblyTypeEnum.ACCESSORY_ASSEMBLY
+arch = IfcElementAssemblyTypeEnum.ARCH
+beam_grid = IfcElementAssemblyTypeEnum.BEAM_GRID
+braced_frame = IfcElementAssemblyTypeEnum.BRACED_FRAME
+cross_bracing = IfcElementAssemblyTypeEnum.CROSS_BRACING
+deck = IfcElementAssemblyTypeEnum.DECK
+dilatationpanel = IfcElementAssemblyTypeEnum.DILATATIONPANEL
+entranceworks = IfcElementAssemblyTypeEnum.ENTRANCEWORKS
+girder = IfcElementAssemblyTypeEnum.GIRDER
+grid = IfcElementAssemblyTypeEnum.GRID
+mast = IfcElementAssemblyTypeEnum.MAST
+pier = IfcElementAssemblyTypeEnum.PIER
+pylon = IfcElementAssemblyTypeEnum.PYLON
+rail_mechanical_equipment_assembly = IfcElementAssemblyTypeEnum.RAIL_MECHANICAL_EQUIPMENT_ASSEMBLY
+reinforcement_unit = IfcElementAssemblyTypeEnum.REINFORCEMENT_UNIT
+rigid_frame = IfcElementAssemblyTypeEnum.RIGID_FRAME
+shelter = IfcElementAssemblyTypeEnum.SHELTER
+signalassembly = IfcElementAssemblyTypeEnum.SIGNALASSEMBLY
+slab_field = IfcElementAssemblyTypeEnum.SLAB_FIELD
+sumpbuster = IfcElementAssemblyTypeEnum.SUMPBUSTER
+supportingassembly = IfcElementAssemblyTypeEnum.SUPPORTINGASSEMBLY
+suspensionassembly = IfcElementAssemblyTypeEnum.SUSPENSIONASSEMBLY
+trackpanel = IfcElementAssemblyTypeEnum.TRACKPANEL
+traction_switching_assembly = IfcElementAssemblyTypeEnum.TRACTION_SWITCHING_ASSEMBLY
+traffic_calming_device = IfcElementAssemblyTypeEnum.TRAFFIC_CALMING_DEVICE
+truss = IfcElementAssemblyTypeEnum.TRUSS
+turnoutpanel = IfcElementAssemblyTypeEnum.TURNOUTPANEL
+userdefined = IfcElementAssemblyTypeEnum.USERDEFINED
+notdefined = IfcElementAssemblyTypeEnum.NOTDEFINED
 IfcElementCompositionEnum = enum_namespace()
-complex = getattr(IfcElementCompositionEnum, 'COMPLEX', INDETERMINATE)
-element = getattr(IfcElementCompositionEnum, 'ELEMENT', INDETERMINATE)
-partial = getattr(IfcElementCompositionEnum, 'PARTIAL', INDETERMINATE)
+complex = IfcElementCompositionEnum.COMPLEX
+element = IfcElementCompositionEnum.ELEMENT
+partial = IfcElementCompositionEnum.PARTIAL
 IfcEngineTypeEnum = enum_namespace()
-externalcombustion = getattr(IfcEngineTypeEnum, 'EXTERNALCOMBUSTION', INDETERMINATE)
-internalcombustion = getattr(IfcEngineTypeEnum, 'INTERNALCOMBUSTION', INDETERMINATE)
-userdefined = getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEngineTypeEnum, 'NOTDEFINED', INDETERMINATE)
+externalcombustion = IfcEngineTypeEnum.EXTERNALCOMBUSTION
+internalcombustion = IfcEngineTypeEnum.INTERNALCOMBUSTION
+userdefined = IfcEngineTypeEnum.USERDEFINED
+notdefined = IfcEngineTypeEnum.NOTDEFINED
 IfcEvaporativeCoolerTypeEnum = enum_namespace()
-directevaporativeairwasher = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEAIRWASHER', INDETERMINATE)
-directevaporativepackagedrotaryaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER', INDETERMINATE)
-directevaporativerandommediaaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER', INDETERMINATE)
-directevaporativerigidmediaaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER', INDETERMINATE)
-directevaporativeslingerspackagedaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER', INDETERMINATE)
-indirectdirectcombination = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTDIRECTCOMBINATION', INDETERMINATE)
-indirectevaporativecoolingtowerorcoilcooler = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER', INDETERMINATE)
-indirectevaporativepackageaircooler = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVEPACKAGEAIRCOOLER', INDETERMINATE)
-indirectevaporativewetcoil = getattr(IfcEvaporativeCoolerTypeEnum, 'INDIRECTEVAPORATIVEWETCOIL', INDETERMINATE)
-userdefined = getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEvaporativeCoolerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+directevaporativeairwasher = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVEAIRWASHER
+directevaporativepackagedrotaryaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVEPACKAGEDROTARYAIRCOOLER
+directevaporativerandommediaaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVERANDOMMEDIAAIRCOOLER
+directevaporativerigidmediaaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVERIGIDMEDIAAIRCOOLER
+directevaporativeslingerspackagedaircooler = IfcEvaporativeCoolerTypeEnum.DIRECTEVAPORATIVESLINGERSPACKAGEDAIRCOOLER
+indirectdirectcombination = IfcEvaporativeCoolerTypeEnum.INDIRECTDIRECTCOMBINATION
+indirectevaporativecoolingtowerorcoilcooler = IfcEvaporativeCoolerTypeEnum.INDIRECTEVAPORATIVECOOLINGTOWERORCOILCOOLER
+indirectevaporativepackageaircooler = IfcEvaporativeCoolerTypeEnum.INDIRECTEVAPORATIVEPACKAGEAIRCOOLER
+indirectevaporativewetcoil = IfcEvaporativeCoolerTypeEnum.INDIRECTEVAPORATIVEWETCOIL
+userdefined = IfcEvaporativeCoolerTypeEnum.USERDEFINED
+notdefined = IfcEvaporativeCoolerTypeEnum.NOTDEFINED
 IfcEvaporatorTypeEnum = enum_namespace()
-directexpansion = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSION', INDETERMINATE)
-directexpansionbrazedplate = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONBRAZEDPLATE', INDETERMINATE)
-directexpansionshellandtube = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONSHELLANDTUBE', INDETERMINATE)
-directexpansiontubeintube = getattr(IfcEvaporatorTypeEnum, 'DIRECTEXPANSIONTUBEINTUBE', INDETERMINATE)
-floodedshellandtube = getattr(IfcEvaporatorTypeEnum, 'FLOODEDSHELLANDTUBE', INDETERMINATE)
-shellandcoil = getattr(IfcEvaporatorTypeEnum, 'SHELLANDCOIL', INDETERMINATE)
-userdefined = getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEvaporatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+directexpansion = IfcEvaporatorTypeEnum.DIRECTEXPANSION
+directexpansionbrazedplate = IfcEvaporatorTypeEnum.DIRECTEXPANSIONBRAZEDPLATE
+directexpansionshellandtube = IfcEvaporatorTypeEnum.DIRECTEXPANSIONSHELLANDTUBE
+directexpansiontubeintube = IfcEvaporatorTypeEnum.DIRECTEXPANSIONTUBEINTUBE
+floodedshellandtube = IfcEvaporatorTypeEnum.FLOODEDSHELLANDTUBE
+shellandcoil = IfcEvaporatorTypeEnum.SHELLANDCOIL
+userdefined = IfcEvaporatorTypeEnum.USERDEFINED
+notdefined = IfcEvaporatorTypeEnum.NOTDEFINED
 IfcEventTriggerTypeEnum = enum_namespace()
-eventcomplex = getattr(IfcEventTriggerTypeEnum, 'EVENTCOMPLEX', INDETERMINATE)
-eventmessage = getattr(IfcEventTriggerTypeEnum, 'EVENTMESSAGE', INDETERMINATE)
-eventrule = getattr(IfcEventTriggerTypeEnum, 'EVENTRULE', INDETERMINATE)
-eventtime = getattr(IfcEventTriggerTypeEnum, 'EVENTTIME', INDETERMINATE)
-userdefined = getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEventTriggerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+eventcomplex = IfcEventTriggerTypeEnum.EVENTCOMPLEX
+eventmessage = IfcEventTriggerTypeEnum.EVENTMESSAGE
+eventrule = IfcEventTriggerTypeEnum.EVENTRULE
+eventtime = IfcEventTriggerTypeEnum.EVENTTIME
+userdefined = IfcEventTriggerTypeEnum.USERDEFINED
+notdefined = IfcEventTriggerTypeEnum.NOTDEFINED
 IfcEventTypeEnum = enum_namespace()
-endevent = getattr(IfcEventTypeEnum, 'ENDEVENT', INDETERMINATE)
-intermediateevent = getattr(IfcEventTypeEnum, 'INTERMEDIATEEVENT', INDETERMINATE)
-startevent = getattr(IfcEventTypeEnum, 'STARTEVENT', INDETERMINATE)
-userdefined = getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcEventTypeEnum, 'NOTDEFINED', INDETERMINATE)
+endevent = IfcEventTypeEnum.ENDEVENT
+intermediateevent = IfcEventTypeEnum.INTERMEDIATEEVENT
+startevent = IfcEventTypeEnum.STARTEVENT
+userdefined = IfcEventTypeEnum.USERDEFINED
+notdefined = IfcEventTypeEnum.NOTDEFINED
 IfcExternalSpatialElementTypeEnum = enum_namespace()
-external = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL', INDETERMINATE)
-external_earth = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_EARTH', INDETERMINATE)
-external_fire = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_FIRE', INDETERMINATE)
-external_water = getattr(IfcExternalSpatialElementTypeEnum, 'EXTERNAL_WATER', INDETERMINATE)
-userdefined = getattr(IfcExternalSpatialElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcExternalSpatialElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+external = IfcExternalSpatialElementTypeEnum.EXTERNAL
+external_earth = IfcExternalSpatialElementTypeEnum.EXTERNAL_EARTH
+external_fire = IfcExternalSpatialElementTypeEnum.EXTERNAL_FIRE
+external_water = IfcExternalSpatialElementTypeEnum.EXTERNAL_WATER
+userdefined = IfcExternalSpatialElementTypeEnum.USERDEFINED
+notdefined = IfcExternalSpatialElementTypeEnum.NOTDEFINED
 IfcFacilityPartCommonTypeEnum = enum_namespace()
-aboveground = getattr(IfcFacilityPartCommonTypeEnum, 'ABOVEGROUND', INDETERMINATE)
-belowground = getattr(IfcFacilityPartCommonTypeEnum, 'BELOWGROUND', INDETERMINATE)
-junction = getattr(IfcFacilityPartCommonTypeEnum, 'JUNCTION', INDETERMINATE)
-levelcrossing = getattr(IfcFacilityPartCommonTypeEnum, 'LEVELCROSSING', INDETERMINATE)
-segment = getattr(IfcFacilityPartCommonTypeEnum, 'SEGMENT', INDETERMINATE)
-substructure = getattr(IfcFacilityPartCommonTypeEnum, 'SUBSTRUCTURE', INDETERMINATE)
-superstructure = getattr(IfcFacilityPartCommonTypeEnum, 'SUPERSTRUCTURE', INDETERMINATE)
-terminal = getattr(IfcFacilityPartCommonTypeEnum, 'TERMINAL', INDETERMINATE)
-userdefined = getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFacilityPartCommonTypeEnum, 'NOTDEFINED', INDETERMINATE)
+aboveground = IfcFacilityPartCommonTypeEnum.ABOVEGROUND
+belowground = IfcFacilityPartCommonTypeEnum.BELOWGROUND
+junction = IfcFacilityPartCommonTypeEnum.JUNCTION
+levelcrossing = IfcFacilityPartCommonTypeEnum.LEVELCROSSING
+segment = IfcFacilityPartCommonTypeEnum.SEGMENT
+substructure = IfcFacilityPartCommonTypeEnum.SUBSTRUCTURE
+superstructure = IfcFacilityPartCommonTypeEnum.SUPERSTRUCTURE
+terminal = IfcFacilityPartCommonTypeEnum.TERMINAL
+userdefined = IfcFacilityPartCommonTypeEnum.USERDEFINED
+notdefined = IfcFacilityPartCommonTypeEnum.NOTDEFINED
 IfcFacilityUsageEnum = enum_namespace()
-lateral = getattr(IfcFacilityUsageEnum, 'LATERAL', INDETERMINATE)
-longitudinal = getattr(IfcFacilityUsageEnum, 'LONGITUDINAL', INDETERMINATE)
-region = getattr(IfcFacilityUsageEnum, 'REGION', INDETERMINATE)
-vertical = getattr(IfcFacilityUsageEnum, 'VERTICAL', INDETERMINATE)
-userdefined = getattr(IfcFacilityUsageEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFacilityUsageEnum, 'NOTDEFINED', INDETERMINATE)
+lateral = IfcFacilityUsageEnum.LATERAL
+longitudinal = IfcFacilityUsageEnum.LONGITUDINAL
+region = IfcFacilityUsageEnum.REGION
+vertical = IfcFacilityUsageEnum.VERTICAL
+userdefined = IfcFacilityUsageEnum.USERDEFINED
+notdefined = IfcFacilityUsageEnum.NOTDEFINED
 IfcFanTypeEnum = enum_namespace()
-centrifugalairfoil = getattr(IfcFanTypeEnum, 'CENTRIFUGALAIRFOIL', INDETERMINATE)
-centrifugalbackwardinclinedcurved = getattr(IfcFanTypeEnum, 'CENTRIFUGALBACKWARDINCLINEDCURVED', INDETERMINATE)
-centrifugalforwardcurved = getattr(IfcFanTypeEnum, 'CENTRIFUGALFORWARDCURVED', INDETERMINATE)
-centrifugalradial = getattr(IfcFanTypeEnum, 'CENTRIFUGALRADIAL', INDETERMINATE)
-propelloraxial = getattr(IfcFanTypeEnum, 'PROPELLORAXIAL', INDETERMINATE)
-tubeaxial = getattr(IfcFanTypeEnum, 'TUBEAXIAL', INDETERMINATE)
-vaneaxial = getattr(IfcFanTypeEnum, 'VANEAXIAL', INDETERMINATE)
-userdefined = getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFanTypeEnum, 'NOTDEFINED', INDETERMINATE)
+centrifugalairfoil = IfcFanTypeEnum.CENTRIFUGALAIRFOIL
+centrifugalbackwardinclinedcurved = IfcFanTypeEnum.CENTRIFUGALBACKWARDINCLINEDCURVED
+centrifugalforwardcurved = IfcFanTypeEnum.CENTRIFUGALFORWARDCURVED
+centrifugalradial = IfcFanTypeEnum.CENTRIFUGALRADIAL
+propelloraxial = IfcFanTypeEnum.PROPELLORAXIAL
+tubeaxial = IfcFanTypeEnum.TUBEAXIAL
+vaneaxial = IfcFanTypeEnum.VANEAXIAL
+userdefined = IfcFanTypeEnum.USERDEFINED
+notdefined = IfcFanTypeEnum.NOTDEFINED
 IfcFastenerTypeEnum = enum_namespace()
-glue = getattr(IfcFastenerTypeEnum, 'GLUE', INDETERMINATE)
-mortar = getattr(IfcFastenerTypeEnum, 'MORTAR', INDETERMINATE)
-weld = getattr(IfcFastenerTypeEnum, 'WELD', INDETERMINATE)
-userdefined = getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFastenerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+glue = IfcFastenerTypeEnum.GLUE
+mortar = IfcFastenerTypeEnum.MORTAR
+weld = IfcFastenerTypeEnum.WELD
+userdefined = IfcFastenerTypeEnum.USERDEFINED
+notdefined = IfcFastenerTypeEnum.NOTDEFINED
 IfcFilterTypeEnum = enum_namespace()
-airparticlefilter = getattr(IfcFilterTypeEnum, 'AIRPARTICLEFILTER', INDETERMINATE)
-compressedairfilter = getattr(IfcFilterTypeEnum, 'COMPRESSEDAIRFILTER', INDETERMINATE)
-odorfilter = getattr(IfcFilterTypeEnum, 'ODORFILTER', INDETERMINATE)
-oilfilter = getattr(IfcFilterTypeEnum, 'OILFILTER', INDETERMINATE)
-strainer = getattr(IfcFilterTypeEnum, 'STRAINER', INDETERMINATE)
-waterfilter = getattr(IfcFilterTypeEnum, 'WATERFILTER', INDETERMINATE)
-userdefined = getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFilterTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airparticlefilter = IfcFilterTypeEnum.AIRPARTICLEFILTER
+compressedairfilter = IfcFilterTypeEnum.COMPRESSEDAIRFILTER
+odorfilter = IfcFilterTypeEnum.ODORFILTER
+oilfilter = IfcFilterTypeEnum.OILFILTER
+strainer = IfcFilterTypeEnum.STRAINER
+waterfilter = IfcFilterTypeEnum.WATERFILTER
+userdefined = IfcFilterTypeEnum.USERDEFINED
+notdefined = IfcFilterTypeEnum.NOTDEFINED
 IfcFireSuppressionTerminalTypeEnum = enum_namespace()
-breechinginlet = getattr(IfcFireSuppressionTerminalTypeEnum, 'BREECHINGINLET', INDETERMINATE)
-firehydrant = getattr(IfcFireSuppressionTerminalTypeEnum, 'FIREHYDRANT', INDETERMINATE)
-firemonitor = getattr(IfcFireSuppressionTerminalTypeEnum, 'FIREMONITOR', INDETERMINATE)
-hosereel = getattr(IfcFireSuppressionTerminalTypeEnum, 'HOSEREEL', INDETERMINATE)
-sprinkler = getattr(IfcFireSuppressionTerminalTypeEnum, 'SPRINKLER', INDETERMINATE)
-sprinklerdeflector = getattr(IfcFireSuppressionTerminalTypeEnum, 'SPRINKLERDEFLECTOR', INDETERMINATE)
-userdefined = getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFireSuppressionTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+breechinginlet = IfcFireSuppressionTerminalTypeEnum.BREECHINGINLET
+firehydrant = IfcFireSuppressionTerminalTypeEnum.FIREHYDRANT
+firemonitor = IfcFireSuppressionTerminalTypeEnum.FIREMONITOR
+hosereel = IfcFireSuppressionTerminalTypeEnum.HOSEREEL
+sprinkler = IfcFireSuppressionTerminalTypeEnum.SPRINKLER
+sprinklerdeflector = IfcFireSuppressionTerminalTypeEnum.SPRINKLERDEFLECTOR
+userdefined = IfcFireSuppressionTerminalTypeEnum.USERDEFINED
+notdefined = IfcFireSuppressionTerminalTypeEnum.NOTDEFINED
 IfcFlowDirectionEnum = enum_namespace()
-sink = getattr(IfcFlowDirectionEnum, 'SINK', INDETERMINATE)
-source = getattr(IfcFlowDirectionEnum, 'SOURCE', INDETERMINATE)
-sourceandsink = getattr(IfcFlowDirectionEnum, 'SOURCEANDSINK', INDETERMINATE)
-notdefined = getattr(IfcFlowDirectionEnum, 'NOTDEFINED', INDETERMINATE)
+sink = IfcFlowDirectionEnum.SINK
+source = IfcFlowDirectionEnum.SOURCE
+sourceandsink = IfcFlowDirectionEnum.SOURCEANDSINK
+notdefined = IfcFlowDirectionEnum.NOTDEFINED
 IfcFlowInstrumentTypeEnum = enum_namespace()
-ammeter = getattr(IfcFlowInstrumentTypeEnum, 'AMMETER', INDETERMINATE)
-combined = getattr(IfcFlowInstrumentTypeEnum, 'COMBINED', INDETERMINATE)
-frequencymeter = getattr(IfcFlowInstrumentTypeEnum, 'FREQUENCYMETER', INDETERMINATE)
-phaseanglemeter = getattr(IfcFlowInstrumentTypeEnum, 'PHASEANGLEMETER', INDETERMINATE)
-powerfactormeter = getattr(IfcFlowInstrumentTypeEnum, 'POWERFACTORMETER', INDETERMINATE)
-pressuregauge = getattr(IfcFlowInstrumentTypeEnum, 'PRESSUREGAUGE', INDETERMINATE)
-thermometer = getattr(IfcFlowInstrumentTypeEnum, 'THERMOMETER', INDETERMINATE)
-voltmeter = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER', INDETERMINATE)
-voltmeter_peak = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER_PEAK', INDETERMINATE)
-voltmeter_rms = getattr(IfcFlowInstrumentTypeEnum, 'VOLTMETER_RMS', INDETERMINATE)
-userdefined = getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFlowInstrumentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+ammeter = IfcFlowInstrumentTypeEnum.AMMETER
+combined = IfcFlowInstrumentTypeEnum.COMBINED
+frequencymeter = IfcFlowInstrumentTypeEnum.FREQUENCYMETER
+phaseanglemeter = IfcFlowInstrumentTypeEnum.PHASEANGLEMETER
+powerfactormeter = IfcFlowInstrumentTypeEnum.POWERFACTORMETER
+pressuregauge = IfcFlowInstrumentTypeEnum.PRESSUREGAUGE
+thermometer = IfcFlowInstrumentTypeEnum.THERMOMETER
+voltmeter = IfcFlowInstrumentTypeEnum.VOLTMETER
+voltmeter_peak = IfcFlowInstrumentTypeEnum.VOLTMETER_PEAK
+voltmeter_rms = IfcFlowInstrumentTypeEnum.VOLTMETER_RMS
+userdefined = IfcFlowInstrumentTypeEnum.USERDEFINED
+notdefined = IfcFlowInstrumentTypeEnum.NOTDEFINED
 IfcFlowMeterTypeEnum = enum_namespace()
-energymeter = getattr(IfcFlowMeterTypeEnum, 'ENERGYMETER', INDETERMINATE)
-gasmeter = getattr(IfcFlowMeterTypeEnum, 'GASMETER', INDETERMINATE)
-oilmeter = getattr(IfcFlowMeterTypeEnum, 'OILMETER', INDETERMINATE)
-watermeter = getattr(IfcFlowMeterTypeEnum, 'WATERMETER', INDETERMINATE)
-userdefined = getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFlowMeterTypeEnum, 'NOTDEFINED', INDETERMINATE)
+energymeter = IfcFlowMeterTypeEnum.ENERGYMETER
+gasmeter = IfcFlowMeterTypeEnum.GASMETER
+oilmeter = IfcFlowMeterTypeEnum.OILMETER
+watermeter = IfcFlowMeterTypeEnum.WATERMETER
+userdefined = IfcFlowMeterTypeEnum.USERDEFINED
+notdefined = IfcFlowMeterTypeEnum.NOTDEFINED
 IfcFootingTypeEnum = enum_namespace()
-caisson_foundation = getattr(IfcFootingTypeEnum, 'CAISSON_FOUNDATION', INDETERMINATE)
-footing_beam = getattr(IfcFootingTypeEnum, 'FOOTING_BEAM', INDETERMINATE)
-pad_footing = getattr(IfcFootingTypeEnum, 'PAD_FOOTING', INDETERMINATE)
-pile_cap = getattr(IfcFootingTypeEnum, 'PILE_CAP', INDETERMINATE)
-strip_footing = getattr(IfcFootingTypeEnum, 'STRIP_FOOTING', INDETERMINATE)
-userdefined = getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFootingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+caisson_foundation = IfcFootingTypeEnum.CAISSON_FOUNDATION
+footing_beam = IfcFootingTypeEnum.FOOTING_BEAM
+pad_footing = IfcFootingTypeEnum.PAD_FOOTING
+pile_cap = IfcFootingTypeEnum.PILE_CAP
+strip_footing = IfcFootingTypeEnum.STRIP_FOOTING
+userdefined = IfcFootingTypeEnum.USERDEFINED
+notdefined = IfcFootingTypeEnum.NOTDEFINED
 IfcFurnitureTypeEnum = enum_namespace()
-bed = getattr(IfcFurnitureTypeEnum, 'BED', INDETERMINATE)
-chair = getattr(IfcFurnitureTypeEnum, 'CHAIR', INDETERMINATE)
-desk = getattr(IfcFurnitureTypeEnum, 'DESK', INDETERMINATE)
-filecabinet = getattr(IfcFurnitureTypeEnum, 'FILECABINET', INDETERMINATE)
-shelf = getattr(IfcFurnitureTypeEnum, 'SHELF', INDETERMINATE)
-sofa = getattr(IfcFurnitureTypeEnum, 'SOFA', INDETERMINATE)
-table = getattr(IfcFurnitureTypeEnum, 'TABLE', INDETERMINATE)
-technicalcabinet = getattr(IfcFurnitureTypeEnum, 'TECHNICALCABINET', INDETERMINATE)
-userdefined = getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcFurnitureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bed = IfcFurnitureTypeEnum.BED
+chair = IfcFurnitureTypeEnum.CHAIR
+desk = IfcFurnitureTypeEnum.DESK
+filecabinet = IfcFurnitureTypeEnum.FILECABINET
+shelf = IfcFurnitureTypeEnum.SHELF
+sofa = IfcFurnitureTypeEnum.SOFA
+table = IfcFurnitureTypeEnum.TABLE
+technicalcabinet = IfcFurnitureTypeEnum.TECHNICALCABINET
+userdefined = IfcFurnitureTypeEnum.USERDEFINED
+notdefined = IfcFurnitureTypeEnum.NOTDEFINED
 IfcGeographicElementTypeEnum = enum_namespace()
-soil_boring_point = getattr(IfcGeographicElementTypeEnum, 'SOIL_BORING_POINT', INDETERMINATE)
-terrain = getattr(IfcGeographicElementTypeEnum, 'TERRAIN', INDETERMINATE)
-vegetation = getattr(IfcGeographicElementTypeEnum, 'VEGETATION', INDETERMINATE)
-userdefined = getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcGeographicElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+soil_boring_point = IfcGeographicElementTypeEnum.SOIL_BORING_POINT
+terrain = IfcGeographicElementTypeEnum.TERRAIN
+vegetation = IfcGeographicElementTypeEnum.VEGETATION
+userdefined = IfcGeographicElementTypeEnum.USERDEFINED
+notdefined = IfcGeographicElementTypeEnum.NOTDEFINED
 IfcGeometricProjectionEnum = enum_namespace()
-elevation_view = getattr(IfcGeometricProjectionEnum, 'ELEVATION_VIEW', INDETERMINATE)
-graph_view = getattr(IfcGeometricProjectionEnum, 'GRAPH_VIEW', INDETERMINATE)
-model_view = getattr(IfcGeometricProjectionEnum, 'MODEL_VIEW', INDETERMINATE)
-plan_view = getattr(IfcGeometricProjectionEnum, 'PLAN_VIEW', INDETERMINATE)
-reflected_plan_view = getattr(IfcGeometricProjectionEnum, 'REFLECTED_PLAN_VIEW', INDETERMINATE)
-section_view = getattr(IfcGeometricProjectionEnum, 'SECTION_VIEW', INDETERMINATE)
-sketch_view = getattr(IfcGeometricProjectionEnum, 'SKETCH_VIEW', INDETERMINATE)
-userdefined = getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcGeometricProjectionEnum, 'NOTDEFINED', INDETERMINATE)
+elevation_view = IfcGeometricProjectionEnum.ELEVATION_VIEW
+graph_view = IfcGeometricProjectionEnum.GRAPH_VIEW
+model_view = IfcGeometricProjectionEnum.MODEL_VIEW
+plan_view = IfcGeometricProjectionEnum.PLAN_VIEW
+reflected_plan_view = IfcGeometricProjectionEnum.REFLECTED_PLAN_VIEW
+section_view = IfcGeometricProjectionEnum.SECTION_VIEW
+sketch_view = IfcGeometricProjectionEnum.SKETCH_VIEW
+userdefined = IfcGeometricProjectionEnum.USERDEFINED
+notdefined = IfcGeometricProjectionEnum.NOTDEFINED
 IfcGeotechnicalStratumTypeEnum = enum_namespace()
-solid = getattr(IfcGeotechnicalStratumTypeEnum, 'SOLID', INDETERMINATE)
-void = getattr(IfcGeotechnicalStratumTypeEnum, 'VOID', INDETERMINATE)
-water = getattr(IfcGeotechnicalStratumTypeEnum, 'WATER', INDETERMINATE)
-userdefined = getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcGeotechnicalStratumTypeEnum, 'NOTDEFINED', INDETERMINATE)
+solid = IfcGeotechnicalStratumTypeEnum.SOLID
+void = IfcGeotechnicalStratumTypeEnum.VOID
+water = IfcGeotechnicalStratumTypeEnum.WATER
+userdefined = IfcGeotechnicalStratumTypeEnum.USERDEFINED
+notdefined = IfcGeotechnicalStratumTypeEnum.NOTDEFINED
 IfcGlobalOrLocalEnum = enum_namespace()
-global_coords = getattr(IfcGlobalOrLocalEnum, 'GLOBAL_COORDS', INDETERMINATE)
-local_coords = getattr(IfcGlobalOrLocalEnum, 'LOCAL_COORDS', INDETERMINATE)
+global_coords = IfcGlobalOrLocalEnum.GLOBAL_COORDS
+local_coords = IfcGlobalOrLocalEnum.LOCAL_COORDS
 IfcGridTypeEnum = enum_namespace()
-irregular = getattr(IfcGridTypeEnum, 'IRREGULAR', INDETERMINATE)
-radial = getattr(IfcGridTypeEnum, 'RADIAL', INDETERMINATE)
-rectangular = getattr(IfcGridTypeEnum, 'RECTANGULAR', INDETERMINATE)
-triangular = getattr(IfcGridTypeEnum, 'TRIANGULAR', INDETERMINATE)
-userdefined = getattr(IfcGridTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcGridTypeEnum, 'NOTDEFINED', INDETERMINATE)
+irregular = IfcGridTypeEnum.IRREGULAR
+radial = IfcGridTypeEnum.RADIAL
+rectangular = IfcGridTypeEnum.RECTANGULAR
+triangular = IfcGridTypeEnum.TRIANGULAR
+userdefined = IfcGridTypeEnum.USERDEFINED
+notdefined = IfcGridTypeEnum.NOTDEFINED
 IfcHeatExchangerTypeEnum = enum_namespace()
-plate = getattr(IfcHeatExchangerTypeEnum, 'PLATE', INDETERMINATE)
-shellandtube = getattr(IfcHeatExchangerTypeEnum, 'SHELLANDTUBE', INDETERMINATE)
-turnoutheating = getattr(IfcHeatExchangerTypeEnum, 'TURNOUTHEATING', INDETERMINATE)
-userdefined = getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcHeatExchangerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+plate = IfcHeatExchangerTypeEnum.PLATE
+shellandtube = IfcHeatExchangerTypeEnum.SHELLANDTUBE
+turnoutheating = IfcHeatExchangerTypeEnum.TURNOUTHEATING
+userdefined = IfcHeatExchangerTypeEnum.USERDEFINED
+notdefined = IfcHeatExchangerTypeEnum.NOTDEFINED
 IfcHumidifierTypeEnum = enum_namespace()
-adiabaticairwasher = getattr(IfcHumidifierTypeEnum, 'ADIABATICAIRWASHER', INDETERMINATE)
-adiabaticatomizing = getattr(IfcHumidifierTypeEnum, 'ADIABATICATOMIZING', INDETERMINATE)
-adiabaticcompressedairnozzle = getattr(IfcHumidifierTypeEnum, 'ADIABATICCOMPRESSEDAIRNOZZLE', INDETERMINATE)
-adiabaticpan = getattr(IfcHumidifierTypeEnum, 'ADIABATICPAN', INDETERMINATE)
-adiabaticrigidmedia = getattr(IfcHumidifierTypeEnum, 'ADIABATICRIGIDMEDIA', INDETERMINATE)
-adiabaticultrasonic = getattr(IfcHumidifierTypeEnum, 'ADIABATICULTRASONIC', INDETERMINATE)
-adiabaticwettedelement = getattr(IfcHumidifierTypeEnum, 'ADIABATICWETTEDELEMENT', INDETERMINATE)
-assistedbutane = getattr(IfcHumidifierTypeEnum, 'ASSISTEDBUTANE', INDETERMINATE)
-assistedelectric = getattr(IfcHumidifierTypeEnum, 'ASSISTEDELECTRIC', INDETERMINATE)
-assistednaturalgas = getattr(IfcHumidifierTypeEnum, 'ASSISTEDNATURALGAS', INDETERMINATE)
-assistedpropane = getattr(IfcHumidifierTypeEnum, 'ASSISTEDPROPANE', INDETERMINATE)
-assistedsteam = getattr(IfcHumidifierTypeEnum, 'ASSISTEDSTEAM', INDETERMINATE)
-steaminjection = getattr(IfcHumidifierTypeEnum, 'STEAMINJECTION', INDETERMINATE)
-userdefined = getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcHumidifierTypeEnum, 'NOTDEFINED', INDETERMINATE)
+adiabaticairwasher = IfcHumidifierTypeEnum.ADIABATICAIRWASHER
+adiabaticatomizing = IfcHumidifierTypeEnum.ADIABATICATOMIZING
+adiabaticcompressedairnozzle = IfcHumidifierTypeEnum.ADIABATICCOMPRESSEDAIRNOZZLE
+adiabaticpan = IfcHumidifierTypeEnum.ADIABATICPAN
+adiabaticrigidmedia = IfcHumidifierTypeEnum.ADIABATICRIGIDMEDIA
+adiabaticultrasonic = IfcHumidifierTypeEnum.ADIABATICULTRASONIC
+adiabaticwettedelement = IfcHumidifierTypeEnum.ADIABATICWETTEDELEMENT
+assistedbutane = IfcHumidifierTypeEnum.ASSISTEDBUTANE
+assistedelectric = IfcHumidifierTypeEnum.ASSISTEDELECTRIC
+assistednaturalgas = IfcHumidifierTypeEnum.ASSISTEDNATURALGAS
+assistedpropane = IfcHumidifierTypeEnum.ASSISTEDPROPANE
+assistedsteam = IfcHumidifierTypeEnum.ASSISTEDSTEAM
+steaminjection = IfcHumidifierTypeEnum.STEAMINJECTION
+userdefined = IfcHumidifierTypeEnum.USERDEFINED
+notdefined = IfcHumidifierTypeEnum.NOTDEFINED
 IfcImpactProtectionDeviceTypeEnum = enum_namespace()
-bumper = getattr(IfcImpactProtectionDeviceTypeEnum, 'BUMPER', INDETERMINATE)
-crashcushion = getattr(IfcImpactProtectionDeviceTypeEnum, 'CRASHCUSHION', INDETERMINATE)
-dampingsystem = getattr(IfcImpactProtectionDeviceTypeEnum, 'DAMPINGSYSTEM', INDETERMINATE)
-fender = getattr(IfcImpactProtectionDeviceTypeEnum, 'FENDER', INDETERMINATE)
-userdefined = getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcImpactProtectionDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bumper = IfcImpactProtectionDeviceTypeEnum.BUMPER
+crashcushion = IfcImpactProtectionDeviceTypeEnum.CRASHCUSHION
+dampingsystem = IfcImpactProtectionDeviceTypeEnum.DAMPINGSYSTEM
+fender = IfcImpactProtectionDeviceTypeEnum.FENDER
+userdefined = IfcImpactProtectionDeviceTypeEnum.USERDEFINED
+notdefined = IfcImpactProtectionDeviceTypeEnum.NOTDEFINED
 IfcInterceptorTypeEnum = enum_namespace()
-cyclonic = getattr(IfcInterceptorTypeEnum, 'CYCLONIC', INDETERMINATE)
-grease = getattr(IfcInterceptorTypeEnum, 'GREASE', INDETERMINATE)
-oil = getattr(IfcInterceptorTypeEnum, 'OIL', INDETERMINATE)
-petrol = getattr(IfcInterceptorTypeEnum, 'PETROL', INDETERMINATE)
-userdefined = getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcInterceptorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cyclonic = IfcInterceptorTypeEnum.CYCLONIC
+grease = IfcInterceptorTypeEnum.GREASE
+oil = IfcInterceptorTypeEnum.OIL
+petrol = IfcInterceptorTypeEnum.PETROL
+userdefined = IfcInterceptorTypeEnum.USERDEFINED
+notdefined = IfcInterceptorTypeEnum.NOTDEFINED
 IfcInternalOrExternalEnum = enum_namespace()
-external = getattr(IfcInternalOrExternalEnum, 'EXTERNAL', INDETERMINATE)
-external_earth = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_EARTH', INDETERMINATE)
-external_fire = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_FIRE', INDETERMINATE)
-external_water = getattr(IfcInternalOrExternalEnum, 'EXTERNAL_WATER', INDETERMINATE)
-internal = getattr(IfcInternalOrExternalEnum, 'INTERNAL', INDETERMINATE)
-notdefined = getattr(IfcInternalOrExternalEnum, 'NOTDEFINED', INDETERMINATE)
+external = IfcInternalOrExternalEnum.EXTERNAL
+external_earth = IfcInternalOrExternalEnum.EXTERNAL_EARTH
+external_fire = IfcInternalOrExternalEnum.EXTERNAL_FIRE
+external_water = IfcInternalOrExternalEnum.EXTERNAL_WATER
+internal = IfcInternalOrExternalEnum.INTERNAL
+notdefined = IfcInternalOrExternalEnum.NOTDEFINED
 IfcInventoryTypeEnum = enum_namespace()
-assetinventory = getattr(IfcInventoryTypeEnum, 'ASSETINVENTORY', INDETERMINATE)
-furnitureinventory = getattr(IfcInventoryTypeEnum, 'FURNITUREINVENTORY', INDETERMINATE)
-spaceinventory = getattr(IfcInventoryTypeEnum, 'SPACEINVENTORY', INDETERMINATE)
-userdefined = getattr(IfcInventoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcInventoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+assetinventory = IfcInventoryTypeEnum.ASSETINVENTORY
+furnitureinventory = IfcInventoryTypeEnum.FURNITUREINVENTORY
+spaceinventory = IfcInventoryTypeEnum.SPACEINVENTORY
+userdefined = IfcInventoryTypeEnum.USERDEFINED
+notdefined = IfcInventoryTypeEnum.NOTDEFINED
 IfcJunctionBoxTypeEnum = enum_namespace()
-data = getattr(IfcJunctionBoxTypeEnum, 'DATA', INDETERMINATE)
-power = getattr(IfcJunctionBoxTypeEnum, 'POWER', INDETERMINATE)
-userdefined = getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcJunctionBoxTypeEnum, 'NOTDEFINED', INDETERMINATE)
+data = IfcJunctionBoxTypeEnum.DATA
+power = IfcJunctionBoxTypeEnum.POWER
+userdefined = IfcJunctionBoxTypeEnum.USERDEFINED
+notdefined = IfcJunctionBoxTypeEnum.NOTDEFINED
 IfcKerbTypeEnum = enum_namespace()
-userdefined = getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcKerbTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcKerbTypeEnum.USERDEFINED
+notdefined = IfcKerbTypeEnum.NOTDEFINED
 IfcKnotType = enum_namespace()
-piecewise_bezier_knots = getattr(IfcKnotType, 'PIECEWISE_BEZIER_KNOTS', INDETERMINATE)
-quasi_uniform_knots = getattr(IfcKnotType, 'QUASI_UNIFORM_KNOTS', INDETERMINATE)
-uniform_knots = getattr(IfcKnotType, 'UNIFORM_KNOTS', INDETERMINATE)
-unspecified = getattr(IfcKnotType, 'UNSPECIFIED', INDETERMINATE)
+piecewise_bezier_knots = IfcKnotType.PIECEWISE_BEZIER_KNOTS
+quasi_uniform_knots = IfcKnotType.QUASI_UNIFORM_KNOTS
+uniform_knots = IfcKnotType.UNIFORM_KNOTS
+unspecified = IfcKnotType.UNSPECIFIED
 IfcLaborResourceTypeEnum = enum_namespace()
-administration = getattr(IfcLaborResourceTypeEnum, 'ADMINISTRATION', INDETERMINATE)
-carpentry = getattr(IfcLaborResourceTypeEnum, 'CARPENTRY', INDETERMINATE)
-cleaning = getattr(IfcLaborResourceTypeEnum, 'CLEANING', INDETERMINATE)
-concrete = getattr(IfcLaborResourceTypeEnum, 'CONCRETE', INDETERMINATE)
-drywall = getattr(IfcLaborResourceTypeEnum, 'DRYWALL', INDETERMINATE)
-electric = getattr(IfcLaborResourceTypeEnum, 'ELECTRIC', INDETERMINATE)
-finishing = getattr(IfcLaborResourceTypeEnum, 'FINISHING', INDETERMINATE)
-flooring = getattr(IfcLaborResourceTypeEnum, 'FLOORING', INDETERMINATE)
-general = getattr(IfcLaborResourceTypeEnum, 'GENERAL', INDETERMINATE)
-hvac = getattr(IfcLaborResourceTypeEnum, 'HVAC', INDETERMINATE)
-landscaping = getattr(IfcLaborResourceTypeEnum, 'LANDSCAPING', INDETERMINATE)
-masonry = getattr(IfcLaborResourceTypeEnum, 'MASONRY', INDETERMINATE)
-painting = getattr(IfcLaborResourceTypeEnum, 'PAINTING', INDETERMINATE)
-paving = getattr(IfcLaborResourceTypeEnum, 'PAVING', INDETERMINATE)
-plumbing = getattr(IfcLaborResourceTypeEnum, 'PLUMBING', INDETERMINATE)
-roofing = getattr(IfcLaborResourceTypeEnum, 'ROOFING', INDETERMINATE)
-sitegrading = getattr(IfcLaborResourceTypeEnum, 'SITEGRADING', INDETERMINATE)
-steelwork = getattr(IfcLaborResourceTypeEnum, 'STEELWORK', INDETERMINATE)
-surveying = getattr(IfcLaborResourceTypeEnum, 'SURVEYING', INDETERMINATE)
-userdefined = getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcLaborResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+administration = IfcLaborResourceTypeEnum.ADMINISTRATION
+carpentry = IfcLaborResourceTypeEnum.CARPENTRY
+cleaning = IfcLaborResourceTypeEnum.CLEANING
+concrete = IfcLaborResourceTypeEnum.CONCRETE
+drywall = IfcLaborResourceTypeEnum.DRYWALL
+electric = IfcLaborResourceTypeEnum.ELECTRIC
+finishing = IfcLaborResourceTypeEnum.FINISHING
+flooring = IfcLaborResourceTypeEnum.FLOORING
+general = IfcLaborResourceTypeEnum.GENERAL
+hvac = IfcLaborResourceTypeEnum.HVAC
+landscaping = IfcLaborResourceTypeEnum.LANDSCAPING
+masonry = IfcLaborResourceTypeEnum.MASONRY
+painting = IfcLaborResourceTypeEnum.PAINTING
+paving = IfcLaborResourceTypeEnum.PAVING
+plumbing = IfcLaborResourceTypeEnum.PLUMBING
+roofing = IfcLaborResourceTypeEnum.ROOFING
+sitegrading = IfcLaborResourceTypeEnum.SITEGRADING
+steelwork = IfcLaborResourceTypeEnum.STEELWORK
+surveying = IfcLaborResourceTypeEnum.SURVEYING
+userdefined = IfcLaborResourceTypeEnum.USERDEFINED
+notdefined = IfcLaborResourceTypeEnum.NOTDEFINED
 IfcLampTypeEnum = enum_namespace()
-compactfluorescent = getattr(IfcLampTypeEnum, 'COMPACTFLUORESCENT', INDETERMINATE)
-fluorescent = getattr(IfcLampTypeEnum, 'FLUORESCENT', INDETERMINATE)
-halogen = getattr(IfcLampTypeEnum, 'HALOGEN', INDETERMINATE)
-highpressuremercury = getattr(IfcLampTypeEnum, 'HIGHPRESSUREMERCURY', INDETERMINATE)
-highpressuresodium = getattr(IfcLampTypeEnum, 'HIGHPRESSURESODIUM', INDETERMINATE)
-led = getattr(IfcLampTypeEnum, 'LED', INDETERMINATE)
-metalhalide = getattr(IfcLampTypeEnum, 'METALHALIDE', INDETERMINATE)
-oled = getattr(IfcLampTypeEnum, 'OLED', INDETERMINATE)
-tungstenfilament = getattr(IfcLampTypeEnum, 'TUNGSTENFILAMENT', INDETERMINATE)
-userdefined = getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcLampTypeEnum, 'NOTDEFINED', INDETERMINATE)
+compactfluorescent = IfcLampTypeEnum.COMPACTFLUORESCENT
+fluorescent = IfcLampTypeEnum.FLUORESCENT
+halogen = IfcLampTypeEnum.HALOGEN
+highpressuremercury = IfcLampTypeEnum.HIGHPRESSUREMERCURY
+highpressuresodium = IfcLampTypeEnum.HIGHPRESSURESODIUM
+led = IfcLampTypeEnum.LED
+metalhalide = IfcLampTypeEnum.METALHALIDE
+oled = IfcLampTypeEnum.OLED
+tungstenfilament = IfcLampTypeEnum.TUNGSTENFILAMENT
+userdefined = IfcLampTypeEnum.USERDEFINED
+notdefined = IfcLampTypeEnum.NOTDEFINED
 IfcLayerSetDirectionEnum = enum_namespace()
-axis1 = getattr(IfcLayerSetDirectionEnum, 'AXIS1', INDETERMINATE)
-axis2 = getattr(IfcLayerSetDirectionEnum, 'AXIS2', INDETERMINATE)
-axis3 = getattr(IfcLayerSetDirectionEnum, 'AXIS3', INDETERMINATE)
+axis1 = IfcLayerSetDirectionEnum.AXIS1
+axis2 = IfcLayerSetDirectionEnum.AXIS2
+axis3 = IfcLayerSetDirectionEnum.AXIS3
 IfcLightDistributionCurveEnum = enum_namespace()
-type_a = getattr(IfcLightDistributionCurveEnum, 'TYPE_A', INDETERMINATE)
-type_b = getattr(IfcLightDistributionCurveEnum, 'TYPE_B', INDETERMINATE)
-type_c = getattr(IfcLightDistributionCurveEnum, 'TYPE_C', INDETERMINATE)
-notdefined = getattr(IfcLightDistributionCurveEnum, 'NOTDEFINED', INDETERMINATE)
+type_a = IfcLightDistributionCurveEnum.TYPE_A
+type_b = IfcLightDistributionCurveEnum.TYPE_B
+type_c = IfcLightDistributionCurveEnum.TYPE_C
+notdefined = IfcLightDistributionCurveEnum.NOTDEFINED
 IfcLightEmissionSourceEnum = enum_namespace()
-compactfluorescent = getattr(IfcLightEmissionSourceEnum, 'COMPACTFLUORESCENT', INDETERMINATE)
-fluorescent = getattr(IfcLightEmissionSourceEnum, 'FLUORESCENT', INDETERMINATE)
-highpressuremercury = getattr(IfcLightEmissionSourceEnum, 'HIGHPRESSUREMERCURY', INDETERMINATE)
-highpressuresodium = getattr(IfcLightEmissionSourceEnum, 'HIGHPRESSURESODIUM', INDETERMINATE)
-lightemittingdiode = getattr(IfcLightEmissionSourceEnum, 'LIGHTEMITTINGDIODE', INDETERMINATE)
-lowpressuresodium = getattr(IfcLightEmissionSourceEnum, 'LOWPRESSURESODIUM', INDETERMINATE)
-lowvoltagehalogen = getattr(IfcLightEmissionSourceEnum, 'LOWVOLTAGEHALOGEN', INDETERMINATE)
-mainvoltagehalogen = getattr(IfcLightEmissionSourceEnum, 'MAINVOLTAGEHALOGEN', INDETERMINATE)
-metalhalide = getattr(IfcLightEmissionSourceEnum, 'METALHALIDE', INDETERMINATE)
-tungstenfilament = getattr(IfcLightEmissionSourceEnum, 'TUNGSTENFILAMENT', INDETERMINATE)
-notdefined = getattr(IfcLightEmissionSourceEnum, 'NOTDEFINED', INDETERMINATE)
+compactfluorescent = IfcLightEmissionSourceEnum.COMPACTFLUORESCENT
+fluorescent = IfcLightEmissionSourceEnum.FLUORESCENT
+highpressuremercury = IfcLightEmissionSourceEnum.HIGHPRESSUREMERCURY
+highpressuresodium = IfcLightEmissionSourceEnum.HIGHPRESSURESODIUM
+lightemittingdiode = IfcLightEmissionSourceEnum.LIGHTEMITTINGDIODE
+lowpressuresodium = IfcLightEmissionSourceEnum.LOWPRESSURESODIUM
+lowvoltagehalogen = IfcLightEmissionSourceEnum.LOWVOLTAGEHALOGEN
+mainvoltagehalogen = IfcLightEmissionSourceEnum.MAINVOLTAGEHALOGEN
+metalhalide = IfcLightEmissionSourceEnum.METALHALIDE
+tungstenfilament = IfcLightEmissionSourceEnum.TUNGSTENFILAMENT
+notdefined = IfcLightEmissionSourceEnum.NOTDEFINED
 IfcLightFixtureTypeEnum = enum_namespace()
-directionsource = getattr(IfcLightFixtureTypeEnum, 'DIRECTIONSOURCE', INDETERMINATE)
-pointsource = getattr(IfcLightFixtureTypeEnum, 'POINTSOURCE', INDETERMINATE)
-securitylighting = getattr(IfcLightFixtureTypeEnum, 'SECURITYLIGHTING', INDETERMINATE)
-userdefined = getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcLightFixtureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+directionsource = IfcLightFixtureTypeEnum.DIRECTIONSOURCE
+pointsource = IfcLightFixtureTypeEnum.POINTSOURCE
+securitylighting = IfcLightFixtureTypeEnum.SECURITYLIGHTING
+userdefined = IfcLightFixtureTypeEnum.USERDEFINED
+notdefined = IfcLightFixtureTypeEnum.NOTDEFINED
 IfcLiquidTerminalTypeEnum = enum_namespace()
-hosereel = getattr(IfcLiquidTerminalTypeEnum, 'HOSEREEL', INDETERMINATE)
-loadingarm = getattr(IfcLiquidTerminalTypeEnum, 'LOADINGARM', INDETERMINATE)
-userdefined = getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcLiquidTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+hosereel = IfcLiquidTerminalTypeEnum.HOSEREEL
+loadingarm = IfcLiquidTerminalTypeEnum.LOADINGARM
+userdefined = IfcLiquidTerminalTypeEnum.USERDEFINED
+notdefined = IfcLiquidTerminalTypeEnum.NOTDEFINED
 IfcLoadGroupTypeEnum = enum_namespace()
-load_case = getattr(IfcLoadGroupTypeEnum, 'LOAD_CASE', INDETERMINATE)
-load_combination = getattr(IfcLoadGroupTypeEnum, 'LOAD_COMBINATION', INDETERMINATE)
-load_group = getattr(IfcLoadGroupTypeEnum, 'LOAD_GROUP', INDETERMINATE)
-userdefined = getattr(IfcLoadGroupTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcLoadGroupTypeEnum, 'NOTDEFINED', INDETERMINATE)
+load_case = IfcLoadGroupTypeEnum.LOAD_CASE
+load_combination = IfcLoadGroupTypeEnum.LOAD_COMBINATION
+load_group = IfcLoadGroupTypeEnum.LOAD_GROUP
+userdefined = IfcLoadGroupTypeEnum.USERDEFINED
+notdefined = IfcLoadGroupTypeEnum.NOTDEFINED
 IfcLogicalOperatorEnum = enum_namespace()
-logicaland = getattr(IfcLogicalOperatorEnum, 'LOGICALAND', INDETERMINATE)
-logicalnotand = getattr(IfcLogicalOperatorEnum, 'LOGICALNOTAND', INDETERMINATE)
-logicalnotor = getattr(IfcLogicalOperatorEnum, 'LOGICALNOTOR', INDETERMINATE)
-logicalor = getattr(IfcLogicalOperatorEnum, 'LOGICALOR', INDETERMINATE)
-logicalxor = getattr(IfcLogicalOperatorEnum, 'LOGICALXOR', INDETERMINATE)
+logicaland = IfcLogicalOperatorEnum.LOGICALAND
+logicalnotand = IfcLogicalOperatorEnum.LOGICALNOTAND
+logicalnotor = IfcLogicalOperatorEnum.LOGICALNOTOR
+logicalor = IfcLogicalOperatorEnum.LOGICALOR
+logicalxor = IfcLogicalOperatorEnum.LOGICALXOR
 IfcMarineFacilityTypeEnum = enum_namespace()
-barrierbeach = getattr(IfcMarineFacilityTypeEnum, 'BARRIERBEACH', INDETERMINATE)
-breakwater = getattr(IfcMarineFacilityTypeEnum, 'BREAKWATER', INDETERMINATE)
-canal = getattr(IfcMarineFacilityTypeEnum, 'CANAL', INDETERMINATE)
-drydock = getattr(IfcMarineFacilityTypeEnum, 'DRYDOCK', INDETERMINATE)
-floatingdock = getattr(IfcMarineFacilityTypeEnum, 'FLOATINGDOCK', INDETERMINATE)
-hydrolift = getattr(IfcMarineFacilityTypeEnum, 'HYDROLIFT', INDETERMINATE)
-jetty = getattr(IfcMarineFacilityTypeEnum, 'JETTY', INDETERMINATE)
-launchrecovery = getattr(IfcMarineFacilityTypeEnum, 'LAUNCHRECOVERY', INDETERMINATE)
-marinedefence = getattr(IfcMarineFacilityTypeEnum, 'MARINEDEFENCE', INDETERMINATE)
-navigationalchannel = getattr(IfcMarineFacilityTypeEnum, 'NAVIGATIONALCHANNEL', INDETERMINATE)
-port = getattr(IfcMarineFacilityTypeEnum, 'PORT', INDETERMINATE)
-quay = getattr(IfcMarineFacilityTypeEnum, 'QUAY', INDETERMINATE)
-revetment = getattr(IfcMarineFacilityTypeEnum, 'REVETMENT', INDETERMINATE)
-shiplift = getattr(IfcMarineFacilityTypeEnum, 'SHIPLIFT', INDETERMINATE)
-shiplock = getattr(IfcMarineFacilityTypeEnum, 'SHIPLOCK', INDETERMINATE)
-shipyard = getattr(IfcMarineFacilityTypeEnum, 'SHIPYARD', INDETERMINATE)
-slipway = getattr(IfcMarineFacilityTypeEnum, 'SLIPWAY', INDETERMINATE)
-waterway = getattr(IfcMarineFacilityTypeEnum, 'WATERWAY', INDETERMINATE)
-waterwayshiplift = getattr(IfcMarineFacilityTypeEnum, 'WATERWAYSHIPLIFT', INDETERMINATE)
-userdefined = getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMarineFacilityTypeEnum, 'NOTDEFINED', INDETERMINATE)
+barrierbeach = IfcMarineFacilityTypeEnum.BARRIERBEACH
+breakwater = IfcMarineFacilityTypeEnum.BREAKWATER
+canal = IfcMarineFacilityTypeEnum.CANAL
+drydock = IfcMarineFacilityTypeEnum.DRYDOCK
+floatingdock = IfcMarineFacilityTypeEnum.FLOATINGDOCK
+hydrolift = IfcMarineFacilityTypeEnum.HYDROLIFT
+jetty = IfcMarineFacilityTypeEnum.JETTY
+launchrecovery = IfcMarineFacilityTypeEnum.LAUNCHRECOVERY
+marinedefence = IfcMarineFacilityTypeEnum.MARINEDEFENCE
+navigationalchannel = IfcMarineFacilityTypeEnum.NAVIGATIONALCHANNEL
+port = IfcMarineFacilityTypeEnum.PORT
+quay = IfcMarineFacilityTypeEnum.QUAY
+revetment = IfcMarineFacilityTypeEnum.REVETMENT
+shiplift = IfcMarineFacilityTypeEnum.SHIPLIFT
+shiplock = IfcMarineFacilityTypeEnum.SHIPLOCK
+shipyard = IfcMarineFacilityTypeEnum.SHIPYARD
+slipway = IfcMarineFacilityTypeEnum.SLIPWAY
+waterway = IfcMarineFacilityTypeEnum.WATERWAY
+waterwayshiplift = IfcMarineFacilityTypeEnum.WATERWAYSHIPLIFT
+userdefined = IfcMarineFacilityTypeEnum.USERDEFINED
+notdefined = IfcMarineFacilityTypeEnum.NOTDEFINED
 IfcMarinePartTypeEnum = enum_namespace()
-abovewaterline = getattr(IfcMarinePartTypeEnum, 'ABOVEWATERLINE', INDETERMINATE)
-anchorage = getattr(IfcMarinePartTypeEnum, 'ANCHORAGE', INDETERMINATE)
-approachchannel = getattr(IfcMarinePartTypeEnum, 'APPROACHCHANNEL', INDETERMINATE)
-belowwaterline = getattr(IfcMarinePartTypeEnum, 'BELOWWATERLINE', INDETERMINATE)
-berthingstructure = getattr(IfcMarinePartTypeEnum, 'BERTHINGSTRUCTURE', INDETERMINATE)
-chamber = getattr(IfcMarinePartTypeEnum, 'CHAMBER', INDETERMINATE)
-cill_level = getattr(IfcMarinePartTypeEnum, 'CILL_LEVEL', INDETERMINATE)
-copelevel = getattr(IfcMarinePartTypeEnum, 'COPELEVEL', INDETERMINATE)
-core = getattr(IfcMarinePartTypeEnum, 'CORE', INDETERMINATE)
-crest = getattr(IfcMarinePartTypeEnum, 'CREST', INDETERMINATE)
-gatehead = getattr(IfcMarinePartTypeEnum, 'GATEHEAD', INDETERMINATE)
-gudingstructure = getattr(IfcMarinePartTypeEnum, 'GUDINGSTRUCTURE', INDETERMINATE)
-highwaterline = getattr(IfcMarinePartTypeEnum, 'HIGHWATERLINE', INDETERMINATE)
-landfield = getattr(IfcMarinePartTypeEnum, 'LANDFIELD', INDETERMINATE)
-leewardside = getattr(IfcMarinePartTypeEnum, 'LEEWARDSIDE', INDETERMINATE)
-lowwaterline = getattr(IfcMarinePartTypeEnum, 'LOWWATERLINE', INDETERMINATE)
-manufacturing = getattr(IfcMarinePartTypeEnum, 'MANUFACTURING', INDETERMINATE)
-navigationalarea = getattr(IfcMarinePartTypeEnum, 'NAVIGATIONALAREA', INDETERMINATE)
-protection = getattr(IfcMarinePartTypeEnum, 'PROTECTION', INDETERMINATE)
-shiptransfer = getattr(IfcMarinePartTypeEnum, 'SHIPTRANSFER', INDETERMINATE)
-storagearea = getattr(IfcMarinePartTypeEnum, 'STORAGEAREA', INDETERMINATE)
-vehicleservicing = getattr(IfcMarinePartTypeEnum, 'VEHICLESERVICING', INDETERMINATE)
-waterfield = getattr(IfcMarinePartTypeEnum, 'WATERFIELD', INDETERMINATE)
-weatherside = getattr(IfcMarinePartTypeEnum, 'WEATHERSIDE', INDETERMINATE)
-userdefined = getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMarinePartTypeEnum, 'NOTDEFINED', INDETERMINATE)
+abovewaterline = IfcMarinePartTypeEnum.ABOVEWATERLINE
+anchorage = IfcMarinePartTypeEnum.ANCHORAGE
+approachchannel = IfcMarinePartTypeEnum.APPROACHCHANNEL
+belowwaterline = IfcMarinePartTypeEnum.BELOWWATERLINE
+berthingstructure = IfcMarinePartTypeEnum.BERTHINGSTRUCTURE
+chamber = IfcMarinePartTypeEnum.CHAMBER
+cill_level = IfcMarinePartTypeEnum.CILL_LEVEL
+copelevel = IfcMarinePartTypeEnum.COPELEVEL
+core = IfcMarinePartTypeEnum.CORE
+crest = IfcMarinePartTypeEnum.CREST
+gatehead = IfcMarinePartTypeEnum.GATEHEAD
+gudingstructure = IfcMarinePartTypeEnum.GUDINGSTRUCTURE
+highwaterline = IfcMarinePartTypeEnum.HIGHWATERLINE
+landfield = IfcMarinePartTypeEnum.LANDFIELD
+leewardside = IfcMarinePartTypeEnum.LEEWARDSIDE
+lowwaterline = IfcMarinePartTypeEnum.LOWWATERLINE
+manufacturing = IfcMarinePartTypeEnum.MANUFACTURING
+navigationalarea = IfcMarinePartTypeEnum.NAVIGATIONALAREA
+protection = IfcMarinePartTypeEnum.PROTECTION
+shiptransfer = IfcMarinePartTypeEnum.SHIPTRANSFER
+storagearea = IfcMarinePartTypeEnum.STORAGEAREA
+vehicleservicing = IfcMarinePartTypeEnum.VEHICLESERVICING
+waterfield = IfcMarinePartTypeEnum.WATERFIELD
+weatherside = IfcMarinePartTypeEnum.WEATHERSIDE
+userdefined = IfcMarinePartTypeEnum.USERDEFINED
+notdefined = IfcMarinePartTypeEnum.NOTDEFINED
 IfcMechanicalFastenerTypeEnum = enum_namespace()
-anchorbolt = getattr(IfcMechanicalFastenerTypeEnum, 'ANCHORBOLT', INDETERMINATE)
-bolt = getattr(IfcMechanicalFastenerTypeEnum, 'BOLT', INDETERMINATE)
-chain = getattr(IfcMechanicalFastenerTypeEnum, 'CHAIN', INDETERMINATE)
-coupler = getattr(IfcMechanicalFastenerTypeEnum, 'COUPLER', INDETERMINATE)
-dowel = getattr(IfcMechanicalFastenerTypeEnum, 'DOWEL', INDETERMINATE)
-nail = getattr(IfcMechanicalFastenerTypeEnum, 'NAIL', INDETERMINATE)
-nailplate = getattr(IfcMechanicalFastenerTypeEnum, 'NAILPLATE', INDETERMINATE)
-railfastening = getattr(IfcMechanicalFastenerTypeEnum, 'RAILFASTENING', INDETERMINATE)
-railjoint = getattr(IfcMechanicalFastenerTypeEnum, 'RAILJOINT', INDETERMINATE)
-rivet = getattr(IfcMechanicalFastenerTypeEnum, 'RIVET', INDETERMINATE)
-rope = getattr(IfcMechanicalFastenerTypeEnum, 'ROPE', INDETERMINATE)
-screw = getattr(IfcMechanicalFastenerTypeEnum, 'SCREW', INDETERMINATE)
-shearconnector = getattr(IfcMechanicalFastenerTypeEnum, 'SHEARCONNECTOR', INDETERMINATE)
-staple = getattr(IfcMechanicalFastenerTypeEnum, 'STAPLE', INDETERMINATE)
-studshearconnector = getattr(IfcMechanicalFastenerTypeEnum, 'STUDSHEARCONNECTOR', INDETERMINATE)
-userdefined = getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMechanicalFastenerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anchorbolt = IfcMechanicalFastenerTypeEnum.ANCHORBOLT
+bolt = IfcMechanicalFastenerTypeEnum.BOLT
+chain = IfcMechanicalFastenerTypeEnum.CHAIN
+coupler = IfcMechanicalFastenerTypeEnum.COUPLER
+dowel = IfcMechanicalFastenerTypeEnum.DOWEL
+nail = IfcMechanicalFastenerTypeEnum.NAIL
+nailplate = IfcMechanicalFastenerTypeEnum.NAILPLATE
+railfastening = IfcMechanicalFastenerTypeEnum.RAILFASTENING
+railjoint = IfcMechanicalFastenerTypeEnum.RAILJOINT
+rivet = IfcMechanicalFastenerTypeEnum.RIVET
+rope = IfcMechanicalFastenerTypeEnum.ROPE
+screw = IfcMechanicalFastenerTypeEnum.SCREW
+shearconnector = IfcMechanicalFastenerTypeEnum.SHEARCONNECTOR
+staple = IfcMechanicalFastenerTypeEnum.STAPLE
+studshearconnector = IfcMechanicalFastenerTypeEnum.STUDSHEARCONNECTOR
+userdefined = IfcMechanicalFastenerTypeEnum.USERDEFINED
+notdefined = IfcMechanicalFastenerTypeEnum.NOTDEFINED
 IfcMedicalDeviceTypeEnum = enum_namespace()
-airstation = getattr(IfcMedicalDeviceTypeEnum, 'AIRSTATION', INDETERMINATE)
-feedairunit = getattr(IfcMedicalDeviceTypeEnum, 'FEEDAIRUNIT', INDETERMINATE)
-oxygengenerator = getattr(IfcMedicalDeviceTypeEnum, 'OXYGENGENERATOR', INDETERMINATE)
-oxygenplant = getattr(IfcMedicalDeviceTypeEnum, 'OXYGENPLANT', INDETERMINATE)
-vacuumstation = getattr(IfcMedicalDeviceTypeEnum, 'VACUUMSTATION', INDETERMINATE)
-userdefined = getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMedicalDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airstation = IfcMedicalDeviceTypeEnum.AIRSTATION
+feedairunit = IfcMedicalDeviceTypeEnum.FEEDAIRUNIT
+oxygengenerator = IfcMedicalDeviceTypeEnum.OXYGENGENERATOR
+oxygenplant = IfcMedicalDeviceTypeEnum.OXYGENPLANT
+vacuumstation = IfcMedicalDeviceTypeEnum.VACUUMSTATION
+userdefined = IfcMedicalDeviceTypeEnum.USERDEFINED
+notdefined = IfcMedicalDeviceTypeEnum.NOTDEFINED
 IfcMemberTypeEnum = enum_namespace()
-arch_segment = getattr(IfcMemberTypeEnum, 'ARCH_SEGMENT', INDETERMINATE)
-brace = getattr(IfcMemberTypeEnum, 'BRACE', INDETERMINATE)
-chord = getattr(IfcMemberTypeEnum, 'CHORD', INDETERMINATE)
-collar = getattr(IfcMemberTypeEnum, 'COLLAR', INDETERMINATE)
-member = getattr(IfcMemberTypeEnum, 'MEMBER', INDETERMINATE)
-mullion = getattr(IfcMemberTypeEnum, 'MULLION', INDETERMINATE)
-plate = getattr(IfcMemberTypeEnum, 'PLATE', INDETERMINATE)
-post = getattr(IfcMemberTypeEnum, 'POST', INDETERMINATE)
-purlin = getattr(IfcMemberTypeEnum, 'PURLIN', INDETERMINATE)
-rafter = getattr(IfcMemberTypeEnum, 'RAFTER', INDETERMINATE)
-stay_cable = getattr(IfcMemberTypeEnum, 'STAY_CABLE', INDETERMINATE)
-stiffening_rib = getattr(IfcMemberTypeEnum, 'STIFFENING_RIB', INDETERMINATE)
-stringer = getattr(IfcMemberTypeEnum, 'STRINGER', INDETERMINATE)
-structuralcable = getattr(IfcMemberTypeEnum, 'STRUCTURALCABLE', INDETERMINATE)
-strut = getattr(IfcMemberTypeEnum, 'STRUT', INDETERMINATE)
-stud = getattr(IfcMemberTypeEnum, 'STUD', INDETERMINATE)
-suspender = getattr(IfcMemberTypeEnum, 'SUSPENDER', INDETERMINATE)
-suspension_cable = getattr(IfcMemberTypeEnum, 'SUSPENSION_CABLE', INDETERMINATE)
-tiebar = getattr(IfcMemberTypeEnum, 'TIEBAR', INDETERMINATE)
-userdefined = getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
+arch_segment = IfcMemberTypeEnum.ARCH_SEGMENT
+brace = IfcMemberTypeEnum.BRACE
+chord = IfcMemberTypeEnum.CHORD
+collar = IfcMemberTypeEnum.COLLAR
+member = IfcMemberTypeEnum.MEMBER
+mullion = IfcMemberTypeEnum.MULLION
+plate = IfcMemberTypeEnum.PLATE
+post = IfcMemberTypeEnum.POST
+purlin = IfcMemberTypeEnum.PURLIN
+rafter = IfcMemberTypeEnum.RAFTER
+stay_cable = IfcMemberTypeEnum.STAY_CABLE
+stiffening_rib = IfcMemberTypeEnum.STIFFENING_RIB
+stringer = IfcMemberTypeEnum.STRINGER
+structuralcable = IfcMemberTypeEnum.STRUCTURALCABLE
+strut = IfcMemberTypeEnum.STRUT
+stud = IfcMemberTypeEnum.STUD
+suspender = IfcMemberTypeEnum.SUSPENDER
+suspension_cable = IfcMemberTypeEnum.SUSPENSION_CABLE
+tiebar = IfcMemberTypeEnum.TIEBAR
+userdefined = IfcMemberTypeEnum.USERDEFINED
+notdefined = IfcMemberTypeEnum.NOTDEFINED
 IfcMobileTelecommunicationsApplianceTypeEnum = enum_namespace()
-accesspoint = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'ACCESSPOINT', INDETERMINATE)
-basebandunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'BASEBANDUNIT', INDETERMINATE)
-basetransceiverstation = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'BASETRANSCEIVERSTATION', INDETERMINATE)
-e_utran_node_b = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'E_UTRAN_NODE_B', INDETERMINATE)
-gateway_gprs_support_node = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'GATEWAY_GPRS_SUPPORT_NODE', INDETERMINATE)
-masterunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MASTERUNIT', INDETERMINATE)
-mobileswitchingcenter = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MOBILESWITCHINGCENTER', INDETERMINATE)
-mscserver = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'MSCSERVER', INDETERMINATE)
-packetcontrolunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'PACKETCONTROLUNIT', INDETERMINATE)
-remoteradiounit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'REMOTERADIOUNIT', INDETERMINATE)
-remoteunit = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'REMOTEUNIT', INDETERMINATE)
-service_gprs_support_node = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'SERVICE_GPRS_SUPPORT_NODE', INDETERMINATE)
-subscriberserver = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'SUBSCRIBERSERVER', INDETERMINATE)
-userdefined = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+accesspoint = IfcMobileTelecommunicationsApplianceTypeEnum.ACCESSPOINT
+basebandunit = IfcMobileTelecommunicationsApplianceTypeEnum.BASEBANDUNIT
+basetransceiverstation = IfcMobileTelecommunicationsApplianceTypeEnum.BASETRANSCEIVERSTATION
+e_utran_node_b = IfcMobileTelecommunicationsApplianceTypeEnum.E_UTRAN_NODE_B
+gateway_gprs_support_node = IfcMobileTelecommunicationsApplianceTypeEnum.GATEWAY_GPRS_SUPPORT_NODE
+masterunit = IfcMobileTelecommunicationsApplianceTypeEnum.MASTERUNIT
+mobileswitchingcenter = IfcMobileTelecommunicationsApplianceTypeEnum.MOBILESWITCHINGCENTER
+mscserver = IfcMobileTelecommunicationsApplianceTypeEnum.MSCSERVER
+packetcontrolunit = IfcMobileTelecommunicationsApplianceTypeEnum.PACKETCONTROLUNIT
+remoteradiounit = IfcMobileTelecommunicationsApplianceTypeEnum.REMOTERADIOUNIT
+remoteunit = IfcMobileTelecommunicationsApplianceTypeEnum.REMOTEUNIT
+service_gprs_support_node = IfcMobileTelecommunicationsApplianceTypeEnum.SERVICE_GPRS_SUPPORT_NODE
+subscriberserver = IfcMobileTelecommunicationsApplianceTypeEnum.SUBSCRIBERSERVER
+userdefined = IfcMobileTelecommunicationsApplianceTypeEnum.USERDEFINED
+notdefined = IfcMobileTelecommunicationsApplianceTypeEnum.NOTDEFINED
 IfcMooringDeviceTypeEnum = enum_namespace()
-bollard = getattr(IfcMooringDeviceTypeEnum, 'BOLLARD', INDETERMINATE)
-linetensioner = getattr(IfcMooringDeviceTypeEnum, 'LINETENSIONER', INDETERMINATE)
-magneticdevice = getattr(IfcMooringDeviceTypeEnum, 'MAGNETICDEVICE', INDETERMINATE)
-mooringhooks = getattr(IfcMooringDeviceTypeEnum, 'MOORINGHOOKS', INDETERMINATE)
-vacuumdevice = getattr(IfcMooringDeviceTypeEnum, 'VACUUMDEVICE', INDETERMINATE)
-userdefined = getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMooringDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bollard = IfcMooringDeviceTypeEnum.BOLLARD
+linetensioner = IfcMooringDeviceTypeEnum.LINETENSIONER
+magneticdevice = IfcMooringDeviceTypeEnum.MAGNETICDEVICE
+mooringhooks = IfcMooringDeviceTypeEnum.MOORINGHOOKS
+vacuumdevice = IfcMooringDeviceTypeEnum.VACUUMDEVICE
+userdefined = IfcMooringDeviceTypeEnum.USERDEFINED
+notdefined = IfcMooringDeviceTypeEnum.NOTDEFINED
 IfcMotorConnectionTypeEnum = enum_namespace()
-beltdrive = getattr(IfcMotorConnectionTypeEnum, 'BELTDRIVE', INDETERMINATE)
-coupling = getattr(IfcMotorConnectionTypeEnum, 'COUPLING', INDETERMINATE)
-directdrive = getattr(IfcMotorConnectionTypeEnum, 'DIRECTDRIVE', INDETERMINATE)
-userdefined = getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcMotorConnectionTypeEnum, 'NOTDEFINED', INDETERMINATE)
+beltdrive = IfcMotorConnectionTypeEnum.BELTDRIVE
+coupling = IfcMotorConnectionTypeEnum.COUPLING
+directdrive = IfcMotorConnectionTypeEnum.DIRECTDRIVE
+userdefined = IfcMotorConnectionTypeEnum.USERDEFINED
+notdefined = IfcMotorConnectionTypeEnum.NOTDEFINED
 IfcNavigationElementTypeEnum = enum_namespace()
-beacon = getattr(IfcNavigationElementTypeEnum, 'BEACON', INDETERMINATE)
-buoy = getattr(IfcNavigationElementTypeEnum, 'BUOY', INDETERMINATE)
-userdefined = getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcNavigationElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+beacon = IfcNavigationElementTypeEnum.BEACON
+buoy = IfcNavigationElementTypeEnum.BUOY
+userdefined = IfcNavigationElementTypeEnum.USERDEFINED
+notdefined = IfcNavigationElementTypeEnum.NOTDEFINED
 IfcObjectiveEnum = enum_namespace()
-codecompliance = getattr(IfcObjectiveEnum, 'CODECOMPLIANCE', INDETERMINATE)
-codewaiver = getattr(IfcObjectiveEnum, 'CODEWAIVER', INDETERMINATE)
-designintent = getattr(IfcObjectiveEnum, 'DESIGNINTENT', INDETERMINATE)
-external = getattr(IfcObjectiveEnum, 'EXTERNAL', INDETERMINATE)
-healthandsafety = getattr(IfcObjectiveEnum, 'HEALTHANDSAFETY', INDETERMINATE)
-mergeconflict = getattr(IfcObjectiveEnum, 'MERGECONFLICT', INDETERMINATE)
-modelview = getattr(IfcObjectiveEnum, 'MODELVIEW', INDETERMINATE)
-parameter = getattr(IfcObjectiveEnum, 'PARAMETER', INDETERMINATE)
-requirement = getattr(IfcObjectiveEnum, 'REQUIREMENT', INDETERMINATE)
-specification = getattr(IfcObjectiveEnum, 'SPECIFICATION', INDETERMINATE)
-triggercondition = getattr(IfcObjectiveEnum, 'TRIGGERCONDITION', INDETERMINATE)
-userdefined = getattr(IfcObjectiveEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcObjectiveEnum, 'NOTDEFINED', INDETERMINATE)
+codecompliance = IfcObjectiveEnum.CODECOMPLIANCE
+codewaiver = IfcObjectiveEnum.CODEWAIVER
+designintent = IfcObjectiveEnum.DESIGNINTENT
+external = IfcObjectiveEnum.EXTERNAL
+healthandsafety = IfcObjectiveEnum.HEALTHANDSAFETY
+mergeconflict = IfcObjectiveEnum.MERGECONFLICT
+modelview = IfcObjectiveEnum.MODELVIEW
+parameter = IfcObjectiveEnum.PARAMETER
+requirement = IfcObjectiveEnum.REQUIREMENT
+specification = IfcObjectiveEnum.SPECIFICATION
+triggercondition = IfcObjectiveEnum.TRIGGERCONDITION
+userdefined = IfcObjectiveEnum.USERDEFINED
+notdefined = IfcObjectiveEnum.NOTDEFINED
 IfcOccupantTypeEnum = enum_namespace()
-assignee = getattr(IfcOccupantTypeEnum, 'ASSIGNEE', INDETERMINATE)
-assignor = getattr(IfcOccupantTypeEnum, 'ASSIGNOR', INDETERMINATE)
-lessee = getattr(IfcOccupantTypeEnum, 'LESSEE', INDETERMINATE)
-lessor = getattr(IfcOccupantTypeEnum, 'LESSOR', INDETERMINATE)
-lettingagent = getattr(IfcOccupantTypeEnum, 'LETTINGAGENT', INDETERMINATE)
-owner = getattr(IfcOccupantTypeEnum, 'OWNER', INDETERMINATE)
-tenant = getattr(IfcOccupantTypeEnum, 'TENANT', INDETERMINATE)
-userdefined = getattr(IfcOccupantTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcOccupantTypeEnum, 'NOTDEFINED', INDETERMINATE)
+assignee = IfcOccupantTypeEnum.ASSIGNEE
+assignor = IfcOccupantTypeEnum.ASSIGNOR
+lessee = IfcOccupantTypeEnum.LESSEE
+lessor = IfcOccupantTypeEnum.LESSOR
+lettingagent = IfcOccupantTypeEnum.LETTINGAGENT
+owner = IfcOccupantTypeEnum.OWNER
+tenant = IfcOccupantTypeEnum.TENANT
+userdefined = IfcOccupantTypeEnum.USERDEFINED
+notdefined = IfcOccupantTypeEnum.NOTDEFINED
 IfcOpeningElementTypeEnum = enum_namespace()
-opening = getattr(IfcOpeningElementTypeEnum, 'OPENING', INDETERMINATE)
-recess = getattr(IfcOpeningElementTypeEnum, 'RECESS', INDETERMINATE)
-userdefined = getattr(IfcOpeningElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcOpeningElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+opening = IfcOpeningElementTypeEnum.OPENING
+recess = IfcOpeningElementTypeEnum.RECESS
+userdefined = IfcOpeningElementTypeEnum.USERDEFINED
+notdefined = IfcOpeningElementTypeEnum.NOTDEFINED
 IfcOutletTypeEnum = enum_namespace()
-audiovisualoutlet = getattr(IfcOutletTypeEnum, 'AUDIOVISUALOUTLET', INDETERMINATE)
-communicationsoutlet = getattr(IfcOutletTypeEnum, 'COMMUNICATIONSOUTLET', INDETERMINATE)
-dataoutlet = getattr(IfcOutletTypeEnum, 'DATAOUTLET', INDETERMINATE)
-poweroutlet = getattr(IfcOutletTypeEnum, 'POWEROUTLET', INDETERMINATE)
-telephoneoutlet = getattr(IfcOutletTypeEnum, 'TELEPHONEOUTLET', INDETERMINATE)
-userdefined = getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcOutletTypeEnum, 'NOTDEFINED', INDETERMINATE)
+audiovisualoutlet = IfcOutletTypeEnum.AUDIOVISUALOUTLET
+communicationsoutlet = IfcOutletTypeEnum.COMMUNICATIONSOUTLET
+dataoutlet = IfcOutletTypeEnum.DATAOUTLET
+poweroutlet = IfcOutletTypeEnum.POWEROUTLET
+telephoneoutlet = IfcOutletTypeEnum.TELEPHONEOUTLET
+userdefined = IfcOutletTypeEnum.USERDEFINED
+notdefined = IfcOutletTypeEnum.NOTDEFINED
 IfcPavementTypeEnum = enum_namespace()
-flexible = getattr(IfcPavementTypeEnum, 'FLEXIBLE', INDETERMINATE)
-rigid = getattr(IfcPavementTypeEnum, 'RIGID', INDETERMINATE)
-userdefined = getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPavementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+flexible = IfcPavementTypeEnum.FLEXIBLE
+rigid = IfcPavementTypeEnum.RIGID
+userdefined = IfcPavementTypeEnum.USERDEFINED
+notdefined = IfcPavementTypeEnum.NOTDEFINED
 IfcPerformanceHistoryTypeEnum = enum_namespace()
-userdefined = getattr(IfcPerformanceHistoryTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPerformanceHistoryTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcPerformanceHistoryTypeEnum.USERDEFINED
+notdefined = IfcPerformanceHistoryTypeEnum.NOTDEFINED
 IfcPermeableCoveringOperationEnum = enum_namespace()
-grill = getattr(IfcPermeableCoveringOperationEnum, 'GRILL', INDETERMINATE)
-louver = getattr(IfcPermeableCoveringOperationEnum, 'LOUVER', INDETERMINATE)
-screen = getattr(IfcPermeableCoveringOperationEnum, 'SCREEN', INDETERMINATE)
-userdefined = getattr(IfcPermeableCoveringOperationEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPermeableCoveringOperationEnum, 'NOTDEFINED', INDETERMINATE)
+grill = IfcPermeableCoveringOperationEnum.GRILL
+louver = IfcPermeableCoveringOperationEnum.LOUVER
+screen = IfcPermeableCoveringOperationEnum.SCREEN
+userdefined = IfcPermeableCoveringOperationEnum.USERDEFINED
+notdefined = IfcPermeableCoveringOperationEnum.NOTDEFINED
 IfcPermitTypeEnum = enum_namespace()
-access = getattr(IfcPermitTypeEnum, 'ACCESS', INDETERMINATE)
-building = getattr(IfcPermitTypeEnum, 'BUILDING', INDETERMINATE)
-work = getattr(IfcPermitTypeEnum, 'WORK', INDETERMINATE)
-userdefined = getattr(IfcPermitTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPermitTypeEnum, 'NOTDEFINED', INDETERMINATE)
+access = IfcPermitTypeEnum.ACCESS
+building = IfcPermitTypeEnum.BUILDING
+work = IfcPermitTypeEnum.WORK
+userdefined = IfcPermitTypeEnum.USERDEFINED
+notdefined = IfcPermitTypeEnum.NOTDEFINED
 IfcPhysicalOrVirtualEnum = enum_namespace()
-physical = getattr(IfcPhysicalOrVirtualEnum, 'PHYSICAL', INDETERMINATE)
-virtual = getattr(IfcPhysicalOrVirtualEnum, 'VIRTUAL', INDETERMINATE)
-notdefined = getattr(IfcPhysicalOrVirtualEnum, 'NOTDEFINED', INDETERMINATE)
+physical = IfcPhysicalOrVirtualEnum.PHYSICAL
+virtual = IfcPhysicalOrVirtualEnum.VIRTUAL
+notdefined = IfcPhysicalOrVirtualEnum.NOTDEFINED
 IfcPileConstructionEnum = enum_namespace()
-cast_in_place = getattr(IfcPileConstructionEnum, 'CAST_IN_PLACE', INDETERMINATE)
-composite = getattr(IfcPileConstructionEnum, 'COMPOSITE', INDETERMINATE)
-precast_concrete = getattr(IfcPileConstructionEnum, 'PRECAST_CONCRETE', INDETERMINATE)
-prefab_steel = getattr(IfcPileConstructionEnum, 'PREFAB_STEEL', INDETERMINATE)
-userdefined = getattr(IfcPileConstructionEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPileConstructionEnum, 'NOTDEFINED', INDETERMINATE)
+cast_in_place = IfcPileConstructionEnum.CAST_IN_PLACE
+composite = IfcPileConstructionEnum.COMPOSITE
+precast_concrete = IfcPileConstructionEnum.PRECAST_CONCRETE
+prefab_steel = IfcPileConstructionEnum.PREFAB_STEEL
+userdefined = IfcPileConstructionEnum.USERDEFINED
+notdefined = IfcPileConstructionEnum.NOTDEFINED
 IfcPileTypeEnum = enum_namespace()
-bored = getattr(IfcPileTypeEnum, 'BORED', INDETERMINATE)
-cohesion = getattr(IfcPileTypeEnum, 'COHESION', INDETERMINATE)
-driven = getattr(IfcPileTypeEnum, 'DRIVEN', INDETERMINATE)
-friction = getattr(IfcPileTypeEnum, 'FRICTION', INDETERMINATE)
-jetgrouting = getattr(IfcPileTypeEnum, 'JETGROUTING', INDETERMINATE)
-support = getattr(IfcPileTypeEnum, 'SUPPORT', INDETERMINATE)
-userdefined = getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPileTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bored = IfcPileTypeEnum.BORED
+cohesion = IfcPileTypeEnum.COHESION
+driven = IfcPileTypeEnum.DRIVEN
+friction = IfcPileTypeEnum.FRICTION
+jetgrouting = IfcPileTypeEnum.JETGROUTING
+support = IfcPileTypeEnum.SUPPORT
+userdefined = IfcPileTypeEnum.USERDEFINED
+notdefined = IfcPileTypeEnum.NOTDEFINED
 IfcPipeFittingTypeEnum = enum_namespace()
-bend = getattr(IfcPipeFittingTypeEnum, 'BEND', INDETERMINATE)
-connector = getattr(IfcPipeFittingTypeEnum, 'CONNECTOR', INDETERMINATE)
-entry = getattr(IfcPipeFittingTypeEnum, 'ENTRY', INDETERMINATE)
-exit = getattr(IfcPipeFittingTypeEnum, 'EXIT', INDETERMINATE)
-junction = getattr(IfcPipeFittingTypeEnum, 'JUNCTION', INDETERMINATE)
-obstruction = getattr(IfcPipeFittingTypeEnum, 'OBSTRUCTION', INDETERMINATE)
-transition = getattr(IfcPipeFittingTypeEnum, 'TRANSITION', INDETERMINATE)
-userdefined = getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPipeFittingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bend = IfcPipeFittingTypeEnum.BEND
+connector = IfcPipeFittingTypeEnum.CONNECTOR
+entry = IfcPipeFittingTypeEnum.ENTRY
+exit = IfcPipeFittingTypeEnum.EXIT
+junction = IfcPipeFittingTypeEnum.JUNCTION
+obstruction = IfcPipeFittingTypeEnum.OBSTRUCTION
+transition = IfcPipeFittingTypeEnum.TRANSITION
+userdefined = IfcPipeFittingTypeEnum.USERDEFINED
+notdefined = IfcPipeFittingTypeEnum.NOTDEFINED
 IfcPipeSegmentTypeEnum = enum_namespace()
-culvert = getattr(IfcPipeSegmentTypeEnum, 'CULVERT', INDETERMINATE)
-flexiblesegment = getattr(IfcPipeSegmentTypeEnum, 'FLEXIBLESEGMENT', INDETERMINATE)
-gutter = getattr(IfcPipeSegmentTypeEnum, 'GUTTER', INDETERMINATE)
-rigidsegment = getattr(IfcPipeSegmentTypeEnum, 'RIGIDSEGMENT', INDETERMINATE)
-spool = getattr(IfcPipeSegmentTypeEnum, 'SPOOL', INDETERMINATE)
-userdefined = getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPipeSegmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+culvert = IfcPipeSegmentTypeEnum.CULVERT
+flexiblesegment = IfcPipeSegmentTypeEnum.FLEXIBLESEGMENT
+gutter = IfcPipeSegmentTypeEnum.GUTTER
+rigidsegment = IfcPipeSegmentTypeEnum.RIGIDSEGMENT
+spool = IfcPipeSegmentTypeEnum.SPOOL
+userdefined = IfcPipeSegmentTypeEnum.USERDEFINED
+notdefined = IfcPipeSegmentTypeEnum.NOTDEFINED
 IfcPlateTypeEnum = enum_namespace()
-base_plate = getattr(IfcPlateTypeEnum, 'BASE_PLATE', INDETERMINATE)
-cover_plate = getattr(IfcPlateTypeEnum, 'COVER_PLATE', INDETERMINATE)
-curtain_panel = getattr(IfcPlateTypeEnum, 'CURTAIN_PANEL', INDETERMINATE)
-flange_plate = getattr(IfcPlateTypeEnum, 'FLANGE_PLATE', INDETERMINATE)
-gusset_plate = getattr(IfcPlateTypeEnum, 'GUSSET_PLATE', INDETERMINATE)
-sheet = getattr(IfcPlateTypeEnum, 'SHEET', INDETERMINATE)
-splice_plate = getattr(IfcPlateTypeEnum, 'SPLICE_PLATE', INDETERMINATE)
-stiffener_plate = getattr(IfcPlateTypeEnum, 'STIFFENER_PLATE', INDETERMINATE)
-web_plate = getattr(IfcPlateTypeEnum, 'WEB_PLATE', INDETERMINATE)
-userdefined = getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPlateTypeEnum, 'NOTDEFINED', INDETERMINATE)
+base_plate = IfcPlateTypeEnum.BASE_PLATE
+cover_plate = IfcPlateTypeEnum.COVER_PLATE
+curtain_panel = IfcPlateTypeEnum.CURTAIN_PANEL
+flange_plate = IfcPlateTypeEnum.FLANGE_PLATE
+gusset_plate = IfcPlateTypeEnum.GUSSET_PLATE
+sheet = IfcPlateTypeEnum.SHEET
+splice_plate = IfcPlateTypeEnum.SPLICE_PLATE
+stiffener_plate = IfcPlateTypeEnum.STIFFENER_PLATE
+web_plate = IfcPlateTypeEnum.WEB_PLATE
+userdefined = IfcPlateTypeEnum.USERDEFINED
+notdefined = IfcPlateTypeEnum.NOTDEFINED
 IfcPreferredSurfaceCurveRepresentation = enum_namespace()
-curve3d = getattr(IfcPreferredSurfaceCurveRepresentation, 'CURVE3D', INDETERMINATE)
-pcurve_s1 = getattr(IfcPreferredSurfaceCurveRepresentation, 'PCURVE_S1', INDETERMINATE)
-pcurve_s2 = getattr(IfcPreferredSurfaceCurveRepresentation, 'PCURVE_S2', INDETERMINATE)
+curve3d = IfcPreferredSurfaceCurveRepresentation.CURVE3D
+pcurve_s1 = IfcPreferredSurfaceCurveRepresentation.PCURVE_S1
+pcurve_s2 = IfcPreferredSurfaceCurveRepresentation.PCURVE_S2
 IfcProcedureTypeEnum = enum_namespace()
-advice_caution = getattr(IfcProcedureTypeEnum, 'ADVICE_CAUTION', INDETERMINATE)
-advice_note = getattr(IfcProcedureTypeEnum, 'ADVICE_NOTE', INDETERMINATE)
-advice_warning = getattr(IfcProcedureTypeEnum, 'ADVICE_WARNING', INDETERMINATE)
-calibration = getattr(IfcProcedureTypeEnum, 'CALIBRATION', INDETERMINATE)
-diagnostic = getattr(IfcProcedureTypeEnum, 'DIAGNOSTIC', INDETERMINATE)
-shutdown = getattr(IfcProcedureTypeEnum, 'SHUTDOWN', INDETERMINATE)
-startup = getattr(IfcProcedureTypeEnum, 'STARTUP', INDETERMINATE)
-userdefined = getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcProcedureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+advice_caution = IfcProcedureTypeEnum.ADVICE_CAUTION
+advice_note = IfcProcedureTypeEnum.ADVICE_NOTE
+advice_warning = IfcProcedureTypeEnum.ADVICE_WARNING
+calibration = IfcProcedureTypeEnum.CALIBRATION
+diagnostic = IfcProcedureTypeEnum.DIAGNOSTIC
+shutdown = IfcProcedureTypeEnum.SHUTDOWN
+startup = IfcProcedureTypeEnum.STARTUP
+userdefined = IfcProcedureTypeEnum.USERDEFINED
+notdefined = IfcProcedureTypeEnum.NOTDEFINED
 IfcProfileTypeEnum = enum_namespace()
-area = getattr(IfcProfileTypeEnum, 'AREA', INDETERMINATE)
-curve = getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)
+area = IfcProfileTypeEnum.AREA
+curve = IfcProfileTypeEnum.CURVE
 IfcProjectOrderTypeEnum = enum_namespace()
-changeorder = getattr(IfcProjectOrderTypeEnum, 'CHANGEORDER', INDETERMINATE)
-maintenanceworkorder = getattr(IfcProjectOrderTypeEnum, 'MAINTENANCEWORKORDER', INDETERMINATE)
-moveorder = getattr(IfcProjectOrderTypeEnum, 'MOVEORDER', INDETERMINATE)
-purchaseorder = getattr(IfcProjectOrderTypeEnum, 'PURCHASEORDER', INDETERMINATE)
-workorder = getattr(IfcProjectOrderTypeEnum, 'WORKORDER', INDETERMINATE)
-userdefined = getattr(IfcProjectOrderTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcProjectOrderTypeEnum, 'NOTDEFINED', INDETERMINATE)
+changeorder = IfcProjectOrderTypeEnum.CHANGEORDER
+maintenanceworkorder = IfcProjectOrderTypeEnum.MAINTENANCEWORKORDER
+moveorder = IfcProjectOrderTypeEnum.MOVEORDER
+purchaseorder = IfcProjectOrderTypeEnum.PURCHASEORDER
+workorder = IfcProjectOrderTypeEnum.WORKORDER
+userdefined = IfcProjectOrderTypeEnum.USERDEFINED
+notdefined = IfcProjectOrderTypeEnum.NOTDEFINED
 IfcProjectedOrTrueLengthEnum = enum_namespace()
-projected_length = getattr(IfcProjectedOrTrueLengthEnum, 'PROJECTED_LENGTH', INDETERMINATE)
-true_length = getattr(IfcProjectedOrTrueLengthEnum, 'TRUE_LENGTH', INDETERMINATE)
+projected_length = IfcProjectedOrTrueLengthEnum.PROJECTED_LENGTH
+true_length = IfcProjectedOrTrueLengthEnum.TRUE_LENGTH
 IfcProjectionElementTypeEnum = enum_namespace()
-blister = getattr(IfcProjectionElementTypeEnum, 'BLISTER', INDETERMINATE)
-deviator = getattr(IfcProjectionElementTypeEnum, 'DEVIATOR', INDETERMINATE)
-userdefined = getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcProjectionElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+blister = IfcProjectionElementTypeEnum.BLISTER
+deviator = IfcProjectionElementTypeEnum.DEVIATOR
+userdefined = IfcProjectionElementTypeEnum.USERDEFINED
+notdefined = IfcProjectionElementTypeEnum.NOTDEFINED
 IfcPropertySetTemplateTypeEnum = enum_namespace()
-pset_materialdriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_MATERIALDRIVEN', INDETERMINATE)
-pset_occurrencedriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_OCCURRENCEDRIVEN', INDETERMINATE)
-pset_performancedriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_PERFORMANCEDRIVEN', INDETERMINATE)
-pset_profiledriven = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_PROFILEDRIVEN', INDETERMINATE)
-pset_typedrivenonly = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENONLY', INDETERMINATE)
-pset_typedrivenoverride = getattr(IfcPropertySetTemplateTypeEnum, 'PSET_TYPEDRIVENOVERRIDE', INDETERMINATE)
-qto_occurrencedriven = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_OCCURRENCEDRIVEN', INDETERMINATE)
-qto_typedrivenonly = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_TYPEDRIVENONLY', INDETERMINATE)
-qto_typedrivenoverride = getattr(IfcPropertySetTemplateTypeEnum, 'QTO_TYPEDRIVENOVERRIDE', INDETERMINATE)
-notdefined = getattr(IfcPropertySetTemplateTypeEnum, 'NOTDEFINED', INDETERMINATE)
+pset_materialdriven = IfcPropertySetTemplateTypeEnum.PSET_MATERIALDRIVEN
+pset_occurrencedriven = IfcPropertySetTemplateTypeEnum.PSET_OCCURRENCEDRIVEN
+pset_performancedriven = IfcPropertySetTemplateTypeEnum.PSET_PERFORMANCEDRIVEN
+pset_profiledriven = IfcPropertySetTemplateTypeEnum.PSET_PROFILEDRIVEN
+pset_typedrivenonly = IfcPropertySetTemplateTypeEnum.PSET_TYPEDRIVENONLY
+pset_typedrivenoverride = IfcPropertySetTemplateTypeEnum.PSET_TYPEDRIVENOVERRIDE
+qto_occurrencedriven = IfcPropertySetTemplateTypeEnum.QTO_OCCURRENCEDRIVEN
+qto_typedrivenonly = IfcPropertySetTemplateTypeEnum.QTO_TYPEDRIVENONLY
+qto_typedrivenoverride = IfcPropertySetTemplateTypeEnum.QTO_TYPEDRIVENOVERRIDE
+notdefined = IfcPropertySetTemplateTypeEnum.NOTDEFINED
 IfcProtectiveDeviceTrippingUnitTypeEnum = enum_namespace()
-electromagnetic = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTROMAGNETIC', INDETERMINATE)
-electronic = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'ELECTRONIC', INDETERMINATE)
-residualcurrent = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'RESIDUALCURRENT', INDETERMINATE)
-thermal = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'THERMAL', INDETERMINATE)
-userdefined = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'NOTDEFINED', INDETERMINATE)
+electromagnetic = IfcProtectiveDeviceTrippingUnitTypeEnum.ELECTROMAGNETIC
+electronic = IfcProtectiveDeviceTrippingUnitTypeEnum.ELECTRONIC
+residualcurrent = IfcProtectiveDeviceTrippingUnitTypeEnum.RESIDUALCURRENT
+thermal = IfcProtectiveDeviceTrippingUnitTypeEnum.THERMAL
+userdefined = IfcProtectiveDeviceTrippingUnitTypeEnum.USERDEFINED
+notdefined = IfcProtectiveDeviceTrippingUnitTypeEnum.NOTDEFINED
 IfcProtectiveDeviceTypeEnum = enum_namespace()
-anti_arcing_device = getattr(IfcProtectiveDeviceTypeEnum, 'ANTI_ARCING_DEVICE', INDETERMINATE)
-circuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'CIRCUITBREAKER', INDETERMINATE)
-earthingswitch = getattr(IfcProtectiveDeviceTypeEnum, 'EARTHINGSWITCH', INDETERMINATE)
-earthleakagecircuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'EARTHLEAKAGECIRCUITBREAKER', INDETERMINATE)
-fusedisconnector = getattr(IfcProtectiveDeviceTypeEnum, 'FUSEDISCONNECTOR', INDETERMINATE)
-residualcurrentcircuitbreaker = getattr(IfcProtectiveDeviceTypeEnum, 'RESIDUALCURRENTCIRCUITBREAKER', INDETERMINATE)
-residualcurrentswitch = getattr(IfcProtectiveDeviceTypeEnum, 'RESIDUALCURRENTSWITCH', INDETERMINATE)
-sparkgap = getattr(IfcProtectiveDeviceTypeEnum, 'SPARKGAP', INDETERMINATE)
-varistor = getattr(IfcProtectiveDeviceTypeEnum, 'VARISTOR', INDETERMINATE)
-voltagelimiter = getattr(IfcProtectiveDeviceTypeEnum, 'VOLTAGELIMITER', INDETERMINATE)
-userdefined = getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcProtectiveDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anti_arcing_device = IfcProtectiveDeviceTypeEnum.ANTI_ARCING_DEVICE
+circuitbreaker = IfcProtectiveDeviceTypeEnum.CIRCUITBREAKER
+earthingswitch = IfcProtectiveDeviceTypeEnum.EARTHINGSWITCH
+earthleakagecircuitbreaker = IfcProtectiveDeviceTypeEnum.EARTHLEAKAGECIRCUITBREAKER
+fusedisconnector = IfcProtectiveDeviceTypeEnum.FUSEDISCONNECTOR
+residualcurrentcircuitbreaker = IfcProtectiveDeviceTypeEnum.RESIDUALCURRENTCIRCUITBREAKER
+residualcurrentswitch = IfcProtectiveDeviceTypeEnum.RESIDUALCURRENTSWITCH
+sparkgap = IfcProtectiveDeviceTypeEnum.SPARKGAP
+varistor = IfcProtectiveDeviceTypeEnum.VARISTOR
+voltagelimiter = IfcProtectiveDeviceTypeEnum.VOLTAGELIMITER
+userdefined = IfcProtectiveDeviceTypeEnum.USERDEFINED
+notdefined = IfcProtectiveDeviceTypeEnum.NOTDEFINED
 IfcPumpTypeEnum = enum_namespace()
-circulator = getattr(IfcPumpTypeEnum, 'CIRCULATOR', INDETERMINATE)
-endsuction = getattr(IfcPumpTypeEnum, 'ENDSUCTION', INDETERMINATE)
-splitcase = getattr(IfcPumpTypeEnum, 'SPLITCASE', INDETERMINATE)
-submersiblepump = getattr(IfcPumpTypeEnum, 'SUBMERSIBLEPUMP', INDETERMINATE)
-sumppump = getattr(IfcPumpTypeEnum, 'SUMPPUMP', INDETERMINATE)
-verticalinline = getattr(IfcPumpTypeEnum, 'VERTICALINLINE', INDETERMINATE)
-verticalturbine = getattr(IfcPumpTypeEnum, 'VERTICALTURBINE', INDETERMINATE)
-userdefined = getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcPumpTypeEnum, 'NOTDEFINED', INDETERMINATE)
+circulator = IfcPumpTypeEnum.CIRCULATOR
+endsuction = IfcPumpTypeEnum.ENDSUCTION
+splitcase = IfcPumpTypeEnum.SPLITCASE
+submersiblepump = IfcPumpTypeEnum.SUBMERSIBLEPUMP
+sumppump = IfcPumpTypeEnum.SUMPPUMP
+verticalinline = IfcPumpTypeEnum.VERTICALINLINE
+verticalturbine = IfcPumpTypeEnum.VERTICALTURBINE
+userdefined = IfcPumpTypeEnum.USERDEFINED
+notdefined = IfcPumpTypeEnum.NOTDEFINED
 IfcRailTypeEnum = enum_namespace()
-blade = getattr(IfcRailTypeEnum, 'BLADE', INDETERMINATE)
-checkrail = getattr(IfcRailTypeEnum, 'CHECKRAIL', INDETERMINATE)
-guardrail = getattr(IfcRailTypeEnum, 'GUARDRAIL', INDETERMINATE)
-rackrail = getattr(IfcRailTypeEnum, 'RACKRAIL', INDETERMINATE)
-rail = getattr(IfcRailTypeEnum, 'RAIL', INDETERMINATE)
-stockrail = getattr(IfcRailTypeEnum, 'STOCKRAIL', INDETERMINATE)
-userdefined = getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRailTypeEnum, 'NOTDEFINED', INDETERMINATE)
+blade = IfcRailTypeEnum.BLADE
+checkrail = IfcRailTypeEnum.CHECKRAIL
+guardrail = IfcRailTypeEnum.GUARDRAIL
+rackrail = IfcRailTypeEnum.RACKRAIL
+rail = IfcRailTypeEnum.RAIL
+stockrail = IfcRailTypeEnum.STOCKRAIL
+userdefined = IfcRailTypeEnum.USERDEFINED
+notdefined = IfcRailTypeEnum.NOTDEFINED
 IfcRailingTypeEnum = enum_namespace()
-balustrade = getattr(IfcRailingTypeEnum, 'BALUSTRADE', INDETERMINATE)
-fence = getattr(IfcRailingTypeEnum, 'FENCE', INDETERMINATE)
-guardrail = getattr(IfcRailingTypeEnum, 'GUARDRAIL', INDETERMINATE)
-handrail = getattr(IfcRailingTypeEnum, 'HANDRAIL', INDETERMINATE)
-userdefined = getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRailingTypeEnum, 'NOTDEFINED', INDETERMINATE)
+balustrade = IfcRailingTypeEnum.BALUSTRADE
+fence = IfcRailingTypeEnum.FENCE
+guardrail = IfcRailingTypeEnum.GUARDRAIL
+handrail = IfcRailingTypeEnum.HANDRAIL
+userdefined = IfcRailingTypeEnum.USERDEFINED
+notdefined = IfcRailingTypeEnum.NOTDEFINED
 IfcRailwayPartTypeEnum = enum_namespace()
-dilatationsuperstructure = getattr(IfcRailwayPartTypeEnum, 'DILATATIONSUPERSTRUCTURE', INDETERMINATE)
-linesidestructure = getattr(IfcRailwayPartTypeEnum, 'LINESIDESTRUCTURE', INDETERMINATE)
-linesidestructurepart = getattr(IfcRailwayPartTypeEnum, 'LINESIDESTRUCTUREPART', INDETERMINATE)
-plaintracksuperstructure = getattr(IfcRailwayPartTypeEnum, 'PLAINTRACKSUPERSTRUCTURE', INDETERMINATE)
-superstructure = getattr(IfcRailwayPartTypeEnum, 'SUPERSTRUCTURE', INDETERMINATE)
-trackstructure = getattr(IfcRailwayPartTypeEnum, 'TRACKSTRUCTURE', INDETERMINATE)
-trackstructurepart = getattr(IfcRailwayPartTypeEnum, 'TRACKSTRUCTUREPART', INDETERMINATE)
-turnoutsuperstructure = getattr(IfcRailwayPartTypeEnum, 'TURNOUTSUPERSTRUCTURE', INDETERMINATE)
-userdefined = getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRailwayPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dilatationsuperstructure = IfcRailwayPartTypeEnum.DILATATIONSUPERSTRUCTURE
+linesidestructure = IfcRailwayPartTypeEnum.LINESIDESTRUCTURE
+linesidestructurepart = IfcRailwayPartTypeEnum.LINESIDESTRUCTUREPART
+plaintracksuperstructure = IfcRailwayPartTypeEnum.PLAINTRACKSUPERSTRUCTURE
+superstructure = IfcRailwayPartTypeEnum.SUPERSTRUCTURE
+trackstructure = IfcRailwayPartTypeEnum.TRACKSTRUCTURE
+trackstructurepart = IfcRailwayPartTypeEnum.TRACKSTRUCTUREPART
+turnoutsuperstructure = IfcRailwayPartTypeEnum.TURNOUTSUPERSTRUCTURE
+userdefined = IfcRailwayPartTypeEnum.USERDEFINED
+notdefined = IfcRailwayPartTypeEnum.NOTDEFINED
 IfcRailwayTypeEnum = enum_namespace()
-userdefined = getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRailwayTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcRailwayTypeEnum.USERDEFINED
+notdefined = IfcRailwayTypeEnum.NOTDEFINED
 IfcRampFlightTypeEnum = enum_namespace()
-spiral = getattr(IfcRampFlightTypeEnum, 'SPIRAL', INDETERMINATE)
-straight = getattr(IfcRampFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
-userdefined = getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRampFlightTypeEnum, 'NOTDEFINED', INDETERMINATE)
+spiral = IfcRampFlightTypeEnum.SPIRAL
+straight = IfcRampFlightTypeEnum.STRAIGHT
+userdefined = IfcRampFlightTypeEnum.USERDEFINED
+notdefined = IfcRampFlightTypeEnum.NOTDEFINED
 IfcRampTypeEnum = enum_namespace()
-half_turn_ramp = getattr(IfcRampTypeEnum, 'HALF_TURN_RAMP', INDETERMINATE)
-quarter_turn_ramp = getattr(IfcRampTypeEnum, 'QUARTER_TURN_RAMP', INDETERMINATE)
-spiral_ramp = getattr(IfcRampTypeEnum, 'SPIRAL_RAMP', INDETERMINATE)
-straight_run_ramp = getattr(IfcRampTypeEnum, 'STRAIGHT_RUN_RAMP', INDETERMINATE)
-two_quarter_turn_ramp = getattr(IfcRampTypeEnum, 'TWO_QUARTER_TURN_RAMP', INDETERMINATE)
-two_straight_run_ramp = getattr(IfcRampTypeEnum, 'TWO_STRAIGHT_RUN_RAMP', INDETERMINATE)
-userdefined = getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRampTypeEnum, 'NOTDEFINED', INDETERMINATE)
+half_turn_ramp = IfcRampTypeEnum.HALF_TURN_RAMP
+quarter_turn_ramp = IfcRampTypeEnum.QUARTER_TURN_RAMP
+spiral_ramp = IfcRampTypeEnum.SPIRAL_RAMP
+straight_run_ramp = IfcRampTypeEnum.STRAIGHT_RUN_RAMP
+two_quarter_turn_ramp = IfcRampTypeEnum.TWO_QUARTER_TURN_RAMP
+two_straight_run_ramp = IfcRampTypeEnum.TWO_STRAIGHT_RUN_RAMP
+userdefined = IfcRampTypeEnum.USERDEFINED
+notdefined = IfcRampTypeEnum.NOTDEFINED
 IfcRecurrenceTypeEnum = enum_namespace()
-by_day_count = getattr(IfcRecurrenceTypeEnum, 'BY_DAY_COUNT', INDETERMINATE)
-by_weekday_count = getattr(IfcRecurrenceTypeEnum, 'BY_WEEKDAY_COUNT', INDETERMINATE)
-daily = getattr(IfcRecurrenceTypeEnum, 'DAILY', INDETERMINATE)
-monthly_by_day_of_month = getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_DAY_OF_MONTH', INDETERMINATE)
-monthly_by_position = getattr(IfcRecurrenceTypeEnum, 'MONTHLY_BY_POSITION', INDETERMINATE)
-weekly = getattr(IfcRecurrenceTypeEnum, 'WEEKLY', INDETERMINATE)
-yearly_by_day_of_month = getattr(IfcRecurrenceTypeEnum, 'YEARLY_BY_DAY_OF_MONTH', INDETERMINATE)
-yearly_by_position = getattr(IfcRecurrenceTypeEnum, 'YEARLY_BY_POSITION', INDETERMINATE)
+by_day_count = IfcRecurrenceTypeEnum.BY_DAY_COUNT
+by_weekday_count = IfcRecurrenceTypeEnum.BY_WEEKDAY_COUNT
+daily = IfcRecurrenceTypeEnum.DAILY
+monthly_by_day_of_month = IfcRecurrenceTypeEnum.MONTHLY_BY_DAY_OF_MONTH
+monthly_by_position = IfcRecurrenceTypeEnum.MONTHLY_BY_POSITION
+weekly = IfcRecurrenceTypeEnum.WEEKLY
+yearly_by_day_of_month = IfcRecurrenceTypeEnum.YEARLY_BY_DAY_OF_MONTH
+yearly_by_position = IfcRecurrenceTypeEnum.YEARLY_BY_POSITION
 IfcReferentTypeEnum = enum_namespace()
-boundary = getattr(IfcReferentTypeEnum, 'BOUNDARY', INDETERMINATE)
-intersection = getattr(IfcReferentTypeEnum, 'INTERSECTION', INDETERMINATE)
-kilopoint = getattr(IfcReferentTypeEnum, 'KILOPOINT', INDETERMINATE)
-landmark = getattr(IfcReferentTypeEnum, 'LANDMARK', INDETERMINATE)
-milepoint = getattr(IfcReferentTypeEnum, 'MILEPOINT', INDETERMINATE)
-position = getattr(IfcReferentTypeEnum, 'POSITION', INDETERMINATE)
-referencemarker = getattr(IfcReferentTypeEnum, 'REFERENCEMARKER', INDETERMINATE)
-station = getattr(IfcReferentTypeEnum, 'STATION', INDETERMINATE)
-userdefined = getattr(IfcReferentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcReferentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+boundary = IfcReferentTypeEnum.BOUNDARY
+intersection = IfcReferentTypeEnum.INTERSECTION
+kilopoint = IfcReferentTypeEnum.KILOPOINT
+landmark = IfcReferentTypeEnum.LANDMARK
+milepoint = IfcReferentTypeEnum.MILEPOINT
+position = IfcReferentTypeEnum.POSITION
+referencemarker = IfcReferentTypeEnum.REFERENCEMARKER
+station = IfcReferentTypeEnum.STATION
+userdefined = IfcReferentTypeEnum.USERDEFINED
+notdefined = IfcReferentTypeEnum.NOTDEFINED
 IfcReflectanceMethodEnum = enum_namespace()
-blinn = getattr(IfcReflectanceMethodEnum, 'BLINN', INDETERMINATE)
-flat = getattr(IfcReflectanceMethodEnum, 'FLAT', INDETERMINATE)
-glass = getattr(IfcReflectanceMethodEnum, 'GLASS', INDETERMINATE)
-matt = getattr(IfcReflectanceMethodEnum, 'MATT', INDETERMINATE)
-metal = getattr(IfcReflectanceMethodEnum, 'METAL', INDETERMINATE)
-mirror = getattr(IfcReflectanceMethodEnum, 'MIRROR', INDETERMINATE)
-phong = getattr(IfcReflectanceMethodEnum, 'PHONG', INDETERMINATE)
-physical = getattr(IfcReflectanceMethodEnum, 'PHYSICAL', INDETERMINATE)
-plastic = getattr(IfcReflectanceMethodEnum, 'PLASTIC', INDETERMINATE)
-strauss = getattr(IfcReflectanceMethodEnum, 'STRAUSS', INDETERMINATE)
-notdefined = getattr(IfcReflectanceMethodEnum, 'NOTDEFINED', INDETERMINATE)
+blinn = IfcReflectanceMethodEnum.BLINN
+flat = IfcReflectanceMethodEnum.FLAT
+glass = IfcReflectanceMethodEnum.GLASS
+matt = IfcReflectanceMethodEnum.MATT
+metal = IfcReflectanceMethodEnum.METAL
+mirror = IfcReflectanceMethodEnum.MIRROR
+phong = IfcReflectanceMethodEnum.PHONG
+physical = IfcReflectanceMethodEnum.PHYSICAL
+plastic = IfcReflectanceMethodEnum.PLASTIC
+strauss = IfcReflectanceMethodEnum.STRAUSS
+notdefined = IfcReflectanceMethodEnum.NOTDEFINED
 IfcReinforcedSoilTypeEnum = enum_namespace()
-dynamicallycompacted = getattr(IfcReinforcedSoilTypeEnum, 'DYNAMICALLYCOMPACTED', INDETERMINATE)
-grouted = getattr(IfcReinforcedSoilTypeEnum, 'GROUTED', INDETERMINATE)
-replaced = getattr(IfcReinforcedSoilTypeEnum, 'REPLACED', INDETERMINATE)
-rollercompacted = getattr(IfcReinforcedSoilTypeEnum, 'ROLLERCOMPACTED', INDETERMINATE)
-surchargepreloaded = getattr(IfcReinforcedSoilTypeEnum, 'SURCHARGEPRELOADED', INDETERMINATE)
-verticallydrained = getattr(IfcReinforcedSoilTypeEnum, 'VERTICALLYDRAINED', INDETERMINATE)
-userdefined = getattr(IfcReinforcedSoilTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcReinforcedSoilTypeEnum, 'NOTDEFINED', INDETERMINATE)
+dynamicallycompacted = IfcReinforcedSoilTypeEnum.DYNAMICALLYCOMPACTED
+grouted = IfcReinforcedSoilTypeEnum.GROUTED
+replaced = IfcReinforcedSoilTypeEnum.REPLACED
+rollercompacted = IfcReinforcedSoilTypeEnum.ROLLERCOMPACTED
+surchargepreloaded = IfcReinforcedSoilTypeEnum.SURCHARGEPRELOADED
+verticallydrained = IfcReinforcedSoilTypeEnum.VERTICALLYDRAINED
+userdefined = IfcReinforcedSoilTypeEnum.USERDEFINED
+notdefined = IfcReinforcedSoilTypeEnum.NOTDEFINED
 IfcReinforcingBarRoleEnum = enum_namespace()
-anchoring = getattr(IfcReinforcingBarRoleEnum, 'ANCHORING', INDETERMINATE)
-edge = getattr(IfcReinforcingBarRoleEnum, 'EDGE', INDETERMINATE)
-ligature = getattr(IfcReinforcingBarRoleEnum, 'LIGATURE', INDETERMINATE)
-main = getattr(IfcReinforcingBarRoleEnum, 'MAIN', INDETERMINATE)
-punching = getattr(IfcReinforcingBarRoleEnum, 'PUNCHING', INDETERMINATE)
-ring = getattr(IfcReinforcingBarRoleEnum, 'RING', INDETERMINATE)
-shear = getattr(IfcReinforcingBarRoleEnum, 'SHEAR', INDETERMINATE)
-stud = getattr(IfcReinforcingBarRoleEnum, 'STUD', INDETERMINATE)
-userdefined = getattr(IfcReinforcingBarRoleEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcReinforcingBarRoleEnum, 'NOTDEFINED', INDETERMINATE)
+anchoring = IfcReinforcingBarRoleEnum.ANCHORING
+edge = IfcReinforcingBarRoleEnum.EDGE
+ligature = IfcReinforcingBarRoleEnum.LIGATURE
+main = IfcReinforcingBarRoleEnum.MAIN
+punching = IfcReinforcingBarRoleEnum.PUNCHING
+ring = IfcReinforcingBarRoleEnum.RING
+shear = IfcReinforcingBarRoleEnum.SHEAR
+stud = IfcReinforcingBarRoleEnum.STUD
+userdefined = IfcReinforcingBarRoleEnum.USERDEFINED
+notdefined = IfcReinforcingBarRoleEnum.NOTDEFINED
 IfcReinforcingBarSurfaceEnum = enum_namespace()
-plain = getattr(IfcReinforcingBarSurfaceEnum, 'PLAIN', INDETERMINATE)
-textured = getattr(IfcReinforcingBarSurfaceEnum, 'TEXTURED', INDETERMINATE)
+plain = IfcReinforcingBarSurfaceEnum.PLAIN
+textured = IfcReinforcingBarSurfaceEnum.TEXTURED
 IfcReinforcingBarTypeEnum = enum_namespace()
-anchoring = getattr(IfcReinforcingBarTypeEnum, 'ANCHORING', INDETERMINATE)
-edge = getattr(IfcReinforcingBarTypeEnum, 'EDGE', INDETERMINATE)
-ligature = getattr(IfcReinforcingBarTypeEnum, 'LIGATURE', INDETERMINATE)
-main = getattr(IfcReinforcingBarTypeEnum, 'MAIN', INDETERMINATE)
-punching = getattr(IfcReinforcingBarTypeEnum, 'PUNCHING', INDETERMINATE)
-ring = getattr(IfcReinforcingBarTypeEnum, 'RING', INDETERMINATE)
-shear = getattr(IfcReinforcingBarTypeEnum, 'SHEAR', INDETERMINATE)
-spacebar = getattr(IfcReinforcingBarTypeEnum, 'SPACEBAR', INDETERMINATE)
-stud = getattr(IfcReinforcingBarTypeEnum, 'STUD', INDETERMINATE)
-userdefined = getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcReinforcingBarTypeEnum, 'NOTDEFINED', INDETERMINATE)
+anchoring = IfcReinforcingBarTypeEnum.ANCHORING
+edge = IfcReinforcingBarTypeEnum.EDGE
+ligature = IfcReinforcingBarTypeEnum.LIGATURE
+main = IfcReinforcingBarTypeEnum.MAIN
+punching = IfcReinforcingBarTypeEnum.PUNCHING
+ring = IfcReinforcingBarTypeEnum.RING
+shear = IfcReinforcingBarTypeEnum.SHEAR
+spacebar = IfcReinforcingBarTypeEnum.SPACEBAR
+stud = IfcReinforcingBarTypeEnum.STUD
+userdefined = IfcReinforcingBarTypeEnum.USERDEFINED
+notdefined = IfcReinforcingBarTypeEnum.NOTDEFINED
 IfcReinforcingMeshTypeEnum = enum_namespace()
-userdefined = getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcReinforcingMeshTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcReinforcingMeshTypeEnum.USERDEFINED
+notdefined = IfcReinforcingMeshTypeEnum.NOTDEFINED
 IfcRoadPartTypeEnum = enum_namespace()
-bicyclecrossing = getattr(IfcRoadPartTypeEnum, 'BICYCLECROSSING', INDETERMINATE)
-bus_stop = getattr(IfcRoadPartTypeEnum, 'BUS_STOP', INDETERMINATE)
-carriageway = getattr(IfcRoadPartTypeEnum, 'CARRIAGEWAY', INDETERMINATE)
-centralisland = getattr(IfcRoadPartTypeEnum, 'CENTRALISLAND', INDETERMINATE)
-centralreserve = getattr(IfcRoadPartTypeEnum, 'CENTRALRESERVE', INDETERMINATE)
-hardshoulder = getattr(IfcRoadPartTypeEnum, 'HARDSHOULDER', INDETERMINATE)
-intersection = getattr(IfcRoadPartTypeEnum, 'INTERSECTION', INDETERMINATE)
-layby = getattr(IfcRoadPartTypeEnum, 'LAYBY', INDETERMINATE)
-parkingbay = getattr(IfcRoadPartTypeEnum, 'PARKINGBAY', INDETERMINATE)
-passingbay = getattr(IfcRoadPartTypeEnum, 'PASSINGBAY', INDETERMINATE)
-pedestrian_crossing = getattr(IfcRoadPartTypeEnum, 'PEDESTRIAN_CROSSING', INDETERMINATE)
-railwaycrossing = getattr(IfcRoadPartTypeEnum, 'RAILWAYCROSSING', INDETERMINATE)
-refugeisland = getattr(IfcRoadPartTypeEnum, 'REFUGEISLAND', INDETERMINATE)
-roadsegment = getattr(IfcRoadPartTypeEnum, 'ROADSEGMENT', INDETERMINATE)
-roadside = getattr(IfcRoadPartTypeEnum, 'ROADSIDE', INDETERMINATE)
-roadsidepart = getattr(IfcRoadPartTypeEnum, 'ROADSIDEPART', INDETERMINATE)
-roadwayplateau = getattr(IfcRoadPartTypeEnum, 'ROADWAYPLATEAU', INDETERMINATE)
-roundabout = getattr(IfcRoadPartTypeEnum, 'ROUNDABOUT', INDETERMINATE)
-shoulder = getattr(IfcRoadPartTypeEnum, 'SHOULDER', INDETERMINATE)
-sidewalk = getattr(IfcRoadPartTypeEnum, 'SIDEWALK', INDETERMINATE)
-softshoulder = getattr(IfcRoadPartTypeEnum, 'SOFTSHOULDER', INDETERMINATE)
-tollplaza = getattr(IfcRoadPartTypeEnum, 'TOLLPLAZA', INDETERMINATE)
-trafficisland = getattr(IfcRoadPartTypeEnum, 'TRAFFICISLAND', INDETERMINATE)
-trafficlane = getattr(IfcRoadPartTypeEnum, 'TRAFFICLANE', INDETERMINATE)
-userdefined = getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRoadPartTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bicyclecrossing = IfcRoadPartTypeEnum.BICYCLECROSSING
+bus_stop = IfcRoadPartTypeEnum.BUS_STOP
+carriageway = IfcRoadPartTypeEnum.CARRIAGEWAY
+centralisland = IfcRoadPartTypeEnum.CENTRALISLAND
+centralreserve = IfcRoadPartTypeEnum.CENTRALRESERVE
+hardshoulder = IfcRoadPartTypeEnum.HARDSHOULDER
+intersection = IfcRoadPartTypeEnum.INTERSECTION
+layby = IfcRoadPartTypeEnum.LAYBY
+parkingbay = IfcRoadPartTypeEnum.PARKINGBAY
+passingbay = IfcRoadPartTypeEnum.PASSINGBAY
+pedestrian_crossing = IfcRoadPartTypeEnum.PEDESTRIAN_CROSSING
+railwaycrossing = IfcRoadPartTypeEnum.RAILWAYCROSSING
+refugeisland = IfcRoadPartTypeEnum.REFUGEISLAND
+roadsegment = IfcRoadPartTypeEnum.ROADSEGMENT
+roadside = IfcRoadPartTypeEnum.ROADSIDE
+roadsidepart = IfcRoadPartTypeEnum.ROADSIDEPART
+roadwayplateau = IfcRoadPartTypeEnum.ROADWAYPLATEAU
+roundabout = IfcRoadPartTypeEnum.ROUNDABOUT
+shoulder = IfcRoadPartTypeEnum.SHOULDER
+sidewalk = IfcRoadPartTypeEnum.SIDEWALK
+softshoulder = IfcRoadPartTypeEnum.SOFTSHOULDER
+tollplaza = IfcRoadPartTypeEnum.TOLLPLAZA
+trafficisland = IfcRoadPartTypeEnum.TRAFFICISLAND
+trafficlane = IfcRoadPartTypeEnum.TRAFFICLANE
+userdefined = IfcRoadPartTypeEnum.USERDEFINED
+notdefined = IfcRoadPartTypeEnum.NOTDEFINED
 IfcRoadTypeEnum = enum_namespace()
-userdefined = getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRoadTypeEnum, 'NOTDEFINED', INDETERMINATE)
+userdefined = IfcRoadTypeEnum.USERDEFINED
+notdefined = IfcRoadTypeEnum.NOTDEFINED
 IfcRoleEnum = enum_namespace()
-architect = getattr(IfcRoleEnum, 'ARCHITECT', INDETERMINATE)
-buildingoperator = getattr(IfcRoleEnum, 'BUILDINGOPERATOR', INDETERMINATE)
-buildingowner = getattr(IfcRoleEnum, 'BUILDINGOWNER', INDETERMINATE)
-civilengineer = getattr(IfcRoleEnum, 'CIVILENGINEER', INDETERMINATE)
-client = getattr(IfcRoleEnum, 'CLIENT', INDETERMINATE)
-commissioningengineer = getattr(IfcRoleEnum, 'COMMISSIONINGENGINEER', INDETERMINATE)
-constructionmanager = getattr(IfcRoleEnum, 'CONSTRUCTIONMANAGER', INDETERMINATE)
-consultant = getattr(IfcRoleEnum, 'CONSULTANT', INDETERMINATE)
-contractor = getattr(IfcRoleEnum, 'CONTRACTOR', INDETERMINATE)
-costengineer = getattr(IfcRoleEnum, 'COSTENGINEER', INDETERMINATE)
-electricalengineer = getattr(IfcRoleEnum, 'ELECTRICALENGINEER', INDETERMINATE)
-engineer = getattr(IfcRoleEnum, 'ENGINEER', INDETERMINATE)
-facilitiesmanager = getattr(IfcRoleEnum, 'FACILITIESMANAGER', INDETERMINATE)
-fieldconstructionmanager = getattr(IfcRoleEnum, 'FIELDCONSTRUCTIONMANAGER', INDETERMINATE)
-manufacturer = getattr(IfcRoleEnum, 'MANUFACTURER', INDETERMINATE)
-mechanicalengineer = getattr(IfcRoleEnum, 'MECHANICALENGINEER', INDETERMINATE)
-owner = getattr(IfcRoleEnum, 'OWNER', INDETERMINATE)
-projectmanager = getattr(IfcRoleEnum, 'PROJECTMANAGER', INDETERMINATE)
-reseller = getattr(IfcRoleEnum, 'RESELLER', INDETERMINATE)
-structuralengineer = getattr(IfcRoleEnum, 'STRUCTURALENGINEER', INDETERMINATE)
-subcontractor = getattr(IfcRoleEnum, 'SUBCONTRACTOR', INDETERMINATE)
-supplier = getattr(IfcRoleEnum, 'SUPPLIER', INDETERMINATE)
-userdefined = getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE)
+architect = IfcRoleEnum.ARCHITECT
+buildingoperator = IfcRoleEnum.BUILDINGOPERATOR
+buildingowner = IfcRoleEnum.BUILDINGOWNER
+civilengineer = IfcRoleEnum.CIVILENGINEER
+client = IfcRoleEnum.CLIENT
+commissioningengineer = IfcRoleEnum.COMMISSIONINGENGINEER
+constructionmanager = IfcRoleEnum.CONSTRUCTIONMANAGER
+consultant = IfcRoleEnum.CONSULTANT
+contractor = IfcRoleEnum.CONTRACTOR
+costengineer = IfcRoleEnum.COSTENGINEER
+electricalengineer = IfcRoleEnum.ELECTRICALENGINEER
+engineer = IfcRoleEnum.ENGINEER
+facilitiesmanager = IfcRoleEnum.FACILITIESMANAGER
+fieldconstructionmanager = IfcRoleEnum.FIELDCONSTRUCTIONMANAGER
+manufacturer = IfcRoleEnum.MANUFACTURER
+mechanicalengineer = IfcRoleEnum.MECHANICALENGINEER
+owner = IfcRoleEnum.OWNER
+projectmanager = IfcRoleEnum.PROJECTMANAGER
+reseller = IfcRoleEnum.RESELLER
+structuralengineer = IfcRoleEnum.STRUCTURALENGINEER
+subcontractor = IfcRoleEnum.SUBCONTRACTOR
+supplier = IfcRoleEnum.SUPPLIER
+userdefined = IfcRoleEnum.USERDEFINED
 IfcRoofTypeEnum = enum_namespace()
-barrel_roof = getattr(IfcRoofTypeEnum, 'BARREL_ROOF', INDETERMINATE)
-butterfly_roof = getattr(IfcRoofTypeEnum, 'BUTTERFLY_ROOF', INDETERMINATE)
-dome_roof = getattr(IfcRoofTypeEnum, 'DOME_ROOF', INDETERMINATE)
-flat_roof = getattr(IfcRoofTypeEnum, 'FLAT_ROOF', INDETERMINATE)
-freeform = getattr(IfcRoofTypeEnum, 'FREEFORM', INDETERMINATE)
-gable_roof = getattr(IfcRoofTypeEnum, 'GABLE_ROOF', INDETERMINATE)
-gambrel_roof = getattr(IfcRoofTypeEnum, 'GAMBREL_ROOF', INDETERMINATE)
-hipped_gable_roof = getattr(IfcRoofTypeEnum, 'HIPPED_GABLE_ROOF', INDETERMINATE)
-hip_roof = getattr(IfcRoofTypeEnum, 'HIP_ROOF', INDETERMINATE)
-mansard_roof = getattr(IfcRoofTypeEnum, 'MANSARD_ROOF', INDETERMINATE)
-pavilion_roof = getattr(IfcRoofTypeEnum, 'PAVILION_ROOF', INDETERMINATE)
-rainbow_roof = getattr(IfcRoofTypeEnum, 'RAINBOW_ROOF', INDETERMINATE)
-shed_roof = getattr(IfcRoofTypeEnum, 'SHED_ROOF', INDETERMINATE)
-userdefined = getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcRoofTypeEnum, 'NOTDEFINED', INDETERMINATE)
+barrel_roof = IfcRoofTypeEnum.BARREL_ROOF
+butterfly_roof = IfcRoofTypeEnum.BUTTERFLY_ROOF
+dome_roof = IfcRoofTypeEnum.DOME_ROOF
+flat_roof = IfcRoofTypeEnum.FLAT_ROOF
+freeform = IfcRoofTypeEnum.FREEFORM
+gable_roof = IfcRoofTypeEnum.GABLE_ROOF
+gambrel_roof = IfcRoofTypeEnum.GAMBREL_ROOF
+hipped_gable_roof = IfcRoofTypeEnum.HIPPED_GABLE_ROOF
+hip_roof = IfcRoofTypeEnum.HIP_ROOF
+mansard_roof = IfcRoofTypeEnum.MANSARD_ROOF
+pavilion_roof = IfcRoofTypeEnum.PAVILION_ROOF
+rainbow_roof = IfcRoofTypeEnum.RAINBOW_ROOF
+shed_roof = IfcRoofTypeEnum.SHED_ROOF
+userdefined = IfcRoofTypeEnum.USERDEFINED
+notdefined = IfcRoofTypeEnum.NOTDEFINED
 IfcSIPrefix = enum_namespace()
-atto = getattr(IfcSIPrefix, 'ATTO', INDETERMINATE)
-centi = getattr(IfcSIPrefix, 'CENTI', INDETERMINATE)
-deca = getattr(IfcSIPrefix, 'DECA', INDETERMINATE)
-deci = getattr(IfcSIPrefix, 'DECI', INDETERMINATE)
-exa = getattr(IfcSIPrefix, 'EXA', INDETERMINATE)
-femto = getattr(IfcSIPrefix, 'FEMTO', INDETERMINATE)
-giga = getattr(IfcSIPrefix, 'GIGA', INDETERMINATE)
-hecto = getattr(IfcSIPrefix, 'HECTO', INDETERMINATE)
-kilo = getattr(IfcSIPrefix, 'KILO', INDETERMINATE)
-mega = getattr(IfcSIPrefix, 'MEGA', INDETERMINATE)
-micro = getattr(IfcSIPrefix, 'MICRO', INDETERMINATE)
-milli = getattr(IfcSIPrefix, 'MILLI', INDETERMINATE)
-nano = getattr(IfcSIPrefix, 'NANO', INDETERMINATE)
-peta = getattr(IfcSIPrefix, 'PETA', INDETERMINATE)
-pico = getattr(IfcSIPrefix, 'PICO', INDETERMINATE)
-tera = getattr(IfcSIPrefix, 'TERA', INDETERMINATE)
+atto = IfcSIPrefix.ATTO
+centi = IfcSIPrefix.CENTI
+deca = IfcSIPrefix.DECA
+deci = IfcSIPrefix.DECI
+exa = IfcSIPrefix.EXA
+femto = IfcSIPrefix.FEMTO
+giga = IfcSIPrefix.GIGA
+hecto = IfcSIPrefix.HECTO
+kilo = IfcSIPrefix.KILO
+mega = IfcSIPrefix.MEGA
+micro = IfcSIPrefix.MICRO
+milli = IfcSIPrefix.MILLI
+nano = IfcSIPrefix.NANO
+peta = IfcSIPrefix.PETA
+pico = IfcSIPrefix.PICO
+tera = IfcSIPrefix.TERA
 IfcSIUnitName = enum_namespace()
-ampere = getattr(IfcSIUnitName, 'AMPERE', INDETERMINATE)
-becquerel = getattr(IfcSIUnitName, 'BECQUEREL', INDETERMINATE)
-candela = getattr(IfcSIUnitName, 'CANDELA', INDETERMINATE)
-coulomb = getattr(IfcSIUnitName, 'COULOMB', INDETERMINATE)
-cubic_metre = getattr(IfcSIUnitName, 'CUBIC_METRE', INDETERMINATE)
-degree_celsius = getattr(IfcSIUnitName, 'DEGREE_CELSIUS', INDETERMINATE)
-farad = getattr(IfcSIUnitName, 'FARAD', INDETERMINATE)
-gram = getattr(IfcSIUnitName, 'GRAM', INDETERMINATE)
-gray = getattr(IfcSIUnitName, 'GRAY', INDETERMINATE)
-henry = getattr(IfcSIUnitName, 'HENRY', INDETERMINATE)
-hertz = getattr(IfcSIUnitName, 'HERTZ', INDETERMINATE)
-joule = getattr(IfcSIUnitName, 'JOULE', INDETERMINATE)
-kelvin = getattr(IfcSIUnitName, 'KELVIN', INDETERMINATE)
-lumen = getattr(IfcSIUnitName, 'LUMEN', INDETERMINATE)
-lux = getattr(IfcSIUnitName, 'LUX', INDETERMINATE)
-metre = getattr(IfcSIUnitName, 'METRE', INDETERMINATE)
-mole = getattr(IfcSIUnitName, 'MOLE', INDETERMINATE)
-newton = getattr(IfcSIUnitName, 'NEWTON', INDETERMINATE)
-ohm = getattr(IfcSIUnitName, 'OHM', INDETERMINATE)
-pascal = getattr(IfcSIUnitName, 'PASCAL', INDETERMINATE)
-radian = getattr(IfcSIUnitName, 'RADIAN', INDETERMINATE)
-second = getattr(IfcSIUnitName, 'SECOND', INDETERMINATE)
-siemens = getattr(IfcSIUnitName, 'SIEMENS', INDETERMINATE)
-sievert = getattr(IfcSIUnitName, 'SIEVERT', INDETERMINATE)
-square_metre = getattr(IfcSIUnitName, 'SQUARE_METRE', INDETERMINATE)
-steradian = getattr(IfcSIUnitName, 'STERADIAN', INDETERMINATE)
-tesla = getattr(IfcSIUnitName, 'TESLA', INDETERMINATE)
-volt = getattr(IfcSIUnitName, 'VOLT', INDETERMINATE)
-watt = getattr(IfcSIUnitName, 'WATT', INDETERMINATE)
-weber = getattr(IfcSIUnitName, 'WEBER', INDETERMINATE)
+ampere = IfcSIUnitName.AMPERE
+becquerel = IfcSIUnitName.BECQUEREL
+candela = IfcSIUnitName.CANDELA
+coulomb = IfcSIUnitName.COULOMB
+cubic_metre = IfcSIUnitName.CUBIC_METRE
+degree_celsius = IfcSIUnitName.DEGREE_CELSIUS
+farad = IfcSIUnitName.FARAD
+gram = IfcSIUnitName.GRAM
+gray = IfcSIUnitName.GRAY
+henry = IfcSIUnitName.HENRY
+hertz = IfcSIUnitName.HERTZ
+joule = IfcSIUnitName.JOULE
+kelvin = IfcSIUnitName.KELVIN
+lumen = IfcSIUnitName.LUMEN
+lux = IfcSIUnitName.LUX
+metre = IfcSIUnitName.METRE
+mole = IfcSIUnitName.MOLE
+newton = IfcSIUnitName.NEWTON
+ohm = IfcSIUnitName.OHM
+pascal = IfcSIUnitName.PASCAL
+radian = IfcSIUnitName.RADIAN
+second = IfcSIUnitName.SECOND
+siemens = IfcSIUnitName.SIEMENS
+sievert = IfcSIUnitName.SIEVERT
+square_metre = IfcSIUnitName.SQUARE_METRE
+steradian = IfcSIUnitName.STERADIAN
+tesla = IfcSIUnitName.TESLA
+volt = IfcSIUnitName.VOLT
+watt = IfcSIUnitName.WATT
+weber = IfcSIUnitName.WEBER
 IfcSanitaryTerminalTypeEnum = enum_namespace()
-bath = getattr(IfcSanitaryTerminalTypeEnum, 'BATH', INDETERMINATE)
-bidet = getattr(IfcSanitaryTerminalTypeEnum, 'BIDET', INDETERMINATE)
-cistern = getattr(IfcSanitaryTerminalTypeEnum, 'CISTERN', INDETERMINATE)
-sanitaryfountain = getattr(IfcSanitaryTerminalTypeEnum, 'SANITARYFOUNTAIN', INDETERMINATE)
-shower = getattr(IfcSanitaryTerminalTypeEnum, 'SHOWER', INDETERMINATE)
-sink = getattr(IfcSanitaryTerminalTypeEnum, 'SINK', INDETERMINATE)
-toiletpan = getattr(IfcSanitaryTerminalTypeEnum, 'TOILETPAN', INDETERMINATE)
-urinal = getattr(IfcSanitaryTerminalTypeEnum, 'URINAL', INDETERMINATE)
-washhandbasin = getattr(IfcSanitaryTerminalTypeEnum, 'WASHHANDBASIN', INDETERMINATE)
-wcseat = getattr(IfcSanitaryTerminalTypeEnum, 'WCSEAT', INDETERMINATE)
-userdefined = getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSanitaryTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bath = IfcSanitaryTerminalTypeEnum.BATH
+bidet = IfcSanitaryTerminalTypeEnum.BIDET
+cistern = IfcSanitaryTerminalTypeEnum.CISTERN
+sanitaryfountain = IfcSanitaryTerminalTypeEnum.SANITARYFOUNTAIN
+shower = IfcSanitaryTerminalTypeEnum.SHOWER
+sink = IfcSanitaryTerminalTypeEnum.SINK
+toiletpan = IfcSanitaryTerminalTypeEnum.TOILETPAN
+urinal = IfcSanitaryTerminalTypeEnum.URINAL
+washhandbasin = IfcSanitaryTerminalTypeEnum.WASHHANDBASIN
+wcseat = IfcSanitaryTerminalTypeEnum.WCSEAT
+userdefined = IfcSanitaryTerminalTypeEnum.USERDEFINED
+notdefined = IfcSanitaryTerminalTypeEnum.NOTDEFINED
 IfcSectionTypeEnum = enum_namespace()
-tapered = getattr(IfcSectionTypeEnum, 'TAPERED', INDETERMINATE)
-uniform = getattr(IfcSectionTypeEnum, 'UNIFORM', INDETERMINATE)
+tapered = IfcSectionTypeEnum.TAPERED
+uniform = IfcSectionTypeEnum.UNIFORM
 IfcSensorTypeEnum = enum_namespace()
-co2sensor = getattr(IfcSensorTypeEnum, 'CO2SENSOR', INDETERMINATE)
-conductancesensor = getattr(IfcSensorTypeEnum, 'CONDUCTANCESENSOR', INDETERMINATE)
-contactsensor = getattr(IfcSensorTypeEnum, 'CONTACTSENSOR', INDETERMINATE)
-cosensor = getattr(IfcSensorTypeEnum, 'COSENSOR', INDETERMINATE)
-earthquakesensor = getattr(IfcSensorTypeEnum, 'EARTHQUAKESENSOR', INDETERMINATE)
-firesensor = getattr(IfcSensorTypeEnum, 'FIRESENSOR', INDETERMINATE)
-flowsensor = getattr(IfcSensorTypeEnum, 'FLOWSENSOR', INDETERMINATE)
-foreignobjectdetectionsensor = getattr(IfcSensorTypeEnum, 'FOREIGNOBJECTDETECTIONSENSOR', INDETERMINATE)
-frostsensor = getattr(IfcSensorTypeEnum, 'FROSTSENSOR', INDETERMINATE)
-gassensor = getattr(IfcSensorTypeEnum, 'GASSENSOR', INDETERMINATE)
-heatsensor = getattr(IfcSensorTypeEnum, 'HEATSENSOR', INDETERMINATE)
-humiditysensor = getattr(IfcSensorTypeEnum, 'HUMIDITYSENSOR', INDETERMINATE)
-identifiersensor = getattr(IfcSensorTypeEnum, 'IDENTIFIERSENSOR', INDETERMINATE)
-ionconcentrationsensor = getattr(IfcSensorTypeEnum, 'IONCONCENTRATIONSENSOR', INDETERMINATE)
-levelsensor = getattr(IfcSensorTypeEnum, 'LEVELSENSOR', INDETERMINATE)
-lightsensor = getattr(IfcSensorTypeEnum, 'LIGHTSENSOR', INDETERMINATE)
-moisturesensor = getattr(IfcSensorTypeEnum, 'MOISTURESENSOR', INDETERMINATE)
-movementsensor = getattr(IfcSensorTypeEnum, 'MOVEMENTSENSOR', INDETERMINATE)
-obstaclesensor = getattr(IfcSensorTypeEnum, 'OBSTACLESENSOR', INDETERMINATE)
-phsensor = getattr(IfcSensorTypeEnum, 'PHSENSOR', INDETERMINATE)
-pressuresensor = getattr(IfcSensorTypeEnum, 'PRESSURESENSOR', INDETERMINATE)
-radiationsensor = getattr(IfcSensorTypeEnum, 'RADIATIONSENSOR', INDETERMINATE)
-radioactivitysensor = getattr(IfcSensorTypeEnum, 'RADIOACTIVITYSENSOR', INDETERMINATE)
-rainsensor = getattr(IfcSensorTypeEnum, 'RAINSENSOR', INDETERMINATE)
-smokesensor = getattr(IfcSensorTypeEnum, 'SMOKESENSOR', INDETERMINATE)
-snowdepthsensor = getattr(IfcSensorTypeEnum, 'SNOWDEPTHSENSOR', INDETERMINATE)
-soundsensor = getattr(IfcSensorTypeEnum, 'SOUNDSENSOR', INDETERMINATE)
-temperaturesensor = getattr(IfcSensorTypeEnum, 'TEMPERATURESENSOR', INDETERMINATE)
-trainsensor = getattr(IfcSensorTypeEnum, 'TRAINSENSOR', INDETERMINATE)
-turnoutclosuresensor = getattr(IfcSensorTypeEnum, 'TURNOUTCLOSURESENSOR', INDETERMINATE)
-wheelsensor = getattr(IfcSensorTypeEnum, 'WHEELSENSOR', INDETERMINATE)
-windsensor = getattr(IfcSensorTypeEnum, 'WINDSENSOR', INDETERMINATE)
-userdefined = getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSensorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+co2sensor = IfcSensorTypeEnum.CO2SENSOR
+conductancesensor = IfcSensorTypeEnum.CONDUCTANCESENSOR
+contactsensor = IfcSensorTypeEnum.CONTACTSENSOR
+cosensor = IfcSensorTypeEnum.COSENSOR
+earthquakesensor = IfcSensorTypeEnum.EARTHQUAKESENSOR
+firesensor = IfcSensorTypeEnum.FIRESENSOR
+flowsensor = IfcSensorTypeEnum.FLOWSENSOR
+foreignobjectdetectionsensor = IfcSensorTypeEnum.FOREIGNOBJECTDETECTIONSENSOR
+frostsensor = IfcSensorTypeEnum.FROSTSENSOR
+gassensor = IfcSensorTypeEnum.GASSENSOR
+heatsensor = IfcSensorTypeEnum.HEATSENSOR
+humiditysensor = IfcSensorTypeEnum.HUMIDITYSENSOR
+identifiersensor = IfcSensorTypeEnum.IDENTIFIERSENSOR
+ionconcentrationsensor = IfcSensorTypeEnum.IONCONCENTRATIONSENSOR
+levelsensor = IfcSensorTypeEnum.LEVELSENSOR
+lightsensor = IfcSensorTypeEnum.LIGHTSENSOR
+moisturesensor = IfcSensorTypeEnum.MOISTURESENSOR
+movementsensor = IfcSensorTypeEnum.MOVEMENTSENSOR
+obstaclesensor = IfcSensorTypeEnum.OBSTACLESENSOR
+phsensor = IfcSensorTypeEnum.PHSENSOR
+pressuresensor = IfcSensorTypeEnum.PRESSURESENSOR
+radiationsensor = IfcSensorTypeEnum.RADIATIONSENSOR
+radioactivitysensor = IfcSensorTypeEnum.RADIOACTIVITYSENSOR
+rainsensor = IfcSensorTypeEnum.RAINSENSOR
+smokesensor = IfcSensorTypeEnum.SMOKESENSOR
+snowdepthsensor = IfcSensorTypeEnum.SNOWDEPTHSENSOR
+soundsensor = IfcSensorTypeEnum.SOUNDSENSOR
+temperaturesensor = IfcSensorTypeEnum.TEMPERATURESENSOR
+trainsensor = IfcSensorTypeEnum.TRAINSENSOR
+turnoutclosuresensor = IfcSensorTypeEnum.TURNOUTCLOSURESENSOR
+wheelsensor = IfcSensorTypeEnum.WHEELSENSOR
+windsensor = IfcSensorTypeEnum.WINDSENSOR
+userdefined = IfcSensorTypeEnum.USERDEFINED
+notdefined = IfcSensorTypeEnum.NOTDEFINED
 IfcSequenceEnum = enum_namespace()
-finish_finish = getattr(IfcSequenceEnum, 'FINISH_FINISH', INDETERMINATE)
-finish_start = getattr(IfcSequenceEnum, 'FINISH_START', INDETERMINATE)
-start_finish = getattr(IfcSequenceEnum, 'START_FINISH', INDETERMINATE)
-start_start = getattr(IfcSequenceEnum, 'START_START', INDETERMINATE)
-userdefined = getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSequenceEnum, 'NOTDEFINED', INDETERMINATE)
+finish_finish = IfcSequenceEnum.FINISH_FINISH
+finish_start = IfcSequenceEnum.FINISH_START
+start_finish = IfcSequenceEnum.START_FINISH
+start_start = IfcSequenceEnum.START_START
+userdefined = IfcSequenceEnum.USERDEFINED
+notdefined = IfcSequenceEnum.NOTDEFINED
 IfcShadingDeviceTypeEnum = enum_namespace()
-awning = getattr(IfcShadingDeviceTypeEnum, 'AWNING', INDETERMINATE)
-jalousie = getattr(IfcShadingDeviceTypeEnum, 'JALOUSIE', INDETERMINATE)
-shutter = getattr(IfcShadingDeviceTypeEnum, 'SHUTTER', INDETERMINATE)
-userdefined = getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcShadingDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+awning = IfcShadingDeviceTypeEnum.AWNING
+jalousie = IfcShadingDeviceTypeEnum.JALOUSIE
+shutter = IfcShadingDeviceTypeEnum.SHUTTER
+userdefined = IfcShadingDeviceTypeEnum.USERDEFINED
+notdefined = IfcShadingDeviceTypeEnum.NOTDEFINED
 IfcSignTypeEnum = enum_namespace()
-marker = getattr(IfcSignTypeEnum, 'MARKER', INDETERMINATE)
-mirror = getattr(IfcSignTypeEnum, 'MIRROR', INDETERMINATE)
-pictoral = getattr(IfcSignTypeEnum, 'PICTORAL', INDETERMINATE)
-userdefined = getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSignTypeEnum, 'NOTDEFINED', INDETERMINATE)
+marker = IfcSignTypeEnum.MARKER
+mirror = IfcSignTypeEnum.MIRROR
+pictoral = IfcSignTypeEnum.PICTORAL
+userdefined = IfcSignTypeEnum.USERDEFINED
+notdefined = IfcSignTypeEnum.NOTDEFINED
 IfcSignalTypeEnum = enum_namespace()
-audio = getattr(IfcSignalTypeEnum, 'AUDIO', INDETERMINATE)
-mixed = getattr(IfcSignalTypeEnum, 'MIXED', INDETERMINATE)
-visual = getattr(IfcSignalTypeEnum, 'VISUAL', INDETERMINATE)
-userdefined = getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSignalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+audio = IfcSignalTypeEnum.AUDIO
+mixed = IfcSignalTypeEnum.MIXED
+visual = IfcSignalTypeEnum.VISUAL
+userdefined = IfcSignalTypeEnum.USERDEFINED
+notdefined = IfcSignalTypeEnum.NOTDEFINED
 IfcSimplePropertyTemplateTypeEnum = enum_namespace()
-p_boundedvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_BOUNDEDVALUE', INDETERMINATE)
-p_enumeratedvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_ENUMERATEDVALUE', INDETERMINATE)
-p_listvalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_LISTVALUE', INDETERMINATE)
-p_referencevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_REFERENCEVALUE', INDETERMINATE)
-p_singlevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_SINGLEVALUE', INDETERMINATE)
-p_tablevalue = getattr(IfcSimplePropertyTemplateTypeEnum, 'P_TABLEVALUE', INDETERMINATE)
-q_area = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_AREA', INDETERMINATE)
-q_count = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_COUNT', INDETERMINATE)
-q_length = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_LENGTH', INDETERMINATE)
-q_number = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_NUMBER', INDETERMINATE)
-q_time = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_TIME', INDETERMINATE)
-q_volume = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_VOLUME', INDETERMINATE)
-q_weight = getattr(IfcSimplePropertyTemplateTypeEnum, 'Q_WEIGHT', INDETERMINATE)
+p_boundedvalue = IfcSimplePropertyTemplateTypeEnum.P_BOUNDEDVALUE
+p_enumeratedvalue = IfcSimplePropertyTemplateTypeEnum.P_ENUMERATEDVALUE
+p_listvalue = IfcSimplePropertyTemplateTypeEnum.P_LISTVALUE
+p_referencevalue = IfcSimplePropertyTemplateTypeEnum.P_REFERENCEVALUE
+p_singlevalue = IfcSimplePropertyTemplateTypeEnum.P_SINGLEVALUE
+p_tablevalue = IfcSimplePropertyTemplateTypeEnum.P_TABLEVALUE
+q_area = IfcSimplePropertyTemplateTypeEnum.Q_AREA
+q_count = IfcSimplePropertyTemplateTypeEnum.Q_COUNT
+q_length = IfcSimplePropertyTemplateTypeEnum.Q_LENGTH
+q_number = IfcSimplePropertyTemplateTypeEnum.Q_NUMBER
+q_time = IfcSimplePropertyTemplateTypeEnum.Q_TIME
+q_volume = IfcSimplePropertyTemplateTypeEnum.Q_VOLUME
+q_weight = IfcSimplePropertyTemplateTypeEnum.Q_WEIGHT
 IfcSlabTypeEnum = enum_namespace()
-approach_slab = getattr(IfcSlabTypeEnum, 'APPROACH_SLAB', INDETERMINATE)
-baseslab = getattr(IfcSlabTypeEnum, 'BASESLAB', INDETERMINATE)
-floor = getattr(IfcSlabTypeEnum, 'FLOOR', INDETERMINATE)
-landing = getattr(IfcSlabTypeEnum, 'LANDING', INDETERMINATE)
-paving = getattr(IfcSlabTypeEnum, 'PAVING', INDETERMINATE)
-roof = getattr(IfcSlabTypeEnum, 'ROOF', INDETERMINATE)
-sidewalk = getattr(IfcSlabTypeEnum, 'SIDEWALK', INDETERMINATE)
-trackslab = getattr(IfcSlabTypeEnum, 'TRACKSLAB', INDETERMINATE)
-wearing = getattr(IfcSlabTypeEnum, 'WEARING', INDETERMINATE)
-userdefined = getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSlabTypeEnum, 'NOTDEFINED', INDETERMINATE)
+approach_slab = IfcSlabTypeEnum.APPROACH_SLAB
+baseslab = IfcSlabTypeEnum.BASESLAB
+floor = IfcSlabTypeEnum.FLOOR
+landing = IfcSlabTypeEnum.LANDING
+paving = IfcSlabTypeEnum.PAVING
+roof = IfcSlabTypeEnum.ROOF
+sidewalk = IfcSlabTypeEnum.SIDEWALK
+trackslab = IfcSlabTypeEnum.TRACKSLAB
+wearing = IfcSlabTypeEnum.WEARING
+userdefined = IfcSlabTypeEnum.USERDEFINED
+notdefined = IfcSlabTypeEnum.NOTDEFINED
 IfcSolarDeviceTypeEnum = enum_namespace()
-solarcollector = getattr(IfcSolarDeviceTypeEnum, 'SOLARCOLLECTOR', INDETERMINATE)
-solarpanel = getattr(IfcSolarDeviceTypeEnum, 'SOLARPANEL', INDETERMINATE)
-userdefined = getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSolarDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+solarcollector = IfcSolarDeviceTypeEnum.SOLARCOLLECTOR
+solarpanel = IfcSolarDeviceTypeEnum.SOLARPANEL
+userdefined = IfcSolarDeviceTypeEnum.USERDEFINED
+notdefined = IfcSolarDeviceTypeEnum.NOTDEFINED
 IfcSpaceHeaterTypeEnum = enum_namespace()
-convector = getattr(IfcSpaceHeaterTypeEnum, 'CONVECTOR', INDETERMINATE)
-radiator = getattr(IfcSpaceHeaterTypeEnum, 'RADIATOR', INDETERMINATE)
-userdefined = getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSpaceHeaterTypeEnum, 'NOTDEFINED', INDETERMINATE)
+convector = IfcSpaceHeaterTypeEnum.CONVECTOR
+radiator = IfcSpaceHeaterTypeEnum.RADIATOR
+userdefined = IfcSpaceHeaterTypeEnum.USERDEFINED
+notdefined = IfcSpaceHeaterTypeEnum.NOTDEFINED
 IfcSpaceTypeEnum = enum_namespace()
-berth = getattr(IfcSpaceTypeEnum, 'BERTH', INDETERMINATE)
-external = getattr(IfcSpaceTypeEnum, 'EXTERNAL', INDETERMINATE)
-gfa = getattr(IfcSpaceTypeEnum, 'GFA', INDETERMINATE)
-internal = getattr(IfcSpaceTypeEnum, 'INTERNAL', INDETERMINATE)
-parking = getattr(IfcSpaceTypeEnum, 'PARKING', INDETERMINATE)
-space = getattr(IfcSpaceTypeEnum, 'SPACE', INDETERMINATE)
-userdefined = getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSpaceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+berth = IfcSpaceTypeEnum.BERTH
+external = IfcSpaceTypeEnum.EXTERNAL
+gfa = IfcSpaceTypeEnum.GFA
+internal = IfcSpaceTypeEnum.INTERNAL
+parking = IfcSpaceTypeEnum.PARKING
+space = IfcSpaceTypeEnum.SPACE
+userdefined = IfcSpaceTypeEnum.USERDEFINED
+notdefined = IfcSpaceTypeEnum.NOTDEFINED
 IfcSpatialZoneTypeEnum = enum_namespace()
-construction = getattr(IfcSpatialZoneTypeEnum, 'CONSTRUCTION', INDETERMINATE)
-firesafety = getattr(IfcSpatialZoneTypeEnum, 'FIRESAFETY', INDETERMINATE)
-interference = getattr(IfcSpatialZoneTypeEnum, 'INTERFERENCE', INDETERMINATE)
-lighting = getattr(IfcSpatialZoneTypeEnum, 'LIGHTING', INDETERMINATE)
-occupancy = getattr(IfcSpatialZoneTypeEnum, 'OCCUPANCY', INDETERMINATE)
-reservation = getattr(IfcSpatialZoneTypeEnum, 'RESERVATION', INDETERMINATE)
-security = getattr(IfcSpatialZoneTypeEnum, 'SECURITY', INDETERMINATE)
-thermal = getattr(IfcSpatialZoneTypeEnum, 'THERMAL', INDETERMINATE)
-transport = getattr(IfcSpatialZoneTypeEnum, 'TRANSPORT', INDETERMINATE)
-ventilation = getattr(IfcSpatialZoneTypeEnum, 'VENTILATION', INDETERMINATE)
-userdefined = getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSpatialZoneTypeEnum, 'NOTDEFINED', INDETERMINATE)
+construction = IfcSpatialZoneTypeEnum.CONSTRUCTION
+firesafety = IfcSpatialZoneTypeEnum.FIRESAFETY
+interference = IfcSpatialZoneTypeEnum.INTERFERENCE
+lighting = IfcSpatialZoneTypeEnum.LIGHTING
+occupancy = IfcSpatialZoneTypeEnum.OCCUPANCY
+reservation = IfcSpatialZoneTypeEnum.RESERVATION
+security = IfcSpatialZoneTypeEnum.SECURITY
+thermal = IfcSpatialZoneTypeEnum.THERMAL
+transport = IfcSpatialZoneTypeEnum.TRANSPORT
+ventilation = IfcSpatialZoneTypeEnum.VENTILATION
+userdefined = IfcSpatialZoneTypeEnum.USERDEFINED
+notdefined = IfcSpatialZoneTypeEnum.NOTDEFINED
 IfcStackTerminalTypeEnum = enum_namespace()
-birdcage = getattr(IfcStackTerminalTypeEnum, 'BIRDCAGE', INDETERMINATE)
-cowl = getattr(IfcStackTerminalTypeEnum, 'COWL', INDETERMINATE)
-rainwaterhopper = getattr(IfcStackTerminalTypeEnum, 'RAINWATERHOPPER', INDETERMINATE)
-userdefined = getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStackTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+birdcage = IfcStackTerminalTypeEnum.BIRDCAGE
+cowl = IfcStackTerminalTypeEnum.COWL
+rainwaterhopper = IfcStackTerminalTypeEnum.RAINWATERHOPPER
+userdefined = IfcStackTerminalTypeEnum.USERDEFINED
+notdefined = IfcStackTerminalTypeEnum.NOTDEFINED
 IfcStairFlightTypeEnum = enum_namespace()
-curved = getattr(IfcStairFlightTypeEnum, 'CURVED', INDETERMINATE)
-freeform = getattr(IfcStairFlightTypeEnum, 'FREEFORM', INDETERMINATE)
-spiral = getattr(IfcStairFlightTypeEnum, 'SPIRAL', INDETERMINATE)
-straight = getattr(IfcStairFlightTypeEnum, 'STRAIGHT', INDETERMINATE)
-winder = getattr(IfcStairFlightTypeEnum, 'WINDER', INDETERMINATE)
-userdefined = getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStairFlightTypeEnum, 'NOTDEFINED', INDETERMINATE)
+curved = IfcStairFlightTypeEnum.CURVED
+freeform = IfcStairFlightTypeEnum.FREEFORM
+spiral = IfcStairFlightTypeEnum.SPIRAL
+straight = IfcStairFlightTypeEnum.STRAIGHT
+winder = IfcStairFlightTypeEnum.WINDER
+userdefined = IfcStairFlightTypeEnum.USERDEFINED
+notdefined = IfcStairFlightTypeEnum.NOTDEFINED
 IfcStairTypeEnum = enum_namespace()
-curved_run_stair = getattr(IfcStairTypeEnum, 'CURVED_RUN_STAIR', INDETERMINATE)
-double_return_stair = getattr(IfcStairTypeEnum, 'DOUBLE_RETURN_STAIR', INDETERMINATE)
-half_turn_stair = getattr(IfcStairTypeEnum, 'HALF_TURN_STAIR', INDETERMINATE)
-half_winding_stair = getattr(IfcStairTypeEnum, 'HALF_WINDING_STAIR', INDETERMINATE)
-ladder = getattr(IfcStairTypeEnum, 'LADDER', INDETERMINATE)
-quarter_turn_stair = getattr(IfcStairTypeEnum, 'QUARTER_TURN_STAIR', INDETERMINATE)
-quarter_winding_stair = getattr(IfcStairTypeEnum, 'QUARTER_WINDING_STAIR', INDETERMINATE)
-spiral_stair = getattr(IfcStairTypeEnum, 'SPIRAL_STAIR', INDETERMINATE)
-straight_run_stair = getattr(IfcStairTypeEnum, 'STRAIGHT_RUN_STAIR', INDETERMINATE)
-three_quarter_turn_stair = getattr(IfcStairTypeEnum, 'THREE_QUARTER_TURN_STAIR', INDETERMINATE)
-three_quarter_winding_stair = getattr(IfcStairTypeEnum, 'THREE_QUARTER_WINDING_STAIR', INDETERMINATE)
-two_curved_run_stair = getattr(IfcStairTypeEnum, 'TWO_CURVED_RUN_STAIR', INDETERMINATE)
-two_quarter_turn_stair = getattr(IfcStairTypeEnum, 'TWO_QUARTER_TURN_STAIR', INDETERMINATE)
-two_quarter_winding_stair = getattr(IfcStairTypeEnum, 'TWO_QUARTER_WINDING_STAIR', INDETERMINATE)
-two_straight_run_stair = getattr(IfcStairTypeEnum, 'TWO_STRAIGHT_RUN_STAIR', INDETERMINATE)
-userdefined = getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStairTypeEnum, 'NOTDEFINED', INDETERMINATE)
+curved_run_stair = IfcStairTypeEnum.CURVED_RUN_STAIR
+double_return_stair = IfcStairTypeEnum.DOUBLE_RETURN_STAIR
+half_turn_stair = IfcStairTypeEnum.HALF_TURN_STAIR
+half_winding_stair = IfcStairTypeEnum.HALF_WINDING_STAIR
+ladder = IfcStairTypeEnum.LADDER
+quarter_turn_stair = IfcStairTypeEnum.QUARTER_TURN_STAIR
+quarter_winding_stair = IfcStairTypeEnum.QUARTER_WINDING_STAIR
+spiral_stair = IfcStairTypeEnum.SPIRAL_STAIR
+straight_run_stair = IfcStairTypeEnum.STRAIGHT_RUN_STAIR
+three_quarter_turn_stair = IfcStairTypeEnum.THREE_QUARTER_TURN_STAIR
+three_quarter_winding_stair = IfcStairTypeEnum.THREE_QUARTER_WINDING_STAIR
+two_curved_run_stair = IfcStairTypeEnum.TWO_CURVED_RUN_STAIR
+two_quarter_turn_stair = IfcStairTypeEnum.TWO_QUARTER_TURN_STAIR
+two_quarter_winding_stair = IfcStairTypeEnum.TWO_QUARTER_WINDING_STAIR
+two_straight_run_stair = IfcStairTypeEnum.TWO_STRAIGHT_RUN_STAIR
+userdefined = IfcStairTypeEnum.USERDEFINED
+notdefined = IfcStairTypeEnum.NOTDEFINED
 IfcStateEnum = enum_namespace()
-locked = getattr(IfcStateEnum, 'LOCKED', INDETERMINATE)
-readonly = getattr(IfcStateEnum, 'READONLY', INDETERMINATE)
-readonlylocked = getattr(IfcStateEnum, 'READONLYLOCKED', INDETERMINATE)
-readwrite = getattr(IfcStateEnum, 'READWRITE', INDETERMINATE)
-readwritelocked = getattr(IfcStateEnum, 'READWRITELOCKED', INDETERMINATE)
+locked = IfcStateEnum.LOCKED
+readonly = IfcStateEnum.READONLY
+readonlylocked = IfcStateEnum.READONLYLOCKED
+readwrite = IfcStateEnum.READWRITE
+readwritelocked = IfcStateEnum.READWRITELOCKED
 IfcStructuralCurveActivityTypeEnum = enum_namespace()
-const = getattr(IfcStructuralCurveActivityTypeEnum, 'CONST', INDETERMINATE)
-discrete = getattr(IfcStructuralCurveActivityTypeEnum, 'DISCRETE', INDETERMINATE)
-equidistant = getattr(IfcStructuralCurveActivityTypeEnum, 'EQUIDISTANT', INDETERMINATE)
-linear = getattr(IfcStructuralCurveActivityTypeEnum, 'LINEAR', INDETERMINATE)
-parabola = getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)
-polygonal = getattr(IfcStructuralCurveActivityTypeEnum, 'POLYGONAL', INDETERMINATE)
-sinus = getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE)
-userdefined = getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStructuralCurveActivityTypeEnum, 'NOTDEFINED', INDETERMINATE)
+const = IfcStructuralCurveActivityTypeEnum.CONST
+discrete = IfcStructuralCurveActivityTypeEnum.DISCRETE
+equidistant = IfcStructuralCurveActivityTypeEnum.EQUIDISTANT
+linear = IfcStructuralCurveActivityTypeEnum.LINEAR
+parabola = IfcStructuralCurveActivityTypeEnum.PARABOLA
+polygonal = IfcStructuralCurveActivityTypeEnum.POLYGONAL
+sinus = IfcStructuralCurveActivityTypeEnum.SINUS
+userdefined = IfcStructuralCurveActivityTypeEnum.USERDEFINED
+notdefined = IfcStructuralCurveActivityTypeEnum.NOTDEFINED
 IfcStructuralCurveMemberTypeEnum = enum_namespace()
-cable = getattr(IfcStructuralCurveMemberTypeEnum, 'CABLE', INDETERMINATE)
-compression_member = getattr(IfcStructuralCurveMemberTypeEnum, 'COMPRESSION_MEMBER', INDETERMINATE)
-pin_joined_member = getattr(IfcStructuralCurveMemberTypeEnum, 'PIN_JOINED_MEMBER', INDETERMINATE)
-rigid_joined_member = getattr(IfcStructuralCurveMemberTypeEnum, 'RIGID_JOINED_MEMBER', INDETERMINATE)
-tension_member = getattr(IfcStructuralCurveMemberTypeEnum, 'TENSION_MEMBER', INDETERMINATE)
-userdefined = getattr(IfcStructuralCurveMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStructuralCurveMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cable = IfcStructuralCurveMemberTypeEnum.CABLE
+compression_member = IfcStructuralCurveMemberTypeEnum.COMPRESSION_MEMBER
+pin_joined_member = IfcStructuralCurveMemberTypeEnum.PIN_JOINED_MEMBER
+rigid_joined_member = IfcStructuralCurveMemberTypeEnum.RIGID_JOINED_MEMBER
+tension_member = IfcStructuralCurveMemberTypeEnum.TENSION_MEMBER
+userdefined = IfcStructuralCurveMemberTypeEnum.USERDEFINED
+notdefined = IfcStructuralCurveMemberTypeEnum.NOTDEFINED
 IfcStructuralSurfaceActivityTypeEnum = enum_namespace()
-bilinear = getattr(IfcStructuralSurfaceActivityTypeEnum, 'BILINEAR', INDETERMINATE)
-const = getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)
-discrete = getattr(IfcStructuralSurfaceActivityTypeEnum, 'DISCRETE', INDETERMINATE)
-isocontour = getattr(IfcStructuralSurfaceActivityTypeEnum, 'ISOCONTOUR', INDETERMINATE)
-userdefined = getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStructuralSurfaceActivityTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bilinear = IfcStructuralSurfaceActivityTypeEnum.BILINEAR
+const = IfcStructuralSurfaceActivityTypeEnum.CONST
+discrete = IfcStructuralSurfaceActivityTypeEnum.DISCRETE
+isocontour = IfcStructuralSurfaceActivityTypeEnum.ISOCONTOUR
+userdefined = IfcStructuralSurfaceActivityTypeEnum.USERDEFINED
+notdefined = IfcStructuralSurfaceActivityTypeEnum.NOTDEFINED
 IfcStructuralSurfaceMemberTypeEnum = enum_namespace()
-bending_element = getattr(IfcStructuralSurfaceMemberTypeEnum, 'BENDING_ELEMENT', INDETERMINATE)
-membrane_element = getattr(IfcStructuralSurfaceMemberTypeEnum, 'MEMBRANE_ELEMENT', INDETERMINATE)
-shell = getattr(IfcStructuralSurfaceMemberTypeEnum, 'SHELL', INDETERMINATE)
-userdefined = getattr(IfcStructuralSurfaceMemberTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcStructuralSurfaceMemberTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bending_element = IfcStructuralSurfaceMemberTypeEnum.BENDING_ELEMENT
+membrane_element = IfcStructuralSurfaceMemberTypeEnum.MEMBRANE_ELEMENT
+shell = IfcStructuralSurfaceMemberTypeEnum.SHELL
+userdefined = IfcStructuralSurfaceMemberTypeEnum.USERDEFINED
+notdefined = IfcStructuralSurfaceMemberTypeEnum.NOTDEFINED
 IfcSubContractResourceTypeEnum = enum_namespace()
-purchase = getattr(IfcSubContractResourceTypeEnum, 'PURCHASE', INDETERMINATE)
-work = getattr(IfcSubContractResourceTypeEnum, 'WORK', INDETERMINATE)
-userdefined = getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSubContractResourceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+purchase = IfcSubContractResourceTypeEnum.PURCHASE
+work = IfcSubContractResourceTypeEnum.WORK
+userdefined = IfcSubContractResourceTypeEnum.USERDEFINED
+notdefined = IfcSubContractResourceTypeEnum.NOTDEFINED
 IfcSurfaceFeatureTypeEnum = enum_namespace()
-defect = getattr(IfcSurfaceFeatureTypeEnum, 'DEFECT', INDETERMINATE)
-hatchmarking = getattr(IfcSurfaceFeatureTypeEnum, 'HATCHMARKING', INDETERMINATE)
-linemarking = getattr(IfcSurfaceFeatureTypeEnum, 'LINEMARKING', INDETERMINATE)
-mark = getattr(IfcSurfaceFeatureTypeEnum, 'MARK', INDETERMINATE)
-nonskidsurfacing = getattr(IfcSurfaceFeatureTypeEnum, 'NONSKIDSURFACING', INDETERMINATE)
-pavementsurfacemarking = getattr(IfcSurfaceFeatureTypeEnum, 'PAVEMENTSURFACEMARKING', INDETERMINATE)
-rumblestrip = getattr(IfcSurfaceFeatureTypeEnum, 'RUMBLESTRIP', INDETERMINATE)
-symbolmarking = getattr(IfcSurfaceFeatureTypeEnum, 'SYMBOLMARKING', INDETERMINATE)
-tag = getattr(IfcSurfaceFeatureTypeEnum, 'TAG', INDETERMINATE)
-transverserumblestrip = getattr(IfcSurfaceFeatureTypeEnum, 'TRANSVERSERUMBLESTRIP', INDETERMINATE)
-treatment = getattr(IfcSurfaceFeatureTypeEnum, 'TREATMENT', INDETERMINATE)
-userdefined = getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSurfaceFeatureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+defect = IfcSurfaceFeatureTypeEnum.DEFECT
+hatchmarking = IfcSurfaceFeatureTypeEnum.HATCHMARKING
+linemarking = IfcSurfaceFeatureTypeEnum.LINEMARKING
+mark = IfcSurfaceFeatureTypeEnum.MARK
+nonskidsurfacing = IfcSurfaceFeatureTypeEnum.NONSKIDSURFACING
+pavementsurfacemarking = IfcSurfaceFeatureTypeEnum.PAVEMENTSURFACEMARKING
+rumblestrip = IfcSurfaceFeatureTypeEnum.RUMBLESTRIP
+symbolmarking = IfcSurfaceFeatureTypeEnum.SYMBOLMARKING
+tag = IfcSurfaceFeatureTypeEnum.TAG
+transverserumblestrip = IfcSurfaceFeatureTypeEnum.TRANSVERSERUMBLESTRIP
+treatment = IfcSurfaceFeatureTypeEnum.TREATMENT
+userdefined = IfcSurfaceFeatureTypeEnum.USERDEFINED
+notdefined = IfcSurfaceFeatureTypeEnum.NOTDEFINED
 IfcSurfaceSide = enum_namespace()
-both = getattr(IfcSurfaceSide, 'BOTH', INDETERMINATE)
-negative = getattr(IfcSurfaceSide, 'NEGATIVE', INDETERMINATE)
-positive = getattr(IfcSurfaceSide, 'POSITIVE', INDETERMINATE)
+both = IfcSurfaceSide.BOTH
+negative = IfcSurfaceSide.NEGATIVE
+positive = IfcSurfaceSide.POSITIVE
 IfcSwitchingDeviceTypeEnum = enum_namespace()
-contactor = getattr(IfcSwitchingDeviceTypeEnum, 'CONTACTOR', INDETERMINATE)
-dimmerswitch = getattr(IfcSwitchingDeviceTypeEnum, 'DIMMERSWITCH', INDETERMINATE)
-emergencystop = getattr(IfcSwitchingDeviceTypeEnum, 'EMERGENCYSTOP', INDETERMINATE)
-keypad = getattr(IfcSwitchingDeviceTypeEnum, 'KEYPAD', INDETERMINATE)
-momentaryswitch = getattr(IfcSwitchingDeviceTypeEnum, 'MOMENTARYSWITCH', INDETERMINATE)
-relay = getattr(IfcSwitchingDeviceTypeEnum, 'RELAY', INDETERMINATE)
-selectorswitch = getattr(IfcSwitchingDeviceTypeEnum, 'SELECTORSWITCH', INDETERMINATE)
-starter = getattr(IfcSwitchingDeviceTypeEnum, 'STARTER', INDETERMINATE)
-start_and_stop_equipment = getattr(IfcSwitchingDeviceTypeEnum, 'START_AND_STOP_EQUIPMENT', INDETERMINATE)
-switchdisconnector = getattr(IfcSwitchingDeviceTypeEnum, 'SWITCHDISCONNECTOR', INDETERMINATE)
-toggleswitch = getattr(IfcSwitchingDeviceTypeEnum, 'TOGGLESWITCH', INDETERMINATE)
-userdefined = getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSwitchingDeviceTypeEnum, 'NOTDEFINED', INDETERMINATE)
+contactor = IfcSwitchingDeviceTypeEnum.CONTACTOR
+dimmerswitch = IfcSwitchingDeviceTypeEnum.DIMMERSWITCH
+emergencystop = IfcSwitchingDeviceTypeEnum.EMERGENCYSTOP
+keypad = IfcSwitchingDeviceTypeEnum.KEYPAD
+momentaryswitch = IfcSwitchingDeviceTypeEnum.MOMENTARYSWITCH
+relay = IfcSwitchingDeviceTypeEnum.RELAY
+selectorswitch = IfcSwitchingDeviceTypeEnum.SELECTORSWITCH
+starter = IfcSwitchingDeviceTypeEnum.STARTER
+start_and_stop_equipment = IfcSwitchingDeviceTypeEnum.START_AND_STOP_EQUIPMENT
+switchdisconnector = IfcSwitchingDeviceTypeEnum.SWITCHDISCONNECTOR
+toggleswitch = IfcSwitchingDeviceTypeEnum.TOGGLESWITCH
+userdefined = IfcSwitchingDeviceTypeEnum.USERDEFINED
+notdefined = IfcSwitchingDeviceTypeEnum.NOTDEFINED
 IfcSystemFurnitureElementTypeEnum = enum_namespace()
-panel = getattr(IfcSystemFurnitureElementTypeEnum, 'PANEL', INDETERMINATE)
-subrack = getattr(IfcSystemFurnitureElementTypeEnum, 'SUBRACK', INDETERMINATE)
-worksurface = getattr(IfcSystemFurnitureElementTypeEnum, 'WORKSURFACE', INDETERMINATE)
-userdefined = getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcSystemFurnitureElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+panel = IfcSystemFurnitureElementTypeEnum.PANEL
+subrack = IfcSystemFurnitureElementTypeEnum.SUBRACK
+worksurface = IfcSystemFurnitureElementTypeEnum.WORKSURFACE
+userdefined = IfcSystemFurnitureElementTypeEnum.USERDEFINED
+notdefined = IfcSystemFurnitureElementTypeEnum.NOTDEFINED
 IfcTankTypeEnum = enum_namespace()
-basin = getattr(IfcTankTypeEnum, 'BASIN', INDETERMINATE)
-breakpressure = getattr(IfcTankTypeEnum, 'BREAKPRESSURE', INDETERMINATE)
-expansion = getattr(IfcTankTypeEnum, 'EXPANSION', INDETERMINATE)
-feedandexpansion = getattr(IfcTankTypeEnum, 'FEEDANDEXPANSION', INDETERMINATE)
-oilretentiontray = getattr(IfcTankTypeEnum, 'OILRETENTIONTRAY', INDETERMINATE)
-pressurevessel = getattr(IfcTankTypeEnum, 'PRESSUREVESSEL', INDETERMINATE)
-storage = getattr(IfcTankTypeEnum, 'STORAGE', INDETERMINATE)
-vessel = getattr(IfcTankTypeEnum, 'VESSEL', INDETERMINATE)
-userdefined = getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTankTypeEnum, 'NOTDEFINED', INDETERMINATE)
+basin = IfcTankTypeEnum.BASIN
+breakpressure = IfcTankTypeEnum.BREAKPRESSURE
+expansion = IfcTankTypeEnum.EXPANSION
+feedandexpansion = IfcTankTypeEnum.FEEDANDEXPANSION
+oilretentiontray = IfcTankTypeEnum.OILRETENTIONTRAY
+pressurevessel = IfcTankTypeEnum.PRESSUREVESSEL
+storage = IfcTankTypeEnum.STORAGE
+vessel = IfcTankTypeEnum.VESSEL
+userdefined = IfcTankTypeEnum.USERDEFINED
+notdefined = IfcTankTypeEnum.NOTDEFINED
 IfcTaskDurationEnum = enum_namespace()
-elapsedtime = getattr(IfcTaskDurationEnum, 'ELAPSEDTIME', INDETERMINATE)
-worktime = getattr(IfcTaskDurationEnum, 'WORKTIME', INDETERMINATE)
-notdefined = getattr(IfcTaskDurationEnum, 'NOTDEFINED', INDETERMINATE)
+elapsedtime = IfcTaskDurationEnum.ELAPSEDTIME
+worktime = IfcTaskDurationEnum.WORKTIME
+notdefined = IfcTaskDurationEnum.NOTDEFINED
 IfcTaskTypeEnum = enum_namespace()
-adjustment = getattr(IfcTaskTypeEnum, 'ADJUSTMENT', INDETERMINATE)
-attendance = getattr(IfcTaskTypeEnum, 'ATTENDANCE', INDETERMINATE)
-calibration = getattr(IfcTaskTypeEnum, 'CALIBRATION', INDETERMINATE)
-construction = getattr(IfcTaskTypeEnum, 'CONSTRUCTION', INDETERMINATE)
-demolition = getattr(IfcTaskTypeEnum, 'DEMOLITION', INDETERMINATE)
-dismantle = getattr(IfcTaskTypeEnum, 'DISMANTLE', INDETERMINATE)
-disposal = getattr(IfcTaskTypeEnum, 'DISPOSAL', INDETERMINATE)
-emergency = getattr(IfcTaskTypeEnum, 'EMERGENCY', INDETERMINATE)
-inspection = getattr(IfcTaskTypeEnum, 'INSPECTION', INDETERMINATE)
-installation = getattr(IfcTaskTypeEnum, 'INSTALLATION', INDETERMINATE)
-logistic = getattr(IfcTaskTypeEnum, 'LOGISTIC', INDETERMINATE)
-maintenance = getattr(IfcTaskTypeEnum, 'MAINTENANCE', INDETERMINATE)
-move = getattr(IfcTaskTypeEnum, 'MOVE', INDETERMINATE)
-operation = getattr(IfcTaskTypeEnum, 'OPERATION', INDETERMINATE)
-removal = getattr(IfcTaskTypeEnum, 'REMOVAL', INDETERMINATE)
-renovation = getattr(IfcTaskTypeEnum, 'RENOVATION', INDETERMINATE)
-safety = getattr(IfcTaskTypeEnum, 'SAFETY', INDETERMINATE)
-shutdown = getattr(IfcTaskTypeEnum, 'SHUTDOWN', INDETERMINATE)
-startup = getattr(IfcTaskTypeEnum, 'STARTUP', INDETERMINATE)
-testing = getattr(IfcTaskTypeEnum, 'TESTING', INDETERMINATE)
-troubleshooting = getattr(IfcTaskTypeEnum, 'TROUBLESHOOTING', INDETERMINATE)
-userdefined = getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTaskTypeEnum, 'NOTDEFINED', INDETERMINATE)
+adjustment = IfcTaskTypeEnum.ADJUSTMENT
+attendance = IfcTaskTypeEnum.ATTENDANCE
+calibration = IfcTaskTypeEnum.CALIBRATION
+construction = IfcTaskTypeEnum.CONSTRUCTION
+demolition = IfcTaskTypeEnum.DEMOLITION
+dismantle = IfcTaskTypeEnum.DISMANTLE
+disposal = IfcTaskTypeEnum.DISPOSAL
+emergency = IfcTaskTypeEnum.EMERGENCY
+inspection = IfcTaskTypeEnum.INSPECTION
+installation = IfcTaskTypeEnum.INSTALLATION
+logistic = IfcTaskTypeEnum.LOGISTIC
+maintenance = IfcTaskTypeEnum.MAINTENANCE
+move = IfcTaskTypeEnum.MOVE
+operation = IfcTaskTypeEnum.OPERATION
+removal = IfcTaskTypeEnum.REMOVAL
+renovation = IfcTaskTypeEnum.RENOVATION
+safety = IfcTaskTypeEnum.SAFETY
+shutdown = IfcTaskTypeEnum.SHUTDOWN
+startup = IfcTaskTypeEnum.STARTUP
+testing = IfcTaskTypeEnum.TESTING
+troubleshooting = IfcTaskTypeEnum.TROUBLESHOOTING
+userdefined = IfcTaskTypeEnum.USERDEFINED
+notdefined = IfcTaskTypeEnum.NOTDEFINED
 IfcTendonAnchorTypeEnum = enum_namespace()
-coupler = getattr(IfcTendonAnchorTypeEnum, 'COUPLER', INDETERMINATE)
-fixed_end = getattr(IfcTendonAnchorTypeEnum, 'FIXED_END', INDETERMINATE)
-tensioning_end = getattr(IfcTendonAnchorTypeEnum, 'TENSIONING_END', INDETERMINATE)
-userdefined = getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTendonAnchorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+coupler = IfcTendonAnchorTypeEnum.COUPLER
+fixed_end = IfcTendonAnchorTypeEnum.FIXED_END
+tensioning_end = IfcTendonAnchorTypeEnum.TENSIONING_END
+userdefined = IfcTendonAnchorTypeEnum.USERDEFINED
+notdefined = IfcTendonAnchorTypeEnum.NOTDEFINED
 IfcTendonConduitTypeEnum = enum_namespace()
-coupler = getattr(IfcTendonConduitTypeEnum, 'COUPLER', INDETERMINATE)
-diabolo = getattr(IfcTendonConduitTypeEnum, 'DIABOLO', INDETERMINATE)
-duct = getattr(IfcTendonConduitTypeEnum, 'DUCT', INDETERMINATE)
-grouting_duct = getattr(IfcTendonConduitTypeEnum, 'GROUTING_DUCT', INDETERMINATE)
-trumpet = getattr(IfcTendonConduitTypeEnum, 'TRUMPET', INDETERMINATE)
-userdefined = getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTendonConduitTypeEnum, 'NOTDEFINED', INDETERMINATE)
+coupler = IfcTendonConduitTypeEnum.COUPLER
+diabolo = IfcTendonConduitTypeEnum.DIABOLO
+duct = IfcTendonConduitTypeEnum.DUCT
+grouting_duct = IfcTendonConduitTypeEnum.GROUTING_DUCT
+trumpet = IfcTendonConduitTypeEnum.TRUMPET
+userdefined = IfcTendonConduitTypeEnum.USERDEFINED
+notdefined = IfcTendonConduitTypeEnum.NOTDEFINED
 IfcTendonTypeEnum = enum_namespace()
-bar = getattr(IfcTendonTypeEnum, 'BAR', INDETERMINATE)
-coated = getattr(IfcTendonTypeEnum, 'COATED', INDETERMINATE)
-strand = getattr(IfcTendonTypeEnum, 'STRAND', INDETERMINATE)
-wire = getattr(IfcTendonTypeEnum, 'WIRE', INDETERMINATE)
-userdefined = getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTendonTypeEnum, 'NOTDEFINED', INDETERMINATE)
+bar = IfcTendonTypeEnum.BAR
+coated = IfcTendonTypeEnum.COATED
+strand = IfcTendonTypeEnum.STRAND
+wire = IfcTendonTypeEnum.WIRE
+userdefined = IfcTendonTypeEnum.USERDEFINED
+notdefined = IfcTendonTypeEnum.NOTDEFINED
 IfcTextPath = enum_namespace()
-down = getattr(IfcTextPath, 'DOWN', INDETERMINATE)
-left = getattr(IfcTextPath, 'LEFT', INDETERMINATE)
-right = getattr(IfcTextPath, 'RIGHT', INDETERMINATE)
-up = getattr(IfcTextPath, 'UP', INDETERMINATE)
+down = IfcTextPath.DOWN
+left = IfcTextPath.LEFT
+right = IfcTextPath.RIGHT
+up = IfcTextPath.UP
 IfcTimeSeriesDataTypeEnum = enum_namespace()
-continuous = getattr(IfcTimeSeriesDataTypeEnum, 'CONTINUOUS', INDETERMINATE)
-discrete = getattr(IfcTimeSeriesDataTypeEnum, 'DISCRETE', INDETERMINATE)
-discretebinary = getattr(IfcTimeSeriesDataTypeEnum, 'DISCRETEBINARY', INDETERMINATE)
-piecewisebinary = getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISEBINARY', INDETERMINATE)
-piecewiseconstant = getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISECONSTANT', INDETERMINATE)
-piecewisecontinuous = getattr(IfcTimeSeriesDataTypeEnum, 'PIECEWISECONTINUOUS', INDETERMINATE)
-notdefined = getattr(IfcTimeSeriesDataTypeEnum, 'NOTDEFINED', INDETERMINATE)
+continuous = IfcTimeSeriesDataTypeEnum.CONTINUOUS
+discrete = IfcTimeSeriesDataTypeEnum.DISCRETE
+discretebinary = IfcTimeSeriesDataTypeEnum.DISCRETEBINARY
+piecewisebinary = IfcTimeSeriesDataTypeEnum.PIECEWISEBINARY
+piecewiseconstant = IfcTimeSeriesDataTypeEnum.PIECEWISECONSTANT
+piecewisecontinuous = IfcTimeSeriesDataTypeEnum.PIECEWISECONTINUOUS
+notdefined = IfcTimeSeriesDataTypeEnum.NOTDEFINED
 IfcTrackElementTypeEnum = enum_namespace()
-blockingdevice = getattr(IfcTrackElementTypeEnum, 'BLOCKINGDEVICE', INDETERMINATE)
-derailer = getattr(IfcTrackElementTypeEnum, 'DERAILER', INDETERMINATE)
-frog = getattr(IfcTrackElementTypeEnum, 'FROG', INDETERMINATE)
-half_set_of_blades = getattr(IfcTrackElementTypeEnum, 'HALF_SET_OF_BLADES', INDETERMINATE)
-sleeper = getattr(IfcTrackElementTypeEnum, 'SLEEPER', INDETERMINATE)
-speedregulator = getattr(IfcTrackElementTypeEnum, 'SPEEDREGULATOR', INDETERMINATE)
-trackendofalignment = getattr(IfcTrackElementTypeEnum, 'TRACKENDOFALIGNMENT', INDETERMINATE)
-vehiclestop = getattr(IfcTrackElementTypeEnum, 'VEHICLESTOP', INDETERMINATE)
-userdefined = getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTrackElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+blockingdevice = IfcTrackElementTypeEnum.BLOCKINGDEVICE
+derailer = IfcTrackElementTypeEnum.DERAILER
+frog = IfcTrackElementTypeEnum.FROG
+half_set_of_blades = IfcTrackElementTypeEnum.HALF_SET_OF_BLADES
+sleeper = IfcTrackElementTypeEnum.SLEEPER
+speedregulator = IfcTrackElementTypeEnum.SPEEDREGULATOR
+trackendofalignment = IfcTrackElementTypeEnum.TRACKENDOFALIGNMENT
+vehiclestop = IfcTrackElementTypeEnum.VEHICLESTOP
+userdefined = IfcTrackElementTypeEnum.USERDEFINED
+notdefined = IfcTrackElementTypeEnum.NOTDEFINED
 IfcTransformerTypeEnum = enum_namespace()
-chopper = getattr(IfcTransformerTypeEnum, 'CHOPPER', INDETERMINATE)
-combined = getattr(IfcTransformerTypeEnum, 'COMBINED', INDETERMINATE)
-current = getattr(IfcTransformerTypeEnum, 'CURRENT', INDETERMINATE)
-frequency = getattr(IfcTransformerTypeEnum, 'FREQUENCY', INDETERMINATE)
-inverter = getattr(IfcTransformerTypeEnum, 'INVERTER', INDETERMINATE)
-rectifier = getattr(IfcTransformerTypeEnum, 'RECTIFIER', INDETERMINATE)
-voltage = getattr(IfcTransformerTypeEnum, 'VOLTAGE', INDETERMINATE)
-userdefined = getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTransformerTypeEnum, 'NOTDEFINED', INDETERMINATE)
+chopper = IfcTransformerTypeEnum.CHOPPER
+combined = IfcTransformerTypeEnum.COMBINED
+current = IfcTransformerTypeEnum.CURRENT
+frequency = IfcTransformerTypeEnum.FREQUENCY
+inverter = IfcTransformerTypeEnum.INVERTER
+rectifier = IfcTransformerTypeEnum.RECTIFIER
+voltage = IfcTransformerTypeEnum.VOLTAGE
+userdefined = IfcTransformerTypeEnum.USERDEFINED
+notdefined = IfcTransformerTypeEnum.NOTDEFINED
 IfcTransitionCode = enum_namespace()
-continuous = getattr(IfcTransitionCode, 'CONTINUOUS', INDETERMINATE)
-contsamegradient = getattr(IfcTransitionCode, 'CONTSAMEGRADIENT', INDETERMINATE)
-contsamegradientsamecurvature = getattr(IfcTransitionCode, 'CONTSAMEGRADIENTSAMECURVATURE', INDETERMINATE)
-discontinuous = getattr(IfcTransitionCode, 'DISCONTINUOUS', INDETERMINATE)
+continuous = IfcTransitionCode.CONTINUOUS
+contsamegradient = IfcTransitionCode.CONTSAMEGRADIENT
+contsamegradientsamecurvature = IfcTransitionCode.CONTSAMEGRADIENTSAMECURVATURE
+discontinuous = IfcTransitionCode.DISCONTINUOUS
 IfcTransportElementTypeEnum = enum_namespace()
-craneway = getattr(IfcTransportElementTypeEnum, 'CRANEWAY', INDETERMINATE)
-elevator = getattr(IfcTransportElementTypeEnum, 'ELEVATOR', INDETERMINATE)
-escalator = getattr(IfcTransportElementTypeEnum, 'ESCALATOR', INDETERMINATE)
-haulinggear = getattr(IfcTransportElementTypeEnum, 'HAULINGGEAR', INDETERMINATE)
-liftinggear = getattr(IfcTransportElementTypeEnum, 'LIFTINGGEAR', INDETERMINATE)
-movingwalkway = getattr(IfcTransportElementTypeEnum, 'MOVINGWALKWAY', INDETERMINATE)
-userdefined = getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTransportElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+craneway = IfcTransportElementTypeEnum.CRANEWAY
+elevator = IfcTransportElementTypeEnum.ELEVATOR
+escalator = IfcTransportElementTypeEnum.ESCALATOR
+haulinggear = IfcTransportElementTypeEnum.HAULINGGEAR
+liftinggear = IfcTransportElementTypeEnum.LIFTINGGEAR
+movingwalkway = IfcTransportElementTypeEnum.MOVINGWALKWAY
+userdefined = IfcTransportElementTypeEnum.USERDEFINED
+notdefined = IfcTransportElementTypeEnum.NOTDEFINED
 IfcTrimmingPreference = enum_namespace()
-cartesian = getattr(IfcTrimmingPreference, 'CARTESIAN', INDETERMINATE)
-parameter = getattr(IfcTrimmingPreference, 'PARAMETER', INDETERMINATE)
-unspecified = getattr(IfcTrimmingPreference, 'UNSPECIFIED', INDETERMINATE)
+cartesian = IfcTrimmingPreference.CARTESIAN
+parameter = IfcTrimmingPreference.PARAMETER
+unspecified = IfcTrimmingPreference.UNSPECIFIED
 IfcTubeBundleTypeEnum = enum_namespace()
-finned = getattr(IfcTubeBundleTypeEnum, 'FINNED', INDETERMINATE)
-userdefined = getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcTubeBundleTypeEnum, 'NOTDEFINED', INDETERMINATE)
+finned = IfcTubeBundleTypeEnum.FINNED
+userdefined = IfcTubeBundleTypeEnum.USERDEFINED
+notdefined = IfcTubeBundleTypeEnum.NOTDEFINED
 IfcUnitEnum = enum_namespace()
-absorbeddoseunit = getattr(IfcUnitEnum, 'ABSORBEDDOSEUNIT', INDETERMINATE)
-amountofsubstanceunit = getattr(IfcUnitEnum, 'AMOUNTOFSUBSTANCEUNIT', INDETERMINATE)
-areaunit = getattr(IfcUnitEnum, 'AREAUNIT', INDETERMINATE)
-doseequivalentunit = getattr(IfcUnitEnum, 'DOSEEQUIVALENTUNIT', INDETERMINATE)
-electriccapacitanceunit = getattr(IfcUnitEnum, 'ELECTRICCAPACITANCEUNIT', INDETERMINATE)
-electricchargeunit = getattr(IfcUnitEnum, 'ELECTRICCHARGEUNIT', INDETERMINATE)
-electricconductanceunit = getattr(IfcUnitEnum, 'ELECTRICCONDUCTANCEUNIT', INDETERMINATE)
-electriccurrentunit = getattr(IfcUnitEnum, 'ELECTRICCURRENTUNIT', INDETERMINATE)
-electricresistanceunit = getattr(IfcUnitEnum, 'ELECTRICRESISTANCEUNIT', INDETERMINATE)
-electricvoltageunit = getattr(IfcUnitEnum, 'ELECTRICVOLTAGEUNIT', INDETERMINATE)
-energyunit = getattr(IfcUnitEnum, 'ENERGYUNIT', INDETERMINATE)
-forceunit = getattr(IfcUnitEnum, 'FORCEUNIT', INDETERMINATE)
-frequencyunit = getattr(IfcUnitEnum, 'FREQUENCYUNIT', INDETERMINATE)
-illuminanceunit = getattr(IfcUnitEnum, 'ILLUMINANCEUNIT', INDETERMINATE)
-inductanceunit = getattr(IfcUnitEnum, 'INDUCTANCEUNIT', INDETERMINATE)
-lengthunit = getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)
-luminousfluxunit = getattr(IfcUnitEnum, 'LUMINOUSFLUXUNIT', INDETERMINATE)
-luminousintensityunit = getattr(IfcUnitEnum, 'LUMINOUSINTENSITYUNIT', INDETERMINATE)
-magneticfluxdensityunit = getattr(IfcUnitEnum, 'MAGNETICFLUXDENSITYUNIT', INDETERMINATE)
-magneticfluxunit = getattr(IfcUnitEnum, 'MAGNETICFLUXUNIT', INDETERMINATE)
-massunit = getattr(IfcUnitEnum, 'MASSUNIT', INDETERMINATE)
-planeangleunit = getattr(IfcUnitEnum, 'PLANEANGLEUNIT', INDETERMINATE)
-powerunit = getattr(IfcUnitEnum, 'POWERUNIT', INDETERMINATE)
-pressureunit = getattr(IfcUnitEnum, 'PRESSUREUNIT', INDETERMINATE)
-radioactivityunit = getattr(IfcUnitEnum, 'RADIOACTIVITYUNIT', INDETERMINATE)
-solidangleunit = getattr(IfcUnitEnum, 'SOLIDANGLEUNIT', INDETERMINATE)
-thermodynamictemperatureunit = getattr(IfcUnitEnum, 'THERMODYNAMICTEMPERATUREUNIT', INDETERMINATE)
-timeunit = getattr(IfcUnitEnum, 'TIMEUNIT', INDETERMINATE)
-volumeunit = getattr(IfcUnitEnum, 'VOLUMEUNIT', INDETERMINATE)
-userdefined = getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)
+absorbeddoseunit = IfcUnitEnum.ABSORBEDDOSEUNIT
+amountofsubstanceunit = IfcUnitEnum.AMOUNTOFSUBSTANCEUNIT
+areaunit = IfcUnitEnum.AREAUNIT
+doseequivalentunit = IfcUnitEnum.DOSEEQUIVALENTUNIT
+electriccapacitanceunit = IfcUnitEnum.ELECTRICCAPACITANCEUNIT
+electricchargeunit = IfcUnitEnum.ELECTRICCHARGEUNIT
+electricconductanceunit = IfcUnitEnum.ELECTRICCONDUCTANCEUNIT
+electriccurrentunit = IfcUnitEnum.ELECTRICCURRENTUNIT
+electricresistanceunit = IfcUnitEnum.ELECTRICRESISTANCEUNIT
+electricvoltageunit = IfcUnitEnum.ELECTRICVOLTAGEUNIT
+energyunit = IfcUnitEnum.ENERGYUNIT
+forceunit = IfcUnitEnum.FORCEUNIT
+frequencyunit = IfcUnitEnum.FREQUENCYUNIT
+illuminanceunit = IfcUnitEnum.ILLUMINANCEUNIT
+inductanceunit = IfcUnitEnum.INDUCTANCEUNIT
+lengthunit = IfcUnitEnum.LENGTHUNIT
+luminousfluxunit = IfcUnitEnum.LUMINOUSFLUXUNIT
+luminousintensityunit = IfcUnitEnum.LUMINOUSINTENSITYUNIT
+magneticfluxdensityunit = IfcUnitEnum.MAGNETICFLUXDENSITYUNIT
+magneticfluxunit = IfcUnitEnum.MAGNETICFLUXUNIT
+massunit = IfcUnitEnum.MASSUNIT
+planeangleunit = IfcUnitEnum.PLANEANGLEUNIT
+powerunit = IfcUnitEnum.POWERUNIT
+pressureunit = IfcUnitEnum.PRESSUREUNIT
+radioactivityunit = IfcUnitEnum.RADIOACTIVITYUNIT
+solidangleunit = IfcUnitEnum.SOLIDANGLEUNIT
+thermodynamictemperatureunit = IfcUnitEnum.THERMODYNAMICTEMPERATUREUNIT
+timeunit = IfcUnitEnum.TIMEUNIT
+volumeunit = IfcUnitEnum.VOLUMEUNIT
+userdefined = IfcUnitEnum.USERDEFINED
 IfcUnitaryControlElementTypeEnum = enum_namespace()
-alarmpanel = getattr(IfcUnitaryControlElementTypeEnum, 'ALARMPANEL', INDETERMINATE)
-basestationcontroller = getattr(IfcUnitaryControlElementTypeEnum, 'BASESTATIONCONTROLLER', INDETERMINATE)
-combined = getattr(IfcUnitaryControlElementTypeEnum, 'COMBINED', INDETERMINATE)
-controlpanel = getattr(IfcUnitaryControlElementTypeEnum, 'CONTROLPANEL', INDETERMINATE)
-gasdetectionpanel = getattr(IfcUnitaryControlElementTypeEnum, 'GASDETECTIONPANEL', INDETERMINATE)
-humidistat = getattr(IfcUnitaryControlElementTypeEnum, 'HUMIDISTAT', INDETERMINATE)
-indicatorpanel = getattr(IfcUnitaryControlElementTypeEnum, 'INDICATORPANEL', INDETERMINATE)
-mimicpanel = getattr(IfcUnitaryControlElementTypeEnum, 'MIMICPANEL', INDETERMINATE)
-thermostat = getattr(IfcUnitaryControlElementTypeEnum, 'THERMOSTAT', INDETERMINATE)
-weatherstation = getattr(IfcUnitaryControlElementTypeEnum, 'WEATHERSTATION', INDETERMINATE)
-userdefined = getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcUnitaryControlElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+alarmpanel = IfcUnitaryControlElementTypeEnum.ALARMPANEL
+basestationcontroller = IfcUnitaryControlElementTypeEnum.BASESTATIONCONTROLLER
+combined = IfcUnitaryControlElementTypeEnum.COMBINED
+controlpanel = IfcUnitaryControlElementTypeEnum.CONTROLPANEL
+gasdetectionpanel = IfcUnitaryControlElementTypeEnum.GASDETECTIONPANEL
+humidistat = IfcUnitaryControlElementTypeEnum.HUMIDISTAT
+indicatorpanel = IfcUnitaryControlElementTypeEnum.INDICATORPANEL
+mimicpanel = IfcUnitaryControlElementTypeEnum.MIMICPANEL
+thermostat = IfcUnitaryControlElementTypeEnum.THERMOSTAT
+weatherstation = IfcUnitaryControlElementTypeEnum.WEATHERSTATION
+userdefined = IfcUnitaryControlElementTypeEnum.USERDEFINED
+notdefined = IfcUnitaryControlElementTypeEnum.NOTDEFINED
 IfcUnitaryEquipmentTypeEnum = enum_namespace()
-airconditioningunit = getattr(IfcUnitaryEquipmentTypeEnum, 'AIRCONDITIONINGUNIT', INDETERMINATE)
-airhandler = getattr(IfcUnitaryEquipmentTypeEnum, 'AIRHANDLER', INDETERMINATE)
-dehumidifier = getattr(IfcUnitaryEquipmentTypeEnum, 'DEHUMIDIFIER', INDETERMINATE)
-rooftopunit = getattr(IfcUnitaryEquipmentTypeEnum, 'ROOFTOPUNIT', INDETERMINATE)
-splitsystem = getattr(IfcUnitaryEquipmentTypeEnum, 'SPLITSYSTEM', INDETERMINATE)
-userdefined = getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcUnitaryEquipmentTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airconditioningunit = IfcUnitaryEquipmentTypeEnum.AIRCONDITIONINGUNIT
+airhandler = IfcUnitaryEquipmentTypeEnum.AIRHANDLER
+dehumidifier = IfcUnitaryEquipmentTypeEnum.DEHUMIDIFIER
+rooftopunit = IfcUnitaryEquipmentTypeEnum.ROOFTOPUNIT
+splitsystem = IfcUnitaryEquipmentTypeEnum.SPLITSYSTEM
+userdefined = IfcUnitaryEquipmentTypeEnum.USERDEFINED
+notdefined = IfcUnitaryEquipmentTypeEnum.NOTDEFINED
 IfcValveTypeEnum = enum_namespace()
-airrelease = getattr(IfcValveTypeEnum, 'AIRRELEASE', INDETERMINATE)
-antivacuum = getattr(IfcValveTypeEnum, 'ANTIVACUUM', INDETERMINATE)
-changeover = getattr(IfcValveTypeEnum, 'CHANGEOVER', INDETERMINATE)
-check = getattr(IfcValveTypeEnum, 'CHECK', INDETERMINATE)
-commissioning = getattr(IfcValveTypeEnum, 'COMMISSIONING', INDETERMINATE)
-diverting = getattr(IfcValveTypeEnum, 'DIVERTING', INDETERMINATE)
-doublecheck = getattr(IfcValveTypeEnum, 'DOUBLECHECK', INDETERMINATE)
-doubleregulating = getattr(IfcValveTypeEnum, 'DOUBLEREGULATING', INDETERMINATE)
-drawoffcock = getattr(IfcValveTypeEnum, 'DRAWOFFCOCK', INDETERMINATE)
-faucet = getattr(IfcValveTypeEnum, 'FAUCET', INDETERMINATE)
-flushing = getattr(IfcValveTypeEnum, 'FLUSHING', INDETERMINATE)
-gascock = getattr(IfcValveTypeEnum, 'GASCOCK', INDETERMINATE)
-gastap = getattr(IfcValveTypeEnum, 'GASTAP', INDETERMINATE)
-isolating = getattr(IfcValveTypeEnum, 'ISOLATING', INDETERMINATE)
-mixing = getattr(IfcValveTypeEnum, 'MIXING', INDETERMINATE)
-pressurereducing = getattr(IfcValveTypeEnum, 'PRESSUREREDUCING', INDETERMINATE)
-pressurerelief = getattr(IfcValveTypeEnum, 'PRESSURERELIEF', INDETERMINATE)
-regulating = getattr(IfcValveTypeEnum, 'REGULATING', INDETERMINATE)
-safetycutoff = getattr(IfcValveTypeEnum, 'SAFETYCUTOFF', INDETERMINATE)
-steamtrap = getattr(IfcValveTypeEnum, 'STEAMTRAP', INDETERMINATE)
-stopcock = getattr(IfcValveTypeEnum, 'STOPCOCK', INDETERMINATE)
-userdefined = getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcValveTypeEnum, 'NOTDEFINED', INDETERMINATE)
+airrelease = IfcValveTypeEnum.AIRRELEASE
+antivacuum = IfcValveTypeEnum.ANTIVACUUM
+changeover = IfcValveTypeEnum.CHANGEOVER
+check = IfcValveTypeEnum.CHECK
+commissioning = IfcValveTypeEnum.COMMISSIONING
+diverting = IfcValveTypeEnum.DIVERTING
+doublecheck = IfcValveTypeEnum.DOUBLECHECK
+doubleregulating = IfcValveTypeEnum.DOUBLEREGULATING
+drawoffcock = IfcValveTypeEnum.DRAWOFFCOCK
+faucet = IfcValveTypeEnum.FAUCET
+flushing = IfcValveTypeEnum.FLUSHING
+gascock = IfcValveTypeEnum.GASCOCK
+gastap = IfcValveTypeEnum.GASTAP
+isolating = IfcValveTypeEnum.ISOLATING
+mixing = IfcValveTypeEnum.MIXING
+pressurereducing = IfcValveTypeEnum.PRESSUREREDUCING
+pressurerelief = IfcValveTypeEnum.PRESSURERELIEF
+regulating = IfcValveTypeEnum.REGULATING
+safetycutoff = IfcValveTypeEnum.SAFETYCUTOFF
+steamtrap = IfcValveTypeEnum.STEAMTRAP
+stopcock = IfcValveTypeEnum.STOPCOCK
+userdefined = IfcValveTypeEnum.USERDEFINED
+notdefined = IfcValveTypeEnum.NOTDEFINED
 IfcVehicleTypeEnum = enum_namespace()
-cargo = getattr(IfcVehicleTypeEnum, 'CARGO', INDETERMINATE)
-rollingstock = getattr(IfcVehicleTypeEnum, 'ROLLINGSTOCK', INDETERMINATE)
-vehicle = getattr(IfcVehicleTypeEnum, 'VEHICLE', INDETERMINATE)
-vehicleair = getattr(IfcVehicleTypeEnum, 'VEHICLEAIR', INDETERMINATE)
-vehiclemarine = getattr(IfcVehicleTypeEnum, 'VEHICLEMARINE', INDETERMINATE)
-vehicletracked = getattr(IfcVehicleTypeEnum, 'VEHICLETRACKED', INDETERMINATE)
-vehiclewheeled = getattr(IfcVehicleTypeEnum, 'VEHICLEWHEELED', INDETERMINATE)
-userdefined = getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcVehicleTypeEnum, 'NOTDEFINED', INDETERMINATE)
+cargo = IfcVehicleTypeEnum.CARGO
+rollingstock = IfcVehicleTypeEnum.ROLLINGSTOCK
+vehicle = IfcVehicleTypeEnum.VEHICLE
+vehicleair = IfcVehicleTypeEnum.VEHICLEAIR
+vehiclemarine = IfcVehicleTypeEnum.VEHICLEMARINE
+vehicletracked = IfcVehicleTypeEnum.VEHICLETRACKED
+vehiclewheeled = IfcVehicleTypeEnum.VEHICLEWHEELED
+userdefined = IfcVehicleTypeEnum.USERDEFINED
+notdefined = IfcVehicleTypeEnum.NOTDEFINED
 IfcVibrationDamperTypeEnum = enum_namespace()
-axial_yield = getattr(IfcVibrationDamperTypeEnum, 'AXIAL_YIELD', INDETERMINATE)
-bending_yield = getattr(IfcVibrationDamperTypeEnum, 'BENDING_YIELD', INDETERMINATE)
-friction = getattr(IfcVibrationDamperTypeEnum, 'FRICTION', INDETERMINATE)
-rubber = getattr(IfcVibrationDamperTypeEnum, 'RUBBER', INDETERMINATE)
-shear_yield = getattr(IfcVibrationDamperTypeEnum, 'SHEAR_YIELD', INDETERMINATE)
-viscous = getattr(IfcVibrationDamperTypeEnum, 'VISCOUS', INDETERMINATE)
-userdefined = getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcVibrationDamperTypeEnum, 'NOTDEFINED', INDETERMINATE)
+axial_yield = IfcVibrationDamperTypeEnum.AXIAL_YIELD
+bending_yield = IfcVibrationDamperTypeEnum.BENDING_YIELD
+friction = IfcVibrationDamperTypeEnum.FRICTION
+rubber = IfcVibrationDamperTypeEnum.RUBBER
+shear_yield = IfcVibrationDamperTypeEnum.SHEAR_YIELD
+viscous = IfcVibrationDamperTypeEnum.VISCOUS
+userdefined = IfcVibrationDamperTypeEnum.USERDEFINED
+notdefined = IfcVibrationDamperTypeEnum.NOTDEFINED
 IfcVibrationIsolatorTypeEnum = enum_namespace()
-base = getattr(IfcVibrationIsolatorTypeEnum, 'BASE', INDETERMINATE)
-compression = getattr(IfcVibrationIsolatorTypeEnum, 'COMPRESSION', INDETERMINATE)
-spring = getattr(IfcVibrationIsolatorTypeEnum, 'SPRING', INDETERMINATE)
-userdefined = getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcVibrationIsolatorTypeEnum, 'NOTDEFINED', INDETERMINATE)
+base = IfcVibrationIsolatorTypeEnum.BASE
+compression = IfcVibrationIsolatorTypeEnum.COMPRESSION
+spring = IfcVibrationIsolatorTypeEnum.SPRING
+userdefined = IfcVibrationIsolatorTypeEnum.USERDEFINED
+notdefined = IfcVibrationIsolatorTypeEnum.NOTDEFINED
 IfcVirtualElementTypeEnum = enum_namespace()
-boundary = getattr(IfcVirtualElementTypeEnum, 'BOUNDARY', INDETERMINATE)
-clearance = getattr(IfcVirtualElementTypeEnum, 'CLEARANCE', INDETERMINATE)
-provisionforvoid = getattr(IfcVirtualElementTypeEnum, 'PROVISIONFORVOID', INDETERMINATE)
-userdefined = getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcVirtualElementTypeEnum, 'NOTDEFINED', INDETERMINATE)
+boundary = IfcVirtualElementTypeEnum.BOUNDARY
+clearance = IfcVirtualElementTypeEnum.CLEARANCE
+provisionforvoid = IfcVirtualElementTypeEnum.PROVISIONFORVOID
+userdefined = IfcVirtualElementTypeEnum.USERDEFINED
+notdefined = IfcVirtualElementTypeEnum.NOTDEFINED
 IfcVoidingFeatureTypeEnum = enum_namespace()
-chamfer = getattr(IfcVoidingFeatureTypeEnum, 'CHAMFER', INDETERMINATE)
-cutout = getattr(IfcVoidingFeatureTypeEnum, 'CUTOUT', INDETERMINATE)
-edge = getattr(IfcVoidingFeatureTypeEnum, 'EDGE', INDETERMINATE)
-hole = getattr(IfcVoidingFeatureTypeEnum, 'HOLE', INDETERMINATE)
-miter = getattr(IfcVoidingFeatureTypeEnum, 'MITER', INDETERMINATE)
-notch = getattr(IfcVoidingFeatureTypeEnum, 'NOTCH', INDETERMINATE)
-userdefined = getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcVoidingFeatureTypeEnum, 'NOTDEFINED', INDETERMINATE)
+chamfer = IfcVoidingFeatureTypeEnum.CHAMFER
+cutout = IfcVoidingFeatureTypeEnum.CUTOUT
+edge = IfcVoidingFeatureTypeEnum.EDGE
+hole = IfcVoidingFeatureTypeEnum.HOLE
+miter = IfcVoidingFeatureTypeEnum.MITER
+notch = IfcVoidingFeatureTypeEnum.NOTCH
+userdefined = IfcVoidingFeatureTypeEnum.USERDEFINED
+notdefined = IfcVoidingFeatureTypeEnum.NOTDEFINED
 IfcWallTypeEnum = enum_namespace()
-elementedwall = getattr(IfcWallTypeEnum, 'ELEMENTEDWALL', INDETERMINATE)
-movable = getattr(IfcWallTypeEnum, 'MOVABLE', INDETERMINATE)
-parapet = getattr(IfcWallTypeEnum, 'PARAPET', INDETERMINATE)
-partitioning = getattr(IfcWallTypeEnum, 'PARTITIONING', INDETERMINATE)
-plumbingwall = getattr(IfcWallTypeEnum, 'PLUMBINGWALL', INDETERMINATE)
-polygonal = getattr(IfcWallTypeEnum, 'POLYGONAL', INDETERMINATE)
-retainingwall = getattr(IfcWallTypeEnum, 'RETAININGWALL', INDETERMINATE)
-shear = getattr(IfcWallTypeEnum, 'SHEAR', INDETERMINATE)
-solidwall = getattr(IfcWallTypeEnum, 'SOLIDWALL', INDETERMINATE)
-standard = getattr(IfcWallTypeEnum, 'STANDARD', INDETERMINATE)
-wavewall = getattr(IfcWallTypeEnum, 'WAVEWALL', INDETERMINATE)
-userdefined = getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWallTypeEnum, 'NOTDEFINED', INDETERMINATE)
+elementedwall = IfcWallTypeEnum.ELEMENTEDWALL
+movable = IfcWallTypeEnum.MOVABLE
+parapet = IfcWallTypeEnum.PARAPET
+partitioning = IfcWallTypeEnum.PARTITIONING
+plumbingwall = IfcWallTypeEnum.PLUMBINGWALL
+polygonal = IfcWallTypeEnum.POLYGONAL
+retainingwall = IfcWallTypeEnum.RETAININGWALL
+shear = IfcWallTypeEnum.SHEAR
+solidwall = IfcWallTypeEnum.SOLIDWALL
+standard = IfcWallTypeEnum.STANDARD
+wavewall = IfcWallTypeEnum.WAVEWALL
+userdefined = IfcWallTypeEnum.USERDEFINED
+notdefined = IfcWallTypeEnum.NOTDEFINED
 IfcWasteTerminalTypeEnum = enum_namespace()
-floortrap = getattr(IfcWasteTerminalTypeEnum, 'FLOORTRAP', INDETERMINATE)
-floorwaste = getattr(IfcWasteTerminalTypeEnum, 'FLOORWASTE', INDETERMINATE)
-gullysump = getattr(IfcWasteTerminalTypeEnum, 'GULLYSUMP', INDETERMINATE)
-gullytrap = getattr(IfcWasteTerminalTypeEnum, 'GULLYTRAP', INDETERMINATE)
-roofdrain = getattr(IfcWasteTerminalTypeEnum, 'ROOFDRAIN', INDETERMINATE)
-wastedisposalunit = getattr(IfcWasteTerminalTypeEnum, 'WASTEDISPOSALUNIT', INDETERMINATE)
-wastetrap = getattr(IfcWasteTerminalTypeEnum, 'WASTETRAP', INDETERMINATE)
-userdefined = getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWasteTerminalTypeEnum, 'NOTDEFINED', INDETERMINATE)
+floortrap = IfcWasteTerminalTypeEnum.FLOORTRAP
+floorwaste = IfcWasteTerminalTypeEnum.FLOORWASTE
+gullysump = IfcWasteTerminalTypeEnum.GULLYSUMP
+gullytrap = IfcWasteTerminalTypeEnum.GULLYTRAP
+roofdrain = IfcWasteTerminalTypeEnum.ROOFDRAIN
+wastedisposalunit = IfcWasteTerminalTypeEnum.WASTEDISPOSALUNIT
+wastetrap = IfcWasteTerminalTypeEnum.WASTETRAP
+userdefined = IfcWasteTerminalTypeEnum.USERDEFINED
+notdefined = IfcWasteTerminalTypeEnum.NOTDEFINED
 IfcWindowPanelOperationEnum = enum_namespace()
-bottomhung = getattr(IfcWindowPanelOperationEnum, 'BOTTOMHUNG', INDETERMINATE)
-fixedcasement = getattr(IfcWindowPanelOperationEnum, 'FIXEDCASEMENT', INDETERMINATE)
-otheroperation = getattr(IfcWindowPanelOperationEnum, 'OTHEROPERATION', INDETERMINATE)
-pivothorizontal = getattr(IfcWindowPanelOperationEnum, 'PIVOTHORIZONTAL', INDETERMINATE)
-pivotvertical = getattr(IfcWindowPanelOperationEnum, 'PIVOTVERTICAL', INDETERMINATE)
-removablecasement = getattr(IfcWindowPanelOperationEnum, 'REMOVABLECASEMENT', INDETERMINATE)
-sidehunglefthand = getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGLEFTHAND', INDETERMINATE)
-sidehungrighthand = getattr(IfcWindowPanelOperationEnum, 'SIDEHUNGRIGHTHAND', INDETERMINATE)
-slidinghorizontal = getattr(IfcWindowPanelOperationEnum, 'SLIDINGHORIZONTAL', INDETERMINATE)
-slidingvertical = getattr(IfcWindowPanelOperationEnum, 'SLIDINGVERTICAL', INDETERMINATE)
-tiltandturnlefthand = getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNLEFTHAND', INDETERMINATE)
-tiltandturnrighthand = getattr(IfcWindowPanelOperationEnum, 'TILTANDTURNRIGHTHAND', INDETERMINATE)
-tophung = getattr(IfcWindowPanelOperationEnum, 'TOPHUNG', INDETERMINATE)
-notdefined = getattr(IfcWindowPanelOperationEnum, 'NOTDEFINED', INDETERMINATE)
+bottomhung = IfcWindowPanelOperationEnum.BOTTOMHUNG
+fixedcasement = IfcWindowPanelOperationEnum.FIXEDCASEMENT
+otheroperation = IfcWindowPanelOperationEnum.OTHEROPERATION
+pivothorizontal = IfcWindowPanelOperationEnum.PIVOTHORIZONTAL
+pivotvertical = IfcWindowPanelOperationEnum.PIVOTVERTICAL
+removablecasement = IfcWindowPanelOperationEnum.REMOVABLECASEMENT
+sidehunglefthand = IfcWindowPanelOperationEnum.SIDEHUNGLEFTHAND
+sidehungrighthand = IfcWindowPanelOperationEnum.SIDEHUNGRIGHTHAND
+slidinghorizontal = IfcWindowPanelOperationEnum.SLIDINGHORIZONTAL
+slidingvertical = IfcWindowPanelOperationEnum.SLIDINGVERTICAL
+tiltandturnlefthand = IfcWindowPanelOperationEnum.TILTANDTURNLEFTHAND
+tiltandturnrighthand = IfcWindowPanelOperationEnum.TILTANDTURNRIGHTHAND
+tophung = IfcWindowPanelOperationEnum.TOPHUNG
+notdefined = IfcWindowPanelOperationEnum.NOTDEFINED
 IfcWindowPanelPositionEnum = enum_namespace()
-bottom = getattr(IfcWindowPanelPositionEnum, 'BOTTOM', INDETERMINATE)
-left = getattr(IfcWindowPanelPositionEnum, 'LEFT', INDETERMINATE)
-middle = getattr(IfcWindowPanelPositionEnum, 'MIDDLE', INDETERMINATE)
-right = getattr(IfcWindowPanelPositionEnum, 'RIGHT', INDETERMINATE)
-top = getattr(IfcWindowPanelPositionEnum, 'TOP', INDETERMINATE)
-notdefined = getattr(IfcWindowPanelPositionEnum, 'NOTDEFINED', INDETERMINATE)
+bottom = IfcWindowPanelPositionEnum.BOTTOM
+left = IfcWindowPanelPositionEnum.LEFT
+middle = IfcWindowPanelPositionEnum.MIDDLE
+right = IfcWindowPanelPositionEnum.RIGHT
+top = IfcWindowPanelPositionEnum.TOP
+notdefined = IfcWindowPanelPositionEnum.NOTDEFINED
 IfcWindowTypeEnum = enum_namespace()
-lightdome = getattr(IfcWindowTypeEnum, 'LIGHTDOME', INDETERMINATE)
-skylight = getattr(IfcWindowTypeEnum, 'SKYLIGHT', INDETERMINATE)
-window = getattr(IfcWindowTypeEnum, 'WINDOW', INDETERMINATE)
-userdefined = getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWindowTypeEnum, 'NOTDEFINED', INDETERMINATE)
+lightdome = IfcWindowTypeEnum.LIGHTDOME
+skylight = IfcWindowTypeEnum.SKYLIGHT
+window = IfcWindowTypeEnum.WINDOW
+userdefined = IfcWindowTypeEnum.USERDEFINED
+notdefined = IfcWindowTypeEnum.NOTDEFINED
 IfcWindowTypePartitioningEnum = enum_namespace()
-double_panel_horizontal = getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_HORIZONTAL', INDETERMINATE)
-double_panel_vertical = getattr(IfcWindowTypePartitioningEnum, 'DOUBLE_PANEL_VERTICAL', INDETERMINATE)
-single_panel = getattr(IfcWindowTypePartitioningEnum, 'SINGLE_PANEL', INDETERMINATE)
-triple_panel_bottom = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_BOTTOM', INDETERMINATE)
-triple_panel_horizontal = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_HORIZONTAL', INDETERMINATE)
-triple_panel_left = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_LEFT', INDETERMINATE)
-triple_panel_right = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_RIGHT', INDETERMINATE)
-triple_panel_top = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_TOP', INDETERMINATE)
-triple_panel_vertical = getattr(IfcWindowTypePartitioningEnum, 'TRIPLE_PANEL_VERTICAL', INDETERMINATE)
-userdefined = getattr(IfcWindowTypePartitioningEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWindowTypePartitioningEnum, 'NOTDEFINED', INDETERMINATE)
+double_panel_horizontal = IfcWindowTypePartitioningEnum.DOUBLE_PANEL_HORIZONTAL
+double_panel_vertical = IfcWindowTypePartitioningEnum.DOUBLE_PANEL_VERTICAL
+single_panel = IfcWindowTypePartitioningEnum.SINGLE_PANEL
+triple_panel_bottom = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_BOTTOM
+triple_panel_horizontal = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_HORIZONTAL
+triple_panel_left = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_LEFT
+triple_panel_right = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_RIGHT
+triple_panel_top = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_TOP
+triple_panel_vertical = IfcWindowTypePartitioningEnum.TRIPLE_PANEL_VERTICAL
+userdefined = IfcWindowTypePartitioningEnum.USERDEFINED
+notdefined = IfcWindowTypePartitioningEnum.NOTDEFINED
 IfcWorkCalendarTypeEnum = enum_namespace()
-firstshift = getattr(IfcWorkCalendarTypeEnum, 'FIRSTSHIFT', INDETERMINATE)
-secondshift = getattr(IfcWorkCalendarTypeEnum, 'SECONDSHIFT', INDETERMINATE)
-thirdshift = getattr(IfcWorkCalendarTypeEnum, 'THIRDSHIFT', INDETERMINATE)
-userdefined = getattr(IfcWorkCalendarTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWorkCalendarTypeEnum, 'NOTDEFINED', INDETERMINATE)
+firstshift = IfcWorkCalendarTypeEnum.FIRSTSHIFT
+secondshift = IfcWorkCalendarTypeEnum.SECONDSHIFT
+thirdshift = IfcWorkCalendarTypeEnum.THIRDSHIFT
+userdefined = IfcWorkCalendarTypeEnum.USERDEFINED
+notdefined = IfcWorkCalendarTypeEnum.NOTDEFINED
 IfcWorkPlanTypeEnum = enum_namespace()
-actual = getattr(IfcWorkPlanTypeEnum, 'ACTUAL', INDETERMINATE)
-baseline = getattr(IfcWorkPlanTypeEnum, 'BASELINE', INDETERMINATE)
-planned = getattr(IfcWorkPlanTypeEnum, 'PLANNED', INDETERMINATE)
-userdefined = getattr(IfcWorkPlanTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWorkPlanTypeEnum, 'NOTDEFINED', INDETERMINATE)
+actual = IfcWorkPlanTypeEnum.ACTUAL
+baseline = IfcWorkPlanTypeEnum.BASELINE
+planned = IfcWorkPlanTypeEnum.PLANNED
+userdefined = IfcWorkPlanTypeEnum.USERDEFINED
+notdefined = IfcWorkPlanTypeEnum.NOTDEFINED
 IfcWorkScheduleTypeEnum = enum_namespace()
-actual = getattr(IfcWorkScheduleTypeEnum, 'ACTUAL', INDETERMINATE)
-baseline = getattr(IfcWorkScheduleTypeEnum, 'BASELINE', INDETERMINATE)
-planned = getattr(IfcWorkScheduleTypeEnum, 'PLANNED', INDETERMINATE)
-userdefined = getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE)
-notdefined = getattr(IfcWorkScheduleTypeEnum, 'NOTDEFINED', INDETERMINATE)
+actual = IfcWorkScheduleTypeEnum.ACTUAL
+baseline = IfcWorkScheduleTypeEnum.BASELINE
+planned = IfcWorkScheduleTypeEnum.PLANNED
+userdefined = IfcWorkScheduleTypeEnum.USERDEFINED
+notdefined = IfcWorkScheduleTypeEnum.NOTDEFINED
 
 def IfcActionRequest(*args, **kwargs):
     return ifcopenshell.create_entity('IfcActionRequest', 'IFC4X3_TC1', *args, **kwargs)
@@ -5121,7 +5131,7 @@ class IfcBoxAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
 
 class IfcCardinalPointReference_GreaterThanZero:
     SCOPE = 'type'
@@ -5202,7 +5212,7 @@ class IfcFontStyle_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
 
 class IfcFontVariant_WR1:
     SCOPE = 'type'
@@ -5211,7 +5221,7 @@ class IfcFontVariant_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
 
 class IfcFontWeight_WR1:
     SCOPE = 'type'
@@ -5220,7 +5230,7 @@ class IfcFontWeight_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
 
 class IfcHeatingValueMeasure_WR1:
     SCOPE = 'type'
@@ -5319,7 +5329,7 @@ class IfcTextAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
 
 class IfcTextDecoration_WR1:
     SCOPE = 'type'
@@ -5328,7 +5338,7 @@ class IfcTextDecoration_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
 
 class IfcTextTransformation_WR1:
     SCOPE = 'type'
@@ -5337,7 +5347,7 @@ class IfcTextTransformation_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
 
 class IfcActorRole_WR1:
     SCOPE = 'entity'
@@ -5346,8 +5356,8 @@ class IfcActorRole_WR1:
 
     @staticmethod
     def __call__(self):
-        role = getattr(self, 'Role', INDETERMINATE)
-        assert (role != getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE) or (role == getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'UserDefinedRole', INDETERMINATE)))) is not False
+        role = express_getattr(self, 'Role', INDETERMINATE)
+        assert (role != express_getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE) or (role == express_getattr(IfcRoleEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'UserDefinedRole', INDETERMINATE)))) is not False
 
 class IfcActuator_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5356,8 +5366,8 @@ class IfcActuator_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcActuator_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -5366,8 +5376,8 @@ class IfcActuator_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcactuatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcactuatortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcActuatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5376,8 +5386,8 @@ class IfcActuatorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcActuatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcAddress_WR1:
     SCOPE = 'entity'
@@ -5386,8 +5396,8 @@ class IfcAddress_WR1:
 
     @staticmethod
     def __call__(self):
-        purpose = getattr(self, 'Purpose', INDETERMINATE)
-        assert (not exists(purpose) or (purpose != getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE) or (purpose == getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'UserDefinedPurpose', INDETERMINATE))))) is not False
+        purpose = express_getattr(self, 'Purpose', INDETERMINATE)
+        assert (not exists(purpose) or (purpose != express_getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE) or (purpose == express_getattr(IfcAddressTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'UserDefinedPurpose', INDETERMINATE))))) is not False
 
 class IfcAdvancedBrep_HasAdvancedFaces:
     SCOPE = 'entity'
@@ -5396,7 +5406,7 @@ class IfcAdvancedBrep_HasAdvancedFaces:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([afs for afs in getattr(getattr(self, 'Outer', INDETERMINATE), 'CfsFaces', INDETERMINATE) if not 'ifc4x3_tc1.ifcadvancedface' in typeof(afs)]) == 0) is not False
+        assert (sizeof([afs for afs in express_getattr(express_getattr(self, 'Outer', INDETERMINATE), 'CfsFaces', INDETERMINATE) if not 'ifc4x3_tc1.ifcadvancedface' in typeof(afs)]) == 0) is not False
 
 class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     SCOPE = 'entity'
@@ -5405,8 +5415,8 @@ class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
 
     @staticmethod
     def __call__(self):
-        voids = getattr(self, 'Voids', INDETERMINATE)
-        assert (sizeof([vsh for vsh in voids if sizeof([afs for afs in getattr(vsh, 'CfsFaces', INDETERMINATE) if not 'ifc4x3_tc1.ifcadvancedface' in typeof(afs)]) == 0]) == 0) is not False
+        voids = express_getattr(self, 'Voids', INDETERMINATE)
+        assert (sizeof([vsh for vsh in voids if sizeof([afs for afs in express_getattr(vsh, 'CfsFaces', INDETERMINATE) if not 'ifc4x3_tc1.ifcadvancedface' in typeof(afs)]) == 0]) == 0) is not False
 
 class IfcAdvancedFace_ApplicableEdgeCurves:
     SCOPE = 'entity'
@@ -5415,7 +5425,7 @@ class IfcAdvancedFace_ApplicableEdgeCurves:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_tc1.ifcedgeloop' in typeof(getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in getattr(getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not sizeof(['ifc4x3_tc1.ifcline', 'ifc4x3_tc1.ifcconic', 'ifc4x3_tc1.ifcpolyline', 'ifc4x3_tc1.ifcbsplinecurve'] * typeof(getattr(getattr(oe, 'EdgeElement', INDETERMINATE), 'EdgeGeometry', INDETERMINATE))) == 1]) == 0]) == 0) is not False
+        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in express_getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_tc1.ifcedgeloop' in typeof(express_getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in express_getattr(express_getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not sizeof(['ifc4x3_tc1.ifcline', 'ifc4x3_tc1.ifcconic', 'ifc4x3_tc1.ifcpolyline', 'ifc4x3_tc1.ifcbsplinecurve'] * typeof(express_getattr(express_getattr(oe, 'EdgeElement', INDETERMINATE), 'EdgeGeometry', INDETERMINATE))) == 1]) == 0]) == 0) is not False
 
 class IfcAdvancedFace_ApplicableSurface:
     SCOPE = 'entity'
@@ -5424,7 +5434,7 @@ class IfcAdvancedFace_ApplicableSurface:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_tc1.ifcelementarysurface', 'ifc4x3_tc1.ifcsweptsurface', 'ifc4x3_tc1.ifcbsplinesurface'] * typeof(getattr(self, 'FaceSurface', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_tc1.ifcelementarysurface', 'ifc4x3_tc1.ifcsweptsurface', 'ifc4x3_tc1.ifcbsplinesurface'] * typeof(express_getattr(self, 'FaceSurface', INDETERMINATE))) == 1) is not False
 
 class IfcAdvancedFace_RequiresEdgeCurve:
     SCOPE = 'entity'
@@ -5433,7 +5443,7 @@ class IfcAdvancedFace_RequiresEdgeCurve:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_tc1.ifcedgeloop' in typeof(getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in getattr(getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not 'ifc4x3_tc1.ifcedgecurve' in typeof(getattr(oe, 'EdgeElement', INDETERMINATE))]) == 0]) == 0) is not False
+        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in express_getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_tc1.ifcedgeloop' in typeof(express_getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in express_getattr(express_getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not 'ifc4x3_tc1.ifcedgecurve' in typeof(express_getattr(oe, 'EdgeElement', INDETERMINATE))]) == 0]) == 0) is not False
 
 class IfcAirTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5442,8 +5452,8 @@ class IfcAirTerminal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcAirTerminal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -5452,8 +5462,8 @@ class IfcAirTerminal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcairterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcairterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirTerminalBox_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5462,8 +5472,8 @@ class IfcAirTerminalBox_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcAirTerminalBox_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -5472,8 +5482,8 @@ class IfcAirTerminalBox_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcairterminalboxtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcairterminalboxtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirTerminalBoxType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5482,8 +5492,8 @@ class IfcAirTerminalBoxType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAirTerminalBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcAirTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5492,8 +5502,8 @@ class IfcAirTerminalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAirTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcAirToAirHeatRecovery_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5502,8 +5512,8 @@ class IfcAirToAirHeatRecovery_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcAirToAirHeatRecovery_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -5512,8 +5522,8 @@ class IfcAirToAirHeatRecovery_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcairtoairheatrecoverytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcairtoairheatrecoverytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirToAirHeatRecoveryType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5522,8 +5532,8 @@ class IfcAirToAirHeatRecoveryType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAirToAirHeatRecoveryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcAlarm_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5532,8 +5542,8 @@ class IfcAlarm_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcAlarm_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -5542,8 +5552,8 @@ class IfcAlarm_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcalarmtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcalarmtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAlarmType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5552,8 +5562,8 @@ class IfcAlarmType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAlarmTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcApproval_HasIdentifierOrName:
     SCOPE = 'entity'
@@ -5562,8 +5572,8 @@ class IfcApproval_HasIdentifierOrName:
 
     @staticmethod
     def __call__(self):
-        identifier = getattr(self, 'Identifier', INDETERMINATE)
-        name = getattr(self, 'Name', INDETERMINATE)
+        identifier = express_getattr(self, 'Identifier', INDETERMINATE)
+        name = express_getattr(self, 'Name', INDETERMINATE)
         assert (exists(identifier) or exists(name)) is not False
 
 class IfcArbitraryClosedProfileDef_WR1:
@@ -5573,8 +5583,8 @@ class IfcArbitraryClosedProfileDef_WR1:
 
     @staticmethod
     def __call__(self):
-        outercurve = getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (getattr(outercurve, 'Dim', INDETERMINATE) == 2) is not False
+        outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
+        assert (express_getattr(outercurve, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcArbitraryClosedProfileDef_WR2:
     SCOPE = 'entity'
@@ -5583,7 +5593,7 @@ class IfcArbitraryClosedProfileDef_WR2:
 
     @staticmethod
     def __call__(self):
-        outercurve = getattr(self, 'OuterCurve', INDETERMINATE)
+        outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcline' in typeof(outercurve)) is not False
 
 class IfcArbitraryClosedProfileDef_WR3:
@@ -5593,7 +5603,7 @@ class IfcArbitraryClosedProfileDef_WR3:
 
     @staticmethod
     def __call__(self):
-        outercurve = getattr(self, 'OuterCurve', INDETERMINATE)
+        outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcoffsetcurve2d' in typeof(outercurve)) is not False
 
 class IfcArbitraryOpenProfileDef_WR11:
@@ -5603,7 +5613,7 @@ class IfcArbitraryOpenProfileDef_WR11:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifccenterlineprofiledef' in typeof(self) or getattr(self, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
+        assert ('ifc4x3_tc1.ifccenterlineprofiledef' in typeof(self) or express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
 
 class IfcArbitraryOpenProfileDef_WR12:
     SCOPE = 'entity'
@@ -5612,8 +5622,8 @@ class IfcArbitraryOpenProfileDef_WR12:
 
     @staticmethod
     def __call__(self):
-        curve = getattr(self, 'Curve', INDETERMINATE)
-        assert (getattr(curve, 'Dim', INDETERMINATE) == 2) is not False
+        curve = express_getattr(self, 'Curve', INDETERMINATE)
+        assert (express_getattr(curve, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcArbitraryProfileDefWithVoids_WR1:
     SCOPE = 'entity'
@@ -5622,7 +5632,7 @@ class IfcArbitraryProfileDefWithVoids_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'ProfileType', INDETERMINATE) == area) is not False
+        assert (express_getattr(self, 'ProfileType', INDETERMINATE) == area) is not False
 
 class IfcArbitraryProfileDefWithVoids_WR2:
     SCOPE = 'entity'
@@ -5631,8 +5641,8 @@ class IfcArbitraryProfileDefWithVoids_WR2:
 
     @staticmethod
     def __call__(self):
-        innercurves = getattr(self, 'InnerCurves', INDETERMINATE)
-        assert (sizeof([temp for temp in innercurves if getattr(temp, 'Dim', INDETERMINATE) != 2]) == 0) is not False
+        innercurves = express_getattr(self, 'InnerCurves', INDETERMINATE)
+        assert (sizeof([temp for temp in innercurves if express_getattr(temp, 'Dim', INDETERMINATE) != 2]) == 0) is not False
 
 class IfcArbitraryProfileDefWithVoids_WR3:
     SCOPE = 'entity'
@@ -5641,7 +5651,7 @@ class IfcArbitraryProfileDefWithVoids_WR3:
 
     @staticmethod
     def __call__(self):
-        innercurves = getattr(self, 'InnerCurves', INDETERMINATE)
+        innercurves = express_getattr(self, 'InnerCurves', INDETERMINATE)
         assert (sizeof([temp for temp in innercurves if 'ifc4x3_tc1.ifcline' in typeof(temp)]) == 0) is not False
 
 class IfcAsymmetricIShapeProfileDef_ValidBottomFilletRadius:
@@ -5651,9 +5661,9 @@ class IfcAsymmetricIShapeProfileDef_ValidBottomFilletRadius:
 
     @staticmethod
     def __call__(self):
-        bottomflangewidth = getattr(self, 'BottomFlangeWidth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
-        bottomflangefilletradius = getattr(self, 'BottomFlangeFilletRadius', INDETERMINATE)
+        bottomflangewidth = express_getattr(self, 'BottomFlangeWidth', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
+        bottomflangefilletradius = express_getattr(self, 'BottomFlangeFilletRadius', INDETERMINATE)
         assert (not exists(bottomflangefilletradius) or bottomflangefilletradius <= (bottomflangewidth - webthickness) / 2.0) is not False
 
 class IfcAsymmetricIShapeProfileDef_ValidFlangeThickness:
@@ -5663,9 +5673,9 @@ class IfcAsymmetricIShapeProfileDef_ValidFlangeThickness:
 
     @staticmethod
     def __call__(self):
-        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
-        bottomflangethickness = getattr(self, 'BottomFlangeThickness', INDETERMINATE)
-        topflangethickness = getattr(self, 'TopFlangeThickness', INDETERMINATE)
+        overalldepth = express_getattr(self, 'OverallDepth', INDETERMINATE)
+        bottomflangethickness = express_getattr(self, 'BottomFlangeThickness', INDETERMINATE)
+        topflangethickness = express_getattr(self, 'TopFlangeThickness', INDETERMINATE)
         assert (not exists(topflangethickness) or bottomflangethickness + topflangethickness < overalldepth) is not False
 
 class IfcAsymmetricIShapeProfileDef_ValidTopFilletRadius:
@@ -5675,9 +5685,9 @@ class IfcAsymmetricIShapeProfileDef_ValidTopFilletRadius:
 
     @staticmethod
     def __call__(self):
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
-        topflangewidth = getattr(self, 'TopFlangeWidth', INDETERMINATE)
-        topflangefilletradius = getattr(self, 'TopFlangeFilletRadius', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
+        topflangewidth = express_getattr(self, 'TopFlangeWidth', INDETERMINATE)
+        topflangefilletradius = express_getattr(self, 'TopFlangeFilletRadius', INDETERMINATE)
         assert (not exists(topflangefilletradius) or topflangefilletradius <= (topflangewidth - webthickness) / 2.0) is not False
 
 class IfcAsymmetricIShapeProfileDef_ValidWebThickness:
@@ -5687,9 +5697,9 @@ class IfcAsymmetricIShapeProfileDef_ValidWebThickness:
 
     @staticmethod
     def __call__(self):
-        bottomflangewidth = getattr(self, 'BottomFlangeWidth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
-        topflangewidth = getattr(self, 'TopFlangeWidth', INDETERMINATE)
+        bottomflangewidth = express_getattr(self, 'BottomFlangeWidth', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
+        topflangewidth = express_getattr(self, 'TopFlangeWidth', INDETERMINATE)
         assert (webthickness < bottomflangewidth and webthickness < topflangewidth) is not False
 
 class IfcAudioVisualAppliance_CorrectPredefinedType:
@@ -5699,8 +5709,8 @@ class IfcAudioVisualAppliance_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcAudioVisualAppliance_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -5709,8 +5719,8 @@ class IfcAudioVisualAppliance_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcaudiovisualappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcaudiovisualappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAudioVisualApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5719,8 +5729,8 @@ class IfcAudioVisualApplianceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAudioVisualApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcAxis1Placement_AxisIs3D:
     SCOPE = 'entity'
@@ -5729,8 +5739,8 @@ class IfcAxis1Placement_AxisIs3D:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        assert (not exists(axis) or getattr(axis, 'Dim', INDETERMINATE) == 3) is not False
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        assert (not exists(axis) or express_getattr(axis, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcAxis1Placement_LocationIs3D:
     SCOPE = 'entity'
@@ -5739,7 +5749,7 @@ class IfcAxis1Placement_LocationIs3D:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
+        assert (express_getattr(express_getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcAxis1Placement_LocationIsCP:
     SCOPE = 'entity'
@@ -5748,10 +5758,10 @@ class IfcAxis1Placement_LocationIsCP:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(express_getattr(self, 'Location', INDETERMINATE))) is not False
 
 def calc_IfcAxis1Placement_Z(self):
-    axis = getattr(self, 'Axis', INDETERMINATE)
+    axis = express_getattr(self, 'Axis', INDETERMINATE)
     return nvl(IfcNormalise(axis), IfcDirection(DirectionRatios=[0.0, 0.0, 1.0]))
 
 class IfcAxis2Placement2D_LocationIs2D:
@@ -5761,7 +5771,7 @@ class IfcAxis2Placement2D_LocationIs2D:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
+        assert (express_getattr(express_getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcAxis2Placement2D_LocationIsCP:
     SCOPE = 'entity'
@@ -5770,7 +5780,7 @@ class IfcAxis2Placement2D_LocationIsCP:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(express_getattr(self, 'Location', INDETERMINATE))) is not False
 
 class IfcAxis2Placement2D_RefDirIs2D:
     SCOPE = 'entity'
@@ -5779,11 +5789,11 @@ class IfcAxis2Placement2D_RefDirIs2D:
 
     @staticmethod
     def __call__(self):
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(refdirection) or getattr(refdirection, 'Dim', INDETERMINATE) == 2) is not False
+        refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(refdirection) or express_getattr(refdirection, 'Dim', INDETERMINATE) == 2) is not False
 
 def calc_IfcAxis2Placement2D_P(self):
-    refdirection = getattr(self, 'RefDirection', INDETERMINATE)
+    refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
     return IfcBuild2Axes(refdirection)
 
 class IfcAxis2Placement3D_AxisAndRefDirProvision:
@@ -5793,8 +5803,8 @@ class IfcAxis2Placement3D_AxisAndRefDirProvision:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
         assert (not exists(axis) ^ exists(refdirection)) is not False
 
 class IfcAxis2Placement3D_AxisIs3D:
@@ -5804,8 +5814,8 @@ class IfcAxis2Placement3D_AxisIs3D:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        assert (not exists(axis) or getattr(axis, 'Dim', INDETERMINATE) == 3) is not False
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        assert (not exists(axis) or express_getattr(axis, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcAxis2Placement3D_AxisToRefDirPosition:
     SCOPE = 'entity'
@@ -5814,9 +5824,9 @@ class IfcAxis2Placement3D_AxisToRefDirPosition:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(axis) or not exists(refdirection) or getattr(IfcCrossProduct(axis, refdirection), 'Magnitude', INDETERMINATE) > 0.0) is not False
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(axis) or not exists(refdirection) or express_getattr(IfcCrossProduct(axis, refdirection), 'Magnitude', INDETERMINATE) > 0.0) is not False
 
 class IfcAxis2Placement3D_LocationIs3D:
     SCOPE = 'entity'
@@ -5825,7 +5835,7 @@ class IfcAxis2Placement3D_LocationIs3D:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
+        assert (express_getattr(express_getattr(self, 'Location', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcAxis2Placement3D_LocationIsCP:
     SCOPE = 'entity'
@@ -5834,7 +5844,7 @@ class IfcAxis2Placement3D_LocationIsCP:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(express_getattr(self, 'Location', INDETERMINATE))) is not False
 
 class IfcAxis2Placement3D_RefDirIs3D:
     SCOPE = 'entity'
@@ -5843,12 +5853,12 @@ class IfcAxis2Placement3D_RefDirIs3D:
 
     @staticmethod
     def __call__(self):
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(refdirection) or getattr(refdirection, 'Dim', INDETERMINATE) == 3) is not False
+        refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(refdirection) or express_getattr(refdirection, 'Dim', INDETERMINATE) == 3) is not False
 
 def calc_IfcAxis2Placement3D_P(self):
-    axis = getattr(self, 'Axis', INDETERMINATE)
-    refdirection = getattr(self, 'RefDirection', INDETERMINATE)
+    axis = express_getattr(self, 'Axis', INDETERMINATE)
+    refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
     return IfcBuildAxes(axis, refdirection)
 
 class IfcAxis2PlacementLinear_WR1:
@@ -5858,7 +5868,7 @@ class IfcAxis2PlacementLinear_WR1:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifcpointbydistanceexpression' in typeof(getattr(self, 'Location', INDETERMINATE))) is not False
+        assert ('ifc4x3_tc1.ifcpointbydistanceexpression' in typeof(express_getattr(self, 'Location', INDETERMINATE))) is not False
 
 class IfcAxis2PlacementLinear_WR2:
     SCOPE = 'entity'
@@ -5867,9 +5877,9 @@ class IfcAxis2PlacementLinear_WR2:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        refdirection = getattr(self, 'RefDirection', INDETERMINATE)
-        assert (not exists(axis) or not exists(refdirection) or getattr(IfcCrossProduct(axis, refdirection), 'Magnitude', INDETERMINATE) > 0.0) is not False
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        refdirection = express_getattr(self, 'RefDirection', INDETERMINATE)
+        assert (not exists(axis) or not exists(refdirection) or express_getattr(IfcCrossProduct(axis, refdirection), 'Magnitude', INDETERMINATE) > 0.0) is not False
 
 class IfcBSplineCurve_SameDim:
     SCOPE = 'entity'
@@ -5878,16 +5888,16 @@ class IfcBSplineCurve_SameDim:
 
     @staticmethod
     def __call__(self):
-        controlpointslist = getattr(self, 'ControlPointsList', INDETERMINATE)
-        assert (sizeof([temp for temp in controlpointslist if getattr(temp, 'Dim', INDETERMINATE) != getattr(express_getitem(controlpointslist, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
+        controlpointslist = express_getattr(self, 'ControlPointsList', INDETERMINATE)
+        assert (sizeof([temp for temp in controlpointslist if express_getattr(temp, 'Dim', INDETERMINATE) != express_getattr(express_getitem(controlpointslist, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
 
 def calc_IfcBSplineCurve_UpperIndexOnControlPoints(self):
-    controlpointslist = getattr(self, 'ControlPointsList', INDETERMINATE)
+    controlpointslist = express_getattr(self, 'ControlPointsList', INDETERMINATE)
     return sizeof(controlpointslist) - 1
 
 def calc_IfcBSplineCurve_ControlPoints(self):
-    controlpointslist = getattr(self, 'ControlPointsList', INDETERMINATE)
-    upperindexoncontrolpoints = getattr(self, 'UpperIndexOnControlPoints', INDETERMINATE)
+    controlpointslist = express_getattr(self, 'ControlPointsList', INDETERMINATE)
+    upperindexoncontrolpoints = express_getattr(self, 'UpperIndexOnControlPoints', INDETERMINATE)
     return IfcListToArray(controlpointslist, 0, upperindexoncontrolpoints)
 
 class IfcBSplineCurveWithKnots_ConsistentBSpline:
@@ -5897,11 +5907,11 @@ class IfcBSplineCurveWithKnots_ConsistentBSpline:
 
     @staticmethod
     def __call__(self):
-        degree = getattr(self, 'Degree', INDETERMINATE)
-        upperindexoncontrolpoints = getattr(self, 'UpperIndexOnControlPoints', INDETERMINATE)
-        knotmultiplicities = getattr(self, 'KnotMultiplicities', INDETERMINATE)
-        knots = getattr(self, 'Knots', INDETERMINATE)
-        upperindexonknots = getattr(self, 'UpperIndexOnKnots', INDETERMINATE)
+        degree = express_getattr(self, 'Degree', INDETERMINATE)
+        upperindexoncontrolpoints = express_getattr(self, 'UpperIndexOnControlPoints', INDETERMINATE)
+        knotmultiplicities = express_getattr(self, 'KnotMultiplicities', INDETERMINATE)
+        knots = express_getattr(self, 'Knots', INDETERMINATE)
+        upperindexonknots = express_getattr(self, 'UpperIndexOnKnots', INDETERMINATE)
         assert IfcConstraintsParamBSpline(degree, upperindexonknots, upperindexoncontrolpoints, knotmultiplicities, knots) is not False
 
 class IfcBSplineCurveWithKnots_CorrespondingKnotLists:
@@ -5911,26 +5921,26 @@ class IfcBSplineCurveWithKnots_CorrespondingKnotLists:
 
     @staticmethod
     def __call__(self):
-        knotmultiplicities = getattr(self, 'KnotMultiplicities', INDETERMINATE)
-        upperindexonknots = getattr(self, 'UpperIndexOnKnots', INDETERMINATE)
+        knotmultiplicities = express_getattr(self, 'KnotMultiplicities', INDETERMINATE)
+        upperindexonknots = express_getattr(self, 'UpperIndexOnKnots', INDETERMINATE)
         assert (sizeof(knotmultiplicities) == upperindexonknots) is not False
 
 def calc_IfcBSplineCurveWithKnots_UpperIndexOnKnots(self):
-    knots = getattr(self, 'Knots', INDETERMINATE)
+    knots = express_getattr(self, 'Knots', INDETERMINATE)
     return sizeof(knots)
 
 def calc_IfcBSplineSurface_UUpper(self):
-    controlpointslist = getattr(self, 'ControlPointsList', INDETERMINATE)
+    controlpointslist = express_getattr(self, 'ControlPointsList', INDETERMINATE)
     return sizeof(controlpointslist) - 1
 
 def calc_IfcBSplineSurface_VUpper(self):
-    controlpointslist = getattr(self, 'ControlPointsList', INDETERMINATE)
+    controlpointslist = express_getattr(self, 'ControlPointsList', INDETERMINATE)
     return sizeof(express_getitem(controlpointslist, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) - 1
 
 def calc_IfcBSplineSurface_ControlPoints(self):
-    controlpointslist = getattr(self, 'ControlPointsList', INDETERMINATE)
-    uupper = getattr(self, 'UUpper', INDETERMINATE)
-    vupper = getattr(self, 'VUpper', INDETERMINATE)
+    controlpointslist = express_getattr(self, 'ControlPointsList', INDETERMINATE)
+    uupper = express_getattr(self, 'UUpper', INDETERMINATE)
+    vupper = express_getattr(self, 'VUpper', INDETERMINATE)
     return IfcMakeArrayOfArray(controlpointslist, 0, uupper, 0, vupper)
 
 class IfcBSplineSurfaceWithKnots_CorrespondingULists:
@@ -5940,8 +5950,8 @@ class IfcBSplineSurfaceWithKnots_CorrespondingULists:
 
     @staticmethod
     def __call__(self):
-        umultiplicities = getattr(self, 'UMultiplicities', INDETERMINATE)
-        knotuupper = getattr(self, 'KnotUUpper', INDETERMINATE)
+        umultiplicities = express_getattr(self, 'UMultiplicities', INDETERMINATE)
+        knotuupper = express_getattr(self, 'KnotUUpper', INDETERMINATE)
         assert (sizeof(umultiplicities) == knotuupper) is not False
 
 class IfcBSplineSurfaceWithKnots_CorrespondingVLists:
@@ -5951,8 +5961,8 @@ class IfcBSplineSurfaceWithKnots_CorrespondingVLists:
 
     @staticmethod
     def __call__(self):
-        vmultiplicities = getattr(self, 'VMultiplicities', INDETERMINATE)
-        knotvupper = getattr(self, 'KnotVUpper', INDETERMINATE)
+        vmultiplicities = express_getattr(self, 'VMultiplicities', INDETERMINATE)
+        knotvupper = express_getattr(self, 'KnotVUpper', INDETERMINATE)
         assert (sizeof(vmultiplicities) == knotvupper) is not False
 
 class IfcBSplineSurfaceWithKnots_UDirectionConstraints:
@@ -5962,10 +5972,10 @@ class IfcBSplineSurfaceWithKnots_UDirectionConstraints:
 
     @staticmethod
     def __call__(self):
-        umultiplicities = getattr(self, 'UMultiplicities', INDETERMINATE)
-        uknots = getattr(self, 'UKnots', INDETERMINATE)
-        knotuupper = getattr(self, 'KnotUUpper', INDETERMINATE)
-        assert IfcConstraintsParamBSpline(getattr(self, 'UDegree', INDETERMINATE), knotuupper, getattr(self, 'UUpper', INDETERMINATE), umultiplicities, uknots) is not False
+        umultiplicities = express_getattr(self, 'UMultiplicities', INDETERMINATE)
+        uknots = express_getattr(self, 'UKnots', INDETERMINATE)
+        knotuupper = express_getattr(self, 'KnotUUpper', INDETERMINATE)
+        assert IfcConstraintsParamBSpline(express_getattr(self, 'UDegree', INDETERMINATE), knotuupper, express_getattr(self, 'UUpper', INDETERMINATE), umultiplicities, uknots) is not False
 
 class IfcBSplineSurfaceWithKnots_VDirectionConstraints:
     SCOPE = 'entity'
@@ -5974,17 +5984,17 @@ class IfcBSplineSurfaceWithKnots_VDirectionConstraints:
 
     @staticmethod
     def __call__(self):
-        vmultiplicities = getattr(self, 'VMultiplicities', INDETERMINATE)
-        vknots = getattr(self, 'VKnots', INDETERMINATE)
-        knotvupper = getattr(self, 'KnotVUpper', INDETERMINATE)
-        assert IfcConstraintsParamBSpline(getattr(self, 'VDegree', INDETERMINATE), knotvupper, getattr(self, 'VUpper', INDETERMINATE), vmultiplicities, vknots) is not False
+        vmultiplicities = express_getattr(self, 'VMultiplicities', INDETERMINATE)
+        vknots = express_getattr(self, 'VKnots', INDETERMINATE)
+        knotvupper = express_getattr(self, 'KnotVUpper', INDETERMINATE)
+        assert IfcConstraintsParamBSpline(express_getattr(self, 'VDegree', INDETERMINATE), knotvupper, express_getattr(self, 'VUpper', INDETERMINATE), vmultiplicities, vknots) is not False
 
 def calc_IfcBSplineSurfaceWithKnots_KnotVUpper(self):
-    vknots = getattr(self, 'VKnots', INDETERMINATE)
+    vknots = express_getattr(self, 'VKnots', INDETERMINATE)
     return sizeof(vknots)
 
 def calc_IfcBSplineSurfaceWithKnots_KnotUUpper(self):
-    uknots = getattr(self, 'UKnots', INDETERMINATE)
+    uknots = express_getattr(self, 'UKnots', INDETERMINATE)
     return sizeof(uknots)
 
 class IfcBeam_CorrectPredefinedType:
@@ -5994,8 +6004,8 @@ class IfcBeam_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBeam_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6004,8 +6014,8 @@ class IfcBeam_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbeamtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbeamtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBeamType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6014,8 +6024,8 @@ class IfcBeamType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcBearing_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6024,8 +6034,8 @@ class IfcBearing_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBearing_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6034,8 +6044,8 @@ class IfcBearing_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbearingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbearingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBearingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6044,8 +6054,8 @@ class IfcBearingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBearingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcBlobTexture_RasterCodeByteStream:
     SCOPE = 'entity'
@@ -6054,7 +6064,7 @@ class IfcBlobTexture_RasterCodeByteStream:
 
     @staticmethod
     def __call__(self):
-        rastercode = getattr(self, 'RasterCode', INDETERMINATE)
+        rastercode = express_getattr(self, 'RasterCode', INDETERMINATE)
         assert (blength(rastercode) % 8 == 0) is not False
 
 class IfcBlobTexture_SupportedRasterFormat:
@@ -6064,7 +6074,7 @@ class IfcBlobTexture_SupportedRasterFormat:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
+        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
 
 class IfcBoiler_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6073,8 +6083,8 @@ class IfcBoiler_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBoiler_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6083,8 +6093,8 @@ class IfcBoiler_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcboilertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcboilertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBoilerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6093,8 +6103,8 @@ class IfcBoilerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBoilerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcBooleanClippingResult_FirstOperandType:
     SCOPE = 'entity'
@@ -6103,7 +6113,7 @@ class IfcBooleanClippingResult_FirstOperandType:
 
     @staticmethod
     def __call__(self):
-        firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
+        firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
         assert ('ifc4x3_tc1.ifcsweptareasolid' in typeof(firstoperand) or 'ifc4x3_tc1.ifcsweptdiscsolid' in typeof(firstoperand) or 'ifc4x3_tc1.ifcbooleanclippingresult' in typeof(firstoperand)) is not False
 
 class IfcBooleanClippingResult_OperatorType:
@@ -6113,7 +6123,7 @@ class IfcBooleanClippingResult_OperatorType:
 
     @staticmethod
     def __call__(self):
-        operator = getattr(self, 'Operator', INDETERMINATE)
+        operator = express_getattr(self, 'Operator', INDETERMINATE)
         assert (operator == difference) is not False
 
 class IfcBooleanClippingResult_SecondOperandType:
@@ -6123,7 +6133,7 @@ class IfcBooleanClippingResult_SecondOperandType:
 
     @staticmethod
     def __call__(self):
-        secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
+        secondoperand = express_getattr(self, 'SecondOperand', INDETERMINATE)
         assert ('ifc4x3_tc1.ifchalfspacesolid' in typeof(secondoperand)) is not False
 
 class IfcBooleanResult_FirstOperandClosed:
@@ -6133,8 +6143,8 @@ class IfcBooleanResult_FirstOperandClosed:
 
     @staticmethod
     def __call__(self):
-        firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
-        assert (not 'ifc4x3_tc1.ifctessellatedfaceset' in typeof(firstoperand) or (exists(getattr(firstoperand, 'Closed', INDETERMINATE)) and getattr(firstoperand, 'Closed', INDETERMINATE))) is not False
+        firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
+        assert (not 'ifc4x3_tc1.ifctessellatedfaceset' in typeof(firstoperand) or (exists(express_getattr(firstoperand, 'Closed', INDETERMINATE)) and express_getattr(firstoperand, 'Closed', INDETERMINATE))) is not False
 
 class IfcBooleanResult_SameDim:
     SCOPE = 'entity'
@@ -6143,9 +6153,9 @@ class IfcBooleanResult_SameDim:
 
     @staticmethod
     def __call__(self):
-        firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
-        secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
-        assert (getattr(firstoperand, 'Dim', INDETERMINATE) == getattr(secondoperand, 'Dim', INDETERMINATE)) is not False
+        firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
+        secondoperand = express_getattr(self, 'SecondOperand', INDETERMINATE)
+        assert (express_getattr(firstoperand, 'Dim', INDETERMINATE) == express_getattr(secondoperand, 'Dim', INDETERMINATE)) is not False
 
 class IfcBooleanResult_SecondOperandClosed:
     SCOPE = 'entity'
@@ -6154,12 +6164,12 @@ class IfcBooleanResult_SecondOperandClosed:
 
     @staticmethod
     def __call__(self):
-        secondoperand = getattr(self, 'SecondOperand', INDETERMINATE)
-        assert (not 'ifc4x3_tc1.ifctessellatedfaceset' in typeof(secondoperand) or (exists(getattr(secondoperand, 'Closed', INDETERMINATE)) and getattr(secondoperand, 'Closed', INDETERMINATE))) is not False
+        secondoperand = express_getattr(self, 'SecondOperand', INDETERMINATE)
+        assert (not 'ifc4x3_tc1.ifctessellatedfaceset' in typeof(secondoperand) or (exists(express_getattr(secondoperand, 'Closed', INDETERMINATE)) and express_getattr(secondoperand, 'Closed', INDETERMINATE))) is not False
 
 def calc_IfcBooleanResult_Dim(self):
-    firstoperand = getattr(self, 'FirstOperand', INDETERMINATE)
-    return getattr(firstoperand, 'Dim', INDETERMINATE)
+    firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
+    return express_getattr(firstoperand, 'Dim', INDETERMINATE)
 
 class IfcBoundaryCurve_IsClosed:
     SCOPE = 'entity'
@@ -6168,7 +6178,7 @@ class IfcBoundaryCurve_IsClosed:
 
     @staticmethod
     def __call__(self):
-        assert getattr(self, 'ClosedCurve', INDETERMINATE) is not False
+        assert express_getattr(self, 'ClosedCurve', INDETERMINATE) is not False
 
 def calc_IfcBoundingBox_Dim(self):
     return 3
@@ -6180,7 +6190,7 @@ class IfcBoxedHalfSpace_UnboundedSurface:
 
     @staticmethod
     def __call__(self):
-        assert (not 'ifc4x3_tc1.ifccurveboundedplane' in typeof(getattr(self, 'BaseSurface', INDETERMINATE))) is not False
+        assert (not 'ifc4x3_tc1.ifccurveboundedplane' in typeof(express_getattr(self, 'BaseSurface', INDETERMINATE))) is not False
 
 class IfcBridge_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6189,8 +6199,8 @@ class IfcBridge_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBridgeTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBridgePart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6199,8 +6209,8 @@ class IfcBridgePart_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBridgePartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBuildingElementPart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6209,8 +6219,8 @@ class IfcBuildingElementPart_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBuildingElementPart_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6219,8 +6229,8 @@ class IfcBuildingElementPart_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbuildingelementparttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbuildingelementparttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBuildingElementPartType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6229,8 +6239,8 @@ class IfcBuildingElementPartType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBuildingElementPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcBuildingElementProxy_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6239,8 +6249,8 @@ class IfcBuildingElementProxy_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBuildingElementProxy_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6249,8 +6259,8 @@ class IfcBuildingElementProxy_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbuildingelementproxytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcbuildingelementproxytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBuildingElementProxy_HasObjectName:
     SCOPE = 'entity'
@@ -6259,7 +6269,7 @@ class IfcBuildingElementProxy_HasObjectName:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcBuildingElementProxyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6268,8 +6278,8 @@ class IfcBuildingElementProxyType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBuildingElementProxyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcBuildingSystem_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6278,8 +6288,8 @@ class IfcBuildingSystem_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBuildingSystemTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBuiltElement_MaxOneMaterialAssociation:
     SCOPE = 'entity'
@@ -6288,7 +6298,7 @@ class IfcBuiltElement_MaxOneMaterialAssociation:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'HasAssociations', INDETERMINATE) if 'ifc4x3_tc1.ifcrelassociatesmaterial' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'HasAssociations', INDETERMINATE) if 'ifc4x3_tc1.ifcrelassociatesmaterial' in typeof(temp)]) <= 1) is not False
 
 class IfcBuiltSystem_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6297,8 +6307,8 @@ class IfcBuiltSystem_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBuiltSystemTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBuiltSystemTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBuiltSystemTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBuiltSystemTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBurner_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6307,8 +6317,8 @@ class IfcBurner_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcBurner_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6317,8 +6327,8 @@ class IfcBurner_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcburnertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcburnertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBurnerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6327,8 +6337,8 @@ class IfcBurnerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcBurnerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCShapeProfileDef_ValidGirth:
     SCOPE = 'entity'
@@ -6337,8 +6347,8 @@ class IfcCShapeProfileDef_ValidGirth:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        girth = getattr(self, 'Girth', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        girth = express_getattr(self, 'Girth', INDETERMINATE)
         assert (girth < depth / 2.0) is not False
 
 class IfcCShapeProfileDef_ValidInternalFilletRadius:
@@ -6348,10 +6358,10 @@ class IfcCShapeProfileDef_ValidInternalFilletRadius:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        width = getattr(self, 'Width', INDETERMINATE)
-        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
-        internalfilletradius = getattr(self, 'InternalFilletRadius', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        width = express_getattr(self, 'Width', INDETERMINATE)
+        wallthickness = express_getattr(self, 'WallThickness', INDETERMINATE)
+        internalfilletradius = express_getattr(self, 'InternalFilletRadius', INDETERMINATE)
         assert (not exists(internalfilletradius) or (internalfilletradius <= width / 2.0 - wallthickness and internalfilletradius <= depth / 2.0 - wallthickness)) is not False
 
 class IfcCShapeProfileDef_ValidWallThickness:
@@ -6361,9 +6371,9 @@ class IfcCShapeProfileDef_ValidWallThickness:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        width = getattr(self, 'Width', INDETERMINATE)
-        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        width = express_getattr(self, 'Width', INDETERMINATE)
+        wallthickness = express_getattr(self, 'WallThickness', INDETERMINATE)
         assert (wallthickness < width / 2.0 and wallthickness < depth / 2.0) is not False
 
 class IfcCableCarrierFitting_CorrectPredefinedType:
@@ -6373,8 +6383,8 @@ class IfcCableCarrierFitting_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCableCarrierFitting_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6383,8 +6393,8 @@ class IfcCableCarrierFitting_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablecarrierfittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablecarrierfittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableCarrierFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6393,8 +6403,8 @@ class IfcCableCarrierFittingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableCarrierFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCableCarrierSegment_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6403,8 +6413,8 @@ class IfcCableCarrierSegment_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCableCarrierSegment_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6413,8 +6423,8 @@ class IfcCableCarrierSegment_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablecarriersegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablecarriersegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableCarrierSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6423,8 +6433,8 @@ class IfcCableCarrierSegmentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableCarrierSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCableFitting_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6433,8 +6443,8 @@ class IfcCableFitting_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCableFitting_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6443,8 +6453,8 @@ class IfcCableFitting_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablefittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablefittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6453,8 +6463,8 @@ class IfcCableFittingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCableSegment_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6463,8 +6473,8 @@ class IfcCableSegment_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCableSegment_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6473,8 +6483,8 @@ class IfcCableSegment_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablesegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccablesegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6483,8 +6493,8 @@ class IfcCableSegmentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCableSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCaissonFoundation_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6493,8 +6503,8 @@ class IfcCaissonFoundation_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCaissonFoundation_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6503,8 +6513,8 @@ class IfcCaissonFoundation_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccaissonfoundationtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccaissonfoundationtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCaissonFoundationType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6513,8 +6523,8 @@ class IfcCaissonFoundationType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCaissonFoundationTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCartesianPoint_CP2Dor3D:
     SCOPE = 'entity'
@@ -6523,7 +6533,7 @@ class IfcCartesianPoint_CP2Dor3D:
 
     @staticmethod
     def __call__(self):
-        coordinates = getattr(self, 'Coordinates', INDETERMINATE)
+        coordinates = express_getattr(self, 'Coordinates', INDETERMINATE)
         assert (hiindex(coordinates) >= 2) is not False
 
 def calc_IfcCartesianPointList_Dim(self):
@@ -6536,16 +6546,16 @@ class IfcCartesianTransformationOperator_ScaleGreaterZero:
 
     @staticmethod
     def __call__(self):
-        scl = getattr(self, 'Scl', INDETERMINATE)
+        scl = express_getattr(self, 'Scl', INDETERMINATE)
         assert (scl > 0.0) is not False
 
 def calc_IfcCartesianTransformationOperator_Scl(self):
-    scale = getattr(self, 'Scale', INDETERMINATE)
+    scale = express_getattr(self, 'Scale', INDETERMINATE)
     return nvl(scale, 1.0)
 
 def calc_IfcCartesianTransformationOperator_Dim(self):
-    localorigin = getattr(self, 'LocalOrigin', INDETERMINATE)
-    return getattr(localorigin, 'Dim', INDETERMINATE)
+    localorigin = express_getattr(self, 'LocalOrigin', INDETERMINATE)
+    return express_getattr(localorigin, 'Dim', INDETERMINATE)
 
 class IfcCartesianTransformationOperator2D_Axis1Is2D:
     SCOPE = 'entity'
@@ -6554,7 +6564,7 @@ class IfcCartesianTransformationOperator2D_Axis1Is2D:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Axis1', INDETERMINATE)) or getattr(getattr(self, 'Axis1', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
+        assert (not exists(express_getattr(self, 'Axis1', INDETERMINATE)) or express_getattr(express_getattr(self, 'Axis1', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcCartesianTransformationOperator2D_Axis2Is2D:
     SCOPE = 'entity'
@@ -6563,7 +6573,7 @@ class IfcCartesianTransformationOperator2D_Axis2Is2D:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Axis2', INDETERMINATE)) or getattr(getattr(self, 'Axis2', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
+        assert (not exists(express_getattr(self, 'Axis2', INDETERMINATE)) or express_getattr(express_getattr(self, 'Axis2', INDETERMINATE), 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcCartesianTransformationOperator2D_DimEqual2:
     SCOPE = 'entity'
@@ -6572,10 +6582,10 @@ class IfcCartesianTransformationOperator2D_DimEqual2:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Dim', INDETERMINATE) == 2) is not False
+        assert (express_getattr(self, 'Dim', INDETERMINATE) == 2) is not False
 
 def calc_IfcCartesianTransformationOperator2D_U(self):
-    return IfcBaseAxis(2, getattr(self, 'Axis1', INDETERMINATE), getattr(self, 'Axis2', INDETERMINATE), None)
+    return IfcBaseAxis(2, express_getattr(self, 'Axis1', INDETERMINATE), express_getattr(self, 'Axis2', INDETERMINATE), None)
 
 class IfcCartesianTransformationOperator2DnonUniform_Scale2GreaterZero:
     SCOPE = 'entity'
@@ -6584,12 +6594,12 @@ class IfcCartesianTransformationOperator2DnonUniform_Scale2GreaterZero:
 
     @staticmethod
     def __call__(self):
-        scl2 = getattr(self, 'Scl2', INDETERMINATE)
+        scl2 = express_getattr(self, 'Scl2', INDETERMINATE)
         assert (scl2 > 0.0) is not False
 
 def calc_IfcCartesianTransformationOperator2DnonUniform_Scl2(self):
-    scale2 = getattr(self, 'Scale2', INDETERMINATE)
-    return nvl(scale2, getattr(self, 'Scl', INDETERMINATE))
+    scale2 = express_getattr(self, 'Scale2', INDETERMINATE)
+    return nvl(scale2, express_getattr(self, 'Scl', INDETERMINATE))
 
 class IfcCartesianTransformationOperator3D_Axis1Is3D:
     SCOPE = 'entity'
@@ -6598,7 +6608,7 @@ class IfcCartesianTransformationOperator3D_Axis1Is3D:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Axis1', INDETERMINATE)) or getattr(getattr(self, 'Axis1', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
+        assert (not exists(express_getattr(self, 'Axis1', INDETERMINATE)) or express_getattr(express_getattr(self, 'Axis1', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcCartesianTransformationOperator3D_Axis2Is3D:
     SCOPE = 'entity'
@@ -6607,7 +6617,7 @@ class IfcCartesianTransformationOperator3D_Axis2Is3D:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Axis2', INDETERMINATE)) or getattr(getattr(self, 'Axis2', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
+        assert (not exists(express_getattr(self, 'Axis2', INDETERMINATE)) or express_getattr(express_getattr(self, 'Axis2', INDETERMINATE), 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcCartesianTransformationOperator3D_Axis3Is3D:
     SCOPE = 'entity'
@@ -6616,8 +6626,8 @@ class IfcCartesianTransformationOperator3D_Axis3Is3D:
 
     @staticmethod
     def __call__(self):
-        axis3 = getattr(self, 'Axis3', INDETERMINATE)
-        assert (not exists(axis3) or getattr(axis3, 'Dim', INDETERMINATE) == 3) is not False
+        axis3 = express_getattr(self, 'Axis3', INDETERMINATE)
+        assert (not exists(axis3) or express_getattr(axis3, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcCartesianTransformationOperator3D_DimIs3D:
     SCOPE = 'entity'
@@ -6626,11 +6636,11 @@ class IfcCartesianTransformationOperator3D_DimIs3D:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Dim', INDETERMINATE) == 3) is not False
+        assert (express_getattr(self, 'Dim', INDETERMINATE) == 3) is not False
 
 def calc_IfcCartesianTransformationOperator3D_U(self):
-    axis3 = getattr(self, 'Axis3', INDETERMINATE)
-    return IfcBaseAxis(3, getattr(self, 'Axis1', INDETERMINATE), getattr(self, 'Axis2', INDETERMINATE), axis3)
+    axis3 = express_getattr(self, 'Axis3', INDETERMINATE)
+    return IfcBaseAxis(3, express_getattr(self, 'Axis1', INDETERMINATE), express_getattr(self, 'Axis2', INDETERMINATE), axis3)
 
 class IfcCartesianTransformationOperator3DnonUniform_Scale2GreaterZero:
     SCOPE = 'entity'
@@ -6639,7 +6649,7 @@ class IfcCartesianTransformationOperator3DnonUniform_Scale2GreaterZero:
 
     @staticmethod
     def __call__(self):
-        scl2 = getattr(self, 'Scl2', INDETERMINATE)
+        scl2 = express_getattr(self, 'Scl2', INDETERMINATE)
         assert (scl2 > 0.0) is not False
 
 class IfcCartesianTransformationOperator3DnonUniform_Scale3GreaterZero:
@@ -6649,16 +6659,16 @@ class IfcCartesianTransformationOperator3DnonUniform_Scale3GreaterZero:
 
     @staticmethod
     def __call__(self):
-        scl3 = getattr(self, 'Scl3', INDETERMINATE)
+        scl3 = express_getattr(self, 'Scl3', INDETERMINATE)
         assert (scl3 > 0.0) is not False
 
 def calc_IfcCartesianTransformationOperator3DnonUniform_Scl2(self):
-    scale2 = getattr(self, 'Scale2', INDETERMINATE)
-    return nvl(scale2, getattr(self, 'Scl', INDETERMINATE))
+    scale2 = express_getattr(self, 'Scale2', INDETERMINATE)
+    return nvl(scale2, express_getattr(self, 'Scl', INDETERMINATE))
 
 def calc_IfcCartesianTransformationOperator3DnonUniform_Scl3(self):
-    scale3 = getattr(self, 'Scale3', INDETERMINATE)
-    return nvl(scale3, getattr(self, 'Scl', INDETERMINATE))
+    scale3 = express_getattr(self, 'Scale3', INDETERMINATE)
+    return nvl(scale3, express_getattr(self, 'Scl', INDETERMINATE))
 
 class IfcChiller_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6667,8 +6677,8 @@ class IfcChiller_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcChiller_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6677,8 +6687,8 @@ class IfcChiller_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcchillertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcchillertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcChillerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6687,8 +6697,8 @@ class IfcChillerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcChillerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcChimney_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6697,8 +6707,8 @@ class IfcChimney_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcChimney_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6707,8 +6717,8 @@ class IfcChimney_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcchimneytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcchimneytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcChimneyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6717,8 +6727,8 @@ class IfcChimneyType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcChimneyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCircleHollowProfileDef_WR1:
     SCOPE = 'entity'
@@ -6727,8 +6737,8 @@ class IfcCircleHollowProfileDef_WR1:
 
     @staticmethod
     def __call__(self):
-        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
-        assert (wallthickness < getattr(self, 'Radius', INDETERMINATE)) is not False
+        wallthickness = express_getattr(self, 'WallThickness', INDETERMINATE)
+        assert (wallthickness < express_getattr(self, 'Radius', INDETERMINATE)) is not False
 
 class IfcCoil_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6737,8 +6747,8 @@ class IfcCoil_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCoil_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6747,8 +6757,8 @@ class IfcCoil_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoiltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoiltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoilType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6757,8 +6767,8 @@ class IfcCoilType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCoilTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcColumn_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6767,8 +6777,8 @@ class IfcColumn_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcColumn_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6777,8 +6787,8 @@ class IfcColumn_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccolumntype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccolumntype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcColumnType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6787,8 +6797,8 @@ class IfcColumnType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcColumnTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCommunicationsAppliance_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6797,8 +6807,8 @@ class IfcCommunicationsAppliance_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCommunicationsAppliance_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6807,8 +6817,8 @@ class IfcCommunicationsAppliance_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccommunicationsappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccommunicationsappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCommunicationsApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6817,8 +6827,8 @@ class IfcCommunicationsApplianceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcComplexProperty_WR21:
     SCOPE = 'entity'
@@ -6827,7 +6837,7 @@ class IfcComplexProperty_WR21:
 
     @staticmethod
     def __call__(self):
-        hasproperties = getattr(self, 'HasProperties', INDETERMINATE)
+        hasproperties = express_getattr(self, 'HasProperties', INDETERMINATE)
         assert (sizeof([temp for temp in hasproperties if self == temp]) == 0) is not False
 
 class IfcComplexProperty_WR22:
@@ -6837,7 +6847,7 @@ class IfcComplexProperty_WR22:
 
     @staticmethod
     def __call__(self):
-        hasproperties = getattr(self, 'HasProperties', INDETERMINATE)
+        hasproperties = express_getattr(self, 'HasProperties', INDETERMINATE)
         assert IfcUniquePropertyName(hasproperties) is not False
 
 class IfcComplexPropertyTemplate_NoSelfReference:
@@ -6847,7 +6857,7 @@ class IfcComplexPropertyTemplate_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        haspropertytemplates = getattr(self, 'HasPropertyTemplates', INDETERMINATE)
+        haspropertytemplates = express_getattr(self, 'HasPropertyTemplates', INDETERMINATE)
         assert (sizeof([temp for temp in haspropertytemplates if self == temp]) == 0) is not False
 
 class IfcComplexPropertyTemplate_UniquePropertyNames:
@@ -6857,7 +6867,7 @@ class IfcComplexPropertyTemplate_UniquePropertyNames:
 
     @staticmethod
     def __call__(self):
-        haspropertytemplates = getattr(self, 'HasPropertyTemplates', INDETERMINATE)
+        haspropertytemplates = express_getattr(self, 'HasPropertyTemplates', INDETERMINATE)
         assert IfcUniquePropertyTemplateNames(haspropertytemplates) is not False
 
 class IfcCompositeCurve_CurveContinuous:
@@ -6867,9 +6877,9 @@ class IfcCompositeCurve_CurveContinuous:
 
     @staticmethod
     def __call__(self):
-        segments = getattr(self, 'Segments', INDETERMINATE)
-        closedcurve = getattr(self, 'ClosedCurve', INDETERMINATE)
-        assert (not closedcurve and sizeof([temp for temp in segments if getattr(temp, 'Transition', INDETERMINATE) == discontinuous]) == 1 or (closedcurve and sizeof([temp for temp in segments if getattr(temp, 'Transition', INDETERMINATE) == discontinuous]) == 0)) is not False
+        segments = express_getattr(self, 'Segments', INDETERMINATE)
+        closedcurve = express_getattr(self, 'ClosedCurve', INDETERMINATE)
+        assert (not closedcurve and sizeof([temp for temp in segments if express_getattr(temp, 'Transition', INDETERMINATE) == discontinuous]) == 1 or (closedcurve and sizeof([temp for temp in segments if express_getattr(temp, 'Transition', INDETERMINATE) == discontinuous]) == 0)) is not False
 
 class IfcCompositeCurve_SameDim:
     SCOPE = 'entity'
@@ -6878,17 +6888,17 @@ class IfcCompositeCurve_SameDim:
 
     @staticmethod
     def __call__(self):
-        segments = getattr(self, 'Segments', INDETERMINATE)
-        assert (sizeof([temp for temp in segments if getattr(temp, 'Dim', INDETERMINATE) != getattr(express_getitem(segments, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
+        segments = express_getattr(self, 'Segments', INDETERMINATE)
+        assert (sizeof([temp for temp in segments if express_getattr(temp, 'Dim', INDETERMINATE) != express_getattr(express_getitem(segments, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
 
 def calc_IfcCompositeCurve_NSegments(self):
-    segments = getattr(self, 'Segments', INDETERMINATE)
+    segments = express_getattr(self, 'Segments', INDETERMINATE)
     return sizeof(segments)
 
 def calc_IfcCompositeCurve_ClosedCurve(self):
-    segments = getattr(self, 'Segments', INDETERMINATE)
-    nsegments = getattr(self, 'NSegments', INDETERMINATE)
-    return getattr(express_getitem(segments, nsegments - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Transition', INDETERMINATE) != discontinuous
+    segments = express_getattr(self, 'Segments', INDETERMINATE)
+    nsegments = express_getattr(self, 'NSegments', INDETERMINATE)
+    return express_getattr(express_getitem(segments, nsegments - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Transition', INDETERMINATE) != discontinuous
 
 class IfcCompositeCurveOnSurface_SameSurface:
     SCOPE = 'entity'
@@ -6897,7 +6907,7 @@ class IfcCompositeCurveOnSurface_SameSurface:
 
     @staticmethod
     def __call__(self):
-        basissurface = getattr(self, 'BasisSurface', INDETERMINATE)
+        basissurface = express_getattr(self, 'BasisSurface', INDETERMINATE)
         assert (sizeof(basissurface) > 0) is not False
 
 def calc_IfcCompositeCurveOnSurface_BasisSurface(self):
@@ -6910,7 +6920,7 @@ class IfcCompositeCurveSegment_ParentIsBoundedCurve:
 
     @staticmethod
     def __call__(self):
-        parentcurve = getattr(self, 'ParentCurve', INDETERMINATE)
+        parentcurve = express_getattr(self, 'ParentCurve', INDETERMINATE)
         assert ('ifc4x3_tc1.ifcboundedcurve' in typeof(parentcurve)) is not False
 
 class IfcCompositeProfileDef_InvariantProfileType:
@@ -6920,8 +6930,8 @@ class IfcCompositeProfileDef_InvariantProfileType:
 
     @staticmethod
     def __call__(self):
-        profiles = getattr(self, 'Profiles', INDETERMINATE)
-        assert (sizeof([temp for temp in profiles if getattr(temp, 'ProfileType', INDETERMINATE) != getattr(express_getitem(profiles, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE)]) == 0) is not False
+        profiles = express_getattr(self, 'Profiles', INDETERMINATE)
+        assert (sizeof([temp for temp in profiles if express_getattr(temp, 'ProfileType', INDETERMINATE) != express_getattr(express_getitem(profiles, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE)]) == 0) is not False
 
 class IfcCompositeProfileDef_NoRecursion:
     SCOPE = 'entity'
@@ -6930,7 +6940,7 @@ class IfcCompositeProfileDef_NoRecursion:
 
     @staticmethod
     def __call__(self):
-        profiles = getattr(self, 'Profiles', INDETERMINATE)
+        profiles = express_getattr(self, 'Profiles', INDETERMINATE)
         assert (sizeof([temp for temp in profiles if 'ifc4x3_tc1.ifccompositeprofiledef' in typeof(temp)]) == 0) is not False
 
 class IfcCompressor_CorrectPredefinedType:
@@ -6940,8 +6950,8 @@ class IfcCompressor_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCompressor_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6950,8 +6960,8 @@ class IfcCompressor_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccompressortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccompressortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCompressorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6960,8 +6970,8 @@ class IfcCompressorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCompressorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCondenser_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6970,8 +6980,8 @@ class IfcCondenser_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCondenser_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -6980,8 +6990,8 @@ class IfcCondenser_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccondensertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccondensertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCondenserType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6990,8 +7000,8 @@ class IfcCondenserType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCondenserTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcConstraint_WR11:
     SCOPE = 'entity'
@@ -7000,8 +7010,8 @@ class IfcConstraint_WR11:
 
     @staticmethod
     def __call__(self):
-        constraintgrade = getattr(self, 'ConstraintGrade', INDETERMINATE)
-        assert (constraintgrade != getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE) or (constraintgrade == getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'UserDefinedGrade', INDETERMINATE)))) is not False
+        constraintgrade = express_getattr(self, 'ConstraintGrade', INDETERMINATE)
+        assert (constraintgrade != express_getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE) or (constraintgrade == express_getattr(IfcConstraintEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'UserDefinedGrade', INDETERMINATE)))) is not False
 
 class IfcConstructionEquipmentResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7010,8 +7020,8 @@ class IfcConstructionEquipmentResource_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcConstructionEquipmentResourceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7020,8 +7030,8 @@ class IfcConstructionEquipmentResourceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ResourceType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConstructionEquipmentResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ResourceType', INDETERMINATE)))) is not False
 
 class IfcConstructionMaterialResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7030,8 +7040,8 @@ class IfcConstructionMaterialResource_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcConstructionMaterialResourceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7040,8 +7050,8 @@ class IfcConstructionMaterialResourceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ResourceType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConstructionMaterialResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ResourceType', INDETERMINATE)))) is not False
 
 class IfcConstructionProductResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7050,8 +7060,8 @@ class IfcConstructionProductResource_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcConstructionProductResourceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7060,8 +7070,8 @@ class IfcConstructionProductResourceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ResourceType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConstructionProductResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ResourceType', INDETERMINATE)))) is not False
 
 class IfcController_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7070,8 +7080,8 @@ class IfcController_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcController_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7080,8 +7090,8 @@ class IfcController_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccontrollertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccontrollertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcControllerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7090,8 +7100,8 @@ class IfcControllerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcControllerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcConveyorSegment_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7100,8 +7110,8 @@ class IfcConveyorSegment_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcConveyorSegment_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7110,8 +7120,8 @@ class IfcConveyorSegment_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcconveyorsegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcconveyorsegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcConveyorSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7120,8 +7130,8 @@ class IfcConveyorSegmentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcConveyorSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCooledBeam_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7130,8 +7140,8 @@ class IfcCooledBeam_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCooledBeam_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7140,8 +7150,8 @@ class IfcCooledBeam_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccooledbeamtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccooledbeamtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCooledBeamType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7150,8 +7160,8 @@ class IfcCooledBeamType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCooledBeamTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCoolingTower_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7160,8 +7170,8 @@ class IfcCoolingTower_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCoolingTower_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7170,8 +7180,8 @@ class IfcCoolingTower_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoolingtowertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoolingtowertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoolingTowerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7180,8 +7190,8 @@ class IfcCoolingTowerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCoolingTowerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCourse_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7190,8 +7200,8 @@ class IfcCourse_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCourse_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7200,8 +7210,8 @@ class IfcCourse_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoursetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoursetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCourseType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7210,8 +7220,8 @@ class IfcCourseType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCourseTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCovering_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7220,8 +7230,8 @@ class IfcCovering_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCovering_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7230,8 +7240,8 @@ class IfcCovering_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoveringtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccoveringtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoveringType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7240,8 +7250,8 @@ class IfcCoveringType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCoveringTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcCrewResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7250,8 +7260,8 @@ class IfcCrewResource_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCrewResourceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7260,8 +7270,8 @@ class IfcCrewResourceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ResourceType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCrewResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ResourceType', INDETERMINATE)))) is not False
 
 def calc_IfcCsgPrimitive3D_Dim(self):
     return 3
@@ -7273,8 +7283,8 @@ class IfcCurtainWall_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcCurtainWall_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7283,8 +7293,8 @@ class IfcCurtainWall_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccurtainwalltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifccurtainwalltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCurtainWallType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7293,8 +7303,8 @@ class IfcCurtainWallType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcCurtainWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcCurve_Dim(self):
     return IfcCurveDim(self)
@@ -7306,9 +7316,9 @@ class IfcCurveStyle_IdentifiableCurveStyle:
 
     @staticmethod
     def __call__(self):
-        curvefont = getattr(self, 'CurveFont', INDETERMINATE)
-        curvewidth = getattr(self, 'CurveWidth', INDETERMINATE)
-        curvecolour = getattr(self, 'CurveColour', INDETERMINATE)
+        curvefont = express_getattr(self, 'CurveFont', INDETERMINATE)
+        curvewidth = express_getattr(self, 'CurveWidth', INDETERMINATE)
+        curvecolour = express_getattr(self, 'CurveColour', INDETERMINATE)
         assert (exists(curvefont) or exists(curvewidth) or exists(curvecolour)) is not False
 
 class IfcCurveStyle_MeasureOfWidth:
@@ -7318,7 +7328,7 @@ class IfcCurveStyle_MeasureOfWidth:
 
     @staticmethod
     def __call__(self):
-        curvewidth = getattr(self, 'CurveWidth', INDETERMINATE)
+        curvewidth = express_getattr(self, 'CurveWidth', INDETERMINATE)
         assert (not exists(curvewidth) or 'ifc4x3_tc1.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc4x3_tc1.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
 
 class IfcCurveStyleFontPattern_VisibleLengthGreaterEqualZero:
@@ -7328,7 +7338,7 @@ class IfcCurveStyleFontPattern_VisibleLengthGreaterEqualZero:
 
     @staticmethod
     def __call__(self):
-        visiblesegmentlength = getattr(self, 'VisibleSegmentLength', INDETERMINATE)
+        visiblesegmentlength = express_getattr(self, 'VisibleSegmentLength', INDETERMINATE)
         assert (visiblesegmentlength >= 0.0) is not False
 
 class IfcDamper_CorrectPredefinedType:
@@ -7338,8 +7348,8 @@ class IfcDamper_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDamper_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7348,8 +7358,8 @@ class IfcDamper_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdampertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdampertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDamperType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7358,8 +7368,8 @@ class IfcDamperType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDeepFoundation_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7368,8 +7378,8 @@ class IfcDeepFoundation_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdeepfoundationtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdeepfoundationtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDerivedProfileDef_InvariantProfileType:
     SCOPE = 'entity'
@@ -7378,8 +7388,8 @@ class IfcDerivedProfileDef_InvariantProfileType:
 
     @staticmethod
     def __call__(self):
-        parentprofile = getattr(self, 'ParentProfile', INDETERMINATE)
-        assert (getattr(self, 'ProfileType', INDETERMINATE) == getattr(parentprofile, 'ProfileType', INDETERMINATE)) is not False
+        parentprofile = express_getattr(self, 'ParentProfile', INDETERMINATE)
+        assert (express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(parentprofile, 'ProfileType', INDETERMINATE)) is not False
 
 class IfcDerivedUnit_WR1:
     SCOPE = 'entity'
@@ -7388,8 +7398,8 @@ class IfcDerivedUnit_WR1:
 
     @staticmethod
     def __call__(self):
-        elements = getattr(self, 'Elements', INDETERMINATE)
-        assert (sizeof(elements) > 1 or (sizeof(elements) == 1 and getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) != 1)) is not False
+        elements = express_getattr(self, 'Elements', INDETERMINATE)
+        assert (sizeof(elements) > 1 or (sizeof(elements) == 1 and express_getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) != 1)) is not False
 
 class IfcDerivedUnit_WR2:
     SCOPE = 'entity'
@@ -7398,11 +7408,11 @@ class IfcDerivedUnit_WR2:
 
     @staticmethod
     def __call__(self):
-        unittype = getattr(self, 'UnitType', INDETERMINATE)
-        assert (unittype != getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE) or (unittype == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'UserDefinedType', INDETERMINATE)))) is not False
+        unittype = express_getattr(self, 'UnitType', INDETERMINATE)
+        assert (unittype != express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE) or (unittype == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'UserDefinedType', INDETERMINATE)))) is not False
 
 def calc_IfcDerivedUnit_Dimensions(self):
-    elements = getattr(self, 'Elements', INDETERMINATE)
+    elements = express_getattr(self, 'Elements', INDETERMINATE)
     return IfcDeriveDimensionalExponents(elements)
 
 class IfcDirection_MagnitudeGreaterZero:
@@ -7412,11 +7422,11 @@ class IfcDirection_MagnitudeGreaterZero:
 
     @staticmethod
     def __call__(self):
-        directionratios = getattr(self, 'DirectionRatios', INDETERMINATE)
+        directionratios = express_getattr(self, 'DirectionRatios', INDETERMINATE)
         assert (sizeof([tmp for tmp in directionratios if tmp != 0.0]) > 0) is not False
 
 def calc_IfcDirection_Dim(self):
-    directionratios = getattr(self, 'DirectionRatios', INDETERMINATE)
+    directionratios = express_getattr(self, 'DirectionRatios', INDETERMINATE)
     return hiindex(directionratios)
 
 class IfcDirectrixCurveSweptAreaSolid_DirectrixBounded:
@@ -7426,9 +7436,9 @@ class IfcDirectrixCurveSweptAreaSolid_DirectrixBounded:
 
     @staticmethod
     def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        startparam = getattr(self, 'StartParam', INDETERMINATE)
-        endparam = getattr(self, 'EndParam', INDETERMINATE)
+        directrix = express_getattr(self, 'Directrix', INDETERMINATE)
+        startparam = express_getattr(self, 'StartParam', INDETERMINATE)
+        endparam = express_getattr(self, 'EndParam', INDETERMINATE)
         assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_tc1.ifcconic', 'ifc4x3_tc1.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
 
 class IfcDiscreteAccessory_CorrectPredefinedType:
@@ -7438,8 +7448,8 @@ class IfcDiscreteAccessory_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDiscreteAccessory_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7448,8 +7458,8 @@ class IfcDiscreteAccessory_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdiscreteaccessorytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdiscreteaccessorytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDiscreteAccessoryType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7458,8 +7468,8 @@ class IfcDiscreteAccessoryType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDiscreteAccessoryTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDistributionBoard_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7468,8 +7478,8 @@ class IfcDistributionBoard_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDistributionBoard_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7478,8 +7488,8 @@ class IfcDistributionBoard_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdistributionboardtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdistributionboardtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDistributionBoardType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7488,8 +7498,8 @@ class IfcDistributionBoardType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDistributionChamberElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7498,8 +7508,8 @@ class IfcDistributionChamberElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDistributionChamberElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7508,8 +7518,8 @@ class IfcDistributionChamberElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdistributionchamberelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdistributionchamberelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDistributionChamberElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7518,8 +7528,8 @@ class IfcDistributionChamberElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDistributionChamberElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDistributionSystem_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7528,8 +7538,8 @@ class IfcDistributionSystem_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDistributionSystemEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDocumentReference_WR1:
     SCOPE = 'entity'
@@ -7538,8 +7548,8 @@ class IfcDocumentReference_WR1:
 
     @staticmethod
     def __call__(self):
-        name = getattr(self, 'Name', INDETERMINATE)
-        referenceddocument = getattr(self, 'ReferencedDocument', INDETERMINATE)
+        name = express_getattr(self, 'Name', INDETERMINATE)
+        referenceddocument = express_getattr(self, 'ReferencedDocument', INDETERMINATE)
         assert exists(name) ^ exists(referenceddocument) is not False
 
 class IfcDoor_CorrectPredefinedType:
@@ -7549,8 +7559,8 @@ class IfcDoor_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDoor_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7559,8 +7569,8 @@ class IfcDoor_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdoortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcdoortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDoorLiningProperties_WR31:
     SCOPE = 'entity'
@@ -7569,8 +7579,8 @@ class IfcDoorLiningProperties_WR31:
 
     @staticmethod
     def __call__(self):
-        liningdepth = getattr(self, 'LiningDepth', INDETERMINATE)
-        liningthickness = getattr(self, 'LiningThickness', INDETERMINATE)
+        liningdepth = express_getattr(self, 'LiningDepth', INDETERMINATE)
+        liningthickness = express_getattr(self, 'LiningThickness', INDETERMINATE)
         assert (not (exists(liningdepth) and (not exists(liningthickness)))) is not False
 
 class IfcDoorLiningProperties_WR32:
@@ -7580,8 +7590,8 @@ class IfcDoorLiningProperties_WR32:
 
     @staticmethod
     def __call__(self):
-        thresholddepth = getattr(self, 'ThresholdDepth', INDETERMINATE)
-        thresholdthickness = getattr(self, 'ThresholdThickness', INDETERMINATE)
+        thresholddepth = express_getattr(self, 'ThresholdDepth', INDETERMINATE)
+        thresholdthickness = express_getattr(self, 'ThresholdThickness', INDETERMINATE)
         assert (not (exists(thresholddepth) and (not exists(thresholdthickness)))) is not False
 
 class IfcDoorLiningProperties_WR33:
@@ -7591,8 +7601,8 @@ class IfcDoorLiningProperties_WR33:
 
     @staticmethod
     def __call__(self):
-        transomthickness = getattr(self, 'TransomThickness', INDETERMINATE)
-        transomoffset = getattr(self, 'TransomOffset', INDETERMINATE)
+        transomthickness = express_getattr(self, 'TransomThickness', INDETERMINATE)
+        transomoffset = express_getattr(self, 'TransomOffset', INDETERMINATE)
         assert (exists(transomoffset) and exists(transomthickness)) ^ (not exists(transomoffset) and (not exists(transomthickness))) is not False
 
 class IfcDoorLiningProperties_WR34:
@@ -7602,8 +7612,8 @@ class IfcDoorLiningProperties_WR34:
 
     @staticmethod
     def __call__(self):
-        casingthickness = getattr(self, 'CasingThickness', INDETERMINATE)
-        casingdepth = getattr(self, 'CasingDepth', INDETERMINATE)
+        casingthickness = express_getattr(self, 'CasingThickness', INDETERMINATE)
+        casingdepth = express_getattr(self, 'CasingDepth', INDETERMINATE)
         assert (exists(casingdepth) and exists(casingthickness)) ^ (not exists(casingdepth) and (not exists(casingthickness))) is not False
 
 class IfcDoorLiningProperties_WR35:
@@ -7613,7 +7623,7 @@ class IfcDoorLiningProperties_WR35:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcdoortype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcdoortype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcDoorPanelProperties_ApplicableToType:
     SCOPE = 'entity'
@@ -7622,7 +7632,7 @@ class IfcDoorPanelProperties_ApplicableToType:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcdoortype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcdoortype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcDoorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7631,8 +7641,8 @@ class IfcDoorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDoorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
     SCOPE = 'entity'
@@ -7641,7 +7651,7 @@ class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
 
 class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
     SCOPE = 'entity'
@@ -7650,7 +7660,7 @@ class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
 
 class IfcDuctFitting_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7659,8 +7669,8 @@ class IfcDuctFitting_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDuctFitting_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7669,8 +7679,8 @@ class IfcDuctFitting_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcductfittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcductfittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7679,8 +7689,8 @@ class IfcDuctFittingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDuctFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDuctSegment_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7689,8 +7699,8 @@ class IfcDuctSegment_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDuctSegment_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7699,8 +7709,8 @@ class IfcDuctSegment_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcductsegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcductsegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7709,8 +7719,8 @@ class IfcDuctSegmentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDuctSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcDuctSilencer_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7719,8 +7729,8 @@ class IfcDuctSilencer_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcDuctSilencer_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7729,8 +7739,8 @@ class IfcDuctSilencer_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcductsilencertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcductsilencertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctSilencerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7739,8 +7749,8 @@ class IfcDuctSilencerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcDuctSilencerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcEarthworksCut_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7749,8 +7759,8 @@ class IfcEarthworksCut_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcEarthworksCutTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEarthworksCutTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcEarthworksCutTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEarthworksCutTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcEarthworksFill_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7759,8 +7769,8 @@ class IfcEarthworksFill_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcEarthworksFillTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEarthworksFillTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcEarthworksFillTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEarthworksFillTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcEdgeLoop_IsClosed:
     SCOPE = 'entity'
@@ -7769,9 +7779,9 @@ class IfcEdgeLoop_IsClosed:
 
     @staticmethod
     def __call__(self):
-        edgelist = getattr(self, 'EdgeList', INDETERMINATE)
-        ne = getattr(self, 'Ne', INDETERMINATE)
-        assert (getattr(express_getitem(edgelist, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE) == getattr(express_getitem(edgelist, ne - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE)) is not False
+        edgelist = express_getattr(self, 'EdgeList', INDETERMINATE)
+        ne = express_getattr(self, 'Ne', INDETERMINATE)
+        assert (express_getattr(express_getitem(edgelist, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE) == express_getattr(express_getitem(edgelist, ne - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE)) is not False
 
 class IfcEdgeLoop_IsContinuous:
     SCOPE = 'entity'
@@ -7783,7 +7793,7 @@ class IfcEdgeLoop_IsContinuous:
         assert IfcLoopHeadToTail(self) is not False
 
 def calc_IfcEdgeLoop_Ne(self):
-    edgelist = getattr(self, 'EdgeList', INDETERMINATE)
+    edgelist = express_getattr(self, 'EdgeList', INDETERMINATE)
     return sizeof(edgelist)
 
 class IfcElectricAppliance_CorrectPredefinedType:
@@ -7793,8 +7803,8 @@ class IfcElectricAppliance_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricAppliance_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7803,8 +7813,8 @@ class IfcElectricAppliance_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7813,8 +7823,8 @@ class IfcElectricApplianceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElectricDistributionBoard_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7823,8 +7833,8 @@ class IfcElectricDistributionBoard_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricDistributionBoard_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7833,8 +7843,8 @@ class IfcElectricDistributionBoard_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricdistributionboardtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricdistributionboardtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricDistributionBoardType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7843,8 +7853,8 @@ class IfcElectricDistributionBoardType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricDistributionBoardTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElectricFlowStorageDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7853,8 +7863,8 @@ class IfcElectricFlowStorageDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricFlowStorageDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7863,8 +7873,8 @@ class IfcElectricFlowStorageDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricflowstoragedevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricflowstoragedevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricFlowStorageDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7873,8 +7883,8 @@ class IfcElectricFlowStorageDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricFlowStorageDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElectricFlowTreatmentDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7883,8 +7893,8 @@ class IfcElectricFlowTreatmentDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricFlowTreatmentDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7893,8 +7903,8 @@ class IfcElectricFlowTreatmentDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricflowtreatmentdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricflowtreatmentdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricFlowTreatmentDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7903,8 +7913,8 @@ class IfcElectricFlowTreatmentDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricFlowTreatmentDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElectricGenerator_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7913,8 +7923,8 @@ class IfcElectricGenerator_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricGenerator_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7923,8 +7933,8 @@ class IfcElectricGenerator_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricgeneratortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricgeneratortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricGeneratorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7933,8 +7943,8 @@ class IfcElectricGeneratorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricGeneratorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElectricMotor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7943,8 +7953,8 @@ class IfcElectricMotor_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricMotor_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7953,8 +7963,8 @@ class IfcElectricMotor_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricmotortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectricmotortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricMotorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7963,8 +7973,8 @@ class IfcElectricMotorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricMotorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElectricTimeControl_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7973,8 +7983,8 @@ class IfcElectricTimeControl_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElectricTimeControl_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -7983,8 +7993,8 @@ class IfcElectricTimeControl_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectrictimecontroltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelectrictimecontroltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricTimeControlType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7993,8 +8003,8 @@ class IfcElectricTimeControlType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElectricTimeControlTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElementAssembly_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8003,8 +8013,8 @@ class IfcElementAssembly_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcElementAssembly_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8013,8 +8023,8 @@ class IfcElementAssembly_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelementassemblytype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcelementassemblytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElementAssemblyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8023,8 +8033,8 @@ class IfcElementAssemblyType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcElementAssemblyTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcElementQuantity_UniqueQuantityNames:
     SCOPE = 'entity'
@@ -8033,7 +8043,7 @@ class IfcElementQuantity_UniqueQuantityNames:
 
     @staticmethod
     def __call__(self):
-        quantities = getattr(self, 'Quantities', INDETERMINATE)
+        quantities = express_getattr(self, 'Quantities', INDETERMINATE)
         assert IfcUniqueQuantityNames(quantities) is not False
 
 class IfcEngine_CorrectPredefinedType:
@@ -8043,8 +8053,8 @@ class IfcEngine_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcEngine_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8053,8 +8063,8 @@ class IfcEngine_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcenginetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcenginetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEngineType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8063,8 +8073,8 @@ class IfcEngineType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEngineTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcEvaporativeCooler_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8073,8 +8083,8 @@ class IfcEvaporativeCooler_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcEvaporativeCooler_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8083,8 +8093,8 @@ class IfcEvaporativeCooler_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcevaporativecoolertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcevaporativecoolertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEvaporativeCoolerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8093,8 +8103,8 @@ class IfcEvaporativeCoolerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEvaporativeCoolerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcEvaporator_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8103,8 +8113,8 @@ class IfcEvaporator_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcEvaporator_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8113,8 +8123,8 @@ class IfcEvaporator_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcevaporatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcevaporatortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEvaporatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8123,8 +8133,8 @@ class IfcEvaporatorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEvaporatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcEvent_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8133,8 +8143,8 @@ class IfcEvent_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcEvent_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8143,9 +8153,9 @@ class IfcEvent_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        eventtriggertype = getattr(self, 'EventTriggerType', INDETERMINATE)
-        userdefinedeventtriggertype = getattr(self, 'UserDefinedEventTriggerType', INDETERMINATE)
-        assert (not exists(eventtriggertype) or eventtriggertype != getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) or (eventtriggertype == getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedeventtriggertype))) is not False
+        eventtriggertype = express_getattr(self, 'EventTriggerType', INDETERMINATE)
+        userdefinedeventtriggertype = express_getattr(self, 'UserDefinedEventTriggerType', INDETERMINATE)
+        assert (not exists(eventtriggertype) or eventtriggertype != express_getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) or (eventtriggertype == express_getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedeventtriggertype))) is not False
 
 class IfcEventType_CorrectEventTriggerType:
     SCOPE = 'entity'
@@ -8154,9 +8164,9 @@ class IfcEventType_CorrectEventTriggerType:
 
     @staticmethod
     def __call__(self):
-        eventtriggertype = getattr(self, 'EventTriggerType', INDETERMINATE)
-        userdefinedeventtriggertype = getattr(self, 'UserDefinedEventTriggerType', INDETERMINATE)
-        assert (eventtriggertype != getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) or (eventtriggertype == getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedeventtriggertype))) is not False
+        eventtriggertype = express_getattr(self, 'EventTriggerType', INDETERMINATE)
+        userdefinedeventtriggertype = express_getattr(self, 'UserDefinedEventTriggerType', INDETERMINATE)
+        assert (eventtriggertype != express_getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) or (eventtriggertype == express_getattr(IfcEventTriggerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedeventtriggertype))) is not False
 
 class IfcEventType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8165,8 +8175,8 @@ class IfcEventType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ProcessType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcEventTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ProcessType', INDETERMINATE)))) is not False
 
 class IfcExternalReference_WR1:
     SCOPE = 'entity'
@@ -8175,9 +8185,9 @@ class IfcExternalReference_WR1:
 
     @staticmethod
     def __call__(self):
-        location = getattr(self, 'Location', INDETERMINATE)
-        identification = getattr(self, 'Identification', INDETERMINATE)
-        name = getattr(self, 'Name', INDETERMINATE)
+        location = express_getattr(self, 'Location', INDETERMINATE)
+        identification = express_getattr(self, 'Identification', INDETERMINATE)
+        name = express_getattr(self, 'Name', INDETERMINATE)
         assert (exists(identification) or exists(location) or exists(name)) is not False
 
 class IfcExtrudedAreaSolid_ValidExtrusionDirection:
@@ -8187,7 +8197,7 @@ class IfcExtrudedAreaSolid_ValidExtrusionDirection:
 
     @staticmethod
     def __call__(self):
-        assert (IfcDotProduct(IfcDirection(DirectionRatios=[0.0, 0.0, 1.0]), getattr(self, 'ExtrudedDirection', INDETERMINATE)) != 0.0) is not False
+        assert (IfcDotProduct(IfcDirection(DirectionRatios=[0.0, 0.0, 1.0]), express_getattr(self, 'ExtrudedDirection', INDETERMINATE)) != 0.0) is not False
 
 class IfcExtrudedAreaSolidTapered_CorrectProfileAssignment:
     SCOPE = 'entity'
@@ -8196,7 +8206,7 @@ class IfcExtrudedAreaSolidTapered_CorrectProfileAssignment:
 
     @staticmethod
     def __call__(self):
-        assert IfcTaperedSweptAreaProfiles(getattr(self, 'SweptArea', INDETERMINATE), getattr(self, 'EndSweptArea', INDETERMINATE)) is not False
+        assert IfcTaperedSweptAreaProfiles(express_getattr(self, 'SweptArea', INDETERMINATE), express_getattr(self, 'EndSweptArea', INDETERMINATE)) is not False
 
 class IfcFace_HasOuterBound:
     SCOPE = 'entity'
@@ -8205,7 +8215,7 @@ class IfcFace_HasOuterBound:
 
     @staticmethod
     def __call__(self):
-        bounds = getattr(self, 'Bounds', INDETERMINATE)
+        bounds = express_getattr(self, 'Bounds', INDETERMINATE)
         assert (sizeof([temp for temp in bounds if 'ifc4x3_tc1.ifcfaceouterbound' in typeof(temp)]) <= 1) is not False
 
 def calc_IfcFaceBasedSurfaceModel_Dim(self):
@@ -8218,8 +8228,8 @@ class IfcFacilityPartCommon_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFacilityPartCommonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFan_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8228,8 +8238,8 @@ class IfcFan_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFan_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8238,8 +8248,8 @@ class IfcFan_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfantype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfantype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFanType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8248,8 +8258,8 @@ class IfcFanType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFanTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFastener_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8258,8 +8268,8 @@ class IfcFastener_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFastener_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8268,8 +8278,8 @@ class IfcFastener_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfastenertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfastenertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFastenerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8278,8 +8288,8 @@ class IfcFastenerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFeatureElement_NotContained:
     SCOPE = 'entity'
@@ -8288,7 +8298,7 @@ class IfcFeatureElement_NotContained:
 
     @staticmethod
     def __call__(self):
-        containedinstructure = getattr(self, 'ContainedInStructure', INDETERMINATE)
+        containedinstructure = express_getattr(self, 'ContainedInStructure', INDETERMINATE)
         assert (sizeof(containedinstructure) == 0) is not False
 
 class IfcFeatureElementSubtraction_HasNoSubtraction:
@@ -8298,7 +8308,7 @@ class IfcFeatureElementSubtraction_HasNoSubtraction:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'HasOpenings', INDETERMINATE)) == 0) is not False
+        assert (sizeof(express_getattr(self, 'HasOpenings', INDETERMINATE)) == 0) is not False
 
 class IfcFeatureElementSubtraction_IsNotFilling:
     SCOPE = 'entity'
@@ -8307,7 +8317,7 @@ class IfcFeatureElementSubtraction_IsNotFilling:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'FillsVoids', INDETERMINATE)) == 0) is not False
+        assert (sizeof(express_getattr(self, 'FillsVoids', INDETERMINATE)) == 0) is not False
 
 class IfcFillAreaStyle_ConsistentHatchStyleDef:
     SCOPE = 'entity'
@@ -8316,7 +8326,7 @@ class IfcFillAreaStyle_ConsistentHatchStyleDef:
 
     @staticmethod
     def __call__(self):
-        assert IfcCorrectFillAreaStyle(getattr(self, 'FillStyles', INDETERMINATE)) is not False
+        assert IfcCorrectFillAreaStyle(express_getattr(self, 'FillStyles', INDETERMINATE)) is not False
 
 class IfcFillAreaStyle_MaxOneColour:
     SCOPE = 'entity'
@@ -8325,7 +8335,7 @@ class IfcFillAreaStyle_MaxOneColour:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_tc1.ifccolour' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_tc1.ifccolour' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyle_MaxOneExtHatchStyle:
     SCOPE = 'entity'
@@ -8334,7 +8344,7 @@ class IfcFillAreaStyle_MaxOneExtHatchStyle:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_tc1.ifcexternallydefinedhatchstyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_tc1.ifcexternallydefinedhatchstyle' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyleHatching_PatternStart2D:
     SCOPE = 'entity'
@@ -8343,8 +8353,8 @@ class IfcFillAreaStyleHatching_PatternStart2D:
 
     @staticmethod
     def __call__(self):
-        patternstart = getattr(self, 'PatternStart', INDETERMINATE)
-        assert (not exists(patternstart) or getattr(patternstart, 'Dim', INDETERMINATE) == 2) is not False
+        patternstart = express_getattr(self, 'PatternStart', INDETERMINATE)
+        assert (not exists(patternstart) or express_getattr(patternstart, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcFillAreaStyleHatching_RefHatchLine2D:
     SCOPE = 'entity'
@@ -8353,8 +8363,8 @@ class IfcFillAreaStyleHatching_RefHatchLine2D:
 
     @staticmethod
     def __call__(self):
-        pointofreferencehatchline = getattr(self, 'PointOfReferenceHatchLine', INDETERMINATE)
-        assert (not exists(pointofreferencehatchline) or getattr(pointofreferencehatchline, 'Dim', INDETERMINATE) == 2) is not False
+        pointofreferencehatchline = express_getattr(self, 'PointOfReferenceHatchLine', INDETERMINATE)
+        assert (not exists(pointofreferencehatchline) or express_getattr(pointofreferencehatchline, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcFilter_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8363,8 +8373,8 @@ class IfcFilter_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFilter_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8373,8 +8383,8 @@ class IfcFilter_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfiltertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfiltertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFilterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8383,8 +8393,8 @@ class IfcFilterType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFilterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFireSuppressionTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8393,8 +8403,8 @@ class IfcFireSuppressionTerminal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFireSuppressionTerminal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8403,8 +8413,8 @@ class IfcFireSuppressionTerminal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfiresuppressionterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfiresuppressionterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFireSuppressionTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8413,8 +8423,8 @@ class IfcFireSuppressionTerminalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFireSuppressionTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFlowInstrument_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8423,8 +8433,8 @@ class IfcFlowInstrument_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFlowInstrument_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8433,8 +8443,8 @@ class IfcFlowInstrument_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcflowinstrumenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcflowinstrumenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFlowInstrumentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8443,8 +8453,8 @@ class IfcFlowInstrumentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFlowInstrumentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFlowMeter_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8453,8 +8463,8 @@ class IfcFlowMeter_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFlowMeter_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8463,8 +8473,8 @@ class IfcFlowMeter_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcflowmetertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcflowmetertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFlowMeterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8473,8 +8483,8 @@ class IfcFlowMeterType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFlowMeterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFooting_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8483,8 +8493,8 @@ class IfcFooting_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFooting_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8493,8 +8503,8 @@ class IfcFooting_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfootingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfootingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFootingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8503,8 +8513,8 @@ class IfcFootingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFootingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcFurniture_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8513,8 +8523,8 @@ class IfcFurniture_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcFurniture_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8523,8 +8533,8 @@ class IfcFurniture_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfurnituretype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcfurnituretype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFurnitureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8533,8 +8543,8 @@ class IfcFurnitureType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcFurnitureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcGeographicElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8543,8 +8553,8 @@ class IfcGeographicElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcGeographicElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8553,8 +8563,8 @@ class IfcGeographicElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcgeographicelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcgeographicelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcGeographicElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8563,8 +8573,8 @@ class IfcGeographicElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcGeographicElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcGeometricCurveSet_NoSurfaces:
     SCOPE = 'entity'
@@ -8573,7 +8583,7 @@ class IfcGeometricCurveSet_NoSurfaces:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'Elements', INDETERMINATE) if 'ifc4x3_tc1.ifcsurface' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Elements', INDETERMINATE) if 'ifc4x3_tc1.ifcsurface' in typeof(temp)]) == 0) is not False
 
 class IfcGeometricRepresentationContext_North2D:
     SCOPE = 'entity'
@@ -8582,8 +8592,8 @@ class IfcGeometricRepresentationContext_North2D:
 
     @staticmethod
     def __call__(self):
-        truenorth = getattr(self, 'TrueNorth', INDETERMINATE)
-        assert (not exists(truenorth) or hiindex(getattr(truenorth, 'DirectionRatios', INDETERMINATE)) == 2) is not False
+        truenorth = express_getattr(self, 'TrueNorth', INDETERMINATE)
+        assert (not exists(truenorth) or hiindex(express_getattr(truenorth, 'DirectionRatios', INDETERMINATE)) == 2) is not False
 
 class IfcGeometricRepresentationSubContext_NoCoordOperation:
     SCOPE = 'entity'
@@ -8592,7 +8602,7 @@ class IfcGeometricRepresentationSubContext_NoCoordOperation:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'HasCoordinateOperation', INDETERMINATE)) == 0) is not False
+        assert (sizeof(express_getattr(self, 'HasCoordinateOperation', INDETERMINATE)) == 0) is not False
 
 class IfcGeometricRepresentationSubContext_ParentNoSub:
     SCOPE = 'entity'
@@ -8601,7 +8611,7 @@ class IfcGeometricRepresentationSubContext_ParentNoSub:
 
     @staticmethod
     def __call__(self):
-        parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
+        parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
 
 class IfcGeometricRepresentationSubContext_UserTargetProvided:
@@ -8611,25 +8621,25 @@ class IfcGeometricRepresentationSubContext_UserTargetProvided:
 
     @staticmethod
     def __call__(self):
-        targetview = getattr(self, 'TargetView', INDETERMINATE)
-        userdefinedtargetview = getattr(self, 'UserDefinedTargetView', INDETERMINATE)
-        assert (targetview != getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE) or (targetview == getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedtargetview))) is not False
+        targetview = express_getattr(self, 'TargetView', INDETERMINATE)
+        userdefinedtargetview = express_getattr(self, 'UserDefinedTargetView', INDETERMINATE)
+        assert (targetview != express_getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE) or (targetview == express_getattr(IfcGeometricProjectionEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedtargetview))) is not False
 
 def calc_IfcGeometricRepresentationSubContext_WorldCoordinateSystem(self):
-    parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
-    return getattr(parentcontext, 'WorldCoordinateSystem', INDETERMINATE)
+    parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
+    return express_getattr(parentcontext, 'WorldCoordinateSystem', INDETERMINATE)
 
 def calc_IfcGeometricRepresentationSubContext_CoordinateSpaceDimension(self):
-    parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
-    return getattr(parentcontext, 'CoordinateSpaceDimension', INDETERMINATE)
+    parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
+    return express_getattr(parentcontext, 'CoordinateSpaceDimension', INDETERMINATE)
 
 def calc_IfcGeometricRepresentationSubContext_TrueNorth(self):
-    parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
-    return nvl(getattr(parentcontext, 'TrueNorth', INDETERMINATE), IfcConvertDirectionInto2D(express_getitem(getattr(getattr(self, 'WorldCoordinateSystem', INDETERMINATE), 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))
+    parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
+    return nvl(express_getattr(parentcontext, 'TrueNorth', INDETERMINATE), IfcConvertDirectionInto2D(express_getitem(express_getattr(express_getattr(self, 'WorldCoordinateSystem', INDETERMINATE), 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))
 
 def calc_IfcGeometricRepresentationSubContext_Precision(self):
-    parentcontext = getattr(self, 'ParentContext', INDETERMINATE)
-    return nvl(getattr(parentcontext, 'Precision', INDETERMINATE), 1)
+    parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
+    return nvl(express_getattr(parentcontext, 'Precision', INDETERMINATE), 1)
 
 class IfcGeometricSet_ConsistentDim:
     SCOPE = 'entity'
@@ -8638,12 +8648,12 @@ class IfcGeometricSet_ConsistentDim:
 
     @staticmethod
     def __call__(self):
-        elements = getattr(self, 'Elements', INDETERMINATE)
-        assert (sizeof([temp for temp in elements if getattr(temp, 'Dim', INDETERMINATE) != getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
+        elements = express_getattr(self, 'Elements', INDETERMINATE)
+        assert (sizeof([temp for temp in elements if express_getattr(temp, 'Dim', INDETERMINATE) != express_getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
 
 def calc_IfcGeometricSet_Dim(self):
-    elements = getattr(self, 'Elements', INDETERMINATE)
-    return getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
+    elements = express_getattr(self, 'Elements', INDETERMINATE)
+    return express_getattr(express_getitem(elements, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
 
 class IfcGeotechnicalStratum_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8652,8 +8662,8 @@ class IfcGeotechnicalStratum_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcGeotechnicalStratumTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcGridAxis_WR1:
     SCOPE = 'entity'
@@ -8662,8 +8672,8 @@ class IfcGridAxis_WR1:
 
     @staticmethod
     def __call__(self):
-        axiscurve = getattr(self, 'AxisCurve', INDETERMINATE)
-        assert (getattr(axiscurve, 'Dim', INDETERMINATE) == 2) is not False
+        axiscurve = express_getattr(self, 'AxisCurve', INDETERMINATE)
+        assert (express_getattr(axiscurve, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcGridAxis_WR2:
     SCOPE = 'entity'
@@ -8672,9 +8682,9 @@ class IfcGridAxis_WR2:
 
     @staticmethod
     def __call__(self):
-        partofw = getattr(self, 'PartOfW', INDETERMINATE)
-        partofv = getattr(self, 'PartOfV', INDETERMINATE)
-        partofu = getattr(self, 'PartOfU', INDETERMINATE)
+        partofw = express_getattr(self, 'PartOfW', INDETERMINATE)
+        partofv = express_getattr(self, 'PartOfV', INDETERMINATE)
+        partofu = express_getattr(self, 'PartOfU', INDETERMINATE)
         assert (sizeof(partofu) == 1) ^ (sizeof(partofv) == 1) ^ (sizeof(partofw) == 1) is not False
 
 def calc_IfcHalfSpaceSolid_Dim(self):
@@ -8687,8 +8697,8 @@ class IfcHeatExchanger_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcHeatExchanger_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8697,8 +8707,8 @@ class IfcHeatExchanger_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcheatexchangertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcheatexchangertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcHeatExchangerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8707,8 +8717,8 @@ class IfcHeatExchangerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcHeatExchangerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcHumidifier_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8717,8 +8727,8 @@ class IfcHumidifier_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcHumidifier_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8727,8 +8737,8 @@ class IfcHumidifier_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifchumidifiertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifchumidifiertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcHumidifierType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8737,8 +8747,8 @@ class IfcHumidifierType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcHumidifierTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcIShapeProfileDef_ValidFilletRadius:
     SCOPE = 'entity'
@@ -8747,11 +8757,11 @@ class IfcIShapeProfileDef_ValidFilletRadius:
 
     @staticmethod
     def __call__(self):
-        overallwidth = getattr(self, 'OverallWidth', INDETERMINATE)
-        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
-        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
-        filletradius = getattr(self, 'FilletRadius', INDETERMINATE)
+        overallwidth = express_getattr(self, 'OverallWidth', INDETERMINATE)
+        overalldepth = express_getattr(self, 'OverallDepth', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
+        flangethickness = express_getattr(self, 'FlangeThickness', INDETERMINATE)
+        filletradius = express_getattr(self, 'FilletRadius', INDETERMINATE)
         assert (not exists(filletradius) or (filletradius <= (overallwidth - webthickness) / 2.0 and filletradius <= (overalldepth - 2.0 * flangethickness) / 2.0)) is not False
 
 class IfcIShapeProfileDef_ValidFlangeThickness:
@@ -8761,8 +8771,8 @@ class IfcIShapeProfileDef_ValidFlangeThickness:
 
     @staticmethod
     def __call__(self):
-        overalldepth = getattr(self, 'OverallDepth', INDETERMINATE)
-        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
+        overalldepth = express_getattr(self, 'OverallDepth', INDETERMINATE)
+        flangethickness = express_getattr(self, 'FlangeThickness', INDETERMINATE)
         assert (2.0 * flangethickness < overalldepth) is not False
 
 class IfcIShapeProfileDef_ValidWebThickness:
@@ -8772,8 +8782,8 @@ class IfcIShapeProfileDef_ValidWebThickness:
 
     @staticmethod
     def __call__(self):
-        overallwidth = getattr(self, 'OverallWidth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
+        overallwidth = express_getattr(self, 'OverallWidth', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
         assert (webthickness < overallwidth) is not False
 
 class IfcImpactProtectionDevice_CorrectPredefinedType:
@@ -8783,8 +8793,8 @@ class IfcImpactProtectionDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcImpactProtectionDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8793,8 +8803,8 @@ class IfcImpactProtectionDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcimpactprotectiondevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcimpactprotectiondevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcImpactProtectionDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8803,8 +8813,8 @@ class IfcImpactProtectionDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcImpactProtectionDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcIndexedPolyCurve_Consecutive:
     SCOPE = 'entity'
@@ -8813,7 +8823,7 @@ class IfcIndexedPolyCurve_Consecutive:
 
     @staticmethod
     def __call__(self):
-        segments = getattr(self, 'Segments', INDETERMINATE)
+        segments = express_getattr(self, 'Segments', INDETERMINATE)
         assert (not exists(segments) or IfcConsecutiveSegments(segments)) is not False
 
 class IfcInterceptor_CorrectPredefinedType:
@@ -8823,8 +8833,8 @@ class IfcInterceptor_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcInterceptor_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8833,8 +8843,8 @@ class IfcInterceptor_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcinterceptortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcinterceptortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcInterceptorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8843,8 +8853,8 @@ class IfcInterceptorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcInterceptorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcIntersectionCurve_DistinctSurfaces:
     SCOPE = 'entity'
@@ -8853,7 +8863,7 @@ class IfcIntersectionCurve_DistinctSurfaces:
 
     @staticmethod
     def __call__(self):
-        assert (IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (IfcAssociatedSurface(express_getitem(express_getattr(self, 'AssociatedGeometry', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != IfcAssociatedSurface(express_getitem(express_getattr(self, 'AssociatedGeometry', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcIntersectionCurve_TwoPCurves:
     SCOPE = 'entity'
@@ -8862,7 +8872,7 @@ class IfcIntersectionCurve_TwoPCurves:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
+        assert (sizeof(express_getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
 
 class IfcJunctionBox_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8871,8 +8881,8 @@ class IfcJunctionBox_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcJunctionBox_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8881,8 +8891,8 @@ class IfcJunctionBox_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcjunctionboxtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcjunctionboxtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcJunctionBoxType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8891,8 +8901,8 @@ class IfcJunctionBoxType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcJunctionBoxTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcKerb_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8901,8 +8911,8 @@ class IfcKerb_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcKerb_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8911,8 +8921,8 @@ class IfcKerb_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifckerbtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifckerbtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcKerbType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8921,8 +8931,8 @@ class IfcKerbType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcKerbTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcLShapeProfileDef_ValidThickness:
     SCOPE = 'entity'
@@ -8931,9 +8941,9 @@ class IfcLShapeProfileDef_ValidThickness:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        width = getattr(self, 'Width', INDETERMINATE)
-        thickness = getattr(self, 'Thickness', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        width = express_getattr(self, 'Width', INDETERMINATE)
+        thickness = express_getattr(self, 'Thickness', INDETERMINATE)
         assert (thickness < depth and (not exists(width) or thickness < width)) is not False
 
 class IfcLaborResource_CorrectPredefinedType:
@@ -8943,8 +8953,8 @@ class IfcLaborResource_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcLaborResourceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8953,8 +8963,8 @@ class IfcLaborResourceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ResourceType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLaborResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ResourceType', INDETERMINATE)))) is not False
 
 class IfcLamp_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8963,8 +8973,8 @@ class IfcLamp_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcLamp_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -8973,8 +8983,8 @@ class IfcLamp_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifclamptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifclamptype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLampType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8983,8 +8993,8 @@ class IfcLampType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcLightFixture_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8993,8 +9003,8 @@ class IfcLightFixture_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcLightFixture_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9003,8 +9013,8 @@ class IfcLightFixture_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifclightfixturetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifclightfixturetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLightFixtureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9013,8 +9023,8 @@ class IfcLightFixtureType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLightFixtureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcLine_SameDim:
     SCOPE = 'entity'
@@ -9023,9 +9033,9 @@ class IfcLine_SameDim:
 
     @staticmethod
     def __call__(self):
-        pnt = getattr(self, 'Pnt', INDETERMINATE)
-        dir = getattr(self, 'Dir', INDETERMINATE)
-        assert (getattr(dir, 'Dim', INDETERMINATE) == getattr(pnt, 'Dim', INDETERMINATE)) is not False
+        pnt = express_getattr(self, 'Pnt', INDETERMINATE)
+        dir = express_getattr(self, 'Dir', INDETERMINATE)
+        assert (express_getattr(dir, 'Dim', INDETERMINATE) == express_getattr(pnt, 'Dim', INDETERMINATE)) is not False
 
 class IfcLiquidTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9034,8 +9044,8 @@ class IfcLiquidTerminal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcLiquidTerminal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9044,8 +9054,8 @@ class IfcLiquidTerminal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcliquidterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcliquidterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLiquidTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9054,8 +9064,8 @@ class IfcLiquidTerminalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcLiquidTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcLocalPlacement_WR21:
     SCOPE = 'entity'
@@ -9064,8 +9074,8 @@ class IfcLocalPlacement_WR21:
 
     @staticmethod
     def __call__(self):
-        placementrelto = getattr(self, 'PlacementRelTo', INDETERMINATE)
-        relativeplacement = getattr(self, 'RelativePlacement', INDETERMINATE)
+        placementrelto = express_getattr(self, 'PlacementRelTo', INDETERMINATE)
+        relativeplacement = express_getattr(self, 'RelativePlacement', INDETERMINATE)
         assert IfcCorrectLocalPlacement(relativeplacement, placementrelto) is not False
 
 class IfcMarineFacility_CorrectPredefinedType:
@@ -9075,8 +9085,8 @@ class IfcMarineFacility_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMarineFacilityTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMarinePart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9085,8 +9095,8 @@ class IfcMarinePart_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMarinePartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
     SCOPE = 'entity'
@@ -9095,7 +9105,7 @@ class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
 
     @staticmethod
     def __call__(self):
-        representations = getattr(self, 'Representations', INDETERMINATE)
+        representations = express_getattr(self, 'Representations', INDETERMINATE)
         assert (sizeof([temp for temp in representations if not 'ifc4x3_tc1.ifcstyledrepresentation' in typeof(temp)]) == 0) is not False
 
 class IfcMaterialLayer_NormalizedPriority:
@@ -9105,7 +9115,7 @@ class IfcMaterialLayer_NormalizedPriority:
 
     @staticmethod
     def __call__(self):
-        priority = getattr(self, 'Priority', INDETERMINATE)
+        priority = express_getattr(self, 'Priority', INDETERMINATE)
         assert (not exists(priority) or 0 <= priority <= 100) is not False
 
 def calc_IfcMaterialLayerSet_TotalThickness(self):
@@ -9118,7 +9128,7 @@ class IfcMaterialProfile_NormalizedPriority:
 
     @staticmethod
     def __call__(self):
-        priority = getattr(self, 'Priority', INDETERMINATE)
+        priority = express_getattr(self, 'Priority', INDETERMINATE)
         assert (not exists(priority) or 0 <= priority <= 100) is not False
 
 class IfcMechanicalFastener_CorrectPredefinedType:
@@ -9128,8 +9138,8 @@ class IfcMechanicalFastener_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMechanicalFastener_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9138,8 +9148,8 @@ class IfcMechanicalFastener_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmechanicalfastenertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmechanicalfastenertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMechanicalFastenerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9148,8 +9158,8 @@ class IfcMechanicalFastenerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMechanicalFastenerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcMedicalDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9158,8 +9168,8 @@ class IfcMedicalDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMedicalDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9168,8 +9178,8 @@ class IfcMedicalDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmedicaldevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmedicaldevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMedicalDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9178,8 +9188,8 @@ class IfcMedicalDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMedicalDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcMember_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9188,8 +9198,8 @@ class IfcMember_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMember_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9198,8 +9208,8 @@ class IfcMember_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmembertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmembertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMemberType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9208,8 +9218,8 @@ class IfcMemberType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMemberTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcMirroredProfileDef_Operator(self):
     return IfcCartesianTransformationOperator2D(Axis1=IfcDirection(DirectionRatios=[-1.0, 0.0]), Axis2=IfcDirection(DirectionRatios=[0.0, 1.0]), LocalOrigin=IfcCartesianPoint(Coordinates=[0.0, 0.0]), Scale=1.0)
@@ -9221,8 +9231,8 @@ class IfcMobileTelecommunicationsAppliance_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMobileTelecommunicationsAppliance_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9231,8 +9241,8 @@ class IfcMobileTelecommunicationsAppliance_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmobiletelecommunicationsappliancetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmobiletelecommunicationsappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMobileTelecommunicationsApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9241,8 +9251,8 @@ class IfcMobileTelecommunicationsApplianceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMobileTelecommunicationsApplianceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcMooringDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9251,8 +9261,8 @@ class IfcMooringDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMooringDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9261,8 +9271,8 @@ class IfcMooringDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmooringdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmooringdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMooringDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9271,8 +9281,8 @@ class IfcMooringDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMooringDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcMotorConnection_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9281,8 +9291,8 @@ class IfcMotorConnection_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcMotorConnection_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9291,8 +9301,8 @@ class IfcMotorConnection_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmotorconnectiontype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcmotorconnectiontype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMotorConnectionType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9301,8 +9311,8 @@ class IfcMotorConnectionType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcMotorConnectionTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcNamedUnit_WR1:
     SCOPE = 'entity'
@@ -9311,7 +9321,7 @@ class IfcNamedUnit_WR1:
 
     @staticmethod
     def __call__(self):
-        assert IfcCorrectDimensions(getattr(self, 'UnitType', INDETERMINATE), getattr(self, 'Dimensions', INDETERMINATE)) is not False
+        assert IfcCorrectDimensions(express_getattr(self, 'UnitType', INDETERMINATE), express_getattr(self, 'Dimensions', INDETERMINATE)) is not False
 
 class IfcNavigationElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9320,8 +9330,8 @@ class IfcNavigationElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcNavigationElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9330,8 +9340,8 @@ class IfcNavigationElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcnavigationelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcnavigationelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcNavigationElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9340,8 +9350,8 @@ class IfcNavigationElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcNavigationElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcObject_UniquePropertySetNames:
     SCOPE = 'entity'
@@ -9350,7 +9360,7 @@ class IfcObject_UniquePropertySetNames:
 
     @staticmethod
     def __call__(self):
-        isdefinedby = getattr(self, 'IsDefinedBy', INDETERMINATE)
+        isdefinedby = express_getattr(self, 'IsDefinedBy', INDETERMINATE)
         assert (sizeof(isdefinedby) == 0 or IfcUniqueDefinitionNames(isdefinedby)) is not False
 
 class IfcObjective_WR21:
@@ -9360,8 +9370,8 @@ class IfcObjective_WR21:
 
     @staticmethod
     def __call__(self):
-        objectivequalifier = getattr(self, 'ObjectiveQualifier', INDETERMINATE)
-        assert (objectivequalifier != getattr(IfcObjectiveEnum, 'USERDEFINED', INDETERMINATE) or (objectivequalifier == getattr(IfcObjectiveEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'UserDefinedQualifier', INDETERMINATE)))) is not False
+        objectivequalifier = express_getattr(self, 'ObjectiveQualifier', INDETERMINATE)
+        assert (objectivequalifier != express_getattr(IfcObjectiveEnum, 'USERDEFINED', INDETERMINATE) or (objectivequalifier == express_getattr(IfcObjectiveEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'UserDefinedQualifier', INDETERMINATE)))) is not False
 
 class IfcOccupant_WR31:
     SCOPE = 'entity'
@@ -9370,8 +9380,8 @@ class IfcOccupant_WR31:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not predefinedtype == getattr(IfcOccupantTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not predefinedtype == express_getattr(IfcOccupantTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcOffsetCurve2D_DimIs2D:
     SCOPE = 'entity'
@@ -9380,8 +9390,8 @@ class IfcOffsetCurve2D_DimIs2D:
 
     @staticmethod
     def __call__(self):
-        basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
-        assert (getattr(basiscurve, 'Dim', INDETERMINATE) == 2) is not False
+        basiscurve = express_getattr(self, 'BasisCurve', INDETERMINATE)
+        assert (express_getattr(basiscurve, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcOffsetCurve3D_DimIs2D:
     SCOPE = 'entity'
@@ -9390,8 +9400,8 @@ class IfcOffsetCurve3D_DimIs2D:
 
     @staticmethod
     def __call__(self):
-        basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
-        assert (getattr(basiscurve, 'Dim', INDETERMINATE) == 3) is not False
+        basiscurve = express_getattr(self, 'BasisCurve', INDETERMINATE)
+        assert (express_getattr(basiscurve, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcOpenCrossProfileDef_CorrectProfileType:
     SCOPE = 'entity'
@@ -9400,7 +9410,7 @@ class IfcOpenCrossProfileDef_CorrectProfileType:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
+        assert (express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
 
 class IfcOpenCrossProfileDef_CorrespondingSlopeWidths:
     SCOPE = 'entity'
@@ -9409,8 +9419,8 @@ class IfcOpenCrossProfileDef_CorrespondingSlopeWidths:
 
     @staticmethod
     def __call__(self):
-        widths = getattr(self, 'Widths', INDETERMINATE)
-        slopes = getattr(self, 'Slopes', INDETERMINATE)
+        widths = express_getattr(self, 'Widths', INDETERMINATE)
+        slopes = express_getattr(self, 'Slopes', INDETERMINATE)
         assert (sizeof(slopes) == sizeof(widths)) is not False
 
 class IfcOpenCrossProfileDef_CorrespondingTags:
@@ -9420,8 +9430,8 @@ class IfcOpenCrossProfileDef_CorrespondingTags:
 
     @staticmethod
     def __call__(self):
-        slopes = getattr(self, 'Slopes', INDETERMINATE)
-        tags = getattr(self, 'Tags', INDETERMINATE)
+        slopes = express_getattr(self, 'Slopes', INDETERMINATE)
+        tags = express_getattr(self, 'Tags', INDETERMINATE)
         assert (not exists(tags) or sizeof(tags) == sizeof(slopes) + 1) is not False
 
 class IfcOpeningElement_CorrectPredefinedType:
@@ -9431,8 +9441,8 @@ class IfcOpeningElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcOpeningElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcOpeningElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcOpeningElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcOpeningElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcOrientedEdge_EdgeElementNotOriented:
     SCOPE = 'entity'
@@ -9441,18 +9451,18 @@ class IfcOrientedEdge_EdgeElementNotOriented:
 
     @staticmethod
     def __call__(self):
-        edgeelement = getattr(self, 'EdgeElement', INDETERMINATE)
+        edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcorientededge' in typeof(edgeelement)) is not False
 
 def calc_IfcOrientedEdge_EdgeStart(self):
-    edgeelement = getattr(self, 'EdgeElement', INDETERMINATE)
-    orientation = getattr(self, 'Orientation', INDETERMINATE)
-    return IfcBooleanChoose(orientation, getattr(edgeelement, 'EdgeStart', INDETERMINATE), getattr(edgeelement, 'EdgeEnd', INDETERMINATE))
+    edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
+    orientation = express_getattr(self, 'Orientation', INDETERMINATE)
+    return IfcBooleanChoose(orientation, express_getattr(edgeelement, 'EdgeStart', INDETERMINATE), express_getattr(edgeelement, 'EdgeEnd', INDETERMINATE))
 
 def calc_IfcOrientedEdge_EdgeEnd(self):
-    edgeelement = getattr(self, 'EdgeElement', INDETERMINATE)
-    orientation = getattr(self, 'Orientation', INDETERMINATE)
-    return IfcBooleanChoose(orientation, getattr(edgeelement, 'EdgeEnd', INDETERMINATE), getattr(edgeelement, 'EdgeStart', INDETERMINATE))
+    edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
+    orientation = express_getattr(self, 'Orientation', INDETERMINATE)
+    return IfcBooleanChoose(orientation, express_getattr(edgeelement, 'EdgeEnd', INDETERMINATE), express_getattr(edgeelement, 'EdgeStart', INDETERMINATE))
 
 class IfcOutlet_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9461,8 +9471,8 @@ class IfcOutlet_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcOutlet_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9471,8 +9481,8 @@ class IfcOutlet_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcoutlettype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcoutlettype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcOutletType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9481,8 +9491,8 @@ class IfcOutletType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcOutletTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcOwnerHistory_CorrectChangeAction:
     SCOPE = 'entity'
@@ -9491,9 +9501,9 @@ class IfcOwnerHistory_CorrectChangeAction:
 
     @staticmethod
     def __call__(self):
-        changeaction = getattr(self, 'ChangeAction', INDETERMINATE)
-        lastmodifieddate = getattr(self, 'LastModifiedDate', INDETERMINATE)
-        assert (exists(lastmodifieddate) or (not exists(lastmodifieddate) and (not exists(changeaction))) or (not exists(lastmodifieddate) and exists(changeaction) and (changeaction == getattr(IfcChangeActionEnum, 'NOTDEFINED', INDETERMINATE) or changeaction == getattr(IfcChangeActionEnum, 'NOCHANGE', INDETERMINATE)))) is not False
+        changeaction = express_getattr(self, 'ChangeAction', INDETERMINATE)
+        lastmodifieddate = express_getattr(self, 'LastModifiedDate', INDETERMINATE)
+        assert (exists(lastmodifieddate) or (not exists(lastmodifieddate) and (not exists(changeaction))) or (not exists(lastmodifieddate) and exists(changeaction) and (changeaction == express_getattr(IfcChangeActionEnum, 'NOTDEFINED', INDETERMINATE) or changeaction == express_getattr(IfcChangeActionEnum, 'NOCHANGE', INDETERMINATE)))) is not False
 
 class IfcPath_IsContinuous:
     SCOPE = 'entity'
@@ -9511,8 +9521,8 @@ class IfcPavement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPavement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9521,8 +9531,8 @@ class IfcPavement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpavementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpavementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPavementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9531,8 +9541,8 @@ class IfcPavementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPavementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcPcurve_DimIs2D:
     SCOPE = 'entity'
@@ -9541,8 +9551,8 @@ class IfcPcurve_DimIs2D:
 
     @staticmethod
     def __call__(self):
-        referencecurve = getattr(self, 'ReferenceCurve', INDETERMINATE)
-        assert (getattr(referencecurve, 'Dim', INDETERMINATE) == 2) is not False
+        referencecurve = express_getattr(self, 'ReferenceCurve', INDETERMINATE)
+        assert (express_getattr(referencecurve, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcPerson_IdentifiablePerson:
     SCOPE = 'entity'
@@ -9551,9 +9561,9 @@ class IfcPerson_IdentifiablePerson:
 
     @staticmethod
     def __call__(self):
-        identification = getattr(self, 'Identification', INDETERMINATE)
-        familyname = getattr(self, 'FamilyName', INDETERMINATE)
-        givenname = getattr(self, 'GivenName', INDETERMINATE)
+        identification = express_getattr(self, 'Identification', INDETERMINATE)
+        familyname = express_getattr(self, 'FamilyName', INDETERMINATE)
+        givenname = express_getattr(self, 'GivenName', INDETERMINATE)
         assert (exists(identification) or exists(familyname) or exists(givenname)) is not False
 
 class IfcPerson_ValidSetOfNames:
@@ -9563,9 +9573,9 @@ class IfcPerson_ValidSetOfNames:
 
     @staticmethod
     def __call__(self):
-        familyname = getattr(self, 'FamilyName', INDETERMINATE)
-        givenname = getattr(self, 'GivenName', INDETERMINATE)
-        middlenames = getattr(self, 'MiddleNames', INDETERMINATE)
+        familyname = express_getattr(self, 'FamilyName', INDETERMINATE)
+        givenname = express_getattr(self, 'GivenName', INDETERMINATE)
+        middlenames = express_getattr(self, 'MiddleNames', INDETERMINATE)
         assert (not exists(middlenames) or exists(familyname) or exists(givenname)) is not False
 
 class IfcPhysicalComplexQuantity_NoSelfReference:
@@ -9575,7 +9585,7 @@ class IfcPhysicalComplexQuantity_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        hasquantities = getattr(self, 'HasQuantities', INDETERMINATE)
+        hasquantities = express_getattr(self, 'HasQuantities', INDETERMINATE)
         assert (sizeof([temp for temp in hasquantities if self == temp]) == 0) is not False
 
 class IfcPhysicalComplexQuantity_UniqueQuantityNames:
@@ -9585,7 +9595,7 @@ class IfcPhysicalComplexQuantity_UniqueQuantityNames:
 
     @staticmethod
     def __call__(self):
-        hasquantities = getattr(self, 'HasQuantities', INDETERMINATE)
+        hasquantities = express_getattr(self, 'HasQuantities', INDETERMINATE)
         assert IfcUniqueQuantityNames(hasquantities) is not False
 
 class IfcPile_CorrectPredefinedType:
@@ -9595,8 +9605,8 @@ class IfcPile_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPile_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9605,8 +9615,8 @@ class IfcPile_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpiletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpiletype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPileType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9615,8 +9625,8 @@ class IfcPileType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPileTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcPipeFitting_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9625,8 +9635,8 @@ class IfcPipeFitting_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPipeFitting_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9635,8 +9645,8 @@ class IfcPipeFitting_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpipefittingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpipefittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPipeFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9645,8 +9655,8 @@ class IfcPipeFittingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPipeFittingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcPipeSegment_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9655,8 +9665,8 @@ class IfcPipeSegment_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPipeSegment_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9665,8 +9675,8 @@ class IfcPipeSegment_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpipesegmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpipesegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPipeSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9675,8 +9685,8 @@ class IfcPipeSegmentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPipeSegmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcPixelTexture_MinPixelInS:
     SCOPE = 'entity'
@@ -9685,7 +9695,7 @@ class IfcPixelTexture_MinPixelInS:
 
     @staticmethod
     def __call__(self):
-        width = getattr(self, 'Width', INDETERMINATE)
+        width = express_getattr(self, 'Width', INDETERMINATE)
         assert (width >= 1) is not False
 
 class IfcPixelTexture_MinPixelInT:
@@ -9695,7 +9705,7 @@ class IfcPixelTexture_MinPixelInT:
 
     @staticmethod
     def __call__(self):
-        height = getattr(self, 'Height', INDETERMINATE)
+        height = express_getattr(self, 'Height', INDETERMINATE)
         assert (height >= 1) is not False
 
 class IfcPixelTexture_NumberOfColours:
@@ -9705,7 +9715,7 @@ class IfcPixelTexture_NumberOfColours:
 
     @staticmethod
     def __call__(self):
-        colourcomponents = getattr(self, 'ColourComponents', INDETERMINATE)
+        colourcomponents = express_getattr(self, 'ColourComponents', INDETERMINATE)
         assert (1 <= colourcomponents <= 4) is not False
 
 class IfcPixelTexture_PixelAsByteAndSameLength:
@@ -9715,7 +9725,7 @@ class IfcPixelTexture_PixelAsByteAndSameLength:
 
     @staticmethod
     def __call__(self):
-        pixel = getattr(self, 'Pixel', INDETERMINATE)
+        pixel = express_getattr(self, 'Pixel', INDETERMINATE)
         assert (sizeof([temp for temp in pixel if blength(temp) % 8 == 0 and blength(temp) == blength(express_getitem(pixel, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == sizeof(pixel)) is not False
 
 class IfcPixelTexture_SizeOfPixelList:
@@ -9725,14 +9735,14 @@ class IfcPixelTexture_SizeOfPixelList:
 
     @staticmethod
     def __call__(self):
-        width = getattr(self, 'Width', INDETERMINATE)
-        height = getattr(self, 'Height', INDETERMINATE)
-        pixel = getattr(self, 'Pixel', INDETERMINATE)
+        width = express_getattr(self, 'Width', INDETERMINATE)
+        height = express_getattr(self, 'Height', INDETERMINATE)
+        pixel = express_getattr(self, 'Pixel', INDETERMINATE)
         assert (sizeof(pixel) == width * height) is not False
 
 def calc_IfcPlacement_Dim(self):
-    location = getattr(self, 'Location', INDETERMINATE)
-    return getattr(location, 'Dim', INDETERMINATE)
+    location = express_getattr(self, 'Location', INDETERMINATE)
+    return express_getattr(location, 'Dim', INDETERMINATE)
 
 class IfcPlate_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9741,8 +9751,8 @@ class IfcPlate_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPlate_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -9751,8 +9761,8 @@ class IfcPlate_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcplatetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcplatetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPlateType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9761,8 +9771,8 @@ class IfcPlateType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPlateTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcPoint_Dim(self):
     return IfcPointDim(self)
@@ -9774,8 +9784,8 @@ class IfcPolyLoop_AllPointsSameDim:
 
     @staticmethod
     def __call__(self):
-        polygon = getattr(self, 'Polygon', INDETERMINATE)
-        assert (sizeof([temp for temp in polygon if getattr(temp, 'Dim', INDETERMINATE) != getattr(express_getitem(polygon, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
+        polygon = express_getattr(self, 'Polygon', INDETERMINATE)
+        assert (sizeof([temp for temp in polygon if express_getattr(temp, 'Dim', INDETERMINATE) != express_getattr(express_getitem(polygon, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
 
 class IfcPolygonalBoundedHalfSpace_BoundaryDim:
     SCOPE = 'entity'
@@ -9784,8 +9794,8 @@ class IfcPolygonalBoundedHalfSpace_BoundaryDim:
 
     @staticmethod
     def __call__(self):
-        polygonalboundary = getattr(self, 'PolygonalBoundary', INDETERMINATE)
-        assert (getattr(polygonalboundary, 'Dim', INDETERMINATE) == 2) is not False
+        polygonalboundary = express_getattr(self, 'PolygonalBoundary', INDETERMINATE)
+        assert (express_getattr(polygonalboundary, 'Dim', INDETERMINATE) == 2) is not False
 
 class IfcPolygonalBoundedHalfSpace_BoundaryType:
     SCOPE = 'entity'
@@ -9794,7 +9804,7 @@ class IfcPolygonalBoundedHalfSpace_BoundaryType:
 
     @staticmethod
     def __call__(self):
-        polygonalboundary = getattr(self, 'PolygonalBoundary', INDETERMINATE)
+        polygonalboundary = express_getattr(self, 'PolygonalBoundary', INDETERMINATE)
         assert (sizeof(typeof(polygonalboundary) * ['ifc4x3_tc1.ifcpolyline', 'ifc4x3_tc1.ifccompositecurve', 'ifc4x3_tc1.ifcindexedpolycurve']) == 1) is not False
 
 class IfcPolyline_SameDim:
@@ -9804,8 +9814,8 @@ class IfcPolyline_SameDim:
 
     @staticmethod
     def __call__(self):
-        points = getattr(self, 'Points', INDETERMINATE)
-        assert (sizeof([temp for temp in points if getattr(temp, 'Dim', INDETERMINATE) != getattr(express_getitem(points, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
+        points = express_getattr(self, 'Points', INDETERMINATE)
+        assert (sizeof([temp for temp in points if express_getattr(temp, 'Dim', INDETERMINATE) != express_getattr(express_getitem(points, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)]) == 0) is not False
 
 class IfcPolynomialCurve_CorrectPositionDim:
     SCOPE = 'entity'
@@ -9814,9 +9824,9 @@ class IfcPolynomialCurve_CorrectPositionDim:
 
     @staticmethod
     def __call__(self):
-        position = getattr(self, 'Position', INDETERMINATE)
-        coefficientsz = getattr(self, 'CoefficientsZ', INDETERMINATE)
-        assert (getattr(position, 'Dim', INDETERMINATE) == 2 and (not exists(coefficientsz)) or getattr(position, 'Dim', INDETERMINATE) == 3) is not False
+        position = express_getattr(self, 'Position', INDETERMINATE)
+        coefficientsz = express_getattr(self, 'CoefficientsZ', INDETERMINATE)
+        assert (express_getattr(position, 'Dim', INDETERMINATE) == 2 and (not exists(coefficientsz)) or express_getattr(position, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcPolynomialCurve_ValidCoefficients:
     SCOPE = 'entity'
@@ -9825,9 +9835,9 @@ class IfcPolynomialCurve_ValidCoefficients:
 
     @staticmethod
     def __call__(self):
-        coefficientsx = getattr(self, 'CoefficientsX', INDETERMINATE)
-        coefficientsy = getattr(self, 'CoefficientsY', INDETERMINATE)
-        coefficientsz = getattr(self, 'CoefficientsZ', INDETERMINATE)
+        coefficientsx = express_getattr(self, 'CoefficientsX', INDETERMINATE)
+        coefficientsy = express_getattr(self, 'CoefficientsY', INDETERMINATE)
+        coefficientsz = express_getattr(self, 'CoefficientsZ', INDETERMINATE)
         assert (exists(coefficientsx) and exists(coefficientsy) or (exists(coefficientsx) and exists(coefficientsz)) or (exists(coefficientsy) and exists(coefficientsz)) or (exists(coefficientsx) and exists(coefficientsy) and exists(coefficientsz))) is not False
 
 class IfcPositioningElement_HasPlacement:
@@ -9837,7 +9847,7 @@ class IfcPositioningElement_HasPlacement:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'ObjectPlacement', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'ObjectPlacement', INDETERMINATE)) is not False
 
 class IfcPostalAddress_WR1:
     SCOPE = 'entity'
@@ -9846,13 +9856,13 @@ class IfcPostalAddress_WR1:
 
     @staticmethod
     def __call__(self):
-        internallocation = getattr(self, 'InternalLocation', INDETERMINATE)
-        addresslines = getattr(self, 'AddressLines', INDETERMINATE)
-        postalbox = getattr(self, 'PostalBox', INDETERMINATE)
-        town = getattr(self, 'Town', INDETERMINATE)
-        region = getattr(self, 'Region', INDETERMINATE)
-        postalcode = getattr(self, 'PostalCode', INDETERMINATE)
-        country = getattr(self, 'Country', INDETERMINATE)
+        internallocation = express_getattr(self, 'InternalLocation', INDETERMINATE)
+        addresslines = express_getattr(self, 'AddressLines', INDETERMINATE)
+        postalbox = express_getattr(self, 'PostalBox', INDETERMINATE)
+        town = express_getattr(self, 'Town', INDETERMINATE)
+        region = express_getattr(self, 'Region', INDETERMINATE)
+        postalcode = express_getattr(self, 'PostalCode', INDETERMINATE)
+        country = express_getattr(self, 'Country', INDETERMINATE)
         assert (exists(internallocation) or exists(addresslines) or exists(postalbox) or exists(postalcode) or exists(town) or exists(region) or exists(country)) is not False
 
 class IfcPresentationLayerAssignment_ApplicableItems:
@@ -9862,7 +9872,7 @@ class IfcPresentationLayerAssignment_ApplicableItems:
 
     @staticmethod
     def __call__(self):
-        assigneditems = getattr(self, 'AssignedItems', INDETERMINATE)
+        assigneditems = express_getattr(self, 'AssignedItems', INDETERMINATE)
         assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_tc1.ifcshaperepresentation', 'ifc4x3_tc1.ifcgeometricrepresentationitem', 'ifc4x3_tc1.ifcmappeditem']) == 1]) == sizeof(assigneditems)) is not False
 
 class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
@@ -9872,7 +9882,7 @@ class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
 
     @staticmethod
     def __call__(self):
-        assigneditems = getattr(self, 'AssignedItems', INDETERMINATE)
+        assigneditems = express_getattr(self, 'AssignedItems', INDETERMINATE)
         assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_tc1.ifcgeometricrepresentationitem', 'ifc4x3_tc1.ifcmappeditem']) >= 1]) == sizeof(assigneditems)) is not False
 
 class IfcProcedure_CorrectPredefinedType:
@@ -9882,8 +9892,8 @@ class IfcProcedure_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcProcedure_HasName:
     SCOPE = 'entity'
@@ -9892,7 +9902,7 @@ class IfcProcedure_HasName:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcProcedureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9901,8 +9911,8 @@ class IfcProcedureType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ProcessType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProcedureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ProcessType', INDETERMINATE)))) is not False
 
 class IfcProduct_PlacementForShapeRepresentation:
     SCOPE = 'entity'
@@ -9911,9 +9921,9 @@ class IfcProduct_PlacementForShapeRepresentation:
 
     @staticmethod
     def __call__(self):
-        objectplacement = getattr(self, 'ObjectPlacement', INDETERMINATE)
-        representation = getattr(self, 'Representation', INDETERMINATE)
-        assert (exists(representation) and exists(objectplacement) or (exists(representation) and sizeof([temp for temp in getattr(representation, 'Representations', INDETERMINATE) if 'ifc4x3_tc1.ifcshaperepresentation' in typeof(temp)]) == 0) or (not exists(representation))) is not False
+        objectplacement = express_getattr(self, 'ObjectPlacement', INDETERMINATE)
+        representation = express_getattr(self, 'Representation', INDETERMINATE)
+        assert (exists(representation) and exists(objectplacement) or (exists(representation) and sizeof([temp for temp in express_getattr(representation, 'Representations', INDETERMINATE) if 'ifc4x3_tc1.ifcshaperepresentation' in typeof(temp)]) == 0) or (not exists(representation))) is not False
 
 class IfcProductDefinitionShape_OnlyShapeModel:
     SCOPE = 'entity'
@@ -9922,7 +9932,7 @@ class IfcProductDefinitionShape_OnlyShapeModel:
 
     @staticmethod
     def __call__(self):
-        representations = getattr(self, 'Representations', INDETERMINATE)
+        representations = express_getattr(self, 'Representations', INDETERMINATE)
         assert (sizeof([temp for temp in representations if not 'ifc4x3_tc1.ifcshapemodel' in typeof(temp)]) == 0) is not False
 
 class IfcProject_CorrectContext:
@@ -9932,7 +9942,7 @@ class IfcProject_CorrectContext:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'RepresentationContexts', INDETERMINATE)) or sizeof([temp for temp in getattr(self, 'RepresentationContexts', INDETERMINATE) if 'ifc4x3_tc1.ifcgeometricrepresentationsubcontext' in typeof(temp)]) == 0) is not False
+        assert (not exists(express_getattr(self, 'RepresentationContexts', INDETERMINATE)) or sizeof([temp for temp in express_getattr(self, 'RepresentationContexts', INDETERMINATE) if 'ifc4x3_tc1.ifcgeometricrepresentationsubcontext' in typeof(temp)]) == 0) is not False
 
 class IfcProject_HasName:
     SCOPE = 'entity'
@@ -9941,7 +9951,7 @@ class IfcProject_HasName:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcProject_NoDecomposition:
     SCOPE = 'entity'
@@ -9950,7 +9960,7 @@ class IfcProject_NoDecomposition:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'Decomposes', INDETERMINATE)) == 0) is not False
+        assert (sizeof(express_getattr(self, 'Decomposes', INDETERMINATE)) == 0) is not False
 
 class IfcProjectedCRS_IsLengthUnit:
     SCOPE = 'entity'
@@ -9959,8 +9969,8 @@ class IfcProjectedCRS_IsLengthUnit:
 
     @staticmethod
     def __call__(self):
-        mapunit = getattr(self, 'MapUnit', INDETERMINATE)
-        assert (not exists(mapunit) or getattr(mapunit, 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
+        mapunit = express_getattr(self, 'MapUnit', INDETERMINATE)
+        assert (not exists(mapunit) or express_getattr(mapunit, 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
 
 class IfcProjectionElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9969,8 +9979,8 @@ class IfcProjectionElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProjectionElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPropertyBoundedValue_SameUnitLowerSet:
     SCOPE = 'entity'
@@ -9979,8 +9989,8 @@ class IfcPropertyBoundedValue_SameUnitLowerSet:
 
     @staticmethod
     def __call__(self):
-        lowerboundvalue = getattr(self, 'LowerBoundValue', INDETERMINATE)
-        setpointvalue = getattr(self, 'SetPointValue', INDETERMINATE)
+        lowerboundvalue = express_getattr(self, 'LowerBoundValue', INDETERMINATE)
+        setpointvalue = express_getattr(self, 'SetPointValue', INDETERMINATE)
         assert (not exists(lowerboundvalue) or not exists(setpointvalue) or typeof(lowerboundvalue) == typeof(setpointvalue)) is not False
 
 class IfcPropertyBoundedValue_SameUnitUpperLower:
@@ -9990,8 +10000,8 @@ class IfcPropertyBoundedValue_SameUnitUpperLower:
 
     @staticmethod
     def __call__(self):
-        upperboundvalue = getattr(self, 'UpperBoundValue', INDETERMINATE)
-        lowerboundvalue = getattr(self, 'LowerBoundValue', INDETERMINATE)
+        upperboundvalue = express_getattr(self, 'UpperBoundValue', INDETERMINATE)
+        lowerboundvalue = express_getattr(self, 'LowerBoundValue', INDETERMINATE)
         assert (not exists(upperboundvalue) or not exists(lowerboundvalue) or typeof(upperboundvalue) == typeof(lowerboundvalue)) is not False
 
 class IfcPropertyBoundedValue_SameUnitUpperSet:
@@ -10001,8 +10011,8 @@ class IfcPropertyBoundedValue_SameUnitUpperSet:
 
     @staticmethod
     def __call__(self):
-        upperboundvalue = getattr(self, 'UpperBoundValue', INDETERMINATE)
-        setpointvalue = getattr(self, 'SetPointValue', INDETERMINATE)
+        upperboundvalue = express_getattr(self, 'UpperBoundValue', INDETERMINATE)
+        setpointvalue = express_getattr(self, 'SetPointValue', INDETERMINATE)
         assert (not exists(upperboundvalue) or not exists(setpointvalue) or typeof(upperboundvalue) == typeof(setpointvalue)) is not False
 
 class IfcPropertyDependencyRelationship_NoSelfReference:
@@ -10012,8 +10022,8 @@ class IfcPropertyDependencyRelationship_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        dependingproperty = getattr(self, 'DependingProperty', INDETERMINATE)
-        dependantproperty = getattr(self, 'DependantProperty', INDETERMINATE)
+        dependingproperty = express_getattr(self, 'DependingProperty', INDETERMINATE)
+        dependantproperty = express_getattr(self, 'DependantProperty', INDETERMINATE)
         assert (dependingproperty != dependantproperty) is not False
 
 class IfcPropertyEnumeratedValue_WR21:
@@ -10023,9 +10033,9 @@ class IfcPropertyEnumeratedValue_WR21:
 
     @staticmethod
     def __call__(self):
-        enumerationvalues = getattr(self, 'EnumerationValues', INDETERMINATE)
-        enumerationreference = getattr(self, 'EnumerationReference', INDETERMINATE)
-        assert (not exists(enumerationreference) or not exists(enumerationvalues) or sizeof([temp for temp in enumerationvalues if temp in getattr(enumerationreference, 'EnumerationValues', INDETERMINATE)]) == sizeof(enumerationvalues)) is not False
+        enumerationvalues = express_getattr(self, 'EnumerationValues', INDETERMINATE)
+        enumerationreference = express_getattr(self, 'EnumerationReference', INDETERMINATE)
+        assert (not exists(enumerationreference) or not exists(enumerationvalues) or sizeof([temp for temp in enumerationvalues if temp in express_getattr(enumerationreference, 'EnumerationValues', INDETERMINATE)]) == sizeof(enumerationvalues)) is not False
 
 class IfcPropertyEnumeration_WR01:
     SCOPE = 'entity'
@@ -10034,7 +10044,7 @@ class IfcPropertyEnumeration_WR01:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'EnumerationValues', INDETERMINATE) if not typeof(express_getitem(getattr(self, 'EnumerationValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'EnumerationValues', INDETERMINATE) if not typeof(express_getitem(express_getattr(self, 'EnumerationValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == typeof(temp)]) == 0) is not False
 
 class IfcPropertyListValue_WR31:
     SCOPE = 'entity'
@@ -10043,7 +10053,7 @@ class IfcPropertyListValue_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'ListValues', INDETERMINATE) if not typeof(express_getitem(getattr(self, 'ListValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'ListValues', INDETERMINATE) if not typeof(express_getitem(express_getattr(self, 'ListValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == typeof(temp)]) == 0) is not False
 
 class IfcPropertySet_ExistsName:
     SCOPE = 'entity'
@@ -10052,7 +10062,7 @@ class IfcPropertySet_ExistsName:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcPropertySet_UniquePropertyNames:
     SCOPE = 'entity'
@@ -10061,7 +10071,7 @@ class IfcPropertySet_UniquePropertyNames:
 
     @staticmethod
     def __call__(self):
-        hasproperties = getattr(self, 'HasProperties', INDETERMINATE)
+        hasproperties = express_getattr(self, 'HasProperties', INDETERMINATE)
         assert IfcUniquePropertyName(hasproperties) is not False
 
 class IfcPropertySetTemplate_ExistsName:
@@ -10071,7 +10081,7 @@ class IfcPropertySetTemplate_ExistsName:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcPropertySetTemplate_UniquePropertyNames:
     SCOPE = 'entity'
@@ -10080,7 +10090,7 @@ class IfcPropertySetTemplate_UniquePropertyNames:
 
     @staticmethod
     def __call__(self):
-        haspropertytemplates = getattr(self, 'HasPropertyTemplates', INDETERMINATE)
+        haspropertytemplates = express_getattr(self, 'HasPropertyTemplates', INDETERMINATE)
         assert IfcUniquePropertyTemplateNames(haspropertytemplates) is not False
 
 class IfcPropertyTableValue_WR21:
@@ -10090,8 +10100,8 @@ class IfcPropertyTableValue_WR21:
 
     @staticmethod
     def __call__(self):
-        definingvalues = getattr(self, 'DefiningValues', INDETERMINATE)
-        definedvalues = getattr(self, 'DefinedValues', INDETERMINATE)
+        definingvalues = express_getattr(self, 'DefiningValues', INDETERMINATE)
+        definedvalues = express_getattr(self, 'DefinedValues', INDETERMINATE)
         assert (not exists(definingvalues) and (not exists(definedvalues)) or sizeof(definingvalues) == sizeof(definedvalues)) is not False
 
 class IfcPropertyTableValue_WR22:
@@ -10101,8 +10111,8 @@ class IfcPropertyTableValue_WR22:
 
     @staticmethod
     def __call__(self):
-        definingvalues = getattr(self, 'DefiningValues', INDETERMINATE)
-        assert (not exists(definingvalues) or sizeof([temp for temp in getattr(self, 'DefiningValues', INDETERMINATE) if typeof(temp) != typeof(express_getitem(getattr(self, 'DefiningValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == 0) is not False
+        definingvalues = express_getattr(self, 'DefiningValues', INDETERMINATE)
+        assert (not exists(definingvalues) or sizeof([temp for temp in express_getattr(self, 'DefiningValues', INDETERMINATE) if typeof(temp) != typeof(express_getitem(express_getattr(self, 'DefiningValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == 0) is not False
 
 class IfcPropertyTableValue_WR23:
     SCOPE = 'entity'
@@ -10111,8 +10121,8 @@ class IfcPropertyTableValue_WR23:
 
     @staticmethod
     def __call__(self):
-        definedvalues = getattr(self, 'DefinedValues', INDETERMINATE)
-        assert (not exists(definedvalues) or sizeof([temp for temp in getattr(self, 'DefinedValues', INDETERMINATE) if typeof(temp) != typeof(express_getitem(getattr(self, 'DefinedValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == 0) is not False
+        definedvalues = express_getattr(self, 'DefinedValues', INDETERMINATE)
+        assert (not exists(definedvalues) or sizeof([temp for temp in express_getattr(self, 'DefinedValues', INDETERMINATE) if typeof(temp) != typeof(express_getitem(express_getattr(self, 'DefinedValues', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))]) == 0) is not False
 
 class IfcProtectiveDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10121,8 +10131,8 @@ class IfcProtectiveDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcProtectiveDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10131,8 +10141,8 @@ class IfcProtectiveDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcprotectivedevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcprotectivedevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcProtectiveDeviceTrippingUnit_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10141,8 +10151,8 @@ class IfcProtectiveDeviceTrippingUnit_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcProtectiveDeviceTrippingUnit_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10151,8 +10161,8 @@ class IfcProtectiveDeviceTrippingUnit_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcprotectivedevicetrippingunittype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcprotectivedevicetrippingunittype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcProtectiveDeviceTrippingUnitType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10161,8 +10171,8 @@ class IfcProtectiveDeviceTrippingUnitType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProtectiveDeviceTrippingUnitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcProtectiveDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10171,8 +10181,8 @@ class IfcProtectiveDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcProtectiveDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcPump_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10181,8 +10191,8 @@ class IfcPump_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcPump_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10191,8 +10201,8 @@ class IfcPump_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpumptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcpumptype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPumpType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10201,8 +10211,8 @@ class IfcPumpType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcPumpTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcQuantityArea_WR21:
     SCOPE = 'entity'
@@ -10211,7 +10221,7 @@ class IfcQuantityArea_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Unit', INDETERMINATE)) or getattr(getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'AREAUNIT', INDETERMINATE)) is not False
+        assert (not exists(express_getattr(self, 'Unit', INDETERMINATE)) or express_getattr(express_getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'AREAUNIT', INDETERMINATE)) is not False
 
 class IfcQuantityArea_WR22:
     SCOPE = 'entity'
@@ -10220,7 +10230,7 @@ class IfcQuantityArea_WR22:
 
     @staticmethod
     def __call__(self):
-        areavalue = getattr(self, 'AreaValue', INDETERMINATE)
+        areavalue = express_getattr(self, 'AreaValue', INDETERMINATE)
         assert (areavalue >= 0.0) is not False
 
 class IfcQuantityCount_WR21:
@@ -10230,7 +10240,7 @@ class IfcQuantityCount_WR21:
 
     @staticmethod
     def __call__(self):
-        countvalue = getattr(self, 'CountValue', INDETERMINATE)
+        countvalue = express_getattr(self, 'CountValue', INDETERMINATE)
         assert (countvalue >= 0) is not False
 
 class IfcQuantityLength_WR21:
@@ -10240,7 +10250,7 @@ class IfcQuantityLength_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Unit', INDETERMINATE)) or getattr(getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
+        assert (not exists(express_getattr(self, 'Unit', INDETERMINATE)) or express_getattr(express_getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'LENGTHUNIT', INDETERMINATE)) is not False
 
 class IfcQuantityLength_WR22:
     SCOPE = 'entity'
@@ -10249,7 +10259,7 @@ class IfcQuantityLength_WR22:
 
     @staticmethod
     def __call__(self):
-        lengthvalue = getattr(self, 'LengthValue', INDETERMINATE)
+        lengthvalue = express_getattr(self, 'LengthValue', INDETERMINATE)
         assert (lengthvalue >= 0.0) is not False
 
 class IfcQuantityTime_WR21:
@@ -10259,7 +10269,7 @@ class IfcQuantityTime_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Unit', INDETERMINATE)) or getattr(getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'TIMEUNIT', INDETERMINATE)) is not False
+        assert (not exists(express_getattr(self, 'Unit', INDETERMINATE)) or express_getattr(express_getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'TIMEUNIT', INDETERMINATE)) is not False
 
 class IfcQuantityTime_WR22:
     SCOPE = 'entity'
@@ -10268,7 +10278,7 @@ class IfcQuantityTime_WR22:
 
     @staticmethod
     def __call__(self):
-        timevalue = getattr(self, 'TimeValue', INDETERMINATE)
+        timevalue = express_getattr(self, 'TimeValue', INDETERMINATE)
         assert (timevalue >= 0.0) is not False
 
 class IfcQuantityVolume_WR21:
@@ -10278,7 +10288,7 @@ class IfcQuantityVolume_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Unit', INDETERMINATE)) or getattr(getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'VOLUMEUNIT', INDETERMINATE)) is not False
+        assert (not exists(express_getattr(self, 'Unit', INDETERMINATE)) or express_getattr(express_getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'VOLUMEUNIT', INDETERMINATE)) is not False
 
 class IfcQuantityVolume_WR22:
     SCOPE = 'entity'
@@ -10287,7 +10297,7 @@ class IfcQuantityVolume_WR22:
 
     @staticmethod
     def __call__(self):
-        volumevalue = getattr(self, 'VolumeValue', INDETERMINATE)
+        volumevalue = express_getattr(self, 'VolumeValue', INDETERMINATE)
         assert (volumevalue >= 0.0) is not False
 
 class IfcQuantityWeight_WR21:
@@ -10297,7 +10307,7 @@ class IfcQuantityWeight_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(getattr(self, 'Unit', INDETERMINATE)) or getattr(getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'MASSUNIT', INDETERMINATE)) is not False
+        assert (not exists(express_getattr(self, 'Unit', INDETERMINATE)) or express_getattr(express_getattr(self, 'Unit', INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'MASSUNIT', INDETERMINATE)) is not False
 
 class IfcQuantityWeight_WR22:
     SCOPE = 'entity'
@@ -10306,7 +10316,7 @@ class IfcQuantityWeight_WR22:
 
     @staticmethod
     def __call__(self):
-        weightvalue = getattr(self, 'WeightValue', INDETERMINATE)
+        weightvalue = express_getattr(self, 'WeightValue', INDETERMINATE)
         assert (weightvalue >= 0.0) is not False
 
 class IfcRail_CorrectPredefinedType:
@@ -10316,8 +10326,8 @@ class IfcRail_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRail_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10326,8 +10336,8 @@ class IfcRail_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrailtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrailtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRailType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10336,8 +10346,8 @@ class IfcRailType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRailTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcRailing_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10346,8 +10356,8 @@ class IfcRailing_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRailing_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10356,8 +10366,8 @@ class IfcRailing_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrailingtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrailingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRailingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10366,8 +10376,8 @@ class IfcRailingType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRailingTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcRailway_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10376,8 +10386,8 @@ class IfcRailway_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRailwayTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRailwayPart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10386,8 +10396,8 @@ class IfcRailwayPart_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRailwayPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRamp_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10396,8 +10406,8 @@ class IfcRamp_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRamp_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10406,8 +10416,8 @@ class IfcRamp_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcramptype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcramptype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRampFlight_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10416,8 +10426,8 @@ class IfcRampFlight_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRampFlight_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10426,8 +10436,8 @@ class IfcRampFlight_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrampflighttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrampflighttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRampFlightType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10436,8 +10446,8 @@ class IfcRampFlightType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRampFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcRampType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10446,8 +10456,8 @@ class IfcRampType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRampTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcRationalBSplineCurveWithKnots_SameNumOfWeightsAndPoints:
     SCOPE = 'entity'
@@ -10456,8 +10466,8 @@ class IfcRationalBSplineCurveWithKnots_SameNumOfWeightsAndPoints:
 
     @staticmethod
     def __call__(self):
-        weightsdata = getattr(self, 'WeightsData', INDETERMINATE)
-        assert (sizeof(weightsdata) == sizeof(getattr(self, 'ControlPointsList', INDETERMINATE))) is not False
+        weightsdata = express_getattr(self, 'WeightsData', INDETERMINATE)
+        assert (sizeof(weightsdata) == sizeof(express_getattr(self, 'ControlPointsList', INDETERMINATE))) is not False
 
 class IfcRationalBSplineCurveWithKnots_WeightsGreaterZero:
     SCOPE = 'entity'
@@ -10469,8 +10479,8 @@ class IfcRationalBSplineCurveWithKnots_WeightsGreaterZero:
         assert IfcCurveWeightsPositive(self) is not False
 
 def calc_IfcRationalBSplineCurveWithKnots_Weights(self):
-    weightsdata = getattr(self, 'WeightsData', INDETERMINATE)
-    return IfcListToArray(weightsdata, 0, getattr(self, 'UpperIndexOnControlPoints', INDETERMINATE))
+    weightsdata = express_getattr(self, 'WeightsData', INDETERMINATE)
+    return IfcListToArray(weightsdata, 0, express_getattr(self, 'UpperIndexOnControlPoints', INDETERMINATE))
 
 class IfcRationalBSplineSurfaceWithKnots_CorrespondingWeightsDataLists:
     SCOPE = 'entity'
@@ -10479,8 +10489,8 @@ class IfcRationalBSplineSurfaceWithKnots_CorrespondingWeightsDataLists:
 
     @staticmethod
     def __call__(self):
-        weightsdata = getattr(self, 'WeightsData', INDETERMINATE)
-        assert (sizeof(weightsdata) == sizeof(getattr(self, 'ControlPointsList', INDETERMINATE)) and sizeof(express_getitem(weightsdata, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == sizeof(express_getitem(getattr(self, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        weightsdata = express_getattr(self, 'WeightsData', INDETERMINATE)
+        assert (sizeof(weightsdata) == sizeof(express_getattr(self, 'ControlPointsList', INDETERMINATE)) and sizeof(express_getitem(weightsdata, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == sizeof(express_getitem(express_getattr(self, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcRationalBSplineSurfaceWithKnots_WeightValuesGreaterZero:
     SCOPE = 'entity'
@@ -10492,9 +10502,9 @@ class IfcRationalBSplineSurfaceWithKnots_WeightValuesGreaterZero:
         assert IfcSurfaceWeightsPositive(self) is not False
 
 def calc_IfcRationalBSplineSurfaceWithKnots_Weights(self):
-    uupper = getattr(self, 'UUpper', INDETERMINATE)
-    vupper = getattr(self, 'VUpper', INDETERMINATE)
-    weightsdata = getattr(self, 'WeightsData', INDETERMINATE)
+    uupper = express_getattr(self, 'UUpper', INDETERMINATE)
+    vupper = express_getattr(self, 'VUpper', INDETERMINATE)
+    weightsdata = express_getattr(self, 'WeightsData', INDETERMINATE)
     return IfcMakeArrayOfArray(weightsdata, 0, uupper, 0, vupper)
 
 class IfcRectangleHollowProfileDef_ValidInnerRadius:
@@ -10504,9 +10514,9 @@ class IfcRectangleHollowProfileDef_ValidInnerRadius:
 
     @staticmethod
     def __call__(self):
-        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
-        innerfilletradius = getattr(self, 'InnerFilletRadius', INDETERMINATE)
-        assert (not exists(innerfilletradius) or (innerfilletradius <= getattr(self, 'XDim', INDETERMINATE) / 2.0 - wallthickness and innerfilletradius <= getattr(self, 'YDim', INDETERMINATE) / 2.0 - wallthickness)) is not False
+        wallthickness = express_getattr(self, 'WallThickness', INDETERMINATE)
+        innerfilletradius = express_getattr(self, 'InnerFilletRadius', INDETERMINATE)
+        assert (not exists(innerfilletradius) or (innerfilletradius <= express_getattr(self, 'XDim', INDETERMINATE) / 2.0 - wallthickness and innerfilletradius <= express_getattr(self, 'YDim', INDETERMINATE) / 2.0 - wallthickness)) is not False
 
 class IfcRectangleHollowProfileDef_ValidOuterRadius:
     SCOPE = 'entity'
@@ -10515,8 +10525,8 @@ class IfcRectangleHollowProfileDef_ValidOuterRadius:
 
     @staticmethod
     def __call__(self):
-        outerfilletradius = getattr(self, 'OuterFilletRadius', INDETERMINATE)
-        assert (not exists(outerfilletradius) or (outerfilletradius <= getattr(self, 'XDim', INDETERMINATE) / 2.0 and outerfilletradius <= getattr(self, 'YDim', INDETERMINATE) / 2.0)) is not False
+        outerfilletradius = express_getattr(self, 'OuterFilletRadius', INDETERMINATE)
+        assert (not exists(outerfilletradius) or (outerfilletradius <= express_getattr(self, 'XDim', INDETERMINATE) / 2.0 and outerfilletradius <= express_getattr(self, 'YDim', INDETERMINATE) / 2.0)) is not False
 
 class IfcRectangleHollowProfileDef_ValidWallThickness:
     SCOPE = 'entity'
@@ -10525,8 +10535,8 @@ class IfcRectangleHollowProfileDef_ValidWallThickness:
 
     @staticmethod
     def __call__(self):
-        wallthickness = getattr(self, 'WallThickness', INDETERMINATE)
-        assert (wallthickness < getattr(self, 'XDim', INDETERMINATE) / 2.0 and wallthickness < getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
+        wallthickness = express_getattr(self, 'WallThickness', INDETERMINATE)
+        assert (wallthickness < express_getattr(self, 'XDim', INDETERMINATE) / 2.0 and wallthickness < express_getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
 
 class IfcRectangularTrimmedSurface_U1AndU2Different:
     SCOPE = 'entity'
@@ -10535,8 +10545,8 @@ class IfcRectangularTrimmedSurface_U1AndU2Different:
 
     @staticmethod
     def __call__(self):
-        u1 = getattr(self, 'U1', INDETERMINATE)
-        u2 = getattr(self, 'U2', INDETERMINATE)
+        u1 = express_getattr(self, 'U1', INDETERMINATE)
+        u2 = express_getattr(self, 'U2', INDETERMINATE)
         assert (u1 != u2) is not False
 
 class IfcRectangularTrimmedSurface_UsenseCompatible:
@@ -10546,10 +10556,10 @@ class IfcRectangularTrimmedSurface_UsenseCompatible:
 
     @staticmethod
     def __call__(self):
-        basissurface = getattr(self, 'BasisSurface', INDETERMINATE)
-        u1 = getattr(self, 'U1', INDETERMINATE)
-        u2 = getattr(self, 'U2', INDETERMINATE)
-        usense = getattr(self, 'Usense', INDETERMINATE)
+        basissurface = express_getattr(self, 'BasisSurface', INDETERMINATE)
+        u1 = express_getattr(self, 'U1', INDETERMINATE)
+        u2 = express_getattr(self, 'U2', INDETERMINATE)
+        usense = express_getattr(self, 'Usense', INDETERMINATE)
         assert ('ifc4x3_tc1.ifcelementarysurface' in typeof(basissurface) and (not 'ifc4x3_tc1.ifcplane' in typeof(basissurface)) or 'ifc4x3_tc1.ifcsurfaceofrevolution' in typeof(basissurface) or usense == (u2 > u1)) is not False
 
 class IfcRectangularTrimmedSurface_V1AndV2Different:
@@ -10559,8 +10569,8 @@ class IfcRectangularTrimmedSurface_V1AndV2Different:
 
     @staticmethod
     def __call__(self):
-        v1 = getattr(self, 'V1', INDETERMINATE)
-        v2 = getattr(self, 'V2', INDETERMINATE)
+        v1 = express_getattr(self, 'V1', INDETERMINATE)
+        v2 = express_getattr(self, 'V2', INDETERMINATE)
         assert (v1 != v2) is not False
 
 class IfcRectangularTrimmedSurface_VsenseCompatible:
@@ -10570,9 +10580,9 @@ class IfcRectangularTrimmedSurface_VsenseCompatible:
 
     @staticmethod
     def __call__(self):
-        v1 = getattr(self, 'V1', INDETERMINATE)
-        v2 = getattr(self, 'V2', INDETERMINATE)
-        vsense = getattr(self, 'Vsense', INDETERMINATE)
+        v1 = express_getattr(self, 'V1', INDETERMINATE)
+        v2 = express_getattr(self, 'V2', INDETERMINATE)
+        vsense = express_getattr(self, 'Vsense', INDETERMINATE)
         assert (vsense == (v2 > v1)) is not False
 
 class IfcReinforcedSoil_CorrectPredefinedType:
@@ -10582,8 +10592,8 @@ class IfcReinforcedSoil_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcReinforcedSoilTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcedSoilTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcReinforcedSoilTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcReinforcedSoilTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcReinforcingBar_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10592,8 +10602,8 @@ class IfcReinforcingBar_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcReinforcingBar_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10602,8 +10612,8 @@ class IfcReinforcingBar_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcreinforcingbartype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcreinforcingbartype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcReinforcingBarType_BendingShapeCodeProvided:
     SCOPE = 'entity'
@@ -10612,8 +10622,8 @@ class IfcReinforcingBarType_BendingShapeCodeProvided:
 
     @staticmethod
     def __call__(self):
-        bendingshapecode = getattr(self, 'BendingShapeCode', INDETERMINATE)
-        bendingparameters = getattr(self, 'BendingParameters', INDETERMINATE)
+        bendingshapecode = express_getattr(self, 'BendingShapeCode', INDETERMINATE)
+        bendingparameters = express_getattr(self, 'BendingParameters', INDETERMINATE)
         assert (not exists(bendingparameters) or exists(bendingshapecode)) is not False
 
 class IfcReinforcingBarType_CorrectPredefinedType:
@@ -10623,8 +10633,8 @@ class IfcReinforcingBarType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcReinforcingBarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcReinforcingMesh_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10633,8 +10643,8 @@ class IfcReinforcingMesh_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcReinforcingMesh_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10643,8 +10653,8 @@ class IfcReinforcingMesh_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcreinforcingmeshtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcreinforcingmeshtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcReinforcingMeshType_BendingShapeCodeProvided:
     SCOPE = 'entity'
@@ -10653,8 +10663,8 @@ class IfcReinforcingMeshType_BendingShapeCodeProvided:
 
     @staticmethod
     def __call__(self):
-        bendingshapecode = getattr(self, 'BendingShapeCode', INDETERMINATE)
-        bendingparameters = getattr(self, 'BendingParameters', INDETERMINATE)
+        bendingshapecode = express_getattr(self, 'BendingShapeCode', INDETERMINATE)
+        bendingparameters = express_getattr(self, 'BendingParameters', INDETERMINATE)
         assert (not exists(bendingparameters) or exists(bendingshapecode)) is not False
 
 class IfcReinforcingMeshType_CorrectPredefinedType:
@@ -10664,8 +10674,8 @@ class IfcReinforcingMeshType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcReinforcingMeshTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcRelAggregates_NoSelfReference:
     SCOPE = 'entity'
@@ -10674,8 +10684,8 @@ class IfcRelAggregates_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingobject = getattr(self, 'RelatingObject', INDETERMINATE)
-        relatedobjects = getattr(self, 'RelatedObjects', INDETERMINATE)
+        relatingobject = express_getattr(self, 'RelatingObject', INDETERMINATE)
+        relatedobjects = express_getattr(self, 'RelatedObjects', INDETERMINATE)
         assert (sizeof([temp for temp in relatedobjects if relatingobject == temp]) == 0) is not False
 
 class IfcRelAssignsToActor_NoSelfReference:
@@ -10685,8 +10695,8 @@ class IfcRelAssignsToActor_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingactor = getattr(self, 'RelatingActor', INDETERMINATE)
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatingactor == temp]) == 0) is not False
+        relatingactor = express_getattr(self, 'RelatingActor', INDETERMINATE)
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if relatingactor == temp]) == 0) is not False
 
 class IfcRelAssignsToControl_NoSelfReference:
     SCOPE = 'entity'
@@ -10695,8 +10705,8 @@ class IfcRelAssignsToControl_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingcontrol = getattr(self, 'RelatingControl', INDETERMINATE)
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatingcontrol == temp]) == 0) is not False
+        relatingcontrol = express_getattr(self, 'RelatingControl', INDETERMINATE)
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if relatingcontrol == temp]) == 0) is not False
 
 class IfcRelAssignsToGroup_NoSelfReference:
     SCOPE = 'entity'
@@ -10705,8 +10715,8 @@ class IfcRelAssignsToGroup_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatinggroup = getattr(self, 'RelatingGroup', INDETERMINATE)
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatinggroup == temp]) == 0) is not False
+        relatinggroup = express_getattr(self, 'RelatingGroup', INDETERMINATE)
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if relatinggroup == temp]) == 0) is not False
 
 class IfcRelAssignsToProcess_NoSelfReference:
     SCOPE = 'entity'
@@ -10715,8 +10725,8 @@ class IfcRelAssignsToProcess_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingprocess = getattr(self, 'RelatingProcess', INDETERMINATE)
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatingprocess == temp]) == 0) is not False
+        relatingprocess = express_getattr(self, 'RelatingProcess', INDETERMINATE)
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if relatingprocess == temp]) == 0) is not False
 
 class IfcRelAssignsToProduct_NoSelfReference:
     SCOPE = 'entity'
@@ -10725,8 +10735,8 @@ class IfcRelAssignsToProduct_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingproduct = getattr(self, 'RelatingProduct', INDETERMINATE)
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatingproduct == temp]) == 0) is not False
+        relatingproduct = express_getattr(self, 'RelatingProduct', INDETERMINATE)
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if relatingproduct == temp]) == 0) is not False
 
 class IfcRelAssignsToResource_NoSelfReference:
     SCOPE = 'entity'
@@ -10735,8 +10745,8 @@ class IfcRelAssignsToResource_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingresource = getattr(self, 'RelatingResource', INDETERMINATE)
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if relatingresource == temp]) == 0) is not False
+        relatingresource = express_getattr(self, 'RelatingResource', INDETERMINATE)
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if relatingresource == temp]) == 0) is not False
 
 class IfcRelAssociatesMaterial_AllowedElements:
     SCOPE = 'entity'
@@ -10745,7 +10755,7 @@ class IfcRelAssociatesMaterial_AllowedElements:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if sizeof(typeof(temp) * ['ifc4x3_tc1.ifcelement', 'ifc4x3_tc1.ifcelementtype', 'ifc4x3_tc1.ifcstructuralmember', 'ifc4x3_tc1.ifcport']) == 0]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if sizeof(typeof(temp) * ['ifc4x3_tc1.ifcelement', 'ifc4x3_tc1.ifcelementtype', 'ifc4x3_tc1.ifcstructuralmember', 'ifc4x3_tc1.ifcport']) == 0]) == 0) is not False
 
 class IfcRelAssociatesMaterial_NoVoidElement:
     SCOPE = 'entity'
@@ -10754,7 +10764,7 @@ class IfcRelAssociatesMaterial_NoVoidElement:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_tc1.ifcfeatureelementsubtraction' in typeof(temp) or 'ifc4x3_tc1.ifcvirtualelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_tc1.ifcfeatureelementsubtraction' in typeof(temp) or 'ifc4x3_tc1.ifcvirtualelement' in typeof(temp)]) == 0) is not False
 
 class IfcRelConnectsElements_NoSelfReference:
     SCOPE = 'entity'
@@ -10763,8 +10773,8 @@ class IfcRelConnectsElements_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingelement = getattr(self, 'RelatingElement', INDETERMINATE)
-        relatedelement = getattr(self, 'RelatedElement', INDETERMINATE)
+        relatingelement = express_getattr(self, 'RelatingElement', INDETERMINATE)
+        relatedelement = express_getattr(self, 'RelatedElement', INDETERMINATE)
         assert (relatingelement != relatedelement) is not False
 
 class IfcRelConnectsPathElements_NormalizedRelatedPriorities:
@@ -10774,7 +10784,7 @@ class IfcRelConnectsPathElements_NormalizedRelatedPriorities:
 
     @staticmethod
     def __call__(self):
-        relatedpriorities = getattr(self, 'RelatedPriorities', INDETERMINATE)
+        relatedpriorities = express_getattr(self, 'RelatedPriorities', INDETERMINATE)
         assert (sizeof(relatedpriorities) == 0 or sizeof([temp for temp in relatedpriorities if 0 <= temp <= 100]) == sizeof(relatedpriorities)) is not False
 
 class IfcRelConnectsPathElements_NormalizedRelatingPriorities:
@@ -10784,7 +10794,7 @@ class IfcRelConnectsPathElements_NormalizedRelatingPriorities:
 
     @staticmethod
     def __call__(self):
-        relatingpriorities = getattr(self, 'RelatingPriorities', INDETERMINATE)
+        relatingpriorities = express_getattr(self, 'RelatingPriorities', INDETERMINATE)
         assert (sizeof(relatingpriorities) == 0 or sizeof([temp for temp in relatingpriorities if 0 <= temp <= 100]) == sizeof(relatingpriorities)) is not False
 
 class IfcRelConnectsPorts_NoSelfReference:
@@ -10794,8 +10804,8 @@ class IfcRelConnectsPorts_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingport = getattr(self, 'RelatingPort', INDETERMINATE)
-        relatedport = getattr(self, 'RelatedPort', INDETERMINATE)
+        relatingport = express_getattr(self, 'RelatingPort', INDETERMINATE)
+        relatedport = express_getattr(self, 'RelatedPort', INDETERMINATE)
         assert (relatingport != relatedport) is not False
 
 class IfcRelContainedInSpatialStructure_WR31:
@@ -10805,7 +10815,7 @@ class IfcRelContainedInSpatialStructure_WR31:
 
     @staticmethod
     def __call__(self):
-        relatedelements = getattr(self, 'RelatedElements', INDETERMINATE)
+        relatedelements = express_getattr(self, 'RelatedElements', INDETERMINATE)
         assert (sizeof([temp for temp in relatedelements if 'ifc4x3_tc1.ifcspatialstructureelement' in typeof(temp)]) == 0) is not False
 
 class IfcRelDeclares_NoSelfReference:
@@ -10815,8 +10825,8 @@ class IfcRelDeclares_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingcontext = getattr(self, 'RelatingContext', INDETERMINATE)
-        relateddefinitions = getattr(self, 'RelatedDefinitions', INDETERMINATE)
+        relatingcontext = express_getattr(self, 'RelatingContext', INDETERMINATE)
+        relateddefinitions = express_getattr(self, 'RelatedDefinitions', INDETERMINATE)
         assert (sizeof([temp for temp in relateddefinitions if relatingcontext == temp]) == 0) is not False
 
 class IfcRelDefinesByProperties_NoRelatedTypeObject:
@@ -10826,7 +10836,7 @@ class IfcRelDefinesByProperties_NoRelatedTypeObject:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([types for types in getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_tc1.ifctypeobject' in typeof(types)]) == 0) is not False
+        assert (sizeof([types for types in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_tc1.ifctypeobject' in typeof(types)]) == 0) is not False
 
 class IfcRelInterferesElements_NoSelfReference:
     SCOPE = 'entity'
@@ -10835,8 +10845,8 @@ class IfcRelInterferesElements_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingelement = getattr(self, 'RelatingElement', INDETERMINATE)
-        relatedelement = getattr(self, 'RelatedElement', INDETERMINATE)
+        relatingelement = express_getattr(self, 'RelatingElement', INDETERMINATE)
+        relatedelement = express_getattr(self, 'RelatedElement', INDETERMINATE)
         assert (relatingelement != relatedelement) is not False
 
 class IfcRelNests_NoSelfReference:
@@ -10846,8 +10856,8 @@ class IfcRelNests_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingobject = getattr(self, 'RelatingObject', INDETERMINATE)
-        relatedobjects = getattr(self, 'RelatedObjects', INDETERMINATE)
+        relatingobject = express_getattr(self, 'RelatingObject', INDETERMINATE)
+        relatedobjects = express_getattr(self, 'RelatedObjects', INDETERMINATE)
         assert (sizeof([temp for temp in relatedobjects if relatingobject == temp]) == 0) is not False
 
 class IfcRelPositions_NoSelfReference:
@@ -10857,8 +10867,8 @@ class IfcRelPositions_NoSelfReference:
 
     @staticmethod
     def __call__(self):
-        relatingpositioningelement = getattr(self, 'RelatingPositioningElement', INDETERMINATE)
-        relatedproducts = getattr(self, 'RelatedProducts', INDETERMINATE)
+        relatingpositioningelement = express_getattr(self, 'RelatingPositioningElement', INDETERMINATE)
+        relatedproducts = express_getattr(self, 'RelatedProducts', INDETERMINATE)
         assert (sizeof([temp for temp in relatedproducts if relatingpositioningelement == temp]) == 0) is not False
 
 class IfcRelReferencedInSpatialStructure_AllowedRelatedElements:
@@ -10868,7 +10878,7 @@ class IfcRelReferencedInSpatialStructure_AllowedRelatedElements:
 
     @staticmethod
     def __call__(self):
-        relatedelements = getattr(self, 'RelatedElements', INDETERMINATE)
+        relatedelements = express_getattr(self, 'RelatedElements', INDETERMINATE)
         assert (sizeof([temp for temp in relatedelements if 'ifc4x3_tc1.ifcspatialstructureelement' in typeof(temp) and (not 'ifc4x3_tc1.ifcspace' in typeof(temp))]) == 0) is not False
 
 class IfcRelSequence_AvoidInconsistentSequence:
@@ -10878,8 +10888,8 @@ class IfcRelSequence_AvoidInconsistentSequence:
 
     @staticmethod
     def __call__(self):
-        relatingprocess = getattr(self, 'RelatingProcess', INDETERMINATE)
-        relatedprocess = getattr(self, 'RelatedProcess', INDETERMINATE)
+        relatingprocess = express_getattr(self, 'RelatingProcess', INDETERMINATE)
+        relatedprocess = express_getattr(self, 'RelatedProcess', INDETERMINATE)
         assert (relatingprocess != relatedprocess) is not False
 
 class IfcRelSequence_CorrectSequenceType:
@@ -10889,9 +10899,9 @@ class IfcRelSequence_CorrectSequenceType:
 
     @staticmethod
     def __call__(self):
-        sequencetype = getattr(self, 'SequenceType', INDETERMINATE)
-        userdefinedsequencetype = getattr(self, 'UserDefinedSequenceType', INDETERMINATE)
-        assert (sequencetype != getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE) or (sequencetype == getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedsequencetype))) is not False
+        sequencetype = express_getattr(self, 'SequenceType', INDETERMINATE)
+        userdefinedsequencetype = express_getattr(self, 'UserDefinedSequenceType', INDETERMINATE)
+        assert (sequencetype != express_getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE) or (sequencetype == express_getattr(IfcSequenceEnum, 'USERDEFINED', INDETERMINATE) and exists(userdefinedsequencetype))) is not False
 
 class IfcRelSpaceBoundary_CorrectPhysOrVirt:
     SCOPE = 'entity'
@@ -10900,9 +10910,9 @@ class IfcRelSpaceBoundary_CorrectPhysOrVirt:
 
     @staticmethod
     def __call__(self):
-        relatedbuildingelement = getattr(self, 'RelatedBuildingElement', INDETERMINATE)
-        physicalorvirtualboundary = getattr(self, 'PhysicalOrVirtualBoundary', INDETERMINATE)
-        assert (physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (not 'ifc4x3_tc1.ifcvirtualelement' in typeof(relatedbuildingelement)) or (physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and ('ifc4x3_tc1.ifcvirtualelement' in typeof(relatedbuildingelement) or 'ifc4x3_tc1.ifcopeningelement' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
+        relatedbuildingelement = express_getattr(self, 'RelatedBuildingElement', INDETERMINATE)
+        physicalorvirtualboundary = express_getattr(self, 'PhysicalOrVirtualBoundary', INDETERMINATE)
+        assert (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (not 'ifc4x3_tc1.ifcvirtualelement' in typeof(relatedbuildingelement)) or (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and ('ifc4x3_tc1.ifcvirtualelement' in typeof(relatedbuildingelement) or 'ifc4x3_tc1.ifcopeningelement' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
 
 class IfcReparametrisedCompositeCurveSegment_PositiveLengthParameter:
     SCOPE = 'entity'
@@ -10911,7 +10921,7 @@ class IfcReparametrisedCompositeCurveSegment_PositiveLengthParameter:
 
     @staticmethod
     def __call__(self):
-        paramlength = getattr(self, 'ParamLength', INDETERMINATE)
+        paramlength = express_getattr(self, 'ParamLength', INDETERMINATE)
         assert (paramlength > 0.0) is not False
 
 class IfcRepresentationMap_ApplicableMappedRepr:
@@ -10921,7 +10931,7 @@ class IfcRepresentationMap_ApplicableMappedRepr:
 
     @staticmethod
     def __call__(self):
-        mappedrepresentation = getattr(self, 'MappedRepresentation', INDETERMINATE)
+        mappedrepresentation = express_getattr(self, 'MappedRepresentation', INDETERMINATE)
         assert ('ifc4x3_tc1.ifcshapemodel' in typeof(mappedrepresentation)) is not False
 
 class IfcRevolvedAreaSolid_AxisDirectionInXY:
@@ -10931,8 +10941,8 @@ class IfcRevolvedAreaSolid_AxisDirectionInXY:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        assert (express_getitem(getattr(getattr(axis, 'Z', INDETERMINATE), 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        assert (express_getitem(express_getattr(express_getattr(axis, 'Z', INDETERMINATE), 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
 
 class IfcRevolvedAreaSolid_AxisStartInXY:
     SCOPE = 'entity'
@@ -10941,12 +10951,12 @@ class IfcRevolvedAreaSolid_AxisStartInXY:
 
     @staticmethod
     def __call__(self):
-        axis = getattr(self, 'Axis', INDETERMINATE)
-        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(getattr(axis, 'Location', INDETERMINATE)) and express_getitem(getattr(getattr(axis, 'Location', INDETERMINATE), 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
+        axis = express_getattr(self, 'Axis', INDETERMINATE)
+        assert ('ifc4x3_tc1.ifccartesianpoint' in typeof(express_getattr(axis, 'Location', INDETERMINATE)) and express_getitem(express_getattr(express_getattr(axis, 'Location', INDETERMINATE), 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) == 0.0) is not False
 
 def calc_IfcRevolvedAreaSolid_AxisLine(self):
-    axis = getattr(self, 'Axis', INDETERMINATE)
-    return IfcLine(Pnt=getattr(axis, 'Location', INDETERMINATE), Dir=IfcVector(Orientation=getattr(axis, 'Z', INDETERMINATE), Magnitude=1.0))
+    axis = express_getattr(self, 'Axis', INDETERMINATE)
+    return IfcLine(Pnt=express_getattr(axis, 'Location', INDETERMINATE), Dir=IfcVector(Orientation=express_getattr(axis, 'Z', INDETERMINATE), Magnitude=1.0))
 
 class IfcRevolvedAreaSolidTapered_CorrectProfileAssignment:
     SCOPE = 'entity'
@@ -10955,7 +10965,7 @@ class IfcRevolvedAreaSolidTapered_CorrectProfileAssignment:
 
     @staticmethod
     def __call__(self):
-        assert IfcTaperedSweptAreaProfiles(getattr(self, 'SweptArea', INDETERMINATE), getattr(self, 'EndSweptArea', INDETERMINATE)) is not False
+        assert IfcTaperedSweptAreaProfiles(express_getattr(self, 'SweptArea', INDETERMINATE), express_getattr(self, 'EndSweptArea', INDETERMINATE)) is not False
 
 class IfcRoad_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10964,8 +10974,8 @@ class IfcRoad_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRoadTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRoadPart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10974,8 +10984,8 @@ class IfcRoadPart_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRoadPartTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRoof_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10984,8 +10994,8 @@ class IfcRoof_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcRoof_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -10994,8 +11004,8 @@ class IfcRoof_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrooftype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcrooftype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRoofType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11004,8 +11014,8 @@ class IfcRoofType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcRoofTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcRoundedRectangleProfileDef_ValidRadius:
     SCOPE = 'entity'
@@ -11014,11 +11024,11 @@ class IfcRoundedRectangleProfileDef_ValidRadius:
 
     @staticmethod
     def __call__(self):
-        roundingradius = getattr(self, 'RoundingRadius', INDETERMINATE)
-        assert (roundingradius <= getattr(self, 'XDim', INDETERMINATE) / 2.0 and roundingradius <= getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
+        roundingradius = express_getattr(self, 'RoundingRadius', INDETERMINATE)
+        assert (roundingradius <= express_getattr(self, 'XDim', INDETERMINATE) / 2.0 and roundingradius <= express_getattr(self, 'YDim', INDETERMINATE) / 2.0) is not False
 
 def calc_IfcSIUnit_Dimensions(self):
-    return IfcDimensionsForSIUnit(getattr(self, 'Name', INDETERMINATE))
+    return IfcDimensionsForSIUnit(express_getattr(self, 'Name', INDETERMINATE))
 
 class IfcSanitaryTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11027,8 +11037,8 @@ class IfcSanitaryTerminal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSanitaryTerminal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11037,8 +11047,8 @@ class IfcSanitaryTerminal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsanitaryterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsanitaryterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSanitaryTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11047,8 +11057,8 @@ class IfcSanitaryTerminalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSanitaryTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSeamCurve_SameSurface:
     SCOPE = 'entity'
@@ -11057,7 +11067,7 @@ class IfcSeamCurve_SameSurface:
 
     @staticmethod
     def __call__(self):
-        assert (IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == IfcAssociatedSurface(express_getitem(getattr(self, 'AssociatedGeometry', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (IfcAssociatedSurface(express_getitem(express_getattr(self, 'AssociatedGeometry', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) == IfcAssociatedSurface(express_getitem(express_getattr(self, 'AssociatedGeometry', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcSeamCurve_TwoPCurves:
     SCOPE = 'entity'
@@ -11066,7 +11076,7 @@ class IfcSeamCurve_TwoPCurves:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
+        assert (sizeof(express_getattr(self, 'AssociatedGeometry', INDETERMINATE)) == 2) is not False
 
 class IfcSectionedSolid_ConsistentProfileTypes:
     SCOPE = 'entity'
@@ -11075,8 +11085,8 @@ class IfcSectionedSolid_ConsistentProfileTypes:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
-        assert (sizeof([temp for temp in crosssections if getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssections if express_getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != express_getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
 
 class IfcSectionedSolid_DirectrixIs3D:
     SCOPE = 'entity'
@@ -11085,8 +11095,8 @@ class IfcSectionedSolid_DirectrixIs3D:
 
     @staticmethod
     def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        assert (getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
+        directrix = express_getattr(self, 'Directrix', INDETERMINATE)
+        assert (express_getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcSectionedSolid_SectionsSameType:
     SCOPE = 'entity'
@@ -11095,7 +11105,7 @@ class IfcSectionedSolid_SectionsSameType:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
         assert (sizeof([temp for temp in crosssections if typeof(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != typeof(temp)]) == 0) is not False
 
 class IfcSectionedSolidHorizontal_CorrespondingSectionPositions:
@@ -11105,8 +11115,8 @@ class IfcSectionedSolidHorizontal_CorrespondingSectionPositions:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
-        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
+        crosssectionpositions = express_getattr(self, 'CrossSectionPositions', INDETERMINATE)
         assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
 
 class IfcSectionedSolidHorizontal_NoLongitudinalOffsets:
@@ -11116,8 +11126,8 @@ class IfcSectionedSolidHorizontal_NoLongitudinalOffsets:
 
     @staticmethod
     def __call__(self):
-        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
-        assert (sizeof([temp for temp in crosssectionpositions if exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetLongitudinal', INDETERMINATE))]) == 0) is not False
+        crosssectionpositions = express_getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssectionpositions if exists(express_getattr(express_getattr(temp, 'Location', INDETERMINATE), 'OffsetLongitudinal', INDETERMINATE))]) == 0) is not False
 
 class IfcSectionedSpine_ConsistentProfileTypes:
     SCOPE = 'entity'
@@ -11126,8 +11136,8 @@ class IfcSectionedSpine_ConsistentProfileTypes:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
-        assert (sizeof([temp for temp in crosssections if getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssections if express_getattr(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ProfileType', INDETERMINATE) != express_getattr(temp, 'ProfileType', INDETERMINATE)]) == 0) is not False
 
 class IfcSectionedSpine_CorrespondingSectionPositions:
     SCOPE = 'entity'
@@ -11136,8 +11146,8 @@ class IfcSectionedSpine_CorrespondingSectionPositions:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
-        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
+        crosssectionpositions = express_getattr(self, 'CrossSectionPositions', INDETERMINATE)
         assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
 
 class IfcSectionedSpine_SpineCurveDim:
@@ -11147,8 +11157,8 @@ class IfcSectionedSpine_SpineCurveDim:
 
     @staticmethod
     def __call__(self):
-        spinecurve = getattr(self, 'SpineCurve', INDETERMINATE)
-        assert (getattr(spinecurve, 'Dim', INDETERMINATE) == 3) is not False
+        spinecurve = express_getattr(self, 'SpineCurve', INDETERMINATE)
+        assert (express_getattr(spinecurve, 'Dim', INDETERMINATE) == 3) is not False
 
 def calc_IfcSectionedSpine_Dim(self):
     return 3
@@ -11160,8 +11170,8 @@ class IfcSectionedSurface_AreaProfileTypes:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
-        assert (sizeof([temp for temp in crosssections if getattr(temp, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)]) == 0) is not False
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssections if express_getattr(temp, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)]) == 0) is not False
 
 class IfcSectionedSurface_CorrespondingSectionPositions:
     SCOPE = 'entity'
@@ -11170,8 +11180,8 @@ class IfcSectionedSurface_CorrespondingSectionPositions:
 
     @staticmethod
     def __call__(self):
-        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        crosssectionpositions = express_getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
         assert (sizeof(crosssections) == sizeof(crosssectionpositions)) is not False
 
 class IfcSectionedSurface_DirectrixIs3D:
@@ -11181,8 +11191,8 @@ class IfcSectionedSurface_DirectrixIs3D:
 
     @staticmethod
     def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        assert (getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
+        directrix = express_getattr(self, 'Directrix', INDETERMINATE)
+        assert (express_getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcSectionedSurface_NoOffsets:
     SCOPE = 'entity'
@@ -11191,8 +11201,8 @@ class IfcSectionedSurface_NoOffsets:
 
     @staticmethod
     def __call__(self):
-        crosssectionpositions = getattr(self, 'CrossSectionPositions', INDETERMINATE)
-        assert (sizeof([temp for temp in crosssectionpositions if exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetLateral', INDETERMINATE)) or exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetVertical', INDETERMINATE)) or exists(getattr(getattr(temp, 'Location', INDETERMINATE), 'OffsetLongitudinal', INDETERMINATE))]) == 0) is not False
+        crosssectionpositions = express_getattr(self, 'CrossSectionPositions', INDETERMINATE)
+        assert (sizeof([temp for temp in crosssectionpositions if exists(express_getattr(express_getattr(temp, 'Location', INDETERMINATE), 'OffsetLateral', INDETERMINATE)) or exists(express_getattr(express_getattr(temp, 'Location', INDETERMINATE), 'OffsetVertical', INDETERMINATE)) or exists(express_getattr(express_getattr(temp, 'Location', INDETERMINATE), 'OffsetLongitudinal', INDETERMINATE))]) == 0) is not False
 
 class IfcSectionedSurface_SectionsSameType:
     SCOPE = 'entity'
@@ -11201,7 +11211,7 @@ class IfcSectionedSurface_SectionsSameType:
 
     @staticmethod
     def __call__(self):
-        crosssections = getattr(self, 'CrossSections', INDETERMINATE)
+        crosssections = express_getattr(self, 'CrossSections', INDETERMINATE)
         assert (sizeof([temp for temp in crosssections if typeof(express_getitem(crosssections, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != typeof(temp)]) == 0) is not False
 
 def calc_IfcSegment_Dim(self):
@@ -11214,8 +11224,8 @@ class IfcSensor_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSensor_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11224,8 +11234,8 @@ class IfcSensor_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsensortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsensortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSensorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11234,8 +11244,8 @@ class IfcSensorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSensorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcShadingDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11244,8 +11254,8 @@ class IfcShadingDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcShadingDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11254,8 +11264,8 @@ class IfcShadingDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcshadingdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcshadingdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcShadingDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11264,8 +11274,8 @@ class IfcShadingDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcShadingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcShapeModel_WR11:
     SCOPE = 'entity'
@@ -11274,8 +11284,8 @@ class IfcShapeModel_WR11:
 
     @staticmethod
     def __call__(self):
-        ofshapeaspect = getattr(self, 'OfShapeAspect', INDETERMINATE)
-        assert (sizeof(getattr(self, 'OfProductRepresentation', INDETERMINATE)) == 1) ^ (sizeof(getattr(self, 'RepresentationMap', INDETERMINATE)) == 1) ^ (sizeof(ofshapeaspect) == 1) is not False
+        ofshapeaspect = express_getattr(self, 'OfShapeAspect', INDETERMINATE)
+        assert (sizeof(express_getattr(self, 'OfProductRepresentation', INDETERMINATE)) == 1) ^ (sizeof(express_getattr(self, 'RepresentationMap', INDETERMINATE)) == 1) ^ (sizeof(ofshapeaspect) == 1) is not False
 
 class IfcShapeRepresentation_CorrectContext:
     SCOPE = 'entity'
@@ -11284,7 +11294,7 @@ class IfcShapeRepresentation_CorrectContext:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifcgeometricrepresentationcontext' in typeof(getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
+        assert ('ifc4x3_tc1.ifcgeometricrepresentationcontext' in typeof(express_getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
 
 class IfcShapeRepresentation_CorrectItemsForType:
     SCOPE = 'entity'
@@ -11293,7 +11303,7 @@ class IfcShapeRepresentation_CorrectItemsForType:
 
     @staticmethod
     def __call__(self):
-        assert IfcShapeRepresentationTypes(getattr(self, 'RepresentationType', INDETERMINATE), getattr(self, 'Items', INDETERMINATE)) is not False
+        assert IfcShapeRepresentationTypes(express_getattr(self, 'RepresentationType', INDETERMINATE), express_getattr(self, 'Items', INDETERMINATE)) is not False
 
 class IfcShapeRepresentation_HasRepresentationIdentifier:
     SCOPE = 'entity'
@@ -11302,7 +11312,7 @@ class IfcShapeRepresentation_HasRepresentationIdentifier:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'RepresentationIdentifier', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'RepresentationIdentifier', INDETERMINATE)) is not False
 
 class IfcShapeRepresentation_HasRepresentationType:
     SCOPE = 'entity'
@@ -11311,7 +11321,7 @@ class IfcShapeRepresentation_HasRepresentationType:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'RepresentationType', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'RepresentationType', INDETERMINATE)) is not False
 
 class IfcShapeRepresentation_NoTopologicalItem:
     SCOPE = 'entity'
@@ -11320,7 +11330,7 @@ class IfcShapeRepresentation_NoTopologicalItem:
 
     @staticmethod
     def __call__(self):
-        items = getattr(self, 'Items', INDETERMINATE)
+        items = express_getattr(self, 'Items', INDETERMINATE)
         assert (sizeof([temp for temp in items if 'ifc4x3_tc1.ifctopologicalrepresentationitem' in typeof(temp) and (not sizeof(['ifc4x3_tc1.ifcvertexpoint', 'ifc4x3_tc1.ifcedgecurve', 'ifc4x3_tc1.ifcfacesurface'] * typeof(temp)) == 1)]) == 0) is not False
 
 def calc_IfcShellBasedSurfaceModel_Dim(self):
@@ -11333,8 +11343,8 @@ class IfcSign_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSign_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11343,8 +11353,8 @@ class IfcSign_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsigntype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsigntype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSignType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11353,8 +11363,8 @@ class IfcSignType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSignTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSignal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11363,8 +11373,8 @@ class IfcSignal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSignal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11373,8 +11383,8 @@ class IfcSignal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsignaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsignaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSignalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11383,8 +11393,8 @@ class IfcSignalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSignalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSlab_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11393,8 +11403,8 @@ class IfcSlab_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSlab_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11403,8 +11413,8 @@ class IfcSlab_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcslabtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcslabtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSlabType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11413,8 +11423,8 @@ class IfcSlabType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSlabTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSolarDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11423,8 +11433,8 @@ class IfcSolarDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSolarDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11433,8 +11443,8 @@ class IfcSolarDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsolardevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsolardevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSolarDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11443,8 +11453,8 @@ class IfcSolarDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSolarDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcSolidModel_Dim(self):
     return 3
@@ -11456,8 +11466,8 @@ class IfcSpace_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSpace_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11466,8 +11476,8 @@ class IfcSpace_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcspacetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcspacetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpaceHeater_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11476,8 +11486,8 @@ class IfcSpaceHeater_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSpaceHeater_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11486,8 +11496,8 @@ class IfcSpaceHeater_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcspaceheatertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcspaceheatertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpaceHeaterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11496,8 +11506,8 @@ class IfcSpaceHeaterType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSpaceHeaterTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSpaceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11506,8 +11516,8 @@ class IfcSpaceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSpaceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSpatialStructureElement_WR41:
     SCOPE = 'entity'
@@ -11516,7 +11526,7 @@ class IfcSpatialStructureElement_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (hiindex(getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'ifc4x3_tc1.ifcrelaggregates' in typeof(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_tc1.ifcproject' in typeof(getattr(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'ifc4x3_tc1.ifcspatialstructureelement' in typeof(getattr(express_getitem(getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
+        assert (hiindex(express_getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'ifc4x3_tc1.ifcrelaggregates' in typeof(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_tc1.ifcproject' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'ifc4x3_tc1.ifcspatialstructureelement' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
 
 class IfcSpatialZone_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11525,8 +11535,8 @@ class IfcSpatialZone_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSpatialZone_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11535,8 +11545,8 @@ class IfcSpatialZone_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcspatialzonetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcspatialzonetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpatialZoneType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11545,8 +11555,8 @@ class IfcSpatialZoneType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSpatialZoneTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcStackTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11555,8 +11565,8 @@ class IfcStackTerminal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcStackTerminal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11565,8 +11575,8 @@ class IfcStackTerminal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcstackterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcstackterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStackTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11575,8 +11585,8 @@ class IfcStackTerminalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcStackTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcStair_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11585,8 +11595,8 @@ class IfcStair_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcStair_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11595,8 +11605,8 @@ class IfcStair_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcstairtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcstairtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStairFlight_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11605,8 +11615,8 @@ class IfcStairFlight_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcStairFlight_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -11615,8 +11625,8 @@ class IfcStairFlight_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcstairflighttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcstairflighttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStairFlightType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11625,8 +11635,8 @@ class IfcStairFlightType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcStairFlightTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcStairType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11635,8 +11645,8 @@ class IfcStairType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcStairTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcStructuralAnalysisModel_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11645,8 +11655,8 @@ class IfcStructuralAnalysisModel_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcAnalysisModelTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcStructuralCurveAction_HasObjectType:
     SCOPE = 'entity'
@@ -11655,8 +11665,8 @@ class IfcStructuralCurveAction_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralCurveAction_ProjectedIsGlobal:
     SCOPE = 'entity'
@@ -11665,8 +11675,8 @@ class IfcStructuralCurveAction_ProjectedIsGlobal:
 
     @staticmethod
     def __call__(self):
-        projectedortrue = getattr(self, 'ProjectedOrTrue', INDETERMINATE)
-        assert (not exists(projectedortrue) or (projectedortrue != projected_length or getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
+        projectedortrue = express_getattr(self, 'ProjectedOrTrue', INDETERMINATE)
+        assert (not exists(projectedortrue) or (projectedortrue != projected_length or express_getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
 
 class IfcStructuralCurveAction_SuitablePredefinedType:
     SCOPE = 'entity'
@@ -11675,8 +11685,8 @@ class IfcStructuralCurveAction_SuitablePredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'EQUIDISTANT', INDETERMINATE)) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralCurveActivityTypeEnum, 'EQUIDISTANT', INDETERMINATE)) is not False
 
 class IfcStructuralCurveMember_HasObjectType:
     SCOPE = 'entity'
@@ -11685,8 +11695,8 @@ class IfcStructuralCurveMember_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralCurveMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralCurveMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralCurveReaction_HasObjectType:
     SCOPE = 'entity'
@@ -11695,8 +11705,8 @@ class IfcStructuralCurveReaction_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralCurveActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralCurveReaction_SuitablePredefinedType:
     SCOPE = 'entity'
@@ -11705,8 +11715,8 @@ class IfcStructuralCurveReaction_SuitablePredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE) and predefinedtype != getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralCurveActivityTypeEnum, 'SINUS', INDETERMINATE) and predefinedtype != express_getattr(IfcStructuralCurveActivityTypeEnum, 'PARABOLA', INDETERMINATE)) is not False
 
 class IfcStructuralLinearAction_ConstPredefinedType:
     SCOPE = 'entity'
@@ -11715,7 +11725,7 @@ class IfcStructuralLinearAction_ConstPredefinedType:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'PredefinedType', INDETERMINATE) == getattr(IfcStructuralCurveActivityTypeEnum, 'CONST', INDETERMINATE)) is not False
+        assert (express_getattr(self, 'PredefinedType', INDETERMINATE) == express_getattr(IfcStructuralCurveActivityTypeEnum, 'CONST', INDETERMINATE)) is not False
 
 class IfcStructuralLinearAction_SuitableLoadType:
     SCOPE = 'entity'
@@ -11724,7 +11734,7 @@ class IfcStructuralLinearAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadlinearforce', 'ifc4x3_tc1.ifcstructuralloadtemperature'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadlinearforce', 'ifc4x3_tc1.ifcstructuralloadtemperature'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralLoadCase_IsLoadCasePredefinedType:
     SCOPE = 'entity'
@@ -11733,7 +11743,7 @@ class IfcStructuralLoadCase_IsLoadCasePredefinedType:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'PredefinedType', INDETERMINATE) == getattr(IfcLoadGroupTypeEnum, 'LOAD_CASE', INDETERMINATE)) is not False
+        assert (express_getattr(self, 'PredefinedType', INDETERMINATE) == express_getattr(IfcLoadGroupTypeEnum, 'LOAD_CASE', INDETERMINATE)) is not False
 
 class IfcStructuralLoadConfiguration_ValidListSize:
     SCOPE = 'entity'
@@ -11742,8 +11752,8 @@ class IfcStructuralLoadConfiguration_ValidListSize:
 
     @staticmethod
     def __call__(self):
-        values = getattr(self, 'Values', INDETERMINATE)
-        locations = getattr(self, 'Locations', INDETERMINATE)
+        values = express_getattr(self, 'Values', INDETERMINATE)
+        locations = express_getattr(self, 'Locations', INDETERMINATE)
         assert (not exists(locations) or sizeof(locations) == sizeof(values)) is not False
 
 class IfcStructuralLoadGroup_HasObjectType:
@@ -11753,10 +11763,10 @@ class IfcStructuralLoadGroup_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        actiontype = getattr(self, 'ActionType', INDETERMINATE)
-        actionsource = getattr(self, 'ActionSource', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcLoadGroupTypeEnum, 'USERDEFINED', INDETERMINATE) and actiontype != getattr(IfcActionTypeEnum, 'USERDEFINED', INDETERMINATE) and (actionsource != getattr(IfcActionSourceTypeEnum, 'USERDEFINED', INDETERMINATE)) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        actiontype = express_getattr(self, 'ActionType', INDETERMINATE)
+        actionsource = express_getattr(self, 'ActionSource', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcLoadGroupTypeEnum, 'USERDEFINED', INDETERMINATE) and actiontype != express_getattr(IfcActionTypeEnum, 'USERDEFINED', INDETERMINATE) and (actionsource != express_getattr(IfcActionSourceTypeEnum, 'USERDEFINED', INDETERMINATE)) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralPlanarAction_ConstPredefinedType:
     SCOPE = 'entity'
@@ -11765,7 +11775,7 @@ class IfcStructuralPlanarAction_ConstPredefinedType:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'PredefinedType', INDETERMINATE) == getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)) is not False
+        assert (express_getattr(self, 'PredefinedType', INDETERMINATE) == express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'CONST', INDETERMINATE)) is not False
 
 class IfcStructuralPlanarAction_SuitableLoadType:
     SCOPE = 'entity'
@@ -11774,7 +11784,7 @@ class IfcStructuralPlanarAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadplanarforce', 'ifc4x3_tc1.ifcstructuralloadtemperature'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadplanarforce', 'ifc4x3_tc1.ifcstructuralloadtemperature'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralPointAction_SuitableLoadType:
     SCOPE = 'entity'
@@ -11783,7 +11793,7 @@ class IfcStructuralPointAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadsingleforce', 'ifc4x3_tc1.ifcstructuralloadsingledisplacement'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadsingleforce', 'ifc4x3_tc1.ifcstructuralloadsingledisplacement'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralPointReaction_SuitableLoadType:
     SCOPE = 'entity'
@@ -11792,7 +11802,7 @@ class IfcStructuralPointReaction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadsingleforce', 'ifc4x3_tc1.ifcstructuralloadsingledisplacement'] * typeof(getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['ifc4x3_tc1.ifcstructuralloadsingleforce', 'ifc4x3_tc1.ifcstructuralloadsingledisplacement'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralResultGroup_HasObjectType:
     SCOPE = 'entity'
@@ -11801,8 +11811,8 @@ class IfcStructuralResultGroup_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        theorytype = getattr(self, 'TheoryType', INDETERMINATE)
-        assert (theorytype != getattr(IfcAnalysisTheoryTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        theorytype = express_getattr(self, 'TheoryType', INDETERMINATE)
+        assert (theorytype != express_getattr(IfcAnalysisTheoryTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralSurfaceAction_HasObjectType:
     SCOPE = 'entity'
@@ -11811,8 +11821,8 @@ class IfcStructuralSurfaceAction_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralSurfaceAction_ProjectedIsGlobal:
     SCOPE = 'entity'
@@ -11821,8 +11831,8 @@ class IfcStructuralSurfaceAction_ProjectedIsGlobal:
 
     @staticmethod
     def __call__(self):
-        projectedortrue = getattr(self, 'ProjectedOrTrue', INDETERMINATE)
-        assert (not exists(projectedortrue) or (projectedortrue != projected_length or getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
+        projectedortrue = express_getattr(self, 'ProjectedOrTrue', INDETERMINATE)
+        assert (not exists(projectedortrue) or (projectedortrue != projected_length or express_getattr(self, 'GlobalOrLocal', INDETERMINATE) == global_coords)) is not False
 
 class IfcStructuralSurfaceMember_HasObjectType:
     SCOPE = 'entity'
@@ -11831,8 +11841,8 @@ class IfcStructuralSurfaceMember_HasObjectType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralSurfaceMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralSurfaceMemberTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStructuralSurfaceReaction_HasPredefinedType:
     SCOPE = 'entity'
@@ -11841,8 +11851,8 @@ class IfcStructuralSurfaceReaction_HasPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(getattr(self, 'ObjectType', INDETERMINATE))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcStructuralSurfaceActivityTypeEnum, 'USERDEFINED', INDETERMINATE) or exists(express_getattr(self, 'ObjectType', INDETERMINATE))) is not False
 
 class IfcStyledItem_ApplicableItem:
     SCOPE = 'entity'
@@ -11851,7 +11861,7 @@ class IfcStyledItem_ApplicableItem:
 
     @staticmethod
     def __call__(self):
-        item = getattr(self, 'Item', INDETERMINATE)
+        item = express_getattr(self, 'Item', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcstyleditem' in typeof(item)) is not False
 
 class IfcStyledRepresentation_OnlyStyledItems:
@@ -11861,7 +11871,7 @@ class IfcStyledRepresentation_OnlyStyledItems:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_tc1.ifcstyleditem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_tc1.ifcstyleditem' in typeof(temp)]) == 0) is not False
 
 class IfcSubContractResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11870,8 +11880,8 @@ class IfcSubContractResource_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSubContractResourceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11880,8 +11890,8 @@ class IfcSubContractResourceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ResourceType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSubContractResourceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ResourceType', INDETERMINATE)))) is not False
 
 def calc_IfcSurface_Dim(self):
     return 3
@@ -11893,8 +11903,8 @@ class IfcSurfaceCurve_CurveIs3D:
 
     @staticmethod
     def __call__(self):
-        curve3d = getattr(self, 'Curve3D', INDETERMINATE)
-        assert (getattr(curve3d, 'Dim', INDETERMINATE) == 3) is not False
+        curve3d = express_getattr(self, 'Curve3D', INDETERMINATE)
+        assert (express_getattr(curve3d, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcSurfaceCurve_CurveIsNotPcurve:
     SCOPE = 'entity'
@@ -11903,7 +11913,7 @@ class IfcSurfaceCurve_CurveIsNotPcurve:
 
     @staticmethod
     def __call__(self):
-        curve3d = getattr(self, 'Curve3D', INDETERMINATE)
+        curve3d = express_getattr(self, 'Curve3D', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcpcurve' in typeof(curve3d)) is not False
 
 def calc_IfcSurfaceCurve_BasisSurface(self):
@@ -11916,8 +11926,8 @@ class IfcSurfaceFeature_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSurfaceFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSurfaceOfLinearExtrusion_DepthGreaterZero:
     SCOPE = 'entity'
@@ -11926,17 +11936,17 @@ class IfcSurfaceOfLinearExtrusion_DepthGreaterZero:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
         assert (depth > 0.0) is not False
 
 def calc_IfcSurfaceOfLinearExtrusion_ExtrusionAxis(self):
-    extrudeddirection = getattr(self, 'ExtrudedDirection', INDETERMINATE)
-    depth = getattr(self, 'Depth', INDETERMINATE)
+    extrudeddirection = express_getattr(self, 'ExtrudedDirection', INDETERMINATE)
+    depth = express_getattr(self, 'Depth', INDETERMINATE)
     return IfcVector(Orientation=extrudeddirection, Magnitude=depth)
 
 def calc_IfcSurfaceOfRevolution_AxisLine(self):
-    axisposition = getattr(self, 'AxisPosition', INDETERMINATE)
-    return IfcLine(Pnt=getattr(axisposition, 'Location', INDETERMINATE), Dir=IfcVector(Orientation=getattr(axisposition, 'Z', INDETERMINATE), Magnitude=1.0))
+    axisposition = express_getattr(self, 'AxisPosition', INDETERMINATE)
+    return IfcLine(Pnt=express_getattr(axisposition, 'Location', INDETERMINATE), Dir=IfcVector(Orientation=express_getattr(axisposition, 'Z', INDETERMINATE), Magnitude=1.0))
 
 class IfcSurfaceReinforcementArea_NonnegativeArea1:
     SCOPE = 'entity'
@@ -11945,7 +11955,7 @@ class IfcSurfaceReinforcementArea_NonnegativeArea1:
 
     @staticmethod
     def __call__(self):
-        surfacereinforcement1 = getattr(self, 'SurfaceReinforcement1', INDETERMINATE)
+        surfacereinforcement1 = express_getattr(self, 'SurfaceReinforcement1', INDETERMINATE)
         assert (not exists(surfacereinforcement1) or (express_getitem(surfacereinforcement1, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) >= 0.0 and express_getitem(surfacereinforcement1, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) >= 0.0 and (sizeof(surfacereinforcement1) == 1 or express_getitem(surfacereinforcement1, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) >= 0.0))) is not False
 
 class IfcSurfaceReinforcementArea_NonnegativeArea2:
@@ -11955,7 +11965,7 @@ class IfcSurfaceReinforcementArea_NonnegativeArea2:
 
     @staticmethod
     def __call__(self):
-        surfacereinforcement2 = getattr(self, 'SurfaceReinforcement2', INDETERMINATE)
+        surfacereinforcement2 = express_getattr(self, 'SurfaceReinforcement2', INDETERMINATE)
         assert (not exists(surfacereinforcement2) or (express_getitem(surfacereinforcement2, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) >= 0.0 and express_getitem(surfacereinforcement2, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) >= 0.0 and (sizeof(surfacereinforcement2) == 1 or express_getitem(surfacereinforcement2, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) >= 0.0))) is not False
 
 class IfcSurfaceReinforcementArea_NonnegativeArea3:
@@ -11965,7 +11975,7 @@ class IfcSurfaceReinforcementArea_NonnegativeArea3:
 
     @staticmethod
     def __call__(self):
-        shearreinforcement = getattr(self, 'ShearReinforcement', INDETERMINATE)
+        shearreinforcement = express_getattr(self, 'ShearReinforcement', INDETERMINATE)
         assert (not exists(shearreinforcement) or shearreinforcement >= 0.0) is not False
 
 class IfcSurfaceReinforcementArea_SurfaceAndOrShearAreaSpecified:
@@ -11975,9 +11985,9 @@ class IfcSurfaceReinforcementArea_SurfaceAndOrShearAreaSpecified:
 
     @staticmethod
     def __call__(self):
-        surfacereinforcement1 = getattr(self, 'SurfaceReinforcement1', INDETERMINATE)
-        surfacereinforcement2 = getattr(self, 'SurfaceReinforcement2', INDETERMINATE)
-        shearreinforcement = getattr(self, 'ShearReinforcement', INDETERMINATE)
+        surfacereinforcement1 = express_getattr(self, 'SurfaceReinforcement1', INDETERMINATE)
+        surfacereinforcement2 = express_getattr(self, 'SurfaceReinforcement2', INDETERMINATE)
+        shearreinforcement = express_getattr(self, 'ShearReinforcement', INDETERMINATE)
         assert (exists(surfacereinforcement1) or exists(surfacereinforcement2) or exists(shearreinforcement)) is not False
 
 class IfcSurfaceStyle_MaxOneExtDefined:
@@ -11987,7 +11997,7 @@ class IfcSurfaceStyle_MaxOneExtDefined:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcexternallydefinedsurfacestyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcexternallydefinedsurfacestyle' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneLighting:
     SCOPE = 'entity'
@@ -11996,7 +12006,7 @@ class IfcSurfaceStyle_MaxOneLighting:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestylelighting' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestylelighting' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneRefraction:
     SCOPE = 'entity'
@@ -12005,7 +12015,7 @@ class IfcSurfaceStyle_MaxOneRefraction:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestylerefraction' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestylerefraction' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneShading:
     SCOPE = 'entity'
@@ -12014,7 +12024,7 @@ class IfcSurfaceStyle_MaxOneShading:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestyleshading' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestyleshading' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneTextures:
     SCOPE = 'entity'
@@ -12023,7 +12033,7 @@ class IfcSurfaceStyle_MaxOneTextures:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestylewithtextures' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_tc1.ifcsurfacestylewithtextures' in typeof(style)]) <= 1) is not False
 
 class IfcSweptAreaSolid_SweptAreaType:
     SCOPE = 'entity'
@@ -12032,8 +12042,8 @@ class IfcSweptAreaSolid_SweptAreaType:
 
     @staticmethod
     def __call__(self):
-        sweptarea = getattr(self, 'SweptArea', INDETERMINATE)
-        assert (getattr(sweptarea, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'Area', INDETERMINATE)) is not False
+        sweptarea = express_getattr(self, 'SweptArea', INDETERMINATE)
+        assert (express_getattr(sweptarea, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'Area', INDETERMINATE)) is not False
 
 class IfcSweptDiskSolid_DirectrixBounded:
     SCOPE = 'entity'
@@ -12042,9 +12052,9 @@ class IfcSweptDiskSolid_DirectrixBounded:
 
     @staticmethod
     def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        startparam = getattr(self, 'StartParam', INDETERMINATE)
-        endparam = getattr(self, 'EndParam', INDETERMINATE)
+        directrix = express_getattr(self, 'Directrix', INDETERMINATE)
+        startparam = express_getattr(self, 'StartParam', INDETERMINATE)
+        endparam = express_getattr(self, 'EndParam', INDETERMINATE)
         assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_tc1.ifcconic', 'ifc4x3_tc1.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
 
 class IfcSweptDiskSolid_DirectrixDim:
@@ -12054,8 +12064,8 @@ class IfcSweptDiskSolid_DirectrixDim:
 
     @staticmethod
     def __call__(self):
-        directrix = getattr(self, 'Directrix', INDETERMINATE)
-        assert (getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
+        directrix = express_getattr(self, 'Directrix', INDETERMINATE)
+        assert (express_getattr(directrix, 'Dim', INDETERMINATE) == 3) is not False
 
 class IfcSweptDiskSolid_InnerRadiusSize:
     SCOPE = 'entity'
@@ -12064,8 +12074,8 @@ class IfcSweptDiskSolid_InnerRadiusSize:
 
     @staticmethod
     def __call__(self):
-        radius = getattr(self, 'Radius', INDETERMINATE)
-        innerradius = getattr(self, 'InnerRadius', INDETERMINATE)
+        radius = express_getattr(self, 'Radius', INDETERMINATE)
+        innerradius = express_getattr(self, 'InnerRadius', INDETERMINATE)
         assert (not exists(innerradius) or radius > innerradius) is not False
 
 class IfcSweptDiskSolidPolygonal_CorrectRadii:
@@ -12075,8 +12085,8 @@ class IfcSweptDiskSolidPolygonal_CorrectRadii:
 
     @staticmethod
     def __call__(self):
-        filletradius = getattr(self, 'FilletRadius', INDETERMINATE)
-        assert (not exists(filletradius) or filletradius >= getattr(self, 'Radius', INDETERMINATE)) is not False
+        filletradius = express_getattr(self, 'FilletRadius', INDETERMINATE)
+        assert (not exists(filletradius) or filletradius >= express_getattr(self, 'Radius', INDETERMINATE)) is not False
 
 class IfcSweptDiskSolidPolygonal_DirectrixIsPolyline:
     SCOPE = 'entity'
@@ -12085,7 +12095,7 @@ class IfcSweptDiskSolidPolygonal_DirectrixIsPolyline:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifcpolyline' in typeof(getattr(self, 'Directrix', INDETERMINATE)) or ('ifc4x3_tc1.ifcindexedpolycurve' in typeof(getattr(self, 'Directrix', INDETERMINATE)) and (not exists(getattr(getattr(self, 'Directrix', INDETERMINATE), 'Segments', INDETERMINATE))))) is not False
+        assert ('ifc4x3_tc1.ifcpolyline' in typeof(express_getattr(self, 'Directrix', INDETERMINATE)) or ('ifc4x3_tc1.ifcindexedpolycurve' in typeof(express_getattr(self, 'Directrix', INDETERMINATE)) and (not exists(express_getattr(express_getattr(self, 'Directrix', INDETERMINATE), 'Segments', INDETERMINATE))))) is not False
 
 class IfcSweptSurface_SweptCurveType:
     SCOPE = 'entity'
@@ -12094,8 +12104,8 @@ class IfcSweptSurface_SweptCurveType:
 
     @staticmethod
     def __call__(self):
-        sweptcurve = getattr(self, 'SweptCurve', INDETERMINATE)
-        assert (getattr(sweptcurve, 'ProfileType', INDETERMINATE) == getattr(IfcProfileTypeEnum, 'Curve', INDETERMINATE)) is not False
+        sweptcurve = express_getattr(self, 'SweptCurve', INDETERMINATE)
+        assert (express_getattr(sweptcurve, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'Curve', INDETERMINATE)) is not False
 
 class IfcSwitchingDevice_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12104,8 +12114,8 @@ class IfcSwitchingDevice_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSwitchingDevice_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12114,8 +12124,8 @@ class IfcSwitchingDevice_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcswitchingdevicetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcswitchingdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSwitchingDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12124,8 +12134,8 @@ class IfcSwitchingDeviceType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSwitchingDeviceTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcSystemFurnitureElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12134,8 +12144,8 @@ class IfcSystemFurnitureElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcSystemFurnitureElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12144,8 +12154,8 @@ class IfcSystemFurnitureElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsystemfurnitureelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcsystemfurnitureelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSystemFurnitureElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12154,8 +12164,8 @@ class IfcSystemFurnitureElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcSystemFurnitureElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -12164,8 +12174,8 @@ class IfcTShapeProfileDef_ValidFlangeThickness:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        flangethickness = express_getattr(self, 'FlangeThickness', INDETERMINATE)
         assert (flangethickness < depth) is not False
 
 class IfcTShapeProfileDef_ValidWebThickness:
@@ -12175,8 +12185,8 @@ class IfcTShapeProfileDef_ValidWebThickness:
 
     @staticmethod
     def __call__(self):
-        flangewidth = getattr(self, 'FlangeWidth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
+        flangewidth = express_getattr(self, 'FlangeWidth', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
         assert (webthickness < flangewidth) is not False
 
 class IfcTable_WR1:
@@ -12186,8 +12196,8 @@ class IfcTable_WR1:
 
     @staticmethod
     def __call__(self):
-        rows = getattr(self, 'Rows', INDETERMINATE)
-        assert (sizeof([temp for temp in rows if hiindex(getattr(temp, 'RowCells', INDETERMINATE)) != hiindex(getattr(express_getitem(rows, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RowCells', INDETERMINATE))]) == 0) is not False
+        rows = express_getattr(self, 'Rows', INDETERMINATE)
+        assert (sizeof([temp for temp in rows if hiindex(express_getattr(temp, 'RowCells', INDETERMINATE)) != hiindex(express_getattr(express_getitem(rows, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RowCells', INDETERMINATE))]) == 0) is not False
 
 class IfcTable_WR2:
     SCOPE = 'entity'
@@ -12196,20 +12206,20 @@ class IfcTable_WR2:
 
     @staticmethod
     def __call__(self):
-        numberofheadings = getattr(self, 'NumberOfHeadings', INDETERMINATE)
+        numberofheadings = express_getattr(self, 'NumberOfHeadings', INDETERMINATE)
         assert (0 <= numberofheadings <= 1) is not False
 
 def calc_IfcTable_NumberOfCellsInRow(self):
-    rows = getattr(self, 'Rows', INDETERMINATE)
-    return hiindex(getattr(express_getitem(rows, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RowCells', INDETERMINATE))
+    rows = express_getattr(self, 'Rows', INDETERMINATE)
+    return hiindex(express_getattr(express_getitem(rows, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RowCells', INDETERMINATE))
 
 def calc_IfcTable_NumberOfHeadings(self):
-    rows = getattr(self, 'Rows', INDETERMINATE)
-    return sizeof([temp for temp in rows if getattr(temp, 'IsHeading', INDETERMINATE)])
+    rows = express_getattr(self, 'Rows', INDETERMINATE)
+    return sizeof([temp for temp in rows if express_getattr(temp, 'IsHeading', INDETERMINATE)])
 
 def calc_IfcTable_NumberOfDataRows(self):
-    rows = getattr(self, 'Rows', INDETERMINATE)
-    return sizeof([temp for temp in rows if not getattr(temp, 'IsHeading', INDETERMINATE)])
+    rows = express_getattr(self, 'Rows', INDETERMINATE)
+    return sizeof([temp for temp in rows if not express_getattr(temp, 'IsHeading', INDETERMINATE)])
 
 class IfcTank_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12218,8 +12228,8 @@ class IfcTank_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTank_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12228,8 +12238,8 @@ class IfcTank_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctanktype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctanktype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTankType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12238,8 +12248,8 @@ class IfcTankType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTankTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTask_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12248,8 +12258,8 @@ class IfcTask_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTask_HasName:
     SCOPE = 'entity'
@@ -12258,7 +12268,7 @@ class IfcTask_HasName:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcTaskType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12267,8 +12277,8 @@ class IfcTaskType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ProcessType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTaskTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ProcessType', INDETERMINATE)))) is not False
 
 class IfcTelecomAddress_MinimumDataProvided:
     SCOPE = 'entity'
@@ -12277,12 +12287,12 @@ class IfcTelecomAddress_MinimumDataProvided:
 
     @staticmethod
     def __call__(self):
-        telephonenumbers = getattr(self, 'TelephoneNumbers', INDETERMINATE)
-        facsimilenumbers = getattr(self, 'FacsimileNumbers', INDETERMINATE)
-        pagernumber = getattr(self, 'PagerNumber', INDETERMINATE)
-        electronicmailaddresses = getattr(self, 'ElectronicMailAddresses', INDETERMINATE)
-        wwwhomepageurl = getattr(self, 'WWWHomePageURL', INDETERMINATE)
-        messagingids = getattr(self, 'MessagingIDs', INDETERMINATE)
+        telephonenumbers = express_getattr(self, 'TelephoneNumbers', INDETERMINATE)
+        facsimilenumbers = express_getattr(self, 'FacsimileNumbers', INDETERMINATE)
+        pagernumber = express_getattr(self, 'PagerNumber', INDETERMINATE)
+        electronicmailaddresses = express_getattr(self, 'ElectronicMailAddresses', INDETERMINATE)
+        wwwhomepageurl = express_getattr(self, 'WWWHomePageURL', INDETERMINATE)
+        messagingids = express_getattr(self, 'MessagingIDs', INDETERMINATE)
         assert (exists(telephonenumbers) or exists(facsimilenumbers) or exists(pagernumber) or exists(electronicmailaddresses) or exists(wwwhomepageurl) or exists(messagingids)) is not False
 
 class IfcTendon_CorrectPredefinedType:
@@ -12292,8 +12302,8 @@ class IfcTendon_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTendon_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12302,8 +12312,8 @@ class IfcTendon_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctendontype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctendontype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonAnchor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12312,8 +12322,8 @@ class IfcTendonAnchor_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTendonAnchor_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12322,8 +12332,8 @@ class IfcTendonAnchor_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctendonanchortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctendonanchortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonAnchorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12332,8 +12342,8 @@ class IfcTendonAnchorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTendonAnchorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTendonConduit_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12342,8 +12352,8 @@ class IfcTendonConduit_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTendonConduit_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12352,8 +12362,8 @@ class IfcTendonConduit_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctendonconduittype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctendonconduittype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonConduitType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12362,8 +12372,8 @@ class IfcTendonConduitType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTendonConduitTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTendonType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12372,8 +12382,8 @@ class IfcTendonType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTendonTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcTessellatedFaceSet_Dim(self):
     return 3
@@ -12385,7 +12395,7 @@ class IfcTextLiteralWithExtent_WR31:
 
     @staticmethod
     def __call__(self):
-        extent = getattr(self, 'Extent', INDETERMINATE)
+        extent = express_getattr(self, 'Extent', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcplanarbox' in typeof(extent)) is not False
 
 class IfcTextStyleFontModel_MeasureOfFontSize:
@@ -12395,7 +12405,7 @@ class IfcTextStyleFontModel_MeasureOfFontSize:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_tc1.ifclengthmeasure' in typeof(getattr(self, 'FontSize', INDETERMINATE)) and getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
+        assert ('ifc4x3_tc1.ifclengthmeasure' in typeof(express_getattr(self, 'FontSize', INDETERMINATE)) and express_getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
 
 class IfcTopologyRepresentation_WR21:
     SCOPE = 'entity'
@@ -12404,7 +12414,7 @@ class IfcTopologyRepresentation_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_tc1.ifctopologicalrepresentationitem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_tc1.ifctopologicalrepresentationitem' in typeof(temp)]) == 0) is not False
 
 class IfcTopologyRepresentation_WR22:
     SCOPE = 'entity'
@@ -12413,7 +12423,7 @@ class IfcTopologyRepresentation_WR22:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'RepresentationType', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'RepresentationType', INDETERMINATE)) is not False
 
 class IfcTopologyRepresentation_WR23:
     SCOPE = 'entity'
@@ -12422,7 +12432,7 @@ class IfcTopologyRepresentation_WR23:
 
     @staticmethod
     def __call__(self):
-        assert IfcTopologyRepresentationTypes(getattr(self, 'RepresentationType', INDETERMINATE), getattr(self, 'Items', INDETERMINATE)) is not False
+        assert IfcTopologyRepresentationTypes(express_getattr(self, 'RepresentationType', INDETERMINATE), express_getattr(self, 'Items', INDETERMINATE)) is not False
 
 class IfcToroidalSurface_MajorLargerMinor:
     SCOPE = 'entity'
@@ -12431,8 +12441,8 @@ class IfcToroidalSurface_MajorLargerMinor:
 
     @staticmethod
     def __call__(self):
-        majorradius = getattr(self, 'MajorRadius', INDETERMINATE)
-        minorradius = getattr(self, 'MinorRadius', INDETERMINATE)
+        majorradius = express_getattr(self, 'MajorRadius', INDETERMINATE)
+        minorradius = express_getattr(self, 'MinorRadius', INDETERMINATE)
         assert (minorradius < majorradius) is not False
 
 class IfcTrackElement_CorrectPredefinedType:
@@ -12442,8 +12452,8 @@ class IfcTrackElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTrackElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12452,8 +12462,8 @@ class IfcTrackElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctrackelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctrackelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTrackElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12462,8 +12472,8 @@ class IfcTrackElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTrackElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTransformer_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12472,8 +12482,8 @@ class IfcTransformer_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTransformer_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12482,8 +12492,8 @@ class IfcTransformer_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctransformertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctransformertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTransformerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12492,8 +12502,8 @@ class IfcTransformerType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTransformerTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTransportElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12502,8 +12512,8 @@ class IfcTransportElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTransportElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12512,8 +12522,8 @@ class IfcTransportElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctransportelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctransportelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTransportElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12522,11 +12532,11 @@ class IfcTransportElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTransportElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 def calc_IfcTriangulatedFaceSet_NumberOfTriangles(self):
-    coordindex = getattr(self, 'CoordIndex', INDETERMINATE)
+    coordindex = express_getattr(self, 'CoordIndex', INDETERMINATE)
     return sizeof(coordindex)
 
 class IfcTriangulatedIrregularNetwork_NotClosed:
@@ -12536,7 +12546,7 @@ class IfcTriangulatedIrregularNetwork_NotClosed:
 
     @staticmethod
     def __call__(self):
-        assert (getattr(self, 'Closed', INDETERMINATE) == False) is not False
+        assert (express_getattr(self, 'Closed', INDETERMINATE) == False) is not False
 
 class IfcTrimmedCurve_NoTrimOfBoundedCurves:
     SCOPE = 'entity'
@@ -12545,7 +12555,7 @@ class IfcTrimmedCurve_NoTrimOfBoundedCurves:
 
     @staticmethod
     def __call__(self):
-        basiscurve = getattr(self, 'BasisCurve', INDETERMINATE)
+        basiscurve = express_getattr(self, 'BasisCurve', INDETERMINATE)
         assert (not 'ifc4x3_tc1.ifcboundedcurve' in typeof(basiscurve)) is not False
 
 class IfcTrimmedCurve_Trim1ValuesConsistent:
@@ -12555,7 +12565,7 @@ class IfcTrimmedCurve_Trim1ValuesConsistent:
 
     @staticmethod
     def __call__(self):
-        trim1 = getattr(self, 'Trim1', INDETERMINATE)
+        trim1 = express_getattr(self, 'Trim1', INDETERMINATE)
         assert (hiindex(trim1) == 1 or typeof(express_getitem(trim1, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != typeof(express_getitem(trim1, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcTrimmedCurve_Trim2ValuesConsistent:
@@ -12565,7 +12575,7 @@ class IfcTrimmedCurve_Trim2ValuesConsistent:
 
     @staticmethod
     def __call__(self):
-        trim2 = getattr(self, 'Trim2', INDETERMINATE)
+        trim2 = express_getattr(self, 'Trim2', INDETERMINATE)
         assert (hiindex(trim2) == 1 or typeof(express_getitem(trim2, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) != typeof(express_getitem(trim2, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcTubeBundle_CorrectPredefinedType:
@@ -12575,8 +12585,8 @@ class IfcTubeBundle_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcTubeBundle_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12585,8 +12595,8 @@ class IfcTubeBundle_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctubebundletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifctubebundletype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTubeBundleType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12595,8 +12605,8 @@ class IfcTubeBundleType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcTubeBundleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcTypeObject_NameRequired:
     SCOPE = 'entity'
@@ -12605,7 +12615,7 @@ class IfcTypeObject_NameRequired:
 
     @staticmethod
     def __call__(self):
-        assert exists(getattr(self, 'Name', INDETERMINATE)) is not False
+        assert exists(express_getattr(self, 'Name', INDETERMINATE)) is not False
 
 class IfcTypeObject_UniquePropertySetNames:
     SCOPE = 'entity'
@@ -12614,7 +12624,7 @@ class IfcTypeObject_UniquePropertySetNames:
 
     @staticmethod
     def __call__(self):
-        haspropertysets = getattr(self, 'HasPropertySets', INDETERMINATE)
+        haspropertysets = express_getattr(self, 'HasPropertySets', INDETERMINATE)
         assert (not exists(haspropertysets) or IfcUniquePropertySetNames(haspropertysets)) is not False
 
 class IfcTypeProduct_ApplicableOccurrence:
@@ -12624,7 +12634,7 @@ class IfcTypeProduct_ApplicableOccurrence:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(lambda : express_getitem(getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in getattr(express_getitem(getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc4x3_tc1.ifcproduct' in typeof(temp)]) == 0) is not False
+        assert (not exists(lambda : express_getitem(express_getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc4x3_tc1.ifcproduct' in typeof(temp)]) == 0) is not False
 
 class IfcUShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -12633,8 +12643,8 @@ class IfcUShapeProfileDef_ValidFlangeThickness:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        flangethickness = express_getattr(self, 'FlangeThickness', INDETERMINATE)
         assert (flangethickness < depth / 2.0) is not False
 
 class IfcUShapeProfileDef_ValidWebThickness:
@@ -12644,8 +12654,8 @@ class IfcUShapeProfileDef_ValidWebThickness:
 
     @staticmethod
     def __call__(self):
-        flangewidth = getattr(self, 'FlangeWidth', INDETERMINATE)
-        webthickness = getattr(self, 'WebThickness', INDETERMINATE)
+        flangewidth = express_getattr(self, 'FlangeWidth', INDETERMINATE)
+        webthickness = express_getattr(self, 'WebThickness', INDETERMINATE)
         assert (webthickness < flangewidth) is not False
 
 class IfcUnitAssignment_WR01:
@@ -12655,7 +12665,7 @@ class IfcUnitAssignment_WR01:
 
     @staticmethod
     def __call__(self):
-        units = getattr(self, 'Units', INDETERMINATE)
+        units = express_getattr(self, 'Units', INDETERMINATE)
         assert IfcCorrectUnitAssignment(units) is not False
 
 class IfcUnitaryControlElement_CorrectPredefinedType:
@@ -12665,8 +12675,8 @@ class IfcUnitaryControlElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcUnitaryControlElement_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12675,8 +12685,8 @@ class IfcUnitaryControlElement_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcunitarycontrolelementtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcunitarycontrolelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcUnitaryControlElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12685,8 +12695,8 @@ class IfcUnitaryControlElementType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcUnitaryControlElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcUnitaryEquipment_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12695,8 +12705,8 @@ class IfcUnitaryEquipment_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcUnitaryEquipment_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12705,8 +12715,8 @@ class IfcUnitaryEquipment_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcunitaryequipmenttype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcunitaryequipmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcUnitaryEquipmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12715,8 +12725,8 @@ class IfcUnitaryEquipmentType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcUnitaryEquipmentTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcValve_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12725,8 +12735,8 @@ class IfcValve_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcValve_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12735,8 +12745,8 @@ class IfcValve_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvalvetype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvalvetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcValveType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12745,8 +12755,8 @@ class IfcValveType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcValveTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcVector_MagGreaterOrEqualZero:
     SCOPE = 'entity'
@@ -12755,12 +12765,12 @@ class IfcVector_MagGreaterOrEqualZero:
 
     @staticmethod
     def __call__(self):
-        magnitude = getattr(self, 'Magnitude', INDETERMINATE)
+        magnitude = express_getattr(self, 'Magnitude', INDETERMINATE)
         assert (magnitude >= 0.0) is not False
 
 def calc_IfcVector_Dim(self):
-    orientation = getattr(self, 'Orientation', INDETERMINATE)
-    return getattr(orientation, 'Dim', INDETERMINATE)
+    orientation = express_getattr(self, 'Orientation', INDETERMINATE)
+    return express_getattr(orientation, 'Dim', INDETERMINATE)
 
 class IfcVehicle_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12769,8 +12779,8 @@ class IfcVehicle_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcVehicle_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12779,8 +12789,8 @@ class IfcVehicle_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvehicletype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvehicletype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVehicleType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12789,8 +12799,8 @@ class IfcVehicleType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVehicleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcVibrationDamper_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12799,8 +12809,8 @@ class IfcVibrationDamper_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcVibrationDamper_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12809,8 +12819,8 @@ class IfcVibrationDamper_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvibrationdampertype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvibrationdampertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVibrationDamperType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12819,8 +12829,8 @@ class IfcVibrationDamperType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVibrationDamperTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcVibrationIsolator_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12829,8 +12839,8 @@ class IfcVibrationIsolator_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcVibrationIsolator_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12839,8 +12849,8 @@ class IfcVibrationIsolator_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvibrationisolatortype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcvibrationisolatortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVibrationIsolatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12849,8 +12859,8 @@ class IfcVibrationIsolatorType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVibrationIsolatorTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcVirtualElement_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12859,8 +12869,8 @@ class IfcVirtualElement_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVirtualElementTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcVoidingFeature_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12869,8 +12879,8 @@ class IfcVoidingFeature_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcVoidingFeatureTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWall_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12879,8 +12889,8 @@ class IfcWall_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWall_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12889,8 +12899,8 @@ class IfcWall_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcwalltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcwalltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWallStandardCase_HasMaterialLayerSetUsage:
     SCOPE = 'entity'
@@ -12899,7 +12909,7 @@ class IfcWallStandardCase_HasMaterialLayerSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_tc1.ifcrelassociates.relatedobjects') if 'ifc4x3_tc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_tc1.ifcmateriallayersetusage' in typeof(getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_tc1.ifcrelassociates.relatedobjects') if 'ifc4x3_tc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_tc1.ifcmateriallayersetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcWallType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12908,8 +12918,8 @@ class IfcWallType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWallTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcWasteTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12918,8 +12928,8 @@ class IfcWasteTerminal_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWasteTerminal_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12928,8 +12938,8 @@ class IfcWasteTerminal_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcwasteterminaltype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcwasteterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWasteTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12938,8 +12948,8 @@ class IfcWasteTerminalType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWasteTerminalTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcWindow_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12948,8 +12958,8 @@ class IfcWindow_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWindow_CorrectTypeAssigned:
     SCOPE = 'entity'
@@ -12958,8 +12968,8 @@ class IfcWindow_CorrectTypeAssigned:
 
     @staticmethod
     def __call__(self):
-        istypedby = getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcwindowtype' in typeof(getattr(express_getitem(getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
+        assert (sizeof(istypedby) == 0 or 'ifc4x3_tc1.ifcwindowtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWindowLiningProperties_WR31:
     SCOPE = 'entity'
@@ -12968,8 +12978,8 @@ class IfcWindowLiningProperties_WR31:
 
     @staticmethod
     def __call__(self):
-        liningdepth = getattr(self, 'LiningDepth', INDETERMINATE)
-        liningthickness = getattr(self, 'LiningThickness', INDETERMINATE)
+        liningdepth = express_getattr(self, 'LiningDepth', INDETERMINATE)
+        liningthickness = express_getattr(self, 'LiningThickness', INDETERMINATE)
         assert (not (exists(liningdepth) and (not exists(liningthickness)))) is not False
 
 class IfcWindowLiningProperties_WR32:
@@ -12979,8 +12989,8 @@ class IfcWindowLiningProperties_WR32:
 
     @staticmethod
     def __call__(self):
-        firsttransomoffset = getattr(self, 'FirstTransomOffset', INDETERMINATE)
-        secondtransomoffset = getattr(self, 'SecondTransomOffset', INDETERMINATE)
+        firsttransomoffset = express_getattr(self, 'FirstTransomOffset', INDETERMINATE)
+        secondtransomoffset = express_getattr(self, 'SecondTransomOffset', INDETERMINATE)
         assert (not (not exists(firsttransomoffset) and exists(secondtransomoffset))) is not False
 
 class IfcWindowLiningProperties_WR33:
@@ -12990,8 +13000,8 @@ class IfcWindowLiningProperties_WR33:
 
     @staticmethod
     def __call__(self):
-        firstmullionoffset = getattr(self, 'FirstMullionOffset', INDETERMINATE)
-        secondmullionoffset = getattr(self, 'SecondMullionOffset', INDETERMINATE)
+        firstmullionoffset = express_getattr(self, 'FirstMullionOffset', INDETERMINATE)
+        secondmullionoffset = express_getattr(self, 'SecondMullionOffset', INDETERMINATE)
         assert (not (not exists(firstmullionoffset) and exists(secondmullionoffset))) is not False
 
 class IfcWindowLiningProperties_WR34:
@@ -13001,7 +13011,7 @@ class IfcWindowLiningProperties_WR34:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcwindowtype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcwindowtype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcWindowPanelProperties_ApplicableToType:
     SCOPE = 'entity'
@@ -13010,7 +13020,7 @@ class IfcWindowPanelProperties_ApplicableToType:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcwindowtype' in typeof(express_getitem(getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc4x3_tc1.ifcwindowtype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcWindowType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -13019,8 +13029,8 @@ class IfcWindowType_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (predefinedtype != getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ElementType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (predefinedtype != express_getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWindowTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ElementType', INDETERMINATE)))) is not False
 
 class IfcWorkCalendar_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -13029,8 +13039,8 @@ class IfcWorkCalendar_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcWorkCalendarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWorkCalendarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcWorkCalendarTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWorkCalendarTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWorkPlan_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -13039,8 +13049,8 @@ class IfcWorkPlan_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcWorkPlanTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWorkPlanTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcWorkPlanTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWorkPlanTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcWorkSchedule_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -13049,8 +13059,8 @@ class IfcWorkSchedule_CorrectPredefinedType:
 
     @staticmethod
     def __call__(self):
-        predefinedtype = getattr(self, 'PredefinedType', INDETERMINATE)
-        assert (not exists(predefinedtype) or predefinedtype != getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(getattr(self, 'ObjectType', INDETERMINATE)))) is not False
+        predefinedtype = express_getattr(self, 'PredefinedType', INDETERMINATE)
+        assert (not exists(predefinedtype) or predefinedtype != express_getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE) or (predefinedtype == express_getattr(IfcWorkScheduleTypeEnum, 'USERDEFINED', INDETERMINATE) and exists(express_getattr(self, 'ObjectType', INDETERMINATE)))) is not False
 
 class IfcZShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -13059,8 +13069,8 @@ class IfcZShapeProfileDef_ValidFlangeThickness:
 
     @staticmethod
     def __call__(self):
-        depth = getattr(self, 'Depth', INDETERMINATE)
-        flangethickness = getattr(self, 'FlangeThickness', INDETERMINATE)
+        depth = express_getattr(self, 'Depth', INDETERMINATE)
+        flangethickness = express_getattr(self, 'FlangeThickness', INDETERMINATE)
         assert (flangethickness < depth / 2.0) is not False
 
 class IfcZone_WR1:
@@ -13070,19 +13080,19 @@ class IfcZone_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(getattr(self, 'IsGroupedBy', INDETERMINATE)) == 0 or sizeof([temp for temp in getattr(express_getitem(getattr(self, 'IsGroupedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc4x3_tc1.ifczone' in typeof(temp) or 'ifc4x3_tc1.ifcspace' in typeof(temp) or 'ifc4x3_tc1.ifcspatialzone' in typeof(temp))]) == 0) is not False
+        assert (sizeof(express_getattr(self, 'IsGroupedBy', INDETERMINATE)) == 0 or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc4x3_tc1.ifczone' in typeof(temp) or 'ifc4x3_tc1.ifcspace' in typeof(temp) or 'ifc4x3_tc1.ifcspatialzone' in typeof(temp))]) == 0) is not False
 
 class IfcRepresentationContextSameWCS:
     SCOPE = 'file'
 
     @staticmethod
     def __call__(file):
-        IfcGeometricRepresentationContext = getattr(file, 'by_type', INDETERMINATE)('IfcGeometricRepresentationContext')
+        IfcGeometricRepresentationContext = express_getattr(file, 'by_type', INDETERMINATE)('IfcGeometricRepresentationContext')
         isdifferent = False
         if sizeof(IfcGeometricRepresentationContext) > 1:
             for i in range(2, hiindex(IfcGeometricRepresentationContext) + 1):
-                if getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE) != getattr(express_getitem(IfcGeometricRepresentationContext, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE):
-                    isdifferent = not IfcSameValidPrecision(getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Precision', INDETERMINATE), getattr(express_getitem(IfcGeometricRepresentationContext, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Precision', INDETERMINATE)) or not IfcSameAxis2Placement(getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE), getattr(express_getitem(IfcGeometricRepresentationContext, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE), getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Precision', INDETERMINATE))
+                if express_getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE) != express_getattr(express_getitem(IfcGeometricRepresentationContext, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE):
+                    isdifferent = not IfcSameValidPrecision(express_getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Precision', INDETERMINATE), express_getattr(express_getitem(IfcGeometricRepresentationContext, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Precision', INDETERMINATE)) or not IfcSameAxis2Placement(express_getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE), express_getattr(express_getitem(IfcGeometricRepresentationContext, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'WorldCoordinateSystem', INDETERMINATE), express_getattr(express_getitem(IfcGeometricRepresentationContext, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Precision', INDETERMINATE))
                     if isdifferent == True:
                         break
         assert (isdifferent == False) is not False
@@ -13092,11 +13102,11 @@ class IfcSingleProjectInstance:
 
     @staticmethod
     def __call__(file):
-        IfcProject = getattr(file, 'by_type', INDETERMINATE)('IfcProject')
+        IfcProject = express_getattr(file, 'by_type', INDETERMINATE)('IfcProject')
         assert (sizeof(IfcProject) <= 1) is not False
 
 def IfcAssociatedSurface(arg):
-    surf = getattr(arg, 'BasisSurface', INDETERMINATE)
+    surf = express_getattr(arg, 'BasisSurface', INDETERMINATE)
     return surf
 
 def IfcBaseAxis(dim, axis1, axis2, axis3):
@@ -13110,13 +13120,13 @@ def IfcBaseAxis(dim, axis1, axis2, axis3):
         if exists(axis2):
             factor = IfcDotProduct(axis2, express_getitem(u, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))
             if factor < 0.0:
-                u[2 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[1 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(getattr(express_getitem(u, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-                u[2 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[2 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(getattr(express_getitem(u, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+                u[2 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[1 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(express_getattr(express_getitem(u, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+                u[2 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[2 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(express_getattr(express_getitem(u, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     elif exists(axis2):
         d1 = IfcNormalise(axis2)
         u = [IfcOrthogonalComplement(d1), d1]
-        u[1 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[1 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(getattr(express_getitem(u, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-        u[1 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[2 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(getattr(express_getitem(u, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+        u[1 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[1 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(express_getattr(express_getitem(u, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+        u[1 - EXPRESS_ONE_BASED_INDEXING].DirectionRatios[2 - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(express_getattr(express_getitem(u, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     else:
         u = [IfcDirection(DirectionRatios=[1.0, 0.0]), IfcDirection(DirectionRatios=[0.0, 1.0])]
     return u
@@ -13134,7 +13144,7 @@ def IfcBuild2Axes(refdirection):
 def IfcBuildAxes(axis, refdirection):
     d1 = nvl(IfcNormalise(axis), IfcDirection(DirectionRatios=[0.0, 0.0, 1.0]))
     d2 = IfcFirstProjAxis(d1, refdirection)
-    return [d2, getattr(IfcNormalise(IfcCrossProduct(d1, d2)), 'Orientation', INDETERMINATE), d1]
+    return [d2, express_getattr(IfcNormalise(IfcCrossProduct(d1, d2)), 'Orientation', INDETERMINATE), d1]
 
 def IfcConsecutiveSegments(segments):
     result = True
@@ -13171,11 +13181,11 @@ def IfcConstraintsParamBSpline(degree, upknots, upcp, knotmult, knots):
 
 def IfcConvertDirectionInto2D(direction):
     direction2d = IfcDirection(DirectionRatios=[0.0, 1.0])
-    temp = list(getattr(direction2d, 'DirectionRatios', INDETERMINATE))
-    temp[1 - EXPRESS_ONE_BASED_INDEXING] = express_getitem(getattr(direction, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    temp = list(express_getattr(direction2d, 'DirectionRatios', INDETERMINATE))
+    temp[1 - EXPRESS_ONE_BASED_INDEXING] = express_getitem(express_getattr(direction, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     direction2d.DirectionRatios = temp
-    temp = list(getattr(direction2d, 'DirectionRatios', INDETERMINATE))
-    temp[2 - EXPRESS_ONE_BASED_INDEXING] = express_getitem(getattr(direction, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    temp = list(express_getattr(direction2d, 'DirectionRatios', INDETERMINATE))
+    temp[2 - EXPRESS_ONE_BASED_INDEXING] = express_getitem(express_getattr(direction, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     direction2d.DirectionRatios = temp
     return direction2d
 
@@ -13355,7 +13365,7 @@ def IfcCorrectLocalPlacement(axisplacement, relplacement):
             if 'ifc4x3_tc1.ifcaxis2placement2d' in typeof(axisplacement):
                 return True
             if 'ifc4x3_tc1.ifcaxis2placement3d' in typeof(axisplacement):
-                if getattr(getattr(relplacement, 'RelativePlacement', INDETERMINATE), 'Dim', INDETERMINATE) == 3:
+                if express_getattr(express_getattr(relplacement, 'RelativePlacement', INDETERMINATE), 'Dim', INDETERMINATE) == 3:
                     return True
                 else:
                     return False
@@ -13368,26 +13378,26 @@ def IfcCorrectUnitAssignment(units):
     monetaryunitnumber = 0
     namedunitnames = express_set([])
     derivedunitnames = express_set([])
-    namedunitnumber = sizeof([temp for temp in units if 'ifc4x3_tc1.ifcnamedunit' in typeof(temp) and (not getattr(temp, 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    derivedunitnumber = sizeof([temp for temp in units if 'ifc4x3_tc1.ifcderivedunit' in typeof(temp) and (not getattr(temp, 'UnitType', INDETERMINATE) == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    namedunitnumber = sizeof([temp for temp in units if 'ifc4x3_tc1.ifcnamedunit' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    derivedunitnumber = sizeof([temp for temp in units if 'ifc4x3_tc1.ifcderivedunit' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
     monetaryunitnumber = sizeof([temp for temp in units if 'ifc4x3_tc1.ifcmonetaryunit' in typeof(temp)])
     for i in range(1, sizeof(units) + 1):
-        if 'ifc4x3_tc1.ifcnamedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
-            namedunitnames = namedunitnames + getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
-        if 'ifc4x3_tc1.ifcderivedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
-            derivedunitnames = derivedunitnames + getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
+        if 'ifc4x3_tc1.ifcnamedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
+            namedunitnames = namedunitnames + express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
+        if 'ifc4x3_tc1.ifcderivedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
+            derivedunitnames = derivedunitnames + express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
     return sizeof(namedunitnames) == namedunitnumber and sizeof(derivedunitnames) == derivedunitnumber and (monetaryunitnumber <= 1)
 
 def IfcCrossProduct(arg1, arg2):
-    if (not exists(arg1) or getattr(arg1, 'Dim', INDETERMINATE) == 2) or (not exists(arg2) or getattr(arg2, 'Dim', INDETERMINATE) == 2):
+    if (not exists(arg1) or express_getattr(arg1, 'Dim', INDETERMINATE) == 2) or (not exists(arg2) or express_getattr(arg2, 'Dim', INDETERMINATE) == 2):
         return None
     else:
-        v1 = getattr(IfcNormalise(arg1), 'DirectionRatios', INDETERMINATE)
-        v2 = getattr(IfcNormalise(arg2), 'DirectionRatios', INDETERMINATE)
+        v1 = express_getattr(IfcNormalise(arg1), 'DirectionRatios', INDETERMINATE)
+        v2 = express_getattr(IfcNormalise(arg2), 'DirectionRatios', INDETERMINATE)
         res = IfcDirection(DirectionRatios=[express_getitem(v1, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(v2, 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) - express_getitem(v1, 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(v2, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(v1, 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(v2, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) - express_getitem(v1, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(v2, 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(v1, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(v2, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) - express_getitem(v1, 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(v2, 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)])
         mag = 0.0
         for i in range(1, 3 + 1):
-            mag = mag + express_getitem(getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            mag = mag + express_getitem(express_getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(express_getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
         if mag > 0.0:
             result = IfcVector(Orientation=res, Magnitude=sqrt(mag))
         else:
@@ -13396,21 +13406,21 @@ def IfcCrossProduct(arg1, arg2):
 
 def IfcCurveDim(curve):
     if 'ifc4x3_tc1.ifcline' in typeof(curve):
-        return getattr(getattr(curve, 'Pnt', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(curve, 'Pnt', INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifcconic' in typeof(curve):
-        return getattr(getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifcpolyline' in typeof(curve):
-        return getattr(express_getitem(getattr(curve, 'Points', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getitem(express_getattr(curve, 'Points', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifctrimmedcurve' in typeof(curve):
-        return IfcCurveDim(getattr(curve, 'BasisCurve', INDETERMINATE))
+        return IfcCurveDim(express_getattr(curve, 'BasisCurve', INDETERMINATE))
     if 'ifc4x3_tc1.ifcgradientcurve' in typeof(curve):
         return 3
     if 'ifc4x3_tc1.ifcsegmentedreferencecurve' in typeof(curve):
         return 3
     if 'ifc4x3_tc1.ifccompositecurve' in typeof(curve):
-        return getattr(express_getitem(getattr(curve, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getitem(express_getattr(curve, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifcbsplinecurve' in typeof(curve):
-        return getattr(express_getitem(getattr(curve, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getitem(express_getattr(curve, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifcoffsetcurve2d' in typeof(curve):
         return 2
     if 'ifc4x3_tc1.ifcoffsetcurve3d' in typeof(curve):
@@ -13420,19 +13430,19 @@ def IfcCurveDim(curve):
     if 'ifc4x3_tc1.ifccurvesegment2d' in typeof(curve):
         return 2
     if 'ifc4x3_tc1.ifcpolynomialcurve' in typeof(curve):
-        if not exists(getattr(curve, 'CoefficientsZ', INDETERMINATE)) and getattr(getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE) == 2:
+        if not exists(express_getattr(curve, 'CoefficientsZ', INDETERMINATE)) and express_getattr(express_getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE) == 2:
             return 2
         return 3
     if 'ifc4x3_tc1.ifcpcurve' in typeof(curve):
         return 3
     if 'ifc4x3_tc1.ifcindexedpolycurve' in typeof(curve):
-        return getattr(getattr(curve, 'Points', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(curve, 'Points', INDETERMINATE), 'Dim', INDETERMINATE)
     return None
 
 def IfcCurveWeightsPositive(b):
     result = True
-    for i in range(0, getattr(b, 'UpperIndexOnControlPoints', INDETERMINATE) + 1):
-        if express_getitem(getattr(b, 'Weights', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) <= 0.0:
+    for i in range(0, express_getattr(b, 'UpperIndexOnControlPoints', INDETERMINATE) + 1):
+        if express_getitem(express_getattr(b, 'Weights', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) <= 0.0:
             result = False
             return result
     return result
@@ -13440,13 +13450,13 @@ def IfcCurveWeightsPositive(b):
 def IfcDeriveDimensionalExponents(unitelements):
     result = IfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0)
     for i in range(loindex(unitelements), hiindex(unitelements) + 1):
-        result.LengthExponent = getattr(result, 'LengthExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'LengthExponent', INDETERMINATE)
-        result.MassExponent = getattr(result, 'MassExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'MassExponent', INDETERMINATE)
-        result.TimeExponent = getattr(result, 'TimeExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'TimeExponent', INDETERMINATE)
-        result.ElectricCurrentExponent = getattr(result, 'ElectricCurrentExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'ElectricCurrentExponent', INDETERMINATE)
-        result.ThermodynamicTemperatureExponent = getattr(result, 'ThermodynamicTemperatureExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'ThermodynamicTemperatureExponent', INDETERMINATE)
-        result.AmountOfSubstanceExponent = getattr(result, 'AmountOfSubstanceExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'AmountOfSubstanceExponent', INDETERMINATE)
-        result.LuminousIntensityExponent = getattr(result, 'LuminousIntensityExponent', INDETERMINATE) + getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * getattr(getattr(getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'LuminousIntensityExponent', INDETERMINATE)
+        result.LengthExponent = express_getattr(result, 'LengthExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'LengthExponent', INDETERMINATE)
+        result.MassExponent = express_getattr(result, 'MassExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'MassExponent', INDETERMINATE)
+        result.TimeExponent = express_getattr(result, 'TimeExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'TimeExponent', INDETERMINATE)
+        result.ElectricCurrentExponent = express_getattr(result, 'ElectricCurrentExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'ElectricCurrentExponent', INDETERMINATE)
+        result.ThermodynamicTemperatureExponent = express_getattr(result, 'ThermodynamicTemperatureExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'ThermodynamicTemperatureExponent', INDETERMINATE)
+        result.AmountOfSubstanceExponent = express_getattr(result, 'AmountOfSubstanceExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'AmountOfSubstanceExponent', INDETERMINATE)
+        result.LuminousIntensityExponent = express_getattr(result, 'LuminousIntensityExponent', INDETERMINATE) + express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Exponent', INDETERMINATE) * express_getattr(express_getattr(express_getattr(express_getitem(unitelements, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Unit', INDETERMINATE), 'Dimensions', INDETERMINATE), 'LuminousIntensityExponent', INDETERMINATE)
     return result
 
 def IfcDimensionsForSIUnit(n):
@@ -13516,15 +13526,15 @@ def IfcDimensionsForSIUnit(n):
 def IfcDotProduct(arg1, arg2):
     if not exists(arg1) or not exists(arg2):
         scalar = None
-    elif getattr(arg1, 'Dim', INDETERMINATE) != getattr(arg2, 'Dim', INDETERMINATE):
+    elif express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         scalar = None
     else:
         vec1 = IfcNormalise(arg1)
         vec2 = IfcNormalise(arg2)
-        ndim = getattr(arg1, 'Dim', INDETERMINATE)
+        ndim = express_getattr(arg1, 'Dim', INDETERMINATE)
         scalar = 0.0
         for i in range(1, ndim + 1):
-            scalar = scalar + express_getitem(getattr(vec1, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(getattr(vec2, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            scalar = scalar + express_getitem(express_getattr(vec1, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(express_getattr(vec2, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     return scalar
 
 def IfcFirstProjAxis(zaxis, arg):
@@ -13533,42 +13543,42 @@ def IfcFirstProjAxis(zaxis, arg):
     else:
         z = IfcNormalise(zaxis)
         if not exists(arg):
-            if getattr(z, 'DirectionRatios', INDETERMINATE) != [1.0, 0.0, 0.0]:
+            if express_getattr(z, 'DirectionRatios', INDETERMINATE) != [1.0, 0.0, 0.0]:
                 v = IfcDirection(DirectionRatios=[1.0, 0.0, 0.0])
             else:
                 v = IfcDirection(DirectionRatios=[0.0, 1.0, 0.0])
         else:
-            if getattr(arg, 'Dim', INDETERMINATE) != 3:
+            if express_getattr(arg, 'Dim', INDETERMINATE) != 3:
                 return None
-            if getattr(IfcCrossProduct(arg, z), 'Magnitude', INDETERMINATE) == 0.0:
+            if express_getattr(IfcCrossProduct(arg, z), 'Magnitude', INDETERMINATE) == 0.0:
                 return None
             else:
                 v = IfcNormalise(arg)
         xvec = IfcScalarTimesVector(IfcDotProduct(v, z), z)
-        xaxis = getattr(IfcVectorDifference(v, xvec), 'Orientation', INDETERMINATE)
+        xaxis = express_getattr(IfcVectorDifference(v, xvec), 'Orientation', INDETERMINATE)
         xaxis = IfcNormalise(xaxis)
     return xaxis
 
 def IfcGetBasisSurface(c):
     surfs = []
     if 'ifc4x3_tc1.ifcpcurve' in typeof(c):
-        surfs = [getattr(c, 'BasisSurface', INDETERMINATE)]
+        surfs = [express_getattr(c, 'BasisSurface', INDETERMINATE)]
     elif 'ifc4x3_tc1.ifcsurfacecurve' in typeof(c):
-        n = sizeof(getattr(c, 'AssociatedGeometry', INDETERMINATE))
+        n = sizeof(express_getattr(c, 'AssociatedGeometry', INDETERMINATE))
         for i in range(1, n + 1):
-            surfs = surfs + IfcAssociatedSurface(express_getitem(getattr(c, 'AssociatedGeometry', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))
+            surfs = surfs + IfcAssociatedSurface(express_getitem(express_getattr(c, 'AssociatedGeometry', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))
     if 'ifc4x3_tc1.ifccompositecurveonsurface' in typeof(c):
-        n = sizeof(getattr(c, 'Segments', INDETERMINATE))
-        if 'ifc4x3_tc1.ifccurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-            surfs = IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
-        if 'ifc4x3_tc1.ifccompositecurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-            surfs = IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+        n = sizeof(express_getattr(c, 'Segments', INDETERMINATE))
+        if 'ifc4x3_tc1.ifccurvesegment' in typeof(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+            surfs = IfcGetBasisSurface(express_getattr(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+        if 'ifc4x3_tc1.ifccompositecurvesegment' in typeof(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+            surfs = IfcGetBasisSurface(express_getattr(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
         if n > 1:
             for i in range(2, n + 1):
-                if 'ifc4x3_tc1.ifccurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-                    surfs = surfs * IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
-                if 'ifc4x3_tc1.ifccompositecurvesegment' in typeof(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-                    surfs = surfs * IfcGetBasisSurface(getattr(express_getitem(getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+                if 'ifc4x3_tc1.ifccurvesegment' in typeof(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                    surfs = surfs * IfcGetBasisSurface(express_getattr(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
+                if 'ifc4x3_tc1.ifccompositecurvesegment' in typeof(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                    surfs = surfs * IfcGetBasisSurface(express_getattr(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
     return surfs
 
 def IfcListToArray(lis, low, u):
@@ -13585,9 +13595,9 @@ def IfcListToArray(lis, low, u):
 
 def IfcLoopHeadToTail(aloop):
     p = True
-    n = sizeof(getattr(aloop, 'EdgeList', INDETERMINATE))
+    n = sizeof(express_getattr(aloop, 'EdgeList', INDETERMINATE))
     for i in range(2, n + 1):
-        p = p and getattr(express_getitem(getattr(aloop, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(aloop, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
+        p = p and express_getattr(express_getitem(express_getattr(aloop, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == express_getattr(express_getitem(express_getattr(aloop, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
     return p
 
 def IfcMakeArrayOfArray(lis, low1, u1, low2, u2):
@@ -13605,10 +13615,10 @@ def IfcMakeArrayOfArray(lis, low1, u1, low2, u2):
     return res
 
 def IfcMlsTotalThickness(layerset):
-    max = getattr(express_getitem(getattr(layerset, 'MaterialLayers', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'LayerThickness', INDETERMINATE)
-    if sizeof(getattr(layerset, 'MaterialLayers', INDETERMINATE)) > 1:
-        for i in range(2, hiindex(getattr(layerset, 'MaterialLayers', INDETERMINATE)) + 1):
-            max = max + getattr(express_getitem(getattr(layerset, 'MaterialLayers', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'LayerThickness', INDETERMINATE)
+    max = express_getattr(express_getitem(express_getattr(layerset, 'MaterialLayers', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'LayerThickness', INDETERMINATE)
+    if sizeof(express_getattr(layerset, 'MaterialLayers', INDETERMINATE)) > 1:
+        for i in range(2, hiindex(express_getattr(layerset, 'MaterialLayers', INDETERMINATE)) + 1):
+            max = max + express_getattr(express_getitem(express_getattr(layerset, 'MaterialLayers', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'LayerThickness', INDETERMINATE)
     return max
 
 def IfcNormalise(arg):
@@ -13619,25 +13629,25 @@ def IfcNormalise(arg):
         return None
     else:
         if 'ifc4x3_tc1.ifcvector' in typeof(arg):
-            ndim = getattr(arg, 'Dim', INDETERMINATE)
-            v.DirectionRatios = getattr(getattr(arg, 'Orientation', INDETERMINATE), 'DirectionRatios', INDETERMINATE)
-            vec.Magnitude = getattr(arg, 'Magnitude', INDETERMINATE)
+            ndim = express_getattr(arg, 'Dim', INDETERMINATE)
+            v.DirectionRatios = express_getattr(express_getattr(arg, 'Orientation', INDETERMINATE), 'DirectionRatios', INDETERMINATE)
+            vec.Magnitude = express_getattr(arg, 'Magnitude', INDETERMINATE)
             vec.Orientation = v
-            if getattr(arg, 'Magnitude', INDETERMINATE) == 0.0:
+            if express_getattr(arg, 'Magnitude', INDETERMINATE) == 0.0:
                 return None
             else:
                 vec.Magnitude = 1.0
         else:
-            ndim = getattr(arg, 'Dim', INDETERMINATE)
-            v.DirectionRatios = getattr(arg, 'DirectionRatios', INDETERMINATE)
+            ndim = express_getattr(arg, 'Dim', INDETERMINATE)
+            v.DirectionRatios = express_getattr(arg, 'DirectionRatios', INDETERMINATE)
         mag = 0.0
         for i in range(1, ndim + 1):
-            mag = mag + express_getitem(getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            mag = mag + express_getitem(express_getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(express_getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
         if mag > 0.0:
             mag = sqrt(mag)
             for i in range(1, ndim + 1):
-                temp = list(getattr(v, 'DirectionRatios', INDETERMINATE))
-                temp[i - EXPRESS_ONE_BASED_INDEXING] = express_getitem(getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) / mag
+                temp = list(express_getattr(v, 'DirectionRatios', INDETERMINATE))
+                temp[i - EXPRESS_ONE_BASED_INDEXING] = express_getitem(express_getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) / mag
                 v.DirectionRatios = temp
             if 'ifc4x3_tc1.ifcvector' in typeof(arg):
                 vec.Orientation = v
@@ -13649,29 +13659,29 @@ def IfcNormalise(arg):
     return result
 
 def IfcOrthogonalComplement(vec):
-    if not exists(vec) or getattr(vec, 'Dim', INDETERMINATE) != 2:
+    if not exists(vec) or express_getattr(vec, 'Dim', INDETERMINATE) != 2:
         return None
     else:
-        result = IfcDirection(DirectionRatios=[-express_getitem(getattr(vec, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(vec, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)])
+        result = IfcDirection(DirectionRatios=[-express_getitem(express_getattr(vec, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(express_getattr(vec, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)])
         return result
 
 def IfcPathHeadToTail(apath):
     n = 0
     p = unknown
-    n = sizeof(getattr(apath, 'EdgeList', INDETERMINATE))
+    n = sizeof(express_getattr(apath, 'EdgeList', INDETERMINATE))
     for i in range(2, n + 1):
-        p = p and getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == getattr(express_getitem(getattr(apath, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
+        p = p and express_getattr(express_getitem(express_getattr(apath, 'EdgeList', INDETERMINATE), i - 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeEnd', INDETERMINATE) == express_getattr(express_getitem(express_getattr(apath, 'EdgeList', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'EdgeStart', INDETERMINATE)
     return p
 
 def IfcPointDim(point):
     if 'ifc4x3_tc1.ifccartesianpoint' in typeof(point):
-        return hiindex(getattr(point, 'Coordinates', INDETERMINATE))
+        return hiindex(express_getattr(point, 'Coordinates', INDETERMINATE))
     if 'ifc4x3_tc1.ifcpointbydistanceexpression' in typeof(point):
-        return getattr(getattr(point, 'BasisCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(point, 'BasisCurve', INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifcpointoncurve' in typeof(point):
-        return getattr(getattr(point, 'BasisCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(point, 'BasisCurve', INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifcpointonsurface' in typeof(point):
-        return getattr(getattr(point, 'BasisSurface', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(point, 'BasisSurface', INDETERMINATE), 'Dim', INDETERMINATE)
     return None
 
 def IfcPointListDim(pointlist):
@@ -13682,32 +13692,32 @@ def IfcPointListDim(pointlist):
     return None
 
 def IfcSameAxis2Placement(ap1, ap2, epsilon):
-    return IfcSameDirection(express_getitem(getattr(ap1, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(ap2, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameDirection(express_getitem(getattr(ap1, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(getattr(ap2, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameCartesianPoint(getattr(ap1, 'Location', INDETERMINATE), getattr(ap2, 'Location', INDETERMINATE), epsilon)
+    return IfcSameDirection(express_getitem(express_getattr(ap1, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(express_getattr(ap2, 'P', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameDirection(express_getitem(express_getattr(ap1, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), express_getitem(express_getattr(ap2, 'P', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), epsilon) and IfcSameCartesianPoint(express_getattr(ap1, 'Location', INDETERMINATE), express_getattr(ap2, 'Location', INDETERMINATE), epsilon)
 
 def IfcSameCartesianPoint(cp1, cp2, epsilon):
-    cp1x = express_getitem(getattr(cp1, 'Coordinates', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-    cp1y = express_getitem(getattr(cp1, 'Coordinates', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    cp1x = express_getitem(express_getattr(cp1, 'Coordinates', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    cp1y = express_getitem(express_getattr(cp1, 'Coordinates', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     cp1z = 0
-    cp2x = express_getitem(getattr(cp2, 'Coordinates', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-    cp2y = express_getitem(getattr(cp2, 'Coordinates', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    cp2x = express_getitem(express_getattr(cp2, 'Coordinates', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    cp2y = express_getitem(express_getattr(cp2, 'Coordinates', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     cp2z = 0
-    if sizeof(getattr(cp1, 'Coordinates', INDETERMINATE)) > 2:
-        cp1z = express_getitem(getattr(cp1, 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-    if sizeof(getattr(cp2, 'Coordinates', INDETERMINATE)) > 2:
-        cp2z = express_getitem(getattr(cp2, 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    if sizeof(express_getattr(cp1, 'Coordinates', INDETERMINATE)) > 2:
+        cp1z = express_getitem(express_getattr(cp1, 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    if sizeof(express_getattr(cp2, 'Coordinates', INDETERMINATE)) > 2:
+        cp2z = express_getitem(express_getattr(cp2, 'Coordinates', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     return IfcSameValue(cp1x, cp2x, epsilon) and IfcSameValue(cp1y, cp2y, epsilon) and IfcSameValue(cp1z, cp2z, epsilon)
 
 def IfcSameDirection(dir1, dir2, epsilon):
-    dir1x = express_getitem(getattr(dir1, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-    dir1y = express_getitem(getattr(dir1, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    dir1x = express_getitem(express_getattr(dir1, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    dir1y = express_getitem(express_getattr(dir1, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     dir1z = 0
-    dir2x = express_getitem(getattr(dir2, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-    dir2y = express_getitem(getattr(dir2, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    dir2x = express_getitem(express_getattr(dir2, 'DirectionRatios', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    dir2y = express_getitem(express_getattr(dir2, 'DirectionRatios', INDETERMINATE), 2 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     dir2z = 0
-    if sizeof(getattr(dir1, 'DirectionRatios', INDETERMINATE)) > 2:
-        dir1z = express_getitem(getattr(dir1, 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
-    if sizeof(getattr(dir2, 'DirectionRatios', INDETERMINATE)) > 2:
-        dir2z = express_getitem(getattr(dir2, 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    if sizeof(express_getattr(dir1, 'DirectionRatios', INDETERMINATE)) > 2:
+        dir1z = express_getitem(express_getattr(dir1, 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+    if sizeof(express_getattr(dir2, 'DirectionRatios', INDETERMINATE)) > 2:
+        dir2z = express_getitem(express_getattr(dir2, 'DirectionRatios', INDETERMINATE), 3 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
     return IfcSameValue(dir1x, dir2x, epsilon) and IfcSameValue(dir1y, dir2y, epsilon) and IfcSameValue(dir1z, dir2z, epsilon)
 
 def IfcSameValidPrecision(epsilon1, epsilon2):
@@ -13728,15 +13738,15 @@ def IfcScalarTimesVector(scalar, vec):
         return None
     else:
         if 'ifc4x3_tc1.ifcvector' in typeof(vec):
-            v = getattr(vec, 'Orientation', INDETERMINATE)
-            mag = scalar * getattr(vec, 'Magnitude', INDETERMINATE)
+            v = express_getattr(vec, 'Orientation', INDETERMINATE)
+            mag = scalar * express_getattr(vec, 'Magnitude', INDETERMINATE)
         else:
             v = vec
             mag = scalar
         if mag < 0.0:
-            for i in range(1, sizeof(getattr(v, 'DirectionRatios', INDETERMINATE)) + 1):
-                temp = list(getattr(v, 'DirectionRatios', INDETERMINATE))
-                temp[i - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            for i in range(1, sizeof(express_getattr(v, 'DirectionRatios', INDETERMINATE)) + 1):
+                temp = list(express_getattr(v, 'DirectionRatios', INDETERMINATE))
+                temp[i - EXPRESS_ONE_BASED_INDEXING] = -express_getitem(express_getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
                 v.DirectionRatios = temp
             mag = -mag
         result = IfcVector(Orientation=IfcNormalise(v), Magnitude=mag)
@@ -13752,82 +13762,82 @@ def IfcSecondProjAxis(zaxis, xaxis, arg):
     temp = IfcScalarTimesVector(IfcDotProduct(v, xaxis), xaxis)
     yaxis = IfcVectorDifference(yaxis, temp)
     yaxis = IfcNormalise(yaxis)
-    return getattr(yaxis, 'Orientation', INDETERMINATE)
+    return express_getattr(yaxis, 'Orientation', INDETERMINATE)
 
 def IfcSegmentDim(segment):
     if 'ifc4x3_tc1.ifccurvesegment' in typeof(segment):
-        return getattr(getattr(segment, 'ParentCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(segment, 'ParentCurve', INDETERMINATE), 'Dim', INDETERMINATE)
     if 'ifc4x3_tc1.ifccompositecurvesegment' in typeof(segment):
-        return getattr(getattr(segment, 'ParentCurve', INDETERMINATE), 'Dim', INDETERMINATE)
+        return express_getattr(express_getattr(segment, 'ParentCurve', INDETERMINATE), 'Dim', INDETERMINATE)
     return None
 
 def IfcShapeRepresentationTypes(reptype, items):
     count = 0
-    if getattr(reptype, 'lower', INDETERMINATE)() == 'point':
+    if express_getattr(reptype, 'lower', INDETERMINATE)() == 'point':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcpoint' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'pointcloud':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'pointcloud':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifccartesianpointlist3d' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'curve':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifccurve' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'curve2d':
-        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifccurve' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 2])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'curve3d':
-        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifccurve' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 3])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'segment':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve2d':
+        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifccurve' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve3d':
+        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifccurve' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 3])
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'segment':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsegment' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'surface':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surface':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsurface' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'surface2d':
-        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsurface' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 2])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'surface3d':
-        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsurface' in typeof(temp) and getattr(temp, 'Dim', INDETERMINATE) == 3])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedsurface':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surface2d':
+        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsurface' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surface3d':
+        count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsurface' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 3])
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedsurface':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsectionedsurface' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'fillarea':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'fillarea':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcannotationfillarea' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'text':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'text':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifctextliteral' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsurface':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsurface':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcbsplinesurface' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'annotation2d':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'annotation2d':
         count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['ifc4x3_tc1.ifcpoint', 'ifc4x3_tc1.ifccurve', 'ifc4x3_tc1.ifcgeometriccurveset', 'ifc4x3_tc1.ifcannotationfillarea', 'ifc4x3_tc1.ifctextliteral']) == 1])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'geometricset':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'geometricset':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcgeometricset' in typeof(temp) or 'ifc4x3_tc1.ifcpoint' in typeof(temp) or 'ifc4x3_tc1.ifccurve' in typeof(temp) or ('ifc4x3_tc1.ifcsurface' in typeof(temp))])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'geometriccurveset':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'geometriccurveset':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcgeometriccurveset' in typeof(temp) or 'ifc4x3_tc1.ifcgeometricset' in typeof(temp) or 'ifc4x3_tc1.ifcpoint' in typeof(temp) or ('ifc4x3_tc1.ifccurve' in typeof(temp))])
         for i in range(1, hiindex(items) + 1):
             if 'ifc4x3_tc1.ifcgeometricset' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-                if sizeof([temp for temp in getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'ifc4x3_tc1.ifcsurface' in typeof(temp)]) > 0:
+                if sizeof([temp for temp in express_getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'ifc4x3_tc1.ifcsurface' in typeof(temp)]) > 0:
                     count = count - 1
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'tessellation':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'tessellation':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifctessellateditem' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'surfaceorsolidmodel':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surfaceorsolidmodel':
         count = sizeof([temp for temp in items if sizeof(['ifc4x3_tc1.ifctessellateditem', 'ifc4x3_tc1.ifcshellbasedsurfacemodel', 'ifc4x3_tc1.ifcfacebasedsurfacemodel', 'ifc4x3_tc1.ifcsolidmodel'] * typeof(temp)) >= 1])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'surfacemodel':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surfacemodel':
         count = sizeof([temp for temp in items if sizeof(['ifc4x3_tc1.ifctessellateditem', 'ifc4x3_tc1.ifcshellbasedsurfacemodel', 'ifc4x3_tc1.ifcfacebasedsurfacemodel'] * typeof(temp)) >= 1])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'solidmodel':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'solidmodel':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsolidmodel' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'sweptsolid':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sweptsolid':
         count = sizeof([temp for temp in items if sizeof(['ifc4x3_tc1.ifcextrudedareasolid', 'ifc4x3_tc1.ifcrevolvedareasolid'] * typeof(temp)) >= 1 and sizeof(['ifc4x3_tc1.ifcextrudedareasolidtapered', 'ifc4x3_tc1.ifcrevolvedareasolidtapered'] * typeof(temp)) == 0])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsweptsolid':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsweptsolid':
         count = sizeof([temp for temp in items if sizeof(['ifc4x3_tc1.ifcsweptareasolid', 'ifc4x3_tc1.ifcsweptdisksolid', 'ifc4x3_tc1.ifcsectionedsolidhorizontal'] * typeof(temp)) >= 1])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'csg':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'csg':
         count = sizeof([temp for temp in items if sizeof(['ifc4x3_tc1.ifcbooleanresult', 'ifc4x3_tc1.ifccsgprimitive3d', 'ifc4x3_tc1.ifccsgsolid'] * typeof(temp)) >= 1])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'clipping':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'clipping':
         count = sizeof([temp for temp in items if sizeof(['ifc4x3_tc1.ifccsgsolid', 'ifc4x3_tc1.ifcbooleanclippingresult'] * typeof(temp)) >= 1])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'brep':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'brep':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcfacetedbrep' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'advancedbrep':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedbrep':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcmanifoldsolidbrep' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'boundingbox':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'boundingbox':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcboundingbox' in typeof(temp)])
         if sizeof(items) > 1:
             count = 0
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedspine':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedspine':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcsectionedspine' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'lightsource':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'lightsource':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifclightsource' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'mappedrepresentation':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'mappedrepresentation':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcmappeditem' in typeof(temp)])
     else:
         return None
@@ -13835,9 +13845,9 @@ def IfcShapeRepresentationTypes(reptype, items):
 
 def IfcSurfaceWeightsPositive(b):
     result = True
-    weights = getattr(b, 'Weights', INDETERMINATE)
-    for i in range(0, getattr(b, 'UUpper', INDETERMINATE) + 1):
-        for j in range(0, getattr(b, 'VUpper', INDETERMINATE) + 1):
+    weights = express_getattr(b, 'Weights', INDETERMINATE)
+    for i in range(0, express_getattr(b, 'UUpper', INDETERMINATE) + 1):
+        for j in range(0, express_getattr(b, 'VUpper', INDETERMINATE) + 1):
             if express_getitem(express_getitem(weights, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), j - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) <= 0.0:
                 result = False
                 return result
@@ -13847,28 +13857,28 @@ def IfcTaperedSweptAreaProfiles(startarea, endarea):
     result = False
     if 'ifc4x3_tc1.ifcparameterizedprofiledef' in typeof(startarea):
         if 'ifc4x3_tc1.ifcderivedprofiledef' in typeof(endarea):
-            result = startarea == getattr(endarea, 'ParentProfile', INDETERMINATE)
+            result = startarea == express_getattr(endarea, 'ParentProfile', INDETERMINATE)
         else:
             result = typeof(startarea) == typeof(endarea)
     elif 'ifc4x3_tc1.ifcderivedprofiledef' in typeof(endarea):
-        result = startarea == getattr(endarea, 'ParentProfile', INDETERMINATE)
+        result = startarea == express_getattr(endarea, 'ParentProfile', INDETERMINATE)
     else:
         result = False
     return result
 
 def IfcTopologyRepresentationTypes(reptype, items):
     count = 0
-    if getattr(reptype, 'lower', INDETERMINATE)() == 'vertex':
+    if express_getattr(reptype, 'lower', INDETERMINATE)() == 'vertex':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcvertex' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'edge':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'edge':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcedge' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'path':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'path':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcpath' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'face':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'face':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcface' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'shell':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'shell':
         count = sizeof([temp for temp in items if 'ifc4x3_tc1.ifcopenshell' in typeof(temp) or 'ifc4x3_tc1.ifcclosedshell' in typeof(temp)])
-    elif getattr(reptype, 'lower', INDETERMINATE)() == 'undefined':
+    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'undefined':
         return True
     else:
         return None
@@ -13879,7 +13889,7 @@ def IfcUniqueDefinitionNames(relations):
     if sizeof(relations) == 0:
         return True
     for i in range(1, hiindex(relations) + 1):
-        definition = getattr(express_getitem(relations, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingPropertyDefinition', INDETERMINATE)
+        definition = express_getattr(express_getitem(relations, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingPropertyDefinition', INDETERMINATE)
         if 'ifc4x3_tc1.ifcpropertysetdefinition' in typeof(definition):
             properties = properties + definition
         elif 'ifc4x3_tc1.ifcpropertysetdefinitionset' in typeof(definition):
@@ -13892,7 +13902,7 @@ def IfcUniqueDefinitionNames(relations):
 def IfcUniquePropertyName(properties):
     names = express_set([])
     for i in range(1, hiindex(properties) + 1):
-        names = names + getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
+        names = names + express_getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
     return sizeof(names) == sizeof(properties)
 
 def IfcUniquePropertySetNames(properties):
@@ -13900,7 +13910,7 @@ def IfcUniquePropertySetNames(properties):
     unnamed = 0
     for i in range(1, hiindex(properties) + 1):
         if 'ifc4x3_tc1.ifcpropertyset' in typeof(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-            names = names + getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
+            names = names + express_getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
         else:
             unnamed = unnamed + 1
     return sizeof(names) + unnamed == sizeof(properties)
@@ -13908,41 +13918,41 @@ def IfcUniquePropertySetNames(properties):
 def IfcUniquePropertyTemplateNames(properties):
     names = express_set([])
     for i in range(1, hiindex(properties) + 1):
-        names = names + getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
+        names = names + express_getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
     return sizeof(names) == sizeof(properties)
 
 def IfcUniqueQuantityNames(properties):
     names = express_set([])
     for i in range(1, hiindex(properties) + 1):
-        names = names + getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
+        names = names + express_getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
     return sizeof(names) == sizeof(properties)
 
 def IfcVectorDifference(arg1, arg2):
-    if (not exists(arg1) or not exists(arg2)) or getattr(arg1, 'Dim', INDETERMINATE) != getattr(arg2, 'Dim', INDETERMINATE):
+    if (not exists(arg1) or not exists(arg2)) or express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
         if 'ifc4x3_tc1.ifcvector' in typeof(arg1):
-            mag1 = getattr(arg1, 'Magnitude', INDETERMINATE)
-            vec1 = getattr(arg1, 'Orientation', INDETERMINATE)
+            mag1 = express_getattr(arg1, 'Magnitude', INDETERMINATE)
+            vec1 = express_getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
         if 'ifc4x3_tc1.ifcvector' in typeof(arg2):
-            mag2 = getattr(arg2, 'Magnitude', INDETERMINATE)
-            vec2 = getattr(arg2, 'Orientation', INDETERMINATE)
+            mag2 = express_getattr(arg2, 'Magnitude', INDETERMINATE)
+            vec2 = express_getattr(arg2, 'Orientation', INDETERMINATE)
         else:
             mag2 = 1.0
             vec2 = arg2
         vec1 = IfcNormalise(vec1)
         vec2 = IfcNormalise(vec2)
-        ndim = sizeof(getattr(vec1, 'DirectionRatios', INDETERMINATE))
+        ndim = sizeof(express_getattr(vec1, 'DirectionRatios', INDETERMINATE))
         mag = 0.0
         res = IfcDirection(DirectionRatios=[0.0] * ndim)
         for i in range(1, ndim + 1):
-            temp = list(getattr(res, 'DirectionRatios', INDETERMINATE))
-            temp[i - EXPRESS_ONE_BASED_INDEXING] = mag1 * express_getitem(getattr(vec1, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) - mag2 * express_getitem(getattr(vec2, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            temp = list(express_getattr(res, 'DirectionRatios', INDETERMINATE))
+            temp[i - EXPRESS_ONE_BASED_INDEXING] = mag1 * express_getitem(express_getattr(vec1, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) - mag2 * express_getitem(express_getattr(vec2, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
             res.DirectionRatios = temp
-            mag = mag + express_getitem(getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            mag = mag + express_getitem(express_getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(express_getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
         if mag > 0.0:
             result = IfcVector(Orientation=res, Magnitude=sqrt(mag))
         else:
@@ -13950,31 +13960,31 @@ def IfcVectorDifference(arg1, arg2):
     return result
 
 def IfcVectorSum(arg1, arg2):
-    if (not exists(arg1) or not exists(arg2)) or getattr(arg1, 'Dim', INDETERMINATE) != getattr(arg2, 'Dim', INDETERMINATE):
+    if (not exists(arg1) or not exists(arg2)) or express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
         if 'ifc4x3_tc1.ifcvector' in typeof(arg1):
-            mag1 = getattr(arg1, 'Magnitude', INDETERMINATE)
-            vec1 = getattr(arg1, 'Orientation', INDETERMINATE)
+            mag1 = express_getattr(arg1, 'Magnitude', INDETERMINATE)
+            vec1 = express_getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
         if 'ifc4x3_tc1.ifcvector' in typeof(arg2):
-            mag2 = getattr(arg2, 'Magnitude', INDETERMINATE)
-            vec2 = getattr(arg2, 'Orientation', INDETERMINATE)
+            mag2 = express_getattr(arg2, 'Magnitude', INDETERMINATE)
+            vec2 = express_getattr(arg2, 'Orientation', INDETERMINATE)
         else:
             mag2 = 1.0
             vec2 = arg2
         vec1 = IfcNormalise(vec1)
         vec2 = IfcNormalise(vec2)
-        ndim = sizeof(getattr(vec1, 'DirectionRatios', INDETERMINATE))
+        ndim = sizeof(express_getattr(vec1, 'DirectionRatios', INDETERMINATE))
         mag = 0.0
         res = IfcDirection(DirectionRatios=[0.0] * ndim)
         for i in range(1, ndim + 1):
-            temp = list(getattr(res, 'DirectionRatios', INDETERMINATE))
-            temp[i - EXPRESS_ONE_BASED_INDEXING] = mag1 * express_getitem(getattr(vec1, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) + mag2 * express_getitem(getattr(vec2, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            temp = list(express_getattr(res, 'DirectionRatios', INDETERMINATE))
+            temp[i - EXPRESS_ONE_BASED_INDEXING] = mag1 * express_getitem(express_getattr(vec1, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) + mag2 * express_getitem(express_getattr(vec2, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
             res.DirectionRatios = temp
-            mag = mag + express_getitem(getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
+            mag = mag + express_getitem(express_getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) * express_getitem(express_getattr(res, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
         if mag > 0.0:
             result = IfcVector(Orientation=res, Magnitude=sqrt(mag))
         else:

@@ -17,18 +17,21 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import datetime
+import math
 import os
 import re
 import sys
-import math
-import datetime
+from typing import Literal, Optional, TypedDict, Union
+
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-from .ids import Specification, Ids
+
 from .facet import Facet, FacetFailure
-from typing import TypedDict, Union, Literal, Optional
+from .ids import Ids, Specification
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -55,6 +58,7 @@ class Results(TypedDict):
     date: str
     filepath: str
     filename: str
+    hide_skipped: bool
     specifications: list[ResultsSpecification]
     status: bool
     total_specifications: int
@@ -77,16 +81,18 @@ class ResultsSpecification(TypedDict):
     description: str
     instructions: str
     status: bool
+    is_skipped: bool
     is_ifc_version: bool
     total_applicable: int
     total_applicable_pass: int
     total_applicable_fail: int
+    applicable_entities: list[ResultsEntity]
     percent_applicable_pass: ResultsPercent
     total_checks: int
     total_checks_pass: int
     total_checks_fail: int
     percent_checks_pass: ResultsPercent
-    required: bool
+    cardinality: str
     applicability: list[str]
     requirements: list[ResultsRequirement]
 
@@ -236,9 +242,10 @@ class Txt(Console):
 
 
 class Json(Reporter):
-    def __init__(self, ids: Ids):
+    def __init__(self, ids: Ids, hide_skipped=False):
         super().__init__(ids)
         self.results = Results()
+        self.results["hide_skipped"] = hide_skipped
 
     def report(self) -> Results:
         self.results["title"] = self.ids.info.get("title", "Untitled IDS")
@@ -356,24 +363,57 @@ class Json(Reporter):
         )
         percent_checks_pass = math.floor((total_checks_pass / total_checks) * 100) if total_checks else "N/A"
 
+        if specification.minOccurs == 1 and specification.maxOccurs == "unbounded":
+            cardinality = "required"
+        elif specification.minOccurs == 0 and specification.maxOccurs == "unbounded":
+            cardinality = "optional"
+        elif specification.minOccurs == 0 and specification.maxOccurs == 0:
+            cardinality = "prohibited"
+        elif specification.minOccurs >= 1:
+            # Any minimum occurrence >= 1 means the specification is required
+            cardinality = "required"
+        else:
+            # minOccurs == 0 with any other maxOccurs value means optional
+            cardinality = "optional"
+
         return ResultsSpecification(
             name=specification.name,
             description=specification.description,
             instructions=specification.instructions,
             status=specification.status,
+            is_skipped=cardinality == "optional" and total_checks == 0,
             is_ifc_version=specification.is_ifc_version,
             total_applicable=total_applicable,
             total_applicable_pass=total_applicable_pass,
             total_applicable_fail=total_applicable - total_applicable_pass,
+            applicable_entities=self.report_applicable_entities(specification),
             percent_applicable_pass=percent_applicable_pass,
             total_checks=total_checks,
             total_checks_pass=total_checks_pass,
             total_checks_fail=total_checks - total_checks_pass,
             percent_checks_pass=percent_checks_pass,
-            required=specification.minOccurs != 0,
+            cardinality=cardinality,
             applicability=applicability,
             requirements=requirements,
         )
+
+    def report_applicable_entities(self, specification: Specification) -> list[ResultsEntity]:
+        return [
+            ResultsEntity(
+                {
+                    "element": e,
+                    "element_type": ifcopenshell.util.element.get_type(e),
+                    "class": e.is_a(),
+                    "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
+                    "name": getattr(e, "Name", None),
+                    "description": getattr(e, "Description", None),
+                    "id": e.id(),
+                    "global_id": getattr(e, "GlobalId", None),
+                    "tag": getattr(e, "Tag", None),
+                }
+            )
+            for e in specification.applicable_entities
+        ]
 
     def report_passed_entities(self, requirement: Facet) -> list[ResultsEntity]:
         return [
@@ -428,13 +468,21 @@ class Json(Reporter):
 
 
 class Html(Json):
-    def __init__(self, ids: Ids):
+    def __init__(self, ids: Ids, hide_skipped: bool = False):
         self.entity_limit = 100
         super().__init__(ids)
+        self.results["hide_skipped"] = hide_skipped
 
     def report(self) -> None:
         super().report()
         for spec in self.results["specifications"]:
+            spec["is_prohibited"] = spec["cardinality"] == "prohibited"
+            spec["cardinality"] = spec["cardinality"].capitalize()
+            spec["has_requirements"] = bool(spec["requirements"])
+            total_applicable_entities = len(spec["applicable_entities"])
+            spec["applicable_entities"] = self.limit_entities(spec["applicable_entities"])
+            spec["has_omitted_applicable"] = total_applicable_entities > self.entity_limit
+            spec["total_omitted_applicable"] = total_applicable_entities - self.entity_limit
             for requirement in spec["requirements"]:
                 total_passed_entities = len(requirement["passed_entities"])
                 total_failed_entities = len(requirement["failed_entities"])
@@ -446,6 +494,7 @@ class Html(Json):
                 requirement["total_passed_entities"] = total_passed_entities
                 requirement["total_omitted_passes"] = total_passed_entities - self.entity_limit
                 requirement["has_omitted_passes"] = total_passed_entities > self.entity_limit
+                requirement["instructions"] = requirement["metadata"].get("@instructions")
 
     def limit_entities(self, entities):
         if len(entities) > self.entity_limit:
@@ -539,7 +588,7 @@ class Ods(Json):
     def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
-        from odf.table import Table, TableRow, TableCell
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
 
         self.doc = OpenDocumentSpreadsheet()
@@ -680,7 +729,7 @@ class OdsSummary(Json):
     def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
-        from odf.table import Table, TableRow, TableCell
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
 
         self.doc = OpenDocumentSpreadsheet()

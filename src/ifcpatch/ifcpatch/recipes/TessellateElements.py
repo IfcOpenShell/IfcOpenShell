@@ -16,16 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.api.geometry
-import ifcopenshell.geom
-import ifcopenshell.util.selector
-import ifcopenshell.util.shape
-import ifcopenshell.util.representation
 import multiprocessing
 from logging import Logger
 from typing import Union
+
+import ifcopenshell
+import ifcopenshell.api.geometry
+import ifcopenshell.geom
+import ifcopenshell.util.representation
+import ifcopenshell.util.selector
+import ifcopenshell.util.shape
 
 
 class Patcher:
@@ -47,10 +47,8 @@ class Patcher:
         See example bug: https://github.com/Autodesk/revit-ifc/issues/707
 
         :param query: Query string to filter out elements to convert, defaults to "IfcBeam"
-        :type query: str
         :param force_faceted_brep: Force using IfcFacetedBreps instead of IfcPolygonalFaceSets,
             defaults to `False`
-        :type force_faceted_brep: bool
 
         Example:
 

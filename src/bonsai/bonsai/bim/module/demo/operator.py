@@ -28,8 +28,9 @@
 # "Operators", since they correlate to a single user operation.
 
 import bpy
-import bonsai.tool as tool
+
 import bonsai.core.demo as core
+import bonsai.tool as tool
 
 
 # Each button correlates to a class like the one below. In this case, we're
@@ -88,7 +89,7 @@ class SendWebUiDemoMessage(bpy.types.Operator):
         # First, we need to make sure that we are connected to the Web UI
         # We do that by checking the Web module properties' is_connected prop
         # and calling the operator connect_websocket_server if we aren't connected to a Web UI
-        if not context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             bpy.ops.bim.connect_websocket_server(page="demo")
         props = tool.Demo.get_demo_props()
         core.send_webui_demo_message(tool.Web, message=props.webui_message)

@@ -27,21 +27,21 @@
 #ifndef IFCCHARACTERDECODER_H
 #define IFCCHARACTERDECODER_H
 
-#include "IfcSpfStream.h"
+#include "FileReader.h"
 
 #include <string>
 
 namespace IfcUtil {
-std::u32string::value_type convert_codepage(int codepage, int index);
-std::string convert_utf8(const std::u32string& string);
-std::u32string convert_utf8(const std::string& string);
+IFC_PARSE_API std::u32string::value_type convert_codepage(int codepage, int index);
+IFC_PARSE_API std::string convert_utf8(const std::u32string& string);
+IFC_PARSE_API std::u32string convert_utf8(const std::string& string);
 } // namespace IfcUtil
 
 namespace IfcParse {
 
 class IFC_PARSE_API IfcCharacterDecoder {
   private:
-    IfcParse::IfcSpfStream* stream_;
+    IfcParse::FileReader* stream_;
     int codepage_;
 
   public:
@@ -52,7 +52,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
     };
     static ConversionMode mode;
     static char substitution_character;
-    IfcCharacterDecoder(IfcParse::IfcSpfStream* stream);
+    IfcCharacterDecoder(IfcParse::FileReader* stream);
     ~IfcCharacterDecoder();
     // Only advances the underlying token stream read pointer
     // to the next token.
@@ -62,7 +62,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
     operator std::string();
     // Gets a decoded string representation at the offset provided,
     // does not mutate the underlying token stream read pointer.
-    std::string get(unsigned int&);
+    std::string get(size_t&);
 };
 
 } // namespace IfcParse

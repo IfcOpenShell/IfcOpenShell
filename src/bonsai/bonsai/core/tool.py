@@ -99,6 +99,7 @@ class Blender:
     def get_object_bounding_box(cls, obj): pass
     def get_selected_objects(cls, include_active=False): pass
     def get_viewport_context(cls): pass
+    def operator_idname_to_py(cls, idname): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
     def remove_object(cls, obj): pass
@@ -287,27 +288,36 @@ class Debug:
 
 @interface
 class Document:
-    def add_breadcrumb(cls, document): pass
-    def clear_breadcrumbs(cls): pass
     def clear_document_tree(cls): pass
     def disable_editing_document(cls): pass
+    def disable_object_editing_ui(cls): pass
     def disable_editing_ui(cls): pass
     def enable_editing_ui(cls): pass
     def export_document_attributes(cls): pass
-    def get_active_breadcrumb(cls): pass
     def import_document_attributes(cls, document): pass
     def import_project_documents(cls): pass
-    def import_references(cls, document): pass
-    def import_subdocuments(cls, document): pass
     def is_document_information(cls, document): pass
-    def remove_latest_breadcrumb(cls): pass
     def set_active_document(cls, document): pass
+    def clear_active_document(cls): pass
+    def clear_document_attributes(cls): pass
+    def expand_document(cls, document): pass
+    def get_default_parent_for_information(cls): pass
+    def get_selected_document_information(cls): pass
+    def get_document_information_id(cls, document): pass
+    def set_document_information_id(cls, document, value): pass
+    def get_external_reference_id(cls, reference): pass
+    def set_external_reference_id(cls, reference, value): pass
+    def get_document_references(cls, document): pass
+    def refresh_document_data(cls): pass
+    def load_document_objects_into_props(cls, document_id): pass
+    def update_document_objects(cls, document_id): pass
 
 
 @interface
 class Drawing:
     def activate_drawing(cls, camera): pass
-    def add_literal_to_annotation(cls, obj, Literal='Literal', Path='RIGHT', BoxAlignment='bottom-left'): pass
+    def add_literal(cls, **attributes): pass
+    def clear_annotation_relationships(cls, drawing): pass
     def copy_representation(cls, source, dest): pass
     def create_annotation_context(cls, target_view, object_type=None): pass
     def create_annotation_object(cls, drawing, object_type): pass
@@ -325,6 +335,11 @@ class Drawing:
     def disable_editing_sheets(cls): pass
     def disable_editing_text(cls, obj): pass
     def does_file_exist(cls, uri): pass
+    def edit_text_alignment(cls, obj, alignment): pass
+    def edit_text_font_size(cls, obj, size): pass
+    def edit_text_literals(cls, obj, literals): pass
+    def edit_text_symbol(cls, obj, symbol): pass
+    def edit_text_wrap_length(cls, obj, wrap_length): pass
     def enable_editing(cls, obj): pass
     def enable_editing_assigned_product(cls, obj): pass
     def enable_editing_drawings(cls): pass
@@ -334,7 +349,10 @@ class Drawing:
     def enable_editing_text(cls, obj): pass
     def ensure_unique_drawing_name(cls, name): pass
     def ensure_unique_identification(cls, identification): pass
+    def export_font_size(cls, obj): pass
+    def export_symbol(cls, obj): pass
     def export_text_literal_attributes(cls, obj): pass
+    def export_wrap_length(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
     def generate_reference_attributes(cls, reference, **attributes): pass
@@ -342,6 +360,7 @@ class Drawing:
     def get_annotation_context(cls, target_view, object_type=None): pass
     def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
+    def get_assigned_product_workaround(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
     def get_default_drawing_resource_path(cls, resource): pass
@@ -382,22 +401,18 @@ class Drawing:
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
     def reload_representation(cls, obj, representation): pass
-    def remove_literal_from_annotation(cls, obj, literal): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_type_assign_type(cls, element=None, relating_type=None): pass
     def select_assigned_product(cls, drawing): pass
+    def set_camera_name(cls, drawing, name): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
     def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
-    def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
-    def update_newline_at(cls, obj): pass
-    def update_text_size_pset(cls, obj): pass
-    def update_text_value(cls, obj): pass
 
 
 @interface
@@ -488,6 +503,19 @@ class Georeference:
 
 
 @interface
+class Group:
+    def get_group_props(cls): pass
+    def get_groups_data(cls, group_type): pass
+    def import_groups(cls, group_type): pass
+    def enable_group_editing_ui(cls)    : pass
+    def disable_group_editing_ui(cls): pass
+    def disable_editing_group(cls): pass
+    def set_active_group_to_edit(cls, group): pass
+    def toggle_group(cls, group, group_type, option): pass
+    def update_uilist_index(cls, group_type): pass
+
+
+@interface
 class Ifc:
     def get(cls): pass
     def get_entity(cls, obj): pass
@@ -505,6 +533,60 @@ class Ifc:
     def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass
     def get_all_element_occurrences(cls, element): pass
+
+
+@interface
+class IfcGit:
+    def add_file_to_repo(cls, repo, path_file): pass
+    def add_remote(cls, repo, remote_name, remote_url): pass
+    def add_tag(cls, repo, hexsha, tag_name, tag_message): pass
+    def branches_by_hexsha(cls, repo): pass
+    def checkout_new_branch(cls, path_file, branch_name): pass
+    def clear_commits_list(cls): pass
+    def clone_repo(cls, remote_url, local_folder): pass
+    def colourise(cls, step_ids): pass
+    def config_ifcmerge(cls): pass
+    def create_new_branch(cls, branch_name): pass
+    def decolourise(cls): pass
+    def delete_remote(cls, repo, remote_name): pass
+    def delete_tag(cls, repo, tag_name): pass
+    def dos2unix(cls, path_file): pass
+    def commit_merge(cls, path_ifc): pass
+    def entity_log(cls, path_ifc, step_id): pass
+    def fetch(cls, remote_name): pass
+    def get_commits_list(cls, path_ifc, lookup): pass
+    def get_merge_tool(cls, branch_name): pass
+    def get_selected_branch(cls): pass
+    def git_merge(cls, branch_name): pass
+    def git_merge_abort(cls): pass
+    def git_merge_no_commit(cls, branch_name): pass
+    def git_mergetool(cls, mergetool, path_ifc): pass
+    def store_merge_conflicts(cls, conflicts): pass
+    def clear_merge_conflicts(cls): pass
+    def get_merge_conflicts(cls): pass
+    def set_display_branch(cls): pass
+    def get_active_branch_name(cls): pass
+    def get_ifcgit_props(cls): pass
+    def get_modified_step_ids(cls, step_ids): pass
+    def get_path_dir(cls, path_ifc): pass
+    def get_revisions_step_ids(cls): pass
+    def is_head_detached(cls): pass
+    def repo_has_commits(cls): pass
+    def git_checkout(cls, path_file): pass
+    def git_commit(cls, path_file, commit_message): pass
+    def ifc_diff_ids(cls, repo, hash_a, hash_b, path_ifc): pass
+    def init_repo(cls, path_dir): pass
+    def install_git_windows(cls, operator): pass
+    def is_valid_ref_format(cls, string): pass
+    def load_anyifc(cls, repo): pass
+    def load_project(cls, path_ifc): pass
+    def push(cls, repo, remote_name, branch_name): pass
+    def refresh_revision_list(cls, path_ifc): pass
+    def repo_from_path(cls, path): pass
+    def run_git_diff(cls, operator, save_to_temp): pass
+    def switch_to_revision_item(cls): pass
+    def tags_by_hexsha(cls, repo): pass
+    def update_step_ids(cls, step_ids, modified_step_ids): pass
 
 
 @interface
@@ -556,6 +638,7 @@ class Material:
     def import_material_definitions(cls, material_type: str): pass
     def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
+    def is_type_product(cls, element): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
@@ -595,7 +678,10 @@ class Model:
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
+    def recalculate_walls(cls, objs): pass
     def regenerate_array(cls, parent, data): pass
+    def regenerate_profile(cls, obj): pass
+    def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
@@ -856,8 +942,6 @@ class Sequence:
     def get_animation_product_frames(cls, work_schedule, settings): pass
     def get_animation_settings(cls): pass
     def get_checked_tasks(cls): pass
-    def get_direct_nested_tasks(cls, task):pass
-    def get_direct_task_outputs(cls, task): pass
     def get_finish_date(cls): pass
     def get_highlighted_task(cls): pass
     def get_lag_time_attributes(cls): pass
@@ -890,7 +974,6 @@ class Sequence:
     def load_lag_time_attributes(cls, lag_time): pass
     def load_product_related_tasks(cls, product): pass
     def load_rel_sequence_attributes(cls, rel_sequence): pass
-    def load_resources(cls): pass
     def load_task_attributes(cls, task): pass
     def load_task_inputs(cls, inputs): pass
     def load_task_outputs(cls, outputs): pass
@@ -933,15 +1016,17 @@ class Spatial:
     def get_active_container(cls): pass
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container, recursive): pass
+    def get_decomposition(cls, element): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
+    def get_root_element(cls, element): pass
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_spatial_decomposition(cls): pass
     def import_spatial_element(cls, element, level_index): pass
     def load_contained_elements(cls): pass
     def run_root_copy_class(cls, obj): pass
-    def run_spatial_assign_container(cls, container, element_obj): pass
+    def run_spatial_assign_container(cls, container, objs): pass
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
@@ -968,14 +1053,12 @@ class Spatial:
     def get_purged_inner_holes_poly(cls, union_geom, min_area): pass
     def get_poly_valid_interior_list(cls, poly, min_area, interiors_list): pass
     def get_buffered_poly_from_linear_ring(cls, linear_ring): pass
-    def get_bmesh_from_polygon(cls, poly, h, polygon_is_si=False): pass
-    def get_named_obj_from_bmesh(cls, name, bmesh): pass
-    def get_named_obj_from_mesh(cls, name, mesh): pass
-    def get_named_mesh_from_bmesh(cls, name, bmesh): pass
-    def get_transformed_mesh_from_local_to_global(cls, mesh): pass
-    def edit_active_space_obj_from_mesh(cls, mesh): pass
-    def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
+    def get_2d_vertices_from_polygon(cls, poly, obj, polygon_is_si=True): pass
+    def set_extrusion_representation_from_polygon(cls, obj, element, poly, depth_ifc, polygon_is_si=True): pass
+    def set_space_representation_from_polygon(cls, obj, element, poly, h, polygon_is_si=True): pass
+    def set_covering_representation_from_polygon(cls, obj, poly, polygon_is_si=True): pass
+    def create_object(cls, name): pass
+    def set_obj_origin_to_polygon_center(cls, obj, poly, polygon_is_si=True): pass
     def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass
@@ -983,14 +1066,9 @@ class Spatial:
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
     def translate_obj_to_z_location(cls, obj, z): pass
-    def get_2d_vertices_from_obj(cls, obj): pass
-    def get_scaled_2d_vertices(cls, points): pass
-    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
-    def get_body_representation(cls, obj): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
     def assign_relating_type_to_element(cls, ifc, type, element, relating_type): pass
-    def regen_obj_representation(cls, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
     def toggle_hide_spaces(cls, spaces): pass
     def set_default_container(cls, container): pass
@@ -1064,6 +1142,7 @@ class Surveyor:
 @interface
 class System:
     def create_empty_at_cursor_with_element_orientation(cls, element): pass
+    def create_port_at_cursor(cls, system): pass
     def delete_element_objects(cls, elements): pass
     def disable_editing_system(cls): pass
     def disable_system_editing_ui(cls): pass
@@ -1094,8 +1173,10 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def record_material_usage_attributes(cls, element): pass
+    def restore_material_usage_attributes(cls, element, usage_attributes): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
-    def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, is_global=None): pass
+    def run_geometry_switch_representation(cls, obj=None, representation=None): pass
 
 
 @interface
@@ -1104,16 +1185,15 @@ class Unit:
     def disable_editing_units(cls): pass
     def enable_editing_units(cls): pass
     def export_unit_attributes(cls): pass
+    def get_currency_name(cls): pass
+    def get_project_currency_unit(cls): pass
     def get_scene_unit_name(cls, unit_type): pass
-    def get_scene_unit_si_prefix(cls, unit_type): pass
+    def get_scene_unit_si_prefix(cls, name): pass
     def import_unit_attributes(cls, unit): pass
     def import_units(cls): pass
-    def is_scene_unit_metric(cls): pass
+    def is_si_unit(cls, name): pass
     def is_unit_class(cls, unit, ifc_class): pass
     def set_active_unit(cls, unit): pass
-    def get_project_currency_unit(cls): pass
-    def get_currency_name(cls): pass
-
 
 @interface
 class Voider:

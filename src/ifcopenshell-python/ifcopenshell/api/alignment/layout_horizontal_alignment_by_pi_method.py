@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
-import ifcopenshell.api.alignment
-from ifcopenshell import entity_instance
-
 import math
 from collections.abc import Sequence
+
+import ifcopenshell
+import ifcopenshell.api.alignment
+import ifcopenshell.util.unit
+from ifcopenshell import entity_instance
 
 
 def layout_horizontal_alignment_by_pi_method(
@@ -39,6 +40,8 @@ def layout_horizontal_alignment_by_pi_method(
     """
     if not (len(hpoints) - 2 == len(radii)):
         raise ValueError("radii should have two fewer elements that hpoints")
+
+    angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
 
     xBT, yBT = hpoints[0]
     xPI, yPI = hpoints[1]
@@ -84,7 +87,7 @@ def layout_horizontal_alignment_by_pi_method(
                 StartTag=None,
                 EndTag=None,
                 StartPoint=pt,
-                StartDirection=angleBT,
+                StartDirection=angleBT / angle_unit_scale,
                 StartRadiusOfCurvature=0.0,
                 EndRadiusOfCurvature=0.0,
                 SegmentLength=tangent_run,
@@ -102,7 +105,7 @@ def layout_horizontal_alignment_by_pi_method(
                 StartTag=None,
                 EndTag=None,
                 StartPoint=pc,
-                StartDirection=angleBT,
+                StartDirection=angleBT / angle_unit_scale,
                 StartRadiusOfCurvature=float(radius),
                 EndRadiusOfCurvature=float(radius),
                 SegmentLength=lc,
@@ -130,7 +133,7 @@ def layout_horizontal_alignment_by_pi_method(
             StartTag=None,
             EndTag=None,
             StartPoint=pt,
-            StartDirection=angleBT,
+            StartDirection=angleBT / angle_unit_scale,
             StartRadiusOfCurvature=0.0,
             EndRadiusOfCurvature=0.0,
             SegmentLength=tangent_run,

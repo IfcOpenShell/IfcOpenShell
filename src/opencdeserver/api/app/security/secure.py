@@ -1,17 +1,15 @@
 from __future__ import annotations
-from fastapi import Depends, HTTPException, status, Security
-from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
 
-from datetime import datetime, timedelta
-from passlib.context import CryptContext
-from jose import jwt, JWTError
-
-from models.other import TokenData
-from models.request import User
+import os
+from datetime import datetime, timedelta, timezone
 
 from database.neo4j import db
-import os
-
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
+from jose import JWTError, jwt
+from models.other import TokenData
+from models.request import User
+from passlib.context import CryptContext
 from security.secrets import get_secrets
 
 secrets = get_secrets()
@@ -35,10 +33,8 @@ credentials_exception = HTTPException(
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     payload = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+    expires_delta = expires_delta or timedelta(minutes=15)
+    expire = datetime.now(timezone.utc) + expires_delta
     payload.update({"expires": str(expire)})
     encoded_jwt = jwt.encode(payload, secrets["security_secret_key"], algorithm=os.environ["SECURITY_ALGORITHM"])
     return encoded_jwt

@@ -16,26 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bmesh
+import json
+from math import cos, pi, radians, tan
+from typing import Any, Literal, Union
 
+import bmesh
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+import shapely
+from bpypolyskel import bpypolyskel
+from mathutils import Quaternion, Vector
+
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.model.data import RoofData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
-
-import json
-from math import cos, tan, pi, radians
-from mathutils import Vector, Matrix, Quaternion
-import mathutils.geometry
-from bpypolyskel import bpypolyskel
-import shapely
-from typing import Literal, Union, Any
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
@@ -569,6 +567,8 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = tool.Model.get_roof_props(obj)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        tool.Blender.get_addon_preferences().default_parameters.roof.copy_to(props)
 
         # rejecting original roof shape to be safe
         # taking into account only it's bounding box dimensions

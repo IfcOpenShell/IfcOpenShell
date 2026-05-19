@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import json
+import sys
+from typing import Any, Literal, Optional, Self, TypedDict
+
 import pytest
+
 import bonsai.core.tool
-from typing import Any, Optional, TypedDict, Literal, Self
 
 
 @pytest.fixture
@@ -101,8 +103,22 @@ def geometry():
 
 
 @pytest.fixture
+def ifcgit():
+    prophet = Prophecy(bonsai.core.tool.IfcGit)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def georeference():
     prophet = Prophecy(bonsai.core.tool.Georeference)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def group():
+    prophet = Prophecy(bonsai.core.tool.Group)
     yield prophet
     prophet.verify()
 
@@ -124,6 +140,13 @@ def material():
 @pytest.fixture
 def misc():
     prophet = Prophecy(bonsai.core.tool.Misc)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
+def model():
+    prophet = Prophecy(bonsai.core.tool.Model)
     yield prophet
     prophet.verify()
 

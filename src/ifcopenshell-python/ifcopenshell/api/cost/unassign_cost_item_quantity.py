@@ -86,7 +86,7 @@ class Usecase:
         for product in products:
             ifcopenshell.api.control.unassign_control(
                 self.file,
-                related_object=product,
+                related_objects=[product],
                 relating_control=cost_item,
             )
         self.update_cost_item_count(cost_item)

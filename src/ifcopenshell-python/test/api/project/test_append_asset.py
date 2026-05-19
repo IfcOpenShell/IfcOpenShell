@@ -16,26 +16,28 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
-import ifcopenshell.api.layer
-import ifcopenshell.api.geometry
-import ifcopenshell.api.georeference
-import ifcopenshell.api.pset
-import ifcopenshell.api.root
-import ifcopenshell.api.type
+import numpy as np
+
+import ifcopenshell.api.classification
+import ifcopenshell.api.context
 import ifcopenshell.api.cost
 import ifcopenshell.api.feature
-import ifcopenshell.api.style
-import ifcopenshell.api.context
-import ifcopenshell.api.project
+import ifcopenshell.api.geometry
+import ifcopenshell.api.georeference
+import ifcopenshell.api.layer
 import ifcopenshell.api.material
-import ifcopenshell.api.profile
-import ifcopenshell.api.unit
 import ifcopenshell.api.owner.settings
+import ifcopenshell.api.profile
+import ifcopenshell.api.project
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.style
+import ifcopenshell.api.type
+import ifcopenshell.api.unit
+import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-import ifcopenshell.util.unit
-import numpy as np
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
@@ -406,6 +408,29 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.feature.add_feature(library, feature=opening, element=element)
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         assert self.file.by_type("IfcWall")[0].HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
+
+    def test_append_a_product_with_unrelated_relationships_to_openings(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        opening = ifcopenshell.api.root.create_entity(library, ifc_class="IfcOpeningElement")
+        classification = ifcopenshell.api.classification.add_classification(
+            library, classification="MyCustomClassification"
+        )
+        ifcopenshell.api.classification.add_reference(
+            library,
+            products=[element, opening],
+            classification=classification,
+            identification="W_01",
+            name="Interior Walls",
+        )
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        wall = self.file.by_type("IfcWall")[0]
+        assert wall
+        references = list(ifcopenshell.util.classification.get_references(wall))
+        assert len(references) == 1
+        assert references[0].is_a("IfcClassificationReference")
+        assert not self.file.by_type("IfcOpeningElement")
 
     def test_append_a_product_when_projects_have_georeference(self):
         ifc_file = ifcopenshell.file()

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pyver: [py39, py310, py311, py312, py313]
+        pyver: [py310, py311, py312, py313, py314]
         config:
           - {
             name: "Windows 64bit",
@@ -38,10 +38,10 @@ jobs:
             short_name: macosm164
           }
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+      - uses: actions/setup-python@v6 # https://github.com/actions/setup-python
         with:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified

@@ -53,13 +53,16 @@ Example:
     for wall in walls:
         print(wall.Name)
 """
+
 from __future__ import annotations
+
 import os
 import sys
-import zipfile
 import tempfile
+import zipfile
+from collections.abc import Generator, Sequence
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Any, overload, Literal
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union, overload
 
 if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
@@ -85,18 +88,22 @@ try:
 except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
-from .file import file
+# `_file`, `_stream` is used only for annotations inside this file,
+# see https://github.com/microsoft/pyright/discussions/9065.
 from . import guid
 from .entity_instance import entity_instance, register_schema_attributes
+from .file import file, rocksdb_lazy_instance
+from .file import file as _file
 from .sql import sqlite, sqlite_entity
 
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
 __all__ = [
-    "ifcopenshell_wrapper",
+    "entity_instance",
     "file",
     "guid",
-    "entity_instance",
+    "ifcopenshell_wrapper",
+    "rocksdb_lazy_instance",
     "sqlite",
     "sqlite_entity",
     "stream",
@@ -104,7 +111,8 @@ __all__ = [
 ]
 
 try:
-    from .stream import stream, stream_entity
+    from .stream import stream, stream_entity  # ty: ignore[possibly-missing-import]
+    from .stream import stream as _stream  # ty: ignore[possibly-missing-import]
 except:
     pass
 
@@ -123,25 +131,33 @@ class SchemaError(Error):
 
 @overload
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[False] = False
-) -> Union[file, sqlite]: ...
+    path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[False] = False
+) -> Union[_file, sqlite]: ...
 @overload
-def open(path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: Literal[True]) -> stream: ...
+def open(path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[True]) -> _stream: ...
 @overload
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, *, should_stream: bool
-) -> Union[file, sqlite, stream]: ...
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: bool = False,
+    readonly: bool = False,
+) -> Union[_file, sqlite, _stream]: ...
 def open(
-    path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False
-) -> Union[file, sqlite, stream]:
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    should_stream: bool = False,
+    readonly: bool = False,
+    mmap: bool = False,
+    bypass_types: Optional[Sequence[str]] = None,
+) -> Union[_file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
     :param should_stream: Whether to open the file in streaming mode. Could be useful
         for reading large files.
 
     You can specify a file format. If no format is given, it is guessed from
-    its extension. Currently supported specified format: .ifc | .ifcZIP |
-    .ifcXML.
+    its extension.
 
     You can then filter by element ID, class, etc, and subscript by id or guid.
 
@@ -158,8 +174,8 @@ def open(
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
     path = Path(path)
-    if not path.is_file():
-        raise FileNotFoundError(f"File does not exist: '{path}'.")
+    if not path.exists():
+        raise FileNotFoundError(f"Path does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
     if format == ".ifcXML":
@@ -179,7 +195,22 @@ def open(
         return sqlite(path)
     if should_stream:
         return stream(path)
-    f = ifcopenshell_wrapper.open(str(path.absolute()))
+    if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly=readonly)
+    elif bypass_types:
+        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag())
+        for ty in bypass_types:
+            f.bypass_type(ty)
+        if mmap:
+            # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
+            f.initialize(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
+        else:
+            f.initialize(str(path.absolute()))
+    elif mmap:
+        # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
+        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
+    else:
+        f = ifcopenshell_wrapper.open(str(path.absolute()))
     return file(f)
 
 
@@ -260,7 +291,10 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", None]:
+SupportedFormat = Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", "rocksdb", None]
+
+
+def guess_format(path: Path) -> SupportedFormat:
     """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``
@@ -275,7 +309,9 @@ def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON"
     this internally to guess the file format.
     """
     suffix = path.suffix.lower()
-    if suffix == ".ifc":
+    if path.is_dir():
+        return "rocksdb"
+    elif suffix == ".ifc":
         return ".ifc"
     elif suffix in (".ifczip", ".zip"):
         return ".ifcZIP"
@@ -286,6 +322,69 @@ def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON"
     elif suffix in (".ifcsqlite", ".sqlite", ".db"):
         return ".ifcSQLite"
     return None
+
+
+def stream2(path: Union[Path, str], mmap: bool = False, page_size: int = 0):
+    """Streams the content of a file path from disk, yielding each instance
+    as a dictionary.
+
+    :param path: Input file path
+    :param mmap: Open the file contents using memory mapping
+    :param page_size: Open file in python and feed chunks to the parser.
+
+    :yield: Entity instance dictionaries
+    """
+    if page_size:
+        import builtins
+
+        f = builtins.open(path, encoding="ascii")
+        strm = ifcopenshell_wrapper.InstanceStreamer()
+        strm.pushPage(f.read(page_size))
+        finished = False
+        while True:
+            while strm.hasSemicolon():
+                if inst := strm.readInstancePy():
+                    yield inst
+                else:
+                    finished = True
+                    break
+            if finished:
+                break
+            else:
+                if data := f.read(page_size):
+                    strm.pushPage(data)
+                else:
+                    break
+    else:
+        streamer = ifcopenshell_wrapper.InstanceStreamer(str(path), mmap)
+        while streamer:
+            if inst := streamer.readInstancePy():
+                yield inst
+
+
+def stream2_from_string(data: str) -> Generator[dict]:
+    """Streams the content of a file path from string, yielding each instance
+    as a dictionary.
+
+    :param data: Input data string
+    :yield: entity instance dictionaries
+    """
+    streamer = ifcopenshell_wrapper.stream_from_string(data)
+    while streamer:
+        if inst := streamer.read_instance_py():
+            yield inst
+
+
+def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[Path, str]) -> None:
+    """Converts an IFC-SPF file on disk to the IfcOpenShell-specific
+    RocksDB encoding. RocksDB is an embedded key-value store that allows
+    partial reads and is therefore more memory efficient with larger files.
+
+    :param ifcspf_path: Input file path - needs to exist
+    :param rocksdb_path: RocksDB file path (directory) - may exist, but result may then be invalid
+    """
+    ser = ifcopenshell_wrapper.RocksDbSerializer(str(ifcspf_path), str(rocksdb_path), True)
+    ser.finalize()
 
 
 version_core = ifcopenshell_wrapper.version()

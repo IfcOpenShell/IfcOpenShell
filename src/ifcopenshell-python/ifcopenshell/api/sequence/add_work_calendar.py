@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.root
 import ifcopenshell.api.project
+import ifcopenshell.api.root
 
 
 def add_work_calendar(
@@ -75,7 +75,7 @@ def add_work_calendar(
         # We associate the calendar with the construction root task. All
         # subtasks underneath the construction work task will also inherit
         # this calendar by default (though you can override them).
-        ifcopenshell.api.control.assign_control(model, relating_control=calendar, related_object=task)
+        ifcopenshell.api.control.assign_control(model, relating_control=calendar, related_objects=[task])
     """
     work_calendar = ifcopenshell.api.root.create_entity(
         file,

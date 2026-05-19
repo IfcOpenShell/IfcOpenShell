@@ -8,6 +8,9 @@ Project Overview
    .. |location| image:: /images/location-scene.svg
    .. |>| image:: /images/location-breadcrumb.svg
 
+
+.. include:: /_incomplete_message.rst
+
 The Project Overview sub-tab in the Bonsai interface provides a central hub
 for accessing and managing essential information and settings related to an IFC project.
 Located within the Scene Properties tab of Property Editor, this sub-tab is organized into several panels, each focusing on a specific aspect of the project.

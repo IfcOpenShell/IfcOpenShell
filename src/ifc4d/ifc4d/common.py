@@ -1,12 +1,12 @@
 from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+from typing import Any, TypedDict, Union
+
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.control
 import ifcopenshell.api.resource
 import ifcopenshell.api.sequence
-import ifcopenshell.util.date
-from datetime import datetime, timedelta, date
-from typing import Union, Any, TypedDict
 from typing_extensions import NotRequired
 
 
@@ -261,6 +261,7 @@ class ScheduleIfcGenerator:
         wbs: Union[WBSEntry, None],
         work_schedule: Union[ifcopenshell.entity_instance, None],
     ) -> None:
+        assert self.file
         activity["ifc"] = ifcopenshell.api.sequence.add_task(
             self.file,
             work_schedule=None if wbs else work_schedule,
@@ -283,7 +284,7 @@ class ScheduleIfcGenerator:
         ifcopenshell.api.control.assign_control(
             self.file,
             relating_control=calendar["ifc"],
-            related_object=activity["ifc"],
+            related_objects=[activity["ifc"]],
         )
         ifcopenshell.api.sequence.edit_task_time(
             self.file,

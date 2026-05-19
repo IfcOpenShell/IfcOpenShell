@@ -44,20 +44,26 @@ Learning how to use the bSDD is best done by reading the official Swagger API do
 
 .. code-block:: python
 
+    from bsdd import Client,apply_ifc_classification_properties
+    from pprint import pprint
+
     client = Client()
 
     # Get a list of "dictionary domains". For example, Uniclass (by the NBS organisation) might be one domain.
-    print(client.Domain())
+    pprint(client.get_dictionary())
 
     # For example, search the Netherland's Nlsfb2005 classification standard for all codes that apply to an IfcWall.
-    print(client.SearchListOpen("http://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005-2.2", RelatedIfcEntity="IfcWall"))
+    pprint(client.search_in_dictionary("https://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005/2.2", related_ifc_entity="IfcWall"))
+
+    # And, search the classification for external walls(buitenwanden) that apply to an IfcWall.
+    pprint(client.search_class(search_text='buitenwanden',dictionary_uris="https://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005/2.2", related_ifc_entities=["IfcWall"]))
 
     # Alternatively, search up a particular classification code.
-    data = client.Classification("http://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005-2.2/class/21.21")
-    print(data)
+    data = client.get_class("https://identifier.buildingsmart.org/uri/nlsfb/nlsfb2005/2.2/class/21.21")
+    pprint(data)
 
     # You may also apply default properties (if the classification system on
     # the bSDD defines them) to your IFC element. For example, if a
     # classification code is for a load bearing wall, it can automatically set
     # the "LoadBearing" property to True for you.
-    apply_ifc_classification_properties(ifc_file, element, data["classificationProperties"])
+    apply_ifc_classification_properties(ifc_file, element, data["classProperties"])

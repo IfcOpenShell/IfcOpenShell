@@ -40,17 +40,18 @@ if "bpy" in locals():
     if "ifcopenshell" in locals():
         importlib.reload(ifcopenshell)
 
+import logging
+import os
+from collections import defaultdict
+
+import bpy
+import mathutils
 from bpy.props import (
     BoolProperty,
     IntProperty,
     StringProperty,
 )
 from bpy_extras.io_utils import ImportHelper
-from collections import defaultdict
-import bpy
-import logging
-import mathutils
-import os
 
 major, minor = bpy.app.version[0:2]
 transpose_matrices = minor >= 62
@@ -176,7 +177,8 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
                             mat.blend_method = "HASHED"
                             mat.use_screen_refraction = True
                             mat.refraction_depth = 0.1
-                            mat.use_nodes = True
+                            if bpy.app.version >= (5, 0, 0):
+                                mat.use_nodes = True
                             bsdf = next(n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
                             bsdf.inputs[15].default_value = v
                         else:

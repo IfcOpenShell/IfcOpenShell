@@ -2,6 +2,8 @@
 Project 2: Building a Bungalow
 ==============================
 
+.. include:: /_incomplete_message.rst
+
 In this project, we'll take your Bonsai skills to the next level by designing a complete bungalow.
 You'll learn about roof design, advanced foundations, structural elements, and more complex MEP systems.
 We'll also introduce basic costing and scheduling concepts.
@@ -34,7 +36,7 @@ Tutorial Steps
 2. Define project parameters (site conditions, climate zone, etc.)
 3. Create a basic site plan
 
-.. note:: See :doc:`/users/modeling/starting_new_project` for detailed instructions.
+.. note:: See :doc:`/guides/authoring/starting_new_project` for detailed instructions.
 
 
 2. Advanced Foundation Design

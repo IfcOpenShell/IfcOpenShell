@@ -92,7 +92,7 @@ You may filter elements and only load a portion of the model. Click on
 .. image:: images/advanced-mode.png
 
 This will preload the model and present you with model loading options in the
-:doc:`Project Info </users/user_interface/property_editor/scene_editor/project_overview/project_info>`
+:doc:`Project Info </reference/project_overview/project_info>`
 panel.
 
 .. image:: images/advanced-mode-settings.png

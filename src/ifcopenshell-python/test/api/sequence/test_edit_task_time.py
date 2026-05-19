@@ -17,11 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import test.bootstrap
-import ifcopenshell.api.root
-import ifcopenshell.api.control
-import ifcopenshell.api.sequence
 
+import ifcopenshell.api.control
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
+import test.bootstrap
 
 # NOTE: IfcTaskTime was introduced in IFC4
 
@@ -95,7 +95,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
         task = self.file.createIfcTask()
-        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_object=task)
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
         ifcopenshell.api.sequence.edit_task_time(
             self.file,
@@ -195,7 +195,7 @@ class TestEditTaskTime(test.bootstrap.IFC4):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         calendar = ifcopenshell.api.sequence.add_work_calendar(self.file)
         task = self.file.createIfcTask()
-        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_object=task)
+        ifcopenshell.api.control.assign_control(self.file, relating_control=calendar, related_objects=[task])
         task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
         ifcopenshell.api.sequence.edit_task_time(
             self.file,

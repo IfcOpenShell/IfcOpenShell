@@ -16,12 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import ifcopenshell
-import ifcopenshell.util.date
-import ifcopenshell.util.classification
+
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 
 
 def refresh():

@@ -17,20 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import bpy
+
 import json
-import ifccsv
-import logging
-import tempfile
+from collections import Counter
+from typing import TYPE_CHECKING
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.selector
-import bonsai.tool as tool
-import bonsai.bim.module.drawing.scheduler as scheduler
 from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.bim.module.drawing.scheduler as scheduler
+import bonsai.tool as tool
 from bonsai.bim.handler import refresh_ui_data
-from typing import TYPE_CHECKING
-from collections import Counter
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -269,7 +268,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
         if props.format == "web":
-            if not context.scene.WebProperties.is_connected:
+            if not tool.Web.get_web_props().is_connected:
                 bpy.ops.bim.connect_websocket_server()
             df = ifc_csv.dataframe
             assert df is not None

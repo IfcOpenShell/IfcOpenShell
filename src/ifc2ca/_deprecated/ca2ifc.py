@@ -17,10 +17,11 @@
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import ifcopenshell
-import ifcopenshell.guid
 import os
 from datetime import datetime
+
+import ifcopenshell
+import ifcopenshell.guid
 
 
 class CA2IFC:
@@ -309,7 +310,7 @@ class CA2IFC:
         return ifcopenshell.guid.new()
 
     def create_header(self):
-        self.f.wrapped_data.header.file_name.name = os.path.basename(self.outputFilename)
+        self.f.header.file_name.name = os.path.basename(self.outputFilename)
 
     def create_global_axes(self):
         self.xAxis = self.f.createIfcDirection((1.0, 0.0, 0.0))

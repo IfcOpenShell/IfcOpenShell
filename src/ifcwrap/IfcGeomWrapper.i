@@ -71,6 +71,7 @@
 }
 
 %newobject IfcGeom::Representation::BRep::item;
+%newobject IfcGeom::Representation::BRep::as_compound;
 
 %newobject IfcGeom::ConversionResultShape::halfspaces;
 %newobject IfcGeom::ConversionResultShape::box;
@@ -78,7 +79,9 @@
 %newobject IfcGeom::ConversionResultShape::add;
 %newobject IfcGeom::ConversionResultShape::subtract;
 %newobject IfcGeom::ConversionResultShape::intersect;
+%newobject IfcGeom::ConversionResultShape::concat;
 %newobject IfcGeom::ConversionResultShape::moved;
+%newobject IfcGeom::ConversionResultShape::wrap_in_compound;
 
 %newobject IfcGeom::ConversionResultShape::area;
 %newobject IfcGeom::ConversionResultShape::volume;
@@ -112,6 +115,14 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	}
 }
 
+%typemap(out) boost::optional<bool> {
+    if ($1) {
+        $result = PyBool_FromLong(*$1 ? 1 : 0);
+    } else {
+        Py_INCREF(Py_None);
+        $result = Py_None;
+    }
+}
 
 %typemap(in) ifcopenshell::geometry::taxonomy::item::ptr {
 	// @this is really annoying, but apparently inheritance
@@ -264,6 +275,7 @@ namespace {
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
 %include "../serializers/TtlWktSerializer.h"
+%include "../serializers/JsonSerializer.h"
 
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
@@ -617,6 +629,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	$result = boost::apply_visitor(ShapeRTTI(), (boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*>) $1);
 }
 
+%newobject construct_iterator;
 %newobject construct_iterator_with_include_exclude;
 %newobject construct_iterator_with_include_exclude_globalid;
 %newobject construct_iterator_with_include_exclude_id;
@@ -624,10 +637,14 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
 // anyway it does not matter as SWIG generates C code without actual constructors
 %inline %{
+	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, int num_threads) {
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, num_threads);
+	}
+
 	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::entity_filter ef{ include, false, elems_set };
-		return new IfcGeom::Iterator(geometry_library, settings, file, {ef}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {ef}, num_threads);
 	}
 
 	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<std::string> elems, bool include, int num_threads) {
@@ -636,13 +653,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
 	}
 
 	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, IfcParse::IfcFile* file, std::vector<int> elems, bool include, int num_threads) {
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
-		return new IfcGeom::Iterator(geometry_library, settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
 	}
 %}
 
@@ -868,7 +885,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->file_;
 			
-		ifcopenshell::geometry::Converter kernel(geometry_library, file, st);
+		ifcopenshell::geometry::Converter kernel(ifcopenshell::geometry::kernels::construct(file, geometry_library, st), file, st);
 			
 		if (typename Schema::IfcProduct* product = instance->as<typename Schema::IfcProduct>()) {
 			if (representation) {
@@ -1149,6 +1166,7 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %ignore svgfill::line_segments_to_polygons;
 %ignore svgfill::svg_to_polygons;
 %ignore svgfill::arrange_polygons;
+%ignore svgfill::abstract_arrangement;
 
 %template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
 %template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
@@ -1270,9 +1288,9 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		}	
 	}
 
-	std::vector<svgfill::polygon_2> arrange_polygons(const std::vector<svgfill::polygon_2>& polygons) {
+	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons) {
 		std::vector<svgfill::polygon_2> r;
-		if (svgfill::arrange_polygons(polygons, r)) {
+		if (svgfill::arrange_polygons(settings, polygons, r)) {
 			return r;
 		} else {
 			throw std::runtime_error("Failed to arrange polygons");

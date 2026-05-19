@@ -194,7 +194,7 @@ void IfcGeom::Iterator::process_concurrently() {
 
 	kernel_pool.reserve(conc_threads);
 	for (unsigned i = 0; i < conc_threads; ++i) {
-		kernel_pool.push_back(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_));
+		kernel_pool.push_back(new ifcopenshell::geometry::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(converter_->kernel()->clone()), ifc_file, settings_));
 	}
 
 	std::vector<std::future<geometry_conversion_result*>> threadpool;
@@ -367,11 +367,13 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 	}));
 
 	if (!brep) {
+        Logger::SetProduct(boost::none);
 		return;
 	}
 
 	auto elem = process_based_on_settings(settings, brep);
 	if (!elem) {
+        Logger::SetProduct(boost::none);
 		return;
 	}
 
@@ -394,6 +396,8 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 			}
 		}
 	}
+
+	Logger::SetProduct(boost::none);
 }
 
 IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geometry::Settings settings, IfcGeom::BRepElement* elem, IfcGeom::TriangulationElement* previous)
@@ -560,13 +564,19 @@ IfcGeom::Element* IfcGeom::Iterator::get()
 			// We need to find all the parents
 			while (parent_object != NULL && hasParent && parent_object->parent_id() != -1) {
 				// Find the next parent
-				try {
-					parent_object = get_object(parent_object->parent_id());
-				} catch (const std::exception& e) {
-					Logger::Error(e);
-					hasParent = false;
-				}
-
+                auto pid = parent_object->parent_id();
+                auto ifc_product = ifc_file->instance_by_id(pid)->as<IfcUtil::IfcBaseEntity>();
+				if (ifc_product->declaration().name() == "IfcProject") {
+                    hasParent = false;
+                } else {
+					try {
+						parent_object = get_object(pid);
+					} catch (const std::exception& e) {
+						Logger::Error(e);
+						hasParent = false;
+					}
+                }
+				
 				// Add the previously found parent to the vector
 				if (hasParent) parents.insert(parents.begin(), parent_object);
 
@@ -610,17 +620,7 @@ const IfcGeom::Element* IfcGeom::Iterator::get_object(int id) {
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
-	}
-#ifdef IFOPSH_WITH_OPENCASCADE
-	catch (const Standard_Failure& e) {
-		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Error(e.GetMessageString());
-		} else {
-			Logger::Error("Unknown error returning product");
-		}
-	}
-#endif
-	catch (...) {
+	} catch (...) {
 		Logger::Error("Unknown error returning product");
 	}
 
@@ -635,18 +635,7 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create() {
 	} catch (const std::exception& e) {
 		Logger::Error(e);
 		had_error_processing_elements_ = true;
-	}
-#ifdef IFOPSH_WITH_OPENCASCADE
-	catch (const Standard_Failure& e) {
-		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Error(e.GetMessageString());
-		} else {
-			Logger::Error("Unknown error creating geometry");
-		}
-		had_error_processing_elements_ = true;
-	}
-#endif
-	catch (...) {
+	} catch (...) {
 		Logger::Error("Unknown error creating geometry");
 		had_error_processing_elements_ = true;
 	}
@@ -805,7 +794,7 @@ ifcopenshell::geometry::taxonomy::direction3::ptr IfcGeom::Iterator::remove_offs
 			double translation_amnt = bb.norm();
 			if (translation_amnt > settings_.get<MaxOffset>().get()) {
 				// block has an underlying mutable ref to the matrix
-				bb -= vec;
+				bb += vec;
 			} else {
 				all_applied = false;
 			}

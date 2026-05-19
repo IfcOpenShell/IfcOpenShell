@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import tempfile
-import ifcopenshell.api.root
-import ifcpatch
 from pathlib import Path
+
+import ifcopenshell.api.root
+
+import ifcpatch
 
 
 class Test:
@@ -50,10 +52,10 @@ class Test:
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
 
-        output_path = Path(tempfile.mktemp())
+        output_path = Path(tempfile.mkstemp()[1])
         try:
-            assert not output_path.exists()
+            assert output_path.stat().st_size == 0
             ifcpatch.write(patcher.get_output(), output_path)
-            assert output_path.exists()
+            assert output_path.stat().st_size != 0
         finally:
             output_path.unlink()

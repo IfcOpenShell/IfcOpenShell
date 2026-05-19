@@ -16,11 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-import test.bootstrap
-import ifcopenshell.api
+
 import ifcopenshell.api.control
 import ifcopenshell.api.sequence
+import test.bootstrap
 
 
 # NOTE: sequence module features relies on entities introduced in IFC4
@@ -38,7 +37,7 @@ class TestRemoveWorkCalendar(test.bootstrap.IFC4):
 
         # Assign tasks.
         task = ifcopenshell.api.sequence.add_task(self.file)
-        ifcopenshell.api.control.assign_control(self.file, work_calendar, task)
+        ifcopenshell.api.control.assign_control(self.file, work_calendar, [task])
 
         ifcopenshell.api.sequence.remove_work_calendar(self.file, work_calendar)
 

@@ -17,14 +17,13 @@
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import numpy as np
+
 import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
-
+import ifcopenshell.util.placement
+import numpy as np
 from behave import step
-
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.lang import _
@@ -234,7 +233,7 @@ def step_impl(context, guid, number):
     site = util.assert_guid(IfcStore.file, guid)
     util.assert_type(site, "IfcSite")
     ref = util.assert_attribute(site, "RefLongitude")
-    number = ifcopenshell.util.geolocation.dd2dms(number, use_ms=(len(ref) == 4))
+    number = ifcopenshell.util.geolocation.dd2dms(number, use_us=(len(ref) == 4))
     util.assert_attribute(site, "RefLongitude", number)
 
 
@@ -244,7 +243,7 @@ def step_impl(context, guid, number):
     site = util.assert_guid(IfcStore.file, guid)
     util.assert_type(site, "IfcSite")
     ref = util.assert_attribute(site, "RefLatitude")
-    number = ifcopenshell.util.geolocation.dd2dms(number, use_ms=(len(ref) == 4))
+    number = ifcopenshell.util.geolocation.dd2dms(number, use_us=(len(ref) == 4))
     util.assert_attribute(site, "RefLatitude", number)
 
 

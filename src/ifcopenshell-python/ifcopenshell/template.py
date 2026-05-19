@@ -19,12 +19,11 @@
 
 import time
 import uuid
+from typing import Optional
 
 from .file import file
 from .guid import compress
 from .ifcopenshell_wrapper import version
-from typing import Optional
-
 
 # A quick way to setup an 'empty' IFC file, taken from:
 # http://academy.ifcopenshell.org/creating-a-simple-wall-with-property-set-and-quantity-information/

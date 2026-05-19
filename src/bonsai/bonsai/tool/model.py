@@ -17,56 +17,67 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import bpy
-import json
-import bmesh
-import shapely
-import collections
+
 import collections.abc
-import numpy as np
+import json
+from collections.abc import Iterable, Sequence
+from copy import deepcopy
+from math import atan, cos, degrees, pi, radians
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Optional,
+    TypedDict,
+    TypeVar,
+    Union,
+    assert_never,
+)
+
+import bmesh
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import mathutils
+import numpy as np
+import shapely
+from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
-import mathutils
-from math import atan, cos, degrees, pi, radians
-from mathutils import Matrix, Vector
-from copy import deepcopy
-from functools import partial
 from bonsai.bim import import_ifc
-
-from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
-from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict, assert_never
-from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
 
 if TYPE_CHECKING:
+    import ifcsverchok.nodes.ifc.shape_builder.shape_output
+    import sverchok.node_tree
+    from sverchok.core.node_group import SvGroupTreeNode
+
     from bonsai.bim.module.model.prop import (
-        BIMModelProperties,
-        BIMDoorProperties,
         BIMArrayProperties,
-        BIMRoofProperties,
-        BIMWindowProperties,
-        BIMStairProperties,
-        BIMRailingProperties,
+        BIMDoorProperties,
         BIMExternalParametricGeometryProperties,
+        BIMModelProperties,
         BIMPolylineProperties,
-        BIMProductPreviewProperties,
+        BIMRailingProperties,
+        BIMRoofProperties,
+        BIMStairProperties,
+        BIMSverchokProperties,
+        BIMWindowProperties,
     )
 
 
@@ -77,23 +88,27 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_door_props(cls, obj: bpy.types.Object) -> BIMDoorProperties:
-        return obj.BIMDoorProperties
+        return obj.BIMDoorProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_window_props(cls, obj: bpy.types.Object) -> BIMWindowProperties:
-        return obj.BIMWindowProperties
+        return obj.BIMWindowProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
-        return obj.BIMStairProperties
+        return obj.BIMStairProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
-        return obj.BIMRoofProperties
+        return obj.BIMRoofProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
-        return obj.BIMRailingProperties
+        return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_sverchok_props(cls, obj: bpy.types.Object) -> BIMSverchokProperties:
+        return obj.BIMSverchokProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_array_props(cls, obj: bpy.types.Object) -> BIMArrayProperties:
@@ -107,11 +122,6 @@ class Model(bonsai.core.tool.Model):
     def get_polyline_props(cls) -> BIMPolylineProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def get_product_preview_props(cls) -> BIMProductPreviewProperties:
-        assert (scene := bpy.context.scene)
-        return scene.BIMProductPreviewProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -144,9 +154,10 @@ class Model(bonsai.core.tool.Model):
         for prop_name in data:
             if prop_name in non_si_props:
                 continue
-            prop_value = data[prop_name]
+            # `None` is used by `custom_first_last_tread_run`.
+            prop_value: Iterable[float | None] | float = data[prop_name]
             if isinstance(prop_value, collections.abc.Iterable):
-                data[prop_name] = [v * si_conversion for v in prop_value]
+                data[prop_name] = [v if v is None else v * si_conversion for v in prop_value]
             else:
                 data[prop_name] = prop_value * si_conversion
         return data
@@ -237,6 +248,8 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def export_surface(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        ifc_file = tool.Ifc.get()
+        builder = ShapeBuilder(ifc_file)
         p1, p2, p3 = [v.co.copy() for v in obj.data.vertices[0:3]]
 
         edge1 = p2 - p1
@@ -270,13 +283,8 @@ class Model(bonsai.core.tool.Model):
         cls.bm.edges.ensure_lookup_table()
 
         surface = tool.Ifc.get().createIfcCurveBoundedPlane()
-        surface.BasisSurface = tool.Ifc.get().createIfcPlane(
-            tool.Ifc.get().createIfcAxis2Placement3D(
-                tool.Ifc.get().createIfcCartesianPoint([o / cls.unit_scale for o in p1]),
-                tool.Ifc.get().createIfcDirection([float(o) for o in z_axis]),
-                tool.Ifc.get().createIfcDirection([float(o) for o in x_axis]),
-            )
-        )
+        placement = builder.create_axis2_placement_3d([o / cls.unit_scale for o in p1], z_axis, x_axis)
+        surface.BasisSurface = ifc_file.create_entity("IfcPlane", placement)
 
         surface.OuterBoundary = tool.Ifc.get().add(profile_def.OuterCurve)
         if profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
@@ -624,6 +632,71 @@ class Model(bonsai.core.tool.Model):
             if not openings[i].obj:
                 openings.remove(i)
 
+    @classmethod
+    def save_custom_offset_to_pset(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        """Save custom offset settings to BBIM_MaterialLayer pset."""
+        props = tool.Material.get_object_material_props(obj)
+
+        if not props.use_custom_offset:
+            # Remove pset if custom offset is disabled
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+            if pset:
+                pset_entity = tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset_entity)
+            return
+
+        # Determine which reference to save based on usage type
+        usage_type = tool.Model.get_usage_type(element)
+        custom_wall_reference = None
+        custom_slab_reference = None
+
+        if usage_type == "LAYER2":
+            custom_wall_reference = props.custom_wall_reference
+        elif usage_type == "LAYER3":
+            custom_slab_reference = props.custom_slab_reference
+
+        # Get or create pset
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+        if pset_data:
+            pset = tool.Ifc.get().by_id(pset_data["id"])
+        else:
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_MaterialLayer")
+
+        # Save properties (store in SI units)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        properties = {
+            "UseCustomOffset": props.use_custom_offset,
+            "CustomOffset": props.custom_offset / unit_scale,
+            "CustomWallReference": custom_wall_reference if custom_wall_reference else "",
+            "CustomSlabReference": custom_slab_reference if custom_slab_reference else "",
+        }
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=properties)
+
+    @classmethod
+    def load_custom_offset_from_pset(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        """Load custom offset settings from BBIM_MaterialLayer pset."""
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+        if not pset:
+            return
+
+        props = tool.Material.get_object_material_props(obj)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        # Load properties
+        props.use_custom_offset = pset.get("UseCustomOffset", False)
+        props.custom_offset = pset.get("CustomOffset", 0.0) * unit_scale  # Convert from SI
+
+        # Load the appropriate reference based on usage type
+        usage_type = tool.Model.get_usage_type(element)
+        if usage_type == "LAYER2":
+            custom_wall_ref = pset.get("CustomWallReference", "")
+            if custom_wall_ref:
+                props.custom_wall_reference = custom_wall_ref
+        elif usage_type == "LAYER3":
+            custom_slab_ref = pset.get("CustomSlabReference", "")
+            if custom_slab_ref:
+                props.custom_slab_reference = custom_slab_ref
+
     class MaterialLayerParameters(TypedDict):
         """Float values are in project units."""
 
@@ -654,6 +727,60 @@ class Model(bonsai.core.tool.Model):
             offset=offset,
             direction_sense=direction_sense,
         )
+
+    @classmethod
+    def get_material_layer_custom_offset(
+        cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object
+    ) -> Optional[float]:
+        """Get custom offset value, reading from pset if props are not set."""
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        layer_params = tool.Model.get_material_layer_parameters(element)
+        layer_offset = layer_params["offset"]
+        thickness = layer_params["thickness"] / unit_scale
+        props = tool.Material.get_object_material_props(obj)
+
+        # Try to load from pset if not already in props
+        if not props.use_custom_offset:
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
+            if pset and pset.get("UseCustomOffset", False):
+                # Load from pset
+                custom_offset = pset.get("CustomOffset", 0.0)
+                usage_type = tool.Model.get_usage_type(element)
+
+                if usage_type == "LAYER2":
+                    custom_offset_reference = pset.get("CustomWallReference", "CENTER")
+                elif usage_type == "LAYER3":
+                    custom_offset_reference = pset.get("CustomSlabReference", "MIDDLE")
+                else:
+                    return None
+            else:
+                return None
+        else:
+            # Use current props
+            custom_offset = props.custom_offset / unit_scale
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                custom_offset_reference = props.custom_wall_reference
+            elif tool.Model.get_usage_type(element) == "LAYER3":
+                custom_offset_reference = props.custom_slab_reference
+            else:
+                return None
+
+        direction_sense = layer_params["direction_sense"]
+
+        if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
+            layer_offset = custom_offset - thickness * unit_scale
+        if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
+            layer_offset = custom_offset - (thickness / 2) * unit_scale
+        if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
+            direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
+        ):
+            layer_offset = custom_offset
+        if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
+            layer_offset = custom_offset + (thickness / 2) * unit_scale
+        if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
+            layer_offset = custom_offset + thickness * unit_scale
+
+        return layer_offset / unit_scale
 
     @classmethod
     def get_booleans(
@@ -754,17 +881,21 @@ class Model(bonsai.core.tool.Model):
             elif material.is_a("IfcMaterialLayerSet"):
                 axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
                 if axis is None:
-                    if element.is_a() in [
+                    if element.is_a() in (
                         "IfcSlabType",
                         "IfcRoofType",
                         "IfcRampType",
                         "IfcPlateType",
-                        "IfcCovering",
-                        "IfcFurniture",
-                    ]:
+                        "IfcSlab",
+                        "IfcRoof",
+                        "IfcRamp",
+                        "IfcPlate",
+                    ):
                         axis = "AXIS3"
-                    else:
+                    elif element.is_a() in ("IfcWallType", "IfcWall"):
                         axis = "AXIS2"
+                    else:
+                        return
                 return f"LAYER{axis[-1]}"
             elif material.is_a("IfcMaterialProfileSetUsage"):
                 # TODO: remove after we support editing profile usages with IfcRevolvedAreaSolid.
@@ -781,7 +912,9 @@ class Model(bonsai.core.tool.Model):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, list[Vector]]:
+    def get_wall_axis(
+        cls, obj: bpy.types.Object, layers: Optional[MaterialLayerParameters] = None
+    ) -> dict[str, list[Vector]]:
         """Each item of a resulting dictionary is a list of 2 2D vectors."""
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
@@ -921,6 +1054,7 @@ class Model(bonsai.core.tool.Model):
 
             tool.Model.regenerate_array(obj, array_data)
 
+            array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
             json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
@@ -933,23 +1067,17 @@ class Model(bonsai.core.tool.Model):
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
     ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
-        tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
+        parent_element = tool.Ifc.get_entity(parent_obj)
+
+        if pset := ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array"):
+            ifcopenshell.api.pset.remove_pset(
+                tool.Ifc.get(), product=parent_element, pset=tool.Ifc.get().by_id(pset["id"])
+            )
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj_stack = [parent_obj]
 
         for array_i, array in enumerate(data):
-            # for `sync_children` we remove all previously generated children to regenerate them again
-            # to assure they are in complete sync (psets, etc) with the array parent
-            if array["sync_children"]:
-                removed_children = set(array["children"])
-                for removed_child in removed_children:
-                    element = tool.Ifc.get().by_guid(removed_child)
-                    obj = tool.Ifc.get_object(element)
-                    if obj:
-                        tool.Geometry.delete_ifc_object(obj)
-                array["children"].clear()
-
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
@@ -969,29 +1097,27 @@ class Model(bonsai.core.tool.Model):
                 offset = base_offset * i
 
                 for obj in obj_stack:
-                    # get currently proccesed array element and it's object
-                    if child_i >= total_existing_children:
-                        child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                        child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
-                    else:
+                    try:
                         global_id = array["children"][child_i]
-                        try:
-                            child_element = tool.Ifc.get().by_guid(global_id)
-                            child_obj = tool.Ifc.get_object(child_element)
-                            assert child_obj
-                        except:
-                            child_obj = tool.Spatial.duplicate_object_and_data(obj)
-                            child_element = tool.Spatial.run_root_copy_class(obj=child_obj)
+                        child_element = tool.Ifc.get().by_guid(global_id)
+                        child_obj = tool.Ifc.get_object(child_element)
+                        assert child_obj
+                    except:
+                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
+                        child_element = next(iter(old_to_new.values()))[0]
+                        child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
-                    child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
-                    if child_pset:
-                        ifcopenshell.api.pset.edit_pset(
-                            tool.Ifc.get(),
-                            pset=child_pset,
-                            properties={"Data": None},
-                            should_purge=False,
+                    if not (child_pset := tool.Pset.get_element_pset(child_element, "BBIM_Array")):
+                        child_pset = ifcopenshell.api.pset.add_pset(
+                            tool.Ifc.get(), product=child_element, name="BBIM_Array"
                         )
+                    ifcopenshell.api.pset.edit_pset(
+                        tool.Ifc.get(),
+                        pset=child_pset,
+                        properties={"Data": None, "Parent": parent_element.GlobalId},
+                        should_purge=False,
+                    )
 
                     # set child object position
                     new_matrix = obj.matrix_world.copy()
@@ -1027,6 +1153,12 @@ class Model(bonsai.core.tool.Model):
 
             bpy.context.view_layer.update()
 
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=parent_element, name="BBIM_Array")
+        json_data = tool.Ifc.get().createIfcText(json.dumps(data))
+        ifcopenshell.api.pset.edit_pset(
+            tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
+        )
+
     @classmethod
     def replace_object_ifc_representation(
         cls,
@@ -1057,9 +1189,6 @@ class Model(bonsai.core.tool.Model):
             tool.Geometry,
             obj=obj,
             representation=new_representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
         )
 
     @classmethod
@@ -1068,6 +1197,8 @@ class Model(bonsai.core.tool.Model):
             return
 
         from PIL import Image, ImageDraw
+
+        from bonsai.bim.module.model.data import AuthoringData
 
         obj = tool.Ifc.get_object(element)
         if not obj:
@@ -1085,6 +1216,9 @@ class Model(bonsai.core.tool.Model):
             # No need to preview to update, Blender will do it in background,
             # `preview.icon_id` doesn't change after `asset_generate_preview()`.
             obj.asset_generate_preview()
+        # Avoid issues with sqlite files.
+        elif type(tool.Ifc.get()) is not ifcopenshell.file:
+            return
         else:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             size = 128
@@ -1113,18 +1247,7 @@ class Model(bonsai.core.tool.Model):
 
                 height = 100
 
-                is_horizontal = False
-                if element.is_a("IfcSlabType"):
-                    is_horizontal = True
-
-                parametric = ifcopenshell.util.element.get_psets(element).get("EPset_Parametric")
-                if parametric:
-                    layer_set_direction = parametric.get("LayerSetDirection", None)
-                    if layer_set_direction == "AXIS2":
-                        is_horizontal = False
-                    elif layer_set_direction == "AXIS3":
-                        is_horizontal = True
-
+                is_horizontal = cls.get_usage_type(element) == "LAYER3"
                 if is_horizontal:
                     width, height = height, width
 
@@ -1135,7 +1258,7 @@ class Model(bonsai.core.tool.Model):
                 del thicknesses[-1]
                 for thickness in thicknesses:
                     current_thickness += thickness
-                    if element.is_a("IfcSlabType"):
+                    if is_horizontal:
                         y = (current_thickness / total_thickness) * height
                         line = [x_offset, y_offset + y, x_offset + width, y_offset + y]
                     else:
@@ -1170,6 +1293,8 @@ class Model(bonsai.core.tool.Model):
 
         Allows postponing the thumbnail update until it is actually needed by the user.
         """
+        from bonsai.bim.module.model.data import AuthoringData
+
         element_id = element.id()
         if element_id not in AuthoringData.type_thumbnails:
             return
@@ -1180,8 +1305,8 @@ class Model(bonsai.core.tool.Model):
         return [obj for obj in tool.Blender.get_selected_objects() if tool.Ifc.get_entity(obj)]
 
     @classmethod
-    def has_selected_ifc_objects(cls) -> bool:
-        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects())
+    def has_selected_ifc_objects(cls, include_active: bool = True) -> bool:
+        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects(include_active=include_active))
 
     @classmethod
     def get_selected_mesh_objects(cls) -> list[bpy.types.Object]:
@@ -1269,30 +1394,38 @@ class Model(bonsai.core.tool.Model):
                 tool.Geometry,
                 obj=obj,
                 representation=body,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
             )
 
     @classmethod
     def is_parametric_roof_active(cls) -> bool:
+        from bonsai.bim.module.model.data import RoofData
+
         return bool((RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"])
 
     @classmethod
     def is_parametric_railing_active(cls) -> bool:
+        from bonsai.bim.module.model.data import RailingData
+
         return bool((RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"])
 
     @classmethod
     def is_parametric_window_active(cls) -> bool:
+        from bonsai.bim.module.model.data import WindowData
+
         return bool((WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"])
 
     @classmethod
     def is_parametric_door_active(cls) -> bool:
+        from bonsai.bim.module.model.data import DoorData
+
         return bool((DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"])
+
+    CustomTreadRunType = Union[tuple[float, float], tuple[None, None]]
 
     @classmethod
     def get_active_stair_calculated_params(cls, pset_data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
-        props = bpy.context.active_object.BIMStairProperties
+        assert (obj := bpy.context.active_object)
+        props = tool.Model.get_stair_props(obj)
 
         if props.is_editing:
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1302,39 +1435,44 @@ class Model(bonsai.core.tool.Model):
             first_tread_run = props.custom_first_last_tread_run[0] / si_conversion
             last_tread_run = props.custom_first_last_tread_run[1] / si_conversion
             nosing_length = props.nosing_length / si_conversion
+            use_custom_first_last_tread_run = not props.custom_tread_lock
         else:
-            number_of_treads = pset_data["number_of_treads"]
-            height = pset_data["height"]
-            tread_run = pset_data["tread_run"]
+            assert pset_data
+            number_of_treads: int = pset_data["number_of_treads"]
+            height: float = pset_data["height"]
+            tread_run: float = pset_data["tread_run"]
             # use .get to not break the old .ifc models
-            custom_first_last_tread_run = pset_data.get("custom_first_last_tread_run", (0, 0))
+            custom_first_last_tread_run: tool.Model.CustomTreadRunType = pset_data.get(
+                "custom_first_last_tread_run", (0, 0)
+            )
             first_tread_run, last_tread_run = custom_first_last_tread_run
             nosing_length = pset_data.get("nosing_length", 0)
+            use_custom_first_last_tread_run = not pset_data.get("custom_tread_lock", True)
 
-        calculated_params = {}
+        calculated_params: dict[str, Any] = {}
         number_of_rises = number_of_treads + 1
         calculated_params["Number of Risers"] = number_of_rises
         calculated_params["Tread Rise"] = round(height / number_of_rises, 5)
 
-        # calculate stair length
-        n_default_tread_runs = number_of_rises
-        length = 0
-        if first_tread_run != 0:
-            n_default_tread_runs -= 1
+        # Calculate total length taking into account custom first/last tread runs :
+        length = 0.0
+        default_rises = number_of_rises
+        if use_custom_first_last_tread_run and first_tread_run is not None:
+            default_rises -= 1
             length += first_tread_run
-        if last_tread_run != 0:
-            n_default_tread_runs -= 1
-            if n_default_tread_runs >= 0:
-                length += last_tread_run
-        length += tread_run * max(n_default_tread_runs, 0)
-        # nosing overlaps
-        # are not part of the tread run
-        # so they don't affect the stair length
-        # except the first tread's nosing
+        if use_custom_first_last_tread_run and last_tread_run is not None:
+            default_rises -= 1
+            length += last_tread_run
+        length += tread_run * default_rises
+
+        # Handle nosing length effects on total length
+        # Nosing overlaps don't affect tread run spacing,
+        # but the first tread's nosing extends the total length
         if nosing_length > 0:  # nosing overlaps
             length += nosing_length
-        if nosing_length < 0:  # tread gaps
+        if nosing_length < 0:  # tread gaps between treads
             length += abs(nosing_length) * number_of_treads
+
         calculated_params["Length"] = round(length, 5)
         pitch = height / length
         pitch_formatted = str(round(pitch * 100, 1)) + " % / " + str(round(degrees(atan(pitch)), 1)) + " deg"
@@ -1342,36 +1480,61 @@ class Model(bonsai.core.tool.Model):
 
         return calculated_params
 
+    StairType = Literal["CONCRETE", "WOOD/STEEL", "GENERIC"]
+
+    DoorType = Literal[
+        "SINGLE_SWING_LEFT",
+        "SINGLE_SWING_RIGHT",
+        "DOUBLE_SWING_LEFT",
+        "DOUBLE_SWING_RIGHT",
+        "DOUBLE_DOOR_SINGLE_SWING",
+        "SLIDING_TO_LEFT",
+        "SLIDING_TO_RIGHT",
+        "DOUBLE_DOOR_SLIDING",
+    ]
+
+    WindowType = Literal[
+        "SINGLE_PANEL",
+        "DOUBLE_PANEL_HORIZONTAL",
+        "DOUBLE_PANEL_VERTICAL",
+        "TRIPLE_PANEL_BOTTOM",
+        "TRIPLE_PANEL_TOP",
+        "TRIPLE_PANEL_LEFT",
+        "TRIPLE_PANEL_RIGHT",
+        "TRIPLE_PANEL_HORIZONTAL",
+        "TRIPLE_PANEL_VERTICAL",
+    ]
+
     @classmethod
     def generate_stair_2d_profile(
         cls,
-        number_of_treads,
-        height,
-        width,
-        tread_run,
-        stair_type,
+        number_of_treads: int,
+        height: float,
+        width: float,
+        tread_run: float,
+        stair_type: StairType,
         # WOOD/STEEL CONCRETE STAIR ARGUMENTS
-        tread_depth=None,
+        tread_depth: Union[float, None] = None,
         # CONCRETE STAIR ARGUMENTS
-        has_top_nib=None,
-        top_slab_depth=None,
-        base_slab_depth=None,
-        custom_first_last_tread_run=(0, 0),
-        nosing_length=0,
+        has_top_nib: Union[bool, None] = None,
+        top_slab_depth: Union[float, None] = None,
+        base_slab_depth: Union[float, None] = None,
+        custom_first_last_tread_run: Union[tuple[float, float], tuple[None, None]] = (None, None),
+        nosing_length: float = 0.0,
         # CONCRETE GENERIC STAIR ARGUMENTS
-        nosing_depth=0,
-    ):
+        nosing_depth: float = 0.0,
+    ) -> tuple[list[Vector], list[tuple[int, ...]], list[[list[int]]]]:
         """returns a tuple of stair profile data: (vertices, edges, faces)"""
-        vertices = []
-        edges = []
-        faces = []
+        vertices: list[Vector] = []
+        edges: list[tuple[int, ...]] = []
+        faces: list[[list[int]]] = []
 
         number_of_risers = number_of_treads + 1
         tread_rise = height / number_of_risers
-        custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
         nosing_overlap = max(nosing_length, 0)
         nosing_tread_gap = -min(nosing_length, 0)
         nosing_overlap_offset = -V_(nosing_overlap, 0)
+        first_tread_run = custom_first_last_tread_run[0] if custom_first_last_tread_run[0] is not None else tread_run
 
         def define_generic_stair_treads():
             vertices.append(Vector([0, 0]))
@@ -1387,7 +1550,12 @@ class Model(bonsai.core.tool.Model):
             elif nosing_depth == 0:
                 default_tread_verts = (V_(-nosing_overlap, tread_rise), V_(tread_run, tread_rise))
             else:  # nosing_overlap > 0 nosing_depth > 0
-                # kind of L shape
+                # kind of L shape:
+                # (2)●───────────────────────────●(3)
+                #    |
+                #    |
+                #    ●──────────────●
+                #  (1)              (0)
                 default_tread_verts = (
                     V_(0, tread_rise - nosing_depth),
                     V_(-nosing_overlap, tread_rise - nosing_depth),
@@ -1399,19 +1567,26 @@ class Model(bonsai.core.tool.Model):
             default_tread_offset = Vector([tread_run, tread_rise])
 
             def get_tread_data(i):
-                if custom_tread_run:
-                    current_tread_run = None
-                    if i == 0:
-                        current_tread_run = custom_first_last_tread_run[0]
-                    elif i == number_of_risers - 1:
-                        current_tread_run = custom_first_last_tread_run[1]
+                # Check if this is first or last tread with custom run
+                current_tread_run = None
+                if i == 0 and custom_first_last_tread_run[0] is not None:
+                    current_tread_run = custom_first_last_tread_run[0]
+                elif i == number_of_risers - 1 and custom_first_last_tread_run[1] is not None:
+                    current_tread_run = custom_first_last_tread_run[1]
 
-                    if current_tread_run:
-                        tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run
-                        tread_verts = deepcopy(default_tread_verts)
-                        tread_verts[-1].x = current_tread_run
-                        return tread_offset, tread_verts
+                if current_tread_run is not None:
+                    tread_offset = default_tread_offset.copy()
+                    tread_offset.x = current_tread_run
+
+                    # Handle zero-width treads
+                    if current_tread_run == 0:
+                        # For zero width, just return vertical offset with no horizontal tread
+                        return tread_offset, ()
+
+                    tread_verts = deepcopy(default_tread_verts)
+                    tread_verts[-1].x = current_tread_run
+                    return tread_offset, tread_verts
+
                 return default_tread_offset, default_tread_verts
 
             # treads
@@ -1419,52 +1594,69 @@ class Model(bonsai.core.tool.Model):
             for i in range(number_of_risers):
                 last_vert_i = len(vertices) - 1
                 tread_offset, tread_verts = get_tread_data(i)
-                current_tread_verts = [v + current_offset for v in tread_verts]
-                edges.extend(default_tread_edges + last_vert_i)
-                vertices.extend(current_tread_verts)
+
+                # Skip adding vertices/edges for zero-width treads
+                if tread_verts:
+                    current_tread_verts = [v + current_offset for v in tread_verts]
+                    edges.extend(default_tread_edges + last_vert_i)
+                    vertices.extend(current_tread_verts)
+
                 current_offset += tread_offset
 
         if stair_type == "WOOD/STEEL":
-            builder = ShapeBuilder(None)
+            assert tread_depth is not None
 
             # full tread rectangle
-            def get_tread_verts(*args, **kwargs):
-                fn = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
-                return [Vector(x) for x in fn(*args, **kwargs)]
+            def get_tread_verts(size: Vector) -> list[Vector]:
+                coords = ShapeBuilder.get_rectangle_coords(position=V_(0, -(tread_depth - tread_rise)), size=size)
+                return [Vector(x) for x in coords]
 
             default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
             default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
             def get_tread_data(i):
-                if custom_tread_run:
-                    current_tread_run = None
-                    if i == 0 and custom_first_last_tread_run[0] != 0:
-                        current_tread_run = custom_first_last_tread_run[0]
-                    elif i == number_of_risers - 1 and custom_first_last_tread_run[1] != 0:
-                        current_tread_run = custom_first_last_tread_run[1]
+                # Check if this is first or last tread with custom run
+                current_tread_run = None
+                if i == 0 and custom_first_last_tread_run[0] is not None:
+                    current_tread_run = custom_first_last_tread_run[0]
+                elif i == number_of_risers - 1 and custom_first_last_tread_run[1] is not None:
+                    current_tread_run = custom_first_last_tread_run[1]
 
-                    if current_tread_run:
-                        tread_offset = default_tread_offset.copy()
-                        tread_offset.x = current_tread_run + nosing_tread_gap
-                        tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
-                        return tread_offset, tread_verts
+                if current_tread_run is not None:
+                    tread_offset = default_tread_offset.copy()
+                    tread_offset.x = current_tread_run + nosing_tread_gap
+
+                    # Handle zero-width treads
+                    if current_tread_run == 0:
+                        return tread_offset, ()
+
+                    tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
+                    return tread_offset, tread_verts
+
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
             cur_offset = V_(0, 0)
+            tread_index = 0
+
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
-                cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
-                vertices.extend(cur_trade_shape)
 
-                cur_vertex = i * 4
-                verts_to_add = (
-                    (cur_vertex, cur_vertex + 1),
-                    (cur_vertex + 1, cur_vertex + 2),
-                    (cur_vertex + 2, cur_vertex + 3),
-                    (cur_vertex + 3, cur_vertex),
-                )
-                edges.extend(verts_to_add)
+                # Skip adding vertices/edges for zero-width treads
+                if tread_verts:
+                    cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
+                    vertices.extend(cur_trade_shape)
+
+                    cur_vertex = tread_index * 4
+                    verts_to_add = (
+                        (cur_vertex, cur_vertex + 1),
+                        (cur_vertex + 1, cur_vertex + 2),
+                        (cur_vertex + 2, cur_vertex + 3),
+                        (cur_vertex + 3, cur_vertex),
+                    )
+                    edges.extend(verts_to_add)
+                    tread_index += 1
+
                 cur_offset += tread_offset
 
         elif stair_type == "GENERIC":
@@ -1481,6 +1673,11 @@ class Model(bonsai.core.tool.Model):
         elif stair_type == "CONCRETE":
             define_generic_stair_treads()
 
+            assert has_top_nib is not None
+            assert top_slab_depth is not None
+            assert base_slab_depth is not None
+            assert tread_depth is not None
+
             # add the nibs
             # basically we define stair bottom line as a line at `tread_depth` distance
             # from the tread diagonal line
@@ -1494,15 +1691,20 @@ class Model(bonsai.core.tool.Model):
             # s0 is just a sampled point from the bottom line
             # we stick to the third point as the first point
             # is affected by customized tread run
-            s0 = V_(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
+            s0 = V_(first_tread_run, tread_rise) + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
-            def get_point_on_2d_line(x=None, y=None):
-                if y is None:
+            def get_point_on_2d_line(
+                x: Union[float, None] = None,
+                y: Union[float, None] = None,
+            ) -> Vector:
+                if x is not None and y is None:
                     y = stair_tan * x + b
-                elif x is None:
+                elif x is None and y is not None:
                     x = (y - b) / stair_tan
+                else:
+                    assert False
                 return V_(x, y)
 
             # top nib
@@ -1546,11 +1748,13 @@ class Model(bonsai.core.tool.Model):
         else:
             raise Exception(f"Unsupported stair type: {stair_type}")
 
-        vertices = (v.to_3d().xzy for v in vertices)
+        vertices = [v.to_3d().xzy for v in vertices]
         return (vertices, edges, faces)
 
     @classmethod
     def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+        from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
         ifc_file = tool.Ifc.get()
         fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
 
@@ -1615,9 +1819,6 @@ class Model(bonsai.core.tool.Model):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
                 apply_openings=True,
             )
 
@@ -1864,6 +2065,7 @@ class Model(bonsai.core.tool.Model):
         polygons = {}
         for curve in curves:
             geometry = ifcopenshell.geom.create_shape(settings, curve)
+            assert isinstance(geometry, W.Triangulation)
             v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
             v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
             edges = ifcopenshell.util.shape.get_edges(geometry)
@@ -2115,18 +2317,15 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
         FilledOpeningGenerator().generate(filling_obj, voided_obj)
 
     @classmethod
     def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: Vector) -> None:
         ifc_file = tool.Ifc.get()
-
-        new_position = ifc_file.createIfcAxis2Placement3D(
-            ifc_file.createIfcCartesianPoint(position),
-            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
-            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
-        )
-
+        builder = ShapeBuilder(ifc_file)
+        new_position = builder.create_axis2_placement_3d(position)
         extrusion.Position = new_position
 
     @classmethod
@@ -2342,12 +2541,24 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def clean_up_parametric_geometry(cls, obj: bpy.types.Object) -> None:
+        # Geo nodes are using modifier.
         modifier = tool.Model.get_epg_modifier(obj)
-        assert modifier
-        node_tree = modifier.node_group
-        assert node_tree
-        bpy.data.node_groups.remove(node_tree)
-        obj.modifiers.clear()
+        if modifier is not None:
+            node_tree = modifier.node_group
+            assert node_tree
+            bpy.data.node_groups.remove(node_tree)
+            obj.modifiers.clear()
+
+        # Sverchok are changing the mesh data to preview changes.
+        # TODO: probably should use modifiers with nodes and temp mesh instead.
+        active_representation = tool.Geometry.get_active_representation(obj)
+        assert active_representation is not None
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=active_representation,
+        )
 
     @classmethod
     def get_parametric_geometry_inputs(cls, modifier: bpy.types.NodesModifier) -> list[bpy.types.NodeSocket]:
@@ -2360,12 +2571,65 @@ class Model(bonsai.core.tool.Model):
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
 
     @classmethod
+    def get_ifcsverchok_group_node(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> SvGroupTreeNode:
+        from sverchok.core.node_group import SvGroupTreeNode
+
+        return next(n for n in node_tree.nodes if isinstance(n, SvGroupTreeNode) and n.label == "BBIM_EPG")
+
+    @classmethod
+    def get_ifcsverchok_shape_output(
+        cls, node_tree: sverchok.node_tree.SverchCustomTree
+    ) -> ifcsverchok.nodes.ifc.shape_builder.shape_output.SvSbShapeOutput:
+        from ifcsverchok.nodes.ifc.shape_builder.shape_output import SvSbShapeOutput
+
+        group_node = cls.get_ifcsverchok_group_node(node_tree)
+        subtree = group_node.node_tree
+        return next(n for n in subtree.nodes if isinstance(n, SvSbShapeOutput))
+
+    @classmethod
+    def update_mesh_from_sverchok(
+        cls, obj: bpy.types.Object, node_tree: sverchok.node_tree.SverchCustomTree
+    ) -> str | None:
+        """
+        :return: ``None`` if successful, otherwise error message.
+        """
+        import ifcsverchok.helper as helper
+
+        output_node = cls.get_ifcsverchok_shape_output(node_tree)
+        verts = helper.get_socket_value(output_node.outputs, "Vers", value_type="CONTAINER")
+        edges = helper.get_socket_value(output_node.outputs, "Edgs", value_type="CONTAINER")
+        faces = helper.get_socket_value(output_node.outputs, "Pols", value_type="CONTAINER")
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        mesh.clear_geometry()
+
+        # `shade_flat=False`, because `from_pydata` is using method that doesn't support changing shading
+        # during `Panel.draw` execution. We shade flat later ourselves.
+        mesh.from_pydata(verts, edges, faces, shade_flat=False)
+
+        def _name_convention_attribute_ensure(attributes, name, domain, data_type):
+            try:
+                attribute = attributes[name]
+            except KeyError:
+                return attributes.new(name, data_type, domain)
+            if attribute.domain == domain and attribute.data_type == data_type:
+                return attribute
+            attributes.remove(attribute)
+            return attributes.new(name, data_type, domain)
+
+        sharp_faces = _name_convention_attribute_ensure(mesh.attributes, "sharp_face", "FACE", "BOOLEAN")
+        assert isinstance(sharp_faces, bpy.types.BoolAttribute)
+        data = sharp_faces.data
+        ones = np.ones(len(data), dtype=bool)
+        data.foreach_set("value", ones)
+
+    @classmethod
     def align_objects(
         cls,
         reference_obj: bpy.types.Object,
         objs: Iterable[bpy.types.Object],
         align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"],
-    ):
+    ) -> None:
         if align_type == "CENTER":
             point = reference_obj.matrix_world @ (Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2))
         elif align_type == "POSITIVE":
@@ -2435,9 +2699,6 @@ class Model(bonsai.core.tool.Model):
             tool.Geometry,
             obj=obj,
             representation=rep,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
 
@@ -2467,4 +2728,64 @@ class Model(bonsai.core.tool.Model):
                 queue.add((rel.RelatingElement, obj))
         for element, wall in queue:
             if tool.Model.get_usage_type(element) == "LAYER2" and wall:
+                # Use layer custom offset
+                custom_offset = tool.Model.get_material_layer_custom_offset(element, wall)
+                material = ifcopenshell.util.element.get_material(element)
+                if material.is_a("IfcMaterialLayerSetUsage") and custom_offset is not None:
+                    material.OffsetFromReferenceLine = custom_offset
+
                 cls.recreate_wall(element, wall)
+
+    @classmethod
+    def regenerate_slab(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.slab import DumbSlabPlaner
+
+        element = tool.Ifc.get_entity(obj)
+        material_set = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        new_thickness = sum([l.LayerThickness for l in material_set.MaterialLayers])
+        DumbSlabPlaner().change_thickness(element, new_thickness)
+
+    @classmethod
+    def regenerate_profile(cls, obj: bpy.types.Object) -> None:
+        from bonsai.bim.module.model.profile import DumbProfileRecalculator
+
+        DumbProfileRecalculator().recalculate([obj])
+
+    @classmethod
+    def run_ifcsverchok_graph_on_bonsai_file(cls, node_tree: sverchok.node_tree.SverchCustomTree) -> None:
+        from ifcsverchok.ifcstore import SvIfcStore
+        from sverchok.core.update_system import UpdateTree
+
+        # We should be very careful and use bonsai file just for 1 graph update.
+        # To avoid producing duplicated data in non-ephemeral file.
+        SvIfcStore.use_bonsai_file = True
+        try:
+            # The ones below refresh asyncronously, so we're using different method to get results synchronously.
+            # - bpy.ops.node.sverchok_update_context(force_mode=True)
+            # - node_tree.force_update()
+            # TODO: Ideally we should find shape output node and update only it's furtherest children.
+            # Because user might have some nodes just floating around unused.
+            # ` update_tree = UpdateTree.get(node_tree); update_tree.add_outdated(nodes)` can be used for this.
+            UpdateTree.reset_tree(node_tree)
+            nodes_to_update = UpdateTree.main_update(node_tree)
+            # Consuming generator, which triggers the update.
+            list(nodes_to_update)
+        finally:
+            SvIfcStore.use_bonsai_file = False
+
+    @classmethod
+    def create_bmesh_from_vertices(cls, vertices: list[Vector], is_closed: bool = False) -> bmesh.types.BMesh:
+        bm = bmesh.new()
+
+        new_verts = [bm.verts.new(v) for v in vertices]
+        if is_closed:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+            new_edges.append(
+                bm.edges.new((new_verts[-1], new_verts[0]))
+            )  # Add an edge between the last an first point to make it closed.
+        else:
+            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+        bm.verts.index_update()
+        bm.edges.index_update()
+        return bm

@@ -16,10 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-import test.bootstrap
-import ifcopenshell.api
+
 import ifcopenshell.util.type as subject
+import test.bootstrap
 
 
 class TestGetApplicableTypes(test.bootstrap.IFC4):

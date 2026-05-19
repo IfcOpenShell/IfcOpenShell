@@ -46,7 +46,7 @@
 	// of our typemap. So the attribute conversion block
 	// is wrapped in a try-catch block manually.
 	try {
-		$result = $1.array_->apply_visitor([](auto& v){
+		$result = $1.apply_visitor([](const auto& v){
 			using U = std::decay_t<decltype(v)>;
             if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
@@ -68,7 +68,7 @@
             } else {
 				return pythonize(v);
 			}
-		}, $1.index_);
+		});
 	} catch(IfcParse::IfcException& e) {
 		SWIG_exception(SWIG_RuntimeError, e.what());
 	} catch(...) {

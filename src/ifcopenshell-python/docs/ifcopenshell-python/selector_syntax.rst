@@ -251,9 +251,14 @@ nest formulas, for example ``concat(title("foo"), lower("Bar"))`` will produce
     "``int({{value}})``", "``int(3.123)``", "``3``", "Truncates the decimal part of the ``{{value}}``."
     "``number({{value}}[, {{decimal_separator}}[, {{thousands_separator}}]])``", "``number(1234.56, "","", ""."")``", "``1.234,56``", "Formats {{value}} with an optional custom {{decimal_separator}} and {{thousands_separator}}. The default separators are ``.`` and ``,``."
     "``metric_length({{value}}, {{precision}}, {{decimals}})``", "``metric_length(3.123, 0.1, 2)``", "``3.10``", "Rounds ``{{value}}`` to the nearest ``{{precision}}`` then displays using a certain amount of decimal places."
-    "``imperial_length({{value}}, {{precision}}, {{input_unit}}, {{output_unit}})``", "``imperial_length(3.22, 4, ""foot"")``", "``3' - 3 3/4""``", "``The {{value}}`` may be specified either as ``foot`` or ``inch`` depending on ``{{input_unit}}``. The ``{{value}}`` is then rounded to the nearest ``1/{{precision}}`` inch then formatted using fractional feet and inches if ``{{output_unit}}`` is set to ``foot`` or just inches if ``{{output_unit}}`` is set to ``inch``."
+    "``imperial_length({{value}}, {{precision}}, {{input_unit}}, {{output_unit}}, {{suppress_zero_inches}})``", "``imperial_length(3.0, 4, ""foot"", ""foot"", true)`` OR ``imperial_length(3.0, 4, ""foot"", ""foot"", false)``", "``3'`` OR ``3' - 0""``", "The ``{{value}}`` may be specified either as ``foot`` or ``inch`` depending on ``{{input_unit}}``. The ``{{value}}`` is then rounded to the nearest ``1/{{precision}}`` inch, then formatted using fractional feet and inches if ``{{output_unit}}`` is set to ``foot``, or just inches if ``{{output_unit}}`` is set to ``inch``. When ``{{suppress_zero_inches}}`` is ``true`` (default), measurements with zero inches will omit the inch portion (e.g., ``3'`` instead of ``3' - 0""``)."
+    "``sort({{values}})``", "``sort({{mats.Name}})``", "``Name1, Name2``", "Sorts a list of items."
+    "``reverse({{values}})``", "``reverse({{mats.Name}})``", "``Name2, Name1``", "Reverses a list of items."
+    "``join({{separator}}, {{values}})``", "``join(""-"", {{mats.Name}})``", "``Name1-Name2``", "Joins a list of items with a custom separator. By default, all lists a rendered as comma separated."
+    "``{{value1}}[+-*/]{{value2}}``", "``{{z}}+3``", "``5``", "Does arithmetic. Typical operators such as +, -, \*, and / are allowed and can be mixed with other variables and formatting functions."
 
-When using queries in an IfcAnnotation tag surround with backticks. 
-Examples: 
-````number({{Qto_WallBaseQuantities.Width}}, ",",".")```` or 
-````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````
+When using queries in an IfcAnnotation tag surround with backticks. Examples: 
+
+- ````number({{Qto_WallBaseQuantities.Width}}, ",",".")````
+- ````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````
+- ````join(", OVER ", reverse({{material.item.Material.Name}}))````

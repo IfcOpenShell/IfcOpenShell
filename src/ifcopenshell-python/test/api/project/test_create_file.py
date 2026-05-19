@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import test.bootstrap
 import ifcopenshell.api.project
+import test.bootstrap
 
 
 class TestCreateFile(test.bootstrap.IFC4):
@@ -26,9 +26,9 @@ class TestCreateFile(test.bootstrap.IFC4):
         assert ifc.schema == "IFC4"
         ifc = ifcopenshell.api.project.create_file(version="IFC2X3")
         assert ifc.schema == "IFC2X3"
-        assert ifc.wrapped_data.header.file_name.name == "/dev/null"
-        assert ifc.wrapped_data.header.file_name.time_stamp
-        assert "IfcOpenShell" in ifc.wrapped_data.header.file_name.preprocessor_version
-        assert "IfcOpenShell" in ifc.wrapped_data.header.file_name.originating_system
-        assert ifc.wrapped_data.header.file_name.authorization == "Nobody"
-        assert ifc.wrapped_data.header.file_description.description == ("ViewDefinition[DesignTransferView]",)
+        assert ifc.header.file_name.name == "/dev/null"
+        assert ifc.header.file_name.time_stamp
+        assert "IfcOpenShell" in ifc.header.file_name.preprocessor_version
+        assert "IfcOpenShell" in ifc.header.file_name.originating_system
+        assert ifc.header.file_name.authorization == "Nobody"
+        assert ifc.header.file_description.description == ("ViewDefinition[DesignTransferView]",)

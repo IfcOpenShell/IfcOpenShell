@@ -17,23 +17,29 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
 import bpy
-import numpy as np
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+from mathutils import Color
+
+import bonsai.bim.helper
 import bonsai.core.style
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.bim.helper
-from mathutils import Color
-from typing import Union, Any, Optional, Literal, TYPE_CHECKING
-from collections.abc import Sequence
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.style.prop import (
+        BIMStyleProperties,
+        BIMStylesProperties,
+        ColourRgb,
+    )
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties, ColourRgb
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -64,8 +70,22 @@ class Style(bonsai.core.tool.Style):
         return material.BIMStyleProperties
 
     @classmethod
+    def get_use_nodes(cls, obj: bpy.types.Material) -> bool:
+        """Since Blender 5.0 ``use_nodes`` are always ``True`` and considered deprecated."""
+        if tool.Blender.BLENDER_5:
+            return True
+        return obj.use_nodes
+
+    @classmethod
+    def set_use_nodes(cls, obj: bpy.types.Material, use_nodes: bool) -> None:
+        """Since Blender 5.0 ``use_nodes`` are always ``True`` and considered deprecated."""
+        if tool.Blender.BLENDER_5:
+            return
+        obj.use_nodes = use_nodes
+
+    @classmethod
     def can_support_rendering_style(cls, obj: bpy.types.Material) -> bool:
-        return obj.use_nodes and hasattr(obj.node_tree, "nodes")
+        return tool.Blender.BLENDER_5 or (obj.use_nodes and hasattr(obj.node_tree, "nodes"))
 
     @classmethod
     def delete_object(cls, obj: bpy.types.Material) -> None:
@@ -183,6 +203,11 @@ class Style(bonsai.core.tool.Style):
 
         available_props = props.bl_rna.properties.keys()
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
+            null_prop_name = f"is_{prop_blender}_null"
+            if null_prop_name in available_props and getattr(props, null_prop_name):
+                surface_style_data[prop_ifc] = None
+                continue
+
             class_prop_name = f"{prop_blender}_class"
 
             # get detailed color properties if available

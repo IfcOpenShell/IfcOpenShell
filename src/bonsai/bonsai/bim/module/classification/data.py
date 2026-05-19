@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, Literal, Union
+
 import bpy
 import ifcopenshell
-import ifcopenshell.util.date
 import ifcopenshell.util.classification
+import ifcopenshell.util.date
+
 import bonsai.tool as tool
-from typing import Any, Literal, Union
 from bonsai.bim.ifc import IfcStore
 
 
@@ -56,6 +58,7 @@ class ClassificationsData:
             data = element.get_info()
             if tool.Ifc.get().schema == "IFC2X3" and element.EditionDate:
                 data["EditionDate"] = ifcopenshell.util.date.ifc2datetime(data["EditionDate"])
+            data["Name"] = data["Name"] or "Unnamed"
             results.append(data)
         return results
 
@@ -103,6 +106,7 @@ class ReferencesData:
         if element:
             for reference in ifcopenshell.util.classification.get_references(element):
                 data = reference.get_info()
+                data["ifcClassificationReference"] = reference
                 del data["ReferencedSource"]
                 results.append(data)
         return results

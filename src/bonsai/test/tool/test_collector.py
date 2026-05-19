@@ -24,6 +24,7 @@ import ifcopenshell.api.feature
 import ifcopenshell.api.group
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
+
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.collector import Collector as subject

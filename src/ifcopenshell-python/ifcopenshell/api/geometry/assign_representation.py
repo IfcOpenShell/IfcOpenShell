@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.owner
+
 import ifcopenshell.api.geometry
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
-from typing import Any
 
 
 def assign_representation(
@@ -32,7 +32,6 @@ def assign_representation(
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
     def execute(self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance) -> None:
         if product.is_a("IfcProduct"):
@@ -41,6 +40,14 @@ class Usecase:
                 product_type
                 and product_type.RepresentationMaps
                 and representation.RepresentationType != "MappedRepresentation"
+                # Revit is adding a non-mapped representation to the exported profile-based types,
+                # so assigning representation to occurrence by accident was assigning it to the type.
+                # We guard from this by skipping profile and layer-based types.
+                # See 6934 for example.
+                and not (
+                    (material := ifcopenshell.util.element.get_material(product_type))
+                    and material.is_a() in ("IfcMaterialProfileSet", "IfcMaterialLayerSet")
+                )
             ):
                 product = product_type
 
@@ -60,7 +67,7 @@ class Usecase:
                     **{
                         "MappingOrigin": self.file.createIfcAxis2Placement3D(self.zero, self.z_axis, self.x_axis),
                         "MappedRepresentation": representation,
-                    }
+                    },
                 )
             )
             product.RepresentationMaps = maps

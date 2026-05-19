@@ -18,37 +18,36 @@
 #
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import bpy
 import copy
 import math
-import numpy as np
+from math import atan2, cos, degrees, pi, sin
+from typing import TYPE_CHECKING, Any, Literal, Union, get_args
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
-import ifcopenshell.api.geometry
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import mathutils.geometry
-import bonsai.core.type
-import bonsai.core.root
+import numpy as np
+from mathutils import Matrix, Vector
+
 import bonsai.core.geometry
 import bonsai.core.model as core
+import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees, atan2
-from mathutils import Vector, Matrix
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal, Union, Any
 
 
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -397,6 +396,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
             assert element
+
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 continue
@@ -441,6 +441,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
         x_angle = 0 if tool.Cad.is_x(self.x_angle, pi, tolerance=0.001) else self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
@@ -466,16 +467,21 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     existing_x_angle = obj.rotation_euler.x
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
-                    # Reset the transformation and returns to the original points with 0 degrees
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(cos(existing_x_angle)))
-                        for p in extrusion.SweptArea.OuterCurve.Points.CoordList
-                    ]
 
-                    # Apply the transformation for the new x_angle
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
-                    ]
+                    profiles = (
+                        extrusion.SweptArea.Profiles
+                        if extrusion.SweptArea.is_a("IfcCompositeProfileDef")
+                        else [extrusion.SweptArea]
+                    )
+                    for profile in profiles:
+                        coord_list = builder.get_polyline_coords(profile.OuterCurve)
+                        coord_list = [
+                            (p[0], p[1] * abs(cos(existing_x_angle))) for p in coord_list
+                        ]  # Reset the transformation and returns to the original points with 0 degrees
+                        coord_list = [
+                            (p[0], p[1] * abs(1 / cos(x_angle))) for p in coord_list
+                        ]  # Apply the transformation for the new x_angle
+                        builder.set_polyline_coords(profile.OuterCurve, coord_list)
 
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative if that's the case
@@ -517,9 +523,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
-                    should_sync_changes_first=False,
                 )
 
                 # Object rotation
@@ -715,10 +718,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         self.handle_keyboard_input(context, event)
-
         self.handle_inserting_polyline(context, event)
-
-        self.get_product_preview_data(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
@@ -895,7 +895,8 @@ class DumbWallGenerator:
         elevation = self.container_obj.location.z
         representation = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
-        polyline_points = extrusion.SweptArea.OuterCurve.Points.CoordList
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        polyline_points = builder.get_polyline_coords(extrusion.SweptArea.OuterCurve)
         polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
         polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
         if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
@@ -918,8 +919,8 @@ class DumbWallGenerator:
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
-            # Round to nearest 5 degrees
-            nearest_degree = (math.pi / 180) * 5
+            angle_snap = tool.Snap.get_angle_snap_value(bpy.context)
+            nearest_degree = math.radians(angle_snap)
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_wall()
@@ -1023,9 +1024,6 @@ class DumbWallGenerator:
             tool.Geometry,
             obj=obj,
             representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
         )
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
@@ -1061,37 +1059,6 @@ class DumbWallPlaner:
                 for rel in inverse.AssociatedTo:
                     walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
         tool.Model.recalculate_walls([w for w in set(walls) if w])
-
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        relating_type = settings["relating_type"]
-
-        new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
-            return
-
-        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
-        layer_set_direction = None
-        if parametric:
-            layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object, layer_set_direction)
-
-    def _regenerate_from_type(
-        self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str]
-    ) -> None:
-        obj = tool.Ifc.get_object(related_object)
-        if not obj or not tool.Geometry.get_active_representation(obj):
-            return
-
-        material = ifcopenshell.util.element.get_material(related_object)
-        if not material or not material.is_a("IfcMaterialLayerSetUsage"):
-            return
-        if layer_set_direction:
-            material.LayerSetDirection = layer_set_direction
-        if material.LayerSetDirection == "AXIS2":
-            tool.Model.recalculate_walls([obj])
 
 
 class DumbWallJoiner:
@@ -1307,27 +1274,6 @@ class DumbWallJoiner:
         bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
         return wall2
 
-    def join_Z(self, wall1, slab2):
-        element1 = tool.Ifc.get_entity(wall1)
-        element2 = tool.Ifc.get_entity(slab2)
-
-        for rel in element1.ConnectedFrom:
-            if rel.is_a() == "IfcRelConnectsElements" and rel.Description == "TOP":
-                ifcopenshell.api.geometry.disconnect_element(
-                    tool.Ifc.get(),
-                    relating_element=rel.RelatingElement,
-                    related_element=element1,
-                )
-
-        ifcopenshell.api.geometry.connect_element(
-            tool.Ifc.get(),
-            relating_element=element2,
-            related_element=element1,
-            description="TOP",
-        )
-
-        tool.Model.recreate_wall(element1, wall1)
-
     def set_axis(self, wall, p1, p2):
         axis = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -1371,29 +1317,6 @@ class DumbWallJoiner:
         p2[0] = p1[0] + si_length / unit_scale
         self.set_axis(element1, p1, p2)
         tool.Model.recreate_wall(element1, wall1)
-
-    def join_T(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
-        element1 = tool.Ifc.get_entity(wall1)
-        element2 = tool.Ifc.get_entity(wall2)
-        axis1 = tool.Model.get_wall_axis(wall1)
-        axis2 = tool.Model.get_wall_axis(wall2)
-        intersect = tool.Cad.intersect_edges(axis1["reference"], axis2["reference"])
-        if intersect:
-            intersect, _ = intersect
-        else:
-            return
-        connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
-
-        ifcopenshell.api.geometry.connect_path(
-            tool.Ifc.get(),
-            related_element=element1,
-            relating_element=element2,
-            relating_connection="ATPATH",
-            related_connection=connection,
-            description="BUTT",
-        )
-
-        tool.Model.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
 
     def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object) -> None:
         wall1 = tool.Ifc.get_entity(obj1)

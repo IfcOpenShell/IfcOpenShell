@@ -2,6 +2,8 @@
 Project 3: Multi-Storey Single-Family Home
 ==========================================
 
+.. include:: /_incomplete_message.rst
+
 In this project, we'll design a multi-storey single-family home using Bonsai.
 This tutorial will introduce more advanced concepts such as templating, complex roofs, and sophisticated MEP systems.
 We'll also touch on basic site landscaping.

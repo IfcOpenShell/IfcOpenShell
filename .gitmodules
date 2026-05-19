@@ -5,15 +5,9 @@
 [submodule "src/ifcopenshell-python/ifcopenshell/mvd"]
 	path = src/ifcopenshell-python/ifcopenshell/mvd
 	url = https://github.com/opensourceBIM/python-mvdxml/
-[submodule "src/svgfill"]
-	path = src/svgfill
-	url = https://github.com/IfcOpenShell/svgfill
 [submodule "src/ifcopenshell-python/test/Sample-BIM-Files"]
 	path = src/ifcopenshell-python/test/Sample-BIM-Files
 	url = https://github.com/IfcOpenShell/ids-test-files
-[submodule "src/ifcconvert/cityjson"]
-	path = src/ifcconvert/cityjson
-	url = https://github.com/IfcOpenShell/ifc-to-cityjson
 [submodule "docs/cpp-api/assets/doxygen-awesome-css"]
 	path = docs/cpp-api/assets/doxygen-awesome-css
 	url = https://github.com/jothepro/doxygen-awesome-css.git
@@ -23,3 +17,6 @@
 [submodule "src/pyodide/demo-app/wheels"]
 	path = src/pyodide/demo-app/wheels
 	url = https://github.com/IfcOpenShell/wasm-wheels
+[submodule "src/svgfill/3rdparty/svgpp"]
+	path = src/svgfill/3rdparty/svgpp
+	url = https://github.com/svgpp/svgpp

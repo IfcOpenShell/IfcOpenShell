@@ -1,5 +1,12 @@
+import functools
+import itertools
+import multiprocessing
+import operator
+import os
+from typing import get_args
+
 import pytest
-import test.bootstrap
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.owner.settings
@@ -9,14 +16,18 @@ import ifcopenshell.api.unit
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.shape
+import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import get_args
+
+fn = os.path.join(os.path.dirname(__file__), "fixtures/ColumnPSetsOfSets.ifc")
 
 
 class TestGeomSettings:
     def test_settings(self):
         settings = ifcopenshell.geom.settings()
-        assert set(get_args(ifcopenshell.geom.SETTING)) == set(settings.setting_names())
+        assert set(get_args(ifcopenshell.geom.SETTING)) == set(
+            settings.setting_names()
+        ), "Also need to update IfcPython.i, if new settings were added/removed."
 
         assert "use-python-opencascade" in settings.setting_names()
         assert settings.get(settings.USE_PYTHON_OPENCASCADE) is False
@@ -38,7 +49,9 @@ class TestGeomSettings:
 
     def test_serializer_settings(self):
         settings = ifcopenshell.geom.serializer_settings()
-        assert set(get_args(ifcopenshell.geom.SERIALIZER_SETTING)) == set(settings.setting_names())
+        assert set(get_args(ifcopenshell.geom.SERIALIZER_SETTING)) == set(
+            settings.setting_names()
+        ), "Also need to update IfcPython.i, if new settings were added/removed."
 
         # Only for settings.
         assert "use-python-opencascade" not in settings.setting_names()
@@ -179,6 +192,28 @@ class TestAssignObject:
 
         # even though there are only 12 unique vertices as the cubes are touching
         assert len(set(vs)) == 12
+
+
+def test_iterator():
+    # just test some permutations of invocation
+    settings = ifcopenshell.geom.settings()
+    file_or_filename = [fn, ifcopenshell.open(fn)]
+    with_or_without_threads = [[], [multiprocessing.cpu_count()]]
+    includes = [
+        {},
+        {"include": ["IfcColumn"]},
+        {"include": [file_or_filename[1].by_type("IfcColumn")[0]]},
+    ]
+    for args in itertools.product(file_or_filename, with_or_without_threads, includes):
+        kwargs = functools.reduce(operator.or_, (a for a in args if isinstance(a, dict)))
+        pargs = []
+        for a in (_ for _ in args if not isinstance(_, dict)):
+            if isinstance(a, list):
+                pargs.extend(a)
+            else:
+                pargs.append(a)
+        iterator = ifcopenshell.geom.iterator(settings, *pargs, **kwargs)
+        assert iterator.initialize()
 
 
 if __name__ == "__main__":

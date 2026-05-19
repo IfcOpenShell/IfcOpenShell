@@ -17,12 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
-import ifcopenshell.api.sequence
+from typing import Any
+
 import ifcopenshell.api.resource
+import ifcopenshell.api.sequence
 import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from typing import Any
 
 
 def edit_task_time(
@@ -143,7 +144,7 @@ class Usecase:
         return next(e for e in self.file.get_inverse(self.task_time) if e.is_a("IfcTask"))
 
     def handle_resource_calculation(self):
-        resources = ifcopenshell.util.sequence.get_task_resources(self.task, is_deep=False)
+        resources = ifcopenshell.util.sequence.get_task_resources(self.task, is_recursive=False)
         for resource in resources:
             if ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleWork"):
                 ifcopenshell.api.resource.calculate_resource_usage(self.file, resource=resource)

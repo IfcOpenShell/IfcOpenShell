@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.date
 
@@ -32,11 +31,11 @@ def calculate_quantities(usecase_path, ifc_file: ifcopenshell.file, settings):
         return
     task = next(e for e in ifc_file.get_inverse(element) if e.is_a("IfcTask"))
     qto = ifcopenshell.api.pset.add_qto(
-        ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"
+        ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"  # ty:ignore[unknown-argument]
     )
     ifcopenshell.api.pset.edit_qto(
         ifc_file,
-        should_run_listeners=False,
+        should_run_listeners=False,  # ty:ignore[unknown-argument]
         qto=qto,
         properties={
             "StandardWork": ifcopenshell.util.date.ifc2datetime(element.ScheduleDuration).days,

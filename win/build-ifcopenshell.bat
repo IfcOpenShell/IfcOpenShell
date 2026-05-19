@@ -21,7 +21,7 @@
 :: a deduced generator will be used for %1 and BUILD_CFG_DEFAULT for %2 (both set in vs-cfg.cmd)
 :: Possible extra parameters are passed for the MSBuild call.
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 set PROJECT_NAME=IfcOpenShell
 echo.
 

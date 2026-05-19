@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.control
-import ifcopenshell.api.root
-import ifcopenshell.api.nest
-import ifcopenshell.guid
 from typing import Optional
+
+import ifcopenshell.api.control
+import ifcopenshell.api.nest
+import ifcopenshell.api.root
+import ifcopenshell.guid
 
 
 def add_cost_item(
@@ -59,7 +60,7 @@ def add_cost_item(
     cost_item_ = ifcopenshell.api.root.create_entity(file, ifc_class="IfcCostItem")
 
     if cost_schedule:
-        ifcopenshell.api.control.assign_control(file, cost_schedule, cost_item_)
+        ifcopenshell.api.control.assign_control(file, cost_schedule, [cost_item_])
     elif cost_item:
         ifcopenshell.api.nest.assign_object(file, related_objects=[cost_item_], relating_object=cost_item)
     return cost_item_

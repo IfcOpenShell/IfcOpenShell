@@ -120,7 +120,7 @@ public:
 
 simpletype_impl_comment = "// Function implementations for %(name)s"
 simpletype_impl_argument_type = 'if (i == 0) { return %(attr_type)s; } else { throw IfcParse::IfcAttributeOutOfRangeException("Argument index out of range"); }'
-simpletype_impl_argument = "return data_.get_attribute_value(i);"
+simpletype_impl_argument = "return get_attribute_value(i);"
 simpletype_impl_is_with_supertype = "return v == %(class_name)s_type || %(superclass)s::is(v);"
 simpletype_impl_is_without_supertype = "return v == %(class_name)s_type;"
 simpletype_impl_type = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
@@ -130,9 +130,9 @@ simpletype_impl_constructor = (
     "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v);"
 )
 simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); set_attribute_value(0, v->generalize());"
-simpletype_impl_cast = "return data_.get_attribute_value(0);"
+simpletype_impl_cast = "return get_attribute_value(0);"
 simpletype_impl_cast_templated = (
-    "aggregate_of_instance::ptr es = data_.get_attribute_value(0); return es->as< %(underlying_type)s >();"
+    "aggregate_of_instance::ptr es = get_attribute_value(0); return es->as< %(underlying_type)s >();"
 )
 simpletype_impl_declaration = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 
@@ -204,7 +204,7 @@ const char* %(schema_name)s::%(name)s::ToString(Value v) {
 }
 
 %(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {
-    return (%(schema_name)s::%(name)s::Value) data_.storage_.get<EnumerationReference>(0).index();
+    return (%(schema_name)s::%(name)s::Value) ((EnumerationReference) get_attribute_value(0)).index();
 }
 """
 
@@ -217,7 +217,7 @@ const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse:
 %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass_num_attrs)s { %(constructor_implementation)s; populate_derived(); }
 """
 
-# data_ = e; 
+# data_ = e;
 # data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
@@ -245,42 +245,26 @@ parent_type_stmt = "    if(v==%(name)s%(padding)s) { return %(parent)s; }"
 
 parent_type_test = " || %s::is(v)"
 
-optional_attr_stmt = "return !data_.get_attribute_value(%(index)d).isNull();"
+optional_attr_stmt = "return !get_attribute_value(%(index)d).isNull();"
 
-get_attr_stmt = "%(null_check)s %(non_optional_type)s v = data_.get_attribute_value(%(index)d); return v;"
-get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(data_.get_attribute_value(%(index)d));"
-get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(data_.get_attribute_value(%(index)d)))->as<%(non_optional_type_no_pointer)s>(true);"
-get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = data_.get_attribute_value(%(index)d); return es->as< %(list_instance_type)s >();"
-get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = data_.get_attribute_value(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt = "%(null_check)s %(non_optional_type)s v = get_attribute_value(%(index)d); return v;"
+get_attr_stmt_enum = "%(null_check)s return %(non_optional_type)s::FromString(get_attribute_value(%(index)d));"
+get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(get_attribute_value(%(index)d)))->as<%(non_optional_type_no_pointer)s>(true);"
+get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = get_attribute_value(%(index)d); return es->as< %(list_instance_type)s >();"
+get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = get_attribute_value(%(index)d); return es->as< %(list_instance_type)s >();"
 
 get_inverse = "if (!file_) { return nullptr; } return file_->getInverse(id_, %(schema_name_upper)s_types[%(type_index)d], %(index)d)->as<%(type)s>();"
 
-set_attr_stmt = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_instance = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, v->as<IfcUtil::IfcBaseClass>());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
-set_attr_stmt_enum =  "%(check_optional_set_begin)sset_attribute_value(%(index)d, EnumerationReference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-set_attr_stmt_array = (
-    "%(check_optional_set_begin)sset_attribute_value(%(index)d, (%(star_if_optional)sv)->generalize());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
-)
+set_attr_stmt = "%(check_optional_set_begin)sset_attribute_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_instance = "%(check_optional_set_begin)sset_attribute_value(%(index)d, v->as<IfcUtil::IfcBaseClass>());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_enum = "%(check_optional_set_begin)sset_attribute_value(%(index)d, EnumerationReference(&%(non_optional_type)s::Class(), (size_t) %(star_if_optional)sv));%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
+set_attr_stmt_array = "%(check_optional_set_begin)sset_attribute_value(%(index)d, (%(star_if_optional)sv)->generalize());%(check_optional_set_else)sunset_attribute_value(%(index)d);%(check_optional_set_end)s"
 
-constructor_stmt = (
-    "set_attribute_value(%(index)d, (%(name)s));"
-)
-constructor_stmt_enum = (
-    "set_attribute_value(%(index)d, (EnumerationReference(&%(type)s::Class(),(size_t)%(name)s)));"
-)
-constructor_stmt_array = (
-    "set_attribute_value(%(index)d, (%(name)s)->generalize());"
-)
-constructor_stmt_derived = (
-    ""
-)
-constructor_stmt_instance = (
-    "set_attribute_value(%(index)d, %(name)s ? %(name)s->as<IfcUtil::IfcBaseClass>() : (IfcUtil::IfcBaseClass*) nullptr);"
-)
+constructor_stmt = "set_attribute_value(%(index)d, (%(name)s));"
+constructor_stmt_enum = "set_attribute_value(%(index)d, (EnumerationReference(&%(type)s::Class(),(size_t)%(name)s)));"
+constructor_stmt_array = "set_attribute_value(%(index)d, (%(name)s)->generalize());"
+constructor_stmt_derived = ""
+constructor_stmt_instance = "set_attribute_value(%(index)d, %(name)s ? %(name)s->as<IfcUtil::IfcBaseClass>() : (IfcUtil::IfcBaseClass*) nullptr);"
 
 constructor_stmt_optional = " if (%(name)s) {%(stmt)s }"
 

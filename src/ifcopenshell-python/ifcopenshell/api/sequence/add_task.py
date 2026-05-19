@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.control
-import ifcopenshell.api.root
-import ifcopenshell.api.nest
-import ifcopenshell
 from typing import Optional
+
+import ifcopenshell
+import ifcopenshell.api.control
+import ifcopenshell.api.nest
+import ifcopenshell.api.root
 
 
 def add_task(
@@ -138,7 +139,7 @@ def add_task(
         task.Identification = identification
     task.IsMilestone = False
     if work_schedule:
-        ifcopenshell.api.control.assign_control(file, work_schedule, task)
+        ifcopenshell.api.control.assign_control(file, work_schedule, [task])
     elif parent_task:
         rel = ifcopenshell.api.nest.assign_object(
             file,

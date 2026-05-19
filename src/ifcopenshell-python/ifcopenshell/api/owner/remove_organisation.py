@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api.root
 import ifcopenshell.api.owner
+import ifcopenshell.api.root
 
 
 def remove_organisation(file: ifcopenshell.file, organisation: ifcopenshell.entity_instance) -> None:

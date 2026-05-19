@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
-from behave import step, given, when, then, use_step_matcher
-
+from behave import given, step, then, use_step_matcher, when
 from bimtester import util
 from bimtester.ifc import IfcStore
 from bimtester.table import TableModel
@@ -29,12 +28,8 @@ use_step_matcher("parse")
 @step('There must be exactly {number} "{ifc_class}" elements')
 def step_impl(context, number, ifc_class):
     num = len(IfcStore.file.by_type(ifc_class))
-    assert num == int(
-        number
-    ), "Could not find {} elements of {}. \
-        Found {} element(s).".format(
-        number, ifc_class, num
-    )
+    assert num == int(number), "Could not find {} elements of {}. \
+        Found {} element(s).".format(number, ifc_class, num)
 
 
 @given('a set of (key,value) called ("{key_name}","{value_name}")')
@@ -96,13 +91,9 @@ def step_impl(context, attribute_name):
 @then('there must be exactly a number of "{ifc_class}" equals to the number of distinct value')
 def step_impl(context, ifc_class):
     try:
-        context.execute_steps(
-            """
+        context.execute_steps("""
             then There must be exactly {number} "{ifc_class}" elements
-            """.format(
-                ifc_class=ifc_class, number=context.model.get_count_distinct_values()
-            )
-        )
+            """.format(ifc_class=ifc_class, number=context.model.get_count_distinct_values()))
     except AssertionError as error:
         str_error = str(error)
         assert False, str_error[: str_error.find("Traceback")]

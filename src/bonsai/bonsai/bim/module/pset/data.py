@@ -16,14 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import bonsai.tool as tool
-import bonsai.bim.schema
 
+import bonsai.bim.schema
+import bonsai.tool as tool
 
 # TODO: Should this cache belong here? Dunno. Maybe.
 is_expanded: dict[int, bool] = {}
@@ -43,6 +45,7 @@ def refresh():
     WorkSchedulePsetsData.is_loaded = False
     ZonePsetsData.is_loaded = False
     AddEditCustomPropertiesData.is_loaded = False
+    PsetsGeneralData.is_loaded = False
 
 
 class Data:
@@ -266,7 +269,7 @@ class GroupQtosData(Data):
 
     @classmethod
     def load(cls):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         assert (active_group := props.active_group)
         ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
@@ -279,7 +282,7 @@ class GroupPsetData(Data):
 
     @classmethod
     def load(cls):
-        props = tool.Blender.get_group_props()
+        props = tool.Group.get_group_props()
         assert (active_group := props.active_group)
         ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
@@ -357,3 +360,31 @@ class AddEditCustomPropertiesData:
         return [
             (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", "")) for t in sorted(declarations)
         ]
+
+
+class PsetsGeneralData:
+    data: dict[str, Any] = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.data = {
+            "bsdd_enum_items": cls.bsdd_enum_items(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def bsdd_enum_items(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        res: list[tuple[str, str, str]] = []
+        dictionaries = tool.Bsdd.get_active_bsdd_enum_items()
+        if not dictionaries:
+            return res
+        res.append(
+            (
+                "BBIM_BSDD",
+                "All Data Dictionaries",
+                "Manage properties from all active buildingSMART Data Dictionaries",
+            )
+        )
+        res.extend([(uri, f"bSDD: {name}", descr) for uri, name, descr in tool.Bsdd.get_active_bsdd_enum_items()])
+        return res

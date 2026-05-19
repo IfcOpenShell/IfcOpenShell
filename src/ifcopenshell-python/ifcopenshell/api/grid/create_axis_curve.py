@@ -17,12 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
 import ifcopenshell.util.placement
-import numpy as np
-from ifcopenshell.util.shape_builder import VectorType, V, ifc_safe_vector_type, np_apply_matrix
+import ifcopenshell.util.unit
+from ifcopenshell.util.shape_builder import (
+    V,
+    VectorType,
+    ifc_safe_vector_type,
+    np_apply_matrix,
+)
 
 
 def create_axis_curve(

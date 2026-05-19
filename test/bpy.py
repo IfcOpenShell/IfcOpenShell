@@ -24,15 +24,19 @@
 ###############################################################################
 
 import os
-import bpy
 import sys
 import time
-try: from io_import_scene_ifc import import_ifc
-except: 
+
+import bpy
+
+try:
+    from io_import_scene_ifc import import_ifc
+except:
     print("[Error] Unable to import IfcOpenShell")
     sys.exit(1)
-from mathutils import Vector as V
 from math import radians
+
+from mathutils import Vector as V
 
 scn = bpy.context.scene
 
@@ -49,8 +53,8 @@ if not succes:
     sys.exit(1)
 
 dt = time.time()-t1
-print ("[Notice] Conversion took %.2f seconds"%dt) 
-    
+print ("[Notice] Conversion took %.2f seconds"%dt)
+
 cam = bpy.data.cameras.new('cam')
 cam.angle = radians(45)
 cam_ob = bpy.data.objects.new('cam',cam)
@@ -72,7 +76,7 @@ def material(name,settings):
     if not m: return
     for k,v in settings.items():
         setattr(m,k,v)
-        
+
 material("IfcWall",{"diffuse_color":[1,1,1],"diffuse_intensity":1})
 material("IfcWallStandardCase",{"diffuse_color":[1,1,1],"diffuse_intensity":1})
 material("IfcSite",{"diffuse_color":[0.4,0.5,0.25]})

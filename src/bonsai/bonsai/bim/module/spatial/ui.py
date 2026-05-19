@@ -17,14 +17,21 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
+
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
+
 import bonsai.tool as tool
-from typing import TYPE_CHECKING, cast, Any
+from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
+    from bonsai.bim.module.spatial.prop import (
+        BIMContainer,
+        BIMSpatialDecompositionProperties,
+        Element,
+    )
 
 
 class BIM_PT_spatial(Panel):
@@ -55,26 +62,6 @@ class BIM_PT_spatial(Panel):
                 row.prop(osprops, "container_obj", text="", icon="OUTLINER_COLLECTION")
                 row.operator("bim.assign_container", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_container", icon="CANCEL", text="")
-
-            # TODO: deprecate as it's very hard to discover
-            # containers are not even selectable by default.
-            if SpatialData.data["selected_containers"]:
-                row = self.layout.row()
-                row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
-                for name in SpatialData.data["selected_containers"][:3]:
-                    row = self.layout.row()
-                    row.label(text=name, icon="OUTLINER_COLLECTION")
-                if len(SpatialData.data["selected_containers"]) > 3:
-                    row = self.layout.row()
-                    row.label(text=f"... {len(SpatialData.data['selected_containers']) - 3} More")
-                row = self.layout.row(align=True)
-                row.operator("bim.reference_structure", icon="LINKED", text="Reference Selected")
-                row.operator("bim.dereference_structure", icon="UNLINKED", text="")
-                row = self.layout.row()
-                row.operator("bim.copy_to_container", icon="COPYDOWN", text="Copy Object To Selected")
-            else:
-                row = self.layout.row()
-                row.label(text="No Selected Containers")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
@@ -152,6 +139,17 @@ class BIM_PT_spatial_decomposition(Panel):
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
+            if tool.Blender.get_addon_preferences().container_hide_show_isolate:
+                op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="")
+                op.mode = "ISOLATE"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+                op.mode = "SHOW"
+                op.container = ifc_definition_id
+                op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+                op.mode = "HIDE"
+                op.container = ifc_definition_id
+
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)
             col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
@@ -211,6 +209,7 @@ class BIM_PT_spatial_decomposition(Panel):
         row_ = col.row(align=True)
         row_.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
         row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
+        row_.operator("bim.copy_to_container", icon="MOD_DISPLACE", text="").container = ifc_definition_id
 
         col = row.column()
         row_ = col.row(align=True)
@@ -252,7 +251,7 @@ class BIM_PT_grids(Panel):
     bl_options = {"HEADER_LAYOUT_EXPAND"}
 
     def draw(self, context):
-        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
+        self.layout.row().operator("bim.add_grid", icon="ADD", text="Add Grids")
 
     def draw_header(self, context):
         props = tool.Spatial.get_grid_props()
@@ -296,7 +295,7 @@ class BIM_UL_containers_manager(UIList):
         if item:
             row = layout.row(align=True)
             icon = self.icon_by_class.get(item.ifc_class, "META_PLANE")
-            split = row.split(factor=0.85)
+            split = row.split(factor=0.8)
             if item.long_name:
                 split2 = split.split(factor=0.7)
                 row = split2.row(align=True)
@@ -358,7 +357,7 @@ class BIM_UL_elements(UIList):
         super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
-    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int):
+    def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int) -> None:
         icon_id = "DISCLOSURE_TRI_DOWN" if is_expanded else "DISCLOSURE_TRI_RIGHT"
         row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).element_index = index
 

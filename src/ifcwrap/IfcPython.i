@@ -93,7 +93,12 @@
 %ignore curve_to_face_upgrade_impl;
 %ignore loop_to_function_item_upgrade_impl;
 
+%ignore IfcGeom::geometry_exception;
+%ignore IfcGeom::too_many_faces_exception;
+%ignore ifcopenshell::geometry::taxonomy::topology_error;
+
 // settings, can this done more generally?
+// GeometrySerializer.h
 %ignore UseElementNames;
 %ignore UseElementGuids;
 %ignore UseElementStepIds;
@@ -103,6 +108,8 @@
 %ignore FloatingPointDigits;
 %ignore BaseUri;
 %ignore WktUseSection;
+%ignore SeparateZUpNode;
+// ConversionSettings.h
 %ignore MesherLinearDeflection;
 %ignore MesherAngularDeflection;
 %ignore ReorientShells;
@@ -137,14 +144,29 @@
 %ignore SiteLocalPlacement;
 %ignore BuildingLocalPlacement;
 %ignore NoParallelMapping;
+%ignore PermissiveShapeReuse;
 %ignore ForceSpaceTransparency;
 %ignore CircleSegments;
+%ignore CgalSmoothAngleDegrees;
 %ignore KeepBoundingBoxes;
 %ignore SurfaceColour;
-%ignore PiecewiseStepType;
-%ignore PiecewiseStepParam;
+%ignore ComputeCurvature;
+%ignore FunctionStepType;
+%ignore FunctionStepParam;
 %ignore ModelOffset;
 %ignore ModelRotation;
+%ignore TriangulationType;
+%ignore CgalEmitOriginalEdges;
+%ignore OcctNoCleanTriangulation;
+%ignore CacheShapes;
+%ignore MakeVolume;
+%ignore DeferProcessingFirstElement;
+%ignore MaxOffset;
+%ignore MaxOffsetDeviation;
+%ignore ApplyOffset;
+
+%ignore XmlSerializerFactory;
+%ignore JsonSerializerFactory;
 
 // Triangulated representation helper struct
 %ignore EdgeKey;
@@ -188,6 +210,7 @@
 	#include "../serializers/WavefrontObjSerializer.h"
 	#include "../serializers/ColladaSerializer.h"
 	#include "../serializers/HdfSerializer.h"
+	#include "../serializers/RocksDbSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"
@@ -280,6 +303,7 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 #endif
 	#include "../ifcgeom/Iterator.h"
 	#include "../ifcgeom/ConversionResult.h"
+	#include "../ifcgeom/hybrid_kernel.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -288,6 +312,8 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 	#include "../serializers/XmlSerializer.h"
 	#include "../serializers/GltfSerializer.h"
 	#include "../serializers/TtlWktSerializer.h"
+	#include "../serializers/RocksDbSerializer.h"
+	#include "../serializers/JsonSerializer.h"
 
 #ifdef HAS_SCHEMA_2x3
 	#include "../ifcparse/Ifc2x3.h"

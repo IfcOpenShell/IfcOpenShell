@@ -16,27 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import os
-import bpy
-import pytest
+import pprint
+import shutil
 import traceback
+import types
 import webbrowser
-import numpy as np
-import test.bim.stub
+from collections.abc import Generator
+from inspect import signature
+from math import radians
+from pathlib import Path
+from typing import Any, Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import bonsai.tool as tool
-import bonsai.bim.handler
-from bonsai.bim.ifc import IfcStore
-from bonsai.tool.brick import BrickStore
-from bonsai.bim.module.model.data import AuthoringData
-from pytest_bdd import scenarios, given, when, then, parsers
-from inspect import signature
+import numpy as np
+import pytest
 from mathutils import Vector
-from math import radians
-from pathlib import Path
-from typing import Union, Any
+from pytest_bdd import given, parsers, scenarios, then, when
+
+import bonsai.bim.handler
+import bonsai.tool as tool
+import test.bim.stub
+from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.tool.brick import BrickStore
 
 scenarios("feature")
 
@@ -46,6 +54,7 @@ variables = {
     "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
+    "temp_project_path": tool.Project.TEMP_PROJECT_PATH.as_posix(),
 }
 
 # Monkey-patch webbrowser opening since we want to test headlessly
@@ -54,33 +63,55 @@ webbrowser.open = lambda x: True
 
 tool.Bsdd.client = test.bim.stub.bSDDClientStub()
 
+PYTEST_BLENDER_NO_BACKGROUND = bool(os.getenv("PYTEST_BLENDER_NO_BACKGROUND"))
+"""Option to run Blender not in background.
+
+Can be useful for debugging, but has caveats - can't use ``wm.read_homefile``
+as resets the ``bpy.context`` and some it's members become `None`.
+"""
+
+TMP = Path(f"{variables['cwd']}/test/files/temp")
+
+EPSET_DRAWING = Path.cwd() / "bonsai/bim/data/pset/EPset_Drawing.ifc"
+EPSET_DRAWING_BYTES = EPSET_DRAWING.read_bytes()
+RELOAD_EPSET_DRAWING = False
+
 
 class PanelSpy:
-    def __init__(self, panel: type[bpy.types.Panel]):
+    def __init__(self, blender_panel: type[bpy.types.Panel]):
         self.is_spy_dirty = True
-        self.panel = panel
+        self.blender_panel = blender_panel
 
-    def refresh_spy(self):
+    def refresh_spy(self) -> None:
         if self.is_spy_dirty:
             self.is_spy_dirty = False
             self.spied_attr: Union[str, None] = None
             self.spied_labels: list[str] = []
             self.spied_props: list[dict[str, Any]] = []
             self.spied_operators: list[dict[str, Any]] = []
-            self.spied_lists: list[dict[str, Any]] = []
-            self.panel.draw(self, bpy.context)
+            self.spied_lists: list[TemplateListSpy] = []
+            if hasattr(self.blender_panel, "draw_header"):
+                self.blender_panel.draw_header(self, bpy.context)
+            self.blender_panel.draw(self, bpy.context)
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> PanelSpy | Any:
         self.spied_attr = attr
-        if annotation := self.panel.__annotations__.get(attr, None):
+        try:
+            annotations = self.blender_panel.__annotations__
+        except AttributeError:
+            annotations = type(self.blender_panel).__annotations__
+        if annotation := annotations.get(attr, None):
             return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
-        if hasattr(self.panel, attr) and not callable(getattr(self.panel, attr)):
-            return getattr(self.panel, attr)
+        sentinel = object()
+        attr_value = getattr(self.blender_panel, attr, sentinel)
+        # Don't use `callable`, because we might have `Data` classes as panel attributes.
+        if attr_value is not sentinel and not isinstance(attr_value, types.FunctionType):
+            return attr_value
         return self
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: Any, **kwargs: Any) -> PanelSpy | TemplateListSpy | OperatorSpy | Any:
         if self.spied_attr in ("row", "column", "box", "separator", "menu", "operator_menu_enum", "split"):
             return self
         elif self.spied_attr == "template_list":
@@ -102,14 +133,22 @@ class PanelSpy:
             self.spied_labels.append(kwargs["text"])
             return self
         elif self.spied_attr == "prop":
-            props, name = args
+            if args:
+                props, name = args
+            else:
+                props = kwargs.get("data")
+                name = kwargs.get("property")
             props: bpy.types.bpy_struct
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
             prop_type = props.bl_rna.properties[name].type
             enum_items = []
             if prop_type == "ENUM":
-                prop_keywords = props.__annotations__[name].keywords
+                try:
+                    annotations = props.__annotations__
+                except AttributeError:
+                    annotations = type(props).__annotations__
+                prop_keywords = annotations[name].keywords
                 items = prop_keywords.get("items")
                 if items is not None:
                     if isinstance(items, (list, tuple)):
@@ -149,15 +188,20 @@ class PanelSpy:
             spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}, "after": after}
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
+        elif self.spied_attr == "panel":
+            default_closed = kwargs.get("default_closed", False)
+            header = self
+            panel = None if default_closed else self
+            return header, panel
         else:
-            getattr(self.panel, self.spied_attr)(self, *args, **kwargs)
+            return getattr(self.blender_panel, self.spied_attr)(self, *args, **kwargs)
 
 
 class OperatorSpy:
-    def __init__(self, spied_data):
+    def __init__(self, spied_data: dict[str, Any]):
         self.spied_data = spied_data
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if name == "spied_data":
             # Allow direct setting of spied_data only during initialization
             super().__setattr__(name, value)
@@ -166,17 +210,19 @@ class OperatorSpy:
 
 
 class TemplateListSpy(PanelSpy):
-    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict) -> None:
+    items: bpy.types.bpy_prop_collection_idprop[bpy.types.PropertyGroup]
+    active_index: int
+    active_item: bpy.types.PropertyGroup | None
+    blender_panel: type[bpy.types.UIList]
+
+    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict[str, Any]):
         self.spied_data = spied_data
         self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
         self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
-        try:
-            self.active_item = self.items[self.active_index]
-        except:
-            self.active_item = None
-        self.panel = template_list
+        self.active_item = tool.Blender.get_active_uilist_element(self.items, self.active_index)
+        self.blender_panel = template_list
 
-        self.rows = []
+        self.rows: list[TemplateListItemSpy] = []
         for item in self.items:
             self.rows.append(TemplateListItemSpy(self, item))
 
@@ -188,16 +234,19 @@ class TemplateListSpy(PanelSpy):
         except:
             assert False, f"Could not set active index {index}"
 
+    def __repr__(self) -> str:
+        return f"TemplateListSpy({self.spied_data['listtype_name']}, {len(self.items)} items, active_index={self.active_index})"
+
 
 class TemplateListItemSpy(PanelSpy):
     def __init__(self, parent: TemplateListSpy, item):
-        self.panel = parent.panel
+        self.blender_panel = blender_panel = parent.blender_panel
         self.spied_attr: Union[str, None] = None
         self.spied_labels: list[str] = []
         self.spied_props: list[dict[str, Any]] = []
         self.spied_operators: list[dict[str, Any]] = []
-        if len(signature(parent.panel.draw_item).parameters) == 8:
-            parent.panel.draw_item(
+        if len(signature(blender_panel.draw_item).parameters) == 8:
+            blender_panel.draw_item(  # ty:ignore[missing-argument]
                 self,
                 bpy.context,
                 self,
@@ -208,7 +257,7 @@ class TemplateListItemSpy(PanelSpy):
                 parent.spied_data["active_propname"],
             )
         else:
-            parent.panel.draw_item(
+            blender_panel.draw_item(
                 self,
                 bpy.context,
                 self,
@@ -222,7 +271,8 @@ class TemplateListItemSpy(PanelSpy):
             )
 
 
-ui_name_cache = {}
+ui_name_cache: dict[str, str] = {}
+"""Mapping of UI panel names to their bl_idnames (e.g. `xxx` in `bpy.types.xxx`)."""
 panel_spy: Union[PanelSpy, None] = None
 
 
@@ -234,6 +284,8 @@ def create_ui_name_cache():
         try:
             panel_type = getattr(bpy.types, bl_idname)
             if panel_type.bl_rna.base.name == "Panel":
+                if "_tab_" in panel_type.bl_idname:
+                    continue  # Tab panels are just groups and not relevant in testing
                 ui_name_cache[panel_type.bl_label] = panel_type.bl_idname
             elif panel_type.bl_rna.base.name == "Operator":
                 ui_name_cache[panel_type.bl_label] = bl_idname
@@ -271,7 +323,8 @@ def an_untestable_scenario():
 @when("an empty Blender session is started")
 def an_empty_blender_session():
     IfcStore.purge()
-    bpy.ops.wm.read_homefile(app_template="")
+    if not PYTEST_BLENDER_NO_BACKGROUND:
+        bpy.ops.wm.read_homefile(app_template="", use_factory_startup=True)
     if len(bpy.data.objects) > 0:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
@@ -300,6 +353,21 @@ def an_empty_ifc_2x3_project():
     bpy.ops.bim.create_project()
 
 
+@given(parsers.parse("I load previously saved IFC project"))
+@when(parsers.parse("I load previously saved IFC project"))
+@then(parsers.parse("I load previously saved IFC project"))
+def load_previously_saved_ifc_project() -> None:
+    filepath = tool.Project.TEMP_PROJECT_PATH
+    bpy.ops.bim.load_project(filepath=filepath.__str__())
+
+
+@given(parsers.parse("I save IFC project"))
+@when(parsers.parse("I save IFC project"))
+@then(parsers.parse("I save IFC project"))
+def saving_ifc_project() -> None:
+    tool.Project.save_test_project()
+
+
 @given("the Brickschema is stubbed")
 def the_brickschema_is_stubbed():
     # This makes things run faster since we don't need to load the entire brick schema
@@ -310,14 +378,46 @@ def the_brickschema_is_stubbed():
 @given(parsers.parse('I look at the "{panel}" panel'))
 @when(parsers.parse('I look at the "{panel}" panel'))
 @then(parsers.parse('I look at the "{panel}" panel'))
-def i_look_at_the_panel_panel(panel):
-    global ui_name_cache
+def i_look_at_the_panel_panel(panel: str) -> None:
+    # Option to provide explicit panel name if panel names overlap.
+    panel_class = getattr(bpy.types, panel, None)
+
+    if panel_class is None or panel_class.bl_rna.base.name not in ("Panel", "Operator", "Menu", "UIList"):
+        global ui_name_cache
+        create_ui_name_cache()
+        if panel not in ui_name_cache:
+            assert False, f"Panel '{panel}' not found in `bpy.types` and in {ui_name_cache}"
+        panel_class = getattr(bpy.types, ui_name_cache[panel])
+
     global panel_spy
-    create_ui_name_cache()
-    if panel not in ui_name_cache:
-        assert False, f"Panel {panel} not found in {ui_name_cache}"
-    panel_spy = PanelSpy(getattr(bpy.types, ui_name_cache[panel]))
+    panel_spy = PanelSpy(panel_class)
     panel_spy.refresh_spy()
+
+
+@given(parsers.parse("I look at the tool header"))
+@when(parsers.parse("I look at the tool header"))
+@then(parsers.parse("I look at the tool header"))
+def i_look_at_the_tool_header() -> None:
+    from bonsai.bim.module.model.workspace import EditObjectUI
+
+    class MockRegion:
+        type = "UI"
+
+    class MockContext:
+        def __getattr__(self, name):
+            if name == "region":
+                return MockRegion()
+            return getattr(bpy.context, name)
+
+    global panel_spy
+    panel_spy = PanelSpy(EditObjectUI)
+    panel_spy.is_spy_dirty = False
+    panel_spy.spied_attr = None
+    panel_spy.spied_labels = []
+    panel_spy.spied_props = []
+    panel_spy.spied_operators = []
+    panel_spy.spied_lists = []
+    EditObjectUI.draw(MockContext(), panel_spy)
 
 
 @given(parsers.parse('I open the "{name}" menu'))
@@ -415,18 +515,21 @@ def i_dont_see_text_in_the_nth_list(text, nth):
 @given(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
 @when(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
 @then(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
-def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth):
+def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button: str, text: str, nth: str) -> None:
     """
-    :param button: The text or icon of the button to click.
+    :param button: The text or icon or name of the button/prop to click.
+    :param text: The text to search for in the row.
+    :param nth: E.g. "1st", "2nd", "5th".
     """
+
     assert panel_spy
     panel_spy.refresh_spy()
-    nth = int("".join([c for c in nth if c.isnumeric()]))
-    if len(panel_spy.spied_lists) < nth:
-        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    nth_ = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth_:
+        assert False, f"{nth_} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
     debug = []
     for i, template_list in enumerate(panel_spy.spied_lists):
-        if i + 1 != nth:
+        if i + 1 != nth_:
             continue
         for row in template_list.rows:
             is_row = False
@@ -440,7 +543,8 @@ def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth
                     is_row = True
             if is_row:
                 _i_click_button_on_panel(button, row)
-                return True
+                # Success.
+                return
     debug = "\n".join(debug)
     assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
 
@@ -502,7 +606,7 @@ def i_see_the_prop_property(prop):
     panel_spy.refresh_spy()
     assert [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {panel_spy.spied_props}"
+    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
 
 @given(parsers.parse('I don\'t see the "{prop}" property'))
@@ -513,7 +617,7 @@ def i_dont_see_the_prop_property(prop):
     panel_spy.refresh_spy()
     assert not [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
-    ], f"Property {prop} not found in {panel_spy.spied_props}"
+    ], f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
 
 @given(parsers.parse('I see the "{prop}" property is "{value}"'))
@@ -528,7 +632,7 @@ def i_see_the_prop_property_is_value(prop, value):
                 spied_prop["value"] == value
             ), f"Property {prop} value is not {value} - it is actually {spied_prop['value']}"
             return
-    assert False, f"Property {prop} not found in {panel_spy.spied_props}"
+    assert False, f"Property {prop} not found in {pprint.pformat(panel_spy.spied_props)}"
 
 
 @given(parsers.parse('I set the "{prop}" property to "{value}"'))
@@ -536,25 +640,46 @@ def i_see_the_prop_property_is_value(prop, value):
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
 def i_set_the_prop_property_to_value(prop: str, value: str):
     """
-    :param prop: Could be either property name, property text, property icon
-        or property index (e.g. "1st", "2nd", "5th").
+    :param prop: Could be either property name, property text, property icon,
+        property index (e.g. "1st", "2nd", "5th"), or Nth named property
+        (e.g. "2nd Literal" for the 2nd property called "Literal").
+    :param value:
+        For boolean propeties - 'TRUE' or 'FALSE'.
     """
     value = value.strip()
     assert panel_spy
     panel_spy.refresh_spy()
     is_nth = False
-    if prop[0].isnumeric() and (prop.endswith("st") or prop.endswith("nd") or prop.endswith("th")):
+    is_nth_named = False
+    nth_target = 0
+    prop_name = prop
+    if " " in prop and prop[0].isnumeric():
+        parts = prop.split(" ", 1)
+        if parts[0].endswith(("st", "nd", "th")):
+            is_nth_named = True
+            nth_target = int(parts[0][:-2]) - 1
+            prop_name = parts[1]
+    elif prop[0].isnumeric() and prop.endswith(("st", "nd", "th")):
         is_nth = True
+    named_count = 0
     for nth, spied_prop in enumerate(panel_spy.spied_props):
         if is_nth and nth != int(prop[:-2]) - 1:
             continue
-        if not is_nth and prop not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+        if is_nth_named:
+            if prop_name not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+                continue
+            if named_count != nth_target:
+                named_count += 1
+                continue
+        elif not is_nth and prop not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
             continue
         if spied_prop["prop_type"] == "BOOLEAN":
             if value == "TRUE":
                 setattr(spied_prop["props"], spied_prop["name"], True)
             elif value == "FALSE":
                 setattr(spied_prop["props"], spied_prop["name"], False)
+            else:
+                assert False, f"Unexpected value for BOOLEAN property: '{value}'. Allowed values: TRUE, FALSE."
         elif spied_prop["prop_type"] == "FLOAT":
             setattr(spied_prop["props"], spied_prop["name"], float(value))
         elif spied_prop["prop_type"] == "INT":
@@ -590,12 +715,16 @@ def the_name_list_has_total_items(name, total):
 @given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @then(parsers.parse('I can select the "{item_name}" item in the "{list_name}" list'))
-def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+def i_select_the_item_name_item_in_the_list_name_list(item_name: str, list_name: str) -> None:
+    """
+    :param item_name: The ``.name`` of the item to select.
+    :param list_name: List type name, e.g. ``BIM_UL_containers_manager``.
+    """
     assert panel_spy
     panel_spy.refresh_spy()
     for template_list in panel_spy.spied_lists:
         if list_name == template_list.spied_data["listtype_name"]:
-            item_names = []
+            item_names: list[str] = []
             for i, item in enumerate(template_list.items):
                 item_names.append(item.name)
                 if item.name == item_name:
@@ -608,6 +737,8 @@ def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
 
 @when("I load a new pset template file")
 def i_load_a_new_pset_template_file():
+    global RELOAD_EPSET_DRAWING
+    RELOAD_EPSET_DRAWING = True
     props = tool.PsetTemplate.get_pset_template_props()
     IfcStore.pset_template_path = props.pset_template_files
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
@@ -739,9 +870,11 @@ def i_press_operator_and_expect_error(operator, error_msg):
     assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
 
 
+# TODO: We should rename 'I press' to 'I run' or 'I execute'
+# to avoid confusion with 'I click'.
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
-def i_press_operator(operator):
+def i_press_operator(operator: str) -> types.NoneType:
     operator = replace_variables(operator)
     try:
         if "(" in operator:
@@ -753,7 +886,7 @@ def i_press_operator(operator):
         assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
-def _i_click_button_on_panel(button, panel_spy):
+def _i_click_button_on_panel(button: str, panel_spy: PanelSpy) -> None:
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
             spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
@@ -766,11 +899,12 @@ def _i_click_button_on_panel(button, panel_spy):
             setattr(spied_prop["props"], spied_prop["name"], not bool(val))
             panel_spy.is_spy_dirty = True
             return
-    if button == "OK" and panel_spy.panel.bl_rna.base.name == "Operator":
+    if button == "OK" and panel_spy.blender_panel.bl_rna.base.name == "Operator":
         # Clicked confirm on an operator's draw dialog
-        return i_press_operator(panel_spy.panel.bl_idname)
+        return i_press_operator(panel_spy.blender_panel.bl_idname)
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
-    debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {panel_spy.spied_props}"
+    debug_props = pprint.pformat(panel_spy.spied_props)
+    debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {debug_props}"
     assert False, f"Could not find {button}:\n{debug}"
 
 
@@ -784,6 +918,29 @@ def i_click_button(button):
     assert panel_spy
     panel_spy.refresh_spy()
     _i_click_button_on_panel(button, panel_spy)
+
+
+@given(parsers.parse('I click the "{nth}" "{button}"'))
+@when(parsers.parse('I click the "{nth}" "{button}"'))
+@then(parsers.parse('I click the "{nth}" "{button}"'))
+def i_click_the_nth_button(nth, button):
+    """
+    :param nth: Ordinal like "1st", "2nd", "3rd" to select the Nth matching button.
+    :param button: The text or icon of the button to click.
+    """
+    assert panel_spy
+    panel_spy.refresh_spy()
+    target = int(nth[:-2]) - 1
+    count = 0
+    for spied_operator in panel_spy.spied_operators:
+        if spied_operator["text"] == button or spied_operator["icon"] == button:
+            if count == target:
+                spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
+                panel_spy.is_spy_dirty = True
+                return
+            count += 1
+    debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
+    assert False, f"Could not find {nth} {button}:\n{debug}"
 
 
 @given(parsers.parse('I click the "{button}" after the text "{text}"'))
@@ -996,11 +1153,9 @@ def the_object_name_exists(name: str) -> bpy.types.Object:
 
 
 @then(parsers.parse('the object "{name}" does not exist'))
-def the_object_name_does_not_exist(name) -> bpy.types.Object:
+def the_object_name_does_not_exist(name) -> None:
     obj = bpy.data.objects.get(name)
-    if not obj:
-        assert True, f'The object "{name}" exists'
-    return obj
+    assert obj is None, f'The object "{name}" exists'
 
 
 @given(parsers.parse('the collection "{name}" exists'))
@@ -1088,6 +1243,11 @@ def the_material_name_exists(name: str) -> bpy.types.Material:
 @then(parsers.parse('the material "{name}" does not exist'))
 def the_material_name_does_not_exist(name):
     assert bpy.data.materials.get(name) is None, "Material exists"
+
+
+@then(parsers.parse('the mesh "{name}" does not exist'))
+def the_mesh_name_does_not_exist(name: str) -> None:
+    assert bpy.data.meshes.get(name) is None, f"Mesh '{name}' exists"
 
 
 def get_ifc_material_by_name(name: str) -> Union[ifcopenshell.entity_instance, None]:
@@ -1467,10 +1627,19 @@ def the_object_name_has_a_vertex_at_location(name, location):
     is_pass = False
     target = Vector([float(co) for co in location.split(",")])
     verts = []
-    for v in obj.data.vertices:
-        verts.append(obj.matrix_world @ v.co)
-        if (verts[-1] - target).length < 0.001:
-            is_pass = True
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    obj_eval = obj.evaluated_get(depsgraph)
+    mesh = obj_eval.to_mesh(preserve_all_data_layers=False, depsgraph=depsgraph)
+    try:
+        for inst in depsgraph.object_instances:
+            if inst.object.original is obj:
+                mw = inst.matrix_world
+                for i, v in enumerate(mesh.vertices):
+                    verts.append(mw @ v.co)
+                    if (verts[-1] - target).length < 0.001:
+                        is_pass = True
+    finally:
+        obj_eval.to_mesh_clear()
     assert is_pass, f"No verts found at {location}: {verts}"
 
 
@@ -1729,19 +1898,19 @@ def i_fail():
 @given(parsers.parse("I save sample test files"))
 @when(parsers.parse("I save sample test files"))
 @then(parsers.parse("I save sample test files"))
-def saving_sample_test_files(and_open_in_blender=None):
-    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
+def saving_sample_test_files() -> None:
+    filepath = TMP / "sample_test_file"
     print(f"Saved to {filepath}")
-    bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
-    bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
+    bpy.ops.bim.save_project(filepath=filepath.with_suffix(".ifc").__str__(), should_save_as=True)
+    bpy.ops.wm.save_as_mainfile(filepath=filepath.with_suffix(".blend").__str__())
 
 
 @given(parsers.parse("I load test blend file"))
 @when(parsers.parse("I load test blend file"))
 @then(parsers.parse("I load test blend file"))
 def opening_sample_test_files_in_blender():
-    filepath = f"{variables['cwd']}/test/files/temp/sample_test_file.blend"
-    bpy.ops.wm.open_mainfile(filepath=filepath, display_file_selector=False)
+    filepath = TMP / "sample_test_file.blend"
+    bpy.ops.wm.open_mainfile(filepath=filepath.__str__(), display_file_selector=False)
 
 
 # TODO: merge to single fixture with `saving_sample_test_files`; add "and wait"
@@ -1763,3 +1932,16 @@ def run_pdb():
     import pdb
 
     pdb.set_trace()
+
+
+@given(parsers.parse("I start debugpy"))
+@when(parsers.parse("I start debugpy"))
+@then(parsers.parse("I start debugpy"))
+def run_debugpy() -> types.NoneType:
+    import debugpy
+
+    debugpy.listen(5678)
+    debugpy.wait_for_client()
+
+    # Set a breakpoint here.
+    print("debugpy connected")

@@ -18,16 +18,17 @@
 
 import numpy
 import pytest
-import test.bootstrap
-import ifcopenshell.api.feature
-import ifcopenshell.api.root
-import ifcopenshell.api.unit
-import ifcopenshell.api.system
-import ifcopenshell.api.spatial
-import ifcopenshell.api.geometry
+
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.system
+import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifcopenshell.util.placement
+import test.bootstrap
 
 
 class TestEditObjectPlacement(test.bootstrap.IFC4):

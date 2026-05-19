@@ -17,21 +17,27 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import http.client
+from collections.abc import Sequence
 from pathlib import Path
 from urllib.parse import urlparse
 
-import pytest
-import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.element
-import test.bootstrap
+from typing_extensions import assert_never
+
+try:
+    from bs4 import BeautifulSoup
+except:
+    pass
 
 # Where it's also reflected:
 # - .github/workflows/ci-ifcopenshell-python.yml
 # - .github/workflows/ci-ifcopenshell-python-pypi.yml
 # - src/ifcopenshell-python/Makefile (PYVERSION check)
-SUPPORTED_PY_VERSIONS = ("39", "310", "311", "312", "313")
+SUPPORTED_PY_VERSIONS = ("310", "311", "312", "313", "314")
 SUPPORTED_PLATFORMS = ("win64", "linux64", "macos64", "macosm164")
+
+WASM_SUPPORTED_PY_VERSIONS = ("313",)
+WASM_PLATFORM = "pyodide_2025_0_wasm32"
+WASM_TEMPLATE = "https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-{BINARY_VERSION}%2B{BUILD_COMMIT}-cp{PYNUMBER}-cp{PYNUMBER}-{PLATFORM}.whl"
 
 
 class TestPackageSupportedPlatforms:
@@ -47,16 +53,58 @@ class TestPackageSupportedPlatforms:
         response = conn.getresponse()
         build_html = response.read().decode("utf-8")
 
+        def find_make_var(var_name: str) -> str:
+            line = next(l for l in text.splitlines() if l.startswith(f"{var_name}:="))
+            return line.partition(":=")[2]
+
+        BINARY_VERSION = find_make_var("BINARY_VERSION")
+        BUILD_COMMIT = find_make_var("BUILD_COMMIT")
+
+        required_urls: list[str] = []
+
+        base_kwargs = {
+            "BINARY_VERSION": BINARY_VERSION,
+            "BUILD_COMMIT": BUILD_COMMIT,
+        }
+
+        # Non-WASM binaries.
         URL_TYPES = ("IOS_URL", "IFCCONVERT_URL")
-        missing_urls: set[str] = set()
         for url_type in URL_TYPES:
-            line = next(l for l in text.splitlines() if l.startswith(f"{url_type}:="))
-            _, _, url_template = line.partition(":=")
+            url_template = find_make_var(url_type)
             url_template = url_template.replace("$(", "{").replace(")", "}")
             for platform in SUPPORTED_PLATFORMS:
-                for pyver in SUPPORTED_PY_VERSIONS:
-                    url = url_template.format(PYNUMBER=pyver, PLATFORM=platform)
-                    if url not in build_html:
-                        missing_urls.add(url)
+                kwargs = base_kwargs | {"PLATFORM": platform}
+
+                if url_type == "IOS_URL":
+                    for pyver in SUPPORTED_PY_VERSIONS:
+                        url = url_template.format(**kwargs, PYNUMBER=pyver)
+                        required_urls.append(url)
+
+                elif url_type == "IFCCONVERT_URL":
+                    url = url_template.format(**kwargs)
+                    required_urls.append(url)
+
+                else:
+                    assert_never(url_type)
+
+        # WASM wheels.
+        for pyver in WASM_SUPPORTED_PY_VERSIONS:
+            url = WASM_TEMPLATE.format(
+                PYNUMBER=pyver,
+                PLATFORM=WASM_PLATFORM,
+                BINARY_VERSION=BINARY_VERSION,
+                BUILD_COMMIT=BUILD_COMMIT,
+            )
+            required_urls.append(url)
+
+        # Verify all required URLs are present in the build HTML.
+        missing_urls: Sequence[str]
+        if "BeautifulSoup" in globals():
+            missing_urls = set(required_urls) - set(a["href"] for a in BeautifulSoup(build_html).find_all("a"))
+        else:
+            missing_urls = []
+            for url in required_urls:
+                if url not in build_html:
+                    missing_urls.append(url)
 
         assert not missing_urls

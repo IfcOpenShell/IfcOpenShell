@@ -58,11 +58,20 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 				if (crv->kind() == taxonomy::EDGE) {
 					auto ecrv = taxonomy::cast<taxonomy::edge>(crv);
 					loop->children.push_back(ecrv);
-				}
-				else if (crv->kind() == taxonomy::LOOP) {
+				} else if (crv->kind() == taxonomy::LOOP) {
 					for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 						loop->children.push_back(s);
 					}
+				} else if ((crv->kind() == taxonomy::CIRCLE || crv->kind() == taxonomy::ELLIPSE) && segments->size() == 1) {
+					// A circle or ellipse segment is a full circle/ellipse, only possible when it is the only segment
+					std::shared_ptr<taxonomy::edge> e = std::make_shared<taxonomy::edge>();
+					e->basis = crv;
+					e->start = 0.0;
+					e->end = 2.0 * boost::math::constants::pi<double>();
+					loop->children.push_back(e);
+				} else {
+					Logger::Warning("Unexpected segment type", segment);
+					return nullptr;
 				}
 			}
 		}

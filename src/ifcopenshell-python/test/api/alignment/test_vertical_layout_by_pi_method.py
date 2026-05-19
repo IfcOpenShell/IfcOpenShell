@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
+
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
 import ifcopenshell.api.unit
@@ -58,22 +58,17 @@ def test_vertical_layout_by_pi_method():
     ifcopenshell.api.alignment.layout_vertical_alignment_by_pi_method(file, vlayout, vpoints, lengths)
 
     assert len(alignment.IsDecomposedBy) == 0  # no child alignments
-    assert len(alignment.IsNestedBy) == 1  # one nest
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects) == 3
-    )  # nesting IfcReferent, IfcAlignmentHorizontal, IfcAlignmentVertical
-    assert alignment.IsNestedBy[0].RelatedObjects[0].is_a("IfcReferent")
-    assert alignment.IsNestedBy[0].RelatedObjects[1].is_a("IfcAlignmentHorizontal")
-    assert alignment.IsNestedBy[0].RelatedObjects[2].is_a("IfcAlignmentVertical")
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy) == 1
-    )  # nesting of segments beneath IfcAlignmentHorizontal
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects[1].IsNestedBy[0].RelatedObjects) == 2
-    )  # segments in horizontal layout
-    assert (
-        len(alignment.IsNestedBy[0].RelatedObjects[2].IsNestedBy[0].RelatedObjects) == 3
-    )  # segments in vertical layout
+
+    assert len(alignment.IsNestedBy) == 2
+
+    layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(alignment)
+    assert len(layout_nest.RelatedObjects) == 2
+
+    referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
+    assert len(referent_nest.RelatedObjects) == 6
+
+    segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(vlayout)
+    assert len(segment_nest.RelatedObjects) == 3
 
 
 test_vertical_layout_by_pi_method()

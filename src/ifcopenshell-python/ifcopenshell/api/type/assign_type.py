@@ -16,13 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import ifcopenshell
-import ifcopenshell.api.type
-import ifcopenshell.api.owner
 import ifcopenshell.api.material
+import ifcopenshell.api.owner
+import ifcopenshell.api.type
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union
 
 
 def assign_type(
@@ -188,10 +189,7 @@ class Usecase:
         if not related_objects:
             return
 
-        related_objects_set = set(related_objects)
-
         ifc2x3 = self.file.schema == "IFC2X3"
-
         related_objects_set = set(related_objects)
         if ifc2x3:
             types = next(iter(relating_type.ObjectTypeOf), None)
@@ -257,6 +255,14 @@ class Usecase:
                         relating_type=relating_type,
                     )
             self.map_material_usages(objects_to_change, relating_type)
+
+        # Remove PredefinedType  / ObjectType if existing to forbid double typing(See #7006)
+        predefined_type = ifcopenshell.util.element.get_predefined_type(relating_type)
+        if predefined_type != "NOTDEFINED" and predefined_type is not None:
+            for obj in related_objects_set:
+                obj.ObjectType = None
+                if hasattr(obj, "PredefinedType"):
+                    obj.PredefinedType = None
         return types
 
     def map_material_usages(

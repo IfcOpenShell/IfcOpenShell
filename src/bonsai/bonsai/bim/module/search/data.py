@@ -16,11 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import json
+
+import bpy
 import ifcopenshell.util.element
-import bonsai.tool as tool
 from natsort import natsorted
+
+import bonsai.tool as tool
 
 
 def refresh():
@@ -101,7 +103,7 @@ class ColourByPropertyData:
             elif pset.endswith("BaseQuantities"):
                 keys.extend([f'/.*BaseQuantities/."{name}"' for name in properties.keys() if name != "id"])
             else:
-                keys.extend([f"{pset}.{name}" for name in properties.keys() if name != "id"])
+                keys.extend([f'"{pset}"."{name}"' for name in properties.keys() if name != "id"])
         results = [(k, k, "") for k in keys]
         return default + results
 

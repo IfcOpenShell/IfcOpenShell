@@ -16,26 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
+from typing import TYPE_CHECKING
+
 import bpy
-from ifcopenshell.util.doc import get_entity_doc
+from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatProperty,
+    IntProperty,
+    StringProperty,
+)
+from bpy.types import PropertyGroup
+
 import bonsai.tool as tool
 from bonsai.bim.module.classification.data import MaterialClassificationsData
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
-from bonsai.bim.prop import StrProperty, Attribute
-from bpy.types import PropertyGroup
-from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
-)
-from typing import TYPE_CHECKING
+from bonsai.bim.prop import Attribute
 
 
 def get_profile_classes(self, context):
@@ -208,6 +206,24 @@ class BIMObjectMaterialProperties(PropertyGroup):
     parameterized_profile_classes: EnumProperty(
         items=get_parameterized_profile_classes, name="Parameterized Profile Classes"
     )
+    use_custom_offset: BoolProperty(name="Use Custom Usage Settings")
+    custom_offset: FloatProperty(name="Use Custom Usage Settings", subtype="DISTANCE")
+    custom_slab_reference: EnumProperty(
+        items=[
+            ("TOP", "TOP", ""),
+            ("MIDDLE", "MIDDLE", ""),
+            ("BOTTOM", "BOTTOM", ""),
+        ],
+        name="Custom Offset Reference",
+    )
+    custom_wall_reference: EnumProperty(
+        items=[
+            ("EXTERIOR", "EXTERIOR", ""),
+            ("CENTER", "CENTER", ""),
+            ("INTERIOR", "INTERIOR", ""),
+        ],
+        name="Custom Offset Reference",
+    )
 
     if TYPE_CHECKING:
         material_type: str
@@ -221,3 +237,7 @@ class BIMObjectMaterialProperties(PropertyGroup):
         material_set_item_material: str
         profile_classes: str
         parameterized_profile_classes: str
+        use_custom_offset: bool
+        custom_offset: float
+        custom_slab_reference: str
+        custom_wall_reference: str

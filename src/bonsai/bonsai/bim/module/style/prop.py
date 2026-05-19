@@ -16,25 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import gettext
+from typing import TYPE_CHECKING, Literal, Union, get_args
+
 import bpy
-import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.module.style.data import StylesData
-from bpy.types import PropertyGroup
 from bpy.props import (
+    BoolProperty,
+    CollectionProperty,
+    EnumProperty,
+    FloatVectorProperty,
+    IntProperty,
     PointerProperty,
     StringProperty,
-    EnumProperty,
-    BoolProperty,
-    IntProperty,
-    FloatProperty,
-    FloatVectorProperty,
-    CollectionProperty,
 )
+from bpy.types import PropertyGroup
 
-import gettext
-from typing import Literal, Union, TYPE_CHECKING, get_args
-
+import bonsai.tool as tool
+from bonsai.bim.module.style.data import StylesData
+from bonsai.bim.prop import Attribute, StrProperty
 
 _ = gettext.gettext
 
@@ -103,7 +102,10 @@ def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Contex
 
 
 def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: bpy.types.Context) -> None:
-    props = self.id_data.BIMStylesProperties if isinstance(self, Texture) else self
+    if isinstance(self, Texture):
+        props = tool.Style.get_style_props()
+    else:
+        props = self
 
     if not props.update_graph:
         return
@@ -114,6 +116,19 @@ def update_shader_graph(self: Union["Texture", "BIMStylesProperties"], context: 
     textures_data = tool.Style.get_texture_style_data_from_props()
     tool.Loader.create_surface_style_rendering(material, shading_data)
     tool.Loader.create_surface_style_with_textures(material, shading_data, textures_data)
+
+
+def _make_clear_null_updater(null_prop: str):
+    def _update(self: "BIMStylesProperties", context: bpy.types.Context) -> None:
+        self[null_prop] = False
+        update_shader_graph(self, context)
+
+    return _update
+
+
+update_diffuse_colour = _make_clear_null_updater("is_diffuse_colour_null")
+update_specular_colour = _make_clear_null_updater("is_specular_colour_null")
+update_specular_highlight_value = _make_clear_null_updater("is_specular_highlight_null")
 
 
 UV_MODES = [
@@ -219,24 +234,29 @@ class BIMStylesProperties(PropertyGroup):
     transparency: bpy.props.FloatProperty(
         name="Transparency", default=0.0, min=0.0, max=1.0, update=update_shader_graph
     )
-    # TODO: do something on null?
-    is_diffuse_colour_null: BoolProperty(name="Is Null")
+    is_diffuse_colour_null: BoolProperty(name="Is Null", update=update_shader_graph)
     diffuse_colour_class: EnumProperty(
         items=[(x, x, "") for x in get_args(ColourClass)],
         name="Diffuse Colour Class",
-        update=update_shader_graph,
+        update=update_diffuse_colour,
     )
     diffuse_colour: bpy.props.FloatVectorProperty(
-        name="Diffuse Colour", subtype="COLOR", default=(1, 1, 1), min=0.0, max=1.0, size=3, update=update_shader_graph
+        name="Diffuse Colour",
+        subtype="COLOR",
+        default=(1, 1, 1),
+        min=0.0,
+        max=1.0,
+        size=3,
+        update=update_diffuse_colour,
     )
     diffuse_colour_ratio: bpy.props.FloatProperty(
-        name="Diffuse Ratio", default=0.0, min=0.0, max=1.0, update=update_shader_graph
+        name="Diffuse Ratio", default=0.0, min=0.0, max=1.0, update=update_diffuse_colour
     )
-    is_specular_colour_null: BoolProperty(name="Is Null")
+    is_specular_colour_null: BoolProperty(name="Is Null", update=update_shader_graph)
     specular_colour_class: EnumProperty(
         items=[(x, x, "") for x in get_args(ColourClass)],
         name="Specular Colour Class",
-        update=update_shader_graph,
+        update=update_specular_colour,
         default="IfcNormalisedRatioMeasure",
     )
     specular_colour: bpy.props.FloatVectorProperty(
@@ -246,7 +266,7 @@ class BIMStylesProperties(PropertyGroup):
         min=0.0,
         max=1.0,
         size=3,
-        update=update_shader_graph,
+        update=update_specular_colour,
     )
     specular_colour_ratio: bpy.props.FloatProperty(
         name="Specular Ratio",
@@ -254,16 +274,16 @@ class BIMStylesProperties(PropertyGroup):
         default=0.0,
         min=0.0,
         max=1.0,
-        update=update_shader_graph,
+        update=update_specular_colour,
     )
-    is_specular_highlight_null: BoolProperty(name="Is Null")
+    is_specular_highlight_null: BoolProperty(name="Is Null", update=update_shader_graph)
     specular_highlight: bpy.props.FloatProperty(
         name="Specular Highlight",
         description="Used as Roughness value in PHYSICAL Reflectance Method",
         default=0.0,
         min=0.0,
         max=1.0,
-        update=update_shader_graph,
+        update=update_specular_highlight_value,
     )
     reflectance_method: EnumProperty(
         name="Reflectance Method",

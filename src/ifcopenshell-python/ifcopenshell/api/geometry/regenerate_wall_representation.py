@@ -17,7 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from collections import namedtuple
+from math import cos, sin
+from typing import Optional
+
 import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
@@ -26,9 +31,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
-from collections import namedtuple
-from math import sin, cos
-from typing import Optional
 
 # https://stackoverflow.com/a/9184560/9627415
 # Possible optimisation to linalg.norm?
@@ -66,6 +68,12 @@ def regenerate_wall_representation(
     For sloped walls, a basic rectangular 2D profile is extruded, and then
     additional extrusions are generated for each connection that boolean
     difference the base extrusion.
+
+    Clippings applied via :func:`geometry.clip_solid` or
+    :func:`geometry.clip_solid_bounded` are preserved only if the ``element``
+    parameter was passed when creating them, which registers the result in the
+    ``BBIM_Boolean`` property set.  Clippings created without that parameter
+    are silently discarded during regeneration.
 
     This will also update the axis line representation (e.g. trim the axis line
     to any connections).

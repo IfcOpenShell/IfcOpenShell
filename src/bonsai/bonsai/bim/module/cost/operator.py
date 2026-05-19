@@ -18,16 +18,16 @@
 
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import bpy
 import textwrap
-import ifcopenshell.api.nest
-import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-import bonsai.tool as tool
-import bonsai.core.cost as core
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, get_args
 
-from typing import get_args, TYPE_CHECKING, Literal
+import bpy
+import ifcopenshell.api.nest
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.core.cost as core
+import bonsai.tool as tool
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -87,7 +87,7 @@ class CopyCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy Cost Schedule"
     bl_description = "Create a duplicate of the provided cost schedule."
     bl_options = {"REGISTER", "UNDO"}
-    cost_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    cost_schedule: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         cost_schedule: int
@@ -701,6 +701,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     bl_idname = "bim.show_assigned_cost_rate"
     bl_label = "Info about the assigned cost item rate"
     bl_options = {"REGISTER"}
+    parent_cost_schedule_name: bpy.props.StringProperty()
     assigned_rate_identification: bpy.props.StringProperty()
     assigned_rate_name: bpy.props.StringProperty()
     assigned_rate_description: bpy.props.StringProperty()
@@ -717,6 +718,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         wrapper = textwrap.TextWrapper(width=80)
+        layout.label(text=f"COST SCHEDULE: {self.parent_cost_schedule_name}")
         layout.label(text=f"ID: {self.assigned_rate_identification}")
         layout.label(text=f"Name: {self.assigned_rate_name}")
         layout.label(text="Description:")
@@ -985,10 +987,10 @@ class ExportCostSchedulesToPDF(bpy.types.Operator, ExportHelper):
     @classmethod
     def poll(cls, context):
         try:
-            import typst
+            import typst  # noqa: F401
 
             return True
-        except:
+        except ModuleNotFoundError:
             cls.poll_message_set(
                 "Typst not available.\nIt can be installed from Quality and\nControl -> Debug and using 'typst' with Pip Install.\n(Run Blender as Administrator)"
             )

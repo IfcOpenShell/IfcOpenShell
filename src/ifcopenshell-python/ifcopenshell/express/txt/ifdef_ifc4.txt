@@ -1,0 +1,2 @@
+
+#ifdef USE_IFC4

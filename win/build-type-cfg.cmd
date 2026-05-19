@@ -20,7 +20,7 @@
 :: This script initializes various CMake build configuration type related variables.
 :: This batch file expects CMake build configuration type as %1.
 
-@echo off
+@if not defined ECHO_ON ( echo off )
 
 :: Set up variables depending on the used build configuration type.
 set BUILD_CFG=%1

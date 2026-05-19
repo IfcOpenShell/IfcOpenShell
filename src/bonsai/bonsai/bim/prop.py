@@ -16,35 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bpy
 import json
-import ifcopenshell
-import ifcopenshell.util.pset
+import os
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell.util.unit
-from ifcopenshell.util.doc import (
-    get_entity_doc,
-    get_attribute_doc,
-    get_property_set_doc,
-    get_property_doc,
-    get_predefined_type_doc,
-)
-import bonsai.bim
-import bonsai.bim.schema
-import bonsai.bim.handler
-import bonsai.tool as tool
-from bpy.types import PropertyGroup
 from bpy.props import (
-    PointerProperty,
-    StringProperty,
-    EnumProperty,
     BoolProperty,
-    IntProperty,
+    CollectionProperty,
+    EnumProperty,
     FloatProperty,
     FloatVectorProperty,
-    CollectionProperty,
+    IntProperty,
+    PointerProperty,
+    StringProperty,
 )
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
+from bpy.types import PropertyGroup
+
+import bonsai.bim
+import bonsai.bim.handler
+import bonsai.tool as tool
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -60,10 +52,15 @@ def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
     self.previous_tab = self.tab
 
 
+def update_is_visible(self: "BIMTabVisibility", context: bpy.types.Context) -> None:
+    bonsai.bim.handler.refresh_ui_data()
+
+
 def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
     screen = context.id_data
-    aprops = screen.BIMAreaProperties[screen.areas[:].index(context.area)]
+    assert isinstance(screen, bpy.types.Screen)
+    aprops = tool.Blender.get_area_props(screen)[screen.areas[:].index(context.area)]
     aprops.tab = self.tab
 
 
@@ -92,7 +89,12 @@ def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> 
 
     # Support weird buildingSMART dictionary mappings which behave like enums
     items: list[tuple[str, str, str]] = []
-    data = json.loads(prop.enum_items)
+    if not prop.enum_items:
+        return items
+    try:
+        data = json.loads(prop.enum_items)
+    except Exception:
+        return items
 
     if isinstance(data, dict):
         for k, v in data.items():
@@ -331,7 +333,7 @@ class Attribute(PropertyGroup):
     filter_glob: StringProperty()
     is_null: BoolProperty(name="Is Null", update=update_is_null)
     is_selected: BoolProperty(name="Is Selected", default=False)
-    subitems_values: CollectionProperty(type=StrProperty)  # pyright: ignore[reportRedeclaration]
+    subitems_values: CollectionProperty(type=StrProperty)
 
     # Attribute parameters.
     is_optional: BoolProperty(name="Is Optional")
@@ -340,7 +342,7 @@ class Attribute(PropertyGroup):
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
-    use_explorer_ui: BoolProperty()  # pyright: ignore[reportRedeclaration]
+    use_explorer_ui: BoolProperty()
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
 
@@ -493,8 +495,9 @@ def get_tab(
             ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
             ("FM", "Facility Management", "", "PACKAGE", 7),
             ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
+            ("BOOKMARK", "Bookmark", "", "SOLO_ON", 9),
             None,
-            ("BLENDER", "Blender Properties", "", "BLENDER", 9),
+            ("BLENDER", "Blender Properties", "", "BLENDER", 10),
         ]
     return get_tab.enum_items
 
@@ -529,6 +532,29 @@ class BIMTabProperties(PropertyGroup):
         inactive_tab: bool
 
 
+class BIMTabVisibility(PropertyGroup):
+    name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible", default=True, update=update_is_visible)
+
+    if TYPE_CHECKING:
+        name: str
+        is_visible: bool
+
+
+class BIMPanelVisibility(PropertyGroup):
+    name: StringProperty(name="Name")
+    label: StringProperty(name="Label")
+    tab_name: StringProperty(name="Tab Name")
+    is_visible: BoolProperty(name="Is Visible in Tab", default=True, update=update_is_visible)
+    is_bookmarked: BoolProperty(name="Is Bookmarked", default=False, update=update_is_visible)
+
+    if TYPE_CHECKING:
+        name: str
+        tab_name: str
+        is_visible: bool
+        is_bookmarked: bool
+
+
 class BIMProperties(PropertyGroup):
     is_dirty: BoolProperty(name="Is Dirty", default=False)
     schema_dir: StringProperty(
@@ -556,6 +582,7 @@ class BIMProperties(PropertyGroup):
     area_unit: EnumProperty(
         default="SQUARE_METRE",
         items=[
+            ("NONE", "None", ""),
             ("NANO/SQUARE_METRE", "Square Nanometre", ""),
             ("MICRO/SQUARE_METRE", "Square Micrometre", ""),
             ("MILLI/SQUARE_METRE", "Square Millimetre", ""),
@@ -573,6 +600,7 @@ class BIMProperties(PropertyGroup):
     volume_unit: EnumProperty(
         default="CUBIC_METRE",
         items=[
+            ("NONE", "None", ""),
             ("NANO/CUBIC_METRE", "Cubic Nanometre", ""),
             ("MICRO/CUBIC_METRE", "Cubic Micrometre", ""),
             ("MILLI/CUBIC_METRE", "Cubic Millimetre", ""),
@@ -586,6 +614,33 @@ class BIMProperties(PropertyGroup):
         ],
         name="IFC Volume Unit",
     )
+    mass_unit: EnumProperty(
+        items=[
+            ("NONE", "None", ""),
+            ("GRAM", "Gram", "Grams"),
+            ("KILO/GRAM", "Kilogram", "Kilograms"),
+            ("MEGA/GRAM", "Tonne", "Metric Tons"),
+            ("pound", "Pound", "Pounds"),
+            ("ounce", "Ounce", "Ounces"),
+        ],
+        name="Mass Unit",
+        default="NONE",
+    )
+    time_unit: EnumProperty(
+        items=[
+            ("NONE", "None", ""),
+            ("SECOND", "Second", "Seconds"),
+            ("minute", "Minute", "Minutes"),
+            ("hour", "Hour", "Hours"),
+            ("day", "Day", "Days"),
+        ],
+        name="Time Unit",
+        default="NONE",
+    )
+    tab_visibilities: CollectionProperty(type=BIMTabVisibility, name="Tab Visibilities")
+    active_tab_visibility_index: IntProperty(name="Active Tab Visibility Index")
+    panel_visibilities: CollectionProperty(type=BIMPanelVisibility, name="Panel Properties")
+    active_panel_visibility_index: IntProperty(name="Active Panel Property Index")
 
     if TYPE_CHECKING:
         is_dirty: bool
@@ -599,6 +654,12 @@ class BIMProperties(PropertyGroup):
         section_line_decorator_width: float
         area_unit: str
         volume_unit: str
+        mass_unit: str
+        time_unit: str
+        tab_visibilities: bpy.types.bpy_prop_collection_idprop[BIMTabVisibility]
+        active_tab_visibility_index: int
+        panel_visibilities: bpy.types.bpy_prop_collection_idprop[BIMPanelVisibility]
+        active_panel_visibility_index: int
 
 
 class IfcParameter(PropertyGroup):
@@ -732,12 +793,21 @@ class BIMFacet(PropertyGroup):
             ("!*=", "does not contain", ""),
         ],
     )
+    filter_mode: EnumProperty(
+        items=[
+            ("ADD", "Add", "Add results to the current selection"),
+            ("SUBTRACT", "Subtract", "Remove results from the current selection"),
+            ("FILTER", "Filter", "Filter the current selection"),
+        ],
+        default="ADD",
+    )
 
     if TYPE_CHECKING:
         pset: str
         value: str
         type: str
         comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
+        filter_mode: Literal["ADD", "SUBTRACT", "FILTER"]
 
 
 class BIMFilterGroup(PropertyGroup):

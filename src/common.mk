@@ -1,7 +1,7 @@
 SHELL := sh
 IS_STABLE:=FALSE
-PYTHON:=python3.11
-PIP:=pip3.11
+PYTHON:=python3
+PIP:=pip3
 VERSION:=$(shell cat ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
 SED:=sed -i
@@ -11,10 +11,12 @@ ifeq ($(OS),Windows_NT)
 PYTHON:=python
 PIP:=pip
 VENV_BIN:=Scripts
-endif
+else
+UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 SED:=sed -i '' -e
 PYTHON:=python3
+endif
 endif
 
 VENV_ACTIVATE:=$(VENV_BIN)/activate
@@ -26,6 +28,7 @@ dist:
 	mkdir -p dist
 	cp -r $(PACKAGE_NAME) build/
 	cp pyproject.toml build/
+	if [ -f README.md ]; then cp README.md build/; fi
 ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 ifdef IS_MODULE

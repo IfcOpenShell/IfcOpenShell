@@ -17,12 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
+from decimal import ROUND_HALF_UP, Decimal
+from typing import Any, NamedTuple, Optional, Union
+
 import numpy as np
+
 import ifcopenshell
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from typing import NamedTuple, Optional, Union
 
 MatrixType = ifcopenshell.util.placement.MatrixType
 
@@ -39,39 +41,54 @@ class HelmertTransformation(NamedTuple):
     factor_z: float
 
 
-def dms2dd(degrees: int, minutes: int, seconds: int, ms: int = 0) -> float:
-    """Convert degrees, minutes, and (milli)seconds to decimal degrees
+def dms2dd(degrees: int, minutes: int, seconds: int, us: int = 0) -> float:
+    """Convert degrees, minutes, and (micro)seconds to decimal degrees
+    All components must be either positive or negative.
 
     :param degrees: The degrees component
     :param minutes: The minutes component
     :param seconds: The seconds component
-    :param ms: The milliseconds component
+    :param us: The microseconds component
     :return: The angle in decimal degrees.
     """
-    dd = float(degrees) + float(minutes) / 60.0 + float(seconds) / (3600.0) + float(ms / 3600000000.0)
-    return dd
+    all_positive_or_zero = degrees >= 0 and minutes >= 0 and seconds >= 0 and us >= 0
+    all_negative_or_zero = degrees <= 0 and minutes <= 0 and seconds <= 0 and us <= 0
+    assert all_positive_or_zero or all_negative_or_zero
+    return degrees + minutes / 60.0 + seconds / 3600.0 + us / 3600000000.0
 
 
-def dd2dms(dd: float, use_ms: bool = False) -> Union[tuple[float, float, float, float], tuple[float, float, float]]:
-    """Convert decimal degrees to degrees, minutes, and (milli)seconds format
+def dd2dms(dd: float, use_us: bool = False) -> Union[tuple[int, int, int, int], tuple[int, int, float]]:
+    """Convert decimal degrees to degrees, minutes, and (micro)seconds format
 
     :param dd: The decimal degrees
-    :param use_ms: True if to include milliseconds and false otherwise. Defaults to false.
-    :return: The angle in a tuple of either 3 or 4 values, being degrees,
-        minutes, seconds, and optionally milliseconds.
+    :param use_us: True if to include microseconds and false otherwise. Defaults to false.
+    :return: The angle in a tuple of either 3 or 4 values,
+        4 values: integer number of degrees, integer number of minutes, integer number of seconds and integer number of microseconds
+        3 values: integer number of degrees, integer number of minutes, and a float number for seconds
+    :note: the tuple follows the format of IfcCompoundPlaneAngleMeasure. Namely all of its components are either positive or negative.
     """
-    dd = float(dd)
-    sign = 1 if dd >= 0 else -1
-    dd = abs(dd)
-    if use_ms:
-        seconds, ms = divmod(dd * 60 * 60 * 1000000, 1000000)
-    minutes, seconds = divmod(dd * 60 * 60, 60)
-    degrees, minutes = divmod(minutes, 60)
-    if dd < 0:
-        degrees = -degrees
-    if use_ms:
-        return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign, int(ms) * sign)
-    return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign)
+    dd_decimal = Decimal(str(dd))
+
+    degrees = int(dd_decimal)
+    degrees_decimal = Decimal(degrees)
+
+    fractional_part = dd_decimal - degrees_decimal
+
+    minutes_decimal = fractional_part * Decimal(60)
+    minutes = int(minutes_decimal)
+    minutes_decimal_int = Decimal(minutes)
+
+    seconds_decimal = (minutes_decimal - minutes_decimal_int) * Decimal(60)
+
+    if use_us:
+        seconds = int(seconds_decimal)
+        seconds_decimal_int = Decimal(seconds)
+        microseconds_decimal = (seconds_decimal - seconds_decimal_int) * Decimal(1000000)
+        microseconds = int(microseconds_decimal.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+        return (degrees, minutes, seconds, microseconds)
+    else:
+        seconds_float = float(seconds_decimal)
+        return (degrees, minutes, seconds_float)
 
 
 def xyz2enh(
@@ -251,6 +268,15 @@ def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Option
     return HelmertTransformation(e, n, h, xaa, xao, scale, factor_x, factor_y, factor_z)
 
 
+def get_crs(ifc_file: ifcopenshell.file) -> dict[str, Any]:
+    """Get CRS information from an IFC file."""
+    if ifc_file.schema == "IFC2X3":
+        return ifcopenshell.util.element.get_pset(ifc_file.by_type("IfcProject")[0], "ePSet_ProjectedCRS")
+    for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+        if operation := context.HasCoordinateOperation:
+            return operation[0].TargetCRS.get_info()
+
+
 def auto_z2e(ifc_file: ifcopenshell.file, z: float, should_return_in_map_units: bool = True) -> float:
     """Convert a Z coordinate to an elevation using model georeferencing data
 
@@ -406,12 +432,12 @@ def local2global(
         ]
     )
     result = rotation_matrix @ scale_and_factor_matrix @ matrix
-    result[:, 0][0:3] /= np.linalg.norm(result[:, 0][0:3])
-    result[:, 1][0:3] /= np.linalg.norm(result[:, 1][0:3])
-    result[:, 2][0:3] /= np.linalg.norm(result[:, 2][0:3])
-    result[0][3] += eastings
-    result[1][3] += northings
-    result[2][3] += orthogonal_height
+    result[:3, 0] /= np.linalg.norm(result[:3, 0])
+    result[:3, 1] /= np.linalg.norm(result[:3, 1])
+    result[:3, 2] /= np.linalg.norm(result[:3, 2])
+    result[0, 3] += eastings
+    result[1, 3] += northings
+    result[2, 3] += orthogonal_height
     return result
 
 
@@ -439,9 +465,7 @@ def auto_local2global(
     result = local2global(matrix, *parameters)
     if should_return_in_map_units:
         return result
-    result[0][3] /= parameters.scale
-    result[1][3] /= parameters.scale
-    result[2][3] /= parameters.scale
+    result[:3, 3] /= parameters.scale
     return result
 
 
@@ -496,13 +520,13 @@ def global2local(
         ]
     )
     result = matrix.copy()
-    result[0][3] -= eastings
-    result[1][3] -= northings
-    result[2][3] -= orthogonal_height
+    result[0, 3] -= eastings
+    result[1, 3] -= northings
+    result[2, 3] -= orthogonal_height
     result = np.linalg.inv(scale_and_factor_matrix) @ np.linalg.inv(rotation_matrix) @ result
-    result[:, 0][0:3] /= np.linalg.norm(result[:, 0][0:3])
-    result[:, 1][0:3] /= np.linalg.norm(result[:, 1][0:3])
-    result[:, 2][0:3] /= np.linalg.norm(result[:, 2][0:3])
+    result[:3, 0] /= np.linalg.norm(result[:3, 0])
+    result[:3, 1] /= np.linalg.norm(result[:3, 1])
+    result[:3, 2] /= np.linalg.norm(result[:3, 2])
     return result
 
 
@@ -527,9 +551,7 @@ def auto_global2local(
         return matrix.copy()
     if not is_specified_in_map_units:
         matrix = matrix.copy()
-        matrix[0][3] *= parameters.scale
-        matrix[1][3] *= parameters.scale
-        matrix[2][3] *= parameters.scale
+        matrix[:3, 3] *= parameters.scale
     result = global2local(matrix, *parameters)
     wcs = get_wcs(ifc_file)
     if wcs is not None:

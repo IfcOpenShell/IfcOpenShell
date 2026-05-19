@@ -39,12 +39,12 @@
 #include <Standard_Version.hxx>
 
 #define IfcSchema Ifc2x3
-#include "../ifcparse/macros.h"
-#include "../ifcparse/Ifc2x3.h"
-#include "../ifcparse/IfcBaseClass.h"
-#include "../ifcparse/IfcHierarchyHelper.h"
+#include "ifcparse/macros.h"
+#include "ifcparse/Ifc2x3.h"
+#include "ifcparse/IfcBaseClass.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
-#include "../ifcgeom/Serialization/Serialization.h"
+#include "ifcgeom/Serialization/Serialization.h"
 
 #if USE_VLD
 #include <vld.h>
@@ -60,7 +60,7 @@ int main() {
 	// The IfcHierarchyHelper is a subclass of the regular IfcFile that provides several
 	// convenience functions for working with geometry in IFC files.
 	IfcHierarchyHelper<IfcSchema> file;
-	file.header().file_name().name("IfcAdvancedHouse.ifc");
+	file.header().file_name()->setname("IfcAdvancedHouse.ifc");
 
 	IfcSchema::IfcBuilding* building = file.addBuilding();
 	// By adding a building, a hierarchy has been automatically created that consists of the following

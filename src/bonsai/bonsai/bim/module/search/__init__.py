@@ -17,19 +17,23 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+
+from . import operator, prop, ui
 
 classes = (
     operator.ActivateContainerFilter,
     operator.ActivateIfcClassFilter,
     operator.AddFilter,
     operator.AddFilterGroup,
+    operator.ApplyFilterFromText,
     operator.ColourByProperty,
     operator.EditFilterQuery,
+    operator.FilterValueSuggestions,
     operator.LoadColourscheme,
     operator.LoadSearch,
     operator.RemoveFilter,
     operator.RemoveFilterGroup,
+    operator.RemoveSearch,
     operator.ResetObjectColours,
     operator.SaveColourscheme,
     operator.SaveSearch,
@@ -37,27 +41,29 @@ classes = (
     operator.SelectByProperty,
     operator.SelectFilterElements,
     operator.SelectGlobalId,
+    operator.SelectQueryElements,
     operator.SelectIfcClass,
     operator.SelectSimilar,
     operator.ShowAllElements,
+    operator.ToggleFilterInclusion,
     operator.ToggleFilterSelection,
     prop.BIMColour,
-    prop.BIMFilterClasses,
-    prop.BIMFilterBuildingStoreys,
+    prop.BIMFilterItem,
     prop.BIMSearchProperties,
     ui.BIM_PT_search,
     ui.BIM_PT_filter,
     ui.BIM_PT_colour_by_property,
     ui.BIM_PT_select_similar,
     ui.BIM_UL_colourscheme,
-    ui.BIM_UL_ifc_class_filter,
-    ui.BIM_UL_ifc_building_storey_filter,
+    ui.BIM_UL_ifc_filter,
 )
 
 
 def register():
     bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
+    bpy.types.TEXT_HT_header.append(operator.draw_text_editor_header)
 
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
+    bpy.types.TEXT_HT_header.remove(operator.draw_text_editor_header)

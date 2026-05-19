@@ -16,28 +16,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-
-import pyradiance as pr
-from datetime import datetime
-import bpy
-import bonsai.tool as tool
-from pathlib import Path
-from typing import Union, TYPE_CHECKING
 import json
 import math
-import time
-import ifcopenshell
-import ifcopenshell.util.geolocation
-import webbrowser
-import ifcopenshell.geom
 import multiprocessing
-import requests
+import os
+import time
+import webbrowser
+from datetime import datetime
 from math import radians
+from pathlib import Path
+from typing import TYPE_CHECKING, Union
+
+import bpy
+import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
+import ifcopenshell.util.geolocation
+import pyradiance as pr
+import requests
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from mathutils import Vector
+
+import bonsai.tool as tool
 from bonsai.bim.module.light.data import SolarData
-from bpy_extras.io_utils import ExportHelper
-from bpy_extras.io_utils import ImportHelper
 
 ifc_materials = []
 
@@ -106,9 +107,8 @@ class ExportOBJ(bpy.types.Operator):
         if iterator.initialize():
             while True:
                 shape = iterator.get()
+                assert isinstance(shape, W.TriangulationElement)
                 materials = shape.geometry.materials
-                material_ids = shape.geometry.material_ids
-                # material_names = shape.geometry.material_names
 
                 for material in materials:
                     ifc_materials.append(material.name)
@@ -202,7 +202,7 @@ class RadianceRender(bpy.types.Operator):
         print(f"Camera position: {camera_position}")
         print(f"Camera direction: {camera_direction}")
 
-        # sun_position = tool.Blender.get_sun_position_addon()
+        # sun_position = tool.Blender.get_addon("sun_position")
         #     azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
         #     sun_pos_props.time,
         #     sun_pos_props.latitude,
@@ -272,21 +272,21 @@ class RadianceRender(bpy.types.Operator):
                     + '''" map_u map_v
 0
 1 0.5
- 
+
 # This is a multiplier to colour balance the env map
 # In this case, it provides a rough ground luminance from 3k-5k
 env_map colorfunc env_colour
 4 100 100 100 .
 0
 0
- 
+
 # .37 .57 1.5 is measured from a HDRI image
 # It is multiplied by a factor such that grey(r,g,b) = 1
 skyfunc colorfunc sky_colour
 4 .64 .99 2.6 .
 0
 0
- 
+
 void mixpict composite
 7 env_colour sky_colour grey "'''
                     + hdr_mask_path
@@ -295,22 +295,22 @@ void mixpict composite
                     + """" map_u map_v
 0
 2 0.5 1
- 
+
 composite glow env_map_glow
 0
 0
 4 1 1 1 0
- 
+
 env_map_glow source sky
 0
 0
 4 0 0 1 180
- 
+
 env_colour glow ground_glow
 0
 0
 4 1 1 1 0
- 
+
 ground_glow source ground
 0
 0
@@ -566,7 +566,7 @@ class LightPickCoordinates(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    use_current_location: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    use_current_location: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         use_current_location: bool

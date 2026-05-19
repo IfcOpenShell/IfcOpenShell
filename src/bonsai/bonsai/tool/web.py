@@ -16,36 +16,43 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from ifcopenshell.util.classification import get_classification_data, get_references
-from ifcopenshell.util.selector import filter_elements
-import ifcopenshell.util.cost
+from __future__ import annotations
+
+import asyncio
+import errno
+import json
+import os
+import queue
+import socket
+import subprocess
+import sys
+import threading
+import time
+import webbrowser
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional, Union
+
 import bpy
-from bonsai.bim.module.web.data import WebData
-from ifcopenshell.util.element import get_psets, get_type, has_property
-import bonsai.core.tool
-import bonsai.tool as tool
-import ifcopenshell.api.sequence
 import ifcopenshell.api.classification
 import ifcopenshell.api.cost
-from typing import Any, Optional
-import time
-import socket
-import sys
-import os
-import errno
-import subprocess
-import webbrowser
-import asyncio
+import ifcopenshell.api.sequence
+import ifcopenshell.util.cost
 import socketio
-import threading
-import queue
-import json
-from time import sleep
-from pathlib import Path
-import bonsai.core.sequence
-import bonsai.core.cost
 from ifc5d.ifc2json import ifc5D2json
+from ifcopenshell.util.classification import get_classification_data, get_references
+from ifcopenshell.util.element import get_psets, get_type, has_property
+from ifcopenshell.util.selector import filter_elements
+from mathutils import Color
+
+import bonsai.core.cost
+import bonsai.core.sequence
+import bonsai.core.tool
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.web.data import WebData
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.web.prop import WebProperties
 
 sio = None
 ws_process = None
@@ -63,6 +70,11 @@ IFC_TASK_ATTRIBUTE_MAP = {
 
 class Web(bonsai.core.tool.Web):
     @classmethod
+    def get_web_props(cls) -> WebProperties:
+        assert (scene := bpy.context.scene)
+        return scene.WebProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
     def generate_port_number(cls) -> int:
         """
         Generate a free port number.
@@ -70,8 +82,7 @@ class Web(bonsai.core.tool.Web):
         This method creates a temporary socket to bind to a free port.
         It then retrieves the port number, and returns it.
 
-        Returns:
-            int: The port number that was generated.
+        :return: The port number that was generated.
         """
         print("Generating port number")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -87,11 +98,9 @@ class Web(bonsai.core.tool.Web):
 
         If the connection is refused, the port is available for use; otherwise, it is in use.
 
-        Args:
-           port (int): The port number to check.
+        :param port: The port number to check.
 
-        Returns:
-            bool: True if the port is available, False if it is in use.
+        :return: bool: True if the port is available, False if it is in use.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # connect_ex returns errno.SUCCESS (0) if the connection succeeds
@@ -106,10 +115,8 @@ class Web(bonsai.core.tool.Web):
         This method sets up the environment, locates paths, and starts
         the WebSocket server process.
 
-        Args:
-           port (int): The port number on which to start the WebSocket server.
+        :param port: The port number on which to start the WebSocket server.
         """
-        import addon_utils
 
         global ws_process
 
@@ -146,12 +153,11 @@ class Web(bonsai.core.tool.Web):
         This method sets up an asynchronous Socket.IO client with
         reconnection attempts, starts an asyncio thread, connects to the WebSocket server, and sets the connection status.
 
-        Args:
-           port (int): The port number to connect to the WebSocket server.
+        :param port: The port number to connect to the WebSocket server.
         """
         global ws_thread, sio
 
-        if bpy.context.scene.WebProperties.is_connected:
+        if tool.Web.get_web_props().is_connected:
             print(f"Already connected to websocket server on port: {port}")
             return
 
@@ -200,7 +206,7 @@ class Web(bonsai.core.tool.Web):
             print("No Websocket server running")
             return
 
-        if bpy.context.scene.WebProperties.is_connected:
+        if tool.Web.get_web_props().is_connected:
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
@@ -229,11 +235,9 @@ class Web(bonsai.core.tool.Web):
         this method continuously checks for the existence of the WebSocket server's process ID (PID) in the running_pid JSON file.
         It waits for a maximum of 5 seconds before returning False.
 
-        Args:
-            port (int): The port number on which the WebSocket server is expected to be running.
+        :param port: The port number on which the WebSocket server is expected to be running.
 
-        Returns:
-            bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
+        :return: bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
         """
         pid = ws_process.pid
         max_time = 5
@@ -263,12 +267,11 @@ class Web(bonsai.core.tool.Web):
         """
         Sends data to the Web UI via Websocket connection.
 
-        Args:
-            data (Optional[Any]): The data to send. If None, just sends data from WebData.
-            data_key (str): The key under which to store the data in the payload. Defaults to "data".
-            event (str): The WebSocket event to emit. Defaults to "data".
-            namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
-            use_web_data (bool): Whether to use data from WebData. Defaults to True.
+        :param data: The data to send. If None, just sends data from WebData.
+        :param data_key: The key under which to store the data in the payload. Defaults to "data".
+        :param event: The WebSocket event to emit. Defaults to "data".
+        :param namespace: The namespace for the WebSocket event. Defaults to "/blender".
+        :param use_web_data: Whether to use data from WebData. Defaults to True.
         """
 
         global ws_thread
@@ -282,7 +285,7 @@ class Web(bonsai.core.tool.Web):
         if data is not None:
             payload[data_key] = data
 
-        if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
+        if ws_thread is not None and tool.Web.get_web_props().is_connected:
             ws_thread.run_coro(cls.sio_send(payload, event, namespace))
 
     @classmethod
@@ -292,10 +295,9 @@ class Web(bonsai.core.tool.Web):
         If the WebProperties.is_connected is False, it clears the queue and returns None to unregister the timer.
         If the queue is not empty, it processes each operator by calling the corresponding handling function.
 
-        Returns:
-            (Optional[float]): Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
+        :return: Returns None if the WebProperties.is_connected is False, otherwise returns 1.0 to continue the timer.
         """
-        if not bpy.context.scene.WebProperties.is_connected:
+        if not tool.Web.get_web_props().is_connected:
             with web_operator_queue.mutex:
                 web_operator_queue.queue.clear()
             return None  # unregister timer if not connected
@@ -322,8 +324,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Schedules page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
         if operator_data["type"] == "selection":
             bpy.ops.object.select_all(action="DESELECT")
@@ -338,8 +339,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Cost page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
 
         ifc_file = tool.Ifc.get()
@@ -691,8 +691,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Sequencing page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "getWorkSchedules":
@@ -731,8 +730,7 @@ class Web(bonsai.core.tool.Web):
         """
         this method handles the Documentation page operators.
 
-        Args:
-            operator_data (dict): A dictionary containing the operator data.
+        :param operator_data: A dictionary containing the operator data.
         """
         if operator_data["type"] == "getDrawings":
             drawings_data = []
@@ -768,9 +766,8 @@ class Web(bonsai.core.tool.Web):
         """
         Opens a web browser and navigates to the specified URL.
 
-        Args:
-            port (int): The port number to be used in the URL.
-            page (str): The page name to be appended to the URL. Default is an empty string which points to the index page.
+        :param port: The port number to be used in the URL.
+        :param page: The page name to be appended to the URL. Default is an empty string which points to the index page.
         """
         webbrowser.open(f"http://127.0.0.1:{port}/{page}")
 
@@ -781,8 +778,8 @@ class Web(bonsai.core.tool.Web):
         calculates the mixed colors, and sends the theme data to the Web UI.
         """
 
-        def get_color(theme, attribute) -> tuple[Any, ...]:
-            return tuple(getattr(theme, attribute)[:])
+        def to_tuple(theme: Union[Color, bpy.types.bpy_prop_array[float]]) -> tuple[float, ...]:
+            return tuple(theme[:])
 
         def mix_colors(color1, color2):
             alpha1 = color1[3] * 255 if len(color1) > 3 else 255
@@ -794,33 +791,50 @@ class Web(bonsai.core.tool.Web):
             blue = (color1[2] * (255 - alpha2) + color2[2] * alpha2) / 255
             return red, green, blue, alpha / 255
 
-        prefs = bpy.context.preferences.themes[0].preferences.space
-        panel = prefs.panelcolors
-        view_3d = bpy.context.preferences.themes[0].view_3d
-        top_bar = bpy.context.preferences.themes[0].topbar.space
-        info = bpy.context.preferences.themes[0].info
-        outliner = bpy.context.preferences.themes[0].outliner
-        ui = bpy.context.preferences.themes[0].user_interface
+        assert (blender_preferences := bpy.context.preferences)
+        blender_theme = blender_preferences.themes[0]
+        prefs = blender_theme.preferences.space
+
+        if tool.Blender.BLENDER_5 or TYPE_CHECKING:
+            theme_ui = blender_theme.user_interface
+            theme_regions = blender_theme.regions
+            panel_header, panel_back, panel_sub_back = (
+                theme_ui.panel_header,
+                theme_ui.panel_back,
+                theme_ui.panel_sub_back,
+            )
+            tab_back, tab_outline = theme_regions.sidebars.tab_back, theme_ui.wcol_tab.outline
+        else:
+            # Removed in Blender 5.0.
+            panel = prefs.panelcolors
+            tab_back, tab_outline = prefs.tab_back, prefs.tab_outline
+            panel_header, panel_back, panel_sub_back = panel.header, panel.back, panel.sub_back
+
+        view_3d = blender_theme.view_3d
+        top_bar = blender_theme.topbar.space
+        info = blender_theme.info
+        outliner = blender_theme.outliner
+        ui = blender_theme.user_interface
 
         theme = {
-            "window_background": get_color(prefs, "back"),
-            "text": get_color(prefs, "text"),
-            "tab_background": get_color(prefs, "tab_back"),
-            "tab_outline": get_color(prefs, "tab_outline"),
-            "panel_header": get_color(panel, "header"),
-            "panel_background": mix_colors(get_color(panel, "back"), get_color(panel, "sub_back")),
-            "top_bar_header": get_color(top_bar, "header"),
-            "top_bar_header_text": get_color(top_bar, "header_text"),
-            "active_object": get_color(view_3d, "object_active"),
-            "selected_object": get_color(view_3d, "object_selected"),
-            "info_warning": get_color(info, "info_warning_text"),
-            "odd_row": get_color(outliner.space, "back"),
-            "even_row": mix_colors(get_color(outliner.space, "back"), get_color(outliner, "row_alternate")),
-            "active_highlight": get_color(outliner, "active"),
-            "active_text_highlight": get_color(outliner, "active_object"),
-            "button_background": get_color(ui.wcol_tool, "inner"),
-            "button_test": get_color(ui.wcol_tool, "text"),
-            "button_border": get_color(ui.wcol_tool, "outline"),
+            "window_background": prefs.back[:],
+            "text": to_tuple(prefs.text),
+            "tab_background": to_tuple(tab_back),
+            "tab_outline": to_tuple(tab_outline),
+            "panel_header": to_tuple(panel_header),
+            "panel_background": mix_colors(to_tuple(panel_back), to_tuple(panel_sub_back)),
+            "top_bar_header": to_tuple(top_bar.header),
+            "top_bar_header_text": to_tuple(top_bar.header_text),
+            "active_object": to_tuple(view_3d.object_active),
+            "selected_object": to_tuple(view_3d.object_selected),
+            "info_warning": to_tuple(info.info_warning_text),
+            "odd_row": to_tuple(outliner.space.back),
+            "even_row": mix_colors(to_tuple(outliner.space.back), to_tuple(outliner.row_alternate)),
+            "active_highlight": to_tuple(outliner.active),
+            "active_text_highlight": to_tuple(outliner.active_object),
+            "button_background": to_tuple(ui.wcol_tool.inner),
+            "button_test": to_tuple(ui.wcol_tool.text),
+            "button_border": to_tuple(ui.wcol_tool.outline),
         }
         cls.send_webui_data(theme, "theme", "theme_data", use_web_data=False)
 
@@ -832,8 +846,7 @@ class Web(bonsai.core.tool.Web):
         This method connects to the specified URL using WebSocket transport and registers
         an event listener for the `web_operator` event within the `/blender` namespace.
 
-        Args:
-            url (str): The URL of the WebSocket server to connect to.
+        :param url: The URL of the WebSocket server to connect to.
         """
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
         sio.on("web_operator", cls.sio_listen_web_operator, namespace="/blender")
@@ -854,10 +867,9 @@ class Web(bonsai.core.tool.Web):
 
         This method emits an event with the provided data to the WebSocket server within the specified namespace.
 
-        Args:
-            data (Any): The data to send to the WebSocket server.
-            event (Optional[str]): The WebSocket event to emit. Defaults to "data".
-            namespace (Optional[str]): The namespace for the WebSocket event. Defaults to "/blender".
+        :param data: The data to send to the WebSocket server.
+        :param event: The WebSocket event to emit. Defaults to "data".
+        :param namespace: The namespace for the WebSocket event. Defaults to "/blender".
         """
         await sio.emit(event, data, namespace=namespace)
 
@@ -869,8 +881,7 @@ class Web(bonsai.core.tool.Web):
         This method receives data from the WebSocket server and attempts to place it into the
         `web_operator_queue`. If the queue is full, the data is discarded.
 
-        Args:
-            data (dict): The data received from the `web_operator` event.
+        :param data: The data received from the `web_operator` event.
         """
         try:
             web_operator_queue.put_nowait(data)
@@ -879,11 +890,13 @@ class Web(bonsai.core.tool.Web):
 
     @classmethod
     def set_is_running(cls, is_running: bool) -> None:
-        bpy.context.scene.WebProperties.is_running = is_running
+        props = tool.Web.get_web_props()
+        props.is_running = is_running
 
     @classmethod
     def set_is_connected(cls, is_connected: bool) -> None:
-        bpy.context.scene.WebProperties.is_connected = is_connected
+        props = tool.Web.get_web_props()
+        props.is_connected = is_connected
 
 
 class AsyncioThread(threading.Thread):
@@ -894,10 +907,9 @@ class AsyncioThread(threading.Thread):
         This class represents a thread that runs an asyncio event loop. It is used to handle asynchronous tasks
         in a separate thread from the main thread.
 
-        Args:
-           *args: Variable length argument list. These arguments are passed to the superclass constructor.
-           loop: An existing asyncio event loop. If None, a new event loop is created.
-           **kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
+        :param args: Variable length argument list. These arguments are passed to the superclass constructor.
+        :param loop: An existing asyncio event loop. If None, a new event loop is created.
+        :param kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
         """
         super().__init__(*args, **kwargs)
         self.loop = loop or asyncio.new_event_loop()
@@ -914,11 +926,9 @@ class AsyncioThread(threading.Thread):
         """
         Run a coroutine in the asyncio event loop from a separate thread.
 
-        Args:
-           coro: The coroutine to be run.
+        :param coro: The coroutine to be run.
 
-        Returns:
-            The result of the coroutine.
+        :return: The result of the coroutine.
         """
         return asyncio.run_coroutine_threadsafe(coro, loop=self.loop).result()
 

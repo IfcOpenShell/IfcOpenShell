@@ -17,20 +17,20 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import sys
+from functools import partial
+from typing import Optional, Union
+
 import bpy
 import bpy.utils.previews
-import bonsai.bim
-import bonsai.tool as tool
+from bpy.types import Menu, WorkSpaceTool
+
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
-from bonsai.bim.helper import prop_with_search, draw_attribute
-from bpy.types import WorkSpaceTool, Menu
+import bonsai.tool as tool
+from bonsai.bim.helper import draw_attribute, prop_with_search
 from bonsai.bim.module.model.data import AuthoringData, ItemData
-from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
-from typing import Optional, Union, Any
-from functools import partial
+from bonsai.bim.module.model.wall import DumbWallAligner, DumbWallJoiner
+from bonsai.bim.module.system.data import PortData
 
 
 def load_custom_icons():
@@ -662,6 +662,8 @@ class CreateObjectUI:
             text="",
             button_kwargs={"emboss": False},
             emboss=True,
+            enable_relating_type_suggestions=True,
+            search_threshold=0,
         )
         # Limit width because names can get really long.
         row_.ui_units_x = 10.0
@@ -941,7 +943,7 @@ class EditObjectUI:
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
-                    cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_to_underside.__doc__, ui_context
+                    cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_walls_to_underside.__doc__, ui_context
                 )
 
         if AuthoringData.data["is_flippable_element"]:
@@ -1320,6 +1322,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
+            if len(bpy.context.selected_objects) != 2:
+                self.report(
+                    {"ERROR"},
+                    "Exactly two LAYER2 items (walls, railings, etc) must be selected to perform a merge.",
+                )
+                return
+            for item in bpy.context.selected_objects:
+                element = tool.Ifc.get_entity(item)
+                if tool.Model.get_usage_type(element) != "LAYER2":
+                    self.report(
+                        {"ERROR"},
+                        "Both selected items must be LAYER2 (walls, railings, etc) to perform a merge.",
+                    )
+                    return
             bpy.ops.bim.merge_wall()
         else:
             if len(bpy.context.selected_objects) == 1:
@@ -1450,16 +1466,20 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No LAYER2 objects selected")
             return
 
-        if layer2_bases and len(set(layer2_bases)) > 1:
+        # --- tolerance check ---
+        tolerance = 1e-5  # to provide a little wiggle room
+        if layer2_bases and (max(layer2_bases) - min(layer2_bases)) > tolerance:
             min_base = min(layer2_bases)
             max_base = max(layer2_bases)
             self.report(
                 {"ERROR"},
-                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). All objects must be at the exact same base level.",
+                f"Selected LAYER2 objects have different base heights ({min_base:.3f}m to {max_base:.3f}m). "
+                f"All objects must be at the exact same base level (tolerance {tolerance}).",
             )
             return
 
-        common_base = layer2_bases[0]
+        # use the mean base as the "common" one to avoid floating-point mismatches
+        common_base = sum(layer2_bases) / len(layer2_bases)
         new_height = cursor_z - common_base
 
         if new_height > 0:

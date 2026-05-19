@@ -17,4 +17,5 @@ capabilities of the C++ core are available in Python.
    ifcopenshell-python/geometry_creation
    ifcopenshell-python/geometry_tree
    ifcopenshell-python/selector_syntax
-   ifcopenshell-python/developer_guide
+   ifcopenshell-python/schema_querying
+   ifcopenshell-python/validation

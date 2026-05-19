@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
+from typing import Any, Union
+
 import ifcopenshell
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+
 import bonsai.tool as tool
-from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
-from typing import Any, Union
 
 
 def refresh():
@@ -131,6 +131,7 @@ class CostSchedulesData:
             cls._load_cost_values(cost_item, data)
             cls._load_nesting_index(cost_item, data)
             cls._load_assigned_cost_rate(cost_item, data)
+            cls._load_parent_cost_schedule(cost_item, data)
             results[cost_item.id()] = data
         return results
 
@@ -181,6 +182,10 @@ class CostSchedulesData:
     @classmethod
     def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
         data["AssignedCostRate"] = tool.Cost.get_assigned_rate_cost_item(cost_item)
+
+    @classmethod
+    def _load_parent_cost_schedule(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
+        data["ParentCostSchedule"] = tool.Cost.get_cost_schedule(cost_item)
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:

@@ -16,25 +16,36 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
 import bpy
-import ifcopenshell
 import isodate
-import bonsai.tool as tool
-import bonsai.bim.helper
 from bpy.types import Panel, UIList
+
+import bonsai.bim.helper
+import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.sequence.data import (
+    AnimationColorSchemeData,
+    SequenceData,
+    StatusData,
+    TaskICOMData,
     WorkPlansData,
     WorkScheduleData,
-    SequenceData,
-    TaskICOMData,
-    AnimationColorSchemeData,
 )
-from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from bonsai.bim.module.sequence.prop import (
+        BIMTaskTreeProperties,
+        BIMTaskTypeColor,
+        BIMWorkScheduleProperties,
+        Task,
+        TaskProduct,
+        TaskResource,
+    )
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.sequence.prop import BIMWorkScheduleProperties, BIMTaskTreeProperties, Task
 
 
 class BIM_PT_status(Panel):
@@ -59,16 +70,27 @@ class BIM_PT_status(Panel):
             row.operator("bim.enable_status_filters", icon="GREASEPENCIL")
             return
 
+        if not StatusData.is_loaded:
+            StatusData.load()
+
         row = self.layout.row(align=True)
-        row.label(text="Statuses found in the project:")
+        row.label(text="Elements Statuses:")
         row.operator("bim.activate_status_filters", icon="FILE_REFRESH", text="")
         row.operator("bim.disable_status_filters", icon="CANCEL", text="")
 
+        box = self.layout.box()
         for status in self.props.statuses:
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text=status.name)
+            if status.name in StatusData.data["active_element_status"]:
+                row.label(text="", icon="OBJECT_DATA")
+            if status.name in StatusData.data["statuses_with_elements"]:
+                row.label(text="", icon="ASSET_MANAGER")
             row.prop(status, "is_visible", text="", emboss=False, icon="HIDE_OFF" if status.is_visible else "HIDE_ON")
-            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").name = status.name
+            row.operator("bim.select_status_filter", icon="RESTRICT_SELECT_OFF", text="").status = status.name
+            row.operator("bim.assign_status", icon="BRUSH_DATA", text="").status = status.name
+
+        # TODO: also add a prop to add custom userdefined status.
 
 
 class BIM_PT_work_plans(Panel):
@@ -278,13 +300,21 @@ class BIM_PT_work_schedules(Panel):
                     row2 = self.layout.row(align=True)
                     row2.alignment = "RIGHT"
 
-                    row2.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
-                    row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
-                    row2.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
-                    row2.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = (
+                    col = row2.column()
+                    row_ = col.row(align=True)
+                    op = row_.operator("bim.select_task_elements", icon="RESTRICT_SELECT_OFF", text="Select Elements")
+                    op.task = task.ifc_definition_id
+                    row_.prop(self.props, "should_auto_select", icon="OBJECT_HIDDEN", text="")
+
+                    col = row2.column()
+                    row_ = col.row(align=True)
+                    row_.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
+                    row_.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
+                    row_.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
+                    row_.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = (
                         ifc_definition_id
                     )
-                    row2.operator("bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL").task = (
+                    row_.operator("bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL").task = (
                         ifc_definition_id
                     )
                 row.operator("bim.add_task", text="Add", icon="ADD").task = ifc_definition_id
@@ -704,11 +734,10 @@ class BIM_PT_task_icom(Panel):
                 input_id = self.props.task_inputs[self.props.active_task_input_index].ifc_definition_id
                 op.related_object = input_id
 
-        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="Select")
+        op = row2.operator("bim.select_task_related_inputs", icon="RESTRICT_SELECT_OFF", text="")
         op.task = task.ifc_definition_id
+        row2.prop(self.props, "show_nested_inputs", icon="OUTLINER", text="")
 
-        row2 = col.row()
-        row2.prop(self.props, "show_nested_inputs", text="Show Nested")
         row2 = col.row()
         row2.template_list("BIM_UL_task_inputs", "", self.props, "task_inputs", self.props, "active_task_input_index")
 
@@ -732,8 +761,7 @@ class BIM_PT_task_icom(Panel):
             op.related_object_type = "RESOURCE"
             op.resource = self.props.task_resources[self.props.active_task_resource_index].ifc_definition_id
 
-        row2 = col.row()
-        row2.prop(self.props, "show_nested_resources", text="Show Nested")
+        row2.prop(self.props, "show_nested_resources", icon="OUTLINER", text="")
 
         row2 = col.row()
         row2.template_list(
@@ -761,10 +789,10 @@ class BIM_PT_task_icom(Panel):
                 output_id = self.props.task_outputs[self.props.active_task_output_index].ifc_definition_id
                 op.relating_product = output_id
 
-        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="Select")
+        op = row2.operator("bim.select_task_related_products", icon="RESTRICT_SELECT_OFF", text="")
         op.task = task.ifc_definition_id
-        row2 = col.row()
-        row2.prop(self.props, "show_nested_outputs", text="Show Nested")
+        row2.prop(self.props, "show_nested_outputs", icon="OUTLINER", text="")
+
         row2 = col.row()
         row2.template_list(
             "BIM_UL_task_outputs", "", self.props, "task_outputs", self.props, "active_task_output_index"
@@ -776,23 +804,24 @@ class BIM_UL_task_columns(UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data: "BIMWorkScheduleProperties",
-        item: "Attribute",
+        data: BIMWorkScheduleProperties,
+        item: Attribute,
         icon,
         active_data,
         active_propname,
     ):
-        props = tool.Sequence.get_work_schedule_props()
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
-            if props.sort_column == item.name:
+            if data.sort_column == item.name:
                 row.label(text="", icon="SORTALPHA")
             row.operator("bim.remove_task_column", text="", icon="X").name = item.name
 
 
 class BIM_UL_task_inputs(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
@@ -802,7 +831,9 @@ class BIM_UL_task_inputs(UIList):
 
 
 class BIM_UL_task_resources(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskResource, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.operator("bim.go_to_resource", text="", icon="STYLUS_PRESSURE").resource = item.ifc_definition_id
@@ -811,7 +842,9 @@ class BIM_UL_task_resources(UIList):
 
 
 class BIM_UL_animation_colors(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: BIMTaskTypeColor, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row()
             row.prop(item, "color", text="")
@@ -819,7 +852,9 @@ class BIM_UL_animation_colors(UIList):
 
 
 class BIM_UL_task_outputs(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.select_product", text="", icon="RESTRICT_SELECT_OFF")
@@ -828,7 +863,9 @@ class BIM_UL_task_outputs(UIList):
 
 
 class BIM_UL_product_input_tasks(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
@@ -838,7 +875,9 @@ class BIM_UL_product_input_tasks(UIList):
 
 
 class BIM_UL_product_output_tasks(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: TaskProduct, icon, active_data, active_propname
+    ) -> None:
         if item:
             row = layout.row(align=True)
             op = row.operator("bim.go_to_task", text="", icon="STYLUS_PRESSURE")
@@ -863,8 +902,8 @@ class BIM_UL_tasks(UIList):
         self,
         context,
         layout: bpy.types.UILayout,
-        data: "BIMTaskTreeProperties",
-        item: "Task",
+        data: BIMTaskTreeProperties,
+        item: Task,
         icon,
         active_data,
         active_propname,
@@ -881,7 +920,7 @@ class BIM_UL_tasks(UIList):
             split2 = split1.split(factor=0.9 - min(0.5, 0.15 * len(self.props.columns)))
             split2.prop(item, "name", emboss=False, text="")
 
-            BIM_UL_tasks.draw_custom_columns(self.props, split2, item, task)
+            BIM_UL_tasks.draw_custom_columns(self.props, split2, item, task, item.ifc_definition_id)
 
             if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
                 row.prop(
@@ -948,6 +987,7 @@ class BIM_UL_tasks(UIList):
         row: bpy.types.UILayout,
         item: Optional[bpy.types.PropertyGroup] = None,
         task: Optional[dict[str, Any]] = None,
+        ifc_definition_id: int = 0,
         *,
         header: bool = False,
     ) -> None:
@@ -987,6 +1027,21 @@ class BIM_UL_tasks(UIList):
                         row.label(text=item.derived_calendar + "*")
                     else:
                         row.label(text=item.calendar or "-")
+            elif column.name == "Controls.TotalInputs":
+                if header:
+                    row.label(text="# Inputs")
+                else:
+                    row.label(text=str(SequenceData.data["tasks"][ifc_definition_id]["TotalInputs"]))
+            elif column.name == "Controls.TotalOutputs":
+                if header:
+                    row.label(text="# Outputs")
+                else:
+                    row.label(text=str(SequenceData.data["tasks"][ifc_definition_id]["TotalOutputs"]))
+            elif column.name == "Controls.TotalElements":
+                if header:
+                    row.label(text="# Elements")
+                else:
+                    row.label(text=str(SequenceData.data["tasks"][ifc_definition_id]["TotalElements"]))
             else:
                 ifc_class, name = column.name.split(".")
                 if header:

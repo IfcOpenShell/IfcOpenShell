@@ -18,18 +18,20 @@
 
 
 from __future__ import annotations
-import os
-import time
+
 import argparse
 import datetime
 import logging
+import os
+import time
+from collections import Counter
+from typing import Optional, TypedDict, Union
+
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
-from collections import Counter
-from typing import Union, Optional, Any, TypedDict
 
 
 class CostItem(TypedDict):
@@ -319,8 +321,8 @@ class Ifc5Dwriter:
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ):
         """
-        :param file: IFC file to exprot cost schedules from.
-        :param output: Output directory for csv files.
+        :param file: IFC file to export cost schedules from.
+        :param output: Output directory.
         :param cost_schedule: exported cost schedule. If not provided, will export all available schedules.
         """
         self.output = output
@@ -404,6 +406,7 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
         import csv
 
         super().write()
+        os.makedirs(self.output, exist_ok=True)
         for sheet, data in self.sheet_data.items():
             with open(
                 os.path.join(self.output, "{}.csv".format(data["Name"])), "w", newline="", encoding="utf-8"
@@ -417,9 +420,9 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
 
 class Ifc5DOdsWriter(Ifc5Dwriter):
     def write(self) -> None:
+        from odf.number import CurrencyStyle, CurrencySymbol, Number
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
-        from odf.number import NumberStyle, CurrencyStyle, CurrencySymbol, Number, Text
 
         super().write()
 
@@ -436,6 +439,7 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         ns1.addElement(Number(decimalplaces="2", minintegerdigits="1", grouping="true"))
         self.doc.styles.addElement(ns1)
 
+        os.makedirs(self.output, exist_ok=True)
         file_name = ""
         for cost_schedule in self.cost_schedules:
             if file_name:
@@ -446,9 +450,9 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
         self.doc.save(os.path.join(self.output, file_name), True)
 
     def write_table(self, cost_schedule):
-        from odf.table import Table, TableRow, TableCell
+        from odf.number import CurrencySymbol, Number
+        from odf.table import Table, TableCell, TableRow
         from odf.text import P
-        from odf.number import NumberStyle, CurrencyStyle, CurrencySymbol, Number, Text
 
         def row():
             return TableRow()
@@ -537,6 +541,7 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
         import xlsxwriter
 
         super().write()
+        os.makedirs(self.output, exist_ok=True)
         file_name = ""
         for cost_schedule in self.cost_schedules:
             if file_name:
@@ -591,10 +596,12 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
 
     def write(self) -> None:
         import os
-        import ifc5d
         import shutil
-        import typst
         import tempfile
+
+        import typst
+
+        import ifc5d
 
         DEFAULT_OPTIONS = {
             "nested_structure_depth": 0,
@@ -683,7 +690,7 @@ class Ifc5DPdfWriter(Ifc5Dwriter):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=str, help="Specify an IFC file to process")
-    parser.add_argument("output", help="The output directory for CSV or filename for other formats")
+    parser.add_argument("output", help="The output directory")
     parser.add_argument("-l", "--log", type=str, help="Specify where errors should be logged", default="process.log")
     parser.add_argument(
         "-f", "--format", type=str, help="Choose which format to export in (CSV/ODS/XLSX)", default="CSV"

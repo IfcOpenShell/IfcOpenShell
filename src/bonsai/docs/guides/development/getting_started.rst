@@ -7,8 +7,8 @@ suggesting new features, or contributing code, your involvement is highly encour
 
 This part of the documentation covers various aspects of the Bonsai development process, including:
 
-- :doc:`Writing User Documentation </contribute/writing_docs>`
-- :doc:`Translations and Internationalisation </contribute/translations>`
+- :doc:`Writing User Documentation </guides/development/writing_docs>`
+- :doc:`Translations and Internationalisation </guides/development/translations>`
 - Contributing Code
     - :doc:`Installation and Setting up a Development Environment </guides/development/installation>`
     - Understanding the Project Structure and Codebase

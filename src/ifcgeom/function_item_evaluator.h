@@ -9,7 +9,7 @@ namespace ifcopenshell { namespace geometry {
 
 /// @brief Computes a point on a helmert curve at s.
 /// Returns (x,y,theta) at L/2. The results are in a vector so they can be returned to python
-std::vector<double> helmert_curve_point(double A0, double A1, double A2, double s);
+IFC_GEOM_API std::vector<double> helmert_curve_point(double A0, double A1, double A2, double s);
 
 /// @brief Converts a loop to a function item.
 /// This is intended to be used from python side. Polylines are mapped to a loop, but when
@@ -22,7 +22,7 @@ static taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop
 }
 
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
-struct fn_evaluator {
+struct IFC_GEOM_API fn_evaluator {
     fn_evaluator(const ifcopenshell::geometry::Settings& settings) : settings_(settings) {
     }
     fn_evaluator(const fn_evaluator& other) = default;
@@ -39,7 +39,7 @@ struct fn_evaluator {
 };
 
 /// @brief utility class to evaluate function_item objects.
-class function_item_evaluator {
+class IFC_GEOM_API function_item_evaluator {
   public:
     function_item_evaluator(const ifcopenshell::geometry::Settings& settings, taxonomy::function_item::const_ptr fn);
     function_item_evaluator(const function_item_evaluator& other);

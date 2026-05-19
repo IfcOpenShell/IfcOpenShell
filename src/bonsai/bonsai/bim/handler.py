@@ -17,39 +17,47 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import weakref
+from collections.abc import Callable
+from math import cos
+from typing import Union
+
 import bpy
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import ifcopenshell.api.owner.settings
+from bpy.app.handlers import persistent
+from mathutils import Vector
+
 import bonsai.bim
 import bonsai.tool as tool
-import weakref
-from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator, BoundingBoxDecorator
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.decorator import (
+    BoundingBoxDecorator,
+    SlabDirectionDecorator,
+    WallAxisDecorator,
+)
 from bonsai.bim.module.nest.decorator import NestDecorator
-from mathutils import Vector
-from math import cos
-from typing import Union
-from collections.abc import Callable
-
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
+# Separate owner for per-object msgbus subscriptions (name, active_material_index).
+# Using a dedicated owner allows clearing all per-object subscriptions at once
+# during undo/redo without affecting other global subscriptions.
+object_subscription_owner = object()
 
 
 def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -> None:
     try:
         obj.name
     except:
-        # The object is invalid but somehow still has a callback. Clear all
-        # msgbus subscriptions to prevent useless further triggers.
-        bpy.msgbus.clear_by_owner(obj)
-        return  # In case the object RNA is gone during an undo / redo operation
+        # The object is invalid but somehow still has a callback.
+        # This can occur during undo/redo when the Python wrapper is stale.
+        return
     # Blender names are up to 63 UTF-8 bytes
     if len(bytes(obj.name, "utf-8")) >= 63:
         return
@@ -184,7 +192,7 @@ def subscribe_to(obj: bpy.types.ID, data_path: str, callback: Callable[[bpy.type
         return
     bpy.msgbus.subscribe_rna(
         key=subscribe_to,
-        owner=obj,
+        owner=object_subscription_owner,
         args=(
             obj,
             data_path,
@@ -202,8 +210,8 @@ def refresh_ui_data():
     Note that calling non-ifc-operators by itself doesn't refresh the UI data
     and it need to be refreshed manually if needed.
     """
-    from bonsai.bim import modules
     import bonsai.bim.ui
+    from bonsai.bim import modules
 
     bonsai.bim.ui.refresh()
 
@@ -219,12 +227,10 @@ def refresh_ui_data():
         except AttributeError:
             pass
 
-    if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
-        tool.Ifc.get().clear_cache()
+    if isinstance(ifc_file := tool.Ifc.get(), ifcopenshell.sqlite):
+        ifc_file.clear_cache()
 
-    props = tool.Drawing.get_document_props()
-    props.should_draw_decorations = props.should_draw_decorations
-    if bpy.context.scene.WebProperties.is_connected:
+    if tool.Web.get_web_props().is_connected:
         tool.Web.send_webui_data()
 
 

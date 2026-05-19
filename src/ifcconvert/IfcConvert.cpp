@@ -40,16 +40,15 @@
 #include "../serializers/SvgSerializer.h"
 #include "../serializers/USDSerializer.h"
 #include "../serializers/TtlWktSerializer.h"
+#include "../serializers/RocksDbSerializer.h"
+#include "../serializers/JsonSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
 #include "../ifcgeom/IfcGeomRenderStyles.h"
+#include "../ifcgeom/hybrid_kernel.h"
 
 #include "../ifcparse/utils.h"
-
-#ifdef IFOPSH_WITH_CITYJSON
-#include "./cityjson/geobim.h"
-#endif
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 
@@ -126,12 +125,13 @@ void print_usage(bool suggest_help = true)
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
-        << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
+#ifdef WITH_GLTF
+        << "  .json  JSON           Property definitions and decomposition tree in xeokit json format\n"
+#endif
+        << "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
+		<< "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
-#endif
-#ifdef IFOPSH_WITH_CITYJSON
-		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
 		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
@@ -204,7 +204,7 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties=false);
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
@@ -264,6 +264,7 @@ int main(int argc, char** argv) {
 #ifdef WITH_HDF5
 		("cache-file", new po::typed_value<path_t, char_t>(&cache_file), "geometry cache file")
 #endif
+		("stream", "Use streaming conversion (currently supported with conversion to RocksDB)")
 		;
 
 	po::options_description ifc_options("IFC options");
@@ -568,10 +569,12 @@ int main(int argc, char** argv) {
 	}
 
 	const path_t input_filename = vmap["input-file"].as<path_t>();
-    if (!file_exists(IfcUtil::path::to_utf8(input_filename))) {
+    /*
+	// todo also allow rocksdb dir
+	if (!file_exists(IfcUtil::path::to_utf8(input_filename))) {
         cerr_ << "[Error] Input file '" << input_filename << "' does not exist" << std::endl;
         return EXIT_FAILURE;
-    }
+    }*/
 
 	// If no output filename is specified a Wavefront OBJ file will be output
 	// to maintain backwards compatibility with the obsolete IfcObj executable.
@@ -587,7 +590,7 @@ int main(int argc, char** argv) {
 
     if (file_exists(IfcUtil::path::to_utf8(output_filename)) && !vmap.count("yes")) {
         std::string answer;
-        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file?" << std::endl;
+        cout_ << "A file '" << output_filename << "' already exists. Overwrite the existing file? y/n" << std::endl;
         std::cin >> answer;
         if (!boost::iequals(answer, "yes") && !boost::iequals(answer, "y")) {
             return EXIT_SUCCESS;
@@ -648,7 +651,9 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
-		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
+        JSON = IfcUtil::path::from_utf8(".json"),
+        // @todo this is just temporary as it doesn't make sense to require an extension for a DB
+		RDB = IfcUtil::path::from_utf8(".rdb"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
 		USDA = IfcUtil::path::from_utf8(".usda"),
@@ -657,15 +662,23 @@ int main(int argc, char** argv) {
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
-	if (output_extension == XML) {
+	if (output_extension == XML || output_extension == JSON) {
 		int exit_code = EXIT_FAILURE;
 		try {
 			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				time_t start, end;
 				time(&start);
-				XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
-				Logger::Status("Writing XML output...");
-				s.finalize();
+                if (output_extension == XML) {
+                    XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
+                    Logger::Status("Writing XML output...");
+                    s.finalize();
+                } else {
+#ifdef WITH_GLTF
+                    JsonSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename), JsonSerializer::JSON_DIALECT_CREOOX);
+                    Logger::Status("Writing JSON output...");
+                    s.finalize();
+#endif
+                }
 				time(&end);
 				Logger::Status("Done! Conversion took " +  format_duration(start, end));
 
@@ -702,82 +715,36 @@ int main(int argc, char** argv) {
 		write_log(!quiet);
 		return exit_code;
 	}
-#ifdef IFOPSH_WITH_CITYJSON
-	else if (output_extension == CITY_JSON || (output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
-
-		// none, convex-decomposition, minkowski-triangles or halfspace-snapping
-		boost::to_lower(exterior_only_algo);
-
-		if (exterior_only_algo == "halfspace-snapping") {
-			cerr_ << "[Error] halfspace-snapping not implemented yet" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
-		} else if (exterior_only_algo == "minkowski-triangles") {
-			// 
-		} else if (exterior_only_algo == "convex-decomposition") {
-			// 
-		} else if (exterior_only_algo == "none") {
-			// 
-		} else {
-			cerr_ << "[Error] --exterior-only should be convex-decomposition|minkowski-triangles|halfspace-snapping" << std::endl;
-			print_usage();
-			return EXIT_FAILURE;
+#ifdef WITH_ROCKSDB
+	else if (output_extension == RDB) {
+		int exit_code = EXIT_FAILURE;
+		try {
+			if (vmap.count("stream")) {
+				time_t start, end;
+				time(&start);
+				RocksDbSerializer s(IfcUtil::path::to_utf8(input_filename), IfcUtil::path::to_utf8(output_filename), true);
+				Logger::Status("Populating RocksDB Key-Value store...");
+				s.finalize();
+				time(&end);
+				Logger::Status("Done! Conversion took " + format_duration(start, end));
+				exit_code = EXIT_SUCCESS;
+			} else {
+				if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+					time_t start, end;
+					time(&start);
+					RocksDbSerializer s(ifc_file, IfcUtil::path::to_utf8(output_filename));
+					Logger::Status("Populating RocksDB Key-Value store...");
+					s.finalize();
+					time(&end);
+					Logger::Status("Done! Conversion took " + format_duration(start, end));
+					exit_code = EXIT_SUCCESS;
+				}
+			}			
+		} catch (const std::exception& e) {
+			Logger::Error(e);
 		}
-
-		geobim_settings settings;
-		settings.input_filenames = { IfcUtil::path::to_utf8(input_filename) };
-		settings.file = { new IfcParse::IfcFile(IfcUtil::path::to_utf8(input_filename)) };
-		
-		/*
-		// No longer set, because we pass to real serializers now, awaiting a proper iterator adaptor
-		if (output_extension == OBJ) {
-			settings.obj_output_filename = IfcUtil::path::to_utf8(output_filename);
-		}
-		*/
-	
-		if (output_extension == CITY_JSON) {
-			// we don't have a cityjson serializer though
-			settings.cityjson_output_filename = IfcUtil::path::to_utf8(output_filename);
-		}
-
-		// @todo
-		settings.radii = { "0.05" };
-		settings.apply_openings = false;
-		settings.apply_openings_posthoc = true;
-		settings.debug = false;
-		settings.exact_segmentation = true;
-		settings.minkowski_triangles = exterior_only_algo == "minkowski-triangles";
-		settings.no_erosion = false;
-		settings.spherical_padding = false;
-		if (num_threads != 1) {
-			settings.threads = num_threads;
-		}
-
-		settings.settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
-		settings.settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
-		settings.settings.get<ifcopenshell::geometry::settings::ReorientShells>().value = true;
-		settings.settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
-		settings.settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
-		settings.settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = !settings.apply_openings;
-
-		if (include_filter.type != geom_filter::UNUSED) {
-			settings.entity_names = include_filter.values;
-			settings.entity_names_included = true;
-		} else if (exclude_filter.type != geom_filter::UNUSED) {
-			settings.entity_names = exclude_filter.values;
-			settings.entity_names_included = false;
-		} else {
-			settings.entity_names = { { "IfcSpace", "IfcOpeningElement" } };
-			settings.entity_names_included = false;
-		}
-		
-		elems_from_adaptor.emplace();
-		perform(settings, *elems_from_adaptor);
-		
-		if (output_extension == CITY_JSON) {
-			return 0;
-		}
-		// else ... continue on to serialize elems_from_adaptor
+		write_log(!quiet);
+		return exit_code;
 	}
 #endif
 
@@ -827,8 +794,8 @@ int main(int argc, char** argv) {
 		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
 	}
 
-	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
-		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
+	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC && output_extension != GLB) {
+		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd or .glb output.\n";
 		/// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
 		print_usage();
@@ -925,7 +892,10 @@ int main(int argc, char** argv) {
 	time_t start,end;
 	time(&start);
 	
-    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+	// @nb last argument true -> bypass_properties which are not read by any of the geometry serializers
+    // XML, RocksDB, IFC are already special-cased above
+    // SVG requires properties for IfcAnnotation/DRAWING properties
+    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, output_extension != SVG)) {
         write_log(!quiet);
 		serializer.reset();
         IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
@@ -979,7 +949,7 @@ int main(int argc, char** argv) {
     if (is_tesselated && (center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
 
-		IfcGeom::Iterator tmp_context_iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads);
+		IfcGeom::Iterator tmp_context_iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads);
 			
 		time_t start, end;
 		time(&start);
@@ -1025,7 +995,7 @@ int main(int argc, char** argv) {
 
 	std::unique_ptr<IfcGeom::Iterator> context_iterator;
 	if (!elems_from_adaptor) {
-		context_iterator.reset(new IfcGeom::Iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads));
+		context_iterator.reset(new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(ifc_file, geometry_kernel, geometry_settings), geometry_settings, ifc_file, filter_funcs, num_threads));
 	}	
 
 #if defined(WITH_HDF5) && defined(IFOPSH_WITH_OPENCASCADE)
@@ -1296,7 +1266,7 @@ void write_log(bool header) {
 
 #include <boost/algorithm/string/predicate.hpp>
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool bypass_properties) {
     time_t start, end;
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
@@ -1304,20 +1274,38 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
     time(&start);
 
+	bool requires_init = false;
+
 #ifdef WITH_IFCXML
 	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
 		ifc_file = IfcParse::parse_ifcxml(filename);
-	} else
+    } else
 #endif
+    {
+        ifc_file = new IfcParse::IfcFile(IfcParse::uninitialized_tag{});
+        requires_init = true;
+    }
 
-	{
+	if (bypass_properties) {
+        ifc_file->bypass_type("IfcRelDefinesByProperties");
+        ifc_file->bypass_type("IfcPropertySetDefinition");
+        ifc_file->bypass_type("IfcProperty");
+        ifc_file->bypass_type("IfcMaterialProperties");
+        ifc_file->bypass_type("IfcProfileProperties");
+        ifc_file->bypass_type("IfcPhysicalQuantity");
+    }
+    
 #ifdef USE_MMAP
-		ifc_file = new IfcParse::IfcFile(filename, mmap);
+    if (mmap) {
+        ifc_file->initialize(filename, mmap);
+        requires_init = false;
+    }
 #else
-		(void)mmap;
-		ifc_file = new IfcParse::IfcFile(filename);
+    (void)mmap;
 #endif
-	}
+    if (requires_init) {
+        ifc_file->initialize(filename);
+    }
 
 	if (!ifc_file || !ifc_file->good()) {
         Logger::Error("Unable to parse input file '" + filename + "'");
@@ -1535,7 +1523,7 @@ namespace latebound_access {
 
 	IfcUtil::IfcBaseClass* create(IfcParse::IfcFile& f, const std::string& entity) {
 		auto decl = f.schema()->declaration_by_name(entity);
-		auto data = IfcEntityInstanceData(storage_t(decl->as_entity()->attribute_count()));
+		auto data = IfcEntityInstanceData(in_memory_attribute_storage(decl->as_entity()->attribute_count()));
 		auto inst = f.schema()->instantiate(decl, std::move(data));
 		if (decl->is("IfcRoot")) {
 			IfcParse::IfcGlobalId guid;
@@ -1600,7 +1588,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().value = true;
 	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 
-	IfcGeom::Iterator context_iterator(settings, &f, {}, 1);
+	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "opencascade", settings), settings, &f, {}, 1);
 
 	if (!context_iterator.initialize()) {
 		return;
@@ -1624,7 +1612,7 @@ void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool std
 	latebound_access::set(application, "ApplicationDeveloper", org);
 	latebound_access::set(application, "Version", std::string(IFCOPENSHELL_VERSION));
 	latebound_access::set(application, "ApplicationFullName", std::string("IfcConvert"));
-	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert" IFCOPENSHELL_VERSION));
+	latebound_access::set(application, "ApplicationIdentifier", std::string("IfcConvert") + IFCOPENSHELL_VERSION);
 	
 	auto ownerhist = latebound_access::create(f, "IfcOwnerHistory");
 	latebound_access::set(ownerhist, "OwningUser", pando);

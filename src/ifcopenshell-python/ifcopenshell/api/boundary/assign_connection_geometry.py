@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.util.unit
+from typing import Optional
+
 import numpy as np
 import numpy.typing as npt
-from typing import Optional
+
+import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import SequenceOfVectors, V, ifc_safe_vector_type
 
 
@@ -106,7 +108,7 @@ class Usecase:
         self.rel_space_boundary.ConnectionGeometry = connection_geometry
 
     def create_point(self, point: npt.NDArray) -> ifcopenshell.entity_instance:
-        return self.file.create_enitty("IfcCartesianPoint", ifc_safe_vector_type(point / self.unit_scale))
+        return self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(point / self.unit_scale))
 
     def close_polyline(
         self, points: tuple[ifcopenshell.entity_instance, ...]
@@ -125,7 +127,7 @@ class Usecase:
         return self.file.createIfcPlane(
             self.file.createIfcAxis2Placement3D(
                 self.create_point(location),
-                self.file.createIfcDirection(axis),
-                self.file.createIfcDirection(ref_direction),
+                self.file.createIfcDirection(ifc_safe_vector_type(axis)),
+                self.file.createIfcDirection(ifc_safe_vector_type(ref_direction)),
             )
         )

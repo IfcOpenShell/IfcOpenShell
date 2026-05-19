@@ -5,4 +5,5 @@
     , "IfcAnnotationSurfaceOccurrence": "IfcStyledItem"
     , "IfcAnnotationSymbolOccurrence": "IfcStyledItem"
     , "IfcAnnotationTextOccurrence": "IfcStyledItem"
+    , "IfcExtendedMaterialProperties": "IfcMaterialProperties"
 }

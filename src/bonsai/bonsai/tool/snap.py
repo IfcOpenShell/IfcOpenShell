@@ -16,22 +16,39 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
+import math
+from typing import TYPE_CHECKING, Any, Union
+
+import bmesh
 import bpy
-import ifcopenshell
 import ifcopenshell.util.unit
+from mathutils import Matrix, Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.module.drawing.data import DecoratorData
+from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.model.decorator import PolylineDecorator
-import math
-import mathutils
-from mathutils import Matrix, Vector
-from lark import Lark, Transformer
-from typing import Union, Any
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMSnapGroups, BIMSnapProperties
 
 
 class Snap(bonsai.core.tool.Snap):
     tool_state = None
     snap_plane_method = None
+
+    @classmethod
+    def get_snap_props(cls) -> BIMSnapProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMSnapProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_snap_groups(cls) -> BIMSnapGroups:
+        assert (scene := bpy.context.scene)
+        return scene.BIMSnapGroups  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def set_snap_plane_method(cls, value=True):
@@ -65,7 +82,7 @@ class Snap(bonsai.core.tool.Snap):
             ortho_threshold = [-10.0, -4.75, -2.2, -0.75]
             distances = [3, 6, 10, 20]
 
-        increment = None
+        increment = 1
         if rv3d.view_perspective == "PERSP":
             if rv3d.view_distance < distances[0]:
                 increment = (1 / fractions[0]) * factor
@@ -93,6 +110,15 @@ class Snap(bonsai.core.tool.Snap):
                 increment = 1 * factor
 
         return increment
+
+    @classmethod
+    def get_angle_snap_value(cls, context: bpy.types.Context) -> float:
+        """Get the angle snap increment from Blender's tool settings.
+
+        :param context: Blender context
+        :return: Angle snap increment in degrees
+        """
+        return math.degrees(context.scene.tool_settings.snap_angle_increment_3d)
 
     @classmethod
     def get_snap_points_on_raycasted_face(cls, context, event, obj, face_index):
@@ -362,57 +388,83 @@ class Snap(bonsai.core.tool.Snap):
 
         # Objects
         objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
-        # Wireframes
-        # For wireframe we have to get all the objects so we can further calculate edge intersection
-        for snap_obj in objs_to_raycast:
-            if snap_obj.type in {"EMPTY", "CURVE"} or (snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0):
-                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
-                if snap_points:
-                    for point in snap_points:
-                        point["group"] = "Wireframe"
-                        detected_snaps.append(point)
+        closest_snaps = tool.Raycast.ray_cast_and_get_closest_to_camera_snaps(context, event, objs_to_raycast)
+        detected_snaps.extend(closest_snaps)
 
-        if (space.shading.type == "SOLID" and space.shading.show_xray) or (
+        xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
-        ):
-            results = []
-            for obj in objs_to_raycast:
-                results.append(tool.Raycast.cast_rays_to_single_object(context, event, obj))
-        else:
-            results = []
-            results.append(tool.Raycast.cast_rays_and_get_best_object(context, event, objs_to_raycast))
+        )
 
-        for result in results:
-            snap_obj = result[0]
-            hit = result[1]
-            face_index = result[2]
-            if hit is not None:
-                # Wireframes
-                if snap_obj.type in {"EMPTY", "CURVE"} or (
-                    snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0
-                ):
+        for snap_obj in objs_to_raycast:
+            for snap in closest_snaps:
+                if snap_obj.obj == snap["object"]:
+                    if xray_mode:
+                        if "face_index" in snap and snap["face_index"] is not None:
+                            snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
+                            for point in snap_points:
+                                point["group"] = "Object"
+                                detected_snaps.append(point)
+                    else:
+                        # If it is a solid object that is closest to camera it ignores all the rest
+                        if (
+                            "is_closest_to_camera" in snap
+                            and snap["is_closest_to_camera"]
+                            and snap["group"] == "Object"
+                        ):
+                            closest_snap = [snap]  # discards objects that aren't the closest
+                            if "face_index" in snap and snap["face_index"] is not None:
+                                snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
+                                for point in snap_points:
+                                    point["group"] = "Object"
+                                    closest_snap.append(point)
+                            detected_snaps = closest_snap
+
+        # snap to cut geometry (e.g. in plan view)
+        if CutDecorator.installed:
+            cut_snaps = []
+
+            model_props = tool.Model.get_model_props()
+
+            for obj in [o for o in context.visible_objects if o.type == "MESH"]:
+                if not (element := tool.Ifc.get_entity(obj)):
                     continue
-                # Meshes
-                else:
-                    # Add face snap
-                    snap_point = {
-                        "point": hit,
-                        "type": "Face",
-                        "group": "Object",
-                        "object": snap_obj,
-                        "face_index": face_index,
-                        "distance": 9,  # High value so it has low priority
-                    }
-                    detected_snaps.append(snap_point)
 
-                    # Add vertex and edge snap
-                    snap_points = tool.Raycast.ray_cast_by_proximity(
-                        context, event, snap_obj, snap_obj.data.polygons[face_index]
-                    )
+                if model_props.show_cut_decorator and element.id() in DecoratorData.cut_cache:
+                    verts, edges = DecoratorData.cut_cache[element.id()]
+                    if not verts or not edges:
+                        continue
+
+                    bm = bmesh.new()
+                    bverts = [bm.verts.new(pos) for pos in verts]
+                    for edge in edges:
+                        bm.edges.new([bverts[vi] for vi in edge])
+
+                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
                     if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Object"
-                            detected_snaps.append(point)
+                        for p in snap_points:
+                            p["group"] = "Object"
+                            p["object"] = obj
+                            cut_snaps.append(p)
+
+                if model_props.show_cut_decorator_fill and element.id() in DecoratorData.fill_cache:
+                    bm = bmesh.new()
+                    for color, verts_and_tris in DecoratorData.fill_cache[element.id()].items():
+                        for verts, tris in verts_and_tris:
+                            bverts = [bm.verts.new(pos) for pos in verts]
+                            for tri in tris:
+                                verts = [bverts[vi] for vi in tri]
+                                if not bm.faces.get(verts):
+                                    bm.faces.new(verts)
+
+                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, None, None, bm)
+                    if snap_points:
+                        for p in snap_points:
+                            p["group"] = "Object"
+                            p["object"] = obj
+                            cut_snaps.append(p)
+
+            if len(cut_snaps) > 0:
+                detected_snaps = cut_snaps
 
         # Axis and Plane
         if tool.Ifc.get():
@@ -477,15 +529,23 @@ class Snap(bonsai.core.tool.Snap):
             "distance": 10,  # High value so it has low priority
         }
         detected_snaps.append(snap_point)
-
+        detected_snaps = [
+            snap
+            for snap in detected_snaps
+            if (tool.Raycast.point_is_visible_in_clipping_plane(snap["point"]) or snap["group"] == "Plane")
+        ]
         return detected_snaps
 
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         def filter_snapping_points_by_type(snapping_points):
             options = ["Plane", "Axis"]
-            props = context.scene.BIMSnapProperties
-            for prop in props.__annotations__.keys():
+            props = tool.Snap.get_snap_props()
+            try:
+                annotations = props.__annotations__
+            except AttributeError:
+                annotations = type(props).__annotations__
+            for prop in annotations.keys():
                 if getattr(props, prop):
                     options.append(props.rna_type.properties[prop].name)
 
@@ -494,8 +554,12 @@ class Snap(bonsai.core.tool.Snap):
 
         def filter_snapping_points_by_group(detected_snaps):
             options = ["Wireframe", "Axis", "Plane"]
-            props = context.scene.BIMSnapGroups
-            for prop in props.__annotations__.keys():
+            props = tool.Snap.get_snap_groups()
+            try:
+                annotations = props.__annotations__
+            except AttributeError:
+                annotations = type(props).__annotations__
+            for prop in annotations.keys():
                 if getattr(props, prop):
                     options.append(props.rna_type.properties[prop].name)
             filtered_groups = [group for group in detected_snaps if group["group"] in options]
@@ -503,7 +567,8 @@ class Snap(bonsai.core.tool.Snap):
 
         def sort_points_by_weighted_distance(snapping_points):
             for snap in snapping_points:
-                zoom_factor = bpy.context.region_data.view_distance
+                rv3d = bpy.context.region_data
+                zoom_factor = rv3d.view_distance
                 if snap["type"] == "Vertex":
                     snap["distance"] *= zoom_factor / 10
                 if snap["type"] == "Edge Center":

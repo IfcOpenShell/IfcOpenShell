@@ -18,7 +18,7 @@
 
 import bonsai.core.geometry as subject
 import test.core.test_style
-from test.core.bootstrap import ifc, surveyor, geometry, style
+from test.core.bootstrap import geometry, ifc, style, surveyor
 
 
 class TestEditObjectPlacement:
@@ -195,52 +195,16 @@ class TestAddRepresentation:
 
 class TestSwitchRepresentation:
     def test_switching_to_a_representation(self, ifc, geometry):
-        ifc.is_edited("obj").should_be_called().will_return(False)
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        geometry.clear_cache("element").should_be_called()
         geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
         subject.switch_representation(
             ifc,
             geometry,
             obj="obj",
             representation="mapped_rep",
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=True,
             apply_openings=True,
-        )
-
-    def test_updating_a_representation_if_the_blender_object_has_been_edited_prior_to_switching(self, ifc, geometry):
-        ifc.is_edited("obj").should_be_called().will_return(True)
-        geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
-        geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
-        geometry.run_geometry_update_representation(obj="obj").should_be_called()
-        geometry.does_representation_id_exist("representation_id").should_be_called().will_return(True)
-        geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-            should_reload=False,
-            is_global=False,
-            should_sync_changes_first=True,
-        )
-
-    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, ifc, geometry):
-        ifc.is_edited("obj").should_be_called().will_return(True)
-        geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
-        geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
-        geometry.run_geometry_update_representation(obj="obj").should_be_called()
-        geometry.does_representation_id_exist("representation_id").should_be_called().will_return(False)
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-            should_reload=False,
-            is_global=False,
-            should_sync_changes_first=True,
         )
 
 
@@ -248,7 +212,7 @@ class TestGetRepresentationIfcParameters:
     def test_run(self, geometry):
         geometry.get_object_data("obj").should_be_called().will_return("data")
         geometry.import_representation_parameters("data").should_be_called()
-        subject.get_representation_ifc_parameters(geometry, obj="obj", should_sync_changes_first=False)
+        subject.get_representation_ifc_parameters(geometry, obj="obj")
 
 
 class TestRemoveRepresentation:
@@ -267,7 +231,6 @@ class TestRemoveRepresentation:
         geometry.switch_from_representation("type_obj", "representation").should_be_called()
         ifc.run("geometry.unassign_representation", product="type", representation="representation").should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
-        geometry.delete_data("data").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="mapped_rep")
 
     def test_removing_an_unused_mapped_representation(self, ifc, geometry):
@@ -290,7 +253,6 @@ class TestRemoveRepresentation:
             "geometry.unassign_representation", product="element", representation="representation"
         ).should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
-        geometry.delete_data("data").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="representation")
 
     def test_removing_an_actively_used_representation(self, ifc, geometry):
@@ -305,7 +267,6 @@ class TestRemoveRepresentation:
             "geometry.unassign_representation", product="element", representation="representation"
         ).should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
-        geometry.delete_data("data").should_be_called()
         subject.remove_representation(ifc, geometry, obj="obj", representation="representation")
 
     def test_removing_an_unused_representation(self, ifc, geometry):

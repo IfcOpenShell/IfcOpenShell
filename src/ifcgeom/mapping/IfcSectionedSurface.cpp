@@ -31,19 +31,20 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	std::vector<cross_section> cross_sections;
 
 	auto dir = map(inst->Directrix());
-	auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir);
-	if (!pwf) {
-		// Only implement on alignment curves
-        Logger::Warning("IfcSectionedSurface is only implemented for piecewise function Directrix curves", inst);
+    auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
+    if (!fn) {
+        // Only implement on alignment curves
+        Logger::Warning("IfcSectionedSurface is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
-	}
+    }
+
 
 	{	
 	auto css = inst->CrossSections();
 	auto csps = inst->CrossSectionPositions();
 	std::vector<taxonomy::geom_item::ptr> faces;
 
-	// The PointByDistanceExpressesions are factored out into (a) a cartesian offset relative to the
+	// The PointByDistanceExpressions are factored out into (a) a cartesian offset relative to the
 	// reference frame along a certain curve location (b) the longitude.
 
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between
@@ -62,29 +63,18 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 
 		longitudes.push_back(*pbde->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>(true) * length_unit_);
 
-		// Corresponds to the profile X, Y directions (hopefully).
-		Eigen::Vector3d po(
-			pbde->OffsetLateral().get_value_or(0.),
-			// @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
-			pbde->OffsetVertical().get_value_or(0.),
-			0.
-		);
+        Eigen::Vector3d po(
+            pbde->OffsetLateral().get_value_or(0.),
+            // @todo I don't understand whether vertical is an offset relative to the tangent plane or to the global XY plane
+            pbde->OffsetVertical().get_value_or(0.),
+            0.);
 
-		profile_offsets.push_back(po);
+        profile_offsets.push_back(po);
 
-		boost::optional<Eigen::Matrix3d> rot;
-		if (csp->Axis() && csp->RefDirection()) {
-			rot = taxonomy::matrix4(
-				Eigen::Vector3d(0, 0, 0),
-				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents(),
-				taxonomy::cast<taxonomy::direction3>(map(csp->RefDirection()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
-		} else if (csp->Axis()) {
-			rot = taxonomy::matrix4(
-				Eigen::Vector3d(0, 0, 0),
-				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
-		}
-		profile_rotations.push_back(rot);
-	}
+        auto axis2_placement_linear = taxonomy::cast<taxonomy::matrix4>(map(csp));
+        boost::optional<Eigen::Matrix3d> rot(axis2_placement_linear->ccomponents().block<3, 3>(0, 0));
+        profile_rotations.push_back(rot);
+    }
 #else
 	return nullptr;
 #endif
@@ -102,7 +92,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	}
 	}
 
-	return make_loft(settings_, inst, pwf, cross_sections);
+	return make_loft(settings_, inst, fn, cross_sections);
 }
 
 #endif

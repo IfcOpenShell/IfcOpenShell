@@ -16,37 +16,34 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import bcf.v3
+import tempfile
+import uuid
+import webbrowser
+from math import atan, degrees, radians, tan
+from pathlib import Path
+
+import bcf.agnostic.topic
+import bcf.agnostic.visinfo
+import bcf.v2.bcfxml
+import bcf.v2.model
+import bcf.v2.topic
+import bcf.v2.visinfo
 import bcf.v3.bcfxml
 import bcf.v3.document
 import bcf.v3.model
 import bcf.v3.topic
 import bcf.v3.visinfo
 import bpy
-import bcf
-import bcf.bcfxml
-import bcf.v2.bcfxml
-import bcf.v2.model
-import bcf.v2.topic
-import bcf.v2.visinfo
-import bcf.agnostic.topic
-import bcf.agnostic.visinfo
-import uuid
-import numpy as np
-import tempfile
-import webbrowser
 import ifcopenshell
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit
-import bonsai.tool as tool
-import bonsai.bim.module.bcf.prop as bcf_prop
-import bonsai.bim.module.bcf.bcfstore as bcfstore
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from pathlib import Path
-from math import radians, degrees, atan, tan, cos, sin
-from mathutils import Vector, Matrix, Euler, geometry
+import numpy as np
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+from mathutils import Matrix, Vector
 from xsdata.models.datatype import XmlDateTime
+
+import bonsai.bim.module.bcf.bcfstore as bcfstore
+import bonsai.tool as tool
 
 
 class NewBcfProject(bpy.types.Operator):
@@ -1215,7 +1212,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         assert blender_topic
         topic = bcfxml.topics[blender_topic.name]
         if self.viewpoint_guid:
-            viewpoint_guid = self.viewpoint_guid
+            viewpoint_guid = self.viewpoint_guid + ".bcfv"
             if viewpoint_guid not in topic.viewpoints:
                 self.report({"ERROR"}, f"No such viewpoint in the active topic: '{viewpoint_guid}'.")
                 return {"CANCELLED"}
@@ -1256,8 +1253,8 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         else:
             obj.data.show_background_images = False
 
-        area = next(area for area in context.screen.areas if area.type == "VIEW_3D")
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert (space := tool.Blender.get_view3d_space())
+        space.region_3d.view_perspective = "CAMERA"
 
         if self.file:
             self.set_viewpoint_components(viewpoint, context)
@@ -1313,7 +1310,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         x_axis = y_axis.cross(z_axis).normalized()
         rotation = Matrix((x_axis, y_axis, z_axis))
         rotation.invert()
-        matrix = np.matrix(
+        matrix = np.array(
             (
                 [x_axis[0], y_axis[0], z_axis[0], camera.camera_view_point.x],
                 [x_axis[1], y_axis[1], z_axis[1], camera.camera_view_point.y],

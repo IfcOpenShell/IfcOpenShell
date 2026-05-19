@@ -17,21 +17,30 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+
+import json
+from typing import TYPE_CHECKING, Any, Union
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
-import json
+
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.structural.prop import BIMStructuralProperties, BIMObjectStructuralProperties
-    from ifcopenshell.api.structural.edit_structural_boundary_condition import AttributeDict
+    from ifcopenshell.api.structural.edit_structural_boundary_condition import (
+        AttributeDict,
+    )
+
+    from bonsai.bim.module.structural.prop import (
+        BIMObjectStructuralProperties,
+        BIMStructuralProperties,
+    )
 
 
 class Structural(bonsai.core.tool.Structural):

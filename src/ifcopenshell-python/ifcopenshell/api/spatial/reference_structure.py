@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Union
+
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union
 
 
 def reference_structure(
@@ -62,14 +63,15 @@ def reference_structure(
         storey1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
         storey2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
         storey3 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
+        space = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSpace")
 
         # The project contains a site (note that project aggregation is a special case in IFC)
         ifcopenshell.api.aggregate.assign_object(model, products=[site], relating_object=project)
 
         # The site has a building, the building has a storey, and the storey has a space
         ifcopenshell.api.aggregate.assign_object(model, products=[building], relating_object=site)
-        ifcopenshell.api.aggregate.assign_object(model, products=[storey], relating_object=building)
-        ifcopenshell.api.aggregate.assign_object(model, products=[space], relating_object=storey)
+        ifcopenshell.api.aggregate.assign_object(model, products=[storey1,storey2,storey3], relating_object=building)
+        ifcopenshell.api.aggregate.assign_object(model, products=[space], relating_object=storey1)
 
         # Create a column, this column spans 3 storeys
         column = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
@@ -79,7 +81,11 @@ def reference_structure(
 
         # And referenced in the others
         ifcopenshell.api.spatial.reference_structure(
-            model, products=[column], relating_structure=[storey2, storey3]
+            model, products=[column], relating_structure=storey2
+        )
+
+        ifcopenshell.api.spatial.reference_structure(
+            model, products=[column], relating_structure=storey3
         )
     """
 

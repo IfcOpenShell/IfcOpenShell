@@ -17,16 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+from pathlib import Path
+
 import bpy
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.schema
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from test.bim.bootstrap import NewFile
-from bonsai.tool.debug import Debug as subject
 from bonsai.bim.ifc import IfcStore
-from pathlib import Path
+from bonsai.tool.debug import Debug as subject
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):

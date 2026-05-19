@@ -3,6 +3,8 @@
 
 #include <CGAL/Polygon_mesh_processing/repair.h>
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
+#include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
 
 #include "../../../ifcparse/IfcLogger.h"
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
@@ -17,6 +19,10 @@ using IfcGeom::ConversionResultShape;
 #else
 using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
+#endif
+
+#ifdef IFOPSH_SIMPLE_KERNEL
+#define CgalShape SimpleCgalShape
 #endif
 
 typedef CGAL::Polyhedron_3<Kernel_> Polyhedron;
@@ -217,6 +223,14 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		}
 	}
 
+	boost::optional<double> smooth_treshold;
+	{
+		auto setting_value = settings.get<ifcopenshell::geometry::settings::CgalSmoothAngleDegrees>().get();
+		if (setting_value > 0.) {
+			smooth_treshold = std::cos(setting_value * boost::math::constants::pi<double>() / 180.0);
+		}
+	}
+
 	if (!all_triangles) {
 		if (!shape_to_use->is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
@@ -261,8 +275,8 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	// boost::associative_property_map<std::map<cgal_vertex_descriptor_t, Kernel_::Vector_3>> vertex_normals_map(vertex_normals);
 	
 	// Triangulate the shape and compute the normals
-	std::map<cgal_face_descriptor_t, Kernel_::Vector_3> face_normals;
-	boost::associative_property_map<std::map<cgal_face_descriptor_t, Kernel_::Vector_3>> face_normals_map(face_normals);
+	std::map<Facet_const_handle, Kernel_::Vector_3> face_normals;
+	boost::associative_property_map<std::map<Facet_const_handle, Kernel_::Vector_3>> face_normals_map(face_normals);
 
 	//  CGAL::Polygon_mesh_processing::compute_normals(s, vertex_normals_map, face_normals_map);
 	try {
@@ -286,17 +300,49 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			continue;
 		}
 		CGAL::Polyhedron_3<Kernel_>::Halfedge_around_facet_const_circulator current_halfedge = face->facet_begin();
+
+		const Kernel_::Vector_3 facet_normal = face_normals_map[face];
+
 		int vertexidx[3];
 		bool is_face_boundary[3];
 		int i = 0;
 		do {
+			auto v = current_halfedge->vertex();
+
+			auto vertex_norm = facet_normal;
+
+			if (smooth_treshold) {
+				Kernel_::Vector_3 normal_accum(0, 0, 0);
+				{
+					// circulator around the vertex
+					auto vh_begin = v->vertex_begin();
+					if (vh_begin != nullptr) {
+						auto vh = vh_begin;
+						do {
+							if (!vh->is_border()) {
+								Facet_const_handle adj_f = vh->facet();
+								const auto fn2 = face_normals_map[adj_f];
+								if ((fn2 * facet_normal) >= *smooth_treshold) {
+									normal_accum = normal_accum + fn2;
+								}
+								++vh;
+							}
+						} while (vh != vh_begin);
+					}
+				}
+				const double len = std::sqrt(CGAL::to_double(normal_accum.squared_length()));
+				if (len > 0) {
+					vertex_norm = normal_accum / len;
+				}
+			}
+
 			postion_normal pn = {
-				current_halfedge->vertex()->point().cartesian(0),
-				current_halfedge->vertex()->point().cartesian(1),
-				current_halfedge->vertex()->point().cartesian(2),
-				face_normals_map[face].cartesian(0),
-				face_normals_map[face].cartesian(1),
-				face_normals_map[face].cartesian(2)
+				v->point().cartesian(0),
+				v->point().cartesian(1),
+				v->point().cartesian(2),
+				vertex_norm.cartesian(0),
+				vertex_norm.cartesian(1),
+				vertex_norm.cartesian(2)
 			};
 
 			// @todo normalzie based on largest component?
@@ -564,6 +610,11 @@ ConversionResultShape * ifcopenshell::geometry::CgalShape::box()
 	throw std::runtime_error("Not implemented");
 }
 
+ConversionResultShape* ifcopenshell::geometry::CgalShape::wrap_in_compound()
+{
+	return new CgalShape(poly(), convex_tag_);
+}
+
 std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::vertices()
 {
 	// @todo this is ridiculous
@@ -661,6 +712,43 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::intersect(ConversionRe
 #endif
 }
 
+namespace {
+	template <typename Polyhedron>
+	void concatenate_polyhedra(Polyhedron& p1, const Polyhedron& p2) {
+		std::vector<cgal_point_t> points1, points2;
+		std::vector<std::vector<std::size_t>> faces1, faces2;
+
+		// Extract soups
+		CGAL::Polygon_mesh_processing::polygon_mesh_to_polygon_soup(p1, points1, faces1);
+		CGAL::Polygon_mesh_processing::polygon_mesh_to_polygon_soup(p2, points2, faces2);
+
+		// Offset indices in faces2 by current number of points in points1
+		std::size_t offset = points1.size();
+		for (auto& f : faces2) {
+			for (auto& idx : f) {
+				idx += offset;
+			}
+		}
+
+		// Merge soups
+		points1.insert(points1.end(), points2.begin(), points2.end());
+		faces1.insert(faces1.end(), faces2.begin(), faces2.end());
+
+		// Build merged polyhedron
+		Polyhedron merged;
+		CGAL::Polygon_mesh_processing::polygon_soup_to_polygon_mesh(points1, faces1, merged);
+
+		p1 = std::move(merged);
+	}
+}
+
+ConversionResultShape* ifcopenshell::geometry::CgalShape::concat(ConversionResultShape* other)
+{
+	auto shp = poly();
+	concatenate_polyhedra(shp, ((CgalShape*)other)->poly());
+	return new CgalShape(shp);
+}
+
 std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::CgalShape::bounding_box() const
 {
 	throw std::runtime_error("Not implemented");
@@ -694,6 +782,11 @@ void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>&, OpaqueCoordina
 
 void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
+}
+
+bool ifcopenshell::geometry::CgalShape::surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, double& along_x, double& along_y, double& along_z) const {
+	// @todo
+	return false;
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
@@ -911,6 +1004,12 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vec
 	}
 	auto nw = shape_->map(mp);
 	shape_ = std::move(nw);
+}
+
+
+ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::wrap_in_compound()
+{
+	throw std::runtime_error("Not implemented");
 }
 
 #endif

@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.drawing as subject
-from test.core.bootstrap import ifc, drawing, collector, geometry, blender, Prophecy
+from test.core.bootstrap import Prophecy, blender, collector, drawing, geometry, ifc
 
 
 class TestEnableEditingText:
@@ -35,10 +35,14 @@ class TestDisableEditingText:
 
 class TestEditText:
     def test_run(self, drawing):
-        drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
-        drawing.update_text_size_pset("obj").should_be_called()
-        drawing.update_newline_at("obj").should_be_called()
-        drawing.update_text_value("obj").should_be_called()
+        drawing.export_text_literal_attributes("obj").should_be_called().will_return("literal_attributes")
+        drawing.export_font_size("obj").should_be_called().will_return("font_size")
+        drawing.edit_text_font_size("obj", "font_size").should_be_called()
+        drawing.export_wrap_length("obj").should_be_called().will_return("wrap_length")
+        drawing.edit_text_wrap_length("obj", "wrap_length").should_be_called()
+        drawing.export_symbol("obj").should_be_called().will_return("symbol")
+        drawing.edit_text_symbol("obj", "symbol").should_be_called()
+        drawing.edit_text_literals("obj", "literal_attributes").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(drawing, obj="obj")
 
@@ -59,24 +63,21 @@ class TestDisableEditingAssignedProduct:
 class TestEditAssignedProduct:
     def test_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product_workaround("element").should_be_called().will_return(["existing_product"])
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
-        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(True)
-        drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
     def test_non_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        drawing.get_assigned_product_workaround("element").should_be_called().will_return(["existing_product"])
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
-        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(False)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
@@ -400,6 +401,7 @@ class TestDuplicateDrawing:
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
         ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
+        drawing.clear_annotation_relationships("new_drawing").should_be_called()
         drawing.copy_representation("drawing", "new_drawing").should_be_called()
         drawing.set_name("new_drawing", "unique_name").should_be_called()
         drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
@@ -469,6 +471,7 @@ class TestRemoveDrawing:
 class TestUpdateDrawingName:
     def test_do_not_update_if_name_unchanged(self, ifc, drawing):
         drawing.get_name("drawing").should_be_called().will_return("name")
+        drawing.set_camera_name("drawing", "name").should_be_called()
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         drawing.get_name("group").should_be_called().will_return("name")
         drawing.get_drawing_collection("drawing").should_be_called().will_return("collection")
@@ -485,6 +488,7 @@ class TestUpdateDrawingName:
     def test_run(self, ifc, drawing):
         drawing.get_name("drawing").should_be_called().will_return("oldname")
         ifc.run("attribute.edit_attributes", product="drawing", attributes={"Name": "name"}).should_be_called()
+        drawing.set_camera_name("drawing", "name").should_be_called()
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         drawing.get_name("group").should_be_called().will_return("oldname")
         ifc.run("attribute.edit_attributes", product="group", attributes={"Name": "name"}).should_be_called()

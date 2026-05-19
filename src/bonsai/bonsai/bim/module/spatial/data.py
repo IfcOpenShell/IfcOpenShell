@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
-import bonsai.tool as tool
-import ifcopenshell.util.element
 from typing import Any
+
+import bpy
+import ifcopenshell.util.element
+
+import bonsai.tool as tool
 
 
 def refresh():
@@ -148,14 +150,14 @@ class SpatialDecompositionData:
         elif tool.Ifc.get_schema() == "IFC4X3":
             results = {
                 "IfcBridge": ["IfcBridge", "IfcBridgePart", "IfcSpace"],
-                "IfcBridgePart": ["IfcSpace"],
+                "IfcBridgePart": ["IfcBridgePart", "IfcSpace"],
                 "IfcBuilding": ["IfcBuilding", "IfcBuildingStorey", "IfcSpace"],
                 "IfcBuildingStorey": ["IfcBuildingStorey", "IfcSpace"],
                 "IfcExternalSpatialElement": ["IfcExternalSpatialElement"],
                 "IfcFacility": ["IfcFacility", "IfcFacilityPartCommon", "IfcSpace"],
-                "IfcFacilityPartCommon": ["IfcSpace"],
+                "IfcFacilityPartCommon": ["IfcFacilityPartCommon", "IfcSpace"],
                 "IfcMarineFacility": ["IfcMarineFacility", "IfcMarinePart", "IfcSpace"],
-                "IfcMarinePart": ["IfcSpace"],
+                "IfcMarinePart": ["IfcMarinePart", "IfcSpace"],
                 "IfcProject": [
                     "IfcBridge",
                     "IfcBuilding",
@@ -168,9 +170,9 @@ class SpatialDecompositionData:
                     "IfcSpace",
                 ],
                 "IfcRailway": ["IfcRailway", "IfcRailwayPart", "IfcSpace"],
-                "IfcRailwayPart": ["IfcSpace"],
+                "IfcRailwayPart": ["IfcRailwayPart", "IfcSpace"],
                 "IfcRoad": ["IfcRoad", "IfcRoadPart", "IfcSpace"],
-                "IfcRoadPart": ["IfcSpace"],
+                "IfcRoadPart": ["IfcRoadPart", "IfcSpace"],
                 "IfcSite": [
                     "IfcBridge",
                     "IfcBuilding",

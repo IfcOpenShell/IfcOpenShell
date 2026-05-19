@@ -97,12 +97,7 @@ protected:
     IfcEntityInstanceData data_;
 
 public:
-    IfcBaseClass(IfcEntityInstanceData&& data)
-        : identity_(counter_++)
-        , id_(0)
-        , file_(nullptr)
-        , data_(std::move(data))
-    {}
+    IfcBaseClass(IfcEntityInstanceData&& data);
 
     const IfcEntityInstanceData& data() const { return data_; }
     IfcEntityInstanceData& data() { return data_; }
@@ -110,12 +105,23 @@ public:
     virtual const IfcParse::declaration& declaration() const = 0;
 
     template <typename T>
-    void set_attribute_value(size_t i, const T& t);
+    typename std::enable_if<
+        (!(std::is_pointer<T>::value && std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
+        void>::type
+    set_attribute_value(size_t i, const T& t);
 
     template <typename T>
-    void set_attribute_value(const std::string& name, const T& t);
+    typename std::enable_if<
+        (!(std::is_pointer<T>::value&& std::is_base_of<IfcUtil::IfcBaseClass, typename std::remove_pointer<T>::type>::value) || std::is_same_v<IfcUtil::IfcBaseClass, std::remove_pointer_t<T>>),
+        void>::type
+    set_attribute_value(const std::string& name, const T& t);
+
+    void set_attribute_value(size_t i, IfcUtil::IfcBaseClass* p);
+    void set_attribute_value(const std::string& name, IfcUtil::IfcBaseClass* p);
     
     void unset_attribute_value(size_t i);
+
+    AttributeValue get_attribute_value(size_t index) const;
 
     uint32_t identity() const { return identity_; }
 
@@ -131,7 +137,7 @@ class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
     IfcBaseEntity(IfcEntityInstanceData&& data);
 
     IfcBaseEntity(size_t n)
-        : IfcBaseClass(IfcEntityInstanceData(storage_t(n)))
+        : IfcBaseClass(IfcEntityInstanceData(in_memory_attribute_storage(n)))
     {}
 
     virtual const IfcParse::declaration& declaration() const = 0;
@@ -172,7 +178,7 @@ class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
     {}
 
     IfcBaseType()
-        : IfcBaseClass(IfcEntityInstanceData(storage_t(1)))
+        : IfcBaseClass(IfcEntityInstanceData(in_memory_attribute_storage(1)))
     {}
 
     virtual const IfcParse::declaration& declaration() const = 0;

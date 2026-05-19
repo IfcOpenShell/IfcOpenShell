@@ -16,33 +16,35 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
-import bpy
-import time
-import random
 import logging
-import subprocess
+import os
 import platform
+import random
+import subprocess
+import sys
+import time
+from collections import defaultdict
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
+
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
+
+import bonsai.bim.handler
+import bonsai.bim.import_ifc as import_ifc
 import bonsai.core.debug as core
 import bonsai.core.profile
 import bonsai.core.type
-import bonsai.bim.handler
-import bonsai.bim.import_ifc as import_ifc
-from collections import defaultdict
-from bpy_extras.io_utils import ImportHelper, ExportHelper
-from pathlib import Path
-from bonsai import get_debug_info, format_debug_info
+import bonsai.tool as tool
+from bonsai import format_debug_info, get_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args, Union, Any, TYPE_CHECKING, Literal, get_args, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
@@ -60,8 +62,8 @@ class CopyDebugInformation(bpy.types.Operator):
                 {
                     "ifc": os.path.basename(tool.Ifc.get_path()) if os.path.isfile(tool.Ifc.get_path()) else "Unsaved",
                     "schema": tool.Ifc.get().schema,
-                    "preprocessor_version": tool.Ifc.get().wrapped_data.header.file_name.preprocessor_version,
-                    "originating_system": tool.Ifc.get().wrapped_data.header.file_name.originating_system,
+                    "preprocessor_version": tool.Ifc.get().header.file_name.preprocessor_version,
+                    "originating_system": tool.Ifc.get().header.file_name.originating_system,
                 }
             )
 
@@ -253,15 +255,19 @@ class ProfileImportIFC(bpy.types.Operator):
 class CreateAllShapes(bpy.types.Operator):
     bl_idname = "bim.create_all_shapes"
     bl_label = "Test All Shapes"
-    bl_description = "Look for errors in all the shapes contained in the file"
+    bl_description = (
+        "Look for errors in all the shapes contained in the file.\n\nSee system console for the detailed results."
+    )
     bl_options = {"REGISTER"}
 
-    geometry_library: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    geometry_library: bpy.props.EnumProperty(
         name="Geometry Library",
+        description="Geometry library to use for testing shape creation.",
         items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
-        default="opencascade",
+        # By default use the same library as used for importing ifc project.
+        default="hybrid-cgal-simple-opencascade",
     )
-    custom_geometry_library: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+    custom_geometry_library: bpy.props.StringProperty(
         name="Custom Geometry Library",
         description="Provide a custom geometry library name, will override the 'geometry library' property.",
     )
@@ -272,19 +278,23 @@ class CreateAllShapes(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         self.file = tool.Ifc.get()
         geometry_library = self.custom_geometry_library or self.geometry_library
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
+        print(f"Testing geometry library '{geometry_library}'.")
 
         total = len(elements)
         settings = ifcopenshell.geom.settings()
         settings.set("keep-bounding-boxes", True)
         settings_2d = ifcopenshell.geom.settings()
         settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-        failures = []
+        failures: list[ifcopenshell.entity_instance] = []
         excludes = ()  # For the developer to debug with
         for i, element in enumerate(elements, 1):
             if element.GlobalId in excludes:
@@ -303,12 +313,11 @@ class CreateAllShapes(bpy.types.Operator):
                     failures.append(element)
                     print("***** FAILURE *****")
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
+                geom = shape.geometry
                 print(
-                    "Success",
-                    time.time() - start,
-                    len(shape.geometry.verts),
-                    len(shape.geometry.edges),
-                    len(shape.geometry.faces),
+                    f"Success {time.time() - start:.3f}s "
+                    f"V:{(len(geom.verts)//3)} E:{(len(geom.edges)//2)} F:{(len(geom.faces)//3)}"
                 )
         self.report({"INFO"}, f"Failed shapes: {len(failures)}, check the system console for details.")
         for failure in failures:
@@ -772,7 +781,7 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Purge Unused Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    object_type: bpy.props.EnumProperty(
         name="Object Type",
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
@@ -810,16 +819,36 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
 class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_identical_objects"
     bl_label = "Merge Identical Objects"
-    bl_description = "For materials currently only IfcMaterials are supported"
+    bl_description = (
+        "Merge identical IFC objects (that match all attributes).\n"
+        "\n"
+        "SHIFT + CLICK to merge by name/identification attribute only.\n"
+        "Merges names with number suffix, as well (ex: foo, foo.001, foo.002)\n"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    object_type: bpy.props.EnumProperty(
         name="Object Type",
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
 
+    by_name_or_identification_only: bpy.props.BoolProperty(
+        name="By Name/Identification Only",
+        description="Merge based only on Name or Identification attribute, ignoring other properties",
+        default=False,
+    )
+
     if TYPE_CHECKING:
         object_type: tool.Debug.PurgeMergeObjectType
+
+    def invoke(self, context, event):
+        # Check if shift key is pressed
+        if event.shift:
+            self.by_name_or_identification_only = True
+        else:
+            self.by_name_or_identification_only = False
+
+        return self.execute(context)
 
     def _execute(self, context):
         object_type: str = self.object_type
@@ -827,9 +856,12 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, f"Unsupported object type {object_type}.")
             return {"CANCELLED"}
 
-        merged_data = tool.Debug.merge_identical_objects(object_type)
+        merged_data = tool.Debug.merge_identical_objects(
+            object_type, by_name_or_identification_only=self.by_name_or_identification_only
+        )
         plural_object_type = f"{object_type.lower().replace('_', ' ')}s"
         if merged_data:
+            merge_mode = " by name/identification" if self.by_name_or_identification_only else ""
             for element_type, element_names in merged_data.items():
                 print(f"- {element_type}:")
                 for name in element_names:
@@ -838,7 +870,8 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
         merged = sum(len(v) for v in merged_data.values())
 
         msg = " See system console for details." if merged else ""
-        self.report({"INFO"}, f"{merged} identical {plural_object_type} were merged.{msg}")
+        merge_mode = " (by name/identification)" if self.by_name_or_identification_only else ""
+        self.report({"INFO"}, f"{merged} identical {plural_object_type} were merged{merge_mode}.{msg}")
 
         if merged == 0:
             return
@@ -1040,7 +1073,7 @@ class ChangeLogLevel(bpy.types.Operator):
     bl_options = {"REGISTER"}
     bl_description = "Change general log level across all Python code in Blender"
 
-    log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    log_level: bpy.props.EnumProperty(
         name="Log Level",
         items=[(i, i, "") for i in get_args(LogLevelType)],
         default="WARNING",

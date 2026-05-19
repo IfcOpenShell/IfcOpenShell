@@ -29,7 +29,7 @@
 #include "IfcCharacterDecoder.h"
 
 #include "IfcException.h"
-#include "IfcSpfStream.h"
+#include "FileReader.h"
 #include "IfcLogger.h"
 
 #include <codecvt>
@@ -77,7 +77,7 @@
 
 using namespace IfcParse;
 
-IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* stream) {
+IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::FileReader* stream) {
     stream_ = stream;
     codepage_ = 0;
 }
@@ -86,49 +86,9 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
 }
 
 namespace {
-unsigned int reference_helper = 0;
+    std::string read_string(IfcParse::FileReader& stream_, IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
+        std::u32string builder_;
 
-class pure_impure_helper {
-  private:
-    bool pure_;
-    IfcParse::IfcSpfStream* stream_;
-    unsigned int& pointer_;
-    std::u32string builder_;
-
-    char peek() {
-        if (pure_) {
-            return stream_->peek_at(pointer_);
-        }
-        return stream_->Peek();
-    }
-
-    unsigned int tell() {
-        if (pure_) {
-            return pointer_;
-        }
-        return stream_->Tell();
-    }
-
-    void increment() {
-        if (pure_) {
-            stream_->increment_at(pointer_);
-        } else {
-            stream_->Inc();
-        }
-    }
-
-  public:
-    pure_impure_helper(IfcParse::IfcSpfStream* stream)
-        : pure_(false),
-          stream_(stream),
-          pointer_(reference_helper) {}
-
-    pure_impure_helper(IfcParse::IfcSpfStream* stream, unsigned int& pointer)
-        : pure_(true),
-          stream_(stream),
-          pointer_(pointer) {}
-
-    std::string get(IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
         unsigned int parse_state = 0;
         builder_.clear();
         builder_.push_back('\'');
@@ -137,7 +97,7 @@ class pure_impure_helper {
         unsigned int hex = 0;
         unsigned int hex_count = 0;
 
-        while ((current_char = peek()) != 0) {
+        while ((current_char = stream_.peek()) != 0) {
             if (EXPECTS_CHARACTER(parse_state)) {
                 builder_.push_back(IfcUtil::convert_codepage(codepage, current_char + 0x80));
                 parse_state = 0;
@@ -178,7 +138,7 @@ class pure_impure_helper {
             } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
                 if (IS_LOWERCASE_HEX(current_char)) {
                     Logger::Warning("Lowercase hexadecimal character '" + std::string(1, current_char) +
-                                    "' found at offset " + std::to_string(pointer_) +
+                                    "' found at offset " + std::to_string(stream_.tell()) +
                                     ". It is recommended to use uppercase for hexadecimal.");
                 }
                 hex <<= 4;
@@ -202,12 +162,12 @@ class pure_impure_helper {
                 if (parse_state == APOSTROPHE && current_char != '\'') {
                     break;
                 }
-                throw IfcInvalidTokenException(tell(), current_char);
+                throw IfcInvalidTokenException(stream_.tell(), current_char);
             } else {
                 parse_state = hex = hex_count = 0;
                 builder_.push_back(current_char);
             }
-            increment();
+            stream_.increment();
         }
         builder_.push_back('\'');
 
@@ -248,22 +208,25 @@ class pure_impure_helper {
         }
         throw IfcParse::IfcException("Invalid conversion mode");
     }
-};
 } // namespace
 
 IfcCharacterDecoder::operator std::string() {
-    return pure_impure_helper(stream_).get(mode, substitution_character);
+    return read_string(*stream_, mode, substitution_character);
 }
 
-std::string IfcCharacterDecoder::get(unsigned int& ptr) {
-    return pure_impure_helper(stream_, ptr).get(mode, substitution_character);
+std::string IfcCharacterDecoder::get(size_t& ptr) {
+    auto local_stream = *stream_;
+    local_stream.seek(ptr);
+    auto s = read_string(local_stream, mode, substitution_character);
+	ptr = local_stream.tell();
+    return s;
 }
 
 void IfcCharacterDecoder::skip() {
     unsigned int parse_state = 0;
     char current_char;
     unsigned int hex_count = 0;
-    while ((current_char = stream_->Peek()) != 0) {
+    while ((current_char = stream_->peek()) != 0) {
         if (EXPECTS_CHARACTER(parse_state)) {
             parse_state = 0;
         } else if (current_char == '\'' && (parse_state == 0U)) {
@@ -318,11 +281,11 @@ void IfcCharacterDecoder::skip() {
             if (parse_state == APOSTROPHE && current_char != '\'') {
                 break;
             }
-            throw IfcInvalidTokenException(stream_->Tell(), current_char);
+            throw IfcInvalidTokenException(stream_->tell(), current_char);
         } else {
             parse_state = hex_count = 0;
         }
-        stream_->Inc();
+        stream_->increment();
     }
 }
 

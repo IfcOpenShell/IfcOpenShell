@@ -16,19 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bpy
 import math
-import numpy as np
+from typing import Union
+
+import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+import numpy as np
+from mathutils import Vector
+
 import bonsai.core.tool
 import bonsai.tool as tool
-from mathutils import Vector
-from test.bim.bootstrap import NewFile
 from bonsai.tool.geometry import Geometry as subject
-from typing import Union
+from test.bim.bootstrap import NewFile
 
 
 class TestImplementsTool(NewFile):
@@ -321,8 +323,8 @@ class TestRecordObjectPosition(NewFile):
         obj = bpy.data.objects.new("Object", None)
         props = tool.Blender.get_object_bim_props(obj)
         subject.record_object_position(obj)
-        assert props.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
-        assert props.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        assert props.location_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.translation).tobytes())
+        assert props.rotation_checksum == repr(tool.Blender.np_array_legacy(obj.matrix_world.to_3x3()).tobytes())
 
 
 class TestRemoveConnection(NewFile):
@@ -488,7 +490,7 @@ class TestShouldGenerateUVs(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
-        material.use_nodes = False
+        tool.Style.set_use_nodes(material, False)
         assert subject.should_generate_uvs(obj) is False
 
     def test_needs_texture_coordinates_with_a_uv_output(self):
@@ -497,7 +499,7 @@ class TestShouldGenerateUVs(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
-        material.use_nodes = True
+        tool.Style.set_use_nodes(material, True)
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         node = material.node_tree.nodes.new(type="ShaderNodeTexImage")
@@ -513,7 +515,7 @@ class TestShouldGenerateUVs(NewFile):
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
         obj.data.materials.append(material)
-        material.use_nodes = True
+        tool.Style.set_use_nodes(material, True)
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         node = material.node_tree.nodes.new(type="ShaderNodeTexImage")

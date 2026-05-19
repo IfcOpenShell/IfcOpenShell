@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
+from collections.abc import Sequence
+
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-from collections.abc import Sequence
 
 
 def _get_curve_segment_count(segment: entity_instance) -> int:
@@ -57,4 +57,4 @@ def get_mapped_segments(layout_segment: entity_instance) -> Sequence[entity_inst
     if segment_count == 1:
         return (curve.Segments[index - segment_count], None)
     else:
-        return (curve.Segments[index - segment_count], curve.Segment[index])
+        return (curve.Segments[index - segment_count], curve.Segments[index])

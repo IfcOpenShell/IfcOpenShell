@@ -17,10 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
+
 import pytest
-import test.bootstrap
+
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
+import test.bootstrap
 
 
 class TestCreateOwnerHistory(test.bootstrap.IFC4):

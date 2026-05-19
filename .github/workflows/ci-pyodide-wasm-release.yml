@@ -1,0 +1,46 @@
+name: Release Pyodide WASM Wheel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout IfcOpenShell
+        uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build wheel
+        working-directory: pyodide
+        run: uv run pack_wheel.py --build
+
+      - name: Find wheel
+        id: wheel
+        run: |
+          WHEEL=$(ls pyodide/dist/ifcopenshell-*.whl)
+          echo "path=$WHEEL" >> $GITHUB_OUTPUT
+          echo "name=$(basename $WHEEL)" >> $GITHUB_OUTPUT
+
+      - name: Checkout wasm-wheels
+        uses: actions/checkout@v6
+        with:
+          repository: IfcOpenShell/wasm-wheels
+          path: wasm-wheels
+          token: ${{ secrets.BUILD_REPO_TOKEN }}
+
+      - name: Commit and push wheel to wasm-wheels
+        run: |
+          WHEEL_NAME="${{ steps.wheel.outputs.name }}"
+          cp "${{ steps.wheel.outputs.path }}" "wasm-wheels/$WHEEL_NAME"
+          cd wasm-wheels
+          git config user.name "IfcOpenBot"
+          git config user.email "ifcopenbot@ifcopenshell.org"
+          git add "$WHEEL_NAME"
+          git commit -m "Add $WHEEL_NAME"
+          VERSION=$(cat ../VERSION)
+          git tag "v${VERSION}"
+          git push origin main
+          git push origin "v${VERSION}"

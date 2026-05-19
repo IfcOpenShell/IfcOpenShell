@@ -16,18 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import math
+from collections.abc import Sequence
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 import ifcopenshell.util.alignment
-
 from ifcopenshell import entity_instance
-
-from ifcopenshell.api.alignment._create_polyline_representation import _create_polyline_representation
-
-import math
-from collections.abc import Sequence
+from ifcopenshell.api.alignment._create_polyline_representation import (
+    _create_polyline_representation,
+)
 
 
 def _create_layout(file: ifcopenshell.file, alignment: entity_instance, points: Sequence[entity_instance]):
@@ -137,14 +137,11 @@ def create_as_polyline(
         Name=name,
     )
 
-    # _create_layout(file,alignment,points)
-
     _create_polyline_representation(file, alignment, points)
 
     # define stationing
     name = ifcopenshell.util.alignment.station_as_string(file, start_station)
-    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name)
-    ifcopenshell.api.nest.reorder_nesting(file, referent, -1, 0)
+    referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, start_station, name, alignment)
 
     # IFC 4.1.4.1.1 Alignment Aggregation To Project
     project = file.by_type("IfcProject")[0]

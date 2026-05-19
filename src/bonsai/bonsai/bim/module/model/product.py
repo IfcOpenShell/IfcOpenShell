@@ -18,38 +18,38 @@
 #
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
-import bpy
+import json
+from typing import TYPE_CHECKING, Any, Literal, get_args
+
 import bmesh
-import mathutils
-import numpy as np
+import bpy
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.system
-import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import ifcopenshell.util.system
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import bonsai.tool as tool
+from bpy_extras.object_utils import AddObjectHelper
+from mathutils import Matrix, Vector
+
 import bonsai.core.aggregate
-import bonsai.core.type
-import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.core.model as core
+import bonsai.core.root
 import bonsai.core.spatial
-from . import wall, slab, profile, mep
-from bonsai.bim.ifc import IfcStore
+import bonsai.core.type
+import bonsai.tool as tool
 from bonsai.bim.helper import get_enum_items
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.data import AuthoringData
-from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
-from mathutils import Vector, Matrix
-from bpy_extras.object_utils import AddObjectHelper
-import json
-from typing import Any, Union, Optional, Literal, get_args, assert_never, TYPE_CHECKING
+from bonsai.bim.module.model.polyline import PolylineOperator
+
+from . import mep, profile, slab, wall
 
 
 class AddEmptyType(bpy.types.Operator, AddObjectHelper):
@@ -249,8 +249,6 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             self.create_occurrence(context, event)
 
-        self.get_product_preview_data(context, self.relating_type)
-
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
             ProductDecorator.uninstall()
@@ -327,9 +325,21 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
+        building_obj = None
+        if len(context.selected_objects) == 1 and context.active_object:
+            building_obj = context.active_object
+            building_element = tool.Ifc.get_entity(building_obj)
+
         self.container = None
         self.container_obj = None
-        if container := tool.Root.get_default_container():
+        if (
+            building_obj
+            and building_element
+            and (container := ifcopenshell.util.element.get_container(building_element))
+        ):
+            self.container = container
+            self.container_obj = tool.Ifc.get_object(container)
+        elif container := tool.Root.get_default_container():
             self.container = container
             self.container_obj = tool.Ifc.get_object(container)
 
@@ -367,7 +377,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 ifc_class=instance_class,
                 should_add_representation=False,
             )
-            bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+            bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
             rprops = tool.Root.get_root_props()
             ifc_context = None
@@ -394,9 +404,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
-                    should_sync_changes_first=False,
                 )
             elif self.representation_template == "EXTRUSION":
                 builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -410,16 +417,8 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Geometry,
                     obj=obj,
                     representation=representation,
-                    should_reload=True,
-                    is_global=True,
-                    should_sync_changes_first=False,
                 )
             return
-
-        building_obj = None
-        if len(context.selected_objects) == 1 and context.active_object:
-            building_obj = context.active_object
-            building_element = tool.Ifc.get_entity(building_obj)
 
         mesh = bpy.data.meshes.new(name="Instance")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
@@ -431,7 +430,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         element = tool.Ifc.get_entity(obj)
-        bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        bonsai.core.type.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
         if existing_context:
             representation = ifcopenshell.util.representation.get_representation(element, existing_context)
@@ -446,9 +445,6 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
             )
 
         # Update required as core.type.assign_type may change obj.data
@@ -471,7 +467,7 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 parent = ifcopenshell.util.element.get_container(building_element)
                 if parent:
                     bonsai.core.spatial.assign_container(
-                        tool.Ifc, tool.Collector, tool.Spatial, container=parent, element_obj=obj
+                        tool.Ifc, tool.Collector, tool.Spatial, container=parent, objs=[obj]
                     )
 
         # set occurrences properties for the types defined with modifiers
@@ -487,12 +483,15 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
             building_obj
             and building_element
             and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly"]
+            and instance_class in ["IfcWindow", "IfcDoor"]
         ):
-            if instance_class in ["IfcWindow", "IfcDoor"]:
-                # TODO For now we are hardcoding windows and doors as a prototype
-                tool.Model.add_filled_opening(building_obj, obj)
+            # TODO For now we are hardcoding windows and doors as a prototype
+            tool.Model.add_filled_opening(building_obj, obj)
         else:
             if self.container_obj:
+                bonsai.core.spatial.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, container=self.container, objs=[obj]
+                )
                 if props.rl_mode == "BOTTOM":
                     obj.location.z = self.container_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
                 elif props.rl_mode == "CONTAINER":
@@ -546,7 +545,7 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_type_page"
     bl_label = "Change Type Page"
     bl_options = {"REGISTER"}
-    page: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    page: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         page: int
@@ -695,10 +694,14 @@ def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[
 
         new_settings = settings.copy()
         new_settings["context"] = box_context
-        new_box = ifcopenshell.api.geometry.add_representation(ifc_file, should_run_listeners=False, **new_settings)
+        new_box = ifcopenshell.api.geometry.add_representation(
+            ifc_file,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
+            **new_settings,
+        )
         ifcopenshell.api.geometry.assign_representation(
             ifc_file,
-            should_run_listeners=False,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
             product=product,
             representation=new_box,
         )
@@ -728,7 +731,4 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 tool.Geometry,
                 obj=obj,
                 representation=representation,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
             )
