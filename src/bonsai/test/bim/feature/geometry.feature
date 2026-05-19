@@ -285,6 +285,32 @@ Scenario: Override duplicate move - without active IFC data
     Then the object "Cube" exists
     And the object "Cube.001" exists
 
+Scenario: Override duplicate move - non-IFC objects inside an IFC project
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    When I duplicate the selected objects
+    Then the object "Cube" exists
+    And the object "Cube.001" exists
+    And the object "Cube.001" is selected
+
+Scenario: Override duplicate move - mixed IFC and non-IFC selection
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I add a cube
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "Cube" is selected
+    When I duplicate the selected objects
+    Then the object "IfcWall/Cube.001" exists
+    And the object "IfcWall/Cube.001" is selected
+    And the object "Cube.001" exists
+    And the object "Cube.001" is selected
+
 Scenario: Override duplicate move - with active IFC data
     Given an empty IFC project
     And I add a cube
