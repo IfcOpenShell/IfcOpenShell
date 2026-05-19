@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import sys
 
-from ifcviewer_autodesk.connector import AutodeskConnector
-from ifcviewer_autodesk.rpc import JsonRpcHost
-from ifcviewer_autodesk.ui import ensure_tk_app
+from bonsaiviewer_autodesk.connector import AutodeskConnector
+from bonsaiviewer_autodesk.rpc import JsonRpcHost
+from bonsaiviewer_autodesk.ui import ensure_tk_app
 
 
 def main() -> int:

@@ -3,9 +3,9 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ifcviewer-autodesk"
+name = "bonsaiviewer-autodesk"
 version = "0.1.0"
-description = "Autodesk cloud connector for IfcViewer"
+description = "Autodesk cloud connector for Bonsai Viewer"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -24,4 +24,4 @@ include-package-data = true
 where = ["."]
 
 [project.scripts]
-ifcviewer-autodesk = "ifcviewer_autodesk.__main__:main"
+bonsaiviewer-autodesk = "bonsaiviewer_autodesk.__main__:main"

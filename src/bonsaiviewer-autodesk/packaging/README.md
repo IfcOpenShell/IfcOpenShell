@@ -1,7 +1,7 @@
 # Packaging the Autodesk connector
 
 The connector is shipped as a self-contained folder ready to drop into the
-IfcViewer connectors directory. PyInstaller bundles the Python interpreter,
+Bonsai Viewer connectors directory. PyInstaller bundles the Python interpreter,
 Qt, and all dependencies so end users do not need Python installed.
 
 PyInstaller does **not** cross-compile. Each OS must build on itself —
@@ -13,7 +13,7 @@ typically via a CI matrix.
 dist/
   autodesk/                          # the connector folder, ready to install
     connector.json
-    ifcviewer-autodesk[.exe]
+    bonsaiviewer-autodesk[.exe]
     _internal/...                    # PyInstaller dependencies (Qt, Python, …)
   autodesk-<os>-<arch>.zip           # the distribution archive
 ```
@@ -24,7 +24,7 @@ The folder is what Bonsai Viewer expects under
 ## Build steps (any OS)
 
 ```bash
-cd src/ifcviewer-autodesk
+cd src/bonsaiviewer-autodesk
 python -m venv venv
 venv/bin/activate          # or venv\Scripts\activate on Windows
 pip install -e ".[build]"
@@ -34,7 +34,7 @@ python packaging/build.py
 The build:
 
 1. cleans `dist/` and `build/`
-2. runs PyInstaller against `packaging/ifcviewer-autodesk.spec`
+2. runs PyInstaller against `packaging/bonsaiviewer-autodesk.spec`
 3. renames the produced folder to `autodesk/` and copies `connector.json` into it
 4. zips the folder as `autodesk-<os>-<arch>.zip`
 
@@ -72,7 +72,7 @@ builds do; on Gentoo make sure `USE="tk"` is set for `dev-lang/python`.
   any modern Python distribution).
 - The keyring backend is Credential Manager.
 - The `.exe` is built with `console=True` because the connector speaks
-  JSON-RPC over stdio. The IfcViewer must launch the connector with
+  JSON-RPC over stdio. The Bonsai Viewer must launch the connector with
   `CREATE_NO_WINDOW` (Qt: `QProcess::setCreateProcessArgumentsModifier`) so
   end users never see a console window flicker.
 - For distribution: sign the `.exe` with an Authenticode certificate to
@@ -98,5 +98,5 @@ Bonsai Viewer picks up the connector on next launch.
 
 - Signing / notarization (caller's responsibility per OS)
 - CI matrix (project-level concern)
-- Auto-update (the IfcViewer or the host installer handles this)
+- Auto-update (the Bonsai Viewer or the host installer handles this)
 - Universal macOS binaries via `lipo` (post-process step, not part of `build.py`)

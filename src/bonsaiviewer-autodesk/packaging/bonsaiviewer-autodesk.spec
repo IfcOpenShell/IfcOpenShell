@@ -1,7 +1,7 @@
-# PyInstaller spec for the IfcViewer Autodesk connector (Tk + CustomTkinter).
+# PyInstaller spec for the Bonsai Viewer Autodesk connector (Tk + CustomTkinter).
 #
 # The connector talks JSON-RPC over stdio, so `console=True` is required to
-# attach stdin/stdout on Windows. The IfcViewer is expected to spawn the
+# attach stdin/stdout on Windows. The Bonsai Viewer is expected to spawn the
 # connector with the OS's "hide console window" flag on Windows
 # (CREATE_NO_WINDOW) so end users never see a console pop up.
 
@@ -22,7 +22,7 @@ HIDDEN_IMPORTS = [
 
 
 a = Analysis(
-    [str(PROJECT_ROOT / "ifcviewer_autodesk" / "__main__.py")],
+    [str(PROJECT_ROOT / "bonsaiviewer_autodesk" / "__main__.py")],
     pathex=[str(PROJECT_ROOT)],
     binaries=[],
     datas=[],
@@ -56,7 +56,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="ifcviewer-autodesk",
+    name="bonsaiviewer-autodesk",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -77,5 +77,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name="ifcviewer-autodesk",
+    name="bonsaiviewer-autodesk",
 )

@@ -1,12 +1,12 @@
 """Build the Autodesk connector bundle for the current OS.
 
 Each OS builds on itself (PyInstaller does not cross-compile). The output is a
-single zip ready to drop into the IfcViewer connectors directory:
+single zip ready to drop into the Bonsai Viewer connectors directory:
 
     dist/autodesk-<os>-<arch>.zip
       autodesk/
         connector.json
-        ifcviewer-autodesk[.exe]
+        bonsaiviewer-autodesk[.exe]
         _internal/...
 
 Usage:
@@ -27,12 +27,12 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PACKAGING_DIR = PROJECT_ROOT / "packaging"
-SPEC_FILE = PACKAGING_DIR / "ifcviewer-autodesk.spec"
+SPEC_FILE = PACKAGING_DIR / "bonsaiviewer-autodesk.spec"
 DIST_DIR = PROJECT_ROOT / "dist"
 BUILD_DIR = PROJECT_ROOT / "build"
 
 CONNECTOR_FOLDER_NAME = "autodesk"
-PYINSTALLER_OUTPUT_NAME = "ifcviewer-autodesk"
+PYINSTALLER_OUTPUT_NAME = "bonsaiviewer-autodesk"
 
 
 def _platform_tag() -> str:
@@ -92,7 +92,7 @@ def _assemble_connector_folder(pyinstaller_output: Path) -> Path:
     # `pip install -e .` works for development. For the bundled folder, the
     # binary lives next to connector.json, so rewrite `exec` to a relative path.
     manifest = json.loads((PROJECT_ROOT / "connector.json").read_text(encoding="utf-8"))
-    binary_name = "ifcviewer-autodesk.exe" if platform.system() == "Windows" else "ifcviewer-autodesk"
+    binary_name = "bonsaiviewer-autodesk.exe" if platform.system() == "Windows" else "bonsaiviewer-autodesk"
     manifest["exec"] = f"./{binary_name}"
     (connector_dir / "connector.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 

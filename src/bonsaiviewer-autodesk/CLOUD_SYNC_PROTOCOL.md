@@ -1,13 +1,13 @@
-# IfcViewer cloud connectors
+# Bonsai Viewer cloud connectors
 
-IfcViewer will have the capability to load and save projects and models from a
+Bonsai Viewer will have the capability to load and save projects and models from a
 cloud platform. Later on, there will be other resources stored on cloud
 platforms too, such as issues, clash results, and so on, but this behaviour is
 not currently designed.
 
-Due to the variety of cloud platforms, the IfcViewer itself will depend on
+Due to the variety of cloud platforms, the Bonsai Viewer itself will depend on
 a "connector" to integrate with each platform. The connector is a separate
-application which will communicate to and from the IfcViewer.
+application which will communicate to and from the Bonsai Viewer.
 
 The following types of resources may be managed with a connector:
 
@@ -18,7 +18,7 @@ The following types of resources may be managed with a connector:
 
 ## Communication protocol
 
-The IfcViewer launches one connector process per session, on first use, and
+The Bonsai Viewer launches one connector process per session, on first use, and
 keeps it alive for the duration of the session. This allows the connector to
 maintain authentication tokens, browse state, in-flight downloads, and caches
 in memory across calls without re-authenticating on every request.
@@ -28,18 +28,18 @@ Communication is over stdio using newline-delimited JSON-RPC 2.0:
  - Requests and responses are single-line JSON objects on the connector's
    stdin/stdout. Each message is terminated by a single `\n`.
  - The connector must not emit literal newlines inside a JSON message.
- - The connector may write arbitrary diagnostic output to stderr; the IfcViewer
+ - The connector may write arbitrary diagnostic output to stderr; the Bonsai Viewer
    will not parse it.
 
-The IfcViewer shuts a connector down by closing its stdin. The connector should
-exit cleanly. If it does not exit within a few seconds, the IfcViewer will
+The Bonsai Viewer shuts a connector down by closing its stdin. The connector should
+exit cleanly. If it does not exit within a few seconds, the Bonsai Viewer will
 terminate it.
 
 ## Connector scope
 
-The IfcViewer has minimal knowledge about connectors. IfcViewer only knows how
+The Bonsai Viewer has minimal knowledge about connectors. Bonsai Viewer only knows how
 to work with local files. If it detects that a project or model is not local,
-it will invoke a connector. The connector's job is to resolve the IfcViewer's
+it will invoke a connector. The connector's job is to resolve the Bonsai Viewer's
 request back into a local file and cloud metadata. The connector must not
 modify the file in any way.
 
@@ -52,7 +52,7 @@ This makes connectors very flexible.
 A single project may have different resources coming from different connectors.
 For example, some models might be on one platform, and some projects hosted on
 another platform. The permissions regarding model access can be quite granular
-and therefore managed by the platform, and not IfcViewer.
+and therefore managed by the platform, and not Bonsai Viewer.
 
 When a connector returns a local file, that file is required to be the sole
 child in its directory. This is because there may be adjacent temporary files,
@@ -140,9 +140,9 @@ Note that cloud metadata (filename, cloud ID, revision, date modified, etc) is
 not specified nor stored in the .ifcfed. This is to be returned by the
 connector when requested.
 
-The IfcViewer will display all returned cloud metadata as simple text strings.
+The Bonsai Viewer will display all returned cloud metadata as simple text strings.
 However some keys are treated specially and shown in more places in the
-IfcViewer UI for convenience:
+Bonsai Viewer UI for convenience:
 
  - author
  - revision
@@ -157,7 +157,7 @@ perfectly acceptable to give the user choice on whether to download all or some
 models, or use cache (even if outdated). The user can always reopen the project
 later.
 
- 1. The user presses a button in the IfcViewer UI that says "Open from Cloud"
+ 1. The user presses a button in the Bonsai Viewer UI that says "Open from Cloud"
  2. The user chooses a connector.
  3. The `pull_ifcfed_interactive` method is sent to the connector.
     ```json
@@ -171,8 +171,8 @@ later.
     ```json
     { "jsonrpc": "2.0", "id": "0", "result": { "path": "/path/to/project/file.ifcfed" } }
     ```
- 5. The IfcViewer loads the `path`. This constitutes a fresh session.
- 6. The IfcViewer calls `pull_models`:
+ 5. The Bonsai Viewer loads the `path`. This constitutes a fresh session.
+ 6. The Bonsai Viewer calls `pull_models`:
     ```json
     { "jsonrpc": "2.0", "id": "1", "method": "pull_models", "params": [
         { "display_name": ..., "id": ..., "source": ..., },
@@ -185,7 +185,7 @@ later.
     { "jsonrpc": "2.0", "id": "1", "result": [
         { "path": "/path/to/foo.ifc" },
         {
-            "path": "/path/to/model.ifc", # Used to load the model in IfcViewer
+            "path": "/path/to/model.ifc", # Used to load the model in Bonsai Viewer
             "metadata": { "revision": "B", "date": "2nd Oct 2025" ...  }, # Optional, used to display stats
         },
         null, # If skipped, error, etc
@@ -193,8 +193,8 @@ later.
         ...
     ] }
     ```
- 8. The IfcViewer may call another connector with more models to be downloaded.
- 9. The IfcViewer will load the downloaded models as regular files. Typically this will also result in the IfcViewer reading / writing a cache (e.g. .ifcview) alongside this file, but it is not expected that the connector will know or care about this.
+ 8. The Bonsai Viewer may call another connector with more models to be downloaded.
+ 9. The Bonsai Viewer will load the downloaded models as regular files. Typically this will also result in the Bonsai Viewer reading / writing a cache (e.g. .ifcview) alongside this file, but it is not expected that the connector will know or care about this.
 
 ## Sync cloud to local
 
@@ -205,8 +205,8 @@ the project has any cloud resources: a `.ifcfed.manifest` adjacent to the
 .ifcfed-refresh phase and the model-refresh phase are independent — only the
 first requires a manifest.
 
- 1. The user presses a button in the IfcViewer UI that says "Sync Cloud to Local"
- 2. IfcViewer reads the .ifcfed.manifest and invokes the relevant connector with the manifest data with the `pull_ifcfed` method:
+ 1. The user presses a button in the Bonsai Viewer UI that says "Sync Cloud to Local"
+ 2. Bonsai Viewer reads the .ifcfed.manifest and invokes the relevant connector with the manifest data with the `pull_ifcfed` method:
     ```json
     { "jsonrpc": "2.0", "id": "0", "method": "pull_ifcfed", "params": {
         "connector": "mycompany", "version": "2", "url": ...
@@ -223,16 +223,16 @@ first requires a manifest.
  4. Continue with step 5 of the "Open from cloud" workflow.
 
 If no `.ifcfed.manifest` is present, steps 2–4 are skipped. The .ifcfed on
-disk is used as-is, and the IfcViewer continues from step 6 of the
+disk is used as-is, and the Bonsai Viewer continues from step 6 of the
 "Open from cloud" workflow (calling `pull_models` for any cloud-sourced models
 referenced in the .ifcfed).
 
 Additionally, if the .ifcfed returned in step 3 is unchanged from the one
 already loaded (e.g. the connector served a cached copy because the cloud
-revision matched), the IfcViewer skips step 5 as well and continues from
+revision matched), the Bonsai Viewer skips step 5 as well and continues from
 step 6, preserving the current session rather than forcing an unnecessary
 fresh one. How "unchanged" is determined (byte equality, hash, mtime, etc.)
-is left to the IfcViewer.
+is left to the Bonsai Viewer.
 
 ## Save as to cloud
 
@@ -240,7 +240,7 @@ This pushes a .ifcfed to a fresh location on a cloud platform, chosen by the
 user. It is the "Save As" equivalent and is the only way to first establish a
 cloud location for a project that does not yet have a `.ifcfed.manifest`.
 
- 1. The user presses a button in the IfcViewer UI that says "Save As to Cloud"
+ 1. The user presses a button in the Bonsai Viewer UI that says "Save As to Cloud"
  2. The user chooses a connector.
  3. The `push_ifcfed_interactive` method is called with the path to the .ifcfed. The connector should treat this as a temporary .ifcfed file, as the real project may or may not be actually saved on disk.
     ```json
@@ -254,7 +254,7 @@ cloud location for a project that does not yet have a `.ifcfed.manifest`.
     ```json
     { "jsonrpc": "2.0", "id": "0", "result": { "path": "/path/to/project/file.ifcfed" } }
     ```
- 5. The IfcViewer "repoints" to the returned path. It is not necessary to do a full reload as no "changes" are made.
+ 5. The Bonsai Viewer "repoints" to the returned path. It is not necessary to do a full reload as no "changes" are made.
 
 ## Save to cloud
 
@@ -262,8 +262,8 @@ This pushes a .ifcfed back to the cloud location it originally came from,
 without prompting the user. It is the "Save" equivalent and is only available
 when there is a `.ifcfed.manifest` adjacent to the project.
 
- 1. The user presses a button in the IfcViewer UI that says "Save to Cloud"
- 2. IfcViewer reads the .ifcfed.manifest and invokes the relevant connector with the `push_ifcfed` method, passing both the local path and the manifest data:
+ 1. The user presses a button in the Bonsai Viewer UI that says "Save to Cloud"
+ 2. Bonsai Viewer reads the .ifcfed.manifest and invokes the relevant connector with the `push_ifcfed` method, passing both the local path and the manifest data:
     ```json
     { "jsonrpc": "2.0", "id": "0", "method": "push_ifcfed", "params": {
         "path": "/tmp/path/to/project.ifcfed",
@@ -278,18 +278,18 @@ when there is a `.ifcfed.manifest` adjacent to the project.
     ```json
     { "jsonrpc": "2.0", "id": "0", "result": { "path": "/path/to/project/file.ifcfed" } }
     ```
- 4. The IfcViewer "repoints" to the returned path. It is not necessary to do a full reload as no "changes" are made.
+ 4. The Bonsai Viewer "repoints" to the returned path. It is not necessary to do a full reload as no "changes" are made.
 
 Conflict resolution for non-interactive push methods (the cloud copy moved on
 since the manifest or source was captured, the user lacks write permission,
 revision-pinning policies, etc.) is entirely the connector's responsibility.
 The connector may silently overwrite, prompt the user, refuse with a JSON-RPC
-error, or anything in between. The IfcViewer expresses no opinion. This rule
+error, or anything in between. The Bonsai Viewer expresses no opinion. This rule
 also applies to `push_model` below.
 
 ## Add model from cloud
 
- 1. The user presses a button in the IfcViewer UI that says "Add model from cloud"
+ 1. The user presses a button in the Bonsai Viewer UI that says "Add model from cloud"
  2. The user chooses a connector.
  3. The `pull_models_interactive` method is sent to the connector.
     ```json
@@ -305,16 +305,16 @@ also applies to `push_model` below.
         {
             "display_name": "bar.ifc", # Stored in .ifcfed
             "source": { "connector": "autodesk", ...  }, # Stored in .ifcfed
-            "path": "/path/to/model.ifc", # Used to load the model in IfcViewer
+            "path": "/path/to/model.ifc", # Used to load the model in Bonsai Viewer
             "metadata": { "revision": "B", "date": "2nd Oct 2025" ...  }, # Optional, used to display stats
         },
         { ... },
         ...
     ] }
     ```
- 5. The IfcViewer updates the .ifcfed models section with new models using the
+ 5. The Bonsai Viewer updates the .ifcfed models section with new models using the
     "source" and "display\_name" from the provided data. The models are
-    immediately loaded from the "path", and the IfcViewer stores the "metadata"
+    immediately loaded from the "path", and the Bonsai Viewer stores the "metadata"
     for display. The path and metadata is never stored in the .ifcfed.
 
 ## Save model as to cloud
@@ -323,7 +323,7 @@ This pushes a model to a fresh location on a cloud platform, chosen by the
 user. It is the "Save As" equivalent and is the only way to first establish a
 cloud `source` for a model whose current source is `local`.
 
- 1. The user presses a button in the IfcViewer UI that says "Save Model As to Cloud"
+ 1. The user presses a button in the Bonsai Viewer UI that says "Save Model As to Cloud"
  2. The user chooses a connector.
  3. The `push_model_interactive` method is sent to the connector with a path to the model to be uploaded (typically a file, but RocksDB databases can be a folder).
     ```json
@@ -342,7 +342,7 @@ cloud `source` for a model whose current source is `local`.
         "metadata": { "revision": "B", "date": "2nd Oct 2025" ...  }, # Optional, used to display stats
     } }
     ```
- 5. The IfcViewer updates the .ifcfed models section with the new model metadata from the provided data.
+ 5. The Bonsai Viewer updates the .ifcfed models section with the new model metadata from the provided data.
 
 ## Save model to cloud
 
@@ -351,8 +351,8 @@ without prompting the user. It is the "Save" equivalent and is only available
 for models whose .ifcfed `source` already points at a cloud connector (i.e.
 anything other than `local`).
 
- 1. The user presses a button in the IfcViewer UI that says "Save Model to Cloud"
- 2. IfcViewer invokes the connector named in the model's `source` with the `push_model` method, passing both the local path and the existing `source` object verbatim:
+ 1. The user presses a button in the Bonsai Viewer UI that says "Save Model to Cloud"
+ 2. Bonsai Viewer invokes the connector named in the model's `source` with the `push_model` method, passing both the local path and the existing `source` object verbatim:
     ```json
     { "jsonrpc": "2.0", "id": "0", "method": "push_model", "params": {
         "path": "/tmp/path/to/model.ifc",
@@ -370,17 +370,17 @@ anything other than `local`).
         "metadata": { "revision": "C", "date": "19th May 2026" ...  }, # Optional, used to display stats
     } }
     ```
- 4. The IfcViewer replaces the model's `source` in the .ifcfed and refreshes the stored metadata for display.
+ 4. The Bonsai Viewer replaces the model's `source` in the .ifcfed and refreshes the stored metadata for display.
 
 ## Connector settings (optional)
 
-A connector MAY implement an `open_settings` method that the IfcViewer invokes
+A connector MAY implement an `open_settings` method that the Bonsai Viewer invokes
 when the user clicks the connector's settings entry (e.g. a gear icon next to
 the connector name). The connector is responsible for the entire settings UI:
 credentials, sign-out, default folders, anything connector-specific.
 
- 1. The user clicks the connector's settings entry in the IfcViewer UI.
- 2. The IfcViewer sends `open_settings`:
+ 1. The user clicks the connector's settings entry in the Bonsai Viewer UI.
+ 2. The Bonsai Viewer sends `open_settings`:
     ```json
     { "jsonrpc": "2.0", "id": "0", "method": "open_settings" }
     ```
@@ -391,7 +391,7 @@ credentials, sign-out, default folders, anything connector-specific.
     ```
 
 If the connector returns a JSON-RPC `Method not found` error (code `-32601`),
-the IfcViewer should treat that connector as having no settings and hide its
+the Bonsai Viewer should treat that connector as having no settings and hide its
 settings entry. There is no other discovery mechanism — the viewer probes by
 calling the method when needed.
 
@@ -408,22 +408,22 @@ optional fields (for example a fresh display label for the connector).
 ### Error Response
 
 The connector owns all user-facing error handling: dialogs, retry prompts,
-re-auth flows, logs. The IfcViewer does not interpret or display connector
+re-auth flows, logs. The Bonsai Viewer does not interpret or display connector
 errors directly.
 
 The protocol expresses only two outcomes:
 
  - **Per-item soft failure** (one model in a batch failed, others succeeded):
-   the connector returns `null` in that slot of the result array. The IfcViewer
+   the connector returns `null` in that slot of the result array. The Bonsai Viewer
    skips it and continues.
  - **Whole-call hard failure** (the connector cannot service the request at
-   all): the connector returns a JSON-RPC error object. The IfcViewer aborts
-   the operation. The `error.message` may be logged by the IfcViewer for
+   all): the connector returns a JSON-RPC error object. The Bonsai Viewer aborts
+   the operation. The `error.message` may be logged by the Bonsai Viewer for
    diagnostics, but is not shown to the user — the connector is expected to
    have already surfaced the problem in its own UI.
 
 Diagnostic detail (stack traces, codes, retry context) should be written to
-stderr, which the IfcViewer captures for logs.
+stderr, which the Bonsai Viewer captures for logs.
 
 ## Permissions
 
@@ -438,7 +438,7 @@ The viewer will tolerate partial failure and report skipped resources that the c
 ## Connector discovery
 
 A connector is shipped as a folder containing a `connector.json` manifest and
-an executable entry point. The IfcViewer discovers connectors by scanning a
+an executable entry point. The Bonsai Viewer discovers connectors by scanning a
 small, fixed set of locations for these folders.
 
 ### Connector bundle layout
@@ -447,7 +447,7 @@ small, fixed set of locations for these folders.
 <some-connectors-dir>/
   autodesk/                     # folder name is arbitrary; id comes from connector.json
     connector.json              # required, at the folder root
-    ifcviewer-autodesk          # the executable (or a wrapper script)
+    bonsaiviewer-autodesk          # the executable (or a wrapper script)
     ...                         # anything else the connector ships
 ```
 
@@ -458,38 +458,38 @@ small, fixed set of locations for these folders.
   "id": "autodesk",
   "name": "Autodesk Forma",
   "version": "0.1.0",
-  "exec": "./ifcviewer-autodesk"
+  "exec": "./bonsaiviewer-autodesk"
 }
 ```
 
  - `id` — stable identifier used in `.ifcfed` `source.connector` fields and in
    `.ifcfed.manifest`. Must be unique across all discovered connectors.
- - `name` — human-readable label shown in the IfcViewer UI.
+ - `name` — human-readable label shown in the Bonsai Viewer UI.
  - `version` — connector version string; informational only.
  - `exec` — path to the connector executable. Relative paths are resolved
    against the connector folder; absolute paths are used as-is. Bundled
    connectors should use a relative path so the bundle is self-contained.
 
-   On Windows, the IfcViewer will also try `<exec>.exe` if `<exec>` does not
+   On Windows, the Bonsai Viewer will also try `<exec>.exe` if `<exec>` does not
    exist as written.
 
 ### Search locations
 
-The IfcViewer scans the **user connectors directory**. The platform's per-user
+The Bonsai Viewer scans the **user connectors directory**. The platform's per-user
 application data location:
 
  - Linux: `~/.local/share/IfcOpenShell/BonsaiViewer/connectors/`
  - macOS: `~/Library/Application Support/IfcOpenShell/BonsaiViewer/connectors/`
  - Windows: `%APPDATA%\IfcOpenShell\BonsaiViewer\connectors\`
 
-The IfcViewer looks at every immediate subdirectory and treats it as a
+The Bonsai Viewer looks at every immediate subdirectory and treats it as a
 connector iff it contains a `connector.json`. Connectors are launched on
 demand when the user invokes a cloud workflow, not at startup.
 
 ### Conflicts and errors
 
  - If two folders declare the same `id`, the one found earlier in directory
-   order wins; the loser is skipped and a warning is written to the IfcViewer's
+   order wins; the loser is skipped and a warning is written to the Bonsai Viewer's
    log.
  - A `connector.json` that is missing, unreadable, malformed, or missing
    required fields causes that folder to be skipped (with a log entry); other

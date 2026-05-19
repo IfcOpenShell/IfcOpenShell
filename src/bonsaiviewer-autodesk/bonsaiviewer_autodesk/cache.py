@@ -13,12 +13,12 @@ def cache_root() -> Path:
     system = platform.system()
     if system == "Windows":
         base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-        root = Path(base) / "ifcviewer-autodesk" / "Cache"
+        root = Path(base) / "bonsaiviewer-autodesk" / "Cache"
     elif system == "Darwin":
-        root = Path.home() / "Library" / "Caches" / "ifcviewer-autodesk"
+        root = Path.home() / "Library" / "Caches" / "bonsaiviewer-autodesk"
     else:
         base = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
-        root = Path(base) / "ifcviewer-autodesk"
+        root = Path(base) / "bonsaiviewer-autodesk"
     root.mkdir(parents=True, exist_ok=True)
     return root
 

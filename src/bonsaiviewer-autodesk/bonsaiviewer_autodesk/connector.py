@@ -5,10 +5,10 @@ import traceback
 from pathlib import Path
 from typing import Any, Callable
 
-from ifcviewer_autodesk import cache, settings
-from ifcviewer_autodesk.autodesk import ApsClient, AuthSessionService, KeyringTokenStore
-from ifcviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, JSONRPC_INVALID_PARAMS, RpcError
-from ifcviewer_autodesk.ui import BrowseDialog, SettingsDialog, progress_dialog, prompt_for_filename
+from bonsaiviewer_autodesk import cache, settings
+from bonsaiviewer_autodesk.autodesk import ApsClient, AuthSessionService, KeyringTokenStore
+from bonsaiviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, JSONRPC_INVALID_PARAMS, RpcError
+from bonsaiviewer_autodesk.ui import BrowseDialog, SettingsDialog, progress_dialog, prompt_for_filename
 
 
 ApsProgress = Callable[[str, "int | None"], None]
@@ -34,7 +34,7 @@ def _upload_callback(report: Report) -> ApsProgress:
 
 
 CONNECTOR_ID = "autodesk"
-KEYRING_SERVICE = "ifcviewer-autodesk"
+KEYRING_SERVICE = "bonsaiviewer-autodesk"
 DEFAULT_CALLBACK_URL = "http://localhost:8080/"
 DEFAULT_SCOPE = "data:read data:write data:create"
 

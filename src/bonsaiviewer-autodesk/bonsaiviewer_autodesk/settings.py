@@ -11,12 +11,12 @@ def config_root() -> Path:
     system = platform.system()
     if system == "Windows":
         base = os.environ.get("APPDATA") or os.path.expanduser("~")
-        root = Path(base) / "ifcviewer-autodesk"
+        root = Path(base) / "bonsaiviewer-autodesk"
     elif system == "Darwin":
-        root = Path.home() / "Library" / "Application Support" / "ifcviewer-autodesk"
+        root = Path.home() / "Library" / "Application Support" / "bonsaiviewer-autodesk"
     else:
         base = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-        root = Path(base) / "ifcviewer-autodesk"
+        root = Path(base) / "bonsaiviewer-autodesk"
     root.mkdir(parents=True, exist_ok=True)
     return root
 

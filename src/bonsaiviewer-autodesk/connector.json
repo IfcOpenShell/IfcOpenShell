@@ -2,5 +2,5 @@
   "id": "autodesk",
   "name": "Autodesk Forma",
   "version": "0.1.0",
-  "exec": "ifcviewer-autodesk"
+  "exec": "bonsaiviewer-autodesk"
 }

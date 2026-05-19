@@ -17,7 +17,7 @@ import httpx
 import keyring
 import keyring.errors
 
-from ifcviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, RpcError
+from bonsaiviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, RpcError
 
 
 Progress = Callable[[str, str, "int | None"], None]

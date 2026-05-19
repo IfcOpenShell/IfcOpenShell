@@ -1,6 +1,6 @@
-# `ifcviewer-autodesk`
+# `bonsaiviewer-autodesk`
 
-Autodesk Forma (APS / Docs) connector for IfcViewer.
+Autodesk Forma (APS / Docs) connector for Bonsai Viewer.
 
 Implements the JSON-RPC connector contract defined in
 [`CLOUD_SYNC_PROTOCOL.md`](CLOUD_SYNC_PROTOCOL.md). The connector is a separate
@@ -14,7 +14,7 @@ on Gentoo make sure `USE="tk"` is set for `dev-lang/python`).
 ## Install
 
 ```bash
-cd src/ifcviewer-autodesk
+cd src/bonsaiviewer-autodesk
 python -m venv venv
 source venv/bin/activate
 pip install -e .
@@ -23,7 +23,7 @@ pip install -e .
 ## Run
 
 ```bash
-ifcviewer-autodesk
+bonsaiviewer-autodesk
 ```
 
 The connector launches without any configuration; on first run, invoke
@@ -53,9 +53,9 @@ The connector reads the Autodesk client id from two places, in order:
 
 The config directory is platform-specific:
 
-- Linux: `~/.config/ifcviewer-autodesk/`
-- macOS: `~/Library/Application Support/ifcviewer-autodesk/`
-- Windows: `%APPDATA%\ifcviewer-autodesk\`
+- Linux: `~/.config/bonsaiviewer-autodesk/`
+- macOS: `~/Library/Application Support/bonsaiviewer-autodesk/`
+- Windows: `%APPDATA%\bonsaiviewer-autodesk\`
 
 OAuth tokens are stored in the OS keychain (Secret Service on Linux, Keychain
 on macOS, Credential Manager on Windows), keyed by the client id, so changing
@@ -66,7 +66,7 @@ the client id starts a fresh session.
 The connector owns its own cache. Resolved files live under (Linux):
 
 ```
-~/.cache/ifcviewer-autodesk/
+~/.cache/bonsaiviewer-autodesk/
   ifcfeds/<hash>/<name>.ifcfed[.manifest]
   models/<hash>/<filename>
 ```

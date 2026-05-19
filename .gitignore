@@ -129,6 +129,6 @@ src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
 *.py.tmp*
 *.json.tmp*
 
-# ifcviewer-autodesk connector build artifacts
-/src/ifcviewer-autodesk/build/
-/src/ifcviewer-autodesk/dist/
+# bonsaiviewer-autodesk connector build artifacts
+/src/bonsaiviewer-autodesk/build/
+/src/bonsaiviewer-autodesk/dist/

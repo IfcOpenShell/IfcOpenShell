@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any, Callable, Literal
 
 import customtkinter as ctk
 
-from ifcviewer_autodesk import settings
-from ifcviewer_autodesk.autodesk import ApsClient, AuthSessionService, KeyringTokenStore
-from ifcviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, RpcError
+from bonsaiviewer_autodesk import settings
+from bonsaiviewer_autodesk.autodesk import ApsClient, AuthSessionService, KeyringTokenStore
+from bonsaiviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, RpcError
 
 if TYPE_CHECKING:
-    from ifcviewer_autodesk.connector import AutodeskConnector
+    from bonsaiviewer_autodesk.connector import AutodeskConnector
 
 
 MODEL_EXTENSIONS = (".ifc", ".ifcview", ".rdb", ".rdbview")
@@ -161,10 +161,17 @@ class _ProgressContext:
     def __exit__(self, *_exc: object) -> None:
         if self.dialog is not None:
             try:
+                self.dialog.withdraw()
                 self.dialog.destroy()
             except tk.TclError:
                 pass
             self.dialog = None
+            try:
+                root = ensure_tk_app()
+                root.update_idletasks()
+                root.update()
+            except tk.TclError:
+                pass
 
 
 def progress_dialog(message: str) -> _ProgressContext:
@@ -629,7 +636,7 @@ class SettingsDialog(_BaseDialog):
         ):
             return
         try:
-            KeyringTokenStore(service_name="ifcviewer-autodesk", username=client_id).delete()
+            KeyringTokenStore(service_name="bonsaiviewer-autodesk", username=client_id).delete()
         except RpcError as exc:
             show_error(title="Sign Out Failed", message=exc.message)
             return

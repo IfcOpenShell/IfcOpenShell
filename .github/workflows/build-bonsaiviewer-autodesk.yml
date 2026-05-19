@@ -1,15 +1,15 @@
-name: Build IfcViewer Autodesk Connector
+name: Build Bonsai Viewer Autodesk Connector
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - 'src/ifcviewer-autodesk/**'
-      - '.github/workflows/build-ifcviewer-autodesk.yml'
+      - 'src/bonsaiviewer-autodesk/**'
+      - '.github/workflows/build-bonsaiviewer-autodesk.yml'
   pull_request:
     paths:
-      - 'src/ifcviewer-autodesk/**'
-      - '.github/workflows/build-ifcviewer-autodesk.yml'
+      - 'src/bonsaiviewer-autodesk/**'
+      - '.github/workflows/build-bonsaiviewer-autodesk.yml'
 
 jobs:
   build:
@@ -39,7 +39,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: src/ifcviewer-autodesk
+        working-directory: src/bonsaiviewer-autodesk
 
     steps:
       - uses: actions/checkout@v6
@@ -64,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: autodesk-${{ matrix.os_label }}-${{ matrix.arch }}
-          path: src/ifcviewer-autodesk/dist/autodesk-${{ matrix.os_label }}-${{ matrix.arch }}.zip
+          path: src/bonsaiviewer-autodesk/dist/autodesk-${{ matrix.os_label }}-${{ matrix.arch }}.zip
           if-no-files-found: error
