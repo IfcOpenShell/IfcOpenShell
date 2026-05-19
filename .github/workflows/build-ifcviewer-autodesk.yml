@@ -1,0 +1,68 @@
+name: Build IfcViewer Autodesk Connector
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/ifcviewer-autodesk/**'
+      - '.github/workflows/build-ifcviewer-autodesk.yml'
+  pull_request:
+    paths:
+      - 'src/ifcviewer-autodesk/**'
+      - '.github/workflows/build-ifcviewer-autodesk.yml'
+
+jobs:
+  build:
+    name: ${{ matrix.os_label }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux: build on the oldest reasonable glibc (Ubuntu 22.04 / glibc
+          # 2.35) so the bundle runs on older distributions.
+          - os_label: linux
+            arch: x86_64
+            runner: ubuntu-22.04
+          # macOS Apple Silicon.
+          - os_label: macos
+            arch: arm64
+            runner: macos-14
+          # macOS Intel. macos-13 is the last Intel runner GitHub provides.
+          - os_label: macos
+            arch: x86_64
+            runner: macos-13
+          # Windows x86_64.
+          - os_label: windows
+            arch: x86_64
+            runner: windows-latest
+
+    defaults:
+      run:
+        working-directory: src/ifcviewer-autodesk
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # actions/setup-python ships Python with tkinter on all three OSes via
+      # python-build-standalone, but verify so a missing-tk regression fails
+      # the build loudly instead of inside PyInstaller.
+      - name: Verify tkinter is available
+        run: python -c "import tkinter; print('Tk', tkinter.TkVersion)"
+
+      - name: Install package and build deps
+        run: python -m pip install ".[build]"
+
+      - name: Build connector bundle
+        run: python packaging/build.py
+
+      - name: Upload connector zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: autodesk-${{ matrix.os_label }}-${{ matrix.arch }}
+          path: src/ifcviewer-autodesk/dist/autodesk-${{ matrix.os_label }}-${{ matrix.arch }}.zip
+          if-no-files-found: error
