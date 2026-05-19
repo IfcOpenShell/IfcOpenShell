@@ -478,9 +478,9 @@ small, fixed set of locations for these folders.
 The IfcViewer scans the **user connectors directory**. The platform's per-user
 application data location:
 
- - Linux: `~/.local/share/IfcOpenShell/IfcViewer/connectors/`
- - macOS: `~/Library/Application Support/IfcOpenShell/IfcViewer/connectors/`
- - Windows: `%APPDATA%\IfcOpenShell\IfcViewer\connectors\`
+ - Linux: `~/.local/share/IfcOpenShell/BonsaiViewer/connectors/`
+ - macOS: `~/Library/Application Support/IfcOpenShell/BonsaiViewer/connectors/`
+ - Windows: `%APPDATA%\IfcOpenShell\BonsaiViewer\connectors\`
 
 The IfcViewer looks at every immediate subdirectory and treats it as a
 connector iff it contains a `connector.json`. Connectors are launched on

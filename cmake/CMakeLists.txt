@@ -687,7 +687,7 @@ if(BUILD_IFCVIEWER)
 
     add_subdirectory(../src/ifcviewer ifcviewer)
     add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
-    add_subdirectory(../src/ifcviewer-full ifcviewer-full)
+    add_subdirectory(../src/bonsaiviewer bonsaiviewer)
 endif()
 
 # Cmake uninstall target

@@ -18,8 +18,8 @@ dist/
   autodesk-<os>-<arch>.zip           # the distribution archive
 ```
 
-The folder is what the IfcViewer expects under
-`~/.local/share/IfcOpenShell/IfcViewer/connectors/` (or the OS equivalent).
+The folder is what Bonsai Viewer expects under
+`~/.local/share/IfcOpenShell/BonsaiViewer/connectors/` (or the OS equivalent).
 
 ## Build steps (any OS)
 
@@ -83,16 +83,16 @@ builds do; on Gentoo make sure `USE="tk"` is set for `dev-lang/python`.
 
 ```bash
 # Linux
-unzip dist/autodesk-linux-x86_64.zip -d ~/.local/share/IfcOpenShell/IfcViewer/connectors/
+unzip dist/autodesk-linux-x86_64.zip -d ~/.local/share/IfcOpenShell/BonsaiViewer/connectors/
 
 # macOS
-unzip dist/autodesk-macos-arm64.zip -d "~/Library/Application Support/IfcOpenShell/IfcViewer/connectors/"
+unzip dist/autodesk-macos-arm64.zip -d "~/Library/Application Support/IfcOpenShell/BonsaiViewer/connectors/"
 
 # Windows (PowerShell)
-Expand-Archive dist\autodesk-windows-x86_64.zip -DestinationPath "$env:APPDATA\IfcOpenShell\IfcViewer\connectors\"
+Expand-Archive dist\autodesk-windows-x86_64.zip -DestinationPath "$env:APPDATA\IfcOpenShell\BonsaiViewer\connectors\"
 ```
 
-The IfcViewer picks up the connector on next launch.
+Bonsai Viewer picks up the connector on next launch.
 
 ## Out of scope here
 

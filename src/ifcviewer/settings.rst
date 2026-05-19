@@ -10,7 +10,7 @@ in the GUI because they target developers and benchmark runs.
 
 All variables are read once at first use (most are static-cached
 inside the function that consumes them), so set them in the shell
-before launching ``IfcViewerFull`` rather than expecting hot-toggle
+before launching ``BonsaiViewer`` rather than expecting hot-toggle
 behaviour.
 
 Diagnostic and benchmark instrumentation
