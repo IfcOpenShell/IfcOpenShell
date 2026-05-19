@@ -105,16 +105,15 @@ void SidecarBuilder::onInstanceReady(const InstanceChunk& chunk) {
     inst.color_override_rgba8 = chunk.color_override_rgba8;
     inst.model_id             = chunk.model_id;
 
-    // The streamer's chunk.transform is the placement_transformation.  With
-    // identity stage matrices (no FederatedFalseOrigin / ModelTransformation
-    // / CoordinateOperation applied yet), transform == placement_transformation
-    // and chunk.world_aabb_* is already the world AABB.  ViewportWindow's
-    // applyCachedModel will recompose against the consumer's stage matrices
-    // at load time, so the cached transform/world_aabb is just a sensible
-    // identity-stage baseline.
+    // The streamer's chunk.transform is the double-precision
+    // placement_transformation.  The cached float transform/world_aabb is only
+    // an identity-stage baseline; applyCachedModel recomposes from placement
+    // against the consumer's stage matrices at load time.
     std::memcpy(inst.placement_transformation, chunk.transform,
                 sizeof(inst.placement_transformation));
-    std::memcpy(inst.transform, chunk.transform, sizeof(inst.transform));
+    for (int i = 0; i < 16; ++i) {
+        inst.transform[i] = static_cast<float>(chunk.transform[i]);
+    }
     std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
     std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
 

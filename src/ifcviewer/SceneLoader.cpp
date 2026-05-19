@@ -283,10 +283,9 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
     }
 
     if (!data.instances.empty() && !model.has_first_placement) {
-        using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+        using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
         model.first_placement =
-            Eigen::Map<const Mat4fCol>(data.instances[0].placement_transformation)
-                .cast<double>();
+            Eigen::Map<const Mat4dCol>(data.instances[0].placement_transformation);
         model.has_first_placement = true;
     }
 
@@ -356,9 +355,9 @@ void SceneLoader::onStreamerInstanceReady(InstanceChunk chunk) {
         auto it = models_.find(loading_model_id_);
         if (it != models_.end()) {
             if (!it->second.has_first_placement) {
-                using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+                using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
                 it->second.first_placement =
-                    Eigen::Map<const Mat4fCol>(chunk.transform).cast<double>();
+                    Eigen::Map<const Mat4dCol>(chunk.transform);
                 it->second.has_first_placement = true;
             }
             if (it->second.sidecar_builder) {

@@ -89,7 +89,7 @@ SidecarData buildFixture() {
         inst.color_override_rgba8 = uint32_t(0xAA000000u | (i * 0x010203u));
         inst.model_id  = 1;
         for (int k = 0; k < 16; ++k) {
-            inst.placement_transformation[k] = float(i) * 0.25f + float(k);
+            inst.placement_transformation[k] = double(i) * 0.25 + double(k);
             inst.transform[k]                = float(i) * 0.5f  + float(k);
         }
         inst.world_aabb_min[0] = float(i);
@@ -155,7 +155,7 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 TEST_CASE("MeshInfo and InstanceCpu have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
     REQUIRE(sizeof(InstanceGpu) == 80);
-    REQUIRE(SIDECAR_VERSION == 11);
+    REQUIRE(SIDECAR_VERSION == 12);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }
 

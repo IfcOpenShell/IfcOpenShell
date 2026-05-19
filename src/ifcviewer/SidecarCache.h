@@ -59,7 +59,11 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       georef without re-parsing the IFC source.  Edits to the IFC's
 //       IfcMapConversion do NOT invalidate the sidecar — delete the
 //       .ifcview manually if you change the source's georef parameters.
-static constexpr uint32_t SIDECAR_VERSION = 11;
+// v12 = InstanceCpu::placement_transformation is double[16], and
+//       InstanceChunk carries the streamer placement as double[16].  This keeps
+//       large IFC placements exact until CoordinateOperation / FederatedFalseOrigin
+//       composition has reduced them to viewport-local float-sized values.
+static constexpr uint32_t SIDECAR_VERSION = 12;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs

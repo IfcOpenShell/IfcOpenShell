@@ -1106,9 +1106,8 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
                 sizeof(inst.placement_transformation));
     // Compose against the model's current stage matrices to fill in
     // inst.transform + inst.world_aabb_*.  When all stages are identity
-    // (the default until a setter is called), this reduces to
-    // transform == placement_transformation and the world AABB matches
-    // the streamer's pre-computed chunk.world_aabb_* exactly.
+    // (the default until a setter is called), this reduces to a float render
+    // copy of placement_transformation.
     composeInstanceFromPlacement(inst, m);
     m.instances.push_back(inst);
     m.instance_reflected.push_back(transformIsReflected(inst.transform) ? 1 : 0);
@@ -3811,10 +3810,12 @@ void ViewportWindow::handleWheel(QWheelEvent* e) {
 
 void ViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
                                                   const ModelGpuData& m) const {
-    // Read placement_transformation as float-column-major and lift to double.
+    // Read placement_transformation in double so large IFC placements are
+    // cancelled by the stage matrices before the final GPU float upload.
+    using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
     using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
     const Eigen::Matrix4d P =
-        Eigen::Map<const Mat4fCol>(inst.placement_transformation).cast<double>();
+        Eigen::Map<const Mat4dCol>(inst.placement_transformation);
 
     // FederatedFalseOrigin · ModelTransformation · CoordinateOperation · P.
     const Eigen::Matrix4d composed =
@@ -3960,9 +3961,9 @@ void ViewportWindow::printSelectedObjectCoords() {
                 qInfo("  vertex: (no vertex data)");
             }
 
-            using Mat4f = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+            using Mat4d = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
             const Eigen::Matrix4d Pd =
-                Eigen::Map<const Mat4f>(inst.placement_transformation).cast<double>();
+                Eigen::Map<const Mat4d>(inst.placement_transformation);
             // global = CoordinateOperation · placement_transformation.
             // (FederatedFalseOrigin and ModelTransformation are user-side
             // tweaks; "global" here means the IFC's own georeferenced frame.)
@@ -4099,9 +4100,9 @@ bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
     auto model_it = models_gpu_.find(inst.model_id);
     if (model_it == models_gpu_.end()) return false;
 
-    using Mat4fCol = Eigen::Matrix<float, 4, 4, Eigen::ColMajor>;
+    using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
     const Eigen::Matrix4d placement =
-        Eigen::Map<const Mat4fCol>(inst.placement_transformation).cast<double>();
+        Eigen::Map<const Mat4dCol>(inst.placement_transformation);
     const Eigen::Vector4d local(mesh_local[0], mesh_local[1], mesh_local[2], 1.0);
     const Eigen::Vector3d global =
         (model_it->second.coordinate_operation_meters * placement * local).head<3>();

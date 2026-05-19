@@ -619,8 +619,9 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
                 // Vertex rebasing cont.: post-multiply the per-instance
                 // PlacementTransformation by T(+offset) so world position is
-                // preserved.  Matrix arithmetic is in double; narrow to float
-                // at the end.
+                // preserved.  Keep the emitted placement in double so later
+                // CoordinateOperation / false-origin composition can cancel
+                // large translations before the final GPU float upload.
                 Eigen::Matrix4d mat_d =
                     tri_elem->transformation().data()->ccomponents();
                 if (mesh_aabbs[local_mesh_id].has_offset) {
@@ -637,11 +638,15 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 inst.object_id = object_id;
                 inst.color_override_rgba8 = 0;
                 for (int i = 0; i < 16; ++i) {
-                    inst.transform[i] = static_cast<float>(mat_d.data()[i]);
+                    inst.transform[i] = mat_d.data()[i];
                 }
 
                 const MeshAabb& ma = mesh_aabbs[local_mesh_id];
-                worldAabbFromLocal(ma.lmin, ma.lmax, inst.transform,
+                float mat_f[16];
+                for (int i = 0; i < 16; ++i) {
+                    mat_f[i] = static_cast<float>(inst.transform[i]);
+                }
+                worldAabbFromLocal(ma.lmin, ma.lmax, mat_f,
                                    inst.world_aabb_min, inst.world_aabb_max);
 
                 emit instanceReady(std::move(inst));

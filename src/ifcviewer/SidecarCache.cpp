@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-// v11 layout (all multi-byte fields native-endian; endianness marker in header).
+// v12 layout (all multi-byte fields native-endian; endianness marker in header).
 //
 //   SidecarHeader (12 bytes)
 //
@@ -30,7 +30,7 @@
 //   MeshInfo[num_meshes]
 //
 //   uint32_t  num_instances
-//   InstanceCpu[num_instances]   (already sorted by mesh_id; v10 layout)
+//   InstanceCpu[num_instances]   (already sorted by mesh_id; v12 layout)
 //
 //   uint32_t  has_coordinate_operation              (v11+)
 //   double[16] coordinate_operation_meters          (v11+; column-major)

@@ -55,7 +55,7 @@ double meshLocalVolume(const ViewportWindow::MeshTriangles& tris) {
     return std::abs(sum) / 6.0;
 }
 
-double det3(const float M[16]) {
+double det3(const double M[16]) {
     // Upper-left 3x3 of a column-major 4x4: M[col * 4 + row].
     const double m00 = M[0],  m10 = M[1],  m20 = M[2];
     const double m01 = M[4],  m11 = M[5],  m21 = M[6];

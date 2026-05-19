@@ -203,7 +203,7 @@ public:
     struct InstanceLookup {
         uint32_t model_id = 0;
         uint32_t mesh_id  = 0;
-        float    placement_transformation[16]{};
+        double   placement_transformation[16]{};
     };
     bool findInstance(uint32_t object_id, InstanceLookup& out) const;
 

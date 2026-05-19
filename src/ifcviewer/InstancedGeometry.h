@@ -101,17 +101,20 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 //
 // `placement_transformation` is the raw streamer output (the iterator's
 // transform with vertex-rebasing offset folded in; pre-CoordinateOperation
-// / FederatedFalseOrigin / ModelTransformation).  `transform` is the
-// composed FederatedFalseOrigin · ModelTransformation · CoordinateOperation
-// · placement_transformation result — what gets uploaded to the SSBO and
-// used to compute world_aabb_*.  When ViewportWindow's stage matrices are
-// all identity (default), the two are equal.
+// / FederatedFalseOrigin / ModelTransformation).  Keep it in double precision:
+// large IFC placements must not be rounded before the federation false origin
+// has a chance to cancel them.  `transform` is the composed
+// FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+// · placement_transformation result — narrowed to float only after composition,
+// uploaded to the SSBO, and used to compute world_aabb_*.  When ViewportWindow's
+// stage matrices are all identity (default), transform is the float rendering
+// copy of placement_transformation.
 struct InstanceCpu {
     uint32_t mesh_id                  = 0;  // index into meshes array
     uint32_t object_id                = 0;
     uint32_t color_override_rgba8     = 0;
     uint32_t model_id                 = 0;
-    float    placement_transformation[16]{};
+    double   placement_transformation[16]{};
     float    transform[16]{};
     float    world_aabb_min[3]{};
     float    world_aabb_max[3]{};
@@ -139,7 +142,7 @@ struct InstanceChunk {
     uint32_t local_mesh_id        = 0;
     uint32_t object_id            = 0;
     uint32_t color_override_rgba8 = 0;
-    float    transform[16]{};
+    double   transform[16]{};
     float    world_aabb_min[3]{};
     float    world_aabb_max[3]{};
 };
