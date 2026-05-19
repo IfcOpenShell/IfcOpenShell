@@ -216,6 +216,8 @@ void Federation::clear() {
     federated_false_origin_ = FederatedFalseOrigin{};
     has_home_view_ = false;
     home_view_ = HomeView{};
+    has_manifest_ = false;
+    manifest_ = QJsonObject{};
     setDirty(false);
 }
 
@@ -265,6 +267,46 @@ void Federation::setModelGroup(const QString& fed_id, const QString& group_id) {
         m.group_id = group_id;
         setDirty(true);
         emit modelGroupChanged(fed_id, group_id);
+        return;
+    }
+}
+
+void Federation::setModelDisplayName(const QString& fed_id, const QString& display_name) {
+    if (display_name.isEmpty()) return;
+    for (auto& m : models_) {
+        if (m.id != fed_id) continue;
+        if (m.display_name == display_name) return;
+        m.display_name = display_name;
+        setDirty(true);
+        emit modelChanged(fed_id);
+        return;
+    }
+}
+
+void Federation::setModelSource(const QString& fed_id,
+                                const QString& connector_id,
+                                const QJsonObject& source_data) {
+    if (connector_id.isEmpty()) return;
+    for (auto& m : models_) {
+        if (m.id != fed_id) continue;
+        m.source_connector = connector_id;
+        m.source_data = source_data;
+        m.source_data.remove("connector");
+        if (connector_id == "local") {
+            // Round-trip the path through source_data when caller chooses
+            // to encode it there; otherwise leave m.source_path untouched.
+            const QString path_field = source_data.value("path").toString();
+            if (!path_field.isEmpty()) {
+                m.source_path = QDir::cleanPath(QFileInfo(path_field).absoluteFilePath());
+                m.source_data.remove("path");
+            }
+        } else {
+            // Cloud sources don't track a source_path — local file lives in
+            // the connector's cache, looked up via SceneLoader.
+            m.source_path.clear();
+        }
+        setDirty(true);
+        emit modelChanged(fed_id);
         return;
     }
 }
@@ -471,8 +513,26 @@ QString Federation::addModel(const QString& source_path,
     m.display_name = display_name.isEmpty()
         ? QFileInfo(source_path).fileName()
         : display_name;
-    m.source_kind = "local";
+    m.source_connector = "local";
     m.source_path = QDir::cleanPath(QFileInfo(source_path).absoluteFilePath());
+    models_.push_back(std::move(m));
+    const QString new_id = models_.back().id;
+    setDirty(true);
+    emit modelAdded(new_id);
+    return new_id;
+}
+
+QString Federation::addCloudModel(const QString& display_name,
+                                  const QString& connector_id,
+                                  const QJsonObject& source_data) {
+    if (connector_id.isEmpty() || connector_id == "local") return {};
+
+    Model m;
+    m.id = generateId();
+    m.display_name = display_name.isEmpty() ? m.id : display_name;
+    m.source_connector = connector_id;
+    m.source_data = source_data;
+    m.source_data.remove("connector");  // canonicalize: never duplicated
     models_.push_back(std::move(m));
     const QString new_id = models_.back().id;
     setDirty(true);
@@ -603,26 +663,25 @@ bool Federation::load(const QString& path,
         m.display_name = mo.value("display_name").toString();
 
         QJsonObject so = mo.value("source").toObject();
-        m.source_kind = so.value("kind").toString("local");
-        if (m.source_kind != "local") {
-            if (warnings)
-                *warnings << QString("models[%1]: unsupported source kind '%2'; entry kept but not loaded.")
-                                 .arg(i).arg(m.source_kind);
-            // Keep raw stored path so save() round-trips correctly.
-            m.source_path = so.value("path").toString();
-            models_.push_back(std::move(m));
-            continue;
+        m.source_connector = so.value("connector").toString("local");
+        if (m.source_connector == "local") {
+            QString stored = so.value("path").toString();
+            if (stored.isEmpty()) {
+                if (warnings) *warnings << QString("models[%1]: missing source.path; skipping.").arg(i);
+                continue;
+            }
+            m.source_path = resolvePath(fed_dir, stored);
+            if (m.display_name.isEmpty())
+                m.display_name = QFileInfo(m.source_path).fileName();
+        } else {
+            // Cloud source: keep every key except "connector" itself; the
+            // connector resolves these to a local path on demand.
+            QJsonObject data = so;
+            data.remove("connector");
+            m.source_data = data;
+            if (m.display_name.isEmpty())
+                m.display_name = m.id;
         }
-
-        QString stored = so.value("path").toString();
-        if (stored.isEmpty()) {
-            if (warnings) *warnings << QString("models[%1]: missing source.path; skipping.").arg(i);
-            continue;
-        }
-        m.source_path = resolvePath(fed_dir, stored);
-
-        if (m.display_name.isEmpty())
-            m.display_name = QFileInfo(m.source_path).fileName();
 
         if (QJsonValue tv = mo.value("model_transformation"); tv.isObject()) {
             QJsonObject to = tv.toObject();
@@ -671,22 +730,95 @@ bool Federation::load(const QString& path,
         has_home_view_ = true;
     }
 
+    // Best-effort manifest read. Missing file is not a warning — most
+    // .ifcfed files are local-only and never have a manifest. A malformed
+    // manifest is logged as a warning but does not fail the load.
+    {
+        const QString manifest_path = file_path_ + ".manifest";
+        QFile mf(manifest_path);
+        if (mf.open(QIODevice::ReadOnly)) {
+            QJsonParseError mpe{};
+            const QJsonDocument mdoc = QJsonDocument::fromJson(mf.readAll(), &mpe);
+            if (mdoc.isObject()) {
+                manifest_ = mdoc.object();
+                has_manifest_ = true;
+            } else if (warnings) {
+                *warnings << QString("Ignoring malformed manifest %1: %2")
+                                 .arg(manifest_path, mpe.errorString());
+            }
+        }
+    }
+
     setDirty(false);
     return true;
 }
 
+void Federation::setManifest(const QJsonObject& manifest) {
+    manifest_ = manifest;
+    has_manifest_ = !manifest_.isEmpty();
+}
+
+void Federation::clearManifest() {
+    manifest_ = QJsonObject{};
+    has_manifest_ = false;
+}
+
+QString Federation::manifestConnectorId() const {
+    return manifest_.value("connector").toString();
+}
+
 bool Federation::save(const QString& path, QString* err) {
     QString abs_path = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+    const QDateTime created_now =
+        created_.isValid() ? created_ : QDateTime::currentDateTimeUtc();
+    const QDateTime modified_now = QDateTime::currentDateTimeUtc();
+    if (!writeJsonAt(abs_path, created_now, modified_now, err)) return false;
+    created_ = created_now;
+    modified_ = modified_now;
+    file_path_ = abs_path;
+    setDirty(false);
+    return true;
+}
+
+bool Federation::writeCopyTo(const QString& path, QString* err) const {
+    const QString abs_path = QDir::cleanPath(QFileInfo(path).absoluteFilePath());
+    const QDateTime created_to_emit =
+        created_.isValid() ? created_ : QDateTime::currentDateTimeUtc();
+    const QDateTime modified_to_emit = QDateTime::currentDateTimeUtc();
+    return writeJsonAt(abs_path, created_to_emit, modified_to_emit, err);
+}
+
+void Federation::repointTo(const QString& new_path, QStringList* warnings) {
+    file_path_ = QDir::cleanPath(QFileInfo(new_path).absoluteFilePath());
+    has_manifest_ = false;
+    manifest_ = QJsonObject{};
+    QFile mf(file_path_ + ".manifest");
+    if (mf.open(QIODevice::ReadOnly)) {
+        QJsonParseError mpe{};
+        const QJsonDocument mdoc = QJsonDocument::fromJson(mf.readAll(), &mpe);
+        if (mdoc.isObject()) {
+            manifest_ = mdoc.object();
+            has_manifest_ = true;
+        } else if (warnings) {
+            *warnings << QString("Ignoring malformed manifest %1: %2")
+                             .arg(file_path_ + ".manifest", mpe.errorString());
+        }
+    }
+    setDirty(false);
+}
+
+bool Federation::writeJsonAt(const QString& abs_path,
+                             const QDateTime& created_to_emit,
+                             const QDateTime& modified_to_emit,
+                             QString* err) const {
     QString fed_dir = QFileInfo(abs_path).absolutePath();
 
     QJsonObject root;
     root["schema"] = kSchema;
     if (!name_.isEmpty()) root["name"] = name_;
 
-    if (!created_.isValid()) created_ = QDateTime::currentDateTimeUtc();
-    modified_ = QDateTime::currentDateTimeUtc();
-    root["created"]  = created_.toUTC().toString(Qt::ISODate);
-    root["modified"] = modified_.toUTC().toString(Qt::ISODate);
+    root["created"]  = created_to_emit.toUTC().toString(Qt::ISODate);
+    root["modified"] = modified_to_emit.toUTC().toString(Qt::ISODate);
 
     {
         QJsonObject co, uo;
@@ -730,12 +862,14 @@ bool Federation::save(const QString& path, QString* err) {
         mo["display_name"] = m.display_name;
 
         QJsonObject so;
-        so["kind"] = m.source_kind;
-        if (m.source_kind == "local") {
+        so["connector"] = m.source_connector;
+        if (m.source_connector == "local") {
             so["path"] = relativizePath(fed_dir, m.source_path);
         } else {
-            // Round-trip raw value for unsupported kinds.
-            so["path"] = m.source_path;
+            // Round-trip connector-specific keys verbatim.
+            for (auto it = m.source_data.begin(); it != m.source_data.end(); ++it) {
+                so[it.key()] = it.value();
+            }
         }
         mo["source"] = so;
 
@@ -793,8 +927,5 @@ bool Federation::save(const QString& path, QString* err) {
         if (err) *err = QString("Failed to commit %1: %2").arg(abs_path, f.errorString());
         return false;
     }
-
-    file_path_ = abs_path;
-    setDirty(false);
     return true;
 }

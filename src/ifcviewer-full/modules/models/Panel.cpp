@@ -344,6 +344,27 @@ ModelsPanel::ModelsPanel(ifcviewerfull::SessionState* session_state,
                 });
             }
 
+            const Federation::Model* selected = session_state_->federation()->findById(id);
+            const bool has_cloud_source = selected && selected->source_connector != "local";
+
+            menu.addSeparator();
+            QAction* save_to_cloud = menu.addAction(
+                components::icons::makeSvgIcon(":/icons/cloud-square.svg"), "Save To Cloud");
+            save_to_cloud->setEnabled(has_cloud_source);
+            if (!has_cloud_source) {
+                save_to_cloud->setToolTip(
+                    "This model has no cloud target yet. Use \"Save As To Cloud\" first.");
+            }
+            connect(save_to_cloud, &QAction::triggered, this, [this, id]() {
+                commands::saveModelToCloud(*session_state_, *this, id);
+            });
+            QAction* save_as_to_cloud = menu.addAction(
+                components::icons::makeSvgIcon(":/icons/cloud-square.svg"), "Save As To Cloud");
+            connect(save_as_to_cloud, &QAction::triggered, this, [this, id]() {
+                commands::saveModelAsToCloud(*session_state_, *this, id);
+            });
+
+            menu.addSeparator();
             QAction* remove = menu.addAction(
                 components::icons::makeSvgIcon(":/icons/minus-square.svg"), "Remove Model");
             connect(remove, &QAction::triggered, this, [this, id]() {

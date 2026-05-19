@@ -24,6 +24,7 @@
 #include <QHash>
 #include <QObject>
 #include <QString>
+#include <QVariantMap>
 
 class Federation;
 class SceneLoader;
@@ -32,6 +33,8 @@ class ViewportWindow;
 namespace ifcviewerfull {
 
 class ElementRegistry;
+
+namespace modules::connectors { class ConnectorRegistry; }
 
 class SessionState : public QObject {
     Q_OBJECT
@@ -46,6 +49,7 @@ public:
     Federation* federation() const { return federation_; }
     SceneLoader* loader() const { return loader_; }
     ElementRegistry* elementRegistry() const { return element_registry_; }
+    modules::connectors::ConnectorRegistry* connectorRegistry() const { return connector_registry_; }
     QString statusMode() const { return status_mode_; }
     QString statusDetail() const { return status_detail_; }
 
@@ -63,6 +67,13 @@ public:
     void setModelMapping(const QString& fed_id, uint32_t model_id);
     void removeModelMappingByFedId(const QString& fed_id);
     void clearModelMappings();
+
+    // Per-session cloud metadata returned by connectors (revision/date/
+    // author/...). Not persisted to the .ifcfed; display only. Lifetime
+    // is tied to the fed_id — removeModelMappingByFedId and
+    // clearModelMappings drop the matching entries.
+    void setCloudMetadata(const QString& fed_id, const QVariantMap& metadata);
+    QVariantMap cloudMetadata(const QString& fed_id) const;
     uint32_t modelIdForFedId(const QString& fed_id) const;
     QString fedIdForModelId(uint32_t model_id) const;
     QList<uint32_t> modelIds() const;
@@ -104,11 +115,13 @@ private:
     Federation* federation_ = nullptr;
     SceneLoader* loader_ = nullptr;
     ElementRegistry* element_registry_ = nullptr;
+    modules::connectors::ConnectorRegistry* connector_registry_ = nullptr;
     uint32_t selected_object_id_ = 0;
     QString status_mode_;
     QString status_detail_;
     QHash<QString, uint32_t> fed_id_to_model_id_;
     QHash<uint32_t, QString> model_id_to_fed_id_;
+    QHash<QString, QVariantMap> cloud_metadata_;
 };
 
 } // namespace ifcviewerfull

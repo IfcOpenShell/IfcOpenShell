@@ -21,6 +21,7 @@
 #include "SessionState.h"
 
 #include "ElementRegistry.h"
+#include "modules/connectors/Registry.h"
 #include "../ifcviewer/Federation.h"
 #include "../ifcviewer/SceneLoader.h"
 
@@ -30,6 +31,7 @@ SessionState::SessionState(QObject* parent)
     : QObject(parent)
     , federation_(new Federation(this))
     , element_registry_(new ElementRegistry(this))
+    , connector_registry_(new modules::connectors::ConnectorRegistry(this))
 {
 }
 
@@ -115,6 +117,7 @@ void SessionState::setModelMapping(const QString& fed_id, uint32_t model_id) {
 }
 
 void SessionState::removeModelMappingByFedId(const QString& fed_id) {
+    cloud_metadata_.remove(fed_id);
     auto it = fed_id_to_model_id_.find(fed_id);
     if (it == fed_id_to_model_id_.end()) return;
     model_id_to_fed_id_.remove(it.value());
@@ -124,6 +127,16 @@ void SessionState::removeModelMappingByFedId(const QString& fed_id) {
 void SessionState::clearModelMappings() {
     fed_id_to_model_id_.clear();
     model_id_to_fed_id_.clear();
+    cloud_metadata_.clear();
+}
+
+void SessionState::setCloudMetadata(const QString& fed_id, const QVariantMap& metadata) {
+    if (metadata.isEmpty()) cloud_metadata_.remove(fed_id);
+    else cloud_metadata_.insert(fed_id, metadata);
+}
+
+QVariantMap SessionState::cloudMetadata(const QString& fed_id) const {
+    return cloud_metadata_.value(fed_id);
 }
 
 uint32_t SessionState::modelIdForFedId(const QString& fed_id) const {

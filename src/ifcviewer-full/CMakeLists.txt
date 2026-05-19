@@ -51,6 +51,14 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Section.h
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/components/Panel.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Discovery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Discovery.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/PickerDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/PickerDialog.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Process.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Process.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Registry.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/connectors/Registry.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/AddModelDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/models/SettingsDialog.cpp
@@ -75,6 +83,8 @@ set(IFCVIEWER_FULL_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/SaveProjectDialog.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/SaveProjectDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/spatial_hierarchy/Types.h

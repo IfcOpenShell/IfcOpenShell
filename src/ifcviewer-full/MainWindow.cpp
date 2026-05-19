@@ -159,7 +159,8 @@ QWidget* MainWindow::buildHomeRibbonPage() {
     });
     auto* open_cloud = components::buttons::makeButton("Open Cloud", ":/icons/cloud-square.svg", this);
     connect(open_cloud, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Project", "Open Cloud Project coming soon");
+        modules::project::commands::openCloudProject(
+            *session_state_, *this, *viewport_widget_->viewport());
     });
     auto* open_recent = components::buttons::makeButton("Open Recent", ":/icons/clock-rotate-right.svg", this);
     connect(open_recent, &QToolButton::clicked, this, [this]() {
@@ -167,30 +168,27 @@ QWidget* MainWindow::buildHomeRibbonPage() {
     });
     auto* save_project = components::buttons::makeButton("Save Project", ":/icons/floppy-disk.svg", this);
     connect(save_project, &QToolButton::clicked, this, [this]() {
-        modules::project::commands::saveProject(*session_state_, *this);
-    });
-    auto* save_project_as = components::buttons::makeButton("Save As", ":/icons/floppy-disk-arrow-in.svg", this);
-    connect(save_project_as, &QToolButton::clicked, this, [this]() {
-        modules::project::commands::saveProjectAs(*session_state_, *this);
+        modules::project::commands::saveProjectDialog(*session_state_, *this);
     });
 
     auto* add_model = components::buttons::makeButton("Add Model", ":/icons/cube.svg", this);
     connect(add_model, &QToolButton::clicked, this, [this]() {
         modules::models::commands::addModel(*session_state_, *this);
     });
-    auto* sync_models = components::buttons::makeButton("Sync Models", ":/icons/refresh-double.svg", this);
-    connect(sync_models, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Models", "Sync models coming soon");
+    auto* sync_from_cloud = components::buttons::makeButton("Sync From Cloud", ":/icons/refresh-double.svg", this);
+    connect(sync_from_cloud, &QToolButton::clicked, this, [this]() {
+        modules::project::commands::syncCloudProject(
+            *session_state_, *this, *viewport_widget_->viewport());
     });
 
     auto* settings_button = components::buttons::makeButton("Settings", ":/icons/settings.svg", this);
     connect(settings_button, &QToolButton::clicked, this, [this]() {
-        modules::settings::SettingsDialog dialog(this);
+        modules::settings::SettingsDialog dialog(session_state_, this);
         dialog.exec();
     });
 
-    row->addWidget(components::buttons::makeButtonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project, save_project_as}, this));
-    row->addWidget(components::buttons::makeButtonGroup("MODELS", {add_model, sync_models}, this));
+    row->addWidget(components::buttons::makeButtonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project}, this));
+    row->addWidget(components::buttons::makeButtonGroup("MODELS", {add_model, sync_from_cloud}, this));
     row->addWidget(components::buttons::makeButtonGroup("SETTINGS", {settings_button}, this));
     row->addStretch(1);
     return page;

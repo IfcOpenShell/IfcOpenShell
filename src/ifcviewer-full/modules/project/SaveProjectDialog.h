@@ -18,36 +18,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_ADDMODELDIALOG_H
-#define IFCINTERFACE_PANELS_ADDMODELDIALOG_H
+#ifndef IFCINTERFACE_MODULES_PROJECT_SAVEPROJECTDIALOG_H
+#define IFCINTERFACE_MODULES_PROJECT_SAVEPROJECTDIALOG_H
 
 #include "../../components/Dialog.h"
 
-namespace ifcviewerfull::modules::models {
+namespace ifcviewerfull::modules::project {
 
-enum class SourceMode {
+enum class SaveTarget {
     None,
-    IfcFile,
-    IfcDatabase,
-    GeometryOnly,
-    CloudModel,
-    ConvertToDatabase,
-    ExportGeometryDatabase,
+    Local,    // saveProject:      write to current file_path_ (or fall through to LocalAs)
+    LocalAs,  // saveProjectAs:    pick file with QFileDialog
+    Cloud,    // saveCloudProject: push_ifcfed using existing manifest
+    CloudAs,  // saveAsCloudProject: connector picker + push_ifcfed_interactive
 };
 
-class AddModelDialog : public components::Dialog {
+// "Save Project" dispatch dialog, modelled on AddModelDialog. Always shows
+// all four buttons; "Save to Cloud" is disabled when the project has no
+// .ifcfed.manifest (there is no cloud target to push to).
+class SaveProjectDialog : public components::Dialog {
     Q_OBJECT
 public:
-    explicit AddModelDialog(QWidget* parent = nullptr);
+    explicit SaveProjectDialog(bool has_manifest, QWidget* parent = nullptr);
 
-    SourceMode selectedMode() const { return selected_mode_; }
+    SaveTarget selectedTarget() const { return selected_target_; }
 
 private:
-    void setupUi();
+    void setupUi(bool has_manifest);
 
-    SourceMode selected_mode_ = SourceMode::None;
+    SaveTarget selected_target_ = SaveTarget::None;
 };
 
-} // namespace ifcviewerfull::modules::models
+} // namespace ifcviewerfull::modules::project
 
 #endif

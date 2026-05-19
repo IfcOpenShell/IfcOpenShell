@@ -20,12 +20,15 @@
 
 #include "Dialog.h"
 
+#include "../../SessionState.h"
 #include "../../ViewerSettings.h"
 #include "../../../ifcviewer/AppSettings.h"
 #include "../../components/Dialog.h"
 #include "../../components/Section.h"
 #include "../../components/SvgIcon.h"
 #include "../../components/Style.h"
+#include "../connectors/Process.h"
+#include "../connectors/Registry.h"
 
 #include <QCheckBox>
 #include <QColorDialog>
@@ -35,17 +38,22 @@
 #include <QFrame>
 #include <QFormLayout>
 #include <QGridLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QMessageBox>
+#include <QPointer>
 #include <QPushButton>
 #include <QShowEvent>
 #include <QSpinBox>
+#include <QToolButton>
 #include <QVBoxLayout>
 
 namespace ifcviewerfull::modules::settings {
 
-SettingsDialog::SettingsDialog(QWidget* parent)
+SettingsDialog::SettingsDialog(ifcviewerfull::SessionState* session_state, QWidget* parent)
     : components::TabbedDialog(parent)
+    , session_state_(session_state)
 {
     setObjectName("appDialog");
     setWindowTitle("Settings");
@@ -268,6 +276,7 @@ void SettingsDialog::setupUi() {
     addTab("Interface", interface_tab);
     addTab("Keybindings", make_placeholder_tab("Keybindings", "Shortcut presets and command bindings will live here."));
     addTab("Graphics", graphics_tab);
+    addTab("Connectors", buildConnectorsTab());
     addTab("About", make_placeholder_tab("About", "Version, credits, and environment information will live here."));
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -352,6 +361,94 @@ void SettingsDialog::onAccepted() {
         interface_settings.setCustomColor(editor.key, editor.edit->text());
     }
     accept();
+}
+
+QWidget* SettingsDialog::buildConnectorsTab() {
+    auto* tab = new QWidget(this);
+    auto* layout = new QVBoxLayout(tab);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(components::style::metrics::padding);
+    layout->setAlignment(Qt::AlignTop);
+
+    auto* section = new components::Section(
+        "Installed Connectors", components::SectionHeaderMode::Visible, tab);
+    auto* body = new QWidget(section);
+    auto* body_layout = new QVBoxLayout(body);
+    body_layout->setContentsMargins(0, 0, 0, 0);
+    body_layout->setSpacing(8);
+
+    const auto& manifests = session_state_
+        ? session_state_->connectorRegistry()->available()
+        : std::vector<connectors::ConnectorManifest>{};
+
+    if (manifests.empty()) {
+        auto* empty = new QLabel(
+            "No connectors found. Install one under your user connectors directory.",
+            body);
+        empty->setProperty("textRole", "secondary");
+        empty->setWordWrap(true);
+        body_layout->addWidget(empty);
+    }
+
+    for (const auto& m : manifests) {
+        auto* row = new QWidget(body);
+        auto* row_layout = new QHBoxLayout(row);
+        row_layout->setContentsMargins(0, 0, 0, 0);
+        row_layout->setSpacing(8);
+
+        auto* name = new QLabel(m.name, row);
+        auto* version = new QLabel(
+            m.version.isEmpty() ? QString() : QString("v%1").arg(m.version), row);
+        version->setProperty("textRole", "secondary");
+
+        auto* settings_button = new QPushButton("Settings…", row);
+        settings_button->setIcon(components::icons::makeSvgIcon(":/icons/settings.svg"));
+        const QString connector_id = m.id;
+        connect(settings_button, &QPushButton::clicked, this,
+                [this, connector_id, settings_button]() {
+            if (!session_state_) return;
+            auto* proc = session_state_->connectorRegistry()->get(connector_id);
+            if (!proc) {
+                QMessageBox::warning(this, "Connector",
+                    QString("Could not launch connector '%1':\n%2")
+                        .arg(connector_id,
+                             session_state_->connectorRegistry()->lastError()));
+                return;
+            }
+            settings_button->setEnabled(false);
+            QPointer<QPushButton> guard(settings_button);
+            QPointer<SettingsDialog> self(this);
+            proc->call("open_settings", QJsonValue(),
+                [guard](const QJsonValue&) {
+                    if (guard) guard->setEnabled(true);
+                },
+                [self, guard, connector_id](int code, const QString& message) {
+                    if (guard) guard->setEnabled(true);
+                    if (!self) return;
+                    // -32601 = JSON-RPC "Method not found": connector opted
+                    // out of the optional open_settings handler per spec.
+                    if (code == -32601) {
+                        QMessageBox::information(self, "Connector",
+                            "Settings not available.");
+                    } else {
+                        QMessageBox::warning(self, "Connector",
+                            QString("Connector '%1' failed to open settings:\n%2")
+                                .arg(connector_id, message));
+                    }
+                });
+        });
+
+        row_layout->addWidget(name);
+        row_layout->addWidget(version);
+        row_layout->addStretch(1);
+        row_layout->addWidget(settings_button);
+        body_layout->addWidget(row);
+    }
+
+    section->addBodyWidget(body);
+    layout->addWidget(section);
+    layout->addStretch(1);
+    return tab;
 }
 
 } // namespace ifcviewerfull::modules::settings

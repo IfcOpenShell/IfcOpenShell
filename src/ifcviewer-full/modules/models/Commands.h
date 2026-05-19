@@ -43,6 +43,16 @@ void moveModels(SessionState& s, const QStringList& ids, const QString& parent_g
 void removeGroup(SessionState& s, QWidget& host, const QString& group_id);
 void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QString& fed_id);
 void addModel(SessionState& s, QWidget& host);
+// Connector picker → pull_models_interactive → addCloudModel + load.
+// Reachable from AddModelDialog's CloudModel button; the underlying call
+// is async, so addModelFromCloud returns immediately after kicking it off.
+void addModelFromCloud(SessionState& s, QWidget& host);
+// push_model: push a cloud-sourced model back to its existing target.
+// Only valid when model.source_connector != "local". Async.
+void saveModelToCloud(SessionState& s, QWidget& host, const QString& fed_id);
+// push_model_interactive: pick a connector and push to a fresh cloud
+// target. Valid for any model (local or already cloud-sourced). Async.
+void saveModelAsToCloud(SessionState& s, QWidget& host, const QString& fed_id);
 void convertIfcToDatabase(SessionState& s, QWidget& host);
 void exportGeometryDatabase(SessionState& s, QWidget& host);
 void openSettings(SessionState& s, QWidget& host);

@@ -34,23 +34,29 @@ class QShowEvent;
 class QSpinBox;
 class QWidget;
 
+namespace ifcviewerfull { class SessionState; }
+
 namespace ifcviewerfull::modules::settings {
 
 class SettingsDialog : public components::TabbedDialog {
     Q_OBJECT
 public:
-    explicit SettingsDialog(QWidget* parent = nullptr);
+    explicit SettingsDialog(ifcviewerfull::SessionState* session_state,
+                            QWidget* parent = nullptr);
 
 protected:
     void showEvent(QShowEvent* event) override;
 
 private:
     void setupUi();
+    QWidget* buildConnectorsTab();
     void syncFromSettings();
     void syncThemeSettings();
     void updateThemeEditorEnabled();
     void pickThemeColor(QLineEdit* edit);
     void onAccepted();
+
+    ifcviewerfull::SessionState* session_state_ = nullptr;
 
     struct ThemeColorEditor {
         QString key;

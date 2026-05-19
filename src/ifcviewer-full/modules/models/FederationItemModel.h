@@ -62,6 +62,7 @@ private slots:
     void onModelRemoved(const QString& fed_id);
     void onModelVisibilityChanged(const QString& fed_id, bool visible);
     void onModelGroupChanged(const QString& fed_id, const QString& new_group_id);
+    void onModelChanged(const QString& fed_id);
 
 private:
     QStandardItem* makeGroupNameItem(const QString& group_id, const QString& display_name) const;

@@ -18,36 +18,33 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_ADDMODELDIALOG_H
-#define IFCINTERFACE_PANELS_ADDMODELDIALOG_H
+#ifndef IFCINTERFACE_MODULES_CONNECTORS_DISCOVERY_H
+#define IFCINTERFACE_MODULES_CONNECTORS_DISCOVERY_H
 
-#include "../../components/Dialog.h"
+#include <QString>
+#include <vector>
 
-namespace ifcviewerfull::modules::models {
+namespace ifcviewerfull::modules::connectors {
 
-enum class SourceMode {
-    None,
-    IfcFile,
-    IfcDatabase,
-    GeometryOnly,
-    CloudModel,
-    ConvertToDatabase,
-    ExportGeometryDatabase,
+struct ConnectorManifest {
+    QString id;          // from connector.json; stable identifier
+    QString name;        // human-readable label
+    QString version;     // informational
+    QString folder;      // directory containing connector.json
+    QString exec_path;   // resolved executable; absolute when possible,
+                         // otherwise a bare name for PATH lookup at launch
 };
 
-class AddModelDialog : public components::Dialog {
-    Q_OBJECT
-public:
-    explicit AddModelDialog(QWidget* parent = nullptr);
+// Scans the per-user connectors directory per CLOUD_SYNC_PROTOCOL.md.
+// First match wins for any given id; duplicates and malformed manifests
+// are skipped with a qWarning. Returned in discovery order so first-wins
+// is observable to callers.
+std::vector<ConnectorManifest> discoverConnectors();
 
-    SourceMode selectedMode() const { return selected_mode_; }
+// Per-user connectors directory (platform-specific). Exposed for tests and
+// for "open user connectors dir" affordances.
+QString userConnectorsDir();
 
-private:
-    void setupUi();
-
-    SourceMode selected_mode_ = SourceMode::None;
-};
-
-} // namespace ifcviewerfull::modules::models
+} // namespace ifcviewerfull::modules::connectors
 
 #endif

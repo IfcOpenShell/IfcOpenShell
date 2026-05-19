@@ -34,8 +34,29 @@ namespace ifcviewerfull::modules::project::commands {
 // projectSaved) so views refresh once per command.
 bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp);
 bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+// Pick a connector, then call pull_ifcfed_interactive and open the resulting
+// .ifcfed as a fresh project. Non-local models in the loaded federation are
+// resolved asynchronously via pull_models.
+bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+// pull_ifcfed using the current project's .ifcfed.manifest. Re-downloads
+// the .ifcfed from the same cloud target it came from (typically without
+// user interaction), then opens it like a fresh project — discarding any
+// local edits after the usual dirty-check prompt.
+bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp);
 bool saveProject(SessionState& s, QWidget& host);
 bool saveProjectAs(SessionState& s, QWidget& host);
+// Push the current federation to the cloud target named in its manifest
+// (push_ifcfed). No user prompt for destination. Caller is responsible for
+// gating this on Federation::hasManifest.
+bool saveCloudProject(SessionState& s, QWidget& host);
+// Pick a connector and push the current federation to a fresh cloud target
+// (push_ifcfed_interactive). The connector returns a new path + manifest;
+// Federation repoints to that location.
+bool saveAsCloudProject(SessionState& s, QWidget& host);
+// Show the four-way Save dialog (Local / Save As Local / To Cloud / Save
+// As To Cloud) and dispatch to one of the above. This is what the "Save
+// Project" ribbon button is wired to.
+bool saveProjectDialog(SessionState& s, QWidget& host);
 
 } // namespace ifcviewerfull::modules::project::commands
 

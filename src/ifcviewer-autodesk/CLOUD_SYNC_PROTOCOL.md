@@ -466,35 +466,29 @@ small, fixed set of locations for these folders.
    `.ifcfed.manifest`. Must be unique across all discovered connectors.
  - `name` — human-readable label shown in the IfcViewer UI.
  - `version` — connector version string; informational only.
- - `exec` — how to launch the connector:
-    - Relative path (starts with `./` or `../`): resolved against the
-      connector folder. This is the recommended form for bundled connectors.
-    - Absolute path: used as-is.
-    - Bare name (no path separators): looked up via the system `PATH`.
+ - `exec` — path to the connector executable. Relative paths are resolved
+   against the connector folder; absolute paths are used as-is. Bundled
+   connectors should use a relative path so the bundle is self-contained.
 
    On Windows, the IfcViewer will also try `<exec>.exe` if `<exec>` does not
    exist as written.
 
 ### Search locations
 
-The IfcViewer scans, in order of precedence (first match wins for a given `id`):
+The IfcViewer scans the **user connectors directory**. The platform's per-user
+application data location:
 
- 1. **`IFCVIEWER_CONNECTOR_PATH` environment variable.** A list of directories
-    separated by the platform path separator (`:` on Linux/macOS, `;` on
-    Windows). Intended for development and unusual installs.
- 2. **User connectors directory.** The platform's per-user application data
-    location:
-     - Linux: `~/.local/share/IfcOpenShell/IfcViewer/connectors/`
-     - macOS: `~/Library/Application Support/IfcOpenShell/IfcViewer/connectors/`
-     - Windows: `%APPDATA%\IfcOpenShell\IfcViewer\connectors\`
+ - Linux: `~/.local/share/IfcOpenShell/IfcViewer/connectors/`
+ - macOS: `~/Library/Application Support/IfcOpenShell/IfcViewer/connectors/`
+ - Windows: `%APPDATA%\IfcOpenShell\IfcViewer\connectors\`
 
-In each search location, the IfcViewer looks at every immediate subdirectory
-and treats it as a connector iff it contains a `connector.json`. Connectors
-are launched on demand when the user invokes a cloud workflow, not at startup.
+The IfcViewer looks at every immediate subdirectory and treats it as a
+connector iff it contains a `connector.json`. Connectors are launched on
+demand when the user invokes a cloud workflow, not at startup.
 
 ### Conflicts and errors
 
- - If two folders declare the same `id`, the one found earlier in the search
+ - If two folders declare the same `id`, the one found earlier in directory
    order wins; the loser is skipped and a warning is written to the IfcViewer's
    log.
  - A `connector.json` that is missing, unreadable, malformed, or missing

@@ -22,6 +22,7 @@
 
 #include <Eigen/Dense>
 
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -188,8 +189,13 @@ public:
     struct Model {
         QString id;                              // stable, persisted
         QString display_name;
-        QString source_kind = "local";           // future: "http", "speckle", ...
-        QString source_path;                     // resolved absolute when kind == "local"
+        // "local" or a connector id (e.g. "autodesk") per CLOUD_SYNC_PROTOCOL.md.
+        QString source_connector = "local";
+        // Local connector: resolved absolute path. Empty for cloud sources.
+        QString source_path;
+        // Cloud connectors: arbitrary connector-specific keys, round-tripped
+        // verbatim. Empty / unused for "local".
+        QJsonObject source_data;
         ModelTransformation model_transformation;
         bool visible = true;
         QString group_id;                        // empty = root level
@@ -222,11 +228,28 @@ public:
     // Round-trip
     bool load(const QString& path, QStringList* warnings, QString* err);
     bool save(const QString& path, QString* err);
+    // Serialise to `path` without touching internal state (file_path_,
+    // modified_, dirty_). Used by cloud-push paths to produce a temporary
+    // .ifcfed without claiming it as the project's canonical location.
+    bool writeCopyTo(const QString& path, QString* err) const;
+    // Repoint this project to a new on-disk location without re-loading its
+    // content. Updates file_path_, re-reads adjacent .manifest, marks clean.
+    // Used after push_ifcfed[_interactive] — the connector wrote a fresh
+    // copy and (maybe) manifest to its cache; we already have the content
+    // in memory.
+    void repointTo(const QString& new_path, QStringList* warnings = nullptr);
 
     // Mutations
     void clear();
     QString addModel(const QString& source_path,
                      const QString& display_name = QString());
+    // Add a model whose source is a cloud connector (anything other than
+    // "local"). `source_data` holds the connector-specific keys; the
+    // top-level "connector" field, if present, is overwritten with
+    // `connector_id`. Returns the new fed id, or {} on empty inputs.
+    QString addCloudModel(const QString& display_name,
+                          const QString& connector_id,
+                          const QJsonObject& source_data);
     void removeModel(const QString& fed_id);
     void setHomeView(const HomeView& hv);
     void clearHomeView();
@@ -235,6 +258,17 @@ public:
     void setFederatedFalseOrigin(const FederatedFalseOrigin&);
     void setModelTransformation(const QString& fed_id, const ModelTransformation&);
     void setModelVisible(const QString& fed_id, bool visible);
+    // Rename a model. No-op when fed_id is unknown, name is empty, or
+    // name is unchanged.
+    void setModelDisplayName(const QString& fed_id, const QString& display_name);
+    // Replace a model's source. Used after push_model[_interactive] when
+    // the connector reports a fresh source (e.g. a new version_id) or when
+    // a previously-local model gets uploaded for the first time. The
+    // top-level "connector" key in `source_data`, if any, is dropped —
+    // it's expressed via `connector_id`.
+    void setModelSource(const QString& fed_id,
+                        const QString& connector_id,
+                        const QJsonObject& source_data);
     // Reassign a model to a group (or to root, when group_id is empty).
     // No-op when fed_id is unknown or group_id is unknown-and-non-empty.
     void setModelGroup(const QString& fed_id, const QString& group_id);
@@ -277,6 +311,16 @@ public:
     const FederationConfig& config() const { return config_; }
     const FederatedFalseOrigin& federatedFalseOrigin() const { return federated_false_origin_; }
 
+    // .ifcfed.manifest sidecar — present iff this project came from a
+    // cloud connector. Read best-effort during load() (no warning if
+    // absent); the connector owns writing. setManifest is called after
+    // push_ifcfed[_interactive] returns a fresh manifest.
+    bool hasManifest() const { return has_manifest_; }
+    const QJsonObject& manifest() const { return manifest_; }
+    QString manifestConnectorId() const;
+    void setManifest(const QJsonObject& manifest);
+    void clearManifest();
+
 signals:
     void dirtyChanged(bool dirty);
 
@@ -290,6 +334,9 @@ signals:
     void modelTransformationChanged(const QString& fed_id);
     void modelVisibilityChanged(const QString& fed_id, bool visible);
     void modelGroupChanged(const QString& fed_id, const QString& group_id);
+    // Emitted on rename / source change — anything that affects how the
+    // model is displayed but is not covered by the other granular signals.
+    void modelChanged(const QString& fed_id);
 
     void groupAdded(const QString& group_id);
     void groupRemoved(const QString& group_id);
@@ -304,6 +351,15 @@ private:
     void setDirty(bool d);
     static QString generateId();
     static bool isFederationPath(const QString& path);
+
+    // Pure-write helper shared by save() and writeCopyTo(). Builds the
+    // JSON using the timestamps it's given (so save() can commit them to
+    // member state, while writeCopyTo() can pass throwaway values), and
+    // writes via QSaveFile. Never mutates `this`.
+    bool writeJsonAt(const QString& abs_path,
+                     const QDateTime& created_to_emit,
+                     const QDateTime& modified_to_emit,
+                     QString* err) const;
 
     Group* findGroupByIdMutable(const QString& group_id);
     // Detach a group from its current parent's children vector, returning
@@ -327,6 +383,8 @@ private:
     FederatedFalseOrigin federated_false_origin_;
     bool has_home_view_ = false;
     HomeView home_view_;
+    bool has_manifest_ = false;
+    QJsonObject manifest_;
     bool dirty_ = false;
 };
 

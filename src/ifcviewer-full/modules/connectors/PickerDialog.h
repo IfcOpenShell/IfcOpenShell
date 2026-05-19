@@ -18,36 +18,37 @@
  *                                                                              *
  ********************************************************************************/
 
-#ifndef IFCINTERFACE_PANELS_ADDMODELDIALOG_H
-#define IFCINTERFACE_PANELS_ADDMODELDIALOG_H
+#ifndef IFCINTERFACE_MODULES_CONNECTORS_PICKERDIALOG_H
+#define IFCINTERFACE_MODULES_CONNECTORS_PICKERDIALOG_H
+
+#include "Discovery.h"
 
 #include "../../components/Dialog.h"
 
-namespace ifcviewerfull::modules::models {
+#include <QString>
+#include <vector>
 
-enum class SourceMode {
-    None,
-    IfcFile,
-    IfcDatabase,
-    GeometryOnly,
-    CloudModel,
-    ConvertToDatabase,
-    ExportGeometryDatabase,
-};
+namespace ifcviewerfull::modules::connectors {
 
-class AddModelDialog : public components::Dialog {
+// Connector chooser, modelled on AddModelDialog: one button per available
+// connector. Always shown (even when only one connector is installed), per
+// project UX direction.
+class ConnectorPickerDialog : public components::Dialog {
     Q_OBJECT
 public:
-    explicit AddModelDialog(QWidget* parent = nullptr);
+    // `title` and `description` adapt the dialog to the calling workflow
+    // (e.g. "Open from Cloud", "Save Model to Cloud").
+    ConnectorPickerDialog(const std::vector<ConnectorManifest>& manifests,
+                          const QString& title,
+                          const QString& description,
+                          QWidget* parent = nullptr);
 
-    SourceMode selectedMode() const { return selected_mode_; }
+    QString selectedId() const { return selected_id_; }
 
 private:
-    void setupUi();
-
-    SourceMode selected_mode_ = SourceMode::None;
+    QString selected_id_;
 };
 
-} // namespace ifcviewerfull::modules::models
+} // namespace ifcviewerfull::modules::connectors
 
 #endif

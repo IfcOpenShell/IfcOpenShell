@@ -62,6 +62,7 @@ FederationItemModel::FederationItemModel(Federation* federation, QObject* parent
     connect(federation_, &Federation::modelRemoved,            this, &FederationItemModel::onModelRemoved);
     connect(federation_, &Federation::modelVisibilityChanged,  this, &FederationItemModel::onModelVisibilityChanged);
     connect(federation_, &Federation::modelGroupChanged,       this, &FederationItemModel::onModelGroupChanged);
+    connect(federation_, &Federation::modelChanged,            this, &FederationItemModel::onModelChanged);
 }
 
 void FederationItemModel::rebuildAll() {
@@ -247,6 +248,14 @@ void FederationItemModel::onModelVisibilityChanged(const QString& fed_id, bool /
     QStandardItem* item = findItem(fed_id);
     if (!item) return;
     refreshSubtreeVisibility(item);
+}
+
+void FederationItemModel::onModelChanged(const QString& fed_id) {
+    QStandardItem* item = findItem(fed_id);
+    if (!item) return;
+    const Federation::Model* model = federation_->findById(fed_id);
+    if (!model) return;
+    item->setText(model->display_name);
 }
 
 void FederationItemModel::onModelGroupChanged(const QString& fed_id, const QString& new_group_id) {

@@ -25,6 +25,9 @@
 
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
+#include "../connectors/PickerDialog.h"
+#include "../connectors/Process.h"
+#include "../connectors/Registry.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/SidecarBuilder.h"
@@ -40,9 +43,13 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QInputDialog>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QLineEdit>
 #include <QListView>
 #include <QMessageBox>
+#include <QPointer>
 #include <QStandardPaths>
 #include <QThread>
 #include <QTreeView>
@@ -227,6 +234,9 @@ void addModel(SessionState& s, QWidget& host) {
         }
         break;
     }
+    case SourceMode::CloudModel:
+        addModelFromCloud(s, host);
+        return;
     case SourceMode::ConvertToDatabase:
         convertIfcToDatabase(s, host);
         return;
@@ -247,6 +257,221 @@ void addModel(SessionState& s, QWidget& host) {
     }
     detail::loadModels(s, accepted_paths, accepted_fed_ids);
     s.notifyModelsChanged();
+}
+
+void addModelFromCloud(SessionState& s, QWidget& host) {
+    auto* registry = s.connectorRegistry();
+    const auto& manifests = registry->available();
+    if (manifests.empty()) {
+        QMessageBox::information(&host, "Add From Cloud",
+            "No connectors are installed.");
+        return;
+    }
+
+    modules::connectors::ConnectorPickerDialog picker(
+        manifests, "Add From Cloud",
+        "Pick a connector to browse models on.", &host);
+    if (picker.exec() != QDialog::Accepted) return;
+    const QString connector_id = picker.selectedId();
+    if (connector_id.isEmpty()) return;
+
+    auto* proc = registry->get(connector_id);
+    if (!proc) {
+        QMessageBox::warning(&host, "Add From Cloud",
+            QString("Could not launch connector '%1':\n%2")
+                .arg(connector_id, registry->lastError()));
+        return;
+    }
+
+    s.setStatusMessage("Cloud", QString("Browsing %1...").arg(connector_id));
+
+    QPointer<SessionState> sguard(&s);
+
+    proc->call("pull_models_interactive", QJsonValue(),
+        [sguard, connector_id](const QJsonValue& result) {
+            if (!sguard) return;
+            const QJsonArray arr = result.toArray();
+            QStringList paths;
+            QStringList fed_ids;
+            int added = 0;
+            for (const QJsonValue& v : arr) {
+                if (v.isNull() || !v.isObject()) continue;
+                const QJsonObject entry = v.toObject();
+                const QString display_name = entry.value("display_name").toString();
+                const QString path = entry.value("path").toString();
+                if (path.isEmpty()) continue;
+                const QJsonObject source = entry.value("source").toObject();
+                QString src_connector = source.value("connector").toString();
+                if (src_connector.isEmpty()) src_connector = connector_id;
+
+                const QString fed_id = sguard->federation()->addCloudModel(
+                    display_name, src_connector, source);
+                if (fed_id.isEmpty()) continue;
+
+                const QJsonObject meta = entry.value("metadata").toObject();
+                sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+
+                paths << path;
+                fed_ids << fed_id;
+                ++added;
+            }
+            if (!paths.isEmpty()) {
+                detail::loadModels(*sguard, paths, fed_ids);
+                sguard->notifyModelsChanged();
+            }
+            sguard->setStatusMessage("Cloud",
+                QString("Added %1 model(s) from %2").arg(added).arg(connector_id));
+        },
+        [sguard, connector_id](int code, const QString& message) {
+            qWarning() << "pull_models_interactive from" << connector_id
+                       << "failed:" << code << message;
+            if (sguard) {
+                sguard->setStatusMessage("Cloud",
+                    QString("%1 reported an error (see connector UI)").arg(connector_id));
+            }
+        });
+}
+
+namespace {
+
+// Shared "local path on disk" lookup for the right-click cloud commands:
+// the loader keeps the path keyed by mid (set when a file or pull_models
+// path was queued). Both local-sourced and resolved cloud-sourced models
+// have one; only un-resolved cloud models (where pull_models hasn't
+// returned yet) won't.
+QString localPathForModel(SessionState& s, const QString& fed_id) {
+    const uint32_t mid = s.modelIdForFedId(fed_id);
+    if (mid == 0 || !s.loader()) return {};
+    return s.loader()->filePath(mid);
+}
+
+} // namespace
+
+void saveModelToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
+    auto* fed = s.federation();
+    const Federation::Model* model = fed->findById(fed_id);
+    if (!model) return;
+    if (model->source_connector == "local") {
+        QMessageBox::information(&host, "Save Model To Cloud",
+            "This model has no cloud target. Use \"Save As To Cloud\" first.");
+        return;
+    }
+    const QString local_path = localPathForModel(s, fed_id);
+    if (local_path.isEmpty()) {
+        QMessageBox::warning(&host, "Save Model To Cloud",
+            "Cannot find a local copy of this model to push.");
+        return;
+    }
+    const QString connector_id = model->source_connector;
+    auto* registry = s.connectorRegistry();
+    auto* proc = registry->get(connector_id);
+    if (!proc) {
+        QMessageBox::warning(&host, "Save Model To Cloud",
+            QString("Could not launch connector '%1':\n%2")
+                .arg(connector_id, registry->lastError()));
+        return;
+    }
+
+    QJsonObject source = model->source_data;
+    source["connector"] = connector_id;
+    QJsonObject params;
+    params["path"] = local_path;
+    params["source"] = source;
+
+    s.setStatusMessage("Cloud",
+        QString("Saving %1 to %2...").arg(model->display_name, connector_id));
+
+    QPointer<SessionState> sguard(&s);
+    proc->call("push_model", params,
+        [sguard, fed_id, connector_id](const QJsonValue& result) {
+            if (!sguard) return;
+            const QJsonObject obj = result.toObject();
+            const QJsonObject new_source = obj.value("source").toObject();
+            QString new_connector = new_source.value("connector").toString();
+            if (new_connector.isEmpty()) new_connector = connector_id;
+            sguard->federation()->setModelSource(fed_id, new_connector, new_source);
+            const QJsonObject meta = obj.value("metadata").toObject();
+            sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+            sguard->setStatusMessage("Cloud",
+                QString("Saved to %1").arg(new_connector));
+        },
+        [sguard, connector_id](int code, const QString& message) {
+            qWarning() << "push_model to" << connector_id
+                       << "failed:" << code << message;
+            if (sguard) {
+                sguard->setStatusMessage("Cloud",
+                    QString("%1 reported an error (see connector UI)").arg(connector_id));
+            }
+        });
+}
+
+void saveModelAsToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
+    const Federation::Model* model = s.federation()->findById(fed_id);
+    if (!model) return;
+    const QString local_path = localPathForModel(s, fed_id);
+    if (local_path.isEmpty()) {
+        QMessageBox::warning(&host, "Save Model As To Cloud",
+            "Cannot find a local copy of this model to push.");
+        return;
+    }
+
+    auto* registry = s.connectorRegistry();
+    const auto& manifests = registry->available();
+    if (manifests.empty()) {
+        QMessageBox::information(&host, "Save Model As To Cloud",
+            "No connectors are installed.");
+        return;
+    }
+
+    modules::connectors::ConnectorPickerDialog picker(
+        manifests, "Save Model As To Cloud",
+        QString("Pick a connector to push '%1' to.").arg(model->display_name),
+        &host);
+    if (picker.exec() != QDialog::Accepted) return;
+    const QString connector_id = picker.selectedId();
+    if (connector_id.isEmpty()) return;
+
+    auto* proc = registry->get(connector_id);
+    if (!proc) {
+        QMessageBox::warning(&host, "Save Model As To Cloud",
+            QString("Could not launch connector '%1':\n%2")
+                .arg(connector_id, registry->lastError()));
+        return;
+    }
+
+    QJsonObject params;
+    params["path"] = local_path;
+
+    s.setStatusMessage("Cloud",
+        QString("Pushing %1 to %2...").arg(model->display_name, connector_id));
+
+    QPointer<SessionState> sguard(&s);
+    proc->call("push_model_interactive", params,
+        [sguard, fed_id, connector_id](const QJsonValue& result) {
+            if (!sguard) return;
+            const QJsonObject obj = result.toObject();
+            const QJsonObject new_source = obj.value("source").toObject();
+            QString new_connector = new_source.value("connector").toString();
+            if (new_connector.isEmpty()) new_connector = connector_id;
+            sguard->federation()->setModelSource(fed_id, new_connector, new_source);
+
+            const QString new_name = obj.value("display_name").toString();
+            if (!new_name.isEmpty()) {
+                sguard->federation()->setModelDisplayName(fed_id, new_name);
+            }
+            const QJsonObject meta = obj.value("metadata").toObject();
+            sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+            sguard->setStatusMessage("Cloud",
+                QString("Pushed to %1").arg(new_connector));
+        },
+        [sguard, connector_id](int code, const QString& message) {
+            qWarning() << "push_model_interactive to" << connector_id
+                       << "failed:" << code << message;
+            if (sguard) {
+                sguard->setStatusMessage("Cloud",
+                    QString("%1 reported an error (see connector UI)").arg(connector_id));
+            }
+        });
 }
 
 void convertIfcToDatabase(SessionState& s, QWidget& host) {

@@ -18,9 +18,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "AddModelDialog.h"
+#include "SaveProjectDialog.h"
 
-#include "../../components/Dialog.h"
 #include "../../components/Buttons.h"
 #include "../../components/Section.h"
 #include "../../components/Style.h"
@@ -31,7 +30,7 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
-namespace ifcviewerfull::modules::models {
+namespace ifcviewerfull::modules::project {
 
 namespace {
 
@@ -41,13 +40,9 @@ public:
         : label_(label), hover_text_(std::move(hover_text)), default_text_(std::move(default_text)) {}
 
 protected:
-    bool eventFilter(QObject* watched, QEvent* event) override {
-        Q_UNUSED(watched);
-        if (event->type() == QEvent::Enter) {
-            label_->setText(hover_text_);
-        } else if (event->type() == QEvent::Leave) {
-            label_->setText(default_text_);
-        }
+    bool eventFilter(QObject*, QEvent* event) override {
+        if (event->type() == QEvent::Enter) label_->setText(hover_text_);
+        else if (event->type() == QEvent::Leave) label_->setText(default_text_);
         return false;
     }
 
@@ -59,21 +54,21 @@ private:
 
 } // namespace
 
-AddModelDialog::AddModelDialog(QWidget* parent)
+SaveProjectDialog::SaveProjectDialog(bool has_manifest, QWidget* parent)
     : components::Dialog(parent)
 {
     setObjectName("appDialog");
-    setWindowTitle("Add Model");
+    setWindowTitle("Save Project");
     setModal(true);
-    setupUi();
+    setupUi(has_manifest);
 }
 
-void AddModelDialog::setupUi() {
+void SaveProjectDialog::setupUi(bool has_manifest) {
     if (auto* root = qobject_cast<QVBoxLayout*>(layout())) {
         root->setSizeConstraint(QLayout::SetFixedSize);
     }
 
-    const QString default_description = "Choose what to add to the project";
+    const QString default_description = "Choose where to save this project";
     auto* description_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
     auto* description = new QLabel(default_description, description_section);
     description->setProperty("textRole", "secondary");
@@ -89,72 +84,65 @@ void AddModelDialog::setupUi() {
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(components::style::metrics::padding);
 
-    auto* add_ifc = components::buttons::makeButton("Add IFC File", ":/icons/cube.svg", choices);
-    connect(add_ifc, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::IfcFile;
+    auto* save_local = components::buttons::makeButton(
+        "Save Local", ":/icons/floppy-disk.svg", choices);
+    connect(save_local, &QToolButton::clicked, this, [this]() {
+        selected_target_ = SaveTarget::Local;
         accept();
     });
-    add_ifc->installEventFilter(new HoverDescriptionFilter(
+    save_local->installEventFilter(new HoverDescriptionFilter(
         description,
-        "Add IFC files and load both geometry and data.",
+        "Save to the project's current file on disk (prompts for a path if none).",
         default_description));
 
-    auto* add_database = components::buttons::makeButton("Add IFC\nDatabase", ":/icons/database.svg", choices);
-    connect(add_database, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::IfcDatabase;
+    auto* save_as_local = components::buttons::makeButton(
+        "Save As\nLocal", ":/icons/floppy-disk-arrow-in.svg", choices);
+    connect(save_as_local, &QToolButton::clicked, this, [this]() {
+        selected_target_ = SaveTarget::LocalAs;
         accept();
     });
-    add_database->installEventFilter(new HoverDescriptionFilter(
+    save_as_local->installEventFilter(new HoverDescriptionFilter(
         description,
-        "Add IFC RDB databases for optimised performance",
+        "Save the project to a new file on disk.",
         default_description));
 
-    auto* add_geometry = components::buttons::makeButton("Add Geometry", ":/icons/cube-bandage.svg", choices);
-    connect(add_geometry, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::GeometryOnly;
+    auto* save_cloud = components::buttons::makeButton(
+        "Save To\nCloud", ":/icons/cloud-square.svg", choices);
+    save_cloud->setEnabled(has_manifest);
+    if (!has_manifest) {
+        save_cloud->setToolTip(
+            "This project has no cloud target yet. Use \"Save As To Cloud\" first.");
+    }
+    connect(save_cloud, &QToolButton::clicked, this, [this]() {
+        selected_target_ = SaveTarget::Cloud;
         accept();
     });
-    add_geometry->installEventFilter(new HoverDescriptionFilter(
+    save_cloud->installEventFilter(new HoverDescriptionFilter(
         description,
-        "Add pure geometry for fast visualisation",
+        has_manifest
+            ? "Push back to the cloud location this project came from."
+            : "Disabled until this project has a cloud target (use Save As To Cloud).",
         default_description));
 
-    auto* add_cloud = components::buttons::makeButton("Add From\nCloud", ":/icons/cloud-square.svg", choices);
-    connect(add_cloud, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::CloudModel;
+    auto* save_as_cloud = components::buttons::makeButton(
+        "Save As\nTo Cloud", ":/icons/cloud-square.svg", choices);
+    connect(save_as_cloud, &QToolButton::clicked, this, [this]() {
+        selected_target_ = SaveTarget::CloudAs;
         accept();
     });
-    add_cloud->installEventFilter(new HoverDescriptionFilter(
+    save_as_cloud->installEventFilter(new HoverDescriptionFilter(
         description,
-        "Browse a cloud connector and add one or more models from there.",
+        "Pick a connector and push this project to a fresh cloud location.",
         default_description));
 
-    auto* convert_database = components::buttons::makeButton("Convert IFC File\nto Database", ":/icons/database-restore.svg", choices);
-    connect(convert_database, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::ConvertToDatabase;
-        accept();
-    });
-    convert_database->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Convert IFC files to databases for smaller filesizes, reduced memory, and faster access. No data is lost.",
-        default_description));
-
-    auto* export_geometry_database = components::buttons::makeButton("Export Geometry\nDatabase", ":/icons/database-restore.svg", choices);
-    connect(export_geometry_database, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::ExportGeometryDatabase;
-        accept();
-    });
-    export_geometry_database->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Convert IFC files to a read-only geometry database for smaller filesizes, reduced memory, and faster access. Ideal for cloud read-only coordination workflows. Only parametric geometry editing capabilities are lost.",
-        default_description));
-
-    row->addWidget(components::buttons::makeButtonGroup("ADD", {add_ifc, add_database, add_geometry, add_cloud}, choices, true, 8));
-    row->addWidget(components::buttons::makeButtonGroup("TOOLS", {convert_database, export_geometry_database}, choices, false, 8));
+    row->addWidget(components::buttons::makeButtonGroup(
+        "LOCAL", {save_local, save_as_local}, choices, true, 8));
+    row->addWidget(components::buttons::makeButtonGroup(
+        "CLOUD", {save_cloud, save_as_cloud}, choices, false, 8));
     choices_section->addBodyWidget(choices);
 
     addBodyWidget(description_section);
     addBodyWidget(choices_section);
 }
 
-} // namespace ifcviewerfull::modules::models
+} // namespace ifcviewerfull::modules::project
