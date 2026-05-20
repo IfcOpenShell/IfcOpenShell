@@ -62,12 +62,6 @@ if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
     from sun_position.properties import SunPosProperties
 
-    # Type-only — imported lazily to avoid a circular load when ``bim/__init__.py``
-    # imports ``bonsai.tool`` before ``bim.ifc`` has reached its line-43 definition
-    # of ``IFC_CONNECTED_TYPE`` (the chain re-enters ``bim.ifc`` through
-    # ``bim.handler`` and trips on a still-undefined ``IfcStore``). The file has
-    # ``from __future__ import annotations``, so the type hint at line 1884 is a
-    # deferred string and needs no runtime binding.
     from bonsai.bim.ifc import IFC_CONNECTED_TYPE
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import (
