@@ -11,25 +11,51 @@ from bonsaiviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, JSONRPC_INVALID_PA
 from bonsaiviewer_autodesk.ui import BrowseDialog, SettingsDialog, progress_dialog, prompt_for_filename
 
 
-ApsProgress = Callable[[str, "int | None"], None]
-Report = Callable[[str, str, "int | None"], None]
+ApsProgress = Callable[[str, "int | None", "int | None", "int | None"], None]
+Report = Callable[[str, str, "int | None", "str | None"], None]
+
+
+def _format_bytes(value: int) -> str:
+    """Render a byte count as a short human-readable string (e.g. '3.4 MB')."""
+    if value < 1024:
+        return f"{value} B"
+    scaled = float(value)
+    for unit in ("KB", "MB", "GB", "TB"):
+        scaled /= 1024.0
+        if scaled < 1024 or unit == "TB":
+            return f"{scaled:.1f} {unit}"
+    return f"{value} B"
+
+
+def _progress_detail(percent: int | None, done: int | None, total: int | None) -> str:
+    """Build the stats line shown beneath the filename, e.g. '45%, 4.5 MB / 10.0 MB'."""
+    parts: list[str] = []
+    if percent is not None:
+        parts.append(f"{percent}%")
+    if done is not None and total:
+        parts.append(f"{_format_bytes(done)} / {_format_bytes(total)}")
+    elif done is not None:
+        parts.append(_format_bytes(done))
+    return ", ".join(parts)
 
 
 def _download_callback(report: Report, index: int = 0, total: int = 0) -> ApsProgress:
-    """Adapt ProgressDialog.report (3-arg) to the APS download callback (2-arg).
+    """Adapt ProgressDialog.report to the APS download callback.
 
     index/total render "(i/N)" suffix when batching; pass 0 (the default) for
     single-file downloads to omit the suffix.
     """
-    def cb(name: str, percent: int | None) -> None:
+    def cb(name: str, percent: int | None, bytes_done: int | None, bytes_total: int | None) -> None:
         suffix = f" ({index}/{total})" if total else ""
-        report("download", f"Downloading {name}{suffix}", percent)
+        detail = _progress_detail(percent, bytes_done, bytes_total)
+        report("download", f"Downloading {name}{suffix}", percent, detail)
     return cb
 
 
 def _upload_callback(report: Report) -> ApsProgress:
-    def cb(name: str, percent: int | None) -> None:
-        report("upload", f"Uploading {name}", percent)
+    def cb(name: str, percent: int | None, bytes_done: int | None, bytes_total: int | None) -> None:
+        detail = _progress_detail(percent, bytes_done, bytes_total)
+        report("upload", f"Uploading {name}", percent, detail)
     return cb
 
 
@@ -95,7 +121,7 @@ class AutodeskConnector:
         chosen = BrowseDialog(auth=auth, aps=aps, mode="ifcfed").run()
         hub = chosen["hub"]
         project = chosen["project"]
-        entry = chosen["entry"]
+        entry = chosen["entries"][0]
         with progress_dialog("Downloading project") as report:
             path = self._download_ifcfed(
                 aps=aps,
@@ -230,10 +256,37 @@ class AutodeskConnector:
         chosen = BrowseDialog(auth=auth, aps=aps, mode="model").run()
         hub = chosen["hub"]
         project = chosen["project"]
-        entry = chosen["entry"]
+        entries = chosen["entries"]
+
+        results: list[dict[str, Any]] = []
+        total = len(entries)
+        with progress_dialog("Downloading models") as report:
+            for index, entry in enumerate(entries):
+                callback = _download_callback(report, index=index + 1, total=total)
+                try:
+                    result = self._download_picked_model(aps, hub, project, entry, callback)
+                except RpcError as exc:
+                    print(f"pull_models_interactive[{index}] skipped: {exc.message}", file=sys.stderr)
+                    continue
+                except Exception as exc:
+                    print(f"pull_models_interactive[{index}] skipped: {exc}", file=sys.stderr)
+                    traceback.print_exc(file=sys.stderr)
+                    continue
+                if result is not None:
+                    results.append(result)
+        return results
+
+    def _download_picked_model(
+        self,
+        aps: ApsClient,
+        hub: dict[str, Any],
+        project: dict[str, Any],
+        entry: dict[str, Any],
+        progress: ApsProgress,
+    ) -> dict[str, Any] | None:
         item = aps.get_item(project["id"], entry["id"])
         if item["hidden"]:
-            raise RpcError(JSONRPC_INTERNAL_ERROR, "The selected Autodesk item has been deleted.")
+            raise RpcError(JSONRPC_INTERNAL_ERROR, f"Autodesk item '{entry['id']}' has been deleted.")
         storage_id = item["storage_id"]
         if not isinstance(storage_id, str):
             raise RpcError(JSONRPC_INTERNAL_ERROR, f"Autodesk item '{entry['id']}' has no downloadable storage.")
@@ -245,24 +298,19 @@ class AutodeskConnector:
         model_path = directory / file_name
         if not model_path.exists():
             cache.prepare_sole_child_dir(directory)
-            with progress_dialog("Downloading model") as report:
-                aps.download_storage_to_file(
-                    storage_id, model_path, progress=_download_callback(report)
-                )
+            aps.download_storage_to_file(storage_id, model_path, progress=progress)
 
-        return [
-            {
-                "display_name": file_name,
-                "source": {
-                    "connector": CONNECTOR_ID,
-                    "hub_id": hub["id"],
-                    "project_id": project["id"],
-                    "item_id": entry["id"],
-                },
-                "path": str(model_path),
-                "metadata": _build_metadata(item),
-            }
-        ]
+        return {
+            "display_name": file_name,
+            "source": {
+                "connector": CONNECTOR_ID,
+                "hub_id": hub["id"],
+                "project_id": project["id"],
+                "item_id": entry["id"],
+            },
+            "path": str(model_path),
+            "metadata": _build_metadata(item),
+        }
 
     # ---- push_ifcfed_interactive --------------------------------------------
 
@@ -278,7 +326,7 @@ class AutodeskConnector:
         chosen = BrowseDialog(auth=auth, aps=aps, mode="destination").run()
         hub = chosen["hub"]
         project = chosen["project"]
-        folder = chosen["entry"]
+        folder = chosen["entries"][0]
 
         file_name = prompt_for_filename(
             title="Save Project",
@@ -378,7 +426,7 @@ class AutodeskConnector:
         chosen = BrowseDialog(auth=auth, aps=aps, mode="destination").run()
         hub = chosen["hub"]
         project = chosen["project"]
-        folder = chosen["entry"]
+        folder = chosen["entries"][0]
 
         file_name = prompt_for_filename(
             title="Save Model",

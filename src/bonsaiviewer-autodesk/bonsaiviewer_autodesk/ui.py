@@ -110,28 +110,57 @@ class _BaseDialog(ctk.CTkToplevel):
 
 
 class ProgressDialog(_BaseDialog):
+    """Fixed-size progress dialog: a title line, a stats line, and a bar.
+
+    Both text lines are single-line and middle-elided with '…' so a long
+    filename can never reflow the layout or resize the window.
+    """
+
+    _WIDTH = 560
+
     def __init__(self, title: str = "Working", parent: tk.Misc | None = None) -> None:
-        super().__init__(title, size=(440, 130), resizable=False)
+        super().__init__(title, size=(self._WIDTH, 160), resizable=False)
+
+        self._text_font = ctk.CTkFont()
 
         body = ctk.CTkFrame(self)
         body.pack(fill="both", expand=True, padx=20, pady=20)
 
-        self.message = ctk.CTkLabel(body, text="Working…", anchor="w")
-        self.message.pack(fill="x", anchor="w")
+        self.title_label = ctk.CTkLabel(body, text="Working…", anchor="w", font=self._text_font)
+        self.title_label.pack(fill="x", padx=16, pady=(16, 0))
+
+        # Initialised with a space so the line reserves its height before the
+        # first report(); a single-line label never grows taller than this.
+        self.detail_label = ctk.CTkLabel(body, text=" ", anchor="w", font=self._text_font)
+        self.detail_label.pack(fill="x", padx=16, pady=(2, 0))
 
         self.bar = ctk.CTkProgressBar(body, mode="indeterminate")
-        self.bar.pack(fill="x", pady=(12, 0))
+        self.bar.pack(fill="x", padx=16, pady=(14, 16))
         self.bar.start()
         self._determinate = False
+
+        # Derive the height from the laid-out content (font-driven) rather than
+        # hardcoding it, then lock it. Single-line labels keep it stable no
+        # matter how long the text is.
+        self.update_idletasks()
+        self.geometry(f"{self._WIDTH}x{self.winfo_reqheight()}")
 
         self._center_on_screen()
         self.deiconify()
         self.lift()
         self.update()
 
-    def report(self, _phase: str, message: str, percent: int | None = None) -> None:
+    def report(
+        self,
+        _phase: str,
+        message: str,
+        percent: int | None = None,
+        detail: str | None = None,
+    ) -> None:
         try:
-            self.message.configure(text=message)
+            width = self._text_area_width()
+            self.title_label.configure(text=self._elide_middle(message, width))
+            self.detail_label.configure(text=self._elide_middle(detail or " ", width))
             if percent is None:
                 if self._determinate:
                     self.bar.configure(mode="indeterminate")
@@ -147,6 +176,29 @@ class ProgressDialog(_BaseDialog):
         except tk.TclError:
             pass
 
+    def _text_area_width(self) -> int:
+        """Pixels available for label text, in the same scaled space as the font."""
+        width = self.title_label.winfo_width()
+        if width <= 1:  # not laid out yet
+            return self._WIDTH - 2 * 20 - 2 * 16
+        return max(40, width - 6)
+
+    def _elide_middle(self, text: str, max_width: int) -> str:
+        """Middle-truncate text with '…' so it fits max_width without wrapping."""
+        font = self._text_font
+        if font.measure(text) <= max_width:
+            return text
+        ellipsis = "…"
+        keep = len(text) - 1
+        while keep > 0:
+            head = (keep + 1) // 2
+            tail = keep - head
+            candidate = text[:head] + ellipsis + (text[-tail:] if tail else "")
+            if font.measure(candidate) <= max_width:
+                return candidate
+            keep -= 1
+        return ellipsis
+
 
 class _ProgressContext:
     def __init__(self, parent: tk.Misc | None, message: str) -> None:
@@ -154,7 +206,7 @@ class _ProgressContext:
         self.message = message
         self.dialog: ProgressDialog | None = None
 
-    def __enter__(self) -> Callable[[str, str, int | None], None]:
+    def __enter__(self) -> Callable[..., None]:
         self.dialog = ProgressDialog(self.message, self.parent)
         return self.dialog.report
 
@@ -197,9 +249,10 @@ class BrowseDialog(_BaseDialog):
         self.auth = auth
         self.aps = aps
         self.mode: Mode = mode
+        self.multi_select = mode == "model"
         self.selected_hub: dict[str, Any] | None = None
         self.selected_project: dict[str, Any] | None = None
-        self.selected_entry: dict[str, Any] | None = None
+        self.selected_entries: list[dict[str, Any]] = []
         self._tree_entries: dict[str, dict[str, Any]] = {}
         self._project_entries: dict[str, dict[str, Any]] = {}
 
@@ -241,7 +294,8 @@ class BrowseDialog(_BaseDialog):
         self.projects = self._make_treeview(self.projects_frame, "PROJECTS")
         self.projects.bind("<<TreeviewSelect>>", lambda _e: self._project_changed())
 
-        self.tree = self._make_treeview(self.tree_frame, "FOLDERS")
+        tree_selectmode = "extended" if self.multi_select else "browse"
+        self.tree = self._make_treeview(self.tree_frame, "FOLDERS", selectmode=tree_selectmode)
         self.tree.bind("<<TreeviewSelect>>", lambda _e: self._tree_selection_changed())
         self.tree.bind("<<TreeviewOpen>>", self._on_tree_open)
 
@@ -257,14 +311,14 @@ class BrowseDialog(_BaseDialog):
         self.action_button.grid(row=0, column=2)
         self.action_button.configure(state="disabled")
 
-    def _make_treeview(self, parent: ctk.CTkFrame, header: str) -> ttk.Treeview:
+    def _make_treeview(self, parent: ctk.CTkFrame, header: str, selectmode: str = "browse") -> ttk.Treeview:
         ctk.CTkLabel(parent, text=header, anchor="w").pack(fill="x", padx=12, pady=(8, 0))
         body = ctk.CTkFrame(parent, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=8, pady=8)
         body.grid_rowconfigure(0, weight=1)
         body.grid_columnconfigure(0, weight=1)
 
-        tree = ttk.Treeview(body, show="tree", selectmode="browse")
+        tree = ttk.Treeview(body, show="tree", selectmode=selectmode)
         tree.grid(row=0, column=0, sticky="nsew")
         scrollbar = ctk.CTkScrollbar(body, orientation="vertical", command=tree.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
@@ -336,7 +390,7 @@ class BrowseDialog(_BaseDialog):
         if not isinstance(project, dict):
             return
         self.selected_project = project
-        self.selected_entry = None
+        self.selected_entries = []
         self._refresh_action_button()
         self._clear_tree()
         with self._with_progress("Loading top folders"):
@@ -400,41 +454,53 @@ class BrowseDialog(_BaseDialog):
 
     def _tree_selection_changed(self) -> None:
         selection = self.tree.selection()
-        entry = self._tree_entries.get(selection[0]) if selection else None
-        if isinstance(entry, dict) and not entry.get("__placeholder__"):
-            self.selected_entry = entry
+        entries: list[dict[str, Any]] = []
+        for iid in selection:
+            entry = self._tree_entries.get(iid)
+            if isinstance(entry, dict) and not entry.get("__placeholder__"):
+                entries.append(entry)
+        self.selected_entries = entries
+
+        if not entries:
+            pass
+        elif len(entries) == 1:
+            entry = entries[0]
             name = entry.get("display_name") or entry.get("name") or entry.get("id", "?")
             kind = entry.get("type", "entry")
             self.status.configure(text=f"Selected {kind}: {name}")
         else:
-            self.selected_entry = None
+            valid_count = sum(1 for e in entries if self._is_valid_selection(e))
+            self.status.configure(text=f"Selected {valid_count} of {len(entries)} items.")
         self._refresh_action_button()
 
+    def _is_valid_selection(self, entry: dict[str, Any]) -> bool:
+        if self.mode == "destination":
+            return entry.get("type") == "folders"
+        if self.mode == "ifcfed":
+            return (
+                entry.get("type") == "items"
+                and (entry.get("display_name") or "").lower().endswith(".ifcfed")
+            )
+        return (
+            entry.get("type") == "items"
+            and (entry.get("display_name") or "").lower().endswith(MODEL_EXTENSIONS)
+        )
+
+    def _valid_entries(self) -> list[dict[str, Any]]:
+        return [e for e in self.selected_entries if self._is_valid_selection(e)]
+
     def _refresh_action_button(self) -> None:
-        enabled = self.selected_project is not None and self.selected_entry is not None
-        if enabled:
-            assert self.selected_entry is not None
-            if self.mode == "destination":
-                enabled = self.selected_entry.get("type") == "folders"
-            elif self.mode == "ifcfed":
-                enabled = (
-                    self.selected_entry.get("type") == "items"
-                    and (self.selected_entry.get("display_name") or "").lower().endswith(".ifcfed")
-                )
-            else:
-                enabled = (
-                    self.selected_entry.get("type") == "items"
-                    and (self.selected_entry.get("display_name") or "").lower().endswith(MODEL_EXTENSIONS)
-                )
+        enabled = self.selected_project is not None and bool(self._valid_entries())
         self.action_button.configure(state="normal" if enabled else "disabled")
 
     def _confirm(self) -> None:
-        if not self.selected_hub or not self.selected_project or not self.selected_entry:
+        valid = self._valid_entries()
+        if not self.selected_hub or not self.selected_project or not valid:
             return
         self.result = {
             "hub": self.selected_hub,
             "project": self.selected_project,
-            "entry": self.selected_entry,
+            "entries": valid,
         }
         self._on_close()
 

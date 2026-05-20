@@ -250,7 +250,7 @@ class ApsClient:
 
     def list_hubs(self) -> list[dict[str, Any]]:
         payload = self._get_json("https://developer.api.autodesk.com/project/v1/hubs")
-        return [
+        hubs = [
             {
                 "id": item["id"],
                 "name": item["attributes"]["name"],
@@ -258,6 +258,8 @@ class ApsClient:
             }
             for item in payload.get("data", [])
         ]
+        hubs.sort(key=lambda h: (h["name"] or "").casefold())
+        return hubs
 
     def list_projects(self, hub_id: str) -> list[dict[str, Any]]:
         url = f"https://developer.api.autodesk.com/project/v1/hubs/{hub_id}/projects"
@@ -274,13 +276,16 @@ class ApsClient:
                     }
                 )
             url = payload.get("links", {}).get("next", {}).get("href", "") or ""
+        projects.sort(key=lambda p: (p["name"] or "").casefold())
         return projects
 
     def list_top_folders(self, hub_id: str, project_id: str) -> list[dict[str, Any]]:
         payload = self._get_json(
             f"https://developer.api.autodesk.com/project/v1/hubs/{hub_id}/projects/{project_id}/topFolders"
         )
-        return [self._entry(item) for item in payload.get("data", [])]
+        folders = [self._entry(item) for item in payload.get("data", [])]
+        folders.sort(key=lambda e: (e.get("display_name") or "").casefold())
+        return folders
 
     def list_folder_contents(
         self,
@@ -303,6 +308,7 @@ class ApsClient:
                     continue
                 entries.append(entry)
             url = payload.get("links", {}).get("next", {}).get("href", "") or ""
+        entries.sort(key=lambda e: (e.get("display_name") or "").casefold())
         return entries
 
     def get_item(self, project_id: str, item_id: str) -> dict[str, Any]:
@@ -364,7 +370,7 @@ class ApsClient:
         storage_id: str,
         destination_path: Path,
         *,
-        progress: Callable[[str, int | None], None] | None = None,
+        progress: Callable[[str, int | None, int | None, int | None], None] | None = None,
     ) -> None:
         bucket_key, object_key = self._parse_storage_id(storage_id)
         signed_url = self._get_signed_download_url(bucket_key, object_key)
@@ -377,7 +383,7 @@ class ApsClient:
         local_path: Path,
         *,
         display_name: str | None = None,
-        progress: Callable[[str, int | None], None] | None = None,
+        progress: Callable[[str, int | None, int | None, int | None], None] | None = None,
     ) -> dict[str, Any]:
         if not local_path.exists():
             raise RpcError(JSONRPC_INTERNAL_ERROR, f"Local file '{local_path}' does not exist.")
@@ -439,12 +445,12 @@ class ApsClient:
         self,
         url: str,
         destination_path: Path,
-        progress: Callable[[str, int | None], None] | None,
+        progress: Callable[[str, int | None, int | None, int | None], None] | None,
     ) -> None:
         try:
             with self.http.stream("GET", url) as response:
                 response.raise_for_status()
-                total_bytes = None
+                total_bytes: int | None = None
                 header_value = response.headers.get("Content-Length")
                 if header_value and header_value.isdigit():
                     total_bytes = int(header_value)
@@ -455,9 +461,9 @@ class ApsClient:
                         downloaded_bytes += len(chunk)
                         if progress and total_bytes:
                             percent = min(100, int((downloaded_bytes / total_bytes) * 100))
-                            progress(destination_path.name, percent)
+                            progress(destination_path.name, percent, downloaded_bytes, total_bytes)
                         elif progress:
-                            progress(destination_path.name, None)
+                            progress(destination_path.name, None, downloaded_bytes, total_bytes)
         except httpx.HTTPStatusError as exc:
             body = exc.response.text.strip()
             raise RpcError(JSONRPC_INTERNAL_ERROR, body or f"HTTP {exc.response.status_code}") from exc
@@ -486,7 +492,7 @@ class ApsClient:
         bucket_key: str,
         object_key: str,
         local_path: Path,
-        progress: Callable[[str, int | None], None] | None,
+        progress: Callable[[str, int | None, int | None, int | None], None] | None,
     ) -> None:
         file_size = local_path.stat().st_size
         chunk_size = 5 * 1024 * 1024
@@ -522,7 +528,7 @@ class ApsClient:
                     bytes_uploaded += len(chunk)
                     if progress:
                         percent = 100 if file_size == 0 else min(100, int((bytes_uploaded / file_size) * 100))
-                        progress(local_path.name, percent)
+                        progress(local_path.name, percent, bytes_uploaded, file_size)
 
         if not upload_key:
             raise RpcError(JSONRPC_INTERNAL_ERROR, "Upload did not return an upload key.")
