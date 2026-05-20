@@ -28,6 +28,7 @@
 #include <cctype>
 #include <iterator>
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <optional>
@@ -521,6 +522,14 @@ class IFC_PARSE_API schema_registry {
     };
 
     std::map<std::string, entry> entries_;
+
+    // The registry is a process-wide singleton (schema_registry_instance())
+    // reached concurrently — e.g. several IFC files parsed on background
+    // threads at once. get() lazily loads schema plugins and mutates
+    // entries_, and re-enters bind() through load_schema_plugin(), so the
+    // mutex is recursive. Held only briefly; returned schema pointers are
+    // stable for the process lifetime.
+    std::recursive_mutex mutex_;
 };
 
 IFC_PARSE_API schema_registry& schema_registry_instance();

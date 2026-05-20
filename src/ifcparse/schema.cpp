@@ -164,6 +164,15 @@ ifcopenshell::schema_definition::schema_definition(const std::string& name, cons
             entities_.push_back((**it).as_entity());
         }
     }
+
+    // Force each entity's lazy all_attributes_ cache now, while construction
+    // is still single-threaded. The schema is a process-wide singleton shared
+    // read-only across concurrent parsing threads; letting all_attributes()
+    // populate the cache lazily on first parse would be a data race.
+    for (const entity* ent : entities_) {
+        ent->all_attributes();
+    }
+
     register_schema(this);
 }
 
@@ -216,6 +225,7 @@ void ifcopenshell::load_schema_plugins(schema_registry& registry) {
 }
 
 void ifcopenshell::schema_registry::bind(const std::string& schema_name, get_schema_fn get, clear_schema_fn clear, const plugin::module& module) {
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	auto& entry = entries_[schema_key(schema_name)];
 	entry.get_ = get;
 	entry.clear_ = clear;
@@ -223,11 +233,13 @@ void ifcopenshell::schema_registry::bind(const std::string& schema_name, get_sch
 }
 
 void ifcopenshell::schema_registry::bind(schema_definition* schema) {
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	auto& entry = entries_[schema_key(schema->name())];
 	entry.schema_ = schema;
 }
 
 const ifcopenshell::schema_definition* ifcopenshell::schema_registry::get(const std::string& schema_name) {
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	const auto key = schema_key(schema_name);
 	auto iter = entries_.find(key);
 	if (iter == entries_.end()) {
@@ -247,6 +259,7 @@ const ifcopenshell::schema_definition* ifcopenshell::schema_registry::get(const 
 }
 
 std::vector<std::string> ifcopenshell::schema_registry::names() {
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	std::set<std::string> seen;
 	for (const auto& pair : entries_) {
 		seen.insert(pair.first);
@@ -266,6 +279,7 @@ std::vector<std::string> ifcopenshell::schema_registry::names() {
 }
 
 void ifcopenshell::schema_registry::clear() {
+	std::lock_guard<std::recursive_mutex> lock(mutex_);
 	for (auto& pair : entries_) {
 		if (pair.second.clear_) {
 			pair.second.clear_();
