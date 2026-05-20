@@ -35,7 +35,7 @@ struct ConnectorManifest {
                          // otherwise a bare name for PATH lookup at launch
 };
 
-// Scans the per-user connectors directory per CLOUD_SYNC_PROTOCOL.md.
+// Scans the per-user connectors directory per the connector protocol docs.
 // First match wins for any given id; duplicates and malformed manifests
 // are skipped with a qWarning. Returned in discovery order so first-wins
 // is observable to callers.

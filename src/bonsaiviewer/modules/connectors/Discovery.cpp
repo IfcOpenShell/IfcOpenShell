@@ -83,7 +83,7 @@ QString userConnectorsDir() {
     //  Linux  -> ~/.local/share
     //  macOS  -> ~/Library/Application Support
     //  Win    -> %APPDATA% (Roaming)
-    // matching CLOUD_SYNC_PROTOCOL.md's listed locations.
+    // matching the Bonsai Viewer connector protocol docs.
     const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
     return QDir(base).filePath("IfcOpenShell/BonsaiViewer/connectors");
 }
