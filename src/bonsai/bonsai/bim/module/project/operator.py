@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import datetime
 import json
@@ -1872,6 +1874,11 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    confirm_parametric_edits: bpy.props.BoolProperty(
+        default=False,
+        options={"HIDDEN", "SKIP_SAVE"},
+        description="Internal: routes draw() to the parametric-commit confirm body instead of the file dialog.",
+    )
 
     if TYPE_CHECKING:
         filter_glob: str
@@ -1879,6 +1886,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         json_compact: bool
         should_save_as: bool
         use_relative_path: bool
+        confirm_parametric_edits: bool
 
     @classmethod
     def poll(cls, context):
@@ -1886,6 +1894,9 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
     def draw(self, context):
         layout = self.layout
+        if self.confirm_parametric_edits:
+            self._draw_parametric_confirm(layout)
+            return
         layout.prop(self, "json_version")
         layout.prop(self, "json_compact")
         if bpy.data.is_saved:
@@ -1895,6 +1906,33 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         layout.label(text="Supported formats for export:")
         layout.label(text=",".join(self.supported_filexts))
 
+    def _draw_parametric_confirm(self, layout: bpy.types.UILayout) -> None:
+        col = layout.column(align=True)
+        col.label(text="Saving will commit all in-progress parametric edits to IFC")
+        col.label(text="before writing the file.")
+        layout.separator()
+        # Auto-derive the noun list from the parametric registry so the dialog stays
+        # in sync as new parametric element types are added.
+        nouns = [feature.name for feature in tool.Parametric.EDIT_TYPES]
+        if len(nouns) > 1:
+            noun_list = ", ".join(nouns[:-1]) + " or " + nouns[-1]
+        else:
+            noun_list = nouns[0] if nouns else ""
+        col = layout.column(align=True)
+        col.label(text="For example, if you are editing a parametric")
+        col.label(text=f"{noun_list}, all pending changes will be applied")
+        col.label(text="to the IFC file first.")
+        layout.separator()
+        col = layout.column(align=True)
+        col.label(text='Click "Commit & Save" to apply the pending edits and save,')
+        col.label(text="or press Esc to abort the save.")
+        layout.separator()
+        box = layout.box()
+        col = box.column(align=True)
+        col.label(text="To disable this prompt and always auto-commit silently,", icon="INFO")
+        col.label(text='turn off "Confirm Before Auto-Committing Parametric Edits')
+        col.label(text='on Save" in the Bonsai add-on preferences.')
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
@@ -1902,11 +1940,24 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
         self.use_relative_path = tool.Project.get_project_props().use_relative_project_path
         props = tool.Blender.get_bim_props()
-        if (filepath := props.ifc_file) and not self.should_save_as:
-            self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
-            return self.execute(context)
+        filepath = props.ifc_file
+        if not filepath or self.should_save_as:
+            return ExportHelper.invoke(self, context, event)
 
-        return ExportHelper.invoke(self, context, event)
+        self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
+        prefs = tool.Blender.get_addon_preferences()
+        if prefs.prompt_auto_commit_parametric_edits and tool.Parametric.get_pending_edits():
+            # `invoke_props_dialog` fires `execute()` on OK using current properties,
+            # so `self.filepath` must already be set above. The `confirm_parametric_edits`
+            # flag routes `draw()` to the multi-line confirm body instead of the file dialog.
+            self.confirm_parametric_edits = True
+            return context.window_manager.invoke_props_dialog(
+                self,
+                width=460,
+                title="Pending Parametric Edits",
+                confirm_text="Commit & Save",
+            )
+        return self.execute(context)
 
     def check(self, context):
         # ExportHelper is automatically adjusting suffix to `filename_ext`.
@@ -1932,6 +1983,12 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
     def _execute(self, context):
+        _, failed_commits = tool.Parametric.commit_pending_edits()
+        if failed_commits:
+            names = ", ".join(o.name for o in failed_commits)
+            msg = f"Auto-commit failed for {len(failed_commits)} object(s): {names}"
+            print(f"Bonsai: {msg} (their drafts are NOT saved to the IFC file).")
+            self.report({"ERROR"}, msg)
         start = time.time()
         logger = logging.getLogger("ExportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import bpy
 
@@ -143,6 +145,14 @@ classes = (
     gizmos.GizmoCancel,
     gizmos.GizmoPlus,
     gizmos.GizmoMinus,
+    gizmos.GizmoMerge,
+    gizmos.GizmoSplit,
+    gizmos.GizmoExtend,
+    gizmos.GizmoExtendVertical,
+    gizmos.GizmoOffsetExterior,
+    gizmos.GizmoOffsetCenter,
+    gizmos.GizmoOffsetInterior,
+    gizmos.GizmoAddOpening,
     gizmos.GizmoCycle,
     # Drawing-specific gizmos
     gizmos.UglyDotGizmo,

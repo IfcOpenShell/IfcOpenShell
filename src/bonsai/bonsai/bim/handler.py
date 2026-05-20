@@ -15,11 +15,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import os
 import weakref
 from collections.abc import Callable
-from math import cos
 from typing import Union
 
 import bpy
@@ -31,6 +32,7 @@ from bpy.app.handlers import persistent
 from mathutils import Vector
 
 import bonsai.bim
+import bonsai.core.model as core_model
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
@@ -133,14 +135,32 @@ def update_bim_tool_props():
 
             if is_annotation_tool and (object_type := tool.Drawing.get_annotation_type_object_type(element_type)):
                 aprops.object_type = object_type
-                aprops.relating_type_id = str(element_type.id())
+                try:
+                    aprops.relating_type_id = str(element_type.id())
+                except TypeError:
+                    # EnumProperty items are rebuilt asynchronously when ifc_class changes;
+                    # this assignment can race a stale item list. Skipping is harmless —
+                    # the UI will resync on the next active_object_callback.
+                    pass
                 return
 
             if is_bim_tool:
                 props.ifc_class = element_type.is_a()
 
-            if is_bim_tool or TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a():
-                props.relating_type_id = str(element_type.id())
+            # Only assign when the target enum is the one that lists this type — otherwise
+            # we hit `enum "<id>" not found in (...)` if the user selects an element of a
+            # different class than the workspace tool was built for (e.g. selecting a wall
+            # while the door tool is active).
+            tool_class_match = TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a()
+            bim_tool_class_match = is_bim_tool and props.ifc_class == element_type.is_a()
+            if bim_tool_class_match or tool_class_match:
+                try:
+                    props.relating_type_id = str(element_type.id())
+                except TypeError:
+                    # Defensive: the enum item list can lag behind ifc_class assignment
+                    # above. Skipping leaves the panel briefly out of sync rather than
+                    # crashing the handler (which Blender re-fires on every selection).
+                    pass
 
     if is_annotation_tool:
         return
@@ -165,7 +185,9 @@ def update_bim_tool_props():
     if AuthoringData.data["active_material_usage"] == "LAYER2":
         x_angle = get_x_angle(extrusion)
         axis = tool.Model.get_wall_axis(obj)["reference"]
-        props.extrusion_depth = abs(extrusion.Depth * si_conversion * cos(x_angle))
+        props.extrusion_depth = core_model.vertical_height_from_extrusion_depth(
+            extrusion.Depth * si_conversion, x_angle
+        )
         props.length = (axis[1] - axis[0]).length
         props.x_angle = x_angle
 

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
@@ -55,12 +57,18 @@ from mathutils import Matrix, Vector
 import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import IFC_CONNECTED_TYPE
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
     from sun_position.properties import SunPosProperties
 
+    # Type-only — imported lazily to avoid a circular load when ``bim/__init__.py``
+    # imports ``bonsai.tool`` before ``bim.ifc`` has reached its line-43 definition
+    # of ``IFC_CONNECTED_TYPE`` (the chain re-enters ``bim.ifc`` through
+    # ``bim.handler`` and trips on a still-undefined ``IfcStore``). The file has
+    # ``from __future__ import annotations``, so the type hint at line 1884 is a
+    # deferred string and needs no runtime binding.
+    from bonsai.bim.ifc import IFC_CONNECTED_TYPE
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import (
         BIMConstraintProperties,
@@ -1137,20 +1145,18 @@ class Blender(bonsai.core.tool.Blender):
 
             :return: True if an action was taken, False otherwise
             """
+            # roof and railing both finalize then drop into path-edit mode — handle
+            # them before the generic finish dispatch so the path transition runs.
             if cls.is_roof(element):
-                if cls.is_editing_roof_parameters(obj):
-                    bpy.ops.bim.finish_editing_roof()
+                if (feature := tool.Parametric.find_by_name("roof")) and feature.is_editing(obj):
+                    tool.Parametric.run_bim_op(feature.finish_op)
                 bpy.ops.bim.enable_editing_roof_path()
             elif cls.is_railing(element):
-                if cls.is_editing_railing_parameters(obj):
-                    bpy.ops.bim.finish_editing_railing()
+                if (feature := tool.Parametric.find_by_name("railing")) and feature.is_editing(obj):
+                    tool.Parametric.run_bim_op(feature.finish_op)
                 bpy.ops.bim.enable_editing_railing_path()
-            elif cls.is_editing_stair_parameters(obj):
-                bpy.ops.bim.finish_editing_stair()
-            elif cls.is_editing_door_parameters(obj):
-                bpy.ops.bim.finish_editing_door()
-            elif cls.is_editing_window_parameters(obj):
-                bpy.ops.bim.finish_editing_window()
+            elif feature := tool.Parametric.is_object_editing(obj):
+                tool.Parametric.run_bim_op(feature.finish_op)
             else:
                 return False
             return True
@@ -1161,20 +1167,13 @@ class Blender(bonsai.core.tool.Blender):
 
             :return: True if an action was taken, False otherwise
             """
+            # Path-edit modes are distinct from parametric draft modes; handle them first.
             if cls.is_editing_railing_path(obj):
                 bpy.ops.bim.cancel_editing_railing_path()
             elif cls.is_editing_roof_path(obj):
                 bpy.ops.bim.cancel_editing_roof_path()
-            elif cls.is_editing_railing_parameters(obj):
-                bpy.ops.bim.cancel_editing_railing()
-            elif cls.is_editing_door_parameters(obj):
-                bpy.ops.bim.cancel_editing_door()
-            elif cls.is_editing_window_parameters(obj):
-                bpy.ops.bim.cancel_editing_window()
-            elif cls.is_editing_roof_parameters(obj):
-                bpy.ops.bim.cancel_editing_roof()
-            elif cls.is_editing_stair_parameters(obj):
-                bpy.ops.bim.cancel_editing_stair()
+            elif feature := tool.Parametric.is_object_editing(obj):
+                tool.Parametric.run_bim_op(feature.cancel_op)
             else:
                 return False
             return True
@@ -1222,6 +1221,17 @@ class Blender(bonsai.core.tool.Blender):
             return tool.Pset.get_element_pset(element, "BBIM_Stair")
 
         @classmethod
+        def is_wall(cls, element: entity_instance) -> bool:
+            """A wall is editable by the parametric gizmo if it is an IfcWall with LAYER2 usage.
+
+            Unlike doors/windows/stairs, walls do not carry a proprietary BBIM_Wall pset —
+            their parametric state lives in standard IFC (axis polyline, IfcMaterialLayerSetUsage,
+            IfcExtrudedAreaSolid). Any LAYER2 wall qualifies."""
+            if not element.is_a("IfcWall"):
+                return False
+            return tool.Model.get_usage_type(element) == "LAYER2"
+
+        @classmethod
         def is_editing_railing_path(cls, obj: bpy.types.Object):
             props = tool.Model.get_railing_props(obj)
             return props.is_editing_path
@@ -1232,33 +1242,9 @@ class Blender(bonsai.core.tool.Blender):
             return props.is_editing_path
 
         @classmethod
-        def is_editing_railing_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_railing_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_roof_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_roof_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_window_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_window_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_door_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_door_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_stair_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_stair_props(obj)
-            return props.is_editing
-
-        @classmethod
         def is_modifier_with_non_editable_path(cls, element: entity_instance) -> bool:
-            return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
+            feature = tool.Parametric.find_for_element(element)
+            return bool(feature and feature.has_non_editable_path)
 
         class Array:
             @classmethod
