@@ -539,7 +539,7 @@ class Model(bonsai.core.tool.Model):
 
             cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
             if is_closed:
-                cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+                cls.edges.append((len(cls.vertices) - 1, offset))  # Close the loop
 
         elif curve.is_a("IfcCompositeCurve"):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
