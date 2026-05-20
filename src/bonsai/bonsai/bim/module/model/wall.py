@@ -1969,13 +1969,8 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         - Toggle-openings icon next to the pen. Lives outside edit mode because
           opening visibility is a viewport-display concern, not a wall-edit action.
 
-        Uses the manual ``Translation(world_pos) @ billboard_rot @ Scale`` pattern
-        rather than the base class's ``set_icon_gizmo_position`` helper. The helper
-        computes ``mw @ (Translation @ billboard_rot @ Scale)``, which applies the
-        wall's rotation to the billboard — for a wall rotated in plan, the icons
-        end up tilted edge-on to the camera instead of facing it. The base class's
-        own ``update_editing_gizmos`` already uses the manual pattern for validate/
-        cancel/cycle for exactly this reason; we match it here."""
+        Uses ``billboarded_at`` directly for parity with the base class's
+        ``update_editing_gizmos`` validate/cancel/cycle pattern."""
         if not hasattr(self, "rotate_gizmo"):
             return
         gizmo_prefs = self.get_gizmo_prefs()
