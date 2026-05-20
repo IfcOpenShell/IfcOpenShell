@@ -143,7 +143,7 @@ mkdir build && cd build
 
 cmake ../cmake \
     -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_IFCVIEWER=ON \
+    -DBUILD_BONSAIVIEWER=ON \
     -DBUILD_CONVERT=OFF \
     -DBUILD_IFCPYTHON=OFF \
     -DBUILD_GEOMSERVER=OFF \

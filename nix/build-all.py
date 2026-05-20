@@ -141,7 +141,7 @@ logger.addHandler(ch)
 PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
-BUILD_IFCVIEWER = os.getenv("BUILD_IFCVIEWER", "").lower() in {"1", "on", "true", "yes"}
+BUILD_BONSAIVIEWER = os.getenv("BUILD_BONSAIVIEWER", "").lower() in {"1", "on", "true", "yes"}
 
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
 JSON_VERSION = "3.11.3"
@@ -337,7 +337,7 @@ dependency_tree: "dict[str, tuple[str, ...]]" = {
     "OpenCOLLADA": ("libxml2", "pcre"),
     "IfcGeomServer": ("IfcGeom",),
     "IfcOpenShell-Python": ("python", "swig", "IfcGeom"),
-    "IfcViewer": ("IfcGeom", "qt6"),
+    "BonsaiViewer": ("IfcGeom", "qt6"),
     "swig": (),
     "boost": (),
     "libxml2": (),
@@ -404,10 +404,10 @@ else:
     targets = set(dependency_tree.keys())
 
 targets = set(t for t in targets if "without-%s" % t.lower() not in flags)
-if not explicit_targets and not BUILD_IFCVIEWER:
-    targets.difference_update({"IfcViewer", "qt6"})
-if BUILD_IFCVIEWER:
-    targets.update(gather_dependencies("IfcViewer"))
+if not explicit_targets and not BUILD_BONSAIVIEWER:
+    targets.difference_update({"BonsaiViewer", "qt6"})
+if BUILD_BONSAIVIEWER:
+    targets.update(gather_dependencies("BonsaiViewer"))
 if WASM:
     SKIP_TARGETS_FOR_WASM = {
         "rocksdb",
@@ -417,7 +417,7 @@ if WASM:
         "IfcGeom",
         "IfcConvert",
         "IfcGeomServer",
-        "IfcViewer",
+        "BonsaiViewer",
         "qt6",
     }
     SKIP_TARGETS_FOR_WASM = {t.lower() for t in SKIP_TARGETS_FOR_WASM}
@@ -1457,18 +1457,20 @@ if os.environ.get("QT_DIR"):
     cmake_args_prefix_path.append(os.environ["QT_DIR"])
     cmake_args.append(f"-DQT_DIR={os.environ['QT_DIR']}")
 
-build_ifcviewer = BUILD_IFCVIEWER or "IfcViewer" in targets
+build_bonsaiviewer = BUILD_BONSAIVIEWER or "BonsaiViewer" in targets
 
 ifcos_build_args = [
     f"-DBUILD_IFCGEOM={OFF_ON['IfcGeom' in targets]}",
     f"-DBUILD_GEOMSERVER={OFF_ON['IfcGeomServer' in targets]}",
     f"-DBUILD_CONVERT={OFF_ON['IfcConvert' in targets]}",
-    f"-DBUILD_IFCVIEWER={OFF_ON[build_ifcviewer]}",
+    f"-DBUILD_BONSAIVIEWER={OFF_ON[build_bonsaiviewer]}",
     f"-DCMAKE_INSTALL_PREFIX={DEPS_DIR}/install/ifcopenshell",
 ]
 
 if not WASM and (
-    build_ifcviewer or not explicit_targets or {"IfcGeom", "IfcConvert", "IfcGeomServer", "IfcViewer"} & set(explicit_targets)
+    build_bonsaiviewer
+    or not explicit_targets
+    or {"IfcGeom", "IfcConvert", "IfcGeomServer", "BonsaiViewer"} & set(explicit_targets)
 ):
     logger.info("\rConfiguring executables...")
 

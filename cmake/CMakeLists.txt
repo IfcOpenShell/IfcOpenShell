@@ -71,8 +71,8 @@ option(BUILD_EXAMPLES "Build example applications." ON)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
-option(BUILD_IFCVIEWER "Build IfcViewer, a high-performance IFC viewer" OFF) # Requires Qt6 + OpenGL 4.5
-option(BUILD_IFCVIEWER_TESTS "Build unit tests for IfcViewer (fetches Catch2 v3)" OFF)
+option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
+option(BUILD_BONSAIVIEWER_TESTS "Build unit tests for Bonsai Viewer core (fetches Catch2 v3)" OFF)
 option(BUILD_PACKAGE "" OFF)
 
 option(
@@ -547,9 +547,9 @@ if(BUILD_IFCGEOM)
     add_subdirectory(../src/ifcgeom ifcgeom)
 endif(BUILD_IFCGEOM)
 
-if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_IFCVIEWER)
+if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER)
     add_subdirectory(../src/serializers serializers)
-endif(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_IFCVIEWER)
+endif(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER)
 
 if(BUILD_CONVERT)
     add_subdirectory(../src/ifcconvert ifcconvert)
@@ -667,8 +667,8 @@ if(BUILD_IFCGEOM)
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
-if(BUILD_IFCVIEWER)
-    if(BUILD_IFCVIEWER_TESTS)
+if(BUILD_BONSAIVIEWER)
+    if(BUILD_BONSAIVIEWER_TESTS)
         # Catch2 v3 — fetched on demand. Test option is OFF by default so the
         # default build remains offline-capable.
         include(FetchContent)
