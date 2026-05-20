@@ -28,7 +28,7 @@ bonsaiviewer-autodesk
 
 The connector launches without any configuration; on first run, invoke
 `open_settings` (or, equivalently, set the `APS_CLIENT_ID` env var) to
-configure the Autodesk client id.
+configure the Autodesk client id and OAuth callback port.
 
 Then send newline-delimited JSON-RPC 2.0 requests on `stdin`. Examples:
 
@@ -50,6 +50,9 @@ The connector reads the Autodesk client id from two places, in order:
 1. The `APS_CLIENT_ID` environment variable (takes precedence — useful for dev
    overrides).
 2. `<config dir>/settings.json` (persisted via the settings dialog).
+
+The OAuth callback host is always `localhost`. The callback port defaults to
+`8080` and can be changed in the settings dialog.
 
 The config directory is platform-specific:
 
@@ -85,7 +88,7 @@ What is implemented:
 - Hub / project / folder browsing (Qt UI)
 - `pull_ifcfed_interactive`, `pull_ifcfed`, `pull_models`, `pull_models_interactive`
 - `push_ifcfed_interactive`, `push_ifcfed`, `push_model_interactive`, `push_model`
-- `open_settings` — edit the client id, sign out
+- `open_settings` — edit the client id and callback port, sign out
 - Connector-managed cache with sole-child invariant
 - Adjacent `.ifcfed.manifest` written/read alongside `.ifcfed` files
 

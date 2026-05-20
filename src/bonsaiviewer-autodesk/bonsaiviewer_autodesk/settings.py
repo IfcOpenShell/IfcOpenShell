@@ -7,6 +7,9 @@ from pathlib import Path
 from typing import Any
 
 
+DEFAULT_CALLBACK_PORT = 8080
+
+
 def config_root() -> Path:
     system = platform.system()
     if system == "Windows":
@@ -58,4 +61,21 @@ def load_client_id() -> str:
 def save_client_id(client_id: str) -> None:
     data = _read()
     data["client_id"] = client_id.strip()
+    _write(data)
+
+
+def stored_callback_port() -> int:
+    value = _read().get("callback_port", DEFAULT_CALLBACK_PORT)
+    try:
+        port = int(value)
+    except (TypeError, ValueError):
+        return DEFAULT_CALLBACK_PORT
+    return port if 1 <= port <= 65535 else DEFAULT_CALLBACK_PORT
+
+
+def save_callback_port(port: int) -> None:
+    if not 1 <= port <= 65535:
+        raise ValueError("Callback port must be between 1 and 65535.")
+    data = _read()
+    data["callback_port"] = port
     _write(data)

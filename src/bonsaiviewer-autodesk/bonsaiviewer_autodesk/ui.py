@@ -550,6 +550,7 @@ class SettingsDialog(_BaseDialog):
         env_override = settings.env_client_id()
         stored = settings.stored_client_id()
         effective = env_override or stored
+        callback_port = settings.stored_callback_port()
 
         body = ctk.CTkFrame(self, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=24, pady=24)
@@ -582,6 +583,11 @@ class SettingsDialog(_BaseDialog):
                 justify="left",
                 text_color=("#b45309", "#f59e0b"),
             ).pack(fill="x", pady=(0, 8))
+
+        ctk.CTkLabel(body, text="OAuth callback port", anchor="w").pack(fill="x")
+        self.callback_port_entry = ctk.CTkEntry(body, placeholder_text=str(settings.DEFAULT_CALLBACK_PORT))
+        self.callback_port_entry.pack(fill="x", pady=(6, 8))
+        self.callback_port_entry.insert(0, str(callback_port))
 
         self.status_label = ctk.CTkLabel(
             body,
@@ -618,6 +624,12 @@ class SettingsDialog(_BaseDialog):
 
     def _save(self) -> None:
         new_id = self.client_id_entry.get().strip()
+        try:
+            callback_port = int(self.callback_port_entry.get().strip())
+            settings.save_callback_port(callback_port)
+        except ValueError:
+            show_error(title="Invalid Callback Port", message="Callback port must be a number between 1 and 65535.")
+            return
         settings.save_client_id(new_id)
         try:
             self.connector.reload_credentials()

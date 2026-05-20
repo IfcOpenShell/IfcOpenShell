@@ -35,7 +35,6 @@ def _upload_callback(report: Report) -> ApsProgress:
 
 CONNECTOR_ID = "autodesk"
 KEYRING_SERVICE = "bonsaiviewer-autodesk"
-DEFAULT_CALLBACK_URL = "http://localhost:8080/"
 DEFAULT_SCOPE = "data:read data:write data:create"
 
 
@@ -53,9 +52,10 @@ class AutodeskConnector:
             self.aps = None
             return
         token_store = KeyringTokenStore(service_name=KEYRING_SERVICE, username=client_id)
+        callback_url = f"http://localhost:{settings.stored_callback_port()}/"
         self.auth = AuthSessionService(
             client_id=client_id,
-            callback_url=DEFAULT_CALLBACK_URL,
+            callback_url=callback_url,
             scope=DEFAULT_SCOPE,
             token_store=token_store,
         )
