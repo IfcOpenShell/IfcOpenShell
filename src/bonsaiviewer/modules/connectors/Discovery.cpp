@@ -20,6 +20,7 @@
 
 #include "Discovery.h"
 
+#include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -27,7 +28,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSet>
-#include <QStandardPaths>
 
 namespace bonsaiviewer::modules::connectors {
 
@@ -78,20 +78,15 @@ bool parseManifest(const QString& folder, ConnectorManifest& out) {
 
 } // namespace
 
-QString userConnectorsDir() {
-    // GenericDataLocation maps to the platform's per-user data root:
-    //  Linux  -> ~/.local/share
-    //  macOS  -> ~/Library/Application Support
-    //  Win    -> %APPDATA% (Roaming)
-    // matching the Bonsai Viewer connector protocol docs.
-    const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    return QDir(base).filePath("IfcOpenShell/BonsaiViewer/connectors");
+QString bundledConnectorsDir() {
+    // Connectors ship alongside the executable in a "connectors" subdirectory.
+    return QDir(QCoreApplication::applicationDirPath()).filePath("connectors");
 }
 
 std::vector<ConnectorManifest> discoverConnectors() {
     std::vector<ConnectorManifest> result;
     QSet<QString> seen_ids;
-    QDir dir(userConnectorsDir());
+    QDir dir(bundledConnectorsDir());
     if (!dir.exists()) return result;
     const QFileInfoList entries = dir.entryInfoList(
         QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name);

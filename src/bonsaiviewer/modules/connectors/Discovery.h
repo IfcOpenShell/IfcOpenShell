@@ -35,15 +35,16 @@ struct ConnectorManifest {
                          // otherwise a bare name for PATH lookup at launch
 };
 
-// Scans the per-user connectors directory per the connector protocol docs.
+// Scans the connectors directory bundled alongside the executable.
 // First match wins for any given id; duplicates and malformed manifests
 // are skipped with a qWarning. Returned in discovery order so first-wins
 // is observable to callers.
 std::vector<ConnectorManifest> discoverConnectors();
 
-// Per-user connectors directory (platform-specific). Exposed for tests and
-// for "open user connectors dir" affordances.
-QString userConnectorsDir();
+// Connectors directory bundled next to the executable
+// (<applicationDirPath>/connectors). Exposed for tests and for
+// "open connectors dir" affordances.
+QString bundledConnectorsDir();
 
 } // namespace bonsaiviewer::modules::connectors
 
