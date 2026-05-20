@@ -23,6 +23,7 @@
 
 #include <QList>
 
+class QBoxLayout;
 class QToolButton;
 class QWidget;
 
@@ -35,8 +36,12 @@ QToolButton* makeButton(const QString& text,
 QWidget* makeButtonGroup(const QString& title,
                          const QList<QToolButton*>& buttons,
                          QWidget* parent,
-                         bool trailing_separator = true,
                          int vertical_spacing = 4);
+
+// Adds button groups to a ribbon row, drawing a vertical divider between
+// adjacent groups but never after the last one. Centralising the decision
+// here means a row can't end up with a dangling trailing separator.
+void addButtonGroups(QBoxLayout* row, const QList<QWidget*>& groups);
 
 } // namespace bonsaiviewer::components::buttons
 

@@ -49,6 +49,8 @@ public:
     void setModel(FederationItemModel* model);
 
 private:
+    void applyColumnLayout();
+
     bonsaiviewer::SessionState* session_state_ = nullptr;
     ViewportWindow* viewport_ = nullptr;
     QTreeView* tree_ = nullptr;

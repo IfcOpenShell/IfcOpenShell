@@ -74,13 +74,12 @@ void AddModelDialog::setupUi() {
     }
 
     const QString default_description = "Choose what to add to the project";
+
     auto* description_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
     auto* description = new QLabel(default_description, description_section);
     description->setProperty("textRole", "secondary");
     description->setWordWrap(true);
     description->setAlignment(Qt::AlignCenter);
-    description->setMinimumWidth((90 * 4) + (components::style::metrics::padding * 3));
-    description->setMinimumHeight(description->fontMetrics().lineSpacing() * 2 + 4);
     description_section->addBodyWidget(description);
 
     auto* choices_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
@@ -89,69 +88,72 @@ void AddModelDialog::setupUi() {
     row->setContentsMargins(0, 0, 0, 0);
     row->setSpacing(components::style::metrics::padding);
 
-    auto* add_ifc = components::buttons::makeButton("Add IFC File", ":/icons/cube.svg", choices);
-    connect(add_ifc, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::IfcFile;
-        accept();
-    });
-    add_ifc->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Add IFC files and load both geometry and data.",
-        default_description));
+    struct Choice {
+        SourceMode mode;
+        QString text;
+        QString icon;
+        QString hover;
+    };
+    const QList<Choice> local_choices = {
+        {SourceMode::IfcFile, "Add IFC File", ":/icons/cube.svg",
+         "Add IFC files and load both geometry and data."},
+        {SourceMode::IfcDatabase, "Add IFC\nDatabase", ":/icons/database.svg",
+         "Add IFC RDB databases for optimised performance"},
+        {SourceMode::GeometryOnly, "Add Geometry", ":/icons/cube-bandage.svg",
+         "Add pure geometry for fast visualisation"},
+    };
+    const QList<Choice> cloud_choices = {
+        {SourceMode::CloudModel, "Add From\nCloud", ":/icons/cloud-square.svg",
+         "Browse a cloud connector and add one or more models from there."},
+    };
+    const QList<Choice> tool_choices = {
+        {SourceMode::ConvertToDatabase, "Convert IFC File\nto Database", ":/icons/database-restore.svg",
+         "Convert IFC files to databases for smaller filesizes, reduced memory, "
+         "and faster access. No data is lost."},
+        {SourceMode::ExportGeometryDatabase, "Export Geometry\nDatabase", ":/icons/database-restore.svg",
+         "Convert IFC files to a read-only geometry database for smaller filesizes, "
+         "reduced memory, and faster access. Ideal for cloud read-only coordination "
+         "workflows. Only parametric geometry editing capabilities are lost."},
+    };
 
-    auto* add_database = components::buttons::makeButton("Add IFC\nDatabase", ":/icons/database.svg", choices);
-    connect(add_database, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::IfcDatabase;
-        accept();
-    });
-    add_database->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Add IFC RDB databases for optimised performance",
-        default_description));
+    QStringList descriptions = {default_description};
+    auto build_group = [&](const QString& title, const QList<Choice>& group_choices) {
+        QList<QToolButton*> buttons;
+        for (const Choice& choice : group_choices) {
+            auto* button = components::buttons::makeButton(choice.text, choice.icon, choices);
+            const SourceMode mode = choice.mode;
+            connect(button, &QToolButton::clicked, this, [this, mode]() {
+                selected_mode_ = mode;
+                accept();
+            });
+            button->installEventFilter(
+                new HoverDescriptionFilter(description, choice.hover, default_description));
+            descriptions << choice.hover;
+            buttons << button;
+        }
+        return components::buttons::makeButtonGroup(title, buttons, choices, 8);
+    };
 
-    auto* add_geometry = components::buttons::makeButton("Add Geometry", ":/icons/cube-bandage.svg", choices);
-    connect(add_geometry, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::GeometryOnly;
-        accept();
+    components::buttons::addButtonGroups(row, {
+        build_group("LOCAL", local_choices),
+        build_group("CLOUD", cloud_choices),
+        build_group("TOOLS", tool_choices),
     });
-    add_geometry->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Add pure geometry for fast visualisation",
-        default_description));
-
-    auto* add_cloud = components::buttons::makeButton("Add From\nCloud", ":/icons/cloud-square.svg", choices);
-    connect(add_cloud, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::CloudModel;
-        accept();
-    });
-    add_cloud->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Browse a cloud connector and add one or more models from there.",
-        default_description));
-
-    auto* convert_database = components::buttons::makeButton("Convert IFC File\nto Database", ":/icons/database-restore.svg", choices);
-    connect(convert_database, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::ConvertToDatabase;
-        accept();
-    });
-    convert_database->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Convert IFC files to databases for smaller filesizes, reduced memory, and faster access. No data is lost.",
-        default_description));
-
-    auto* export_geometry_database = components::buttons::makeButton("Export Geometry\nDatabase", ":/icons/database-restore.svg", choices);
-    connect(export_geometry_database, &QToolButton::clicked, this, [this]() {
-        selected_mode_ = SourceMode::ExportGeometryDatabase;
-        accept();
-    });
-    export_geometry_database->installEventFilter(new HoverDescriptionFilter(
-        description,
-        "Convert IFC files to a read-only geometry database for smaller filesizes, reduced memory, and faster access. Ideal for cloud read-only coordination workflows. Only parametric geometry editing capabilities are lost.",
-        default_description));
-
-    row->addWidget(components::buttons::makeButtonGroup("ADD", {add_ifc, add_database, add_geometry, add_cloud}, choices, true, 8));
-    row->addWidget(components::buttons::makeButtonGroup("TOOLS", {convert_database, export_geometry_database}, choices, false, 8));
     choices_section->addBodyWidget(choices);
+
+    // Hovering a button swaps in a longer description; with a free-growing
+    // label that reflow shoves the buttons below it downward. Lock the label
+    // to the tallest string it will ever show. The label is laid out at the
+    // choices' width (both sit in Section bodies with identical margins), so
+    // measure every string at that width and keep the largest result.
+    const int label_width = choices->sizeHint().width();
+    int reserved_height = 0;
+    for (const QString& text : descriptions) {
+        description->setText(text);
+        reserved_height = qMax(reserved_height, description->heightForWidth(label_width));
+    }
+    description->setText(default_description);
+    description->setFixedHeight(reserved_height);
 
     addBodyWidget(description_section);
     addBodyWidget(choices_section);

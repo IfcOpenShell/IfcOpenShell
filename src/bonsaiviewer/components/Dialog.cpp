@@ -49,19 +49,27 @@ Dialog::Dialog(QWidget* parent, bool scrollable)
                                      style::metrics::section_body_padding);
     frame_layout->setSpacing(0);
 
-    auto* scroll = new QScrollArea(frame);
-    scroll->setWidgetResizable(true);
-    scroll->setFrameShape(QFrame::NoFrame);
-
-    auto* scroll_body = new QWidget(scroll);
-    scroll_body->setObjectName("panelScrollBody");
-    body_layout_ = new QVBoxLayout(scroll_body);
+    // A non-scrollable dialog must not be wrapped in a QScrollArea. The scroll
+    // area caps its own sizeHint at 36x24 character cells, and dialogs size
+    // themselves with QLayout::SetFixedSize — so any content wider/taller than
+    // that cap is turned into scrollbars instead of growing the dialog. Only
+    // use a scroll area when scrolling is actually wanted (mirrors Panel).
+    auto* body = new QWidget(frame);
+    body->setObjectName("panelScrollBody");
+    body_layout_ = new QVBoxLayout(body);
     body_layout_->setContentsMargins(0, 0, 0, 0);
     body_layout_->setSpacing(style::metrics::section_body_padding);
     body_layout_->setAlignment(Qt::AlignTop);
 
-    scroll->setWidget(scroll_body);
-    frame_layout->addWidget(scroll, scrollable ? 1 : 0);
+    if (scrollable) {
+        auto* scroll = new QScrollArea(frame);
+        scroll->setWidgetResizable(true);
+        scroll->setFrameShape(QFrame::NoFrame);
+        scroll->setWidget(body);
+        frame_layout->addWidget(scroll, 1);
+    } else {
+        frame_layout->addWidget(body);
+    }
 
     auto* footer = new QWidget(frame);
     footer_layout_ = new QVBoxLayout(footer);

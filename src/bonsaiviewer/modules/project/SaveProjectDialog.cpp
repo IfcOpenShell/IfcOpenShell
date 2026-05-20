@@ -135,10 +135,10 @@ void SaveProjectDialog::setupUi(bool has_manifest) {
         "Pick a connector and push this project to a fresh cloud location.",
         default_description));
 
-    row->addWidget(components::buttons::makeButtonGroup(
-        "LOCAL", {save_local, save_as_local}, choices, true, 8));
-    row->addWidget(components::buttons::makeButtonGroup(
-        "CLOUD", {save_cloud, save_as_cloud}, choices, false, 8));
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("LOCAL", {save_local, save_as_local}, choices, 8),
+        components::buttons::makeButtonGroup("CLOUD", {save_cloud, save_as_cloud}, choices, 8),
+    });
     choices_section->addBodyWidget(choices);
 
     addBodyWidget(description_section);

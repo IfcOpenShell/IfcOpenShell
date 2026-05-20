@@ -69,7 +69,9 @@ ConnectorPickerDialog::ConnectorPickerDialog(const std::vector<ConnectorManifest
         });
         buttons.push_back(button);
     }
-    row->addWidget(components::buttons::makeButtonGroup("CONNECTORS", buttons, choices, true, 8));
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("CONNECTORS", buttons, choices, 8),
+    });
     choices_section->addBodyWidget(choices);
 
     addBodyWidget(description_section);

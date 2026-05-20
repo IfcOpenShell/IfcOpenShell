@@ -232,9 +232,11 @@ QWidget* MainWindow::buildHomeRibbonPage() {
         dialog.exec();
     });
 
-    row->addWidget(components::buttons::makeButtonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project}, this));
-    row->addWidget(components::buttons::makeButtonGroup("MODELS", {add_model, sync_from_cloud}, this));
-    row->addWidget(components::buttons::makeButtonGroup("SETTINGS", {settings_button}, this));
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("PROJECT", {new_project, open_project, open_cloud, open_recent, save_project}, this),
+        components::buttons::makeButtonGroup("MODELS", {add_model, sync_from_cloud}, this),
+        components::buttons::makeButtonGroup("SETTINGS", {settings_button}, this),
+    });
     row->addStretch(1);
     return page;
 }
@@ -296,9 +298,11 @@ QWidget* MainWindow::buildNavigateRibbonPage() {
         modules::viewport::commands::toggleSection(*session_state_, *viewport_widget_->viewport());
     });
 
-    row->addWidget(components::buttons::makeButtonGroup("CAMERA", {set_home, go_home, view_all, view_selected}, this));
-    row->addWidget(components::buttons::makeButtonGroup("ORIENTATION", {plan_view, front_view, side_view, align_object, projection_button}, this));
-    row->addWidget(components::buttons::makeButtonGroup("MODE", {fly_mode, section_mode}, this));
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("CAMERA", {set_home, go_home, view_all, view_selected}, this),
+        components::buttons::makeButtonGroup("ORIENTATION", {plan_view, front_view, side_view, align_object, projection_button}, this),
+        components::buttons::makeButtonGroup("MODE", {fly_mode, section_mode}, this),
+    });
     row->addStretch(1);
     return page;
 }
@@ -340,8 +344,10 @@ QWidget* MainWindow::buildInspectRibbonPage() {
         modules::viewport::commands::toggleVolume(*viewport_widget_->viewport());
     });
 
-    row->addWidget(components::buttons::makeButtonGroup("SELECTION", {hide_selected, isolate_selected, show_all, invert_selection}, this));
-    row->addWidget(components::buttons::makeButtonGroup("MEASURE", {distance, area, volume}, this));
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("SELECTION", {hide_selected, isolate_selected, show_all, invert_selection}, this),
+        components::buttons::makeButtonGroup("MEASURE", {distance, area, volume}, this),
+    });
     row->addStretch(1);
     return page;
 }
@@ -353,22 +359,24 @@ QWidget* MainWindow::buildPanelsRibbonPage() {
     row->setContentsMargins(2, 4, 2, 4);
     row->setSpacing(0);
 
-    row->addWidget(components::buttons::makeButtonGroup("DATA", {
-        makePanelToggle("Models", models_panel_),
-        makePanelToggle("Spatial", spatial_panel_),
-        makePanelToggle("Layers", layers_panel_),
-        makePanelToggle("Properties", properties_panel_)
-    }, this));
-    row->addWidget(components::buttons::makeButtonGroup("QUERY", {
-        makePanelToggle("Views", stored_views_panel_),
-        makePanelToggle("Search", search_panel_),
-        makePanelToggle("Sheets", spreadsheet_panel_),
-        makePanelToggle("Audit", audit_panel_)
-    }, this));
-    row->addWidget(components::buttons::makeButtonGroup("COLLABORATE", {
-        makePanelToggle("Clash", clash_panel_),
-        makePanelToggle("Issues", issues_panel_)
-    }, this));
+    components::buttons::addButtonGroups(row, {
+        components::buttons::makeButtonGroup("DATA", {
+            makePanelToggle("Models", models_panel_),
+            makePanelToggle("Spatial", spatial_panel_),
+            makePanelToggle("Layers", layers_panel_),
+            makePanelToggle("Properties", properties_panel_)
+        }, this),
+        components::buttons::makeButtonGroup("QUERY", {
+            makePanelToggle("Views", stored_views_panel_),
+            makePanelToggle("Search", search_panel_),
+            makePanelToggle("Sheets", spreadsheet_panel_),
+            makePanelToggle("Audit", audit_panel_)
+        }, this),
+        components::buttons::makeButtonGroup("COLLABORATE", {
+            makePanelToggle("Clash", clash_panel_),
+            makePanelToggle("Issues", issues_panel_)
+        }, this),
+    });
     row->addStretch(1);
     return page;
 }

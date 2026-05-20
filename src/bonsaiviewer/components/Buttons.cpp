@@ -22,6 +22,7 @@
 
 #include "SvgIcon.h"
 
+#include <QBoxLayout>
 #include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -47,11 +48,9 @@ QToolButton* makeButton(const QString& text,
 QWidget* makeButtonGroup(const QString& title,
                          const QList<QToolButton*>& buttons,
                          QWidget* parent,
-                         bool trailing_separator,
                          int vertical_spacing) {
     auto* group = new QFrame(parent);
     group->setObjectName("ribbonGroup");
-    group->setProperty("separator", trailing_separator);
 
     auto* group_layout = new QVBoxLayout(group);
     group_layout->setContentsMargins(8, 6, 8, 4);
@@ -72,6 +71,15 @@ QWidget* makeButtonGroup(const QString& title,
     group_layout->addLayout(button_row);
     group_layout->addWidget(label);
     return group;
+}
+
+void addButtonGroups(QBoxLayout* row, const QList<QWidget*>& groups) {
+    for (int i = 0; i < groups.size(); ++i) {
+        // The divider belongs *between* groups; the last group never draws a
+        // trailing one. The stylesheet keys off this dynamic property.
+        groups[i]->setProperty("separator", i + 1 < groups.size());
+        row->addWidget(groups[i]);
+    }
 }
 
 } // namespace bonsaiviewer::components::buttons

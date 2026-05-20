@@ -89,15 +89,6 @@ public:
         : QTreeView(parent), session_state_(session_state) {}
 
 protected:
-    void resizeEvent(QResizeEvent* event) override {
-        QTreeView::resizeEvent(event);
-        if (model() && model()->columnCount() >= 2) {
-            const int vw = viewport()->width();
-            setColumnWidth(0, std::max(40, vw - kVisibilityColumnWidth));
-            setColumnWidth(1, kVisibilityColumnWidth);
-        }
-    }
-
     void startDrag(Qt::DropActions actions) override {
         const QModelIndexList selection = selectionModel()->selectedRows(0);
         if (selection.isEmpty()) return;
@@ -382,14 +373,25 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
 void ModelsPanel::setModel(FederationItemModel* model) {
     model_ = model;
     tree_->setModel(model);
-    // Columns are sized by ModelsTreeView::resizeEvent — header is hidden so
-    // there's no user-facing resize affordance, and Stretch mode on
-    // non-last sections proved unreliable here. Manual sizing is simpler.
-    tree_->header()->setMinimumSectionSize(16);
-    tree_->header()->setStretchLastSection(false);
-    tree_->setColumnWidth(0, std::max(40, tree_->viewport()->width() - kVisibilityColumnWidth));
-    tree_->setColumnWidth(1, kVisibilityColumnWidth);
+    // QHeaderView resets per-section resize modes to Interactive whenever the
+    // column set is rebuilt — which FederationItemModel::rebuildAll() does on
+    // project open / theme change (clear() + setColumnCount()). Re-apply the
+    // layout every time the columns reappear.
+    connect(tree_->header(), &QHeaderView::sectionCountChanged,
+            this, [this]() { applyColumnLayout(); });
+    applyColumnLayout();
     tree_->expandAll();
+}
+
+void ModelsPanel::applyColumnLayout() {
+    // Column 0 (name) stretches to fill; column 1 (visibility icon) is fixed.
+    QHeaderView* header = tree_->header();
+    if (header->count() < 2) return;
+    header->setStretchLastSection(false);
+    header->setMinimumSectionSize(kVisibilityColumnWidth);
+    header->setSectionResizeMode(0, QHeaderView::Stretch);
+    header->setSectionResizeMode(1, QHeaderView::Fixed);
+    header->resizeSection(1, kVisibilityColumnWidth);
 }
 
 } // namespace bonsaiviewer::modules::models
