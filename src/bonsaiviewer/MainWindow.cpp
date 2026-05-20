@@ -33,6 +33,7 @@
 #include "modules/models/View.h"
 #include "modules/models/Panel.h"
 #include "modules/project/Commands.h"
+#include "modules/project/RecentProjects.h"
 #include "modules/properties/View.h"
 #include "modules/properties/Panel.h"
 #include "modules/settings/Dialog.h"
@@ -42,11 +43,13 @@
 #include "modules/viewport/Panel.h"
 #include "modules/viewport/View.h"
 
+#include <QAction>
 #include <QDockWidget>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QLabel>
+#include <QMenu>
 #include <QMessageBox>
 #include <QShortcut>
 #include <QSignalBlocker>
@@ -75,6 +78,13 @@ MainWindow::MainWindow(QWidget* parent)
     connect(session_state_, &bonsaiviewer::SessionState::projectReset,      this, on_clean_state);
     connect(session_state_, &bonsaiviewer::SessionState::projectOpened,     this, on_clean_state);
     connect(session_state_, &bonsaiviewer::SessionState::projectSaved,      this, on_clean_state);
+
+    // Every successful open/save (local or cloud) feeds the recent list.
+    auto remember_recent = [](const QString& path) {
+        modules::project::RecentProjects::add(path);
+    };
+    connect(session_state_, &bonsaiviewer::SessionState::projectOpened, this, remember_recent);
+    connect(session_state_, &bonsaiviewer::SessionState::projectSaved,  this, remember_recent);
     setupChrome();
     setupViewport();
     setupPanels();
@@ -140,6 +150,37 @@ QToolButton* MainWindow::makePanelToggle(const QString& text, QDockWidget* dock)
     return button;
 }
 
+void MainWindow::populateRecentMenu(QMenu* menu) {
+    menu->clear();
+
+    const QStringList recent = modules::project::RecentProjects::list();
+    if (recent.isEmpty()) {
+        QAction* empty = menu->addAction("No Recent Projects");
+        empty->setEnabled(false);
+        return;
+    }
+
+    for (const QString& path : recent) {
+        QAction* action = menu->addAction(QFileInfo(path).fileName());
+        action->setToolTip(path);
+        connect(action, &QAction::triggered, this, [this, path]() {
+            const bool opened = modules::project::commands::openProjectPath(
+                *session_state_, *this, *viewport_widget_->viewport(), path);
+            // A recent entry that no longer loads is dropped so it stops
+            // cluttering the menu (e.g. moved/deleted file).
+            if (!opened && !QFileInfo::exists(path)) {
+                modules::project::RecentProjects::remove(path);
+            }
+        });
+    }
+
+    menu->addSeparator();
+    QAction* clear = menu->addAction("Clear Recent Projects");
+    connect(clear, &QAction::triggered, this, []() {
+        modules::project::RecentProjects::clear();
+    });
+}
+
 QWidget* MainWindow::buildHomeRibbonPage() {
     auto* page = new QFrame(this);
     page->setObjectName("ribbonPage");
@@ -163,8 +204,12 @@ QWidget* MainWindow::buildHomeRibbonPage() {
             *session_state_, *this, *viewport_widget_->viewport());
     });
     auto* open_recent = components::buttons::makeButton("Open Recent", ":/icons/clock-rotate-right.svg", this);
-    connect(open_recent, &QToolButton::clicked, this, [this]() {
-        session_state_->setStatusMessage("Project", "Open Recent coming soon");
+    auto* recent_menu = new QMenu(open_recent);
+    recent_menu->setToolTipsVisible(true);
+    open_recent->setMenu(recent_menu);
+    open_recent->setPopupMode(QToolButton::InstantPopup);
+    connect(recent_menu, &QMenu::aboutToShow, this, [this, recent_menu]() {
+        populateRecentMenu(recent_menu);
     });
     auto* save_project = components::buttons::makeButton("Save Project", ":/icons/floppy-disk.svg", this);
     connect(save_project, &QToolButton::clicked, this, [this]() {

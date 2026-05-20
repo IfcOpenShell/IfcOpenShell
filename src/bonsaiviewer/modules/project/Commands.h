@@ -34,6 +34,10 @@ namespace bonsaiviewer::modules::project::commands {
 // projectSaved) so views refresh once per command.
 bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp);
 bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+// Open a specific .ifcfed by path, bypassing the file dialog. Used by the
+// "Open Recent" menu. Same dirty-check / load / cloud-resolve flow as
+// openProject; returns false if the load failed or was cancelled.
+bool openProjectPath(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path);
 // Pick a connector, then call pull_ifcfed_interactive and open the resulting
 // .ifcfed as a fresh project. Non-local models in the loaded federation are
 // resolved asynchronously via pull_models.

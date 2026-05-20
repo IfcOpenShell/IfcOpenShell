@@ -27,6 +27,7 @@
 
 class QLabel;
 class QDockWidget;
+class QMenu;
 class QProgressBar;
 class QStackedWidget;
 class QToolButton;
@@ -61,6 +62,9 @@ private:
     QWidget* buildPanelsRibbonPage();
     void updateWindowTitle();
     QToolButton* makePanelToggle(const QString& text, QDockWidget* dock);
+    // Rebuilds `menu` from the persisted recent-projects list. Wired to the
+    // menu's aboutToShow so it always reflects the current MRU state.
+    void populateRecentMenu(QMenu* menu);
 
 private:
     QLabel* status_mode_label_ = nullptr;

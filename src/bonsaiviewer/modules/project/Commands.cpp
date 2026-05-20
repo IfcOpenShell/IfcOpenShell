@@ -297,6 +297,11 @@ bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     return openProjectAt(s, host, vp, path);
 }
 
+bool openProjectPath(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path) {
+    if (path.isEmpty()) return false;
+    return openProjectAt(s, host, vp, path);
+}
+
 bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     SceneLoader* loader = s.loader();
     if (loader && loader->isLoading()) {

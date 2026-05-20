@@ -83,6 +83,8 @@ set(BONSAIVIEWER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/properties/View.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/Commands.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/RecentProjects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/RecentProjects.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/SaveProjectDialog.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/project/SaveProjectDialog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/modules/settings/Dialog.cpp
