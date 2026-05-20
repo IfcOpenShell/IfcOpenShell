@@ -1300,10 +1300,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.generate_space()
             return
         if self.active_material_usage == "LAYER2":
-            if element and any(
-                rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP"
-                for rel in element.ConnectedFrom
-            ):
+            if element and tool.Model.has_underside_connection(element):
                 bpy.ops.bim.regenerate_wall_to_underside()
             else:
                 bpy.ops.bim.recalculate_wall()

@@ -836,6 +836,11 @@ class Model(bonsai.core.tool.Model):
         return result
 
     @classmethod
+    def has_underside_connection(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if element has an IfcRelConnectsElements(TOP) relationship."""
+        return any(rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP" for rel in element.ConnectedFrom)
+
+    @classmethod
     def remove_wall_to_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> None:
         """Remove all IfcBooleanResult items previously added by extend_walls_to_underside."""
         manual_booleans = cls.get_manual_booleans(wall)
@@ -2535,9 +2540,7 @@ class Model(bonsai.core.tool.Model):
 
             if operands:
                 body_repr = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
-                booleans = ifcopenshell.api.geometry.add_boolean(
-                    ifc_file, first_item=extrusion, second_items=operands
-                )
+                booleans = ifcopenshell.api.geometry.add_boolean(ifc_file, first_item=extrusion, second_items=operands)
                 tool.Model.mark_manual_booleans(wall, booleans)
 
     @classmethod
