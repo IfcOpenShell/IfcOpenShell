@@ -4847,8 +4847,8 @@ class BaseParametricGizmoGroup:
             scale: Gizmo scale factor (default 0.5)
         """
         if gz := self.get_gizmo_if_visible(gizmo_name):
-            local_transform = Matrix.Translation(Vector((x, y, z))) @ billboard_rot @ Matrix.Scale(scale, 4)
-            gz.matrix_basis = mw @ local_transform
+            world_pos = mw @ Vector((x, y, z))
+            gz.matrix_basis = billboarded_at(world_pos, billboard_rot, scale)
 
     def set_dimension_gizmo_position(
         self,
