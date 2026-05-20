@@ -266,54 +266,6 @@ def are_axes_collinear(
     parallel_threshold: float = 0.9994,
     line_tolerance: float = 0.05,
 ) -> bool:
-    """True if both segments lie on the same infinite line in plan (X,Y).
-
-    Two conditions: their directions must be (anti-)parallel within
-    ``parallel_threshold`` (cos ~2°), AND any endpoint of B must lie on A's
-    infinite line within ``line_tolerance`` (~5cm). Z is ignored — two parallel
-    walls at different elevations are still considered collinear."""
-    p1, p2 = seg_a
-    q1, q2 = seg_b
-    d1x, d1y = p2[0] - p1[0], p2[1] - p1[1]
-    d2x, d2y = q2[0] - q1[0], q2[1] - q1[1]
-    d1_len = (d1x * d1x + d1y * d1y) ** 0.5
-    d2_len = (d2x * d2x + d2y * d2y) ** 0.5
-    if d1_len < 1e-9 or d2_len < 1e-9:
-        return False
-    dot = (d1x * d2x + d1y * d2y) / (d1_len * d2_len)
-    if abs(dot) < parallel_threshold:
-        return False
-    # Project q1 onto the infinite line through seg_a; perpendicular distance
-    # from q1 to its projection tells us how far off the line B sits.
-    ux, uy = d1x / d1_len, d1y / d1_len
-    rx, ry = q1[0] - p1[0], q1[1] - p1[1]
-    t = rx * ux + ry * uy
-    proj_x = p1[0] + t * ux
-    proj_y = p1[1] + t * uy
-    perp_dist = ((q1[0] - proj_x) ** 2 + (q1[1] - proj_y) ** 2) ** 0.5
-    return perp_dist < line_tolerance
-
-
-def closest_endpoint_midpoint(
-    seg_a: tuple[tuple[float, float, float], tuple[float, float, float]],
-    seg_b: tuple[tuple[float, float, float], tuple[float, float, float]],
-) -> tuple[float, float, float]:
-    """Midpoint of the closest pair of endpoints between two segments.
-
-    For walls that meet end-to-end this is the shared corner; for walls with a
-    small gap it is the midpoint of the gap. Either way it is the user-meaningful
-    "boundary" where a merge would graft the two segments together."""
-    pairs = ((a, b) for a in seg_a for b in seg_b)
-    pa, pb = min(pairs, key=lambda pair: sum((pair[0][i] - pair[1][i]) ** 2 for i in range(3)))
-    return ((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2, (pa[2] + pb[2]) / 2)
-
-
-def are_axes_collinear(
-    seg_a: tuple[tuple[float, float, float], tuple[float, float, float]],
-    seg_b: tuple[tuple[float, float, float], tuple[float, float, float]],
-    parallel_threshold: float = 0.9994,
-    line_tolerance: float = 0.05,
-) -> bool:
     """True if both axis segments lie on the same infinite line in plan.
 
     Two conditions: directions must be (anti-)parallel within ``parallel_threshold``
