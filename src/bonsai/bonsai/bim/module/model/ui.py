@@ -338,6 +338,36 @@ class BIM_PT_stair(bpy.types.Panel):
             row.operator("bim.add_stair", icon="ADD", text="")
 
 
+class BIM_PT_wall(bpy.types.Panel):
+    bl_label = "Wall"
+    bl_idname = "BIM_PT_wall"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if not obj:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return bool(element) and tool.Blender.Modifier.is_wall(element)
+
+    def draw(self, context):
+        obj = context.active_object
+        if obj is None:
+            return
+        props = tool.Model.get_wall_props(obj)
+        row = self.layout.row(align=True)
+        if props.is_editing:
+            row.operator("bim.finish_editing_wall", icon="CHECKMARK", text="Finish Editing")
+            row.operator("bim.cancel_editing_wall", icon="CANCEL", text="")
+        else:
+            row.operator("bim.enable_editing_wall", icon="GREASEPENCIL", text="Edit Wall")
+
+
 class BIM_PT_sverchok(bpy.types.Panel):
     bl_label = "Sverchok"
     bl_idname = "BIM_PT_sverchok"

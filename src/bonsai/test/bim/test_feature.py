@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
@@ -1129,6 +1131,17 @@ def i_delete_the_selected_objects():
 @then(parsers.parse('the variable "{key}" is "{value}"'))
 def the_variable_key_is_value(key, value):
     variables[key] = eval(replace_variables(value))
+
+
+@then(parsers.parse('the variable "{key}" equals "{value}"'))
+def the_variable_key_equals_value(key, value):
+    assert key in variables, f'Variable "{key}" was never set'
+    expected = eval(replace_variables(value))
+    actual = variables[key]
+    if isinstance(actual, float) and isinstance(expected, float):
+        assert abs(actual - expected) < 1e-5, f'Variable "{key}" is {actual!r}, expected {expected!r}'
+    else:
+        assert actual == expected, f'Variable "{key}" is {actual!r}, expected {expected!r}'
 
 
 @then("nothing happens")

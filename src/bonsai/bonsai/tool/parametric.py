@@ -272,6 +272,7 @@ class Parametric(bonsai.core.tool.Parametric):
         ParametricObject("stair", has_non_editable_path=True),
         ParametricObject("railing"),
         ParametricObject("roof"),
+        ParametricObject("wall"),
     ]
 
     _geom_generation: int = 0

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import os
 import platform
@@ -380,6 +382,76 @@ class GizmoPreferencesStair(bpy.types.PropertyGroup):
         cycle: bool
 
 
+class GizmoPreferencesWall(bpy.types.PropertyGroup):
+    """Property group for wall gizmo visibility settings."""
+
+    length: BoolProperty(
+        name="Length",
+        default=True,
+        description="Show the length dimension gizmo along the wall axis.",
+    )
+    height: BoolProperty(
+        name="Height",
+        default=True,
+        description="Show the height dimension gizmo at the wall's start endpoint.",
+    )
+    height_end: BoolProperty(
+        name="Height (far end, walls > 5m)",
+        default=True,
+        description=(
+            "Show a second height gizmo at the wall's far end so long walls don't "
+            "require panning to reach the handle."
+        ),
+    )
+    x_angle: BoolProperty(
+        name="Slope",
+        default=True,
+        description="Show the slope gizmo at the wall top measuring horizontal displacement of the top face.",
+    )
+    cycle: BoolProperty(
+        name="Cycle Offset Baseline",
+        default=True,
+        description="Show the baseline-state icon (Exterior / Centreline / Interior) in the editing icon row.",
+    )
+    scissors: BoolProperty(
+        name="Split at cursor",
+        default=True,
+        description="Show the split icon at the 3D cursor when it lies within the wall's length range.",
+    )
+    extend: BoolProperty(
+        name="Extend length to cursor X",
+        default=True,
+        description="Show the extend-length icon at the 3D cursor's projected wall-axis X.",
+    )
+    extend_height: BoolProperty(
+        name="Extend height to cursor Z",
+        default=True,
+        description="Show the extend-height icon at the 3D cursor's Z, on the wall axis.",
+    )
+    rotate: BoolProperty(
+        name="Rotate 90°",
+        default=True,
+        description="Show the rotate-90 icon in the editing icon row (rotates the wall around its Z axis).",
+    )
+    toggle_openings: BoolProperty(
+        name="Toggle Openings",
+        default=True,
+        description="Show the toggle-openings icon next to the pen (toggles opening fill visibility in the viewport).",
+    )
+
+    if TYPE_CHECKING:
+        length: bool
+        height: bool
+        height_end: bool
+        x_angle: bool
+        cycle: bool
+        scissors: bool
+        extend: bool
+        extend_height: bool
+        rotate: bool
+        toggle_openings: bool
+
+
 class GizmoPreferences(bpy.types.PropertyGroup):
     """Property group for all gizmo visibility settings."""
 
@@ -391,12 +463,14 @@ class GizmoPreferences(bpy.types.PropertyGroup):
     door: bpy.props.PointerProperty(type=GizmoPreferencesDoor)
     window: bpy.props.PointerProperty(type=GizmoPreferencesWindow)
     stair: bpy.props.PointerProperty(type=GizmoPreferencesStair)
+    wall: bpy.props.PointerProperty(type=GizmoPreferencesWall)
 
     if TYPE_CHECKING:
         draw_gizmos_in_3d_viewport: bool
         door: GizmoPreferencesDoor
         window: GizmoPreferencesWindow
         stair: GizmoPreferencesStair
+        wall: GizmoPreferencesWall
 
 
 class DocPreferences(bpy.types.PropertyGroup):
@@ -664,6 +738,19 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
+    prompt_auto_commit_parametric_edits: BoolProperty(
+        name="Confirm Before Auto-Committing Parametric Edits on Save",
+        description=(
+            "When saving while a door/window/stair/railing/roof/wall edit is in progress, "
+            "show a confirmation dialog. Saving always commits the edit; this preference "
+            "only controls whether you are warned first. "
+            "Save As bypasses the prompt because the file picker is itself a dialog — "
+            "commits then happen silently. "
+            "Each committed edit is a separate undo step; saving with N edits in progress "
+            "produces N undo entries (one per commit) plus one for the save itself."
+        ),
+        default=True,
+    )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_always_cache: BoolProperty(
         name="Always Cache Geometry",
@@ -776,6 +863,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_test_dictionaries: bool
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
+        prompt_auto_commit_parametric_edits: bool
         should_stream: bool
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
@@ -849,49 +937,56 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Door", self.draw_door_gizmo_parameters)
         bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Window", self.draw_window_gizmo_parameters)
         bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Stair", self.draw_stair_gizmo_parameters)
+        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Wall", self.draw_wall_gizmo_parameters)
+
+    def _draw_parametric_gizmo_parameters(
+        self,
+        layout: bpy.types.UILayout,
+        gizmo_pg: bpy.types.PropertyGroup,
+        dimension_gizmo_class: type,
+        special_gizmo_names: frozenset[str] = frozenset(),
+    ) -> None:
+        """Draw the per-element gizmo visibility toggles. Surfaces every annotation
+        on ``gizmo_pg`` that either maps to one of ``dimension_gizmo_class``'s
+        dimension gizmos or is named in ``special_gizmo_names`` (non-dimension icons
+        like baseline cycle, scissors, rotate, …)."""
+        visible_names = {p.attr_name for p in dimension_gizmo_class.dimension_gizmo_props} | special_gizmo_names
+        try:
+            annotations = gizmo_pg.__annotations__
+        except AttributeError:
+            annotations = type(gizmo_pg).__annotations__
+        for prop in annotations:
+            if prop in visible_names:
+                layout.prop(gizmo_pg, prop)
 
     def draw_door_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         from bonsai.bim.module.model.door import GizmoDoorEdition
 
-        door_gizmos = self.gizmos.door
-        gizmo_prop_names = {p.attr_name for p in GizmoDoorEdition.dimension_gizmo_props}
-        # Add special gizmos not in dimension_gizmo_props
-        gizmo_prop_names.update(("swing_arc", "flip_arc"))
-        try:
-            annotations = door_gizmos.__annotations__
-        except AttributeError:
-            annotations = type(door_gizmos).__annotations__
-        for prop in annotations:
-            if prop in gizmo_prop_names:
-                layout.prop(door_gizmos, prop)
+        self._draw_parametric_gizmo_parameters(
+            layout, self.gizmos.door, GizmoDoorEdition, frozenset({"swing_arc", "flip_arc"})
+        )
 
     def draw_window_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         from bonsai.bim.module.model.window import GizmoWindowEdition
 
-        window_gizmos = self.gizmos.window
-        gizmo_prop_names = {p.attr_name for p in GizmoWindowEdition.dimension_gizmo_props}
-        try:
-            annotations = window_gizmos.__annotations__
-        except AttributeError:
-            annotations = type(window_gizmos).__annotations__
-        for prop in annotations:
-            if prop in gizmo_prop_names:
-                layout.prop(window_gizmos, prop)
+        self._draw_parametric_gizmo_parameters(layout, self.gizmos.window, GizmoWindowEdition)
 
     def draw_stair_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         from bonsai.bim.module.model.stair import GizmoStairEdition
 
-        stair_gizmos = self.gizmos.stair
-        gizmo_prop_names = {p.attr_name for p in GizmoStairEdition.dimension_gizmo_props}
-        # Add special gizmos not in dimension_gizmo_props
-        special_gizmo_names = {"lock", "plus", "minus", "cycle"}
-        try:
-            annotations = stair_gizmos.__annotations__
-        except AttributeError:
-            annotations = type(stair_gizmos).__annotations__
-        for prop in annotations:
-            if prop in gizmo_prop_names or prop in special_gizmo_names:
-                layout.prop(stair_gizmos, prop)
+        self._draw_parametric_gizmo_parameters(
+            layout, self.gizmos.stair, GizmoStairEdition, frozenset({"lock", "plus", "minus", "cycle"})
+        )
+
+    def draw_wall_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        from bonsai.bim.module.model.wall import GizmoWallEdition
+
+        self._draw_parametric_gizmo_parameters(
+            layout,
+            self.gizmos.wall,
+            GizmoWallEdition,
+            frozenset({"cycle", "scissors", "extend", "extend_height", "rotate", "toggle_openings"}),
+        )
 
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "occurrence_name_style")
@@ -975,6 +1070,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
+        layout.prop(self, "prompt_auto_commit_parametric_edits")
         layout.prop(self, "should_stream")
         layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")
