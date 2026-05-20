@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import math
 from collections.abc import Callable
@@ -191,6 +193,32 @@ def update_stair(self: "BIMStairProperties", context: bpy.types.Context) -> None
     obj = context.active_object
     if obj and self.is_editing:
         _get_updater("stair", "regenerate_stair_mesh")(obj)
+
+
+def update_wall(self: "BIMWallProperties", context: bpy.types.Context) -> None:
+    """Regenerate wall mesh preview when property changes. Does NOT touch IFC."""
+    obj = context.active_object
+    if obj and self.is_editing:
+        _get_updater("wall", "regenerate_wall_mesh_from_props")(obj)
+
+
+def update_wall_offset_baseline(self: "BIMWallProperties", context: bpy.types.Context) -> None:
+    """Recompute the preview-only ``offset`` when the draft baseline cycles. Does not touch IFC.
+
+    ``offset`` itself has no ``update`` callback on purpose — adding one would make
+    every baseline cycle rebuild the bmesh twice (once via offset's callback, once
+    explicitly below)."""
+    obj = context.active_object
+    if not (obj and self.is_editing):
+        return
+    t = self.thickness
+    if self.desired_offset_baseline == "CENTER":
+        self.offset = -t / 2
+    elif self.desired_offset_baseline == "INTERIOR":
+        self.offset = -t
+    else:  # EXTERIOR
+        self.offset = 0.0
+    _get_updater("wall", "regenerate_wall_mesh_from_props")(obj)
 
 
 def update_railing(self: "BIMRailingProperties", context: bpy.types.Context) -> None:
@@ -1629,6 +1657,118 @@ class BIMRoofProperties(PropertyGroup):
         """Copy preset values to target roof properties."""
         for prop_name, prop_value in self.get_general_kwargs().items():
             setattr(target_props, prop_name, prop_value)
+
+
+class BIMWallProperties(PropertyGroup):
+    """Transient draft state for parametric wall gizmo editing.
+
+    Populated from IFC on `bim.enable_editing_wall`, mutated by gizmo drags during edit
+    (preview only — no IFC writes), and either committed by `bim.finish_editing_wall`
+    or discarded by `bim.cancel_editing_wall`.
+
+    The `snap_*` fields are the values captured on enable; `finish_editing_wall` compares
+    current vs snap to skip unchanged params and guarantee a no-op session leaves the
+    IFC file byte-identical.
+    """
+
+    is_editing: bpy.props.BoolProperty(
+        default=False,
+        description="True while wall parametric edit mode is active.",
+    )
+    mesh_dirty: bpy.props.BoolProperty(
+        default=False,
+        options={"HIDDEN", "SKIP_SAVE"},
+        description=(
+            "True while the visible mesh is the preview box; cleared once the real "
+            "IFC-derived geometry is restored (on commit or cancel)."
+        ),
+    )
+    length: bpy.props.FloatProperty(
+        name="Length",
+        default=1.0,
+        min=0.01,
+        subtype="DISTANCE",
+        update=update_wall,
+        description="Wall length along its reference axis (preview value; committed on finish).",
+    )
+    height: bpy.props.FloatProperty(
+        name="Height",
+        default=3.0,
+        min=0.01,
+        subtype="DISTANCE",
+        update=update_wall,
+        description="Wall vertical height (preview value; committed on finish).",
+    )
+    x_angle: bpy.props.FloatProperty(
+        name="Slope (X Angle)",
+        default=0.0,
+        soft_min=-math.pi / 3,
+        soft_max=math.pi / 3,
+        subtype="ANGLE",
+        update=update_wall,
+        description="Slope angle: tilt of the wall's top face along +Y (preview value; committed on finish).",
+    )
+    thickness: bpy.props.FloatProperty(
+        name="Thickness",
+        default=0.2,
+        min=0.001,
+        subtype="DISTANCE",
+        description="Wall thickness captured from IFC at edit-enable; not gizmo-bound.",
+    )
+    offset: bpy.props.FloatProperty(
+        name="Offset",
+        default=0.0,
+        subtype="DISTANCE",
+        description="Layer-set offset captured from IFC at edit-enable; driven by desired_offset_baseline.",
+    )
+    desired_offset_baseline: bpy.props.EnumProperty(
+        items=[
+            ("EXTERIOR", "Exterior", "Reference axis at the exterior face"),
+            ("CENTER", "Center", "Reference axis at the wall centreline"),
+            ("INTERIOR", "Interior", "Reference axis at the interior face"),
+        ],
+        name="Desired Offset Baseline",
+        default="CENTER",
+        update=update_wall_offset_baseline,
+        description="Which face of the wall the reference axis aligns to (preview value; committed on finish).",
+    )
+    anchor_x: bpy.props.FloatProperty(
+        default=0.0,
+        subtype="DISTANCE",
+        description="Local-X of the wall's axis polyline start, so the preview box lands where the IFC mesh does.",
+    )
+
+    snap_length: bpy.props.FloatProperty(description="Snapshot of length at edit-enable; commit skips no-op writes.")
+    snap_height: bpy.props.FloatProperty(description="Snapshot of height at edit-enable; commit skips no-op writes.")
+    snap_thickness: bpy.props.FloatProperty(
+        description="Snapshot of thickness at edit-enable; commit skips no-op writes."
+    )
+    snap_offset: bpy.props.FloatProperty(description="Snapshot of offset at edit-enable; commit skips no-op writes.")
+    snap_x_angle: bpy.props.FloatProperty(
+        subtype="ANGLE",
+        description="Snapshot of x_angle at edit-enable; commit skips no-op writes.",
+    )
+    snap_offset_baseline: bpy.props.StringProperty(
+        default="",
+        description="Snapshot of desired_offset_baseline at edit-enable; commit skips no-op writes.",
+    )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        mesh_dirty: bool
+        length: float
+        height: float
+        x_angle: float
+        thickness: float
+        offset: float
+        desired_offset_baseline: Literal["EXTERIOR", "CENTER", "INTERIOR"]
+        anchor_x: float
+        snap_length: float
+        snap_height: float
+        snap_thickness: float
+        snap_offset: float
+        snap_x_angle: float
+        snap_offset_baseline: str
 
 
 class SnapMousePoint(PropertyGroup):
