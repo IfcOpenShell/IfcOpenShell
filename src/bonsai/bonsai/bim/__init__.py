@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import importlib
 import os
@@ -26,6 +28,18 @@ import bpy.utils.previews
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 from . import handler, operator, prop, ui
+
+
+def _parametric_gizmo_preference_classes() -> list[type]:
+    """Deferred lookup. Importing ``bonsai.tool`` at module top would cold-start
+    ``tool.blender`` → ``bim.ifc`` before the ``from . import handler, …`` above
+    has primed the ``bim.ifc`` ↔ ``bim.handler`` partial-import dance, crashing
+    addon registration. Resolved at classes-tuple build time below — by then the
+    relative imports have settled."""
+    import bonsai.tool as tool
+
+    return tool.Parametric.iter_gizmo_preference_classes(ui)
+
 
 try:
     from bonsai.translations import translations_dict
@@ -157,9 +171,10 @@ classes = [
     ui.BIM_UL_tab_visibilities,
     ui.BIM_UL_panel_visibilities,
     ui.DocPreferences,
-    ui.GizmoPreferencesDoor,  # Register before GizmoPreferences
-    ui.GizmoPreferencesWindow,  # Register before GizmoPreferences
-    ui.GizmoPreferencesStair,  # Register before GizmoPreferences
+    # Per-parametric-type ``GizmoPreferences<Name>`` classes — must register
+    # before ``ui.GizmoPreferences`` which holds the matching PointerProperty
+    # fields. Driven by ``tool.Parametric.EDIT_TYPES``.
+    *_parametric_gizmo_preference_classes(),
     ui.GizmoPreferences,
     # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import json
 
@@ -262,7 +264,6 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
         # Use the special method that includes custom_tread_lock for IFC storage
         data = props.get_props_kwargs_for_ifc_export(convert_to_project_units=True)
-        props.is_editing = False
         regenerate_stair_mesh(obj)
         tool.Model.add_body_representation(obj)
 
@@ -272,6 +273,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
         # update IfcStairFlight properties
         update_ifc_stair_props(obj)
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -608,28 +610,23 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "VIEW3D_GT_minus", self.COLOR_RED, "bim.adjust_stair_treads", increment=-1
         )
 
-    def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties") -> None:
-        """Update stair-specific lock and tread count gizmos."""
-        billboard_rot = gizmo.get_billboard_rotation(context)
-        self.update_lock_gizmo(mw, props, billboard_rot)
+    def _refresh_element_specific(
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
+    ) -> None:
+        """Update stair-specific lock and tread count gizmos. Lock positioning is
+        handled per-frame in :py:meth:`_update_lock_gizmo_position`."""
+        self.update_lock_gizmo(props)
         self.update_tread_lock_gizmo(props)
         self.update_tread_count_gizmos(props)
 
-    def update_lock_gizmo(self, mw: Matrix, props: "BIMStairProperties", billboard_rot: Matrix) -> None:
-        """Update lock gizmo visibility, color, and position."""
+    def update_lock_gizmo(self, props: "BIMStairProperties") -> None:
+        """Update lock gizmo color and visibility. Positioning is handled in
+        :py:meth:`_update_lock_gizmo_position` (called per frame via
+        :py:meth:`_update_dimension_gizmo_positions`)."""
         gizmo_prefs = self.get_gizmo_prefs()
         if not self.update_gizmo_visibility(self.lock_gizmo, props.is_editing, gizmo_prefs.lock):
-            return  # Hidden, skip positioning
-
+            return  # Hidden, skip color update
         self.lock_gizmo.color = self.COLOR_RED if props.total_length_lock else self.COLOR_GREEN
-
-        total_run = props.get_total_run()
-        local_transform = (
-            Matrix.Translation(Vector((total_run + self.ICON_Z_OFFSET, -self.GIZMO_OFFSET, -self.GIZMO_OFFSET)))
-            @ billboard_rot
-            @ Matrix.Scale(self.EDITING_ICON_SCALE, 4)
-        )
-        self.lock_gizmo.matrix_basis = mw @ local_transform
 
     def update_tread_lock_gizmo(self, props: "BIMStairProperties") -> None:
         """Update visibility of tread lock gizmo. Positioning is handled in _update_editing_icon_positions."""
@@ -650,11 +647,11 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         )
 
     def _update_dimension_gizmo_positions(
-        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"
+        self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
     ) -> None:
         """Update dimension gizmo positions based on camera view direction."""
-        viewing_from_negative_y, viewing_from_negative_x = self.get_local_view_direction(context, mw)
-        billboard_rot = gizmo.get_billboard_rotation(context)
+        viewing_from_negative_y, viewing_from_negative_x = self._frame_view_dir
+        billboard_rot = self._frame_billboard_rot
         total_run = props.get_total_run()
         riser_height = props.get_riser_height()
 

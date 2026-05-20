@@ -51,6 +51,7 @@ from bonsai.tool.misc import Misc
 from bonsai.tool.model import Model
 from bonsai.tool.nest import Nest
 from bonsai.tool.owner import Owner
+from bonsai.tool.parametric import Parametric
 from bonsai.tool.patch import Patch
 from bonsai.tool.polyline import Polyline
 from bonsai.tool.profile import Profile
