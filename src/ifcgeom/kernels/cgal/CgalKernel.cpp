@@ -214,8 +214,13 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		} catch (...) {}
 
 		if (!success) {
-			logger::message(logger::LOG_WARNING, "Failed to convert face:", f->instance);
-			continue;
+			if (this->partial_success_is_success) {
+				logger::message(logger::LOG_WARNING, "Failed to convert face, skipping:", f->instance);
+                continue;
+			} else {
+				logger::message(logger::LOG_ERROR, "Failed to convert face:", f->instance);
+                return false;
+            }			
 		}
 
 		//    std::cout << "Face in ConnectedFaceSet: " << std::endl;
