@@ -17,9 +17,11 @@ jobs:
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
-                         findutils xz byacc patchelf libxkbcommon-devel
+                         findutils xz byacc patchelf libxkbcommon-devel                 \
+                         python3.11 python3.11-pip python3.11-tkinter
           python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
+          python3.11 -c "import tkinter; print('Tk', tkinter.TkVersion)"
 
       - name: Install aws cli
         run: |
@@ -87,6 +89,11 @@ jobs:
         shell: bash
         run: |
           VERSION=v`cat VERSION`
+          python3.11 -m pip install "src/bonsaiviewer-autodesk[build]"
+          python3.11 src/bonsaiviewer-autodesk/packaging/build.py
+          autodesk_connector_dir="$PWD/src/bonsaiviewer-autodesk/dist/autodesk"
+          test -d "$autodesk_connector_dir"
+
           cd ./build/`uname`/*/install/ifcopenshell
           mkdir -p ~/output
           install_root="$PWD"
@@ -205,6 +212,10 @@ jobs:
               patchelf --set-rpath '$ORIGIN' "$package_dir/$exe"
               stage_runtime_payload "$package_dir"
               stage_qt_runtime_payload "$exe_path" "$package_dir"
+              if [ "$exe" = "BonsaiViewer" ]; then
+                  mkdir -p "$package_dir/connectors"
+                  cp -a "$autodesk_connector_dir" "$package_dir/connectors/"
+              fi
               check_runtime_dependencies "$package_dir"
               pushd "$package_dir" > /dev/null
               zip -y -qq -r "$HOME/output/${exe}-${VERSION}-${GITHUB_SHA:0:7}-linux64.zip" .

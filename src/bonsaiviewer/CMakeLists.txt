@@ -21,7 +21,15 @@
 message("Running CMakeLists.txt in /src/bonsaiviewer")
 
 set(QT_VERSION 6 CACHE STRING "Qt version")
-find_package(Qt${QT_VERSION} COMPONENTS Core CorePrivate Gui Widgets Svg REQUIRED PATHS ${QT_DIR})
+# Qt6::CorePrivate is exposed differently across Qt versions: Qt 6.8 ships the
+# target inside Qt6Core (no CorePrivate config package), while Qt 6.10 provides
+# it only as a separate CorePrivate package. OPTIONAL_COMPONENTS finds that
+# package where it exists without failing where it does not; the Qt6::CorePrivate
+# target ends up available either way for the link step below.
+find_package(Qt${QT_VERSION} REQUIRED
+             COMPONENTS Core Gui Widgets Svg
+             OPTIONAL_COMPONENTS CorePrivate
+             PATHS ${QT_DIR})
 
 set(BONSAIVIEWER_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp

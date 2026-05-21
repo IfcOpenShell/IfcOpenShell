@@ -32,6 +32,10 @@ assert Path.cwd() == Path(__file__).parent, "Run this script from the 'win' dire
 PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.0", "3.14.0"]
 REPO_PATH = Path(__file__).parent.parent
 REPO_WIN = REPO_PATH / "win"
+# Prebuilt Autodesk connector folder, produced by the connector's packaging
+# build.py. The CI workflow builds it before invoking this script; it gets
+# bundled next to BonsaiViewer.exe so the viewer can discover it at runtime.
+CONNECTOR_DIR = REPO_PATH / "src" / "bonsaiviewer-autodesk" / "dist" / "autodesk"
 VERSION = (REPO_PATH / "VERSION").read_text().strip()
 if "GITHUB_SHA" in os.environ:
     SHA = os.environ["GITHUB_SHA"][:7]
@@ -163,6 +167,21 @@ def collect_qt_deployment_files(install_dir: Path) -> dict[str, Path]:
     return files
 
 
+def collect_connector_files() -> dict[str, Path]:
+    """Map the prebuilt Autodesk connector to ``connectors/autodesk/`` arcnames."""
+    if not CONNECTOR_DIR.is_dir():
+        raise RuntimeError(
+            f"Autodesk connector not found at {CONNECTOR_DIR}. Build it first with: "
+            "python src/bonsaiviewer-autodesk/packaging/build.py"
+        )
+    files: dict[str, Path] = {}
+    for file in CONNECTOR_DIR.rglob("*"):
+        if file.is_file():
+            arcname = Path("connectors") / "autodesk" / file.relative_to(CONNECTOR_DIR)
+            files[arcname.as_posix()] = file
+    return files
+
+
 def write_zip(zip_path: Path, files: dict[str, Path], generated_files: dict[str, str] | None = None) -> None:
     zip_path.parent.mkdir(exist_ok=True)
     with ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zipf:
@@ -190,7 +209,7 @@ def build() -> None:
                 "-DENABLE_BUILD_OPTIMIZATIONS=ON",
                 "-DGLTF_SUPPORT=ON",
                 "-DBUILD_EXAMPLES=OFF",
-                "-DBUILD_IFCVIEWER=ON",
+                "-DBUILD_BONSAIVIEWER=ON",
             ]
         )
         restore_env(*OLD_ADD_COMMIT_SHA)
@@ -231,6 +250,10 @@ def archive_executables() -> None:
             for arcname, dependency in qt_deployment_files.items():
                 files[arcname] = dependency
             generated_files["qt.conf"] = QT_CONF
+
+        # Bundle the Autodesk connector next to the Bonsai Viewer executable.
+        if file.stem == "BonsaiViewer":
+            files.update(collect_connector_files())
 
         zip_name = ZIP_TEMPLATE.format(package_name=file.stem)
         write_zip(OUTPUT_DIR / zip_name, files, generated_files)

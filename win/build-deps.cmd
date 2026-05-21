@@ -804,11 +804,11 @@ IF DEFINED QT6_HOST_INSTALL_DIR (
 )
 
 set QT6_TARGET_INSTALLED=FALSE
-IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" set QT6_TARGET_INSTALLED=TRUE
+IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" IF EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_TARGET_INSTALLED=TRUE
 set QT6_HOST_INSTALLED=TRUE
 IF DEFINED QT6_HOST_INSTALL_DIR (
     set QT6_HOST_INSTALLED=FALSE
-    IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" set QT6_HOST_INSTALLED=TRUE
+    IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\moc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\bin\rcc.exe" IF EXIST "%QT6_HOST_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" set QT6_HOST_INSTALLED=TRUE
 )
 
 IF "%QT6_TARGET_INSTALLED%"=="TRUE" IF "%QT6_HOST_INSTALLED%"=="TRUE" (
@@ -825,13 +825,18 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" IF EXIST "%PYTHONHOME%\python.exe" set AQT_P
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 IF NOT "%QT6_TARGET_INSTALLED%"=="TRUE" (
-    %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase
+    REM Keep the install lean by filtering archives: qtbase provides
+    REM Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
+    REM Qt6::Svg. Both are base-Qt archives, not add-on modules.
+    %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_ARCH% -O "%QT6_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
     IF ERRORLEVEL 1 GOTO :Error
 )
 
 IF DEFINED QT6_HOST_INSTALL_DIR (
     IF NOT "%QT6_HOST_INSTALLED%"=="TRUE" (
-        %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_HOST_ARCH% -O "%QT6_HOST_AQT_OUTPUT_DIR%" --archives qtbase
+        REM windeployqt runs from the host Qt when cross-compiling ARM64, so the
+        REM host Qt needs qtsvg too to deploy the Bonsai Viewer's Qt6Svg dependency.
+        %AQT_PYTHON% -m aqt install-qt windows desktop %QT6_VERSION% %QT6_HOST_ARCH% -O "%QT6_HOST_AQT_OUTPUT_DIR%" --archives qtbase qtsvg
         IF ERRORLEVEL 1 GOTO :Error
     )
 )
@@ -843,6 +848,11 @@ IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6\Qt6Config.cmake" (
 
 IF NOT EXIST "%QT6_INSTALL_DIR%\bin\%QT6_CONFIG_DLL%" (
     call cecho.cmd 0 12 "Qt6 installation did not produce %BUILD_CFG% runtime %QT6_CONFIG_DLL% at %QT6_INSTALL_DIR%\bin."
+    GOTO :Error
+)
+
+IF NOT EXIST "%QT6_INSTALL_DIR%\lib\cmake\Qt6Svg\Qt6SvgConfig.cmake" (
+    call cecho.cmd 0 12 "Qt6 installation did not produce the Qt6 Svg module at %QT6_INSTALL_DIR%."
     GOTO :Error
 )
 

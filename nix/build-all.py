@@ -805,7 +805,8 @@ def install_qt6() -> str:
 
     qt_config = qt_dir / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake"
     qt_core = qt_dir / "lib" / "libQt6Core.so.6"
-    if qt_config.exists() and qt_core.exists():
+    qt_svg = qt_dir / "lib" / "cmake" / "Qt6Svg" / "Qt6SvgConfig.cmake"
+    if qt_config.exists() and qt_core.exists() and qt_svg.exists():
         logger.info(f"Found existing Qt6 at {qt_dir}, skipping")
         return str(qt_dir)
 
@@ -822,13 +823,17 @@ def install_qt6() -> str:
             qt_arch,
             "-O",
             str(qt_install_root),
+            # Keep the install lean by filtering archives: qtbase provides
+            # Core/Gui/Widgets (and the Qt6::CorePrivate target), qtsvg provides
+            # Qt6::Svg. Both are base-Qt archives, not add-on modules.
             "--archives",
             "icu",
             "qtbase",
+            "qtsvg",
         ]
     )
 
-    if not qt_config.exists() or not qt_core.exists():
+    if not (qt_config.exists() and qt_core.exists() and qt_svg.exists()):
         raise RuntimeError(f"Qt6 installation did not produce a usable Qt at {qt_dir}.")
 
     return str(qt_dir)

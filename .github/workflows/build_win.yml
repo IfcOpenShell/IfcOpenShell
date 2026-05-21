@@ -63,6 +63,24 @@ jobs:
           # and with default 500MB some cache gets deleted, leading to misses.
           max-size: 5000MB
 
+      - name: Set up Python for connector build
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # The connector's PyInstaller bundle embeds a tkinter GUI; verify Tk is
+      # present so a missing-tk regression fails here, not inside the build.
+      - name: Verify tkinter is available
+        run: python -c "import tkinter; print('Tk', tkinter.TkVersion)"
+
+      # Build the Autodesk connector before the C++ build: build-all-win.py
+      # bundles it next to BonsaiViewer.exe while archiving the executables.
+      - name: Build Autodesk connector
+        working-directory: src/bonsaiviewer-autodesk
+        run: |
+          python -m pip install ".[build]"
+          python packaging/build.py
+
       - name: Run Build Script And Pack .zip Archives
         shell: cmd
         env:
