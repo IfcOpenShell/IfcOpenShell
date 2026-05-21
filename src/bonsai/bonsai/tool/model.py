@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
@@ -77,6 +79,7 @@ if TYPE_CHECKING:
         BIMRoofProperties,
         BIMStairProperties,
         BIMSverchokProperties,
+        BIMWallProperties,
         BIMWindowProperties,
     )
 
@@ -97,6 +100,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
         return obj.BIMStairProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_wall_props(cls, obj: bpy.types.Object) -> BIMWallProperties:
+        return obj.BIMWallProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:

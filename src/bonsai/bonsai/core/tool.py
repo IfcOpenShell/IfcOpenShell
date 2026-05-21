@@ -777,6 +777,12 @@ class Profile:
 
 
 @interface
+class Parametric:
+    def get_geom_generation(cls) -> int: pass
+    def refresh_post_commit(cls) -> None: pass
+
+
+@interface
 class Pset:
     def add_proposed_property(cls, name, value, props): pass
     def cast_string_to_primitive(cls, value: str): pass

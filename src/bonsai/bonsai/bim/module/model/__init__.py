@@ -15,10 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from typing import NamedTuple
 
 import bpy
+
+import bonsai.tool as tool
 
 from . import (
     array,
@@ -70,18 +74,32 @@ classes = (
     workspace.BIM_MT_add_representation_item,
     wall.AddWallsFromSlab,
     wall.AlignWall,
+    wall.CancelEditingWall,
     wall.ChangeExtrusionDepth,
     wall.ChangeExtrusionXAngle,
     wall.ChangeLayerLength,
+    wall.CycleWallOffset,
     wall.DrawPolylineWall,
+    wall.EnableEditingWall,
+    wall.ExtendWallHeightToCursor,
     wall.ExtendWallsToUnderside,
     wall.ExtendWallsToWall,
     wall.ExtendWallsToPolylinePoint,
+    wall.ExtendWallToCursor,
+    wall.FinishEditingWall,
     wall.FlipWall,
+    wall.GizmoWallAddOpening,
+    wall.GizmoWallEdition,
+    wall.GizmoWallExtendVertically,
+    wall.GizmoWallJoinIntersection,
+    wall.JoinWallsIntersection,
     wall.MergeWall,
     wall.OffsetWalls,
     wall.RecalculateWall,
+    wall.RotateWall90,
     wall.SplitWall,
+    wall.SplitWallAtCursor,
+    wall.ToggleWallOpenings,
     wall.UnjoinWalls,
     opening.AddBoolean,
     opening.CloneOpening,
@@ -140,10 +158,12 @@ classes = (
     prop.BIMDoorProperties,
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
+    prop.BIMWallProperties,
     prop.BIMPolylineProperties,
     prop.BIMExternalParametricGeometryProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
+    ui.BIM_PT_wall,
     ui.BIM_PT_sverchok,
     ui.BIM_PT_window,
     ui.BIM_PT_door,
@@ -264,12 +284,10 @@ def register():
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
-    bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
-    bpy.types.Object.BIMWindowProperties = bpy.props.PointerProperty(type=prop.BIMWindowProperties)
-    bpy.types.Object.BIMDoorProperties = bpy.props.PointerProperty(type=prop.BIMDoorProperties)
-    bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
-    bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
+    # Per-parametric-type ``BIM<Name>Properties`` PointerProperties — driven by
+    # ``tool.Parametric.EDIT_TYPES``; adding a registry entry is the single touchpoint.
+    tool.Parametric.register_object_properties(prop)
     bpy.types.Object.BIMExternalParametricGeometryProperties = bpy.props.PointerProperty(
         type=prop.BIMExternalParametricGeometryProperties
     )
@@ -288,12 +306,8 @@ def unregister():
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Scene.BIMPolylineProperties
     del bpy.types.Object.BIMArrayProperties
-    del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties
-    del bpy.types.Object.BIMWindowProperties
-    del bpy.types.Object.BIMDoorProperties
-    del bpy.types.Object.BIMRailingProperties
-    del bpy.types.Object.BIMRoofProperties
+    tool.Parametric.unregister_object_properties()
     del bpy.types.Object.BIMExternalParametricGeometryProperties
 
     bpy.app.handlers.load_post.remove(handler.load_post)
