@@ -285,6 +285,7 @@ Scenario: Split a wall which has a flipped door
     And the object "IfcWall/Wall" is selected
     And I press "bim.hotkey(hotkey='S_K')"
     Then the object "IfcDoor/Door" is at "8.01,0.1,0"
+    And the object "IfcWall/Wall.001" is filled by "IfcDoor/Door"
 
 Scenario: Offset walls
     Given an empty IFC project
