@@ -614,15 +614,14 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
     ) -> None:
         """Update stair-specific lock and tread count gizmos. Lock positioning is
-        handled per-frame in :py:meth:`_update_lock_gizmo_position`."""
+        handled per-frame in the dimension-positioning hook."""
         self.update_lock_gizmo(props)
         self.update_tread_lock_gizmo(props)
         self.update_tread_count_gizmos(props)
 
     def update_lock_gizmo(self, props: "BIMStairProperties") -> None:
-        """Update lock gizmo color and visibility. Positioning is handled in
-        :py:meth:`_update_lock_gizmo_position` (called per frame via
-        :py:meth:`_update_dimension_gizmo_positions`)."""
+        """Update lock gizmo color and visibility. Positioning is handled
+        per-frame by the dimension-positioning hook."""
         gizmo_prefs = self.get_gizmo_prefs()
         if not self.update_gizmo_visibility(self.lock_gizmo, props.is_editing, gizmo_prefs.lock):
             return  # Hidden, skip color update

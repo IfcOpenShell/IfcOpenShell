@@ -3168,7 +3168,7 @@ class GizmoMerge(TrisGizmoMixin, bpy.types.Gizmo):
 
 class GizmoSplit(TrisGizmoMixin, bpy.types.Gizmo):
     """Two arrows pointing outward away from each other — conveys splitting/cutting
-    one element into two. Visual inverse of :class:`GizmoMerge`."""
+    one element into two. Visual inverse of `GizmoMerge`."""
 
     bl_idname = "VIEW3D_GT_split"
 
@@ -3216,7 +3216,7 @@ class GizmoExtend(TrisGizmoMixin, bpy.types.Gizmo):
 
 
 class GizmoExtendVertical(TrisGizmoMixin, bpy.types.Gizmo):
-    """Vertical sibling of :class:`GizmoExtend` — arrow pointing UP into a horizontal
+    """Vertical sibling of `GizmoExtend` — arrow pointing UP into a horizontal
     bar. Conveys extending an element's height to a target Z."""
 
     bl_idname = "VIEW3D_GT_extend_vertical"
@@ -4211,7 +4211,7 @@ class BillboardingGizmoGroupMixin:
         operator: str,
         alpha: float = 0.8,
     ) -> bpy.types.Gizmo:
-        """Convenience wrapper over :func:`setup_icon_gizmo` for subclasses."""
+        """Convenience wrapper over `setup_icon_gizmo` for subclasses."""
         return setup_icon_gizmo(self, gizmo_type, color, highlight_color, operator, alpha)
 
     def position_gizmos(self, context: bpy.types.Context) -> None:
@@ -4445,7 +4445,7 @@ class BaseParametricGizmoGroup:
     ) -> float:
         """Y coordinate just outside the camera-facing face of an element.
 
-        Generalises :meth:`get_y_position_for_view` for elements whose near face
+        Generalises `get_y_position_for_view` for elements whose near face
         isn't at the local origin. ``near_y`` is the local-Y of the -Y face;
         ``far_y`` is the local-Y of the +Y face. Returns the Y just *outside* the
         face the camera is currently looking at, pushed by ``gizmo_offset`` (use
@@ -4670,11 +4670,10 @@ class BaseParametricGizmoGroup:
         """
         pass
 
-    # Frame-scoped caches populated by :meth:`_prime_frame_caches` at the top of
-    # ``refresh()`` and ``draw_prepare()``. Every per-frame helper — preferences
-    # access, view-direction lookup, billboard rotation — reads these instead of
-    # re-deriving the same values, since each gizmo group ends up needing them
-    # 2–5× per frame across its position helpers.
+    # Frame-scoped caches primed at the top of ``refresh()`` and ``draw_prepare()``.
+    # Every per-frame helper — preferences access, view-direction lookup, billboard
+    # rotation — reads these instead of re-deriving the same values, since each
+    # gizmo group ends up needing them 2–5× per frame across its position helpers.
     _frame_prefs: Any = None
     _frame_view_dir: tuple[bool, bool] | None = None
     _frame_billboard_rot: "Matrix | None" = None
@@ -4939,7 +4938,7 @@ class BaseParametricGizmoGroup:
     ) -> bpy.types.Gizmo:
         """Create and configure an icon gizmo with standard settings.
 
-        Thin wrapper over :func:`setup_icon_gizmo` that defaults ``highlight_color``
+        Thin wrapper over `setup_icon_gizmo` that defaults ``highlight_color``
         to the addon-prefs selection color via ``get_decoration_colors``.
         """
         if highlight_color is None:
@@ -5112,33 +5111,39 @@ class BaseParametricGizmoGroup:
         icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
         icon_y = self.get_icon_y_offset(context, mw)
         billboard_rot = self._frame_billboard_rot
-
-        # This ensures icons face camera regardless of object rotation
-        local_pos_validate = Vector((self.ICON_VALIDATE_X, icon_y, icon_z))
-        world_pos_validate = mw @ local_pos_validate
-
-        icon_matrix_base = Matrix.Translation(world_pos_validate) @ billboard_rot @ Matrix.Scale(0.5, 4)
-
+        # set_icon_gizmo_position no-ops on hidden gizmos (via get_gizmo_if_visible),
+        # so the hide flag must be set first; that gates whether the matrix is written.
         if props.is_editing:
             self.pen_gizmo.hide = True
             self.validate_gizmo.hide = self.is_gizmo_hidden_by_modal(self.validate_gizmo)
-            self.validate_gizmo.matrix_basis = icon_matrix_base
-
+            self.set_icon_gizmo_position(
+                "validate_gizmo", mw=mw, x=self.ICON_VALIDATE_X, y=icon_y, z=icon_z, billboard_rot=billboard_rot
+            )
             self.cancel_gizmo.hide = self.is_gizmo_hidden_by_modal(self.cancel_gizmo)
-            local_pos_cancel = Vector((self.ICON_VALIDATE_X + self.ICON_CANCEL_X, icon_y, icon_z))
-            world_pos_cancel = mw @ local_pos_cancel
-            self.cancel_gizmo.matrix_basis = Matrix.Translation(world_pos_cancel) @ billboard_rot @ Matrix.Scale(0.5, 4)
-
+            self.set_icon_gizmo_position(
+                "cancel_gizmo",
+                mw=mw,
+                x=self.ICON_VALIDATE_X + self.ICON_CANCEL_X,
+                y=icon_y,
+                z=icon_z,
+                billboard_rot=billboard_rot,
+            )
             if self.cycle_type_operator:
                 self.cycle_gizmo.hide = self.is_gizmo_hidden_by_modal(self.cycle_gizmo)
-                local_pos_cycle = Vector((self.ICON_VALIDATE_X + self.ICON_CYCLE_X, icon_y, icon_z))
-                world_pos_cycle = mw @ local_pos_cycle
-                self.cycle_gizmo.matrix_basis = (
-                    Matrix.Translation(world_pos_cycle) @ billboard_rot @ Matrix.Scale(0.30, 4)
+                self.set_icon_gizmo_position(
+                    "cycle_gizmo",
+                    mw=mw,
+                    x=self.ICON_VALIDATE_X + self.ICON_CYCLE_X,
+                    y=icon_y,
+                    z=icon_z,
+                    billboard_rot=billboard_rot,
+                    scale=0.30,
                 )
         else:
             self.pen_gizmo.hide = self.is_gizmo_hidden_by_modal(self.pen_gizmo)
-            self.pen_gizmo.matrix_basis = icon_matrix_base
+            self.set_icon_gizmo_position(
+                "pen_gizmo", mw=mw, x=self.ICON_VALIDATE_X, y=icon_y, z=icon_z, billboard_rot=billboard_rot
+            )
             self.validate_gizmo.hide = True
             self.cancel_gizmo.hide = True
             if self.cycle_type_operator:

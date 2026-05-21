@@ -21,7 +21,7 @@
 """Registry + save-time auto-commit for parametric draft edits.
 
 Single source of truth: adding a new parametric element type is one entry in
-:attr:`Parametric.EDIT_TYPES`. Every consumer — save-time auto-commit, the
+`Parametric.EDIT_TYPES`. Every consumer — save-time auto-commit, the
 finish/cancel chains in ``tool.Blender.Modifier``, the ``PointerProperty``
 attachment in ``bim/module/model/__init__.py``, and the per-type
 ``GizmoPreferences<X>`` registration in ``bim/__init__.py`` — derives the
@@ -45,7 +45,7 @@ implementation files it references — if a step's example code stops matching
 the real registration site, the step is out of date.
 
 STEP 1 — Add the registry entry (this file)
-    Append to :attr:`Parametric.EDIT_TYPES`::
+    Append to `Parametric.EDIT_TYPES`::
 
         ParametricObject("slab", has_non_editable_path=False),
 
@@ -57,7 +57,7 @@ STEP 1 — Add the registry entry (this file)
 
 STEP 2 — Define the ``PropertyGroup`` (``bim/module/model/prop.py``)
     Class name **must** be ``BIM<Name>Properties`` — capitalisation matches
-    :attr:`ParametricObject.props_attr`::
+    `ParametricObject.props_attr`::
 
         class BIMSlabProperties(bpy.types.PropertyGroup):
             is_editing: BoolProperty(...)
@@ -70,7 +70,7 @@ STEP 3 — Register the PropertyGroup class
     Add it to the ``classes`` tuple in ``bim/module/model/__init__.py`` (near
     the existing ``prop.BIM<X>Properties`` entries). The
     ``bpy.types.Object.BIMSlabProperties`` attachment is automatic —
-    :meth:`Parametric.register_object_properties` loops the registry.
+    `Parametric.register_object_properties` loops the registry.
 
 STEP 4 — Implement the Enable / Finish / Cancel triad
     In ``bim/module/model/slab.py``, define three ``bpy.types.Operator``
@@ -81,7 +81,7 @@ STEP 4 — Implement the Enable / Finish / Cancel triad
         - ``CancelEditingSlab``  → ``bl_idname = "bim.cancel_editing_slab"``
 
     **First, check if your new type fits one of the existing lifecycle
-    shapes** in :mod:`bonsai.bim.parametric_lifecycle`. If it does, inherit
+    shapes** in `bonsai.bim.parametric_lifecycle`. If it does, inherit
     the matching mixin and the triad collapses to ~25 lines total:
 
         - ``FeatureModifierEditMixin`` — BBIM_<Type> pset with nested
@@ -128,7 +128,7 @@ STEP 6 — Add the element-type predicate (``tool/blender.py``)
             return tool.Pset.get_element_pset(element, "BBIM_Slab")
 
     The method name **must** be ``is_<name>`` to match
-    :attr:`ParametricObject.name` — :meth:`Parametric.find_for_element`
+    `ParametricObject.name` — `Parametric.find_for_element`
     looks it up by string.
 
 STEP 7 — OPTIONAL: typed property accessor (``tool/model.py``)
@@ -153,9 +153,9 @@ STEP 8 — OPTIONAL: gizmo visibility preferences (``bim/ui.py``)
         slab: bpy.props.PointerProperty(type=GizmoPreferencesSlab)
 
     Do **not** add ``GizmoPreferencesSlab`` to the ``classes`` list in
-    ``bim/__init__.py`` — :meth:`Parametric.iter_gizmo_preference_classes`
-    discovers it from the registry automatically by its name
-    (``GizmoPreferences`` + capitalised registry token).
+    ``bim/__init__.py`` — the registry-driven discovery in this module finds
+    it by name (``GizmoPreferences`` + capitalised registry token) and
+    registers it automatically.
 
 STEP 9 — OPTIONAL: pure geometry helpers (``core/model.py``)
     Per-type math (collinearity checks, slope/displacement conversions,
@@ -172,13 +172,12 @@ STEP 10 — Verify
         pytest test/core/ -x -q
         blender -b -P runpytest.py -- test/bim/ -x -q -m model
 
-    The Blender-backed lane runs the registration smoke test in
-    ``test/bim/test_parametric_registry.py`` — it iterates
-    :attr:`Parametric.EDIT_TYPES` and asserts each ``enable_op`` /
-    ``finish_op`` / ``cancel_op`` resolves to a registered operator, that
-    ``bpy.types.Object`` carries the matching ``BIM<Name>Properties``
-    attribute, and that ``tool.Blender.Modifier.is_<name>`` exists. Forget
-    any of the steps above and that test fails with a precise pointer at
+    The Blender-backed lane runs a registry smoke test that iterates the
+    EDIT_TYPES list and asserts each entry's enable/finish/cancel operator
+    resolves to a registered ``bpy.ops.bim.*``, that ``bpy.types.Object``
+    carries the matching ``BIM<Name>Properties`` attribute, and that the
+    ``is_<name>`` predicate exists on ``tool.Blender.Modifier``. Forget any
+    of the steps above and that test fails with a precise pointer at
     what's missing.
 
     Then manually in Blender:
@@ -223,14 +222,19 @@ class ParametricObject:
     "wall", …) drives every derived identifier: the ``BIM<Name>Properties``
     attribute on ``bpy.types.Object`` and the ``bim.enable_editing_<name>`` /
     ``bim.finish_editing_<name>`` / ``bim.cancel_editing_<name>`` operator
-    ``bl_idname``s. The ``name`` is validated at construction time —
-    multi-word IFC types (e.g. ``IfcCurtainWall``) would silently mis-derive
-    through ``str.capitalize()`` and need a different approach than
-    appending to :data:`Parametric.EDIT_TYPES` directly.
+    ``bl_idname``s. The ``name`` is validated at construction time — a
+    multi-word IFC type would silently mis-derive through
+    ``str.capitalize()`` and breaks the single-token assumption.
 
     ``has_non_editable_path`` flags element types whose modifier exposes no
-    user-editable path (door, window, stair) — historically queried via
-    ``tool.Blender.Modifier.is_modifier_with_non_editable_path``."""
+    user-editable path (door, window, stair).
+
+    The paired runtime predicate ``tool.Blender.Modifier.is_<name>(element)``
+    is part of the registry contract: it MUST be **total** — accept any
+    IFC entity and return a boolean, never raise. The registry iterates
+    every predicate against the active element on save; a raising predicate
+    propagates upward and breaks the save path for *all* parametric types,
+    not just its own."""
 
     name: str
     has_non_editable_path: bool = False
@@ -342,12 +346,17 @@ class Parametric(bonsai.core.tool.Parametric):
     def run_bim_op(cls, bl_idname: str) -> None:
         """Invoke a ``bim.*`` operator by its ``bl_idname``.
 
-        Constraint: only use with operators that are themselves
-        ``tool.Ifc.Operator`` subclasses — their transaction wrap is what
+        Constraint enforced via ``assert``: the operator MUST be a
+        ``tool.Ifc.Operator`` subclass — its transaction wrap is what
         makes the IFC mutation undo-aware. Direct ``bpy.ops.bim.*`` invocation
         of a non-``Ifc.Operator`` would mutate IFC outside Bonsai's
         transaction system."""
-        getattr(bpy.ops.bim, bl_idname.removeprefix("bim."))()
+        verb = bl_idname.removeprefix("bim.")
+        op_cls = getattr(bpy.types, f"BIM_OT_{verb}", None)
+        assert op_cls is not None and issubclass(
+            op_cls, tool.Ifc.Operator
+        ), f"{bl_idname!r} must be a registered tool.Ifc.Operator subclass for undo-safe IFC mutation"
+        getattr(bpy.ops.bim, verb)()
 
     @classmethod
     def commit_object_draft(cls, obj: bpy.types.Object, finish_op: str) -> bool:
@@ -397,7 +406,7 @@ class Parametric(bonsai.core.tool.Parametric):
     def commit_pending_edits_for_selection(
         cls, names: Optional[tuple[str, ...]] = None
     ) -> tuple[int, list[bpy.types.Object]]:
-        """Selection-scoped variant of :meth:`commit_pending_edits`. ``names``
+        """Selection-scoped variant of `commit_pending_edits`. ``names``
         filters which registry entries to consider — e.g. ``("wall",)`` to commit
         only wall drafts among selected objects; ``None`` considers every type.
 
@@ -439,7 +448,7 @@ class Parametric(bonsai.core.tool.Parametric):
     @classmethod
     def iter_gizmo_preference_classes(cls, ui_module) -> list[type]:
         """``GizmoPreferences<Name>`` classes that exist on ``ui_module`` for
-        every registry entry. Order matches :attr:`EDIT_TYPES`. Used by
+        every registry entry. Order matches `EDIT_TYPES`. Used by
         ``bim/__init__.py`` to inject the per-type ``GizmoPreferences<X>``
         classes at the correct point — before ``ui.GizmoPreferences``, which
         references them via ``PointerProperty``."""

@@ -1617,6 +1617,7 @@ class FinishEditingWall(bpy.types.Operator, tool.Ifc.Operator):
         height_changed = not tool.Cad.is_x(props.height, props.snap_height, tolerance=1e-5)
         x_angle_changed = not tool.Cad.is_x(props.x_angle, props.snap_x_angle, tolerance=1e-5)
         baseline_changed = props.desired_offset_baseline != props.snap_offset_baseline
+        any_change = length_changed or height_changed or x_angle_changed or baseline_changed
 
         # Order matters: baseline shifts the layer-set reference line, then length
         # adjusts endpoints relative to that, then x_angle changes the slope (and
@@ -1638,7 +1639,7 @@ class FinishEditingWall(bpy.types.Operator, tool.Ifc.Operator):
             if height_changed:
                 bpy.ops.bim.change_extrusion_depth(depth=props.height)
 
-        if length_changed or height_changed or x_angle_changed or baseline_changed:
+        if any_change:
             props.mesh_dirty = False
         else:
             _restore_wall_mesh_if_dirty(obj)
@@ -1816,7 +1817,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     # The baseline icons (EXT / CEN / INT) all share ICON_CYCLE_X — only one is
     # ever visible at a time so they don't overlap.
     ICON_ROTATE_X = 1.24
-    ICON_TOGGLE_OPENINGS_X = 1.61
 
     # Mapping from BIMWallProperties.desired_offset_baseline value to the
     # attribute on `self` that holds the corresponding state icon.
@@ -1969,8 +1969,10 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         - Toggle-openings icon next to the pen. Lives outside edit mode because
           opening visibility is a viewport-display concern, not a wall-edit action.
 
-        Uses ``billboarded_at`` directly for parity with the base class's
-        ``update_editing_gizmos`` validate/cancel/cycle pattern."""
+        Calls ``billboarded_at`` directly rather than routing through
+        ``set_icon_gizmo_position`` because the icon row has wall-specific
+        visibility/state branching (baseline-indicator selection, edit-mode
+        toggle for opening-visibility) that the helper does not model."""
         if not hasattr(self, "rotate_gizmo"):
             return
         gizmo_prefs = self.get_gizmo_prefs()
@@ -2030,7 +2032,7 @@ def _commit_active_wall_edit_if_any(context: bpy.types.Context) -> bpy.types.Obj
 
 
 def _commit_pending_wall_edits_for_selection(context: bpy.types.Context) -> None:  # noqa: ARG001
-    """Thin wall-scoped alias for :meth:`tool.Parametric.commit_pending_edits_for_selection`.
+    """Thin wall-scoped alias for `tool.Parametric.commit_pending_edits_for_selection`.
 
     Kept as a named helper because every multi-wall operator (split / join / merge /
     unjoin / extend-to-wall …) calls it at the top of ``_execute``; centralising the
@@ -2198,12 +2200,12 @@ def _wall_axis_world_segment_from_geom(obj: bpy.types.Object, geom: dict) -> tup
 
 
 class _WallGeomCachedBillboardingMixin(gizmo.BillboardingGizmoGroupMixin):
-    """Adds IFC-read caching to :class:`BillboardingGizmoGroupMixin` for wall-driven
+    """Adds IFC-read caching to `BillboardingGizmoGroupMixin` for wall-driven
     gizmo groups. ``refresh()`` is Blender's "something state-relevant changed"
     signal — that's when we drop the cache. ``draw_prepare()`` (every redraw) reuses
     whatever ``_get_wall_geom_cached`` populated, so plain camera orbits don't re-hit
     IFC. ``_get_wall_geom_cached`` also drops entries on its own when
-    :meth:`tool.Parametric.get_geom_generation` advances (any ``tool.Ifc.Operator``
+    `tool.Parametric.get_geom_generation` advances (any ``tool.Ifc.Operator``
     commit) so external ``bpy.ops`` mutations on the same selection don't leave
     stale geometry behind."""
 
@@ -2274,7 +2276,7 @@ def _are_walls_collinear(
     parallel_threshold: float = 0.9994,
     line_tolerance: float = 0.05,
 ) -> bool:
-    """Vector wrapper around :func:`core.are_axes_collinear` — converts Vector
+    """Vector wrapper around `core.are_axes_collinear` — converts Vector
     endpoints to plain tuples at the boundary so the math stays unit-testable in
     ``test/core/`` without a mathutils dependency."""
     return core.are_axes_collinear(
@@ -2286,7 +2288,7 @@ def _are_walls_collinear(
 
 
 def _collinear_boundary_world(seg_a: tuple[Vector, Vector], seg_b: tuple[Vector, Vector]) -> Vector:
-    """Vector wrapper around :func:`core.closest_endpoint_midpoint`."""
+    """Vector wrapper around `core.closest_endpoint_midpoint`."""
     return Vector(
         core.closest_endpoint_midpoint(
             (tuple(seg_a[0]), tuple(seg_a[1])),
@@ -2302,7 +2304,7 @@ class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
     object's projected origin. Clicking dispatches `bim.add_opening`, which lets the
     existing FilledOpeningGenerator decide how the opening is applied.
 
-    Per-frame positioning via :class:`BillboardingGizmoGroupMixin` ensures the icon
+    Per-frame positioning via `BillboardingGizmoGroupMixin` ensures the icon
     keeps facing the camera as the viewport is orbited."""
 
     bl_idname = "OBJECT_GGT_bim_wall_add_opening"
@@ -2447,7 +2449,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
       "join the corner" vs "extend this wall into the other."
     - **None of the above**: all icons hidden.
 
-    Per-frame positioning via :class:`BillboardingGizmoGroupMixin` ensures the icons
+    Per-frame positioning via `BillboardingGizmoGroupMixin` ensures the icons
     keep facing the camera as the viewport is orbited."""
 
     bl_idname = "OBJECT_GGT_bim_wall_join_intersection"
