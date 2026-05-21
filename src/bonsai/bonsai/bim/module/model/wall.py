@@ -2402,6 +2402,60 @@ def _collinear_boundary_world(seg_a: tuple[Vector, Vector], seg_b: tuple[Vector,
     )
 
 
+def _path_connection_location_world(
+    seg_self: tuple[Vector, Vector],
+    self_conn_type: str,
+    seg_other: tuple[Vector, Vector],
+    other_conn_type: str,
+    parallel_threshold: float = 0.9994,
+) -> Vector:
+    """Vector wrapper around `core.compute_path_connection_location`. Used by the
+    single-wall unjoin gizmo group to place one icon per ``IfcRelConnectsPathElements``
+    at its physical join point (an endpoint of the end-connected wall, or the
+    axis intersection for an ATPATH/ATPATH cross junction)."""
+    return Vector(
+        core.compute_path_connection_location(
+            (tuple(seg_self[0]), tuple(seg_self[1])),
+            self_conn_type,
+            (tuple(seg_other[0]), tuple(seg_other[1])),
+            other_conn_type,
+            parallel_threshold,
+        )
+    )
+
+
+def _iter_path_connections(
+    elem: ifcopenshell.entity_instance,
+) -> list[tuple[ifcopenshell.entity_instance, str, str]]:
+    """For each ``IfcRelConnectsPathElements`` involving ``elem``, yield
+    ``(other_element, self_connection_type, other_connection_type)``.
+
+    Walks both inverse arrays (``ConnectedTo`` + ``ConnectedFrom``) so the orientation
+    of each rel is normalised to "self first". Non-wall partners are skipped — a wall
+    MAY share a path connection with non-wall elements, but the unjoin gizmo only
+    exposes wall-to-wall joins to match the existing two-wall gizmo's scope."""
+    out: list[tuple[ifcopenshell.entity_instance, str, str]] = []
+    for rel in getattr(elem, "ConnectedTo", []):
+        if not rel.is_a("IfcRelConnectsPathElements"):
+            continue
+        other = rel.RelatedElement
+        # `Modifier.is_wall(None)` raises on `None.is_a(...)` — guard before the
+        # predicate runs. Malformed / partial IFC files can leave a rel's element
+        # ref unset, and the gizmo loop must survive a stray None rather than
+        # crashing the per-frame `position_gizmos`.
+        if other is None or not tool.Blender.Modifier.is_wall(other):
+            continue
+        out.append((other, rel.RelatingConnectionType, rel.RelatedConnectionType))
+    for rel in getattr(elem, "ConnectedFrom", []):
+        if not rel.is_a("IfcRelConnectsPathElements"):
+            continue
+        other = rel.RelatingElement
+        if other is None or not tool.Blender.Modifier.is_wall(other):
+            continue
+        out.append((other, rel.RelatedConnectionType, rel.RelatingConnectionType))
+    return out
+
+
 class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
     """Activates when a wall (active) and one non-wall blender object are co-selected.
 
