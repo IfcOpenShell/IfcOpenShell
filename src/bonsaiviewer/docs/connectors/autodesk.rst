@@ -30,8 +30,7 @@ Run
    bonsaiviewer-autodesk
 
 The connector launches without configuration. On first run, open the settings
-dialog, or set the ``APS_CLIENT_ID`` environment variable, to configure the
-Autodesk client ID and OAuth callback port.
+dialog to configure the Autodesk client ID and OAuth callback port.
 
 For direct protocol testing, send newline-delimited JSON-RPC 2.0 requests on
 standard input:
@@ -51,11 +50,8 @@ exit.
 Configuration
 -------------
 
-The connector reads the Autodesk client ID from these places, in order:
-
-1. ``APS_CLIENT_ID`` environment variable.
-2. ``settings.json`` in the connector config directory, written by the settings
-   dialog.
+The connector reads the Autodesk client ID from ``settings.json`` in the
+connector config directory, written by the settings dialog.
 
 The OAuth callback host is always ``localhost``. The callback port defaults to
 ``8080`` and can be changed in the settings dialog.

@@ -16,12 +16,17 @@ dependencies = [
 
 [project.optional-dependencies]
 build = ["pyinstaller>=6.0"]
+test = ["pytest>=8"]
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["bonsaiviewer_autodesk*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.scripts]
 bonsaiviewer-autodesk = "bonsaiviewer_autodesk.__main__:main"

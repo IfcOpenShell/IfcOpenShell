@@ -43,19 +43,9 @@ def _write(data: dict[str, Any]) -> None:
     _settings_path().write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
 
-def stored_client_id() -> str:
-    """Whatever is persisted in settings.json — ignores the env var."""
-    return str(_read().get("client_id", "")).strip()
-
-
-def env_client_id() -> str:
-    """Whatever APS_CLIENT_ID currently has — ignores settings.json."""
-    return os.environ.get("APS_CLIENT_ID", "").strip()
-
-
 def load_client_id() -> str:
-    """The effective value: env var wins, so dev overrides keep working."""
-    return env_client_id() or stored_client_id()
+    """The client id persisted in settings.json, or "" if none is set."""
+    return str(_read().get("client_id", "")).strip()
 
 
 def save_client_id(client_id: str) -> None:

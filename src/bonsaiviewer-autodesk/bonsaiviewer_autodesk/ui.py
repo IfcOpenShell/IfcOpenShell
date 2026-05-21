@@ -613,9 +613,7 @@ class SettingsDialog(_BaseDialog):
         super().__init__("Autodesk Connector Settings", size=(520, 400), resizable=False)
         self.connector = connector
 
-        env_override = settings.env_client_id()
-        stored = settings.stored_client_id()
-        effective = env_override or stored
+        client_id = settings.load_client_id()
         callback_port = settings.stored_callback_port()
 
         body = ctk.CTkFrame(self, fg_color="transparent")
@@ -638,17 +636,7 @@ class SettingsDialog(_BaseDialog):
         ctk.CTkLabel(body, text="APS client id", anchor="w").pack(fill="x")
         self.client_id_entry = ctk.CTkEntry(body, placeholder_text="Paste your APS client id")
         self.client_id_entry.pack(fill="x", pady=(6, 8))
-        self.client_id_entry.insert(0, stored)
-
-        if env_override:
-            ctk.CTkLabel(
-                body,
-                text=f"APS_CLIENT_ID environment variable is set ({env_override}) and overrides the saved value.",
-                anchor="w",
-                wraplength=460,
-                justify="left",
-                text_color=("#b45309", "#f59e0b"),
-            ).pack(fill="x", pady=(0, 8))
+        self.client_id_entry.insert(0, client_id)
 
         ctk.CTkLabel(body, text="OAuth callback port", anchor="w").pack(fill="x")
         self.callback_port_entry = ctk.CTkEntry(body, placeholder_text=str(settings.DEFAULT_CALLBACK_PORT))
@@ -657,7 +645,7 @@ class SettingsDialog(_BaseDialog):
 
         self.status_label = ctk.CTkLabel(
             body,
-            text=f"Signed in as {effective}" if effective else "No client id configured.",
+            text=f"Signed in as {client_id}" if client_id else "No client id configured.",
             anchor="w",
             wraplength=460,
             justify="left",
@@ -676,7 +664,7 @@ class SettingsDialog(_BaseDialog):
             border_width=1,
         )
         self.signout_button.grid(row=0, column=0, sticky="w")
-        if not effective:
+        if not client_id:
             self.signout_button.configure(state="disabled")
 
         ctk.CTkButton(
@@ -705,7 +693,7 @@ class SettingsDialog(_BaseDialog):
         self._on_close()
 
     def _sign_out(self) -> None:
-        client_id = settings.env_client_id() or settings.stored_client_id()
+        client_id = settings.load_client_id()
         if not client_id:
             return
         if not confirm(

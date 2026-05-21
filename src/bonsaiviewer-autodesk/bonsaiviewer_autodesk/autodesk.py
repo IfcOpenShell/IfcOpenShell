@@ -22,6 +22,13 @@ from bonsaiviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, RpcError
 
 Progress = Callable[[str, str, "int | None"], None]
 
+# (host, port, path, expected_state) -> authorization code
+CallbackWaiter = Callable[[str, int, str, str], str]
+
+
+def _utcnow() -> dt.datetime:
+    return dt.datetime.now(dt.timezone.utc)
+
 
 def _no_keyring_error() -> RpcError:
     return RpcError(
@@ -93,6 +100,48 @@ def _noop_progress(_phase: str, _message: str, _percent: int | None = None) -> N
     return
 
 
+def wait_for_oauth_callback(host: str, port: int, path: str, expected_state: str) -> str:
+    """Block on a single OAuth redirect to ``http://host:port/path`` and return
+    the authorization code. Raises ``RpcError`` on an OAuth error, a ``state``
+    mismatch, or a missing code. This is the default ``callback_waiter`` for
+    :class:`AuthSessionService`; tests inject a stub instead."""
+    result: dict[str, str] = {}
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            parsed = urllib.parse.urlparse(self.path)
+            if parsed.path != path:
+                self.send_response(404)
+                self.end_headers()
+                return
+            query = urllib.parse.parse_qs(parsed.query)
+            result["state"] = query.get("state", [""])[0]
+            result["code"] = query.get("code", [""])[0]
+            result["error"] = query.get("error", [""])[0]
+            body = b"<html><body><h2>Authentication complete. You can close this window.</h2></body></html>"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = HTTPServer((host, port), Handler)
+    server.handle_request()
+    server.server_close()
+
+    if result.get("error"):
+        raise RpcError(JSONRPC_INTERNAL_ERROR, f"Autodesk returned OAuth error '{result['error']}'.")
+    if result.get("state") != expected_state:
+        raise RpcError(JSONRPC_INTERNAL_ERROR, "OAuth state mismatch.")
+    code = result.get("code", "")
+    if not code:
+        raise RpcError(JSONRPC_INTERNAL_ERROR, "OAuth callback did not return an authorization code.")
+    return code
+
+
 class AuthSessionService:
     authorize_endpoint = "https://developer.api.autodesk.com/authentication/v2/authorize"
     token_endpoint = "https://developer.api.autodesk.com/authentication/v2/token"
@@ -104,12 +153,17 @@ class AuthSessionService:
         callback_url: str,
         scope: str,
         token_store: KeyringTokenStore,
+        transport: httpx.BaseTransport | None = None,
+        now: Callable[[], dt.datetime] | None = None,
+        callback_waiter: CallbackWaiter | None = None,
     ) -> None:
         self.client_id = client_id
         self.callback_url = callback_url
         self.scope = scope
         self.token_store = token_store
-        self.http = httpx.Client(timeout=60)
+        self.http = httpx.Client(timeout=60, transport=transport)
+        self._now = now or _utcnow
+        self._callback_waiter = callback_waiter or wait_for_oauth_callback
 
     def get_token(self) -> StoredToken | None:
         raw = self.token_store.load()
@@ -117,7 +171,7 @@ class AuthSessionService:
 
     def ensure_access_token(self, progress: Progress = _noop_progress) -> str:
         token = self.get_token()
-        now = dt.datetime.now(dt.timezone.utc)
+        now = self._now()
         if token and token.access_token_expires_at > now + dt.timedelta(minutes=1):
             return token.access_token
         if token and token.refresh_token_expires_at > now + dt.timedelta(minutes=1):
@@ -148,7 +202,7 @@ class AuthSessionService:
 
         progress("auth", "Opening browser for Autodesk sign-in", None)
         webbrowser.open(authorize_url)
-        code = self._wait_for_callback(
+        code = self._callback_waiter(
             callback.hostname or "127.0.0.1",
             callback.port or 80,
             callback.path or "/",
@@ -192,7 +246,7 @@ class AuthSessionService:
         return refreshed
 
     def _token_from_payload(self, payload: dict[str, Any]) -> StoredToken:
-        now = dt.datetime.now(dt.timezone.utc)
+        now = self._now()
         refresh_ttl = int(payload.get("refresh_token_expires_in", 15 * 24 * 60 * 60))
         return StoredToken(
             client_id=self.client_id,
@@ -203,48 +257,10 @@ class AuthSessionService:
             scope=self.scope,
         )
 
-    def _wait_for_callback(self, host: str, port: int, path: str, expected_state: str) -> str:
-        result: dict[str, str] = {}
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(self) -> None:
-                parsed = urllib.parse.urlparse(self.path)
-                if parsed.path != path:
-                    self.send_response(404)
-                    self.end_headers()
-                    return
-                query = urllib.parse.parse_qs(parsed.query)
-                result["state"] = query.get("state", [""])[0]
-                result["code"] = query.get("code", [""])[0]
-                result["error"] = query.get("error", [""])[0]
-                body = b"<html><body><h2>Authentication complete. You can close this window.</h2></body></html>"
-                self.send_response(200)
-                self.send_header("Content-Type", "text/html; charset=utf-8")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
-
-            def log_message(self, format: str, *args: object) -> None:
-                return
-
-        server = HTTPServer((host, port), Handler)
-        server.handle_request()
-        server.server_close()
-
-        if result.get("error"):
-            raise RpcError(JSONRPC_INTERNAL_ERROR, f"Autodesk returned OAuth error '{result['error']}'.")
-        if result.get("state") != expected_state:
-            raise RpcError(JSONRPC_INTERNAL_ERROR, "OAuth state mismatch.")
-        code = result.get("code", "")
-        if not code:
-            raise RpcError(JSONRPC_INTERNAL_ERROR, "OAuth callback did not return an authorization code.")
-        return code
-
-
 class ApsClient:
-    def __init__(self, auth: AuthSessionService) -> None:
+    def __init__(self, auth: AuthSessionService, *, transport: httpx.BaseTransport | None = None) -> None:
         self.auth = auth
-        self.http = httpx.Client(timeout=120)
+        self.http = httpx.Client(timeout=120, transport=transport)
 
     # Browsing -----------------------------------------------------------------
 

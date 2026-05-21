@@ -12,8 +12,41 @@ on:
       - '.github/workflows/build-bonsaiviewer-autodesk.yml'
 
 jobs:
+  test:
+    name: test-py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Exercise the floor and a current version of the supported range
+        # (pyproject requires-python = ">=3.11").
+        python-version: ['3.11', '3.13']
+
+    defaults:
+      run:
+        working-directory: src/bonsaiviewer-autodesk
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # The connector imports tkinter/customtkinter (via the test suite's
+      # connector coverage), so fail loudly here if Tk is missing.
+      - name: Verify tkinter is available
+        run: python -c "import tkinter; print('Tk', tkinter.TkVersion)"
+
+      - name: Install package and test deps
+        run: python -m pip install ".[test]"
+
+      - name: Run pytest
+        run: python -m pytest -q
+
   build:
     name: ${{ matrix.os_label }}-${{ matrix.arch }}
+    needs: test
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
