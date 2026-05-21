@@ -5396,6 +5396,7 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         self._draw_handler = None
         self._snap_cand_obj_ptr: int = -1   # Blender object pointer for cached snap cands
         self._snap_cand_cache: list = []    # cached get_layer/profile_snap_candidates result
+        self._snap_cand_multi_cache: dict = {}  # ptr → candidates for coplanar-edge nearby objects
 
     # ------------------------------------------------------------------
     # Snap → anchor bridge
@@ -5576,17 +5577,68 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
     # ------------------------------------------------------------------
     # IFC-native snap for LAYER / VERTEX / EDGE modes
 
+    @staticmethod
+    def _snap_on_coplanar_faces(obj, hit_pt_world, tol_z=1e-3):
+        """Return FACE snap candidates for vertical mesh faces with an edge at hit_pt_world's Z.
+
+        Finds faces that are edge-on to the camera (perpendicular to the floor plane) and
+        whose bottom edge is coplanar with the hovered floor surface, then projects the
+        hit point onto each such face's plane to get the snap position.
+        """
+        from mathutils import Vector
+        mx = obj.matrix_world
+        mesh = obj.data
+        target_z = float(hit_pt_world.z)
+        hit_pt = Vector(hit_pt_world)
+        candidates = []
+        for poly in mesh.polygons:
+            normal_w = (mx.to_3x3() @ poly.normal).normalized()
+            if abs(normal_w.z) > 0.9:
+                continue
+            verts_w = [mx @ mesh.vertices[vi].co for vi in poly.vertices]
+            n = len(verts_w)
+            has_coplanar_edge = any(
+                abs(verts_w[i].z - target_z) <= tol_z and abs(verts_w[(i + 1) % n].z - target_z) <= tol_z
+                for i in range(n)
+            )
+            if not has_coplanar_edge:
+                continue
+            face_center_w = sum(verts_w, Vector((0.0, 0.0, 0.0))) / n
+            dist = (hit_pt - face_center_w).dot(normal_w)
+            snapped_pt = hit_pt - normal_w * dist
+            candidates.append({
+                "type": "FACE",
+                "snap_world": (snapped_pt.x, snapped_pt.y, snapped_pt.z),
+                "snap": "FACE",
+                "face_verts": [tuple(v) for v in verts_w],
+            })
+        return candidates
+
+    @staticmethod
+    def _pt_in_obj_bbox(obj, pt_world, tol=1e-3):
+        """Return True if pt_world is inside obj's world-space bounding box."""
+        try:
+            local_pt = obj.matrix_world.inverted() @ pt_world
+        except Exception:
+            return False
+        bb = obj.bound_box  # 8 corners in local space
+        xs = [v[0] for v in bb]
+        ys = [v[1] for v in bb]
+        zs = [v[2] for v in bb]
+        return (
+            min(xs) - tol <= local_pt.x <= max(xs) + tol
+            and min(ys) - tol <= local_pt.y <= max(ys) + tol
+            and min(zs) - tol <= local_pt.z <= max(zs) + tol
+        )
+
     def _compute_ifc_snap_candidate(self, context, event) -> "Optional[dict]":
         """Return an IFC-native snap candidate for the current snap mode, or None."""
-        if self._snap_mode == "FACE" or not self.snapping_points:
+        if not self.snapping_points:
             return None
+
         snap = self.snapping_points[0]
         hit_obj = snap.get("object")
-        if not hit_obj:
-            return None
-        element = tool.Ifc.get_entity(hit_obj)
-        if not element or not hasattr(element, "GlobalId"):
-            return None
+        hit_pt = snap.get("point")
 
         from bpy_extras.view3d_utils import location_3d_to_region_2d
         import ifcopenshell.api.drawing as drawing_api
@@ -5594,6 +5646,63 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         region = context.region
         rv3d = context.region_data
         mx, my = event.mouse_region_x, event.mouse_region_y
+
+        # ----------------------------------------------------------------
+        # FACE mode: no IFC snap on the primary hit object, but look for
+        # coplanar-edge candidates from nearby objects (e.g. a wall whose
+        # bottom edge is coplanar with the hovered floor surface).
+        # Uses direct mesh edge projection rather than get_profile_snap_candidates
+        # so the snap tracks cursor position along the edge, not just fixed vertices.
+        # ----------------------------------------------------------------
+        if self._snap_mode == "FACE":
+            if hit_pt is None or not self.objs_2d_bbox:
+                return None
+            nearby_cands = []
+            extra_count = 0
+            for obj, _bbox2d in self.objs_2d_bbox:
+                if extra_count >= 4:
+                    break
+                if obj is hit_obj:
+                    continue
+                if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
+                    continue
+                extra_elem = tool.Ifc.get_entity(obj)
+                if not extra_elem or not hasattr(extra_elem, "GlobalId"):
+                    continue
+                in_bbox = self._pt_in_obj_bbox(obj, hit_pt)
+                if not in_bbox:
+                    continue
+                face_cands = self._snap_on_coplanar_faces(obj, hit_pt)
+                nearby_cands.extend((c, extra_elem, obj) for c in face_cands)
+                extra_count += 1
+
+            _FACE_THRESH_D2 = 30 * 30
+            best_cand, best_elem, best_obj, best_d2 = None, None, None, float("inf")
+            for cand, elem, obj in nearby_cands:
+                sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
+                if sp is None:
+                    continue
+                d2 = (sp.x - mx) ** 2 + (sp.y - my) ** 2
+                if d2 < best_d2 and d2 < _FACE_THRESH_D2:
+                    best_d2 = d2
+                    best_cand = cand
+                    best_elem = elem
+                    best_obj = obj
+            if best_cand is None:
+                return None
+            result = dict(best_cand)
+            result["element"] = best_elem
+            result["obj"] = best_obj
+            return result
+
+        # ----------------------------------------------------------------
+        # LAYER / VERTEX / EDGE modes
+        # ----------------------------------------------------------------
+        if not hit_obj:
+            return None
+        element = tool.Ifc.get_entity(hit_obj)
+        if not element or not hasattr(element, "GlobalId"):
+            return None
 
         # Recompute expensive candidate geometry only when the hovered object changes.
         obj_ptr = hit_obj.as_pointer()
@@ -5605,14 +5714,34 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             else:
                 self._snap_cand_cache = drawing_api.get_profile_snap_candidates(file, element, placement_override)
             self._snap_cand_obj_ptr = obj_ptr
-        cands = self._snap_cand_cache
-
-        if not cands:
-            return None
 
         if self._snap_mode == "LAYER":
-            best_cand, best_d2 = None, float("inf")
-            for cand in cands:
+            all_layer_cands = [(c, element, hit_obj) for c in self._snap_cand_cache]
+            if hit_pt is not None and self.objs_2d_bbox:
+                file = tool.Ifc.get()
+                extra_count = 0
+                for obj, _bbox2d in self.objs_2d_bbox:
+                    if extra_count >= 4:
+                        break
+                    if obj is hit_obj:
+                        continue
+                    if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
+                        continue
+                    extra_elem = tool.Ifc.get_entity(obj)
+                    if not extra_elem or not hasattr(extra_elem, "GlobalId"):
+                        continue
+                    if not self._pt_in_obj_bbox(obj, hit_pt):
+                        continue
+                    extra_ptr = obj.as_pointer()
+                    if extra_ptr not in self._snap_cand_multi_cache:
+                        placement_override = {extra_elem.id(): np.array(obj.matrix_world)}
+                        self._snap_cand_multi_cache[extra_ptr] = drawing_api.get_layer_snap_candidates(
+                            file, extra_elem, placement_override
+                        )
+                    all_layer_cands.extend((c, extra_elem, obj) for c in self._snap_cand_multi_cache[extra_ptr])
+                    extra_count += 1
+            best_cand, best_elem, best_obj, best_d2 = None, None, None, float("inf")
+            for cand, elem, obj in all_layer_cands:
                 sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
                 if sp is None:
                     continue
@@ -5620,20 +5749,51 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 if d2 < best_d2:
                     best_d2 = d2
                     best_cand = cand
+                    best_elem = elem
+                    best_obj = obj
             if best_cand is None:
                 return None
             result = dict(best_cand)
             result["method"] = "LAYER_BOUNDARY"
-            result["element"] = element
-            result["obj"] = hit_obj
+            result["element"] = best_elem
+            result["obj"] = best_obj
             return result
 
-        # VERTEX or EDGE — profile-based candidates
-        cands_of_type = [c for c in cands if c["type"] == self._snap_mode]
-        if not cands_of_type:
-            return None
-        best_cand, best_d2 = None, float("inf")
-        for cand in cands_of_type:
+        # VERTEX or EDGE — profile-based candidates.
+        # Build a tagged list of (candidate, element, obj) so the best match from
+        # any object carries the right element reference into _build_ifc_anchor.
+        all_cands = [(c, element, hit_obj) for c in self._snap_cand_cache]
+
+        # Also query nearby objects whose 3D bbox contains the hit point.
+        if hit_pt is not None and self.objs_2d_bbox:
+            file = tool.Ifc.get()
+            extra_count = 0
+            for obj, _bbox2d in self.objs_2d_bbox:
+                if extra_count >= 4:
+                    break
+                if obj is hit_obj:
+                    continue
+                if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
+                    continue
+                extra_elem = tool.Ifc.get_entity(obj)
+                if not extra_elem or not hasattr(extra_elem, "GlobalId"):
+                    continue
+                in_bbox = self._pt_in_obj_bbox(obj, hit_pt)
+                if not in_bbox:
+                    continue
+                extra_ptr = obj.as_pointer()
+                if extra_ptr not in self._snap_cand_multi_cache:
+                    placement_override = {extra_elem.id(): np.array(obj.matrix_world)}
+                    self._snap_cand_multi_cache[extra_ptr] = drawing_api.get_profile_snap_candidates(
+                        file, extra_elem, placement_override
+                    )
+                all_cands.extend((c, extra_elem, obj) for c in self._snap_cand_multi_cache[extra_ptr])
+                extra_count += 1
+
+        best_cand, best_elem, best_obj, best_d2 = None, None, None, float("inf")
+        for cand, elem, obj in all_cands:
+            if cand["type"] != self._snap_mode:
+                continue
             sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
             if sp is None:
                 continue
@@ -5641,11 +5801,13 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             if d2 < best_d2:
                 best_d2 = d2
                 best_cand = cand
+                best_elem = elem
+                best_obj = obj
         if best_cand is None:
             return None
         result = dict(best_cand)
-        result["element"] = element
-        result["obj"] = hit_obj
+        result["element"] = best_elem
+        result["obj"] = best_obj
         return result
 
     def _build_ifc_anchor(self, candidate: dict) -> dict:
@@ -5676,6 +5838,12 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 _snap_draw_data.update({
                     "type": "LAYER",
                     "seam_corners": cand.get("seam_corners", []),
+                    "snap_world": cand.get("snap_world"),
+                })
+            elif cand.get("snap") == "FACE":
+                _snap_draw_data.update({
+                    "type": "FACE",
+                    "face_verts": cand.get("face_verts", []),
                     "snap_world": cand.get("snap_world"),
                 })
             elif cand.get("snap") == "EDGE":
@@ -5854,7 +6022,8 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 cur = self._SNAP_MODES.index(self._snap_mode)
                 self._snap_mode = self._SNAP_MODES[(cur + 1) % len(self._SNAP_MODES)]
                 self._ifc_snap_candidate = None
-                self._snap_cand_obj_ptr = -1   # invalidate cache: LAYER vs VERTEX/EDGE differ
+                self._snap_cand_obj_ptr = -1       # invalidate cache: LAYER vs VERTEX/EDGE differ
+                self._snap_cand_multi_cache = {}   # invalidate nearby-object cache too
                 self._set_status(context)
             return {"RUNNING_MODAL"}
 
