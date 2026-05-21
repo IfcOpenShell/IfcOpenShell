@@ -5394,6 +5394,8 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         self._snap_mode = "FACE"
         self._ifc_snap_candidate = None
         self._draw_handler = None
+        self._snap_cand_obj_ptr: int = -1   # Blender object pointer for cached snap cands
+        self._snap_cand_cache: list = []    # cached get_layer/profile_snap_candidates result
 
     # ------------------------------------------------------------------
     # Snap → anchor bridge
@@ -5494,12 +5496,10 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         from mathutils import Vector
         a = self._anchors[0] if self._anchors else None
         if not a or a.get("type") != "FACE":
-            print(f"[perp] _update_perp_constraint: anchor type={a.get('type') if a else None} — need FACE, skipping")
             return
         addr = a.get("addr") or {}
         pt = a.get("pt")
         if not pt:
-            print(f"[perp] _update_perp_constraint: missing pt")
             return
 
         method = addr.get("method", "FACE_NORMAL")
@@ -5508,7 +5508,6 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         if method == "LAYER_BOUNDARY":
             # Derive the thickness-axis normal from the element's LayerSetDirection.
             if not guid:
-                print(f"[perp] _update_perp_constraint (LAYER): no guid")
                 return
             try:
                 file = tool.Ifc.get()
@@ -5516,7 +5515,6 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 import ifcopenshell.util.element as _ifc_elem
                 usage = _ifc_elem.get_material(element, should_inherit=True)
                 if not usage or not usage.is_a("IfcMaterialLayerSetUsage"):
-                    print(f"[perp] _update_perp_constraint (LAYER): no IfcMaterialLayerSetUsage")
                     return
                 axis = getattr(usage, "LayerSetDirection", None) or "AXIS2"
                 if axis == "AXIS1":
@@ -5532,13 +5530,11 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                     n: tuple = (nw.x, nw.y, nw.z)
                 else:
                     n = normal_local
-            except Exception as exc:
-                print(f"[perp] _update_perp_constraint (LAYER): {exc}")
+            except Exception:
                 return
         else:
             normal_local = addr.get("normal_local")
             if not normal_local:
-                print(f"[perp] _update_perp_constraint: missing normal_local")
                 return
             n = normal_local
             if guid:
@@ -5550,18 +5546,14 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                         nw = obj.matrix_world.to_3x3() @ Vector(normal_local)
                         nw.normalize()
                         n = (nw.x, nw.y, nw.z)
-                    else:
-                        print(f"[perp] _update_perp_constraint: no Blender obj for guid={guid}, using normal_local as-is")
-                except Exception as exc:
-                    print(f"[perp] _update_perp_constraint: exception rotating normal: {exc}")
+                except Exception:
+                    pass
 
         mag = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
         if mag < 1e-12:
-            print(f"[perp] _update_perp_constraint: zero-length normal after rotation")
             return
         self._anchor0_normal = (n[0] / mag, n[1] / mag, n[2] / mag)
         self._anchor0_pt = tuple(pt)
-        print(f"[perp] _update_perp_constraint: OK  normal={[round(v,3) for v in self._anchor0_normal]}  pt={[round(v,3) for v in self._anchor0_pt]}")
 
     def _apply_perp_constraint(self) -> None:
         """Project the current snap point onto the constraint line when active."""
@@ -5579,7 +5571,6 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         n = self._anchor0_normal
         t = (p.x - base[0]) * n[0] + (p.y - base[1]) * n[1] + (p.z - base[2]) * n[2]
         constrained = Vector((base[0] + t * n[0], base[1] + t * n[1], base[2] + t * n[2]))
-        print(f"[perp] _apply_perp_constraint: raw=({p.x:.3f},{p.y:.3f},{p.z:.3f})  t={t:.4f}  constrained=({constrained.x:.3f},{constrained.y:.3f},{constrained.z:.3f})")
         snap["point"] = constrained
 
     # ------------------------------------------------------------------
@@ -5603,13 +5594,23 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         region = context.region
         rv3d = context.region_data
         mx, my = event.mouse_region_x, event.mouse_region_y
-        file = tool.Ifc.get()
-        placement_override = {element.id(): np.array(hit_obj.matrix_world)}
+
+        # Recompute expensive candidate geometry only when the hovered object changes.
+        obj_ptr = hit_obj.as_pointer()
+        if obj_ptr != self._snap_cand_obj_ptr:
+            file = tool.Ifc.get()
+            placement_override = {element.id(): np.array(hit_obj.matrix_world)}
+            if self._snap_mode == "LAYER":
+                self._snap_cand_cache = drawing_api.get_layer_snap_candidates(file, element, placement_override)
+            else:
+                self._snap_cand_cache = drawing_api.get_profile_snap_candidates(file, element, placement_override)
+            self._snap_cand_obj_ptr = obj_ptr
+        cands = self._snap_cand_cache
+
+        if not cands:
+            return None
 
         if self._snap_mode == "LAYER":
-            cands = drawing_api.get_layer_snap_candidates(file, element, placement_override)
-            if not cands:
-                return None
             best_cand, best_d2 = None, float("inf")
             for cand in cands:
                 sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
@@ -5628,9 +5629,6 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             return result
 
         # VERTEX or EDGE — profile-based candidates
-        cands = drawing_api.get_profile_snap_candidates(file, element, placement_override)
-        if not cands:
-            return None
         cands_of_type = [c for c in cands if c["type"] == self._snap_mode]
         if not cands_of_type:
             return None
@@ -5706,7 +5704,10 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         if face_index is None or face_index >= len(hit_obj.data.polygons):
             if pt_world is not None:
                 local_pt = hit_obj.matrix_world.inverted() @ pt_world
-                ok, _loc, _n, face_index = hit_obj.closest_point_on_mesh(local_pt)
+                try:
+                    ok, _loc, _n, face_index = hit_obj.closest_point_on_mesh(local_pt)
+                except RuntimeError:
+                    return
                 if not ok:
                     return
         face_index = _prefer_perp_face_index(hit_obj, pt_world, face_index)
@@ -5853,12 +5854,15 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 cur = self._SNAP_MODES.index(self._snap_mode)
                 self._snap_mode = self._SNAP_MODES[(cur + 1) % len(self._SNAP_MODES)]
                 self._ifc_snap_candidate = None
+                self._snap_cand_obj_ptr = -1   # invalidate cache: LAYER vs VERTEX/EDGE differ
                 self._set_status(context)
             return {"RUNNING_MODAL"}
 
         # For LAYER / VERTEX / EDGE modes, compute an IFC-native snap candidate and
         # override the polyline cursor position so the visual tracks the IFC point.
-        self._ifc_snap_candidate = self._compute_ifc_snap_candidate(context, event)
+        # Only recompute on mouse moves — key events don't change the hit object.
+        if event.type == "MOUSEMOVE":
+            self._ifc_snap_candidate = self._compute_ifc_snap_candidate(context, event)
         if self._ifc_snap_candidate and self.snapping_points:
             wp = self._ifc_snap_candidate.get("snap_world")
             if wp:
@@ -5891,6 +5895,20 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _init_snapping_points(self, context, event):
+        """Skip the full BVH snap at startup — use a plane-intersection placeholder.
+
+        handle_mouse_move populates snapping_points properly after the first few
+        MOUSEMOVE events, so this placeholder only needs to survive until then.
+        We must also populate snap_mouse_point (a Blender prop collection) because
+        calculate_distance_and_angle accesses it immediately after invoke.
+        """
+        from mathutils import Vector
+        plane_pt = tool.Raycast.ray_cast_to_plane(context, event, Vector((0, 0, 0)), Vector((0, 0, 1)))
+        snap = {"type": "Plane", "point": plane_pt, "object": None, "group": "Plane", "distance": 10}
+        self.snapping_points = [snap]
+        tool.Snap.update_snapping_point(plane_pt, "Plane")
 
     def _invoke(self, context, event):
         super().invoke(context, event)
@@ -6065,7 +6083,7 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
     _draw_handler: object     # SpaceView3D draw handler handle
 
     _VERTEX_PICK_RADIUS_PX = 20
-    _HOVER_THROTTLE_PX_SQ = 25
+    _HOVER_THROTTLE_PX_SQ = 144  # 12 px — enough to feel responsive without per-pixel recompute
     _SNAP_MODES = ("FACE", "LAYER", "EDGE", "VERTEX")
 
     @classmethod
@@ -6393,31 +6411,39 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         from mathutils import Vector
 
         origin, direction = self._unproject_coord(coord)
+        depsgraph = context.evaluated_depsgraph_get()
 
-        direct: list = []   # (dist, ifc_obj, mesh_obj, mx, loc_w, normal, face_index)
-        for ifc_obj in context.scene.objects:
+        # Scene-BVH pierce-through: O(log N) vs the previous O(N) per-object loop.
+        # Each iteration steps past the last hit surface to reach the next object.
+        direct: list = []
+        ray_origin = Vector(origin)
+        _EPS = 1e-4
+
+        for _ in range(8):
+            result, loc_w, nrm_w, fi, hit_obj_eval, hit_mx = context.scene.ray_cast(
+                depsgraph, ray_origin, direction
+            )
+            if not result:
+                break
+            ray_origin = loc_w + direction * _EPS
+            ifc_obj = getattr(hit_obj_eval, "original", hit_obj_eval)
             if ifc_obj == self._annotation_obj:
                 continue
-            if not tool.Ifc.get_entity(ifc_obj):
+            if not ifc_obj.visible_get():
                 continue
             if ifc_obj.type != "MESH":
                 continue
+            if not tool.Ifc.get_entity(ifc_obj):
+                continue
             mx = ifc_obj.matrix_world
-            try:
-                mx_inv = mx.inverted()
-            except Exception:
-                continue
-            ok, loc_l, nrm_l, fi = ifc_obj.ray_cast(
-                mx_inv @ origin, (mx_inv.to_3x3() @ direction).normalized()
-            )
-            if not ok:
-                continue
-            loc_w = mx @ loc_l
             fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
-            normal = (mx.to_3x3() @ ifc_obj.data.polygons[fi].normal).normalized() if fi is not None else (mx.to_3x3() @ nrm_l).normalized()
+            normal = (
+                (mx.to_3x3() @ ifc_obj.data.polygons[fi].normal).normalized()
+                if fi is not None
+                else nrm_w.normalized()
+            )
             dist = (loc_w - origin).length
             direct.append((dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
-
         if direct:
             direct.sort(key=lambda c: c[0])
             return [(o, m, mmx, l, n, f) for _, o, m, mmx, l, n, f in direct]
@@ -6431,6 +6457,8 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         prox: list = []
         for ifc_obj in context.scene.objects:
             if ifc_obj == self._annotation_obj:
+                continue
+            if not ifc_obj.visible_get():
                 continue
             if not tool.Ifc.get_entity(ifc_obj):
                 continue

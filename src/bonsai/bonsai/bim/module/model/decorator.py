@@ -753,6 +753,8 @@ class PolylineDecorator:
         rv3d = region.data
 
         polyline_props = tool.Model.get_polyline_props()
+        if not polyline_props.snap_mouse_point:
+            return
         snap_prop = polyline_props.snap_mouse_point[0]
         mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
@@ -820,6 +822,8 @@ class PolylineDecorator:
         gpu.state.point_size_set(6)
 
         polyline_props = tool.Model.get_polyline_props()
+        if not polyline_props.snap_mouse_point:
+            return
         snap_prop = polyline_props.snap_mouse_point[0]
         # Point related to the mouse
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
