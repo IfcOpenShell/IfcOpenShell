@@ -1874,11 +1874,6 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-    confirm_parametric_edits: bpy.props.BoolProperty(
-        default=False,
-        options={"HIDDEN", "SKIP_SAVE"},
-        description="Internal: routes draw() to the parametric-commit confirm body instead of the file dialog.",
-    )
 
     if TYPE_CHECKING:
         filter_glob: str
@@ -1886,7 +1881,6 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         json_compact: bool
         should_save_as: bool
         use_relative_path: bool
-        confirm_parametric_edits: bool
 
     @classmethod
     def poll(cls, context):
@@ -1894,9 +1888,6 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
     def draw(self, context):
         layout = self.layout
-        if self.confirm_parametric_edits:
-            self._draw_parametric_confirm(layout)
-            return
         layout.prop(self, "json_version")
         layout.prop(self, "json_compact")
         if bpy.data.is_saved:
@@ -1905,14 +1896,6 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         layout.separator()
         layout.label(text="Supported formats for export:")
         layout.label(text=",".join(self.supported_filexts))
-
-    def _draw_parametric_confirm(self, layout: bpy.types.UILayout) -> None:
-        col = layout.column(align=True)
-        col.label(text="Saving will apply all parametric edits (stairs, walls, etc.).")
-        layout.separator()
-        box = layout.box()
-        col = box.column(align=True)
-        col.label(text="You can disable this prompt in Bonsai preferences", icon="INFO")
 
     def invoke(self, context, event):
         if not tool.Ifc.get():
@@ -1924,17 +1907,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         filepath = props.ifc_file
         if not filepath or self.should_save_as:
             return ExportHelper.invoke(self, context, event)
-        # Set filepath before showing pending edits prompt :
         self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
-        prefs = tool.Blender.get_addon_preferences()
-        if prefs.prompt_auto_commit_parametric_edits and tool.Parametric.get_pending_edits():
-            self.confirm_parametric_edits = True
-            return context.window_manager.invoke_props_dialog(
-                self,
-                width=400,
-                title="Pending Parametric Edits",
-                confirm_text="Apply Edits & Save",
-            )
         return self.execute(context)
 
     def check(self, context):
@@ -1961,7 +1934,11 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
     def _execute(self, context):
-        _, failed_commits = tool.Parametric.commit_pending_edits()
+        committed, failed_commits = tool.Parametric.commit_pending_edits()
+        # Suffix is appended to the IFC save-success report below so the auto-commit
+        # info isn't immediately overwritten by the success message in Blender's
+        # status bar (only the latest self.report({"INFO"}, ...) sticks).
+        commit_suffix = f" (auto-committed {committed} pending parametric edit(s))" if committed else ""
         if failed_commits:
             names = ", ".join(o.name for o in failed_commits)
             msg = f"Auto-commit failed for {len(failed_commits)} object(s): {names}"
@@ -2035,7 +2012,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                     blendmetadata_path = output_file + suffix
                 self.report(
                     {"INFO"},
-                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}',
+                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}{commit_suffix}',
                 )
             except Exception as e:
                 self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
@@ -2045,7 +2022,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                 bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
             self.report(
                 {"INFO"},
-                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved{commit_suffix}',
             )
 
         bonsai.bim.handler.refresh_ui_data()

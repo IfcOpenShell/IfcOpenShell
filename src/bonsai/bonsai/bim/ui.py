@@ -738,19 +738,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
-    prompt_auto_commit_parametric_edits: BoolProperty(
-        name="Confirm Before Auto-Committing Parametric Edits on Save",
-        description=(
-            "When saving while a door/window/stair/railing/roof/wall edit is in progress, "
-            "show a confirmation dialog. Saving always commits the edit; this preference "
-            "only controls whether you are warned first. "
-            "Save As bypasses the prompt because the file picker is itself a dialog — "
-            "commits then happen silently. "
-            "Each committed edit is a separate undo step; saving with N edits in progress "
-            "produces N undo entries (one per commit) plus one for the save itself."
-        ),
-        default=True,
-    )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     occurrence_name_style: bpy.props.EnumProperty(
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
@@ -859,7 +846,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_test_dictionaries: bool
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
-        prompt_auto_commit_parametric_edits: bool
         should_stream: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
         occurrence_name_function: str
@@ -1065,7 +1051,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
-        layout.prop(self, "prompt_auto_commit_parametric_edits")
         layout.prop(self, "should_stream")
         layout.label(text="bSDD:")
         layout.prop(self, "bsdd_load_preview_dictionaries")
