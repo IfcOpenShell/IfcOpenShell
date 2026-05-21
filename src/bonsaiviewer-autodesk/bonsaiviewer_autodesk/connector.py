@@ -8,7 +8,7 @@ from typing import Any, Callable
 from bonsaiviewer_autodesk import cache, settings
 from bonsaiviewer_autodesk.autodesk import ApsClient, AuthSessionService, KeyringTokenStore
 from bonsaiviewer_autodesk.rpc import JSONRPC_INTERNAL_ERROR, JSONRPC_INVALID_PARAMS, RpcError
-from bonsaiviewer_autodesk.ui import BrowseDialog, SettingsDialog, progress_dialog, prompt_for_filename
+from bonsaiviewer_autodesk.ui import BrowseDialog, SettingsDialog, prompt_for_filename, run_with_progress
 
 
 ApsProgress = Callable[[str, "int | None", "int | None", "int | None"], None]
@@ -122,15 +122,17 @@ class AutodeskConnector:
         hub = chosen["hub"]
         project = chosen["project"]
         entry = chosen["entries"][0]
-        with progress_dialog("Downloading project") as report:
-            path = self._download_ifcfed(
+        path = run_with_progress(
+            "Downloading project",
+            lambda report: self._download_ifcfed(
                 aps=aps,
                 hub_id=hub["id"],
                 project_id=project["id"],
                 item_id=entry["id"],
                 display_name=entry["display_name"],
                 progress=_download_callback(report),
-            )
+            ),
+        )
         return {"path": str(path)}
 
     # ---- pull_ifcfed --------------------------------------------------------
@@ -142,15 +144,17 @@ class AutodeskConnector:
         project_id = _require_string(manifest, "project_id")
         item_id = _require_string(manifest, "item_id")
         display_name = manifest.get("display_name") or item_id
-        with progress_dialog("Downloading project") as report:
-            path = self._download_ifcfed(
+        path = run_with_progress(
+            "Downloading project",
+            lambda report: self._download_ifcfed(
                 aps=aps,
                 hub_id=hub_id,
                 project_id=project_id,
                 item_id=item_id,
                 display_name=display_name,
                 progress=_download_callback(report),
-            )
+            ),
+        )
         return {"path": str(path)}
 
     def _download_ifcfed(
@@ -193,9 +197,10 @@ class AutodeskConnector:
     def pull_models(self, params: Any) -> list[dict[str, Any] | None]:
         _, aps = self._require_aps()
         models = _require_array(params, "params")
-        results: list[dict[str, Any] | None] = []
         total = len(models)
-        with progress_dialog("Downloading models") as report:
+
+        def work(report: Report) -> list[dict[str, Any] | None]:
+            results: list[dict[str, Any] | None] = []
             for index, model in enumerate(models):
                 callback = _download_callback(report, index=index + 1, total=total)
                 try:
@@ -207,7 +212,9 @@ class AutodeskConnector:
                     print(f"pull_models[{index}] skipped: {exc}", file=sys.stderr)
                     traceback.print_exc(file=sys.stderr)
                     results.append(None)
-        return results
+            return results
+
+        return run_with_progress("Downloading models", work)
 
     def _resolve_model(
         self,
@@ -257,10 +264,10 @@ class AutodeskConnector:
         hub = chosen["hub"]
         project = chosen["project"]
         entries = chosen["entries"]
-
-        results: list[dict[str, Any]] = []
         total = len(entries)
-        with progress_dialog("Downloading models") as report:
+
+        def work(report: Report) -> list[dict[str, Any]]:
+            results: list[dict[str, Any]] = []
             for index, entry in enumerate(entries):
                 callback = _download_callback(report, index=index + 1, total=total)
                 try:
@@ -274,7 +281,9 @@ class AutodeskConnector:
                     continue
                 if result is not None:
                     results.append(result)
-        return results
+            return results
+
+        return run_with_progress("Downloading models", work)
 
     def _download_picked_model(
         self,
@@ -338,14 +347,16 @@ class AutodeskConnector:
         if not file_name.lower().endswith(".ifcfed"):
             file_name = file_name + ".ifcfed"
 
-        with progress_dialog("Uploading project") as report:
-            uploaded = aps.upload_file_to_folder(
+        uploaded = run_with_progress(
+            "Uploading project",
+            lambda report: aps.upload_file_to_folder(
                 project["id"],
                 folder["id"],
                 local_path,
                 display_name=file_name,
                 progress=_upload_callback(report),
-            )
+            ),
+        )
 
         directory = cache.prepare_sole_child_dir(cache.ifcfed_dir(project["id"], uploaded["item_id"]))
         cached_path = directory / file_name
@@ -390,14 +401,16 @@ class AutodeskConnector:
             raise RpcError(JSONRPC_INTERNAL_ERROR, f"Cannot resolve parent folder for item '{item_id}'.")
         file_name = manifest.get("display_name") or item.get("display_name") or local_path.name
 
-        with progress_dialog("Uploading project") as report:
-            uploaded = aps.upload_file_to_folder(
+        uploaded = run_with_progress(
+            "Uploading project",
+            lambda report: aps.upload_file_to_folder(
                 project_id,
                 folder_id,
                 local_path,
                 display_name=file_name,
                 progress=_upload_callback(report),
-            )
+            ),
+        )
 
         directory = cache.prepare_sole_child_dir(cache.ifcfed_dir(project_id, uploaded["item_id"]))
         cached_path = directory / file_name
@@ -436,14 +449,16 @@ class AutodeskConnector:
         if not file_name:
             raise RpcError(JSONRPC_INTERNAL_ERROR, "User cancelled save to cloud.")
 
-        with progress_dialog("Uploading model") as report:
-            uploaded = aps.upload_file_to_folder(
+        uploaded = run_with_progress(
+            "Uploading model",
+            lambda report: aps.upload_file_to_folder(
                 project["id"],
                 folder["id"],
                 local_path,
                 display_name=file_name,
                 progress=_upload_callback(report),
-            )
+            ),
+        )
 
         directory = cache.model_dir(project["id"], uploaded["item_id"], uploaded["version_id"])
         cache.prepare_sole_child_dir(directory)
@@ -488,14 +503,16 @@ class AutodeskConnector:
             raise RpcError(JSONRPC_INTERNAL_ERROR, f"Cannot resolve parent folder for item '{item_id}'.")
         file_name = item.get("display_name") or local_path.name
 
-        with progress_dialog("Uploading model") as report:
-            uploaded = aps.upload_file_to_folder(
+        uploaded = run_with_progress(
+            "Uploading model",
+            lambda report: aps.upload_file_to_folder(
                 project_id,
                 folder_id,
                 local_path,
                 display_name=file_name,
                 progress=_upload_callback(report),
-            )
+            ),
+        )
 
         directory = cache.model_dir(project_id, uploaded["item_id"], uploaded["version_id"])
         cache.prepare_sole_child_dir(directory)

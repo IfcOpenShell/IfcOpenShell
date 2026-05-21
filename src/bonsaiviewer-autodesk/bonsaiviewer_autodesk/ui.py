@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import threading
+import time
 import tkinter as tk
 from tkinter import ttk
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Callable, Literal, TypeVar
 
 import customtkinter as ctk
 
@@ -226,9 +228,107 @@ class _ProgressContext:
                 pass
 
 
-def progress_dialog(message: str) -> _ProgressContext:
-    """Standalone progress dialog usable outside the browse picker."""
-    return _ProgressContext(None, message)
+T = TypeVar("T")
+
+# A progress sink: (phase, message, percent, detail) -> None.
+Report = Callable[[str, str, "int | None", "str | None"], None]
+
+
+class _ProgressBridge:
+    """Thread-safe hand-off of the latest progress report to the UI thread.
+
+    ``work`` runs on a worker thread and must never touch Tk; it calls
+    :meth:`report`, which only stashes the most recent update. The main thread
+    drains it via :meth:`take` and applies it to the dialog. Intermediate
+    updates are coalesced — only the latest matters for a progress bar.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._pending: tuple[str, str, int | None, str | None] | None = None
+
+    def report(
+        self,
+        phase: str,
+        message: str,
+        percent: int | None = None,
+        detail: str | None = None,
+    ) -> None:
+        with self._lock:
+            self._pending = (phase, message, percent, detail)
+
+    def take(self) -> tuple[str, str, int | None, str | None] | None:
+        with self._lock:
+            pending, self._pending = self._pending, None
+            return pending
+
+
+def run_with_progress(
+    message: str,
+    work: Callable[[Report], T],
+    *,
+    parent: tk.Misc | None = None,
+) -> T:
+    """Show a ProgressDialog and run ``work`` on a worker thread.
+
+    Tkinter is single-threaded and only repaints while its event loop runs, so
+    a long upload/download executed inline would freeze the dialog. Worse, on
+    Windows ``CTkToplevel`` withdraws itself at construction and re-shows via a
+    delayed ``after()`` callback — without a running loop that callback never
+    fires and the window stays invisible for the whole transfer.
+
+    So the blocking ``work`` runs on a background thread while the main thread
+    pumps the Tk event loop here. ``work`` receives a thread-safe ``report``
+    callback; its updates are marshalled back to the UI thread. Returns work's
+    result, or re-raises (on the main thread) whatever exception it raised.
+    """
+    root = ensure_tk_app()
+    dialog = ProgressDialog(message, parent)
+    bridge = _ProgressBridge()
+    outcome: dict[str, Any] = {}
+
+    def runner() -> None:
+        try:
+            outcome["value"] = work(bridge.report)
+        except BaseException as exc:  # noqa: BLE001 - re-raised on the main thread
+            outcome["error"] = exc
+
+    thread = threading.Thread(target=runner, name="autodesk-progress", daemon=True)
+    thread.start()
+
+    try:
+        while thread.is_alive():
+            pending = bridge.take()
+            try:
+                if pending is not None:
+                    dialog.report(*pending)
+                else:
+                    root.update()
+            except tk.TclError:
+                break
+            time.sleep(0.03)
+        thread.join()
+        final = bridge.take()
+        if final is not None:
+            try:
+                dialog.report(*final)
+            except tk.TclError:
+                pass
+    finally:
+        try:
+            dialog.withdraw()
+            dialog.destroy()
+        except tk.TclError:
+            pass
+        try:
+            root.update_idletasks()
+            root.update()
+        except tk.TclError:
+            pass
+
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["value"]
 
 
 # --- browse ------------------------------------------------------------------

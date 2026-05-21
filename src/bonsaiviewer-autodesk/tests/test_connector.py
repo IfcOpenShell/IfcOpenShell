@@ -1,12 +1,11 @@
 """Tests for the RPC handlers (``bonsaiviewer_autodesk.connector``).
 
 The non-interactive handlers are exercised against a fake ``ApsClient`` so no
-network or GUI is touched; ``progress_dialog`` is stubbed out.
+network or GUI is touched; ``run_with_progress`` is stubbed out.
 """
 
 from __future__ import annotations
 
-from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -18,9 +17,9 @@ from bonsaiviewer_autodesk.rpc import RpcError
 # --- fakes / fixtures --------------------------------------------------------
 
 
-@contextmanager
-def _fake_progress(_message):
-    yield lambda *_args, **_kwargs: None
+def _fake_run_with_progress(_message, work, *, parent=None):
+    """Run ``work`` inline with a no-op report — no worker thread, no GUI."""
+    return work(lambda *_args, **_kwargs: None)
 
 
 class FakeAps:
@@ -58,7 +57,7 @@ class FakeAps:
 @pytest.fixture
 def make_connector(config_dir, cache_dir, monkeypatch):
     """Build an AutodeskConnector wired to a fake ApsClient."""
-    monkeypatch.setattr(connector, "progress_dialog", _fake_progress)
+    monkeypatch.setattr(connector, "run_with_progress", _fake_run_with_progress)
 
     def _make(aps: FakeAps) -> connector.AutodeskConnector:
         conn = connector.AutodeskConnector()
