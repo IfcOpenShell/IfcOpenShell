@@ -3864,6 +3864,11 @@ class GizmoDimension(GizmoMovable):
         self._display_value = max(-10000.0, min(length, 10000.0))
         # Clamp to valid range (0 to 10000 meters is reasonable for BIM) for drawing
         self._dimension_length = max(0.0, min(abs(length), 10000.0))
+        # Smaller dimensions win selection when hit regions overlap: a long gizmo's
+        # hit box fully contains a nested short one's, so without a bias the long
+        # one wins and the short one is unreachable. The long one stays clickable
+        # at its exposed ends regardless of bias.
+        self.select_bias = -self._dimension_length
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set:
         """Initialize dimension gizmo interaction with click-position tracking.
