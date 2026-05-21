@@ -1364,7 +1364,7 @@ class DumbWallJoiner:
                         tool.Ifc.get(), opening.Representation, exclude=["IfcGeometricRepresentationContext"]
                     )
 
-                rel.RelatedBuildingElement = element2
+                rel.RelatingOpeningElement = new_opening
 
                 # Remove the old opening
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
