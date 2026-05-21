@@ -1756,6 +1756,10 @@ class Drawing(bonsai.core.tool.Drawing):
             # For section/elevation views, elevate the segment vertically
             if not (points := helper.elevate_segment(bounds, [v1, v2])):
                 return
+        elif target_view == "MODEL_VIEW":
+            # For model views, clip to XY bounds and keep Z (3D line at true elevation)
+            if not (points := helper.clip_segment(bounds, [v1, v2])):
+                return
         else:
             return
 

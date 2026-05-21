@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
@@ -77,6 +79,7 @@ if TYPE_CHECKING:
         BIMRoofProperties,
         BIMStairProperties,
         BIMSverchokProperties,
+        BIMWallProperties,
         BIMWindowProperties,
     )
 
@@ -97,6 +100,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
         return obj.BIMStairProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_wall_props(cls, obj: bpy.types.Object) -> BIMWallProperties:
+        return obj.BIMWallProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
@@ -312,6 +319,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         """Return first found IfcExtrudedAreaSolid"""
+        if not representation.Items:
+            return None
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
@@ -805,6 +814,57 @@ class Model(bonsai.core.tool.Model):
         return booleans
 
     @classmethod
+    def get_connected_slab_objs(cls, wall: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        """Return Blender objects for slabs connected to wall via IfcRelConnectsElements(TOP)."""
+        result = []
+        for rel in wall.ConnectedFrom:
+            if rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP":
+                slab_obj = tool.Ifc.get_object(rel.RelatingElement)
+                if slab_obj:
+                    result.append(slab_obj)
+        return result
+
+    @classmethod
+    def get_connected_wall_objs(cls, slab: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        """Return Blender objects for LAYER2 walls connected to slab via IfcRelConnectsElements(TOP)."""
+        result = []
+        for rel in slab.ConnectedTo:
+            if rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP":
+                wall_obj = tool.Ifc.get_object(rel.RelatedElement)
+                if wall_obj:
+                    result.append(wall_obj)
+        return result
+
+    @classmethod
+    def has_underside_connection(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if element has an IfcRelConnectsElements(TOP) relationship."""
+        return any(rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP" for rel in element.ConnectedFrom)
+
+    @classmethod
+    def remove_wall_to_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> None:
+        """Remove all IfcBooleanResult items previously added by extend_walls_to_underside."""
+        manual_booleans = cls.get_manual_booleans(wall)
+        if not manual_booleans:
+            return
+        ifc_file = tool.Ifc.get()
+        for b in manual_booleans:
+            sec = b.SecondOperand
+            if sec is None:
+                # The IfcPolygonalFaceSet was already deleted externally.  Splice the
+                # orphaned IfcBooleanResult out of the chain so the representation stays valid.
+                parents = list(ifc_file.get_inverse(b))
+                for parent in parents:
+                    if parent.is_a("IfcBooleanResult") and parent.FirstOperand == b:
+                        parent.FirstOperand = b.FirstOperand
+                    elif parent.is_a("IfcShapeRepresentation"):
+                        new_items = tuple((set(parent.Items) - {b}) | {b.FirstOperand})
+                        parent.Items = new_items
+                cls.unmark_manual_booleans(wall, [b.id()])
+                ifc_file.remove(b)
+            elif sec.is_a("IfcTessellatedFaceSet"):
+                tool.Geometry.remove_representation_item(sec, wall)
+
+    @classmethod
     def get_manual_booleans(
         cls, element: ifcopenshell.entity_instance, representation: Optional[ifcopenshell.entity_instance] = None
     ) -> list[ifcopenshell.entity_instance]:
@@ -816,7 +876,8 @@ class Model(bonsai.core.tool.Model):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return []
-        booleans = [b for b in cls.get_booleans(element, representation) if b.id() in boolean_ids]
+        all_chain_booleans = cls.get_booleans(element, representation)
+        booleans = [b for b in all_chain_booleans if b.id() in boolean_ids]
         return booleans
 
     @classmethod
@@ -1305,8 +1366,8 @@ class Model(bonsai.core.tool.Model):
         return [obj for obj in tool.Blender.get_selected_objects() if tool.Ifc.get_entity(obj)]
 
     @classmethod
-    def has_selected_ifc_objects(cls) -> bool:
-        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects())
+    def has_selected_ifc_objects(cls, include_active: bool = True) -> bool:
+        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects(include_active=include_active))
 
     @classmethod
     def get_selected_mesh_objects(cls) -> list[bpy.types.Object]:
@@ -2379,6 +2440,7 @@ class Model(bonsai.core.tool.Model):
         clipping_bm = bmesh.new()
         vertex_map = {}
 
+        kept = 0
         for face in bm.faces:
             face.normal_update()
             normal = face.normal.to_4d()
@@ -2386,6 +2448,7 @@ class Model(bonsai.core.tool.Model):
             world_normal_z = (obj.matrix_world @ normal).z
             if world_normal_z >= -0.5:
                 continue
+            kept += 1
             new_verts = []
             for vert in face.verts:
                 if not (new_vert := vertex_map.get(vert.index, None)):

@@ -42,7 +42,8 @@ WHITE = numpy.array((1.0, 1.0, 1.0))
 
 DO_NOTHING = lambda *args: None
 
-ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, 'arrange_polygon_settings') else None
+ARRANGE_POLYGON_SETTINGS = W.arrange_polygon_settings() if hasattr(W, "arrange_polygon_settings") else None
+
 
 @dataclass
 class draw_settings:
@@ -537,7 +538,10 @@ def main(
                     *(tup for i, tup in enumerate(zip(path_objects, section_polies, polies)) if has_relevant_zone(i))
                 )
 
-            arranged = W.arrange_polygons(*filter(None, (ARRANGE_POLYGON_SETTINGS,)), polies)
+            arranged = W.arrange_polygons(
+                *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
+                polies,  # ty: ignore[too-many-positional-arguments]
+            )
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)
             svg3 = dom3.childNodes[0]

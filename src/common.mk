@@ -1,7 +1,7 @@
 SHELL := sh
 IS_STABLE:=FALSE
-PYTHON:=python3.11
-PIP:=pip3.11
+PYTHON:=python3
+PIP:=pip3
 VERSION:=$(shell cat ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
 SED:=sed -i

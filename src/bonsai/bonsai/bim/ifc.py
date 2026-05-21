@@ -514,6 +514,7 @@ class IfcStore:
                     BrickStore.end_transaction()
                 IfcStore.end_transaction(operator)
                 bonsai.bim.handler.refresh_ui_data()
+                tool.Parametric.refresh_post_commit()
 
                 if method == "MODAL":
                     cls.modal_in_progress = False

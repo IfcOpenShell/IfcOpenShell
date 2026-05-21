@@ -51,6 +51,62 @@ To use these tools:
 2. Use the appropriate shortcut or select the tool from the top bar.
 3. Follow the on-screen prompts or adjust parameters as needed.
 
+Interactive Parametric Editing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Selected walls expose an in-viewport parametric edit mode that mirrors the door /
+window / stair pen-icon UI:
+
+1. Select a single wall. A pen (Edit Wall) icon appears next to the wall in the
+   3D viewport, and a matching ``Edit Wall`` button is available in the
+   ``Parametric Geometry`` tab of the N panel.
+2. Click the pen icon (or the panel button) to enter edit mode. Dimension
+   gizmos for length, height, slope (x-angle) and the layer offset baseline
+   appear around the wall.
+3. Drag any handle to update the value. Dragging only modifies the in-progress
+   draft — the IFC file is not touched until you commit, so dragging a length
+   handle through many intermediate values produces zero extra IFC entities.
+4. Click the green ✓ icon to commit; click the red ✗ to discard. Pressing the
+   ✓ icon on a wall that hasn't been dragged is a true byte-identical no-op —
+   the IFC file is unchanged.
+
+While editing, additional gizmos surface based on context:
+
+- **Cycle Baseline**: cycles the layer offset baseline (Exterior → Centreline →
+  Interior). Shift+click cycles in reverse.
+- **3D-cursor scissors**: appears when the 3D cursor sits on the wall axis;
+  clicking splits the wall at the cursor's projected X.
+- **3D-cursor extend (horizontal)**: appears when the 3D cursor sits beyond the
+  wall axis; clicking extends the wall to the cursor's projected X.
+- **3D-cursor extend (vertical)**: appears when the 3D cursor sits above /
+  below the wall; clicking extends the wall's height to the cursor's Z.
+- **Rotate 90°**: rotates the wall around its Z axis.
+- **Show / hide openings**: toggles opening fill visibility (doors and windows).
+
+When two walls are selected, the gizmo switches to a state-aware icon at their
+common point:
+
+- Already joined → an Unjoin icon at the shared corner.
+- Collinear (same axis line) → a Merge icon at the boundary midpoint.
+- Joinable corner → a Join icon at the floor + an Extend-To-Wall icon at the
+  active wall's top.
+
+When a wall and a slab (LAYER3 element) are selected, an Extend-Vertically icon
+appears at the wall's origin / slab elevation; clicking dispatches
+``bim.extend_walls_to_underside``.
+
+When a wall and a non-wall, non-slab object are selected, an Add-Opening icon
+appears above the wall at the other object's projected X.
+
+Auto-commit on save
+~~~~~~~~~~~~~~~~~~~
+
+Pressing Ctrl+S (or running ``bim.save_project``) while any wall is mid-edit
+flushes every pending parametric draft first — the same Apply-Wall-Edits the ✓
+icon performs, scoped per wall. The IFC saved on disk reflects the values the
+user dragged, not the snapshot taken when edit mode was entered. Each commit
+produces its own undo entry, so Ctrl+Z walks back through commits individually.
+
 Aligning Walls
 ^^^^^^^^^^^^^^
 
