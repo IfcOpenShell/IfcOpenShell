@@ -23,7 +23,7 @@
 import copy
 import math
 from math import atan2, cos, degrees, pi, sin
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Union, get_args
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union, get_args
 
 import bmesh
 import bpy
@@ -34,9 +34,11 @@ import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
+import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
@@ -1191,6 +1193,62 @@ class DumbWallPlaner:
         tool.Model.recalculate_walls([w for w in set(walls) if w])
 
 
+def _opening_axis_extent(opening, axis_reference, unit_scale):
+    """Return ``(min_t, max_t)``: the opening's world-space footprint
+    projected onto ``axis_reference`` as parametric positions along the
+    wall axis (``0`` is the start of the axis line, ``1`` is its end).
+    Used to detect openings whose footprint straddles a cut.
+
+    Computed via ``ifcopenshell.geom.create_shape`` so the result is
+    correct for any representation type Bonsai may produce — mapped
+    representations, swept-area solids, breps, boolean clips, etc. —
+    without needing a Blender object (Bonsai hides openings after
+    ``bim.add_opening``). Falls back to a degenerate single-point range
+    at the placement origin only when the geometry kernel cannot build
+    a shape from the opening."""
+    verts = None
+    shape_matrix: Optional[Matrix] = None
+    try:
+        settings = ifcopenshell.geom.settings()
+        shape = ifcopenshell.geom.create_shape(settings, opening)
+        verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
+        shape_matrix = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape).tolist())
+    except Exception:
+        verts = None
+        shape_matrix = None
+
+    if verts is None or shape_matrix is None or len(verts) == 0:
+        placement = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
+        placement.translation *= unit_scale
+        _, t = mathutils.geometry.intersect_point_line(placement.translation.to_2d(), *axis_reference)
+        return t, t
+
+    positions = []
+    for v in verts:
+        world = (shape_matrix @ Vector((float(v[0]), float(v[1]), float(v[2])))).to_2d()
+        _, t = mathutils.geometry.intersect_point_line(world, *axis_reference)
+        positions.append(t)
+    return min(positions), max(positions)
+
+
+def _add_void_copy(building_element, source_opening):
+    """Add an unfilled IfcOpeningElement to ``building_element`` whose
+    geometry and placement mirror ``source_opening``. Used when a filled
+    opening's void straddles a wall split — the filling stays on its wall,
+    but the void must also apply to the neighbour so its body gets cut."""
+    void_copy = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=source_opening)
+    for fill_rel in list(void_copy.HasFillings or ()):
+        tool.Ifc.get().remove(fill_rel)
+    void_copy.VoidsElements[0].RelatingBuildingElement = building_element
+    if void_copy.ObjectPlacement and void_copy.ObjectPlacement.is_a("IfcLocalPlacement"):
+        if building_element.ObjectPlacement:
+            void_copy.ObjectPlacement.PlacementRelTo = building_element.ObjectPlacement
+    if source_opening.Representation:
+        void_copy.Representation = ifcopenshell.util.element.copy_deep(
+            tool.Ifc.get(), source_opening.Representation, exclude=["IfcGeometricRepresentationContext"]
+        )
+
+
 class DumbWallJoiner:
     def __init__(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1255,39 +1313,44 @@ class DumbWallJoiner:
             )
 
         # During the duplication process, unfilled voids are copied, so we need
-        # to check openings on both element1 and element2. Let's check element1
-        # first.
+        # to check openings on both element1 and element2. Each wall keeps the
+        # opening when the opening's axis-projected extent overlaps that wall's
+        # portion of the axis — straddling openings are intentionally kept on
+        # both walls so each wall body gets the appropriate cut. Strict
+        # inequalities mean a boundary-only touch (or a degenerate single-point
+        # extent at the cut) keeps the opening on both walls — the safer
+        # default when the helper cannot resolve a true bounding range.
         for opening in [
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
-            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            opening_matrix.translation *= unit_scale
-            opening_location = opening_matrix.translation
-            _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
-            if opening_position > cut_percentage:
-                # The opening should be removed from element1.
+            min_t, _ = _opening_axis_extent(opening, axis1["reference"], unit_scale)
+            if min_t > cut_percentage:
+                # Opening lies entirely past the cut — only element2 should keep it.
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
-        # Now let's check element2.
         for opening in [
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
-            opening_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement).tolist())
-            opening_matrix.translation *= unit_scale
-            opening_location = opening_matrix.translation
-            _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
-            if opening_position < cut_percentage:
-                # The opening should be removed from element2.
+            _, max_t = _opening_axis_extent(opening, axis1["reference"], unit_scale)
+            if max_t < cut_percentage:
+                # Opening lies entirely before the cut — only element1 should keep it.
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         # During the duplication process, filled voids are not copied. So we
-        # only need to check fillings on the original element1.
-        for opening in [r.RelatedOpeningElement for r in element1.HasOpenings if r.RelatedOpeningElement.HasFillings]:
+        # only need to check fillings on the original element1. The filling
+        # (door/window) belongs to whichever wall contains its center, but the
+        # void may need to apply to both walls when the void's extent straddles
+        # the cut — otherwise the neighbour wall's body would not be cut.
+        for opening in [
+            r.RelatedOpeningElement for r in list(element1.HasOpenings) if r.RelatedOpeningElement.HasFillings
+        ]:
             rel = opening.HasFillings[0]
             filling = rel.RelatedBuildingElement
             filling_obj = tool.Ifc.get_object(filling)
             filling_location = filling_obj.matrix_world.translation
             _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis1["reference"])
+            min_t, max_t = _opening_axis_extent(opening, axis1["reference"], unit_scale)
+            void_straddles = min_t < cut_percentage < max_t
             if filling_position > cut_percentage:
                 # The filling should be moved from element1 to element2.
                 new_opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=opening)
@@ -1305,6 +1368,15 @@ class DumbWallJoiner:
 
                 # Remove the old opening
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
+
+                if void_straddles:
+                    # Filling moved to element2, but void straddles — add a
+                    # pure-void copy back to element1 so its body still gets cut.
+                    _add_void_copy(element1, new_opening)
+            elif void_straddles:
+                # Filling stays on element1, but void straddles — add a pure-void
+                # copy to element2 so its body gets cut.
+                _add_void_copy(element2, opening)
 
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3 = (wall1.matrix_world.inverted() @ intersect.to_3d()).to_2d() / unit_scale
