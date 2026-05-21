@@ -385,6 +385,51 @@ Scenario: Edit text - change literal
     When I click "Edit Text"
     Then I see "Hello World"
 
+Scenario: Add text literal
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    And I click the "ADD" after the text "Literals:"
+    And I set the "2nd Literal" property to "New Literal"
+    When I click "Edit Text"
+    Then I see "New Literal"
+
+Scenario: Remove text literal
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save IFC project
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.toggle_target_view(option="EXPAND", target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
+    And I press "bim.add_annotation"
+    And the object "IfcAnnotation/TEXT" is selected
+    And I look at the "BIM_PT_text" panel
+    And I click "Enable Editing Text"
+    And I set the "Literal" property to "Keep This"
+    And I click the "ADD" after the text "Literals:"
+    And I set the "2nd Literal" property to "Remove This"
+    And I click "Edit Text"
+    And I click "Enable Editing Text"
+    When I click the "2nd" "X"
+    And I click "Edit Text"
+    Then I see "Keep This"
+    And I don't see "Remove This"
+
 Scenario: Add reference image
     Given an empty IFC project
     And I save IFC project

@@ -83,6 +83,7 @@ def validate_type(
 
     if remaining_items:
         ifcopenshell.api.geometry.add_boolean(file, preferred_item, remaining_items, "UNION")
+        representation.Items = [i for i in representation.Items if i not in remaining_items]
 
     representation.RepresentationType = ifcopenshell.util.representation.guess_type(representation.Items)
     if representation.RepresentationType == "CSG":

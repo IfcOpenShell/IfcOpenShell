@@ -85,7 +85,7 @@ class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
-    blender_op = bpy.ops.mesh.separate.get_rna_type()
+    blender_op = bpy.ops.mesh.separate.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = blender_op.description + ".\nAlso makes sure changes are in sync with IFC."
     bl_options = {"REGISTER", "UNDO"}
     blender_type_prop = blender_op.properties["type"]
@@ -246,7 +246,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
 class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_origin_set"
-    blender_op = bpy.ops.object.origin_set.get_rna_type()
+    blender_op = bpy.ops.object.origin_set.get_rna_type()  # ty: ignore[missing-argument]
     bl_label = "IFC Origin Set"
     bl_description = (
         blender_op.description + ".\nAlso makes sure changes are in sync with IFC (operator works only on IFC objects)"
@@ -801,7 +801,7 @@ def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
-    blender_op = bpy.ops.object.delete.get_rna_type()
+    blender_op = bpy.ops.object.delete.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes in sync with IFC."
@@ -821,7 +821,7 @@ class OverrideDelete(bpy.types.Operator):
     def poll(cls, context):
         # Match `object.delete` poll for consistency.
         # `object.delete` poll just checks for OBJECT mode.
-        poll = bpy.ops.object.delete.poll()
+        poll = bpy.ops.object.delete.poll()  # ty: ignore[missing-argument]
         if poll:
             return True
         cls.poll_message_set("Only available in OBJECT mode")
@@ -1045,7 +1045,7 @@ class SelectedIdsData(NamedTuple):
 class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_outliner_delete"
     bl_label = "IFC Delete"
-    blender_op = bpy.ops.outliner.delete.get_rna_type()
+    blender_op = bpy.ops.outliner.delete.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes in sync with IFC."
@@ -1060,13 +1060,13 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context) -> bool:
         # Match `outliner.delete` poll for consistency.
         # `outliner.delete` just checks `area.type` == `OUTLINER`.
-        poll = bpy.ops.outliner.delete.poll()
+        poll = bpy.ops.outliner.delete.poll()  # ty: ignore[missing-argument]
         if poll:
             return True
         cls.poll_message_set("Only available from Outliner.")
         return False
 
-    def execute(self, context):
+    def execute(self, context):  # ty:ignore[override-of-final-method]
         if len(getattr(context, "selected_ids", [])) == 0:
             return {"FINISHED"}
 
@@ -1164,7 +1164,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
     def poll(cls, context) -> bool:
         # Match `object.duplicate_move` poll for consistency.
         # `object.duplicate_move` poll checks for OBJECT mode.
-        poll = bpy.ops.object.duplicate_move.poll()
+        poll = bpy.ops.object.duplicate_move.poll()  # ty: ignore[missing-argument]
         if poll:
             return True
         cls.poll_message_set("Only available in OBJECT mode")
@@ -1908,7 +1908,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_object_join"
     bl_label = "IFC Join"
-    blender_op = bpy.ops.mesh.separate.get_rna_type()
+    blender_op = bpy.ops.mesh.separate.get_rna_type()  # ty: ignore[missing-argument]
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes are in sync with IFC."
@@ -1926,7 +1926,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not bpy.ops.object.join.poll():
+        if not bpy.ops.object.join.poll():  # ty: ignore[missing-argument]
             cls.poll_message_set("Active object is not EDITable.")
             return False
         if not context.selected_editable_objects:
@@ -2289,7 +2289,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif obj in pprops.clipping_planes_objs:
             self.report({"ERROR"}, "Clipping planes cannot be edited")
         elif element:
-            if not obj.data:
+            if not obj.data or obj.type not in ("MESH", "CURVE"):
                 self.report({"INFO"}, "No geometry to edit")
             elif tool.Geometry.is_locked(element):
                 self.report({"ERROR"}, lock_error_message(obj.name))

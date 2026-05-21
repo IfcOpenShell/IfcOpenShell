@@ -260,14 +260,14 @@ class CreateAllShapes(bpy.types.Operator):
     )
     bl_options = {"REGISTER"}
 
-    geometry_library: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    geometry_library: bpy.props.EnumProperty(
         name="Geometry Library",
         description="Geometry library to use for testing shape creation.",
         items=[(i, i, "") for i in get_args(ifcopenshell.geom.GEOMETRY_LIBRARY)],
         # By default use the same library as used for importing ifc project.
         default="hybrid-cgal-simple-opencascade",
     )
-    custom_geometry_library: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
+    custom_geometry_library: bpy.props.StringProperty(
         name="Custom Geometry Library",
         description="Provide a custom geometry library name, will override the 'geometry library' property.",
     )
@@ -781,7 +781,7 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Purge Unused Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    object_type: bpy.props.EnumProperty(
         name="Object Type",
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
@@ -827,7 +827,7 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    object_type: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    object_type: bpy.props.EnumProperty(
         name="Object Type",
         items=((s, s.capitalize(), "") for s in get_args(tool.Debug.PurgeMergeObjectType)),
     )
@@ -1073,7 +1073,7 @@ class ChangeLogLevel(bpy.types.Operator):
     bl_options = {"REGISTER"}
     bl_description = "Change general log level across all Python code in Blender"
 
-    log_level: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+    log_level: bpy.props.EnumProperty(
         name="Log Level",
         items=[(i, i, "") for i in get_args(LogLevelType)],
         default="WARNING",

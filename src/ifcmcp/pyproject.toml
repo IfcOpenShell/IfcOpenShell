@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ifcopenshell-mcp"
+version = "0.0.0"
+authors = [
+  { name="Bruno Postle", email="bruno@postle.net" },
+]
+description = "MCP server for querying and editing IFC building models"
+readme = "README.md"
+keywords = ["IFC", "BIM", "MCP"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
+]
+dependencies = ["ifcopenshell", "ifcquery", "ifcedit"]
+
+[project.optional-dependencies]
+mcp = ["mcp"]
+
+[project.scripts]
+ifcmcp = "ifcmcp.__main__:main"
+
+[project.urls]
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
+[tool.setuptools.packages.find]
+include = ["ifcmcp*"]
+exclude = ["test*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

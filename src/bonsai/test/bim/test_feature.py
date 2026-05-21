@@ -133,7 +133,11 @@ class PanelSpy:
             self.spied_labels.append(kwargs["text"])
             return self
         elif self.spied_attr == "prop":
-            props, name = args
+            if args:
+                props, name = args
+            else:
+                props = kwargs.get("data")
+                name = kwargs.get("property")
             props: bpy.types.bpy_struct
             text = kwargs.get("text", props.bl_rna.properties[name].name)
             icon = kwargs.get("icon", None)
@@ -242,7 +246,7 @@ class TemplateListItemSpy(PanelSpy):
         self.spied_props: list[dict[str, Any]] = []
         self.spied_operators: list[dict[str, Any]] = []
         if len(signature(blender_panel.draw_item).parameters) == 8:
-            blender_panel.draw_item(
+            blender_panel.draw_item(  # ty:ignore[missing-argument]
                 self,
                 bpy.context,
                 self,
@@ -388,6 +392,32 @@ def i_look_at_the_panel_panel(panel: str) -> None:
     global panel_spy
     panel_spy = PanelSpy(panel_class)
     panel_spy.refresh_spy()
+
+
+@given(parsers.parse("I look at the tool header"))
+@when(parsers.parse("I look at the tool header"))
+@then(parsers.parse("I look at the tool header"))
+def i_look_at_the_tool_header() -> None:
+    from bonsai.bim.module.model.workspace import EditObjectUI
+
+    class MockRegion:
+        type = "UI"
+
+    class MockContext:
+        def __getattr__(self, name):
+            if name == "region":
+                return MockRegion()
+            return getattr(bpy.context, name)
+
+    global panel_spy
+    panel_spy = PanelSpy(EditObjectUI)
+    panel_spy.is_spy_dirty = False
+    panel_spy.spied_attr = None
+    panel_spy.spied_labels = []
+    panel_spy.spied_props = []
+    panel_spy.spied_operators = []
+    panel_spy.spied_lists = []
+    EditObjectUI.draw(MockContext(), panel_spy)
 
 
 @given(parsers.parse('I open the "{name}" menu'))
@@ -610,8 +640,9 @@ def i_see_the_prop_property_is_value(prop, value):
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
 def i_set_the_prop_property_to_value(prop: str, value: str):
     """
-    :param prop: Could be either property name, property text, property icon
-        or property index (e.g. "1st", "2nd", "5th").
+    :param prop: Could be either property name, property text, property icon,
+        property index (e.g. "1st", "2nd", "5th"), or Nth named property
+        (e.g. "2nd Literal" for the 2nd property called "Literal").
     :param value:
         For boolean propeties - 'TRUE' or 'FALSE'.
     """
@@ -619,12 +650,28 @@ def i_set_the_prop_property_to_value(prop: str, value: str):
     assert panel_spy
     panel_spy.refresh_spy()
     is_nth = False
-    if prop[0].isnumeric() and prop.endswith(("st", "nd", "th")):
+    is_nth_named = False
+    nth_target = 0
+    prop_name = prop
+    if " " in prop and prop[0].isnumeric():
+        parts = prop.split(" ", 1)
+        if parts[0].endswith(("st", "nd", "th")):
+            is_nth_named = True
+            nth_target = int(parts[0][:-2]) - 1
+            prop_name = parts[1]
+    elif prop[0].isnumeric() and prop.endswith(("st", "nd", "th")):
         is_nth = True
+    named_count = 0
     for nth, spied_prop in enumerate(panel_spy.spied_props):
         if is_nth and nth != int(prop[:-2]) - 1:
             continue
-        if not is_nth and prop not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+        if is_nth_named:
+            if prop_name not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+                continue
+            if named_count != nth_target:
+                named_count += 1
+                continue
+        elif not is_nth and prop not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
             continue
         if spied_prop["prop_type"] == "BOOLEAN":
             if value == "TRUE":
@@ -871,6 +918,29 @@ def i_click_button(button):
     assert panel_spy
     panel_spy.refresh_spy()
     _i_click_button_on_panel(button, panel_spy)
+
+
+@given(parsers.parse('I click the "{nth}" "{button}"'))
+@when(parsers.parse('I click the "{nth}" "{button}"'))
+@then(parsers.parse('I click the "{nth}" "{button}"'))
+def i_click_the_nth_button(nth, button):
+    """
+    :param nth: Ordinal like "1st", "2nd", "3rd" to select the Nth matching button.
+    :param button: The text or icon of the button to click.
+    """
+    assert panel_spy
+    panel_spy.refresh_spy()
+    target = int(nth[:-2]) - 1
+    count = 0
+    for spied_operator in panel_spy.spied_operators:
+        if spied_operator["text"] == button or spied_operator["icon"] == button:
+            if count == target:
+                spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
+                panel_spy.is_spy_dirty = True
+                return
+            count += 1
+    debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
+    assert False, f"Could not find {nth} {button}:\n{debug}"
 
 
 @given(parsers.parse('I click the "{button}" after the text "{text}"'))

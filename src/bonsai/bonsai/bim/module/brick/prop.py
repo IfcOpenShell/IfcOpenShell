@@ -46,26 +46,26 @@ def get_libraries(self, context):
 
 
 def get_namespaces(self, context):
-    global NAMESPACES_ENUM_ITEMS
+    global NAMESPACES_ENUM_ITEMS  # ty: ignore[unresolved-global]
     NAMESPACES_ENUM_ITEMS = [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
     return NAMESPACES_ENUM_ITEMS
 
 
 def get_brick_entity_classes(self, context):
-    global ENTITY_CLASSES_ENUM_ITEMS
+    global ENTITY_CLASSES_ENUM_ITEMS  # ty: ignore[unresolved-global]
     entity = self.brick_entity_create_type
     ENTITY_CLASSES_ENUM_ITEMS = [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
     return ENTITY_CLASSES_ENUM_ITEMS
 
 
 def get_brick_roots(self, context):
-    global BRICK_ROOTS_ENUM_ITEMS
+    global BRICK_ROOTS_ENUM_ITEMS  # ty: ignore[unresolved-global]
     BRICK_ROOTS_ENUM_ITEMS = [(root, root, "") for root in BrickStore.root_classes]
     return BRICK_ROOTS_ENUM_ITEMS
 
 
 def get_brick_relations(self, context):
-    global BRICK_RELATIONS_ENUM_ITEMS
+    global BRICK_RELATIONS_ENUM_ITEMS  # ty: ignore[unresolved-global]
     BRICK_RELATIONS_ENUM_ITEMS = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
     for relation in BrickschemaData.data["active_relations"]:
         if relation["predicate_name"] == "label":

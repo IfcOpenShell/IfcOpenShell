@@ -1,14 +1,16 @@
-<script>
+<script lang="ts">
     import * as Tooltip from "$lib/components/ui/tooltip";
-    import { IFCModels, loadIfc, unloadIfc, auditIfc, openIfc, createAuditReport, clearIdsAuditReports, runAudit } from "$src/modules/api/api.svelte.js";
-    import * as IDS from "$src/modules/api/ids.svelte.js";
-    import { error, success } from "$src/modules/utils/toast.svelte.js";
+    import { IFCModels, openIfc, unloadIfc, runAudit } from "$src/modules/api/api.svelte";
+    import * as IDS from "$src/modules/api/ids.svelte";
+    import { error, success } from "$src/modules/utils/toast.svelte";
     import { ChevronRightIcon, LinkIcon, XIcon } from "@lucide/svelte";
-    import { Bonsai, connect, disconnect, runAudit as runBonsaiAudit } from "$src/modules/api/bonsai.svelte.js";
+    import { Bonsai, connect, disconnect, runAudit as runBonsaiAudit } from "$src/modules/api/bonsai.svelte";
     import { onMount } from 'svelte';
+    import type { AuditReport } from "$src/types/report";
     
     let isAuditing = $state(false);
-    let activeTab = $state('home');
+    let activeTab = $state<"home" | "bonsai">('home');
+    // biome-ignore lint/style/useConst: Svelte state uses assignment for updates.
     let isMinimized = $state(false);
     
     const handleLoadModel = async () => {
@@ -16,15 +18,17 @@
             await openIfc();
             success('IFC model loaded successfully');
         } catch (err) {
-            error(`Failed to load IFC model: ${err.message}`);
+            const message = err instanceof Error ? err.message : String(err);
+            error(`Failed to load IFC model: ${message}`);
         }
     };
     
-    const handleUnloadModel = async (modelId) => {
+    const handleUnloadModel = async (modelId: string) => {
         try {
             await unloadIfc(modelId);
         } catch (err) {
-            error(`Failed to unload model: ${err.message}`);
+            const message = err instanceof Error ? err.message : String(err);
+            error(`Failed to unload model: ${message}`);
         }
     };
     
@@ -35,14 +39,14 @@
             success('Audit completed successfully');
         } catch (err) {
             console.error("Audit failed: ", err);
-            error(`Audit failed: check console for details`);
+            error("Audit failed: check console for details");
         } finally {
             isAuditing = false;
         }
     };
     
-    const handleViewAuditReport = (auditId) => {
-        const auditReport = IFCModels.audits.find(audit => audit.id === auditId);
+    const handleViewAuditReport = (auditId: string) => {
+        const auditReport = IFCModels.audits.find(audit => audit.id === auditId) as AuditReport | undefined;
         if (!auditReport) return;
         
         // Switch to the IDS document that was used for this audit
@@ -58,7 +62,7 @@
         }
     };
     
-    const formatFileSize = (bytes) => {
+    const formatFileSize = (bytes: number) => {
         const units = ['B', 'KB', 'MB', 'GB'];
         let size = bytes;
         let unitIndex = 0;
@@ -91,7 +95,7 @@
     <div class="buttons">
         <Tooltip.Provider>
             {#if isMinimized}
-                <Tooltip.Root disableHoverableContent="true">
+                <Tooltip.Root disableHoverableContent>
                     <Tooltip.Trigger>
                         <button class="tb-btn expand-btn" onclick={() => isMinimized = false} aria-label="Expand Toolbar">
                             <ChevronRightIcon size={24} />
@@ -102,7 +106,7 @@
                     </Tooltip.Content>
                 </Tooltip.Root>
             {/if}
-            <Tooltip.Root disableHoverableContent="true">
+            <Tooltip.Root disableHoverableContent>
                 <Tooltip.Trigger>
                     <button class="tb-btn {activeTab === 'home' ? 'active' : ''}" onclick={() => activeTab = 'home'} aria-label="Home">
                         <svg class="w-6 h-6" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -114,7 +118,7 @@
                     <p>Home</p>
                 </Tooltip.Content>
             </Tooltip.Root>
-            <Tooltip.Root disableHoverableContent="true">
+            <Tooltip.Root disableHoverableContent>
                 <Tooltip.Trigger>
                     <button class="tb-btn {activeTab === 'bonsai' ? 'active' : ''}" onclick={() => activeTab = 'bonsai'} aria-label="Bonsai Integration">
                         <svg style="height: 20px;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32mm" height="32mm" version="1.1" viewBox="0 0 32 32" xml:space="preserve">

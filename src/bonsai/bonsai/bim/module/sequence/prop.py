@@ -412,7 +412,7 @@ WorkPlanEditingType = Literal["-", "ATTRIBUTES", "SCHEDULES", "WORK_SCHEDULE", "
 
 class BIMWorkPlanProperties(PropertyGroup):
     work_plan_attributes: CollectionProperty(name="Work Plan Attributes", type=Attribute)
-    editing_type: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    editing_type: EnumProperty(
         items=[(i, i, "") for i in get_args(WorkPlanEditingType)],
     )
     work_plans: CollectionProperty(name="Work Plans", type=WorkPlan)
@@ -430,8 +430,8 @@ class BIMWorkPlanProperties(PropertyGroup):
 
 
 class IFCStatus(PropertyGroup):
-    name: StringProperty()  # pyright: ignore[reportRedeclaration]
-    is_visible: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    name: StringProperty()
+    is_visible: BoolProperty(
         name="Is Visible", default=True, update=lambda x, y: (None, bpy.ops.bim.activate_status_filters())[0]
     )
 

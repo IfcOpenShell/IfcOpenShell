@@ -36,9 +36,9 @@ QuickFavoriteValueType = Literal["float_value", "bool_value", "int_value", "stri
 
 
 class QuickFavoriteEnumItem(PropertyGroup):
-    name: StringProperty(name="Name", default="")  # pyright: ignore[reportRedeclaration]
-    display_name: StringProperty(name="Display Name", default="")  # pyright: ignore[reportRedeclaration]
-    description: StringProperty(name="Description", default="")  # pyright: ignore[reportRedeclaration]
+    name: StringProperty(name="Name", default="")
+    display_name: StringProperty(name="Display Name", default="")
+    description: StringProperty(name="Description", default="")
 
     if TYPE_CHECKING:
         name: str
@@ -51,19 +51,19 @@ def get_enum_items(self: "QuickFavoriteProperty", context: bpy.types.Context | N
 
 
 class QuickFavoriteProperty(PropertyGroup):
-    name: StringProperty(name="Name", default="")  # pyright: ignore[reportRedeclaration]
-    display_name: StringProperty(name="Display Name", default="")  # pyright: ignore[reportRedeclaration]
-    value_prop: EnumProperty(  # pyright: ignore[reportRedeclaration]
+    name: StringProperty(name="Name", default="")
+    display_name: StringProperty(name="Display Name", default="")
+    value_prop: EnumProperty(
         name="Value Prop",
         items=tuple((v, v, "") for v in get_args(QuickFavoriteValueType)),
     )
-    string_value: StringProperty(name="String Value", default="")  # pyright: ignore[reportRedeclaration]
-    float_value: FloatProperty(name="Float Value", default=0.0)  # pyright: ignore[reportRedeclaration]
-    int_value: IntProperty(name="Int Value", default=0)  # pyright: ignore[reportRedeclaration]
-    bool_value: BoolProperty(name="Bool Value", default=False)  # pyright: ignore[reportRedeclaration]
-    enum_value: EnumProperty(name="Enum Value", items=get_enum_items)  # pyright: ignore[reportRedeclaration]
-    enum_items: CollectionProperty(type=QuickFavoriteEnumItem)  # pyright: ignore[reportRedeclaration]
-    is_active: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    string_value: StringProperty(name="String Value", default="")
+    float_value: FloatProperty(name="Float Value", default=0.0)
+    int_value: IntProperty(name="Int Value", default=0)
+    bool_value: BoolProperty(name="Bool Value", default=False)
+    enum_value: EnumProperty(name="Enum Value", items=get_enum_items)
+    enum_items: CollectionProperty(type=QuickFavoriteEnumItem)
+    is_active: BoolProperty(
         name="Is Active",
         description="Only active properties will be added to the operator when invoked from Quick Favorites",
         default=False,
@@ -100,20 +100,20 @@ def get_operator_suggestions(self: "QuickFavoritesItem", context: bpy.types.Cont
 
 
 class QuickFavoritesItem(PropertyGroup):
-    is_expanded: BoolProperty(name="Is Expanded", default=False)  # pyright: ignore[reportRedeclaration]
-    search: StringProperty(  # pyright: ignore[reportRedeclaration]
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
+    search: StringProperty(
         name="Search",
         default="",
         search=get_operator_suggestions,
         # Resetting `search_options`, allowing users only to use suggestions.
         search_options=set(),
     )
-    properties: CollectionProperty(type=QuickFavoriteProperty)  # pyright: ignore[reportRedeclaration]
-    operator_id: StringProperty(  # pyright: ignore[reportRedeclaration]
+    properties: CollectionProperty(type=QuickFavoriteProperty)
+    operator_id: StringProperty(
         name="Operator ID",
         default="",
     )
-    label: StringProperty(  # pyright: ignore[reportRedeclaration]
+    label: StringProperty(
         name="Label",
         description="Label that will be used in Quick Favorites for this operator",
         default="",
@@ -139,15 +139,15 @@ class QuickFavoritesItem(PropertyGroup):
 
 
 class BIMMiscProperties(PropertyGroup):
-    total_storeys: IntProperty(  # pyright: ignore[reportRedeclaration]
+    total_storeys: IntProperty(
         name="Total Storeys",
         description="Number of storeys above object's storey to take into account for resizing",
         default=1,
     )
-    override_colour: FloatVectorProperty(  # pyright: ignore[reportRedeclaration]
+    override_colour: FloatVectorProperty(
         name="Override Colour", subtype="COLOR", default=(1, 0, 0, 1), min=0.0, max=1.0, size=4
     )
-    quick_favorites: CollectionProperty(type=QuickFavoritesItem)  # pyright: ignore[reportRedeclaration]
+    quick_favorites: CollectionProperty(type=QuickFavoritesItem)
 
     if TYPE_CHECKING:
         total_storeys: int

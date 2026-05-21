@@ -71,21 +71,26 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_M")
-        row = layout.row(align=True)
         op = row.operator("bim.explore_hotkey", text="Measure Tool", icon="CON_DISTLIMIT")
         op.hotkey = "S_M"
         row = layout.row(align=True)
         row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
-        row = layout.row(align=True)
         op = row.operator("bim.clear_measurement", text="", icon="X")
 
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_S")
-        row = layout.row(align=True)
         op = row.operator("bim.explore_hotkey", text="Image Scaling Tool", icon="IMAGE_PLANE")
         op.hotkey = "S_S"
-        op.description = "Scale Image Annotation. Allows to scale an IfcReferenceImage. Select image, select tool. Check lower left corner instructions to select two points and provide real distance between them"
+        op.description = (
+            "Scale Image Annotation.\n\n"
+            "Allows to scale an IfcReferenceImage.\n\n"
+            "Select image, select tool. "
+            "Check lower left corner instructions to select two points and provide real distance between them"
+        )
+
+        row = layout.row(align=True)
+        row.operator("bim.generate_uv_map", icon="UV")
 
 
 class ExploreHotkey(bpy.types.Operator):

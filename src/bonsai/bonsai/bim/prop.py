@@ -333,7 +333,7 @@ class Attribute(PropertyGroup):
     filter_glob: StringProperty()
     is_null: BoolProperty(name="Is Null", update=update_is_null)
     is_selected: BoolProperty(name="Is Selected", default=False)
-    subitems_values: CollectionProperty(type=StrProperty)  # pyright: ignore[reportRedeclaration]
+    subitems_values: CollectionProperty(type=StrProperty)
 
     # Attribute parameters.
     is_optional: BoolProperty(name="Is Optional")
@@ -342,7 +342,7 @@ class Attribute(PropertyGroup):
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
-    use_explorer_ui: BoolProperty()  # pyright: ignore[reportRedeclaration]
+    use_explorer_ui: BoolProperty()
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
     update: StringProperty(name="Update", description="Custom update function to be executed")
 

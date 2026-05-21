@@ -45,9 +45,23 @@ class Nest(bonsai.core.tool.Nest):
         related_object = tool.Ifc.get_entity(related_obj)
         if not relating_object or not related_object:
             return False
-        if relating_object.is_a("IfcElement") and related_object.is_a("IfcElement"):
-            return True
-        return False
+        if relating_object == related_object:
+            return False
+        is_compatible_class = relating_object.is_a("IfcElement") and related_object.is_a("IfcElement")
+        if not is_compatible_class:
+            return False
+        # Prevent cyclic references: walk up the full hierarchy from the
+        # proposed parent and reject if we encounter the proposed child.
+        ancestor = ifcopenshell.util.element.get_parent(relating_object)
+        seen = {relating_object}
+        while ancestor:
+            if ancestor == related_object:
+                return False
+            if ancestor in seen:
+                break
+            seen.add(ancestor)
+            ancestor = ifcopenshell.util.element.get_parent(ancestor)
+        return True
 
     @classmethod
     def disable_editing(cls, obj: bpy.types.Object) -> None:

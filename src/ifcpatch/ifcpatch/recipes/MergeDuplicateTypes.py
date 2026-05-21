@@ -97,5 +97,5 @@ class Patcher:
             relating_type=relating_type,
             related_objects=related_objects,
             should_map_representations=False,
-            should_run_listeners=False,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
         )

@@ -377,6 +377,8 @@ class EnableEditingBoundary(bpy.types.Operator):
             obj = tool.Ifc.get_object(entity)
             if entity and obj:
                 setattr(bprops, blender_property, obj)
+        bprops.physical_or_virtual = boundary.PhysicalOrVirtualBoundary or "NOTDEFINED"
+        bprops.internal_or_external = boundary.InternalOrExternalBoundary or "NOTDEFINED"
         return {"FINISHED"}
 
 
@@ -392,6 +394,8 @@ class DisableEditingBoundary(bpy.types.Operator):
         bprops.is_editing = False
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
             setattr(bprops, blender_property, None)
+        bprops.physical_or_virtual = "NOTDEFINED"
+        bprops.internal_or_external = "NOTDEFINED"
         return {"FINISHED"}
 
 
@@ -411,6 +415,8 @@ class EditBoundaryAttributes(bpy.types.Operator, tool.Ifc.Operator):
             obj = getattr(bprops, blender_property, None)
             entity = tool.Ifc.get_entity(obj)
             attributes[blender_property] = entity
+        attributes["physical_or_virtual"] = bprops.physical_or_virtual
+        attributes["internal_or_external"] = bprops.internal_or_external
         ifcopenshell.api.boundary.edit_attributes(tool.Ifc.get(), entity=boundary, **attributes)
         bpy.ops.bim.disable_editing_boundary()
         return {"FINISHED"}

@@ -77,6 +77,10 @@ class BIM_PT_Boundary(Panel):
             self.draw_relation_editor(boundary, "RelatedBuildingElement", "related_building_element")
             self.draw_relation_editor(boundary, "ParentBoundary", "parent_boundary")
             self.draw_relation_editor(boundary, "CorrespondingBoundary", "corresponding_boundary")
+            row = self.layout.row()
+            row.prop(self.bprops, "physical_or_virtual")
+            row = self.layout.row()
+            row.prop(self.bprops, "internal_or_external")
         else:
             row = self.layout.row()
             row.operator("bim.enable_editing_boundary", icon="GREASEPENCIL", text="Edit")
@@ -84,6 +88,8 @@ class BIM_PT_Boundary(Panel):
             self.draw_relation_data(boundary, "RelatedBuildingElement")
             self.draw_relation_data(boundary, "ParentBoundary")
             self.draw_relation_data(boundary, "CorrespondingBoundary")
+            self.draw_enum_data(boundary, "PhysicalOrVirtualBoundary")
+            self.draw_enum_data(boundary, "InternalOrExternalBoundary")
             if hasattr(boundary, "InnerBoundaries"):
                 for i, inner_boundary in enumerate(getattr(boundary, "InnerBoundaries", ())):
                     row = self.layout.row(align=True)
@@ -109,6 +115,11 @@ class BIM_PT_Boundary(Panel):
                     op.related_element = entity.id()
             else:
                 row.label(text="")
+
+    def draw_enum_data(self, boundary, ifc_attribute: str):
+        row = self.layout.row(align=True)
+        row.label(text=ifc_attribute)
+        row.label(text=getattr(boundary, ifc_attribute, "") or "")
 
     def draw_relation_editor(self, boundary, ifc_attribute: str, blender_property: str):
         if hasattr(boundary, ifc_attribute):

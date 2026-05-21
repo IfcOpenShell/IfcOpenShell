@@ -1,0 +1,65 @@
+name: Deploy AI chat App to static page repo
+
+permissions:
+  id-token: write
+  pages: write
+
+on:
+  push:
+    paths:
+      - 'src/ifcchat/**'
+      - '.github/workflows/publish-aichat-app.yaml'
+    branches:
+      - v0.8.0
+  workflow_dispatch:
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+      
+  build:
+    needs: activate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (recursive)
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Checkout intermediate Pages repo
+        uses: actions/checkout@v6
+        with:
+          repository: IfcOpenShell/aichat_ifcopenshell_org_static_html
+          ref: gh-pages
+          path: output
+          token: ${{ secrets.WEBSITE_PUBLISH }}
+      - name: Sync demo app into target subfolder
+        run: |
+          rsync -av --delete --exclude='.git/' src/ifcchat/ output/
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Download wheels
+        working-directory: output/
+        run: |
+          pip download ifcquery==0.8.5 ifcopenshell-mcp==0.8.5 ifcedit==0.8.5 lark==1.3.1 isodate==0.7.2 --no-deps -d ./dist
+      - name: Commit and push if changed
+        working-directory: output
+        run: |
+          git config --global user.name 'IfcOpenBot'
+          git config --global user.email 'IfcOpenBot@users.noreply.github.com'
+
+          git add .
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit  -m "$(git log --oneline -1)"
+          git push origin gh-pages

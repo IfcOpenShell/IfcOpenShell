@@ -396,6 +396,44 @@ Scenario: Add a slab
     And the object "IfcSlab/Slab" bottom left corner is at "0,0,0"
     And the object "IfcSlab/Slab" top right corner is at "1,1,0.2"
 
+Scenario: Extend walls to underside
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcSlab/Slab" is moved to "0,0,2.5"
+    When the object "IfcWall/Wall" is selected
+    And additionally the object "IfcSlab/Slab" is selected
+    And I look at the tool header
+    And I click "Extend To Underside"
+    Then the object "IfcWall/Wall" dimensions are "1,0.1,2.5"
+
+Scenario: Extend walls to underside - extending to a tessellated gable roof
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    # Create gable roof: a cube turned into a prism with a ridge.
+    And I add a cube of size "1" at "0.5,0.05,3"
+    And the object "Cube" is selected
+    And I evaluate expression "obj = bpy.context.active_object; [setattr(v.co, 'y', 0) for v in obj.data.vertices if v.co.z > 0]"
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcRoof"
+    And I press "bim.assign_class"
+    When the object "IfcWall/Wall" is selected
+    And additionally the object "IfcRoof/Cube" is selected
+    And I look at the tool header
+    And I click "Extend To Underside"
+    Then the object "IfcWall/Wall" dimensions are "1,0.1,2.5"
+
 Scenario: Enable editing a slab profile
     Given an empty IFC project
     And I load the demo construction library

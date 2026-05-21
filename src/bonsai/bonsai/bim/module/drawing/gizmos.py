@@ -1285,7 +1285,7 @@ class SnapManager:
                     continue
 
                 coords = np.empty(vertex_count * 3, dtype=np.float32)
-                mesh.vertices.foreach_get("co", coords)  # type: ignore[arg-type]
+                mesh.vertices.foreach_get("co", coords)
                 coords = coords.reshape(-1, 3)
 
                 matrix = np.array(obj_eval.matrix_world, dtype=np.float32)
@@ -1789,6 +1789,19 @@ DISC = (
     (1.0, 0.0, 0),
 )
 
+# Anchor index currently being edited by SetDimensionAnchor (-1 = none).
+_active_anchor_idx: int = -1
+# The annotation curve object being edited (kept so the gizmo group stays
+# visible even when SetDimensionAnchor temporarily changes the active object).
+_editing_annotation_obj = None
+
+
+def set_active_anchor(idx: int, annotation_obj=None) -> None:
+    global _active_anchor_idx, _editing_annotation_obj
+    _active_anchor_idx = idx
+    _editing_annotation_obj = annotation_obj if idx >= 0 else None
+
+
 X3DISC = (
     (0.0, 0.0, 0.0),
     (1.0, 0.0, 0),
@@ -2119,6 +2132,340 @@ class ExtrusionWidget(types.GizmoGroup):
             return
         self.handle.target_set_prop("offset", prop, "value")
         self.guides.target_set_prop("depth", prop, "value")
+
+
+class GizmoAnchorHandle(bpy.types.Gizmo):
+    """Visual-only dot at a parametric dimension vertex.
+
+    No draw_select/invoke — any draw_select entry puts the gizmo in Blender's
+    select buffer, which causes the gizmo system to consume the click even
+    without an explicit invoke.  All click handling is done by the
+    bim.click_nearest_dimension_anchor keymap operator.
+    """
+
+    bl_idname = "BIM_GT_anchor_handle"
+
+    __slots__ = ("anchor_index", "custom_shape")
+
+    def setup(self):
+        self.anchor_index = 0
+        self.custom_shape = self.new_custom_shape(type="TRIS", verts=X3DISC)
+
+    def draw(self, context):
+        self.draw_custom_shape(self.custom_shape)
+
+
+
+class DimensionAnchorWidget(types.GizmoGroup):
+    """Anchor handle gizmos at each vertex of the active parametric dimension.
+
+    Green dots indicate vertices that are anchored to an IFC element face;
+    orange dots are free world-point anchors.  Clicking any dot fires
+    ``bim.set_dimension_anchor`` pre-targeted at that vertex index.
+    """
+
+    bl_idname = "BIM_GGT_dimension_anchors"
+    bl_label = "Dimension Anchor Handles"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+    _MAX_ANCHORS = 16
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if not tool.Ifc.get():
+            return False
+        # Stay visible while SetDimensionAnchor is running (active obj may temporarily
+        # be an IFC element in the face-picking phase rather than the annotation).
+        if _active_anchor_idx >= 0 and _editing_annotation_obj is not None:
+            active = context.active_object
+            if active is _editing_annotation_obj:
+                return True  # annotation still active
+            if active is not None and tool.Ifc.get_entity(active) is not None:
+                return True  # face-picking phase: active obj is a target element
+            # Active object is None or a non-IFC object — the modal ended without
+            # calling set_active_anchor(-1).  Reset stale state and fall through.
+            set_active_anchor(-1)
+        obj = context.active_object
+        if not obj or obj.type != "CURVE":
+            return False
+        if not obj.select_get():
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        import ifcopenshell.util.element as _ue
+        if _ue.get_predefined_type(element) not in cls._DIM_TYPES:
+            return False
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        return bool(pset and pset.get("Anchors"))
+
+    def setup(self, context: bpy.types.Context) -> None:
+        self._handles: list = []
+        for _ in range(self._MAX_ANCHORS):
+            gz = self.gizmos.new("BIM_GT_anchor_handle")
+            gz.scale_basis = 0.2
+            gz.use_draw_modal = True
+            gz.hide = True
+            self._handles.append(gz)
+
+    def refresh(self, context: bpy.types.Context) -> None:
+        import json
+        import ifcopenshell.util.element as _ue
+
+        obj = _editing_annotation_obj if _active_anchor_idx >= 0 and _editing_annotation_obj else context.active_object
+        if not obj or not obj.data or not getattr(obj.data, "splines", None):
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        try:
+            anchors = json.loads(pset["Anchors"])
+        except Exception:
+            for gz in self._handles:
+                gz.hide = True
+            return
+
+        spline = obj.data.splines[0]
+        n = min(len(spline.points), len(anchors), self._MAX_ANCHORS)
+
+        for i in range(n):
+            gz = self._handles[i]
+            raw_co = spline.points[i].co
+            world_co = obj.matrix_world @ raw_co.to_3d()
+            gz.matrix_basis = Matrix.Translation(world_co)
+            gz.anchor_index = i
+            if i == _active_anchor_idx and obj is _editing_annotation_obj:
+                gz.color = (0.2, 0.7, 1.0)
+                gz.color_highlight = (0.4, 0.85, 1.0)
+            elif anchors[i].get("guid"):
+                gz.color = (0.2, 0.85, 0.2)
+                gz.color_highlight = (0.4, 1.0, 0.4)
+            else:
+                gz.color = (0.9, 0.6, 0.1)
+                gz.color_highlight = (1.0, 0.85, 0.2)
+            gz.alpha = 0.85
+            gz.alpha_highlight = 1.0
+            gz.hide = False
+
+        for i in range(n, self._MAX_ANCHORS):
+            self._handles[i].hide = True
+
+    def draw_prepare(self, context: bpy.types.Context) -> None:
+        self.refresh(context)
+
+
+class DimensionLinePositionWidget(types.GizmoGroup):
+    """Drag handle for the LinePosition of a parametric dimension annotation.
+
+    Shows two opposing cones at the midpoint of the dimension curve, oriented
+    along the horizontal offset axis (cross(world_Z, dim_direction)).  Dragging
+    either cone updates BBIM_Dimension.LinePosition and regenerates the curve in
+    real time.  The forward cone points in +offset_dir; the reverse cone in
+    -offset_dir — both respond to mouse movement along the shared axis so the
+    user can drag in either direction from either handle.
+    """
+
+    bl_idname = "BIM_GGT_dimension_line_position"
+    bl_label = "Dimension Line Position"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if not tool.Ifc.get():
+            return False
+        obj = context.active_object
+        if not obj or obj.type != "CURVE":
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            return False
+        import ifcopenshell.util.element as _ue
+        if _ue.get_predefined_type(element) not in cls._DIM_TYPES:
+            return False
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        return bool(pset and pset.get("Anchors") and pset.get("ForcePerpendicularToFace"))
+
+    # ------------------------------------------------------------------
+    # Helpers
+
+    @staticmethod
+    def _offset_dir(obj: bpy.types.Object) -> "Vector | None":
+        """World-space unit direction perpendicular to the dimension line and world_Z."""
+        if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+            return None
+        spline = obj.data.splines[0]
+        if len(spline.points) < 2:
+            return None
+        a = obj.matrix_world @ spline.points[0].co.to_3d()
+        b = obj.matrix_world @ spline.points[-1].co.to_3d()
+        dim = b - a
+        if dim.length < 1e-10:
+            return None
+        dim.normalize()
+        world_z = Vector((0.0, 0.0, 1.0))
+        od = world_z.cross(dim)
+        if od.length < 1e-6:
+            od = Vector((1.0, 0.0, 0.0)).cross(dim)
+        if od.length < 1e-6:
+            return None
+        return od.normalized()
+
+    @staticmethod
+    def _midpoint(obj: bpy.types.Object) -> "Vector":
+        spline = obj.data.splines[0]
+        pts = [obj.matrix_world @ p.co.to_3d() for p in spline.points]
+        return sum(pts, Vector()) / len(pts)
+
+    @staticmethod
+    def _basis(origin: "Vector", x_axis: "Vector") -> "Matrix":
+        """4×4 matrix with translation=origin, local-X=x_axis."""
+        ref = Vector((0.0, 0.0, 1.0)) if abs(x_axis.dot(Vector((0.0, 0.0, 1.0)))) < 0.9 else Vector((1.0, 0.0, 0.0))
+        y_ax = x_axis.cross(ref).normalized()
+        z_ax = x_axis.cross(y_ax)
+        return Matrix([
+            [x_axis.x, y_ax.x, z_ax.x, origin.x],
+            [x_axis.y, y_ax.y, z_ax.y, origin.y],
+            [x_axis.z, y_ax.z, z_ax.z, origin.z],
+            [0.0,      0.0,    0.0,    1.0],
+        ])
+
+    # ------------------------------------------------------------------
+    # Value callbacks
+
+    def _get_pos(self) -> float:
+        obj = bpy.context.active_object
+        if not obj:
+            return 0.0
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return 0.0
+        import ifcopenshell.util.element as _ue
+        pset = _ue.get_pset(element, "BBIM_Dimension")
+        if not pset:
+            return 0.0
+        stored = pset.get("LinePosition")
+        if stored is not None:
+            return float(stored)
+        # Natural position: projection of midpoint onto offset axis
+        od = self._offset_dir(obj)
+        if od is None:
+            return 0.0
+        return self._midpoint(obj).dot(od)
+
+    def _set_pos(self, value: float) -> None:
+        bpy.ops.ed.undo_push(message="Set Line Position")
+        import json
+        import numpy as np
+        import ifcopenshell.util.element as _ue
+        import ifcopenshell.api.pset as _pset_api
+        import ifcopenshell.api.drawing as drawing_api
+        from bonsai.bim.module.drawing.operator import _update_blender_curve
+
+        obj = bpy.context.active_object
+        if not obj:
+            return
+        file = tool.Ifc.get()
+        if not file:
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+        pset_data = _ue.get_pset(element, "BBIM_Dimension")
+        if not pset_data:
+            return
+
+        pset_entity = file.by_id(pset_data["id"])
+        _pset_api.edit_pset(file, pset=pset_entity, properties={"LinePosition": value})
+
+        anchors = json.loads(pset_data.get("Anchors") or "[]")
+        placement_override: dict = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+
+        resolved_pts = drawing_api.regenerate_dimension(file, element, placement_override=placement_override)
+        if resolved_pts:
+            _update_blender_curve(element, resolved_pts)
+        tool.Blender.update_viewport()
+
+    # ------------------------------------------------------------------
+    # GizmoGroup interface
+
+    def _make_cone(self, color: tuple, highlight: tuple) -> "bpy.types.Gizmo":
+        gz = self.gizmos.new("BIM_GT_gizmo_cone")
+        gz.color = color
+        gz.alpha = 0.8
+        gz.color_highlight = highlight
+        gz.alpha_highlight = 1.0
+        gz.scale_basis = 0.15
+        gz.use_draw_modal = True
+        gz.prop_name = "Line Position"
+        gz.move_get_cb = self._get_pos
+        gz.move_set_cb = self._set_pos
+        gz.gizmo_group = self
+        gz.delta_scale = 1.0
+        return gz
+
+    def setup(self, context: bpy.types.Context) -> None:
+        color = (0.9, 0.6, 0.1)
+        highlight = (1.0, 0.9, 0.2)
+        self.gz_fwd = self._make_cone(color, highlight)
+        self.gz_rev = self._make_cone(color, highlight)
+
+    def refresh(self, context: bpy.types.Context) -> None:
+        obj = context.active_object
+        if not obj:
+            self.gz_fwd.hide = self.gz_rev.hide = True
+            return
+
+        od = self._offset_dir(obj)
+        if od is None:
+            self.gz_fwd.hide = self.gz_rev.hide = True
+            return
+
+        mid = self._midpoint(obj)
+        # Lift each cone off the dimension line so the arrow base doesn't
+        # overlap anchor dots.  0.3 m gives clear separation at typical zoom.
+        _GAP = 0.15
+        fwd_origin = mid + _GAP * od
+        rev_origin = mid - _GAP * od
+
+        self.gz_fwd.matrix_basis = self._basis(fwd_origin, od)
+        self.gz_fwd.axis = od.copy()
+        self.gz_fwd.hide = False
+
+        # Reverse cone: visually points in -od; same drag axis so both cones
+        # respond identically — drag toward either tip to move the line.
+        self.gz_rev.matrix_basis = self._basis(rev_origin, -od)
+        self.gz_rev.axis = od.copy()
+        self.gz_rev.hide = False
 
     @staticmethod
     def get_scale_value(system: str, length_unit: str) -> float:

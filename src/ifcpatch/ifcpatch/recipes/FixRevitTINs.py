@@ -80,9 +80,9 @@ class Patcher:
     def patch(self) -> None:
         from math import degrees
 
-        import bmesh  # pyright: ignore[reportMissingImports]
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
-        import bpy  # pyright: ignore[reportMissingImports]
+        import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         props = tool.Project.get_project_props()
         props.should_use_native_meshes = True

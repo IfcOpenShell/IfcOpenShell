@@ -54,7 +54,7 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add System"
     bl_options = {"REGISTER", "UNDO"}
 
-    parent_system_id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    parent_system_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         parent_system_id: int

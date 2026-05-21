@@ -27,7 +27,7 @@ from bonsai.bim.prop import StrProperty
 
 class BIMCityJsonProperties(PropertyGroup):
     def get_lods(self, context):
-        global LODS_ENUM_ITEMS
+        global LODS_ENUM_ITEMS  # ty: ignore[unresolved-global]
         LODS_ENUM_ITEMS = [(item.name, "LOD" + item.name, "Level of Detail " + item.name) for item in self.lods]
         return LODS_ENUM_ITEMS
 

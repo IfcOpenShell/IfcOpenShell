@@ -272,21 +272,21 @@ class RadianceRender(bpy.types.Operator):
                     + '''" map_u map_v
 0
 1 0.5
- 
+
 # This is a multiplier to colour balance the env map
 # In this case, it provides a rough ground luminance from 3k-5k
 env_map colorfunc env_colour
 4 100 100 100 .
 0
 0
- 
+
 # .37 .57 1.5 is measured from a HDRI image
 # It is multiplied by a factor such that grey(r,g,b) = 1
 skyfunc colorfunc sky_colour
 4 .64 .99 2.6 .
 0
 0
- 
+
 void mixpict composite
 7 env_colour sky_colour grey "'''
                     + hdr_mask_path
@@ -295,22 +295,22 @@ void mixpict composite
                     + """" map_u map_v
 0
 2 0.5 1
- 
+
 composite glow env_map_glow
 0
 0
 4 1 1 1 0
- 
+
 env_map_glow source sky
 0
 0
 4 0 0 1 180
- 
+
 env_colour glow ground_glow
 0
 0
 4 1 1 1 0
- 
+
 ground_glow source ground
 0
 0
@@ -566,7 +566,7 @@ class LightPickCoordinates(bpy.types.Operator):
     )
     bl_options = {"REGISTER", "UNDO"}
 
-    use_current_location: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    use_current_location: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         use_current_location: bool

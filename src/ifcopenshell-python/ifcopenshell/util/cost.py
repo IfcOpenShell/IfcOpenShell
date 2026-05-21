@@ -196,9 +196,12 @@ def get_cost_items_for_product(product: ifcopenshell.entity_instance) -> list[if
     :return: A list of IfcCostItem objects representing the cost items related to the product.
     """
     cost_items = []
-    for assignment in product.HasAssignments:
-        if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl.is_a("IfcCostItem"):
-            cost_items.append(assignment.RelatingControl)
+    for assignment in product.HasAssignments or []:
+        if assignment.is_a("IfcRelAssignsToControl"):
+            control = assignment.RelatingControl
+            if control and control.is_a("IfcCostItem"):
+                cost_items.append(control)
+
     return cost_items
 
 

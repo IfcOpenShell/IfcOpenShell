@@ -227,7 +227,7 @@ class FitFlowSegments(bpy.types.Operator, tool.Ifc.Operator):
             is_parallel21 = tool.Cad.is_x(angle21, (0, 180), tolerance=0.001)
             is_parallel23 = tool.Cad.is_x(angle23, (0, 180), tolerance=0.001)
 
-            if not all(is_parallel12, is_parallel13, is_parallel21, is_parallel23):
+            if not all([is_parallel12, is_parallel13, is_parallel21, is_parallel23]):
                 fitting_type = "WYE"
 
         if not fitting_type:
@@ -903,7 +903,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
     start_segment_id: bpy.props.IntProperty(name="Start Segment Element ID", default=0)
     end_segment_id: bpy.props.IntProperty(name="End Segment Element ID", default=0)
     radius: bpy.props.FloatProperty(
-        "Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
+        name="Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
     )
 
     def _execute(self, context):

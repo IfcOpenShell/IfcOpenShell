@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import itertools
 import json
 import os
 import sys
@@ -331,7 +332,7 @@ def log_internal_cpp_errors(
         lines = list(open(filename, "rb"))
         lengths = list(map(len, lines))
         cumsum = 0
-        cs = [cumsum := cumsum + x for x in lengths]
+        cs = list(itertools.accumulate(lengths))
 
         for offsets, msg in zip(chr_offsets, msgs):
             if offsets:

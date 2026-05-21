@@ -79,5 +79,5 @@ def add_resource_quantity(
     old_quantity = resource.BaseQuantity
     resource.BaseQuantity = quantity
     if old_quantity:
-        ifcopenshell.util.element.remove_deep(file, old_quantity)
+        ifcopenshell.util.element.remove_deep2(file, old_quantity)
     return quantity

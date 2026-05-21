@@ -2,12 +2,16 @@
 # because `tool.setuptools.ext-modules` is still experimental in pyproject.toml
 # and we need it to get the wheel suffix right.
 import os
+import sys
 from pathlib import Path
 
 import tomllib
 from setuptools import Extension, find_packages, setup
+from setuptools.command.build_ext import build_ext
 
-REPO_FOLDER = Path(__file__).parent
+# Detect repo folder: if setup.py is in pyodide folder, go to parent
+SETUP_DIR = Path(__file__).parent
+REPO_FOLDER = SETUP_DIR.parent if SETUP_DIR.name == "pyodide" else SETUP_DIR
 
 
 def get_version() -> str:
@@ -23,6 +27,39 @@ def get_dependencies() -> list[str]:
     pyproject_data = tomllib.loads(pyproject_toml.read_text())
     dependencies = pyproject_data["project"]["dependencies"]
     return dependencies
+
+
+class UnixBuildExt(build_ext):
+    """Customize ``build_ext`` to support packing on Windows."""
+
+    def finalize_options(self):
+        from distutils import sysconfig
+
+        super().finalize_options()
+        if sys.platform == "win32":
+            self.compiler = "unix"
+
+            # Configure sysconfig for Windows builds
+            # CCSHARED is the only variable that's not customizable with env vars.
+            # Basically avoiding this:
+            # File ".venv\Lib\site-packages\setuptools\_distutils\sysconfig.py", line 366, in customize_compiler
+            #     compiler_so=cc_cmd + ' ' + ccshared,
+            #                 ~~~~~~~~~~~~~^~~~~~~~~~
+            # TypeError: can only concatenate str (not "NoneType") to str
+            sysconfig.get_config_vars()  # Initialize config cache
+            if sysconfig._config_vars.get("CCSHARED") is None:
+                sysconfig._config_vars["CCSHARED"] = "-fPIC"
+            # Override compiler type before it's instantiated
+
+        # Set Emscripten compiler environment variables
+        os.environ["CC"] = "emcc"
+        os.environ["CXX"] = "em++"
+        os.environ["CFLAGS"] = ""
+        os.environ["CXXFLAGS"] = ""
+        os.environ["LDSHARED"] = "emcc -shared"
+        os.environ["AR"] = "emar"
+        os.environ["ARFLAGS"] = "rcs"
+        os.environ["SETUPTOOLS_EXT_SUFFIX"] = ".cpython-313-wasm32-emscripten.so"
 
 
 setup(
@@ -44,4 +81,5 @@ setup(
     },
     # Has to provide extension to get the correct wheel suffix.
     ext_modules=[Extension("ifcopenshell._ifcopenshell_wrapper", sources=[])],
+    cmdclass={"build_ext": UnixBuildExt},
 )

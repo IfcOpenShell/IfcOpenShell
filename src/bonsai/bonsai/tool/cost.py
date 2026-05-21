@@ -154,7 +154,7 @@ class Cost(bonsai.core.tool.Cost):
         device = aud.Device()
         # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
         filepath = tool.Blender.get_data_dir_path("chaching.mp3").__str__()
-        sound = aud.Sound(filepath)
+        sound = aud.Sound(filepath)  # ty:ignore[too-many-positional-arguments]
         device.play(sound)
 
     @classmethod
@@ -987,7 +987,8 @@ class Cost(bonsai.core.tool.Cost):
     def disable_editing_cost_item_parent(cls) -> None:
         props = cls.get_cost_props()
         props.active_cost_item_id = 0
-        props.change_cost_item_parent = False
+        if props.change_cost_item_parent == True:
+            props.change_cost_item_parent = False
 
     @classmethod
     def load_cost_item_quantities(cls, cost_item: Optional[ifcopenshell.entity_instance] = None) -> None:

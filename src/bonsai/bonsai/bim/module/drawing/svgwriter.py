@@ -1397,14 +1397,18 @@ class SvgWriter:
 
             def get_text():
                 radius = (points[-1].co - points[-2].co).length
-                radius = helper.format_distance(
-                    radius,
-                    precision=self.precision,
-                    decimal_places=self.decimal_places,
-                    custom_unit=dimension_data["custom_unit"],
-                )
-                text = f"R{radius}"
-                return text
+                units_to_format = dimension_data["custom_units"] if dimension_data["custom_units"] else [None]
+                parts = [
+                    helper.format_distance(
+                        radius,
+                        precision=self.precision,
+                        decimal_places=self.decimal_places,
+                        suppress_zero_feet=dimension_data["suppress_zero_feet"],
+                        custom_unit=unit,
+                    )
+                    for unit in units_to_format
+                ]
+                return "R" + dimension_data["separator"].join(str(p) for p in parts)
 
             self.draw_dimension_text(
                 get_text, tag, dimension_data, text_position=text_position, class_str="RADIUS", box_alignment="center"
@@ -1529,10 +1533,12 @@ class SvgWriter:
                     text_format=lambda x: "D" + x,
                     show_description_only=dimension_data["show_description_only"],
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                    suppress_zero_feet=dimension_data["suppress_zero_feet"],
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
                     fill_bg=dimension_data["fill_bg"],
-                    custom_unit=dimension_data["custom_unit"],
+                    custom_units=dimension_data["custom_units"],
+                    separator=dimension_data["separator"],
                 )
 
     def draw_dimension_annotations(self, obj: bpy.types.Object) -> None:
@@ -1543,11 +1549,15 @@ class SvgWriter:
         dimension_data = DecoratorData.get_dimension_data(obj)
 
         assert isinstance(obj.data, bpy.types.Curve)
+        is_ordinate = dimension_data["is_ordinate"]
         for spline in obj.data.splines:
             points = self.get_spline_points(spline)
+            ordinate_total = 0.0
             for i in range(len(points) - 1):
                 v0_global = matrix_world @ points[i].co.xyz
                 v1_global = matrix_world @ points[i + 1].co.xyz
+                if is_ordinate:
+                    ordinate_total += (v1_global - v0_global).length
                 self.draw_dimension_annotation(
                     v0_global,
                     v1_global,
@@ -1555,10 +1565,13 @@ class SvgWriter:
                     dimension_text=dimension_text,
                     show_description_only=dimension_data["show_description_only"],
                     suppress_zero_inches=dimension_data["suppress_zero_inches"],
+                    suppress_zero_feet=dimension_data["suppress_zero_feet"],
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
                     fill_bg=dimension_data["fill_bg"],
-                    custom_unit=dimension_data["custom_unit"],
+                    custom_units=dimension_data["custom_units"],
+                    separator=dimension_data["separator"],
+                    distance_override=ordinate_total if is_ordinate else None,
                 )
 
     def draw_measureit_arch_dimension_annotations(self) -> None:
@@ -1582,10 +1595,13 @@ class SvgWriter:
         text_format=lambda x: x,
         show_description_only=False,
         suppress_zero_inches=False,
+        suppress_zero_feet=False,
         text_prefix="",
         text_suffix="",
         fill_bg=False,
-        custom_unit=None,
+        custom_units=None,
+        separator=" / ",
+        distance_override=None,
     ) -> None:
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
@@ -1598,7 +1614,10 @@ class SvgWriter:
         sheet_dimension = (end - start).length
 
         # if annotation can't fit offset text to the right of marker
-        text_position = mid if sheet_dimension > 5 else (end + (3 * vector.normalized()))
+        if distance_override is not None:
+            text_position = end
+        else:
+            text_position = mid if sheet_dimension > 5 else (end + (3 * vector.normalized()))
         angle = math.degrees(vector.angle_signed(Vector((1, 0))))
 
         line = self.svg.line(start=start, end=end, class_=" ".join(classes))
@@ -1613,15 +1632,20 @@ class SvgWriter:
         }
 
         if not show_description_only:
-            dimension = (v1_global - v0_global).length
-            dimension = helper.format_distance(
-                dimension,
-                precision=self.precision,
-                decimal_places=self.decimal_places,
-                suppress_zero_inches=suppress_zero_inches,
-                custom_unit=custom_unit,
-            )
-            text = text_prefix + str(dimension) + text_suffix
+            dimension = distance_override if distance_override is not None else (v1_global - v0_global).length
+            units_to_format = custom_units if custom_units else [None]
+            parts = [
+                helper.format_distance(
+                    dimension,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    suppress_zero_inches=suppress_zero_inches,
+                    suppress_zero_feet=suppress_zero_feet,
+                    custom_unit=unit,
+                )
+                for unit in units_to_format
+            ]
+            text = text_prefix + separator.join(str(p) for p in parts) + text_suffix
         else:
             if not dimension_text:
                 return
@@ -1629,8 +1653,8 @@ class SvgWriter:
 
         text_tags += self.create_text_tag(
             text,
-            text_position + perpendicular,
-            box_alignment="bottom-middle",
+            text_position + perpendicular + (Vector((0, 1.5)) if distance_override is not None else Vector((0, 0))),
+            box_alignment="bottom-right" if distance_override is not None else "bottom-middle",
             multiline_to_bottom=False,
             **text_tag_kwargs,
         )
@@ -1638,8 +1662,8 @@ class SvgWriter:
         if not show_description_only and dimension_text:
             text_tags += self.create_text_tag(
                 dimension_text,
-                text_position - perpendicular,
-                box_alignment="top-middle",
+                text_position - perpendicular + (Vector((0, 1.5)) if distance_override is not None else Vector((0, 0))),
+                box_alignment="top-right" if distance_override is not None else "top-middle",
                 multiline_to_bottom=True,
                 **text_tag_kwargs,
             )

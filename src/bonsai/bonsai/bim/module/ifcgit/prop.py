@@ -17,28 +17,14 @@ from bonsai.bim.module.ifcgit.data import IfcGitData
 def git_branches(self: "IfcGitProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     # NOTE "Python must keep a reference to the strings returned by
     # the callback or Blender will misbehave or even crash"
-    IfcGitData.data["branch_names"] = sorted([branch.name for branch in IfcGitData.data["repo"].heads])
-
-    if "main" in IfcGitData.data["branch_names"]:
-        IfcGitData.data["branch_names"].remove("main")
-        IfcGitData.data["branch_names"] = ["main"] + IfcGitData.data["branch_names"]
-
-    if IfcGitData.data["remotes"]:
-        for remote in IfcGitData.data["remotes"]:
-            for remote_branch in remote.refs:
-                IfcGitData.data["branch_names"].append(remote_branch.name)
-
-    return [(myname, myname, myname) for myname in IfcGitData.data["branch_names"]]
+    # Branch list (local + remote, main first) is computed once in IfcGitData.load()
+    IfcGitData.make_sure_is_loaded()
+    return [(name, name, name) for name in IfcGitData.data["branch_names"]]
 
 
 def git_remotes(self: "IfcGitProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-    IfcGitData.data["remote_names"] = sorted([remote.name for remote in IfcGitData.data["remotes"]])
-
-    if "origin" in IfcGitData.data["remote_names"]:
-        IfcGitData.data["remote_names"].remove("origin")
-        IfcGitData.data["remote_names"] = ["origin"] + IfcGitData.data["remote_names"]
-
-    return [(myname, myname, myname) for myname in IfcGitData.data["remote_names"]]
+    IfcGitData.make_sure_is_loaded()
+    return [(name, name, name) for name in IfcGitData.data["remote_names"]]
 
 
 def update_revlist(self: "IfcGitProperties", context: bpy.types.Context) -> None:
@@ -90,6 +76,7 @@ class IfcGitListItem(PropertyGroup):
         name="Commit Message",
         default="",
     )
+    committed_date: IntProperty(name="Committed Date", default=0)
     tags: CollectionProperty(type=IfcGitTag, name="List of revision tags")
 
     if TYPE_CHECKING:
@@ -98,6 +85,7 @@ class IfcGitListItem(PropertyGroup):
         author_name: str
         author_email: str
         message: str
+        committed_date: int
         tags: bpy.types.bpy_prop_collection_idprop[IfcGitTag]
 
 
@@ -151,6 +139,11 @@ class IfcGitProperties(PropertyGroup):
         ],
         update=update_revlist,
     )
+    merge_conflicts: StringProperty(
+        name="Merge Conflicts",
+        description="JSON report from last failed merge attempt",
+        default="",
+    )
 
     if TYPE_CHECKING:
         ifcgit_commits: bpy.types.bpy_prop_collection_idprop[IfcGitListItem]
@@ -165,3 +158,4 @@ class IfcGitProperties(PropertyGroup):
         display_branch: str
         select_remote: str
         ifcgit_filter: Literal["all", "tagged", "relevant"]
+        merge_conflicts: str

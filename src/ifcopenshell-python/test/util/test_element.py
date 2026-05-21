@@ -38,6 +38,7 @@ import ifcopenshell.api.sequence
 import ifcopenshell.api.spatial
 import ifcopenshell.api.style
 import ifcopenshell.api.type
+import ifcopenshell.api.feature
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
 import test.bootstrap
@@ -303,6 +304,35 @@ class TestGetPropertiesIFC4(test.bootstrap.IFC4):
                 "id": 4,
                 "type": "IfcComplexProperty",
                 "properties": {"a": "b"},
+            }
+        }
+
+    def test_getting_complex_properties_verbose(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="pset")
+        complex_property = self.file.create_entity("IfcComplexProperty", Name="prop", UsageName="usage_name")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=complex_property, properties={"a": "b"})
+        pset.HasProperties = [complex_property]
+        properties = subject.get_properties(pset.HasProperties, verbose=True)
+        prop_value = properties["prop"]["value"]
+        nested_prop = prop_value["properties"]["a"]
+        assert properties == {
+            "prop": {
+                "id": complex_property.id(),
+                "class": "IfcComplexProperty",
+                "value": {
+                    "UsageName": "usage_name",
+                    "id": complex_property.id(),
+                    "type": "IfcComplexProperty",
+                    "properties": {
+                        "a": {
+                            "id": nested_prop["id"],
+                            "class": "IfcPropertySingleValue",
+                            "value": "b",
+                            "value_type": "IfcLabel",
+                        }
+                    },
+                },
             }
         }
 
@@ -889,6 +919,35 @@ class TestGetlayers(test.bootstrap.IFC4, TestGetlayersIFC2X3):
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
         ifcopenshell.api.layer.assign_layer(self.file, items=[representation], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
+
+
+class TestGetParentIFC4(test.bootstrap.IFC4):
+    def test_getting_the_parent_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=building)
+        assert subject.get_parent(element) == building
+
+    def test_getting_the_specific_parent_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_parent(element, ifc_class="IfcBuilding") == building
+        assert subject.get_parent(element, ifc_class="IfcSite") == None
+
+    def test_getting_the_specific_parent_of_an_element_via_voiding(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=building)
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=window)
+        assert subject.get_parent(window, ifc_class="IfcWall") == wall
+        assert subject.get_parent(window, ifc_class="IfcBuilding") == building
+        assert subject.get_parent(window, ifc_class="IfcSite") == None
 
 
 class TestGetContainerIFC4(test.bootstrap.IFC4):

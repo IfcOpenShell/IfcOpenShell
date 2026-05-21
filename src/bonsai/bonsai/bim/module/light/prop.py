@@ -320,7 +320,7 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     def get_subcategories(self, context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
-        global SUBCATEGORIES_ENUM_ITEMS
+        global SUBCATEGORIES_ENUM_ITEMS  # ty: ignore[unresolved-global]
         if self.category in spectraldb:
             SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
         else:
