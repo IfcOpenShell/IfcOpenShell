@@ -35,7 +35,6 @@ import types
 
 import bpy
 import pytest
-from mathutils import Matrix, Vector
 
 pytestmark = pytest.mark.model
 
@@ -46,7 +45,7 @@ def _require_real_bpy():
         pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
-def _rotation_close(a: Matrix, b: Matrix, tol: float = 1e-6) -> bool:
+def _rotation_close(a, b, tol: float = 1e-6) -> bool:
     for row_a, row_b in zip(a, b):
         for va, vb in zip(row_a, row_b):
             if abs(va - vb) > tol:
@@ -57,6 +56,8 @@ def _rotation_close(a: Matrix, b: Matrix, tol: float = 1e-6) -> bool:
 @pytest.mark.parametrize("angle_deg", [0, 30, 45, 90, 135, 217])
 def test_billboarded_at_rotation_is_pure_billboard(angle_deg):
     """Object rotation must not leak into the gizmo's rotation part."""
+    from mathutils import Matrix, Vector
+
     from bonsai.bim.module.drawing.gizmos import billboarded_at
 
     mw = Matrix.Rotation(math.radians(angle_deg), 4, "Z") @ Matrix.Translation((3, 4, 5))
@@ -73,6 +74,8 @@ def test_billboarded_at_rotation_is_pure_billboard(angle_deg):
 
 def test_billboarded_at_translation_is_world_pos():
     """Translation lands exactly at the world-space target."""
+    from mathutils import Matrix, Vector
+
     from bonsai.bim.module.drawing.gizmos import billboarded_at
 
     world_pos = Vector((1.23, 4.56, 7.89))
@@ -85,6 +88,8 @@ def test_set_icon_gizmo_position_does_not_apply_object_rotation():
     parametric gizmo groups) must produce a matrix whose rotation part is
     billboard_rot, not mw_rotation @ billboard_rot. This is the exact bug
     that left stair icons edge-on to the camera."""
+    from mathutils import Matrix, Vector
+
     from bonsai.bim.module.drawing.gizmos import (
         BaseParametricGizmoGroup,
         billboarded_at,
@@ -97,7 +102,7 @@ def test_set_icon_gizmo_position_does_not_apply_object_rotation():
     captured = {}
 
     class _GizmoStub:
-        matrix_basis: Matrix = Matrix.Identity(4)
+        matrix_basis = Matrix.Identity(4)
 
     stub = _GizmoStub()
 
@@ -108,19 +113,21 @@ def test_set_icon_gizmo_position_does_not_apply_object_rotation():
     # Bind the helper to a throwaway instance so `self.get_gizmo_if_visible`
     # resolves to our stub without registering a real GizmoGroup with Blender.
     fake_self = types.SimpleNamespace(get_gizmo_if_visible=_fake_get)
+    mw = Matrix.Rotation(math.radians(45), 4, "Z") @ Matrix.Translation((3, 4, 5))
+    billboard_rot = Matrix.Rotation(math.radians(30), 4, "X")
+    local_pos = Vector((1, 0, 2))
     BaseParametricGizmoGroup.set_icon_gizmo_position(
         fake_self,
         "validate_gizmo",
-        mw=Matrix.Rotation(math.radians(45), 4, "Z") @ Matrix.Translation((3, 4, 5)),
-        x=1.0,
-        y=0.0,
-        z=2.0,
-        billboard_rot=Matrix.Rotation(math.radians(30), 4, "X"),
+        mw=mw,
+        x=local_pos.x,
+        y=local_pos.y,
+        z=local_pos.z,
+        billboard_rot=billboard_rot,
         scale=0.5,
     )
 
-    expected_world_pos = (Matrix.Rotation(math.radians(45), 4, "Z") @ Matrix.Translation((3, 4, 5))) @ Vector((1, 0, 2))
-    expected = billboarded_at(expected_world_pos, Matrix.Rotation(math.radians(30), 4, "X"), 0.5)
+    expected = billboarded_at(mw @ local_pos, billboard_rot, 0.5)
 
     assert captured["name"] == "validate_gizmo"
     for row_a, row_b in zip(stub.matrix_basis, expected):
