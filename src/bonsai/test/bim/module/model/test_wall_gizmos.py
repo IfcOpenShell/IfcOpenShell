@@ -179,3 +179,112 @@ def test_poll_rejects_when_other_is_not_layer2_wall():
         _run_poll(prefs_on=True, active_is_in_selected=True, len_override=None, active_usage="LAYER3", other_usage=None)
         is False
     )
+
+
+# ----------------------------------------------------------------------------
+# _iter_path_connections — IfcRelConnectsPathElements inverse-graph walk
+# ----------------------------------------------------------------------------
+#
+# Normalises both ConnectedTo and ConnectedFrom orientations to (other, self_ct,
+# other_ct) so callers always read "self first" regardless of which side of the
+# rel this wall was authored on. Non-wall partners and malformed (None) refs are
+# filtered out so per-frame gizmo positioning survives partial IFC state.
+
+
+def _make_path_rel(relating, related, relating_ct, related_ct, kind="IfcRelConnectsPathElements"):
+    """Build a stub IfcRelConnectsPathElements for inverse-walk tests."""
+    return SimpleNamespace(
+        is_a=lambda name, _k=kind: name == _k,
+        RelatingElement=relating,
+        RelatedElement=related,
+        RelatingConnectionType=relating_ct,
+        RelatedConnectionType=related_ct,
+    )
+
+
+def _run_iter_path_connections(elem, *, is_wall_predicate=lambda _e: True):
+    from bonsai import tool
+    from bonsai.bim.module.model.wall import _iter_path_connections
+
+    with patch.object(tool.Blender.Modifier, "is_wall", side_effect=is_wall_predicate):
+        return _iter_path_connections(elem)
+
+
+def test_iter_path_connections_empty_inverses_yields_nothing():
+    elem = SimpleNamespace(ConnectedTo=[], ConnectedFrom=[])
+    assert _run_iter_path_connections(elem) == []
+
+
+def test_iter_path_connections_connected_to_orientation_is_self_first():
+    # Self is the rel's RelatingElement → its connection type is RelatingConnectionType.
+    self_elem = object()
+    other = object()
+    rel = _make_path_rel(relating=self_elem, related=other, relating_ct="ATEND", related_ct="ATSTART")
+    elem = SimpleNamespace(ConnectedTo=[rel], ConnectedFrom=[])
+    assert _run_iter_path_connections(elem) == [(other, "ATEND", "ATSTART")]
+
+
+def test_iter_path_connections_connected_from_orientation_is_self_first():
+    # Self is the rel's RelatedElement → its connection type is RelatedConnectionType.
+    # The helper must FLIP the tuple so callers still see (other, self_ct, other_ct).
+    self_elem = object()
+    other = object()
+    rel = _make_path_rel(relating=other, related=self_elem, relating_ct="ATSTART", related_ct="ATEND")
+    elem = SimpleNamespace(ConnectedTo=[], ConnectedFrom=[rel])
+    assert _run_iter_path_connections(elem) == [(other, "ATEND", "ATSTART")]
+
+
+def test_iter_path_connections_skips_non_path_rels():
+    # IfcRelAggregates, IfcRelContainedInSpatialStructure, etc. share the
+    # ConnectedTo/ConnectedFrom inverse arrays — only IfcRelConnectsPathElements
+    # carries the per-end connection-type semantics we care about.
+    self_elem = object()
+    other = object()
+    non_path = _make_path_rel(
+        relating=self_elem, related=other, relating_ct="ATSTART", related_ct="ATEND", kind="IfcRelAggregates"
+    )
+    path = _make_path_rel(relating=self_elem, related=other, relating_ct="ATEND", related_ct="ATSTART")
+    elem = SimpleNamespace(ConnectedTo=[non_path, path], ConnectedFrom=[])
+    assert _run_iter_path_connections(elem) == [(other, "ATEND", "ATSTART")]
+
+
+def test_iter_path_connections_skips_non_wall_partners():
+    # Walls may path-connect to non-wall elements (columns, beams). The single-
+    # wall unjoin gizmo only surfaces wall-to-wall joins to match the existing
+    # two-wall gizmo's scope.
+    self_elem = object()
+    wall_partner = object()
+    non_wall_partner = object()
+    rel_wall = _make_path_rel(relating=self_elem, related=wall_partner, relating_ct="ATEND", related_ct="ATSTART")
+    rel_non_wall = _make_path_rel(
+        relating=self_elem, related=non_wall_partner, relating_ct="ATEND", related_ct="ATSTART"
+    )
+    elem = SimpleNamespace(ConnectedTo=[rel_wall, rel_non_wall], ConnectedFrom=[])
+    result = _run_iter_path_connections(elem, is_wall_predicate=lambda e: e is wall_partner)
+    assert result == [(wall_partner, "ATEND", "ATSTART")]
+
+
+def test_iter_path_connections_tolerates_none_partner_refs():
+    # Malformed / partial IFC files can leave a rel's element ref unset.
+    # Without a None guard, `Modifier.is_wall(None)` would raise on
+    # `None.is_a(...)` mid-frame and silently break the gizmo group.
+    self_elem = object()
+    other = object()
+    rel_none = _make_path_rel(relating=self_elem, related=None, relating_ct="ATEND", related_ct="ATSTART")
+    rel_ok = _make_path_rel(relating=self_elem, related=other, relating_ct="ATSTART", related_ct="ATEND")
+    elem = SimpleNamespace(ConnectedTo=[rel_none, rel_ok], ConnectedFrom=[])
+    assert _run_iter_path_connections(elem) == [(other, "ATSTART", "ATEND")]
+
+
+def test_iter_path_connections_walks_both_inverses_in_order():
+    # A wall can sit on both sides of different path rels (e.g. authored once
+    # as the RelatingElement, once as the RelatedElement). The helper walks
+    # ConnectedTo first, then ConnectedFrom — pinning the order so callers can
+    # depend on it for icon-slot allocation.
+    self_elem = object()
+    p1 = object()
+    p2 = object()
+    rel_to = _make_path_rel(relating=self_elem, related=p1, relating_ct="ATSTART", related_ct="ATSTART")
+    rel_from = _make_path_rel(relating=p2, related=self_elem, relating_ct="ATEND", related_ct="ATEND")
+    elem = SimpleNamespace(ConnectedTo=[rel_to], ConnectedFrom=[rel_from])
+    assert _run_iter_path_connections(elem) == [(p1, "ATSTART", "ATSTART"), (p2, "ATEND", "ATEND")]
