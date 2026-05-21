@@ -59,7 +59,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON python3 ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON python3 ./nix/build-all.py -v --diskcleanup --shared 2>&1 | tee build.log
 
       - name: Upload Build Logs
         if: always()
@@ -120,7 +120,11 @@ jobs:
 
           stage_runtime_payload() {
               dest="$1"
+              include_geometry_writers="${2:-1}"
               while IFS= read -r runtime_file; do
+                  if [ "$include_geometry_writers" != "1" ] && [[ "$(basename "$runtime_file")" == ifcopenshell.geometry.writer.* ]]; then
+                      continue
+                  fi
                   cp -P "$runtime_file" "$dest/"
               done < <(
                   for runtime_dir in "$install_root/bin" "$install_root/lib" "$install_root/lib64"; do
@@ -211,7 +215,7 @@ jobs:
               mkdir -p "$package_dir"
               cp "$exe_path" "$package_dir/"
               patchelf --set-rpath '$ORIGIN' "$package_dir/$exe"
-              stage_runtime_payload "$package_dir"
+              stage_runtime_payload "$package_dir" 0
               stage_qt_runtime_payload "$exe_path" "$package_dir"
               if [ "$exe" = "BonsaiViewer" ]; then
                   mkdir -p "$package_dir/connectors"
