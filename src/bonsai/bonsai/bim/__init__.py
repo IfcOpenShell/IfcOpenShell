@@ -31,18 +31,11 @@ from . import handler, operator, prop, ui
 
 
 def _parametric_gizmo_preference_classes() -> list[type]:
-    """Lazy resolution. ``bonsai.tool/__init__.py`` transitively loads
-    ``tool/ifc.py`` (and several siblings) which import ``from bonsai.bim.ifc
-    import IfcStore`` at module top — that ``tool → bim`` cycle means
-    ``bonsai.tool`` cannot be imported here before ``from . import handler, …``
-    above has primed the bim partial-import dance through ``handler``'s own
-    ``import bonsai.tool``. By the time this function runs (during the
-    classes-tuple build below), ``handler`` has fully loaded and ``bonsai.tool``
-    is safely importable.
-
-    The architectural root cause is ``IfcStore`` living in ``bim/ifc.py``;
-    moving it to ``tool/ifc.py`` would let ``tool/`` stop reaching into ``bim/``
-    and eliminate the need for this indirection. Tracked separately."""
+    """Resolves the registry-driven ``GizmoPreferences<X>`` classes for the
+    ``classes`` list below. ``import bonsai.tool`` is kept local to surface
+    the load-order constraint: it relies on ``from . import handler, …``
+    above having primed the
+    ``tool/ifc.py → bim/ifc.py → bim/handler.py → bonsai.tool`` cycle."""
     import bonsai.tool as tool
 
     return tool.Parametric.iter_gizmo_preference_classes(ui)

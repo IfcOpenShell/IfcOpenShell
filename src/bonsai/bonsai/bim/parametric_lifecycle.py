@@ -22,12 +22,12 @@
 
 Two mixins fit the parametric-edit triads in ``bim/module/model/``:
 
-:class:`FeatureModifierEditMixin`
+`FeatureModifierEditMixin`
     Door, Window — BBIM_<Type> pset with nested ``lining_properties`` /
     ``panel_properties``; Finish calls ``update_<type>_modifier_representation``
     via ``ifcopenshell.api.feature``; Cancel restores via ``switch_representation``.
 
-:class:`PathPreservingEditMixin`
+`PathPreservingEditMixin`
     Railing, Roof — BBIM_<Type> pset whose ``path_data`` is preserved through
     edit (only general kwargs are user-editable); Finish calls
     ``update_<type>_modifier_bmesh`` / ``update_<type>_modifier_ifc_data``;
@@ -38,7 +38,7 @@ fit either mixin without optional escape hatches (Stair has a unique
 ``update_ifc_stair_props`` post-Finish step + a separate ``get_props_kwargs_for_ifc_export``;
 Wall is validation-first, snapshot-driven, no preview regen in operators).
 
-This module sits separately from :class:`bonsai.tool.Parametric` (the registry +
+This module sits separately from `bonsai.tool.Parametric` (the registry +
 auto-commit) because it imports ``bonsai.tool`` freely, while the registry
 itself must stay light — ``tool/blender.py`` consumes the registry at module load."""
 
@@ -201,9 +201,9 @@ class PathPreservingEditMixin(_ParametricEditMixinBase):
 
     Enable:
         Fetch pset data via ``tool.Model.get_modeling_bbim_pset_data`` → set
-        draft props → ``is_editing = True``. Subclass override
-        :meth:`_post_load_data` lets railing JSON-serialise ``path_data`` for
-        the PropertyGroup string field.
+        draft props → ``is_editing = True``. The subclass post-load hook
+        lets railing JSON-serialise ``path_data`` for the PropertyGroup
+        string field.
 
     Finish:
         Read fresh pset → keep ``path_data`` → gather ``general`` kwargs
