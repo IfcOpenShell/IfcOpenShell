@@ -1908,30 +1908,11 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
     def _draw_parametric_confirm(self, layout: bpy.types.UILayout) -> None:
         col = layout.column(align=True)
-        col.label(text="Saving will commit all in-progress parametric edits to IFC")
-        col.label(text="before writing the file.")
-        layout.separator()
-        # Auto-derive the noun list from the parametric registry so the dialog stays
-        # in sync as new parametric element types are added.
-        nouns = [feature.name for feature in tool.Parametric.EDIT_TYPES]
-        if len(nouns) > 1:
-            noun_list = ", ".join(nouns[:-1]) + " or " + nouns[-1]
-        else:
-            noun_list = nouns[0] if nouns else ""
-        col = layout.column(align=True)
-        col.label(text="For example, if you are editing a parametric")
-        col.label(text=f"{noun_list}, all pending changes will be applied")
-        col.label(text="to the IFC file first.")
-        layout.separator()
-        col = layout.column(align=True)
-        col.label(text='Click "Commit & Save" to apply the pending edits and save,')
-        col.label(text="or press Esc to abort the save.")
+        col.label(text="Saving will apply all parametric edits (stairs, walls, etc.).")
         layout.separator()
         box = layout.box()
         col = box.column(align=True)
-        col.label(text="To disable this prompt and always auto-commit silently,", icon="INFO")
-        col.label(text='turn off "Confirm Before Auto-Committing Parametric Edits')
-        col.label(text='on Save" in the Bonsai add-on preferences.')
+        col.label(text="You can disable this prompt in Bonsai preferences", icon="INFO")
 
     def invoke(self, context, event):
         if not tool.Ifc.get():
@@ -1943,19 +1924,16 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         filepath = props.ifc_file
         if not filepath or self.should_save_as:
             return ExportHelper.invoke(self, context, event)
-
+        # Set filepath before showing pending edits prompt :
         self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
         prefs = tool.Blender.get_addon_preferences()
         if prefs.prompt_auto_commit_parametric_edits and tool.Parametric.get_pending_edits():
-            # `invoke_props_dialog` fires `execute()` on OK using current properties,
-            # so `self.filepath` must already be set above. The `confirm_parametric_edits`
-            # flag routes `draw()` to the multi-line confirm body instead of the file dialog.
             self.confirm_parametric_edits = True
             return context.window_manager.invoke_props_dialog(
                 self,
-                width=460,
+                width=400,
                 title="Pending Parametric Edits",
-                confirm_text="Commit & Save",
+                confirm_text="Apply Edits & Save",
             )
         return self.execute(context)
 
