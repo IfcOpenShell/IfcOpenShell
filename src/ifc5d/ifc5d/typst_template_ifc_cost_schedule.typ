@@ -26,7 +26,7 @@
 
 
 
-#let bill_of_quantities_table = table(
+#let bill_of_quantities_table(currency: "") = table(
   columns: (18mm,54mm, 12mm,12mm,12mm,12mm, 20mm, 20mm, 25mm),
     rows: (6mm, 248mm),
     align: (center, left, center, center, center, center, center, center, center),
@@ -36,12 +36,12 @@
       top: 1pt,
       bottom: 1pt
     ),
-    [Hierarchy], [Description], [n°],[l],[w],[h/w], [Quantity], [Rate], [Total]
+    [Hierarchy], [Description], [n°],[l],[w],[h/w], [Quantity], [Rate (#currency)], [Total (#currency)]
   )
 
 
 
-#let schedule_of_rates_table = table(
+#let schedule_of_rates_table(currency: "") = table(
   columns: (30mm,130mm, 25mm),
     rows: (6mm, 248mm),
     align: (center, left, center),
@@ -51,12 +51,12 @@
       top: 1pt,
       bottom: 1pt
     ),
-    [Identification], [Description], [Rate]
+    [Identification], [Description], [Rate (#currency)]
   )
 
 
   
-#let summary_table = table(
+#let summary_table(currency: "") = table(
   columns: (18mm,107mm, 30mm, 30mm),
   rows: (6mm, 248mm),
   align: (center, left, center, center, center, center, center, center, center),
@@ -67,9 +67,9 @@
     bottom: 1pt
   ),
   text(size: 8pt)[Hierarchy],
-  text(size: 8pt)[Description], 
-  text(size: 8pt)[Sub Total], 
-  text(size: 8pt)[Total]
+  text(size: 8pt)[Description],
+  text(size: 8pt)[Sub Total (#currency)],
+  text(size: 8pt)[Total (#currency)]
 )
 
 
@@ -127,7 +127,6 @@
 #let arrange_summary_row(row, options) = {
   let name = strong(upper(row.at("Name")))
   let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
-  let total = if row.at("RateSubtotal") == "" {0.0} else {float(row.at("RateSubtotal"))}
   if row.at("ItemIsASum") == "True" {   
     if row.at("Index") == "1" {
       // ROOT COST
@@ -216,7 +215,8 @@
       format-decimal(float(row.at("Quantity")))}
     let rate = if row.at("RateSubtotal") == "" {0.0} else {
       format-decimal(float(row.at("RateSubtotal")))}
-    let total = if row.at("Quantity") == "" {0.0} else {
+    let total = if row.at("Quantity") == "" or row.at("RateSubtotal") == "" {
+      format-decimal(0.0, places: 2)} else {
       format-decimal(float(row.at("Quantity")) * float(row.at("RateSubtotal")), places: 2)}
     
     (
@@ -281,18 +281,18 @@
 #let arrange_schedule_of_rates_row(row, options) = {
   let name = strong(upper(row.at("Name")))
   let description = [#par(justify: true, text(8pt, row.at("Description", default: "")))]
-  let unit = table.cell(align: right)[#unit_map.at(row.at("Unit"), default: "")]
+  let unit = table.cell(align: right + bottom)[#unit_map.at(row.at("Unit"), default: "")]
   let rate = if row.at("RateSubtotal") == "" {0.0} else {
       format-decimal(float(row.at("RateSubtotal")))}
   if row.at("ItemIsASum") == "True" {return ()} //skip sections in schedule of rates
   (
     row.at("Identification"),
-    if row.at("Identification") == "" {name + linebreak() + description} else {name + linebreak() + description},
+    name + linebreak() + description,
     []
   )
   (
     [],
-    table.cell(align: right+bottom)[#unit],
+    unit,
     table.cell(align: right+bottom)[#rate],
   )
   (
@@ -342,8 +342,12 @@
   ) = {
   let data = csv(path, delimiter: delimiter, row-type: dictionary)
   let new_rows = data.map(item => arrange_summary_row(item, options))
-  let general_total = data.filter(row => row.at("ItemIsASum") == "False") 
-   .map(row => float(row.at("RateSubtotal", default: 0.0))*float(row.at("Quantity", default: 0.0)))
+  let general_total = data.filter(row => row.at("ItemIsASum") == "False")
+   .map(row => {
+     let qty  = if row.at("Quantity", default: "") == "" { 0.0 } else { float(row.at("Quantity")) }
+     let rate = if row.at("RateSubtotal", default: "") == "" { 0.0 } else { float(row.at("RateSubtotal")) }
+     qty * rate
+   })
    .sum(default: 0.00)
   
   set text(size: 10pt)
@@ -477,9 +481,9 @@
         [#counter(page).display("1/1", both: true)]
       )
     ],
-    background: 
+    background:
     place( top + left, dx: 15mm, dy: 25mm,
-      format_table.at(schedule_type, default: bill_of_quantities_table)
+      (format_table.at(schedule_type, default: bill_of_quantities_table))(currency: project_currency)
     )
   )
   
@@ -522,7 +526,7 @@
     set page(
     background:
       place( top + left, dx: 15mm, dy: 25mm,
-        format_table.at("SUMMARY")
+        (format_table.at("SUMMARY"))(currency: project_currency)
     )
   )
     create-summary(schedule_path, options)
