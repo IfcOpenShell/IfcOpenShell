@@ -6453,6 +6453,82 @@ def _draw_snap_indicator_global():
             pass
 
 
+# Separate draw data dict and POST_PIXEL callback for SetDimensionAnchor hover —
+# avoids GPU matrix state issues by working in pre-converted 2D screen coords.
+_anchor_hover_draw_data: dict = {}
+
+
+def _draw_anchor_hover_global():
+    """POST_PIXEL callback — draws the face/edge/vertex hover indicator for SetDimensionAnchor."""
+    data = _anchor_hover_draw_data
+    if not data or not data.get("type"):
+        return
+    import gpu
+    from gpu_extras.batch import batch_for_shader
+    try:
+        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        gpu.state.blend_set("ALPHA")
+        snap_type = data["type"]
+
+        if snap_type == "FACE":
+            verts = data.get("face_verts_2d", [])
+            if len(verts) >= 3:
+                lines = []
+                for i in range(len(verts)):
+                    lines.append(verts[i])
+                    lines.append(verts[(i + 1) % len(verts)])
+                shader.bind()
+                shader.uniform_float("color", (0.2, 0.55, 1.0, 0.9))
+                gpu.state.line_width_set(4.0)
+                batch_for_shader(shader, "LINES", {"pos": lines}).draw(shader)
+
+        elif snap_type == "EDGE":
+            v0, v1 = data.get("v0_2d"), data.get("v1_2d")
+            if v0 and v1:
+                shader.bind()
+                shader.uniform_float("color", (1.0, 0.65, 0.0, 1.0))
+                gpu.state.line_width_set(6.0)
+                batch_for_shader(shader, "LINES", {"pos": [v0, v1]}).draw(shader)
+                gpu.state.point_size_set(12.0)
+                batch_for_shader(shader, "POINTS", {"pos": [v0, v1]}).draw(shader)
+
+        elif snap_type == "LAYER":
+            shader.bind()
+            shader.uniform_float("color", (0.2, 0.9, 0.5, 1.0))
+            corners = data.get("seam_corners_2d", [])
+            n = len(corners)
+            if n >= 2:
+                lines = []
+                for i in range(n):
+                    lines.append(corners[i])
+                    lines.append(corners[(i + 1) % n])
+                gpu.state.line_width_set(5.0)
+                batch_for_shader(shader, "LINES", {"pos": lines}).draw(shader)
+                gpu.state.point_size_set(10.0)
+                batch_for_shader(shader, "POINTS", {"pos": corners}).draw(shader)
+            pt = data.get("snap_2d")
+            if pt:
+                gpu.state.point_size_set(20.0)
+                batch_for_shader(shader, "POINTS", {"pos": [pt]}).draw(shader)
+
+        elif snap_type == "VERTEX":
+            pt = data.get("snap_2d")
+            shader.bind()
+            shader.uniform_float("color", (1.0, 0.2, 0.4, 1.0))
+            if pt:
+                gpu.state.point_size_set(20.0)
+                batch_for_shader(shader, "POINTS", {"pos": [pt]}).draw(shader)
+
+    except Exception:
+        pass
+    finally:
+        try:
+            gpu.state.blend_set("NONE")
+            gpu.state.line_width_set(1.0)
+        except Exception:
+            pass
+
+
 class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
     """Interactively anchor dimension vertices to IFC element faces.
 
@@ -6544,9 +6620,9 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         self._hover_last_px = (-9999, -9999)
         self._hover_highlighted_obj = None
         self._snap_mode = "FACE"
-        _snap_draw_data.clear()
+        _anchor_hover_draw_data.clear()
         self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            _draw_snap_indicator_global, (), "WINDOW", "POST_VIEW"
+            _draw_anchor_hover_global, (), "WINDOW", "POST_PIXEL"
         )
 
         # When invoked from a panel, context.region_data is None.
@@ -6577,7 +6653,7 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         if event.type == "ESC" or (event.type == "RIGHTMOUSE" and event.value == "PRESS"):
             self._clear_hover_highlight(context)
             context.workspace.status_text_set(None)
-            _snap_draw_data.clear()
+            _anchor_hover_draw_data.clear()
             if self._draw_handler:
                 bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, "WINDOW")
                 self._draw_handler = None
@@ -6618,7 +6694,7 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
     def _cleanup(self, context):
         self._clear_hover_highlight(context)
         context.workspace.status_text_set(None)
-        _snap_draw_data.clear()
+        _anchor_hover_draw_data.clear()
         if self._draw_handler:
             bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, "WINDOW")
             self._draw_handler = None
@@ -6813,6 +6889,20 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             origin = origin - direction * 1e4
         return origin, direction
 
+    def _get_current_anchor_guid(self) -> "Optional[str]":
+        """Return the element GUID the active anchor is currently bound to, or None."""
+        if self._active_vertex_idx < 0 or not self._annotation:
+            return None
+        try:
+            pset_data = ifcopenshell.util.element.get_pset(self._annotation, "BBIM_Dimension")
+            if not pset_data or not pset_data.get("Anchors"):
+                return None
+            anchors = json.loads(pset_data["Anchors"])
+            anchor = anchors[self._active_vertex_idx]
+            return anchor.get("guid") or None
+        except Exception:
+            return None
+
     def _compute_candidates(self, context, coord):
         """Cast a ray from *coord* and return a ranked list of hit candidates.
 
@@ -6824,10 +6914,33 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 
         origin, direction = self._unproject_coord(coord)
         depsgraph = context.evaluated_depsgraph_get()
+        view_layer = context.view_layer
+
+        def _is_hidden(obj):
+            h = obj.hide_get(view_layer=view_layer)
+            hv = obj.hide_viewport
+            vis = obj.visible_get()
+            return h or hv or not vis
+
+        # In FACE mode only snap to faces whose normal is roughly perpendicular to
+        # the camera view direction (i.e., wall/vertical faces in plan view, not
+        # floor/ceiling faces).  |dot| < 0.5 ≈ within 60° of perpendicular.
+        _face_cam_view = None
+        if self._snap_mode == "FACE":
+            _cam = bpy.context.scene.camera
+            if _cam:
+                _face_cam_view = (_cam.matrix_world.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+
+        def _face_perp_ok(normal_w):
+            """Return True when the face is acceptably perpendicular to the camera."""
+            if _face_cam_view is None:
+                return True
+            return abs(normal_w.dot(_face_cam_view)) < 0.5
 
         # Scene-BVH pierce-through: O(log N) vs the previous O(N) per-object loop.
         # Each iteration steps past the last hit surface to reach the next object.
         direct: list = []
+        ray_hit_objs: set = set()   # all IFC objects the ray passed through (any face)
         ray_origin = Vector(origin)
         _EPS = 1e-4
 
@@ -6841,23 +6954,39 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             ifc_obj = getattr(hit_obj_eval, "original", hit_obj_eval)
             if ifc_obj == self._annotation_obj:
                 continue
-            if not ifc_obj.visible_get():
+            if _is_hidden(ifc_obj):
                 continue
             if ifc_obj.type != "MESH":
                 continue
             if not tool.Ifc.get_entity(ifc_obj):
                 continue
+            ray_hit_objs.add(ifc_obj)   # track even if face is non-perp
             mx = ifc_obj.matrix_world
-            fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
+            # In FACE mode use the exact hit face; _prefer_perp_face_index is only
+            # needed for VERTEX/EDGE profile snapping.
+            if self._snap_mode != "FACE":
+                fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
             normal = (
                 (mx.to_3x3() @ ifc_obj.data.polygons[fi].normal).normalized()
                 if fi is not None
                 else nrm_w.normalized()
             )
+            if not _face_perp_ok(normal):
+                continue
             dist = (loc_w - origin).length
             direct.append((dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
         if direct:
             direct.sort(key=lambda c: c[0])
+            # Prefer the element the anchor is currently bound to so that
+            # re-picking a gizmo dot defaults to the same element rather than
+            # whatever happened to be closest along the ray.
+            preferred_guid = self._get_current_anchor_guid()
+            if preferred_guid:
+                for _pi, _pc in enumerate(direct):
+                    if getattr(tool.Ifc.get_entity(_pc[1]), "GlobalId", None) == preferred_guid:
+                        if _pi > 0:
+                            direct.insert(0, direct.pop(_pi))
+                        break
             return [(o, m, mmx, l, n, f) for _, o, m, mmx, l, n, f in direct]
 
         # Proximity fallback — collect ALL candidates within TOL, sorted by perp distance.
@@ -6870,9 +6999,10 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         for ifc_obj in context.scene.objects:
             if ifc_obj == self._annotation_obj:
                 continue
-            if not ifc_obj.visible_get():
+            if _is_hidden(ifc_obj):
                 continue
-            if not tool.Ifc.get_entity(ifc_obj):
+            elem = tool.Ifc.get_entity(ifc_obj)
+            if not elem:
                 continue
             if ifc_obj.type != "MESH":
                 continue
@@ -6900,11 +7030,17 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             if not found:
                 continue
             loc_w = mx @ loc_l
-            fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
+            if self._snap_mode != "FACE":
+                fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
             normal = (mx.to_3x3() @ ifc_obj.data.polygons[fi].normal).normalized() if fi is not None else (mx.to_3x3() @ nrm_l).normalized()
+            if not _face_perp_ok(normal):
+                continue
             prox.append((perp_dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
 
-        prox.sort(key=lambda c: c[0])
+        # Objects the ray directly passed through get priority over objects that
+        # are merely nearby — prevents adjacent windows/walls stealing the snap
+        # from an element the cursor is actually over.
+        prox.sort(key=lambda c: (0 if c[1] in ray_hit_objs else 1, c[0]))
         return [(o, m, mmx, l, n, f) for _, o, m, mmx, l, n, f in prox]
 
     def _handle_hover(self, context, event):
@@ -6934,31 +7070,45 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         self._apply_hover_highlight(context)
 
     def _apply_hover_highlight(self, context):
-        """Select the current candidate object; compute snap geometry; update status."""
+        """Compute snap geometry for the current candidate and update the status bar."""
         if not self._hover_candidates:
             self._clear_hover_highlight(context)
-            _snap_draw_data.clear()
             return
 
         ifc_obj, _, _, _, _, face_index = self._hover_candidates[self._hover_index]
 
-        # Only update selection when the highlighted object changes.
-        if ifc_obj != self._hover_highlighted_obj:
-            if self._hover_highlighted_obj:
-                try:
-                    self._hover_highlighted_obj.select_set(False)
-                except Exception:
-                    pass
-            self._hover_highlighted_obj = ifc_obj
-            try:
-                ifc_obj.select_set(True)
-                context.view_layer.objects.active = ifc_obj
-            except Exception:
-                pass
-
-        _snap_draw_data.clear()
-        _snap_draw_data.update(self._compute_snap_geom(ifc_obj, face_index, self._hover_last_px))
-
+        sg = self._compute_snap_geom(ifc_obj, face_index, self._hover_last_px)
+        _anchor_hover_draw_data.clear()
+        if sg and self._region and self._rv3d:
+            from bpy_extras.view3d_utils import location_3d_to_region_2d
+            snap_type = sg.get("type")
+            _anchor_hover_draw_data["type"] = snap_type
+            if snap_type == "FACE":
+                verts_2d = [
+                    tuple(location_3d_to_region_2d(self._region, self._rv3d, v) or (0, 0))
+                    for v in sg.get("face_verts", [])
+                ]
+                _anchor_hover_draw_data["face_verts_2d"] = verts_2d
+            elif snap_type == "EDGE":
+                v0 = location_3d_to_region_2d(self._region, self._rv3d, sg["v0"])
+                v1 = location_3d_to_region_2d(self._region, self._rv3d, sg["v1"])
+                _anchor_hover_draw_data["v0_2d"] = tuple(v0) if v0 else None
+                _anchor_hover_draw_data["v1_2d"] = tuple(v1) if v1 else None
+            elif snap_type == "LAYER":
+                pt = sg.get("snap_world")
+                if pt:
+                    sp = location_3d_to_region_2d(self._region, self._rv3d, pt)
+                    _anchor_hover_draw_data["snap_2d"] = tuple(sp) if sp else None
+                corners_3d = sg.get("seam_corners", [])
+                _anchor_hover_draw_data["seam_corners_2d"] = [
+                    tuple(location_3d_to_region_2d(self._region, self._rv3d, c) or (0, 0))
+                    for c in corners_3d
+                ]
+            elif snap_type == "VERTEX":
+                pt = sg.get("snap_world")
+                if pt:
+                    sp = location_3d_to_region_2d(self._region, self._rv3d, pt)
+                    _anchor_hover_draw_data["snap_2d"] = tuple(sp) if sp else None
         entity = tool.Ifc.get_entity(ifc_obj)
         label = (entity.Name or entity.GlobalId) if entity else ifc_obj.name
         n = len(self._hover_candidates)
@@ -6974,13 +7124,9 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                 break
 
     def _clear_hover_highlight(self, context):
-        """Deselect the highlighted object and restore the annotation as active."""
-        if self._hover_highlighted_obj:
-            try:
-                self._hover_highlighted_obj.select_set(False)
-            except Exception:
-                pass
-            self._hover_highlighted_obj = None
+        """Clear hover draw data and restore the annotation as the active object."""
+        self._hover_highlighted_obj = None
+        _anchor_hover_draw_data.clear()
         try:
             self._annotation_obj.select_set(True)
             context.view_layer.objects.active = self._annotation_obj
@@ -6989,7 +7135,7 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 
     def cancel(self, context):
         """Called when the operator is cancelled externally — clean up GPU handler."""
-        _snap_draw_data.clear()
+        _anchor_hover_draw_data.clear()
         if self._draw_handler:
             bpy.types.SpaceView3D.draw_handler_remove(self._draw_handler, "WINDOW")
             self._draw_handler = None
@@ -7002,6 +7148,82 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 
     # ------------------------------------------------------------------
     # Snap geometry helpers
+
+    @staticmethod
+    def _coplanar_face_outline(obj, mx, seed_face):
+        """Return ordered world-space vertices forming the outline of the planar region.
+
+        Finds all polygons on *obj* coplanar with *seed_face*, collects their
+        boundary edges (edges shared by only one polygon in the group), then
+        walks those edges into a single ordered loop and converts to world space.
+        Falls back to the seed face's own vertices if the walk fails.
+        """
+        # Skip the full boundary-walk for highly-tessellated meshes (e.g. terrain).
+        # The O(N) polygon scan freezes Blender on objects with thousands of faces.
+        if len(obj.data.polygons) > 500:
+            return [tuple(mx @ obj.data.vertices[vi].co) for vi in seed_face.vertices]
+
+        target_n = seed_face.normal.copy()
+        target_d = seed_face.center.dot(target_n)
+        tol_n = 1e-3
+        tol_d = 1e-3
+
+        # Collect all coplanar polygon indices
+        coplanar = [
+            i for i, p in enumerate(obj.data.polygons)
+            if abs(p.normal.dot(target_n) - 1.0) <= tol_n
+            and abs(p.center.dot(target_n) - target_d) <= tol_d
+        ]
+
+        # Count edge appearances; boundary edges appear exactly once
+        edge_count: dict = {}
+        for fi in coplanar:
+            poly = obj.data.polygons[fi]
+            verts = list(poly.vertices)
+            n = len(verts)
+            for i in range(n):
+                e = (min(verts[i], verts[(i + 1) % n]), max(verts[i], verts[(i + 1) % n]))
+                edge_count[e] = edge_count.get(e, 0) + 1
+        boundary = [e for e, cnt in edge_count.items() if cnt == 1]
+
+        if not boundary:
+            return [tuple(mx @ obj.data.vertices[vi].co) for vi in seed_face.vertices]
+
+        # Build adjacency map
+        adj: dict = {}
+        for a, b in boundary:
+            adj.setdefault(a, []).append(b)
+            adj.setdefault(b, []).append(a)
+
+        # Walk ALL disconnected loops (outer perimeter + any window/door hole loops).
+        # A wall with a window void has two loops: the outer wall outline and the
+        # inner opening perimeter.  We want the largest loop (outer boundary).
+        unvisited = set(v for e in boundary for v in e)
+        loops: list = []
+        while unvisited:
+            start = next(iter(unvisited))
+            ring = [start]
+            unvisited.discard(start)
+            prev, cur = None, start
+            for _ in range(len(boundary) + 1):
+                nxts = [v for v in adj.get(cur, []) if v != prev]
+                if not nxts or nxts[0] == start:
+                    break
+                prev, cur = cur, nxts[0]
+                if cur in unvisited:
+                    unvisited.discard(cur)
+                    ring.append(cur)
+                else:
+                    break
+            if len(ring) >= 3:
+                loops.append(ring)
+
+        if not loops:
+            return [tuple(mx @ obj.data.vertices[vi].co) for vi in seed_face.vertices]
+
+        # The outer perimeter has the most vertices; window/door holes are smaller.
+        best_ring = max(loops, key=len)
+        return [tuple(mx @ obj.data.vertices[vi].co) for vi in best_ring]
 
     def _compute_snap_geom(self, hit_obj, face_index, coord) -> dict:
         """Return snap draw-data dict for the current snap mode and hit face.
@@ -7028,6 +7250,10 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
         face_verts_world = [tuple(mx @ hit_obj.data.vertices[vi].co) for vi in face.vertices]
 
         if self._snap_mode == "FACE":
+            # For tessellated meshes a single polygon may be a tiny micro-triangle.
+            # Find all coplanar faces on the same plane and walk their boundary edges
+            # to produce the full planar face outline.
+            face_verts_world = self._coplanar_face_outline(hit_obj, mx, face)
             return {"type": "FACE", "face_verts": face_verts_world}
 
         # Try profile-based snap candidates first (IFC-native, index-stable).
