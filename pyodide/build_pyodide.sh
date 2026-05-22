@@ -1,6 +1,11 @@
 #!/usr/bin/bash
 set -ex
 
+PYODIDE_VERSION=0.29.3
+PYODIDE_BUILD_VERSION=0.33.0
+PYODIDE_XBUILDENV_ROOT="${HOME}/.cache/.pyodide-xbuildenv-${PYODIDE_BUILD_VERSION}"
+PYODIDE_XBUILDENV="${PYODIDE_XBUILDENV_ROOT}/${PYODIDE_VERSION}"
+
 # Script is assuming that it will be possible to execute it multiple times
 # therefore we're clearing venv each time and ignoring existing 'emsdk' folder.
 
@@ -11,21 +16,15 @@ source .venv/bin/activate
 
 # Install pyodide cross build environment.
 # Instructions: https://pyodide.org/en/stable/development/building-packages.html
-uv pip install pyodide-build
+uv pip install "pyodide-build==${PYODIDE_BUILD_VERSION}"
 # `uv run` is required, so xbuildenv would skip using `pip`.
-uv run pyodide xbuildenv install
+uv run pyodide xbuildenv install "${PYODIDE_VERSION}"
+uv run pyodide xbuildenv install-emscripten
 
-# Emscripten doesn't come with xbuildenv.
-if [ ! -d emsdk ]; then
-  git clone https://github.com/emscripten-core/emsdk
-fi
-pushd emsdk
-PYODIDE_EMSCRIPTEN_VERSION=$(pyodide config get emscripten_version)
-./emsdk install ${PYODIDE_EMSCRIPTEN_VERSION}
-./emsdk activate ${PYODIDE_EMSCRIPTEN_VERSION}
-source emsdk_env.sh
+EMSDK_ROOT="${PYODIDE_XBUILDENV}/emsdk"
+source "${EMSDK_ROOT}/emsdk_env.sh"
 which emcc
-popd
+emcc --version
 
 mkdir -p packages/ifcopenshell
 VERSION=`cat IfcOpenShell/VERSION`

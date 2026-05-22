@@ -159,9 +159,9 @@ class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    attribute_data_path: bpy.props.StringProperty(name="Data Path")  # pyright: ignore[reportRedeclaration]
+    attribute_data_path: bpy.props.StringProperty(name="Data Path")
     """Full data path to `Attribute`/string property."""
-    use_relative_path: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    use_relative_path: bpy.props.BoolProperty(
         name="Use Relative Path",
         default=False,
     )
@@ -601,7 +601,7 @@ class CreateMacBonsaiApp(bpy.types.Operator):
         "ALT+click to uninstall Bonsai app if it was installed previously."
     )
 
-    uninstall: bpy.props.BoolProperty(options={"SKIP_SAVE"})  # pyright: ignore[reportRedeclaration]
+    uninstall: bpy.props.BoolProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         uninstall: bool
@@ -1667,7 +1667,7 @@ class BIM_OT_attribute_add_subitem(bpy.types.Operator):
     bl_description = "Add subitem to the current attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    data_path: bpy.props.StringProperty()
     """Full data path."""
 
     if TYPE_CHECKING:
@@ -1691,9 +1691,9 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
     bl_description = "Add subitem to the current attribute"
     bl_options = {"REGISTER", "UNDO"}
 
-    data_path: bpy.props.StringProperty()  # pyright: ignore[reportRedeclaration]
+    data_path: bpy.props.StringProperty()
     """Full data path."""
-    index: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    index: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         data_path: str

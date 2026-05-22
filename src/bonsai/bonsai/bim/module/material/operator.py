@@ -630,7 +630,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
 
             if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
-                if "CardinalPoint" in attributes:
+                if "CardinalPoint" in attributes and attributes["CardinalPoint"] is not None:
                     attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
                 ifcopenshell.api.material.edit_profile_usage(
                     self.file,
@@ -717,13 +717,40 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
         self.props.material_set_item_material = str(material_set_item.Material.id())
 
         self.props.material_set_item_attributes.clear()
-        bonsai.bim.helper.import_attributes(material_set_item, self.props.material_set_item_attributes)
+        bonsai.bim.helper.import_attributes(
+            material_set_item,
+            self.props.material_set_item_attributes,
+            callback=self.import_attributes_callback,
+        )
 
         if material_set_item.is_a("IfcMaterialProfile"):
             if material_set_item.Profile and material_set_item.Profile.ProfileName:
                 self.mprops.profiles = str(material_set_item.Profile.id())
 
         return {"FINISHED"}
+
+    def import_attributes_callback(
+        self, name: str, prop: Union["Attribute", None], data: dict[str, Any]
+    ) -> None | Literal[True]:
+        if data["type"] != "IfcMaterialLayer" or name != "IsVentilated" or not prop:
+            return None
+
+        # Keep null semantics unchanged on export, but avoid an empty UI selection.
+        prop.data_type = "enum"
+        prop.special_type = "LOGICAL"
+        prop.enum_items = json.dumps(("TRUE", "FALSE", "UNKNOWN"))
+
+        value = data[name]
+        if value == "UNKNOWN":
+            prop.enum_value = "UNKNOWN"
+        elif value is None:
+            # Keep visible default as FALSE, but preserve null semantics on save.
+            prop.enum_value = "FALSE"
+            prop.is_null = True
+        else:
+            prop.enum_value = "TRUE" if value else "FALSE"
+
+        return True
 
 
 class DisableEditingMaterialSetItem(bpy.types.Operator):
@@ -777,6 +804,8 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
             )
             slab.DumbSlabPlaner().regenerate_from_layer(layer)
             wall.DumbWallPlaner().regenerate_from_layer(layer)
+            from bonsai.bim.module.drawing.handler import regenerate_dims_for_layer
+            regenerate_dims_for_layer(self.file, layer)
         elif material.is_a("IfcMaterialProfileSet"):
             profile_def = None
             if mprops.profiles:

@@ -79,7 +79,7 @@ jobs:
           libhdf5-dev libcgal-dev libeigen3-dev
           
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.20
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ubuntu-22.04-${{ runner.arch }}
 
@@ -254,6 +254,7 @@ jobs:
           cd ../ifcpatch && make test || ERROR=1
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || ERROR=1
+          make build-ids-docs || ERROR=1
           # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
           cd ../ifcopenshell-python
           pip install mathutils

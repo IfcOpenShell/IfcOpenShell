@@ -114,7 +114,11 @@ class AnnotationTool(WorkSpaceTool):
     bl_description = "Gives you Annotation related superpowers"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.annotation")
     bl_widget = None
-    bl_keymap = tool.Blender.get_default_selection_keypmap() + (
+    bl_keymap = (
+        # Before view3d.select: tool keymaps take priority over the addon keymap
+        # where ClickNearestDimensionAnchor is also registered.
+        ("bim.click_nearest_dimension_anchor", {"type": "LEFTMOUSE", "value": "PRESS"}, None),
+    ) + tool.Blender.get_default_selection_keypmap() + (
         ("bim.annotation_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.annotation_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
         ("bim.annotation_hotkey", {"type": "E", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_E")]}),
@@ -221,11 +225,28 @@ class AnnotationToolUI:
         props = tool.Drawing.get_document_props()
         row.prop(props, "should_draw_decorations", text="Viewport Annotations")
 
+    _DIMENSION_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+
     @classmethod
     def draw_edit_object_interface(cls, context):
         obj = bpy.context.active_object
         if tool.Ifc.get_entity(obj) and DecoratorData.get_text_data(obj):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        if element and element.is_a("IfcAnnotation"):
+            ptype = ifcopenshell.util.element.get_predefined_type(element)
+            if ptype in cls._DIMENSION_TYPES:
+                cls.layout.separator()
+                ann_props = tool.Drawing.get_annotation_props()
+                if ann_props.force_perpendicular_to_face:
+                    row = cls.layout.row(align=True)
+                    row.prop(ann_props, "line_position")
+                cls.layout.separator()
+                row = cls.layout.row(align=True)
+                op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
+                op.active_only = True
 
     @classmethod
     def draw_type_selection_interface(cls):
@@ -252,6 +273,11 @@ class AnnotationToolUI:
         if object_type in ("ELEVATION", "SECTION"):
             row = cls.layout.row(align=True)
             row.prop(cls.props, "is_manual_reference")
+
+        _DIMENSION_TYPES = {"DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"}
+        if object_type in _DIMENSION_TYPES:
+            row = cls.layout.row(align=True)
+            row.prop(cls.props, "force_perpendicular_to_face")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
@@ -335,8 +361,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if created_objects:
             bpy.context.view_layer.objects.active = created_objects[-1]
 
+    _PARAMETRIC_DIMENSION_TYPES = frozenset(
+        ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL")
+    )
+
     def hotkey_S_A(self):
-        if bpy.ops.bim.add_annotation.poll():
+        props = tool.Drawing.get_annotation_props()
+        if props.object_type in self._PARAMETRIC_DIMENSION_TYPES:
+            if bpy.ops.bim.draw_parametric_dimension.poll():
+                bpy.ops.bim.draw_parametric_dimension("INVOKE_DEFAULT")
+        elif bpy.ops.bim.add_annotation.poll():
             bpy.ops.bim.add_annotation("INVOKE_DEFAULT")
 
     def hotkey_S_E(self):

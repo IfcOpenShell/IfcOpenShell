@@ -316,11 +316,8 @@ class IfcStore:
         del IfcStore.id_map[data["id"]]
         if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
-        obj = IfcStore.get_object_by_name(data["obj"])
-        if obj is None:
-            # obj was just created during this step and didn't existed before.
-            return
-        bpy.msgbus.clear_by_owner(obj)
+        # Note: msgbus subscriptions are cleared globally during
+        # rebuild_element_maps which runs after every undo/redo.
 
     @staticmethod
     def commit_link_element(data: OperationData) -> None:
@@ -367,10 +364,8 @@ class IfcStore:
         del IfcStore.id_map[data["id"]]
         if "guid" in data:
             del IfcStore.guid_map[data["guid"]]
-        obj = IfcStore.get_object_by_name(data["obj"])
-        # obj might be removed after unlink.
-        if not obj:
-            bpy.msgbus.clear_by_owner(obj)
+        # Note: msgbus subscriptions are cleared globally during
+        # rebuild_element_maps which runs after every undo/redo.
 
     @staticmethod
     def unlink_element(

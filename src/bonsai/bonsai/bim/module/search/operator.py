@@ -619,7 +619,7 @@ class SelectFilterElements(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ApplyFilterFromText(Operator, tool.Ifc.Operator):
+class ApplyFilterFromText(Operator):
     bl_idname = "bim.apply_filter_from_text"
     bl_label = "Apply Filter Configuration"
     bl_description = "Apply the JSON filter configuration from the current text block"
@@ -799,7 +799,7 @@ class SelectQueryElements(Operator):
     bl_description = "Select elements matching an provided selector query"
     bl_options = {"REGISTER", "UNDO"}
 
-    query: StringProperty(name="Query")  # pyright: ignore[reportRedeclaration]
+    query: StringProperty(name="Query")
 
     if TYPE_CHECKING:
         query: str
@@ -829,12 +829,12 @@ class SaveSearch(Operator, tool.Ifc.Operator):
         # Extra item so it will be easy to select current text.
         return [text] + SaveSearch.name_search_items
 
-    name: StringProperty(  # pyright: ignore[reportRedeclaration]
+    name: StringProperty(
         name="Name",
         search=get_name_search_items,
         search_options={"SORT"},
     )
-    module: StringProperty()  # pyright: ignore[reportRedeclaration]
+    module: StringProperty()
 
     def update_use_all_ifcgroups(self, context: object = None) -> None:
         ifc_file = tool.Ifc.get()
@@ -845,7 +845,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
         }
         self.name_search_items[:] = natsorted(groups)
 
-    use_all_ifcgroups: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    use_all_ifcgroups: BoolProperty(
         name="Use Any IfcGroup",
         description=(
             "By default we're targeting only IfcGroups with SEARCH ObjectType "
@@ -1440,7 +1440,7 @@ class ShowAllElements(Operator):
         return {"FINISHED"}
 
 
-class SelectSimilar(Operator, tool.Ifc.Operator):
+class SelectSimilar(Operator):
     bl_idname = "bim.select_similar"
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 
 import logging
 from typing import Optional, TYPE_CHECKING
@@ -25,7 +26,7 @@ import ifcopenshell
 import ifcopenshell.util.shape_builder
 
 if TYPE_CHECKING:
-    import bpy  # pyright: ignore[reportMissingImports]
+    import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
 
 class Patcher:
@@ -113,9 +114,9 @@ class Patcher:
         self.should_create_edges = should_create_edges
 
     def patch(self) -> None:
-        import bmesh  # pyright: ignore[reportMissingImports]
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
-        import bpy  # pyright: ignore[reportMissingImports]
+        import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import ifcopenshell.util.schema
         import ifcopenshell.util.unit
 
@@ -166,9 +167,9 @@ class Patcher:
         self.file = tool.Ifc.get()
 
     def create_edges(self, obj: bpy.types.Object) -> None:
-        import bmesh  # pyright: ignore[reportMissingImports]
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
-        import bpy  # pyright: ignore[reportMissingImports]
+        import bpy  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import ifcopenshell.api.geometry
         import ifcopenshell.api.root
         import ifcopenshell.util.representation
@@ -234,7 +235,7 @@ class Patcher:
         # No sharp faces
         from math import degrees
 
-        import bmesh  # pyright: ignore[reportMissingImports]
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
         import ifcopenshell.api.geometry
         import ifcopenshell.api.root
@@ -281,13 +282,13 @@ class Patcher:
         # This is crazy but we need a sharp face per island
         from math import degrees, radians, sin
 
-        import bmesh  # pyright: ignore[reportMissingImports]
+        import bmesh  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
         import bonsai.tool as tool
         import ifcopenshell.api.geometry
         import ifcopenshell.api.root
         import ifcopenshell.util.representation
         import ifcopenshell.util.shape_builder
-        from mathutils import Matrix  # pyright: ignore[reportMissingImports]
+        from mathutils import Matrix  # pyright: ignore[reportMissingImports]  # ty:ignore[unresolved-import]
 
         # Get the active object (assumed to have a mesh)
         mesh = obj.data

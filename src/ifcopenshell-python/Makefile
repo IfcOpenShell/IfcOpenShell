@@ -5,8 +5,8 @@ VERSION_DATE:=$(shell date '+%y%m%d')
 PYVERSION:=py311
 PLATFORM:=linux64
 
-PYTHON:=python3.11
-PIP:=pip3.11
+PYTHON:=python3
+PIP:=pip3
 SED:=sed -i
 VENV_ACTIVATE:=bin/activate
 
@@ -27,28 +27,14 @@ SED:=sed -i '' -e
 endif
 endif
 
-# TODO: we should simplify this at some point...
-ifeq ($(PYVERSION), py39)
-PYNUMBER:=39
+SUPPORTED_PYVERSIONS := py310 py311 py312 py313 py314
+
+ifeq ($(filter $(PYVERSION),$(SUPPORTED_PYVERSIONS)),)
+$(error Unsupported PYVERSION=$(PYVERSION). Must be one of $(SUPPORTED_PYVERSIONS))
 endif
-ifeq ($(PYVERSION), py310)
-PYNUMBER:=310
-endif
-ifeq ($(PYVERSION), py311)
-PYNUMBER:=311
-endif
-ifeq ($(PYVERSION), py312)
-PYNUMBER:=312
-endif
-ifeq ($(PYVERSION), py313)
-PYNUMBER:=313
-endif
-ifeq ($(PYVERSION), py314)
-PYNUMBER:=314
-endif
-ifndef PYNUMBER
-$(error Unsupported PYVERSION '$(PYVERSION)')
-endif
+
+PYMINOR:=$(subst py3,,$(PYVERSION))
+PYNUMBER:=3$(PYMINOR)
 
 # We actually do support glibc 2.28-2.30 (see #5636)
 # but those are old and there's no demand for it.
@@ -93,10 +79,6 @@ test-parallel:
 test-mathutils:
 	pytest -p no:pytest-blender test/util/test_shape_builder.py
 
-.PHONY: build-ids-docs
-build-ids-docs:
-	mkdir -p test/build
-	cd test && python ids_doc_generator.py
 
 .PHONY: qa
 qa:

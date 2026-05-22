@@ -545,7 +545,7 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_type_page"
     bl_label = "Change Type Page"
     bl_options = {"REGISTER"}
-    page: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    page: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         page: int
@@ -694,10 +694,14 @@ def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[
 
         new_settings = settings.copy()
         new_settings["context"] = box_context
-        new_box = ifcopenshell.api.geometry.add_representation(ifc_file, should_run_listeners=False, **new_settings)
+        new_box = ifcopenshell.api.geometry.add_representation(
+            ifc_file,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
+            **new_settings,
+        )
         ifcopenshell.api.geometry.assign_representation(
             ifc_file,
-            should_run_listeners=False,
+            should_run_listeners=False,  # ty:ignore[unknown-argument]
             product=product,
             representation=new_box,
         )

@@ -178,6 +178,9 @@ public:
         std::vector<CGAL::Segment_2<Kernel>> segments;
         for (const auto& p : adjacency_list) {
             for (const auto& q : p.second) {
+                if (p.first == q) {
+                    return false;
+                }
                 if (p.first < q) {
                     segments.emplace_back(p.first, q);
                 }
@@ -198,7 +201,7 @@ public:
                 any = true;
             }
         });
-        return any;
+        return !any;
     }
 
     // Eliminates a vertex with exactly two neighbors by connecting its neighbors
@@ -338,11 +341,27 @@ public:
 
     template <typename T>
     void to_arrangement(T& arr) {
-        for (auto it = edges_begin(); it != edges_end(); ++it) {
-            if (it->first == it->second) {
-                continue;
+        if (is_valid() && arr.is_empty()) {
+            std::vector<CGAL::Segment_2<Kernel>> edges;
+            
+            for (auto it = edges_begin(); it != edges_end(); ++it) {
+                edges.emplace_back(it->first, it->second);
             }
-            CGAL::insert(arr, CGAL::Segment_2<Kernel>(it->first, it->second));
+            CGAL::insert_non_intersecting_curves(arr, edges.begin(), edges.end());
+        } else {
+            for (auto it = edges_begin(); it != edges_end(); ++it) {
+                if (it->first == it->second) {
+                    continue;
+                }
+                CGAL::insert(arr, CGAL::Segment_2<Kernel>(it->first, it->second));
+            }
+        }        
+    }
+
+    template <typename T>
+    void from_arrangement(T& arr) {
+        for (auto it = arr.edges_begin(); it != arr.edges_end(); ++it) {
+            insert(it->source()->point(), it->target()->point());
         }
     }
 

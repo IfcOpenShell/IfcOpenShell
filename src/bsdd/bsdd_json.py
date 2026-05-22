@@ -7,7 +7,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
-from .type_hints import *
+from type_hints import *
 
 
 def _lower_first(s: str) -> str:

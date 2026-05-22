@@ -368,9 +368,9 @@ class GlobalPsetProperties(PropertyGroup):
     qto_filter: StringProperty(name="Qto Filter", options={"TEXTEDIT_UPDATE"})
 
     # Bulk operations.
-    psets_to_delete: CollectionProperty(type=DeletePsetEntry)  # pyright: ignore[reportRedeclaration]
-    psets_to_rename: CollectionProperty(type=RenamePropertyEntry)  # pyright: ignore[reportRedeclaration]
-    psets_to_add_edit: CollectionProperty(type=AddEditPropertyEntry)  # pyright: ignore[reportRedeclaration]
+    psets_to_delete: CollectionProperty(type=DeletePsetEntry)
+    psets_to_rename: CollectionProperty(type=RenamePropertyEntry)
+    psets_to_add_edit: CollectionProperty(type=AddEditPropertyEntry)
 
     if TYPE_CHECKING:
         pset_filter: str

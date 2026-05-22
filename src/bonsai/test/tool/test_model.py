@@ -176,6 +176,7 @@ class TestStairCalculatedParams(NewFile):
         pset_data = pset_data_base.copy()
         calculated_data = calculated_data_base.copy()
         pset_data["custom_first_last_tread_run"] = (0.1, 0.4)
+        pset_data["custom_tread_lock"] = False
         calculated_data["Length"] += -0.2 + 0.1
         self.compare_data(pset_data, calculated_data)
 
@@ -183,6 +184,7 @@ class TestStairCalculatedParams(NewFile):
         pset_data = pset_data_base.copy()
         calculated_data = calculated_data_base.copy()
         pset_data["custom_first_last_tread_run"] = (0.0, None)
+        pset_data["custom_tread_lock"] = False
         calculated_data["Length"] = 0.9  # Only 3 treads at 0.3 each
         self.compare_data(pset_data, calculated_data)
 
@@ -190,6 +192,7 @@ class TestStairCalculatedParams(NewFile):
         pset_data = pset_data_base.copy()
         calculated_data = calculated_data_base.copy()
         pset_data["custom_first_last_tread_run"] = (None, 0.0)
+        pset_data["custom_tread_lock"] = False
         calculated_data["Length"] = 0.9  # Only 3 treads at 0.3 each
         self.compare_data(pset_data, calculated_data)
 
@@ -197,6 +200,7 @@ class TestStairCalculatedParams(NewFile):
         pset_data = pset_data_base.copy()
         calculated_data = calculated_data_base.copy()
         pset_data["custom_first_last_tread_run"] = (0.0, 0.0)
+        pset_data["custom_tread_lock"] = False
         calculated_data["Length"] = 0.6  # Only 2 middle treads at 0.3 each
         self.compare_data(pset_data, calculated_data)
 

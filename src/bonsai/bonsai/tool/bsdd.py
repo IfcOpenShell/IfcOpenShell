@@ -32,6 +32,8 @@ import bonsai.core.tool
 import bonsai.tool as tool
 
 if TYPE_CHECKING:
+    from bsdd.bsdd import ClassContractV1, ClassPropertyContractV1, PropertyContractV5
+
     from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDDictionary
 
 
@@ -39,8 +41,8 @@ class Bsdd(bonsai.core.tool.Bsdd):
     default_identifier_url = "https://identifier.buildingsmart.org"
     default_api_url = "https://api.bsdd.buildingsmart.org/api/"
     client = bsdd.Client()
-    bsdd_classes: dict[str, dict] = {}
-    bsdd_properties: dict[str, dict] = {}
+    bsdd_classes: dict[str, ClassContractV1] = {}
+    bsdd_properties: dict[str, ClassPropertyContractV1 | PropertyContractV5] = {}
 
     @classmethod
     def identifier_url(cls) -> str:
@@ -267,7 +269,8 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def get_bsdd_property(cls, uri: str) -> dict:
         if not (bsdd_property := cls.bsdd_properties.get(uri, {})):
-            bsdd_property = cls.client.get_property(uri, include_classes=True)
+            # Cache miss occurs for keyword search mode, for classes cache is prepopulated.
+            bsdd_property = cls.client.get_property(uri)
             cls.bsdd_properties[uri] = bsdd_property
         return bsdd_property
 

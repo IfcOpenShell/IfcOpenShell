@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
@@ -98,6 +99,42 @@ class TestCanAggregate(NewFile):
         element_obj = bpy.data.objects.new("Object", None)
         subelement_obj = bpy.data.objects.new("Object", None)
         assert subject.can_aggregate(element_obj, subelement_obj) is False
+
+    def test_element_cannot_aggregate_to_itself(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        element = ifc.createIfcElementAssembly()
+        element_obj = bpy.data.objects.new("Object", None)
+        tool.Ifc.link(element, element_obj)
+        assert subject.can_aggregate(element_obj, element_obj) is False
+
+    def test_cyclic_aggregation_is_prevented(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assembly_a = ifc.createIfcElementAssembly()
+        assembly_a_obj = bpy.data.objects.new("AssemblyA", None)
+        tool.Ifc.link(assembly_a, assembly_a_obj)
+        beam = ifc.createIfcBeam()
+        beam_obj = bpy.data.objects.new("Beam", None)
+        tool.Ifc.link(beam, beam_obj)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[beam], relating_object=assembly_a)
+        assert subject.can_aggregate(beam_obj, assembly_a_obj) is False
+
+    def test_deep_cyclic_aggregation_is_prevented(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assembly_a = ifc.createIfcElementAssembly()
+        assembly_a_obj = bpy.data.objects.new("AssemblyA", None)
+        tool.Ifc.link(assembly_a, assembly_a_obj)
+        assembly_b = ifc.createIfcElementAssembly()
+        assembly_b_obj = bpy.data.objects.new("AssemblyB", None)
+        tool.Ifc.link(assembly_b, assembly_b_obj)
+        beam = ifc.createIfcBeam()
+        beam_obj = bpy.data.objects.new("Beam", None)
+        tool.Ifc.link(beam, beam_obj)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[assembly_b], relating_object=assembly_a)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[beam], relating_object=assembly_b)
+        assert subject.can_aggregate(beam_obj, assembly_a_obj) is False
 
 
 class TestHasPhysicalBodyRepresentation(NewFile):

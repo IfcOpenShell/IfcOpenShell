@@ -51,8 +51,10 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
         new = context.ParentContext
         for inverse in file.get_inverse(context):
             if inverse.is_a("IfcCoordinateOperation"):
+                # Trick to make sure the coordinate operation is not referenced
+                # by a context so we can delete it safely
                 inverse.SourceCRS = inverse.TargetCRS
-                ifcopenshell.util.element.remove_deep(file, inverse)
+                ifcopenshell.util.element.remove_deep2(file, inverse)
             else:
                 ifcopenshell.util.element.replace_attribute(inverse, context, new)
         file.remove(context)

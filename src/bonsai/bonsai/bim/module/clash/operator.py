@@ -201,16 +201,10 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
         "ALT+click to run a quick clash without selecting a file to save."
     )
 
-    filter_glob: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
-        default="*.bcf;*.json", options={"HIDDEN"}
-    )
-    format: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
-        name="Format", items=[(i, i, "") for i in ("bcf", "json")]
-    )
-    filepath: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
-        subtype="FILE_PATH", options={"SKIP_SAVE"}
-    )
-    quick_clash: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+    filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
+    format: bpy.props.EnumProperty(name="Format", items=[(i, i, "") for i in ("bcf", "json")])
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
+    quick_clash: bpy.props.BoolProperty(
         options={"SKIP_SAVE"},
     )
 

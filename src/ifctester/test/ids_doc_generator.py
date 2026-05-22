@@ -16,6 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+Documentation generator for IfcTester IDS facets and test cases.
+
+This is not a test file. It lives in the test/ directory because it reuses
+test cases from test_facet.py and test_ids.py to generate example IFC files,
+IDS files, and Markdown documentation into test/build/.
+
+Run via: make build-ids-docs (from src/ifctester/)
+"""
+
 import functools
 import os
 import re
@@ -40,6 +50,7 @@ import test_ids
 from ifcopenshell import validate
 
 import ifctester
+import ifctester.facet
 from ifctester import ids
 
 outdir = "build"
@@ -117,6 +128,8 @@ class FacetDocGenerator:
             {"name": name, "ids": xml_text, "ifc": ifc_text, "basename": basename, "result": result, "id": inst.id()}
         )
 
+        ifctester.facet.get_pset.cache_clear()
+        ifctester.facet.get_psets.cache_clear()
         assert bool(facet(inst)) is expected
 
     def set_facet(self, facet):
@@ -140,7 +153,7 @@ class IdsDocGenerator:
             all_applicable.update(spec.applicable_entities)
             for requirement in spec.requirements:
                 if requirement.status is False:
-                    all_failures.update(requirement.failed_entities)
+                    all_failures.update(f["element"] for f in requirement.failures)
         assert set(all_applicable) == set(applicable_entities)
         assert set(all_failures) == set(failed_entities)
 
@@ -151,7 +164,11 @@ class IdsDocGenerator:
         l = validate.json_logger()
         validate.validate(ifc, l)
         for issue in l.statements:
-            raise Exception("About to emit invalid example data:", issue)
+            # test_parsing_entities_with_no_attributes uses nameless IfcMaterial; fix for doc generation.
+            if issue["instance"].is_a("IfcMaterial") and issue.get("attribute") == "IfcMaterial.Name":
+                issue["instance"].Name = "Unnamed"
+            else:
+                raise Exception("About to emit invalid example data:", issue)
 
         lines = ifc.wrapped_data.to_string().split("\n")[7:-3]
         ifc_text = ""
@@ -293,12 +310,12 @@ spec = ifctester.ids.Specification(
 )
 specs.specifications.append(spec)
 spec.applicability.append(ifctester.ids.Entity(name="IFCWALLTYPE"))
-restriction = ifctester.ids.Restriction(options={"pattern": "(-|[0-9]{2,3})\/(-|[0-9]{2,3})\/(-|[0-9]{2,3})"})
+restriction = ifctester.ids.Restriction(options={"pattern": r"(-|[0-9]{2,3})/(-|[0-9]{2,3})/(-|[0-9]{2,3})"})
 spec.requirements.append(
     ifctester.ids.Property(
         propertySet="Pset_WallCommon",
-        name="FireRating",
-        datatype="IfcLabel",
+        baseName="FireRating",
+        dataType="IfcLabel",
         value=restriction,
         instructions="Fire rating is specified using the Fire Resistance Level as defined in the Australian National Construction Code (NCC) 2019. Valid examples include -/-/-, -/120/120, and 60/60/60",
     )

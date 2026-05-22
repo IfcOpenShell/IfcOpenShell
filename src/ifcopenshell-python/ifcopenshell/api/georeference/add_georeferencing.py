@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.georeference
 import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
@@ -63,8 +64,13 @@ def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversi
             },
         )
         return
-    if file.by_type("IfcProjectedCRS"):
+    has_crs = bool(file.by_type("IfcProjectedCRS"))
+    has_conversion = bool(file.by_type("IfcCoordinateOperation"))
+    if has_crs and has_conversion:
         return
+    if has_crs or has_conversion:
+        # This is technically invalid, but we shall forgive the industry here if they are wrong ...
+        ifcopenshell.api.georeference.remove_georeferencing(file)
     source_crs = None
     for context in file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
         if context.ContextType == "Model":

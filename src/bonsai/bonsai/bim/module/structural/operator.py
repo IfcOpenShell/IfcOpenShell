@@ -167,7 +167,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_boundary_condition"
     bl_label = "Enable Editing Structural Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    boundary_condition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    boundary_condition: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         boundary_condition: int
@@ -186,7 +186,7 @@ class EditStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_structural_boundary_condition"
     bl_label = "Edit Structural Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    connection: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    connection: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         connection: int
@@ -917,7 +917,7 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
     bl_idname = "bim.enable_editing_boundary_condition"
     bl_label = "Enable Editing Boundary Condition"
     bl_options = {"REGISTER", "UNDO"}
-    boundary_condition: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    boundary_condition: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         boundary_condition: int

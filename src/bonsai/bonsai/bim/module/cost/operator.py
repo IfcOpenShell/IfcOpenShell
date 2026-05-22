@@ -87,7 +87,7 @@ class CopyCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Copy Cost Schedule"
     bl_description = "Create a duplicate of the provided cost schedule."
     bl_options = {"REGISTER", "UNDO"}
-    cost_schedule: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
+    cost_schedule: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         cost_schedule: int

@@ -665,7 +665,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
-    should_always_cache: BoolProperty(  # pyright: ignore[reportRedeclaration]
+    should_always_cache: BoolProperty(
         name="Always Cache Geometry",
         description="Whether to always cache geometry regardless of 'Cache' setting during Advanced Project Load.",
     )
@@ -787,7 +787,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         doc: DocPreferences
         default_parameters: DefaultParameters
         container_hide_show_isolate: bool
-        mass_time_units_in_wizard: bool
         chain_filter_with_set_operations: bool
         save_metadata_blend_file: bool
         metadata_blend_file_suffix: str
@@ -986,7 +985,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_extras_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "container_hide_show_isolate")
-        layout.prop(self, "mass_time_units_in_wizard")
         row = layout.row(align=True)
         row.prop(self, "chain_filter_with_set_operations")
         row.operator("bim.open_uri", text="", icon="HELP").uri = "https://community.osarch.org/discussion/3270"

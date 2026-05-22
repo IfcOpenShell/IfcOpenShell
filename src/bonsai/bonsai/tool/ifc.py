@@ -197,11 +197,15 @@ class Ifc(bonsai.core.tool.Ifc):
         if not cls.get():
             return
 
+        # Clear all per-object msgbus subscriptions at once using the dedicated
+        # owner.  After undo/redo, per-object Python wrappers have new
+        # identities so clearing by individual obj would miss stale
+        # subscriptions registered with the old wrappers.
+        bpy.msgbus.clear_by_owner(bonsai.bim.handler.object_subscription_owner)
+
         for obj in bpy.data.objects:
             if obj.library:
                 continue
-
-            bpy.msgbus.clear_by_owner(obj)
 
             element = cls.get_entity(obj)
             if not element:
@@ -216,8 +220,6 @@ class Ifc(bonsai.core.tool.Ifc):
         for obj in bpy.data.materials:
             if obj.library:
                 continue
-
-            bpy.msgbus.clear_by_owner(obj)
 
             style = cls.get_entity(obj)
             if not style:

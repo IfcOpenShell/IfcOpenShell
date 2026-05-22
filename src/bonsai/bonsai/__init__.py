@@ -43,6 +43,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 last_commit_hash = "8888888"
 last_commit_date = "9999999"
+last_git_branch = "7777777"
 
 
 def get_last_commit_hash() -> Union[str, None]:
@@ -58,6 +59,15 @@ def get_last_commit_date() -> Union[str, None]:
     if last_commit_date == str(9_999999):
         return None
     return last_commit_date
+
+
+def get_git_branch() -> Union[str, None]:
+    # Using this weird way to write 7777777,
+    # so makefile won't accidentally replace it here
+    # we'll be able to distinguish branch from placeholder value.
+    if last_git_branch == str(7_777777):
+        return None
+    return last_git_branch
 
 
 # Accessed from bonsai extension:
@@ -125,6 +135,7 @@ def get_debug_info(*, bonsai_failed_to_load: bool = False) -> dict[str, Any]:
         "bonsai_version": bbim_version,
         "bonsai_commit_hash": get_last_commit_hash(),
         "bonsai_commit_date": get_last_commit_date(),
+        "bonsai_git_branch": get_git_branch(),
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -251,10 +262,12 @@ if IN_BLENDER:
 
             global last_commit_hash
             global last_commit_date
+            global last_git_branch
             path = Path(__file__).resolve().parent
             repo = git.Repo(str(path), search_parent_directories=True)
             last_commit_hash = repo.head.object.hexsha
             last_commit_date = repo.head.object.committed_datetime.isoformat()
+            last_git_branch = repo.active_branch.name
         except:
             pass
 

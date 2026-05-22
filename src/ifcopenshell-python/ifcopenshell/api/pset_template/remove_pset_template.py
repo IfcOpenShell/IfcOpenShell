@@ -38,4 +38,4 @@ def remove_pset_template(file: ifcopenshell.file, pset_template: ifcopenshell.en
         # Let's remove the template.
         ifcopenshell.api.pset_template.remove_pset_template(model, pset_template=template)
     """
-    ifcopenshell.util.element.remove_deep(file, pset_template)
+    ifcopenshell.util.element.remove_deep2(file, pset_template)
