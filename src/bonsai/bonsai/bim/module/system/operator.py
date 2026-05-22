@@ -317,13 +317,23 @@ class MEPConnectElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Connect MEP Elements"
     bl_description = "Connects two selected elements by their closest located ports and adjusts them"
     bl_options = {"REGISTER", "UNDO"}
-    obj1_name: bpy.props.StringProperty(name="Object 1")
-    obj2_name: bpy.props.StringProperty(name="Object 2")
+    obj1_guid: bpy.props.StringProperty(name="Object 1 GlobalId")
+    obj2_guid: bpy.props.StringProperty(name="Object 2 GlobalId")
 
     def _execute(self, context):
-        if self.obj1_name and self.obj2_name:
-            obj1 = bpy.data.objects.get(self.obj1_name)
-            obj2 = bpy.data.objects.get(self.obj2_name)
+        if self.obj1_guid and self.obj2_guid:
+            ifc_file = tool.Ifc.get()
+            try:
+                el1_lookup = ifc_file.by_guid(self.obj1_guid)
+                el2_lookup = ifc_file.by_guid(self.obj2_guid)
+            except RuntimeError:
+                self.report({"ERROR"}, "Could not resolve MEP elements from supplied GlobalIds.")
+                return {"CANCELLED"}
+            obj1 = tool.Ifc.get_object(el1_lookup)
+            obj2 = tool.Ifc.get_object(el2_lookup)
+            if not obj1 or not obj2:
+                self.report({"ERROR"}, "Supplied MEP elements have no Blender object bound.")
+                return {"CANCELLED"}
         else:
             if not context.selected_objects or len(context.selected_objects) != 2:
                 self.report({"ERROR"}, "Need to select 2 objects.")
