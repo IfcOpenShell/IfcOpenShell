@@ -5831,12 +5831,19 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 "snap_world": (snapped_pt.x, snapped_pt.y, snapped_pt.z),
                 "snap": "FACE",
                 "face_verts": [tuple(v) for v in verts_w],
+                "face_normal_world": (normal_w.x, normal_w.y, normal_w.z),
             })
         return candidates
 
     @staticmethod
-    def _pt_in_obj_bbox(obj, pt_world, tol=1e-3):
-        """Return True if pt_world is inside obj's world-space bounding box."""
+    def _pt_in_obj_bbox(obj, pt_world, tol=1e-3, tol_z=None):
+        """Return True if pt_world is inside obj's world-space bounding box.
+
+        tol_z overrides tol for the Z axis — pass a large value to skip Z
+        checking when Z is already constrained by the caller (e.g. FACE mode).
+        """
+        if tol_z is None:
+            tol_z = tol
         try:
             local_pt = obj.matrix_world.inverted() @ pt_world
         except Exception:
@@ -5848,7 +5855,7 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         return (
             min(xs) - tol <= local_pt.x <= max(xs) + tol
             and min(ys) - tol <= local_pt.y <= max(ys) + tol
-            and min(zs) - tol <= local_pt.z <= max(zs) + tol
+            and min(zs) - tol_z <= local_pt.z <= max(zs) + tol_z
         )
 
     def _compute_ifc_snap_candidate(self, context, event) -> "Optional[dict]":
@@ -5878,6 +5885,13 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             if hit_pt is None or not self.objs_2d_bbox:
                 return None
             nearby_cands = []
+            # Check hit_obj itself first: handles the case where the cursor
+            # lands exactly on the wall/edge boundary (hit_obj IS the wall).
+            if hit_obj and hit_obj.data and isinstance(hit_obj.data, bpy.types.Mesh):
+                hit_elem = tool.Ifc.get_entity(hit_obj)
+                if hit_elem and hasattr(hit_elem, "GlobalId"):
+                    for c in self._snap_on_coplanar_faces(hit_obj, hit_pt):
+                        nearby_cands.append((c, hit_elem, hit_obj))
             extra_count = 0
             for obj, _bbox2d in self.objs_2d_bbox:
                 if extra_count >= 4:
@@ -5889,8 +5903,10 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 extra_elem = tool.Ifc.get_entity(obj)
                 if not extra_elem or not hasattr(extra_elem, "GlobalId"):
                     continue
-                in_bbox = self._pt_in_obj_bbox(obj, hit_pt)
-                if not in_bbox:
+                sx0, sx1, sy0, sy1 = _bbox2d
+                _SCREEN_TOL = 30
+                if not (sx0 - _SCREEN_TOL <= mx <= sx1 + _SCREEN_TOL and
+                        sy0 - _SCREEN_TOL <= my <= sy1 + _SCREEN_TOL):
                     continue
                 face_cands = self._snap_on_coplanar_faces(obj, hit_pt)
                 nearby_cands.extend((c, extra_elem, obj) for c in face_cands)
@@ -5950,7 +5966,8 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                     extra_elem = tool.Ifc.get_entity(obj)
                     if not extra_elem or not hasattr(extra_elem, "GlobalId"):
                         continue
-                    if not self._pt_in_obj_bbox(obj, hit_pt):
+                    _sx0, _sx1, _sy0, _sy1 = _bbox2d
+                    if not (_sx0 - 30 <= mx <= _sx1 + 30 and _sy0 - 30 <= my <= _sy1 + 30):
                         continue
                     extra_ptr = obj.as_pointer()
                     if extra_ptr not in self._snap_cand_multi_cache:
@@ -6045,6 +6062,11 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             return drawing_api.build_anchor_from_profile_vert(file, element, candidate)
         if snap_kind == "EDGE" and candidate.get("profile_x_m") is not None:
             return drawing_api.build_anchor_from_profile_edge(file, element, candidate)
+        if snap_kind == "FACE":
+            hit_location = candidate.get("snap_world", (0.0, 0.0, 0.0))
+            hit_normal = candidate.get("face_normal_world")
+            if hit_normal:
+                return drawing_api.build_anchor_from_hit(file, element, hit_location, hit_normal)
         pt = candidate.get("snap_world", (0.0, 0.0, 0.0))
         return drawing_api.make_world_anchor(list(pt))
 
@@ -6061,9 +6083,10 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                     "snap_world": cand.get("snap_world"),
                 })
             elif cand.get("snap") == "FACE":
+                fv = cand.get("face_verts", [])
                 _snap_draw_data.update({
                     "type": "FACE",
-                    "face_verts": cand.get("face_verts", []),
+                    "face_verts": fv,
                     "snap_world": cand.get("snap_world"),
                 })
             elif cand.get("snap") == "EDGE":
