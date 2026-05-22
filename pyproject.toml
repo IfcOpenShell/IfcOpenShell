@@ -6,7 +6,7 @@ dependencies = [
     "ruff==0.15.12",
     "poethepoet",
     "ty==0.0.32",
-    "gersemi==0.26.1",
+    "gersemi==0.27.6",
 ]
 
 [tool.black]
