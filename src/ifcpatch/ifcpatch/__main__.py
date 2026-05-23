@@ -19,28 +19,65 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import glob
+import os
+import sys
 
 import ifcopenshell
 
 import ifcpatch
 
-parser = argparse.ArgumentParser(description="Patches IFC files to fix badly formatted data")
-parser.add_argument("-i", "--input", type=str, required=True, help="The IFC file to patch")
-parser.add_argument("-o", "--output", type=str, help="The output file to save the patched IFC")
-parser.add_argument("-r", "--recipe", type=str, required=True, help="Name of the recipe to use when patching")
-parser.add_argument("-l", "--log", type=str, help="Specify a log file", default="ifcpatch.log")
-parser.add_argument("-a", "--arguments", nargs="+", help="Specify custom arguments to the patch recipe")
-args = vars(parser.parse_args())
 
-print("# Loading IFC file ...")
-args["file"] = ifcopenshell.open(args["input"])
+def main():
+    parser = argparse.ArgumentParser(description="Patches IFC files to fix badly formatted data")
+    parser.add_argument("-i", "--input", type=str, required=True, help="The IFC file or glob pattern (e.g. *.ifc) to patch")
+    parser.add_argument("-o", "--output", type=str, help="The output file or directory")
+    parser.add_argument("-r", "--recipe", type=str, required=True, help="Name of the recipe to use when patching")
+    parser.add_argument("-l", "--log", type=str, help="Specify a log file", default="ifcpatch.log")
+    parser.add_argument("-a", "--arguments", nargs="+", help="Specify custom arguments to the patch recipe")
+    args = vars(parser.parse_args())
 
-print("# Patching ...")
-output = ifcpatch.execute(args)
+    inputs = glob.glob(args["input"])
+    if not inputs:
+        print(f"Error: No files found matching pattern: {args['input']}")
+        sys.exit(1)
 
-print("# Writing patched file ...")
-if not args["output"]:
-    args["output"] = args["input"]
-ifcpatch.write(output, args["output"])
+    if len(inputs) > 1:
+        print(f"# Batch processing {len(inputs)} files ...")
 
-print("# All tasks are complete :-)")
+    output_is_dir = args["output"] and (os.path.isdir(args["output"]) or not os.path.splitext(args["output"])[1])
+
+    for input_file in inputs:
+        print(f"# Processing {input_file} ...")
+        
+        current_args = args.copy()
+        try:
+            current_args["file"] = ifcopenshell.open(input_file)
+            current_args["input"] = input_file
+        except Exception as e:
+            print(f"Error loading {input_file}: {e}")
+            continue
+
+        try:
+            output = ifcpatch.execute(current_args)
+        except Exception as e:
+            print(f"Error patching {input_file}: {e}")
+            continue
+
+        if not args["output"]:
+            current_output = input_file
+        elif output_is_dir:
+            if not os.path.exists(args["output"]):
+                os.makedirs(args["output"], exist_ok=True)
+            current_output = os.path.join(args["output"], os.path.basename(input_file))
+        else:
+            current_output = args["output"]
+
+        print(f"# Writing {current_output} ...")
+        ifcpatch.write(output, current_output)
+
+    print("# All tasks are complete :-)")
+
+
+if __name__ == "__main__":
+    main()
