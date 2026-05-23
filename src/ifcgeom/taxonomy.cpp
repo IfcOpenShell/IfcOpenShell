@@ -591,6 +591,7 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 }
 
 std::atomic_uint32_t item::counter_(0);
+item::item(const IfcUtil::IfcBaseInterface* instance) : identity_(counter_++), computed_hash_(0), instance(instance) {}          
 
 void ifcopenshell::geometry::taxonomy::item::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
