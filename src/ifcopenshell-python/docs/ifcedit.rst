@@ -57,13 +57,13 @@ Dry-run to validate without modifying the file::
 Apply an API function to each element in a JSON array from stdin (``{field}``
 placeholders are substituted from each item; model is opened and saved once)::
 
-    $ ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+    $ ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product '{id}'
     $ ifcquery model.ifc select 'IfcDoor' | ifcedit foreach model.ifc attribute.edit_attributes \
-        --product {id} --attributes '{"Name": "Door"}'
+        --product '{id}' --attributes '{"Name": "Door"}'
 
 Write to a separate output file instead of overwriting::
 
-    $ ifcquery model.ifc select 'IfcWall' | ifcedit foreach model.ifc root.remove_product -o output.ifc --product {id}
+    $ ifcquery model.ifc select 'IfcWall' | ifcedit foreach model.ifc root.remove_product -o output.ifc --product '{id}'
 
 Quantity take-off (writes ``IfcElementQuantity`` psets back to the file; requires C++ geometry bindings)::
 
