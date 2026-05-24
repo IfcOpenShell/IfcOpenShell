@@ -189,7 +189,7 @@ each JSON object. The model is opened once and saved once regardless of how
 many elements are processed.
 
 ```bash
-ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product '{id}'
 ```
 
 ```json
@@ -201,7 +201,7 @@ Placeholder tokens match the fields emitted by `ifcquery` — typically `{id}`,
 
 ```bash
 ifcquery model.ifc select 'IfcDoor' | ifcedit foreach model.ifc attribute.edit_attributes \
-    --product {id} --attributes '{"Name": "Door"}'
+    --product '{id}' --attributes '{"Name": "Door"}'
 ```
 
 **Options:**
@@ -297,7 +297,7 @@ ifcedit run model.ifc spatial.unassign_container \
     --products "$(ifcquery model.ifc --format ids select 'IfcWall')"
 
 # Fan-out — one operation per element, model opened and saved once
-ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product '{id}'
 ```
 
 ## License
