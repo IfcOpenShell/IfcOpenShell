@@ -491,11 +491,10 @@ class curve_segment_evaluator {
               // tilt angle in the plane of the cross section
               auto cant = Cant(u);
               auto tilt_angle = start_angle + delta_angle * (cant - start_cant) / delta_cant;
-              Eigen::Vector4d z(0.0, cos(tilt_angle), sin(tilt_angle), 0.0);
+              Eigen::Vector4d axis(0.0, cos(tilt_angle), sin(tilt_angle), 0.0);
 
-              // compute axis direction
-              Eigen::Vector4d y = z.cross3(ref_dir);
-              Eigen::Vector4d axis = ref_dir.cross3(y);
+              // compute cross slope direction
+              Eigen::Vector4d y = axis.cross3(ref_dir);
 
               Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
               m.col(0) = ref_dir;
