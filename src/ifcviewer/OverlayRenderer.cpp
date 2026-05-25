@@ -224,11 +224,29 @@ void uploadFloats(QOpenGLFunctions_4_5_Core* gl,
     if (bytes == 0) return;
     if (bytes > capacity_bytes) {
         const size_t new_cap = bytes + bytes / 2;
-        gl->glNamedBufferData(vbo, GLsizeiptr(new_cap),
-                              nullptr, GL_DYNAMIC_DRAW);
+        gl->glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        gl->glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(new_cap), nullptr, GL_DYNAMIC_DRAW);
         capacity_bytes = new_cap;
     }
-    gl->glNamedBufferSubData(vbo, 0, GLsizeiptr(bytes), data.data());
+    gl->glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    gl->glBufferSubData(GL_ARRAY_BUFFER, 0, GLsizeiptr(bytes), data.data());
+    gl->glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+void uploadFloatBytes(QOpenGLFunctions_4_5_Core* gl,
+                      GLuint vbo, size_t& capacity_bytes,
+                      const float* data, size_t float_count) {
+    const size_t bytes = float_count * sizeof(float);
+    if (bytes == 0) return;
+    if (bytes > capacity_bytes) {
+        const size_t new_cap = bytes + bytes / 2;
+        gl->glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        gl->glBufferData(GL_ARRAY_BUFFER, GLsizeiptr(new_cap), nullptr, GL_DYNAMIC_DRAW);
+        capacity_bytes = new_cap;
+    }
+    gl->glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    gl->glBufferSubData(GL_ARRAY_BUFFER, 0, GLsizeiptr(bytes), data);
+    gl->glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 // CPU expansion of N segments (3 floats * 2 verts per segment, packed) into
@@ -572,13 +590,6 @@ void OverlayRenderer::render(const float view_proj[16],
         // Each piece is its own draw so we can switch alpha between
         // fill and outline.  All five share the same VBO slot — we
         // stream-overwrite per draw.
-        const size_t bytes = 12 * sizeof(float);
-        if (bytes > vbo_rect_capacity_) {
-            const size_t new_cap = bytes + bytes / 2;
-            gl_->glNamedBufferData(vbo_rect_, GLsizeiptr(new_cap),
-                                   nullptr, GL_DYNAMIC_DRAW);
-            vbo_rect_capacity_ = new_cap;
-        }
         for (int i = 0; i < 5; ++i) {
             const float x0 = px_to_ndc_x(pieces[i].x0);
             const float x1 = px_to_ndc_x(pieces[i].x1);
@@ -588,7 +599,7 @@ void OverlayRenderer::render(const float view_proj[16],
                 x0, y0,  x1, y0,  x0, y1,
                 x0, y1,  x1, y0,  x1, y1
             };
-            gl_->glNamedBufferSubData(vbo_rect_, 0, GLsizeiptr(bytes), ndc);
+            uploadFloatBytes(gl_, vbo_rect_, vbo_rect_capacity_, ndc, 12);
             gl_->glUniform4f(u_rect_color_,
                              colors[i][0], colors[i][1],
                              colors[i][2], colors[i][3]);
@@ -672,14 +683,7 @@ void OverlayRenderer::render(const float view_proj[16],
                 x0, y1,  x1, y0,  x1, y1
             });
         }
-        const size_t bytes = ndc.size() * sizeof(float);
-        if (bytes > vbo_rect_capacity_) {
-            const size_t new_cap = bytes + bytes / 2;
-            gl_->glNamedBufferData(vbo_rect_, GLsizeiptr(new_cap),
-                                   nullptr, GL_DYNAMIC_DRAW);
-            vbo_rect_capacity_ = new_cap;
-        }
-        gl_->glNamedBufferSubData(vbo_rect_, 0, GLsizeiptr(bytes), ndc.data());
+        uploadFloats(gl_, vbo_rect_, vbo_rect_capacity_, ndc);
 
         // GL_TRIANGLES respects GL_CULL_FACE; the NDC→window y-flip turns
         // our CCW NDC quads into window-CW which get back-culled if cull
