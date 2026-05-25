@@ -637,10 +637,11 @@ class Blender(bonsai.core.tool.Blender):
         op_text = "" if ui_context == "TOOL_HEADER" else text
         modifier_icon, modifier_str = cls.KEY_MODIFIERS.get(modifier, ("NONE", ""))
 
-        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
         module = sys.modules[module_name]
         icon_previews: Union[bpy.utils.previews.ImagePreviewCollection, None]
         icon_previews = getattr(module, "custom_icon_previews", None)
+
+        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
         if icon_previews:
             custom_icon = icon_previews.get(text.upper().replace(" ", "_"), icon_previews["IFC"]).icon_id
             op = row.operator(operator_to_use, text=op_text, icon_value=custom_icon)
@@ -648,6 +649,7 @@ class Blender(bonsai.core.tool.Blender):
             op = row.operator(operator_to_use, text=op_text)
         if ui_context != "TOOL_HEADER":
             row.label(text="", icon=modifier_icon)
+            row.separator(factor=1)
             row.label(text="", icon=f"EVENT_{key}")
 
         if operator_to_use == hotkey_operator:
