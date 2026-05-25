@@ -270,14 +270,14 @@ class AnnotationToolUI:
 
         add_layout_hotkey_operator(cls.layout, "Add", "S_A", "Create a new annotation")
 
+        if object_type in ("ELEVATION", "SECTION"):
+            row = cls.layout.row(align=True)
+            row.prop(cls.props, "is_manual_reference")
+
         _DIMENSION_TYPES = {"DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"}
         if object_type in _DIMENSION_TYPES:
             row = cls.layout.row(align=True)
             row.prop(cls.props, "force_perpendicular_to_face")
-
-        if object_type in ("ELEVATION", "SECTION"):
-            row = cls.layout.row(align=True)
-            row.prop(cls.props, "is_manual_reference")
 
         if object_type in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
             row = cls.layout.row(align=True)
