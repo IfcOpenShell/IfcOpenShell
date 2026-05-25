@@ -49,7 +49,7 @@ def _entity_guid(sketch, slvs_index, ifc_tag=None):
     if sketch is None or slvs_index == -1:
         return ""
     for group in sketch.groups:
-        if ifc_tag and group.tag != ifc_tag:
+        if ifc_tag and not group.has_tag(ifc_tag):
             continue
         member = group.get_member(slvs_index)
         if member and member.guid:
@@ -66,7 +66,7 @@ def _set_entity_guid(sketch, slvs_index, ifc_tag, guid):
     if sketch is None or slvs_index == -1:
         return
     for group in sketch.groups:
-        if group.tag != ifc_tag:
+        if not group.has_tag(ifc_tag):
             continue
         member = group.get_member(slvs_index)
         if member is None:
@@ -74,7 +74,7 @@ def _set_entity_guid(sketch, slvs_index, ifc_tag, guid):
         member.guid = guid
         return
     group = sketch.groups.add()
-    group.tag = ifc_tag
+    group.add_tag(ifc_tag)
     member = group.add_member(slvs_index)
     member.guid = guid
 
@@ -90,7 +90,7 @@ def _entities_with_ifc_tag(sketch, sse, ifc_tag, predicate=None):
     seen = set()
     result = []
     for group in sketch.groups:
-        if group.tag != ifc_tag:
+        if not group.has_tag(ifc_tag):
             continue
         for member in group.members:
             if member.entity_index in seen:
@@ -113,13 +113,13 @@ def _ensure_entity_in_group(sketch, slvs_index, ifc_tag):
     if sketch is None or slvs_index == -1:
         return
     for group in sketch.groups:
-        if group.tag != ifc_tag:
+        if not group.has_tag(ifc_tag):
             continue
         if group.get_member(slvs_index) is None:
             group.add_member(slvs_index)
         return
     group = sketch.groups.add()
-    group.tag = ifc_tag
+    group.add_tag(ifc_tag)
     group.add_member(slvs_index)
 
 
@@ -132,7 +132,8 @@ def _entity_ifc_tag(sketch, slvs_index):
         return ""
     for group in sketch.groups:
         if group.get_member(slvs_index) is not None:
-            return group.tag
+            vals = group.tag_values()
+            return vals[0] if vals else ""
     return ""
 
 
