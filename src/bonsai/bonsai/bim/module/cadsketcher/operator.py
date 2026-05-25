@@ -37,6 +37,104 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import mathutils
 
+# ── Group-aware data access ──────────────────────────────────────────────────
+
+
+def _entity_guid(sketch, slvs_index, ifc_tag=None):
+    """Return the GUID stored for *slvs_index* in *sketch*.groups.
+
+    If *ifc_tag* is given, only search groups with that tag.  Returns ``""`` if
+    not found or if either argument is *None*.
+    """
+    if sketch is None or slvs_index == -1:
+        return ""
+    for group in sketch.groups:
+        if ifc_tag and group.tag != ifc_tag:
+            continue
+        member = group.get_member(slvs_index)
+        if member and member.guid:
+            return member.guid
+    return ""
+
+
+def _set_entity_guid(sketch, slvs_index, ifc_tag, guid):
+    """Write *guid* to the group member for *slvs_index* in *sketch*.
+
+    Searches groups tagged *ifc_tag*; creates a group + member when missing.
+    No-ops when *sketch* is *None* or *slvs_index* is ``-1``.
+    """
+    if sketch is None or slvs_index == -1:
+        return
+    for group in sketch.groups:
+        if group.tag != ifc_tag:
+            continue
+        member = group.get_member(slvs_index)
+        if member is None:
+            member = group.add_member(slvs_index)
+        member.guid = guid
+        return
+    group = sketch.groups.add()
+    group.tag = ifc_tag
+    member = group.add_member(slvs_index)
+    member.guid = guid
+
+
+def _entities_with_ifc_tag(sketch, sse, ifc_tag, predicate=None):
+    """Return entities in *sketch*.groups tagged *ifc_tag*.
+
+    Optional *predicate(entity) → bool* for further filtering.  Deduplicates
+    by slvs_index.  Returns an empty list when *sketch* is *None*.
+    """
+    if sketch is None:
+        return []
+    seen = set()
+    result = []
+    for group in sketch.groups:
+        if group.tag != ifc_tag:
+            continue
+        for member in group.members:
+            if member.entity_index in seen:
+                continue
+            ent = sse.get(member.entity_index)
+            if ent is None:
+                continue
+            if predicate is None or predicate(ent):
+                seen.add(member.entity_index)
+                result.append(ent)
+    return result
+
+
+def _ensure_entity_in_group(sketch, slvs_index, ifc_tag):
+    """Ensure *slvs_index* is a member of a group tagged *ifc_tag* in *sketch*.
+
+    Creates the group and/or member if missing.  No-ops when *sketch* is *None*
+    or *slvs_index* is ``-1``.
+    """
+    if sketch is None or slvs_index == -1:
+        return
+    for group in sketch.groups:
+        if group.tag != ifc_tag:
+            continue
+        if group.get_member(slvs_index) is None:
+            group.add_member(slvs_index)
+        return
+    group = sketch.groups.add()
+    group.tag = ifc_tag
+    group.add_member(slvs_index)
+
+
+def _entity_ifc_tag(sketch, slvs_index):
+    """Return the IFC class tag for *slvs_index* from its group memberships.
+
+    Returns ``""`` when *sketch* is *None* or the entity belongs to no group.
+    """
+    if sketch is None:
+        return ""
+    for group in sketch.groups:
+        if group.get_member(slvs_index) is not None:
+            return group.tag
+    return ""
+
 
 def _wall_type_items(self, context):
     items = []
@@ -380,14 +478,10 @@ class FetchCADSketcher(Operator):
 
         # Populate per-wall type entries
         self.wall_type_items.clear()
-        wall_lines = [
-            e
-            for e in context.scene.sketcher.entities.all
-            if getattr(e, "sketch_i", -1) == sketch_index
-            and getattr(e, "tag", "") == "IfcWall"
-            and hasattr(e, "p1")
-            and hasattr(e, "p2")
-        ]
+        sse = context.scene.sketcher.entities
+        wall_lines = _entities_with_ifc_tag(
+            sketch, sse, "IfcWall", lambda e: e.sketch_i == sketch_index and hasattr(e, "p1") and hasattr(e, "p2")
+        )
         unit_scale_inv = ifcopenshell.util.unit.calculate_unit_scale(ifc_file) if ifc_file else 1.0
         for i, line in enumerate(wall_lines):
             item = self.wall_type_items.add()
@@ -398,9 +492,10 @@ class FetchCADSketcher(Operator):
             item.label = _entity_label(line, f"Wall {i + 1}  ({length:.2f} m)")
             item.height = self.storey_height  # default; overridden below on reimport
             # Pre-populate with existing type and height if this is a reimport
-            if ifc_file and getattr(line, "guid", ""):
+            line_guid = _entity_guid(sketch, line.slvs_index, "IfcWall")
+            if ifc_file and line_guid:
                 try:
-                    existing = ifc_file.by_guid(line.guid)
+                    existing = ifc_file.by_guid(line_guid)
                     if existing:
                         existing_type = ifcopenshell.util.element.get_type(existing)
                         if existing_type:
@@ -417,11 +512,14 @@ class FetchCADSketcher(Operator):
                     pass
 
         # Populate per-wall-run entries (Plan sketches only)
-        sse = context.scene.sketcher.entities
         self.wall_run_items.clear()
-        for i, poly in enumerate(
-            p for p in sse.polylines if p.sketch_i == sketch_index and p.tag == "IfcWall" and sketch.tag == "Plan"
-        ):
+        _wall_run_polys = _entities_with_ifc_tag(
+            sketch,
+            sse,
+            "IfcWall",
+            lambda e: e.sketch_i == sketch_index and hasattr(e, "segment_count") and sketch.tag == "Plan",
+        )
+        for i, poly in enumerate(_wall_run_polys):
             item = self.wall_run_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Wall Run {i + 1}  ({poly.segment_count} seg)")
@@ -432,10 +530,13 @@ class FetchCADSketcher(Operator):
                 if seg_idx == -1:
                     continue
                 seg = sse.get(seg_idx)
-                if seg is None or not getattr(seg, "guid", ""):
+                if seg is None:
+                    continue
+                seg_guid = _entity_guid(sketch, seg.slvs_index, "IfcWall")
+                if not seg_guid:
                     continue
                 try:
-                    existing = ifc_file.by_guid(seg.guid)
+                    existing = ifc_file.by_guid(seg_guid)
                     if existing:
                         existing_type = ifcopenshell.util.element.get_type(existing)
                         if existing_type:
@@ -457,7 +558,10 @@ class FetchCADSketcher(Operator):
         self.wall_elevation_items.clear()
         if sketch.tag == "Elevation":
             src_wall_guid = FetchCADSketcher._resolve_elevation_wall_guid(sketch, sse)
-            for i, poly in enumerate(p for p in sse.polylines if p.sketch_i == sketch_index and p.tag == "IfcWall"):
+            _elev_polys = _entities_with_ifc_tag(
+                sketch, sse, "IfcWall", lambda e: e.sketch_i == sketch_index and hasattr(e, "segment_count")
+            )
+            for i, poly in enumerate(_elev_polys):
                 item = self.wall_elevation_items.add()
                 item.slvs_index = poly.slvs_index
                 pts = FetchCADSketcher._polygon_from_polyline(context, poly)
@@ -469,7 +573,7 @@ class FetchCADSketcher(Operator):
                 item.label = _entity_label(poly, f"Wall Elevation {i + 1}  ({auto_height:.2f} m tall)")
                 item.height = auto_height
                 # Prefer the polyline's own GUID, then the source wall's GUID
-                guid_to_use = getattr(poly, "guid", "") or src_wall_guid
+                guid_to_use = _entity_guid(sketch, poly.slvs_index, "IfcWall") or src_wall_guid
                 if ifc_file and guid_to_use:
                     try:
                         existing = ifc_file.by_guid(guid_to_use)
@@ -486,9 +590,10 @@ class FetchCADSketcher(Operator):
             item = self.slab_type_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Slab {i + 1}")
-            if ifc_file and getattr(poly, "guid", ""):
+            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcSlab")
+            if ifc_file and poly_guid:
                 try:
-                    existing_slab = ifc_file.by_guid(poly.guid)
+                    existing_slab = ifc_file.by_guid(poly_guid)
                     if existing_slab:
                         existing_type = ifcopenshell.util.element.get_type(existing_slab)
                         if existing_type:
@@ -502,9 +607,10 @@ class FetchCADSketcher(Operator):
             item = self.covering_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Covering {i + 1}")
-            if ifc_file and getattr(poly, "guid", ""):
+            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcCovering")
+            if ifc_file and poly_guid:
                 try:
-                    existing_covering = ifc_file.by_guid(poly.guid)
+                    existing_covering = ifc_file.by_guid(poly_guid)
                     if existing_covering:
                         existing_type = ifcopenshell.util.element.get_type(existing_covering)
                         if existing_type:
@@ -518,9 +624,10 @@ class FetchCADSketcher(Operator):
             item = self.plate_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Plate {i + 1}")
-            if ifc_file and getattr(poly, "guid", ""):
+            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcPlate")
+            if ifc_file and poly_guid:
                 try:
-                    existing_plate = ifc_file.by_guid(poly.guid)
+                    existing_plate = ifc_file.by_guid(poly_guid)
                     if existing_plate:
                         existing_type = ifcopenshell.util.element.get_type(existing_plate)
                         if existing_type:
@@ -534,9 +641,10 @@ class FetchCADSketcher(Operator):
             item = self.opening_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Opening {i + 1}")
-            if ifc_file and getattr(poly, "guid", ""):
+            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcOpeningElement")
+            if ifc_file and poly_guid:
                 try:
-                    existing_opening = ifc_file.by_guid(poly.guid)
+                    existing_opening = ifc_file.by_guid(poly_guid)
                     if existing_opening:
                         voids_rels = getattr(existing_opening, "VoidsElements", [])
                         if voids_rels:
@@ -550,9 +658,10 @@ class FetchCADSketcher(Operator):
             item = self.window_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Window {i + 1}")
-            if ifc_file and getattr(poly, "guid", ""):
+            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcWindow")
+            if ifc_file and poly_guid:
                 try:
-                    existing_win = ifc_file.by_guid(poly.guid)
+                    existing_win = ifc_file.by_guid(poly_guid)
                     if existing_win:
                         existing_type = ifcopenshell.util.element.get_type(existing_win)
                         if existing_type:
@@ -572,9 +681,10 @@ class FetchCADSketcher(Operator):
             item = self.door_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Door {i + 1}")
-            if ifc_file and getattr(poly, "guid", ""):
+            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcDoor")
+            if ifc_file and poly_guid:
                 try:
-                    existing_door = ifc_file.by_guid(poly.guid)
+                    existing_door = ifc_file.by_guid(poly_guid)
                     if existing_door:
                         existing_type = ifcopenshell.util.element.get_type(existing_door)
                         if existing_type:
@@ -592,12 +702,9 @@ class FetchCADSketcher(Operator):
             """Populate *collection* from sketch lines tagged *ifc_tag*."""
             collection.clear()
             for i, line in enumerate(
-                e
-                for e in context.scene.sketcher.entities.all
-                if getattr(e, "sketch_i", -1) == sketch_index
-                and getattr(e, "tag", "") == ifc_tag
-                and hasattr(e, "p1")
-                and hasattr(e, "p2")
+                _entities_with_ifc_tag(
+                    sketch, sse, ifc_tag, lambda e: e.sketch_i == sketch_index and hasattr(e, "p1") and hasattr(e, "p2")
+                )
             ):
                 item = collection.add()
                 item.slvs_index = line.slvs_index
@@ -605,9 +712,10 @@ class FetchCADSketcher(Operator):
                 p2 = line.p2.location
                 length = (p2 - p1).length
                 item.label = _entity_label(line, f"{label_prefix} {i + 1}  ({length:.2f} m)")
-                if ifc_file and getattr(line, "guid", ""):
+                line_guid = _entity_guid(sketch, line.slvs_index, ifc_tag)
+                if ifc_file and line_guid:
                     try:
-                        existing = ifc_file.by_guid(line.guid)
+                        existing = ifc_file.by_guid(line_guid)
                         if existing:
                             existing_type = ifcopenshell.util.element.get_type(existing)
                             if existing_type:
@@ -618,9 +726,13 @@ class FetchCADSketcher(Operator):
         def _populate_profile_run_items(collection, ifc_tag, label_prefix):
             """Populate *collection* from open polylines on *sketch* tagged *ifc_tag*."""
             collection.clear()
-            sse = context.scene.sketcher.entities
             for i, poly in enumerate(
-                p for p in sse.polylines if p.sketch_i == sketch_index and p.tag == ifc_tag and not p.closed
+                _entities_with_ifc_tag(
+                    sketch,
+                    sse,
+                    ifc_tag,
+                    lambda e: e.sketch_i == sketch_index and hasattr(e, "segment_count") and not e.closed,
+                )
             ):
                 item = collection.add()
                 item.slvs_index = poly.slvs_index
@@ -631,10 +743,13 @@ class FetchCADSketcher(Operator):
                     if seg_idx == -1:
                         continue
                     seg = sse.get(seg_idx)
-                    if seg is None or not getattr(seg, "guid", ""):
+                    if seg is None:
+                        continue
+                    seg_guid = _entity_guid(sketch, seg.slvs_index, ifc_tag)
+                    if not seg_guid:
                         continue
                     try:
-                        existing = ifc_file.by_guid(seg.guid)
+                        existing = ifc_file.by_guid(seg_guid)
                         if existing:
                             existing_type = ifcopenshell.util.element.get_type(existing)
                             if existing_type:
@@ -658,16 +773,18 @@ class FetchCADSketcher(Operator):
             p1 is the base, the line length is the height.
             """
             collection.clear()
-            candidates = [
-                e
-                for e in context.scene.sketcher.entities.all
-                if getattr(e, "sketch_i", -1) == sketch_index
-                and getattr(e, "tag", "") == ifc_tag
-                and (
-                    (hasattr(e, "location") and not hasattr(e, "p1"))  # point entity
-                    or (hasattr(e, "p1") and hasattr(e, "p2"))  # line entity
-                )
-            ]
+            candidates = _entities_with_ifc_tag(
+                sketch,
+                sse,
+                ifc_tag,
+                lambda e: (
+                    e.sketch_i == sketch_index
+                    and (
+                        (hasattr(e, "location") and not hasattr(e, "p1"))  # point entity
+                        or (hasattr(e, "p1") and hasattr(e, "p2"))  # line entity
+                    )
+                ),
+            )
             for i, pt_ent in enumerate(candidates):
                 item = collection.add()
                 item.slvs_index = pt_ent.slvs_index
@@ -679,9 +796,10 @@ class FetchCADSketcher(Operator):
                     loc = pt_ent.location
                     item.height = default_height
                 item.label = _entity_label(pt_ent, f"{label_prefix} {i + 1}  ({loc.x:.2f}, {loc.y:.2f})")
-                if ifc_file and getattr(pt_ent, "guid", ""):
+                pt_guid = _entity_guid(sketch, pt_ent.slvs_index, ifc_tag)
+                if ifc_file and pt_guid:
                     try:
-                        existing = ifc_file.by_guid(pt_ent.guid)
+                        existing = ifc_file.by_guid(pt_guid)
                         if existing:
                             existing_type = ifcopenshell.util.element.get_type(existing)
                             if existing_type:
@@ -906,17 +1024,13 @@ class FetchCADSketcher(Operator):
             wall_height_map[item.slvs_index] = item.height
 
         sketch_index = sketch.slvs_index
+        sse = context.scene.sketcher.entities
         created = 0
 
         # ── Walls ─────────────────────────────────────────────────────────────
-        wall_lines = [
-            e
-            for e in context.scene.sketcher.entities.all
-            if getattr(e, "sketch_i", -1) == sketch_index
-            and getattr(e, "tag", "") == "IfcWall"
-            and hasattr(e, "p1")
-            and hasattr(e, "p2")
-        ]
+        wall_lines = _entities_with_ifc_tag(
+            sketch, sse, "IfcWall", lambda e: e.sketch_i == sketch_index and hasattr(e, "p1") and hasattr(e, "p2")
+        )
 
         wall_pairs = []  # [(sketch_line, blender_obj), ...]
         for line in wall_lines:
@@ -946,7 +1060,6 @@ class FetchCADSketcher(Operator):
                 pass
 
         # ── Wall Runs ─────────────────────────────────────────────────────────
-        sse = context.scene.sketcher.entities
         for item in self.wall_run_items:
             type_id = int(item.type_id)
             if not type_id:
@@ -965,10 +1078,8 @@ class FetchCADSketcher(Operator):
                 seg = sse.get(seg_idx)
                 if seg is None or not hasattr(seg, "p1") or not hasattr(seg, "p2"):
                     continue
-                # Propagate the polyline tag to each segment so individual lines
-                # carry the same IFC class (e.g. "IfcWall") as the polyline they belong to.
-                if hasattr(seg, "tag") and poly.tag:
-                    seg.tag = poly.tag
+                # Ensure the segment is in the IfcWall group (inherits from its polyline)
+                _ensure_entity_in_group(sketch, seg.slvs_index, "IfcWall")
                 obj = self._create_or_update_wall(
                     seg, ifc_file, unit_scale, body_context, axis_context, run_type, run_height, sketch=sketch
                 )
@@ -1123,7 +1234,9 @@ class FetchCADSketcher(Operator):
             ent = sse.get(item.slvs_index)
             if ent is None:
                 continue
-            if self._create_or_update_profile_element(ent, ifc_file, unit_scale, body_context, axis_context, beam_type):
+            if self._create_or_update_profile_element(
+                ent, ifc_file, unit_scale, body_context, axis_context, beam_type, sketch=sketch
+            ):
                 created += 1
 
         # ── Beam runs (open polylines tagged IfcBeam) ────────────────────────
@@ -1143,10 +1256,9 @@ class FetchCADSketcher(Operator):
                 seg = sse.get(seg_idx)
                 if seg is None or not hasattr(seg, "p1") or not hasattr(seg, "p2"):
                     continue
-                if hasattr(seg, "tag") and poly.tag:
-                    seg.tag = poly.tag
+                _ensure_entity_in_group(sketch, seg.slvs_index, "IfcBeam")
                 if self._create_or_update_profile_element(
-                    seg, ifc_file, unit_scale, body_context, axis_context, beam_type
+                    seg, ifc_file, unit_scale, body_context, axis_context, beam_type, sketch=sketch
                 ):
                     created += 1
 
@@ -1163,7 +1275,7 @@ class FetchCADSketcher(Operator):
             if ent is None:
                 continue
             if self._create_or_update_profile_element(
-                ent, ifc_file, unit_scale, body_context, axis_context, member_type
+                ent, ifc_file, unit_scale, body_context, axis_context, member_type, sketch=sketch
             ):
                 created += 1
 
@@ -1186,10 +1298,9 @@ class FetchCADSketcher(Operator):
                 seg = sse.get(seg_idx)
                 if seg is None or not hasattr(seg, "p1") or not hasattr(seg, "p2"):
                     continue
-                if hasattr(seg, "tag") and poly.tag:
-                    seg.tag = poly.tag
+                _ensure_entity_in_group(sketch, seg.slvs_index, "IfcMember")
                 if self._create_or_update_profile_element(
-                    seg, ifc_file, unit_scale, body_context, axis_context, member_type
+                    seg, ifc_file, unit_scale, body_context, axis_context, member_type, sketch=sketch
                 ):
                     created += 1
 
@@ -1206,7 +1317,7 @@ class FetchCADSketcher(Operator):
             if ent is None:
                 continue
             if self._create_or_update_profile_element(
-                ent, ifc_file, unit_scale, body_context, axis_context, footing_type
+                ent, ifc_file, unit_scale, body_context, axis_context, footing_type, sketch=sketch
             ):
                 created += 1
 
@@ -1229,10 +1340,9 @@ class FetchCADSketcher(Operator):
                 seg = sse.get(seg_idx)
                 if seg is None or not hasattr(seg, "p1") or not hasattr(seg, "p2"):
                     continue
-                if hasattr(seg, "tag") and poly.tag:
-                    seg.tag = poly.tag
+                _ensure_entity_in_group(sketch, seg.slvs_index, "IfcFooting")
                 if self._create_or_update_profile_element(
-                    seg, ifc_file, unit_scale, body_context, axis_context, footing_type
+                    seg, ifc_file, unit_scale, body_context, axis_context, footing_type, sketch=sketch
                 ):
                     created += 1
 
@@ -1249,7 +1359,7 @@ class FetchCADSketcher(Operator):
             if pt_ent is None:
                 continue
             if self._create_or_update_point_element(
-                pt_ent, ifc_file, unit_scale, body_context, axis_context, column_type, item.height
+                pt_ent, ifc_file, unit_scale, body_context, axis_context, column_type, item.height, sketch=sketch
             ):
                 created += 1
                 if not hasattr(pt_ent, "p1"):  # line entities are already the height definition
@@ -1266,7 +1376,7 @@ class FetchCADSketcher(Operator):
             if pt_ent is None:
                 continue
             if self._create_or_update_point_element(
-                pt_ent, ifc_file, unit_scale, body_context, axis_context, pile_type, item.height
+                pt_ent, ifc_file, unit_scale, body_context, axis_context, pile_type, item.height, sketch=sketch
             ):
                 created += 1
                 if not hasattr(pt_ent, "p1"):  # line entities are already the height definition
@@ -1306,21 +1416,10 @@ class FetchCADSketcher(Operator):
     def _find_orth_sketch_for_point(sse, pt_ent):
         """Find the orthogonal sketch that has *pt_ent* projected as external geometry.
 
-        Matches by GUID when available, otherwise by tag + world position (1 mm).
+        Matches by world position (1 mm tolerance).
         Returns (orth_sketch, ext_pt_2d) or (None, None).
         """
-        pt_tag = getattr(pt_ent, "tag", "")
-        pt_guid = getattr(pt_ent, "guid", "")
         pt_loc = pt_ent.location
-        print(f"[BIM] _find_orth_sketch_for_point: pt_tag={pt_tag!r} pt_guid={pt_guid!r} pt_loc={pt_loc}")
-        all_ext_pts = [
-            e for e in sse.all if getattr(e, "external", False) and not hasattr(e, "p1") and hasattr(e, "location")
-        ]
-        print(f"[BIM]   external points in sse ({len(all_ext_pts)} total):")
-        for _ep in all_ext_pts:
-            print(
-                f"[BIM]     idx={_ep.slvs_index} sk={getattr(_ep,'sketch_i',-1)} tag={getattr(_ep,'tag','')!r} guid={getattr(_ep,'guid','')!r} loc={_ep.location}"
-            )
         for ent in sse.all:
             if not getattr(ent, "external", False):
                 continue
@@ -1328,29 +1427,15 @@ class FetchCADSketcher(Operator):
                 continue
             if not hasattr(ent, "location"):
                 continue
-            ent_guid = getattr(ent, "guid", "")
-            if pt_guid and ent_guid:
-                # Both sides have a GUID — use it as the definitive match.
-                if ent_guid != pt_guid:
-                    continue
-            else:
-                # At least one side has no GUID; fall back to tag + position.
-                # Only reject on tag mismatch when the external point actually
-                # carries a tag — if its tag is empty, position alone decides.
-                ent_tag = getattr(ent, "tag", "")
-                if pt_tag and ent_tag and ent_tag != pt_tag:
-                    continue
-                if (ent.location - pt_loc).length > 0.001:
-                    continue
+            if (ent.location - pt_loc).length > 0.001:
+                continue
             sk_idx = getattr(ent, "sketch_i", -1)
             if sk_idx == -1:
                 continue
             orth_sketch = next((s for s in sse.sketches if s.slvs_index == sk_idx), None)
             if orth_sketch is None:
                 continue
-            print(f"[BIM]   FOUND orth_sketch idx={orth_sketch.slvs_index} ext_pt idx={ent.slvs_index}")
             return orth_sketch, ent
-        print("[BIM]   no matching external point found")
         return None, None
 
     @staticmethod
@@ -1393,31 +1478,17 @@ class FetchCADSketcher(Operator):
         orthogonal sketch, but only when no such line already exists.
 
         The line runs from the external point at (u, 0) to (u, height) in the
-        sketch's local 2-D space, tagged with *ifc_tag*.
+        sketch's local 2-D space.
         """
-        print(f"[BIM] _ensure_column_height_line: height={height} tag={ifc_tag!r}")
         orth_sketch, ext_pt = FetchCADSketcher._find_orth_sketch_for_point(sse, pt_ent)
         if orth_sketch is None or ext_pt is None:
-            print("[BIM]   no orth_sketch/ext_pt — skipping line creation")
             return
-        # Propagate GUID from source point to the external copy so future runs
-        # match by GUID and detect the existing height line immediately.
-        pt_guid = getattr(pt_ent, "guid", "")
-        if pt_guid and not getattr(ext_pt, "guid", ""):
-            ext_pt.guid = pt_guid
-            print(f"[BIM]   propagated guid {pt_guid!r} to ext_pt idx={ext_pt.slvs_index}")
         if FetchCADSketcher._find_column_height_line(sse, orth_sketch, ext_pt) is not None:
-            print("[BIM]   height line already present — skipping")
             return  # line already present
         u, _v = ext_pt.co  # local 2-D coordinates of the external point
-        print(f"[BIM]   creating height line at u={u:.4f} from 0 to {height:.4f} in sketch {orth_sketch.slvs_index}")
         top_pt = sse.add_point_2d((u, height), orth_sketch)
         height_line = sse.add_line_2d(ext_pt, top_pt, orth_sketch)
-        height_line.tag = ifc_tag
-        height_line.guid = getattr(pt_ent, "guid", "")
-        print(
-            f"[BIM]   height line created idx={height_line.slvs_index} tag={height_line.tag!r} guid={height_line.guid!r}"
-        )
+        _ensure_entity_in_group(orth_sketch, height_line.slvs_index, ifc_tag)
 
     # ── Wall ──────────────────────────────────────────────────────────────────
 
@@ -1434,7 +1505,9 @@ class FetchCADSketcher(Operator):
             return None
 
         # Remove existing wall before recreating; save GUID and Name so the new element reuses them
-        old_guid = getattr(line, "guid", "") or None
+        old_guid = (
+            line.guid if isinstance(line, _FakeWallLine) else _entity_guid(sketch, line.slvs_index, "IfcWall")
+        ) or None
         old_name = None
         if old_guid:
             try:
@@ -1450,7 +1523,10 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None  # GUID was stale; don't reuse it
-        line.guid = ""
+        if isinstance(line, _FakeWallLine):
+            line.guid = ""
+        else:
+            _set_entity_guid(sketch, line.slvs_index, "IfcWall", "")
 
         from bonsai.bim.module.model.wall import DumbWallGenerator
 
@@ -1506,12 +1582,17 @@ class FetchCADSketcher(Operator):
         if old_name:
             entity.Name = old_name
             obj.name = old_name
-        line.guid = entity.GlobalId
+        if isinstance(line, _FakeWallLine):
+            line.guid = entity.GlobalId
+        else:
+            _set_entity_guid(sketch, line.slvs_index, "IfcWall", entity.GlobalId)
         return obj
 
     # ── Profile elements (IfcBeam, IfcMember, IfcFooting) ─────────────────────
 
-    def _create_or_update_profile_element(self, line, ifc_file, unit_scale, body_context, axis_context, element_type):
+    def _create_or_update_profile_element(
+        self, line, ifc_file, unit_scale, body_context, axis_context, element_type, sketch=None
+    ):
         """Create or update a single profile-extruded element (IfcBeam, IfcMember, IfcFooting)
         from a sketch line with p1/p2 endpoints.
 
@@ -1533,8 +1614,12 @@ class FetchCADSketcher(Operator):
         if material is None or not material.is_a("IfcMaterialProfileSet"):
             return None
 
+        # Derive IFC class tag from element type (e.g. "IfcBeamType" → "IfcBeam")
+        _type_name = element_type.is_a()
+        ifc_tag = _type_name[:-4] if _type_name.endswith("Type") else _type_name
+
         # Remove existing element before recreating so GUID / Name are preserved.
-        old_guid = getattr(line, "guid", "") or None
+        old_guid = _entity_guid(sketch, line.slvs_index, ifc_tag) or None
         old_name = None
         if old_guid:
             try:
@@ -1550,7 +1635,7 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None
-        line.guid = ""
+        _set_entity_guid(sketch, line.slvs_index, ifc_tag, "")
 
         from bonsai.bim.module.model.profile import DumbProfileGenerator
 
@@ -1576,13 +1661,13 @@ class FetchCADSketcher(Operator):
         if old_name:
             entity.Name = old_name
             obj.name = old_name
-        line.guid = entity.GlobalId
+        _set_entity_guid(sketch, line.slvs_index, ifc_tag, entity.GlobalId)
         return obj
 
     # ── Point elements (IfcColumn, IfcPile) ───────────────────────────────────
 
     def _create_or_update_point_element(
-        self, point_ent, ifc_file, unit_scale, body_context, axis_context, element_type, height
+        self, point_ent, ifc_file, unit_scale, body_context, axis_context, element_type, height, sketch=None
     ):
         """Create or update a profile element (IfcColumn, IfcPile) from a sketch point or line.
 
@@ -1604,7 +1689,11 @@ class FetchCADSketcher(Operator):
         if material is None or not material.is_a("IfcMaterialProfileSet"):
             return False
 
-        old_guid = getattr(point_ent, "guid", "") or None
+        # Derive IFC class tag from element type (e.g. "IfcColumnType" → "IfcColumn")
+        _type_name = element_type.is_a()
+        ifc_tag = _type_name[:-4] if _type_name.endswith("Type") else _type_name
+
+        old_guid = _entity_guid(sketch, point_ent.slvs_index, ifc_tag) or None
         old_name = None
         if old_guid:
             try:
@@ -1620,7 +1709,7 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None
-        point_ent.guid = ""
+        _set_entity_guid(sketch, point_ent.slvs_index, ifc_tag, "")
 
         from bonsai.bim.module.model.profile import DumbProfileGenerator
 
@@ -1670,7 +1759,7 @@ class FetchCADSketcher(Operator):
         if old_name:
             entity.Name = old_name
             obj.name = old_name
-        point_ent.guid = entity.GlobalId
+        _set_entity_guid(sketch, point_ent.slvs_index, ifc_tag, entity.GlobalId)
         return True
 
     def _create_wall_from_elevation_polyline(
@@ -1765,29 +1854,32 @@ class FetchCADSketcher(Operator):
         # Priority 3: a plan IfcWall line with matching XY endpoints already has
         #              a GUID — reuse it so we update the existing wall instead of
         #              creating a duplicate.
-        guid = getattr(polyline, "guid", "") or ""
+        _sse_elev = context.scene.sketcher.entities
+        _poly_sketch_elev = next((s for s in _sse_elev.sketches if s.slvs_index == polyline.sketch_i), None)
+        guid = _entity_guid(_poly_sketch_elev, polyline.slvs_index, "IfcWall") or ""
         if not guid and wall_guid_hint:
             guid = wall_guid_hint
         if not guid:
             tol = 0.001  # 1 mm
-            for ent in context.scene.sketcher.entities.all:
-                if not (
-                    getattr(ent, "tag", "") == "IfcWall"
-                    and hasattr(ent, "p1")
-                    and hasattr(ent, "p2")
-                    and getattr(ent, "guid", "")
+            for _sk in _sse_elev.sketches:
+                for ent in _entities_with_ifc_tag(
+                    _sk, _sse_elev, "IfcWall", lambda e: hasattr(e, "p1") and hasattr(e, "p2")
                 ):
-                    continue
-                ep1 = ent.p1.location
-                ep2 = ent.p2.location
-                ep1_xy = mathutils.Vector((ep1.x, ep1.y))
-                ep2_xy = mathutils.Vector((ep2.x, ep2.y))
-                p1_xy = mathutils.Vector((p1_loc.x, p1_loc.y))
-                p2_xy = mathutils.Vector((p2_loc.x, p2_loc.y))
-                forward = (p1_xy - ep1_xy).length < tol and (p2_xy - ep2_xy).length < tol
-                reverse = (p1_xy - ep2_xy).length < tol and (p2_xy - ep1_xy).length < tol
-                if forward or reverse:
-                    guid = ent.guid
+                    ent_guid = _entity_guid(_sk, ent.slvs_index, "IfcWall")
+                    if not ent_guid:
+                        continue
+                    ep1 = ent.p1.location
+                    ep2 = ent.p2.location
+                    ep1_xy = mathutils.Vector((ep1.x, ep1.y))
+                    ep2_xy = mathutils.Vector((ep2.x, ep2.y))
+                    p1_xy = mathutils.Vector((p1_loc.x, p1_loc.y))
+                    p2_xy = mathutils.Vector((p2_loc.x, p2_loc.y))
+                    forward = (p1_xy - ep1_xy).length < tol and (p2_xy - ep2_xy).length < tol
+                    reverse = (p1_xy - ep2_xy).length < tol and (p2_xy - ep1_xy).length < tol
+                    if forward or reverse:
+                        guid = ent_guid
+                        break
+                if guid:
                     break
 
         mock_line = _FakeWallLine(p1_loc, p2_loc, guid=guid)
@@ -1812,29 +1904,25 @@ class FetchCADSketcher(Operator):
             bpy.context.view_layer.update()
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if obj is not None:
-            polyline.guid = mock_line.guid
+            _set_entity_guid(_poly_sketch_elev, polyline.slvs_index, "IfcWall", mock_line.guid)
 
-            # Back-propagate tag + GUID to the source plan line when it has no
-            # GUID yet (i.e. the user drew the elevation polyline first without
-            # having tagged the original line in the plan sketch).
+            # Back-propagate GUID to the source plan line when it has no GUID yet
+            # (i.e. the user drew the elevation polyline first without having
+            # tagged the original line in the plan sketch).
             sse_bp = context.scene.sketcher.entities
-            src_sketch = next((s for s in sse_bp.sketches if s.slvs_index == polyline.sketch_i), None)
-            if src_sketch is not None:
-                src_line_i = getattr(src_sketch, "source_line_i", -1)
+            elev_sketch = next((s for s in sse_bp.sketches if s.slvs_index == polyline.sketch_i), None)
+            if elev_sketch is not None:
+                src_line_i = getattr(elev_sketch, "source_line_i", -1)
                 if src_line_i != -1:
                     src_line = sse_bp.get(src_line_i)
-                    if src_line is not None and not getattr(src_line, "guid", ""):
-                        src_line.tag = "IfcWall"
-                        src_line.guid = mock_line.guid
-
-            # Keep the matched plan line's GUID in sync (it was preserved by
-            # _create_or_update_wall so it should already be correct, but
-            # explicitly updating it is harmless and makes reimports reliable).
-            if guid and guid != mock_line.guid:
-                for ent in context.scene.sketcher.entities.all:
-                    if getattr(ent, "guid", "") == guid:
-                        ent.guid = mock_line.guid
-                        break
+                    if src_line is not None:
+                        src_line_sketch_i = getattr(src_line, "sketch_i", -1)
+                        src_line_sketch = next((s for s in sse_bp.sketches if s.slvs_index == src_line_sketch_i), None)
+                        if src_line_sketch is not None and not _entity_guid(
+                            src_line_sketch, src_line.slvs_index, "IfcWall"
+                        ):
+                            _ensure_entity_in_group(src_line_sketch, src_line.slvs_index, "IfcWall")
+                            _set_entity_guid(src_line_sketch, src_line.slvs_index, "IfcWall", mock_line.guid)
             # For non-rectangular elevation profiles (e.g. gable walls), create an
             # IfcOpeningElement that subtracts the complement region — the space
             # between the actual profile and the 10 % taller outer bounding box.
@@ -2083,88 +2171,90 @@ class FetchCADSketcher(Operator):
 
     @staticmethod
     def _get_slab_polylines(context, sketch):
-        """Return all closed polylines on *sketch* with tag == 'IfcSlab'."""
+        """Return all closed polylines on *sketch* tagged as 'IfcSlab'."""
         if sketch is None:
             return []
+        sse = context.scene.sketcher.entities
         sk_idx = sketch.slvs_index
-        return [
-            p
-            for p in context.scene.sketcher.entities.polylines
-            if p.sketch_i == sk_idx and p.tag == "IfcSlab" and p.closed
-        ]
+        return _entities_with_ifc_tag(
+            sketch, sse, "IfcSlab", lambda e: hasattr(e, "segment_count") and e.closed and e.sketch_i == sk_idx
+        )
 
     @staticmethod
     def _get_covering_polylines(context, sketch):
-        """Return all closed polylines on *sketch* with tag == 'IfcCovering'."""
+        """Return all closed polylines on *sketch* tagged as 'IfcCovering'."""
         if sketch is None:
             return []
+        sse = context.scene.sketcher.entities
         sk_idx = sketch.slvs_index
-        return [
-            p
-            for p in context.scene.sketcher.entities.polylines
-            if p.sketch_i == sk_idx and p.tag == "IfcCovering" and p.closed
-        ]
+        return _entities_with_ifc_tag(
+            sketch, sse, "IfcCovering", lambda e: hasattr(e, "segment_count") and e.closed and e.sketch_i == sk_idx
+        )
 
     @staticmethod
     def _get_plate_polylines(context, sketch):
-        """Return all closed polylines on *sketch* with tag == 'IfcPlate'."""
+        """Return all closed polylines on *sketch* tagged as 'IfcPlate'."""
         if sketch is None:
             return []
+        sse = context.scene.sketcher.entities
         sk_idx = sketch.slvs_index
-        return [
-            p
-            for p in context.scene.sketcher.entities.polylines
-            if p.sketch_i == sk_idx and p.tag == "IfcPlate" and p.closed
-        ]
+        return _entities_with_ifc_tag(
+            sketch, sse, "IfcPlate", lambda e: hasattr(e, "segment_count") and e.closed and e.sketch_i == sk_idx
+        )
 
     @staticmethod
     def _get_opening_polylines(context, sketch):
-        """Return all closed polylines on *sketch* with tag == 'IfcOpeningElement'."""
+        """Return all closed polylines on *sketch* tagged as 'IfcOpeningElement'."""
         if sketch is None:
             return []
+        sse = context.scene.sketcher.entities
         sk_idx = sketch.slvs_index
-        return [
-            p
-            for p in context.scene.sketcher.entities.polylines
-            if p.sketch_i == sk_idx and p.tag == "IfcOpeningElement" and p.closed
-        ]
+        return _entities_with_ifc_tag(
+            sketch,
+            sse,
+            "IfcOpeningElement",
+            lambda e: hasattr(e, "segment_count") and e.closed and e.sketch_i == sk_idx,
+        )
 
     @staticmethod
     def _get_window_polylines(context, sketch):
-        """Return all closed polylines on *sketch* with tag == 'IfcWindow'."""
+        """Return all closed polylines on *sketch* tagged as 'IfcWindow'."""
         if sketch is None:
             return []
+        sse = context.scene.sketcher.entities
         sk_idx = sketch.slvs_index
-        return [
-            p
-            for p in context.scene.sketcher.entities.polylines
-            if p.sketch_i == sk_idx and p.tag == "IfcWindow" and p.closed
-        ]
+        return _entities_with_ifc_tag(
+            sketch, sse, "IfcWindow", lambda e: hasattr(e, "segment_count") and e.closed and e.sketch_i == sk_idx
+        )
 
     @staticmethod
     def _get_door_polylines(context, sketch):
-        """Return all closed polylines on *sketch* with tag == 'IfcDoor'."""
+        """Return all closed polylines on *sketch* tagged as 'IfcDoor'."""
         if sketch is None:
             return []
+        sse = context.scene.sketcher.entities
         sk_idx = sketch.slvs_index
-        return [
-            p
-            for p in context.scene.sketcher.entities.polylines
-            if p.sketch_i == sk_idx and p.tag == "IfcDoor" and p.closed
-        ]
+        return _entities_with_ifc_tag(
+            sketch, sse, "IfcDoor", lambda e: hasattr(e, "segment_count") and e.closed and e.sketch_i == sk_idx
+        )
 
     @staticmethod
     def _resolve_elevation_wall_guid(sketch, sse):
         """Return the GUID of the plan IfcWall line that drives this elevation sketch.
 
-        Uses sketch.source_line_i to find the source line, then returns its guid.
-        Returns '' if the sketch has no source line or the line has no GUID.
+        Uses sketch.source_line_i to find the source line, then returns its GUID
+        from the sketch group.  Returns '' if the sketch has no source line or
+        the line has no GUID.
         """
         src_i = getattr(sketch, "source_line_i", -1)
         if src_i == -1:
             return ""
         line = sse.get(src_i)
-        return getattr(line, "guid", "") if line is not None else ""
+        if line is None:
+            return ""
+        src_sketch_i = getattr(line, "sketch_i", -1)
+        src_sketch = next((s for s in sse.sketches if s.slvs_index == src_sketch_i), None)
+        return _entity_guid(src_sketch, src_i, "IfcWall")
 
     @staticmethod
     def _rectangle_dimensions(context, polyline, up_vec=None):
@@ -2255,7 +2345,7 @@ class FetchCADSketcher(Operator):
         print(f"[CADSketcher]   cursor → fill_origin before add_occurrence")
 
         # Remove existing element before recreating; save GUID so it is reused
-        old_guid = getattr(polyline, "guid", "") or None
+        old_guid = _entity_guid(sketch, polyline.slvs_index, ifc_class) or None
         if old_guid:
             try:
                 existing = ifc_file.by_guid(old_guid)
@@ -2269,7 +2359,7 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None
-        polyline.guid = ""
+        _set_entity_guid(sketch, polyline.slvs_index, ifc_class, "")
 
         # Place cursor at the chosen corner so add_occurrence starts there.
         saved_cursor = context.scene.cursor.location.copy()
@@ -2446,7 +2536,7 @@ class FetchCADSketcher(Operator):
         # Preserve GUID across reimports
         if old_guid:
             element.GlobalId = old_guid
-        polyline.guid = element.GlobalId
+        _set_entity_guid(sketch, polyline.slvs_index, ifc_class, element.GlobalId)
 
         return True
 
@@ -2694,8 +2784,11 @@ class FetchCADSketcher(Operator):
             self.report({"WARNING"}, f"Polyline {polyline} has fewer than 3 vertices for a slab.")
             return False
 
+        sse = context.scene.sketcher.entities
+        poly_sketch = next((s for s in sse.sketches if s.slvs_index == polyline.sketch_i), None)
+
         # Remove existing slab before recreating; save GUID so the new element reuses it
-        old_guid = getattr(polyline, "guid", "") or None
+        old_guid = _entity_guid(poly_sketch, polyline.slvs_index, "IfcSlab") or None
         if old_guid:
             try:
                 existing = ifc_file.by_guid(old_guid)
@@ -2709,15 +2802,13 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None  # GUID was stale; don't reuse it
-        polyline.guid = ""
+        _set_entity_guid(poly_sketch, polyline.slvs_index, "IfcSlab", "")
 
         origin = polygon_pts[0]
         grows_up_from_workplane = self._polyline_uses_external_geometry(context, polyline)
 
         # ── Typed path ────────────────────────────────────────────────────────
         if slab_type is not None:
-            sse = context.scene.sketcher.entities
-            poly_sketch = next((s for s in sse.sketches if s.slvs_index == polyline.sketch_i), None)
             print(
                 "[SLAB] poly_sketch =",
                 poly_sketch,
@@ -2768,7 +2859,7 @@ class FetchCADSketcher(Operator):
             entity = tool.Ifc.get_entity(obj)
             if old_guid:
                 entity.GlobalId = old_guid
-            polyline.guid = entity.GlobalId
+            _set_entity_guid(poly_sketch, polyline.slvs_index, "IfcSlab", entity.GlobalId)
             return True
 
     # ── Covering ──────────────────────────────────────────────────────────────
@@ -2785,7 +2876,9 @@ class FetchCADSketcher(Operator):
             self.report({"WARNING"}, f"Polyline {polyline} has fewer than 3 vertices for a covering.")
             return False
 
-        old_guid = getattr(polyline, "guid", "") or None
+        poly_sketch = next((s for s in sse.sketches if s.slvs_index == polyline.sketch_i), None)
+
+        old_guid = _entity_guid(poly_sketch, polyline.slvs_index, "IfcCovering") or None
         if old_guid:
             try:
                 existing = ifc_file.by_guid(old_guid)
@@ -2799,9 +2892,7 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None
-        polyline.guid = ""
-
-        poly_sketch = next((s for s in sse.sketches if s.slvs_index == polyline.sketch_i), None)
+        _set_entity_guid(poly_sketch, polyline.slvs_index, "IfcCovering", "")
 
         if poly_sketch is not None:
             obj = self._create_layered_element_from_elevation_polyline(
@@ -2839,7 +2930,7 @@ class FetchCADSketcher(Operator):
         entity = tool.Ifc.get_entity(obj)
         if old_guid:
             entity.GlobalId = old_guid
-        polyline.guid = entity.GlobalId
+        _set_entity_guid(poly_sketch, polyline.slvs_index, "IfcCovering", entity.GlobalId)
         return True
 
     # ── Plate ──────────────────────────────────────────────────────────────────
@@ -2856,7 +2947,9 @@ class FetchCADSketcher(Operator):
             self.report({"WARNING"}, f"Polyline {polyline} has fewer than 3 vertices for a plate.")
             return False
 
-        old_guid = getattr(polyline, "guid", "") or None
+        poly_sketch = next((s for s in sse.sketches if s.slvs_index == polyline.sketch_i), None)
+
+        old_guid = _entity_guid(poly_sketch, polyline.slvs_index, "IfcPlate") or None
         if old_guid:
             try:
                 existing = ifc_file.by_guid(old_guid)
@@ -2870,9 +2963,8 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None
-        polyline.guid = ""
+        _set_entity_guid(poly_sketch, polyline.slvs_index, "IfcPlate", "")
 
-        poly_sketch = next((s for s in sse.sketches if s.slvs_index == polyline.sketch_i), None)
         is_elevation = poly_sketch is not None and getattr(poly_sketch, "tag", "") == "Elevation"
         # Also treat any non-horizontal workplane as needing the elevation path.
         if poly_sketch is not None and not is_elevation:
@@ -2916,7 +3008,7 @@ class FetchCADSketcher(Operator):
         entity = tool.Ifc.get_entity(obj)
         if old_guid:
             entity.GlobalId = old_guid
-        polyline.guid = entity.GlobalId
+        _set_entity_guid(poly_sketch, polyline.slvs_index, "IfcPlate", entity.GlobalId)
         return True
 
     # ── Opening ───────────────────────────────────────────────────────────────────────
@@ -2928,8 +3020,11 @@ class FetchCADSketcher(Operator):
             self.report({"WARNING"}, f"Opening polyline {polyline} has fewer than 3 vertices.")
             return False
 
+        _sse_op = context.scene.sketcher.entities
+        _poly_sketch_op = next((s for s in _sse_op.sketches if s.slvs_index == polyline.sketch_i), None)
+
         # Remove existing opening before recreating; save GUID so the new element reuses it
-        old_guid = getattr(polyline, "guid", "") or None
+        old_guid = _entity_guid(_poly_sketch_op, polyline.slvs_index, "IfcOpeningElement") or None
         if old_guid:
             try:
                 existing = ifc_file.by_guid(old_guid)
@@ -2943,7 +3038,7 @@ class FetchCADSketcher(Operator):
                             bpy.data.meshes.remove(data)
             except Exception:
                 old_guid = None
-        polyline.guid = ""
+        _set_entity_guid(_poly_sketch_op, polyline.slvs_index, "IfcOpeningElement", "")
 
         # ── Step 1: activate the host slab so add_element picks it up as featured_obj ──
         host_obj = tool.Ifc.get_object(host_slab)
@@ -3041,7 +3136,7 @@ class FetchCADSketcher(Operator):
         # ── Step 9: preserve GUID across reimports ──
         if old_guid:
             element.GlobalId = old_guid
-        polyline.guid = element.GlobalId
+        _set_entity_guid(_poly_sketch_op, polyline.slvs_index, "IfcOpeningElement", element.GlobalId)
 
         return True
 
@@ -3095,17 +3190,17 @@ class FetchCADSketcher(Operator):
 
         if sketch_role == "Plan":
             # ── Plan walls (tagged lines) ──────────────────────────────────────
-            for ent in sse.all:
-                if (
-                    getattr(ent, "sketch_i", -1) != sketch_index
-                    or getattr(ent, "tag", "") != "IfcWall"
-                    or not hasattr(ent, "p1")
-                    or not hasattr(ent, "p2")
-                    or not getattr(ent, "guid", "")
-                ):
-                    continue
+            for ent in _entities_with_ifc_tag(
+                sketch_entity,
+                sse,
+                "IfcWall",
+                lambda e: hasattr(e, "p1")
+                and hasattr(e, "p2")
+                and bool(_entity_guid(sketch_entity, e.slvs_index, "IfcWall")),
+            ):
+                _ent_guid = _entity_guid(sketch_entity, ent.slvs_index, "IfcWall")
                 try:
-                    existing = ifc_file.by_guid(ent.guid)
+                    existing = ifc_file.by_guid(_ent_guid)
                 except Exception:
                     continue
                 if existing is None:
@@ -3127,9 +3222,12 @@ class FetchCADSketcher(Operator):
                     count += 1
 
             # ── Wall runs (tagged polylines) ───────────────────────────────────
-            for poly in sse.polylines:
-                if poly.sketch_i != sketch_index or getattr(poly, "tag", "") != "IfcWall":
-                    continue
+            for poly in _entities_with_ifc_tag(
+                sketch_entity,
+                sse,
+                "IfcWall",
+                lambda e: hasattr(e, "segment_count") and not e.closed and e.sketch_i == sketch_index,
+            ):
                 # Determine type from the first segment that has a GUID
                 run_type = None
                 run_height = self.storey_height
@@ -3138,10 +3236,13 @@ class FetchCADSketcher(Operator):
                     if seg_idx == -1:
                         continue
                     seg = sse.get(seg_idx)
-                    if seg is None or not getattr(seg, "guid", ""):
+                    if seg is None:
+                        continue
+                    seg_guid = _entity_guid(sketch_entity, seg.slvs_index, "IfcWall")
+                    if not seg_guid:
                         continue
                     try:
-                        existing = ifc_file.by_guid(seg.guid)
+                        existing = ifc_file.by_guid(seg_guid)
                     except Exception:
                         continue
                     if existing is None:
@@ -3164,8 +3265,16 @@ class FetchCADSketcher(Operator):
                     seg = sse.get(seg_idx)
                     if seg is None or not hasattr(seg, "p1") or not hasattr(seg, "p2"):
                         continue
+                    _ensure_entity_in_group(sketch_entity, seg.slvs_index, "IfcWall")
                     obj = self._create_or_update_wall(
-                        seg, ifc_file, unit_scale, body_context, axis_context, run_type, run_height
+                        seg,
+                        ifc_file,
+                        unit_scale,
+                        body_context,
+                        axis_context,
+                        run_type,
+                        run_height,
+                        sketch=sketch_entity,
                     )
                     if obj is not None:
                         run_pairs.append((seg, obj))
@@ -3188,13 +3297,12 @@ class FetchCADSketcher(Operator):
         # ── Wall elevation polylines (Elevation sketches only) ────────────────
         if sketch_entity is not None and sketch_role == "Elevation":
             wall_guid = self._resolve_elevation_wall_guid(sketch_entity, sse)
-            for poly in sse.polylines:
-                if poly.sketch_i != sketch_index or getattr(poly, "tag", "") != "IfcWall":
-                    continue
-
+            for poly in _entities_with_ifc_tag(
+                sketch_entity, sse, "IfcWall", lambda e: hasattr(e, "segment_count") and e.sketch_i == sketch_index
+            ):
                 # Resolve wall type via polyline GUID or source wall GUID
                 wall_type = None
-                guid = getattr(poly, "guid", "") or wall_guid
+                guid = _entity_guid(sketch_entity, poly.slvs_index, "IfcWall") or wall_guid
                 if guid:
                     try:
                         existing = ifc_file.by_guid(guid)
@@ -3229,17 +3337,17 @@ class FetchCADSketcher(Operator):
         # ── Profile elements: IfcBeam, IfcMember, IfcFooting ─────────────────
         for ifc_tag in ("IfcBeam", "IfcMember", "IfcFooting"):
             # Single tagged lines that have a GUID
-            for ent in sse.all:
-                if (
-                    getattr(ent, "sketch_i", -1) != sketch_index
-                    or getattr(ent, "tag", "") != ifc_tag
-                    or not hasattr(ent, "p1")
-                    or not hasattr(ent, "p2")
-                    or not getattr(ent, "guid", "")
-                ):
-                    continue
+            for ent in _entities_with_ifc_tag(
+                sketch_entity,
+                sse,
+                ifc_tag,
+                lambda e: hasattr(e, "p1")
+                and hasattr(e, "p2")
+                and bool(_entity_guid(sketch_entity, e.slvs_index, ifc_tag)),
+            ):
+                _ent_guid = _entity_guid(sketch_entity, ent.slvs_index, ifc_tag)
                 try:
-                    existing = ifc_file.by_guid(ent.guid)
+                    existing = ifc_file.by_guid(_ent_guid)
                 except Exception:
                     continue
                 if existing is None:
@@ -3248,25 +3356,37 @@ class FetchCADSketcher(Operator):
                 if element_type is None:
                     continue
                 obj = self._create_or_update_profile_element(
-                    ent, ifc_file, unit_scale, body_context, axis_context, element_type
+                    ent,
+                    ifc_file,
+                    unit_scale,
+                    body_context,
+                    axis_context,
+                    element_type,
+                    sketch=sketch_entity,
                 )
                 if obj is not None:
                     count += 1
 
             # Open polylines (runs) whose segments have a GUID
-            for poly in sse.polylines:
-                if poly.sketch_i != sketch_index or getattr(poly, "tag", "") != ifc_tag or poly.closed:
-                    continue
+            for poly in _entities_with_ifc_tag(
+                sketch_entity,
+                sse,
+                ifc_tag,
+                lambda e: hasattr(e, "segment_count") and not e.closed and e.sketch_i == sketch_index,
+            ):
                 run_type = None
                 for j in range(poly.segment_count):
                     seg_idx = int(poly.segment_indices[j])
                     if seg_idx == -1:
                         continue
                     seg = sse.get(seg_idx)
-                    if seg is None or not getattr(seg, "guid", ""):
+                    if seg is None:
+                        continue
+                    seg_guid = _entity_guid(sketch_entity, seg.slvs_index, ifc_tag)
+                    if not seg_guid:
                         continue
                     try:
-                        existing = ifc_file.by_guid(seg.guid)
+                        existing = ifc_file.by_guid(seg_guid)
                     except Exception:
                         continue
                     if existing is None:
@@ -3282,10 +3402,15 @@ class FetchCADSketcher(Operator):
                     seg = sse.get(seg_idx)
                     if seg is None or not hasattr(seg, "p1") or not hasattr(seg, "p2"):
                         continue
-                    if hasattr(seg, "tag") and poly.tag:
-                        seg.tag = poly.tag
+                    _ensure_entity_in_group(sketch_entity, seg.slvs_index, ifc_tag)
                     obj = self._create_or_update_profile_element(
-                        seg, ifc_file, unit_scale, body_context, axis_context, run_type
+                        seg,
+                        ifc_file,
+                        unit_scale,
+                        body_context,
+                        axis_context,
+                        run_type,
+                        sketch=sketch_entity,
                     )
                     if obj is not None:
                         count += 1
