@@ -70,8 +70,10 @@ from .get_basis_curve import get_basis_curve
 from .get_cant_layout import get_cant_layout
 from .get_child_alignments import get_child_alignments
 from .get_curve import get_curve
+from .get_curve_segment import get_curve_segment
 from .get_curve_segment_transition_code import get_curve_segment_transition_code
 from .get_horizontal_layout import get_horizontal_layout
+from .get_layout import get_layout
 from .get_layout_curve import get_layout_curve
 from .get_layout_segments import get_layout_segments
 from .get_mapped_segments import get_mapped_segments
@@ -86,6 +88,7 @@ from .layout_vertical_alignment_by_pi_method import (
     layout_vertical_alignment_by_pi_method,
 )
 from .name_segments import name_segments
+from .update_end_point import update_end_point
 from .update_fallback_position import update_fallback_position
 from .util import *
 
@@ -112,8 +115,10 @@ __all__ = [
     "get_cant_layout",
     "get_child_alignments",
     "get_curve",
+    "get_curve_segment",
     "get_curve_segment_transition_code",
     "get_horizontal_layout",
+    "get_layout",
     "get_layout_curve",
     "get_layout_segments",
     "get_parent_alignment",
@@ -124,6 +129,7 @@ __all__ = [
     "layout_vertical_alignment_by_pi_method",
     "name_segments",
     "register_referent_name_callback",
+    "update_end_point",
     "update_fallback_position",
     "get_mapped_segments",
 ]

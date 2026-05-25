@@ -24,10 +24,12 @@ from ifcopenshell import entity_instance
 
 
 def _get_axis(file: ifcopenshell.file, Ds: float, rail_head_distance: float) -> entity_instance:
-    Dy = rail_head_distance
-    Dz = 2 * Ds
-    D = math.sqrt(Dy * Dy + Dz * Dz)
-    return file.createIfcDirection((0.0, Dz / D, Dy / D))
+    # solves the ratio right triangle legs to hypotenous
+    # Dh^2 = Dy^2 + Dz^2
+    Dh = rail_head_distance  # hypotenous
+    Dy = 2 * Ds  # horizontal leg
+    Dz = math.sqrt(Dh * Dh - Dy * Dy)  # vertical leg
+    return file.createIfcDirection((0.0, Dy / Dh, Dz / Dh))
 
 
 def _map_constant_cant(
@@ -54,7 +56,7 @@ def _map_constant_cant(
         Transition=transition,
         Placement=file.createIfcAxis2Placement3D(
             Location=start_point,
-            Axis=_get_axis(file, Ds, rail_head_distance),
+            Axis=_get_axis(file, 0.5 * (Dsr - Dsl), rail_head_distance),
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction), 0.0)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),

@@ -20,6 +20,7 @@ import numpy as np
 
 import ifcopenshell
 import ifcopenshell.api.alignment
+from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.guid
@@ -58,7 +59,7 @@ def add_stationing_referent(
 
     object_placement = None
     representation = None
-    if basis_curve:
+    if basis_curve and basis_curve.is_a("IfcCompositeCurve") and 0 < len(basis_curve.Segments):
         object_placement = file.createIfcLinearPlacement(
             RelativePlacement=file.createIfcAxis2PlacementLinear(
                 Location=file.createIfcPointByDistanceExpression(
@@ -71,54 +72,13 @@ def add_stationing_referent(
             ),
         )
 
-        is_valid_curve = True
-        if basis_curve.is_a("IfcCompositeCurve") and len(basis_curve.Segments) == 0:
-            is_valid_curve = False
-        if basis_curve.is_a("IfcPolyline") and len(basis_curve.Points) < 2:
-            is_valid_curve = False
-        elif basis_curve.is_a("IfcIndexedPolyCurve") and len(basis_curve.Points.CoordList) < 2:
-            is_valid_curve = False
-
-        if is_valid_curve:
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-
-            settings = ifcopenshell.geom.settings()
-            fn = ifcopenshell_wrapper.map_shape(settings, basis_curve)
-
-            if basis_curve.is_a("IfcPolyline") or basis_curve.is_a("IfcIndexedPolyCurve"):
-                fn = ifcopenshell_wrapper.convert_loop_to_function_item(fn)
-
-            evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, fn)
-
-            p = evaluator.evaluate(distance_along * unit_scale)
-            p = np.array(p)
-
-            x = float(p[0, 3]) / unit_scale
-            y = float(p[1, 3]) / unit_scale
-            z = float(p[2, 3]) / unit_scale
-
-            rx = float(p[0, 0])
-            ry = float(p[1, 0])
-            rz = float(p[2, 0])
-
-            ax = float(p[0, 2])
-            ay = float(p[1, 2])
-            az = float(p[2, 2])
-        else:
-            x = 0.0
-            y = 0.0
-            z = 0.0
-            rx = 1.0
-            ry = 0.0
-            rz = 0.0
-            ax = 0.0
-            ay = 0.0
-            az = 1.0
-
-        object_placement.CartesianPosition = file.createIfcAxis2Placement3D(
-            Location=file.createIfcCartesianPoint((x, y, z)),
-            Axis=file.createIfcDirection((ax, ay, az)),
-            RefDirection=file.createIfcDirection((rx, ry, rz)),
+        update_fallback_position(file, object_placement)
+    else:
+        object_placement = file.createIfcLocalPlacement(
+            PlacementRelTo=None,
+            RelativePlacement=file.createIfcAxis2Placement2D(
+                Location=file.createIfcCartesianPoint(alignment.ObjectPlacement.RelativePlacement.Location.Coordinates)
+            ),
         )
 
     # this commented out code is what you would do to add a geometric representation of the referent
@@ -144,7 +104,12 @@ def add_stationing_referent(
     ifcopenshell.api.pset.edit_pset(file, pset=pset_stationing, properties={"Station": station})
 
     nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    nest.RelatedObjects += (referent,)
+    if nest is None:
+        nest = file.createIfcRelNests(
+            GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=(referent,)
+        )
+    else:
+        nest.RelatedObjects += (referent,)
 
     nest.RelatedObjects = sorted(
         nest.RelatedObjects, key=lambda x: ifcopenshell.util.element.get_pset(x, name="Pset_Stationing", prop="Station")

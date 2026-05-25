@@ -60,7 +60,7 @@ def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
     segment_type = segment.is_a().upper()
     if not segment_type in supported_segment_types:
         raise NotImplementedError(f"Expected entity type 'IFCCURVESEGMENT', got '{segment_type}")
-    if dist_along > segment.SegmentLength:
+    if dist_along > abs(segment.SegmentLength.wrappedValue):
         raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
 
     s = ifcopenshell.geom.settings()

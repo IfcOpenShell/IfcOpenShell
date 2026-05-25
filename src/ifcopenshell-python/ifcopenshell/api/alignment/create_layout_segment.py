@@ -53,35 +53,8 @@ def create_layout_segment(
 
     # create the segment and add it to the layout.
     segment = file.createIfcAlignmentSegment(GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters)
-    _add_segment_to_layout(file, layout, segment)  # adds to layout and geometric representation
+    end = _add_segment_to_layout(
+        file, layout, segment
+    )  # adds to layout and geometric representation (if present, also updates zero length segment position)
 
-    # compute the 4x4 matrix at the end of the segment so this information can be
-    # returned and used when defining the next segment
-    alignment = ifcopenshell.api.alignment.get_alignment(layout)
-    curve = ifcopenshell.api.alignment.get_curve(alignment)
-
-    if curve:
-        if layout.is_a("IfcAlignmentHorizontal"):
-            if curve.is_a("IfcGradientCurve"):
-                curve = curve.BaseCurve
-            elif curve.is_a("IfcSegmentedReferenceCurve"):
-                curve = (
-                    curve.BaseCurve.BaseCurve
-                )  # layout is horizontal and curve is segmented ref ... we want the curve's base curve
-        elif layout.is_a("IfcAlignmentVertical"):
-            if curve.is_a("IfcSegmentedReferenceCurve"):
-                curve = curve.BaseCurve
-
-        # the new segment is two from the end... the end segment is zero length
-        curve_segment = curve.Segments[-2]
-
-        settings = ifcopenshell.geom.settings()
-
-        segment_fn = ifcopenshell_wrapper.map_shape(settings, curve_segment)
-        segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, segment_fn)
-        e = segment_evaluator.evaluate(segment_fn.end())
-        end = np.array(e)
-
-        return end
-    else:
-        return None
+    return end

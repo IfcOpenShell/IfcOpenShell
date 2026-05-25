@@ -16,24 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell
 from ifcopenshell import entity_instance
 
 
-def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> entity_instance:
+def get_layout(segment: entity_instance) -> entity_instance:
     """
-    Searches for the IfcRelNest that contains IfcReferent.
-
-    :param file:
-    :param alignment: The IfcAlignment which hosts IfcReferent
-    :return: Returns the IfcRelNests or None
+    Retrieves the layout to which an alignment segment belongs.
     """
-    if not alignment.is_a("IfcAlignment"):
-        raise TypeError(f"Expected IfcAlignment, instead received {alignment.is_a()}")
+    if not segment.is_a("IfcAlignmentSegment"):
+        raise TypeError(f"Expected entity type to be IfcAlignmentSegment, instead received {segment.is_a()}")
 
-    for nest in alignment.IsNestedBy:
-        for related_object in nest.RelatedObjects:
-            if related_object.is_a("IfcReferent"):
-                return nest
+    layout = None
+    nests = segment.Nests
+    if nests:
+        layout = nests[0].RelatingObject
 
-    return None
+    return layout
