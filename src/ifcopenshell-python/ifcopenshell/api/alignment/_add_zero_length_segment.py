@@ -42,17 +42,8 @@ def _add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -
             f"Expected layout type to be one of {[_ for _ in expected_types]}, instead received {layout.is_a()}"
         )
 
-    if not ifcopenshell.api.alignment.add_zero_length_segment(file, layout, include_referent=False):
-        return  # zero length segment not added, probably because it already exists
+    ifcopenshell.api.alignment.add_zero_length_segment(file, layout)
 
     curve = ifcopenshell.api.alignment.get_layout_curve(layout)
-
     if curve:
         ifcopenshell.api.alignment.add_zero_length_segment(file, curve)
-
-        segment_nest = ifcopenshell.api.alignment.get_alignment_segment_nest(layout)
-        segment = segment_nest.RelatedObjects[-1]
-        alignment = ifcopenshell.api.alignment.get_alignment(layout)
-        station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
-        name = f"{_get_segment_start_point_label(segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
-        referent = ifcopenshell.api.alignment.add_stationing_referent(file, alignment, 0.0, station, name, segment)

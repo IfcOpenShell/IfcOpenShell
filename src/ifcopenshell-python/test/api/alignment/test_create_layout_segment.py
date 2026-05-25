@@ -73,9 +73,16 @@ def _test_horizontal() -> ifcopenshell.file:
     assert y == 0.0
     assert z == 0.0
 
+    # check the start point of the zero length segment
+    assert horizontal_alignment.IsNestedBy[0].RelatedObjects[1].DesignParameters.SegmentLength == 0.0
+    assert horizontal_alignment.IsNestedBy[0].RelatedObjects[1].DesignParameters.StartPoint.Coordinates[0] == x
+    assert horizontal_alignment.IsNestedBy[0].RelatedObjects[1].DesignParameters.StartPoint.Coordinates[1] == y
+
     curve = ifcopenshell.api.alignment.get_curve(ali)
     assert curve.is_a("IfcCompositeCurve")
     assert len(curve.Segments) == 2
+    assert curve.Segments[0].Transition == "CONTSAMEGRADIENTSAMECURVATURE"
+    assert curve.Segments[1].Transition == "DISCONTINUOUS"
 
     design_parameters = file.create_entity(
         type="IfcAlignmentHorizontalSegment",
@@ -101,9 +108,16 @@ def _test_horizontal() -> ifcopenshell.file:
     assert y == 50.0 * math.sin(math.pi / 6)
     assert z == 0.0
 
+    # check the start point of the zero length segment
+    assert horizontal_alignment.IsNestedBy[0].RelatedObjects[2].DesignParameters.SegmentLength == 0.0
+    assert horizontal_alignment.IsNestedBy[0].RelatedObjects[2].DesignParameters.StartPoint.Coordinates[0] == x
+    assert horizontal_alignment.IsNestedBy[0].RelatedObjects[2].DesignParameters.StartPoint.Coordinates[1] == y
+
     curve = ifcopenshell.api.alignment.get_curve(ali)
     assert curve.is_a("IfcCompositeCurve")
     assert len(curve.Segments) == 3
+    assert curve.Segments[1].Transition == "CONTSAMEGRADIENTSAMECURVATURE"
+    assert curve.Segments[2].Transition == "DISCONTINUOUS"
 
     return file
 
