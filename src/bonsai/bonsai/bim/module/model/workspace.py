@@ -841,7 +841,7 @@ class EditObjectUI:
         row = cls.layout.row(align=True)
         row.separator()
         row.label(text="Operations") if ui_context != "TOOL_HEADER" else row
-        cls.draw_regen_operations(row)
+        cls.draw_regen_operations(row, ui_context)
 
         if AuthoringData.data["active_material_usage"] == "LAYER2":
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
@@ -962,20 +962,14 @@ class EditObjectUI:
         return row
 
     @classmethod
-    def draw_regen_operations(cls, row):
-        custom_icon = custom_icon_previews.get("REGEN", custom_icon_previews["IFC"]).icon_id
-
+    def draw_regen_operations(cls, row, ui_context):
         if AuthoringData.data["is_regenable_element"]:
-            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-            description = "Recalculate Element Geometry\nHotkey: S G"
-            op.hotkey = "S_G"
-            op.description = description.strip()
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Regen", "S_G", "Recalculate Element Geometry", ui_context)
 
         if PortData.data["total_ports"] > 0:
-            op = row.operator("bim.hotkey", text="", icon_value=custom_icon)
-            description = f"{bpy.ops.bim.regenerate_distribution_element.__doc__}\n\nHotkey: S G"
-            op.hotkey = "S_G"
-            op.description = description.strip()
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context)
 
     @classmethod
     def draw_void(cls, context, row):
