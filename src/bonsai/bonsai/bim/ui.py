@@ -2108,7 +2108,7 @@ class BIM_PT_decorators_overlay(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.mode == "OBJECT"
+        return context.mode in ("OBJECT", "EDIT_MESH")
 
     def draw(self, context):
         layout = self.layout
@@ -2136,8 +2136,16 @@ class BIM_PT_decorators_overlay(Panel):
         row.prop(model_props, "show_wall_axis", text="Wall Axis")
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
+        # (Logic moved to property update callback)
         row = col.row(align=True)
         row.prop(model_props, "show_bounding_box", text="Bounding Box Dimensions")
+        row = col.row(align=True)
+        row.prop(model_props, "show_construction_lines", text="Construction Lines")
+        if model_props.show_construction_lines:
+            row.prop(model_props, "construction_lines_max_count", text="Max")
+            if context.mode == "EDIT_MESH":
+                row.operator("bim.construction_lines_add", text="", icon="ADD")
+            row.operator("bim.construction_lines_clear", text="", icon="TRASH")
         row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
