@@ -114,18 +114,18 @@ def _tpg_encode(entries):
 
 
 def _tpg_get_guid(raw_value, ifc_tag=None):
-    entries, legacy_single = _tpg_decode(raw_value)
+    entries, _unused = _tpg_decode(raw_value)
     if ifc_tag:
         tag = str(ifc_tag).strip()
         for entry in entries:
             if entry["t"] == tag:
                 return entry["g"]
-        return legacy_single
+        return ""
 
     for entry in entries:
         if entry["g"]:
             return entry["g"]
-    return legacy_single
+    return ""
 
 
 def _tpg_set_guid(raw_value, ifc_tag, guid):
@@ -134,7 +134,7 @@ def _tpg_set_guid(raw_value, ifc_tag, guid):
     if not tag:
         return guid_value
 
-    entries, _legacy_single = _tpg_decode(raw_value)
+    entries, _unused = _tpg_decode(raw_value)
     updated = []
     replaced = False
     for entry in entries:
