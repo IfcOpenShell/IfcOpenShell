@@ -40,6 +40,118 @@ import mathutils
 # ── Group-aware data access ──────────────────────────────────────────────────
 
 
+def _tpg_decode(raw_value):
+    text = (raw_value or "").strip()
+    if not text:
+        return [], ""
+
+    if text.startswith("{") and text.endswith("}"):
+        try:
+            obj = json.loads(text)
+            if isinstance(obj, dict):
+                entries = []
+                if isinstance(obj.get("entries"), list):
+                    for item in obj["entries"]:
+                        if not isinstance(item, dict):
+                            continue
+                        tag = str(item.get("t") or item.get("tag") or "").strip()
+                        if not tag:
+                            continue
+                        param = str(item.get("p") or item.get("param") or "").strip()
+                        guid = str(item.get("g") or item.get("guid") or "").strip()
+                        entries.append({"t": tag, "p": param, "g": guid})
+                    if entries:
+                        return entries, ""
+
+                for key, value in obj.items():
+                    if key in {"v", "entries"}:
+                        continue
+                    tag = str(key).strip()
+                    if not tag:
+                        continue
+                    guid = "" if value is None else str(value).strip()
+                    entries.append({"t": tag, "p": "", "g": guid})
+                if entries:
+                    return entries, ""
+        except Exception:
+            pass
+
+    entries = []
+    for part in text.replace("|", ";").split(";"):
+        token = part.strip()
+        if not token:
+            continue
+        if "=" in token:
+            key, value = token.split("=", 1)
+        elif ":" in token:
+            key, value = token.split(":", 1)
+        else:
+            continue
+        tag = key.strip()
+        if not tag:
+            continue
+        entries.append({"t": tag, "p": "", "g": value.strip()})
+    if entries:
+        return entries, ""
+
+    return [], text
+
+
+def _tpg_encode(entries):
+    payload = {
+        "v": 1,
+        "entries": [
+            {
+                "t": str(entry.get("t") or "").strip(),
+                "p": str(entry.get("p") or "").strip(),
+                "g": str(entry.get("g") or "").strip(),
+            }
+            for entry in entries
+            if str(entry.get("t") or "").strip()
+        ],
+    }
+    return json.dumps(payload, separators=(",", ":"))
+
+
+def _tpg_get_guid(raw_value, ifc_tag=None):
+    entries, legacy_single = _tpg_decode(raw_value)
+    if ifc_tag:
+        tag = str(ifc_tag).strip()
+        for entry in entries:
+            if entry["t"] == tag:
+                return entry["g"]
+        return legacy_single
+
+    for entry in entries:
+        if entry["g"]:
+            return entry["g"]
+    return legacy_single
+
+
+def _tpg_set_guid(raw_value, ifc_tag, guid):
+    tag = str(ifc_tag or "").strip()
+    guid_value = str(guid or "").strip()
+    if not tag:
+        return guid_value
+
+    entries, _legacy_single = _tpg_decode(raw_value)
+    updated = []
+    replaced = False
+    for entry in entries:
+        if entry["t"] == tag and not replaced:
+            updated.append({"t": tag, "p": entry.get("p", ""), "g": guid_value})
+            replaced = True
+            continue
+        if entry["t"] == tag:
+            continue
+        updated.append(entry)
+
+    if not replaced:
+        updated.append({"t": tag, "p": "", "g": guid_value})
+
+    return _tpg_encode(updated)
+
+
 def _entity_guid(sketch, slvs_index, ifc_tag=None):
     """Return the GUID stored for *slvs_index* in *sketch*.groups.
 
@@ -52,17 +164,65 @@ def _entity_guid(sketch, slvs_index, ifc_tag=None):
     group_index = _decode_group_key(slvs_index)
     if group_index is not None and 0 <= group_index < len(sketch.groups):
         group = sketch.groups[group_index]
-        if ifc_tag and not group.has_tag(ifc_tag):
+        if ifc_tag and not _group_has_active_tag(group, ifc_tag):
             return ""
-        return group.guid or ""
+        group_guid = _tpg_get_guid(group.guid, ifc_tag)
+        if group_guid:
+            return group_guid
+        if ifc_tag == "IfcWall":
+            return _group_first_member_guid(group, ifc_tag) or ""
+        return ""
 
     for group in sketch.groups:
-        if ifc_tag and not group.has_tag(ifc_tag):
+        if ifc_tag and not _group_has_active_tag(group, ifc_tag):
             continue
         member = group.get_member(slvs_index)
-        if member and member.guid:
-            return member.guid
+        if member:
+            member_guid = _tpg_get_guid(member.guid, ifc_tag)
+            if member_guid:
+                return member_guid
     return ""
+
+
+def _group_has_active_tag(group, ifc_tag):
+    """Return True only when *group* has *ifc_tag* enabled.
+
+    CAD Sketcher keeps tags with an ``enabled`` flag; disabled tags should not
+    participate in fetch proposals.
+    """
+    if not ifc_tag:
+        return True
+
+    tags = getattr(group, "tags", None)
+    if tags is not None:
+        for tag in tags:
+            if getattr(tag, "value", None) != ifc_tag:
+                continue
+            if getattr(tag, "enabled", True):
+                return True
+        return False
+
+    # Fallback for environments where tags collection is not exposed.
+    return bool(hasattr(group, "has_tag") and group.has_tag(ifc_tag))
+
+
+def _group_member_guids(group):
+    """Return the non-empty GUIDs stored on the members of *group*."""
+    values = []
+    for member in getattr(group, "members", []):
+        guid = _tpg_get_guid(getattr(member, "guid", ""))
+        if guid:
+            values.append(guid)
+    return values
+
+
+def _group_first_member_guid(group, ifc_tag=None):
+    member_guids = []
+    for member in getattr(group, "members", []):
+        guid = _tpg_get_guid(getattr(member, "guid", ""), ifc_tag)
+        if guid:
+            member_guids.append(guid)
+    return member_guids[0] if member_guids else ""
 
 
 def _set_entity_guid(sketch, slvs_index, ifc_tag, guid):
@@ -77,22 +237,22 @@ def _set_entity_guid(sketch, slvs_index, ifc_tag, guid):
     group_index = _decode_group_key(slvs_index)
     if group_index is not None and 0 <= group_index < len(sketch.groups):
         group = sketch.groups[group_index]
-        if not ifc_tag or group.has_tag(ifc_tag):
-            group.guid = guid
+        if not ifc_tag or _group_has_active_tag(group, ifc_tag):
+            group.guid = _tpg_set_guid(group.guid, ifc_tag, guid)
         return
 
     for group in sketch.groups:
-        if not group.has_tag(ifc_tag):
+        if not _group_has_active_tag(group, ifc_tag):
             continue
         member = group.get_member(slvs_index)
         if member is None:
             member = group.add_member(slvs_index)
-        member.guid = guid
+        member.guid = _tpg_set_guid(member.guid, ifc_tag, guid)
         return
     group = sketch.groups.add()
     group.add_tag(ifc_tag)
     member = group.add_member(slvs_index)
-    member.guid = guid
+    member.guid = _tpg_set_guid(member.guid, ifc_tag, guid)
 
 
 def _entities_with_ifc_tag(sketch, sse, ifc_tag, predicate=None):
@@ -106,7 +266,7 @@ def _entities_with_ifc_tag(sketch, sse, ifc_tag, predicate=None):
     seen = set()
     result = []
     for group in sketch.groups:
-        if not group.has_tag(ifc_tag):
+        if not _group_has_active_tag(group, ifc_tag):
             continue
         for member in group.members:
             if member.entity_index in seen:
@@ -134,7 +294,7 @@ def _ensure_entity_in_group(sketch, slvs_index, ifc_tag):
         return
 
     for group in sketch.groups:
-        if not group.has_tag(ifc_tag):
+        if not _group_has_active_tag(group, ifc_tag):
             continue
         if group.get_member(slvs_index) is None:
             group.add_member(slvs_index)
@@ -192,12 +352,13 @@ class _PathGroupProxy:
     """Path-group view over a SketchGroup path so downstream code can reuse
     segment-based logic while CAD Sketcher stores only groups."""
 
-    def __init__(self, group, group_index, sse, sketch_index):
+    def __init__(self, group, group_index, sse, sketch_index, ifc_tag=None):
         self._group = group
         self.slvs_index = _encode_group_key(group_index)
         self.sketch_i = sketch_index
         self.name = group.name
-        self.guid = group.guid
+        self.member_guids = _group_member_guids(group)
+        self.guid = group.guid or (_group_first_member_guid(group) if ifc_tag == "IfcWall" else "")
         self.segment_indices = [
             int(m.entity_index)
             for m in group.members
@@ -216,7 +377,7 @@ def _group_path_proxies(sketch, sse, ifc_tag, path_kind="ANY"):
 
     result = []
     for i, group in enumerate(sketch.groups):
-        if not group.has_tag(ifc_tag):
+        if not _group_has_active_tag(group, ifc_tag):
             continue
         ptype = group.path_type(sse)
         if path_kind == "OPEN" and ptype != "OPEN_PATH":
@@ -225,7 +386,7 @@ def _group_path_proxies(sketch, sse, ifc_tag, path_kind="ANY"):
             continue
         if path_kind == "ANY" and ptype == "NOT_PATH":
             continue
-        proxy = _PathGroupProxy(group, i, sse, sketch.slvs_index)
+        proxy = _PathGroupProxy(group, i, sse, sketch.slvs_index, ifc_tag)
         if proxy.segment_count > 0:
             result.append(proxy)
     return result
@@ -239,7 +400,7 @@ def _resolve_path_proxy(sketch, sse, key, ifc_tag=None, path_kind="ANY"):
         return None
 
     group = sketch.groups[group_index]
-    if ifc_tag and not group.has_tag(ifc_tag):
+    if ifc_tag and not _group_has_active_tag(group, ifc_tag):
         return None
 
     ptype = group.path_type(sse)
@@ -250,7 +411,7 @@ def _resolve_path_proxy(sketch, sse, key, ifc_tag=None, path_kind="ANY"):
     if path_kind == "ANY" and ptype == "NOT_PATH":
         return None
 
-    proxy = _PathGroupProxy(group, group_index, sse, sketch.slvs_index)
+    proxy = _PathGroupProxy(group, group_index, sse, sketch.slvs_index, ifc_tag)
     return proxy if proxy.segment_count > 0 else None
 
 
@@ -937,11 +1098,6 @@ class FetchCADSketcher(Operator):
 
     def draw(self, context):
         layout = self.layout
-        sketch = context.scene.sketcher.active_sketch
-
-        layout.label(text="General Settings")
-        col = layout.column(align=True)
-        col.prop(self, "storey_height")
 
         if self.wall_type_items:
             layout.separator()
