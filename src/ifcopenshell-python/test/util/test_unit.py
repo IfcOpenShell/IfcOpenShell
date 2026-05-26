@@ -32,6 +32,17 @@ import test.bootstrap
 from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
+class TestMmToM:
+    def test_converts_a_positive_value(self):
+        assert subject.mm_to_m(150) == 0.15
+
+    def test_returns_zero_for_zero(self):
+        assert subject.mm_to_m(0) == 0.0
+
+    def test_passes_through_negative_values(self):
+        assert subject.mm_to_m(-25) == -0.025
+
+
 class TestCacheUnits(test.bootstrap.IFC4):
     def test_run(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

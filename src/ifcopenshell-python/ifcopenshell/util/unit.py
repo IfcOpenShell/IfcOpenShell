@@ -644,6 +644,11 @@ def convert_unit(value: float, from_unit: ifcopenshell.entity_instance, to_unit:
     )
 
 
+def mm_to_m(value: float) -> float:
+    """Convert a millimetre value to metres."""
+    return value / 1000
+
+
 def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix: Optional[str], to_unit: str) -> float:
     """Converts between length, area, and volume units
 
