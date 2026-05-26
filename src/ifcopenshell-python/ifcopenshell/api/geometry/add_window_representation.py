@@ -27,6 +27,7 @@ import numpy as np
 import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.unit import mm_to_m as mm
 
 # SCHEMAS describe panels setup
 # where:
@@ -57,11 +58,6 @@ DEFAULT_PANEL_SCHEMAS = {
     "TRIPLE_PANEL_HORIZONTAL": [[0], [1], [2]],
     "TRIPLE_PANEL_VERTICAL": [[0, 1, 2]],
 }
-
-
-def mm(x: float) -> float:
-    """mm to meters shortcut for readability"""
-    return x / 1000
 
 
 def create_ifc_window_frame_simple(
