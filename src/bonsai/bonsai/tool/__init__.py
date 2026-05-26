@@ -66,6 +66,7 @@ from bonsai.tool.resource import Resource
 from bonsai.tool.root import Root
 from bonsai.tool.search import Search
 from bonsai.tool.sequence import Sequence
+from bonsai.tool.slab import Slab
 from bonsai.tool.snap import Snap
 from bonsai.tool.spatial import Spatial
 from bonsai.tool.structural import Structural
