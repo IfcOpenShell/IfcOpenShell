@@ -20,6 +20,7 @@
 # ruff: noqa: F401
 
 from bonsai.tool.aggregate import Aggregate
+from bonsai.tool.array import Array
 from bonsai.tool.attribute import Attribute
 from bonsai.tool.bcf import Bcf
 from bonsai.tool.blender import Blender
