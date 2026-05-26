@@ -20,6 +20,7 @@
 #include "OverlayRenderer.h"
 
 #include <QFont>
+#include <QFontDatabase>
 #include <QFontMetrics>
 #include <QPainter>
 #include <QtGlobal>
@@ -56,6 +57,13 @@ GLuint link(QOpenGLFunctions_4_5_Core* gl, GLuint vs, GLuint fs) {
     gl->glDeleteShader(vs);
     gl->glDeleteShader(fs);
     return p;
+}
+
+QFont overlayTextFont(int point_size) {
+    QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    font.setPointSize(point_size);
+    font.setStyleHint(QFont::TypeWriter);
+    return font;
 }
 
 // ---- Triangle program (flat color) ----
@@ -620,10 +628,8 @@ void OverlayRenderer::render(const float view_proj[16],
     const bool any_painter = !hud_text_.isEmpty() || !labels_.empty();
     if (!any_painter) return;
 
-    QFont label_font("monospace", 9);
-    label_font.setStyleHint(QFont::TypeWriter);
-    QFont hud_font("monospace", 11);
-    hud_font.setStyleHint(QFont::TypeWriter);
+    QFont label_font = overlayTextFont(9);
+    QFont hud_font = overlayTextFont(11);
     const QFontMetrics lfm(label_font);
     const QFontMetrics hfm(hud_font);
 
