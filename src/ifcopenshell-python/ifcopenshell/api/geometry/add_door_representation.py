@@ -28,6 +28,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.unit import mm_to_m as mm
 
 DOOR_TYPE = Literal[
     "SINGLE_SWING_LEFT",
@@ -41,11 +42,6 @@ DOOR_TYPE = Literal[
     "DOUBLE_DOOR_SLIDING",
 ]
 SUPPORTED_DOOR_TYPES = get_args(DOOR_TYPE)
-
-
-def mm(x: float) -> float:
-    """mm to meters shortcut for readability"""
-    return x / 1000
 
 
 def create_ifc_door_lining(
