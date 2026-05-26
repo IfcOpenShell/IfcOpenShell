@@ -93,7 +93,6 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         representation_data = {
-            "railing_type": props.railing_type,
             "context": body,
             "railing_path": railing_path,
             "use_manual_supports": props.use_manual_supports,
