@@ -23,18 +23,8 @@ import ifcopenshell.api.alignment
 from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
 from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
 import ifcopenshell.api.nest
-import ifcopenshell.ifcopenshell_wrapper as wrapper
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
-from ifcopenshell.api.alignment._get_segment_start_point_label import (
-    _get_segment_start_point_label,
-)
-from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
-    _map_alignment_horizontal_segment,
-)
-from ifcopenshell.api.alignment._map_alignment_vertical_segment import (
-    _map_alignment_vertical_segment,
-)
 from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
     _update_curve_segment_transition_code,
 )
