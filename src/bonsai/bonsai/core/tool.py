@@ -791,8 +791,8 @@ class Profile:
 
 @interface
 class Parametric:
-    def get_geom_generation(cls) -> int: pass
-    def refresh_post_commit(cls) -> None: pass
+    def get_geom_generation(cls): pass
+    def refresh_post_commit(cls): pass
 
 
 @interface
