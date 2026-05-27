@@ -2631,6 +2631,11 @@ void WgpuViewportWindow::render() {
         }
     }
 
+    // Streaming: bring non-resident chunks that the cull just flagged
+    // visible into residency. Runs before draw encoding so newly-loaded
+    // chunks render the same frame.
+    driveStreamingLoads();
+
     // Snapshot camera state for next frame's motion detection.
     prev_camera_target_[0] = camera_target_[0];
     prev_camera_target_[1] = camera_target_[1];
@@ -3120,48 +3125,116 @@ void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
         // Empty model — no chunks, no bind groups; the draw loop will skip.
         return;
     }
-
-    // One bind group per chunk: chunk's vertex_storage, visible_draws,
-    // prefix_sums, per_chunk_uniform — plus the shared mesh / instance /
-    // index buffers.
-    for (auto& c : m.chunks) {
-        if (c.bind_group) {
-            wgpuBindGroupRelease(c.bind_group);
-            c.bind_group = nullptr;
-        }
-        if (!c.vertex_storage || !c.visible_draws_buffer
-            || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
-
-        WGPUBindGroupEntry entries[7] = {};
-        entries[0].binding = 0;
-        entries[0].buffer  = c.vertex_storage;
-        entries[0].size    = WGPU_WHOLE_SIZE;
-        entries[1].binding = 1;
-        entries[1].buffer  = m.mesh_storage;
-        entries[1].size    = WGPU_WHOLE_SIZE;
-        entries[2].binding = 2;
-        entries[2].buffer  = m.instance_storage;
-        entries[2].size    = WGPU_WHOLE_SIZE;
-        entries[3].binding = 3;
-        entries[3].buffer  = m.index_buffer;
-        entries[3].size    = WGPU_WHOLE_SIZE;
-        entries[4].binding = 4;
-        entries[4].buffer  = c.visible_draws_buffer;
-        entries[4].size    = WGPU_WHOLE_SIZE;
-        entries[5].binding = 5;
-        entries[5].buffer  = c.prefix_sums_buffer;
-        entries[5].size    = WGPU_WHOLE_SIZE;
-        entries[6].binding = 6;
-        entries[6].buffer  = c.per_chunk_uniform;
-        entries[6].size    = 16;
-
-        WGPUBindGroupDescriptor desc = {};
-        desc.layout     = model_bgl_;
-        desc.entryCount = 7;
-        desc.entries    = entries;
-        desc.label      = svFromCStr("ifcviewer-wgpu.chunk_bind_group");
-        c.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
+    for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+        buildChunkBindGroup(m, ci);
     }
+}
+
+void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return;
+    auto& c = m.chunks[chunk_idx];
+    if (c.bind_group) {
+        wgpuBindGroupRelease(c.bind_group);
+        c.bind_group = nullptr;
+    }
+    if (!c.vertex_storage || !c.visible_draws_buffer
+        || !c.prefix_sums_buffer || !c.per_chunk_uniform
+        || !m.mesh_storage || !m.instance_storage || !m.index_buffer) {
+        return;
+    }
+
+    WGPUBindGroupEntry entries[7] = {};
+    entries[0].binding = 0;
+    entries[0].buffer  = c.vertex_storage;
+    entries[0].size    = WGPU_WHOLE_SIZE;
+    entries[1].binding = 1;
+    entries[1].buffer  = m.mesh_storage;
+    entries[1].size    = WGPU_WHOLE_SIZE;
+    entries[2].binding = 2;
+    entries[2].buffer  = m.instance_storage;
+    entries[2].size    = WGPU_WHOLE_SIZE;
+    entries[3].binding = 3;
+    entries[3].buffer  = m.index_buffer;
+    entries[3].size    = WGPU_WHOLE_SIZE;
+    entries[4].binding = 4;
+    entries[4].buffer  = c.visible_draws_buffer;
+    entries[4].size    = WGPU_WHOLE_SIZE;
+    entries[5].binding = 5;
+    entries[5].buffer  = c.prefix_sums_buffer;
+    entries[5].size    = WGPU_WHOLE_SIZE;
+    entries[6].binding = 6;
+    entries[6].buffer  = c.per_chunk_uniform;
+    entries[6].size    = 16;
+
+    WGPUBindGroupDescriptor desc = {};
+    desc.layout     = model_bgl_;
+    desc.entryCount = 7;
+    desc.entries    = entries;
+    desc.label      = svFromCStr("ifcviewer-wgpu.chunk_bind_group");
+    c.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
+}
+
+bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return false;
+    auto& c = m.chunks[chunk_idx];
+    if (c.is_resident) return true;
+    if (m.streaming_file_path.empty()) return false;
+
+    std::vector<uint8_t> bytes;
+    if (!readSidecarVertexChunk(m.streaming_file_path,
+                                m.streaming_vertex_section_offset,
+                                c.vertex_byte_offset,
+                                c.vertex_byte_size,
+                                bytes)) {
+        qWarning().noquote().nospace()
+            << "[wgpu stream] failed to read vertex chunk " << chunk_idx
+            << " from " << QString::fromStdString(m.streaming_file_path)
+            << " (offset=" << c.vertex_byte_offset
+            << " size=" << c.vertex_byte_size << ")";
+        return false;
+    }
+
+    c.vertex_storage = createBufferWithData(
+        device_, queue_,
+        bytes.data(), bytes.size(),
+        WGPUBufferUsage_Storage,
+        "model.chunk.vertex_storage_streamed");
+    if (!c.vertex_storage) return false;
+
+    m.vram_bytes_vbo += bytes.size();
+    buildChunkBindGroup(m, chunk_idx);
+    c.is_resident = true;
+    return true;
+}
+
+void WgpuViewportWindow::driveStreamingLoads() {
+    // Per-frame budget. Caps first-frame stall on a fresh load — at 4
+    // chunks/frame × 60fps we ingest 240 chunks/sec, fast enough that
+    // a 100-model scene fully resides in ~1s. Eviction-aware policies
+    // can tune this later.
+    constexpr int MAX_STREAMING_LOADS_PER_FRAME = 4;
+    int loads = 0;
+    bool more_pending = false;
+    for (auto& [mid, m] : models_gpu_) {
+        if (m.streaming_file_path.empty() || m.hidden) continue;
+        for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+            auto& c = m.chunks[ci];
+            if (c.is_resident) continue;
+            // Only load chunks the cull just marked visible — keeps fetch
+            // priority aligned with what the camera actually sees.
+            if (c.total_visible_draws == 0) continue;
+            if (loads >= MAX_STREAMING_LOADS_PER_FRAME) {
+                more_pending = true;
+                break;
+            }
+            if (loadChunkBytesAndUploadGpu(m, ci)) {
+                ++loads;
+            }
+        }
+        if (more_pending) break;
+    }
+    // Keep the frame loop running until all visible chunks are resident.
+    if (more_pending) requestUpdate();
 }
 
 // -----------------------------------------------------------------------------

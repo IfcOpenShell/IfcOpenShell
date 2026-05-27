@@ -128,6 +128,15 @@ private:
 
     bool  buildPipelines();
     void  buildModelBindGroup(WgpuModelGpuData& m);
+    void  buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_idx);
+    // Streaming: read the chunk's vertex bytes from disk, allocate
+    // vertex_storage, build the chunk's bind group, flip is_resident=true.
+    // Returns true on success. No-op (returns true) when already resident.
+    bool  loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx);
+    // Called from render() after cull: find non-resident chunks with
+    // current visible draw counts > 0 and bring them resident, up to a
+    // per-frame budget. Triggers requestUpdate() if more remain.
+    void  driveStreamingLoads();
     void  ensureDepthTexture(int w, int h);
     void  releaseDepthTexture();
     void  ensureMsaaColorTexture(int w, int h);
