@@ -27,7 +27,7 @@ import bpy
 import bpy.utils.previews
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from . import handler, operator, prop, ui
+from . import handler, operator, parametric_lifecycle, prop, ui
 
 
 def _parametric_gizmo_preference_classes() -> list[type]:
@@ -283,6 +283,8 @@ def register():
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)
+    # Must follow the two appends above so regenerators see restored IFC state.
+    parametric_lifecycle.install_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
@@ -340,6 +342,7 @@ def unregister():
 
     unregister_classes(classes)
 
+    parametric_lifecycle.uninstall_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     del bpy.types.Scene.BIMProperties
