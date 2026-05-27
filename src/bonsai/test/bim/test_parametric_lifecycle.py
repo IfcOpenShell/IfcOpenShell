@@ -198,10 +198,12 @@ def test_feature_modifier_finish_one_clears_is_editing_and_writes_pset(patched_t
 
     assert props.is_editing is False
     assert obj in cls.representations_called
-    # edit_pset is called exactly once; properties key is "Data" wrapping JSON.
-    patched_tool_and_ifc["ifc"].api.pset.edit_pset.assert_called_once()
-    kwargs = patched_tool_and_ifc["ifc"].api.pset.edit_pset.call_args.kwargs
-    assert "properties" in kwargs and "Data" in kwargs["properties"]
+    # tool.Pset.write_bbim_data is called exactly once with the merged dict.
+    patched_tool_and_ifc["tool"].Pset.write_bbim_data.assert_called_once()
+    call_args = patched_tool_and_ifc["tool"].Pset.write_bbim_data.call_args
+    assert call_args.args[1] == "BBIM_Door"  # pset_name positional arg
+    written_data = call_args.args[2]
+    assert "lining_properties" in written_data and "panel_properties" in written_data
 
 
 def test_feature_modifier_finish_one_exception_leaves_draft_in_progress(patched_tool_and_ifc):
@@ -302,7 +304,7 @@ def _path_mixin_cls(match=True):
             cls.ifc_data_updates.append(obj)
 
         @classmethod
-        def _update_modifier_bmesh(cls, obj, context):
+        def _restore_viewport_after_cancel(cls, obj, context):
             cls.bmesh_updates.append(obj)
 
     return _TestPathMixin
@@ -344,7 +346,7 @@ def test_path_preserving_finish_one_preserves_path_data_and_clears_is_editing(pa
     assert obj in cls.ifc_data_updates
 
 
-def test_path_preserving_cancel_one_calls_update_modifier_bmesh(patched_tool_and_ifc):
+def test_path_preserving_cancel_one_calls_restore_viewport_after_cancel(patched_tool_and_ifc):
     props = _FakePathProps()
     props.is_editing = True
     obj = _make_obj(props)
