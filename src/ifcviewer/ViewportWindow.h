@@ -399,6 +399,14 @@ public:
 
     void setCamera(float tx, float ty, float tz, float dist, float yaw, float pitch);
     void setBenchmarkFrames(int n);
+
+    // Queue a one-shot framebuffer capture: at the end of the next render()
+    // (just before swapBuffers), the default framebuffer is read back with
+    // glReadPixels, saved as PNG to `path`, and — if `quit_after` — the
+    // QCoreApplication is asked to quit. Used by parity-diff harnesses to
+    // produce a GL output PNG that's directly comparable to the wgpu
+    // backend's --screenshot.
+    void captureNextFrameToPng(const QString& path, bool quit_after = true);
     QString cameraString() const;
 
     // Move camera_target_ to the selected set's world-AABB centroid and
@@ -715,6 +723,10 @@ private:
     float benchmark_yaw_start_ = 0.0f;
     float benchmark_yaw_speed_ = 0.5f;  // degrees per frame
     std::vector<float> benchmark_frame_times_;
+
+    // Queued one-shot framebuffer capture (see captureNextFrameToPng).
+    QString pending_screenshot_path_;
+    bool    pending_screenshot_quit_ = false;
 
     // Per-frame stats
     uint32_t visible_triangles_ = 0;

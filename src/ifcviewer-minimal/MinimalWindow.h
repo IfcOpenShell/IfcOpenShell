@@ -35,6 +35,10 @@ public:
     void addFiles(const QStringList& paths);
     void setPendingCamera(const QString& params);
     void setPendingBenchmark(int frames);
+    // One-shot framebuffer capture queued for the next render. Forwarded
+    // to ViewportWindow::captureNextFrameToPng; the viewport handles the
+    // glReadPixels + PNG save + optional QCoreApplication::quit.
+    void setPendingScreenshot(const QString& path);
 
 private slots:
     void onLoadStarted(uint32_t mid, QString display_name);
@@ -55,6 +59,7 @@ private:
 
     QString pending_camera_;
     int     pending_benchmark_ = 0;
+    QString pending_screenshot_;
 };
 
 #endif // MINIMALWINDOW_H

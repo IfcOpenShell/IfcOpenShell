@@ -27,6 +27,7 @@
 #include <QWheelEvent>
 #include <QSurfaceFormat>
 #include <QCoreApplication>
+#include <QImage>
 #include <QCursor>
 #include <QTimer>
 #include <QtMath>
@@ -1638,6 +1639,12 @@ void ViewportWindow::setBenchmarkFrames(int n) {
     requestUpdate();
 }
 
+void ViewportWindow::captureNextFrameToPng(const QString& path, bool quit_after) {
+    pending_screenshot_path_ = path;
+    pending_screenshot_quit_ = quit_after;
+    requestUpdate();
+}
+
 QString ViewportWindow::cameraString() const {
     return QString("%1,%2,%3,%4,%5,%6")
         .arg(camera_target_.x(), 0, 'f', 4)
@@ -2863,6 +2870,41 @@ void ViewportWindow::render() {
     // bit-identical to the one we already turned into a pyramid.
     if (hizEnabled() && cull_this_frame) {
         buildHizPyramid();
+    }
+
+    // ---- One-shot framebuffer capture (parity-diff harness) -------------
+    // Read back the just-rendered colour buffer and write a PNG. Runs
+    // before swapBuffers so the source is the back buffer (still bound).
+    // glReadPixels here is synchronous and at full surface size — fine
+    // for a one-shot capture, never used per-frame.
+    if (!pending_screenshot_path_.isEmpty() && gl_) {
+        const int w = int(width()  * devicePixelRatio());
+        const int h = int(height() * devicePixelRatio());
+        if (w > 0 && h > 0) {
+            std::vector<uint8_t> buf(size_t(w) * size_t(h) * 4);
+            gl_->glPixelStorei(GL_PACK_ALIGNMENT, 1);
+            gl_->glReadBuffer(GL_BACK);
+            gl_->glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, buf.data());
+            // glReadPixels returns bottom-up; QImage is top-down — flip rows.
+            QImage img(w, h, QImage::Format_RGBA8888);
+            for (int y = 0; y < h; ++y) {
+                std::memcpy(img.scanLine(h - 1 - y),
+                            buf.data() + size_t(y) * size_t(w) * 4,
+                            size_t(w) * 4);
+            }
+            if (img.save(pending_screenshot_path_, "PNG")) {
+                qInfo().noquote() << "[gl] saved screenshot:"
+                                  << pending_screenshot_path_
+                                  << "(" << w << "x" << h << ")";
+            } else {
+                qWarning().noquote() << "[gl] QImage::save failed for"
+                                     << pending_screenshot_path_;
+            }
+        }
+        const bool quit_after = pending_screenshot_quit_;
+        pending_screenshot_path_.clear();
+        pending_screenshot_quit_ = false;
+        if (quit_after) QCoreApplication::quit();
     }
 
     context_->swapBuffers(this);

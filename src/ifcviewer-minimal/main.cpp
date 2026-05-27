@@ -44,6 +44,8 @@ int main(int argc, char* argv[]) {
         "Set camera: tx,ty,tz,dist,yaw,pitch", "params"});
     parser.addOption({{"b", "benchmark"},
         "Run N frames then print stats and exit", "frames"});
+    parser.addOption({{"s", "screenshot"},
+        "Render one frame after load, save to PATH as PNG, exit", "path"});
     parser.process(app);
 
     MinimalWindow window;
@@ -59,6 +61,9 @@ int main(int argc, char* argv[]) {
     }
     if (parser.isSet("benchmark")) {
         window.setPendingBenchmark(parser.value("benchmark").toInt());
+    }
+    if (parser.isSet("screenshot")) {
+        window.setPendingScreenshot(parser.value("screenshot"));
     }
 
     return app.exec();

@@ -127,8 +127,13 @@ void MinimalWindow::setPendingBenchmark(int frames) {
     pending_benchmark_ = frames;
 }
 
+void MinimalWindow::setPendingScreenshot(const QString& path) {
+    pending_screenshot_ = path;
+}
+
 void MinimalWindow::applyPendingBenchmark() {
-    if (pending_camera_.isEmpty() && pending_benchmark_ <= 0) return;
+    if (pending_camera_.isEmpty() && pending_benchmark_ <= 0
+        && pending_screenshot_.isEmpty()) return;
 
     if (!pending_camera_.isEmpty()) {
         QStringList parts = pending_camera_.split(',');
@@ -147,5 +152,10 @@ void MinimalWindow::applyPendingBenchmark() {
         qDebug("Starting benchmark: %d frames", pending_benchmark_);
         viewport_->setBenchmarkFrames(pending_benchmark_);
         pending_benchmark_ = 0;
+    }
+
+    if (!pending_screenshot_.isEmpty()) {
+        viewport_->captureNextFrameToPng(pending_screenshot_, /*quit_after=*/true);
+        pending_screenshot_.clear();
     }
 }
