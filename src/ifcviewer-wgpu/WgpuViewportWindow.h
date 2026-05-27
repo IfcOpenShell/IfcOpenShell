@@ -22,12 +22,22 @@
 
 #include <QWindow>
 #include <QColor>
+#include <QString>
 
 #include <webgpu/webgpu.h>
 
-// Stage-1 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
+#include <cstdint>
+#include <deque>
+#include <unordered_map>
+
+#include "SidecarCache.h"
+#include "WgpuModelGpuData.h"
+
+// Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
 // adapter/device, configures a surface against the platform-native window
-// handle, and clears to background_color_ on every UpdateRequest.
+// handle, and clears to background_color_ on every UpdateRequest. Models
+// loaded from `.ifcview` sidecars are uploaded as wgpu buffers (no draw
+// path yet — that's stage 3).
 //
 // Mirrors the lifecycle shape of the GL ViewportWindow so subsequent stages
 // can grow this into a full IFC renderer without restructuring the host.
@@ -38,6 +48,27 @@ public:
     ~WgpuViewportWindow();
 
     void setBackgroundColor(const QColor& color);
+
+    // Queue a sidecar path to be loaded after wgpu init completes. Safe to
+    // call before the window is exposed. The path is resolved against the
+    // working directory and read via SidecarCache::readSidecar (which
+    // normalises stem → .ifcview).
+    void queueLoadSidecar(const QString& path);
+
+    // Synchronous load + GPU upload. Requires wgpu init to have completed
+    // (i.e. the window has been exposed at least once). Returns the
+    // assigned model_id, or 0 on failure.
+    uint32_t loadSidecar(const QString& path);
+
+    // Restore a finalised model from a SidecarData struct: allocate wgpu
+    // buffers, upload vertex/index/mesh/instance bytes, register in
+    // models_gpu_. Replaces any existing state for model_id.
+    void applyCachedModel(uint32_t model_id, SidecarData data);
+
+    void removeModel(uint32_t model_id);
+    void resetScene();
+
+    size_t modelCount() const { return models_gpu_.size(); }
 
 protected:
     void exposeEvent(QExposeEvent* event) override;
@@ -50,6 +81,8 @@ private:
     void configureSurface(int width_px, int height_px);
     void render();
     void shutdown();
+
+    void flushPendingSidecarQueue();
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -64,6 +97,13 @@ private:
     WGPUTextureFormat surface_format_ = WGPUTextureFormat_Undefined;
 
     QColor background_color_ = QColor("#202329");
+
+    // Per-model state, keyed by viewport-assigned model_id.
+    std::unordered_map<uint32_t, WgpuModelGpuData> models_gpu_;
+    uint32_t next_model_id_ = 1;
+
+    // Sidecar paths queued before init completes.
+    std::deque<QString> pending_sidecars_;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

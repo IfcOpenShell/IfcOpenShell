@@ -100,6 +100,16 @@ file(GLOB IFCVIEWER_WGPU_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB IFCVIEWER_WGPU_H_FILES   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 set(IFCVIEWER_WGPU_FILES ${IFCVIEWER_WGPU_CPP_FILES} ${IFCVIEWER_WGPU_H_FILES})
 
+# Intentional source-level borrowing from the GL backend until ifcviewer-core
+# is extracted (task #12). SidecarCache + InstancedGeometry have zero Qt /
+# OCCT / IFC-parse deps, so compiling them directly into IfcViewerWgpu is
+# cheaper than dragging in the IfcViewer static lib (which would pull all
+# of IfcGeom + IfcParse + OCCT + Qt OpenGL).
+set(IFCVIEWER_SHARED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ifcviewer)
+list(APPEND IFCVIEWER_WGPU_FILES
+    ${IFCVIEWER_SHARED_DIR}/SidecarCache.cpp
+)
+
 add_library(IfcViewerWgpu STATIC ${IFCVIEWER_WGPU_FILES})
 
 set_target_properties(IfcViewerWgpu PROPERTIES
@@ -108,7 +118,10 @@ set_target_properties(IfcViewerWgpu PROPERTIES
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
 
-target_include_directories(IfcViewerWgpu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(IfcViewerWgpu
+    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC  ${IFCVIEWER_SHARED_DIR}  # SidecarCache.h is reachable via WgpuViewportWindow.h
+)
 
 target_link_libraries(IfcViewerWgpu PUBLIC
     Qt${QT_VERSION}::Core

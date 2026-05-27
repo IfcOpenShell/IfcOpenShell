@@ -22,10 +22,12 @@
 #include <QGuiApplication>
 #include <QResizeEvent>
 #include <QDebug>
+#include <QFileInfo>
 
 #include <webgpu/wgpu.h>  // wgpu-native extensions (logging, MULTI_DRAW_INDIRECT, …)
 
 #include <cstring>
+#include <utility>
 
 // -----------------------------------------------------------------------------
 // Small helpers
@@ -58,6 +60,43 @@ static void onUncapturedError(WGPUDevice const* /*device*/,
     qWarning().noquote() << "[wgpu device error" << int(type) << "]" << sv(message);
 }
 
+// Allocate a wgpu buffer of `size_bytes` with the given usage, and upload
+// `data` into it via the queue. Returns nullptr when size_bytes == 0 (wgpu
+// rejects zero-sized buffer creation). `label` is informational; it shows up
+// in validation messages when something goes wrong.
+static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
+                                       const void* data, size_t size_bytes,
+                                       WGPUBufferUsage usage,
+                                       const char* label) {
+    if (size_bytes == 0) return nullptr;
+
+    WGPUBufferDescriptor desc = {};
+    desc.size  = uint64_t(size_bytes);
+    desc.usage = usage | WGPUBufferUsage_CopyDst;
+    if (label) {
+        desc.label.data   = label;
+        desc.label.length = std::strlen(label);
+    }
+    WGPUBuffer buf = wgpuDeviceCreateBuffer(device, &desc);
+    if (buf && data) {
+        wgpuQueueWriteBuffer(queue, buf, 0, data, size_bytes);
+    }
+    return buf;
+}
+
+void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
+    if (m.vertex_storage)   { wgpuBufferRelease(m.vertex_storage);   m.vertex_storage = nullptr; }
+    if (m.index_buffer)     { wgpuBufferRelease(m.index_buffer);     m.index_buffer = nullptr; }
+    if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
+    if (m.instance_storage) { wgpuBufferRelease(m.instance_storage); m.instance_storage = nullptr; }
+    m.vertex_bytes   = 0;
+    m.index_count    = 0;
+    m.mesh_count     = 0;
+    m.instance_count = 0;
+    m.meshes.clear();
+    m.instances.clear();
+}
+
 // -----------------------------------------------------------------------------
 // Construction / destruction
 // -----------------------------------------------------------------------------
@@ -81,6 +120,147 @@ void WgpuViewportWindow::setBackgroundColor(const QColor& color) {
 }
 
 // -----------------------------------------------------------------------------
+// Sidecar load + GPU upload
+// -----------------------------------------------------------------------------
+
+void WgpuViewportWindow::queueLoadSidecar(const QString& path) {
+    if (wgpu_initialized_) {
+        loadSidecar(path);
+    } else {
+        pending_sidecars_.push_back(path);
+    }
+}
+
+uint32_t WgpuViewportWindow::loadSidecar(const QString& path) {
+    if (!wgpu_initialized_) {
+        qWarning().noquote() << "loadSidecar called before wgpu init:" << path;
+        return 0;
+    }
+
+    auto data_opt = readSidecar(path.toStdString());
+    if (!data_opt) {
+        qWarning().noquote() << "Failed to read sidecar:" << path
+                             << "(file missing, wrong magic, or schema mismatch)";
+        return 0;
+    }
+
+    const uint32_t mid = next_model_id_++;
+    applyCachedModel(mid, std::move(*data_opt));
+    return mid;
+}
+
+void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
+    if (!device_ || !queue_) {
+        qWarning() << "applyCachedModel without an initialised device";
+        return;
+    }
+
+    // Replace any existing state for this id.
+    auto it = models_gpu_.find(model_id);
+    if (it != models_gpu_.end()) {
+        releaseWgpuModelGpuData(it->second);
+        models_gpu_.erase(it);
+    }
+
+    WgpuModelGpuData m;
+    m.vertex_bytes   = data.vertices.size();
+    m.index_count    = uint32_t(data.indices.size());
+    m.mesh_count     = uint32_t(data.meshes.size());
+    m.instance_count = uint32_t(data.instances.size());
+
+    // Vertex storage — raw bytes at INSTANCED_VERTEX_STRIDE_BYTES layout. The
+    // vertex shader will read this as a u8 storage buffer in stage 3.
+    m.vertex_storage = createBufferWithData(
+        device_, queue_,
+        data.vertices.data(), data.vertices.size(),
+        WGPUBufferUsage_Storage,
+        "model.vertex_storage");
+
+    // Index buffer — mesh-local u32 indices; baseVertex applied per-draw.
+    m.index_buffer = createBufferWithData(
+        device_, queue_,
+        data.indices.data(), data.indices.size() * sizeof(uint32_t),
+        WGPUBufferUsage_Index,
+        "model.index_buffer");
+
+    // Derive MeshGpu[] (vec4 aabb_min + vec4 aabb_max) from MeshInfo's
+    // local_aabb_*. Mirrors the GL backend's mesh_info_ssbo population.
+    std::vector<MeshGpu> mesh_gpu;
+    mesh_gpu.reserve(data.meshes.size());
+    for (const auto& mi : data.meshes) {
+        MeshGpu mg = {};
+        mg.aabb_min[0] = mi.local_aabb_min[0];
+        mg.aabb_min[1] = mi.local_aabb_min[1];
+        mg.aabb_min[2] = mi.local_aabb_min[2];
+        mg.aabb_min[3] = 0.0f;
+        mg.aabb_max[0] = mi.local_aabb_max[0];
+        mg.aabb_max[1] = mi.local_aabb_max[1];
+        mg.aabb_max[2] = mi.local_aabb_max[2];
+        mg.aabb_max[3] = 0.0f;
+        mesh_gpu.push_back(mg);
+    }
+    m.mesh_storage = createBufferWithData(
+        device_, queue_,
+        mesh_gpu.data(), mesh_gpu.size() * sizeof(MeshGpu),
+        WGPUBufferUsage_Storage,
+        "model.mesh_storage");
+
+    // Derive InstanceGpu[] from InstanceCpu[]. Stage 2 uses the cached
+    // `transform` directly (stage matrices are identity until stage 5+
+    // adds federation composition).
+    std::vector<InstanceGpu> inst_gpu;
+    inst_gpu.reserve(data.instances.size());
+    for (const auto& ic : data.instances) {
+        InstanceGpu ig = {};
+        std::memcpy(ig.transform, ic.transform, sizeof(ig.transform));
+        ig.object_id            = ic.object_id;
+        ig.color_override_rgba8 = ic.color_override_rgba8;
+        ig.mesh_id              = ic.mesh_id;
+        inst_gpu.push_back(ig);
+    }
+    m.instance_storage = createBufferWithData(
+        device_, queue_,
+        inst_gpu.data(), inst_gpu.size() * sizeof(InstanceGpu),
+        WGPUBufferUsage_Storage,
+        "model.instance_storage");
+
+    // Hand off CPU mirrors (cull / picking will need them later).
+    m.meshes    = std::move(data.meshes);
+    m.instances = std::move(data.instances);
+
+    models_gpu_.emplace(model_id, std::move(m));
+
+    qInfo().noquote().nospace()
+        << "[wgpu] applyCachedModel mid=" << model_id
+        << " verts=" << m.vertex_bytes << "B"
+        << " idx="   << m.index_count
+        << " meshes=" << m.mesh_count
+        << " instances=" << m.instance_count;
+}
+
+void WgpuViewportWindow::removeModel(uint32_t model_id) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    releaseWgpuModelGpuData(it->second);
+    models_gpu_.erase(it);
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::resetScene() {
+    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m);
+    models_gpu_.clear();
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::flushPendingSidecarQueue() {
+    while (!pending_sidecars_.empty()) {
+        const QString p = pending_sidecars_.front();
+        pending_sidecars_.pop_front();
+        loadSidecar(p);
+    }
+}
+
+// -----------------------------------------------------------------------------
 // Lifecycle
 // -----------------------------------------------------------------------------
 
@@ -93,6 +273,9 @@ void WgpuViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
             return;
         }
         wgpu_initialized_ = true;
+        // Drain any sidecar paths queued before init; uploads run on the
+        // now-valid device.
+        flushPendingSidecarQueue();
     }
 
     const int w = int(width()  * devicePixelRatio());
@@ -367,6 +550,10 @@ void WgpuViewportWindow::render() {
 }
 
 void WgpuViewportWindow::shutdown() {
+    // Release per-model buffers before the device they were created from.
+    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m);
+    models_gpu_.clear();
+
     if (queue_)    { wgpuQueueRelease(queue_);       queue_    = nullptr; }
     if (device_)   { wgpuDeviceRelease(device_);     device_   = nullptr; }
     if (adapter_)  { wgpuAdapterRelease(adapter_);   adapter_  = nullptr; }

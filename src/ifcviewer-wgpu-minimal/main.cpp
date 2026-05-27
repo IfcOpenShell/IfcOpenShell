@@ -36,8 +36,11 @@ int main(int argc, char* argv[]) {
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        "IfcOpenShell minimal wgpu IFC viewer (stage 1: clear-color smoke test)");
+        "IfcOpenShell minimal wgpu IFC viewer (stage 2: sidecar load, no draw)");
     parser.addHelpOption();
+    parser.addPositionalArgument("files",
+        "Sidecar (.ifcview) files to load. Stem-based: foo.ifc resolves to foo.ifcview.",
+        "[files...]");
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
@@ -47,10 +50,16 @@ int main(int argc, char* argv[]) {
     container->setMinimumSize(320, 240);
 
     QMainWindow main_window;
-    main_window.setWindowTitle("IfcViewer (wgpu) — stage 1");
+    main_window.setWindowTitle("IfcViewer (wgpu) — stage 2");
     main_window.setCentralWidget(container);
     main_window.resize(1280, 800);
     main_window.show();
+
+    // Queue sidecars; they're loaded after wgpu init completes in
+    // exposeEvent. Ordering matches the command line.
+    for (const QString& path : parser.positionalArguments()) {
+        viewport->queueLoadSidecar(path);
+    }
 
     return app.exec();
 }
