@@ -436,11 +436,7 @@ def resync_parametric_drafts_after_undo() -> None:
         if regenerator is None:
             continue
         regenerator(obj)
-    screen = getattr(bpy.context, "screen", None)
-    if screen is not None:
-        for area in screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+    tool.Blender.update_all_viewports()
 
 
 @persistent
@@ -464,4 +460,3 @@ def uninstall_parametric_lifecycle_handlers() -> None:
             hook.remove(_resync_on_undo)
         except ValueError:
             pass
->>>>>>> 8e305588d (fixup! Add parametric-draft undo-resync registry + handler hooks)

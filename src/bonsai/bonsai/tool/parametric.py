@@ -187,11 +187,7 @@ class Parametric(bonsai.core.tool.Parametric):
 
         cls._geom_generation += 1
         bonsai.bim.handler.update_bim_tool_props()
-        screen = getattr(bpy.context, "screen", None)
-        if screen is not None:
-            for area in screen.areas:
-                if area.type == "VIEW_3D":
-                    area.tag_redraw()
+        tool.Blender.update_all_viewports()
 
     @classmethod
     def find_by_name(cls, name: str) -> Optional[ParametricObject]:

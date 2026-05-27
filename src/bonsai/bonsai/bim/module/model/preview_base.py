@@ -126,9 +126,7 @@ def make_dim_setter(
         if props is None:
             return
         setattr(props, field, max(min_value, float(value)))
-        for area in bpy.context.screen.areas if bpy.context.screen else ():
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports()
 
     return _set
 
@@ -179,10 +177,7 @@ def try_cancel_active_preview(context: bpy.types.Context) -> bool:
             getattr(bpy.ops.bim, op_name)()
             cancelled = True
     if cancelled:
-        screen = context.screen
-        for area in screen.areas if screen else ():
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
+        tool.Blender.update_all_viewports(context)
     return cancelled
 
 
