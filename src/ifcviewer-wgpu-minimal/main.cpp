@@ -36,11 +36,13 @@ int main(int argc, char* argv[]) {
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        "IfcOpenShell minimal wgpu IFC viewer (stage 2: sidecar load, no draw)");
+        "IfcOpenShell minimal wgpu IFC viewer");
     parser.addHelpOption();
     parser.addPositionalArgument("files",
         "Sidecar (.ifcview) files to load. Stem-based: foo.ifc resolves to foo.ifcview.",
         "[files...]");
+    parser.addOption({{"s", "screenshot"},
+        "Render one frame, save to PATH as PNG, exit.", "path"});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
@@ -59,6 +61,11 @@ int main(int argc, char* argv[]) {
     // exposeEvent. Ordering matches the command line.
     for (const QString& path : parser.positionalArguments()) {
         viewport->queueLoadSidecar(path);
+    }
+
+    if (parser.isSet("screenshot")) {
+        viewport->captureNextFrameToPng(parser.value("screenshot"),
+                                        /*quit_after=*/true);
     }
 
     return app.exec();

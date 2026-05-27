@@ -47,6 +47,12 @@ struct FrameUniforms {
 static_assert(sizeof(FrameUniforms) == 16 * sizeof(float) + 4 * 4 * sizeof(float),
               "FrameUniforms must match WGSL layout (mat4 + 4xvec4)");
 
+// WebGPU texture<->buffer copies require bytes-per-row to be a multiple of
+// this. RGBA8 (4 B/pixel) at 1280 wide produces 5120 — already a multiple,
+// but at e.g. 1281 wide we round up to 5376. Tracked as the padded row
+// stride in the capture path.
+static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
+
 // -----------------------------------------------------------------------------
 // Small helpers
 // -----------------------------------------------------------------------------
@@ -645,7 +651,9 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     WGPUSurfaceConfiguration cfg = {};
     cfg.device      = device_;
     cfg.format      = surface_format_;
-    cfg.usage       = WGPUTextureUsage_RenderAttachment;
+    // CopySrc lets captureNextFrameToPng copy the surface texture back to
+    // host memory. Trivial cost on all known backends.
+    cfg.usage       = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
     cfg.width       = uint32_t(width_px);
     cfg.height      = uint32_t(height_px);
     cfg.presentMode = WGPUPresentMode_Fifo;
@@ -756,12 +764,113 @@ void WgpuViewportWindow::render() {
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
+    // ---- Optional capture: encode copy on the same command buffer -------
+    WGPUBuffer    capture_buffer    = nullptr;
+    uint32_t      capture_padded_bpr = 0;
+    const bool    want_capture       = !pending_screenshot_path_.isEmpty();
+    if (want_capture) {
+        const uint32_t row_bytes_unpadded = uint32_t(configured_w_) * 4u;
+        capture_padded_bpr = uint32_t(
+            (row_bytes_unpadded + WGPU_BYTES_PER_ROW_ALIGN - 1)
+            / WGPU_BYTES_PER_ROW_ALIGN * WGPU_BYTES_PER_ROW_ALIGN);
+        const uint64_t total_bytes = uint64_t(capture_padded_bpr) * uint64_t(configured_h_);
+
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.size  = total_bytes;
+        bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.capture");
+        capture_buffer = wgpuDeviceCreateBuffer(device_, &bdesc);
+
+        WGPUTexelCopyTextureInfo src = {};
+        src.texture = surf_tex.texture;
+        src.aspect  = WGPUTextureAspect_All;
+
+        WGPUTexelCopyBufferInfo dst = {};
+        dst.buffer              = capture_buffer;
+        dst.layout.bytesPerRow  = capture_padded_bpr;
+        dst.layout.rowsPerImage = uint32_t(configured_h_);
+
+        WGPUExtent3D extent = {};
+        extent.width  = uint32_t(configured_w_);
+        extent.height = uint32_t(configured_h_);
+        extent.depthOrArrayLayers = 1;
+
+        wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+    }
+
     WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
     wgpuQueueSubmit(queue_, 1, &cmd);
 
     wgpuCommandBufferRelease(cmd);
     wgpuCommandEncoderRelease(enc);
     wgpuTextureViewRelease(view);
+
+    // ---- Optional capture: map + save PNG -------------------------------
+    if (want_capture && capture_buffer) {
+        struct MapReq { bool done = false; bool ok = false; };
+        MapReq req;
+
+        WGPUBufferMapCallbackInfo mcb = {};
+        mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+        mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView message,
+                          void* ud1, void* /*ud2*/) {
+            auto* r = static_cast<MapReq*>(ud1);
+            r->done = true;
+            r->ok   = (status == WGPUMapAsyncStatus_Success);
+            if (!r->ok) {
+                qWarning().noquote() << "wgpu MapAsync failed:" << sv(message);
+            }
+        };
+        mcb.userdata1 = &req;
+
+        const uint64_t total_bytes = uint64_t(capture_padded_bpr) * uint64_t(configured_h_);
+        wgpuBufferMapAsync(capture_buffer, WGPUMapMode_Read, 0, size_t(total_bytes), mcb);
+        while (!req.done) wgpuInstanceProcessEvents(instance_);
+
+        if (req.ok) {
+            const uint8_t* mapped = static_cast<const uint8_t*>(
+                wgpuBufferGetConstMappedRange(capture_buffer, 0, size_t(total_bytes)));
+
+            // Assemble tightly-packed RGBA8 image. Surface is BGRA8 on most
+            // backends (we saw format=28 = BGRA8Unorm), so swap R/B on the
+            // fly. If a future surface_format_ is RGBA8, just memcpy.
+            const bool is_bgra =
+                surface_format_ == WGPUTextureFormat_BGRA8Unorm ||
+                surface_format_ == WGPUTextureFormat_BGRA8UnormSrgb;
+            const uint32_t w = uint32_t(configured_w_);
+            const uint32_t h = uint32_t(configured_h_);
+            QImage img(int(w), int(h), QImage::Format_RGBA8888);
+            for (uint32_t y = 0; y < h; ++y) {
+                const uint8_t* src_row = mapped + size_t(y) * capture_padded_bpr;
+                uint8_t*       dst_row = img.scanLine(int(y));
+                if (is_bgra) {
+                    for (uint32_t x = 0; x < w; ++x) {
+                        dst_row[x * 4 + 0] = src_row[x * 4 + 2];  // R <- B
+                        dst_row[x * 4 + 1] = src_row[x * 4 + 1];  // G
+                        dst_row[x * 4 + 2] = src_row[x * 4 + 0];  // B <- R
+                        dst_row[x * 4 + 3] = src_row[x * 4 + 3];  // A
+                    }
+                } else {
+                    std::memcpy(dst_row, src_row, size_t(w) * 4);
+                }
+            }
+            wgpuBufferUnmap(capture_buffer);
+
+            if (img.save(pending_screenshot_path_, "PNG")) {
+                qInfo().noquote() << "[wgpu] saved screenshot:"
+                                  << pending_screenshot_path_ << "(" << w << "x" << h << ")";
+            } else {
+                qWarning().noquote() << "[wgpu] QImage::save failed for"
+                                     << pending_screenshot_path_;
+            }
+        }
+        wgpuBufferRelease(capture_buffer);
+
+        const bool quit_after = pending_screenshot_quit_;
+        pending_screenshot_path_.clear();
+        pending_screenshot_quit_ = false;
+        if (quit_after) QCoreApplication::quit();
+    }
 
     wgpuSurfacePresent(surface_);
     wgpuTextureRelease(surf_tex.texture);
@@ -1032,6 +1141,32 @@ void WgpuViewportWindow::viewAll() {
     // Pull back enough so the bounding sphere fits at half-FOV.
     const float half_fov = qDegreesToRadians(camera_fov_y_deg_) * 0.5f;
     camera_distance_ = std::max(1.0f, 0.6f * diag / std::tan(half_fov));
+    if (isExposed()) requestUpdate();
+}
+
+// -----------------------------------------------------------------------------
+// One-shot framebuffer capture → PNG
+// -----------------------------------------------------------------------------
+//
+// WebGPU's buffer<->texture copies require bytes-per-row to be a multiple of
+// 256. For an RGBA8 (or BGRA8) source the natural row stride width*4 rarely
+// satisfies that, so we round up and strip the padding when assembling the
+// QImage.
+//
+// Capture flow:
+//   1. After the render pass + before present, encode a copyTextureToBuffer
+//      into a CPU-mappable buffer.
+//   2. Submit, then wgpuBufferMapAsync (CallbackMode_AllowProcessEvents) and
+//      spin wgpuInstanceProcessEvents until the callback signals completion.
+//   3. Strip per-row padding into a QImage; convert BGRA↔RGBA if needed;
+//      save PNG; optionally quit the app.
+
+#include <QImage>
+#include <QCoreApplication>
+
+void WgpuViewportWindow::captureNextFrameToPng(const QString& path, bool quit_after) {
+    pending_screenshot_path_ = path;
+    pending_screenshot_quit_ = quit_after;
     if (isExposed()) requestUpdate();
 }
 

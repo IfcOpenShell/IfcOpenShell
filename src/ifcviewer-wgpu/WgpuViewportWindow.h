@@ -75,6 +75,13 @@ public:
     // can re-invoke to re-frame.
     void viewAll();
 
+    // Queue a one-shot framebuffer capture: the next rendered frame is
+    // copied back to host memory and saved to `path` as PNG. If
+    // `quit_after` is true, QCoreApplication::quit() is called once the
+    // PNG is written. Use this for headless verification and pixel-diff
+    // parity testing against the GL backend.
+    void captureNextFrameToPng(const QString& path, bool quit_after = true);
+
 protected:
     void exposeEvent(QExposeEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
@@ -147,6 +154,10 @@ private:
     // subsequent loads from snapping the camera away from where the
     // user pointed it.
     bool initial_view_applied_ = false;
+
+    // Pending one-shot screenshot, captured at the end of the next render().
+    QString pending_screenshot_path_;
+    bool    pending_screenshot_quit_ = false;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H
