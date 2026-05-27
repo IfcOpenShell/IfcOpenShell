@@ -53,6 +53,16 @@ struct FrameUniforms {
 static_assert(sizeof(FrameUniforms) == 16 * sizeof(float) + 4 * 4 * sizeof(float),
               "FrameUniforms must match WGSL layout (mat4 + 4xvec4)");
 
+// Inverse of sRGB encoding. wgpu-native's Vulkan swap chain on X11 treats
+// BGRA8Unorm as sRGB-output (encodes shader output linear→sRGB on write,
+// despite caps reporting plain Unorm). Pre-applying srgbToLinear here on
+// any value we pass to the swap chain — clearValue, etc. — makes the
+// implicit encode round-trip and the final bytes match the GL backend.
+static inline float srgbToLinear(float s) {
+    if (s <= 0.04045f) return s / 12.92f;
+    return std::pow((s + 0.055f) / 1.055f, 2.4f);
+}
+
 // WebGPU texture<->buffer copies require bytes-per-row to be a multiple of
 // this. RGBA8 (4 B/pixel) at 1280 wide produces 5120 — already a multiple,
 // but at e.g. 1281 wide we round up to 5376. Tracked as the padded row
@@ -254,6 +264,18 @@ fn vs_main(@builtin(vertex_index)   vid: u32,
     return out;
 }
 
+// sRGB decode — used to undo wgpu's automatic linear→sRGB write encoding
+// on swap-chain BGRA8Unorm so the final bytes match what the GL backend
+// writes directly. The GL pipeline outputs to a non-sRGB FB and treats
+// every colour input as already-linear, so its bytes are exactly its
+// shader outputs. wgpu on the same swap chain auto-encodes, which makes
+// everything appear ~3× brighter unless we pre-decode once.
+fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
+    let lo = s / 12.92;
+    let hi = pow((s + 0.055) / 1.055, vec3<f32>(2.4));
+    return select(hi, lo, s <= vec3<f32>(0.04045));
+}
+
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     var n = normalize(in.normal);
@@ -266,8 +288,17 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let key  = max(dot(n, u_frame.light_dir.xyz), 0.0);
     let fill = max(dot(n, u_frame.fill_dir.xyz),  0.0) * 0.35;
 
-    let color = in.color.xyz * (ambient + (key + fill) * 0.7);
-    return vec4<f32>(color, in.color.a);
+    var color = in.color.xyz * (ambient + (key + fill) * 0.7);
+
+    // Cavity shading: where adjacent fragments have a sharp normal change
+    // (concave creases, edges where two faces meet), darken slightly so
+    // shape boundaries read on flat-colour models. Matches the GL shader.
+    let cavity = clamp(length(fwidth(n)) * 1.5, 0.0, 0.35);
+    color = color * (1.0 - cavity);
+
+    // Cancel the swap chain's implicit linear→sRGB encoding so the final
+    // bytes match the GL backend (see srgbToLinear above).
+    return vec4<f32>(srgbToLinear(color), in.color.a);
 }
 )";
 
@@ -738,6 +769,7 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     configured_h_       = height_px;
     surface_configured_ = true;
     ensureDepthTexture(width_px, height_px);
+    ensureMsaaColorTexture(width_px, height_px);
 }
 
 // -----------------------------------------------------------------------------
@@ -930,13 +962,14 @@ void WgpuViewportWindow::render() {
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
     WGPURenderPassColorAttachment color = {};
-    color.view       = view;
-    color.loadOp     = WGPULoadOp_Clear;
-    color.storeOp    = WGPUStoreOp_Store;
-    color.clearValue = {
-        background_color_.redF(),
-        background_color_.greenF(),
-        background_color_.blueF(),
+    color.view          = msaa_color_view_;  // render into 4× MSAA target
+    color.resolveTarget = view;              // resolve to surface texture
+    color.loadOp        = WGPULoadOp_Clear;
+    color.storeOp       = WGPUStoreOp_Store;
+    color.clearValue    = {
+        srgbToLinear(background_color_.redF()),
+        srgbToLinear(background_color_.greenF()),
+        srgbToLinear(background_color_.blueF()),
         1.0,
     };
     color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
@@ -1235,7 +1268,7 @@ bool WgpuViewportWindow::buildPipelines() {
     rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
     rp_desc.primitive.cullMode = WGPUCullMode_Back;
     rp_desc.primitive.frontFace = WGPUFrontFace_CCW;
-    rp_desc.multisample.count = 1;
+    rp_desc.multisample.count = SAMPLE_COUNT;
     rp_desc.multisample.mask  = 0xFFFFFFFFu;
 
     main_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
@@ -1314,7 +1347,7 @@ void WgpuViewportWindow::ensureDepthTexture(int w, int h) {
     desc.size.depthOrArrayLayers = 1;
     desc.format        = WGPUTextureFormat_Depth32Float;
     desc.mipLevelCount = 1;
-    desc.sampleCount   = 1;
+    desc.sampleCount   = SAMPLE_COUNT;  // matches MSAA color target
     desc.label         = svFromCStr("ifcviewer-wgpu.depth");
     depth_texture_ = wgpuDeviceCreateTexture(device_, &desc);
 
@@ -1334,6 +1367,33 @@ void WgpuViewportWindow::releaseDepthTexture() {
     if (depth_view_)    { wgpuTextureViewRelease(depth_view_); depth_view_ = nullptr; }
     if (depth_texture_) { wgpuTextureRelease(depth_texture_);  depth_texture_ = nullptr; }
     depth_w_ = depth_h_ = 0;
+}
+
+void WgpuViewportWindow::ensureMsaaColorTexture(int w, int h) {
+    if (w == msaa_w_ && h == msaa_h_ && msaa_color_view_) return;
+    releaseMsaaColorTexture();
+
+    WGPUTextureDescriptor desc = {};
+    desc.usage         = WGPUTextureUsage_RenderAttachment;
+    desc.dimension     = WGPUTextureDimension_2D;
+    desc.size.width    = uint32_t(w);
+    desc.size.height   = uint32_t(h);
+    desc.size.depthOrArrayLayers = 1;
+    desc.format        = surface_format_;
+    desc.mipLevelCount = 1;
+    desc.sampleCount   = SAMPLE_COUNT;
+    desc.label         = svFromCStr("ifcviewer-wgpu.msaa_color");
+    msaa_color_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+
+    msaa_color_view_ = wgpuTextureCreateView(msaa_color_texture_, nullptr);
+    msaa_w_ = w;
+    msaa_h_ = h;
+}
+
+void WgpuViewportWindow::releaseMsaaColorTexture() {
+    if (msaa_color_view_)    { wgpuTextureViewRelease(msaa_color_view_); msaa_color_view_ = nullptr; }
+    if (msaa_color_texture_) { wgpuTextureRelease(msaa_color_texture_);  msaa_color_texture_ = nullptr; }
+    msaa_w_ = msaa_h_ = 0;
 }
 
 // -----------------------------------------------------------------------------
@@ -1380,12 +1440,16 @@ void WgpuViewportWindow::updateFrameUniforms() {
     FrameUniforms u = {};
     std::memcpy(u.view_proj, view_proj.constData(), 16 * sizeof(float));
 
-    QVector3D L(0.4f, -0.6f, 0.9f); L.normalize();
-    QVector3D F(-0.3f,  0.5f, 0.4f); F.normalize();
+    // Values match the GL viewport's main fragment shader so a side-by-side
+    // diff of the two backends only shows what the wgpu pipeline has yet to
+    // implement (edge silhouette pass, MSAA polish, etc.) — not lighting
+    // model differences. Key + fill are ~unit-length, ~120° apart.
+    QVector3D L( 0.3f,  0.5f, 0.8f); L.normalize();
+    QVector3D F(-0.3f, -0.5f, 0.8f); F.normalize();
     u.light_dir[0] = L.x(); u.light_dir[1] = L.y(); u.light_dir[2] = L.z(); u.light_dir[3] = 0;
     u.fill_dir [0] = F.x(); u.fill_dir [1] = F.y(); u.fill_dir [2] = F.z(); u.fill_dir [3] = 0;
-    u.sky_color   [0] = 0.85f; u.sky_color   [1] = 0.88f; u.sky_color   [2] = 0.95f;
-    u.ground_color[0] = 0.35f; u.ground_color[1] = 0.32f; u.ground_color[2] = 0.30f;
+    u.sky_color   [0] = 0.55f; u.sky_color   [1] = 0.60f; u.sky_color   [2] = 0.70f;
+    u.ground_color[0] = 0.35f; u.ground_color[1] = 0.32f; u.ground_color[2] = 0.28f;
 
     wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
 }
@@ -1534,6 +1598,7 @@ void WgpuViewportWindow::shutdown() {
     models_gpu_.clear();
 
     releaseDepthTexture();
+    releaseMsaaColorTexture();
 
     if (frame_bind_group_)     { wgpuBindGroupRelease(frame_bind_group_);         frame_bind_group_ = nullptr; }
     if (frame_uniform_buffer_) { wgpuBufferRelease(frame_uniform_buffer_);        frame_uniform_buffer_ = nullptr; }

@@ -109,6 +109,8 @@ private:
     void  buildModelBindGroup(WgpuModelGpuData& m);
     void  ensureDepthTexture(int w, int h);
     void  releaseDepthTexture();
+    void  ensureMsaaColorTexture(int w, int h);
+    void  releaseMsaaColorTexture();
     void  updateFrameUniforms();
     void  flushPendingSidecarQueue();
     bool  computeSceneAabb(float mn[3], float mx[3]) const;
@@ -142,11 +144,19 @@ private:
     WGPUBuffer    frame_uniform_buffer_ = nullptr;
     WGPUBindGroup frame_bind_group_     = nullptr;
 
-    // Depth attachment, recreated on surface resize.
+    // Depth attachment (4× MSAA), recreated on surface resize.
     WGPUTexture     depth_texture_ = nullptr;
     WGPUTextureView depth_view_    = nullptr;
     int             depth_w_       = 0;
     int             depth_h_       = 0;
+
+    // 4× MSAA color target. Surface format-matched, recreated on resize.
+    // The render pass writes here, then resolves into the surface texture.
+    WGPUTexture     msaa_color_texture_ = nullptr;
+    WGPUTextureView msaa_color_view_    = nullptr;
+    int             msaa_w_             = 0;
+    int             msaa_h_             = 0;
+    static constexpr uint32_t SAMPLE_COUNT = 4;
 
     QColor background_color_ = QColor("#202329");
 
