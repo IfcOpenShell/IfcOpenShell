@@ -1471,12 +1471,17 @@ void WgpuViewportWindow::releaseMsaaColorTexture() {
 
 static QVector3D orbitEye(const float target[3], float dist,
                           float yaw_deg, float pitch_deg) {
+    // Matches the GL ViewportWindow::updateCamera convention exactly so the
+    // orbit pivot, framing, and benchmark camera path align between backends.
+    //   eye.x = target.x + dist * cos(pitch) * cos(yaw)
+    //   eye.y = target.y + dist * cos(pitch) * sin(yaw)
+    //   eye.z = target.z + dist * sin(pitch)
     const float yaw = qDegreesToRadians(yaw_deg);
     const float pit = qDegreesToRadians(pitch_deg);
     const float cp = std::cos(pit), sp = std::sin(pit);
     const float cy = std::cos(yaw), sy = std::sin(yaw);
-    return QVector3D(target[0] + dist * cp * sy,
-                     target[1] - dist * cp * cy,
+    return QVector3D(target[0] + dist * cp * cy,
+                     target[1] + dist * cp * sy,
                      target[2] + dist * sp);
 }
 
@@ -1541,16 +1546,38 @@ bool WgpuViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
 void WgpuViewportWindow::viewAll() {
     float mn[3], mx[3];
     if (!computeSceneAabb(mn, mx)) return;
-    camera_target_[0] = 0.5f * (mn[0] + mx[0]);
-    camera_target_[1] = 0.5f * (mn[1] + mx[1]);
-    camera_target_[2] = 0.5f * (mn[2] + mx[2]);
-    const float diag = std::sqrt(
-        (mx[0] - mn[0]) * (mx[0] - mn[0]) +
-        (mx[1] - mn[1]) * (mx[1] - mn[1]) +
-        (mx[2] - mn[2]) * (mx[2] - mn[2]));
-    // Pull back enough so the bounding sphere fits at half-FOV.
-    const float half_fov = qDegreesToRadians(camera_fov_y_deg_) * 0.5f;
-    camera_distance_ = std::max(1.0f, 0.6f * diag / std::tan(half_fov));
+
+    // Frame the union AABB with the same math as GL's frameAabb(mn, mx, 1.10):
+    // target at centroid, distance pulls the bounding sphere just inside the
+    // tighter of the horizontal/vertical FOV. Padding 1.10 matches GL viewAll.
+    const float cx = 0.5f * (mn[0] + mx[0]);
+    const float cy = 0.5f * (mn[1] + mx[1]);
+    const float cz = 0.5f * (mn[2] + mx[2]);
+    camera_target_[0] = cx;
+    camera_target_[1] = cy;
+    camera_target_[2] = cz;
+
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx*dx + dy*dy + dz*dz);
+
+    if (radius > 1e-4f) {
+        const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
+        const float tan_half = std::tan(fovy_rad * 0.5f);
+        if (tan_half > 1e-6f) {
+            const int   h          = std::max(configured_h_, 1);
+            const float aspect     = float(std::max(configured_w_, 1)) / float(h);
+            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+            camera_distance_ = std::max(0.1f, (radius / (tan_half * min_aspect)) * 1.10f);
+        }
+    }
+
+    qInfo().noquote().nospace()
+        << "[wgpu] viewAll target=(" << cx << ", " << cy << ", " << cz << ")"
+        << " distance=" << camera_distance_
+        << " (scene radius=" << radius << ")";
+
     if (isExposed()) requestUpdate();
 }
 
