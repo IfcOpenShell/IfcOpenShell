@@ -1329,10 +1329,10 @@ class Blender(bonsai.core.tool.Blender):
 
     class Modifier:
         # ----------------------------------------------------------------------
-        # Backward-compat shims for callers still using the pre-refactor API.
-        # The is_<type> predicates now live on tool.Parametric; the Array helper
-        # bag now lives on tool.Array. PR4 migrates each caller; these shims
-        # are removed in PR5's cleanup.
+        # FIXME(PR5): backward-compat shims for callers still using the
+        # pre-refactor API. The is_<type> predicates now live on tool.Parametric;
+        # the Array helper bag now lives on tool.Array. PR4 migrates each caller;
+        # this whole shim block is removed in PR5's cleanup.
         # ----------------------------------------------------------------------
 
         @classmethod
