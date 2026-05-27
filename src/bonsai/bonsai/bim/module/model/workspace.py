@@ -969,7 +969,9 @@ class EditObjectUI:
 
         if PortData.data["total_ports"] > 0:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
+            )
 
     @classmethod
     def draw_void(cls, context, row):
