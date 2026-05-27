@@ -129,14 +129,21 @@ private:
     // per-LOD draw schedule for the frame.
     //
     // `eye` and `forward` (forward = unit (target - eye)) are used to compute
-    // each instance's view-space depth for the LOD-pick projected-radius
-    // formula. `focal_px` = viewport_height / (2 * tan(fov_y / 2)). Instances
-    // whose projected bounding-sphere radius is below `lod1_threshold_px`
-    // get the mesh's LOD1 index slice when one was baked.
+    // each instance's view-space depth for the projected-radius formula.
+    // `focal_px` = viewport_height / (2 * tan(fov_y / 2)).
+    //
+    // Two pixel-radius thresholds:
+    //   `min_radius_px`  — instances projected below this are dropped
+    //                       entirely (contribution culling).
+    //   `lod1_threshold_px` — survivors projected below this get the mesh's
+    //                       LOD1 index slice when one was baked.
+    // min_radius_px == 0 disables contribution culling.
     void  cullModelCpu(WgpuModelGpuData& m,
                        const float planes[6][4],
                        const float eye[3], const float forward[3],
-                       float focal_px, float lod1_threshold_px);
+                       float focal_px,
+                       float min_radius_px,
+                       float lod1_threshold_px);
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -186,6 +193,12 @@ private:
     float camera_fov_y_deg_ = 45.0f;
     float camera_near_      = 0.1f;
     float camera_far_       = 10000.0f;
+
+    // Drop instances whose projected bounding-sphere radius is below this
+    // many pixels. Mirrors AppSettings::minPixelRadius() (GL default 2.0;
+    // motion mode uses 10.0 but we don't differentiate yet — that arrives
+    // with mouse-driven motion-state tracking later).
+    float min_pixel_radius_ = 2.0f;
 
     // Switch to LOD1 when an instance's projected bounding-sphere radius
     // drops below this many pixels. 0 disables (always LOD0). Defaults

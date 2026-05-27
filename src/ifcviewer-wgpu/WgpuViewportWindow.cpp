@@ -863,7 +863,9 @@ void WgpuViewportWindow::setBenchmarkFrames(int frames) {
 void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m,
                                       const float planes[6][4],
                                       const float eye[3], const float forward[3],
-                                      float focal_px, float lod1_threshold_px) {
+                                      float focal_px,
+                                      float min_radius_px,
+                                      float lod1_threshold_px) {
     if (m.instances.empty() || m.meshes.empty() || !m.visible_buffer) {
         for (auto& d : m.mesh_draws) d.instance_count = 0;
         return;
@@ -880,20 +882,21 @@ void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m,
         per_mesh_lod1[mi].clear();
     }
 
-    const bool lod_enabled = (lod1_threshold_px > 0.0f);
+    const bool contrib_enabled = (min_radius_px      > 0.0f);
+    const bool lod_enabled     = (lod1_threshold_px  > 0.0f);
 
     for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
         const auto& inst = m.instances[i];
         if (inst.mesh_id >= m.meshes.size()) continue;
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) continue;
 
-        // LOD pick: project the AABB's bounding sphere to pixels. Use LOD1
-        // when (a) the mesh has a baked LOD1 index slice and (b) the
-        // projected radius is below the threshold. View-space depth from
-        // forward · (center - eye); guard against behind-near-plane.
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
-        bool use_lod1 = false;
-        if (lod_enabled && mesh.lod1_index_count > 0) {
+
+        // Projected bounding-sphere radius in pixels, shared between the
+        // contribution-cull and LOD-pick decisions. Computed once per
+        // instance; guarded against behind-near-plane and division by zero.
+        float projected_px = std::numeric_limits<float>::infinity();
+        if (contrib_enabled || (lod_enabled && mesh.lod1_index_count > 0)) {
             const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
             const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
             const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
@@ -905,10 +908,20 @@ void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m,
                                + forward[1] * (cy - eye[1])
                                + forward[2] * (cz - eye[2]);
             if (view_z > 1e-3f) {
-                const float projected_px = radius_world * focal_px / view_z;
-                use_lod1 = projected_px < lod1_threshold_px;
+                projected_px = radius_world * focal_px / view_z;
             }
         }
+
+        // Contribution cull: drop instances projected below threshold. Most
+        // of the per-frame cost on dense scenes — typically rejects 80-90%
+        // of frustum-visible instances on real BIM models.
+        if (contrib_enabled && projected_px < min_radius_px) continue;
+
+        // LOD pick: switch to LOD1 if the mesh has one baked and we're below
+        // the LOD threshold.
+        const bool use_lod1 = lod_enabled
+                            && mesh.lod1_index_count > 0
+                            && projected_px < lod1_threshold_px;
 
         if (use_lod1) per_mesh_lod1[inst.mesh_id].push_back(i);
         else          per_mesh_lod0[inst.mesh_id].push_back(i);
@@ -1026,7 +1039,8 @@ void WgpuViewportWindow::render() {
 
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
-            cullModelCpu(m, planes, eye_a, fwd_a, focal_px, lod1_pixel_threshold_);
+            cullModelCpu(m, planes, eye_a, fwd_a, focal_px,
+                         min_pixel_radius_, lod1_pixel_threshold_);
             for (const auto& d : m.mesh_draws) {
                 if (d.instance_count == 0 || d.index_count == 0) continue;
                 last_visible_objects_   += d.instance_count;
