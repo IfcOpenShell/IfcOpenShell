@@ -70,10 +70,12 @@ free of such imports and lives separately in ``tool/parametric.py``."""
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from typing import TYPE_CHECKING, ClassVar
 
 import bpy
 import ifcopenshell.util.element
+from bpy.app.handlers import persistent
 
 import bonsai.core.geometry
 import bonsai.tool as tool
@@ -375,3 +377,91 @@ class PathPreservingEditMixin(ParametricEditMixinBase):
         for obj in self._iter_targets(context):
             self._cancel_one(obj, context)
         return {"FINISHED"}
+
+
+# --- Undo-resync registry ----------------------------------------------------
+#
+# Per-type regenerators called from ``resync_parametric_drafts_after_undo``
+# (wired into ``bim/handler.py:undo_post`` and ``redo_post``) so the preview
+# mesh of an in-progress parametric draft repaints after Ctrl+Z / Ctrl+Shift+Z.
+#
+# Each regenerator is a one-line lazy-import + call. Lazy imports because
+# ``bonsai.bim.parametric_lifecycle`` loads before ``bim/module/model/*``
+# at addon enable; a module-level import would cycle. Each function-local
+# import lands at first call, after the feature module has registered.
+#
+# Types with no entry — door, window, railing, etc. — are IFC-derived: undo
+# of an IFC mutation already restores the entity, and ``switch_representation``
+# repaints the mesh as a side effect of the next refresh. They don't need a
+# bespoke preview regenerator.
+
+
+def _wall_undo_regenerator(obj: bpy.types.Object) -> None:
+    from bonsai.bim.module.model.wall import regenerate_wall_mesh_from_props
+
+    regenerate_wall_mesh_from_props(obj)
+
+
+def _stair_undo_regenerator(obj: bpy.types.Object) -> None:
+    from bonsai.bim.module.model.stair import regenerate_stair_mesh
+
+    regenerate_stair_mesh(obj)
+
+
+def _roof_undo_regenerator(obj: bpy.types.Object) -> None:
+    from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
+
+    update_roof_modifier_bmesh(obj)
+
+
+UNDO_REGENERATORS: dict[str, Callable[[bpy.types.Object], None]] = {
+    "wall": _wall_undo_regenerator,
+    "stair": _stair_undo_regenerator,
+    "roof": _roof_undo_regenerator,
+}
+
+
+def resync_parametric_drafts_after_undo() -> None:
+    """Re-render preview meshes for every parametric draft currently active.
+
+    Walks all objects, skips any not in a registered parametric edit,
+    dispatches to the per-type regenerator in ``UNDO_REGENERATORS``. A type
+    without an entry is left alone — its preview is either already correct
+    (IFC-derived) or has no draft preview mesh."""
+    for obj in bpy.data.objects:
+        feature = tool.Parametric.is_object_editing(obj)
+        if feature is None:
+            continue
+        regenerator = UNDO_REGENERATORS.get(feature.name)
+        if regenerator is None:
+            continue
+        regenerator(obj)
+    screen = getattr(bpy.context, "screen", None)
+    if screen is not None:
+        for area in screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+
+
+@persistent
+def _resync_on_undo(scene: bpy.types.Scene) -> None:
+    resync_parametric_drafts_after_undo()
+
+
+def install_parametric_lifecycle_handlers() -> None:
+    """Append the undo-resync callback to undo_post and redo_post; idempotent.
+
+    Caller must invoke this AFTER appending the central undo/redo handlers so
+    regenerators see restored IFC state — bpy.app.handlers fire in append order."""
+    for hook in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):
+        if _resync_on_undo not in hook:
+            hook.append(_resync_on_undo)
+
+
+def uninstall_parametric_lifecycle_handlers() -> None:
+    for hook in (bpy.app.handlers.undo_post, bpy.app.handlers.redo_post):
+        try:
+            hook.remove(_resync_on_undo)
+        except ValueError:
+            pass
+>>>>>>> 8e305588d (fixup! Add parametric-draft undo-resync registry + handler hooks)
