@@ -50,14 +50,15 @@ def copy_z_rotation_to_selected(
     flip: bool = False,
 ) -> int:
     """Apply ``active``'s Z-Euler rotation to each target."""
-    source_z = surveyor.get_z_rotation(active)
+    source_z = surveyor.get_z_rotation(active)  # ty:ignore[missing-argument]
     if flip:
         source_z += math.pi
     rotated = 0
     for obj in targets:
-        if abs(_z_rotation_diff(surveyor.get_z_rotation(obj), source_z)) < Z_ROTATION_ALIGNMENT_TOLERANCE:
+        target_z = surveyor.get_z_rotation(obj)  # ty:ignore[missing-argument]
+        if abs(_z_rotation_diff(target_z, source_z)) < Z_ROTATION_ALIGNMENT_TOLERANCE:
             continue
-        surveyor.set_z_rotation(obj, source_z)
+        surveyor.set_z_rotation(obj, source_z)  # ty:ignore[missing-argument]
         rotated += 1
         if ifc.get_entity(obj) is not None:
             bonsai.core.geometry.edit_object_placement(ifc, geometry, surveyor, obj=obj)
