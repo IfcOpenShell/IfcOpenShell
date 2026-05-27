@@ -83,6 +83,12 @@ public:
     // parity testing against the GL backend.
     void captureNextFrameToPng(const QString& path, bool quit_after = true);
 
+    // Benchmark mode: render N timed frames (after a small warmup), yaw-
+    // sweeping the camera at 0.5°/frame, then print a stats block on
+    // stderr and QCoreApplication::quit(). Mirrors the GL minimal's
+    // --benchmark output format so a script can diff them line for line.
+    void setBenchmarkFrames(int frames);
+
 protected:
     void exposeEvent(QExposeEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
@@ -176,6 +182,23 @@ private:
     // safe to dedicate to orbit for now.
     Qt::MouseButton nav_active_button_ = Qt::NoButton;
     QPoint          nav_last_pos_;
+
+    // Benchmark mode. setBenchmarkFrames(N) arms it; render() integrates the
+    // yaw, captures per-frame ms after warmup, and prints + quits when the
+    // target frame count is hit.
+    int   bench_total_    = 0;
+    int   bench_count_    = 0;
+    int   bench_warmup_   = 5;
+    float bench_yaw_start_ = 0.0f;
+    float bench_yaw_speed_ = 0.5f;  // degrees per frame
+    std::vector<float> bench_frame_ms_;
+
+    // Per-frame stat snapshot from the last cull. Sum of m.mesh_draws across
+    // visible models. Exposed via the benchmark summary; will grow into a
+    // proper FrameStats signal when stage 11's host integration arrives.
+    uint32_t last_visible_objects_   = 0;
+    uint32_t last_visible_triangles_ = 0;
+    uint32_t last_sub_draws_         = 0;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

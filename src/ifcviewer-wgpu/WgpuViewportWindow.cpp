@@ -22,6 +22,7 @@
 #include <QGuiApplication>
 #include <QResizeEvent>
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QFileInfo>
 #include <QMatrix4x4>
 #include <QVector3D>
@@ -765,6 +766,15 @@ static bool aabbInFrustum(const float mn[3], const float mx[3],
     return true;
 }
 
+void WgpuViewportWindow::setBenchmarkFrames(int frames) {
+    bench_total_    = std::max(0, frames);
+    bench_count_    = 0;
+    bench_yaw_start_ = camera_yaw_deg_;
+    bench_frame_ms_.clear();
+    bench_frame_ms_.reserve(size_t(bench_total_));
+    if (isExposed() && bench_total_ > 0) requestUpdate();
+}
+
 void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m, const float planes[6][4]) {
     if (m.instances.empty() || m.meshes.empty() || !m.visible_buffer) {
         for (auto& d : m.mesh_draws) d.instance_count = 0;
@@ -813,6 +823,11 @@ void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m, const float planes[6]
 }
 
 void WgpuViewportWindow::render() {
+    // Time the whole render() body (cull + encode + present) for the
+    // benchmark stats. Started before any wgpu work so cull is included.
+    QElapsedTimer frame_timer;
+    if (bench_total_ > 0) frame_timer.start();
+
     WGPUSurfaceTexture surf_tex = {};
     wgpuSurfaceGetCurrentTexture(surface_, &surf_tex);
 
@@ -844,6 +859,9 @@ void WgpuViewportWindow::render() {
     // cull writes its results directly into each model's visible_buffer via
     // wgpuQueueWriteBuffer — these writes are sequenced before the draw
     // commands we encode next.
+    last_visible_objects_   = 0;
+    last_visible_triangles_ = 0;
+    last_sub_draws_         = 0;
     {
         const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
         const QVector3D eye = orbitEye(camera_target_, camera_distance_,
@@ -859,6 +877,12 @@ void WgpuViewportWindow::render() {
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
             cullModelCpu(m, planes);
+            for (const auto& d : m.mesh_draws) {
+                if (d.instance_count == 0 || d.index_count == 0) continue;
+                last_visible_objects_   += d.instance_count;
+                last_visible_triangles_ += (d.index_count / 3u) * d.instance_count;
+                last_sub_draws_         += 1;
+            }
         }
     }
 
@@ -1036,6 +1060,61 @@ void WgpuViewportWindow::render() {
 
     wgpuSurfacePresent(surface_);
     wgpuTextureRelease(surf_tex.texture);
+
+    // ---- Benchmark integration + auto-quit -------------------------------
+    if (bench_total_ > 0) {
+        const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
+
+        // Warm-up frames are dropped from the sample. The yaw advance starts
+        // immediately so the warmup frames already exercise different views.
+        if (bench_count_ >= bench_warmup_) {
+            bench_frame_ms_.push_back(ms);
+        }
+        camera_yaw_deg_ = bench_yaw_start_
+                        + bench_yaw_speed_ * float(bench_count_ + 1);
+        ++bench_count_;
+
+        if (bench_count_ >= bench_warmup_ + bench_total_) {
+            // Final frame — assemble stats and emit. Format mirrors the GL
+            // minimal so output is line-diffable across backends.
+            std::vector<float> times = bench_frame_ms_;
+            std::sort(times.begin(), times.end());
+            auto pct = [&times](double p) -> float {
+                if (times.empty()) return 0.0f;
+                const size_t idx = std::min(times.size() - 1,
+                    size_t(p * double(times.size() - 1)));
+                return times[idx];
+            };
+            float sum = 0.0f;
+            for (float f : times) sum += f;
+            const float avg    = times.empty() ? 0.0f : sum / float(times.size());
+            const float median = pct(0.5);
+            const float p1     = pct(0.01);
+            const float p99    = pct(0.99);
+
+            const float total_sweep = bench_yaw_speed_ * float(bench_total_);
+            qInfo().noquote().nospace()
+                << "\n=== BENCHMARK (" << bench_total_ << " frames, orbit "
+                << total_sweep << "° at " << bench_yaw_speed_ << "°/frame) ===";
+            qInfo().noquote().nospace()
+                << "  avg: "    << avg    << " ms (" << (avg    > 0 ? 1000.0f/avg    : 0.0f) << " fps)";
+            qInfo().noquote().nospace()
+                << "  median: " << median << " ms (" << (median > 0 ? 1000.0f/median : 0.0f) << " fps)";
+            qInfo().noquote().nospace()
+                << "  p1: "  << p1  << " ms  p99: " << p99 << " ms";
+            qInfo().noquote().nospace()
+                << "  last frame: obj " << last_visible_objects_
+                << "  tri " << last_visible_triangles_
+                << "  sub_draws " << last_sub_draws_
+                << "  hiz_rej 0";  // HiZ lands in stage 7
+            qInfo().noquote() << "=== END BENCHMARK ===\n";
+
+            bench_total_ = 0;
+            QCoreApplication::quit();
+        } else {
+            requestUpdate();
+        }
+    }
 }
 
 // -----------------------------------------------------------------------------

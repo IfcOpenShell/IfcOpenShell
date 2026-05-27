@@ -43,6 +43,8 @@ int main(int argc, char* argv[]) {
         "[files...]");
     parser.addOption({{"s", "screenshot"},
         "Render one frame, save to PATH as PNG, exit.", "path"});
+    parser.addOption({{"b", "benchmark"},
+        "Render N frames (yaw-sweeping the camera), print stats, exit.", "frames"});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
@@ -66,6 +68,9 @@ int main(int argc, char* argv[]) {
     if (parser.isSet("screenshot")) {
         viewport->captureNextFrameToPng(parser.value("screenshot"),
                                         /*quit_after=*/true);
+    }
+    if (parser.isSet("benchmark")) {
+        viewport->setBenchmarkFrames(parser.value("benchmark").toInt());
     }
 
     return app.exec();
