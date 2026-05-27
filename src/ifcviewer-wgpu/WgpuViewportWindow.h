@@ -35,6 +35,7 @@
 #include "SidecarCache.h"
 #include "WgpuModelGpuData.h"
 #include "WgpuSelectionState.h"
+#include "WgpuVisibilityState.h"
 
 // Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
 // adapter/device, configures a surface against the platform-native window
@@ -106,6 +107,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent* event) override;
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
 private:
     bool initWgpu();
@@ -231,6 +233,13 @@ private:
     uint32_t           selection_flags_capacity_ = 0;  // number of u32 entries
     WgpuSelectionState selection_;
     std::vector<uint32_t> selection_flags_scratch_;
+
+    // Per-element visibility. Consulted in cullModelCpuCompute to drop
+    // hidden instances before they're added to visible_draws — keeps
+    // hidden geometry out of cost on every axis (no draw, no depth, no
+    // pick). Mutated on the main thread between renders; cull workers
+    // read concurrently which is safe as long as no concurrent writes.
+    WgpuVisibilityState visibility_;
 
     // Depth attachment (4× MSAA), recreated on surface resize.
     WGPUTexture     depth_texture_ = nullptr;

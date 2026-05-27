@@ -1941,6 +1941,9 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
     for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
         const auto& inst = m.instances[i];
         if (inst.mesh_id >= m.meshes.size()) continue;
+        // Cheapest possible cull first: explicit user-hidden flag. Skips
+        // every downstream cost (frustum / HiZ / draw / pick).
+        if (visibility_.isHidden(inst.object_id)) continue;
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) continue;
 
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
@@ -2970,6 +2973,54 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
         camera_target_[2] += shift.z();
         requestUpdate();
     }
+}
+
+void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
+    // Visibility shortcuts, modelled on the GL viewer:
+    //   H         — hide selected
+    //   Shift+H   — show all (clear hidden set)
+    //   I         — isolate selected (hide everything not currently selected)
+    // None of these are useful without a selection (except show-all), so we
+    // skip silently rather than burning a cull on an empty mutation.
+    const auto mods = event->modifiers();
+    const int key   = event->key();
+
+    if (key == Qt::Key_H && (mods & Qt::ShiftModifier)) {
+        if (visibility_.hiddenCount() == 0) return;
+        visibility_.clear();
+        qInfo() << "[wgpu] show all";
+        requestUpdate();
+        return;
+    }
+    if (key == Qt::Key_H) {
+        if (selection_.count() == 0) return;
+        for (uint32_t id : selection_.ids()) visibility_.hide(id);
+        const size_t n = selection_.count();
+        selection_.clear();   // hiding deselects, matching GL behaviour
+        qInfo().noquote().nospace() << "[wgpu] hid " << n << " selected";
+        requestUpdate();
+        return;
+    }
+    if (key == Qt::Key_I) {
+        if (selection_.count() == 0) return;
+        // Walk every instance across all models; hide those NOT in selection.
+        size_t hidden_now = 0;
+        for (auto& [mid, m] : models_gpu_) {
+            for (const auto& inst : m.instances) {
+                if (selection_.contains(inst.object_id)) continue;
+                if (!visibility_.isHidden(inst.object_id)) {
+                    visibility_.hide(inst.object_id);
+                    ++hidden_now;
+                }
+            }
+        }
+        qInfo().noquote().nospace() << "[wgpu] isolated " << selection_.count()
+                                    << " (hid " << hidden_now << " others)";
+        requestUpdate();
+        return;
+    }
+
+    QWindow::keyPressEvent(event);
 }
 
 void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
