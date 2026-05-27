@@ -225,6 +225,46 @@ def _group_first_member_guid(group, ifc_tag=None):
     return member_guids[0] if member_guids else ""
 
 
+def _normalize_linked_wall_group(group):
+    """Ensure linked elevation wall groups use tag-level GUID only.
+
+    Expected shape:
+    - group name is ``linkedWall``
+    - only one active tag: ``IfcWall``
+    - group GUID payload stores only ``IfcWall`` entry
+    - member GUID payloads are cleared
+    """
+    if group is None:
+        return
+
+    group.name = "linkedWall"
+
+    tags = getattr(group, "tags", None)
+    if tags is not None:
+        has_ifcwall_tag = False
+        for i in range(len(tags) - 1, -1, -1):
+            tag = tags[i]
+            if getattr(tag, "value", None) != "IfcWall":
+                tags.remove(i)
+                continue
+            if has_ifcwall_tag:
+                tags.remove(i)
+                continue
+            has_ifcwall_tag = True
+            if hasattr(tag, "enabled"):
+                tag.enabled = True
+        if not has_ifcwall_tag and hasattr(group, "add_tag"):
+            group.add_tag("IfcWall")
+    elif hasattr(group, "has_tag") and hasattr(group, "add_tag") and not group.has_tag("IfcWall"):
+        group.add_tag("IfcWall")
+
+    current_wall_guid = _tpg_get_guid(getattr(group, "guid", ""), "IfcWall")
+    group.guid = _tpg_set_guid("", "IfcWall", current_wall_guid)
+
+    for member in getattr(group, "members", []):
+        member.guid = ""
+
+
 def _set_entity_guid(sketch, slvs_index, ifc_tag, guid):
     """Write *guid* to the group member for *slvs_index* in *sketch*.
 
@@ -2166,6 +2206,9 @@ class FetchCADSketcher(Operator):
             bpy.context.view_layer.update()
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if obj is not None:
+            group = getattr(path_group, "_group", None)
+            if group is not None and _group_has_active_tag(group, "IfcWall"):
+                _normalize_linked_wall_group(group)
             _set_entity_guid(_path_sketch_elev, path_group.slvs_index, "IfcWall", mock_line.guid)
 
             # Back-propagate GUID to the source plan line when it has no GUID yet
