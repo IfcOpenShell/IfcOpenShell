@@ -680,9 +680,13 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def update_all_viewports(cls, context: bpy.types.Context | None = None) -> None:
+        """Tag every visible 3D viewport for redraw. Silent no-op when no
+        screen attached (background mode, plug-out, mid-load_post)."""
         context = context or bpy.context
-        assert context.screen
-        for area in context.screen.areas:
+        screen = getattr(context, "screen", None)
+        if screen is None:
+            return
+        for area in screen.areas:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
 
