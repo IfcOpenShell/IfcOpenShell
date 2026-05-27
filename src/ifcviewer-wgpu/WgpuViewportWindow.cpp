@@ -207,6 +207,10 @@ struct PerModel {
 };
 
 @group(0) @binding(0) var<uniform> u_frame: FrameUniforms;
+// Selection flags indexed by object_id. bit 0 = in selection, bit 1 = active.
+// Sized to next_object_id_ on the CPU side; out-of-range reads can't happen
+// because we cap the index by arrayLength before fetching.
+@group(0) @binding(1) var<storage, read> sel_flags: array<u32>;
 
 @group(1) @binding(0) var<storage, read> vertices:      array<u32>;
 @group(1) @binding(1) var<storage, read> meshes:        array<MeshQuant>;
@@ -221,6 +225,7 @@ struct VsOut {
     @location(0) normal:    vec3<f32>,
     @location(1) color:     vec4<f32>,
     @location(2) world_pos: vec3<f32>,
+    @location(3) @interpolate(flat) object_id: u32,
 };
 
 // Sign-extend an i8 packed into the byte_idx'th byte of `packed`.
@@ -317,6 +322,7 @@ fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
     out.normal    = n_final;
     out.color     = color;
     out.world_pos = world4.xyz;
+    out.object_id = inst.object_id;
     return out;
 }
 
@@ -351,6 +357,14 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     // shape boundaries read on flat-colour models. Matches the GL shader.
     let cavity = clamp(length(fwidth(n)) * 1.5, 0.0, 0.35);
     color = color * (1.0 - cavity);
+
+    // Selection tint. bit 0 = in selection (cool blue mix), bit 1 = active
+    // (slightly stronger blue mix). Matches the GL main shader.
+    if (in.object_id < arrayLength(&sel_flags)) {
+        let flags = sel_flags[in.object_id];
+        if ((flags & 1u) != 0u) { color = mix(color, vec3<f32>(0.2, 0.6, 1.0), 0.45); }
+        if ((flags & 2u) != 0u) { color = mix(color, vec3<f32>(0.4, 0.8, 1.0), 0.40); }
+    }
 
     // Cancel the swap chain's implicit linear→sRGB encoding so the final
     // bytes match the GL backend (see srgbToLinear above).
@@ -562,12 +576,19 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         WGPUBufferUsage_Storage,
         "model.mesh_storage");
 
-    // Derive InstanceGpu[] from InstanceCpu[]. Stage 2 uses the cached
-    // `transform` directly (stage matrices are identity until stage 5+
-    // adds federation composition).
+    // Derive InstanceGpu[] from InstanceCpu[]. Rebase each instance's
+    // object_id by next_object_id_ so picks are globally unambiguous
+    // across multiple loaded sidecars (each sidecar's local IDs start
+    // from 1 and would otherwise collide).
+    const uint32_t object_id_base = next_object_id_;
+    uint32_t max_local_id = 0;
     std::vector<InstanceGpu> inst_gpu;
     inst_gpu.reserve(data.instances.size());
-    for (const auto& ic : data.instances) {
+    for (auto& ic : data.instances) {
+        if (ic.object_id > max_local_id) max_local_id = ic.object_id;
+        // Rebase in the CPU mirror too so future cull / picks see the
+        // global id consistently.
+        ic.object_id = object_id_base + ic.object_id;
         InstanceGpu ig = {};
         std::memcpy(ig.transform, ic.transform, sizeof(ig.transform));
         ig.object_id            = ic.object_id;
@@ -575,6 +596,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         ig.mesh_id              = ic.mesh_id;
         inst_gpu.push_back(ig);
     }
+    next_object_id_ = object_id_base + max_local_id + 1;
     m.instance_storage = createBufferWithData(
         device_, queue_,
         inst_gpu.data(), inst_gpu.size() * sizeof(InstanceGpu),
@@ -634,6 +656,8 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         viewAll();
         initial_view_applied_ = true;
     }
+    // Grow selection_flags_ to cover the new id range.
+    ensureSelectionFlagsBuffer();
     if (isExposed()) requestUpdate();
 }
 
@@ -2017,6 +2041,9 @@ void WgpuViewportWindow::render() {
     // pyramid is as fresh as it can be before cull runs.
     if (hiz_enabled_) drainHizReadbacks();
 
+    // Flush any pending selection changes to GPU.
+    uploadSelectionFlagsIfDirty();
+
     WGPUSurfaceTexture surf_tex = {};
     wgpuSurfaceGetCurrentTexture(surface_, &surf_tex);
 
@@ -2391,14 +2418,17 @@ void WgpuViewportWindow::render() {
 
 bool WgpuViewportWindow::buildPipelines() {
     // ---- Bind group layouts ----------------------------------------------
-    WGPUBindGroupLayoutEntry frame_entries[1] = {};
+    WGPUBindGroupLayoutEntry frame_entries[2] = {};
     frame_entries[0].binding = 0;
     frame_entries[0].visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
     frame_entries[0].buffer.type = WGPUBufferBindingType_Uniform;
     frame_entries[0].buffer.minBindingSize = sizeof(FrameUniforms);
+    frame_entries[1].binding = 1;
+    frame_entries[1].visibility = WGPUShaderStage_Fragment;
+    frame_entries[1].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
 
     WGPUBindGroupLayoutDescriptor frame_bgl_desc = {};
-    frame_bgl_desc.entryCount = 1;
+    frame_bgl_desc.entryCount = 2;
     frame_bgl_desc.entries    = frame_entries;
     frame_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bgl");
     frame_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &frame_bgl_desc);
@@ -2479,26 +2509,91 @@ bool WgpuViewportWindow::buildPipelines() {
         return false;
     }
 
-    // ---- Per-frame uniform buffer + bind group ---------------------------
+    // ---- Per-frame uniform buffer ---------------------------------------
     WGPUBufferDescriptor fb_desc = {};
     fb_desc.size  = sizeof(FrameUniforms);
     fb_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
     fb_desc.label = svFromCStr("ifcviewer-wgpu.frame_uniform");
     frame_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &fb_desc);
 
-    WGPUBindGroupEntry fbg_entries[1] = {};
+    // frame_bind_group_ is built lazily once we have a selection_flags_
+    // buffer to bind alongside the uniform — ensureSelectionFlagsBuffer
+    // handles both the first creation and any subsequent resize.
+
+    return true;
+}
+
+void WgpuViewportWindow::ensureSelectionFlagsBuffer() {
+    // Round up to at least 64 entries (256 B — minimum useful storage) and
+    // grow geometrically when next_object_id_ outruns the current capacity.
+    const uint32_t needed = std::max<uint32_t>(next_object_id_, 64);
+    if (selection_flags_buffer_ && selection_flags_capacity_ >= needed) {
+        if (!frame_bind_group_) {
+            // First-time bind group creation after the buffer exists.
+            // (Should always be true here.)
+        } else {
+            return;
+        }
+    }
+
+    // (Re)allocate. Geometric grow so we don't recreate every frame as a
+    // big scene streams in.
+    uint32_t new_cap = selection_flags_capacity_;
+    if (new_cap < 64) new_cap = 64;
+    while (new_cap < needed) new_cap *= 2;
+
+    if (!selection_flags_buffer_ || selection_flags_capacity_ < new_cap) {
+        if (selection_flags_buffer_) {
+            wgpuBufferRelease(selection_flags_buffer_);
+            selection_flags_buffer_ = nullptr;
+        }
+        WGPUBufferDescriptor sb = {};
+        sb.size  = uint64_t(new_cap) * sizeof(uint32_t);
+        sb.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+        sb.label = svFromCStr("ifcviewer-wgpu.selection_flags");
+        selection_flags_buffer_   = wgpuDeviceCreateBuffer(device_, &sb);
+        selection_flags_capacity_ = new_cap;
+        // Initialise to zero so any unused range reads as "not selected".
+        // wgpuQueueWriteBuffer with a small zero block is enough; the rest
+        // is created as zero-initialised by wgpu per the spec.
+    }
+
+    // Rebuild the frame bind group against the (possibly new) buffer.
+    if (frame_bind_group_) {
+        wgpuBindGroupRelease(frame_bind_group_);
+        frame_bind_group_ = nullptr;
+    }
+    WGPUBindGroupEntry fbg_entries[2] = {};
     fbg_entries[0].binding = 0;
     fbg_entries[0].buffer  = frame_uniform_buffer_;
-    fbg_entries[0].offset  = 0;
     fbg_entries[0].size    = sizeof(FrameUniforms);
+    fbg_entries[1].binding = 1;
+    fbg_entries[1].buffer  = selection_flags_buffer_;
+    fbg_entries[1].size    = WGPU_WHOLE_SIZE;
     WGPUBindGroupDescriptor fbg_desc = {};
     fbg_desc.layout     = frame_bgl_;
-    fbg_desc.entryCount = 1;
+    fbg_desc.entryCount = 2;
     fbg_desc.entries    = fbg_entries;
     fbg_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bind_group");
     frame_bind_group_ = wgpuDeviceCreateBindGroup(device_, &fbg_desc);
 
-    return true;
+    // Force a re-upload of the flags into the (possibly new) buffer.
+    selection_flags_scratch_.assign(selection_flags_capacity_, 0);
+    selection_.fillFlagsArray(selection_flags_scratch_, selection_flags_capacity_);
+    wgpuQueueWriteBuffer(queue_, selection_flags_buffer_, 0,
+                         selection_flags_scratch_.data(),
+                         selection_flags_scratch_.size() * sizeof(uint32_t));
+    selection_.markClean();
+}
+
+void WgpuViewportWindow::uploadSelectionFlagsIfDirty() {
+    if (!selection_.dirty() || !selection_flags_buffer_) return;
+    selection_flags_scratch_.assign(selection_flags_capacity_, 0);
+    selection_.fillFlagsArray(selection_flags_scratch_, selection_flags_capacity_);
+    wgpuQueueWriteBuffer(queue_, selection_flags_buffer_, 0,
+                         selection_flags_scratch_.data(),
+                         selection_flags_scratch_.size() * sizeof(uint32_t));
+    selection_.markClean();
 }
 
 void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
@@ -2794,19 +2889,34 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
 
 void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == nav_active_button_) {
-        // LMB-click without drag → pick the object under the cursor.
+        // LMB-click without drag → pick the object under the cursor and
+        // route through the selection state. Shift = add, Ctrl = remove,
+        // no modifier = replace. Empty-space click clears.
         if (event->button() == Qt::LeftButton && !nav_dragged_) {
             const QPoint pos = event->position().toPoint();
             const int px = int(pos.x() * devicePixelRatio());
             const int py = int(pos.y() * devicePixelRatio());
             const uint32_t id = pickObjectAt(px, py);
-            if (id != 0) {
-                qInfo().noquote().nospace()
-                    << "[wgpu pick] object_id=" << id << " at (" << pos.x()
-                    << ", " << pos.y() << ")";
-            } else {
+            const auto mods = event->modifiers();
+            if (id == 0) {
+                if (!(mods & (Qt::ShiftModifier | Qt::ControlModifier))) {
+                    selection_.clear();
+                }
                 qInfo().noquote() << "[wgpu pick] miss";
+            } else if (mods & Qt::ControlModifier) {
+                selection_.remove(id);
+                qInfo().noquote().nospace()
+                    << "[wgpu pick] -remove object_id=" << id;
+            } else if (mods & Qt::ShiftModifier) {
+                selection_.add(id);
+                qInfo().noquote().nospace()
+                    << "[wgpu pick] +add object_id=" << id;
+            } else {
+                selection_.replace(id);
+                qInfo().noquote().nospace()
+                    << "[wgpu pick] replace object_id=" << id;
             }
+            requestUpdate();
         }
         nav_active_button_ = Qt::NoButton;
     }
@@ -2882,8 +2992,10 @@ void WgpuViewportWindow::shutdown() {
     releaseEdgeResources();
     releasePickResources();
 
-    if (frame_bind_group_)     { wgpuBindGroupRelease(frame_bind_group_);         frame_bind_group_ = nullptr; }
-    if (frame_uniform_buffer_) { wgpuBufferRelease(frame_uniform_buffer_);        frame_uniform_buffer_ = nullptr; }
+    if (frame_bind_group_)        { wgpuBindGroupRelease(frame_bind_group_);          frame_bind_group_ = nullptr; }
+    if (frame_uniform_buffer_)    { wgpuBufferRelease(frame_uniform_buffer_);         frame_uniform_buffer_ = nullptr; }
+    if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
+    selection_flags_capacity_ = 0;
     if (main_pipeline_)        { wgpuRenderPipelineRelease(main_pipeline_);       main_pipeline_ = nullptr; }
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }

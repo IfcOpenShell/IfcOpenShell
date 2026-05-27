@@ -34,6 +34,7 @@
 
 #include "SidecarCache.h"
 #include "WgpuModelGpuData.h"
+#include "WgpuSelectionState.h"
 
 // Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
 // adapter/device, configures a surface against the platform-native window
@@ -126,6 +127,14 @@ private:
     void  releaseEdgeResources();
 
     bool  buildPickPipeline();
+
+    // Make sure selection_flags_buffer_ is large enough to address every
+    // object_id in next_object_id_. Recreates (and rebuilds frame_bind_group_)
+    // if it grew. Safe to call every frame; idempotent when already sized.
+    void  ensureSelectionFlagsBuffer();
+    // Repack the CPU selection into bit-flags and wgpuQueueWriteBuffer to
+    // the GPU. Called from render() when selection_.dirty().
+    void  uploadSelectionFlagsIfDirty();
     void  ensurePickAttachments(int w, int h);
     void  releasePickResources();
     // Synchronous pick: encodes a one-shot R32UInt render of the current
@@ -213,6 +222,15 @@ private:
     // Per-frame uniform (view-proj + lighting), bound at group 0.
     WGPUBuffer    frame_uniform_buffer_ = nullptr;
     WGPUBindGroup frame_bind_group_     = nullptr;
+
+    // Selection flags storage buffer at group=0 binding=1. u32-per-object_id,
+    // bit 0 = selected, bit 1 = active. Sized to next_object_id_ rounded up;
+    // grows when a load pushes past the current capacity. Bound in the
+    // frame bind group because object_ids are globally unique across models.
+    WGPUBuffer         selection_flags_buffer_   = nullptr;
+    uint32_t           selection_flags_capacity_ = 0;  // number of u32 entries
+    WgpuSelectionState selection_;
+    std::vector<uint32_t> selection_flags_scratch_;
 
     // Depth attachment (4× MSAA), recreated on surface resize.
     WGPUTexture     depth_texture_ = nullptr;
@@ -334,7 +352,11 @@ private:
 
     // Per-model state, keyed by viewport-assigned model_id.
     std::unordered_map<uint32_t, WgpuModelGpuData> models_gpu_;
-    uint32_t next_model_id_ = 1;
+    uint32_t next_model_id_  = 1;
+    // Globally-unique object_id allocator. Each applyCachedModel rebases
+    // the sidecar's local object_ids by base_object_id_so_far so picks
+    // are unambiguous across models. Selection flags index this range.
+    uint32_t next_object_id_ = 1;
 
     // Sidecar paths queued before init completes.
     std::deque<QString> pending_sidecars_;
