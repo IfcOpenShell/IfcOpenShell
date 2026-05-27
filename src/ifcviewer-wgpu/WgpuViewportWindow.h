@@ -22,6 +22,7 @@
 
 #include <QWindow>
 #include <QColor>
+#include <QMatrix4x4>
 #include <QPoint>
 #include <QString>
 
@@ -118,6 +119,23 @@ private:
     void  releaseDepthTexture();
     void  ensureMsaaColorTexture(int w, int h);
     void  releaseMsaaColorTexture();
+
+    bool  buildHizPipeline();
+    void  ensureHizTextures(int viewport_w, int viewport_h);
+    void  releaseHizResources();
+    // Resolves the just-rendered MSAA depth into the small single-sample
+    // HiZ texture and copies it to the staging buffer. Encoded onto `enc`
+    // so it ships in the same command buffer as the main draw.
+    void  encodeHizResolve(WGPUCommandEncoder enc);
+    // Maps the staging buffer (waits via processEvents), max-reduces a CPU
+    // mip pyramid, stores the VP used. Run after submitting the encoder so
+    // the GPU has begun the copy. Updates hiz_valid_ to true on success.
+    void  readbackAndBuildHizPyramid(const QMatrix4x4& vp_used);
+    // Project AABB through hiz_vp_ and test against the pyramid. False
+    // (keep) if HiZ isn't valid yet, AABB straddles the near plane, or
+    // any projection is unreliable. True (cull) when AABB is provably
+    // behind every relevant pyramid cell.
+    bool  aabbOccludedByHiz(const float mn[3], const float mx[3]) const;
     void  updateFrameUniforms();
     void  flushPendingSidecarQueue();
     bool  computeSceneAabb(float mn[3], float mx[3]) const;
@@ -143,7 +161,8 @@ private:
                        const float eye[3], const float forward[3],
                        float focal_px,
                        float min_radius_px,
-                       float lod1_threshold_px);
+                       float lod1_threshold_px,
+                       bool  hiz_enabled);
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -182,6 +201,40 @@ private:
     int             msaa_h_             = 0;
     static constexpr uint32_t SAMPLE_COUNT = 4;
 
+    // HiZ occlusion culling. After each frame's main render pass we
+    // downsample MSAA depth into a small single-sample Depth32Float texture
+    // (hiz_resolve_texture_), copy it into a CPU-mappable staging buffer,
+    // wait for the map via processEvents, and max-reduce a mip pyramid on
+    // CPU. The cull pass in the *next* frame projects each instance's AABB
+    // through hiz_vp_ (the VP used to fill the pyramid) and rejects when
+    // the AABB's nearest projected z is behind the pyramid's coverage.
+    //
+    // GL's HiZ default is 256 wide; we match. Height tracks viewport aspect.
+    static constexpr uint32_t HIZ_BASE_W = 256;
+
+    WGPUShaderModule    hiz_shader_module_   = nullptr;
+    WGPUBindGroupLayout hiz_bgl_             = nullptr;
+    WGPUPipelineLayout  hiz_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  hiz_pipeline_        = nullptr;
+    WGPUBuffer          hiz_uniform_buffer_  = nullptr;
+    WGPUBindGroup       hiz_bind_group_      = nullptr;
+
+    WGPUTexture     hiz_resolve_texture_ = nullptr;
+    WGPUTextureView hiz_resolve_view_    = nullptr;
+    WGPUBuffer      hiz_staging_buffer_  = nullptr;
+    uint32_t        hiz_resolve_w_       = 0;
+    uint32_t        hiz_resolve_h_       = 0;
+    uint32_t        hiz_padded_bpr_      = 0;  // bytes per row in the staging buffer
+
+    // CPU mip pyramid (max-reduce). hiz_pyramid_[hiz_mip_offset_[L] + y*W + x].
+    std::vector<float>    hiz_pyramid_;
+    std::vector<uint32_t> hiz_mip_offset_;
+    std::vector<uint32_t> hiz_mip_w_;
+    std::vector<uint32_t> hiz_mip_h_;
+    QMatrix4x4            hiz_vp_;
+    bool                  hiz_valid_         = false;
+    uint32_t              hiz_reject_count_  = 0;  // per-frame stat
+
     QColor background_color_ = QColor("#202329");
 
     // Camera (orbit, right-handed Y-up world → wait, BIM is +Z up).
@@ -199,6 +252,10 @@ private:
     // motion mode uses 10.0 but we don't differentiate yet — that arrives
     // with mouse-driven motion-state tracking later).
     float min_pixel_radius_ = 2.0f;
+
+    // Master switch for HiZ occlusion. Set false to skip the depth resolve
+    // + readback + cull test entirely (matches IFC_NO_HIZ in the GL backend).
+    bool hiz_enabled_ = true;
 
     // Switch to LOD1 when an instance's projected bounding-sphere radius
     // drops below this many pixels. 0 disables (always LOD0). Defaults
