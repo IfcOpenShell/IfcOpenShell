@@ -50,11 +50,16 @@ int main(int argc, char* argv[]) {
         "params"});
     parser.addOption({"no-hiz",
         "Disable HiZ occlusion culling for perf diagnostics."});
+    parser.addOption({"web-limits",
+        "Request the WebGPU mandatory floor limits (128MB max storage binding) "
+        "instead of the adapter's actual max. Use to verify scenes fit through "
+        "browser constraints."});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
     viewport->resize(1280, 800);
-    if (parser.isSet("no-hiz")) viewport->hiz_enabled_ = false;
+    if (parser.isSet("no-hiz"))     viewport->hiz_enabled_ = false;
+    if (parser.isSet("web-limits")) viewport->web_limits_  = true;
 
     QWidget* container = QWidget::createWindowContainer(viewport);
     container->setMinimumSize(320, 240);

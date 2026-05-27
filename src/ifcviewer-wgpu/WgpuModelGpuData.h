@@ -36,64 +36,70 @@
 // wgpuQueueWriteBuffer. The vertex storage buffer is read by the vertex
 // shader (vertex pulling), not used as a classic vertex buffer — there is
 // no input-assembler vertex layout to match.
-struct WgpuModelGpuData {
-    // Raw VBO bytes at the INSTANCED_VERTEX_STRIDE_BYTES layout (12 B/vertex).
-    // Bound as a read-only storage buffer in the vertex shader.
-    WGPUBuffer vertex_storage = nullptr;
-    // Mesh-local u32 indices. base_vertex applied at draw time so a single
-    // index buffer per model is shared across meshes.
-    WGPUBuffer index_buffer = nullptr;
-    // MeshGpu[] — per-mesh quantization basis (aabb_min/max as vec4 pair).
-    // Derived from MeshInfo on upload.
-    WGPUBuffer mesh_storage = nullptr;
-    // InstanceGpu[] — per-instance transform + ids. Derived from InstanceCpu
-    // on upload. Stage 2 stores the cached `transform`; later stages will
-    // recompose from placement_transformation when stage matrices change.
-    WGPUBuffer instance_storage = nullptr;
+// Web (WebGPU) mandates `maxStorageBufferBindingSize` ≥ 128 MB; some browsers
+// grant more, but we plan for the floor. Applied identically on desktop —
+// the cost is a few extra draws per frame (1 per chunk; typical models =
+// 1–3 chunks), which is invisible compared to per-frame GPU work.
+//
+// At INSTANCED_VERTEX_STRIDE_BYTES = 12 B/vertex this caps a chunk at
+// 11.18 M vertices. A mesh whose vertex range is bigger than this can't fit
+// in any chunk and would need splitting — typical IFC meshes are nowhere
+// near (hundreds of verts), and applyCachedModel asserts loudly if it ever
+// happens.
+static constexpr uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 128ull * 1024 * 1024;
 
-    // Cross-mesh vertex pulling: one entry per visible (mesh, lod, instance)
-    // tuple, written into a single flat buffer per frame. The vertex shader
-    // binary-searches `prefix_sums` to find which entry a given
-    // gl_VertexID belongs to, then fetches that entry's mesh slice via the
-    // offsets baked here. Pre-sized at applyCachedModel to a generous
-    // worst case so the bind group stays valid for the model's lifetime.
-    //
-    // std430 layout: 16 bytes per entry, naturally aligned.
+struct WgpuModelGpuData {
+    // std430 layout: 16 bytes per entry, naturally aligned. base_vertex is
+    // CHUNK-LOCAL — the bound vertex_storage on that chunk's bind group
+    // gives the right slice when the shader indexes vertices[].
     struct alignas(16) VisibleDrawGpu {
         uint32_t mesh_id;        // -> meshes[] for quantisation basis
         uint32_t instance_idx;   // -> instances[] for transform + ids
-        uint32_t ebo_first_u32;  // start of this entry's slice in indices[]
-        uint32_t base_vertex;    // start of this mesh's slice in vertices[]
+        uint32_t ebo_first_u32;  // start of this entry's slice in indices[] (global)
+        uint32_t base_vertex;    // chunk-local start of this mesh's slice in vertex_storage
     };
     static_assert(sizeof(VisibleDrawGpu) == 16, "VisibleDrawGpu must be 16 bytes");
 
-    WGPUBuffer visible_draws_buffer = nullptr;
-    size_t     visible_draws_capacity = 0;  // entries (not bytes)
+    // Per-chunk state. Each chunk owns its vertex_storage (sized ≤ 128 MB)
+    // plus a small set of per-frame buffers (visible_draws, prefix_sums,
+    // uniform) and a bind group that pulls in the chunk's vertex_storage
+    // alongside the model-shared index/mesh/instance buffers. Rendering
+    // issues one drawcall per non-empty chunk.
+    struct Chunk {
+        WGPUBuffer    vertex_storage          = nullptr;
+        WGPUBuffer    visible_draws_buffer    = nullptr;
+        WGPUBuffer    prefix_sums_buffer      = nullptr;
+        WGPUBuffer    per_chunk_uniform       = nullptr;
+        WGPUBindGroup bind_group              = nullptr;
 
-    // prefix_sums[i] = sum of index_counts for visible_draws[0..i-1].
-    // Sized to visible_draws_capacity + 1 so prefix_sums[N] = total verts.
-    WGPUBuffer prefix_sums_buffer = nullptr;
-    size_t     prefix_sums_capacity = 0;  // entries (u32 count)
+        uint32_t      vertex_count            = 0;   // chunk capacity (vertices)
+        size_t        visible_draws_capacity  = 0;
+        size_t        prefix_sums_capacity    = 0;
 
-    // Per-model uniform: (draw_count, total_vertex_count, _pad, _pad).
-    // The vertex shader uses draw_count to bound the binary search; CPU
-    // uses total_vertex_count as the draw() call's vertex count.
-    WGPUBuffer per_model_uniform = nullptr;
+        // Per-frame, populated by cullModelCpuCompute and consumed by render().
+        uint32_t      total_visible_vertices  = 0;
+        uint32_t      total_visible_draws     = 0;
 
-    // Bind group binding the storage + uniform buffers above (group=1 in
-    // the main pipeline). Built in applyCachedModel.
-    WGPUBindGroup bind_group = nullptr;
+        std::vector<VisibleDrawGpu> visible_draws_scratch;
+        std::vector<uint32_t>       prefix_sums_scratch;
+    };
+    std::vector<Chunk> chunks;
 
-    // Per-frame, populated by cullModelCpu and consumed by render().
-    uint32_t total_visible_vertices = 0;
-    uint32_t total_visible_draws    = 0;
+    // For each mesh in meshes[], the chunk it lives in plus the chunk-local
+    // vertex offset (where its vertex range starts in chunk's vertex_storage).
+    // Populated at applyCachedModel time.
+    std::vector<uint32_t> mesh_chunk_idx;
+    std::vector<uint32_t> mesh_chunk_local_base_vertex;
 
-    // Scratch reused each frame so per-frame cull doesn't allocate. Sized
-    // on first use; never shrunk.
-    std::vector<VisibleDrawGpu> visible_draws_scratch;
-    std::vector<uint32_t>       prefix_sums_scratch;
+    // Model-shared buffers (NOT chunked — sizes safely under 128 MB on real
+    // scenes: index buffer up to ~76 MB on a 19 M-index model; instance and
+    // mesh storage are far smaller).
+    WGPUBuffer index_buffer     = nullptr;   // u32 mesh-local indices (read as storage)
+    WGPUBuffer mesh_storage     = nullptr;   // MeshGpu[]: aabb_min/max
+    WGPUBuffer instance_storage = nullptr;   // InstanceGpu[]: transform + ids
 
-    // Size mirrors for stats / range checks.
+    // Size mirrors for stats / range checks. vertex_bytes is the sum across
+    // all chunks; index_count / mesh_count / instance_count are unchanged.
     size_t   vertex_bytes   = 0;
     uint32_t index_count    = 0;
     uint32_t mesh_count     = 0;

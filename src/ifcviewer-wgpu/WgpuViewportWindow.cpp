@@ -132,26 +132,25 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 }
 
 void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
-    if (m.bind_group)           { wgpuBindGroupRelease(m.bind_group);         m.bind_group = nullptr; }
-    if (m.vertex_storage)       { wgpuBufferRelease(m.vertex_storage);        m.vertex_storage = nullptr; }
+    for (auto& c : m.chunks) {
+        if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
+        if (c.vertex_storage)       { wgpuBufferRelease(c.vertex_storage);         c.vertex_storage = nullptr; }
+        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
+        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
+        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
+    }
+    m.chunks.clear();
+    m.mesh_chunk_idx.clear();
+    m.mesh_chunk_local_base_vertex.clear();
     if (m.index_buffer)         { wgpuBufferRelease(m.index_buffer);          m.index_buffer = nullptr; }
     if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
     if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
-    if (m.visible_draws_buffer) { wgpuBufferRelease(m.visible_draws_buffer);  m.visible_draws_buffer = nullptr; }
-    if (m.prefix_sums_buffer)   { wgpuBufferRelease(m.prefix_sums_buffer);    m.prefix_sums_buffer = nullptr; }
-    if (m.per_model_uniform)    { wgpuBufferRelease(m.per_model_uniform);     m.per_model_uniform = nullptr; }
     m.vertex_bytes   = 0;
     m.index_count    = 0;
     m.mesh_count     = 0;
     m.instance_count = 0;
-    m.visible_draws_capacity = 0;
-    m.prefix_sums_capacity   = 0;
-    m.total_visible_vertices = 0;
-    m.total_visible_draws    = 0;
     m.meshes.clear();
     m.instances.clear();
-    m.visible_draws_scratch.clear();
-    m.prefix_sums_scratch.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -537,17 +536,95 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.mesh_count     = uint32_t(data.meshes.size());
     m.instance_count = uint32_t(data.instances.size());
 
-    // Vertex storage — raw bytes at INSTANCED_VERTEX_STRIDE_BYTES layout. The
-    // vertex shader will read this as a u8 storage buffer in stage 3.
-    m.vertex_storage = createBufferWithData(
-        device_, queue_,
-        data.vertices.data(), data.vertices.size(),
-        WGPUBufferUsage_Storage,
-        "model.vertex_storage");
+    // ---- Vertex chunking: split data.vertices into ≤128 MB chunks --------
+    // Each mesh's vertex range stays in exactly one chunk. We walk meshes in
+    // their existing order, accumulating into the current chunk until adding
+    // another mesh would overflow the limit; then start a new chunk.
+    //
+    // After this, mesh_chunk_idx[mi] tells which chunk mesh mi lives in,
+    // and mesh_chunk_local_base_vertex[mi] is the chunk-LOCAL vertex offset
+    // for that mesh (in vertex units, divide bytes by 12). The shader's
+    // vertex_storage binding will be the chunk's vertex_storage so the
+    // chunk-local base_vertex indexes correctly.
+    m.mesh_chunk_idx.assign(data.meshes.size(), 0);
+    m.mesh_chunk_local_base_vertex.assign(data.meshes.size(), 0);
 
-    // Index buffer — mesh-local u32 indices. Bound as a read-only storage
-    // buffer in the vertex shader (cross-mesh vertex pulling manually fetches
-    // indices); Index usage is kept for forward compatibility but never used.
+    struct ChunkPlan {
+        size_t   source_byte_offset = 0;  // where in data.vertices this chunk's slice starts
+        size_t   byte_count         = 0;  // bytes in this chunk
+        uint32_t vertex_count       = 0;  // vertex_count = byte_count / 12
+    };
+    std::vector<ChunkPlan> chunk_plans;
+    size_t   current_chunk_bytes  = 0;
+    uint32_t current_chunk_idx    = 0;
+    size_t   current_chunk_start  = 0;  // byte offset in data.vertices for current chunk's start
+
+    chunk_plans.push_back({});  // chunk 0
+    for (uint32_t mi = 0; mi < data.meshes.size(); ++mi) {
+        const MeshInfo& mesh = data.meshes[mi];
+        const size_t mesh_vertex_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        if (mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
+            qWarning().noquote().nospace()
+                << "Mesh #" << mi << " has " << mesh_vertex_bytes
+                << " B of vertex data — exceeds chunk limit "
+                << WGPU_CHUNK_VERTEX_BYTES_LIMIT
+                << " B. Mesh-splitting is not implemented; this mesh will be"
+                   " in an oversize chunk that won't fit a web browser.";
+        }
+
+        // Sanity: mesh.vbo_byte_offset is the GLOBAL byte offset in
+        // data.vertices. We use it for chunk bookkeeping; if a sidecar's
+        // meshes aren't sorted by vbo_byte_offset things go subtly wrong,
+        // but every baker produces them ascending.
+        if (current_chunk_bytes > 0
+            && current_chunk_bytes + mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
+            // Finalise current chunk, start a new one.
+            ChunkPlan& done = chunk_plans[current_chunk_idx];
+            done.source_byte_offset = current_chunk_start;
+            done.byte_count         = current_chunk_bytes;
+            done.vertex_count       = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+            ++current_chunk_idx;
+            chunk_plans.push_back({});
+            current_chunk_bytes = 0;
+            current_chunk_start = mesh.vbo_byte_offset;
+        } else if (current_chunk_bytes == 0) {
+            current_chunk_start = mesh.vbo_byte_offset;
+        }
+
+        m.mesh_chunk_idx[mi]             = current_chunk_idx;
+        m.mesh_chunk_local_base_vertex[mi]
+            = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+        current_chunk_bytes += mesh_vertex_bytes;
+    }
+    // Finalise the last (possibly first) chunk.
+    {
+        ChunkPlan& done = chunk_plans[current_chunk_idx];
+        done.source_byte_offset = current_chunk_start;
+        done.byte_count         = current_chunk_bytes;
+        done.vertex_count       = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+    }
+    // Drop trailing empty chunk (e.g. on a no-mesh model).
+    if (chunk_plans.back().byte_count == 0) chunk_plans.pop_back();
+
+    // ---- Allocate per-chunk buffers + upload vertex slices --------------
+    m.chunks.resize(chunk_plans.size());
+    for (size_t ci = 0; ci < chunk_plans.size(); ++ci) {
+        const ChunkPlan& plan = chunk_plans[ci];
+        WgpuModelGpuData::Chunk& c = m.chunks[ci];
+        c.vertex_count = plan.vertex_count;
+
+        const char* vs_label = (ci == 0) ? "model.chunk0.vertex_storage"
+                                         : "model.chunkN.vertex_storage";
+        c.vertex_storage = createBufferWithData(
+            device_, queue_,
+            data.vertices.data() + plan.source_byte_offset,
+            plan.byte_count,
+            WGPUBufferUsage_Storage,
+            vs_label);
+    }
+
+    // Index buffer — single, shared across chunks. Mesh-local u32 indices.
+    // Bound as storage in the vertex shader for manual fetch.
     m.index_buffer = createBufferWithData(
         device_, queue_,
         data.indices.data(), data.indices.size() * sizeof(uint32_t),
@@ -603,43 +680,47 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         WGPUBufferUsage_Storage,
         "model.instance_storage");
 
-    // Per-frame buffers for cross-mesh vertex pulling. Sized for the worst
-    // case so cullModelCpu only needs wgpuQueueWriteBuffer (never recreate)
-    // — keeps the bind group reference valid for the model's lifetime.
+    // Per-chunk buffers for cross-mesh vertex pulling. Pre-sized to the
+    // worst case (every visible instance ends up in this one chunk) so
+    // wgpuQueueWriteBuffer never has to recreate them mid-frame and the
+    // bind group reference stays valid for the model's lifetime.
     //
-    // VisibleDraw capacity: up to one entry per (instance × 2 LODs). LOD1 is
-    // only used when bake produced one, but allocating headroom is cheap
-    // (~3 MB worst-case for a 100k-instance model).
-    const size_t draw_cap = std::max<size_t>(size_t(data.instances.size()) * 2u, 1u);
-    const size_t draws_bytes = draw_cap * sizeof(WgpuModelGpuData::VisibleDrawGpu);
-    WGPUBufferDescriptor vd_desc = {};
-    vd_desc.size  = std::max<uint64_t>(draws_bytes, 16);
-    vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-    vd_desc.label = svFromCStr("model.visible_draws");
-    m.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
-    m.visible_draws_capacity = draw_cap;
+    // VisibleDraw capacity: up to one entry per (instance × 2 LODs). LOD1
+    // only fills when bake produced one, but headroom is cheap (~3 MB
+    // worst-case per chunk for a 100k-instance model).
+    const size_t draw_cap_per_chunk = std::max<size_t>(size_t(data.instances.size()) * 2u, 1u);
+    const size_t draws_bytes_per_chunk = draw_cap_per_chunk * sizeof(WgpuModelGpuData::VisibleDrawGpu);
+    const size_t ps_cap_per_chunk = draw_cap_per_chunk + 1;
+    for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+        WgpuModelGpuData::Chunk& c = m.chunks[ci];
 
-    // prefix_sums: draw_cap + 1 entries (final entry = total vertex count).
-    const size_t ps_cap = draw_cap + 1;
-    WGPUBufferDescriptor ps_desc = {};
-    ps_desc.size  = std::max<uint64_t>(ps_cap * sizeof(uint32_t), 16);
-    ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-    ps_desc.label = svFromCStr("model.prefix_sums");
-    m.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-    m.prefix_sums_capacity = ps_cap;
+        WGPUBufferDescriptor vd_desc = {};
+        vd_desc.size  = std::max<uint64_t>(draws_bytes_per_chunk, 16);
+        vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+        vd_desc.label = svFromCStr("model.chunk.visible_draws");
+        c.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
+        c.visible_draws_capacity = draw_cap_per_chunk;
 
-    // 16-byte per-model uniform: (draw_count, total_vertex_count, _pad, _pad).
-    WGPUBufferDescriptor mu_desc = {};
-    mu_desc.size  = 16;
-    mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-    mu_desc.label = svFromCStr("model.per_model_uniform");
-    m.per_model_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+        WGPUBufferDescriptor ps_desc = {};
+        ps_desc.size  = std::max<uint64_t>(ps_cap_per_chunk * sizeof(uint32_t), 16);
+        ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+        ps_desc.label = svFromCStr("model.chunk.prefix_sums");
+        c.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
+        c.prefix_sums_capacity = ps_cap_per_chunk;
+
+        WGPUBufferDescriptor mu_desc = {};
+        mu_desc.size  = 16;
+        mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        mu_desc.label = svFromCStr("model.chunk.uniform");
+        c.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+
+        c.visible_draws_scratch.reserve(draw_cap_per_chunk);
+        c.prefix_sums_scratch.reserve(ps_cap_per_chunk);
+    }
 
     // Hand off CPU mirrors (cull / picking will need them later).
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
-    m.visible_draws_scratch.reserve(draw_cap);
-    m.prefix_sums_scratch.reserve(ps_cap);
 
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
     WgpuModelGpuData& mref = inserted->second;
@@ -650,7 +731,8 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         << " verts=" << mref.vertex_bytes << "B"
         << " idx="   << mref.index_count
         << " meshes=" << mref.mesh_count
-        << " instances=" << mref.instance_count;
+        << " instances=" << mref.instance_count
+        << " chunks=" << mref.chunks.size();
 
     if (!initial_view_applied_) {
         viewAll();
@@ -779,19 +861,29 @@ bool WgpuViewportWindow::initWgpu() {
     struct DeviceReq { WGPUDevice device = nullptr; bool done = false; bool ok = false; };
     DeviceReq dreq;
 
-    // Query what the adapter can do, and request the same headroom on the
-    // device so a single large model's vertex/instance storage buffer doesn't
-    // hit the conservative defaults (128 MB binding, 256 MB buffer). Real
-    // BIM models routinely cross 100 MB of vertex bytes; without this the
-    // first applyCachedModel fails with a bind-group validation error.
-    //
-    // For eventual web parity this needs revisiting — browsers cap at the
-    // defaults — but native targets always support the requested ceilings.
+    // Pick the limits to request on the device. Default = the adapter's
+    // actual maximum so large native scenes get all the headroom the GPU
+    // can give. --web-limits forces the WebGPU spec mandatory floor
+    // (128 MB max storage binding, 256 MB max buffer) so we can verify on
+    // desktop that the renderer's chunking actually fits through browser
+    // constraints — turns "trust me, web will work" into a hard test.
     WGPULimits adapter_limits = {};
     wgpuAdapterGetLimits(adapter_, &adapter_limits);
 
+    WGPULimits web_floor_limits = adapter_limits;
+    // Override just the two that BIM scenes typically blow past. Everything
+    // else stays at adapter max (no point making the device weaker than it
+    // could be on facets we know browsers grant generously, e.g. workgroup
+    // sizes — those are texture / compute limits and we don't hit them).
+    web_floor_limits.maxStorageBufferBindingSize = 128ull * 1024 * 1024;
+    web_floor_limits.maxBufferSize               = 256ull * 1024 * 1024;
+
     WGPUDeviceDescriptor dev_desc = {};
-    dev_desc.requiredLimits = &adapter_limits;
+    dev_desc.requiredLimits = web_limits_ ? &web_floor_limits : &adapter_limits;
+    if (web_limits_) {
+        qInfo() << "wgpu --web-limits: requesting browser-floor limits"
+                << "(maxStorageBufferBindingSize=128MB, maxBufferSize=256MB)";
+    }
     // Surface uncaptured errors (validation failures etc.) into qWarning so
     // they're attributable rather than silently swallowed.
     dev_desc.uncapturedErrorCallbackInfo.callback = onUncapturedError;
@@ -1413,9 +1505,12 @@ uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
     for (const auto& [mid, m] : models_gpu_) {
-        if (m.hidden || !m.bind_group || m.total_visible_vertices == 0) continue;
-        wgpuRenderPassEncoderSetBindGroup(pass, 1, m.bind_group, 0, nullptr);
-        wgpuRenderPassEncoderDraw(pass, m.total_visible_vertices, 1, 0, 0);
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
     }
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
@@ -1921,22 +2016,28 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                                                  float min_radius_px,
                                                  float lod1_threshold_px,
                                                  bool  hiz_enabled) const {
-    m.total_visible_vertices = 0;
-    m.total_visible_draws    = 0;
     uint32_t hiz_rejects = 0;
 
-    if (m.instances.empty() || m.meshes.empty()
-        || !m.visible_draws_buffer || !m.prefix_sums_buffer || !m.per_model_uniform) {
+    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()) {
         return 0;
     }
 
     const bool contrib_enabled = (min_radius_px      > 0.0f);
     const bool lod_enabled     = (lod1_threshold_px  > 0.0f);
 
-    m.visible_draws_scratch.clear();
-    m.prefix_sums_scratch.clear();
-    m.prefix_sums_scratch.push_back(0);  // prefix_sums[0] = 0
-    uint32_t running_vertex_count = 0;
+    // Reset per-chunk scratch + counters at the start of each cull.
+    for (auto& c : m.chunks) {
+        c.visible_draws_scratch.clear();
+        c.prefix_sums_scratch.clear();
+        c.prefix_sums_scratch.push_back(0);
+        c.total_visible_vertices = 0;
+        c.total_visible_draws    = 0;
+    }
+
+    // Per-chunk running vertex count (used to populate that chunk's prefix
+    // sums incrementally). Kept on the stack to avoid heap churn for small
+    // chunk counts.
+    std::vector<uint32_t> running_vertex_count(m.chunks.size(), 0);
 
     for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
         const auto& inst = m.instances[i];
@@ -1985,53 +2086,61 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                             && mesh.lod1_index_count > 0
                             && projected_px < lod1_threshold_px;
 
-        // Emit one VisibleDraw entry per visible instance. Cross-mesh vertex
-        // pulling means the shader binary-searches prefix_sums to locate
-        // this entry from a global vertex_index.
+        // Emit one VisibleDraw entry into the chunk that owns this mesh's
+        // vertex range. base_vertex is CHUNK-LOCAL; the chunk's bind group
+        // points at its own vertex_storage so the shader indexes correctly.
+        const uint32_t chunk_idx = m.mesh_chunk_idx[inst.mesh_id];
+        WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
+
         WgpuModelGpuData::VisibleDrawGpu d;
-        d.mesh_id      = inst.mesh_id;
-        d.instance_idx = i;
+        d.mesh_id       = inst.mesh_id;
+        d.instance_idx  = i;
         d.ebo_first_u32 = (use_lod1 ? mesh.lod1_ebo_byte_offset : mesh.ebo_byte_offset)
                           / uint32_t(sizeof(uint32_t));
-        d.base_vertex  = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
-        m.visible_draws_scratch.push_back(d);
+        d.base_vertex   = m.mesh_chunk_local_base_vertex[inst.mesh_id];
+        c.visible_draws_scratch.push_back(d);
 
         const uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count
                                                     : mesh.index_count;
-        running_vertex_count += entry_vert_count;
-        m.prefix_sums_scratch.push_back(running_vertex_count);
+        running_vertex_count[chunk_idx] += entry_vert_count;
+        c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
     }
 
-    m.total_visible_draws    = uint32_t(m.visible_draws_scratch.size());
-    m.total_visible_vertices = running_vertex_count;
+    for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+        auto& c = m.chunks[ci];
+        c.total_visible_draws    = uint32_t(c.visible_draws_scratch.size());
+        c.total_visible_vertices = running_vertex_count[ci];
+    }
     return hiz_rejects;
 }
 
 void WgpuViewportWindow::cullModelCpuUpload(WgpuModelGpuData& m) {
-    if (!m.visible_draws_buffer || !m.prefix_sums_buffer || !m.per_model_uniform) return;
+    for (auto& c : m.chunks) {
+        if (!c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
 
-    if (m.total_visible_draws == 0) {
-        // No visible geometry this frame; render() will skip the draw.
-        // Still update the uniform so the shader sees zero (defensive).
-        const uint32_t um[4] = { 0, 0, 0, 0 };
-        wgpuQueueWriteBuffer(queue_, m.per_model_uniform, 0, um, sizeof(um));
-        return;
+        if (c.total_visible_draws == 0) {
+            // Render() will skip this chunk; still zero the uniform so any
+            // accidental dispatch sees 0 work.
+            const uint32_t um[4] = { 0, 0, 0, 0 };
+            wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+            continue;
+        }
+
+        wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
+                             c.visible_draws_scratch.data(),
+                             c.visible_draws_scratch.size()
+                                 * sizeof(WgpuModelGpuData::VisibleDrawGpu));
+        wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
+                             c.prefix_sums_scratch.data(),
+                             c.prefix_sums_scratch.size() * sizeof(uint32_t));
+
+        const uint32_t um[4] = {
+            c.total_visible_draws,
+            c.total_visible_vertices,
+            0, 0,
+        };
+        wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
     }
-
-    wgpuQueueWriteBuffer(queue_, m.visible_draws_buffer, 0,
-                         m.visible_draws_scratch.data(),
-                         m.visible_draws_scratch.size()
-                             * sizeof(WgpuModelGpuData::VisibleDrawGpu));
-    wgpuQueueWriteBuffer(queue_, m.prefix_sums_buffer, 0,
-                         m.prefix_sums_scratch.data(),
-                         m.prefix_sums_scratch.size() * sizeof(uint32_t));
-
-    const uint32_t um[4] = {
-        m.total_visible_draws,
-        m.total_visible_vertices,
-        0, 0,
-    };
-    wgpuQueueWriteBuffer(queue_, m.per_model_uniform, 0, um, sizeof(um));
 }
 
 void WgpuViewportWindow::render() {
@@ -2121,10 +2230,11 @@ void WgpuViewportWindow::render() {
              || camera_distance_  != prev_camera_distance_
              || camera_yaw_deg_   != prev_camera_yaw_deg_
              || camera_pitch_deg_ != prev_camera_pitch_deg_);
+        const bool use_motion_threshold =
+            camera_moved && motion_min_pixel_radius_ > min_pixel_radius_;
         const float effective_min_px =
-            (camera_moved && motion_min_pixel_radius_ > min_pixel_radius_)
-                ? motion_min_pixel_radius_
-                : min_pixel_radius_;
+            use_motion_threshold ? motion_min_pixel_radius_ : min_pixel_radius_;
+        last_cull_was_motion_ = use_motion_threshold;
 
         // Cull each model on its own worker thread. wgpu queue writes are
         // serialised on the main thread after the parallel compute joins —
@@ -2149,10 +2259,12 @@ void WgpuViewportWindow::render() {
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
             cullModelCpuUpload(m);
-            last_visible_objects_   += m.total_visible_draws;
-            last_visible_triangles_ += m.total_visible_vertices / 3u;
-            // One CPU drawcall per model now (cross-mesh vertex pulling).
-            if (m.total_visible_draws > 0) last_sub_draws_ += 1;
+            for (const auto& c : m.chunks) {
+                last_visible_objects_   += c.total_visible_draws;
+                last_visible_triangles_ += c.total_visible_vertices / 3u;
+                // One CPU drawcall per non-empty chunk.
+                if (c.total_visible_draws > 0) last_sub_draws_ += 1;
+            }
         }
     }
 
@@ -2205,12 +2317,15 @@ void WgpuViewportWindow::render() {
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [mid, m] : models_gpu_) {
-            if (m.hidden || !m.bind_group || m.total_visible_vertices == 0) continue;
-            wgpuRenderPassEncoderSetBindGroup(pass, 1, m.bind_group, 0, nullptr);
-            // Single CPU drawcall per model. The vertex shader binary-
-            // searches prefix_sums by vertex_index to find (mesh, instance)
-            // and pulls index + vertex data manually from storage buffers.
-            wgpuRenderPassEncoderDraw(pass, m.total_visible_vertices, 1, 0, 0);
+            if (m.hidden) continue;
+            // One drawcall per non-empty chunk. Each chunk binds its own
+            // vertex_storage + visible_draws + prefix_sums + uniform via
+            // its bind_group. The shader is identical across chunks.
+            for (const auto& c : m.chunks) {
+                if (!c.bind_group || c.total_visible_vertices == 0) continue;
+                wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+                wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+            }
         }
     }
 
@@ -2340,6 +2455,12 @@ void WgpuViewportWindow::render() {
 
     wgpuSurfacePresent(surface_);
     wgpuTextureRelease(surf_tex.texture);
+
+    // Settle frame: if this frame applied the motion contribution threshold,
+    // schedule one more frame so the camera-now-stopped state recomputes
+    // the cull at the still threshold and the previously dropped sub-pixel
+    // instances pop back in. Matches GL's behaviour.
+    if (last_cull_was_motion_) requestUpdate();
 
     // ---- HiZ async readback handoff -------------------------------------
     // Don't block — just kick off the mapAsync for the slot we filled this
@@ -2600,46 +2721,52 @@ void WgpuViewportWindow::uploadSelectionFlagsIfDirty() {
 }
 
 void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
-    if (m.bind_group) {
-        wgpuBindGroupRelease(m.bind_group);
-        m.bind_group = nullptr;
-    }
-    if (!m.vertex_storage || !m.mesh_storage || !m.instance_storage
-        || !m.index_buffer || !m.visible_draws_buffer || !m.prefix_sums_buffer
-        || !m.per_model_uniform) {
-        // Empty model — no bind group needed; the draw loop will skip it.
+    if (!m.mesh_storage || !m.instance_storage || !m.index_buffer) {
+        // Empty model — no chunks, no bind groups; the draw loop will skip.
         return;
     }
 
-    WGPUBindGroupEntry entries[7] = {};
-    entries[0].binding = 0;
-    entries[0].buffer  = m.vertex_storage;
-    entries[0].size    = WGPU_WHOLE_SIZE;
-    entries[1].binding = 1;
-    entries[1].buffer  = m.mesh_storage;
-    entries[1].size    = WGPU_WHOLE_SIZE;
-    entries[2].binding = 2;
-    entries[2].buffer  = m.instance_storage;
-    entries[2].size    = WGPU_WHOLE_SIZE;
-    entries[3].binding = 3;
-    entries[3].buffer  = m.index_buffer;
-    entries[3].size    = WGPU_WHOLE_SIZE;
-    entries[4].binding = 4;
-    entries[4].buffer  = m.visible_draws_buffer;
-    entries[4].size    = WGPU_WHOLE_SIZE;
-    entries[5].binding = 5;
-    entries[5].buffer  = m.prefix_sums_buffer;
-    entries[5].size    = WGPU_WHOLE_SIZE;
-    entries[6].binding = 6;
-    entries[6].buffer  = m.per_model_uniform;
-    entries[6].size    = 16;
+    // One bind group per chunk: chunk's vertex_storage, visible_draws,
+    // prefix_sums, per_chunk_uniform — plus the shared mesh / instance /
+    // index buffers.
+    for (auto& c : m.chunks) {
+        if (c.bind_group) {
+            wgpuBindGroupRelease(c.bind_group);
+            c.bind_group = nullptr;
+        }
+        if (!c.vertex_storage || !c.visible_draws_buffer
+            || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
 
-    WGPUBindGroupDescriptor desc = {};
-    desc.layout     = model_bgl_;
-    desc.entryCount = 7;
-    desc.entries    = entries;
-    desc.label      = svFromCStr("ifcviewer-wgpu.model_bind_group");
-    m.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
+        WGPUBindGroupEntry entries[7] = {};
+        entries[0].binding = 0;
+        entries[0].buffer  = c.vertex_storage;
+        entries[0].size    = WGPU_WHOLE_SIZE;
+        entries[1].binding = 1;
+        entries[1].buffer  = m.mesh_storage;
+        entries[1].size    = WGPU_WHOLE_SIZE;
+        entries[2].binding = 2;
+        entries[2].buffer  = m.instance_storage;
+        entries[2].size    = WGPU_WHOLE_SIZE;
+        entries[3].binding = 3;
+        entries[3].buffer  = m.index_buffer;
+        entries[3].size    = WGPU_WHOLE_SIZE;
+        entries[4].binding = 4;
+        entries[4].buffer  = c.visible_draws_buffer;
+        entries[4].size    = WGPU_WHOLE_SIZE;
+        entries[5].binding = 5;
+        entries[5].buffer  = c.prefix_sums_buffer;
+        entries[5].size    = WGPU_WHOLE_SIZE;
+        entries[6].binding = 6;
+        entries[6].buffer  = c.per_chunk_uniform;
+        entries[6].size    = 16;
+
+        WGPUBindGroupDescriptor desc = {};
+        desc.layout     = model_bgl_;
+        desc.entryCount = 7;
+        desc.entries    = entries;
+        desc.label      = svFromCStr("ifcviewer-wgpu.chunk_bind_group");
+        c.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
+    }
 }
 
 // -----------------------------------------------------------------------------

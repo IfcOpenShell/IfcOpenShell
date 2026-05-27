@@ -352,6 +352,12 @@ public:
     // + readback + cull test entirely (matches IFC_NO_HIZ in the GL backend).
     bool hiz_enabled_ = true;
 
+    // When true, initWgpu requests the WebGPU mandatory floor limits
+    // (maxStorageBufferBindingSize=128MB, maxBufferSize=256MB) instead of
+    // the adapter's actual maximum. Use this to verify on desktop that a
+    // scene fits through the constraints a browser will impose.
+    bool web_limits_ = false;
+
 private:
 
     // Switch to LOD1 when an instance's projected bounding-sphere radius
@@ -383,6 +389,14 @@ private:
     float prev_camera_yaw_deg_     = 0.0f;
     float prev_camera_pitch_deg_   = 0.0f;
     bool  has_prev_camera_         = false;
+
+    // True iff the last cull used the motion threshold. Render schedules a
+    // single settle frame after motion stops so the previously dropped
+    // sub-pixel instances reappear at the still threshold. Without this,
+    // event-driven rendering would leave those instances missing forever
+    // because no further frame is requested after the user releases the
+    // mouse. Matches GL's last_cull_was_motion_ behaviour.
+    bool  last_cull_was_motion_    = false;
 
     // Pending one-shot screenshot, captured at the end of the next render().
     QString pending_screenshot_path_;
