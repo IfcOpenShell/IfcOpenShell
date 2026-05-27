@@ -18,29 +18,54 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Shared Enable / Finish / Cancel lifecycle mixins for parametric-edit operators.
+"""Shared operator mixins for parametric-edit operators.
 
-Two mixins fit the parametric-edit triads in ``bim/module/model/``:
+Edit-lifecycle mixins (Enable / Finish / Cancel):
+    `FeatureModifierEditMixin` — door, window (BBIM_<Type> pset; nested
+        lining/panel properties; Finish + Cancel route through
+        ``ifcopenshell.api.feature``).
+    `PathPreservingEditMixin` — railing, roof (path_data preserved across
+        edit; only general kwargs are user-editable).
 
-`FeatureModifierEditMixin`
-    Door, Window — BBIM_<Type> pset with nested ``lining_properties`` /
-    ``panel_properties``; Finish calls ``update_<type>_modifier_representation``
-    via ``ifcopenshell.api.feature``; Cancel restores via ``switch_representation``.
+Pattern selection (which approach a new feature should adopt):
+    Every parametric edit lifecycle commits to one of three patterns. Pick by
+    answering "does the feature share the Enable→Finish→Cancel shape that
+    one of the existing mixins already encodes?":
 
-`PathPreservingEditMixin`
-    Railing, Roof — BBIM_<Type> pset whose ``path_data`` is preserved through
-    edit (only general kwargs are user-editable); Finish calls
-    ``update_<type>_modifier_bmesh`` / ``update_<type>_modifier_ifc_data``;
-    Cancel re-reads the pset and rebuilds the bmesh preview.
+    A. Inherit one of the shared mixins below and route through
+       `tool.Parametric.build_edit_lifecycle`:
 
-Stair and Wall stay standalone — their lifecycles diverge in ways that don't
-fit either mixin without optional escape hatches (Stair has a unique
-``update_ifc_stair_props`` post-Finish step + a separate ``get_props_kwargs_for_ifc_export``;
-Wall is validation-first, snapshot-driven, no preview regen in operators).
+       - `FeatureModifierEditMixin` when the feature stores its pset as
+         `{general fields} + {lining_properties: {...}} + {panel_properties: {...}}`
+         and Finish must call a per-type `update_<type>_modifier_representation`.
 
-This module sits separately from `bonsai.tool.Parametric` (the registry +
-auto-commit) because it imports ``bonsai.tool`` freely, while the registry
-itself must stay light — ``tool/blender.py`` consumes the registry at module load."""
+       - `PathPreservingEditMixin` when the feature's pset carries a
+         `path_data` field that survives general-kwarg edits untouched, with
+         a separate Enable/Finish/Cancel lifecycle for path editing itself.
+
+    B. Write a per-feature mixin that subclasses `ParametricEditMixinBase`
+       and provides `_enable_targets` / `_finish_targets` / `_cancel_targets`,
+       then route through `build_edit_lifecycle`. Pick this when the
+       feature's pset roundtrip or representation handling diverges from the
+       shared mixins but the Enable→Finish→Cancel shape still fits.
+
+    C. Declare standalone Enable/Finish/Cancel Operator subclasses (no
+       factory) when the feature's parameter-change logic is sufficiently
+       unique that even a per-feature mixin would force optional hooks or
+       dead branches. Such operators MUST call the matrix_world drift
+       helpers (`tool.Geometry.commit_placement_if_moved` on Enable/Finish,
+       `tool.Geometry.restore_or_rebaseline_placement` on Cancel) — the
+       drift contract is enforced uniformly regardless of which pattern the
+       operators adopt.
+
+    The authoritative list of registered parametric types — and which use
+    `build_edit_lifecycle` vs. standalone operators — lives in
+    `tool/parametric.py`'s `EDIT_TYPES` and is enforced by the registry
+    contract tests in `test/bim/test_parametric_registry.py`.
+
+This module hosts operator-side mixins that import ``bonsai.tool`` freely.
+The lightweight parametric registry consumed at addon-enable time must stay
+free of such imports and lives separately in ``tool/parametric.py``."""
 
 from __future__ import annotations
 
@@ -48,9 +73,7 @@ import json
 from typing import TYPE_CHECKING, ClassVar
 
 import bpy
-import ifcopenshell.api.pset
 import ifcopenshell.util.element
-import ifcopenshell.util.representation
 
 import bonsai.core.geometry
 import bonsai.tool as tool
@@ -59,8 +82,8 @@ if TYPE_CHECKING:
     from ifcopenshell import entity_instance
 
 
-class _ParametricEditMixinBase:
-    """Common scaffolding for parametric edit-triad mixins.
+class ParametricEditMixinBase:
+    """Common scaffolding for parametric edit-lifecycle mixins.
 
     Each per-type subclass provides four hooks:
 
@@ -68,6 +91,11 @@ class _ParametricEditMixinBase:
         ``_is_element_type(element)``: IFC element predicate
         ``_get_props(obj)``: PropertyGroup accessor
         ``_iter_targets(context)``: list of objects to act on (default: ``[active_object]``)
+
+    Drift handling is built in: pre-edit matrix_world drift commits to IFC on
+    Enable, in-edit drag commits on Finish, and Cancel restores the committed
+    IFC placement. This prevents an uncommitted drag from disappearing on
+    Finish or snapping back on Cancel.
 
     Operator subclasses call one of ``_enable_targets`` / ``_finish_targets`` /
     ``_cancel_targets`` from their ``_execute`` method."""
@@ -99,8 +127,29 @@ class _ParametricEditMixinBase:
             return None
         return element, cls._get_props(obj)
 
+    @classmethod
+    def _handle_drift_on_enable(cls, obj: bpy.types.Object) -> None:
+        tool.Geometry.commit_placement_if_moved(obj, apply_scale=False)
 
-class FeatureModifierEditMixin(_ParametricEditMixinBase):
+    @classmethod
+    def _handle_drift_on_finish(cls, obj: bpy.types.Object) -> None:
+        tool.Geometry.commit_placement_if_moved(obj)
+
+    @classmethod
+    def _handle_drift_on_cancel(cls, obj: bpy.types.Object, element: entity_instance) -> None:
+        tool.Geometry.restore_or_rebaseline_placement(obj, element)
+
+    @classmethod
+    def _mark_type_thumbnail_dirty(cls, element: entity_instance) -> None:
+        """Mark the element's type's preview thumbnail for refresh so the
+        property-panel preview reflects post-edit geometry. No-op for
+        occurrences without a backing type."""
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            tool.Model.mark_thumbnail_for_update(element_type)
+
+
+class FeatureModifierEditMixin(ParametricEditMixinBase):
     """Lifecycle for door- and window-style parametric modifier operators.
 
     Enable:
@@ -121,10 +170,7 @@ class FeatureModifierEditMixin(_ParametricEditMixinBase):
 
     @classmethod
     def _update_modifier_representation(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
-        """Hook: call the per-type ``update_<type>_modifier_representation``.
-
-        Door's helper takes ``obj``; window's takes ``context``. The hook lets
-        each subclass forward to its existing helper without unifying signatures."""
+        """Hook: call the per-type ``update_<type>_modifier_representation``."""
         raise NotImplementedError
 
     @classmethod
@@ -133,6 +179,7 @@ class FeatureModifierEditMixin(_ParametricEditMixinBase):
         if resolved is None:
             return
         element, props = resolved
+        cls._handle_drift_on_enable(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, cls.pset_name, "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
@@ -152,12 +199,9 @@ class FeatureModifierEditMixin(_ParametricEditMixinBase):
         data["lining_properties"] = props.get_lining_kwargs(convert_to_project_units=True)
         data["panel_properties"] = props.get_panel_kwargs(convert_to_project_units=True)
         cls._update_modifier_representation(obj, context)
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type:
-            tool.Model.mark_thumbnail_for_update(element_type)
-        pset = tool.Pset.get_element_pset(element, cls.pset_name)
-        data_text = tool.Ifc.get().createIfcText(json.dumps(data, default=list))
-        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data_text})
+        cls._mark_type_thumbnail_dirty(element)
+        tool.Pset.write_bbim_data(element, cls.pset_name, data)
+        cls._handle_drift_on_finish(obj)
         # Set only on success: if any IFC op above raised, the user's draft survives for retry.
         props.is_editing = False
 
@@ -167,13 +211,21 @@ class FeatureModifierEditMixin(_ParametricEditMixinBase):
         if resolved is None:
             return
         element, props = resolved
-        data = json.loads(ifcopenshell.util.element.get_pset(element, cls.pset_name, "Data"))
-        data.update(data.pop("lining_properties"))
-        data.update(data.pop("panel_properties"))
-        props.set_props_kwargs_from_ifc_data(data)
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=body)
-        props.is_editing = False
+        # Cancel must always clear is_editing — leaving it True after a
+        # restore-failure would block the user from re-entering edit mode and
+        # the next save's stale-flag heal would silently roll back the
+        # cancellation. Wrap the restore in try/finally so the flag flips
+        # even on partial failure.
+        try:
+            data = json.loads(ifcopenshell.util.element.get_pset(element, cls.pset_name, "Data"))
+            data.update(data.pop("lining_properties"))
+            data.update(data.pop("panel_properties"))
+            props.set_props_kwargs_from_ifc_data(data)
+            body = tool.Geometry.get_body_representation(element)
+            bonsai.core.geometry.switch_representation(tool.Ifc, tool.Geometry, obj=obj, representation=body)
+            cls._handle_drift_on_cancel(obj, element)
+        finally:
+            props.is_editing = False
 
     def _enable_targets(self, context: bpy.types.Context) -> set[str]:
         for obj in self._iter_targets(context):
@@ -191,19 +243,20 @@ class FeatureModifierEditMixin(_ParametricEditMixinBase):
         return {"FINISHED"}
 
 
-class PathPreservingEditMixin(_ParametricEditMixinBase):
+class PathPreservingEditMixin(ParametricEditMixinBase):
     """Lifecycle for railing- and roof-style parametric modifier operators.
 
     Distinctive: ``path_data`` is part of the BBIM_<Type> pset but is **not**
-    user-editable through this triad — it survives the edit untouched, only
+    user-editable through this lifecycle — it survives the edit untouched, only
     general kwargs are diffed. (Path editing has its own separate operator
     pair, ``Enable/Finish/CancelEditing<Type>Path``, out of scope here.)
 
     Enable:
         Fetch pset data via ``tool.Model.get_modeling_bbim_pset_data`` → set
         draft props → ``is_editing = True``. The subclass post-load hook
-        lets railing JSON-serialise ``path_data`` for the PropertyGroup
-        string field.
+        can reshape the dict to fit the PropertyGroup's storage layout
+        (e.g., pre-serialise a structured pset value to JSON for a
+        ``StringProperty`` field).
 
     Finish:
         Read fresh pset → keep ``path_data`` → gather ``general`` kwargs
@@ -213,16 +266,18 @@ class PathPreservingEditMixin(_ParametricEditMixinBase):
 
     Cancel:
         Read fresh pset → restore draft props → call
-        ``_update_modifier_bmesh`` (per-type bmesh preview) →
-        ``is_editing = False``."""
+        ``_restore_viewport_after_cancel`` (per-type viewport restore — typically
+        rebuilds the bmesh preview, but subclasses may load a different
+        representation entirely) → ``is_editing = False``."""
 
     @classmethod
     def _post_load_data(cls, data: dict) -> dict:
         """Hook: optionally transform the pset data dict after loading and before
         passing to ``set_props_kwargs_from_ifc_data``. Default: pass-through.
 
-        Railing overrides to JSON-serialise ``path_data`` (its
-        BIMRailingProperties.path_data is a ``StringProperty`` holding JSON)."""
+        Override when the PropertyGroup stores a structured pset field as a
+        serialised primitive — e.g., a list/dict value mapped onto a
+        ``StringProperty`` requires JSON-encoding here."""
         return data
 
     @classmethod
@@ -238,9 +293,12 @@ class PathPreservingEditMixin(_ParametricEditMixinBase):
         raise NotImplementedError
 
     @classmethod
-    def _update_modifier_bmesh(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
-        """Hook: per-type ``update_<type>_modifier_bmesh`` — rebuilds the
-        bmesh preview to match the current draft props (used by Cancel)."""
+    def _restore_viewport_after_cancel(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        """Hook: restore the viewport mesh to match the just-restored draft props.
+
+        Most subclasses rebuild a bmesh preview from props. Subclasses whose
+        committed IFC representation diverges from the preview may switch
+        the mesh back to the committed representation instead."""
         raise NotImplementedError
 
     @classmethod
@@ -249,6 +307,7 @@ class PathPreservingEditMixin(_ParametricEditMixinBase):
         if resolved is None:
             return
         _element, props = resolved
+        cls._handle_drift_on_enable(obj)
         data = tool.Model.get_modeling_bbim_pset_data(obj, cls.pset_name)["data_dict"]
         data = cls._post_load_data(data)
         props.set_props_kwargs_from_ifc_data(data)
@@ -261,11 +320,18 @@ class PathPreservingEditMixin(_ParametricEditMixinBase):
             return
         element, props = resolved
         pset_data = tool.Model.get_modeling_bbim_pset_data(obj, cls.pset_name)
-        path_data = pset_data["data_dict"]["path_data"]
+        stored = pset_data["data_dict"]
         data = props.get_general_kwargs(convert_to_project_units=True)
-        data["path_data"] = path_data
-        cls._update_pset(element, data)
-        cls._update_modifier_ifc_data(obj, context)
+        data["path_data"] = stored["path_data"]
+        # Skip the pset commit when the draft is identical to the stored pset:
+        # an Enable → Finish-without-changes cycle should not pollute the
+        # representation list or burn an undo entry. Drift commit still runs
+        # unconditionally — matrix_world drift is independent of pset content.
+        if data != stored:
+            cls._update_pset(element, data)
+            cls._update_modifier_ifc_data(obj, context)
+            cls._mark_type_thumbnail_dirty(element)
+        cls._handle_drift_on_finish(obj)
         # Set only on success: if any IFC op above raised, the user's draft survives for retry.
         props.is_editing = False
 
@@ -274,12 +340,26 @@ class PathPreservingEditMixin(_ParametricEditMixinBase):
         resolved = cls._resolve(obj)
         if resolved is None:
             return
-        _element, props = resolved
-        data = tool.Model.get_modeling_bbim_pset_data(obj, cls.pset_name)["data_dict"]
-        data = cls._post_load_data(data)
-        props.set_props_kwargs_from_ifc_data(data)
-        cls._update_modifier_bmesh(obj, context)
-        props.is_editing = False
+        element, props = resolved
+        try:
+            pset_data = tool.Model.get_modeling_bbim_pset_data(obj, cls.pset_name)
+            stored = pset_data["data_dict"]
+            draft = props.get_general_kwargs(convert_to_project_units=True)
+            draft["path_data"] = stored["path_data"]
+            nothing_changed = draft == stored
+            data = cls._post_load_data(stored)
+            props.set_props_kwargs_from_ifc_data(data)
+            # Skip the viewport rebuild on a no-op cancel: the mesh on screen is
+            # still the committed representation, and the per-type viewport-restore
+            # hook may be expensive (some subclasses reload a high-poly IFC
+            # representation rather than rebuild a preview mesh).
+            if not nothing_changed:
+                cls._restore_viewport_after_cancel(obj, context)
+            cls._handle_drift_on_cancel(obj, element)
+        finally:
+            # Always clear the flag — see ``FeatureModifierEditMixin._cancel_one``
+            # for the rationale.
+            props.is_editing = False
 
     def _enable_targets(self, context: bpy.types.Context) -> set[str]:
         for obj in self._iter_targets(context):
