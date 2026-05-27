@@ -24,6 +24,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <string>
 #include <vector>
 
 #include "BvhAccel.h"
@@ -66,6 +68,12 @@ struct WgpuModelGpuData {
     // uniform) and a bind group that pulls in the chunk's vertex_storage
     // alongside the model-shared index/mesh/instance buffers. Rendering
     // issues one drawcall per non-empty chunk.
+    //
+    // Streaming (task #16): a chunk may be marked is_resident=false; its
+    // vertex_storage + bind_group are then null until the streaming loader
+    // brings it in. Other per-chunk buffers (visible_draws etc.) stay
+    // allocated regardless because cull still needs them. Non-streaming
+    // path always sets is_resident=true so existing code is unchanged.
     struct Chunk {
         WGPUBuffer    vertex_storage          = nullptr;
         WGPUBuffer    visible_draws_buffer    = nullptr;
@@ -83,8 +91,36 @@ struct WgpuModelGpuData {
 
         std::vector<VisibleDrawGpu> visible_draws_scratch;
         std::vector<uint32_t>       prefix_sums_scratch;
+
+        // Residency. Streaming sets is_resident=false at applyCachedModel
+        // and flips true once the chunk's vertex bytes are uploaded.
+        // Render and pick skip chunks where !is_resident.
+        bool     is_resident                  = true;
+
+        // Where the chunk's vertex bytes live in the sidecar (offsets
+        // relative to vertex_section_offset on the model). Populated by
+        // the streaming loader; zeroed for the non-streaming path.
+        uint64_t vertex_byte_offset           = 0;  // 0 == start of vertex section
+        uint64_t vertex_byte_size             = 0;
+
+        // World-space AABB covering every instance whose mesh lives in
+        // this chunk. Used by cull to reject whole chunks against the
+        // frustum before iterating instances — and by the streaming
+        // loader to prioritise which non-resident chunks to fetch first.
+        float    aabb_min[3]                  = {  std::numeric_limits<float>::infinity(),
+                                                    std::numeric_limits<float>::infinity(),
+                                                    std::numeric_limits<float>::infinity() };
+        float    aabb_max[3]                  = { -std::numeric_limits<float>::infinity(),
+                                                   -std::numeric_limits<float>::infinity(),
+                                                   -std::numeric_limits<float>::infinity() };
     };
     std::vector<Chunk> chunks;
+
+    // Streaming source. Non-empty path means this model was loaded via the
+    // streaming path: chunks may be non-resident and need byte-range reads
+    // from this file. Empty path = legacy non-streaming load.
+    std::string streaming_file_path;
+    uint64_t    streaming_vertex_section_offset = 0;
 
     // For each mesh in meshes[], the chunk it lives in plus the chunk-local
     // vertex offset (where its vertex range starts in chunk's vertex_storage).
@@ -98,6 +134,14 @@ struct WgpuModelGpuData {
     WGPUBuffer index_buffer     = nullptr;   // u32 mesh-local indices (read as storage)
     WGPUBuffer mesh_storage     = nullptr;   // MeshGpu[]: aabb_min/max
     WGPUBuffer instance_storage = nullptr;   // InstanceGpu[]: transform + ids
+
+    // Cumulative VRAM accounting (bytes), populated at applyCachedModel
+    // time. Sum of vertex_storage across chunks + index_buffer + mesh_storage
+    // + instance_storage + per-chunk visible_draws + prefix_sums + uniforms.
+    // Used by the per-frame stats log to attribute total VRAM.
+    uint64_t vram_bytes_vbo = 0;   // vertex storage total
+    uint64_t vram_bytes_ebo = 0;   // index buffer
+    uint64_t vram_bytes_ssbo = 0;  // mesh + instance + per-chunk small buffers
 
     // Size mirrors for stats / range checks. vertex_bytes is the sum across
     // all chunks; index_count / mesh_count / instance_count are unchanged.
