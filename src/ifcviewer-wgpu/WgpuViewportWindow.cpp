@@ -26,8 +26,26 @@
 
 #include <webgpu/wgpu.h>  // wgpu-native extensions (logging, MULTI_DRAW_INDIRECT, …)
 
+#include <algorithm>
+#include <cmath>
 #include <cstring>
+#include <limits>
 #include <utility>
+
+// -----------------------------------------------------------------------------
+// Frame uniforms (CPU mirror of group=0 binding=0 in the WGSL).
+// std140-ish layout: every member naturally 16-aligned, struct stride = 96.
+// -----------------------------------------------------------------------------
+
+struct FrameUniforms {
+    float view_proj[16];
+    float light_dir[4];     // xyz = unit dir toward light, w unused
+    float fill_dir[4];      // xyz = secondary fill dir
+    float sky_color[4];     // xyz = sky-tint ambient, w unused
+    float ground_color[4];  // xyz = ground-tint ambient, w unused
+};
+static_assert(sizeof(FrameUniforms) == 16 * sizeof(float) + 4 * 4 * sizeof(float),
+              "FrameUniforms must match WGSL layout (mat4 + 4xvec4)");
 
 // -----------------------------------------------------------------------------
 // Small helpers
@@ -85,6 +103,7 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 }
 
 void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
+    if (m.bind_group)       { wgpuBindGroupRelease(m.bind_group);    m.bind_group = nullptr; }
     if (m.vertex_storage)   { wgpuBufferRelease(m.vertex_storage);   m.vertex_storage = nullptr; }
     if (m.index_buffer)     { wgpuBufferRelease(m.index_buffer);     m.index_buffer = nullptr; }
     if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
@@ -95,6 +114,143 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
     m.instance_count = 0;
     m.meshes.clear();
     m.instances.clear();
+}
+
+// -----------------------------------------------------------------------------
+// WGSL main pipeline — vertex pulling.
+//
+// Vertex bytes are read manually from a u32 storage buffer (3 u32 per vertex,
+// matching INSTANCED_VERTEX_STRIDE_BYTES=12). gl_BaseVertex is folded into
+// vertex_index by the WebGPU IA, so per-mesh draws set baseVertex =
+// mesh.vbo_byte_offset / 12 and the shader indexes the global storage array
+// directly. firstInstance carries the global instance slot, fetched as
+// @builtin(instance_index).
+// -----------------------------------------------------------------------------
+
+static const char* MAIN_WGSL = R"(
+struct InstanceRecord {
+    transform: mat4x4<f32>,
+    object_id: u32,
+    color_override: u32,
+    mesh_id: u32,
+    _pad1: u32,
+};
+
+struct MeshQuant {
+    aabb_min: vec4<f32>,
+    aabb_max: vec4<f32>,
+};
+
+struct FrameUniforms {
+    view_proj:    mat4x4<f32>,
+    light_dir:    vec4<f32>,
+    fill_dir:     vec4<f32>,
+    sky_color:    vec4<f32>,
+    ground_color: vec4<f32>,
+};
+
+@group(0) @binding(0) var<uniform> u_frame: FrameUniforms;
+
+@group(1) @binding(0) var<storage, read> vertices:  array<u32>;
+@group(1) @binding(1) var<storage, read> meshes:    array<MeshQuant>;
+@group(1) @binding(2) var<storage, read> instances: array<InstanceRecord>;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) normal:    vec3<f32>,
+    @location(1) color:     vec4<f32>,
+    @location(2) world_pos: vec3<f32>,
+};
+
+// Sign-extend an i8 packed into the byte_idx'th byte of `packed`.
+fn extractI8(packed: u32, byte_idx: u32) -> i32 {
+    let raw = i32((packed >> (byte_idx * 8u)) & 0xFFu);
+    return select(raw, raw - 256, raw >= 128);
+}
+
+// Meyer et al. octahedral normal decode. Input in [-1,1]^2.
+fn octDecode(e: vec2<f32>) -> vec3<f32> {
+    var n = vec3<f32>(e.x, e.y, 1.0 - abs(e.x) - abs(e.y));
+    if (n.z < 0.0) {
+        let tx = select(-1.0, 1.0, n.x >= 0.0);
+        let ty = select(-1.0, 1.0, n.y >= 0.0);
+        n = vec3<f32>((1.0 - abs(n.y)) * tx, (1.0 - abs(n.x)) * ty, n.z);
+    }
+    return normalize(n);
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index)   vid: u32,
+           @builtin(instance_index) iid: u32) -> VsOut {
+    let inst = instances[iid];
+    let mq   = meshes[inst.mesh_id];
+
+    let w0 = vertices[vid * 3u + 0u];
+    let w1 = vertices[vid * 3u + 1u];
+    let w2 = vertices[vid * 3u + 2u];
+
+    let px = f32(w0 & 0xFFFFu)         / 65535.0;
+    let py = f32((w0 >> 16u) & 0xFFFFu) / 65535.0;
+    let pz = f32(w1 & 0xFFFFu)         / 65535.0;
+    let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, vec3<f32>(px, py, pz));
+
+    let nx = f32(extractI8(w1, 2u)) / 127.0;
+    let ny = f32(extractI8(w1, 3u)) / 127.0;
+    let n_local = octDecode(vec2<f32>(nx, ny));
+
+    let r = f32(w2 & 0xFFu)          / 255.0;
+    let g = f32((w2 >>  8u) & 0xFFu) / 255.0;
+    let b = f32((w2 >> 16u) & 0xFFu) / 255.0;
+    let a = f32((w2 >> 24u) & 0xFFu) / 255.0;
+
+    let world4 = inst.transform * vec4<f32>(pos_local, 1.0);
+    let rot = mat3x3<f32>(inst.transform[0].xyz,
+                          inst.transform[1].xyz,
+                          inst.transform[2].xyz);
+    let n_world = normalize(rot * n_local);
+    let det = determinant(rot);
+    let n_final = select(n_world, -n_world, det < 0.0);
+
+    var color = vec4<f32>(r, g, b, a);
+    if (inst.color_override != 0u) {
+        let cr = f32(inst.color_override         & 0xFFu) / 255.0;
+        let cg = f32((inst.color_override >>  8u) & 0xFFu) / 255.0;
+        let cb = f32((inst.color_override >> 16u) & 0xFFu) / 255.0;
+        let ca = f32((inst.color_override >> 24u) & 0xFFu) / 255.0;
+        if (ca > 0.0) { color = vec4<f32>(cr, cg, cb, ca); }
+    }
+
+    var out: VsOut;
+    out.clip_pos  = u_frame.view_proj * world4;
+    out.normal    = n_final;
+    out.color     = color;
+    out.world_pos = world4.xyz;
+    return out;
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    var n = normalize(in.normal);
+
+    // World +Z is up (BIM convention). Hemisphere ambient: faces pointing
+    // up read sky, faces pointing down read ground, lerp by n.z.
+    let hemi_t  = 0.5 + 0.5 * n.z;
+    let ambient = mix(u_frame.ground_color.xyz, u_frame.sky_color.xyz, hemi_t);
+
+    let key  = max(dot(n, u_frame.light_dir.xyz), 0.0);
+    let fill = max(dot(n, u_frame.fill_dir.xyz),  0.0) * 0.35;
+
+    let color = in.color.xyz * (ambient + (key + fill) * 0.7);
+    return vec4<f32>(color, in.color.a);
+}
+)";
+
+// Helper: build a WGPUStringView from a null-terminated C string literal.
+static WGPUStringView svFromCStr(const char* s) {
+    WGPUStringView v{};
+    v.data   = s;
+    v.length = std::strlen(s);
+    return v;
 }
 
 // -----------------------------------------------------------------------------
@@ -228,14 +384,22 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
 
-    models_gpu_.emplace(model_id, std::move(m));
+    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
+    WgpuModelGpuData& mref = inserted->second;
+    buildModelBindGroup(mref);
 
     qInfo().noquote().nospace()
         << "[wgpu] applyCachedModel mid=" << model_id
-        << " verts=" << m.vertex_bytes << "B"
-        << " idx="   << m.index_count
-        << " meshes=" << m.mesh_count
-        << " instances=" << m.instance_count;
+        << " verts=" << mref.vertex_bytes << "B"
+        << " idx="   << mref.index_count
+        << " meshes=" << mref.mesh_count
+        << " instances=" << mref.instance_count;
+
+    if (!initial_view_applied_) {
+        viewAll();
+        initial_view_applied_ = true;
+    }
+    if (isExposed()) requestUpdate();
 }
 
 void WgpuViewportWindow::removeModel(uint32_t model_id) {
@@ -392,6 +556,8 @@ bool WgpuViewportWindow::initWgpu() {
     surface_format_ = caps.formats[0];  // preferred format per wgpu docs
     wgpuSurfaceCapabilitiesFreeMembers(caps);
 
+    if (!buildPipelines()) return false;
+
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
     return true;
 }
@@ -489,6 +655,7 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     configured_w_       = width_px;
     configured_h_       = height_px;
     surface_configured_ = true;
+    ensureDepthTexture(width_px, height_px);
 }
 
 void WgpuViewportWindow::render() {
@@ -516,6 +683,8 @@ void WgpuViewportWindow::render() {
 
     WGPUTextureView view = wgpuTextureCreateView(surf_tex.texture, nullptr);
 
+    updateFrameUniforms();
+
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
     WGPURenderPassColorAttachment color = {};
@@ -530,11 +699,60 @@ void WgpuViewportWindow::render() {
     };
     color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view              = depth_view_;
+    depth.depthLoadOp       = WGPULoadOp_Clear;
+    depth.depthStoreOp      = WGPUStoreOp_Store;
+    depth.depthClearValue   = 1.0f;
+    depth.stencilLoadOp     = WGPULoadOp_Undefined;
+    depth.stencilStoreOp    = WGPUStoreOp_Undefined;
+    depth.depthReadOnly     = false;
+    depth.stencilReadOnly   = true;
+
     WGPURenderPassDescriptor pass_desc = {};
     pass_desc.colorAttachmentCount = 1;
     pass_desc.colorAttachments     = &color;
+    pass_desc.depthStencilAttachment = depth_view_ ? &depth : nullptr;
 
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+
+    if (main_pipeline_ && frame_bind_group_ && !models_gpu_.empty()) {
+        wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+
+        for (const auto& [mid, m] : models_gpu_) {
+            if (m.hidden || !m.bind_group || !m.index_buffer || m.index_count == 0) continue;
+
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, m.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderSetIndexBuffer(pass, m.index_buffer,
+                                                WGPUIndexFormat_Uint32,
+                                                0, WGPU_WHOLE_SIZE);
+
+            // One draw per (mesh, instance) pair. firstInstance carries the
+            // instance's absolute index into instance_storage so the vertex
+            // shader can fetch its transform; baseVertex offsets vertex pulling
+            // into the mesh's slice of the model's vertex storage.
+            for (uint32_t mi = 0; mi < m.meshes.size(); ++mi) {
+                const MeshInfo& mesh = m.meshes[mi];
+                if (mesh.index_count == 0 || mesh.instance_count == 0) continue;
+
+                const uint32_t first_index = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
+                const int32_t  base_vertex = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
+
+                for (uint32_t i = 0; i < mesh.instance_count; ++i) {
+                    const uint32_t inst_idx = mesh.first_instance + i;
+                    wgpuRenderPassEncoderDrawIndexed(
+                        pass,
+                        mesh.index_count,
+                        1,                       // instanceCount
+                        first_index,
+                        base_vertex,
+                        inst_idx);               // firstInstance == @builtin(instance_index)
+                }
+            }
+        }
+    }
+
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
@@ -549,10 +767,288 @@ void WgpuViewportWindow::render() {
     wgpuTextureRelease(surf_tex.texture);
 }
 
+// -----------------------------------------------------------------------------
+// Pipeline + bind-group layouts (built once after init)
+// -----------------------------------------------------------------------------
+
+bool WgpuViewportWindow::buildPipelines() {
+    // ---- Bind group layouts ----------------------------------------------
+    WGPUBindGroupLayoutEntry frame_entries[1] = {};
+    frame_entries[0].binding = 0;
+    frame_entries[0].visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+    frame_entries[0].buffer.type = WGPUBufferBindingType_Uniform;
+    frame_entries[0].buffer.minBindingSize = sizeof(FrameUniforms);
+
+    WGPUBindGroupLayoutDescriptor frame_bgl_desc = {};
+    frame_bgl_desc.entryCount = 1;
+    frame_bgl_desc.entries    = frame_entries;
+    frame_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bgl");
+    frame_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &frame_bgl_desc);
+
+    WGPUBindGroupLayoutEntry model_entries[3] = {};
+    for (int i = 0; i < 3; ++i) {
+        model_entries[i].binding     = uint32_t(i);
+        model_entries[i].visibility  = WGPUShaderStage_Vertex;
+        model_entries[i].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
+    }
+    WGPUBindGroupLayoutDescriptor model_bgl_desc = {};
+    model_bgl_desc.entryCount = 3;
+    model_bgl_desc.entries    = model_entries;
+    model_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.model_bgl");
+    model_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &model_bgl_desc);
+
+    // ---- Pipeline layout -------------------------------------------------
+    WGPUBindGroupLayout bgls[2] = { frame_bgl_, model_bgl_ };
+    WGPUPipelineLayoutDescriptor pl_desc = {};
+    pl_desc.bindGroupLayoutCount = 2;
+    pl_desc.bindGroupLayouts     = bgls;
+    pl_desc.label                = svFromCStr("ifcviewer-wgpu.pipeline_layout");
+    pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+
+    // ---- Shader module ---------------------------------------------------
+    WGPUShaderSourceWGSL wgsl_src = {};
+    wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+    wgsl_src.code        = svFromCStr(MAIN_WGSL);
+
+    WGPUShaderModuleDescriptor sm_desc = {};
+    sm_desc.nextInChain = &wgsl_src.chain;
+    sm_desc.label       = svFromCStr("ifcviewer-wgpu.main_wgsl");
+    main_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+
+    // ---- Render pipeline -------------------------------------------------
+    WGPUColorTargetState color_target = {};
+    color_target.format    = surface_format_;
+    color_target.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &color_target;
+
+    WGPUDepthStencilState depth = {};
+    depth.format              = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled   = WGPUOptionalBool_True;
+    depth.depthCompare        = WGPUCompareFunction_Less;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout            = pipeline_layout_;
+    rp_desc.label             = svFromCStr("ifcviewer-wgpu.main_pipeline");
+    rp_desc.vertex.module     = main_shader_module_;
+    rp_desc.vertex.entryPoint = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount = 0;       // vertex pulling: no IA bindings
+    rp_desc.fragment          = &frag;
+    rp_desc.depthStencil      = &depth;
+    rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode = WGPUCullMode_Back;
+    rp_desc.primitive.frontFace = WGPUFrontFace_CCW;
+    rp_desc.multisample.count = 1;
+    rp_desc.multisample.mask  = 0xFFFFFFFFu;
+
+    main_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!main_pipeline_) {
+        qWarning() << "wgpu main render pipeline creation failed";
+        return false;
+    }
+
+    // ---- Per-frame uniform buffer + bind group ---------------------------
+    WGPUBufferDescriptor fb_desc = {};
+    fb_desc.size  = sizeof(FrameUniforms);
+    fb_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+    fb_desc.label = svFromCStr("ifcviewer-wgpu.frame_uniform");
+    frame_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &fb_desc);
+
+    WGPUBindGroupEntry fbg_entries[1] = {};
+    fbg_entries[0].binding = 0;
+    fbg_entries[0].buffer  = frame_uniform_buffer_;
+    fbg_entries[0].offset  = 0;
+    fbg_entries[0].size    = sizeof(FrameUniforms);
+    WGPUBindGroupDescriptor fbg_desc = {};
+    fbg_desc.layout     = frame_bgl_;
+    fbg_desc.entryCount = 1;
+    fbg_desc.entries    = fbg_entries;
+    fbg_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bind_group");
+    frame_bind_group_ = wgpuDeviceCreateBindGroup(device_, &fbg_desc);
+
+    return true;
+}
+
+void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
+    if (m.bind_group) {
+        wgpuBindGroupRelease(m.bind_group);
+        m.bind_group = nullptr;
+    }
+    if (!m.vertex_storage || !m.mesh_storage || !m.instance_storage) {
+        // Empty model — no bind group needed; the draw loop will skip it.
+        return;
+    }
+
+    WGPUBindGroupEntry entries[3] = {};
+    entries[0].binding = 0;
+    entries[0].buffer  = m.vertex_storage;
+    entries[0].size    = WGPU_WHOLE_SIZE;
+    entries[1].binding = 1;
+    entries[1].buffer  = m.mesh_storage;
+    entries[1].size    = WGPU_WHOLE_SIZE;
+    entries[2].binding = 2;
+    entries[2].buffer  = m.instance_storage;
+    entries[2].size    = WGPU_WHOLE_SIZE;
+
+    WGPUBindGroupDescriptor desc = {};
+    desc.layout     = model_bgl_;
+    desc.entryCount = 3;
+    desc.entries    = entries;
+    desc.label      = svFromCStr("ifcviewer-wgpu.model_bind_group");
+    m.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
+}
+
+// -----------------------------------------------------------------------------
+// Depth attachment
+// -----------------------------------------------------------------------------
+
+void WgpuViewportWindow::ensureDepthTexture(int w, int h) {
+    if (w == depth_w_ && h == depth_h_ && depth_view_) return;
+    releaseDepthTexture();
+
+    WGPUTextureDescriptor desc = {};
+    desc.usage         = WGPUTextureUsage_RenderAttachment;
+    desc.dimension     = WGPUTextureDimension_2D;
+    desc.size.width    = uint32_t(w);
+    desc.size.height   = uint32_t(h);
+    desc.size.depthOrArrayLayers = 1;
+    desc.format        = WGPUTextureFormat_Depth32Float;
+    desc.mipLevelCount = 1;
+    desc.sampleCount   = 1;
+    desc.label         = svFromCStr("ifcviewer-wgpu.depth");
+    depth_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+
+    WGPUTextureViewDescriptor vdesc = {};
+    vdesc.format          = WGPUTextureFormat_Depth32Float;
+    vdesc.dimension       = WGPUTextureViewDimension_2D;
+    vdesc.mipLevelCount   = 1;
+    vdesc.arrayLayerCount = 1;
+    vdesc.aspect          = WGPUTextureAspect_DepthOnly;
+    depth_view_ = wgpuTextureCreateView(depth_texture_, &vdesc);
+
+    depth_w_ = w;
+    depth_h_ = h;
+}
+
+void WgpuViewportWindow::releaseDepthTexture() {
+    if (depth_view_)    { wgpuTextureViewRelease(depth_view_); depth_view_ = nullptr; }
+    if (depth_texture_) { wgpuTextureRelease(depth_texture_);  depth_texture_ = nullptr; }
+    depth_w_ = depth_h_ = 0;
+}
+
+// -----------------------------------------------------------------------------
+// Camera + frame uniforms
+// -----------------------------------------------------------------------------
+//
+// Orbit camera around `camera_target_`. World +Z up (BIM convention). Yaw is
+// rotation about Z (positive = anticlockwise looking down +Z); pitch is
+// elevation above the XY plane.
+
+#include <QMatrix4x4>
+#include <QVector3D>
+#include <QtMath>
+
+static QVector3D orbitEye(const float target[3], float dist,
+                          float yaw_deg, float pitch_deg) {
+    const float yaw = qDegreesToRadians(yaw_deg);
+    const float pit = qDegreesToRadians(pitch_deg);
+    const float cp = std::cos(pit), sp = std::sin(pit);
+    const float cy = std::cos(yaw), sy = std::sin(yaw);
+    return QVector3D(target[0] + dist * cp * sy,
+                     target[1] - dist * cp * cy,
+                     target[2] + dist * sp);
+}
+
+void WgpuViewportWindow::updateFrameUniforms() {
+    const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                   camera_yaw_deg_, camera_pitch_deg_);
+
+    QMatrix4x4 view;
+    view.lookAt(eye, target, QVector3D(0.0f, 0.0f, 1.0f));
+
+    const float aspect = (configured_h_ > 0)
+                            ? float(configured_w_) / float(configured_h_)
+                            : 1.0f;
+    QMatrix4x4 proj;
+    proj.perspective(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
+
+    // Qt builds a GL-style projection (clip-z in [-1, 1]); WebGPU expects
+    // clip-z in [0, 1]. Pre-multiply by a remap matrix that maps [-1,1] → [0,1].
+    QMatrix4x4 z_remap;  // identity
+    z_remap(2, 2) = 0.5f;
+    z_remap(2, 3) = 0.5f;
+
+    const QMatrix4x4 view_proj = z_remap * proj * view;
+
+    FrameUniforms u = {};
+    std::memcpy(u.view_proj, view_proj.constData(), 16 * sizeof(float));
+
+    QVector3D L(0.4f, -0.6f, 0.9f); L.normalize();
+    QVector3D F(-0.3f,  0.5f, 0.4f); F.normalize();
+    u.light_dir[0] = L.x(); u.light_dir[1] = L.y(); u.light_dir[2] = L.z(); u.light_dir[3] = 0;
+    u.fill_dir [0] = F.x(); u.fill_dir [1] = F.y(); u.fill_dir [2] = F.z(); u.fill_dir [3] = 0;
+    u.sky_color   [0] = 0.85f; u.sky_color   [1] = 0.88f; u.sky_color   [2] = 0.95f;
+    u.ground_color[0] = 0.35f; u.ground_color[1] = 0.32f; u.ground_color[2] = 0.30f;
+
+    wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
+}
+
+bool WgpuViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
+    bool any = false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& inst : m.instances) {
+            for (int i = 0; i < 3; ++i) {
+                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
+                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
+            }
+            any = true;
+        }
+    }
+    return any;
+}
+
+void WgpuViewportWindow::viewAll() {
+    float mn[3], mx[3];
+    if (!computeSceneAabb(mn, mx)) return;
+    camera_target_[0] = 0.5f * (mn[0] + mx[0]);
+    camera_target_[1] = 0.5f * (mn[1] + mx[1]);
+    camera_target_[2] = 0.5f * (mn[2] + mx[2]);
+    const float diag = std::sqrt(
+        (mx[0] - mn[0]) * (mx[0] - mn[0]) +
+        (mx[1] - mn[1]) * (mx[1] - mn[1]) +
+        (mx[2] - mn[2]) * (mx[2] - mn[2]));
+    // Pull back enough so the bounding sphere fits at half-FOV.
+    const float half_fov = qDegreesToRadians(camera_fov_y_deg_) * 0.5f;
+    camera_distance_ = std::max(1.0f, 0.6f * diag / std::tan(half_fov));
+    if (isExposed()) requestUpdate();
+}
+
 void WgpuViewportWindow::shutdown() {
     // Release per-model buffers before the device they were created from.
     for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m);
     models_gpu_.clear();
+
+    releaseDepthTexture();
+
+    if (frame_bind_group_)     { wgpuBindGroupRelease(frame_bind_group_);         frame_bind_group_ = nullptr; }
+    if (frame_uniform_buffer_) { wgpuBufferRelease(frame_uniform_buffer_);        frame_uniform_buffer_ = nullptr; }
+    if (main_pipeline_)        { wgpuRenderPipelineRelease(main_pipeline_);       main_pipeline_ = nullptr; }
+    if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
+    if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
+    if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
+    if (frame_bgl_)            { wgpuBindGroupLayoutRelease(frame_bgl_);          frame_bgl_ = nullptr; }
 
     if (queue_)    { wgpuQueueRelease(queue_);       queue_    = nullptr; }
     if (device_)   { wgpuDeviceRelease(device_);     device_   = nullptr; }

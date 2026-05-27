@@ -70,6 +70,11 @@ public:
 
     size_t modelCount() const { return models_gpu_.size(); }
 
+    // Frame the union of all loaded models' world AABBs. No-op on empty
+    // scenes. Called automatically after the first model loads; clients
+    // can re-invoke to re-frame.
+    void viewAll();
+
 protected:
     void exposeEvent(QExposeEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
@@ -82,7 +87,13 @@ private:
     void render();
     void shutdown();
 
-    void flushPendingSidecarQueue();
+    bool  buildPipelines();
+    void  buildModelBindGroup(WgpuModelGpuData& m);
+    void  ensureDepthTexture(int w, int h);
+    void  releaseDepthTexture();
+    void  updateFrameUniforms();
+    void  flushPendingSidecarQueue();
+    bool  computeSceneAabb(float mn[3], float mx[3]) const;
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -96,7 +107,34 @@ private:
     WGPUSurface       surface_        = nullptr;
     WGPUTextureFormat surface_format_ = WGPUTextureFormat_Undefined;
 
+    // Render pipeline + bind group layouts (built once after init).
+    WGPUShaderModule       main_shader_module_ = nullptr;
+    WGPUBindGroupLayout    frame_bgl_          = nullptr;  // group 0
+    WGPUBindGroupLayout    model_bgl_          = nullptr;  // group 1
+    WGPUPipelineLayout     pipeline_layout_    = nullptr;
+    WGPURenderPipeline     main_pipeline_      = nullptr;
+
+    // Per-frame uniform (view-proj + lighting), bound at group 0.
+    WGPUBuffer    frame_uniform_buffer_ = nullptr;
+    WGPUBindGroup frame_bind_group_     = nullptr;
+
+    // Depth attachment, recreated on surface resize.
+    WGPUTexture     depth_texture_ = nullptr;
+    WGPUTextureView depth_view_    = nullptr;
+    int             depth_w_       = 0;
+    int             depth_h_       = 0;
+
     QColor background_color_ = QColor("#202329");
+
+    // Camera (orbit, right-handed Y-up world → wait, BIM is +Z up).
+    // Mirrors the GL viewport's defaults; mouse navigation lands later.
+    float camera_target_[3] = { 0.0f, 0.0f, 0.0f };
+    float camera_distance_  = 50.0f;
+    float camera_yaw_deg_   = 45.0f;
+    float camera_pitch_deg_ = 30.0f;
+    float camera_fov_y_deg_ = 45.0f;
+    float camera_near_      = 0.1f;
+    float camera_far_       = 10000.0f;
 
     // Per-model state, keyed by viewport-assigned model_id.
     std::unordered_map<uint32_t, WgpuModelGpuData> models_gpu_;
@@ -104,6 +142,11 @@ private:
 
     // Sidecar paths queued before init completes.
     std::deque<QString> pending_sidecars_;
+
+    // Set after the first model load triggers a viewAll(); prevents
+    // subsequent loads from snapping the camera away from where the
+    // user pointed it.
+    bool initial_view_applied_ = false;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

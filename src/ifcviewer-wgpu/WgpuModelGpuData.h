@@ -51,6 +51,10 @@ struct WgpuModelGpuData {
     // recompose from placement_transformation when stage matrices change.
     WGPUBuffer instance_storage = nullptr;
 
+    // Bind group binding the three storage buffers above (group=1 in the
+    // main pipeline). Built in applyCachedModel after the buffers exist.
+    WGPUBindGroup bind_group = nullptr;
+
     // Size mirrors for stats / range checks.
     size_t   vertex_bytes   = 0;
     uint32_t index_count    = 0;
