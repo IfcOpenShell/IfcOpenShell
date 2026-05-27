@@ -1331,6 +1331,80 @@ void WgpuViewportWindow::captureNextFrameToPng(const QString& path, bool quit_af
     if (isExposed()) requestUpdate();
 }
 
+// -----------------------------------------------------------------------------
+// Mouse navigation — orbit, pan, zoom
+// -----------------------------------------------------------------------------
+//
+// LMB drag → orbit (yaw/pitch). MMB drag → pan (target moves in the camera's
+// screen-space plane). Wheel → zoom (camera_distance_ multiplies). Pitch is
+// clamped just shy of ±90° to avoid the gimbal-flip at the poles.
+//
+// No nav-preset awareness yet (Blender/Rhino/Revit bindings come later); we
+// don't have selection bound, so LMB is free to orbit.
+
+#include <QMouseEvent>
+#include <QWheelEvent>
+
+void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
+    nav_active_button_ = event->button();
+    nav_last_pos_      = event->position().toPoint();
+}
+
+void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
+    if (event->button() == nav_active_button_) {
+        nav_active_button_ = Qt::NoButton;
+    }
+}
+
+void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
+    if (nav_active_button_ == Qt::NoButton) return;
+
+    const QPoint pos = event->position().toPoint();
+    const int dx = pos.x() - nav_last_pos_.x();
+    const int dy = pos.y() - nav_last_pos_.y();
+    nav_last_pos_ = pos;
+
+    if (nav_active_button_ == Qt::LeftButton) {
+        // Orbit. 0.4 deg/px feels right for a 1280-wide window.
+        camera_yaw_deg_   += float(dx) * -0.4f;
+        camera_pitch_deg_ += float(dy) * -0.4f;
+        camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
+        requestUpdate();
+    } else if (nav_active_button_ == Qt::MiddleButton) {
+        // Pan in the camera's screen-space plane. World units per pixel
+        // tracks the view-frustum width at the pivot's depth so panning
+        // feels constant regardless of zoom.
+        const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                       camera_yaw_deg_, camera_pitch_deg_);
+        const QVector3D fwd   = (target - eye).normalized();
+        const QVector3D right = QVector3D::crossProduct(fwd, QVector3D(0, 0, 1)).normalized();
+        const QVector3D up    = QVector3D::crossProduct(right, fwd).normalized();
+
+        const float half_h_world = camera_distance_
+            * std::tan(qDegreesToRadians(camera_fov_y_deg_) * 0.5f);
+        const float pan_per_pixel = (height() > 0)
+            ? (2.0f * half_h_world / float(height()))
+            : 0.0f;
+
+        const QVector3D shift = -right * (float(dx) * pan_per_pixel)
+                              +  up    * (float(dy) * pan_per_pixel);
+        camera_target_[0] += shift.x();
+        camera_target_[1] += shift.y();
+        camera_target_[2] += shift.z();
+        requestUpdate();
+    }
+}
+
+void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
+    // 120 = one notch on a typical mouse. Each notch zooms ~12% in/out;
+    // sign matches conventional "wheel up = zoom in".
+    const float notches = float(event->angleDelta().y()) / 120.0f;
+    const float factor  = std::pow(0.9f, notches);
+    camera_distance_ = std::max(0.01f, camera_distance_ * factor);
+    requestUpdate();
+}
+
 void WgpuViewportWindow::shutdown() {
     // Release per-model buffers before the device they were created from.
     for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m);

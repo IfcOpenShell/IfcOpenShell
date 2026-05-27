@@ -22,6 +22,7 @@
 
 #include <QWindow>
 #include <QColor>
+#include <QPoint>
 #include <QString>
 
 #include <webgpu/webgpu.h>
@@ -86,6 +87,10 @@ protected:
     void exposeEvent(QExposeEvent* event) override;
     void resizeEvent(QResizeEvent* event) override;
     bool event(QEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
 
 private:
     bool initWgpu();
@@ -164,6 +169,13 @@ private:
     // Pending one-shot screenshot, captured at the end of the next render().
     QString pending_screenshot_path_;
     bool    pending_screenshot_quit_ = false;
+
+    // Mouse navigation state. LMB drag orbits, MMB drag pans, wheel zooms.
+    // No Blender/Maya preset selection yet — that arrives with the AppSettings
+    // port (post-task-12). Selection is unbound (no pick pass), so LMB is
+    // safe to dedicate to orbit for now.
+    Qt::MouseButton nav_active_button_ = Qt::NoButton;
+    QPoint          nav_last_pos_;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H
