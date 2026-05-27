@@ -554,7 +554,7 @@ class Blender(bonsai.core.tool.Blender):
         def sync_all(
             cls,
             context: bpy.types.Context,
-            enabled: Mapping[type[ViewportDecorator], bool],
+            enabled: Mapping[type[Blender.ViewportDecorator], bool],
         ) -> None:
             """Drive each listed decorator to its desired install state in one call.
 

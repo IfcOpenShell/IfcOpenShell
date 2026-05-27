@@ -75,10 +75,8 @@ if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import (
         BIMArrayProperties,
         BIMDoorProperties,
-        BIMDuctSegmentProperties,
         BIMExternalParametricGeometryProperties,
         BIMModelProperties,
-        BIMPipeSegmentProperties,
         BIMPolylineProperties,
         BIMRailingProperties,
         BIMRoofProperties,
@@ -117,14 +115,6 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def get_pipe_segment_props(cls, obj: bpy.types.Object) -> BIMPipeSegmentProperties:
-        return obj.BIMPipeSegmentProperties  # pyright: ignore[reportAttributeAccessIssue]
-
-    @classmethod
-    def get_duct_segment_props(cls, obj: bpy.types.Object) -> BIMDuctSegmentProperties:
-        return obj.BIMDuctSegmentProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_sverchok_props(cls, obj: bpy.types.Object) -> BIMSverchokProperties:
@@ -2881,20 +2871,10 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def recreate_wall(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        # Curved fillet-corner walls own a hand-built banana body that
-        # ``regenerate_wall_representation`` would flatten — it reads the
-        # axis as a 2-point reference line and builds a straight extrusion.
-        # Instead rebuild the curve in place: ``regenerate_fillet_corner_wall``
-        # keeps radius + placement from the pset / current ``ObjectPlacement``
-        # while picking up new thickness / height from the wall type, which
-        # is what we want when a type-property edit triggered this call.
-        if ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "IsFilletCorner"):
-            # Lazy import: ``tool.Model`` loads before ``bim/module/model``
-            # at addon enable; a module-level import would cycle.
-            from bonsai.bim.module.model.wall import regenerate_fillet_corner_wall
-
-            regenerate_fillet_corner_wall(element, obj)
-            return
+        # FIXME(PR4): the fillet-corner branch lands with PR4's
+        # `regenerate_fillet_corner_wall` (bim/module/model/wall.py). On v0.8.0
+        # the function doesn't exist; falling through to the straight-extrusion
+        # path preserves v0.8.0 behaviour for fillet walls until PR4 ships.
         rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
