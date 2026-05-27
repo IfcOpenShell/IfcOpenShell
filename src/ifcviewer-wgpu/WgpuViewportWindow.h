@@ -116,10 +116,20 @@ private:
     bool  computeSceneAabb(float mn[3], float mx[3]) const;
 
     // Cull `m`'s instances against the supplied frustum planes (world-space,
-    // ax+by+cz+d >= 0 means inside), bucket survivors by mesh_id, and write
-    // the flat visible-index list into m.visible_buffer via wgpuQueueWriteBuffer.
-    // After return, m.mesh_draws is the per-mesh draw schedule for the frame.
-    void  cullModelCpu(WgpuModelGpuData& m, const float planes[6][4]);
+    // ax+by+cz+d >= 0 means inside), bucket survivors by (mesh_id, lod), and
+    // write the flat visible-index list into m.visible_buffer via
+    // wgpuQueueWriteBuffer. After return, m.mesh_draws is the per-mesh,
+    // per-LOD draw schedule for the frame.
+    //
+    // `eye` and `forward` (forward = unit (target - eye)) are used to compute
+    // each instance's view-space depth for the LOD-pick projected-radius
+    // formula. `focal_px` = viewport_height / (2 * tan(fov_y / 2)). Instances
+    // whose projected bounding-sphere radius is below `lod1_threshold_px`
+    // get the mesh's LOD1 index slice when one was baked.
+    void  cullModelCpu(WgpuModelGpuData& m,
+                       const float planes[6][4],
+                       const float eye[3], const float forward[3],
+                       float focal_px, float lod1_threshold_px);
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -169,6 +179,11 @@ private:
     float camera_fov_y_deg_ = 45.0f;
     float camera_near_      = 0.1f;
     float camera_far_       = 10000.0f;
+
+    // Switch to LOD1 when an instance's projected bounding-sphere radius
+    // drops below this many pixels. 0 disables (always LOD0). Defaults
+    // mirror AppSettings::lod1PixelThreshold() in the GL backend.
+    float lod1_pixel_threshold_ = 30.0f;
 
     // Per-model state, keyed by viewport-assigned model_id.
     std::unordered_map<uint32_t, WgpuModelGpuData> models_gpu_;

@@ -848,38 +848,91 @@ void WgpuViewportWindow::setBenchmarkFrames(int frames) {
     if (isExposed() && bench_total_ > 0) requestUpdate();
 }
 
-void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m, const float planes[6][4]) {
+void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m,
+                                      const float planes[6][4],
+                                      const float eye[3], const float forward[3],
+                                      float focal_px, float lod1_threshold_px) {
     if (m.instances.empty() || m.meshes.empty() || !m.visible_buffer) {
         for (auto& d : m.mesh_draws) d.instance_count = 0;
         return;
     }
 
-    // Per-mesh visible-instance buckets. Allocated once per cull from scratch
-    // vectors held on the model (no fresh heap on the per-frame path).
-    static thread_local std::vector<std::vector<uint32_t>> per_mesh_visible;
-    if (per_mesh_visible.size() < m.meshes.size()) per_mesh_visible.resize(m.meshes.size());
-    for (size_t mi = 0; mi < m.meshes.size(); ++mi) per_mesh_visible[mi].clear();
+    // Per-mesh visible-instance buckets split by LOD. Per-frame scratch held
+    // thread-locally so the cull path doesn't allocate.
+    static thread_local std::vector<std::vector<uint32_t>> per_mesh_lod0;
+    static thread_local std::vector<std::vector<uint32_t>> per_mesh_lod1;
+    if (per_mesh_lod0.size() < m.meshes.size()) per_mesh_lod0.resize(m.meshes.size());
+    if (per_mesh_lod1.size() < m.meshes.size()) per_mesh_lod1.resize(m.meshes.size());
+    for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+        per_mesh_lod0[mi].clear();
+        per_mesh_lod1[mi].clear();
+    }
+
+    const bool lod_enabled = (lod1_threshold_px > 0.0f);
 
     for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
         const auto& inst = m.instances[i];
         if (inst.mesh_id >= m.meshes.size()) continue;
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) continue;
-        per_mesh_visible[inst.mesh_id].push_back(i);
+
+        // LOD pick: project the AABB's bounding sphere to pixels. Use LOD1
+        // when (a) the mesh has a baked LOD1 index slice and (b) the
+        // projected radius is below the threshold. View-space depth from
+        // forward · (center - eye); guard against behind-near-plane.
+        const MeshInfo& mesh = m.meshes[inst.mesh_id];
+        bool use_lod1 = false;
+        if (lod_enabled && mesh.lod1_index_count > 0) {
+            const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
+            const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
+            const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
+            const float ex = inst.world_aabb_max[0] - inst.world_aabb_min[0];
+            const float ey = inst.world_aabb_max[1] - inst.world_aabb_min[1];
+            const float ez = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+            const float radius_world = 0.5f * std::sqrt(ex*ex + ey*ey + ez*ez);
+            const float view_z = forward[0] * (cx - eye[0])
+                               + forward[1] * (cy - eye[1])
+                               + forward[2] * (cz - eye[2]);
+            if (view_z > 1e-3f) {
+                const float projected_px = radius_world * focal_px / view_z;
+                use_lod1 = projected_px < lod1_threshold_px;
+            }
+        }
+
+        if (use_lod1) per_mesh_lod1[inst.mesh_id].push_back(i);
+        else          per_mesh_lod0[inst.mesh_id].push_back(i);
     }
 
-    // Flatten into m.visible_flat_scratch and populate per-mesh draws.
+    // Flatten into m.visible_flat_scratch as [mesh0 lod0 | mesh0 lod1 | mesh1
+    // lod0 | mesh1 lod1 | …] and emit one MeshDraw per non-empty bucket.
     m.visible_flat_scratch.clear();
-    m.mesh_draws.assign(m.meshes.size(), WgpuModelGpuData::MeshDraw{});
+    m.mesh_draws.clear();
+    m.mesh_draws.reserve(m.meshes.size() * 2);
     for (uint32_t mi = 0; mi < m.meshes.size(); ++mi) {
         const MeshInfo& mesh = m.meshes[mi];
-        WgpuModelGpuData::MeshDraw& d = m.mesh_draws[mi];
-        d.first_instance = uint32_t(m.visible_flat_scratch.size());
-        d.instance_count = uint32_t(per_mesh_visible[mi].size());
-        d.first_index    = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
-        d.base_vertex    = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
-        d.index_count    = mesh.index_count;
-        for (uint32_t inst_idx : per_mesh_visible[mi]) {
-            m.visible_flat_scratch.push_back(inst_idx);
+
+        if (!per_mesh_lod0[mi].empty()) {
+            WgpuModelGpuData::MeshDraw d;
+            d.first_instance = uint32_t(m.visible_flat_scratch.size());
+            d.instance_count = uint32_t(per_mesh_lod0[mi].size());
+            d.first_index    = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
+            d.base_vertex    = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
+            d.index_count    = mesh.index_count;
+            for (uint32_t inst_idx : per_mesh_lod0[mi]) {
+                m.visible_flat_scratch.push_back(inst_idx);
+            }
+            m.mesh_draws.push_back(d);
+        }
+        if (!per_mesh_lod1[mi].empty()) {
+            WgpuModelGpuData::MeshDraw d;
+            d.first_instance = uint32_t(m.visible_flat_scratch.size());
+            d.instance_count = uint32_t(per_mesh_lod1[mi].size());
+            d.first_index    = mesh.lod1_ebo_byte_offset / uint32_t(sizeof(uint32_t));
+            d.base_vertex    = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
+            d.index_count    = mesh.lod1_index_count;
+            for (uint32_t inst_idx : per_mesh_lod1[mi]) {
+                m.visible_flat_scratch.push_back(inst_idx);
+            }
+            m.mesh_draws.push_back(d);
         }
     }
 
@@ -947,9 +1000,21 @@ void WgpuViewportWindow::render() {
         const QMatrix4x4 vp = z * p * v;
         float planes[6][4];
         extractFrustumPlanes(vp.constData(), planes);
+
+        // LOD pick inputs: world-space eye, unit forward, vertical focal in
+        // pixels. focal_px maps view-space depth to projected radius:
+        //   projected_px = world_radius * focal_px / view_z.
+        const QVector3D fwd_q = (target - eye).normalized();
+        const float eye_a[3] = { eye.x(),  eye.y(),  eye.z()  };
+        const float fwd_a[3] = { fwd_q.x(), fwd_q.y(), fwd_q.z() };
+        const float focal_px = (configured_h_ > 0)
+            ? (0.5f * float(configured_h_)
+                / std::tan(qDegreesToRadians(camera_fov_y_deg_) * 0.5f))
+            : 0.0f;
+
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
-            cullModelCpu(m, planes);
+            cullModelCpu(m, planes, eye_a, fwd_a, focal_px, lod1_pixel_threshold_);
             for (const auto& d : m.mesh_draws) {
                 if (d.instance_count == 0 || d.index_count == 0) continue;
                 last_visible_objects_   += d.instance_count;
