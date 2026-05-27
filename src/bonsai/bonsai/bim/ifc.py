@@ -64,6 +64,44 @@ class TransactionStep(TypedDict):
     operations: list[Operation]
 
 
+# Set when ``IfcStore.get_cache`` observes an external lock on the HDF5 cache —
+# signal that another Blender process has the same IFC file open. Project panel
+# polls ``is_cache_locked_by_other_process`` to warn the user. The dismissed
+# flag is sticky per-session so the warning doesn't re-nag once the user has
+# acknowledged it.
+_cache_locked_by_other_process: bool = False
+_multi_instance_warning_dismissed: bool = False
+
+
+def is_cache_locked_by_other_process() -> bool:
+    return _cache_locked_by_other_process and not _multi_instance_warning_dismissed
+
+
+def dismiss_multi_instance_warning() -> None:
+    global _multi_instance_warning_dismissed
+    _multi_instance_warning_dismissed = True
+
+
+def get_cache_or_detect_lock() -> ifcopenshell.geom.serializers.hdf5 | None:
+    """Like ``IfcStore.get_cache`` but tracks the multi-instance lock flag — sets
+    it on ``PermissionError``, clears it (along with the dismiss flag) when a
+    subsequent call succeeds. Returns ``None`` on lock; other exceptions
+    propagate. Callers that don't need the warning side effect can use
+    ``IfcStore.get_cache`` directly."""
+    global _cache_locked_by_other_process, _multi_instance_warning_dismissed
+    try:
+        cache = IfcStore.get_cache()
+    except PermissionError:
+        _cache_locked_by_other_process = True
+        return None
+    if _cache_locked_by_other_process:
+        # Lock released — clear both flags so a future re-locking re-surfaces
+        # the warning rather than staying suppressed by the previous dismiss.
+        _cache_locked_by_other_process = False
+        _multi_instance_warning_dismissed = False
+    return cache
+
+
 class IfcStore:
     path: str = ""
     """Should be set only using ``tool.Ifc.set_path``."""
@@ -196,7 +234,7 @@ class IfcStore:
                 shutil.copy2(IfcStore.cache_path, new_cache_path)
             except PermissionError:
                 pass  # Well we tried. No cache for you!
-        IfcStore.get_cache()
+        get_cache_or_detect_lock()
 
     @staticmethod
     def load_file(path: str) -> None:

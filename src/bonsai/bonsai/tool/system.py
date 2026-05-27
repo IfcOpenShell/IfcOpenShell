@@ -19,6 +19,7 @@
 from __future__ import annotations
 
 import re
+from collections import deque
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -26,6 +27,7 @@ import bpy
 import ifcopenshell.api.geometry
 import ifcopenshell.api.system
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.system
 from mathutils import Matrix, Vector
 
@@ -35,10 +37,27 @@ import bonsai.core.root
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
-from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
+
+# Data-class imports from ``bonsai.bim.module.system.data`` are function-local:
+# a top-level import would trigger a partial-init cycle through tool.Ifc.Operator.
 
 if TYPE_CHECKING:
     from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
+
+
+_DIRECTION_FROM_FLOW_PAIR: dict[tuple[str, str], str] = {
+    ("SOURCE", "SINK"): "SOURCE",
+    ("SINK", "SOURCE"): "SINK",
+    ("SOURCEANDSINK", "SOURCEANDSINK"): "SOURCEANDSINK",
+}
+
+
+def direction_from_port_pair(port_a: ifcopenshell.entity_instance, port_b: ifcopenshell.entity_instance) -> str:
+    """Derive the ``direction`` arg for ``ifcopenshell.api.system.connect_port``
+    from each port's ``FlowDirection``. Returns ``NOTDEFINED`` for non-canonical pairs."""
+    a = getattr(port_a, "FlowDirection", None) or "NOTDEFINED"
+    b = getattr(port_b, "FlowDirection", None) or "NOTDEFINED"
+    return _DIRECTION_FROM_FLOW_PAIR.get((a, b), "NOTDEFINED")
 
 
 class System(bonsai.core.tool.System):
@@ -81,7 +100,7 @@ class System(bonsai.core.tool.System):
         # make sure obj.dimensions and .matrix_world has valid data
         bpy.context.view_layer.update()
         # need to make sure .ObjectPlacement is also updated when we're going to add ports
-        tool.Model.sync_object_ifc_position(obj)
+        tool.Geometry.commit_placement_if_moved(obj)
 
         mep_element = tool.Ifc.get_entity(obj)
         bbox = tool.Blender.get_object_bounding_box(obj)
@@ -162,12 +181,12 @@ class System(bonsai.core.tool.System):
         return ifcopenshell.util.system.get_ports(element)
 
     @classmethod
-    def get_port_relating_element(cls, port: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    def get_port_relating_element(cls, port: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if tool.Ifc.get_schema() == "IFC2X3":
-            element = port.ContainedIn[0].RelatedElement
-        else:
-            element = port.Nests[0].RelatingObject
-        return element
+            rel = port.ContainedIn[0] if port.ContainedIn else None
+            return rel.RelatedElement if rel else None
+        rel = port.Nests[0] if port.Nests else None
+        return rel.RelatingObject if rel else None
 
     @classmethod
     def get_port_predefined_type(cls, mep_element: ifcopenshell.entity_instance) -> str:
@@ -282,28 +301,25 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def get_decoration_data(cls) -> dict[str, Any]:
+        from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
+
+        if not ObjectSystemData.is_loaded:
+            ObjectSystemData.load()
+        if not SystemDecorationData.is_loaded:
+            SystemDecorationData.load()
+        return cls._build_decoration_data()
+
+    @classmethod
+    def _build_decoration_data(cls) -> dict[str, Any]:
+        from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
+
         all_vertices = []
         preview_edges = []
         special_vertices = []
         selected_edges = []
         selected_vertices = []
 
-        view3d_space = tool.Blender.get_viewport_context()["space_data"].region_3d
-        viewport_matrix = view3d_space.view_matrix.inverted()
-        viewport_y_axis = viewport_matrix.col[1].to_3d().normalized()
-        camera_pos = viewport_matrix.translation
-        dir_to_camera = lambda x: (camera_pos - x).normalized()
-
-        def most_aligned_vector(a, vectors):
-            return max(vectors, key=lambda v: abs(a.dot(v)))
-
         start_vert_i = 0
-
-        if not ObjectSystemData.is_loaded:
-            ObjectSystemData.load()
-
-        if not SystemDecorationData.is_loaded:
-            SystemDecorationData.load()
 
         class FlowDirection(Enum):
             BACKWARD = -1
@@ -457,6 +473,72 @@ class System(bonsai.core.tool.System):
     @classmethod
     def is_mep_element(cls, element: ifcopenshell.entity_instance) -> bool:
         return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
+
+    @classmethod
+    def walk_connected_mep_elements(
+        cls, start_element: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        """Return all MEP elements reachable from ``start_element`` via
+        ``IfcRelConnectsPorts`` in either direction, in BFS order with
+        ``start_element`` first.
+
+        Only ``IfcFlowSegment`` and ``IfcFlowFitting`` instances are
+        returned; non-MEP neighbours reached via a fitting's port are
+        traversed but not collected.
+        """
+        if not cls.is_mep_element(start_element):
+            return []
+        result: list[ifcopenshell.entity_instance] = []
+        visited: set[int] = set()
+        queue: deque[ifcopenshell.entity_instance] = deque([start_element])
+        while queue:
+            element = queue.popleft()
+            if element.id() in visited:
+                continue
+            visited.add(element.id())
+            if not cls.is_mep_element(element):
+                continue
+            result.append(element)
+            for port in cls.get_ports(element):
+                connected_port = cls.get_connected_port(port)
+                if connected_port is None:
+                    continue
+                neighbor = cls.get_port_relating_element(connected_port)
+                if neighbor is None or neighbor.id() in visited:
+                    continue
+                queue.append(neighbor)
+        return result
+
+    @classmethod
+    def get_port_world_position(cls, port: ifcopenshell.entity_instance) -> Vector:
+        """World-space position of an ``IfcDistributionPort``.
+
+        Follows the parent element's live ``matrix_world`` when available so
+        an uncommitted rotation doesn't drift from its ports; falls back to
+        the raw IFC placement otherwise."""
+        placement = getattr(port, "ObjectPlacement", None)
+        if placement is None:
+            return Vector((0.0, 0.0, 0.0))
+        port_ifc_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(placement).tolist())
+
+        parent_element = cls.get_port_relating_element(port)
+        if parent_element is None:
+            return Vector(port_ifc_matrix.translation)
+
+        parent_obj = tool.Ifc.get_object(parent_element)
+        if parent_obj is None:
+            return Vector(port_ifc_matrix.translation)
+
+        parent_placement = getattr(parent_element, "ObjectPlacement", None)
+        if parent_placement is None:
+            return Vector(port_ifc_matrix.translation)
+        parent_ifc_matrix = Matrix(ifcopenshell.util.placement.get_local_placement(parent_placement).tolist())
+
+        try:
+            port_local_to_parent = parent_ifc_matrix.inverted() @ port_ifc_matrix
+        except ValueError:
+            return Vector(port_ifc_matrix.translation)
+        return (parent_obj.matrix_world @ port_local_to_parent).translation
 
     @classmethod
     def get_flow_element_controls(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
