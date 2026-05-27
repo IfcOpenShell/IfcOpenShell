@@ -121,6 +121,9 @@ private:
     void  releaseMsaaColorTexture();
 
     bool  buildHizPipeline();
+    bool  buildEdgePipeline();
+    void  encodeEdgePass(WGPUCommandEncoder enc, WGPUTextureView surface_view);
+    void  releaseEdgeResources();
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
     // Resolves the just-rendered MSAA depth into the small single-sample
@@ -247,6 +250,17 @@ private:
     // — making the pyramid 1+ frames stale, which is fine ("slightly-stale
     // depth" pattern the GL backend already documents). Two slots overlap
     // GPU write with CPU read; we never block on the readback.
+    // Edge silhouette post-process (stage 9). Samples the MSAA depth
+    // texture in a fullscreen pass, computes a depth Laplacian, blends
+    // dark lines into the resolved surface colour. Matches GL's
+    // renderEdgePass() visually.
+    WGPUShaderModule    edge_shader_module_   = nullptr;
+    WGPUBindGroupLayout edge_bgl_             = nullptr;
+    WGPUPipelineLayout  edge_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  edge_pipeline_        = nullptr;
+    WGPUBindGroup       edge_bind_group_      = nullptr;
+    bool                edges_enabled_        = true;
+
     enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
     static constexpr int HIZ_SLOTS = 2;
     WGPUBuffer    hiz_staging_buffers_[HIZ_SLOTS] = { nullptr, nullptr };

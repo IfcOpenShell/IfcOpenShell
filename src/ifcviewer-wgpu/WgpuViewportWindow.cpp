@@ -758,6 +758,7 @@ bool WgpuViewportWindow::initWgpu() {
 
     if (!buildPipelines()) return false;
     if (!buildHizPipeline()) return false;
+    if (!buildEdgePipeline()) return false;
 
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
     return true;
@@ -861,10 +862,15 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     ensureDepthTexture(width_px, height_px);
     ensureMsaaColorTexture(width_px, height_px);
     ensureHizTextures(width_px, height_px);
-    // depth_view_ was just replaced; force the HiZ bind group to rebuild.
+    // depth_view_ was just replaced; force the HiZ + edge bind groups to
+    // rebuild against the new view on next encode.
     if (hiz_bind_group_) {
         wgpuBindGroupRelease(hiz_bind_group_);
         hiz_bind_group_ = nullptr;
+    }
+    if (edge_bind_group_) {
+        wgpuBindGroupRelease(edge_bind_group_);
+        edge_bind_group_ = nullptr;
     }
 }
 
@@ -994,6 +1000,191 @@ fn fs_main(in: VsOut) -> @builtin(frag_depth) f32 {
     return max_d;
 }
 )";
+
+// -----------------------------------------------------------------------------
+// Edge silhouette post-process (stage 9)
+// -----------------------------------------------------------------------------
+//
+// Ports the GL renderEdgePass algorithm:
+//   1. Sample MSAA depth (sample 0) at centre + 4 cardinal neighbours.
+//   2. Linearise depth to view-space metres so the Laplacian is meaningful
+//      across the entire depth range (raw [0,1] z is heavily non-linear —
+//      a fixed threshold would only catch near-camera edges).
+//   3. Threshold scales with depth (`u_threshold * c`) so a 4 mm gap reads
+//      the same whether it's 0.5 m or 50 m away.
+//   4. Multiplicative blend (Dst·src) with src = vec3(1 - edge). Strictly
+//      darkens; never brightens.
+//
+// Constants u_scale=6.0 and u_threshold=0.004 are GL's tuned values;
+// camera near/far are hard-coded to the viewport defaults (0.1 / 10000).
+// They'll move to a small uniform when AppSettings ports over.
+
+static const char* EDGE_WGSL = R"(
+@group(0) @binding(0) var src_depth: texture_depth_multisampled_2d;
+
+const NEAR: f32 = 0.1;
+const FAR:  f32 = 10000.0;
+const EDGE_SCALE:     f32 = 6.0;
+const EDGE_THRESHOLD: f32 = 0.004;
+
+// Depth texture stores [0,1] z (we pre-multiply a z-remap onto Qt's GL-style
+// projection in the main pipeline). Convert back to GL-NDC then reverse-
+// project to view-space distance.
+fn linearise(z: f32) -> f32 {
+    let ndc = z * 2.0 - 1.0;
+    return (2.0 * NEAR * FAR) / (FAR + NEAR - ndc * (FAR - NEAR));
+}
+
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> @builtin(position) vec4<f32> {
+    let x = f32((vid << 1u) & 2u) * 2.0 - 1.0;
+    let y = f32(vid & 2u) * 2.0 - 1.0;
+    return vec4<f32>(x, y, 0.0, 1.0);
+}
+
+@fragment
+fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
+    let p   = vec2<i32>(i32(frag.x), i32(frag.y));
+    let dim = vec2<i32>(textureDimensions(src_depth));
+
+    let dc_raw = textureLoad(src_depth, p, 0);
+    // Background pixels: nothing was drawn here. Skip so we don't draw
+    // edges on the void / sky.
+    if (dc_raw >= 0.99999) { discard; }
+
+    let c = linearise(dc_raw);
+    let n = linearise(textureLoad(src_depth, vec2<i32>(p.x,                     max(p.y - 1, 0)),     0));
+    let s = linearise(textureLoad(src_depth, vec2<i32>(p.x,                     min(p.y + 1, dim.y - 1)), 0));
+    let e = linearise(textureLoad(src_depth, vec2<i32>(min(p.x + 1, dim.x - 1), p.y),                 0));
+    let w = linearise(textureLoad(src_depth, vec2<i32>(max(p.x - 1, 0),         p.y),                 0));
+
+    let lap   = abs(4.0 * c - n - s - e - w);
+    let t     = EDGE_THRESHOLD * c;
+    let edge  = clamp((lap - t) * EDGE_SCALE, 0.0, 0.6);
+
+    // Multiplicative blend (Dst, Zero): output rgb = (1 - edge), so the
+    // existing surface colour is multiplied by (1 - edge) per channel.
+    return vec4<f32>(vec3<f32>(1.0 - edge), 1.0);
+}
+)";
+
+bool WgpuViewportWindow::buildEdgePipeline() {
+    WGPUBindGroupLayoutEntry entries[1] = {};
+    entries[0].binding = 0;
+    entries[0].visibility = WGPUShaderStage_Fragment;
+    entries[0].texture.sampleType    = WGPUTextureSampleType_Depth;
+    entries[0].texture.viewDimension = WGPUTextureViewDimension_2D;
+    entries[0].texture.multisampled  = 1;
+
+    WGPUBindGroupLayoutDescriptor bgl_desc = {};
+    bgl_desc.entryCount = 1;
+    bgl_desc.entries    = entries;
+    bgl_desc.label      = svFromCStr("ifcviewer-wgpu.edge_bgl");
+    edge_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+
+    WGPUPipelineLayoutDescriptor pl_desc = {};
+    pl_desc.bindGroupLayoutCount = 1;
+    pl_desc.bindGroupLayouts     = &edge_bgl_;
+    pl_desc.label                = svFromCStr("ifcviewer-wgpu.edge_pipeline_layout");
+    edge_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+
+    WGPUShaderSourceWGSL wgsl_src = {};
+    wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+    wgsl_src.code        = svFromCStr(EDGE_WGSL);
+    WGPUShaderModuleDescriptor sm_desc = {};
+    sm_desc.nextInChain = &wgsl_src.chain;
+    sm_desc.label       = svFromCStr("ifcviewer-wgpu.edge_wgsl");
+    edge_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+
+    // Multiplicative blend (Dst, Zero): out.rgb = src.rgb * dst.rgb.
+    // Fragment outputs (1 - edge, 1 - edge, 1 - edge) so the existing
+    // surface colour is scaled per-channel — strictly darkens, never
+    // brightens. Matches GL's renderEdgePass (GL_DST_COLOR, GL_ZERO).
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_Dst;
+    blend.color.dstFactor = WGPUBlendFactor_Zero;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_Zero;
+    blend.alpha.dstFactor = WGPUBlendFactor_One;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState target = {};
+    target.format    = surface_format_;
+    target.blend     = &blend;
+    target.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = edge_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &target;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = edge_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.edge_pipeline");
+    rp_desc.vertex.module       = edge_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 0;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = nullptr;            // no depth attachment
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+
+    edge_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!edge_pipeline_) {
+        qWarning() << "wgpu edge pipeline creation failed";
+        return false;
+    }
+    return true;
+}
+
+void WgpuViewportWindow::encodeEdgePass(WGPUCommandEncoder enc,
+                                        WGPUTextureView surface_view) {
+    if (!edges_enabled_ || !edge_pipeline_ || !depth_view_ || !surface_view) return;
+
+    // Rebuild lazily when the underlying depth view was replaced (on resize
+    // we proactively null this out alongside the HiZ bind group).
+    if (!edge_bind_group_) {
+        WGPUBindGroupEntry entry = {};
+        entry.binding     = 0;
+        entry.textureView = depth_view_;
+        WGPUBindGroupDescriptor bg = {};
+        bg.layout     = edge_bgl_;
+        bg.entryCount = 1;
+        bg.entries    = &entry;
+        bg.label      = svFromCStr("ifcviewer-wgpu.edge_bind_group");
+        edge_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg);
+    }
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = surface_view;
+    color.loadOp     = WGPULoadOp_Load;      // preserve resolved main-pass colour
+    color.storeOp    = WGPUStoreOp_Store;
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 1;
+    pass_desc.colorAttachments       = &color;
+    pass_desc.depthStencilAttachment = nullptr;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.edge_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, edge_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, edge_bind_group_, 0, nullptr);
+    wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
+void WgpuViewportWindow::releaseEdgeResources() {
+    if (edge_bind_group_)      { wgpuBindGroupRelease(edge_bind_group_);      edge_bind_group_ = nullptr; }
+    if (edge_pipeline_)        { wgpuRenderPipelineRelease(edge_pipeline_);   edge_pipeline_ = nullptr; }
+    if (edge_shader_module_)   { wgpuShaderModuleRelease(edge_shader_module_);edge_shader_module_ = nullptr; }
+    if (edge_pipeline_layout_) { wgpuPipelineLayoutRelease(edge_pipeline_layout_); edge_pipeline_layout_ = nullptr; }
+    if (edge_bgl_)             { wgpuBindGroupLayoutRelease(edge_bgl_);       edge_bgl_ = nullptr; }
+}
 
 bool WgpuViewportWindow::buildHizPipeline() {
     // Bind group layout: MSAA depth texture + small uniform.
@@ -1736,6 +1927,13 @@ void WgpuViewportWindow::render() {
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
+    // ---- Edge silhouette post-process — reads MSAA depth, blends dark
+    // lines onto the resolved surface colour. Encoded before HiZ resolve
+    // so HiZ uses the same MSAA depth that produced the edges.
+    if (edges_enabled_) {
+        encodeEdgePass(enc, view);
+    }
+
     // ---- HiZ: resolve MSAA depth → small single-sample → ping-pong slot
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) {
@@ -2398,6 +2596,7 @@ void WgpuViewportWindow::shutdown() {
     releaseDepthTexture();
     releaseMsaaColorTexture();
     releaseHizResources();
+    releaseEdgeResources();
 
     if (frame_bind_group_)     { wgpuBindGroupRelease(frame_bind_group_);         frame_bind_group_ = nullptr; }
     if (frame_uniform_buffer_) { wgpuBufferRelease(frame_uniform_buffer_);        frame_uniform_buffer_ = nullptr; }
