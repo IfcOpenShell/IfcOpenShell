@@ -299,15 +299,29 @@ class System(bonsai.core.tool.System):
         system_props = cls.get_system_props()
         return tool.Ifc.get_entity_by_id(system_props.active_system_id)
 
+    # Decoration-data cache, keyed on (decorator_cache_token, id(decorated_elements_set)).
+    _decoration_data_cache_key: tuple | None = None
+    _decoration_data_cache: dict[str, Any] | None = None
+
     @classmethod
     def get_decoration_data(cls) -> dict[str, Any]:
+        from bonsai.bim.decorator_cache import get_decorator_cache_token
         from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
 
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
         if not SystemDecorationData.is_loaded:
             SystemDecorationData.load()
-        return cls._build_decoration_data()
+
+        token = get_decorator_cache_token()
+        key = (token, id(SystemDecorationData.data["decorated_elements"]))
+        if key == cls._decoration_data_cache_key and cls._decoration_data_cache is not None:
+            return cls._decoration_data_cache
+
+        result = cls._build_decoration_data()
+        cls._decoration_data_cache_key = key
+        cls._decoration_data_cache = result
+        return result
 
     @classmethod
     def _build_decoration_data(cls) -> dict[str, Any]:
