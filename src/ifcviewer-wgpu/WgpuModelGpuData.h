@@ -51,9 +51,31 @@ struct WgpuModelGpuData {
     // recompose from placement_transformation when stage matrices change.
     WGPUBuffer instance_storage = nullptr;
 
-    // Bind group binding the three storage buffers above (group=1 in the
+    // u32[] of visible instance indices, repacked per frame by the CPU cull
+    // into per-mesh contiguous slices. Sized for the worst case
+    // (instance_count entries) at applyCachedModel time so we never have to
+    // recreate it (and the bind group that references it) mid-frame.
+    WGPUBuffer visible_buffer = nullptr;
+    size_t     visible_buffer_capacity = 0;  // entries (u32 count), not bytes
+
+    // Bind group binding the four storage buffers above (group=1 in the
     // main pipeline). Built in applyCachedModel after the buffers exist.
     WGPUBindGroup bind_group = nullptr;
+
+    // One per mesh, populated per frame by cullAndCompact. instance_count==0
+    // means the mesh contributes nothing this frame and the draw is skipped.
+    struct MeshDraw {
+        uint32_t first_instance = 0;  // offset into visible_buffer
+        uint32_t instance_count = 0;
+        uint32_t first_index    = 0;  // index buffer offset (in u32 indices)
+        int32_t  base_vertex    = 0;  // added to every fetched vertex_index
+        uint32_t index_count    = 0;
+    };
+    std::vector<MeshDraw> mesh_draws;     // size = meshes.size() after first frame
+
+    // Scratch reused each frame so per-frame cull doesn't allocate. Sized
+    // to instance_count entries on first use; never shrunk.
+    std::vector<uint32_t> visible_flat_scratch;
 
     // Size mirrors for stats / range checks.
     size_t   vertex_bytes   = 0;

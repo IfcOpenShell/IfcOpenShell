@@ -23,6 +23,9 @@
 #include <QResizeEvent>
 #include <QDebug>
 #include <QFileInfo>
+#include <QMatrix4x4>
+#include <QVector3D>
+#include <QtMath>
 
 #include <webgpu/wgpu.h>  // wgpu-native extensions (logging, MULTI_DRAW_INDIRECT, …)
 
@@ -52,6 +55,11 @@ static_assert(sizeof(FrameUniforms) == 16 * sizeof(float) + 4 * 4 * sizeof(float
 // but at e.g. 1281 wide we round up to 5376. Tracked as the padded row
 // stride in the capture path.
 static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
+
+// Forward declaration — defined below alongside updateFrameUniforms. Used
+// by render() to extract camera/frustum state without duplicating the math.
+static QVector3D orbitEye(const float target[3], float dist,
+                          float yaw_deg, float pitch_deg);
 
 // -----------------------------------------------------------------------------
 // Small helpers
@@ -114,12 +122,16 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
     if (m.index_buffer)     { wgpuBufferRelease(m.index_buffer);     m.index_buffer = nullptr; }
     if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
     if (m.instance_storage) { wgpuBufferRelease(m.instance_storage); m.instance_storage = nullptr; }
+    if (m.visible_buffer)   { wgpuBufferRelease(m.visible_buffer);   m.visible_buffer = nullptr; }
     m.vertex_bytes   = 0;
     m.index_count    = 0;
     m.mesh_count     = 0;
     m.instance_count = 0;
+    m.visible_buffer_capacity = 0;
     m.meshes.clear();
     m.instances.clear();
+    m.mesh_draws.clear();
+    m.visible_flat_scratch.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -160,6 +172,10 @@ struct FrameUniforms {
 @group(1) @binding(0) var<storage, read> vertices:  array<u32>;
 @group(1) @binding(1) var<storage, read> meshes:    array<MeshQuant>;
 @group(1) @binding(2) var<storage, read> instances: array<InstanceRecord>;
+// Per-frame compacted visible list: visible[firstInstance + i] picks the
+// real instance for this draw slot. firstInstance is set per drawIndexed
+// call so each mesh reads its own contiguous slice of `visible`.
+@group(1) @binding(3) var<storage, read> visible:   array<u32>;
 
 struct VsOut {
     @builtin(position) clip_pos: vec4<f32>,
@@ -188,7 +204,8 @@ fn octDecode(e: vec2<f32>) -> vec3<f32> {
 @vertex
 fn vs_main(@builtin(vertex_index)   vid: u32,
            @builtin(instance_index) iid: u32) -> VsOut {
-    let inst = instances[iid];
+    let inst_idx = visible[iid];
+    let inst = instances[inst_idx];
     let mq   = meshes[inst.mesh_id];
 
     let w0 = vertices[vid * 3u + 0u];
@@ -386,9 +403,24 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         WGPUBufferUsage_Storage,
         "model.instance_storage");
 
+    // Pre-size the visible buffer for the worst case (every instance visible).
+    // Per-frame cull writes a u32 list into it via wgpuQueueWriteBuffer; we
+    // never grow it so the bind group reference stays valid for the model's
+    // lifetime. Minimum size 4 bytes — wgpu rejects zero-sized buffers.
+    const size_t visible_bytes = std::max<size_t>(
+        size_t(data.instances.size()) * sizeof(uint32_t), 4u);
+    WGPUBufferDescriptor vb_desc = {};
+    vb_desc.size  = visible_bytes;
+    vb_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+    vb_desc.label = svFromCStr("model.visible_buffer");
+    m.visible_buffer          = wgpuDeviceCreateBuffer(device_, &vb_desc);
+    m.visible_buffer_capacity = std::max<size_t>(data.instances.size(), 1u);
+
     // Hand off CPU mirrors (cull / picking will need them later).
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
+    m.mesh_draws.assign(m.meshes.size(), WgpuModelGpuData::MeshDraw{});
+    m.visible_flat_scratch.reserve(m.instances.size());
 
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
     WgpuModelGpuData& mref = inserted->second;
@@ -666,6 +698,120 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     ensureDepthTexture(width_px, height_px);
 }
 
+// -----------------------------------------------------------------------------
+// CPU frustum cull + per-mesh compaction
+// -----------------------------------------------------------------------------
+//
+// Plane extraction follows the standard "rows of the VP matrix" derivation,
+// adjusted for WebGPU's [0, 1] clip-space z (near plane = row 2, not row 3
+// + row 2 as in GL). Planes are stored as (a, b, c, d) with the convention
+// a*x + b*y + c*z + d >= 0 meaning the point is inside.
+//
+// VP is column-major float[16] (Qt convention): element [c*4 + r] is column
+// c, row r. row(i) = (vp[0*4+i], vp[1*4+i], vp[2*4+i], vp[3*4+i]).
+
+static inline void rowVec(const float vp[16], int row, float out[4]) {
+    out[0] = vp[0 * 4 + row];
+    out[1] = vp[1 * 4 + row];
+    out[2] = vp[2 * 4 + row];
+    out[3] = vp[3 * 4 + row];
+}
+
+static inline void planeNormalize(float p[4]) {
+    const float len = std::sqrt(p[0] * p[0] + p[1] * p[1] + p[2] * p[2]);
+    if (len > 0.0f) {
+        const float inv = 1.0f / len;
+        p[0] *= inv; p[1] *= inv; p[2] *= inv; p[3] *= inv;
+    }
+}
+
+static void extractFrustumPlanes(const float vp[16], float planes[6][4]) {
+    float r0[4], r1[4], r2[4], r3[4];
+    rowVec(vp, 0, r0);
+    rowVec(vp, 1, r1);
+    rowVec(vp, 2, r2);
+    rowVec(vp, 3, r3);
+
+    // left   = r3 + r0
+    // right  = r3 - r0
+    // bottom = r3 + r1
+    // top    = r3 - r1
+    // near   = r2          (WebGPU clip z >= 0)
+    // far    = r3 - r2
+    for (int i = 0; i < 4; ++i) {
+        planes[0][i] = r3[i] + r0[i];
+        planes[1][i] = r3[i] - r0[i];
+        planes[2][i] = r3[i] + r1[i];
+        planes[3][i] = r3[i] - r1[i];
+        planes[4][i] = r2[i];
+        planes[5][i] = r3[i] - r2[i];
+    }
+    for (int p = 0; p < 6; ++p) planeNormalize(planes[p]);
+}
+
+// Returns false iff the AABB is fully outside any one plane (early-rejects
+// trivially-invisible instances). May return true for boxes that straddle
+// the frustum — that's fine, those still need to draw.
+static bool aabbInFrustum(const float mn[3], const float mx[3],
+                          const float planes[6][4]) {
+    for (int p = 0; p < 6; ++p) {
+        const float a = planes[p][0], b = planes[p][1], c = planes[p][2], d = planes[p][3];
+        // p-vertex: the AABB corner furthest along the plane normal.
+        const float px = (a >= 0.0f) ? mx[0] : mn[0];
+        const float py = (b >= 0.0f) ? mx[1] : mn[1];
+        const float pz = (c >= 0.0f) ? mx[2] : mn[2];
+        if (a * px + b * py + c * pz + d < 0.0f) return false;
+    }
+    return true;
+}
+
+void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m, const float planes[6][4]) {
+    if (m.instances.empty() || m.meshes.empty() || !m.visible_buffer) {
+        for (auto& d : m.mesh_draws) d.instance_count = 0;
+        return;
+    }
+
+    // Per-mesh visible-instance buckets. Allocated once per cull from scratch
+    // vectors held on the model (no fresh heap on the per-frame path).
+    static thread_local std::vector<std::vector<uint32_t>> per_mesh_visible;
+    if (per_mesh_visible.size() < m.meshes.size()) per_mesh_visible.resize(m.meshes.size());
+    for (size_t mi = 0; mi < m.meshes.size(); ++mi) per_mesh_visible[mi].clear();
+
+    for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
+        const auto& inst = m.instances[i];
+        if (inst.mesh_id >= m.meshes.size()) continue;
+        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) continue;
+        per_mesh_visible[inst.mesh_id].push_back(i);
+    }
+
+    // Flatten into m.visible_flat_scratch and populate per-mesh draws.
+    m.visible_flat_scratch.clear();
+    m.mesh_draws.assign(m.meshes.size(), WgpuModelGpuData::MeshDraw{});
+    for (uint32_t mi = 0; mi < m.meshes.size(); ++mi) {
+        const MeshInfo& mesh = m.meshes[mi];
+        WgpuModelGpuData::MeshDraw& d = m.mesh_draws[mi];
+        d.first_instance = uint32_t(m.visible_flat_scratch.size());
+        d.instance_count = uint32_t(per_mesh_visible[mi].size());
+        d.first_index    = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
+        d.base_vertex    = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
+        d.index_count    = mesh.index_count;
+        for (uint32_t inst_idx : per_mesh_visible[mi]) {
+            m.visible_flat_scratch.push_back(inst_idx);
+        }
+    }
+
+    // Upload the visible list. Round up to 4-byte multiple (always true for
+    // u32 arrays). Empty visible list still uploads one zero so the bind
+    // group has something well-defined; the per-mesh loop will skip the draw.
+    const size_t bytes_to_upload = std::max<size_t>(
+        m.visible_flat_scratch.size() * sizeof(uint32_t), sizeof(uint32_t));
+    static const uint32_t zero = 0;
+    const void*  src  = m.visible_flat_scratch.empty()
+                          ? static_cast<const void*>(&zero)
+                          : static_cast<const void*>(m.visible_flat_scratch.data());
+    wgpuQueueWriteBuffer(queue_, m.visible_buffer, 0, src, bytes_to_upload);
+}
+
 void WgpuViewportWindow::render() {
     WGPUSurfaceTexture surf_tex = {};
     wgpuSurfaceGetCurrentTexture(surface_, &surf_tex);
@@ -692,6 +838,29 @@ void WgpuViewportWindow::render() {
     WGPUTextureView view = wgpuTextureCreateView(surf_tex.texture, nullptr);
 
     updateFrameUniforms();
+
+    // Per-frame cull: extract frustum planes from the same VP we just wrote
+    // into the uniform, then run cullModelCpu on every visible model. The
+    // cull writes its results directly into each model's visible_buffer via
+    // wgpuQueueWriteBuffer — these writes are sequenced before the draw
+    // commands we encode next.
+    {
+        const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                       camera_yaw_deg_, camera_pitch_deg_);
+        QMatrix4x4 v; v.lookAt(eye, target, QVector3D(0.0f, 0.0f, 1.0f));
+        const float aspect = (configured_h_ > 0)
+                                ? float(configured_w_) / float(configured_h_) : 1.0f;
+        QMatrix4x4 p; p.perspective(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
+        QMatrix4x4 z; z(2, 2) = 0.5f; z(2, 3) = 0.5f;
+        const QMatrix4x4 vp = z * p * v;
+        float planes[6][4];
+        extractFrustumPlanes(vp.constData(), planes);
+        for (auto& [mid, m] : models_gpu_) {
+            if (m.hidden) continue;
+            cullModelCpu(m, planes);
+        }
+    }
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
@@ -736,27 +905,20 @@ void WgpuViewportWindow::render() {
                                                 WGPUIndexFormat_Uint32,
                                                 0, WGPU_WHOLE_SIZE);
 
-            // One draw per (mesh, instance) pair. firstInstance carries the
-            // instance's absolute index into instance_storage so the vertex
-            // shader can fetch its transform; baseVertex offsets vertex pulling
-            // into the mesh's slice of the model's vertex storage.
-            for (uint32_t mi = 0; mi < m.meshes.size(); ++mi) {
-                const MeshInfo& mesh = m.meshes[mi];
-                if (mesh.index_count == 0 || mesh.instance_count == 0) continue;
-
-                const uint32_t first_index = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
-                const int32_t  base_vertex = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
-
-                for (uint32_t i = 0; i < mesh.instance_count; ++i) {
-                    const uint32_t inst_idx = mesh.first_instance + i;
-                    wgpuRenderPassEncoderDrawIndexed(
-                        pass,
-                        mesh.index_count,
-                        1,                       // instanceCount
-                        first_index,
-                        base_vertex,
-                        inst_idx);               // firstInstance == @builtin(instance_index)
-                }
+            // One drawIndexed per non-empty mesh. instanceCount is the number
+            // of frustum-surviving instances of this mesh; firstInstance is
+            // their offset into m.visible_buffer (consumed by the WGSL
+            // `visible[iid]` indirection). All-instances-culled meshes are
+            // skipped — no draw call issued at all.
+            for (const auto& d : m.mesh_draws) {
+                if (d.instance_count == 0 || d.index_count == 0) continue;
+                wgpuRenderPassEncoderDrawIndexed(
+                    pass,
+                    d.index_count,
+                    d.instance_count,
+                    d.first_index,
+                    d.base_vertex,
+                    d.first_instance);
             }
         }
     }
@@ -894,14 +1056,14 @@ bool WgpuViewportWindow::buildPipelines() {
     frame_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bgl");
     frame_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &frame_bgl_desc);
 
-    WGPUBindGroupLayoutEntry model_entries[3] = {};
-    for (int i = 0; i < 3; ++i) {
+    WGPUBindGroupLayoutEntry model_entries[4] = {};
+    for (int i = 0; i < 4; ++i) {
         model_entries[i].binding     = uint32_t(i);
         model_entries[i].visibility  = WGPUShaderStage_Vertex;
         model_entries[i].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
     }
     WGPUBindGroupLayoutDescriptor model_bgl_desc = {};
-    model_bgl_desc.entryCount = 3;
+    model_bgl_desc.entryCount = 4;
     model_bgl_desc.entries    = model_entries;
     model_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.model_bgl");
     model_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &model_bgl_desc);
@@ -989,12 +1151,12 @@ void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
         wgpuBindGroupRelease(m.bind_group);
         m.bind_group = nullptr;
     }
-    if (!m.vertex_storage || !m.mesh_storage || !m.instance_storage) {
+    if (!m.vertex_storage || !m.mesh_storage || !m.instance_storage || !m.visible_buffer) {
         // Empty model — no bind group needed; the draw loop will skip it.
         return;
     }
 
-    WGPUBindGroupEntry entries[3] = {};
+    WGPUBindGroupEntry entries[4] = {};
     entries[0].binding = 0;
     entries[0].buffer  = m.vertex_storage;
     entries[0].size    = WGPU_WHOLE_SIZE;
@@ -1004,10 +1166,13 @@ void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
     entries[2].binding = 2;
     entries[2].buffer  = m.instance_storage;
     entries[2].size    = WGPU_WHOLE_SIZE;
+    entries[3].binding = 3;
+    entries[3].buffer  = m.visible_buffer;
+    entries[3].size    = WGPU_WHOLE_SIZE;
 
     WGPUBindGroupDescriptor desc = {};
     desc.layout     = model_bgl_;
-    desc.entryCount = 3;
+    desc.entryCount = 4;
     desc.entries    = entries;
     desc.label      = svFromCStr("ifcviewer-wgpu.model_bind_group");
     m.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
@@ -1058,10 +1223,6 @@ void WgpuViewportWindow::releaseDepthTexture() {
 // Orbit camera around `camera_target_`. World +Z up (BIM convention). Yaw is
 // rotation about Z (positive = anticlockwise looking down +Z); pitch is
 // elevation above the XY plane.
-
-#include <QMatrix4x4>
-#include <QVector3D>
-#include <QtMath>
 
 static QVector3D orbitEye(const float target[3], float dist,
                           float yaw_deg, float pitch_deg) {

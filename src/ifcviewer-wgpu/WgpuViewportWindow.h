@@ -102,6 +102,12 @@ private:
     void  flushPendingSidecarQueue();
     bool  computeSceneAabb(float mn[3], float mx[3]) const;
 
+    // Cull `m`'s instances against the supplied frustum planes (world-space,
+    // ax+by+cz+d >= 0 means inside), bucket survivors by mesh_id, and write
+    // the flat visible-index list into m.visible_buffer via wgpuQueueWriteBuffer.
+    // After return, m.mesh_draws is the per-mesh draw schedule for the frame.
+    void  cullModelCpu(WgpuModelGpuData& m, const float planes[6][4]);
+
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
     int  configured_w_ = 0;
