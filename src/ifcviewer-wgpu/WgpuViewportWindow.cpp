@@ -356,6 +356,53 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     // bytes match the GL backend (see srgbToLinear above).
     return vec4<f32>(srgbToLinear(color), in.color.a);
 }
+
+// --------------------------- Pick pipeline ---------------------------------
+// Same vertex pulling as vs_main, but VsOutPick carries only the object_id
+// (flat-interpolated). Fragment writes the object_id to an R32UInt target.
+// Background (no draw) reads 0 because the pick attachment is cleared to 0.
+
+struct VsOutPick {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) @interpolate(flat) object_id: u32,
+};
+
+@vertex
+fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
+    var out: VsOutPick;
+    if (vid >= u_model.total_vertex_count) {
+        out.clip_pos  = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        out.object_id = 0u;
+        return out;
+    }
+
+    let draw_idx = find_draw(vid);
+    let local_v  = vid - prefix_sums[draw_idx];
+    let item     = visible_draws[draw_idx];
+    let mesh_local_index = indices[item.ebo_first_u32 + local_v];
+    let v_global = item.base_vertex + mesh_local_index;
+    let inst = instances[item.instance_idx];
+    let mq   = meshes[item.mesh_id];
+
+    let w0 = vertices[v_global * 3u + 0u];
+    let w1 = vertices[v_global * 3u + 1u];
+    let pos_norm = vec3<f32>(
+        f32(w0 & 0xFFFFu)          / 65535.0,
+        f32((w0 >> 16u) & 0xFFFFu) / 65535.0,
+        f32(w1 & 0xFFFFu)          / 65535.0,
+    );
+    let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, pos_norm);
+    let world4    = inst.transform * vec4<f32>(pos_local, 1.0);
+
+    out.clip_pos  = u_frame.view_proj * world4;
+    out.object_id = inst.object_id;
+    return out;
+}
+
+@fragment
+fn fs_pick(in: VsOutPick) -> @location(0) u32 {
+    return in.object_id;
+}
 )";
 
 // Helper: build a WGPUStringView from a null-terminated C string literal.
@@ -759,6 +806,7 @@ bool WgpuViewportWindow::initWgpu() {
     if (!buildPipelines()) return false;
     if (!buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
+    if (!buildPickPipeline()) return false;
 
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
     return true;
@@ -1184,6 +1232,218 @@ void WgpuViewportWindow::releaseEdgeResources() {
     if (edge_shader_module_)   { wgpuShaderModuleRelease(edge_shader_module_);edge_shader_module_ = nullptr; }
     if (edge_pipeline_layout_) { wgpuPipelineLayoutRelease(edge_pipeline_layout_); edge_pipeline_layout_ = nullptr; }
     if (edge_bgl_)             { wgpuBindGroupLayoutRelease(edge_bgl_);       edge_bgl_ = nullptr; }
+}
+
+// -----------------------------------------------------------------------------
+// Pick pipeline (stage 4)
+// -----------------------------------------------------------------------------
+//
+// Same vertex pulling architecture as the main pipeline; reuses
+// pipeline_layout_ so per-frame and per-model bind groups stay shared with
+// the main draw. Differences are in the fragment (one R32UInt output) and
+// the render target attachments (single-sample, surface-sized pick FBO).
+
+bool WgpuViewportWindow::buildPickPipeline() {
+    WGPUColorTargetState color_target = {};
+    color_target.format    = WGPUTextureFormat_R32Uint;
+    color_target.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_pick");
+    frag.targetCount = 1;
+    frag.targets     = &color_target;
+
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_True;
+    depth.depthCompare         = WGPUCompareFunction_Less;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.pick_pipeline");
+    rp_desc.vertex.module       = main_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_pick");
+    rp_desc.vertex.bufferCount  = 0;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_Back;
+    rp_desc.primitive.frontFace = WGPUFrontFace_CCW;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+
+    pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!pick_pipeline_) {
+        qWarning() << "wgpu pick pipeline creation failed";
+        return false;
+    }
+    return true;
+}
+
+void WgpuViewportWindow::ensurePickAttachments(int w, int h) {
+    if (w <= 0 || h <= 0) return;
+    if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
+
+    if (pick_color_view_)    { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
+    if (pick_color_texture_) { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
+    if (pick_depth_view_)    { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
+    if (pick_depth_texture_) { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
+
+    WGPUTextureDescriptor cdesc = {};
+    cdesc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
+    cdesc.dimension     = WGPUTextureDimension_2D;
+    cdesc.size.width    = uint32_t(w);
+    cdesc.size.height   = uint32_t(h);
+    cdesc.size.depthOrArrayLayers = 1;
+    cdesc.format        = WGPUTextureFormat_R32Uint;
+    cdesc.mipLevelCount = 1;
+    cdesc.sampleCount   = 1;
+    cdesc.label         = svFromCStr("ifcviewer-wgpu.pick_color");
+    pick_color_texture_ = wgpuDeviceCreateTexture(device_, &cdesc);
+    pick_color_view_    = wgpuTextureCreateView(pick_color_texture_, nullptr);
+
+    WGPUTextureDescriptor ddesc = {};
+    ddesc.usage         = WGPUTextureUsage_RenderAttachment;
+    ddesc.dimension     = WGPUTextureDimension_2D;
+    ddesc.size.width    = uint32_t(w);
+    ddesc.size.height   = uint32_t(h);
+    ddesc.size.depthOrArrayLayers = 1;
+    ddesc.format        = WGPUTextureFormat_Depth32Float;
+    ddesc.mipLevelCount = 1;
+    ddesc.sampleCount   = 1;
+    ddesc.label         = svFromCStr("ifcviewer-wgpu.pick_depth");
+    pick_depth_texture_ = wgpuDeviceCreateTexture(device_, &ddesc);
+    WGPUTextureViewDescriptor dvdesc = {};
+    dvdesc.format          = WGPUTextureFormat_Depth32Float;
+    dvdesc.dimension       = WGPUTextureViewDimension_2D;
+    dvdesc.mipLevelCount   = 1;
+    dvdesc.arrayLayerCount = 1;
+    dvdesc.aspect          = WGPUTextureAspect_DepthOnly;
+    pick_depth_view_ = wgpuTextureCreateView(pick_depth_texture_, &dvdesc);
+
+    if (!pick_staging_buffer_) {
+        // 256 B is the smallest aligned staging buffer that satisfies
+        // WGPU_BYTES_PER_ROW_ALIGN for a single-row copy.
+        WGPUBufferDescriptor sb = {};
+        sb.size  = 256;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.pick_staging");
+        pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+    }
+
+    pick_w_ = w;
+    pick_h_ = h;
+}
+
+void WgpuViewportWindow::releasePickResources() {
+    if (pick_color_view_)    { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
+    if (pick_color_texture_) { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
+    if (pick_depth_view_)    { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
+    if (pick_depth_texture_) { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
+    if (pick_staging_buffer_){ wgpuBufferRelease(pick_staging_buffer_);  pick_staging_buffer_ = nullptr; }
+    if (pick_pipeline_)      { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
+    pick_w_ = pick_h_ = 0;
+}
+
+uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return 0;
+    if (x_pixels < 0 || y_pixels < 0 ||
+        x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+
+    // The current frame's visible_draws are already on the GPU (uploaded
+    // by the last render's cullModelCpuUpload), and the per-model bind
+    // groups + frame uniform are valid. Just encode a one-shot pick pass.
+
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = pick_color_view_;
+    color.loadOp     = WGPULoadOp_Clear;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = { 0.0, 0.0, 0.0, 0.0 };  // object_id == 0 means miss
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view              = pick_depth_view_;
+    depth.depthLoadOp       = WGPULoadOp_Clear;
+    depth.depthStoreOp      = WGPUStoreOp_Store;
+    depth.depthClearValue   = 1.0f;
+    depth.stencilLoadOp     = WGPULoadOp_Undefined;
+    depth.stencilStoreOp    = WGPUStoreOp_Undefined;
+    depth.stencilReadOnly   = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 1;
+    pass_desc.colorAttachments       = &color;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.pick_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden || !m.bind_group || m.total_visible_vertices == 0) continue;
+        wgpuRenderPassEncoderSetBindGroup(pass, 1, m.bind_group, 0, nullptr);
+        wgpuRenderPassEncoderDraw(pass, m.total_visible_vertices, 1, 0, 0);
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    // Copy the single texel at (x, y) into the staging buffer's first 4 B.
+    WGPUTexelCopyTextureInfo src = {};
+    src.texture  = pick_color_texture_;
+    src.aspect   = WGPUTextureAspect_All;
+    src.origin.x = uint32_t(x_pixels);
+    src.origin.y = uint32_t(y_pixels);
+
+    WGPUTexelCopyBufferInfo dst = {};
+    dst.buffer              = pick_staging_buffer_;
+    dst.layout.bytesPerRow  = 256;
+    dst.layout.rowsPerImage = 1;
+
+    WGPUExtent3D extent = {};
+    extent.width  = 1;
+    extent.height = 1;
+    extent.depthOrArrayLayers = 1;
+
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+
+    // Sync wait for the readback — pick is interactive (click) and rare,
+    // so the GPU stall here is fine.
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+
+    wgpuBufferMapAsync(pick_staging_buffer_, WGPUMapMode_Read, 0, 256, mcb);
+    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    if (!req.ok) return 0;
+
+    const uint32_t* mapped = static_cast<const uint32_t*>(
+        wgpuBufferGetConstMappedRange(pick_staging_buffer_, 0, 256));
+    const uint32_t object_id = mapped ? mapped[0] : 0u;
+    wgpuBufferUnmap(pick_staging_buffer_);
+
+    return object_id;
 }
 
 bool WgpuViewportWindow::buildHizPipeline() {
@@ -2528,10 +2788,26 @@ void WgpuViewportWindow::captureNextFrameToPng(const QString& path, bool quit_af
 void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
     nav_active_button_ = event->button();
     nav_last_pos_      = event->position().toPoint();
+    nav_press_pos_     = nav_last_pos_;
+    nav_dragged_       = false;
 }
 
 void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     if (event->button() == nav_active_button_) {
+        // LMB-click without drag → pick the object under the cursor.
+        if (event->button() == Qt::LeftButton && !nav_dragged_) {
+            const QPoint pos = event->position().toPoint();
+            const int px = int(pos.x() * devicePixelRatio());
+            const int py = int(pos.y() * devicePixelRatio());
+            const uint32_t id = pickObjectAt(px, py);
+            if (id != 0) {
+                qInfo().noquote().nospace()
+                    << "[wgpu pick] object_id=" << id << " at (" << pos.x()
+                    << ", " << pos.y() << ")";
+            } else {
+                qInfo().noquote() << "[wgpu pick] miss";
+            }
+        }
         nav_active_button_ = Qt::NoButton;
     }
 }
@@ -2543,6 +2819,13 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     const int dx = pos.x() - nav_last_pos_.x();
     const int dy = pos.y() - nav_last_pos_.y();
     nav_last_pos_ = pos;
+
+    // Promote to drag past 3 px so a wobbly click doesn't get reclassified.
+    if (!nav_dragged_) {
+        const int adx = std::abs(pos.x() - nav_press_pos_.x());
+        const int ady = std::abs(pos.y() - nav_press_pos_.y());
+        if (adx + ady > 3) nav_dragged_ = true;
+    }
 
     if (nav_active_button_ == Qt::LeftButton) {
         // Orbit. Sign convention matches the GL viewport: drag-right rotates
@@ -2597,6 +2880,7 @@ void WgpuViewportWindow::shutdown() {
     releaseMsaaColorTexture();
     releaseHizResources();
     releaseEdgeResources();
+    releasePickResources();
 
     if (frame_bind_group_)     { wgpuBindGroupRelease(frame_bind_group_);         frame_bind_group_ = nullptr; }
     if (frame_uniform_buffer_) { wgpuBufferRelease(frame_uniform_buffer_);        frame_uniform_buffer_ = nullptr; }

@@ -124,6 +124,15 @@ private:
     bool  buildEdgePipeline();
     void  encodeEdgePass(WGPUCommandEncoder enc, WGPUTextureView surface_view);
     void  releaseEdgeResources();
+
+    bool  buildPickPipeline();
+    void  ensurePickAttachments(int w, int h);
+    void  releasePickResources();
+    // Synchronous pick: encodes a one-shot R32UInt render of the current
+    // visible_draws against the click pixel, copies the single texel back,
+    // waits, and returns the object_id (0 if nothing was hit). Call from
+    // the main thread between renders.
+    uint32_t pickObjectAt(int x_pixels, int y_pixels);
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
     // Resolves the just-rendered MSAA depth into the small single-sample
@@ -261,6 +270,20 @@ private:
     WGPUBindGroup       edge_bind_group_      = nullptr;
     bool                edges_enabled_        = true;
 
+    // Pick pass (stage 4). Single-sample R32UInt target + depth, vertex-
+    // pulled from the same visible_draws / instances buffers as the main
+    // pass — pick fragment outputs the instance's object_id. The pick
+    // pipeline reuses pipeline_layout_ because it needs the same set of
+    // bindings (frame uniform at group=0, per-model storages at group=1).
+    WGPURenderPipeline pick_pipeline_       = nullptr;
+    WGPUTexture        pick_color_texture_  = nullptr;
+    WGPUTextureView    pick_color_view_     = nullptr;
+    WGPUTexture        pick_depth_texture_  = nullptr;
+    WGPUTextureView    pick_depth_view_     = nullptr;
+    WGPUBuffer         pick_staging_buffer_ = nullptr;  // 256 B (single texel + bytes-per-row pad)
+    int                pick_w_              = 0;
+    int                pick_h_              = 0;
+
     enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
     static constexpr int HIZ_SLOTS = 2;
     WGPUBuffer    hiz_staging_buffers_[HIZ_SLOTS] = { nullptr, nullptr };
@@ -335,11 +358,12 @@ private:
     bool    pending_screenshot_quit_ = false;
 
     // Mouse navigation state. LMB drag orbits, MMB drag pans, wheel zooms.
-    // No Blender/Maya preset selection yet — that arrives with the AppSettings
-    // port (post-task-12). Selection is unbound (no pick pass), so LMB is
-    // safe to dedicate to orbit for now.
+    // LMB-click-without-drag picks the object under the cursor. No
+    // Blender/Maya preset awareness yet — that arrives with AppSettings.
     Qt::MouseButton nav_active_button_ = Qt::NoButton;
     QPoint          nav_last_pos_;
+    QPoint          nav_press_pos_;
+    bool            nav_dragged_       = false;
 
     // Benchmark mode. setBenchmarkFrames(N) arms it; render() integrates the
     // yaw, captures per-frame ms after warmup, and prints + quits when the
