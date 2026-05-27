@@ -61,13 +61,23 @@ public:
 
     // Synchronous load + GPU upload. Requires wgpu init to have completed
     // (i.e. the window has been exposed at least once). Returns the
-    // assigned model_id, or 0 on failure.
+    // assigned model_id, or 0 on failure. Routes through the streaming
+    // loader when streaming_enabled_, else the legacy full-load path.
     uint32_t loadSidecar(const QString& path);
 
     // Restore a finalised model from a SidecarData struct: allocate wgpu
     // buffers, upload vertex/index/mesh/instance bytes, register in
     // models_gpu_. Replaces any existing state for model_id.
     void applyCachedModel(uint32_t model_id, SidecarData data);
+
+    // Streaming variant: takes a StreamingSidecar (metadata only — no
+    // vertex / index bytes). Allocates per-chunk small buffers and the
+    // model-shared index / mesh / instance storage upfront, but leaves
+    // each chunk's vertex_storage null and is_resident=false. The per-
+    // frame loader (commit 4 of streaming) brings chunks resident on
+    // demand as cull flags them visible.
+    void applyCachedModelStreaming(uint32_t model_id,
+                                   struct StreamingSidecar metadata);
 
     void removeModel(uint32_t model_id);
     void resetScene();
@@ -365,6 +375,14 @@ public:
     // model in a sprawling federation). Toggle on via --bvh to measure.
     // Real default-on requires further tuning — see task #15.
     bool bvh_enabled_ = false;
+
+    // Streaming load (task #16). When enabled, queueLoadSidecar routes
+    // through the metadata-only reader: mesh dict + instance dict + georef
+    // load immediately; per-chunk vertex bytes are read + uploaded on
+    // demand by the per-frame loader as chunks become frustum-visible.
+    // Default OFF so existing behaviour (synchronous full load) is
+    // preserved; --streaming opts in.
+    bool streaming_enabled_ = false;
 
 private:
 

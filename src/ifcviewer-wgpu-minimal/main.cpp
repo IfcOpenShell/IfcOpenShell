@@ -58,13 +58,18 @@ int main(int argc, char* argv[]) {
         "Enable BVH-walk cull. Off by default — currently a regression on "
         "dense camera-looking-at-everything scenes; may help on sprawling "
         "federations where most of the scene is off-screen."});
+    parser.addOption({"streaming",
+        "Enable streaming sidecar load. Reads metadata-only at load time; "
+        "vertex chunks are deferred and loaded on demand as they become "
+        "frustum-visible. Required for scenes that exceed GPU memory."});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
     viewport->resize(1280, 800);
-    if (parser.isSet("no-hiz"))     viewport->hiz_enabled_ = false;
-    if (parser.isSet("web-limits")) viewport->web_limits_  = true;
-    if (parser.isSet("bvh"))        viewport->bvh_enabled_ = true;
+    if (parser.isSet("no-hiz"))     viewport->hiz_enabled_      = false;
+    if (parser.isSet("web-limits")) viewport->web_limits_       = true;
+    if (parser.isSet("bvh"))        viewport->bvh_enabled_      = true;
+    if (parser.isSet("streaming"))  viewport->streaming_enabled_ = true;
 
     QWidget* container = QWidget::createWindowContainer(viewport);
     container->setMinimumSize(320, 240);
