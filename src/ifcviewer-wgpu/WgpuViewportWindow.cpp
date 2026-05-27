@@ -33,8 +33,10 @@
 #include <webgpu/wgpu.h>  // wgpu-native extensions (logging, MULTI_DRAW_INDIRECT, …)
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstring>
+#include <future>
 #include <limits>
 #include <utility>
 
@@ -130,32 +132,42 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 }
 
 void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
-    if (m.bind_group)       { wgpuBindGroupRelease(m.bind_group);    m.bind_group = nullptr; }
-    if (m.vertex_storage)   { wgpuBufferRelease(m.vertex_storage);   m.vertex_storage = nullptr; }
-    if (m.index_buffer)     { wgpuBufferRelease(m.index_buffer);     m.index_buffer = nullptr; }
-    if (m.mesh_storage)     { wgpuBufferRelease(m.mesh_storage);     m.mesh_storage = nullptr; }
-    if (m.instance_storage) { wgpuBufferRelease(m.instance_storage); m.instance_storage = nullptr; }
-    if (m.visible_buffer)   { wgpuBufferRelease(m.visible_buffer);   m.visible_buffer = nullptr; }
+    if (m.bind_group)           { wgpuBindGroupRelease(m.bind_group);         m.bind_group = nullptr; }
+    if (m.vertex_storage)       { wgpuBufferRelease(m.vertex_storage);        m.vertex_storage = nullptr; }
+    if (m.index_buffer)         { wgpuBufferRelease(m.index_buffer);          m.index_buffer = nullptr; }
+    if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
+    if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
+    if (m.visible_draws_buffer) { wgpuBufferRelease(m.visible_draws_buffer);  m.visible_draws_buffer = nullptr; }
+    if (m.prefix_sums_buffer)   { wgpuBufferRelease(m.prefix_sums_buffer);    m.prefix_sums_buffer = nullptr; }
+    if (m.per_model_uniform)    { wgpuBufferRelease(m.per_model_uniform);     m.per_model_uniform = nullptr; }
     m.vertex_bytes   = 0;
     m.index_count    = 0;
     m.mesh_count     = 0;
     m.instance_count = 0;
-    m.visible_buffer_capacity = 0;
+    m.visible_draws_capacity = 0;
+    m.prefix_sums_capacity   = 0;
+    m.total_visible_vertices = 0;
+    m.total_visible_draws    = 0;
     m.meshes.clear();
     m.instances.clear();
-    m.mesh_draws.clear();
-    m.visible_flat_scratch.clear();
+    m.visible_draws_scratch.clear();
+    m.prefix_sums_scratch.clear();
 }
 
 // -----------------------------------------------------------------------------
-// WGSL main pipeline — vertex pulling.
+// WGSL main pipeline — cross-mesh vertex pulling.
 //
-// Vertex bytes are read manually from a u32 storage buffer (3 u32 per vertex,
-// matching INSTANCED_VERTEX_STRIDE_BYTES=12). gl_BaseVertex is folded into
-// vertex_index by the WebGPU IA, so per-mesh draws set baseVertex =
-// mesh.vbo_byte_offset / 12 and the shader indexes the global storage array
-// directly. firstInstance carries the global instance slot, fetched as
-// @builtin(instance_index).
+// We issue ONE draw() call per model per frame. The vertex shader binary-
+// searches the prefix-sum table to find which visible-draw entry the current
+// @builtin(vertex_index) belongs to, then manually fetches the index and the
+// 12-byte packed vertex from storage buffers. This avoids the N-drawcalls-per-
+// frame CPU overhead of per-mesh draws (which dominated on scenes with many
+// unique meshes — wgpu-native overhead is ~5 µs/draw, so 27k draws = 135ms).
+//
+// Binary search cost is O(log N) per vertex, with N up to a few hundred
+// thousand on dense scenes. Adjacent vertices in the same draw entry share
+// the search result inside a warp, so memory-coherence keeps this cheap on
+// GPU.
 // -----------------------------------------------------------------------------
 
 static const char* MAIN_WGSL = R"(
@@ -180,15 +192,29 @@ struct FrameUniforms {
     ground_color: vec4<f32>,
 };
 
+struct VisibleDraw {
+    mesh_id:        u32,
+    instance_idx:   u32,
+    ebo_first_u32:  u32,
+    base_vertex:    u32,
+};
+
+struct PerModel {
+    draw_count:           u32,
+    total_vertex_count:   u32,
+    _pad0:                u32,
+    _pad1:                u32,
+};
+
 @group(0) @binding(0) var<uniform> u_frame: FrameUniforms;
 
-@group(1) @binding(0) var<storage, read> vertices:  array<u32>;
-@group(1) @binding(1) var<storage, read> meshes:    array<MeshQuant>;
-@group(1) @binding(2) var<storage, read> instances: array<InstanceRecord>;
-// Per-frame compacted visible list: visible[firstInstance + i] picks the
-// real instance for this draw slot. firstInstance is set per drawIndexed
-// call so each mesh reads its own contiguous slice of `visible`.
-@group(1) @binding(3) var<storage, read> visible:   array<u32>;
+@group(1) @binding(0) var<storage, read> vertices:      array<u32>;
+@group(1) @binding(1) var<storage, read> meshes:        array<MeshQuant>;
+@group(1) @binding(2) var<storage, read> instances:     array<InstanceRecord>;
+@group(1) @binding(3) var<storage, read> indices:       array<u32>;
+@group(1) @binding(4) var<storage, read> visible_draws: array<VisibleDraw>;
+@group(1) @binding(5) var<storage, read> prefix_sums:   array<u32>;
+@group(1) @binding(6) var<uniform>       u_model:       PerModel;
 
 struct VsOut {
     @builtin(position) clip_pos: vec4<f32>,
@@ -214,16 +240,46 @@ fn octDecode(e: vec2<f32>) -> vec3<f32> {
     return normalize(n);
 }
 
-@vertex
-fn vs_main(@builtin(vertex_index)   vid: u32,
-           @builtin(instance_index) iid: u32) -> VsOut {
-    let inst_idx = visible[iid];
-    let inst = instances[inst_idx];
-    let mq   = meshes[inst.mesh_id];
+// Binary search for the largest i in [0, draw_count) with prefix_sums[i] <= vid.
+// prefix_sums is monotonic non-decreasing and contains draw_count+1 entries
+// (prefix_sums[draw_count] == total_vertex_count).
+fn find_draw(vid: u32) -> u32 {
+    var lo: u32 = 0u;
+    var hi: u32 = u_model.draw_count;
+    while (lo + 1u < hi) {
+        let mid = (lo + hi) >> 1u;
+        if (prefix_sums[mid] <= vid) {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    return lo;
+}
 
-    let w0 = vertices[vid * 3u + 0u];
-    let w1 = vertices[vid * 3u + 1u];
-    let w2 = vertices[vid * 3u + 2u];
+@vertex
+fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
+    // Saturate past the end (shouldn't happen given draw() count, but safe).
+    if (vid >= u_model.total_vertex_count) {
+        var degen: VsOut;
+        degen.clip_pos = vec4<f32>(0.0, 0.0, 0.0, 0.0);
+        return degen;
+    }
+
+    let draw_idx = find_draw(vid);
+    let local_v  = vid - prefix_sums[draw_idx];
+    let item     = visible_draws[draw_idx];
+
+    // Fetch the mesh-local index then the global vertex index.
+    let mesh_local_index = indices[item.ebo_first_u32 + local_v];
+    let v_global         = item.base_vertex + mesh_local_index;
+
+    let inst = instances[item.instance_idx];
+    let mq   = meshes[item.mesh_id];
+
+    let w0 = vertices[v_global * 3u + 0u];
+    let w1 = vertices[v_global * 3u + 1u];
+    let w2 = vertices[v_global * 3u + 2u];
 
     let px = f32(w0 & 0xFFFFu)         / 65535.0;
     let py = f32((w0 >> 16u) & 0xFFFFu) / 65535.0;
@@ -428,11 +484,13 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         WGPUBufferUsage_Storage,
         "model.vertex_storage");
 
-    // Index buffer — mesh-local u32 indices; baseVertex applied per-draw.
+    // Index buffer — mesh-local u32 indices. Bound as a read-only storage
+    // buffer in the vertex shader (cross-mesh vertex pulling manually fetches
+    // indices); Index usage is kept for forward compatibility but never used.
     m.index_buffer = createBufferWithData(
         device_, queue_,
         data.indices.data(), data.indices.size() * sizeof(uint32_t),
-        WGPUBufferUsage_Index,
+        WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
         "model.index_buffer");
 
     // Derive MeshGpu[] (vec4 aabb_min + vec4 aabb_max) from MeshInfo's
@@ -476,24 +534,43 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         WGPUBufferUsage_Storage,
         "model.instance_storage");
 
-    // Pre-size the visible buffer for the worst case (every instance visible).
-    // Per-frame cull writes a u32 list into it via wgpuQueueWriteBuffer; we
-    // never grow it so the bind group reference stays valid for the model's
-    // lifetime. Minimum size 4 bytes — wgpu rejects zero-sized buffers.
-    const size_t visible_bytes = std::max<size_t>(
-        size_t(data.instances.size()) * sizeof(uint32_t), 4u);
-    WGPUBufferDescriptor vb_desc = {};
-    vb_desc.size  = visible_bytes;
-    vb_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-    vb_desc.label = svFromCStr("model.visible_buffer");
-    m.visible_buffer          = wgpuDeviceCreateBuffer(device_, &vb_desc);
-    m.visible_buffer_capacity = std::max<size_t>(data.instances.size(), 1u);
+    // Per-frame buffers for cross-mesh vertex pulling. Sized for the worst
+    // case so cullModelCpu only needs wgpuQueueWriteBuffer (never recreate)
+    // — keeps the bind group reference valid for the model's lifetime.
+    //
+    // VisibleDraw capacity: up to one entry per (instance × 2 LODs). LOD1 is
+    // only used when bake produced one, but allocating headroom is cheap
+    // (~3 MB worst-case for a 100k-instance model).
+    const size_t draw_cap = std::max<size_t>(size_t(data.instances.size()) * 2u, 1u);
+    const size_t draws_bytes = draw_cap * sizeof(WgpuModelGpuData::VisibleDrawGpu);
+    WGPUBufferDescriptor vd_desc = {};
+    vd_desc.size  = std::max<uint64_t>(draws_bytes, 16);
+    vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+    vd_desc.label = svFromCStr("model.visible_draws");
+    m.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
+    m.visible_draws_capacity = draw_cap;
+
+    // prefix_sums: draw_cap + 1 entries (final entry = total vertex count).
+    const size_t ps_cap = draw_cap + 1;
+    WGPUBufferDescriptor ps_desc = {};
+    ps_desc.size  = std::max<uint64_t>(ps_cap * sizeof(uint32_t), 16);
+    ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
+    ps_desc.label = svFromCStr("model.prefix_sums");
+    m.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
+    m.prefix_sums_capacity = ps_cap;
+
+    // 16-byte per-model uniform: (draw_count, total_vertex_count, _pad, _pad).
+    WGPUBufferDescriptor mu_desc = {};
+    mu_desc.size  = 16;
+    mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+    mu_desc.label = svFromCStr("model.per_model_uniform");
+    m.per_model_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
 
     // Hand off CPU mirrors (cull / picking will need them later).
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
-    m.mesh_draws.assign(m.meshes.size(), WgpuModelGpuData::MeshDraw{});
-    m.visible_flat_scratch.reserve(m.instances.size());
+    m.visible_draws_scratch.reserve(draw_cap);
+    m.prefix_sums_scratch.reserve(ps_cap);
 
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
     WgpuModelGpuData& mref = inserted->second;
@@ -1005,7 +1082,19 @@ void WgpuViewportWindow::ensureHizTextures(int viewport_w, int viewport_h) {
 
     if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
     if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    if (hiz_staging_buffer_)  { wgpuBufferRelease(hiz_staging_buffer_);    hiz_staging_buffer_ = nullptr; }
+    for (int s = 0; s < HIZ_SLOTS; ++s) {
+        if (hiz_staging_buffers_[s]) {
+            // Force any pending map to finish before release (defensive: shouldn't happen on resize).
+            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
+                wgpuBufferUnmap(hiz_staging_buffers_[s]);
+            }
+            wgpuBufferRelease(hiz_staging_buffers_[s]);
+            hiz_staging_buffers_[s] = nullptr;
+        }
+        hiz_slot_state_[s] = HizSlotState::Idle;
+    }
+    hiz_write_idx_ = 0;
+    hiz_valid_     = false;
     if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
 
     WGPUTextureDescriptor desc = {};
@@ -1028,15 +1117,19 @@ void WgpuViewportWindow::ensureHizTextures(int viewport_w, int viewport_h) {
     vdesc.aspect          = WGPUTextureAspect_DepthOnly;
     hiz_resolve_view_ = wgpuTextureCreateView(hiz_resolve_texture_, &vdesc);
 
-    // Staging buffer: pad each row to 256-byte alignment.
+    // Staging buffers: pad each row to 256-byte alignment. Two slots
+    // ping-pong so GPU fill of slot N overlaps CPU read of slot N-1.
     hiz_padded_bpr_ = uint32_t(
         (dst_w * sizeof(float) + WGPU_BYTES_PER_ROW_ALIGN - 1)
         / WGPU_BYTES_PER_ROW_ALIGN * WGPU_BYTES_PER_ROW_ALIGN);
-    WGPUBufferDescriptor bdesc = {};
-    bdesc.size  = uint64_t(hiz_padded_bpr_) * uint64_t(dst_h);
-    bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
-    bdesc.label = svFromCStr("ifcviewer-wgpu.hiz_staging");
-    hiz_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    for (int s = 0; s < HIZ_SLOTS; ++s) {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.size  = uint64_t(hiz_padded_bpr_) * uint64_t(dst_h);
+        bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        bdesc.label = svFromCStr(s == 0 ? "ifcviewer-wgpu.hiz_staging[0]"
+                                        : "ifcviewer-wgpu.hiz_staging[1]");
+        hiz_staging_buffers_[s] = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
 
     hiz_resolve_w_ = dst_w;
     hiz_resolve_h_ = dst_h;
@@ -1048,7 +1141,17 @@ void WgpuViewportWindow::releaseHizResources() {
     if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
     if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    if (hiz_staging_buffer_)  { wgpuBufferRelease(hiz_staging_buffer_);    hiz_staging_buffer_ = nullptr; }
+    for (int s = 0; s < HIZ_SLOTS; ++s) {
+        if (hiz_staging_buffers_[s]) {
+            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
+                wgpuBufferUnmap(hiz_staging_buffers_[s]);
+            }
+            wgpuBufferRelease(hiz_staging_buffers_[s]);
+            hiz_staging_buffers_[s] = nullptr;
+        }
+        hiz_slot_state_[s] = HizSlotState::Idle;
+    }
+    hiz_write_idx_ = 0;
     if (hiz_pipeline_)        { wgpuRenderPipelineRelease(hiz_pipeline_);  hiz_pipeline_ = nullptr; }
     if (hiz_shader_module_)   { wgpuShaderModuleRelease(hiz_shader_module_); hiz_shader_module_ = nullptr; }
     if (hiz_pipeline_layout_) { wgpuPipelineLayoutRelease(hiz_pipeline_layout_); hiz_pipeline_layout_ = nullptr; }
@@ -1061,8 +1164,19 @@ void WgpuViewportWindow::releaseHizResources() {
     hiz_mip_h_.clear();
 }
 
-void WgpuViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
-    if (!hiz_enabled_ || !hiz_pipeline_ || !hiz_resolve_view_ || !depth_view_) return;
+int WgpuViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
+    if (!hiz_enabled_ || !hiz_pipeline_ || !hiz_resolve_view_ || !depth_view_) return -1;
+
+    // Pick an idle ping-pong slot. If both slots are in flight, skip the
+    // resolve for this frame — the cull keeps using whatever pyramid we
+    // already built (slightly more stale than usual, but never blocks).
+    int slot = -1;
+    for (int s = 0; s < HIZ_SLOTS; ++s) {
+        const int idx = (hiz_write_idx_ + s) % HIZ_SLOTS;
+        if (hiz_slot_state_[idx] == HizSlotState::Idle) { slot = idx; break; }
+    }
+    if (slot < 0) return -1;
+    hiz_write_idx_ = (slot + 1) % HIZ_SLOTS;
 
     // (Re)build the bind group every frame is wasteful; only rebuild when the
     // depth view itself was replaced (driven by surface resize). For now we
@@ -1110,13 +1224,13 @@ void WgpuViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
-    // Now copy the small resolved depth texture into the staging buffer.
+    // Copy the small resolved depth texture into the chosen staging slot.
     WGPUTexelCopyTextureInfo src = {};
     src.texture = hiz_resolve_texture_;
     src.aspect  = WGPUTextureAspect_DepthOnly;
 
     WGPUTexelCopyBufferInfo dst = {};
-    dst.buffer              = hiz_staging_buffer_;
+    dst.buffer              = hiz_staging_buffers_[slot];
     dst.layout.bytesPerRow  = hiz_padded_bpr_;
     dst.layout.rowsPerImage = hiz_resolve_h_;
 
@@ -1126,89 +1240,112 @@ void WgpuViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
     extent.depthOrArrayLayers = 1;
 
     wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+    return slot;
 }
 
-void WgpuViewportWindow::readbackAndBuildHizPyramid(const QMatrix4x4& vp_used) {
-    if (!hiz_enabled_ || !hiz_staging_buffer_ || hiz_resolve_w_ == 0) return;
+void WgpuViewportWindow::startHizMap(int slot, const QMatrix4x4& vp_used) {
+    if (slot < 0 || slot >= HIZ_SLOTS) return;
+    if (!hiz_staging_buffers_[slot] || hiz_resolve_w_ == 0) return;
 
-    struct MapReq { bool done = false; bool ok = false; };
-    MapReq req;
+    hiz_slot_vp_[slot]   = vp_used;
+    hiz_slot_state_[slot] = HizSlotState::Mapping;
+
+    struct MapCtx { WgpuViewportWindow* self; int slot; };
+    auto* ctx = new MapCtx{ this, slot };
 
     WGPUBufferMapCallbackInfo mcb = {};
     mcb.mode = WGPUCallbackMode_AllowProcessEvents;
     mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
                       void* ud1, void* /*ud2*/) {
-        auto* r = static_cast<MapReq*>(ud1);
-        r->done = true;
-        r->ok   = (status == WGPUMapAsyncStatus_Success);
+        auto* c = static_cast<MapCtx*>(ud1);
+        if (status == WGPUMapAsyncStatus_Success) {
+            c->self->hiz_slot_state_[c->slot] = HizSlotState::Mapped;
+        } else {
+            c->self->hiz_slot_state_[c->slot] = HizSlotState::Idle;
+        }
+        delete c;
     };
-    mcb.userdata1 = &req;
+    mcb.userdata1 = ctx;
 
     const size_t map_size = size_t(hiz_padded_bpr_) * size_t(hiz_resolve_h_);
-    wgpuBufferMapAsync(hiz_staging_buffer_, WGPUMapMode_Read, 0, map_size, mcb);
-    while (!req.done) wgpuInstanceProcessEvents(instance_);
-    if (!req.ok) return;
+    wgpuBufferMapAsync(hiz_staging_buffers_[slot], WGPUMapMode_Read,
+                       0, map_size, mcb);
+}
 
-    const uint8_t* mapped = static_cast<const uint8_t*>(
-        wgpuBufferGetConstMappedRange(hiz_staging_buffer_, 0, map_size));
+void WgpuViewportWindow::drainHizReadbacks() {
+    if (!hiz_enabled_ || hiz_resolve_w_ == 0) return;
+    // Process any callbacks that have fired since last frame. Does NOT block:
+    // wgpuInstanceProcessEvents returns immediately after running ready
+    // callbacks. The mapAsync mode is AllowProcessEvents, so this is the
+    // correct drainage point.
+    wgpuInstanceProcessEvents(instance_);
 
-    // Mip 0: tight copy, stripping per-row padding.
-    const uint32_t W0 = hiz_resolve_w_;
-    const uint32_t H0 = hiz_resolve_h_;
+    for (int slot = 0; slot < HIZ_SLOTS; ++slot) {
+        if (hiz_slot_state_[slot] != HizSlotState::Mapped) continue;
 
-    // Pre-size storage: count levels until we hit 1×1.
-    hiz_mip_offset_.clear();
-    hiz_mip_w_.clear();
-    hiz_mip_h_.clear();
-    uint32_t total_texels = 0;
-    {
-        uint32_t w = W0, h = H0;
-        while (true) {
-            hiz_mip_offset_.push_back(total_texels);
-            hiz_mip_w_.push_back(w);
-            hiz_mip_h_.push_back(h);
-            total_texels += w * h;
-            if (w == 1 && h == 1) break;
-            w = std::max(1u, w / 2u);
-            h = std::max(1u, h / 2u);
+        const size_t map_size = size_t(hiz_padded_bpr_) * size_t(hiz_resolve_h_);
+        const uint8_t* mapped = static_cast<const uint8_t*>(
+            wgpuBufferGetConstMappedRange(hiz_staging_buffers_[slot], 0, map_size));
+
+        const uint32_t W0 = hiz_resolve_w_;
+        const uint32_t H0 = hiz_resolve_h_;
+
+        // (Re)build mip pyramid metadata if dimensions changed.
+        if (hiz_mip_offset_.empty()
+            || hiz_mip_w_.empty() || hiz_mip_w_[0] != W0
+            || hiz_mip_h_.empty() || hiz_mip_h_[0] != H0) {
+            hiz_mip_offset_.clear();
+            hiz_mip_w_.clear();
+            hiz_mip_h_.clear();
+            uint32_t total = 0;
+            uint32_t w = W0, h = H0;
+            while (true) {
+                hiz_mip_offset_.push_back(total);
+                hiz_mip_w_.push_back(w);
+                hiz_mip_h_.push_back(h);
+                total += w * h;
+                if (w == 1 && h == 1) break;
+                w = std::max(1u, w / 2u);
+                h = std::max(1u, h / 2u);
+            }
+            hiz_pyramid_.assign(total, 0.0f);
         }
-    }
-    hiz_pyramid_.assign(total_texels, 0.0f);
 
-    // Mip 0: strip row padding.
-    for (uint32_t y = 0; y < H0; ++y) {
-        std::memcpy(&hiz_pyramid_[y * W0],
-                    mapped + size_t(y) * hiz_padded_bpr_,
-                    W0 * sizeof(float));
-    }
-    wgpuBufferUnmap(hiz_staging_buffer_);
+        // Mip 0: strip per-row padding.
+        for (uint32_t y = 0; y < H0; ++y) {
+            std::memcpy(&hiz_pyramid_[y * W0],
+                        mapped + size_t(y) * hiz_padded_bpr_,
+                        W0 * sizeof(float));
+        }
+        wgpuBufferUnmap(hiz_staging_buffers_[slot]);
+        hiz_slot_state_[slot] = HizSlotState::Idle;
 
-    // Higher mips: max-reduce 2×2 children. Edge handling: if parent
-    // dimension shrunk to 1, just read the single child.
-    for (size_t L = 1; L < hiz_mip_offset_.size(); ++L) {
-        const uint32_t prev_w = hiz_mip_w_[L - 1];
-        const uint32_t prev_h = hiz_mip_h_[L - 1];
-        const uint32_t this_w = hiz_mip_w_[L];
-        const uint32_t this_h = hiz_mip_h_[L];
-        const float* src = &hiz_pyramid_[hiz_mip_offset_[L - 1]];
-        float*       dst = &hiz_pyramid_[hiz_mip_offset_[L]];
-        for (uint32_t y = 0; y < this_h; ++y) {
-            for (uint32_t x = 0; x < this_w; ++x) {
-                const uint32_t x0 = std::min(prev_w - 1, x * 2u);
-                const uint32_t y0 = std::min(prev_h - 1, y * 2u);
-                const uint32_t x1 = std::min(prev_w - 1, x0 + 1u);
-                const uint32_t y1 = std::min(prev_h - 1, y0 + 1u);
-                const float a = src[y0 * prev_w + x0];
-                const float b = src[y0 * prev_w + x1];
-                const float c = src[y1 * prev_w + x0];
-                const float d = src[y1 * prev_w + x1];
-                dst[y * this_w + x] = std::max(std::max(a, b), std::max(c, d));
+        // Higher mips: max-reduce 2×2 children.
+        for (size_t L = 1; L < hiz_mip_offset_.size(); ++L) {
+            const uint32_t prev_w = hiz_mip_w_[L - 1];
+            const uint32_t prev_h = hiz_mip_h_[L - 1];
+            const uint32_t this_w = hiz_mip_w_[L];
+            const uint32_t this_h = hiz_mip_h_[L];
+            const float* src = &hiz_pyramid_[hiz_mip_offset_[L - 1]];
+            float*       dst = &hiz_pyramid_[hiz_mip_offset_[L]];
+            for (uint32_t y = 0; y < this_h; ++y) {
+                for (uint32_t x = 0; x < this_w; ++x) {
+                    const uint32_t x0 = std::min(prev_w - 1, x * 2u);
+                    const uint32_t y0 = std::min(prev_h - 1, y * 2u);
+                    const uint32_t x1 = std::min(prev_w - 1, x0 + 1u);
+                    const uint32_t y1 = std::min(prev_h - 1, y0 + 1u);
+                    const float a = src[y0 * prev_w + x0];
+                    const float b = src[y0 * prev_w + x1];
+                    const float c = src[y1 * prev_w + x0];
+                    const float d = src[y1 * prev_w + x1];
+                    dst[y * this_w + x] = std::max(std::max(a, b), std::max(c, d));
+                }
             }
         }
-    }
 
-    hiz_vp_    = vp_used;
-    hiz_valid_ = true;
+        hiz_vp_    = hiz_slot_vp_[slot];
+        hiz_valid_ = true;
+    }
 }
 
 bool WgpuViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) const {
@@ -1302,47 +1439,41 @@ void WgpuViewportWindow::setBenchmarkFrames(int frames) {
     if (isExposed() && bench_total_ > 0) requestUpdate();
 }
 
-void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m,
-                                      const float planes[6][4],
-                                      const float eye[3], const float forward[3],
-                                      float focal_px,
-                                      float min_radius_px,
-                                      float lod1_threshold_px,
-                                      bool  hiz_enabled) {
-    if (m.instances.empty() || m.meshes.empty() || !m.visible_buffer) {
-        for (auto& d : m.mesh_draws) d.instance_count = 0;
-        return;
-    }
+uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
+                                                 const float planes[6][4],
+                                                 const float eye[3], const float forward[3],
+                                                 float focal_px,
+                                                 float min_radius_px,
+                                                 float lod1_threshold_px,
+                                                 bool  hiz_enabled) const {
+    m.total_visible_vertices = 0;
+    m.total_visible_draws    = 0;
+    uint32_t hiz_rejects = 0;
 
-    // Per-mesh visible-instance buckets split by LOD. Per-frame scratch held
-    // thread-locally so the cull path doesn't allocate.
-    static thread_local std::vector<std::vector<uint32_t>> per_mesh_lod0;
-    static thread_local std::vector<std::vector<uint32_t>> per_mesh_lod1;
-    if (per_mesh_lod0.size() < m.meshes.size()) per_mesh_lod0.resize(m.meshes.size());
-    if (per_mesh_lod1.size() < m.meshes.size()) per_mesh_lod1.resize(m.meshes.size());
-    for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
-        per_mesh_lod0[mi].clear();
-        per_mesh_lod1[mi].clear();
+    if (m.instances.empty() || m.meshes.empty()
+        || !m.visible_draws_buffer || !m.prefix_sums_buffer || !m.per_model_uniform) {
+        return 0;
     }
 
     const bool contrib_enabled = (min_radius_px      > 0.0f);
     const bool lod_enabled     = (lod1_threshold_px  > 0.0f);
 
+    m.visible_draws_scratch.clear();
+    m.prefix_sums_scratch.clear();
+    m.prefix_sums_scratch.push_back(0);  // prefix_sums[0] = 0
+    uint32_t running_vertex_count = 0;
+
     for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
         const auto& inst = m.instances[i];
         if (inst.mesh_id >= m.meshes.size()) continue;
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) continue;
-        if (hiz_enabled
-            && aabbOccludedByHiz(inst.world_aabb_min, inst.world_aabb_max)) {
-            ++hiz_reject_count_;
-            continue;
-        }
 
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
 
-        // Projected bounding-sphere radius in pixels, shared between the
-        // contribution-cull and LOD-pick decisions. Computed once per
-        // instance; guarded against behind-near-plane and division by zero.
+        // Projected bounding-sphere radius in pixels — shared between the
+        // contribution-cull and LOD-pick decisions. Computed before HiZ so
+        // contribution can short-circuit the per-instance HiZ projection
+        // (which is the bulk of cull cost on dense scenes).
         float projected_px = std::numeric_limits<float>::infinity();
         if (contrib_enabled || (lod_enabled && mesh.lod1_index_count > 0)) {
             const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
@@ -1360,65 +1491,69 @@ void WgpuViewportWindow::cullModelCpu(WgpuModelGpuData& m,
             }
         }
 
-        // Contribution cull: drop instances projected below threshold. Most
-        // of the per-frame cost on dense scenes — typically rejects 80-90%
-        // of frustum-visible instances on real BIM models.
+        // Contribution cull before HiZ: HiZ is by far the most expensive
+        // per-instance test (8-corner projection + mip pyramid sample), so
+        // letting cheap contribution drops happen first cuts the HiZ-tested
+        // population by ~5× on real scenes.
         if (contrib_enabled && projected_px < min_radius_px) continue;
 
-        // LOD pick: switch to LOD1 if the mesh has one baked and we're below
-        // the LOD threshold.
+        if (hiz_enabled
+            && aabbOccludedByHiz(inst.world_aabb_min, inst.world_aabb_max)) {
+            ++hiz_rejects;
+            continue;
+        }
+
         const bool use_lod1 = lod_enabled
                             && mesh.lod1_index_count > 0
                             && projected_px < lod1_threshold_px;
 
-        if (use_lod1) per_mesh_lod1[inst.mesh_id].push_back(i);
-        else          per_mesh_lod0[inst.mesh_id].push_back(i);
+        // Emit one VisibleDraw entry per visible instance. Cross-mesh vertex
+        // pulling means the shader binary-searches prefix_sums to locate
+        // this entry from a global vertex_index.
+        WgpuModelGpuData::VisibleDrawGpu d;
+        d.mesh_id      = inst.mesh_id;
+        d.instance_idx = i;
+        d.ebo_first_u32 = (use_lod1 ? mesh.lod1_ebo_byte_offset : mesh.ebo_byte_offset)
+                          / uint32_t(sizeof(uint32_t));
+        d.base_vertex  = mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES;
+        m.visible_draws_scratch.push_back(d);
+
+        const uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count
+                                                    : mesh.index_count;
+        running_vertex_count += entry_vert_count;
+        m.prefix_sums_scratch.push_back(running_vertex_count);
     }
 
-    // Flatten into m.visible_flat_scratch as [mesh0 lod0 | mesh0 lod1 | mesh1
-    // lod0 | mesh1 lod1 | …] and emit one MeshDraw per non-empty bucket.
-    m.visible_flat_scratch.clear();
-    m.mesh_draws.clear();
-    m.mesh_draws.reserve(m.meshes.size() * 2);
-    for (uint32_t mi = 0; mi < m.meshes.size(); ++mi) {
-        const MeshInfo& mesh = m.meshes[mi];
+    m.total_visible_draws    = uint32_t(m.visible_draws_scratch.size());
+    m.total_visible_vertices = running_vertex_count;
+    return hiz_rejects;
+}
 
-        if (!per_mesh_lod0[mi].empty()) {
-            WgpuModelGpuData::MeshDraw d;
-            d.first_instance = uint32_t(m.visible_flat_scratch.size());
-            d.instance_count = uint32_t(per_mesh_lod0[mi].size());
-            d.first_index    = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
-            d.base_vertex    = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
-            d.index_count    = mesh.index_count;
-            for (uint32_t inst_idx : per_mesh_lod0[mi]) {
-                m.visible_flat_scratch.push_back(inst_idx);
-            }
-            m.mesh_draws.push_back(d);
-        }
-        if (!per_mesh_lod1[mi].empty()) {
-            WgpuModelGpuData::MeshDraw d;
-            d.first_instance = uint32_t(m.visible_flat_scratch.size());
-            d.instance_count = uint32_t(per_mesh_lod1[mi].size());
-            d.first_index    = mesh.lod1_ebo_byte_offset / uint32_t(sizeof(uint32_t));
-            d.base_vertex    = int32_t(mesh.vbo_byte_offset / INSTANCED_VERTEX_STRIDE_BYTES);
-            d.index_count    = mesh.lod1_index_count;
-            for (uint32_t inst_idx : per_mesh_lod1[mi]) {
-                m.visible_flat_scratch.push_back(inst_idx);
-            }
-            m.mesh_draws.push_back(d);
-        }
+void WgpuViewportWindow::cullModelCpuUpload(WgpuModelGpuData& m) {
+    if (!m.visible_draws_buffer || !m.prefix_sums_buffer || !m.per_model_uniform) return;
+
+    if (m.total_visible_draws == 0) {
+        // No visible geometry this frame; render() will skip the draw.
+        // Still update the uniform so the shader sees zero (defensive).
+        const uint32_t um[4] = { 0, 0, 0, 0 };
+        wgpuQueueWriteBuffer(queue_, m.per_model_uniform, 0, um, sizeof(um));
+        return;
     }
 
-    // Upload the visible list. Round up to 4-byte multiple (always true for
-    // u32 arrays). Empty visible list still uploads one zero so the bind
-    // group has something well-defined; the per-mesh loop will skip the draw.
-    const size_t bytes_to_upload = std::max<size_t>(
-        m.visible_flat_scratch.size() * sizeof(uint32_t), sizeof(uint32_t));
-    static const uint32_t zero = 0;
-    const void*  src  = m.visible_flat_scratch.empty()
-                          ? static_cast<const void*>(&zero)
-                          : static_cast<const void*>(m.visible_flat_scratch.data());
-    wgpuQueueWriteBuffer(queue_, m.visible_buffer, 0, src, bytes_to_upload);
+    wgpuQueueWriteBuffer(queue_, m.visible_draws_buffer, 0,
+                         m.visible_draws_scratch.data(),
+                         m.visible_draws_scratch.size()
+                             * sizeof(WgpuModelGpuData::VisibleDrawGpu));
+    wgpuQueueWriteBuffer(queue_, m.prefix_sums_buffer, 0,
+                         m.prefix_sums_scratch.data(),
+                         m.prefix_sums_scratch.size() * sizeof(uint32_t));
+
+    const uint32_t um[4] = {
+        m.total_visible_draws,
+        m.total_visible_vertices,
+        0, 0,
+    };
+    wgpuQueueWriteBuffer(queue_, m.per_model_uniform, 0, um, sizeof(um));
 }
 
 void WgpuViewportWindow::render() {
@@ -1426,6 +1561,10 @@ void WgpuViewportWindow::render() {
     // benchmark stats. Started before any wgpu work so cull is included.
     QElapsedTimer frame_timer;
     if (bench_total_ > 0) frame_timer.start();
+
+    // Drain any HiZ async readbacks that completed since last frame so the
+    // pyramid is as fresh as it can be before cull runs.
+    if (hiz_enabled_) drainHizReadbacks();
 
     WGPUSurfaceTexture surf_tex = {};
     wgpuSurfaceGetCurrentTexture(surface_, &surf_tex);
@@ -1462,6 +1601,8 @@ void WgpuViewportWindow::render() {
     last_visible_triangles_ = 0;
     last_sub_draws_         = 0;
     hiz_reject_count_       = 0;
+    QElapsedTimer cull_timer;
+    if (bench_total_ > 0) cull_timer.start();
     QMatrix4x4 vp_this_frame;
     {
         const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
@@ -1488,18 +1629,62 @@ void WgpuViewportWindow::render() {
                 / std::tan(qDegreesToRadians(camera_fov_y_deg_) * 0.5f))
             : 0.0f;
 
+        // Motion detection: any change in camera state since last frame
+        // bumps the contribution threshold to motion_min_pixel_radius_
+        // (mirrors GL's NavPreset behaviour, drops more sub-pixel work
+        // during orbit/pan/zoom).
+        const bool camera_moved = has_prev_camera_
+            && (camera_target_[0] != prev_camera_target_[0]
+             || camera_target_[1] != prev_camera_target_[1]
+             || camera_target_[2] != prev_camera_target_[2]
+             || camera_distance_  != prev_camera_distance_
+             || camera_yaw_deg_   != prev_camera_yaw_deg_
+             || camera_pitch_deg_ != prev_camera_pitch_deg_);
+        const float effective_min_px =
+            (camera_moved && motion_min_pixel_radius_ > min_pixel_radius_)
+                ? motion_min_pixel_radius_
+                : min_pixel_radius_;
+
+        // Cull each model on its own worker thread. wgpu queue writes are
+        // serialised on the main thread after the parallel compute joins —
+        // wgpu-native doesn't guarantee thread-safety on queue ops.
+        std::vector<std::pair<uint32_t, std::future<uint32_t>>> futures;
+        futures.reserve(models_gpu_.size());
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
-            cullModelCpu(m, planes, eye_a, fwd_a, focal_px,
-                         min_pixel_radius_, lod1_pixel_threshold_,
-                         hiz_enabled_);
-            for (const auto& d : m.mesh_draws) {
-                if (d.instance_count == 0 || d.index_count == 0) continue;
-                last_visible_objects_   += d.instance_count;
-                last_visible_triangles_ += (d.index_count / 3u) * d.instance_count;
-                last_sub_draws_         += 1;
-            }
+            auto& m_ref = m;
+            futures.emplace_back(mid, std::async(std::launch::async,
+                [this, &m_ref, &planes, &eye_a, &fwd_a,
+                 focal_px, effective_min_px]() {
+                    return cullModelCpuCompute(
+                        m_ref, planes, eye_a, fwd_a, focal_px,
+                        effective_min_px, lod1_pixel_threshold_,
+                        hiz_enabled_);
+                }));
         }
+        for (auto& [mid, fut] : futures) {
+            hiz_reject_count_ += fut.get();
+        }
+        for (auto& [mid, m] : models_gpu_) {
+            if (m.hidden) continue;
+            cullModelCpuUpload(m);
+            last_visible_objects_   += m.total_visible_draws;
+            last_visible_triangles_ += m.total_visible_vertices / 3u;
+            // One CPU drawcall per model now (cross-mesh vertex pulling).
+            if (m.total_visible_draws > 0) last_sub_draws_ += 1;
+        }
+    }
+
+    // Snapshot camera state for next frame's motion detection.
+    prev_camera_target_[0] = camera_target_[0];
+    prev_camera_target_[1] = camera_target_[1];
+    prev_camera_target_[2] = camera_target_[2];
+    prev_camera_distance_  = camera_distance_;
+    prev_camera_yaw_deg_   = camera_yaw_deg_;
+    prev_camera_pitch_deg_ = camera_pitch_deg_;
+    has_prev_camera_       = true;
+    if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
+        bench_cull_ms_total_ += double(cull_timer.nsecsElapsed()) / 1e6;
     }
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
@@ -1539,37 +1724,22 @@ void WgpuViewportWindow::render() {
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [mid, m] : models_gpu_) {
-            if (m.hidden || !m.bind_group || !m.index_buffer || m.index_count == 0) continue;
-
+            if (m.hidden || !m.bind_group || m.total_visible_vertices == 0) continue;
             wgpuRenderPassEncoderSetBindGroup(pass, 1, m.bind_group, 0, nullptr);
-            wgpuRenderPassEncoderSetIndexBuffer(pass, m.index_buffer,
-                                                WGPUIndexFormat_Uint32,
-                                                0, WGPU_WHOLE_SIZE);
-
-            // One drawIndexed per non-empty mesh. instanceCount is the number
-            // of frustum-surviving instances of this mesh; firstInstance is
-            // their offset into m.visible_buffer (consumed by the WGSL
-            // `visible[iid]` indirection). All-instances-culled meshes are
-            // skipped — no draw call issued at all.
-            for (const auto& d : m.mesh_draws) {
-                if (d.instance_count == 0 || d.index_count == 0) continue;
-                wgpuRenderPassEncoderDrawIndexed(
-                    pass,
-                    d.index_count,
-                    d.instance_count,
-                    d.first_index,
-                    d.base_vertex,
-                    d.first_instance);
-            }
+            // Single CPU drawcall per model. The vertex shader binary-
+            // searches prefix_sums by vertex_index to find (mesh, instance)
+            // and pulls index + vertex data manually from storage buffers.
+            wgpuRenderPassEncoderDraw(pass, m.total_visible_vertices, 1, 0, 0);
         }
     }
 
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
-    // ---- HiZ: resolve MSAA depth → small single-sample → staging buffer
+    // ---- HiZ: resolve MSAA depth → small single-sample → ping-pong slot
+    int hiz_submitted_slot = -1;
     if (hiz_enabled_) {
-        encodeHizResolve(enc);
+        hiz_submitted_slot = encodeHizResolve(enc);
     }
 
     // ---- Optional capture: encode copy on the same command buffer -------
@@ -1683,11 +1853,17 @@ void WgpuViewportWindow::render() {
     wgpuSurfacePresent(surface_);
     wgpuTextureRelease(surf_tex.texture);
 
-    // ---- HiZ readback + mip pyramid for the *next* frame's cull ---------
-    // Sync wait via processEvents — the staging buffer is small (≈ 256×160×4)
-    // so the stall is well under a millisecond on every backend.
-    if (hiz_enabled_) {
-        readbackAndBuildHizPyramid(vp_this_frame);
+    // ---- HiZ async readback handoff -------------------------------------
+    // Don't block — just kick off the mapAsync for the slot we filled this
+    // frame. Drainage happens at the top of the *next* frame via
+    // drainHizReadbacks(), giving the GPU at least one frame of headroom.
+    if (hiz_enabled_ && hiz_submitted_slot >= 0) {
+        QElapsedTimer hiz_timer;
+        if (bench_total_ > 0) hiz_timer.start();
+        startHizMap(hiz_submitted_slot, vp_this_frame);
+        if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
+            bench_hiz_readback_ms_total_ += double(hiz_timer.nsecsElapsed()) / 1e6;
+        }
     }
 
     // ---- Benchmark integration + auto-quit -------------------------------
@@ -1736,6 +1912,11 @@ void WgpuViewportWindow::render() {
                 << "  tri " << last_visible_triangles_
                 << "  sub_draws " << last_sub_draws_
                 << "  hiz_rej " << hiz_reject_count_;
+            const double n = double(std::max(1, bench_total_));
+            qInfo().noquote().nospace()
+                << "  per-frame avg ms: cull=" << bench_cull_ms_total_ / n
+                << "  hiz_readback=" << bench_hiz_readback_ms_total_ / n
+                << "  hiz=" << (hiz_enabled_ ? "on" : "off");
             qInfo().noquote() << "=== END BENCHMARK ===\n";
 
             bench_total_ = 0;
@@ -1764,14 +1945,22 @@ bool WgpuViewportWindow::buildPipelines() {
     frame_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.frame_bgl");
     frame_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &frame_bgl_desc);
 
-    WGPUBindGroupLayoutEntry model_entries[4] = {};
-    for (int i = 0; i < 4; ++i) {
+    // 6 read-only storage buffers (vertices, meshes, instances, indices,
+    // visible_draws, prefix_sums) + 1 uniform (per-model count). All read
+    // in the vertex shader. WebGPU's mandatory min is 8 storage / 12 uniform
+    // per stage, so we're comfortably under the cap.
+    WGPUBindGroupLayoutEntry model_entries[7] = {};
+    for (int i = 0; i < 6; ++i) {
         model_entries[i].binding     = uint32_t(i);
         model_entries[i].visibility  = WGPUShaderStage_Vertex;
         model_entries[i].buffer.type = WGPUBufferBindingType_ReadOnlyStorage;
     }
+    model_entries[6].binding             = 6;
+    model_entries[6].visibility          = WGPUShaderStage_Vertex;
+    model_entries[6].buffer.type         = WGPUBufferBindingType_Uniform;
+    model_entries[6].buffer.minBindingSize = 16;
     WGPUBindGroupLayoutDescriptor model_bgl_desc = {};
-    model_bgl_desc.entryCount = 4;
+    model_bgl_desc.entryCount = 7;
     model_bgl_desc.entries    = model_entries;
     model_bgl_desc.label      = svFromCStr("ifcviewer-wgpu.model_bgl");
     model_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &model_bgl_desc);
@@ -1859,12 +2048,14 @@ void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
         wgpuBindGroupRelease(m.bind_group);
         m.bind_group = nullptr;
     }
-    if (!m.vertex_storage || !m.mesh_storage || !m.instance_storage || !m.visible_buffer) {
+    if (!m.vertex_storage || !m.mesh_storage || !m.instance_storage
+        || !m.index_buffer || !m.visible_draws_buffer || !m.prefix_sums_buffer
+        || !m.per_model_uniform) {
         // Empty model — no bind group needed; the draw loop will skip it.
         return;
     }
 
-    WGPUBindGroupEntry entries[4] = {};
+    WGPUBindGroupEntry entries[7] = {};
     entries[0].binding = 0;
     entries[0].buffer  = m.vertex_storage;
     entries[0].size    = WGPU_WHOLE_SIZE;
@@ -1875,12 +2066,21 @@ void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
     entries[2].buffer  = m.instance_storage;
     entries[2].size    = WGPU_WHOLE_SIZE;
     entries[3].binding = 3;
-    entries[3].buffer  = m.visible_buffer;
+    entries[3].buffer  = m.index_buffer;
     entries[3].size    = WGPU_WHOLE_SIZE;
+    entries[4].binding = 4;
+    entries[4].buffer  = m.visible_draws_buffer;
+    entries[4].size    = WGPU_WHOLE_SIZE;
+    entries[5].binding = 5;
+    entries[5].buffer  = m.prefix_sums_buffer;
+    entries[5].size    = WGPU_WHOLE_SIZE;
+    entries[6].binding = 6;
+    entries[6].buffer  = m.per_model_uniform;
+    entries[6].size    = 16;
 
     WGPUBindGroupDescriptor desc = {};
     desc.layout     = model_bgl_;
-    desc.entryCount = 4;
+    desc.entryCount = 7;
     desc.entries    = entries;
     desc.label      = svFromCStr("ifcviewer-wgpu.model_bind_group");
     m.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);

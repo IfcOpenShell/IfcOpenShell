@@ -51,31 +51,47 @@ struct WgpuModelGpuData {
     // recompose from placement_transformation when stage matrices change.
     WGPUBuffer instance_storage = nullptr;
 
-    // u32[] of visible instance indices, repacked per frame by the CPU cull
-    // into per-mesh contiguous slices. Sized for the worst case
-    // (instance_count entries) at applyCachedModel time so we never have to
-    // recreate it (and the bind group that references it) mid-frame.
-    WGPUBuffer visible_buffer = nullptr;
-    size_t     visible_buffer_capacity = 0;  // entries (u32 count), not bytes
+    // Cross-mesh vertex pulling: one entry per visible (mesh, lod, instance)
+    // tuple, written into a single flat buffer per frame. The vertex shader
+    // binary-searches `prefix_sums` to find which entry a given
+    // gl_VertexID belongs to, then fetches that entry's mesh slice via the
+    // offsets baked here. Pre-sized at applyCachedModel to a generous
+    // worst case so the bind group stays valid for the model's lifetime.
+    //
+    // std430 layout: 16 bytes per entry, naturally aligned.
+    struct alignas(16) VisibleDrawGpu {
+        uint32_t mesh_id;        // -> meshes[] for quantisation basis
+        uint32_t instance_idx;   // -> instances[] for transform + ids
+        uint32_t ebo_first_u32;  // start of this entry's slice in indices[]
+        uint32_t base_vertex;    // start of this mesh's slice in vertices[]
+    };
+    static_assert(sizeof(VisibleDrawGpu) == 16, "VisibleDrawGpu must be 16 bytes");
 
-    // Bind group binding the four storage buffers above (group=1 in the
-    // main pipeline). Built in applyCachedModel after the buffers exist.
+    WGPUBuffer visible_draws_buffer = nullptr;
+    size_t     visible_draws_capacity = 0;  // entries (not bytes)
+
+    // prefix_sums[i] = sum of index_counts for visible_draws[0..i-1].
+    // Sized to visible_draws_capacity + 1 so prefix_sums[N] = total verts.
+    WGPUBuffer prefix_sums_buffer = nullptr;
+    size_t     prefix_sums_capacity = 0;  // entries (u32 count)
+
+    // Per-model uniform: (draw_count, total_vertex_count, _pad, _pad).
+    // The vertex shader uses draw_count to bound the binary search; CPU
+    // uses total_vertex_count as the draw() call's vertex count.
+    WGPUBuffer per_model_uniform = nullptr;
+
+    // Bind group binding the storage + uniform buffers above (group=1 in
+    // the main pipeline). Built in applyCachedModel.
     WGPUBindGroup bind_group = nullptr;
 
-    // One per mesh, populated per frame by cullAndCompact. instance_count==0
-    // means the mesh contributes nothing this frame and the draw is skipped.
-    struct MeshDraw {
-        uint32_t first_instance = 0;  // offset into visible_buffer
-        uint32_t instance_count = 0;
-        uint32_t first_index    = 0;  // index buffer offset (in u32 indices)
-        int32_t  base_vertex    = 0;  // added to every fetched vertex_index
-        uint32_t index_count    = 0;
-    };
-    std::vector<MeshDraw> mesh_draws;     // size = meshes.size() after first frame
+    // Per-frame, populated by cullModelCpu and consumed by render().
+    uint32_t total_visible_vertices = 0;
+    uint32_t total_visible_draws    = 0;
 
     // Scratch reused each frame so per-frame cull doesn't allocate. Sized
-    // to instance_count entries on first use; never shrunk.
-    std::vector<uint32_t> visible_flat_scratch;
+    // on first use; never shrunk.
+    std::vector<VisibleDrawGpu> visible_draws_scratch;
+    std::vector<uint32_t>       prefix_sums_scratch;
 
     // Size mirrors for stats / range checks.
     size_t   vertex_bytes   = 0;

@@ -124,13 +124,19 @@ private:
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
     // Resolves the just-rendered MSAA depth into the small single-sample
-    // HiZ texture and copies it to the staging buffer. Encoded onto `enc`
-    // so it ships in the same command buffer as the main draw.
-    void  encodeHizResolve(WGPUCommandEncoder enc);
-    // Maps the staging buffer (waits via processEvents), max-reduces a CPU
-    // mip pyramid, stores the VP used. Run after submitting the encoder so
-    // the GPU has begun the copy. Updates hiz_valid_ to true on success.
-    void  readbackAndBuildHizPyramid(const QMatrix4x4& vp_used);
+    // HiZ texture and copies it to whichever staging slot is currently
+    // idle. Returns the slot index used, or -1 if both slots are still
+    // in flight (resolve is skipped this frame — fine, we already have
+    // a recent pyramid). Encoded onto `enc` so it ships in the same
+    // command buffer as the main draw.
+    int   encodeHizResolve(WGPUCommandEncoder enc);
+    // Issues a non-blocking mapAsync on `slot` after submit, so the
+    // callback can fire whenever the GPU has actually finished writing.
+    void  startHizMap(int slot, const QMatrix4x4& vp_used);
+    // Drains pending mapAsync callbacks (via processEvents — does NOT
+    // block on GPU work). For any slot that just signalled Mapped, reads
+    // it, unmaps it, max-reduces the mip pyramid, and updates hiz_vp_.
+    void  drainHizReadbacks();
     // Project AABB through hiz_vp_ and test against the pyramid. False
     // (keep) if HiZ isn't valid yet, AABB straddles the near plane, or
     // any projection is unreliable. True (cull) when AABB is provably
@@ -156,13 +162,22 @@ private:
     //   `lod1_threshold_px` — survivors projected below this get the mesh's
     //                       LOD1 index slice when one was baked.
     // min_radius_px == 0 disables contribution culling.
-    void  cullModelCpu(WgpuModelGpuData& m,
-                       const float planes[6][4],
-                       const float eye[3], const float forward[3],
-                       float focal_px,
-                       float min_radius_px,
-                       float lod1_threshold_px,
-                       bool  hiz_enabled);
+    // CPU-only phase of cull: produces m.visible_draws_scratch /
+    // prefix_sums_scratch and sets total_visible_draws / total_visible_
+    // vertices. Touches no wgpu state, so this can run on a worker thread
+    // (multiple models culled in parallel). Returns the number of HiZ
+    // rejections accumulated (caller adds to the per-frame stat).
+    uint32_t cullModelCpuCompute(WgpuModelGpuData& m,
+                                 const float planes[6][4],
+                                 const float eye[3], const float forward[3],
+                                 float focal_px,
+                                 float min_radius_px,
+                                 float lod1_threshold_px,
+                                 bool  hiz_enabled) const;
+    // Upload phase: wgpuQueueWriteBuffer for visible_draws / prefix_sums /
+    // per-model uniform. Main-thread only (wgpu queue ops are not all
+    // thread-safe).
+    void     cullModelCpuUpload(WgpuModelGpuData& m);
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -221,10 +236,24 @@ private:
 
     WGPUTexture     hiz_resolve_texture_ = nullptr;
     WGPUTextureView hiz_resolve_view_    = nullptr;
-    WGPUBuffer      hiz_staging_buffer_  = nullptr;
     uint32_t        hiz_resolve_w_       = 0;
     uint32_t        hiz_resolve_h_       = 0;
     uint32_t        hiz_padded_bpr_      = 0;  // bytes per row in the staging buffer
+
+    // Ping-pong async readback. Frame N submits a copy into slot
+    // hiz_write_idx_ and calls mapAsync (non-blocking) on that slot. Frame
+    // N+K (K ≥ 1) calls processEvents to drain callbacks; whichever slot
+    // signalled completion is mapped, read into hiz_pyramid_, and unmapped
+    // — making the pyramid 1+ frames stale, which is fine ("slightly-stale
+    // depth" pattern the GL backend already documents). Two slots overlap
+    // GPU write with CPU read; we never block on the readback.
+    enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
+    static constexpr int HIZ_SLOTS = 2;
+    WGPUBuffer    hiz_staging_buffers_[HIZ_SLOTS] = { nullptr, nullptr };
+    QMatrix4x4    hiz_slot_vp_       [HIZ_SLOTS];
+    HizSlotState  hiz_slot_state_    [HIZ_SLOTS] = { HizSlotState::Idle,
+                                                     HizSlotState::Idle };
+    int           hiz_write_idx_                  = 0;
 
     // CPU mip pyramid (max-reduce). hiz_pyramid_[hiz_mip_offset_[L] + y*W + x].
     std::vector<float>    hiz_pyramid_;
@@ -247,15 +276,19 @@ private:
     float camera_near_      = 0.1f;
     float camera_far_       = 10000.0f;
 
-    // Drop instances whose projected bounding-sphere radius is below this
-    // many pixels. Mirrors AppSettings::minPixelRadius() (GL default 2.0;
-    // motion mode uses 10.0 but we don't differentiate yet — that arrives
-    // with mouse-driven motion-state tracking later).
-    float min_pixel_radius_ = 2.0f;
+    // Contribution-cull thresholds. Still-frame uses min_pixel_radius_;
+    // when the camera changed since last frame, the bigger motion threshold
+    // kicks in to drop more sub-pixel detail (and slash per-frame cull cost).
+    // Matches AppSettings::minPixelRadius / motionMinPixelRadius in GL.
+    float min_pixel_radius_        = 2.0f;
+    float motion_min_pixel_radius_ = 10.0f;
 
+public:
     // Master switch for HiZ occlusion. Set false to skip the depth resolve
     // + readback + cull test entirely (matches IFC_NO_HIZ in the GL backend).
     bool hiz_enabled_ = true;
+
+private:
 
     // Switch to LOD1 when an instance's projected bounding-sphere radius
     // drops below this many pixels. 0 disables (always LOD0). Defaults
@@ -273,6 +306,15 @@ private:
     // subsequent loads from snapping the camera away from where the
     // user pointed it.
     bool initial_view_applied_ = false;
+
+    // Camera state at the previous render() for motion detection. Any
+    // change means we apply the motion contribution threshold this frame
+    // (drops more sub-pixel work mid-orbit; matches GL behaviour).
+    float prev_camera_target_[3]   = { 0, 0, 0 };
+    float prev_camera_distance_    = 0.0f;
+    float prev_camera_yaw_deg_     = 0.0f;
+    float prev_camera_pitch_deg_   = 0.0f;
+    bool  has_prev_camera_         = false;
 
     // Pending one-shot screenshot, captured at the end of the next render().
     QString pending_screenshot_path_;
@@ -301,6 +343,13 @@ private:
     uint32_t last_visible_objects_   = 0;
     uint32_t last_visible_triangles_ = 0;
     uint32_t last_sub_draws_         = 0;
+
+    // Phase-time accumulators for benchmark mode. Each window measures a
+    // distinct slice of render() so we can attribute frame cost. Totals
+    // across the timed window are divided by bench_total_ on print.
+    double   bench_cull_ms_total_     = 0.0;
+    double   bench_hiz_readback_ms_total_ = 0.0;
+    double   bench_submit_ms_total_   = 0.0;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

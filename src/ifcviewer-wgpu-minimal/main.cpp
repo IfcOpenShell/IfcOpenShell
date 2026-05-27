@@ -48,10 +48,13 @@ int main(int argc, char* argv[]) {
     parser.addOption({{"c", "camera"},
         "Set camera as tx,ty,tz,dist,yaw,pitch (same format as IfcViewerMinimal).",
         "params"});
+    parser.addOption({"no-hiz",
+        "Disable HiZ occlusion culling for perf diagnostics."});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
     viewport->resize(1280, 800);
+    if (parser.isSet("no-hiz")) viewport->hiz_enabled_ = false;
 
     QWidget* container = QWidget::createWindowContainer(viewport);
     container->setMinimumSize(320, 240);
