@@ -147,6 +147,11 @@ class Parametric(bonsai.core.tool.Parametric):
             self._data.clear()
             self._gen = None
 
+    # FIXME(PR4): array / pipe_segment / duct_segment land with their
+    # finish/cancel operators in PR4. Adding them to EDIT_TYPES without those
+    # operators makes auto-commit-on-save dispatch bim.finish_editing_<name>
+    # for objects flagged as in-edit, which then raises because the operator
+    # doesn't exist. PR4 re-adds the three entries together with the operators.
     EDIT_TYPES: list[ParametricObject] = [
         ParametricObject("door", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("window", has_non_editable_path=True, supports_build_edit_lifecycle=True),
@@ -154,9 +159,6 @@ class Parametric(bonsai.core.tool.Parametric):
         ParametricObject("railing", supports_build_edit_lifecycle=True),
         ParametricObject("roof", supports_build_edit_lifecycle=True),
         ParametricObject("wall"),
-        ParametricObject("array", supports_build_edit_lifecycle=True),
-        ParametricObject("pipe_segment", has_non_editable_path=True, supports_build_edit_lifecycle=True),
-        ParametricObject("duct_segment", has_non_editable_path=True, supports_build_edit_lifecycle=True),
     ]
 
     # Annotations for the uppercase constants populated from ``EDIT_TYPES`` by
@@ -168,9 +170,6 @@ class Parametric(bonsai.core.tool.Parametric):
     RAILING: ClassVar[ParametricObject]
     ROOF: ClassVar[ParametricObject]
     WALL: ClassVar[ParametricObject]
-    ARRAY: ClassVar[ParametricObject]
-    PIPE_SEGMENT: ClassVar[ParametricObject]
-    DUCT_SEGMENT: ClassVar[ParametricObject]
 
     _geom_generation: int = 0
 
@@ -389,10 +388,26 @@ class Parametric(bonsai.core.tool.Parametric):
 
     @classmethod
     def iter_gizmo_preference_classes(cls, ui_module) -> list[type]:
-        """Shared ``GizmoPreferencesFeature`` class as a one-element list, or
-        empty if absent. Must register before ``GizmoPreferences``."""
+        """``GizmoPreferences<Name>`` classes that exist on ``ui_module`` for
+        every registry entry, plus the shared ``GizmoPreferencesFeature`` if
+        present. Order matches ``EDIT_TYPES``. Used by ``bim/__init__.py`` to
+        inject the per-type ``GizmoPreferences<X>`` classes at the correct
+        point — before ``ui.GizmoPreferences``, which references them via
+        ``PointerProperty``."""
+        # FIXME(PR5): drop the per-feature loop once PR4 consolidates
+        # bim/ui.py to use a single shared GizmoPreferencesFeature class
+        # and rewrites GizmoPreferences accordingly. The shared-class
+        # branch is the forward-compat path; the per-feature loop keeps
+        # v0.8.0's bim/ui.py working until then.
+        out: list[type] = []
+        for feature in cls.EDIT_TYPES:
+            gpref = getattr(ui_module, f"GizmoPreferences{feature.name.capitalize()}", None)
+            if gpref is not None:
+                out.append(gpref)
         shared = getattr(ui_module, "GizmoPreferencesFeature", None)
-        return [shared] if shared is not None else []
+        if shared is not None:
+            out.append(shared)
+        return out
 
     # --- Feature-kind predicates ------------------------------------------------
     # One predicate per registered parametric type. Each is total: accepts any
