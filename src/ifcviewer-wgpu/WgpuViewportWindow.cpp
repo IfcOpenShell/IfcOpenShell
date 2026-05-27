@@ -631,7 +631,19 @@ bool WgpuViewportWindow::initWgpu() {
     struct DeviceReq { WGPUDevice device = nullptr; bool done = false; bool ok = false; };
     DeviceReq dreq;
 
+    // Query what the adapter can do, and request the same headroom on the
+    // device so a single large model's vertex/instance storage buffer doesn't
+    // hit the conservative defaults (128 MB binding, 256 MB buffer). Real
+    // BIM models routinely cross 100 MB of vertex bytes; without this the
+    // first applyCachedModel fails with a bind-group validation error.
+    //
+    // For eventual web parity this needs revisiting — browsers cap at the
+    // defaults — but native targets always support the requested ceilings.
+    WGPULimits adapter_limits = {};
+    wgpuAdapterGetLimits(adapter_, &adapter_limits);
+
     WGPUDeviceDescriptor dev_desc = {};
+    dev_desc.requiredLimits = &adapter_limits;
     // Surface uncaptured errors (validation failures etc.) into qWarning so
     // they're attributable rather than silently swallowed.
     dev_desc.uncapturedErrorCallbackInfo.callback = onUncapturedError;
@@ -1541,6 +1553,20 @@ bool WgpuViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
         }
     }
     return any;
+}
+
+void WgpuViewportWindow::setCamera(float tx, float ty, float tz,
+                                   float dist, float yaw_deg, float pitch_deg) {
+    camera_target_[0] = tx;
+    camera_target_[1] = ty;
+    camera_target_[2] = tz;
+    camera_distance_  = std::max(0.01f, dist);
+    camera_yaw_deg_   = yaw_deg;
+    camera_pitch_deg_ = std::clamp(pitch_deg, -89.9f, 89.9f);
+    // Suppress the auto-viewAll on the first model load so the script-set
+    // camera survives. Manual viewAll() calls after this still work.
+    initial_view_applied_ = true;
+    if (isExposed()) requestUpdate();
 }
 
 void WgpuViewportWindow::viewAll() {

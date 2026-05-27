@@ -72,9 +72,16 @@ public:
     size_t modelCount() const { return models_gpu_.size(); }
 
     // Frame the union of all loaded models' world AABBs. No-op on empty
-    // scenes. Called automatically after the first model loads; clients
-    // can re-invoke to re-frame.
+    // scenes. Called automatically after the first model loads (unless
+    // setCamera was already invoked); clients can re-invoke to re-frame.
     void viewAll();
+
+    // Explicit camera state, mirroring the GL ViewportWindow API. Suppresses
+    // the auto-viewAll on first load so a script-driven camera survives
+    // model loading. Parameters match the GL --camera tx,ty,tz,dist,yaw,pitch
+    // order so a pasted camera string lands the same view in both backends.
+    void setCamera(float tx, float ty, float tz,
+                   float dist, float yaw_deg, float pitch_deg);
 
     // Queue a one-shot framebuffer capture: the next rendered frame is
     // copied back to host memory and saved to `path` as PNG. If

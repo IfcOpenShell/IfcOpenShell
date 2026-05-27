@@ -45,6 +45,9 @@ int main(int argc, char* argv[]) {
         "Render one frame, save to PATH as PNG, exit.", "path"});
     parser.addOption({{"b", "benchmark"},
         "Render N frames (yaw-sweeping the camera), print stats, exit.", "frames"});
+    parser.addOption({{"c", "camera"},
+        "Set camera as tx,ty,tz,dist,yaw,pitch (same format as IfcViewerMinimal).",
+        "params"});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
@@ -63,6 +66,23 @@ int main(int argc, char* argv[]) {
     // exposeEvent. Ordering matches the command line.
     for (const QString& path : parser.positionalArguments()) {
         viewport->queueLoadSidecar(path);
+    }
+
+    if (parser.isSet("camera")) {
+        const QStringList parts = parser.value("camera").split(',');
+        if (parts.size() == 6) {
+            bool ok = true;
+            float v[6];
+            for (int i = 0; i < 6 && ok; ++i) v[i] = parts[i].toFloat(&ok);
+            if (ok) {
+                viewport->setCamera(v[0], v[1], v[2], v[3], v[4], v[5]);
+            } else {
+                qWarning() << "--camera: failed to parse" << parser.value("camera");
+            }
+        } else {
+            qWarning() << "--camera: expected 6 comma-separated floats, got"
+                       << parts.size();
+        }
     }
 
     if (parser.isSet("screenshot")) {
