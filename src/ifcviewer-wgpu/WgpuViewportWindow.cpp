@@ -22,7 +22,9 @@
 #include <QGuiApplication>
 #include <QResizeEvent>
 #include <QDebug>
+#include <QDir>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QFileInfo>
 #include <QMatrix4x4>
 #include <QVector3D>
@@ -317,10 +319,49 @@ uint32_t WgpuViewportWindow::loadSidecar(const QString& path) {
         return 0;
     }
 
-    auto data_opt = readSidecar(path.toStdString());
+    // Tilde expansion — shells handle this inside double-quoted args, but a
+    // literal "~/..." from a launcher / command-line wouldn't. Cheap to do
+    // here so the failure mode isn't "fopen returned ENOENT".
+    QString resolved = path;
+    if (resolved.startsWith("~/")) {
+        resolved = QDir::homePath() + resolved.mid(1);
+    }
+
+    auto data_opt = readSidecar(resolved.toStdString());
     if (!data_opt) {
-        qWarning().noquote() << "Failed to read sidecar:" << path
-                             << "(file missing, wrong magic, or schema mismatch)";
+        // Triage: distinguish missing file from magic/version mismatch by
+        // peeking the header ourselves, so users know which to fix.
+        QFile f(resolved);
+        if (!f.exists()) {
+            qWarning().noquote() << "Sidecar not found:" << resolved;
+        } else if (!f.open(QIODevice::ReadOnly)) {
+            qWarning().noquote() << "Sidecar unreadable:" << resolved
+                                 << "(" << f.errorString() << ")";
+        } else {
+            uint32_t header[3] = { 0, 0, 0 };
+            const qint64 got = f.read(reinterpret_cast<char*>(header), sizeof(header));
+            if (got < qint64(sizeof(header))) {
+                qWarning().noquote() << "Sidecar truncated:" << resolved
+                                     << "(only" << got << "bytes — expected ≥ 12)";
+            } else if (header[0] != SIDECAR_MAGIC) {
+                qWarning().noquote().nospace()
+                    << "Sidecar magic mismatch: " << resolved
+                    << " — got 0x" << QString::number(header[0], 16)
+                    << ", expected 0x" << QString::number(SIDECAR_MAGIC, 16)
+                    << " (\"IFVW\")";
+            } else if (header[1] != SIDECAR_VERSION) {
+                qWarning().noquote().nospace()
+                    << "Sidecar schema mismatch: " << resolved
+                    << " — file is v" << header[1]
+                    << ", this build expects v" << SIDECAR_VERSION
+                    << ". Re-bake the .ifc with a viewer at the matching schema.";
+            } else if (header[2] != SIDECAR_ENDIAN) {
+                qWarning().noquote() << "Sidecar endianness mismatch:" << resolved
+                                     << "(cross-platform load not supported)";
+            } else {
+                qWarning().noquote() << "Sidecar read failed past the header:" << resolved;
+            }
+        }
         return 0;
     }
 
