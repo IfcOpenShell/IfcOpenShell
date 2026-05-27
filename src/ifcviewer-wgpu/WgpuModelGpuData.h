@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "BvhAccel.h"
 #include "InstancedGeometry.h"
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
@@ -108,6 +109,13 @@ struct WgpuModelGpuData {
     // CPU side, kept for cull / picking / federation recompose.
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceCpu> instances;
+
+    // Per-model BVH over the instances' world AABBs. Built once at
+    // applyCachedModel; consumed by cullModelCpuCompute to reject whole
+    // subtrees against frustum + HiZ without descending. Critical for
+    // 100+ model / 1M+ instance scenes — turns O(N) per-instance cull
+    // into ~O(visible_count + log N).
+    ModelBvh bvh;
 
     bool hidden = false;
 };

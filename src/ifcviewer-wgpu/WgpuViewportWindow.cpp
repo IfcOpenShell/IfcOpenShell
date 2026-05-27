@@ -151,6 +151,8 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
     m.instance_count = 0;
     m.meshes.clear();
     m.instances.clear();
+    m.bvh.nodes.clear();
+    m.bvh.item_indices.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -725,6 +727,26 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
     WgpuModelGpuData& mref = inserted->second;
     buildModelBindGroup(mref);
+
+    // Build per-model BVH over the instances' world AABBs. Once-per-load
+    // cost; used every frame by the cull to reject whole subtrees against
+    // frustum + HiZ.
+    {
+        std::vector<BvhItem> items;
+        items.reserve(mref.instances.size());
+        for (const auto& inst : mref.instances) {
+            BvhItem it;
+            it.aabb_min[0] = inst.world_aabb_min[0];
+            it.aabb_min[1] = inst.world_aabb_min[1];
+            it.aabb_min[2] = inst.world_aabb_min[2];
+            it.aabb_max[0] = inst.world_aabb_max[0];
+            it.aabb_max[1] = inst.world_aabb_max[1];
+            it.aabb_max[2] = inst.world_aabb_max[2];
+            it.model_id    = model_id;
+            items.push_back(it);
+        }
+        mref.bvh = buildModelBvhOne(items, model_id);
+    }
 
     qInfo().noquote().nospace()
         << "[wgpu] applyCachedModel mid=" << model_id
@@ -2039,13 +2061,17 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
     // chunk counts.
     std::vector<uint32_t> running_vertex_count(m.chunks.size(), 0);
 
-    for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
+    // Per-instance work as a lambda — same logic regardless of how we
+    // reached the instance (BVH walk leaf vs. flat linear scan). Keeps the
+    // BVH path single-pass (no scratch buffer / no second iteration).
+    auto process_instance = [&](uint32_t i) {
         const auto& inst = m.instances[i];
-        if (inst.mesh_id >= m.meshes.size()) continue;
-        // Cheapest possible cull first: explicit user-hidden flag. Skips
-        // every downstream cost (frustum / HiZ / draw / pick).
-        if (visibility_.isHidden(inst.object_id)) continue;
-        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) continue;
+        if (inst.mesh_id >= m.meshes.size()) return;
+        if (visibility_.isHidden(inst.object_id)) return;
+        // Per-instance frustum still needed: a partially-covered subtree
+        // descended this far means *some* leaves are visible, but not
+        // necessarily this one.
+        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
 
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
 
@@ -2074,12 +2100,12 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         // per-instance test (8-corner projection + mip pyramid sample), so
         // letting cheap contribution drops happen first cuts the HiZ-tested
         // population by ~5× on real scenes.
-        if (contrib_enabled && projected_px < min_radius_px) continue;
+        if (contrib_enabled && projected_px < min_radius_px) return;
 
         if (hiz_enabled
             && aabbOccludedByHiz(inst.world_aabb_min, inst.world_aabb_max)) {
             ++hiz_rejects;
-            continue;
+            return;
         }
 
         const bool use_lod1 = lod_enabled
@@ -2104,6 +2130,41 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                                                     : mesh.index_count;
         running_vertex_count[chunk_idx] += entry_vert_count;
         c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
+    };
+
+    // BVH-driven walk: stack-based DFS through the per-model BVH.
+    // Interior nodes do FRUSTUM ONLY — HiZ at an interior node rarely
+    // rejects because the big subtree AABB spans many HiZ mip cells, and
+    // we'd pay the test cost without saving anything. HiZ runs per-instance
+    // at the leaf (already in process_instance via the inner test order).
+    //
+    // Falls back to a flat linear scan when the BVH is disabled (bvh_enabled_
+    // default off because dense scenes regress under the walk overhead;
+    // see task #15) or absent (empty BVH).
+    if (!bvh_enabled_ || m.bvh.nodes.empty()) {
+        for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
+            process_instance(i);
+        }
+    } else {
+        std::vector<uint32_t> stack;
+        stack.reserve(64);
+        stack.push_back(0);
+        while (!stack.empty()) {
+            const uint32_t ni = stack.back();
+            stack.pop_back();
+            const BvhNode& node = m.bvh.nodes[ni];
+            if (!aabbInFrustum(node.aabb_min, node.aabb_max, planes)) continue;
+            if (node.count > 0) {
+                // Leaf — handle items inline (no scratch buffer).
+                for (uint32_t i = 0; i < node.count; ++i) {
+                    process_instance(m.bvh.item_indices[node.right_or_first + i]);
+                }
+            } else {
+                // Interior: descend both children (Left=ni+1, Right=right_or_first).
+                stack.push_back(ni + 1);
+                stack.push_back(node.right_or_first);
+            }
+        }
     }
 
     for (size_t ci = 0; ci < m.chunks.size(); ++ci) {

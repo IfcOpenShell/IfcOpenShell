@@ -358,6 +358,14 @@ public:
     // scene fits through the constraints a browser will impose.
     bool web_limits_ = false;
 
+    // BVH-walk cull. Default OFF: the BVH adds ~17ms walk overhead on
+    // dense centred-camera scenes without rejecting enough subtrees to
+    // compensate (every subtree's AABB straddles the frustum). It MAY help
+    // on spatially-separated scenes (e.g. distant camera looking at one
+    // model in a sprawling federation). Toggle on via --bvh to measure.
+    // Real default-on requires further tuning — see task #15.
+    bool bvh_enabled_ = false;
+
 private:
 
     // Switch to LOD1 when an instance's projected bounding-sphere radius
