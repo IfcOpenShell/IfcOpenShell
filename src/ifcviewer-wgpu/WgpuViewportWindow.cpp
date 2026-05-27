@@ -1485,9 +1485,12 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     nav_last_pos_ = pos;
 
     if (nav_active_button_ == Qt::LeftButton) {
-        // Orbit. 0.4 deg/px feels right for a 1280-wide window.
-        camera_yaw_deg_   += float(dx) * -0.4f;
-        camera_pitch_deg_ += float(dy) * -0.4f;
+        // Orbit. Sign convention matches the GL viewport: drag-right rotates
+        // the world right (yaw -= dx), drag-down tilts the camera up so we
+        // see more of the object's top (pitch += dy). 0.4 deg/px feels right
+        // for a 1280-wide window.
+        camera_yaw_deg_   -= float(dx) * 0.4f;
+        camera_pitch_deg_ += float(dy) * 0.4f;
         camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
         requestUpdate();
     } else if (nav_active_button_ == Qt::MiddleButton) {
