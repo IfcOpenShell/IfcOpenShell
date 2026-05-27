@@ -73,6 +73,7 @@ option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
 option(BUILD_BONSAIVIEWER_TESTS "Build unit tests for Bonsai Viewer core (fetches Catch2 v3)" OFF)
+option(BUILD_BONSAIVIEWER_WGPU "Build the experimental wgpu backend (fetches wgpu-native binary release)" OFF)
 option(BUILD_PACKAGE "" OFF)
 
 option(
@@ -688,6 +689,16 @@ if(BUILD_BONSAIVIEWER)
     add_subdirectory(../src/ifcviewer ifcviewer)
     add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
     add_subdirectory(../src/bonsaiviewer bonsaiviewer)
+endif()
+
+# The wgpu backend is gated independently of BUILD_BONSAIVIEWER: it shares
+# Qt but does not depend on the GL viewer's static lib, so a developer can
+# build it on its own to iterate on the port without compiling IfcGeom etc.
+# However most stages of the port will reference Federation/SceneLoader
+# headers from src/ifcviewer, so in practice it ships alongside.
+if(BUILD_BONSAIVIEWER_WGPU)
+    add_subdirectory(../src/ifcviewer-wgpu ifcviewer-wgpu)
+    add_subdirectory(../src/ifcviewer-wgpu-minimal ifcviewer-wgpu-minimal)
 endif()
 
 # Cmake uninstall target
