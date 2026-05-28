@@ -22,6 +22,7 @@
 
 import copy
 import math
+from collections.abc import Iterable
 from math import atan2, cos, degrees, pi, sin
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union, get_args
 
@@ -167,6 +168,30 @@ def _read_wall_state_into_props(obj: bpy.types.Object, props: "BIMWallProperties
     props.snap_offset_baseline = props.desired_offset_baseline
 
 
+def _maybe_resync_wall_props_from_ifc(obj: "bpy.types.Object | None") -> None:
+    """Re-prime ``BIMWallProperties`` from current IFC after an IFC mutation, so
+    non-edit-mode gizmos read post-mutation coordinates. Must be called from an
+    operator's ``_execute`` — ID writes from ``GizmoGroup.refresh`` raise
+    ``AttributeError: Writing to ID classes in this context is not allowed``.
+    No-op during a draft session; the draft is then the source of truth."""
+    if obj is None:
+        return
+    if _validate_wall_for_parametric_edit(obj) is not None:
+        return
+    props = tool.Model.get_wall_props(obj)
+    if props.is_editing:
+        return
+    _read_wall_state_into_props(obj, props)
+
+
+def _resync_walls_after_mutation(objs: Iterable["bpy.types.Object | None"]) -> None:
+    """Re-prime each wall's draft props after a one-shot IFC mutation. Safe to
+    call from operator ``_execute``: ID writes are allowed there, unlike gizmo
+    refresh."""
+    for obj in objs:
+        _maybe_resync_wall_props_from_ifc(obj)
+
+
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unjoin_walls"
     bl_label = "Unjoin Walls"
@@ -183,6 +208,7 @@ class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         _commit_pending_wall_edits_for_selection(context)
         core.unjoin_walls(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+        _resync_walls_after_mutation(tool.Blender.get_selected_objects())
 
 
 class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
@@ -212,6 +238,7 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
                 walls.append(obj)
         if slab and walls:
             core.extend_wall_to_slab(tool.Ifc, tool.Geometry, tool.Model, slab, walls)
+            _resync_walls_after_mutation(walls)
         else:
             self.report({"ERROR"}, "Please select at least one LAYER2 element and an active element")
 
@@ -253,6 +280,7 @@ class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 tool.Model.recreate_wall(element, obj)
             tool.Model.recreate_wall(target_element, target_obj)
+            _resync_walls_after_mutation([target_obj, *objs])
         else:
             self.report({"ERROR"}, "Please select at least one LAYER2 element and one active LAYER2 element")
 
@@ -455,6 +483,7 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
         selected_objs = tool.Model.get_selected_mesh_objects()
         for obj in selected_objs:
             DumbWallJoiner().split(obj, context.scene.cursor.location)
+        _resync_walls_after_mutation(selected_objs)
         return {"FINISHED"}
 
 
@@ -483,7 +512,11 @@ class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
         active_obj = context.active_object
         assert active_obj
         selected_objs = tool.Model.get_selected_mesh_objects()
-        DumbWallJoiner().merge(next(o for o in selected_objs if o != active_obj), active_obj)
+        # The merge deletes the second argument when the walls are collinear;
+        # only the first survives, so the resync targets the non-active wall.
+        surviving_obj = next(o for o in selected_objs if o != active_obj)
+        DumbWallJoiner().merge(surviving_obj, active_obj)
+        _maybe_resync_wall_props_from_ifc(surviving_obj)
         return {"FINISHED"}
 
 
@@ -2680,4 +2713,5 @@ class JoinWallsIntersection(bpy.types.Operator, tool.Ifc.Operator):
         except core.RequireTwoWallsError as e:
             self.report({"ERROR"}, str(e))
             return {"CANCELLED"}
+        _resync_walls_after_mutation(tool.Blender.get_selected_objects())
         return {"FINISHED"}
