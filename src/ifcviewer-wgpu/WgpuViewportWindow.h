@@ -387,9 +387,18 @@ private:
     // Contribution-cull thresholds. Still-frame uses min_pixel_radius_;
     // when the camera changed since last frame, the bigger motion threshold
     // kicks in to drop more sub-pixel detail (and slash per-frame cull cost).
-    // Matches AppSettings::minPixelRadius / motionMinPixelRadius in GL.
-    float min_pixel_radius_        = 2.0f;
-    float motion_min_pixel_radius_ = 10.0f;
+    //
+    // GL ships 2.0 / 10.0, but uses euclidean distance for projected_px
+    // (sqrt(dx² + dy² + dz²)) while wgpu uses view-Z distance (the
+    // perspective-divide-correct denominator). For off-axis instances
+    // view_z < euclidean, so wgpu's projected_px is larger than GL's at
+    // the same numeric threshold — i.e. wgpu is structurally less
+    // aggressive. Bumping to 3.0 / 15.0 compensates so the effective drop
+    // rate matches GL's; on the federation scene this lands obj/tri
+    // counts within ~10% of GL's across an orbit (vs ~3× without the
+    // bump). Override at runtime via WGPU_MIN_PX / WGPU_MIN_PX_MOTION.
+    float min_pixel_radius_        = 3.0f;
+    float motion_min_pixel_radius_ = 15.0f;
 
 public:
     // Master switch for HiZ occlusion. Set false to skip the depth resolve

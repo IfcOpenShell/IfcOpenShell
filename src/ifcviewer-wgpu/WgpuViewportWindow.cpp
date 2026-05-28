@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <future>
 #include <limits>
@@ -1301,6 +1302,25 @@ bool WgpuViewportWindow::initWgpu() {
     // problems surface in the console rather than being swallowed.
     wgpuSetLogCallback(onWgpuLog, nullptr);
     wgpuSetLogLevel(WGPULogLevel_Warn);
+
+    // Env-var overrides for contribution-cull thresholds. wgpu uses
+    // view-Z (perspective-divide-correct) for projected_px, whereas the
+    // GL backend uses euclidean distance — so for off-axis instances
+    // wgpu computes a larger projected_px and is less aggressive at the
+    // same numeric threshold. These knobs exist to let us sweep matching
+    // values during the perf-parity push without rebuilding.
+    if (const char* s = std::getenv("WGPU_MIN_PX")) {
+        const float v = float(std::atof(s));
+        if (v >= 0.0f) min_pixel_radius_ = v;
+        qInfo().noquote().nospace()
+            << "[wgpu cull] WGPU_MIN_PX=" << min_pixel_radius_;
+    }
+    if (const char* s = std::getenv("WGPU_MIN_PX_MOTION")) {
+        const float v = float(std::atof(s));
+        if (v >= 0.0f) motion_min_pixel_radius_ = v;
+        qInfo().noquote().nospace()
+            << "[wgpu cull] WGPU_MIN_PX_MOTION=" << motion_min_pixel_radius_;
+    }
 
     instance_ = wgpuCreateInstance(nullptr);
     if (!instance_) {
