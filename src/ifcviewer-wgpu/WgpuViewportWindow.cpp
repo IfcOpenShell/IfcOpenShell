@@ -136,6 +136,7 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
     for (auto& c : m.chunks) {
         if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
         if (c.vertex_storage)       { wgpuBufferRelease(c.vertex_storage);         c.vertex_storage = nullptr; }
+        if (c.index_buffer)         { wgpuBufferRelease(c.index_buffer);           c.index_buffer = nullptr; }
         if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
         if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
         if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
@@ -143,7 +144,7 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
     m.chunks.clear();
     m.mesh_chunk_idx.clear();
     m.mesh_chunk_local_base_vertex.clear();
-    if (m.index_buffer)         { wgpuBufferRelease(m.index_buffer);          m.index_buffer = nullptr; }
+    m.mesh_chunk_local_ebo_first_u32.clear();
     if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
     if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
     m.vertex_bytes   = 0;
@@ -555,48 +556,69 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.instance_count = uint32_t(metadata.meta.instances.size());
     m.streaming_file_path             = metadata.file_path;
     m.streaming_vertex_section_offset = metadata.vertex_section_offset;
+    m.streaming_index_section_offset  = metadata.index_section_offset;
 
     // ---- Compute chunk plan from MeshInfo (same as non-streaming path) -
     // Walks meshes in order, opens a new chunk when adding the next would
     // exceed WGPU_CHUNK_VERTEX_BYTES_LIMIT.
     m.mesh_chunk_idx.assign(metadata.meta.meshes.size(), 0);
     m.mesh_chunk_local_base_vertex.assign(metadata.meta.meshes.size(), 0);
+    m.mesh_chunk_local_ebo_first_u32.assign(metadata.meta.meshes.size(), 0);
 
     struct ChunkPlan {
-        size_t   source_byte_offset = 0;
+        size_t   source_byte_offset = 0;     // vertex bytes
         size_t   byte_count         = 0;
         uint32_t vertex_count       = 0;
+        uint32_t index_first_u32    = 0;     // chunk's first LOD0 index in sd.indices
+        uint32_t index_count        = 0;
     };
     std::vector<ChunkPlan> chunk_plans;
     chunk_plans.push_back({});
     size_t   current_bytes = 0;
     uint32_t current_idx   = 0;
     size_t   current_start = 0;
+    uint32_t current_idx_start = 0;
+    uint32_t current_idx_count = 0;
+    bool     warned_lod1 = false;
     for (uint32_t mi = 0; mi < metadata.meta.meshes.size(); ++mi) {
         const MeshInfo& mesh = metadata.meta.meshes[mi];
+        if (!warned_lod1 && mesh.lod1_index_count > 0) {
+            qWarning() << "[wgpu stream] LOD1 indices present but per-chunk index "
+                          "buffers only carry LOD0; LOD1 will be ignored this load.";
+            warned_lod1 = true;
+        }
         const size_t mesh_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
         if (current_bytes > 0 && current_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
             ChunkPlan& done = chunk_plans[current_idx];
             done.source_byte_offset = current_start;
             done.byte_count         = current_bytes;
             done.vertex_count       = uint32_t(current_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+            done.index_first_u32    = current_idx_start;
+            done.index_count        = current_idx_count;
             ++current_idx;
             chunk_plans.push_back({});
-            current_bytes = 0;
-            current_start = mesh.vbo_byte_offset;
+            current_bytes     = 0;
+            current_start     = mesh.vbo_byte_offset;
+            current_idx_start = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
+            current_idx_count = 0;
         } else if (current_bytes == 0) {
-            current_start = mesh.vbo_byte_offset;
+            current_start     = mesh.vbo_byte_offset;
+            current_idx_start = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
         }
         m.mesh_chunk_idx[mi]              = current_idx;
         m.mesh_chunk_local_base_vertex[mi]
             = uint32_t(current_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-        current_bytes += mesh_bytes;
+        m.mesh_chunk_local_ebo_first_u32[mi] = current_idx_count;
+        current_bytes      += mesh_bytes;
+        current_idx_count  += mesh.index_count;
     }
     {
         ChunkPlan& done = chunk_plans[current_idx];
         done.source_byte_offset = current_start;
         done.byte_count         = current_bytes;
         done.vertex_count       = uint32_t(current_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+        done.index_first_u32    = current_idx_start;
+        done.index_count        = current_idx_count;
     }
     if (chunk_plans.back().byte_count == 0) chunk_plans.pop_back();
 
@@ -619,6 +641,8 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         c.is_resident        = false;                       // streaming
         c.vertex_byte_offset = plan.source_byte_offset;
         c.vertex_byte_size   = plan.byte_count;
+        c.index_first_u32    = plan.index_first_u32;
+        c.index_count        = plan.index_count;
 
         // Small per-chunk buffers, allocated upfront so cull can write into
         // them. visible_draws_buffer cap = chunk's instance count (worst-
@@ -654,31 +678,10 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         c.prefix_sums_scratch.reserve(chunk_inst + 1);
     }
 
-    // ---- Model-shared buffers: indices, mesh quant, instances ----------
-    // Stage-1 streaming still loads these upfront — they're small relative
-    // to vertex data on real scenes (index ≈ 1/2 of vertex, mesh + instance
-    // <1%). Stage 2 can defer indices per chunk if needed.
-    //
-    // Index buffer requires reading the index section from disk now since
-    // metadata-only skipped it. Use readSidecarIndexChunk for the full range.
-    std::vector<uint32_t> indices_full;
-    if (metadata.index_total_count > 0
-        && !readSidecarIndexChunk(metadata.file_path,
-                                  metadata.index_section_offset,
-                                  /*chunk_first_index=*/0,
-                                  metadata.index_total_count,
-                                  indices_full)) {
-        qWarning().noquote() << "Failed to read index section for streaming load:"
-                             << QString::fromStdString(metadata.file_path);
-        return;
-    }
-    const size_t index_bytes = indices_full.size() * sizeof(uint32_t);
-    m.index_buffer = createBufferWithData(
-        device_, queue_,
-        indices_full.data(), index_bytes,
-        WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
-        "model.index_buffer");
-    m.vram_bytes_ebo += index_bytes;
+    // Index section is NOT loaded upfront. Each chunk's index slice will
+    // be range-read alongside its vertex bytes in loadChunkBytesAndUploadGpu.
+    // Eliminates the 1.5+ GB upfront index VRAM cost that was the binding
+    // OOM constraint on real scenes.
 
     // MeshGpu storage (per-mesh quant basis).
     std::vector<MeshGpu> mesh_gpu;
@@ -814,20 +817,31 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     // chunk-local base_vertex indexes correctly.
     m.mesh_chunk_idx.assign(data.meshes.size(), 0);
     m.mesh_chunk_local_base_vertex.assign(data.meshes.size(), 0);
+    m.mesh_chunk_local_ebo_first_u32.assign(data.meshes.size(), 0);
 
     struct ChunkPlan {
         size_t   source_byte_offset = 0;  // where in data.vertices this chunk's slice starts
         size_t   byte_count         = 0;  // bytes in this chunk
         uint32_t vertex_count       = 0;  // vertex_count = byte_count / 12
+        uint32_t index_first_u32    = 0;  // chunk's first LOD0 index in data.indices
+        uint32_t index_count        = 0;  // LOD0 indices belonging to this chunk
     };
     std::vector<ChunkPlan> chunk_plans;
     size_t   current_chunk_bytes  = 0;
     uint32_t current_chunk_idx    = 0;
     size_t   current_chunk_start  = 0;  // byte offset in data.vertices for current chunk's start
+    uint32_t current_idx_start    = 0;
+    uint32_t current_idx_count    = 0;
+    bool     warned_lod1          = false;
 
     chunk_plans.push_back({});  // chunk 0
     for (uint32_t mi = 0; mi < data.meshes.size(); ++mi) {
         const MeshInfo& mesh = data.meshes[mi];
+        if (!warned_lod1 && mesh.lod1_index_count > 0) {
+            qWarning() << "[wgpu] LOD1 indices present but per-chunk index buffers "
+                          "only carry LOD0; LOD1 will be ignored this load.";
+            warned_lod1 = true;
+        }
         const size_t mesh_vertex_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
         if (mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
             qWarning().noquote().nospace()
@@ -838,10 +852,6 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
                    " in an oversize chunk that won't fit a web browser.";
         }
 
-        // Sanity: mesh.vbo_byte_offset is the GLOBAL byte offset in
-        // data.vertices. We use it for chunk bookkeeping; if a sidecar's
-        // meshes aren't sorted by vbo_byte_offset things go subtly wrong,
-        // but every baker produces them ascending.
         if (current_chunk_bytes > 0
             && current_chunk_bytes + mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
             // Finalise current chunk, start a new one.
@@ -849,18 +859,25 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
             done.source_byte_offset = current_chunk_start;
             done.byte_count         = current_chunk_bytes;
             done.vertex_count       = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+            done.index_first_u32    = current_idx_start;
+            done.index_count        = current_idx_count;
             ++current_chunk_idx;
             chunk_plans.push_back({});
             current_chunk_bytes = 0;
             current_chunk_start = mesh.vbo_byte_offset;
+            current_idx_start   = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
+            current_idx_count   = 0;
         } else if (current_chunk_bytes == 0) {
             current_chunk_start = mesh.vbo_byte_offset;
+            current_idx_start   = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
         }
 
         m.mesh_chunk_idx[mi]             = current_chunk_idx;
         m.mesh_chunk_local_base_vertex[mi]
             = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+        m.mesh_chunk_local_ebo_first_u32[mi] = current_idx_count;
         current_chunk_bytes += mesh_vertex_bytes;
+        current_idx_count   += mesh.index_count;
     }
     // Finalise the last (possibly first) chunk.
     {
@@ -868,6 +885,8 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         done.source_byte_offset = current_chunk_start;
         done.byte_count         = current_chunk_bytes;
         done.vertex_count       = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
+        done.index_first_u32    = current_idx_start;
+        done.index_count        = current_idx_count;
     }
     // Drop trailing empty chunk (e.g. on a no-mesh model).
     if (chunk_plans.back().byte_count == 0) chunk_plans.pop_back();
@@ -884,12 +903,14 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         }
     }
 
-    // ---- Allocate per-chunk buffers + upload vertex slices --------------
+    // ---- Allocate per-chunk buffers + upload vertex + index slices -----
     m.chunks.resize(chunk_plans.size());
     for (size_t ci = 0; ci < chunk_plans.size(); ++ci) {
         const ChunkPlan& plan = chunk_plans[ci];
         WgpuModelGpuData::Chunk& c = m.chunks[ci];
-        c.vertex_count = plan.vertex_count;
+        c.vertex_count    = plan.vertex_count;
+        c.index_first_u32 = plan.index_first_u32;
+        c.index_count     = plan.index_count;
 
         const char* vs_label = (ci == 0) ? "model.chunk0.vertex_storage"
                                          : "model.chunkN.vertex_storage";
@@ -900,17 +921,20 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
             WGPUBufferUsage_Storage,
             vs_label);
         m.vram_bytes_vbo += plan.byte_count;
-    }
 
-    // Index buffer — single, shared across chunks. Mesh-local u32 indices.
-    // Bound as storage in the vertex shader for manual fetch.
-    const size_t index_bytes = data.indices.size() * sizeof(uint32_t);
-    m.index_buffer = createBufferWithData(
-        device_, queue_,
-        data.indices.data(), index_bytes,
-        WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
-        "model.index_buffer");
-    m.vram_bytes_ebo += index_bytes;
+        // Per-chunk index slice. base mesh's ebo_byte_offset gives us the
+        // chunk's start; chunk's index_count tells us how far the slice runs.
+        const size_t chunk_index_bytes = size_t(plan.index_count) * sizeof(uint32_t);
+        if (chunk_index_bytes > 0) {
+            c.index_buffer = createBufferWithData(
+                device_, queue_,
+                data.indices.data() + plan.index_first_u32,
+                chunk_index_bytes,
+                WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
+                "model.chunk.index_buffer");
+            m.vram_bytes_ebo += chunk_index_bytes;
+        }
+    }
 
     // Derive MeshGpu[] (vec4 aabb_min + vec4 aabb_max) from MeshInfo's
     // local_aabb_*. Mirrors the GL backend's mesh_info_ssbo population.
@@ -2414,22 +2438,30 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                             && mesh.lod1_index_count > 0
                             && projected_px < lod1_threshold_px;
 
+        // LOD1 is incompatible with the current per-chunk index layout
+        // (LOD1 indices are appended at the end of sd.indices, not
+        // contiguous with their chunk's range). Force LOD0 until per-
+        // chunk LOD1 storage lands.
+        const bool effective_lod1 = false;
+        (void)use_lod1;
+
         // Emit one VisibleDraw entry into the chunk that owns this mesh's
-        // vertex range. base_vertex is CHUNK-LOCAL; the chunk's bind group
-        // points at its own vertex_storage so the shader indexes correctly.
+        // vertex range. base_vertex AND ebo_first_u32 are both CHUNK-LOCAL
+        // — the chunk's bind group points at its own vertex_storage and
+        // index_buffer slices so the shader indexes them directly.
         const uint32_t chunk_idx = m.mesh_chunk_idx[inst.mesh_id];
         WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         WgpuModelGpuData::VisibleDrawGpu d;
         d.mesh_id       = inst.mesh_id;
         d.instance_idx  = i;
-        d.ebo_first_u32 = (use_lod1 ? mesh.lod1_ebo_byte_offset : mesh.ebo_byte_offset)
-                          / uint32_t(sizeof(uint32_t));
+        d.ebo_first_u32 = m.mesh_chunk_local_ebo_first_u32[inst.mesh_id];
         d.base_vertex   = m.mesh_chunk_local_base_vertex[inst.mesh_id];
         c.visible_draws_scratch.push_back(d);
 
-        const uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count
-                                                    : mesh.index_count;
+        const uint32_t entry_vert_count = effective_lod1
+                                              ? mesh.lod1_index_count
+                                              : mesh.index_count;
         running_vertex_count[chunk_idx] += entry_vert_count;
         c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
     };
@@ -3121,7 +3153,7 @@ void WgpuViewportWindow::uploadSelectionFlagsIfDirty() {
 }
 
 void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
-    if (!m.mesh_storage || !m.instance_storage || !m.index_buffer) {
+    if (!m.mesh_storage || !m.instance_storage) {
         // Empty model — no chunks, no bind groups; the draw loop will skip.
         return;
     }
@@ -3137,9 +3169,9 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
         wgpuBindGroupRelease(c.bind_group);
         c.bind_group = nullptr;
     }
-    if (!c.vertex_storage || !c.visible_draws_buffer
+    if (!c.vertex_storage || !c.index_buffer || !c.visible_draws_buffer
         || !c.prefix_sums_buffer || !c.per_chunk_uniform
-        || !m.mesh_storage || !m.instance_storage || !m.index_buffer) {
+        || !m.mesh_storage || !m.instance_storage) {
         return;
     }
 
@@ -3154,7 +3186,7 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
     entries[2].buffer  = m.instance_storage;
     entries[2].size    = WGPU_WHOLE_SIZE;
     entries[3].binding = 3;
-    entries[3].buffer  = m.index_buffer;
+    entries[3].buffer  = c.index_buffer;
     entries[3].size    = WGPU_WHOLE_SIZE;
     entries[4].binding = 4;
     entries[4].buffer  = c.visible_draws_buffer;
@@ -3180,12 +3212,13 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
     if (c.is_resident) return true;
     if (m.streaming_file_path.empty()) return false;
 
-    std::vector<uint8_t> bytes;
+    // Vertex slice.
+    std::vector<uint8_t> vbytes;
     if (!readSidecarVertexChunk(m.streaming_file_path,
                                 m.streaming_vertex_section_offset,
                                 c.vertex_byte_offset,
                                 c.vertex_byte_size,
-                                bytes)) {
+                                vbytes)) {
         qWarning().noquote().nospace()
             << "[wgpu stream] failed to read vertex chunk " << chunk_idx
             << " from " << QString::fromStdString(m.streaming_file_path)
@@ -3193,28 +3226,181 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
             << " size=" << c.vertex_byte_size << ")";
         return false;
     }
-
     c.vertex_storage = createBufferWithData(
         device_, queue_,
-        bytes.data(), bytes.size(),
+        vbytes.data(), vbytes.size(),
         WGPUBufferUsage_Storage,
         "model.chunk.vertex_storage_streamed");
     if (!c.vertex_storage) return false;
+    m.vram_bytes_vbo               += vbytes.size();
+    streaming_vram_resident_bytes_ += vbytes.size();
 
-    m.vram_bytes_vbo += bytes.size();
+    // Index slice. The byte-range read comes from
+    // streaming_index_section_offset + index_first_u32 * 4 (set by
+    // applyCachedModelStreaming alongside the vertex offset).
+    if (c.index_count > 0) {
+        std::vector<uint32_t> idx;
+        if (!readSidecarIndexChunk(m.streaming_file_path,
+                                   m.streaming_index_section_offset,
+                                   c.index_first_u32,
+                                   c.index_count,
+                                   idx)) {
+            qWarning().noquote().nospace()
+                << "[wgpu stream] failed to read index chunk " << chunk_idx
+                << " (first=" << c.index_first_u32
+                << " count=" << c.index_count << ")";
+            // Release the vertex buffer we just allocated so we don't leak.
+            wgpuBufferRelease(c.vertex_storage);
+            c.vertex_storage = nullptr;
+            m.vram_bytes_vbo               -= vbytes.size();
+            streaming_vram_resident_bytes_ -= vbytes.size();
+            return false;
+        }
+        const size_t ibytes = idx.size() * sizeof(uint32_t);
+        c.index_buffer = createBufferWithData(
+            device_, queue_,
+            idx.data(), ibytes,
+            WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
+            "model.chunk.index_buffer_streamed");
+        m.vram_bytes_ebo               += ibytes;
+        streaming_vram_resident_bytes_ += ibytes;
+    }
+
     buildChunkBindGroup(m, chunk_idx);
     c.is_resident = true;
     return true;
 }
 
+void WgpuViewportWindow::unloadChunk(WgpuModelGpuData& m, size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return;
+    auto& c = m.chunks[chunk_idx];
+    if (!c.is_resident) return;
+
+    if (c.bind_group) {
+        wgpuBindGroupRelease(c.bind_group);
+        c.bind_group = nullptr;
+    }
+    if (c.vertex_storage) {
+        const uint64_t vsz = c.vertex_byte_size;
+        wgpuBufferRelease(c.vertex_storage);
+        c.vertex_storage = nullptr;
+        m.vram_bytes_vbo               -= vsz;
+        streaming_vram_resident_bytes_ -= vsz;
+    }
+    if (c.index_buffer) {
+        const uint64_t isz = c.index_count * sizeof(uint32_t);
+        wgpuBufferRelease(c.index_buffer);
+        c.index_buffer = nullptr;
+        m.vram_bytes_ebo               -= isz;
+        streaming_vram_resident_bytes_ -= isz;
+    }
+    // Clear per-frame visibility so the chunk doesn't get re-rendered or
+    // re-evicted on the same frame; cull will set it again next time
+    // the chunk falls in the frustum.
+    c.total_visible_draws    = 0;
+    c.total_visible_vertices = 0;
+    c.is_resident = false;
+}
+
 void WgpuViewportWindow::driveStreamingLoads() {
-    // Per-frame budget. Caps first-frame stall on a fresh load — at 4
-    // chunks/frame × 60fps we ingest 240 chunks/sec, fast enough that
-    // a 100-model scene fully resides in ~1s. Eviction-aware policies
-    // can tune this later.
+    // Bump LRU clock once per call. Resident-and-visible chunks get
+    // stamped with this value below; the evictor uses it to find the
+    // least-recently-visible non-visible resident chunk.
+    ++streaming_frame_idx_;
+
+    // Refresh LRU stamps for every resident chunk the cull just touched.
+    // Doing this before the load loop means newly-loaded chunks (which
+    // get stamped inside the load path) and already-resident-visible
+    // chunks share a single coherent timeline.
+    for (auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (auto& c : m.chunks) {
+            if (c.is_resident && c.total_visible_draws > 0) {
+                c.last_visible_frame_idx = streaming_frame_idx_;
+            }
+        }
+    }
+
+    // World-space camera eye. Used to rank chunks by distance for the
+    // distance-fallback evictor — when LRU has no non-visible victims
+    // left, drop the visible chunk farthest from the camera so the
+    // closest visible chunks always stay resident under a tight budget.
+    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                   camera_yaw_deg_, camera_pitch_deg_);
+
+    auto chunk_center_dist2 = [&](const WgpuModelGpuData::Chunk& c) -> float {
+        const float cx = 0.5f * (c.aabb_min[0] + c.aabb_max[0]);
+        const float cy = 0.5f * (c.aabb_min[1] + c.aabb_max[1]);
+        const float cz = 0.5f * (c.aabb_min[2] + c.aabb_max[2]);
+        const float dx = cx - eye.x();
+        const float dy = cy - eye.y();
+        const float dz = cz - eye.z();
+        return dx*dx + dy*dy + dz*dz;
+    };
+
+    // Per-frame load budget. Caps first-frame stall on a fresh load — at
+    // 4 chunks/frame × 60fps we ingest 240 chunks/sec, fast enough that
+    // a 100-model scene fully resides in ~1s. Bigger scenes are bounded
+    // by the VRAM budget below: the residency set never grows past
+    // streaming_vram_budget_bytes_, so we stay clear of the wgpu-native
+    // allocator's OOM ceiling (~2.4 GB on this box, default budget 1.9).
     constexpr int MAX_STREAMING_LOADS_PER_FRAME = 4;
     int loads = 0;
     bool more_pending = false;
+
+    // Phase-1 evictor: drop the LRU non-visible resident chunk. Skips
+    // chunks stamped on streaming_frame_idx_ to avoid yanking what cull
+    // just marked visible. Returns bytes freed (0 ⇒ no candidate).
+    auto evict_one_lru = [&]() -> uint64_t {
+        WgpuModelGpuData* victim_m = nullptr;
+        size_t            victim_ci = 0;
+        uint64_t          victim_lru = std::numeric_limits<uint64_t>::max();
+        for (auto& [mid, m] : models_gpu_) {
+            for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+                auto& c = m.chunks[ci];
+                if (!c.is_resident) continue;
+                if (c.last_visible_frame_idx == streaming_frame_idx_) continue;
+                if (c.last_visible_frame_idx < victim_lru) {
+                    victim_lru = c.last_visible_frame_idx;
+                    victim_m   = &m;
+                    victim_ci  = ci;
+                }
+            }
+        }
+        if (!victim_m) return 0;
+        const uint64_t before = streaming_vram_resident_bytes_;
+        unloadChunk(*victim_m, victim_ci);
+        return before - streaming_vram_resident_bytes_;
+    };
+
+    // Phase-2 evictor: when every resident chunk is visible-this-frame
+    // but we still need room for a closer one, drop the farthest-from-
+    // eye visible chunk — provided it is farther than the candidate we
+    // want to load. Without the distance check this would loop forever
+    // swapping pairs; with it, residency monotonically converges to the
+    // closest visible chunks that fit the budget.
+    auto evict_farthest_than = [&](float candidate_dist2) -> uint64_t {
+        WgpuModelGpuData* victim_m = nullptr;
+        size_t            victim_ci = 0;
+        float             victim_dist2 = candidate_dist2;
+        for (auto& [mid, m] : models_gpu_) {
+            for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+                auto& c = m.chunks[ci];
+                if (!c.is_resident) continue;
+                const float d2 = chunk_center_dist2(c);
+                if (d2 > victim_dist2) {
+                    victim_dist2 = d2;
+                    victim_m     = &m;
+                    victim_ci    = ci;
+                }
+            }
+        }
+        if (!victim_m) return 0;
+        const uint64_t before = streaming_vram_resident_bytes_;
+        unloadChunk(*victim_m, victim_ci);
+        return before - streaming_vram_resident_bytes_;
+    };
+
     for (auto& [mid, m] : models_gpu_) {
         if (m.streaming_file_path.empty() || m.hidden) continue;
         for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
@@ -3227,13 +3413,38 @@ void WgpuViewportWindow::driveStreamingLoads() {
                 more_pending = true;
                 break;
             }
+
+            // Make room. Phase 1: drop LRU non-visible. Phase 2: if still
+            // over budget, drop the farthest-from-eye visible chunk that
+            // is strictly farther than the candidate we want to load.
+            const uint64_t need = c.vertex_byte_size
+                                + c.index_count * sizeof(uint32_t);
+            while (streaming_vram_resident_bytes_ + need
+                   > streaming_vram_budget_bytes_) {
+                if (evict_one_lru() > 0) continue;
+                if (evict_farthest_than(chunk_center_dist2(c)) > 0) continue;
+                break;  // nothing left we're willing to evict
+            }
+            if (streaming_vram_resident_bytes_ + need
+                > streaming_vram_budget_bytes_) {
+                // Candidate is farther than every resident — skip it.
+                // We'll come back to it if it gets closer.
+                more_pending = true;
+                continue;
+            }
+
             if (loadChunkBytesAndUploadGpu(m, ci)) {
                 ++loads;
+                // Stamp the just-loaded chunk so eviction this frame
+                // can't immediately yank it back out.
+                c.last_visible_frame_idx = streaming_frame_idx_;
             }
         }
-        if (more_pending) break;
+        if (more_pending && loads >= MAX_STREAMING_LOADS_PER_FRAME) break;
     }
-    // Keep the frame loop running until all visible chunks are resident.
+    // Keep the frame loop running until all visible chunks are resident
+    // (or the budget definitively prevents that, in which case residency
+    // converges to the closest visible chunks that fit).
     if (more_pending) requestUpdate();
 }
 

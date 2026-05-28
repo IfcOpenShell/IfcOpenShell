@@ -76,6 +76,11 @@ struct WgpuModelGpuData {
     // path always sets is_resident=true so existing code is unchanged.
     struct Chunk {
         WGPUBuffer    vertex_storage          = nullptr;
+        // Per-chunk index buffer (was previously per-model). Each chunk
+        // covers a contiguous range of mesh ids, so its indices form a
+        // contiguous slice of the model's overall index data. Storing
+        // per-chunk lets streaming defer index loading alongside vertices.
+        WGPUBuffer    index_buffer            = nullptr;
         WGPUBuffer    visible_draws_buffer    = nullptr;
         WGPUBuffer    prefix_sums_buffer      = nullptr;
         WGPUBuffer    per_chunk_uniform       = nullptr;
@@ -103,6 +108,12 @@ struct WgpuModelGpuData {
         uint64_t vertex_byte_offset           = 0;  // 0 == start of vertex section
         uint64_t vertex_byte_size             = 0;
 
+        // Same for indices. index_first_u32 is in u32 units relative to
+        // the start of the index section (sidecar stores raw u32 indices,
+        // no byte-level offset is needed beyond multiplying by 4).
+        uint64_t index_first_u32              = 0;
+        uint64_t index_count                  = 0;
+
         // World-space AABB covering every instance whose mesh lives in
         // this chunk. Used by cull to reject whole chunks against the
         // frustum before iterating instances — and by the streaming
@@ -113,6 +124,12 @@ struct WgpuModelGpuData {
         float    aabb_max[3]                  = { -std::numeric_limits<float>::infinity(),
                                                    -std::numeric_limits<float>::infinity(),
                                                    -std::numeric_limits<float>::infinity() };
+
+        // LRU marker for streaming eviction. Updated to the window's
+        // streaming_frame_idx_ every frame the chunk is rendered (i.e.
+        // total_visible_draws > 0). The evictor picks the smallest value
+        // among non-visible resident chunks when it needs to free VRAM.
+        uint64_t last_visible_frame_idx       = 0;
     };
     std::vector<Chunk> chunks;
 
@@ -121,17 +138,19 @@ struct WgpuModelGpuData {
     // from this file. Empty path = legacy non-streaming load.
     std::string streaming_file_path;
     uint64_t    streaming_vertex_section_offset = 0;
+    uint64_t    streaming_index_section_offset  = 0;
 
     // For each mesh in meshes[], the chunk it lives in plus the chunk-local
-    // vertex offset (where its vertex range starts in chunk's vertex_storage).
-    // Populated at applyCachedModel time.
+    // offsets into that chunk's vertex_storage and index_buffer. Populated
+    // at applyCachedModel time; consumed by cullModelCpuCompute when it
+    // populates VisibleDrawGpu entries.
     std::vector<uint32_t> mesh_chunk_idx;
     std::vector<uint32_t> mesh_chunk_local_base_vertex;
+    std::vector<uint32_t> mesh_chunk_local_ebo_first_u32;
 
-    // Model-shared buffers (NOT chunked — sizes safely under 128 MB on real
-    // scenes: index buffer up to ~76 MB on a 19 M-index model; instance and
-    // mesh storage are far smaller).
-    WGPUBuffer index_buffer     = nullptr;   // u32 mesh-local indices (read as storage)
+    // Model-shared buffers. Mesh + instance storage are small (<10 MB on
+    // any real scene we've seen); the chunked index buffer lives in Chunk
+    // alongside vertex_storage so streaming can defer both together.
     WGPUBuffer mesh_storage     = nullptr;   // MeshGpu[]: aabb_min/max
     WGPUBuffer instance_storage = nullptr;   // InstanceGpu[]: transform + ids
 

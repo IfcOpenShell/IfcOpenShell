@@ -62,6 +62,10 @@ int main(int argc, char* argv[]) {
         "Enable streaming sidecar load. Reads metadata-only at load time; "
         "vertex chunks are deferred and loaded on demand as they become "
         "frustum-visible. Required for scenes that exceed GPU memory."});
+    parser.addOption({"streaming-vram-mb",
+        "Set the streaming residency budget in MB (default 1900). Tune "
+        "down to test browser-class memory ceilings; tune up if your GPU "
+        "+ driver are happy with larger allocations.", "mb"});
     parser.process(app);
 
     auto* viewport = new WgpuViewportWindow;
@@ -70,6 +74,16 @@ int main(int argc, char* argv[]) {
     if (parser.isSet("web-limits")) viewport->web_limits_       = true;
     if (parser.isSet("bvh"))        viewport->bvh_enabled_      = true;
     if (parser.isSet("streaming"))  viewport->streaming_enabled_ = true;
+    if (parser.isSet("streaming-vram-mb")) {
+        bool ok = false;
+        const uint64_t mb = parser.value("streaming-vram-mb").toULongLong(&ok);
+        if (ok && mb > 0) {
+            viewport->streaming_vram_budget_bytes_ = mb * 1024ull * 1024ull;
+        } else {
+            qWarning() << "--streaming-vram-mb: failed to parse"
+                       << parser.value("streaming-vram-mb");
+        }
+    }
 
     QWidget* container = QWidget::createWindowContainer(viewport);
     container->setMinimumSize(320, 240);

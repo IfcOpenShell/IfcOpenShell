@@ -133,9 +133,15 @@ private:
     // vertex_storage, build the chunk's bind group, flip is_resident=true.
     // Returns true on success. No-op (returns true) when already resident.
     bool  loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx);
+    // Release a resident chunk's vertex+index buffers and bind group;
+    // flip is_resident=false. The chunk's CPU metadata (offsets, AABB,
+    // visible-draw scratch) is retained so a subsequent
+    // loadChunkBytesAndUploadGpu can bring it back without re-planning.
+    void  unloadChunk(WgpuModelGpuData& m, size_t chunk_idx);
     // Called from render() after cull: find non-resident chunks with
     // current visible draw counts > 0 and bring them resident, up to a
-    // per-frame budget. Triggers requestUpdate() if more remain.
+    // per-frame budget. Triggers requestUpdate() if more remain. Evicts
+    // LRU non-visible chunks first when over streaming_vram_budget_bytes_.
     void  driveStreamingLoads();
     void  ensureDepthTexture(int w, int h);
     void  releaseDepthTexture();
@@ -392,6 +398,31 @@ public:
     // Default OFF so existing behaviour (synchronous full load) is
     // preserved; --streaming opts in.
     bool streaming_enabled_ = false;
+
+    // Streaming residency budget (bytes). The per-frame loader will not
+    // bring a chunk resident if doing so would exceed this; instead it
+    // evicts the LRU non-visible chunks until headroom exists, then
+    // falls back to evicting the farthest-from-camera visible chunks
+    // when even visible-set residency would overshoot.
+    //
+    // STOPGAP: this is a hand-picked number — the wrong shape of fix.
+    // wgpu-native's per-allocation overhead (gpu-alloc-rs fragmentation +
+    // one VkDeviceMemory block per createBuffer) makes the true usable
+    // ceiling far below physical VRAM, by a margin that varies per
+    // GPU/driver/runtime. The proper fix is a single-pool buffer with
+    // sub-allocation (see WgpuBufferPool task), whose size is *probed*
+    // at startup via wgpuDevicePushErrorScope rather than guessed at
+    // compile time. Once the pool lands, this field disappears.
+    //
+    // For now: 1 GB is a portable-ish floor that won't OOM on any
+    // desktop GPU we care about, and is at least close to the web's
+    // common ceiling. Tune via --streaming-vram-mb on machines with
+    // more headroom.
+    uint64_t streaming_vram_budget_bytes_   = 1024ull * 1024 * 1024;
+    uint64_t streaming_vram_resident_bytes_ = 0;
+    // Monotonic frame counter, bumped at the top of driveStreamingLoads.
+    // Used as the LRU key for chunk eviction.
+    uint64_t streaming_frame_idx_           = 0;
 
 private:
 
