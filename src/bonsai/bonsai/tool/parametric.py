@@ -487,6 +487,13 @@ class Parametric(bonsai.core.tool.Parametric):
             return False
         if tool.Model.get_usage_type(element) == "LAYER2":
             return True
+        return cls.is_fillet_corner_wall(element)
+
+    @classmethod
+    def is_fillet_corner_wall(cls, element: entity_instance) -> bool:
+        """``True`` if the wall carries the ``BBIM_Wall.IsFilletCorner`` flag,
+        marking it as a curved corner whose banana body is hand-built rather
+        than regenerated from the wall's axis + layer set."""
         import ifcopenshell.util.element
 
         return bool(ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "IsFilletCorner"))

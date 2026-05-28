@@ -54,6 +54,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 
@@ -2555,6 +2556,333 @@ def _iter_path_connections(
             continue
         out.append((other, rel.RelatedConnectionType, rel.RelatingConnectionType))
     return out
+
+
+def _wall_fillet_props(context: bpy.types.Context):
+    return preview_base.get_preview_props(context, "wall_fillet")
+
+
+def _wall_fillet_preview_active(context: bpy.types.Context) -> bool:
+    """``True`` while a wall-fillet preview is open."""
+    return preview_base.is_preview_active(context, "wall_fillet")
+
+
+_FILLET_SLOPE_TOLERANCE_RAD = 1e-4
+
+
+def _walls_have_zero_slope_for_fillet(operator: bpy.types.Operator, *walls: bpy.types.Object) -> bool:
+    """``True`` iff every input wall is vertical (``x_angle`` ~ 0). Reports an
+    ERROR on the operator and returns ``False`` otherwise. Slanted-extrusion
+    fillets require swept-along-curve geometry that the banana profile builder
+    isn't designed for — block the entry points so the user sees a clear
+    explanation instead of malformed corner geometry."""
+    for wall in walls:
+        if wall is None:
+            continue
+        element = tool.Ifc.get_entity(wall)
+        if element is None:
+            continue
+        x_angle = tool.Wall.get_x_angle(element)
+        if x_angle is None:
+            continue
+        if abs(x_angle) > _FILLET_SLOPE_TOLERANCE_RAD:
+            operator.report(
+                {"ERROR"},
+                "Wall fillet is not supported for slanted walls (non-zero slope). "
+                "Reset the wall's slope to vertical and try again.",
+            )
+            return False
+    return True
+
+
+def _build_curved_corner_body_representation(
+    ifc_file: ifcopenshell.file,
+    body_context: ifcopenshell.entity_instance,
+    arc_center_local: tuple[float, float, float],
+    chord_length_si: float,
+    radius_si: float,
+    r_outer_si: float,
+    r_inner_si: float,
+    height_si: float,
+) -> ifcopenshell.entity_instance:
+    """Build an ``IfcShapeRepresentation`` with a banana (annular sector)
+    ``IfcExtrudedAreaSolid``.
+
+    Local frame: origin at ``tangent_a``, +X along the chord to ``tangent_b``,
+    +Z vertical. ``r_outer_si`` / ``r_inner_si`` come from wall A's
+    ``IfcMaterialLayerSetUsage`` so the cross-section matches A at
+    ``tangent_a`` rather than centring on the reference arc."""
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+    cx_si, cy_si, _ = arc_center_local
+    dir_a = (-cx_si / radius_si, -cy_si / radius_si)
+    dir_b = ((chord_length_si - cx_si) / radius_si, -cy_si / radius_si)
+
+    # Tessellate the banana profile as an IfcIndexedPolyCurve of straight
+    # IfcLineIndex segments rather than analytical trimmed-circle arcs:
+    # IfcOpenShell's geometry kernel and tool.Model.import_profile's edit-mode
+    # importer both handle polyline segments unconditionally; trimmed-circle
+    # alternatives fall through both paths to a coarse fallback or a hard error.
+    # 24 chord segments per arc is visually smooth and round-trip-stable.
+    arc_resolution = 24
+    cross_z = dir_a[0] * dir_b[1] - dir_a[1] * dir_b[0]
+    theta_a = math.atan2(dir_a[1], dir_a[0])
+    theta_b = math.atan2(dir_b[1], dir_b[0])
+    # Take the SHORT angular sweep from theta_a to theta_b. CCW (positive
+    # signed cross product) means walking in increasing-theta direction.
+    sweep = theta_b - theta_a
+    if cross_z >= 0:
+        if sweep < 0:
+            sweep += 2 * math.pi
+    else:
+        if sweep > 0:
+            sweep -= 2 * math.pi
+
+    def _arc_points(radius: float) -> list[tuple[float, float]]:
+        out = []
+        for i in range(arc_resolution + 1):
+            theta = theta_a + sweep * (i / arc_resolution)
+            out.append((cx_si + radius * math.cos(theta), cy_si + radius * math.sin(theta)))
+        return out
+
+    # Closed loop in counter-clockwise order: outer arc, radial step to inner
+    # arc, inner arc walked backwards, radial step back to outer start. The
+    # outer-to-inner and inner-to-outer steps are pure radial lines because
+    # the arcs share their endpoint angles.
+    outer_points = _arc_points(r_outer_si)
+    inner_points_reversed = list(reversed(_arc_points(r_inner_si)))
+    raw_points = outer_points + inner_points_reversed
+    points_ifc = [(x / unit_scale, y / unit_scale) for x, y in raw_points]
+
+    point_list = ifc_file.createIfcCartesianPointList2D(points_ifc)
+    # Indices are 1-based per IFC schema. The curve auto-closes by referencing
+    # the first point as the next-segment start; the explicit closing segment
+    # survives writers that don't honour implicit close.
+    n = len(points_ifc)
+    segments = [ifc_file.createIfcLineIndex((i + 1, ((i + 1) % n) + 1)) for i in range(n)]
+    curve = ifc_file.createIfcIndexedPolyCurve(point_list, segments, False)
+    profile = ifc_file.createIfcArbitraryClosedProfileDef("AREA", None, curve)
+
+    extrusion = ifc_file.createIfcExtrudedAreaSolid(
+        profile,
+        ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        ),
+        ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+        height_si / unit_scale,
+    )
+    return ifc_file.createIfcShapeRepresentation(
+        body_context, body_context.ContextIdentifier, "SweptSolid", [extrusion]
+    )
+
+
+def _apply_fillet_corner_geometry(
+    ifc_file: ifcopenshell.file,
+    corner_obj: bpy.types.Object,
+    geom: dict,
+    wall_a_obj: bpy.types.Object,
+) -> tuple[Vector, Vector, Vector, float] | None:
+    """Position the corner wall at ``tangent_a`` and rebuild its banana body
+    from ``geom``. Shared by the creation and regenerate paths so a
+    neighbour-driven recalc matches creation-time output even when wall A's
+    layer set has been edited since.
+
+    Returns ``(x_dir, y_dir, z_dir, chord_length_si)`` on success or ``None``
+    on degenerate chord / missing Body context. All probes run before any
+    mutation, so failures leave the corner wall untouched."""
+    tangent_a = Vector(geom["tangent_a"])
+    tangent_b = Vector(geom["tangent_b"])
+    chord = tangent_b - tangent_a
+    chord_length_si = chord.length
+    if chord_length_si < 1e-6:
+        return None
+    body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+    if body_context is None:
+        return None
+
+    x_dir = chord.normalized()
+    z_dir = Vector((0.0, 0.0, 1.0))
+    y_dir = z_dir.cross(x_dir).normalized()
+    corner_obj.matrix_world = Matrix(
+        (
+            (x_dir.x, y_dir.x, z_dir.x, tangent_a.x),
+            (x_dir.y, y_dir.y, z_dir.y, tangent_a.y),
+            (x_dir.z, y_dir.z, z_dir.z, tangent_a.z),
+            (0.0, 0.0, 0.0, 1.0),
+        )
+    )
+    bonsai.core.geometry.edit_object_placement(
+        tool.Ifc, tool.Geometry, tool.Surveyor, obj=corner_obj, apply_scale=False
+    )
+
+    arc_center_world = Vector(geom["arc_center"])
+    v_world = arc_center_world - tangent_a
+    arc_center_local = (v_world.dot(x_dir), v_world.dot(y_dir), v_world.dot(z_dir))
+
+    # Banana cross-section side: ``side_sign`` picks whether the body endpoints
+    # extend toward the arc center (s = -1) or away from it (s = +1), so the
+    # cross-section at tangent_a matches wall A's body span instead of being
+    # centred on the reference arc.
+    radial_a_world = tangent_a - arc_center_world
+    if radial_a_world.length > 1e-6:
+        radial_a_world = radial_a_world.normalized()
+        wall_a_y_world = wall_a_obj.matrix_world.col[1].to_3d().normalized()
+        side_sign = 1.0 if wall_a_y_world.dot(radial_a_world) >= 0.0 else -1.0
+    else:
+        side_sign = -1.0
+
+    # ``arc_radius`` is signed (negative = inverted fillet); banana radii use
+    # the magnitude — the sign only flips which side of A's reference line
+    # the arc center sits on, not the curve radii themselves.
+    radius_si = abs(geom["arc_radius"])
+    offset_si = geom["profile_offset"] or 0.0
+    thickness_si = geom["profile_thickness"]
+    r_endpoint_1 = abs(radius_si + side_sign * offset_si)
+    r_endpoint_2 = abs(radius_si + side_sign * (offset_si + thickness_si))
+    r_outer_si = max(r_endpoint_1, r_endpoint_2)
+    r_inner_si = min(r_endpoint_1, r_endpoint_2)
+
+    new_body = _build_curved_corner_body_representation(
+        ifc_file,
+        body_context,
+        arc_center_local=arc_center_local,
+        chord_length_si=chord_length_si,
+        radius_si=radius_si,
+        r_outer_si=r_outer_si,
+        r_inner_si=r_inner_si,
+        height_si=geom["height"] or 3.0,
+    )
+    tool.Model.replace_object_ifc_representation(body_context, corner_obj, new_body)
+    return x_dir, y_dir, z_dir, chord_length_si
+
+
+def _resolve_two_walls(context: bpy.types.Context) -> tuple[bpy.types.Object, bpy.types.Object] | None:
+    """``(active, other)`` from a 2-wall selection, both LAYER2 with straight axes."""
+    selected = list(tool.Blender.get_selected_objects())
+    if len(selected) != 2:
+        return None
+    active = context.active_object
+    if active is None or active not in selected:
+        return None
+    other = next((o for o in selected if o is not active), None)
+    if other is None:
+        return None
+    for obj in (active, other):
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not element.is_a("IfcWall"):
+            return None
+        if not tool.Wall.has_layer2_usage(element):
+            return None
+        if not tool.Wall.is_straight_axis(element):
+            return None
+        if tool.Parametric.is_fillet_corner_wall(element):
+            # Re-filleting a curved corner would treat its chord as the
+            # reference line and produce nonsense geometry.
+            return None
+    return active, other
+
+
+def _pick_dominant_wall_material(
+    element: ifcopenshell.entity_instance,
+) -> Optional[ifcopenshell.entity_instance]:
+    """Return a single ``IfcMaterial`` representative of ``element``'s effective
+    material — the thickest layer's material when the element resolves to a
+    layer set / usage, the material itself when it is already plain, or
+    ``None`` for unsupported set kinds and elements with no material."""
+    material = tool.Material.get_material(element, should_inherit=True)
+    if material is None:
+        return None
+    if material.is_a("IfcMaterial"):
+        return material
+    layer_set = None
+    if material.is_a("IfcMaterialLayerSetUsage"):
+        layer_set = material.ForLayerSet
+    elif material.is_a("IfcMaterialLayerSet"):
+        layer_set = material
+    if layer_set is None:
+        return None
+    layers_with_material = [layer for layer in (layer_set.MaterialLayers or ()) if layer.Material is not None]
+    if not layers_with_material:
+        return None
+    thickest = max(layers_with_material, key=lambda layer: layer.LayerThickness or 0.0)
+    return thickest.Material
+
+
+def regenerate_fillet_corner_wall(element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+    """Rebuild a fillet corner wall's banana body from ``BBIM_Wall.FilletRadius``
+    and its neighbours' current layer parameters."""
+    ifc_file = tool.Ifc.get()
+    if ifc_file is None:
+        return
+    radius_si = ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "FilletRadius")
+    if not radius_si:
+        return
+
+    # Find the two neighbor walls from IfcRelConnectsPathElements. The corner-
+    # side connection type is NOTDEFINED so neighbours don't miter against the
+    # chord-axis reference line — take the single rel on each side of the
+    # corner's inverse graph rather than filtering on type.
+    wall_a = None
+    for rel in getattr(element, "ConnectedFrom", []):
+        if rel.is_a("IfcRelConnectsPathElements"):
+            wall_a = rel.RelatingElement
+            break
+    wall_b = None
+    for rel in getattr(element, "ConnectedTo", []):
+        if rel.is_a("IfcRelConnectsPathElements"):
+            wall_b = rel.RelatedElement
+            break
+    if wall_a is None or wall_b is None:
+        return
+    wall_a_obj = tool.Ifc.get_object(wall_a)
+    wall_b_obj = tool.Ifc.get_object(wall_b)
+    if wall_a_obj is None or wall_b_obj is None:
+        return
+
+    geom = tool.Wall.compute_wall_fillet_geometry(wall_a_obj, wall_b_obj, float(radius_si))
+    if geom is None or not geom["valid"]:
+        return
+
+    # Re-anchors the corner's ObjectPlacement at the new tangent_a and rebuilds
+    # the banana body. If a neighbour moved, the new placement follows; if
+    # neither moved, the new matrix equals the old within floating-point noise.
+    _apply_fillet_corner_geometry(ifc_file, obj, geom, wall_a_obj)
+
+
+def _wall_fillet_gizmo_x_matrix(location: Vector, x_direction: Vector) -> Matrix:
+    """4×4 matrix placing a gizmo at ``location`` with local +X aligned to
+    ``x_direction`` in world space."""
+    x = x_direction.normalized()
+    seed = Vector((0, 0, 1)) if abs(x.z) < 0.9 else Vector((1, 0, 0))
+    y = (seed - x * seed.dot(x)).normalized()
+    z = x.cross(y)
+    mat = Matrix.Identity(4)
+    mat[0][:3] = (x.x, y.x, z.x)
+    mat[1][:3] = (x.y, y.y, z.y)
+    mat[2][:3] = (x.z, y.z, z.z)
+    mat.translation = location
+    return mat
+
+
+def _wall_fillet_preview_walls(context: bpy.types.Context):
+    """``(wall_a_obj, wall_b_obj)`` pinned by the preview, or ``(None, None)``
+    when inactive or stale."""
+    props = _wall_fillet_props(context)
+    if props is None or not props.is_active:
+        return None, None
+    ifc_file = tool.Ifc.get()
+    if ifc_file is None:
+        return None, None
+    try:
+        elem_a = ifc_file.by_id(props.wall_a_id)
+        elem_b = ifc_file.by_id(props.wall_b_id)
+    except (RuntimeError, KeyError):
+        return None, None
+    wall_a_obj = tool.Ifc.get_object(elem_a) if elem_a else None
+    wall_b_obj = tool.Ifc.get_object(elem_b) if elem_b else None
+    return wall_a_obj, wall_b_obj
 
 
 class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
