@@ -61,6 +61,8 @@ classes = (
     array.Input3DCursorXArray,
     array.Input3DCursorYArray,
     array.Input3DCursorZArray,
+    array.EnableEditingParametric,
+    array.AddArrayFromFeatureEdit,
     product.AddDefaultType,
     product.AddEmptyType,
     product.AddOccurrence,

@@ -44,8 +44,12 @@ class ViewportData:
 
     @classmethod
     def load(cls):
-        cls.is_loaded = True
+        # Populate data BEFORE flipping is_loaded so a raising ``mode()``
+        # call doesn't leave the class half-loaded (flag set, dict empty).
+        # Subsequent items-callback invocations skip load() on a True flag
+        # and would hit ``cls.data["mode"]`` → KeyError.
         cls.data = {"mode": cls.mode()}
+        cls.is_loaded = True
 
     @classmethod
     def mode(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
