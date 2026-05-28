@@ -299,6 +299,12 @@ def register():
 
 
 def unregister():
+    # DecorationsHandler is installed lazily by bim.show_openings; tear it down
+    # (along with its persistent depsgraph / undo / redo / load cache handlers)
+    # before the rest of unregister so those handlers can't fire against
+    # half-unloaded module state.
+    opening.DecorationsHandler.uninstall()
+
     if not bpy.app.background:
         for tool_data in reversed(tools):
             bpy.utils.unregister_tool(tool_data.tool)
