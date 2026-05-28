@@ -211,6 +211,80 @@ class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
         _resync_walls_after_mutation(tool.Blender.get_selected_objects())
 
 
+class UnjoinWallPathConnection(bpy.types.Operator, tool.Ifc.Operator):
+    """Surgical counterpart to `UnjoinWalls`: disconnect the active wall from one
+    specific partner wall, leaving the active wall's other connections intact. The
+    partner is identified by IFC GlobalId — invariant under Blender-object renames,
+    file save/reload, and the undo stack — set on the operator properties by the
+    single-wall unjoin gizmo at click time."""
+
+    bl_idname = "bim.unjoin_wall_path_connection"
+    bl_label = "Unjoin Wall Connection"
+    bl_description = "Disconnect the active wall from a single specific partner wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    other_wall_guid: bpy.props.StringProperty(name="Other Wall GlobalId")
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        _commit_pending_wall_edits_for_selection(context)
+        active = tool.Blender.get_active_object(is_selected=True)
+        if not active:
+            self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
+            return
+        elem_active = tool.Ifc.get_entity(active)
+        if not elem_active:
+            self.report({"ERROR"}, "Active object is not bound to an IFC entity.")
+            return
+        elem_other = None
+        if self.other_wall_guid:
+            try:
+                elem_other = tool.Ifc.get().by_guid(self.other_wall_guid)
+            except RuntimeError:
+                elem_other = None
+        other = tool.Ifc.get_object(elem_other) if elem_other else None
+        if not elem_other or not other:
+            self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
+            return
+        # Walk the inverse graph for the specific IfcRelConnectsPathElements joining
+        # these two walls and remove only that one. `disconnect_path`'s
+        # (relating, related) mode only inspects `relating.ConnectedTo`, so a single
+        # call misses the rel when it was authored with the opposite orientation.
+        rels = [
+            rel
+            for rel in getattr(elem_active, "ConnectedTo", [])
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedElement == elem_other
+        ] + [
+            rel
+            for rel in getattr(elem_active, "ConnectedFrom", [])
+            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingElement == elem_other
+        ]
+        for rel in rels:
+            bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
+        # Recreate body+axis on both walls so the mesh state matches the IFC mutation
+        # and stale miter cuts are dropped. If recreate_wall raises, the rel removal
+        # has already been committed to the operator's IFC transaction — surface the
+        # partial-state diagnostic, then re-raise so the exception lands in Blender's
+        # normal operator error flow.
+        try:
+            tool.Model.recreate_wall(elem_active, active)
+            tool.Model.recreate_wall(elem_other, other)
+        except Exception:
+            self.report(
+                {"ERROR"},
+                "Mesh rebuild failed after unjoin. IFC connection was removed but wall "
+                "meshes may be stale — press Ctrl+Z to undo and restore the previous state.",
+            )
+            raise
+        _resync_walls_after_mutation([active, other])
+
+
 class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_walls_to_underside"
     bl_label = "Extend Walls To Underside"
@@ -2745,6 +2819,116 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
 
         self.unjoin_icon.hide = True
         self.merge_icon.hide = True
+
+
+class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
+    """Activates when exactly one LAYER2 wall is selected. Surfaces an unjoin icon at
+    every join location inferred from the wall's IfcRelConnectsPathElements inverse
+    graph — the single-selection mirror of `GizmoWallJoinIntersection`'s two-wall
+    unjoin state. A wall may participate in many such rels (up to 1 ATSTART + 1 ATEND
+    by end, plus unlimited ATPATH T-junctions), so a pool of icons is preallocated
+    and hidden on a per-frame basis based on the live connection set.
+
+    Each visible icon dispatches `bim.unjoin_wall_path_connection` with the partner
+    wall's GlobalId set on the bound operator properties, so a click removes only
+    the single rel under that icon — the other connections on the same wall survive.
+
+    Mutually exclusive with `GizmoWallJoinIntersection` via `poll()` (that group
+    requires len(selected) == 2; this one requires 1)."""
+
+    bl_idname = "OBJECT_GGT_bim_wall_unjoin_single"
+    bl_label = "Wall Unjoin (single selection) Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    # Pool size. ATSTART + ATEND + ATPATH connections are rarely more than a handful
+    # on real models; 16 is generous enough that excess is exceptional. Excess drops
+    # a one-time console warning. The cap exists because Blender only permits
+    # GizmoGroup to allocate gizmos inside setup() — draw_prepare / refresh-time
+    # creation is forbidden — so the pool must be sized upfront for the worst case.
+    POOL_SIZE = 16
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return False
+        active = tool.Blender.get_active_object(is_selected=True)
+        if active is None:
+            return False
+        selected = tool.Blender.get_selected_objects()
+        if len(selected) != 1:
+            return False
+        element = tool.Ifc.get_entity(active)
+        if not element or not tool.Parametric.is_path_connectable_wall(element):
+            return False
+        return True
+
+    def setup(self, context: bpy.types.Context) -> None:
+        prefs = tool.Blender.get_addon_preferences()
+        default_color = prefs.decorations_colour[:3]
+        highlight_color = prefs.decorator_color_selected[:3]
+        # Bind the operator on each pool icon ONCE at setup time and keep the returned
+        # OperatorProperties handles. target_set_operator allocates a fresh handle on
+        # every call, so calling it from position_gizmos (which fires every redraw
+        # frame via draw_prepare) would discard and re-allocate ~60Hz per visible
+        # icon. Stashing the handles lets per-frame work be a plain property write.
+        self.unjoin_icons = []
+        self.unjoin_op_props = []
+        for _ in range(self.POOL_SIZE):
+            icon = self.setup_icon_gizmo(
+                "VIEW3D_GT_unjoin", default_color, highlight_color, "bim.unjoin_wall_path_connection"
+            )
+            icon.hide = True
+            self.unjoin_icons.append(icon)
+            self.unjoin_op_props.append(icon.target_set_operator("bim.unjoin_wall_path_connection"))
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        # Default: hide every pool slot. The visible-set is rebuilt from the live
+        # connection list each frame so disconnects/reconnects elsewhere in the
+        # session don't leave ghost icons behind.
+        for icon in self.unjoin_icons:
+            icon.hide = True
+
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 1:
+            return
+        wall_obj = selected[0]
+        elem = tool.Ifc.get_entity(wall_obj)
+        geom = _get_wall_geom_cached(self, wall_obj)
+        if elem is None or geom is None:
+            return
+        seg_self = _wall_axis_world_segment_from_geom(wall_obj, geom)
+        billboard_rot = gizmo.get_billboard_rotation(context)
+
+        connections = _iter_path_connections(elem)
+        if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+            print(
+                f"[bonsai] GizmoWallUnjoinSingle: wall has {len(connections)} path connections; "
+                f"only the first {self.POOL_SIZE} unjoin gizmos are shown."
+            )
+            self._pool_cap_warned = True
+
+        for slot_idx, (other_elem, self_ct, other_ct) in enumerate(connections):
+            if slot_idx >= self.POOL_SIZE:
+                break
+            other_obj = tool.Ifc.get_object(other_elem)
+            if other_obj is None:
+                continue
+            other_geom = _get_wall_geom_cached(self, other_obj)
+            if other_geom is None:
+                continue
+            seg_other = _wall_axis_world_segment_from_geom(other_obj, other_geom)
+            location = tool.Wall.path_connection_location_world(seg_self, self_ct, seg_other, other_ct)
+            icon = self.unjoin_icons[slot_idx]
+            icon.matrix_basis = gizmo.billboarded_at(location, billboard_rot)
+            icon.hide = False
+            # Only the partner-GlobalId property is rewritten per frame; the operator
+            # binding itself is the long-lived handle set up at setup() time. GlobalId
+            # (not Blender object name) keeps the binding stable across renames, file
+            # save/reload, and any sit-in-the-undo-stack interlude between dispatch
+            # and execute.
+            self.unjoin_op_props[slot_idx].other_wall_guid = other_elem.GlobalId
 
 
 class JoinWallsIntersection(bpy.types.Operator, tool.Ifc.Operator):
