@@ -128,6 +128,87 @@ def _tpg_get_guid(raw_value, ifc_tag=None):
     return ""
 
 
+# Mapping from IFC class name to its TAG-param type key (mirrors PARAM_SCHEMA in CAD Sketcher).
+_IFC_TAG_TYPE_KEY = {
+    "IfcWall": "IfcWallType",
+    "IfcSlab": "IfcSlabType",
+    "IfcCovering": "IfcCoveringType",
+    "IfcPlate": "IfcPlateType",
+    "IfcWindow": "IfcWindowType",
+    "IfcDoor": "IfcDoorType",
+    "IfcBeam": "IfcBeamType",
+    "IfcMember": "IfcMemberType",
+    "IfcFooting": "IfcFootingType",
+    "IfcColumn": "IfcColumnType",
+    "IfcPile": "IfcPileType",
+}
+
+
+def _tpg_get_param_field(raw_value, ifc_tag, param_key):
+    """Return the value of *param_key* from the `p` JSON of the *ifc_tag* entry."""
+    entries, _ = _tpg_decode(raw_value)
+    for entry in entries:
+        if entry["t"] == ifc_tag:
+            params_str = entry.get("p", "")
+            if not params_str:
+                return ""
+            try:
+                params = json.loads(params_str)
+                return str(params.get(param_key, ""))
+            except Exception:
+                return ""
+    return ""
+
+
+def _get_group_type_guid(sketch, slvs_index, ifc_tag, type_key):
+    """Return the IFC type GUID stored in TAG params for the group owning *slvs_index*.
+
+    For path-group proxies *slvs_index* is a group key; for individual entities it
+    is a member entity index — both cases are handled.
+    """
+    if sketch is None or not type_key:
+        return ""
+
+    group_index = _decode_group_key(slvs_index)
+    if group_index is not None and 0 <= group_index < len(sketch.groups):
+        group = sketch.groups[group_index]
+        if _group_has_active_tag(group, ifc_tag):
+            return _tpg_get_param_field(group.guid, ifc_tag, type_key)
+        return ""
+
+    for group in sketch.groups:
+        if not _group_has_active_tag(group, ifc_tag):
+            continue
+        if group.get_member(slvs_index) is not None:
+            return _tpg_get_param_field(group.guid, ifc_tag, type_key)
+    return ""
+
+
+def _resolve_type_label(ifc_file, type_guid):
+    """Return a human-readable label for an IFC type given its GlobalId."""
+    if not type_guid:
+        return "(no type — set via Edit TAG Parameters)"
+    if ifc_file is None:
+        return type_guid
+    try:
+        ifc_type = ifc_file.by_guid(type_guid)
+        if ifc_type is None:
+            return f"(missing: {type_guid[:8]}…)"
+        return ifc_type.Name or f"#{ifc_type.id()}"
+    except Exception:
+        return type_guid
+
+
+def _resolve_type_from_guid(ifc_file, type_guid):
+    """Return the IFC entity for *type_guid*, or None."""
+    if not type_guid or ifc_file is None:
+        return None
+    try:
+        return ifc_file.by_guid(type_guid)
+    except Exception:
+        return None
+
+
 def _tpg_set_guid(raw_value, ifc_tag, guid):
     tag = str(ifc_tag or "").strip()
     guid_value = str(guid or "").strip()
@@ -645,7 +726,10 @@ class CADSketcherWallTypeItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Sketch Line Index")
-    type_id: EnumProperty(name="Wall Type", items=_wall_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
     height: FloatProperty(name="Height", default=3.0, min=0.1, unit="LENGTH")
 
 
@@ -654,7 +738,10 @@ class CADSketcherSlabTypeItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Path Group Key")
-    type_id: EnumProperty(name="Slab Type", items=_slab_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
 
 
 class CADSketcherCoveringItem(PropertyGroup):
@@ -662,7 +749,10 @@ class CADSketcherCoveringItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Path Group Key")
-    type_id: EnumProperty(name="Covering Type", items=_covering_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
 
 
 class CADSketcherPlateItem(PropertyGroup):
@@ -670,7 +760,10 @@ class CADSketcherPlateItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Path Group Key")
-    type_id: EnumProperty(name="Plate Type", items=_plate_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
 
 
 class CADSketcherOpeningItem(PropertyGroup):
@@ -686,7 +779,10 @@ class CADSketcherWindowItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Path Group Key")
-    type_id: EnumProperty(name="Window Type", items=_window_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
     host_id: EnumProperty(name="Host Wall", items=_wall_instance_items, options={"SKIP_SAVE"})
 
 
@@ -695,7 +791,10 @@ class CADSketcherDoorItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Path Group Key")
-    type_id: EnumProperty(name="Door Type", items=_door_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
     host_id: EnumProperty(name="Host Wall", items=_wall_instance_items, options={"SKIP_SAVE"})
 
 
@@ -704,7 +803,10 @@ class CADSketcherBeamItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Line/Path Group Key")
-    type_id: EnumProperty(name="Beam Type", items=_beam_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
 
 
 class CADSketcherMemberItem(PropertyGroup):
@@ -712,7 +814,10 @@ class CADSketcherMemberItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Line/Path Group Key")
-    type_id: EnumProperty(name="Member Type", items=_member_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
 
 
 class CADSketcherFootingItem(PropertyGroup):
@@ -720,7 +825,10 @@ class CADSketcherFootingItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Line/Path Group Key")
-    type_id: EnumProperty(name="Footing Type", items=_footing_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
 
 
 class CADSketcherColumnItem(PropertyGroup):
@@ -728,7 +836,10 @@ class CADSketcherColumnItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Point Index")
-    type_id: EnumProperty(name="Column Type", items=_column_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
     height: FloatProperty(name="Height", default=3.0, min=0.1, unit="LENGTH")
 
 
@@ -737,7 +848,10 @@ class CADSketcherPileItem(PropertyGroup):
 
     label: StringProperty(name="Label")
     slvs_index: IntProperty(name="Point Index")
-    type_id: EnumProperty(name="Pile Type", items=_pile_type_items, options={"SKIP_SAVE"})
+    type_guid: StringProperty(name="Type GUID", default="", options={"SKIP_SAVE"})
+    type_label: StringProperty(
+        name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
+    )
     height: FloatProperty(name="Depth", default=5.0, min=0.1, unit="LENGTH")
 
 
@@ -810,15 +924,16 @@ class FetchCADSketcher(Operator):
             length = (p2 - p1).length
             item.label = _entity_label(line, f"Wall {i + 1}  ({length:.2f} m)")
             item.height = self.storey_height  # default; overridden below on reimport
-            # Pre-populate with existing type and height if this is a reimport
+            # Read type from TAG parameters
+            type_guid = _get_group_type_guid(sketch, line.slvs_index, "IfcWall", "IfcWallType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
+            # Pre-populate height from existing IFC geometry if available
             line_guid = _entity_guid(sketch, line.slvs_index, "IfcWall")
             if ifc_file and line_guid:
                 try:
                     existing = ifc_file.by_guid(line_guid)
                     if existing:
-                        existing_type = ifcopenshell.util.element.get_type(existing)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
                         body = ifcopenshell.util.representation.get_representation(
                             existing, "Model", "Body", "MODEL_VIEW"
                         )
@@ -840,7 +955,11 @@ class FetchCADSketcher(Operator):
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Wall Run {i + 1}  ({poly.segment_count} seg)")
             item.height = self.storey_height
-            # Pre-populate from the first segment with an existing IFC element
+            # Read type from TAG parameters of the path group
+            type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcWall", "IfcWallType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
+            # Pre-populate height from existing IFC geometry of first segment
             for j in range(poly.segment_count):
                 seg_idx = int(poly.segment_indices[j])
                 if seg_idx == -1:
@@ -854,9 +973,6 @@ class FetchCADSketcher(Operator):
                 try:
                     existing = ifc_file.by_guid(seg_guid)
                     if existing:
-                        existing_type = ifcopenshell.util.element.get_type(existing)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
                         body = ifcopenshell.util.representation.get_representation(
                             existing, "Model", "Body", "MODEL_VIEW"
                         )
@@ -886,17 +1002,10 @@ class FetchCADSketcher(Operator):
                     auto_height = self.storey_height
                 item.label = _entity_label(poly, f"Wall Elevation {i + 1}  ({auto_height:.2f} m tall)")
                 item.height = auto_height
-                # Prefer the path group's own GUID, then the source wall's GUID
-                guid_to_use = _entity_guid(sketch, poly.slvs_index, "IfcWall") or src_wall_guid
-                if ifc_file and guid_to_use:
-                    try:
-                        existing = ifc_file.by_guid(guid_to_use)
-                        if existing:
-                            existing_type = ifcopenshell.util.element.get_type(existing)
-                            if existing_type:
-                                item.type_id = str(existing_type.id())
-                    except Exception:
-                        pass
+                # Read type from TAG parameters of the elevation path group
+                type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcWall", "IfcWallType")
+                item.type_guid = type_guid
+                item.type_label = _resolve_type_label(ifc_file, type_guid)
 
         # Populate per-slab-path entries
         self.slab_type_items.clear()
@@ -904,16 +1013,9 @@ class FetchCADSketcher(Operator):
             item = self.slab_type_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Slab {i + 1}")
-            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcSlab")
-            if ifc_file and poly_guid:
-                try:
-                    existing_slab = ifc_file.by_guid(poly_guid)
-                    if existing_slab:
-                        existing_type = ifcopenshell.util.element.get_type(existing_slab)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
-                except Exception:
-                    pass
+            type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcSlab", "IfcSlabType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
 
         # Populate per-covering-path entries
         self.covering_items.clear()
@@ -921,16 +1023,9 @@ class FetchCADSketcher(Operator):
             item = self.covering_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Covering {i + 1}")
-            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcCovering")
-            if ifc_file and poly_guid:
-                try:
-                    existing_covering = ifc_file.by_guid(poly_guid)
-                    if existing_covering:
-                        existing_type = ifcopenshell.util.element.get_type(existing_covering)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
-                except Exception:
-                    pass
+            type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcCovering", "IfcCoveringType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
 
         # Populate per-plate-path entries
         self.plate_items.clear()
@@ -938,16 +1033,9 @@ class FetchCADSketcher(Operator):
             item = self.plate_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Plate {i + 1}")
-            poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcPlate")
-            if ifc_file and poly_guid:
-                try:
-                    existing_plate = ifc_file.by_guid(poly_guid)
-                    if existing_plate:
-                        existing_type = ifcopenshell.util.element.get_type(existing_plate)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
-                except Exception:
-                    pass
+            type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcPlate", "IfcPlateType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
 
         # Populate per-opening-path entries
         self.opening_items.clear()
@@ -972,14 +1060,14 @@ class FetchCADSketcher(Operator):
             item = self.window_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Window {i + 1}")
+            type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcWindow", "IfcWindowType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
             poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcWindow")
             if ifc_file and poly_guid:
                 try:
                     existing_win = ifc_file.by_guid(poly_guid)
                     if existing_win:
-                        existing_type = ifcopenshell.util.element.get_type(existing_win)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
                         fills = getattr(existing_win, "FillsVoids", [])
                         if fills:
                             host = fills[0].RelatingOpeningElement
@@ -995,14 +1083,14 @@ class FetchCADSketcher(Operator):
             item = self.door_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Door {i + 1}")
+            type_guid = _get_group_type_guid(sketch, poly.slvs_index, "IfcDoor", "IfcDoorType")
+            item.type_guid = type_guid
+            item.type_label = _resolve_type_label(ifc_file, type_guid)
             poly_guid = _entity_guid(sketch, poly.slvs_index, "IfcDoor")
             if ifc_file and poly_guid:
                 try:
                     existing_door = ifc_file.by_guid(poly_guid)
                     if existing_door:
-                        existing_type = ifcopenshell.util.element.get_type(existing_door)
-                        if existing_type:
-                            item.type_id = str(existing_type.id())
                         fills = getattr(existing_door, "FillsVoids", [])
                         if fills:
                             host = fills[0].RelatingOpeningElement
@@ -1026,16 +1114,10 @@ class FetchCADSketcher(Operator):
                 p2 = line.p2.location
                 length = (p2 - p1).length
                 item.label = _entity_label(line, f"{label_prefix} {i + 1}  ({length:.2f} m)")
-                line_guid = _entity_guid(sketch, line.slvs_index, ifc_tag)
-                if ifc_file and line_guid:
-                    try:
-                        existing = ifc_file.by_guid(line_guid)
-                        if existing:
-                            existing_type = ifcopenshell.util.element.get_type(existing)
-                            if existing_type:
-                                item.type_id = str(existing_type.id())
-                    except Exception:
-                        pass
+                type_key = _IFC_TAG_TYPE_KEY.get(ifc_tag, "")
+                type_guid = _get_group_type_guid(sketch, line.slvs_index, ifc_tag, type_key)
+                item.type_guid = type_guid
+                item.type_label = _resolve_type_label(ifc_file, type_guid)
 
         def _populate_profile_run_items(collection, ifc_tag, label_prefix):
             """Populate *collection* from open path groups on *sketch* tagged *ifc_tag*."""
@@ -1044,26 +1126,11 @@ class FetchCADSketcher(Operator):
                 item = collection.add()
                 item.slvs_index = poly.slvs_index
                 item.label = _entity_label(poly, f"{label_prefix} Run {i + 1}  ({poly.segment_count} seg)")
-                # Pre-populate type from the first segment that has a GUID
-                for j in range(poly.segment_count):
-                    seg_idx = int(poly.segment_indices[j])
-                    if seg_idx == -1:
-                        continue
-                    seg = sse.get(seg_idx)
-                    if seg is None:
-                        continue
-                    seg_guid = _entity_guid(sketch, seg.slvs_index, ifc_tag)
-                    if not seg_guid:
-                        continue
-                    try:
-                        existing = ifc_file.by_guid(seg_guid)
-                        if existing:
-                            existing_type = ifcopenshell.util.element.get_type(existing)
-                            if existing_type:
-                                item.type_id = str(existing_type.id())
-                    except Exception:
-                        pass
-                    break
+                # Read type from TAG parameters of the path group
+                type_key = _IFC_TAG_TYPE_KEY.get(ifc_tag, "")
+                type_guid = _get_group_type_guid(sketch, poly.slvs_index, ifc_tag, type_key)
+                item.type_guid = type_guid
+                item.type_label = _resolve_type_label(ifc_file, type_guid)
 
         _populate_profile_line_items(self.beam_items, "IfcBeam", "Beam")
         _populate_profile_line_items(self.member_items, "IfcMember", "Member")
@@ -1103,23 +1170,24 @@ class FetchCADSketcher(Operator):
                     loc = pt_ent.location
                     item.height = default_height
                 item.label = _entity_label(pt_ent, f"{label_prefix} {i + 1}  ({loc.x:.2f}, {loc.y:.2f})")
+                type_key = _IFC_TAG_TYPE_KEY.get(ifc_tag, "")
+                type_guid = _get_group_type_guid(sketch, pt_ent.slvs_index, ifc_tag, type_key)
+                item.type_guid = type_guid
+                item.type_label = _resolve_type_label(ifc_file, type_guid)
+                # Pre-populate height from existing IFC geometry if available
                 pt_guid = _entity_guid(sketch, pt_ent.slvs_index, ifc_tag)
-                if ifc_file and pt_guid:
+                if ifc_file and pt_guid and not is_line:
                     try:
                         existing = ifc_file.by_guid(pt_guid)
                         if existing:
-                            existing_type = ifcopenshell.util.element.get_type(existing)
-                            if existing_type:
-                                item.type_id = str(existing_type.id())
-                            if not is_line:
-                                body = ifcopenshell.util.representation.get_representation(
-                                    existing, "Model", "Body", "MODEL_VIEW"
-                                )
-                                if body:
-                                    for rep_item in body.Items:
-                                        if rep_item.is_a("IfcExtrudedAreaSolid"):
-                                            item.height = rep_item.Depth * unit_scale_inv
-                                            break
+                            body = ifcopenshell.util.representation.get_representation(
+                                existing, "Model", "Body", "MODEL_VIEW"
+                            )
+                            if body:
+                                for rep_item in body.Items:
+                                    if rep_item.is_a("IfcExtrudedAreaSolid"):
+                                        item.height = rep_item.Depth * unit_scale_inv
+                                        break
                     except Exception:
                         pass
                 if not is_line:
@@ -1147,7 +1215,7 @@ class FetchCADSketcher(Operator):
                 row = col.row(align=True)
                 row.label(text=item.label)
                 row.prop(item, "height", text="H")
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.wall_run_items:
             layout.separator()
@@ -1157,7 +1225,7 @@ class FetchCADSketcher(Operator):
                 row = col.row(align=True)
                 row.label(text=item.label)
                 row.prop(item, "height", text="H")
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.wall_elevation_items:
             layout.separator()
@@ -1167,7 +1235,7 @@ class FetchCADSketcher(Operator):
                 row = col.row(align=True)
                 row.label(text=item.label)
                 row.prop(item, "height", text="H")
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.slab_type_items:
             layout.separator()
@@ -1176,7 +1244,7 @@ class FetchCADSketcher(Operator):
             for item in self.slab_type_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.covering_items:
             layout.separator()
@@ -1185,7 +1253,7 @@ class FetchCADSketcher(Operator):
             for item in self.covering_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.plate_items:
             layout.separator()
@@ -1194,7 +1262,7 @@ class FetchCADSketcher(Operator):
             for item in self.plate_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.opening_items:
             layout.separator()
@@ -1212,7 +1280,7 @@ class FetchCADSketcher(Operator):
             for item in self.window_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
                 row.prop(item, "host_id", text="")
 
         if self.door_items:
@@ -1222,7 +1290,7 @@ class FetchCADSketcher(Operator):
             for item in self.door_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
                 row.prop(item, "host_id", text="")
 
         if self.beam_items:
@@ -1232,7 +1300,7 @@ class FetchCADSketcher(Operator):
             for item in self.beam_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.beam_run_items:
             layout.separator()
@@ -1241,7 +1309,7 @@ class FetchCADSketcher(Operator):
             for item in self.beam_run_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.member_items:
             layout.separator()
@@ -1250,7 +1318,7 @@ class FetchCADSketcher(Operator):
             for item in self.member_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.member_run_items:
             layout.separator()
@@ -1259,7 +1327,7 @@ class FetchCADSketcher(Operator):
             for item in self.member_run_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.footing_items:
             layout.separator()
@@ -1268,7 +1336,7 @@ class FetchCADSketcher(Operator):
             for item in self.footing_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.footing_run_items:
             layout.separator()
@@ -1277,7 +1345,7 @@ class FetchCADSketcher(Operator):
             for item in self.footing_run_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.column_items:
             layout.separator()
@@ -1287,7 +1355,7 @@ class FetchCADSketcher(Operator):
                 row = col.row(align=True)
                 row.label(text=item.label)
                 row.prop(item, "height", text="H")
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
         if self.pile_items:
             layout.separator()
@@ -1297,7 +1365,7 @@ class FetchCADSketcher(Operator):
                 row = col.row(align=True)
                 row.label(text=item.label)
                 row.prop(item, "height", text="D")
-                row.prop(item, "type_id", text="")
+                row.label(text=item.type_label)
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
@@ -1318,11 +1386,14 @@ class FetchCADSketcher(Operator):
         wall_type_map = {}
         wall_height_map = {}
         for item in self.wall_type_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcWallType selected. Add wall types to the project first.")
-                return {"CANCELLED"}
-            wall_type_map[item.slvs_index] = ifc_file.by_id(type_id)
+            wall_type_resolved = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if wall_type_resolved is None:
+                self.report(
+                    "WARNING",
+                    f"{item.label}: no IfcWallType in TAG parameters — skipping. Use 'Edit TAG Parameters' to set a type.",
+                )
+                continue
+            wall_type_map[item.slvs_index] = wall_type_resolved
             wall_height_map[item.slvs_index] = item.height
 
         sketch_index = sketch.slvs_index
@@ -1337,6 +1408,8 @@ class FetchCADSketcher(Operator):
         wall_pairs = []  # [(sketch_line, blender_obj), ...]
         for line in wall_lines:
             wall_type = wall_type_map.get(line.slvs_index, None)
+            if wall_type is None:
+                continue
             wall_height = wall_height_map.get(line.slvs_index, self.storey_height)
             obj = self._create_or_update_wall(
                 line, ifc_file, unit_scale, body_context, axis_context, wall_type, wall_height, sketch=sketch
@@ -1363,11 +1436,10 @@ class FetchCADSketcher(Operator):
 
         # ── Wall Runs ─────────────────────────────────────────────────────────
         for item in self.wall_run_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcWallType selected. Add wall types to the project first.")
-                return {"CANCELLED"}
-            run_type = ifc_file.by_id(type_id)
+            run_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if run_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcWallType in TAG parameters — skipping.")
+                continue
             run_height = item.height
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcWall", "OPEN")
             if poly is None:
@@ -1406,11 +1478,10 @@ class FetchCADSketcher(Operator):
         # ── Wall Elevations (one IfcWall per IfcWall-tagged path group in an Elevation sketch) ──
         wall_guid_hint = FetchCADSketcher._resolve_elevation_wall_guid(sketch, sse)
         for item in self.wall_elevation_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcWallType selected. Add wall types to the project first.")
-                return {"CANCELLED"}
-            elev_type = ifc_file.by_id(type_id)
+            elev_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if elev_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcWallType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcWall", "ANY")
             if poly is None:
                 continue
@@ -1431,13 +1502,10 @@ class FetchCADSketcher(Operator):
 
         # ── Coverings (one per closed path group with tag == IfcCovering) ─────────
         for item in self.covering_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report(
-                    {"ERROR"}, f"{item.label}: no IfcCoveringType selected. Add covering types to the project first."
-                )
-                return {"CANCELLED"}
-            covering_type = ifc_file.by_id(type_id)
+            covering_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if covering_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcCoveringType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcCovering", "CLOSED")
             if poly is None:
                 continue
@@ -1446,11 +1514,10 @@ class FetchCADSketcher(Operator):
 
         # ── Plates (one per closed path group with tag == IfcPlate) ────────────────
         for item in self.plate_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcPlateType selected. Add plate types to the project first.")
-                return {"CANCELLED"}
-            plate_type = ifc_file.by_id(type_id)
+            plate_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if plate_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcPlateType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcPlate", "CLOSED")
             if poly is None:
                 continue
@@ -1459,11 +1526,10 @@ class FetchCADSketcher(Operator):
 
         # ── Slabs (one per closed path group with tag == IfcSlab) ──────────────────
         for item in self.slab_type_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcSlabType selected. Add slab types to the project first.")
-                return {"CANCELLED"}
-            slab_type = ifc_file.by_id(type_id)
+            slab_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if slab_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcSlabType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcSlab", "CLOSED")
             if poly is None:
                 continue
@@ -1486,11 +1552,10 @@ class FetchCADSketcher(Operator):
 
         # ── Windows (IfcWindow per rectangle path group tagged IfcWindow) ──
         for item in self.window_items:
-            type_id = int(item.type_id)
             host_id = int(item.host_id)
-            if not type_id or not host_id:
+            window_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if window_type is None or not host_id:
                 continue  # no type or wall selected — skip silently
-            window_type = ifc_file.by_id(type_id)
             host_wall = ifc_file.by_id(host_id)
             if host_wall is None:
                 continue
@@ -1507,11 +1572,10 @@ class FetchCADSketcher(Operator):
 
         # ── Doors (IfcDoor per rectangle path group tagged IfcDoor) ──
         for item in self.door_items:
-            type_id = int(item.type_id)
             host_id = int(item.host_id)
-            if not type_id or not host_id:
+            door_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if door_type is None or not host_id:
                 continue  # no type or wall selected — skip silently
-            door_type = ifc_file.by_id(type_id)
             host_wall = ifc_file.by_id(host_id)
             if host_wall is None:
                 continue
@@ -1528,11 +1592,10 @@ class FetchCADSketcher(Operator):
 
         # ── Beams (single lines tagged IfcBeam) ──────────────────────────────
         for item in self.beam_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcBeamType selected. Add beam types to the project first.")
-                return {"CANCELLED"}
-            beam_type = ifc_file.by_id(type_id)
+            beam_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if beam_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcBeamType in TAG parameters — skipping.")
+                continue
             ent = sse.get(item.slvs_index)
             if ent is None:
                 continue
@@ -1543,11 +1606,10 @@ class FetchCADSketcher(Operator):
 
         # ── Beam runs (open path groups tagged IfcBeam) ────────────────────────
         for item in self.beam_run_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcBeamType selected. Add beam types to the project first.")
-                return {"CANCELLED"}
-            beam_type = ifc_file.by_id(type_id)
+            beam_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if beam_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcBeamType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcBeam", "OPEN")
             if poly is None:
                 continue
@@ -1566,13 +1628,10 @@ class FetchCADSketcher(Operator):
 
         # ── Members (single lines tagged IfcMember) ──────────────────────────
         for item in self.member_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report(
-                    {"ERROR"}, f"{item.label}: no IfcMemberType selected. Add member types to the project first."
-                )
-                return {"CANCELLED"}
-            member_type = ifc_file.by_id(type_id)
+            member_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if member_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcMemberType in TAG parameters — skipping.")
+                continue
             ent = sse.get(item.slvs_index)
             if ent is None:
                 continue
@@ -1583,13 +1642,10 @@ class FetchCADSketcher(Operator):
 
         # ── Member runs (open path groups tagged IfcMember) ────────────────────
         for item in self.member_run_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report(
-                    {"ERROR"}, f"{item.label}: no IfcMemberType selected. Add member types to the project first."
-                )
-                return {"CANCELLED"}
-            member_type = ifc_file.by_id(type_id)
+            member_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if member_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcMemberType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcMember", "OPEN")
             if poly is None:
                 continue
@@ -1608,13 +1664,10 @@ class FetchCADSketcher(Operator):
 
         # ── Footings (single lines tagged IfcFooting) ────────────────────────
         for item in self.footing_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report(
-                    {"ERROR"}, f"{item.label}: no IfcFootingType selected. Add footing types to the project first."
-                )
-                return {"CANCELLED"}
-            footing_type = ifc_file.by_id(type_id)
+            footing_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if footing_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcFootingType in TAG parameters — skipping.")
+                continue
             ent = sse.get(item.slvs_index)
             if ent is None:
                 continue
@@ -1625,13 +1678,10 @@ class FetchCADSketcher(Operator):
 
         # ── Footing runs (open path groups tagged IfcFooting) ──────────────────
         for item in self.footing_run_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report(
-                    {"ERROR"}, f"{item.label}: no IfcFootingType selected. Add footing types to the project first."
-                )
-                return {"CANCELLED"}
-            footing_type = ifc_file.by_id(type_id)
+            footing_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if footing_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcFootingType in TAG parameters — skipping.")
+                continue
             poly = _resolve_path_proxy(sketch, sse, item.slvs_index, "IfcFooting", "OPEN")
             if poly is None:
                 continue
@@ -1650,13 +1700,10 @@ class FetchCADSketcher(Operator):
 
         # ── Columns (sketch points tagged IfcColumn) ──────────────────────────
         for item in self.column_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report(
-                    {"ERROR"}, f"{item.label}: no IfcColumnType selected. Add column types to the project first."
-                )
-                return {"CANCELLED"}
-            column_type = ifc_file.by_id(type_id)
+            column_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if column_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcColumnType in TAG parameters — skipping.")
+                continue
             pt_ent = sse.get(item.slvs_index)
             if pt_ent is None:
                 continue
@@ -1669,11 +1716,10 @@ class FetchCADSketcher(Operator):
 
         # ── Piles (sketch points tagged IfcPile) ──────────────────────────────
         for item in self.pile_items:
-            type_id = int(item.type_id)
-            if not type_id:
-                self.report({"ERROR"}, f"{item.label}: no IfcPileType selected. Add pile types to the project first.")
-                return {"CANCELLED"}
-            pile_type = ifc_file.by_id(type_id)
+            pile_type = _resolve_type_from_guid(ifc_file, item.type_guid)
+            if pile_type is None:
+                self.report({"WARNING"}, f"{item.label}: no IfcPileType in TAG parameters — skipping.")
+                continue
             pt_ent = sse.get(item.slvs_index)
             if pt_ent is None:
                 continue
