@@ -699,6 +699,7 @@ endif()
 if(BUILD_BONSAIVIEWER_WGPU)
     add_subdirectory(../src/ifcviewer-wgpu ifcviewer-wgpu)
     add_subdirectory(../src/ifcviewer-wgpu-minimal ifcviewer-wgpu-minimal)
+    add_subdirectory(../src/wgpu-mem-probe wgpu-mem-probe)
 endif()
 
 # Cmake uninstall target
