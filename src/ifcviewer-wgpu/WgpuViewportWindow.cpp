@@ -132,11 +132,19 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
     return buf;
 }
 
-void releaseWgpuModelGpuData(WgpuModelGpuData& m) {
+void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
     for (auto& c : m.chunks) {
         if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
-        if (c.vertex_storage)       { wgpuBufferRelease(c.vertex_storage);         c.vertex_storage = nullptr; }
-        if (c.index_buffer)         { wgpuBufferRelease(c.index_buffer);           c.index_buffer = nullptr; }
+        if (c.pool_vertex_size > 0) {
+            pool.free(c.pool_vertex_offset, c.pool_vertex_size);
+            c.pool_vertex_offset = 0;
+            c.pool_vertex_size   = 0;
+        }
+        if (c.pool_index_size > 0) {
+            pool.free(c.pool_index_offset, c.pool_index_size);
+            c.pool_index_offset = 0;
+            c.pool_index_size   = 0;
+        }
         if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
         if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
         if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
@@ -545,7 +553,7 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     // Replace any existing state for this id.
     auto it = models_gpu_.find(model_id);
     if (it != models_gpu_.end()) {
-        releaseWgpuModelGpuData(it->second);
+        releaseWgpuModelGpuData(it->second, pool_);
         models_gpu_.erase(it);
     }
 
@@ -795,7 +803,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     // Replace any existing state for this id.
     auto it = models_gpu_.find(model_id);
     if (it != models_gpu_.end()) {
-        releaseWgpuModelGpuData(it->second);
+        releaseWgpuModelGpuData(it->second, pool_);
         models_gpu_.erase(it);
     }
 
@@ -912,26 +920,43 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         c.index_first_u32 = plan.index_first_u32;
         c.index_count     = plan.index_count;
 
-        const char* vs_label = (ci == 0) ? "model.chunk0.vertex_storage"
-                                         : "model.chunkN.vertex_storage";
-        c.vertex_storage = createBufferWithData(
-            device_, queue_,
-            data.vertices.data() + plan.source_byte_offset,
-            plan.byte_count,
-            WGPUBufferUsage_Storage,
-            vs_label);
+        // Vertex bytes: claim a pool range, upload via queueWriteBuffer.
+        // Storage binding offsets must align to 256 B (WebGPU spec floor
+        // — minStorageBufferOffsetAlignment); WgpuBufferPool inserts the
+        // necessary pre-pad. Failure here is fatal for the model: a fresh
+        // applyCachedModel can't proceed without VRAM, so we bail with
+        // a clear log and let the caller see it as a load failure.
+        if (!pool_.alloc(plan.byte_count, 256, &c.pool_vertex_offset)) {
+            qWarning().noquote().nospace()
+                << "[wgpu] pool OOM: chunk " << ci << " needed "
+                << plan.byte_count << " B for vertices, pool free="
+                << pool_.free_bytes() << " B; aborting model load";
+            releaseWgpuModelGpuData(m, pool_);
+            return;
+        }
+        c.pool_vertex_size = plan.byte_count;
+        wgpuQueueWriteBuffer(queue_, pool_.buffer(),
+                             c.pool_vertex_offset,
+                             data.vertices.data() + plan.source_byte_offset,
+                             plan.byte_count);
         m.vram_bytes_vbo += plan.byte_count;
 
-        // Per-chunk index slice. base mesh's ebo_byte_offset gives us the
-        // chunk's start; chunk's index_count tells us how far the slice runs.
+        // Per-chunk index slice — same dance, from the model's indices[].
         const size_t chunk_index_bytes = size_t(plan.index_count) * sizeof(uint32_t);
         if (chunk_index_bytes > 0) {
-            c.index_buffer = createBufferWithData(
-                device_, queue_,
-                data.indices.data() + plan.index_first_u32,
-                chunk_index_bytes,
-                WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
-                "model.chunk.index_buffer");
+            if (!pool_.alloc(chunk_index_bytes, 256, &c.pool_index_offset)) {
+                qWarning().noquote().nospace()
+                    << "[wgpu] pool OOM: chunk " << ci << " needed "
+                    << chunk_index_bytes << " B for indices, pool free="
+                    << pool_.free_bytes() << " B; aborting model load";
+                releaseWgpuModelGpuData(m, pool_);
+                return;
+            }
+            c.pool_index_size = chunk_index_bytes;
+            wgpuQueueWriteBuffer(queue_, pool_.buffer(),
+                                 c.pool_index_offset,
+                                 data.indices.data() + plan.index_first_u32,
+                                 chunk_index_bytes);
             m.vram_bytes_ebo += chunk_index_bytes;
         }
     }
@@ -1094,13 +1119,13 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 void WgpuViewportWindow::removeModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
-    releaseWgpuModelGpuData(it->second);
+    releaseWgpuModelGpuData(it->second, pool_);
     models_gpu_.erase(it);
     if (isExposed()) requestUpdate();
 }
 
 void WgpuViewportWindow::resetScene() {
-    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m);
+    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     if (isExposed()) requestUpdate();
 }
@@ -1257,6 +1282,16 @@ bool WgpuViewportWindow::initWgpu() {
     device_ = dreq.device;
     queue_  = wgpuDeviceGetQueue(device_);
 
+    // ---- Probe streaming pool capacity ----------------------------------
+    // Ask the device for the largest single buffer it'll actually give us.
+    // Replaces the per-machine "guess the OOM ceiling" knob: now the
+    // runtime answers the question. Failure here is fatal — without any
+    // pool we can't load chunks.
+    if (!probeAndCreatePool()) {
+        qWarning() << "wgpu: streaming pool probe failed; cannot start";
+        return false;
+    }
+
     // ---- Pick a surface format -------------------------------------------
     WGPUSurfaceCapabilities caps = {};
     if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
@@ -1274,6 +1309,86 @@ bool WgpuViewportWindow::initWgpu() {
 
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
     return true;
+}
+
+bool WgpuViewportWindow::probeAndCreatePool() {
+    // Discover the largest single buffer the runtime will grant. We
+    // descend from the device's advertised maxBufferSize because the
+    // adapter promises that much per binding, but the underlying
+    // allocator (gpu-alloc-rs on Vulkan, Metal heap manager, browser
+    // internals) may refuse anything above an undocumented per-system
+    // ceiling. The probe answers the question honestly.
+    //
+    // Each attempt is wrapped in an OOM error scope so a failed
+    // allocation doesn't surface to onUncapturedError as a noisy
+    // validation warning — the scope captures the OOM cleanly and we
+    // simply halve and retry.
+
+    WGPULimits device_limits = {};
+    wgpuDeviceGetLimits(device_, &device_limits);
+
+    // 64 MB lower bound: below this the viewer is unusable for any real
+    // dataset, so we'd rather fail init than limp along.
+    constexpr uint64_t MIN_POOL_CAPACITY = 64ull * 1024 * 1024;
+    // 4 GB starting cap: this is the largest single buffer the WebGPU
+    // ecosystem realistically supports today (browsers stay well below;
+    // desktop drivers vary). Asking for the device's full advertised
+    // maxBufferSize first is wasteful — on wgpu-native it can be 1 TB
+    // (a sentinel meaning "no spec floor"), which always fails and
+    // forces ~10 halving steps before we land somewhere sensible.
+    constexpr uint64_t MAX_PROBE_START   = 4ull * 1024 * 1024 * 1024;
+    uint64_t try_size = std::min<uint64_t>(device_limits.maxBufferSize,
+                                           MAX_PROBE_START);
+    if (try_size < MIN_POOL_CAPACITY) try_size = MIN_POOL_CAPACITY;
+
+    const WGPUBufferUsage pool_usage = WGPUBufferUsage_Storage
+                                     | WGPUBufferUsage_CopyDst;
+
+    while (try_size >= MIN_POOL_CAPACITY) {
+        // wgpu-native classifies "Not enough memory left" as Validation,
+        // not OutOfMemory — so we need both filters. Nested scopes: OOM
+        // inner (matches first), Validation outer (catches the rest).
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
+
+        const bool init_ok = pool_.init(device_, try_size, pool_usage,
+                                        "ifcviewer-wgpu.streaming_pool");
+
+        struct PopResult { bool done = false; bool error = false; };
+        auto pop = [&](PopResult& pr) {
+            WGPUPopErrorScopeCallbackInfo pcb = {};
+            pcb.mode = WGPUCallbackMode_AllowProcessEvents;
+            pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
+                              WGPUStringView, void* ud1, void* /*ud2*/) {
+                auto* p = static_cast<PopResult*>(ud1);
+                p->done = true;
+                p->error = (type != WGPUErrorType_NoError);
+            };
+            pcb.userdata1 = &pr;
+            wgpuDevicePopErrorScope(device_, pcb);
+            while (!pr.done) wgpuInstanceProcessEvents(instance_);
+        };
+        PopResult oom_pop, validation_pop;
+        pop(oom_pop);
+        pop(validation_pop);
+
+        if (init_ok && !oom_pop.error && !validation_pop.error) {
+            qInfo().noquote()
+                << "wgpu: streaming pool capacity ="
+                << (try_size / (1024 * 1024)) << "MB"
+                << "(device maxBufferSize ="
+                << (device_limits.maxBufferSize / (1024 * 1024)) << "MB)";
+            return true;
+        }
+        // Tear down the failed pool and halve. The init may have left
+        // the buffer handle in an invalid state — destroy() releases it.
+        pool_.destroy();
+        try_size /= 2;
+    }
+
+    qWarning() << "wgpu: pool probe found no allocatable size >="
+               << (MIN_POOL_CAPACITY / (1024 * 1024)) << "MB";
+    return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -3169,16 +3284,20 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
         wgpuBindGroupRelease(c.bind_group);
         c.bind_group = nullptr;
     }
-    if (!c.vertex_storage || !c.index_buffer || !c.visible_draws_buffer
-        || !c.prefix_sums_buffer || !c.per_chunk_uniform
+    if (c.pool_vertex_size == 0 || c.pool_index_size == 0
+        || !c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform
         || !m.mesh_storage || !m.instance_storage) {
         return;
     }
 
     WGPUBindGroupEntry entries[7] = {};
+    // vertices and indices live in the shared pool buffer at chunk-specific
+    // (offset, size) ranges; the other entries are still per-chunk small
+    // buffers (visible_draws/prefix_sums/uniform) or per-model (mesh/instance).
     entries[0].binding = 0;
-    entries[0].buffer  = c.vertex_storage;
-    entries[0].size    = WGPU_WHOLE_SIZE;
+    entries[0].buffer  = pool_.buffer();
+    entries[0].offset  = c.pool_vertex_offset;
+    entries[0].size    = c.pool_vertex_size;
     entries[1].binding = 1;
     entries[1].buffer  = m.mesh_storage;
     entries[1].size    = WGPU_WHOLE_SIZE;
@@ -3186,8 +3305,9 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
     entries[2].buffer  = m.instance_storage;
     entries[2].size    = WGPU_WHOLE_SIZE;
     entries[3].binding = 3;
-    entries[3].buffer  = c.index_buffer;
-    entries[3].size    = WGPU_WHOLE_SIZE;
+    entries[3].buffer  = pool_.buffer();
+    entries[3].offset  = c.pool_index_offset;
+    entries[3].size    = c.pool_index_size;
     entries[4].binding = 4;
     entries[4].buffer  = c.visible_draws_buffer;
     entries[4].size    = WGPU_WHOLE_SIZE;
@@ -3226,14 +3346,18 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
             << " size=" << c.vertex_byte_size << ")";
         return false;
     }
-    c.vertex_storage = createBufferWithData(
-        device_, queue_,
-        vbytes.data(), vbytes.size(),
-        WGPUBufferUsage_Storage,
-        "model.chunk.vertex_storage_streamed");
-    if (!c.vertex_storage) return false;
-    m.vram_bytes_vbo               += vbytes.size();
-    streaming_vram_resident_bytes_ += vbytes.size();
+    // Claim a pool range for the vertex bytes and upload.
+    if (!pool_.alloc(vbytes.size(), 256, &c.pool_vertex_offset)) {
+        // No room — caller (driveStreamingLoads) should have evicted
+        // first. This branch is a safety net for the very-first-frame
+        // case where pool eviction may not have caught up.
+        return false;
+    }
+    c.pool_vertex_size = vbytes.size();
+    wgpuQueueWriteBuffer(queue_, pool_.buffer(),
+                         c.pool_vertex_offset,
+                         vbytes.data(), vbytes.size());
+    m.vram_bytes_vbo += vbytes.size();
 
     // Index slice. The byte-range read comes from
     // streaming_index_section_offset + index_first_u32 * 4 (set by
@@ -3249,21 +3373,26 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
                 << "[wgpu stream] failed to read index chunk " << chunk_idx
                 << " (first=" << c.index_first_u32
                 << " count=" << c.index_count << ")";
-            // Release the vertex buffer we just allocated so we don't leak.
-            wgpuBufferRelease(c.vertex_storage);
-            c.vertex_storage = nullptr;
-            m.vram_bytes_vbo               -= vbytes.size();
-            streaming_vram_resident_bytes_ -= vbytes.size();
+            // Return the vertex slice to the pool so we don't leak.
+            pool_.free(c.pool_vertex_offset, c.pool_vertex_size);
+            c.pool_vertex_offset = 0;
+            c.pool_vertex_size   = 0;
+            m.vram_bytes_vbo    -= vbytes.size();
             return false;
         }
         const size_t ibytes = idx.size() * sizeof(uint32_t);
-        c.index_buffer = createBufferWithData(
-            device_, queue_,
-            idx.data(), ibytes,
-            WGPUBufferUsage_Storage | WGPUBufferUsage_Index,
-            "model.chunk.index_buffer_streamed");
-        m.vram_bytes_ebo               += ibytes;
-        streaming_vram_resident_bytes_ += ibytes;
+        if (!pool_.alloc(ibytes, 256, &c.pool_index_offset)) {
+            pool_.free(c.pool_vertex_offset, c.pool_vertex_size);
+            c.pool_vertex_offset = 0;
+            c.pool_vertex_size   = 0;
+            m.vram_bytes_vbo    -= vbytes.size();
+            return false;
+        }
+        c.pool_index_size = ibytes;
+        wgpuQueueWriteBuffer(queue_, pool_.buffer(),
+                             c.pool_index_offset,
+                             idx.data(), ibytes);
+        m.vram_bytes_ebo += ibytes;
     }
 
     buildChunkBindGroup(m, chunk_idx);
@@ -3280,19 +3409,17 @@ void WgpuViewportWindow::unloadChunk(WgpuModelGpuData& m, size_t chunk_idx) {
         wgpuBindGroupRelease(c.bind_group);
         c.bind_group = nullptr;
     }
-    if (c.vertex_storage) {
-        const uint64_t vsz = c.vertex_byte_size;
-        wgpuBufferRelease(c.vertex_storage);
-        c.vertex_storage = nullptr;
-        m.vram_bytes_vbo               -= vsz;
-        streaming_vram_resident_bytes_ -= vsz;
+    if (c.pool_vertex_size > 0) {
+        m.vram_bytes_vbo -= c.pool_vertex_size;
+        pool_.free(c.pool_vertex_offset, c.pool_vertex_size);
+        c.pool_vertex_offset = 0;
+        c.pool_vertex_size   = 0;
     }
-    if (c.index_buffer) {
-        const uint64_t isz = c.index_count * sizeof(uint32_t);
-        wgpuBufferRelease(c.index_buffer);
-        c.index_buffer = nullptr;
-        m.vram_bytes_ebo               -= isz;
-        streaming_vram_resident_bytes_ -= isz;
+    if (c.pool_index_size > 0) {
+        m.vram_bytes_ebo -= c.pool_index_size;
+        pool_.free(c.pool_index_offset, c.pool_index_size);
+        c.pool_index_offset = 0;
+        c.pool_index_size   = 0;
     }
     // Clear per-frame visibility so the chunk doesn't get re-rendered or
     // re-evicted on the same frame; cull will set it again next time
@@ -3340,18 +3467,27 @@ void WgpuViewportWindow::driveStreamingLoads() {
 
     // Per-frame load budget. Caps first-frame stall on a fresh load — at
     // 4 chunks/frame × 60fps we ingest 240 chunks/sec, fast enough that
-    // a 100-model scene fully resides in ~1s. Bigger scenes are bounded
-    // by the VRAM budget below: the residency set never grows past
-    // streaming_vram_budget_bytes_, so we stay clear of the wgpu-native
-    // allocator's OOM ceiling (~2.4 GB on this box, default budget 1.9).
+    // a 100-model scene fully resides in ~1s. The hard ceiling on total
+    // residency is the pool capacity (probed at startup); when the pool
+    // can't fit a candidate, the evictors below free closer-fitting
+    // ranges until it does.
     constexpr int MAX_STREAMING_LOADS_PER_FRAME = 4;
     int loads = 0;
     bool more_pending = false;
 
+    // The pool needs `need` contiguous bytes free for both the vertex and
+    // index allocations a load requires. Fragmentation matters: a chunk
+    // may fit total-free-bytes but not largest_free_run_bytes(). We don't
+    // try to predict fragmentation perfectly — the load will simply fail
+    // and trigger another eviction round next frame.
+    auto pool_can_fit = [&](uint64_t bytes) -> bool {
+        return pool_.largest_free_run_bytes() >= bytes;
+    };
+
     // Phase-1 evictor: drop the LRU non-visible resident chunk. Skips
     // chunks stamped on streaming_frame_idx_ to avoid yanking what cull
-    // just marked visible. Returns bytes freed (0 ⇒ no candidate).
-    auto evict_one_lru = [&]() -> uint64_t {
+    // just marked visible. Returns true iff a chunk was evicted.
+    auto evict_one_lru = [&]() -> bool {
         WgpuModelGpuData* victim_m = nullptr;
         size_t            victim_ci = 0;
         uint64_t          victim_lru = std::numeric_limits<uint64_t>::max();
@@ -3367,10 +3503,9 @@ void WgpuViewportWindow::driveStreamingLoads() {
                 }
             }
         }
-        if (!victim_m) return 0;
-        const uint64_t before = streaming_vram_resident_bytes_;
+        if (!victim_m) return false;
         unloadChunk(*victim_m, victim_ci);
-        return before - streaming_vram_resident_bytes_;
+        return true;
     };
 
     // Phase-2 evictor: when every resident chunk is visible-this-frame
@@ -3378,8 +3513,8 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // eye visible chunk — provided it is farther than the candidate we
     // want to load. Without the distance check this would loop forever
     // swapping pairs; with it, residency monotonically converges to the
-    // closest visible chunks that fit the budget.
-    auto evict_farthest_than = [&](float candidate_dist2) -> uint64_t {
+    // closest visible chunks that fit the pool.
+    auto evict_farthest_than = [&](float candidate_dist2) -> bool {
         WgpuModelGpuData* victim_m = nullptr;
         size_t            victim_ci = 0;
         float             victim_dist2 = candidate_dist2;
@@ -3395,10 +3530,9 @@ void WgpuViewportWindow::driveStreamingLoads() {
                 }
             }
         }
-        if (!victim_m) return 0;
-        const uint64_t before = streaming_vram_resident_bytes_;
+        if (!victim_m) return false;
         unloadChunk(*victim_m, victim_ci);
-        return before - streaming_vram_resident_bytes_;
+        return true;
     };
 
     for (auto& [mid, m] : models_gpu_) {
@@ -3415,18 +3549,23 @@ void WgpuViewportWindow::driveStreamingLoads() {
             }
 
             // Make room. Phase 1: drop LRU non-visible. Phase 2: if still
-            // over budget, drop the farthest-from-eye visible chunk that
-            // is strictly farther than the candidate we want to load.
+            // pool-tight, drop the farthest-from-eye visible chunk that is
+            // strictly farther than the candidate we want to load. The
+            // largest-free-run check is conservative — pool may have N MB
+            // free across many small holes that no chunk can use.
             const uint64_t need = c.vertex_byte_size
                                 + c.index_count * sizeof(uint32_t);
-            while (streaming_vram_resident_bytes_ + need
-                   > streaming_vram_budget_bytes_) {
-                if (evict_one_lru() > 0) continue;
-                if (evict_farthest_than(chunk_center_dist2(c)) > 0) continue;
+            while (!pool_can_fit(c.vertex_byte_size)
+                   || (c.index_count > 0
+                       && !pool_can_fit(c.index_count * sizeof(uint32_t)))
+                   || pool_.free_bytes() < need) {
+                if (evict_one_lru())                                continue;
+                if (evict_farthest_than(chunk_center_dist2(c)))     continue;
                 break;  // nothing left we're willing to evict
             }
-            if (streaming_vram_resident_bytes_ + need
-                > streaming_vram_budget_bytes_) {
+            if (!pool_can_fit(c.vertex_byte_size)
+                || (c.index_count > 0
+                    && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
                 // Candidate is farther than every resident — skip it.
                 // We'll come back to it if it gets closer.
                 more_pending = true;
@@ -3840,7 +3979,7 @@ void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
 
 void WgpuViewportWindow::shutdown() {
     // Release per-model buffers before the device they were created from.
-    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m);
+    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
 
     releaseDepthTexture();
@@ -3858,6 +3997,12 @@ void WgpuViewportWindow::shutdown() {
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
     if (frame_bgl_)            { wgpuBindGroupLayoutRelease(frame_bgl_);          frame_bgl_ = nullptr; }
+
+    // Destroy the streaming pool while device_ is still alive (it owns
+    // the underlying WGPUBuffer). All chunks have already returned their
+    // ranges via releaseWgpuModelGpuData above; pool's free-list count
+    // should equal capacity at this point.
+    pool_.destroy();
 
     if (queue_)    { wgpuQueueRelease(queue_);       queue_    = nullptr; }
     if (device_)   { wgpuDeviceRelease(device_);     device_   = nullptr; }

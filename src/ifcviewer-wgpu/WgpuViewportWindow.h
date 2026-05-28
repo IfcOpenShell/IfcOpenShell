@@ -33,6 +33,7 @@
 #include <unordered_map>
 
 #include "SidecarCache.h"
+#include "WgpuBufferPool.h"
 #include "WgpuModelGpuData.h"
 #include "WgpuSelectionState.h"
 #include "WgpuVisibilityState.h"
@@ -72,10 +73,10 @@ public:
 
     // Streaming variant: takes a StreamingSidecar (metadata only — no
     // vertex / index bytes). Allocates per-chunk small buffers and the
-    // model-shared index / mesh / instance storage upfront, but leaves
-    // each chunk's vertex_storage null and is_resident=false. The per-
-    // frame loader (commit 4 of streaming) brings chunks resident on
-    // demand as cull flags them visible.
+    // model-shared mesh / instance storage upfront, but leaves each
+    // chunk's pool ranges unclaimed and is_resident=false. The per-frame
+    // loader (driveStreamingLoads) sub-allocates the chunk's vertex +
+    // index ranges from pool_ on demand as cull flags them visible.
     void applyCachedModelStreaming(uint32_t model_id,
                                    struct StreamingSidecar metadata);
 
@@ -129,20 +130,30 @@ private:
     bool  buildPipelines();
     void  buildModelBindGroup(WgpuModelGpuData& m);
     void  buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_idx);
-    // Streaming: read the chunk's vertex bytes from disk, allocate
-    // vertex_storage, build the chunk's bind group, flip is_resident=true.
-    // Returns true on success. No-op (returns true) when already resident.
+    // Streaming: read the chunk's vertex + index bytes from disk,
+    // sub-allocate ranges in pool_, queueWriteBuffer them in, build the
+    // chunk's bind group, flip is_resident=true. Returns true on success;
+    // false if either the disk read or a pool alloc fails (caller is
+    // expected to have already evicted enough). No-op (returns true)
+    // when already resident.
     bool  loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx);
-    // Release a resident chunk's vertex+index buffers and bind group;
-    // flip is_resident=false. The chunk's CPU metadata (offsets, AABB,
+    // Release a resident chunk's pool ranges + bind group; flip
+    // is_resident=false. The chunk's CPU metadata (offsets, AABB,
     // visible-draw scratch) is retained so a subsequent
     // loadChunkBytesAndUploadGpu can bring it back without re-planning.
     void  unloadChunk(WgpuModelGpuData& m, size_t chunk_idx);
     // Called from render() after cull: find non-resident chunks with
-    // current visible draw counts > 0 and bring them resident, up to a
-    // per-frame budget. Triggers requestUpdate() if more remain. Evicts
-    // LRU non-visible chunks first when over streaming_vram_budget_bytes_.
+    // current visible draw counts > 0 and bring them resident. When the
+    // pool is full, evicts LRU non-visible chunks first, then falls back
+    // to evicting the farthest-from-camera visible chunks if a closer
+    // candidate needs the space. Triggers requestUpdate() if more remain.
     void  driveStreamingLoads();
+
+    // Discover the largest single buffer wgpu will give us by descending
+    // from the device's limits.maxBufferSize through OOM error scopes.
+    // Allocates pool_ at the discovered size. Returns false only when
+    // even a tiny pool can't be created (i.e. the device is unusable).
+    bool  probeAndCreatePool();
     void  ensureDepthTexture(int w, int h);
     void  releaseDepthTexture();
     void  ensureMsaaColorTexture(int w, int h);
@@ -399,30 +410,17 @@ public:
     // preserved; --streaming opts in.
     bool streaming_enabled_ = false;
 
-    // Streaming residency budget (bytes). The per-frame loader will not
-    // bring a chunk resident if doing so would exceed this; instead it
-    // evicts the LRU non-visible chunks until headroom exists, then
-    // falls back to evicting the farthest-from-camera visible chunks
-    // when even visible-set residency would overshoot.
-    //
-    // STOPGAP: this is a hand-picked number — the wrong shape of fix.
-    // wgpu-native's per-allocation overhead (gpu-alloc-rs fragmentation +
-    // one VkDeviceMemory block per createBuffer) makes the true usable
-    // ceiling far below physical VRAM, by a margin that varies per
-    // GPU/driver/runtime. The proper fix is a single-pool buffer with
-    // sub-allocation (see WgpuBufferPool task), whose size is *probed*
-    // at startup via wgpuDevicePushErrorScope rather than guessed at
-    // compile time. Once the pool lands, this field disappears.
-    //
-    // For now: 1 GB is a portable-ish floor that won't OOM on any
-    // desktop GPU we care about, and is at least close to the web's
-    // common ceiling. Tune via --streaming-vram-mb on machines with
-    // more headroom.
-    uint64_t streaming_vram_budget_bytes_   = 1024ull * 1024 * 1024;
-    uint64_t streaming_vram_resident_bytes_ = 0;
     // Monotonic frame counter, bumped at the top of driveStreamingLoads.
     // Used as the LRU key for chunk eviction.
     uint64_t streaming_frame_idx_           = 0;
+
+    // Sub-allocator for all chunk vertex + index bytes. Sized at startup
+    // by probeAndCreatePool() — the runtime tells us how big a single
+    // buffer it can actually deliver, eliminating the per-machine OOM
+    // ceiling that one-WGPUBuffer-per-chunk would otherwise hit. All
+    // chunk allocations land here; nothing else uses the pool. Replaces
+    // the old hand-picked streaming_vram_budget_bytes_ knob entirely.
+    WgpuBufferPool pool_;
 
 private:
 

@@ -63,24 +63,31 @@ struct WgpuModelGpuData {
     };
     static_assert(sizeof(VisibleDrawGpu) == 16, "VisibleDrawGpu must be 16 bytes");
 
-    // Per-chunk state. Each chunk owns its vertex_storage (sized ≤ 128 MB)
-    // plus a small set of per-frame buffers (visible_draws, prefix_sums,
-    // uniform) and a bind group that pulls in the chunk's vertex_storage
-    // alongside the model-shared index/mesh/instance buffers. Rendering
-    // issues one drawcall per non-empty chunk.
+    // Per-chunk state. Each chunk references a vertex range and an
+    // index range inside WgpuViewportWindow::pool_, plus a small set of
+    // per-frame buffers (visible_draws, prefix_sums, uniform) and a bind
+    // group that binds the pool ranges alongside the model-shared
+    // mesh/instance storage. Rendering issues one drawcall per non-empty
+    // chunk.
     //
     // Streaming (task #16): a chunk may be marked is_resident=false; its
-    // vertex_storage + bind_group are then null until the streaming loader
-    // brings it in. Other per-chunk buffers (visible_draws etc.) stay
-    // allocated regardless because cull still needs them. Non-streaming
-    // path always sets is_resident=true so existing code is unchanged.
+    // pool ranges (pool_*_size == 0) and bind_group are then unclaimed
+    // until the streaming loader brings it in. Other per-chunk buffers
+    // (visible_draws etc.) stay allocated regardless because cull still
+    // needs them. Non-streaming path always sets is_resident=true and
+    // populates pool ranges at applyCachedModel time.
     struct Chunk {
-        WGPUBuffer    vertex_storage          = nullptr;
-        // Per-chunk index buffer (was previously per-model). Each chunk
-        // covers a contiguous range of mesh ids, so its indices form a
-        // contiguous slice of the model's overall index data. Storing
-        // per-chunk lets streaming defer index loading alongside vertices.
-        WGPUBuffer    index_buffer            = nullptr;
+        // Pool-allocated vertex bytes. When resident, pool_vertex_size > 0
+        // and the range [pool_vertex_offset, pool_vertex_offset + pool_vertex_size)
+        // in WgpuViewportWindow::pool_ holds this chunk's vertex_storage.
+        // When non-resident, both are 0.
+        uint64_t      pool_vertex_offset      = 0;
+        uint64_t      pool_vertex_size        = 0;
+        // Pool-allocated index bytes. Same lifetime as the vertex range —
+        // either both resident or both freed.
+        uint64_t      pool_index_offset       = 0;
+        uint64_t      pool_index_size         = 0;
+
         WGPUBuffer    visible_draws_buffer    = nullptr;
         WGPUBuffer    prefix_sums_buffer      = nullptr;
         WGPUBuffer    per_chunk_uniform       = nullptr;
@@ -183,8 +190,11 @@ struct WgpuModelGpuData {
     bool hidden = false;
 };
 
-// Release every wgpu handle in `m` and clear its size mirrors. Safe to call
+class WgpuBufferPool;
+
+// Release every wgpu handle in `m` (including per-chunk and per-model pool
+// ranges via `pool.free()`) and clear its size mirrors. Safe to call
 // repeatedly; idempotent on already-released entries.
-void releaseWgpuModelGpuData(WgpuModelGpuData& m);
+void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool);
 
 #endif // WGPUMODELGPUDATA_H
