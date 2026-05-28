@@ -5948,6 +5948,8 @@ class BaseParametricGizmoGroup:
         customize dimension gizmo positioning, and _refresh_element_specific() to
         re-billboard element-specific gizmos per frame.
         """
+        if not self.is_setup_complete():
+            return
         obj = context.active_object
         if not obj:
             return

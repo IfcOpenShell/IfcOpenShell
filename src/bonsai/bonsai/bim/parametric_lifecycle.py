@@ -71,17 +71,15 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from typing import TYPE_CHECKING, ClassVar, get_args
+from typing import ClassVar, get_args
 
 import bpy
 import ifcopenshell.util.element
 from bpy.app.handlers import persistent
+from ifcopenshell import entity_instance
 
 import bonsai.core.geometry
 import bonsai.tool as tool
-
-if TYPE_CHECKING:
-    from ifcopenshell import entity_instance
 
 
 class ParametricEditMixinBase:
@@ -500,9 +498,15 @@ class PickTypeMixin(TypeAccessorBase):
                 op.value = v
 
         context.window_manager.popup_menu(draw, title=self.bl_label, icon="MENU_PANEL")
-        # INTERFACE (not FINISHED) keeps the menu-opening invocation out of the
-        # undo stack; the picked-value write below returns FINISHED, so the
-        # type change remains undoable as a single step.
+        # The type change is a two-step interaction: this invocation just OPENS
+        # the menu (no state change yet); a SECOND invocation fires when the
+        # user clicks a menu item — that one writes ``props.<type_attr>`` and
+        # returns FINISHED. By returning INTERFACE here (and not FINISHED), the
+        # menu-open step is excluded from Blender's undo stack so the user
+        # gets exactly ONE undo entry per type change. If we returned FINISHED
+        # here too, the stack would gain a no-op "opened the menu" entry that
+        # Ctrl+Z would dismiss before reverting the actual type change —
+        # confusing UX where the first Ctrl+Z appears to do nothing.
         return {"INTERFACE"}
 
     def _pick_type(self, context: bpy.types.Context) -> set[str]:

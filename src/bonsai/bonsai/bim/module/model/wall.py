@@ -1829,7 +1829,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
     ]
 
-    props_getter = "get_wall_props"
+    props_getter = tool.Model.get_wall_props
     gizmo_pref_name = "wall"
 
     @classmethod

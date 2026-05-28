@@ -108,7 +108,7 @@ class ProfileDecorator:
 
         obj = context.active_object
 
-        if obj.mode != "EDIT":
+        if obj is None or obj.mode != "EDIT":
             if exit_edit_mode_callback:
                 ProfileDecorator.uninstall()
                 exit_edit_mode_callback()
