@@ -232,6 +232,7 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
     m.mesh_chunk_idx.clear();
     m.mesh_chunk_local_base_vertex.clear();
     m.mesh_chunk_local_ebo_first_u32.clear();
+    m.mesh_chunk_local_lod1_first_u32.clear();
     if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
     if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
     m.vertex_bytes   = 0;
@@ -654,6 +655,7 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.mesh_chunk_idx.assign(n_meshes, 0);
     m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
     m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
+    m.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
 
     // Per-mesh centroid = mean of its instances' world AABB centres.
     // Meshes with no instances stay at (0,0,0) — they're dead weight but
@@ -688,14 +690,8 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     std::vector<std::vector<uint32_t>> chunk_mesh_ids;
     chunk_mesh_ids.push_back({});
     uint64_t current_chunk_bytes = 0;
-    bool warned_lod1 = false;
     for (uint32_t mi : sorted_mesh_ids) {
         const MeshInfo& mesh = metadata.meta.meshes[mi];
-        if (!warned_lod1 && mesh.lod1_index_count > 0) {
-            qWarning() << "[wgpu stream] LOD1 indices present but per-chunk "
-                          "buffers only carry LOD0; LOD1 will be ignored.";
-            warned_lod1 = true;
-        }
         const uint64_t mesh_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
         if (current_chunk_bytes > 0
             && current_chunk_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
@@ -729,7 +725,11 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
 
         // Walk this chunk's meshes in chunk-local layout order, computing
         // each mesh's chunk-local base_vertex / ebo_first_u32 and the
-        // chunk's aggregate vertex/index totals.
+        // chunk's aggregate vertex/index totals. LOD1 indices (if any
+        // mesh has them baked) get a second pass and pack AFTER all the
+        // LOD0 indices in the chunk's index slice — so a single slice
+        // carries both LODs and cull picks per-instance by chunk-local
+        // u32 offset.
         uint32_t chunk_local_v = 0;
         uint32_t chunk_local_i = 0;
         for (uint32_t mi : c.mesh_ids) {
@@ -740,9 +740,17 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
             chunk_local_v += mesh.vertex_count;
             chunk_local_i += mesh.index_count;
         }
+        uint32_t chunk_local_lod1 = 0;
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mi];
+            if (mesh.lod1_index_count == 0) continue;
+            m.mesh_chunk_local_lod1_first_u32[mi] = chunk_local_i + chunk_local_lod1;
+            chunk_local_lod1 += mesh.lod1_index_count;
+        }
         c.vertex_count     = chunk_local_v;
         c.vertex_byte_size = uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
-        c.index_count      = chunk_local_i;
+        c.index_count      = chunk_local_i + chunk_local_lod1;
+        c.lod1_index_count = chunk_local_lod1;
 
         // Small per-chunk buffers, allocated upfront so cull can write into
         // them. visible_draws_buffer cap = chunk's instance count (worst-
@@ -907,6 +915,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.mesh_chunk_idx.assign(n_meshes, 0);
     m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
     m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
+    m.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
 
     std::vector<float>    mesh_cx(n_meshes, 0.0f),
                           mesh_cy(n_meshes, 0.0f),
@@ -934,14 +943,8 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     std::vector<std::vector<uint32_t>> chunk_mesh_ids;
     chunk_mesh_ids.push_back({});
     uint64_t current_chunk_bytes = 0;
-    bool warned_lod1 = false;
     for (uint32_t mi : sorted_mesh_ids) {
         const MeshInfo& mesh = data.meshes[mi];
-        if (!warned_lod1 && mesh.lod1_index_count > 0) {
-            qWarning() << "[wgpu] LOD1 indices present but per-chunk buffers "
-                          "only carry LOD0; LOD1 will be ignored this load.";
-            warned_lod1 = true;
-        }
         const uint64_t mesh_vertex_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
         if (mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
             qWarning().noquote().nospace()
@@ -976,6 +979,9 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
 
         // Walk meshes in chunk-local layout order, computing each mesh's
         // chunk-local offsets and the chunk's aggregate vertex/index totals.
+        // LOD1 indices (if any mesh has them baked) pack AFTER all the
+        // LOD0 indices in the chunk's index slice — single slice carries
+        // both LODs, cull picks per-instance by chunk-local u32 offset.
         uint32_t chunk_local_v = 0;
         uint32_t chunk_local_i = 0;
         for (uint32_t mi : c.mesh_ids) {
@@ -986,9 +992,17 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
             chunk_local_v += mesh.vertex_count;
             chunk_local_i += mesh.index_count;
         }
+        uint32_t chunk_local_lod1 = 0;
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = data.meshes[mi];
+            if (mesh.lod1_index_count == 0) continue;
+            m.mesh_chunk_local_lod1_first_u32[mi] = chunk_local_i + chunk_local_lod1;
+            chunk_local_lod1 += mesh.lod1_index_count;
+        }
         c.vertex_count     = chunk_local_v;
         c.vertex_byte_size = uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
-        c.index_count      = chunk_local_i;
+        c.index_count      = chunk_local_i + chunk_local_lod1;
+        c.lod1_index_count = chunk_local_lod1;
 
         c.vertex_slice = pool_.alloc(c.vertex_byte_size, 256);
         if (!c.vertex_slice.valid()) {
@@ -1037,6 +1051,19 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
                                      i_bytes);
                 i_off += i_bytes;
             }
+        }
+        // LOD1 indices second, packed after all LOD0 indices in the slice.
+        // mesh_chunk_local_lod1_first_u32[mi] already encodes this layout —
+        // we just have to copy in the same order it was assigned.
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = data.meshes[mi];
+            if (mesh.lod1_index_count == 0) continue;
+            const size_t l1_bytes = size_t(mesh.lod1_index_count) * sizeof(uint32_t);
+            wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
+                                 c.index_slice.offset + i_off,
+                                 data.indices.data() + (mesh.lod1_ebo_byte_offset / sizeof(uint32_t)),
+                                 l1_bytes);
+            i_off += l1_bytes;
         }
         m.vram_bytes_vbo += c.vertex_byte_size;
         m.vram_bytes_ebo += c.index_count * sizeof(uint32_t);
@@ -2658,32 +2685,39 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                             && mesh.lod1_index_count > 0
                             && projected_px < lod1_threshold_px;
 
-        // LOD1 is incompatible with the current per-chunk index layout
-        // (LOD1 indices are appended at the end of sd.indices, not
-        // contiguous with their chunk's range). Force LOD0 until per-
-        // chunk LOD1 storage lands.
-        const bool effective_lod1 = false;
-        (void)use_lod1;
-
         // Emit one VisibleDraw entry into the chunk that owns this mesh's
         // vertex range. base_vertex AND ebo_first_u32 are both CHUNK-LOCAL
         // — the chunk's bind group points at its own vertex_storage and
-        // index_buffer slices so the shader indexes them directly.
+        // index_buffer slices so the shader indexes them directly. When
+        // use_lod1, ebo_first_u32 routes into the LOD1 section of the
+        // chunk's index slice (which is packed after the LOD0 section at
+        // chunk-build time); the shader is oblivious to the LOD split.
         const uint32_t chunk_idx = m.mesh_chunk_idx[inst.mesh_id];
         WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         WgpuModelGpuData::VisibleDrawGpu d;
         d.mesh_id       = inst.mesh_id;
         d.instance_idx  = i;
-        d.ebo_first_u32 = m.mesh_chunk_local_ebo_first_u32[inst.mesh_id];
+        d.ebo_first_u32 = use_lod1
+                              ? m.mesh_chunk_local_lod1_first_u32[inst.mesh_id]
+                              : m.mesh_chunk_local_ebo_first_u32[inst.mesh_id];
         d.base_vertex   = m.mesh_chunk_local_base_vertex[inst.mesh_id];
         c.visible_draws_scratch.push_back(d);
 
-        const uint32_t entry_vert_count = effective_lod1
-                                              ? mesh.lod1_index_count
-                                              : mesh.index_count;
+        const uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count
+                                                   : mesh.index_count;
         running_vertex_count[chunk_idx] += entry_vert_count;
         c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
+        if (use_lod1) {
+            ++lod1_dbg_count_;
+            lod1_dbg_tris_saved_ += (mesh.index_count > mesh.lod1_index_count
+                                     ? (mesh.index_count - mesh.lod1_index_count) / 3
+                                     : 0);
+        } else if (mesh.lod1_index_count > 0) {
+            ++lod0_dbg_eligible_count_;
+        } else {
+            ++lod0_dbg_no_lod1_count_;
+        }
     };
 
     // Chunk-driven walk: frustum-test each chunk's AABB once, and skip
@@ -3135,7 +3169,14 @@ void WgpuViewportWindow::render() {
                 << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
                 << "/" << chunks_total << " (missing " << chunks_missing << ")"
                 << "  vram " << QString::number(double(total_vbo + total_ebo + total_ssbo) * mb, 'f', 1) << "MB"
-                << "  models " << models_gpu_.size();
+                << "  models " << models_gpu_.size()
+                << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
+                << " (saved " << lod1_dbg_tris_saved_ << " tris, "
+                << lod0_dbg_no_lod1_count_ << " no-lod1)";
+            lod1_dbg_count_ = 0;
+            lod0_dbg_eligible_count_ = 0;
+            lod0_dbg_no_lod1_count_ = 0;
+            lod1_dbg_tris_saved_ = 0;
 
             // Every ~120 frames, when something's missing, dump the
             // top-8 models by missing-chunk count + top/bottom chunks
@@ -3405,7 +3446,14 @@ void WgpuViewportWindow::render() {
                 << " (vbo " << QString::number(double(total_vbo) * mb, 'f', 1)
                 << " + ebo " << QString::number(double(total_ebo) * mb, 'f', 1)
                 << " + ssbo " << QString::number(double(total_ssbo) * mb, 'f', 1) << ")"
-                << "  models " << models_gpu_.size();
+                << "  models " << models_gpu_.size()
+                << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
+                << " (saved " << lod1_dbg_tris_saved_ << " tris, "
+                << lod0_dbg_no_lod1_count_ << " no-lod1)";
+            lod1_dbg_count_ = 0;
+            lod0_dbg_eligible_count_ = 0;
+            lod0_dbg_no_lod1_count_ = 0;
+            lod1_dbg_tris_saved_ = 0;
         }
         camera_yaw_deg_ = bench_yaw_start_
                         + bench_yaw_speed_ * float(bench_count_ + 1);
@@ -3731,6 +3779,17 @@ static WgpuStreamingThread::Request makeChunkRequest(
                 uint64_t(mesh.ebo_byte_offset / sizeof(uint32_t)),
                 uint64_t(mesh.index_count));
         }
+    }
+    // LOD1 indices second pass — matches the chunk-local packing order
+    // (all LOD0 first, then LOD1) so the worker's concatenated index
+    // result lands at the offsets recorded in
+    // m.mesh_chunk_local_lod1_first_u32.
+    for (uint32_t mi : c.mesh_ids) {
+        const MeshInfo& mesh = m.meshes[mi];
+        if (mesh.lod1_index_count == 0) continue;
+        req.i_ranges.emplace_back(
+            uint64_t(mesh.lod1_ebo_byte_offset / sizeof(uint32_t)),
+            uint64_t(mesh.lod1_index_count));
     }
     return req;
 }

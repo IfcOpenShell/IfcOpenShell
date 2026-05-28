@@ -530,6 +530,15 @@ private:
     // Tick count for the interactive (non-bench) [frame] heartbeat log.
     // Increments every render() and prints stats every N frames.
     int      interactive_frame_count_ = 0;
+
+    // Per-frame LOD selection counts, mutated from cullModelCpuCompute
+    // and reset after the [frame] heartbeat prints them. Keeps an eye
+    // on whether LOD1 is actually firing on real scenes — early-days
+    // diagnostic while we trust the new code path.
+    mutable uint32_t lod1_dbg_count_              = 0;
+    mutable uint32_t lod0_dbg_eligible_count_     = 0;
+    mutable uint32_t lod0_dbg_no_lod1_count_      = 0;
+    mutable uint64_t lod1_dbg_tris_saved_         = 0;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

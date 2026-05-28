@@ -139,6 +139,11 @@ struct WgpuModelGpuData {
         // is recovered by walking mesh_ids and the model's MeshInfo[].
         uint64_t vertex_byte_size             = 0;
         uint64_t index_count                  = 0;
+        // Of `index_count`, how many are LOD1 indices. LOD0 indices occupy
+        // chunk-local u32 offsets [0, index_count - lod1_index_count); LOD1
+        // indices occupy [index_count - lod1_index_count, index_count). 0
+        // when no mesh in this chunk had a baked LOD1 slice.
+        uint32_t lod1_index_count             = 0;
 
         // World-space AABB covering every instance whose mesh lives in
         // this chunk. With spatial chunk planning this AABB is tight
@@ -217,6 +222,10 @@ struct WgpuModelGpuData {
     std::vector<uint32_t> mesh_chunk_idx;
     std::vector<uint32_t> mesh_chunk_local_base_vertex;
     std::vector<uint32_t> mesh_chunk_local_ebo_first_u32;
+    // Where in the chunk's index slice this mesh's LOD1 indices start
+    // (in u32 units). Only meaningful when m.meshes[mi].lod1_index_count > 0;
+    // entries for meshes without LOD1 are 0 and unused.
+    std::vector<uint32_t> mesh_chunk_local_lod1_first_u32;
 
     // Model-shared buffers. Mesh + instance storage are small (<10 MB on
     // any real scene we've seen); the chunked index buffer lives in Chunk
