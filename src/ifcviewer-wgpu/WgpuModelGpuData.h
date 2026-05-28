@@ -122,6 +122,13 @@ struct WgpuModelGpuData {
         // and flips true once the chunk's vertex bytes are uploaded.
         // Render and pick skip chunks where !is_resident.
         bool     is_resident                  = true;
+        // Set true while a worker-thread read is in flight for this
+        // chunk. Prevents driveStreamingLoads from re-enqueueing it
+        // every frame until its result is drained. Cleared when the
+        // result is applied (or dropped on failure / stale model).
+        // Eviction is not gated on this (eviction only acts on resident
+        // chunks; a loading chunk has no slice to free yet).
+        bool     is_loading                   = false;
 
         // Aggregate vertex / index sizes across all meshes in this chunk
         // (sum of mesh.vertex_count * stride / mesh.index_count for each

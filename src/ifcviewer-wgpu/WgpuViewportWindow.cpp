@@ -1302,6 +1302,11 @@ bool WgpuViewportWindow::initWgpu() {
         return false;
     }
 
+    // Background loader for streaming reads — must outlive any
+    // applyCachedModelStreaming call so we can drain results into the
+    // pool. Stopped in shutdown() before pool_.destroy().
+    streaming_thread_.start();
+
     // ---- Pick a surface format -------------------------------------------
     WGPUSurfaceCapabilities caps = {};
     if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
@@ -3018,7 +3023,13 @@ void WgpuViewportWindow::render() {
         if (!bench_warm_done_) {
             constexpr int CONVERGE_FRAMES_REQUIRED = 5;
             constexpr int MAX_WARM_FRAMES          = 600;
-            if (streaming_loads_this_frame_ > 0) {
+            // With async I/O, "no main-thread work this frame" isn't
+            // enough — a worker thread might still be reading. The
+            // streaming is truly settled only when the worker queue is
+            // empty AND no chunks are awaiting drain.
+            const bool worker_idle =
+                streaming_thread_.inFlightApprox() == 0;
+            if (streaming_loads_this_frame_ > 0 || !worker_idle) {
                 bench_warm_streak_ = 0;
             } else {
                 ++bench_warm_streak_;
@@ -3383,69 +3394,56 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
     c.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
 }
 
-bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx) {
-    if (chunk_idx >= m.chunks.size()) return false;
-    auto& c = m.chunks[chunk_idx];
-    if (c.is_resident) return true;
-    if (m.streaming_file_path.empty()) return false;
-
-    // Build scatter-gather ranges from this chunk's mesh_ids. Spatial
-    // chunk planning sorted meshes by world centroid, so the chunk's
-    // mesh ranges are NOT contiguous in the sidecar file — we need a
-    // multi-range read.
-    std::vector<std::pair<uint64_t, uint64_t>> v_ranges;
-    std::vector<std::pair<uint64_t, uint64_t>> i_ranges;
-    v_ranges.reserve(c.mesh_ids.size());
-    i_ranges.reserve(c.mesh_ids.size());
+// Build the worker request for a chunk. Walks the chunk's mesh_ids and
+// derives scatter-gather byte/index ranges from each mesh's sidecar
+// offsets. Pure function of model + chunk metadata; safe to call from
+// the main thread.
+static WgpuStreamingThread::Request makeChunkRequest(
+        const WgpuModelGpuData& m, size_t chunk_idx, uint32_t model_id) {
+    const auto& c = m.chunks[chunk_idx];
+    WgpuStreamingThread::Request req;
+    req.model_id              = model_id;
+    req.chunk_idx             = chunk_idx;
+    req.file_path             = m.streaming_file_path;
+    req.vertex_section_offset = m.streaming_vertex_section_offset;
+    req.index_section_offset  = m.streaming_index_section_offset;
+    req.v_ranges.reserve(c.mesh_ids.size());
+    req.i_ranges.reserve(c.mesh_ids.size());
     for (uint32_t mi : c.mesh_ids) {
         const MeshInfo& mesh = m.meshes[mi];
         const uint64_t v_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (v_bytes > 0) v_ranges.emplace_back(uint64_t(mesh.vbo_byte_offset), v_bytes);
+        if (v_bytes > 0) {
+            req.v_ranges.emplace_back(uint64_t(mesh.vbo_byte_offset), v_bytes);
+        }
         if (mesh.index_count > 0) {
-            i_ranges.emplace_back(uint64_t(mesh.ebo_byte_offset / sizeof(uint32_t)),
-                                  uint64_t(mesh.index_count));
+            req.i_ranges.emplace_back(
+                uint64_t(mesh.ebo_byte_offset / sizeof(uint32_t)),
+                uint64_t(mesh.index_count));
         }
     }
+    return req;
+}
 
-    std::vector<uint8_t> vbytes;
-    if (!readSidecarVertexRanges(m.streaming_file_path,
-                                 m.streaming_vertex_section_offset,
-                                 v_ranges, vbytes)) {
-        qWarning().noquote().nospace()
-            << "[wgpu stream] failed to read vertex chunk " << chunk_idx
-            << " (" << v_ranges.size() << " ranges, total "
-            << c.vertex_byte_size << " B)";
-        return false;
-    }
-    // Claim a pool range for the vertex bytes and upload.
+// Apply a streamed chunk's bytes to the GPU: pool-allocate vertex +
+// index slices, queueWriteBuffer the bytes, build the bind group, flip
+// is_resident=true. Returns false on pool OOM (caller should have made
+// room first); on failure, no slices are claimed and is_resident
+// stays false. Called both from the worker-result drain (async) and
+// from loadChunkBytesAndUploadGpu (sync first-frame fallback).
+bool WgpuViewportWindow::applyStreamedChunk(
+        WgpuModelGpuData& m, size_t chunk_idx,
+        const std::vector<uint8_t>& vbytes,
+        const std::vector<uint32_t>& idx) {
+    auto& c = m.chunks[chunk_idx];
+
     c.vertex_slice = pool_.alloc(vbytes.size(), 256);
-    if (!c.vertex_slice.valid()) {
-        // No room — caller (driveStreamingLoads) should have evicted
-        // first. This branch is a safety net for the very-first-frame
-        // case where pool eviction may not have caught up.
-        return false;
-    }
+    if (!c.vertex_slice.valid()) return false;
     wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
                          c.vertex_slice.offset,
                          vbytes.data(), vbytes.size());
     m.vram_bytes_vbo += vbytes.size();
 
-    // Index slice — scatter-gather from the same mesh_ids list.
-    if (c.index_count > 0) {
-        std::vector<uint32_t> idx;
-        if (!readSidecarIndexRanges(m.streaming_file_path,
-                                    m.streaming_index_section_offset,
-                                    i_ranges, idx)) {
-            qWarning().noquote().nospace()
-                << "[wgpu stream] failed to read index chunk " << chunk_idx
-                << " (" << i_ranges.size() << " ranges, total "
-                << c.index_count << " indices)";
-            // Return the vertex slice to the pool so we don't leak.
-            pool_.free(c.vertex_slice);
-            m.vram_bytes_vbo -= c.vertex_slice.size;
-            c.vertex_slice = {};
-            return false;
-        }
+    if (!idx.empty()) {
         const size_t ibytes = idx.size() * sizeof(uint32_t);
         c.index_slice = pool_.alloc(ibytes, 256);
         if (!c.index_slice.valid()) {
@@ -3462,7 +3460,46 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
 
     buildChunkBindGroup(m, chunk_idx);
     c.is_resident = true;
+    c.is_loading  = false;
     return true;
+}
+
+bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return false;
+    auto& c = m.chunks[chunk_idx];
+    if (c.is_resident) return true;
+    if (m.streaming_file_path.empty()) return false;
+
+    // Synchronous fallback: build the request, do the disk read inline,
+    // apply. Used only when the async path can't be — i.e. by the
+    // screenshot test on first frame. Normal streaming goes through
+    // driveStreamingLoads → streaming_thread_.
+    WgpuStreamingThread::Request req = makeChunkRequest(m, chunk_idx, /*mid*/ 0);
+    std::vector<uint8_t>  vbytes;
+    std::vector<uint32_t> idx;
+    if (!req.v_ranges.empty()) {
+        if (!readSidecarVertexRanges(req.file_path,
+                                     req.vertex_section_offset,
+                                     req.v_ranges, vbytes)) {
+            qWarning().noquote().nospace()
+                << "[wgpu stream] failed to read vertex chunk " << chunk_idx
+                << " (" << req.v_ranges.size() << " ranges, total "
+                << c.vertex_byte_size << " B)";
+            return false;
+        }
+    }
+    if (!req.i_ranges.empty()) {
+        if (!readSidecarIndexRanges(req.file_path,
+                                    req.index_section_offset,
+                                    req.i_ranges, idx)) {
+            qWarning().noquote().nospace()
+                << "[wgpu stream] failed to read index chunk " << chunk_idx
+                << " (" << req.i_ranges.size() << " ranges, total "
+                << c.index_count << " indices)";
+            return false;
+        }
+    }
+    return applyStreamedChunk(m, chunk_idx, vbytes, idx);
 }
 
 void WgpuViewportWindow::unloadChunk(WgpuModelGpuData& m, size_t chunk_idx) {
@@ -3619,16 +3656,48 @@ void WgpuViewportWindow::driveStreamingLoads() {
         return true;
     };
 
-    // Gather candidates: every non-resident frustum-visible chunk. Sort
-    // by distance (closest first) so processing converges monotonically —
-    // each successful swap replaces a far resident with a closer
-    // candidate, and when the next candidate is farther than every
-    // remaining resident, we stop. Without sorting, the load loop
-    // visits candidates in arbitrary (model/chunk-id) order, which
-    // creates an infinite swap cycle on scenes where the frustum-visible
-    // set exceeds pool capacity: each frame loads 4 random candidates
-    // and evicts 4 random residents, getting nowhere.
-    struct Candidate { WgpuModelGpuData* m; size_t ci; float dist2; };
+    // ---- Drain worker results -------------------------------------------
+    // Apply any chunk reads that the streaming thread finished since
+    // last frame. Each apply does pool.alloc + queueWriteBuffer + bind
+    // group build — strictly main-thread work because wgpu queue ops
+    // are not thread-safe. Counts toward loads_this_frame for the
+    // bench warm gate's "settled" check.
+    {
+        auto results = streaming_thread_.drainResults();
+        for (auto& res : results) {
+            auto it = models_gpu_.find(res.model_id);
+            if (it == models_gpu_.end()) continue;  // model unloaded
+            auto& m = it->second;
+            if (res.chunk_idx >= m.chunks.size()) continue;
+            auto& c = m.chunks[res.chunk_idx];
+            // The chunk may have been "unloaded" mid-flight (it wasn't
+            // resident yet — eviction only acts on residents — but the
+            // loader could have re-enqueued or the model could have
+            // been hidden). Clear the loading flag regardless.
+            c.is_loading = false;
+            if (!res.success) {
+                qWarning().noquote().nospace()
+                    << "[wgpu stream] worker read failed for model "
+                    << res.model_id << " chunk " << res.chunk_idx;
+                continue;
+            }
+            if (!applyStreamedChunk(m, res.chunk_idx, res.vbytes, res.idx)) {
+                // Pool OOM at apply time — eviction had freed less than
+                // we needed by the time the result returned. Next frame's
+                // loader will re-enqueue if still wanted.
+                continue;
+            }
+            ++loads;
+            c.last_visible_frame_idx = streaming_frame_idx_;
+        }
+    }
+
+    // ---- Enqueue new requests -------------------------------------------
+    // Gather non-resident, !is_loading, frustum-visible chunks; sort by
+    // distance (closest first) so processing converges monotonically.
+    // Each enqueue makes room in the pool by eviction so the result will
+    // be likely to fit when it returns — apply's alloc is best-effort.
+    struct Candidate { WgpuModelGpuData* m; size_t ci; uint32_t mid; float dist2; };
     std::vector<Candidate> candidates;
     candidates.reserve(64);
     for (auto& [mid, m] : models_gpu_) {
@@ -3636,8 +3705,9 @@ void WgpuViewportWindow::driveStreamingLoads() {
         for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
             auto& c = m.chunks[ci];
             if (c.is_resident)                       continue;
+            if (c.is_loading)                        continue;
             if (c.frustum_visible_count == 0)        continue;
-            candidates.push_back({&m, ci, chunk_center_dist2(c)});
+            candidates.push_back({&m, ci, mid, chunk_center_dist2(c)});
         }
     }
     std::sort(candidates.begin(), candidates.end(),
@@ -3645,20 +3715,14 @@ void WgpuViewportWindow::driveStreamingLoads() {
                   return a.dist2 < b.dist2;
               });
 
+    int enqueued = 0;
     for (const Candidate& cand : candidates) {
-        if (loads >= MAX_STREAMING_LOADS_PER_FRAME) {
+        if (enqueued >= MAX_STREAMING_LOADS_PER_FRAME) {
             more_pending = true;
             break;
         }
         auto& c = cand.m->chunks[cand.ci];
 
-        // Make room. Phase 1: drop LRU non-visible (chunks resident from
-        // a previous viewpoint that aren't frustum-visible now). Phase 2:
-        // drop the farthest-from-eye resident that's strictly farther
-        // than this candidate. With distance-sorted candidates, phase 2
-        // monotonically converges — once the next candidate is farther
-        // than every resident, evict_farthest_than fails for it and all
-        // subsequent (even farther) candidates, and we stop.
         const uint64_t need = c.vertex_byte_size
                             + c.index_count * sizeof(uint32_t);
         while (!pool_can_fit(c.vertex_byte_size)
@@ -3672,27 +3736,37 @@ void WgpuViewportWindow::driveStreamingLoads() {
         if (!pool_can_fit(c.vertex_byte_size)
             || (c.index_count > 0
                 && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
-            // This candidate doesn't fit. Sorted-by-distance means every
-            // remaining candidate is farther, so none of them will fit
-            // either — bail out of the whole loop rather than waste
-            // iterations probing each one.
+            // Sorted-by-distance: every remaining candidate is farther
+            // and won't fit either.
             more_pending = true;
             break;
         }
 
-        if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
-            ++loads;
-            c.last_visible_frame_idx = streaming_frame_idx_;
+        // Sync fallback when a screenshot is pending: the deferred-capture
+        // wait would let the window manager re-layout the window while we
+        // wait, capturing at the wrong size. With sync loads the chunk
+        // appears in the same frame we enqueue, no deferred-state to manage.
+        if (!pending_screenshot_path_.isEmpty()) {
+            if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
+                ++enqueued;
+                c.last_visible_frame_idx = streaming_frame_idx_;
+            }
+            continue;
+        }
+
+        if (streaming_thread_.enqueue(makeChunkRequest(*cand.m, cand.ci, cand.mid))) {
+            c.is_loading = true;
+            ++enqueued;
         }
     }
-    // Keep the frame loop running only while we're making progress.
-    // When loads == 0 (whether because everything fits or because the
-    // pool is at its hardware cap and the rest of the visible set
-    // can't fit), the loader has converged — let the renderer go idle
-    // until something actually changes (camera move, model add/remove
-    // triggers their own requestUpdate). Spinning here would burn the
-    // CPU forever on scenes whose visible set exceeds the pool.
-    if (loads > 0) requestUpdate();
+    loads += enqueued;
+    // Keep the frame loop running while we're making progress or there
+    // are worker reads still in flight. When everything's quiet
+    // (no main-thread work this frame AND worker queue empty) we let
+    // the renderer idle until the camera moves or a model loads.
+    // Spinning otherwise would burn CPU forever on visible-set >
+    // pool-capacity scenes.
+    if (loads > 0 || streaming_thread_.inFlightApprox() > 0) requestUpdate();
 
     // Surface per-frame activity for the bench harness to gate the
     // orbit sweep against cold-load. We only export loads — more_pending
@@ -4093,6 +4167,11 @@ void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
 }
 
 void WgpuViewportWindow::shutdown() {
+    // Stop the streaming worker first so no late results land in the
+    // pool after we've torn down the model state. Pending in-flight
+    // reads are completed (worker drains its queue) then thread joins.
+    streaming_thread_.stop();
+
     // Release per-model buffers before the device they were created from.
     for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();

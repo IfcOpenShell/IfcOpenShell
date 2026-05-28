@@ -36,6 +36,7 @@
 #include "WgpuBufferPool.h"
 #include "WgpuModelGpuData.h"
 #include "WgpuSelectionState.h"
+#include "WgpuStreamingThread.h"
 #include "WgpuVisibilityState.h"
 
 // Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
@@ -137,6 +138,13 @@ private:
     // expected to have already evicted enough). No-op (returns true)
     // when already resident.
     bool  loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx);
+    // Pool-allocate + queueWriteBuffer + build bind group for a chunk
+    // whose vbytes/idx have already been read (by either the worker
+    // thread's drained result or the sync fallback). Returns false on
+    // pool OOM. Toggles is_resident=true / is_loading=false on success.
+    bool  applyStreamedChunk(WgpuModelGpuData& m, size_t chunk_idx,
+                             const std::vector<uint8_t>& vbytes,
+                             const std::vector<uint32_t>& idx);
     // Release a resident chunk's pool ranges + bind group; flip
     // is_resident=false. The chunk's CPU metadata (offsets, AABB,
     // visible-draw scratch) is retained so a subsequent
@@ -413,6 +421,13 @@ public:
     // chunk allocations land here; nothing else uses the pool. Replaces
     // the old hand-picked streaming_vram_budget_bytes_ knob entirely.
     WgpuBufferPool pool_;
+
+    // Background worker that does scatter-gather chunk reads off the
+    // render thread. driveStreamingLoads enqueues requests for visible
+    // non-resident chunks and drains completed results into the pool
+    // on subsequent frames. Kills the 100-300 ms per-frame stutters
+    // that synchronous disk reads caused during orbit.
+    WgpuStreamingThread streaming_thread_;
 
     // Per-frame streaming activity, written by driveStreamingLoads,
     // consumed by the benchmark harness to delay the orbit sweep until
