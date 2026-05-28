@@ -2871,10 +2871,20 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def recreate_wall(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        # FIXME(PR4): the fillet-corner branch lands with PR4's
-        # `regenerate_fillet_corner_wall` (bim/module/model/wall.py). On v0.8.0
-        # the function doesn't exist; falling through to the straight-extrusion
-        # path preserves v0.8.0 behaviour for fillet walls until PR4 ships.
+        # Curved fillet-corner walls own a hand-built banana body that
+        # ``regenerate_wall_representation`` would flatten — it reads the axis
+        # as a 2-point reference line and builds a straight extrusion. Rebuild
+        # the curve in place instead: ``regenerate_fillet_corner_wall`` keeps
+        # radius + placement from the pset / current ``ObjectPlacement`` while
+        # picking up new thickness / height from the wall type, which is what
+        # we want when a type-property edit triggered this call.
+        if tool.Parametric.is_fillet_corner_wall(element):
+            # Lazy import: ``tool.Model`` loads before ``bim/module/model`` at
+            # addon enable; a module-level import would cycle.
+            from bonsai.bim.module.model.wall import regenerate_fillet_corner_wall
+
+            regenerate_fillet_corner_wall(element, obj)
+            return
         rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -2909,7 +2919,7 @@ class Model(bonsai.core.tool.Model):
             if not wall:
                 continue
             is_layer2_usage = tool.Model.get_usage_type(element) == "LAYER2"
-            is_fillet_corner = bool(ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "IsFilletCorner"))
+            is_fillet_corner = tool.Parametric.is_fillet_corner_wall(element)
             if not (is_layer2_usage or is_fillet_corner):
                 continue
             if is_layer2_usage:
