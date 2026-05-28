@@ -520,6 +520,16 @@ private:
     double   bench_stream_ms_total_   = 0.0;  // driveStreamingLoads only
     double   bench_hiz_readback_ms_total_ = 0.0;
     double   bench_submit_ms_total_   = 0.0;
+
+    // Last-frame per-phase times. Available in interactive mode (no
+    // bench) so the periodic [frame] heartbeat log can show cull /
+    // stream cost without needing the bench averaging machinery.
+    double   last_cull_ms_            = 0.0;
+    double   last_stream_ms_          = 0.0;
+
+    // Tick count for the interactive (non-bench) [frame] heartbeat log.
+    // Increments every render() and prints stats every N frames.
+    int      interactive_frame_count_ = 0;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

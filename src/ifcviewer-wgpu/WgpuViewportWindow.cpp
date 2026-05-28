@@ -2742,7 +2742,7 @@ void WgpuViewportWindow::render() {
     // Time the whole render() body (cull + encode + present) for the
     // benchmark stats. Started before any wgpu work so cull is included.
     QElapsedTimer frame_timer;
-    if (bench_total_ > 0) frame_timer.start();
+    frame_timer.start();
 
     // Drain any HiZ async readbacks that completed since last frame so the
     // pyramid is as fresh as it can be before cull runs.
@@ -2787,7 +2787,7 @@ void WgpuViewportWindow::render() {
     last_sub_draws_         = 0;
     hiz_reject_count_       = 0;
     QElapsedTimer cull_timer;
-    if (bench_total_ > 0) cull_timer.start();
+    cull_timer.start();
     QMatrix4x4 vp_this_frame;
     {
         const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
@@ -2866,16 +2866,17 @@ void WgpuViewportWindow::render() {
     // Stop the cull-only timer before streaming, so the benchmark
     // attribution doesn't lump disk I/O into "cull".
     const double cull_only_ms = double(cull_timer.nsecsElapsed()) / 1e6;
+    last_cull_ms_ = cull_only_ms;
 
     // Streaming: bring non-resident chunks that the cull just flagged
     // visible into residency. Runs before draw encoding so newly-loaded
     // chunks render the same frame. Timed separately because synchronous
     // disk reads here can dwarf the cull itself on big scenes.
     QElapsedTimer stream_timer;
-    if (bench_total_ > 0) stream_timer.start();
+    stream_timer.start();
     driveStreamingLoads();
-    const double stream_ms = (bench_total_ > 0)
-        ? double(stream_timer.nsecsElapsed()) / 1e6 : 0.0;
+    const double stream_ms = double(stream_timer.nsecsElapsed()) / 1e6;
+    last_stream_ms_ = stream_ms;
 
     // Snapshot camera state for next frame's motion detection.
     prev_camera_target_[0] = camera_target_[0];
@@ -3082,6 +3083,245 @@ void WgpuViewportWindow::render() {
         startHizMap(hiz_submitted_slot, vp_this_frame);
         if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
             bench_hiz_readback_ms_total_ += double(hiz_timer.nsecsElapsed()) / 1e6;
+        }
+    }
+
+    // ---- Interactive heartbeat log -------------------------------------
+    // Prints a per-frame stats line every 30 frames when not in
+    // benchmark mode, so the user can diagnose performance and
+    // visibility issues at runtime without firing up --benchmark.
+    // Includes "missing" (chunks the cull marked frustum-visible but
+    // are not resident this frame) — that's the diagnostic for "things
+    // I expected to see aren't showing up." Healthy steady state has
+    // missing == 0; pool-bound scenes will show missing > 0 for the
+    // chunks that don't fit.
+    if (bench_total_ == 0) {
+        ++interactive_frame_count_;
+        // Log every render (frames in interactive mode only fire on
+        // actual activity — camera motion, model load, streaming loads
+        // in flight — so this is naturally rate-limited and shows the
+        // user what's happening as they interact).
+        {
+            const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
+            uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
+            uint32_t total_instances = 0, total_meshes = 0;
+            size_t chunks_total = 0, chunks_resident = 0;
+            size_t chunks_frustum_vis = 0, chunks_missing = 0;
+            for (const auto& [mid, mo] : models_gpu_) {
+                total_vbo  += mo.vram_bytes_vbo;
+                total_ebo  += mo.vram_bytes_ebo;
+                total_ssbo += mo.vram_bytes_ssbo;
+                total_instances += mo.instance_count;
+                total_meshes    += mo.mesh_count;
+                for (const auto& c : mo.chunks) {
+                    ++chunks_total;
+                    if (c.is_resident) ++chunks_resident;
+                    if (c.frustum_visible_count > 0) {
+                        ++chunks_frustum_vis;
+                        if (!c.is_resident) ++chunks_missing;
+                    }
+                }
+            }
+            const double mb = 1.0 / (1024.0 * 1024.0);
+            qInfo().noquote().nospace()
+                << "[frame] " << QString::number(ms > 0 ? 1000.0f / ms : 0.0f, 'f', 1) << " fps"
+                << "  " << QString::number(ms, 'f', 2) << " ms"
+                << "  obj " << last_visible_objects_ << "/" << total_instances
+                << "  tri " << last_visible_triangles_
+                << "  sub_draws " << last_sub_draws_
+                << "  hiz_rej " << hiz_reject_count_
+                << "  cull " << QString::number(last_cull_ms_, 'f', 2) << "ms"
+                << "  stream " << QString::number(last_stream_ms_, 'f', 2) << "ms"
+                << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
+                << "/" << chunks_total << " (missing " << chunks_missing << ")"
+                << "  vram " << QString::number(double(total_vbo + total_ebo + total_ssbo) * mb, 'f', 1) << "MB"
+                << "  models " << models_gpu_.size();
+
+            // Every ~120 frames, when something's missing, dump the
+            // top-8 models by missing-chunk count + top/bottom chunks
+            // by priority. The priorities settle the question: is the
+            // metric correctly scoring the missing chunks lower than
+            // residents, or is something else (bug, hysteresis, etc.)
+            // preventing valid swaps?
+            if (chunks_missing > 0 && (interactive_frame_count_ % 30) == 0) {
+                // Build the camera VP matrix and project AABB corners
+                // — same metric driveStreamingLoads uses for priority,
+                // duplicated here so the heartbeat dump can show what
+                // the loader is actually scoring chunks at.
+                const QVector3D target_dbg(camera_target_[0], camera_target_[1], camera_target_[2]);
+                const QVector3D eye_dbg = orbitEye(camera_target_, camera_distance_,
+                                                   camera_yaw_deg_, camera_pitch_deg_);
+                QMatrix4x4 v_dbg; v_dbg.lookAt(eye_dbg, target_dbg, QVector3D(0.0f, 0.0f, 1.0f));
+                const float aspect_dbg = (configured_h_ > 0)
+                    ? float(configured_w_) / float(configured_h_) : 1.0f;
+                QMatrix4x4 p_dbg; p_dbg.perspective(camera_fov_y_deg_, aspect_dbg,
+                                                    camera_near_, camera_far_);
+                QMatrix4x4 z_dbg; z_dbg(2, 2) = 0.5f; z_dbg(2, 3) = 0.5f;
+                const QMatrix4x4 vp_dbg = z_dbg * p_dbg * v_dbg;
+                auto chunk_priority_px2 = [&](const WgpuModelGpuData::Chunk& c) -> float {
+                    if (configured_w_ <= 0 || configured_h_ <= 0 ||
+                        c.aabb_min[0] > c.aabb_max[0]) return 0.0f;
+                    float xmin =  std::numeric_limits<float>::infinity();
+                    float ymin =  std::numeric_limits<float>::infinity();
+                    float xmax = -std::numeric_limits<float>::infinity();
+                    float ymax = -std::numeric_limits<float>::infinity();
+                    int   cif  = 0;
+                    for (int i = 0; i < 8; ++i) {
+                        const QVector4D corner(
+                            (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
+                            (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
+                            (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
+                            1.0f);
+                        const QVector4D clip = vp_dbg * corner;
+                        if (clip.w() <= 1e-3f) continue;
+                        ++cif;
+                        const float px_x = (clip.x() / clip.w() * 0.5f + 0.5f) * float(configured_w_);
+                        const float px_y = (clip.y() / clip.w() * 0.5f + 0.5f) * float(configured_h_);
+                        xmin = std::min(xmin, px_x); ymin = std::min(ymin, px_y);
+                        xmax = std::max(xmax, px_x); ymax = std::max(ymax, px_y);
+                    }
+                    if (cif == 0) return 0.0f;
+                    xmin = std::max(xmin, 0.0f); ymin = std::max(ymin, 0.0f);
+                    xmax = std::min(xmax, float(configured_w_));
+                    ymax = std::min(ymax, float(configured_h_));
+                    if (xmax <= xmin || ymax <= ymin) return 0.0f;
+                    return (xmax - xmin) * (ymax - ymin);
+                };
+                struct Probe {
+                    QString name;
+                    float   priority;
+                    float   ex, ey, ez;
+                    float   history;
+                };
+                std::vector<Probe> missing_set, resident_set;
+                missing_set.reserve(64);
+                resident_set.reserve(256);
+                for (const auto& [mid, mo] : models_gpu_) {
+                    QFileInfo fi(QString::fromStdString(mo.streaming_file_path));
+                    const QString base = fi.completeBaseName();
+                    for (const auto& c : mo.chunks) {
+                        Probe p;
+                        p.name = base;
+                        p.priority = chunk_priority_px2(c);
+                        p.ex = c.aabb_max[0] - c.aabb_min[0];
+                        p.ey = c.aabb_max[1] - c.aabb_min[1];
+                        p.ez = c.aabb_max[2] - c.aabb_min[2];
+                        p.history = c.visibility_history;
+                        if (c.is_resident) {
+                            resident_set.push_back(p);
+                        } else if (c.frustum_visible_count > 0) {
+                            missing_set.push_back(p);
+                        }
+                    }
+                }
+                // Top 20 missing by priority. 20 (not 5) because the
+                // chunks the user actually cares about — e.g. brace
+                // model chunks — may be ranked below the absolute top
+                // but well above the bottom residents. We need to see
+                // them to evaluate whether the metric is right.
+                std::partial_sort(missing_set.begin(),
+                                  missing_set.begin() + std::min<size_t>(20, missing_set.size()),
+                                  missing_set.end(),
+                                  [](const Probe& a, const Probe& b) {
+                                      return a.priority > b.priority;
+                                  });
+                // Bottom 5 residents by EFFECTIVE priority (× history) —
+                // these are the chunks a candidate would need to beat
+                // to swap in.
+                std::partial_sort(resident_set.begin(),
+                                  resident_set.begin() + std::min<size_t>(5, resident_set.size()),
+                                  resident_set.end(),
+                                  [](const Probe& a, const Probe& b) {
+                                      const float ha = std::max(a.history, 0.05f);
+                                      const float hb = std::max(b.history, 0.05f);
+                                      return a.priority * ha < b.priority * hb;
+                                  });
+                qInfo().noquote() << "  [missing per model — top 8 by missing-count]";
+                struct Row {
+                    QString name;
+                    size_t  resident = 0;
+                    size_t  frustum  = 0;
+                    size_t  missing  = 0;
+                };
+                std::vector<Row> rows;
+                rows.reserve(models_gpu_.size());
+                for (const auto& [mid, mo] : models_gpu_) {
+                    Row r;
+                    QFileInfo fi(QString::fromStdString(mo.streaming_file_path));
+                    r.name = fi.completeBaseName();
+                    for (const auto& c : mo.chunks) {
+                        if (c.is_resident) ++r.resident;
+                        if (c.frustum_visible_count > 0) {
+                            ++r.frustum;
+                            if (!c.is_resident) ++r.missing;
+                        }
+                    }
+                    if (r.missing > 0) rows.push_back(std::move(r));
+                }
+                std::sort(rows.begin(), rows.end(),
+                          [](const Row& a, const Row& b) {
+                              return a.missing > b.missing;
+                          });
+                const size_t cap = std::min<size_t>(rows.size(), 8);
+                for (size_t i = 0; i < cap; ++i) {
+                    const Row& r = rows[i];
+                    qInfo().noquote().nospace()
+                        << "    " << r.name
+                        << "  resident=" << r.resident
+                        << "  frustum=" << r.frustum
+                        << "  missing=" << r.missing;
+                }
+                qInfo().noquote() << "  [top 20 MISSING chunks by priority (px², want these loaded)]";
+                for (size_t i = 0; i < std::min<size_t>(20, missing_set.size()); ++i) {
+                    const Probe& p = missing_set[i];
+                    qInfo().noquote().nospace()
+                        << "    pri=" << QString::number(p.priority, 'f', 0)
+                        << "  aabb=" << QString::number(p.ex, 'f', 1) << "x"
+                        << QString::number(p.ey, 'f', 1) << "x"
+                        << QString::number(p.ez, 'f', 1) << "m"
+                        << "  in " << p.name;
+                }
+                qInfo().noquote() << "  [bottom 5 RESIDENT chunks by effective priority (must beat with 2× hysteresis)]";
+                for (size_t i = 0; i < std::min<size_t>(5, resident_set.size()); ++i) {
+                    const Probe& p = resident_set[i];
+                    const float eff = p.priority * std::max(p.history, 0.05f);
+                    qInfo().noquote().nospace()
+                        << "    pri=" << QString::number(p.priority, 'f', 0)
+                        << " hist=" << QString::number(p.history, 'f', 2)
+                        << " eff=" << QString::number(eff, 'f', 0)
+                        << "  aabb=" << QString::number(p.ex, 'f', 1) << "x"
+                        << QString::number(p.ey, 'f', 1) << "x"
+                        << QString::number(p.ez, 'f', 1) << "m"
+                        << "  in " << p.name;
+                }
+                // Dump every chunk of the bracing model so we can see
+                // whether its priority is genuinely low (metric faithful)
+                // or unexpectedly high (metric broken). Hardcoded model
+                // name match is fine for this one-off investigation.
+                qInfo().noquote() << "  [brace.ifc (bracing) all chunks]";
+                for (const auto& [mid, mo] : models_gpu_) {
+                    QFileInfo fi(QString::fromStdString(mo.streaming_file_path));
+                    if (!fi.completeBaseName().contains(QStringLiteral("brace.ifc"))) continue;
+                    for (size_t ci = 0; ci < mo.chunks.size(); ++ci) {
+                        const auto& c = mo.chunks[ci];
+                        const float pri = chunk_priority_px2(c);
+                        qInfo().noquote().nospace()
+                            << "    chunk " << ci
+                            << "  pri=" << QString::number(pri, 'f', 0) << "px²"
+                            << "  resident=" << (c.is_resident ? "Y" : "N")
+                            << "  loading=" << (c.is_loading  ? "Y" : "N")
+                            << "  frustum=" << c.frustum_visible_count
+                            << "  hist=" << QString::number(c.visibility_history, 'f', 2)
+                            << "  aabb=" << QString::number(c.aabb_max[0]-c.aabb_min[0], 'f', 1) << "x"
+                            << QString::number(c.aabb_max[1]-c.aabb_min[1], 'f', 1) << "x"
+                            << QString::number(c.aabb_max[2]-c.aabb_min[2], 'f', 1) << "m"
+                            << "  centre=("
+                            << QString::number(0.5f*(c.aabb_min[0]+c.aabb_max[0]), 'f', 1) << ","
+                            << QString::number(0.5f*(c.aabb_min[1]+c.aabb_max[1]), 'f', 1) << ","
+                            << QString::number(0.5f*(c.aabb_min[2]+c.aabb_max[2]), 'f', 1) << ")";
+                    }
+                }
+            }
         }
     }
 
@@ -3530,8 +3770,9 @@ bool WgpuViewportWindow::applyStreamedChunk(
     }
 
     buildChunkBindGroup(m, chunk_idx);
-    c.is_resident = true;
-    c.is_loading  = false;
+    c.is_resident      = true;
+    c.is_loading       = false;
+    c.loaded_frame_idx = streaming_frame_idx_;
     return true;
 }
 
@@ -3606,37 +3847,113 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // least-recently-visible non-visible resident chunk.
     ++streaming_frame_idx_;
 
-    // Refresh LRU stamps for every resident chunk the cull just touched.
-    // Doing this before the load loop means newly-loaded chunks (which
-    // get stamped inside the load path) and already-resident-visible
-    // chunks share a single coherent timeline. We stamp on FRUSTUM
-    // visibility, not the HiZ-post total_visible_draws — same reason as
-    // residency: HiZ flicker would otherwise un-stamp chunks that should
-    // stay resident.
+    // Refresh per-chunk frame state. (a) LRU stamp on frustum-visible
+    // residents (HiZ flicker can't un-stamp them; cull-with-HiZ would
+    // thrash the LRU). (b) EMA-smoothed visibility_history: how often
+    // the chunk has *actually* contributed pixels (post-HiZ) over the
+    // last ~30 frames. The two metrics serve different jobs — LRU
+    // distinguishes "out of view" from "in view", history distinguishes
+    // "in view AND not occluded" from "in view BUT mostly occluded".
+    constexpr float HISTORY_ALPHA = 1.0f / 30.0f;
     for (auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
         for (auto& c : m.chunks) {
             if (c.is_resident && c.frustum_visible_count > 0) {
                 c.last_visible_frame_idx = streaming_frame_idx_;
             }
+            const float current = (c.total_visible_draws > 0) ? 1.0f : 0.0f;
+            c.visibility_history =
+                c.visibility_history * (1.0f - HISTORY_ALPHA)
+              + current * HISTORY_ALPHA;
         }
     }
 
-    // World-space camera eye. Used to rank chunks by distance for the
-    // distance-fallback evictor — when LRU has no non-visible victims
-    // left, drop the visible chunk farthest from the camera so the
-    // closest visible chunks always stay resident under a tight budget.
-    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
-                                   camera_yaw_deg_, camera_pitch_deg_);
+    // Build the camera's view-projection so we can project AABB corners
+    // to actual screen-space pixels. Same matrix sequence as cull.
+    const QVector3D target_q(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const QVector3D eye   = orbitEye(camera_target_, camera_distance_,
+                                     camera_yaw_deg_, camera_pitch_deg_);
+    QMatrix4x4 v_mat; v_mat.lookAt(eye, target_q, QVector3D(0.0f, 0.0f, 1.0f));
+    const float aspect = (configured_h_ > 0)
+        ? float(configured_w_) / float(configured_h_) : 1.0f;
+    QMatrix4x4 p_mat; p_mat.perspective(camera_fov_y_deg_, aspect,
+                                        camera_near_, camera_far_);
+    QMatrix4x4 z_mat; z_mat(2, 2) = 0.5f; z_mat(2, 3) = 0.5f;
+    const QMatrix4x4 vp_mat = z_mat * p_mat * v_mat;
 
-    auto chunk_center_dist2 = [&](const WgpuModelGpuData::Chunk& c) -> float {
-        const float cx = 0.5f * (c.aabb_min[0] + c.aabb_max[0]);
-        const float cy = 0.5f * (c.aabb_min[1] + c.aabb_max[1]);
-        const float cz = 0.5f * (c.aabb_min[2] + c.aabb_max[2]);
-        const float dx = cx - eye.x();
-        const float dy = cy - eye.y();
-        const float dz = cz - eye.z();
-        return dx*dx + dy*dy + dz*dz;
+    // Chunk priority = projected pixel area of the AABB on screen.
+    // "What would this chunk's AABB cover if rendered solid given the
+    // current camera and viewport." Replaces the prior bounding-sphere-
+    // radius² metric, which was a 3D approximation — it treated a
+    // 322 × 55 × 5 m slab as a 163 m sphere, same huge priority face-on
+    // or edge-on, even though edge-on covers far fewer pixels.
+    auto chunk_screen_area_px = [&](const WgpuModelGpuData::Chunk& c) -> float {
+        if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
+        if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
+        float xmin = std::numeric_limits<float>::infinity();
+        float ymin = std::numeric_limits<float>::infinity();
+        float xmax = -std::numeric_limits<float>::infinity();
+        float ymax = -std::numeric_limits<float>::infinity();
+        int corners_in_front = 0;
+        for (int i = 0; i < 8; ++i) {
+            const QVector4D corner_world(
+                (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
+                (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
+                (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
+                1.0f);
+            const QVector4D clip = vp_mat * corner_world;
+            // w ≤ 0 = corner is behind the camera. We drop it rather
+            // than try to clip-and-reproject; chunks fully behind get
+            // 0 area (correct), chunks partially behind underestimate
+            // (acceptable for an eviction heuristic).
+            if (clip.w() <= 1e-3f) continue;
+            ++corners_in_front;
+            const float ndc_x = clip.x() / clip.w();
+            const float ndc_y = clip.y() / clip.w();
+            const float px_x  = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
+            const float px_y  = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
+            xmin = std::min(xmin, px_x);
+            ymin = std::min(ymin, px_y);
+            xmax = std::max(xmax, px_x);
+            ymax = std::max(ymax, px_y);
+        }
+        if (corners_in_front == 0) return 0.0f;
+        // Clamp to viewport — off-screen area doesn't count.
+        xmin = std::max(xmin, 0.0f);
+        ymin = std::max(ymin, 0.0f);
+        xmax = std::min(xmax, float(configured_w_));
+        ymax = std::min(ymax, float(configured_h_));
+        if (xmax <= xmin || ymax <= ymin) return 0.0f;
+        return (xmax - xmin) * (ymax - ymin);
+    };
+
+    // Resident chunks: contribution × visibility_history (floored), so
+    // chunks that don't actually render lose priority over time and
+    // become evictable. Candidates: pure contribution — best-case
+    // estimate. Asymmetry lets new high-contribution chunks displace
+    // long-resident-but-occluded ones.
+    //
+    // CRITICAL: newly-loaded chunks get a "grace period" of GRACE_FRAMES
+    // at the full max-history factor. Without it, a freshly-loaded
+    // chunk's effective priority crashes to contribution × 0.05 next
+    // frame (history hasn't had time to develop), and the chunk it
+    // displaced — back as a candidate at full priority — re-displaces
+    // it. Infinite reverse-swap between equal-priority chunks. The
+    // cycle starves the per-frame load budget (MAX_STREAMING_LOADS = 4)
+    // so candidates ranked below the cyclers (e.g. brace chunks at
+    // priority position 20) never get attempted. Grace period gives
+    // visibility_history time to settle and breaks the cycle.
+    constexpr float    HISTORY_FLOOR = 0.05f;
+    constexpr uint64_t GRACE_FRAMES  = 30;
+    auto resident_priority = [&](const WgpuModelGpuData::Chunk& c) -> float {
+        const uint64_t age = streaming_frame_idx_ - c.loaded_frame_idx;
+        const float vis = (age < GRACE_FRAMES)
+            ? 1.0f
+            : std::max(c.visibility_history, HISTORY_FLOOR);
+        return chunk_screen_area_px(c) * vis;
+    };
+    auto candidate_priority = [&](const WgpuModelGpuData::Chunk& c) -> float {
+        return chunk_screen_area_px(c);
     };
 
     // Per-frame load budget. Caps first-frame stall on a fresh load — at
@@ -3692,33 +4009,29 @@ void WgpuViewportWindow::driveStreamingLoads() {
     };
 
     // Phase-2 evictor: when every resident chunk is visible-this-frame
-    // but we still need room for a closer one, drop the farthest-from-
-    // eye visible chunk — provided it is farther than the candidate we
-    // want to load. Without the distance check this would loop forever
-    // swapping pairs; with it, residency monotonically converges to the
-    // closest visible chunks that fit the pool.
-    // Require a meaningful distance gap before evicting. Without this,
-    // chunks clustered at similar distances (e.g. three chunks all
-    // ~370 m from the camera) oscillate forever: each frame the "closest
-    // candidate" is fractionally closer than some resident, triggering a
-    // swap that doesn't actually improve the picture. 21% in dist² ≈
-    // 10% in linear distance — a 370 m chunk only evicts a >407 m
-    // resident, not a 371 m one.
-    constexpr float EVICT_DIST2_RATIO = 1.21f;
-    auto evict_farthest_than = [&](float candidate_dist2) -> bool {
-        const float threshold_dist2 = candidate_dist2 * EVICT_DIST2_RATIO;
+    // but we still need room for a higher-priority candidate, drop the
+    // resident with the lowest priority (contribution × history) —
+    // provided the candidate's contribution is meaningfully bigger.
+    // 2.0× hysteresis: candidate must have 2× more pixel area than the
+    // victim's effective priority. In linear-radius terms that's a
+    // ~41% gap, which is what stops 5 m vs 7 m chunks from oscillating.
+    // Area metric is much more discriminating than radius, so we can
+    // afford a bigger gap and still leave room for genuine swaps.
+    constexpr float EVICT_PRIORITY_RATIO = 2.0f;
+    auto evict_lowest_priority_than = [&](float cand_priority) -> bool {
+        const float threshold = cand_priority / EVICT_PRIORITY_RATIO;
         WgpuModelGpuData* victim_m = nullptr;
         size_t            victim_ci = 0;
-        float             victim_dist2 = threshold_dist2;
+        float             victim_priority = threshold;
         for (auto& [mid, m] : models_gpu_) {
             for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
                 auto& c = m.chunks[ci];
                 if (!c.is_resident) continue;
-                const float d2 = chunk_center_dist2(c);
-                if (d2 > victim_dist2) {
-                    victim_dist2 = d2;
-                    victim_m     = &m;
-                    victim_ci    = ci;
+                const float p = resident_priority(c);
+                if (p < victim_priority) {
+                    victim_priority = p;
+                    victim_m        = &m;
+                    victim_ci       = ci;
                 }
             }
         }
@@ -3765,10 +4078,11 @@ void WgpuViewportWindow::driveStreamingLoads() {
 
     // ---- Enqueue new requests -------------------------------------------
     // Gather non-resident, !is_loading, frustum-visible chunks; sort by
-    // distance (closest first) so processing converges monotonically.
-    // Each enqueue makes room in the pool by eviction so the result will
-    // be likely to fit when it returns — apply's alloc is best-effort.
-    struct Candidate { WgpuModelGpuData* m; size_t ci; uint32_t mid; float dist2; };
+    // candidate priority (contribution_px) DESCENDING so the biggest
+    // screen-coverage chunks load first. Each enqueue makes room in
+    // the pool by evicting low-priority residents (contribution ×
+    // visibility_history); apply's alloc is best-effort.
+    struct Candidate { WgpuModelGpuData* m; size_t ci; uint32_t mid; float priority; };
     std::vector<Candidate> candidates;
     candidates.reserve(64);
     for (auto& [mid, m] : models_gpu_) {
@@ -3778,12 +4092,12 @@ void WgpuViewportWindow::driveStreamingLoads() {
             if (c.is_resident)                       continue;
             if (c.is_loading)                        continue;
             if (c.frustum_visible_count == 0)        continue;
-            candidates.push_back({&m, ci, mid, chunk_center_dist2(c)});
+            candidates.push_back({&m, ci, mid, candidate_priority(c)});
         }
     }
     std::sort(candidates.begin(), candidates.end(),
               [](const Candidate& a, const Candidate& b) {
-                  return a.dist2 < b.dist2;
+                  return a.priority > b.priority;  // biggest first
               });
 
     int enqueued = 0;
@@ -3800,15 +4114,15 @@ void WgpuViewportWindow::driveStreamingLoads() {
                || (c.index_count > 0
                    && !pool_can_fit(c.index_count * sizeof(uint32_t)))
                || pool_.total_free_bytes() < need) {
-            if (evict_one_lru())                            continue;
-            if (evict_farthest_than(cand.dist2))            continue;
+            if (evict_one_lru())                                       continue;
+            if (evict_lowest_priority_than(cand.priority))             continue;
             break;
         }
         if (!pool_can_fit(c.vertex_byte_size)
             || (c.index_count > 0
                 && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
-            // Sorted-by-distance: every remaining candidate is farther
-            // and won't fit either.
+            // Sorted-by-priority: every remaining candidate has equal
+            // or lower priority, so eviction won't succeed for them either.
             more_pending = true;
             break;
         }

@@ -178,6 +178,28 @@ struct WgpuModelGpuData {
         // total_visible_draws > 0). The evictor picks the smallest value
         // among non-visible resident chunks when it needs to free VRAM.
         uint64_t last_visible_frame_idx       = 0;
+        // EMA-smoothed visibility score, in [0, 1]. Bumped each frame
+        // toward 1 when total_visible_draws > 0 (the chunk's instances
+        // passed frustum + contribution + HiZ), toward 0 otherwise.
+        // Time constant ~30 frames. Used by the streaming evictor to
+        // de-prioritise chunks that are technically in the frustum but
+        // consistently HiZ-occluded — e.g. interior pipes behind a
+        // building's exterior walls. The smoothing prevents thrash from
+        // momentary HiZ flicker (a wall briefly visible behind a panning
+        // window doesn't displace the window from the pool).
+        float    visibility_history           = 0.0f;
+        // streaming_frame_idx_ when this chunk was last loaded. The
+        // evictor grants newly-loaded chunks ~30 frames of grace at
+        // full priority (max history factor = 1.0) so they have time
+        // for visibility_history to develop. Without this, a just-
+        // loaded chunk's effective priority drops to contribution ×
+        // 0.05 next frame, and the chunk it displaced — back as a
+        // candidate at full priority — re-displaces it: infinite
+        // cycle between equal-priority chunks. The cycle prevents any
+        // lower-priority candidate (e.g. a structural-brace chunk
+        // ranked position 20 in the missing list) from ever getting
+        // attempted.
+        uint64_t loaded_frame_idx             = 0;
     };
     std::vector<Chunk> chunks;
 
