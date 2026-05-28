@@ -86,4 +86,22 @@ bool readSidecarIndexChunk(const std::string& ifc_path,
                            uint64_t chunk_index_count,
                            std::vector<uint32_t>& out_indices);
 
+// Multi-range vertex read. `ranges` is a list of (section-relative
+// byte_offset, byte_size) tuples; their contents are concatenated into
+// out_bytes in input order. Single fopen across all ranges, so it's
+// far cheaper than calling readSidecarVertexChunk N times when a
+// spatially-grouped chunk needs to scatter-gather meshes that aren't
+// adjacent in the sidecar. out_bytes is resized to the total size.
+bool readSidecarVertexRanges(const std::string& ifc_path,
+                             uint64_t vertex_section_offset,
+                             const std::vector<std::pair<uint64_t, uint64_t>>& ranges,
+                             std::vector<uint8_t>& out_bytes);
+
+// Same for the index section. Ranges are (first_u32, count_u32);
+// concatenated into out_indices in input order.
+bool readSidecarIndexRanges(const std::string& ifc_path,
+                            uint64_t index_section_offset,
+                            const std::vector<std::pair<uint64_t, uint64_t>>& ranges,
+                            std::vector<uint32_t>& out_indices);
+
 #endif // WGPUSTREAMINGLOADER_H

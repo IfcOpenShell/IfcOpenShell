@@ -564,91 +564,112 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.streaming_vertex_section_offset = metadata.vertex_section_offset;
     m.streaming_index_section_offset  = metadata.index_section_offset;
 
-    // ---- Compute chunk plan from MeshInfo (same as non-streaming path) -
-    // Walks meshes in order, opens a new chunk when adding the next would
-    // exceed WGPU_CHUNK_VERTEX_BYTES_LIMIT.
-    m.mesh_chunk_idx.assign(metadata.meta.meshes.size(), 0);
-    m.mesh_chunk_local_base_vertex.assign(metadata.meta.meshes.size(), 0);
-    m.mesh_chunk_local_ebo_first_u32.assign(metadata.meta.meshes.size(), 0);
+    // ---- Spatial chunk plan ----------------------------------------------
+    // Sort meshes by world-space centroid (mean of their instances' AABB
+    // centres), then greedy-pack into chunks ≤ WGPU_CHUNK_VERTEX_BYTES_LIMIT.
+    // Each chunk's AABB ends up tight rather than spanning the whole model,
+    // so the distance-based streaming evictor can meaningfully distinguish
+    // chunks. Per-mesh layout within a chunk is the spatial-sort order;
+    // the loader scatter-gathers from each mesh's sidecar offsets.
+    const size_t n_meshes = metadata.meta.meshes.size();
+    m.mesh_chunk_idx.assign(n_meshes, 0);
+    m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
+    m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
 
-    struct ChunkPlan {
-        size_t   source_byte_offset = 0;     // vertex bytes
-        size_t   byte_count         = 0;
-        uint32_t vertex_count       = 0;
-        uint32_t index_first_u32    = 0;     // chunk's first LOD0 index in sd.indices
-        uint32_t index_count        = 0;
-    };
-    std::vector<ChunkPlan> chunk_plans;
-    chunk_plans.push_back({});
-    size_t   current_bytes = 0;
-    uint32_t current_idx   = 0;
-    size_t   current_start = 0;
-    uint32_t current_idx_start = 0;
-    uint32_t current_idx_count = 0;
-    bool     warned_lod1 = false;
-    for (uint32_t mi = 0; mi < metadata.meta.meshes.size(); ++mi) {
+    // Per-mesh centroid = mean of its instances' world AABB centres.
+    // Meshes with no instances stay at (0,0,0) — they're dead weight but
+    // still need a chunk slot for layout consistency.
+    std::vector<float>    mesh_cx(n_meshes, 0.0f),
+                          mesh_cy(n_meshes, 0.0f),
+                          mesh_cz(n_meshes, 0.0f);
+    std::vector<uint32_t> mesh_inst_count(n_meshes, 0);
+    for (const auto& inst : metadata.meta.instances) {
+        if (inst.mesh_id >= n_meshes) continue;
+        mesh_cx[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
+        mesh_cy[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
+        mesh_cz[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
+        ++mesh_inst_count[inst.mesh_id];
+    }
+    for (size_t i = 0; i < n_meshes; ++i) {
+        if (mesh_inst_count[i] > 0) {
+            const float inv = 1.0f / float(mesh_inst_count[i]);
+            mesh_cx[i] *= inv; mesh_cy[i] *= inv; mesh_cz[i] *= inv;
+        }
+    }
+
+    // Sort mesh indices by centroid. Lexicographic (z, y, x) is cheap and
+    // gives reasonable spatial locality — a Morton/Hilbert encode would
+    // be tighter but this is enough to make per-chunk AABBs much smaller
+    // than the model AABB. Stable sort to keep mesh-id order as the
+    // tiebreaker when many meshes coincide (instanced repeat geometry).
+    std::vector<uint32_t> sorted_mesh_ids(n_meshes);
+    std::iota(sorted_mesh_ids.begin(), sorted_mesh_ids.end(), 0u);
+    std::stable_sort(sorted_mesh_ids.begin(), sorted_mesh_ids.end(),
+        [&](uint32_t a, uint32_t b) {
+            if (mesh_cz[a] != mesh_cz[b]) return mesh_cz[a] < mesh_cz[b];
+            if (mesh_cy[a] != mesh_cy[b]) return mesh_cy[a] < mesh_cy[b];
+            return mesh_cx[a] < mesh_cx[b];
+        });
+
+    // Greedy pack sorted meshes into chunks.
+    std::vector<std::vector<uint32_t>> chunk_mesh_ids;
+    chunk_mesh_ids.push_back({});
+    uint64_t current_chunk_bytes = 0;
+    bool warned_lod1 = false;
+    for (uint32_t mi : sorted_mesh_ids) {
         const MeshInfo& mesh = metadata.meta.meshes[mi];
         if (!warned_lod1 && mesh.lod1_index_count > 0) {
-            qWarning() << "[wgpu stream] LOD1 indices present but per-chunk index "
-                          "buffers only carry LOD0; LOD1 will be ignored this load.";
+            qWarning() << "[wgpu stream] LOD1 indices present but per-chunk "
+                          "buffers only carry LOD0; LOD1 will be ignored.";
             warned_lod1 = true;
         }
-        const size_t mesh_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (current_bytes > 0 && current_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
-            ChunkPlan& done = chunk_plans[current_idx];
-            done.source_byte_offset = current_start;
-            done.byte_count         = current_bytes;
-            done.vertex_count       = uint32_t(current_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-            done.index_first_u32    = current_idx_start;
-            done.index_count        = current_idx_count;
-            ++current_idx;
-            chunk_plans.push_back({});
-            current_bytes     = 0;
-            current_start     = mesh.vbo_byte_offset;
-            current_idx_start = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
-            current_idx_count = 0;
-        } else if (current_bytes == 0) {
-            current_start     = mesh.vbo_byte_offset;
-            current_idx_start = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
+        const uint64_t mesh_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        if (current_chunk_bytes > 0
+            && current_chunk_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
+            chunk_mesh_ids.push_back({});
+            current_chunk_bytes = 0;
         }
-        m.mesh_chunk_idx[mi]              = current_idx;
-        m.mesh_chunk_local_base_vertex[mi]
-            = uint32_t(current_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-        m.mesh_chunk_local_ebo_first_u32[mi] = current_idx_count;
-        current_bytes      += mesh_bytes;
-        current_idx_count  += mesh.index_count;
+        chunk_mesh_ids.back().push_back(mi);
+        current_chunk_bytes += mesh_bytes;
     }
-    {
-        ChunkPlan& done = chunk_plans[current_idx];
-        done.source_byte_offset = current_start;
-        done.byte_count         = current_bytes;
-        done.vertex_count       = uint32_t(current_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-        done.index_first_u32    = current_idx_start;
-        done.index_count        = current_idx_count;
-    }
-    if (chunk_plans.back().byte_count == 0) chunk_plans.pop_back();
+    if (chunk_mesh_ids.back().empty()) chunk_mesh_ids.pop_back();
 
     // Per-chunk instance count (used to right-size visible_draws / prefix
-    // buffers per chunk).
-    std::vector<uint32_t> chunk_instance_count(chunk_plans.size(), 0);
+    // buffers per chunk). Each instance belongs to one mesh's chunk.
+    std::vector<uint32_t> mesh_to_chunk(n_meshes, 0);
+    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
+        for (uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = uint32_t(ci);
+    }
+    std::vector<uint32_t> chunk_instance_count(chunk_mesh_ids.size(), 0);
     for (const auto& inst : metadata.meta.instances) {
-        if (inst.mesh_id < m.mesh_chunk_idx.size()) {
-            ++chunk_instance_count[m.mesh_chunk_idx[inst.mesh_id]];
-        }
+        if (inst.mesh_id < n_meshes) ++chunk_instance_count[mesh_to_chunk[inst.mesh_id]];
     }
 
-    // ---- Allocate per-chunk state. NO vertex_storage yet (chunks are
-    // non-resident); record byte offsets for the per-frame loader.
-    m.chunks.resize(chunk_plans.size());
-    for (size_t ci = 0; ci < chunk_plans.size(); ++ci) {
-        const ChunkPlan& plan = chunk_plans[ci];
+    // ---- Allocate per-chunk state. NO pool slices yet (chunks are
+    // non-resident); the per-frame loader brings them in as cull marks
+    // them visible.
+    m.chunks.resize(chunk_mesh_ids.size());
+    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
         WgpuModelGpuData::Chunk& c = m.chunks[ci];
-        c.vertex_count       = plan.vertex_count;
-        c.is_resident        = false;                       // streaming
-        c.vertex_byte_offset = plan.source_byte_offset;
-        c.vertex_byte_size   = plan.byte_count;
-        c.index_first_u32    = plan.index_first_u32;
-        c.index_count        = plan.index_count;
+        c.mesh_ids    = std::move(chunk_mesh_ids[ci]);
+        c.is_resident = false;                              // streaming
+
+        // Walk this chunk's meshes in chunk-local layout order, computing
+        // each mesh's chunk-local base_vertex / ebo_first_u32 and the
+        // chunk's aggregate vertex/index totals.
+        uint32_t chunk_local_v = 0;
+        uint32_t chunk_local_i = 0;
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mi];
+            m.mesh_chunk_idx[mi]                 = uint32_t(ci);
+            m.mesh_chunk_local_base_vertex[mi]   = chunk_local_v;
+            m.mesh_chunk_local_ebo_first_u32[mi] = chunk_local_i;
+            chunk_local_v += mesh.vertex_count;
+            chunk_local_i += mesh.index_count;
+        }
+        c.vertex_count     = chunk_local_v;
+        c.vertex_byte_size = uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
+        c.index_count      = chunk_local_i;
 
         // Small per-chunk buffers, allocated upfront so cull can write into
         // them. visible_draws_buffer cap = chunk's instance count (worst-
@@ -811,154 +832,155 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.mesh_count     = uint32_t(data.meshes.size());
     m.instance_count = uint32_t(data.instances.size());
 
-    // ---- Vertex chunking: split data.vertices into ≤128 MB chunks --------
-    // Each mesh's vertex range stays in exactly one chunk. We walk meshes in
-    // their existing order, accumulating into the current chunk until adding
-    // another mesh would overflow the limit; then start a new chunk.
-    //
-    // After this, mesh_chunk_idx[mi] tells which chunk mesh mi lives in,
-    // and mesh_chunk_local_base_vertex[mi] is the chunk-LOCAL vertex offset
-    // for that mesh (in vertex units, divide bytes by 12). The shader's
-    // vertex_storage binding will be the chunk's vertex_storage so the
-    // chunk-local base_vertex indexes correctly.
-    m.mesh_chunk_idx.assign(data.meshes.size(), 0);
-    m.mesh_chunk_local_base_vertex.assign(data.meshes.size(), 0);
-    m.mesh_chunk_local_ebo_first_u32.assign(data.meshes.size(), 0);
+    // ---- Spatial chunk plan ----------------------------------------------
+    // Identical algorithm to applyCachedModelStreaming: sort meshes by
+    // world-space centroid, then greedy-pack into chunks of
+    // ≤WGPU_CHUNK_VERTEX_BYTES_LIMIT. Each chunk's mesh_ids list defines
+    // the chunk-local layout order. Non-streaming differs only in that
+    // vertex+index bytes are already in memory (data.vertices,
+    // data.indices), so we gather them with per-mesh queueWriteBuffer
+    // calls instead of scatter-gather disk reads.
+    const size_t n_meshes = data.meshes.size();
+    m.mesh_chunk_idx.assign(n_meshes, 0);
+    m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
+    m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
 
-    struct ChunkPlan {
-        size_t   source_byte_offset = 0;  // where in data.vertices this chunk's slice starts
-        size_t   byte_count         = 0;  // bytes in this chunk
-        uint32_t vertex_count       = 0;  // vertex_count = byte_count / 12
-        uint32_t index_first_u32    = 0;  // chunk's first LOD0 index in data.indices
-        uint32_t index_count        = 0;  // LOD0 indices belonging to this chunk
-    };
-    std::vector<ChunkPlan> chunk_plans;
-    size_t   current_chunk_bytes  = 0;
-    uint32_t current_chunk_idx    = 0;
-    size_t   current_chunk_start  = 0;  // byte offset in data.vertices for current chunk's start
-    uint32_t current_idx_start    = 0;
-    uint32_t current_idx_count    = 0;
-    bool     warned_lod1          = false;
+    std::vector<float>    mesh_cx(n_meshes, 0.0f),
+                          mesh_cy(n_meshes, 0.0f),
+                          mesh_cz(n_meshes, 0.0f);
+    std::vector<uint32_t> mesh_inst_count(n_meshes, 0);
+    for (const auto& inst : data.instances) {
+        if (inst.mesh_id >= n_meshes) continue;
+        mesh_cx[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
+        mesh_cy[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
+        mesh_cz[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
+        ++mesh_inst_count[inst.mesh_id];
+    }
+    for (size_t i = 0; i < n_meshes; ++i) {
+        if (mesh_inst_count[i] > 0) {
+            const float inv = 1.0f / float(mesh_inst_count[i]);
+            mesh_cx[i] *= inv; mesh_cy[i] *= inv; mesh_cz[i] *= inv;
+        }
+    }
 
-    chunk_plans.push_back({});  // chunk 0
-    for (uint32_t mi = 0; mi < data.meshes.size(); ++mi) {
+    std::vector<uint32_t> sorted_mesh_ids(n_meshes);
+    std::iota(sorted_mesh_ids.begin(), sorted_mesh_ids.end(), 0u);
+    std::stable_sort(sorted_mesh_ids.begin(), sorted_mesh_ids.end(),
+        [&](uint32_t a, uint32_t b) {
+            if (mesh_cz[a] != mesh_cz[b]) return mesh_cz[a] < mesh_cz[b];
+            if (mesh_cy[a] != mesh_cy[b]) return mesh_cy[a] < mesh_cy[b];
+            return mesh_cx[a] < mesh_cx[b];
+        });
+
+    std::vector<std::vector<uint32_t>> chunk_mesh_ids;
+    chunk_mesh_ids.push_back({});
+    uint64_t current_chunk_bytes = 0;
+    bool warned_lod1 = false;
+    for (uint32_t mi : sorted_mesh_ids) {
         const MeshInfo& mesh = data.meshes[mi];
         if (!warned_lod1 && mesh.lod1_index_count > 0) {
-            qWarning() << "[wgpu] LOD1 indices present but per-chunk index buffers "
+            qWarning() << "[wgpu] LOD1 indices present but per-chunk buffers "
                           "only carry LOD0; LOD1 will be ignored this load.";
             warned_lod1 = true;
         }
-        const size_t mesh_vertex_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        const uint64_t mesh_vertex_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
         if (mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
             qWarning().noquote().nospace()
                 << "Mesh #" << mi << " has " << mesh_vertex_bytes
-                << " B of vertex data — exceeds chunk limit "
-                << WGPU_CHUNK_VERTEX_BYTES_LIMIT
-                << " B. Mesh-splitting is not implemented; this mesh will be"
-                   " in an oversize chunk that won't fit a web browser.";
+                << " B — exceeds chunk limit " << WGPU_CHUNK_VERTEX_BYTES_LIMIT
+                << ". Mesh-splitting is not implemented.";
         }
-
         if (current_chunk_bytes > 0
             && current_chunk_bytes + mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
-            // Finalise current chunk, start a new one.
-            ChunkPlan& done = chunk_plans[current_chunk_idx];
-            done.source_byte_offset = current_chunk_start;
-            done.byte_count         = current_chunk_bytes;
-            done.vertex_count       = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-            done.index_first_u32    = current_idx_start;
-            done.index_count        = current_idx_count;
-            ++current_chunk_idx;
-            chunk_plans.push_back({});
+            chunk_mesh_ids.push_back({});
             current_chunk_bytes = 0;
-            current_chunk_start = mesh.vbo_byte_offset;
-            current_idx_start   = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
-            current_idx_count   = 0;
-        } else if (current_chunk_bytes == 0) {
-            current_chunk_start = mesh.vbo_byte_offset;
-            current_idx_start   = mesh.ebo_byte_offset / uint32_t(sizeof(uint32_t));
         }
-
-        m.mesh_chunk_idx[mi]             = current_chunk_idx;
-        m.mesh_chunk_local_base_vertex[mi]
-            = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-        m.mesh_chunk_local_ebo_first_u32[mi] = current_idx_count;
+        chunk_mesh_ids.back().push_back(mi);
         current_chunk_bytes += mesh_vertex_bytes;
-        current_idx_count   += mesh.index_count;
     }
-    // Finalise the last (possibly first) chunk.
-    {
-        ChunkPlan& done = chunk_plans[current_chunk_idx];
-        done.source_byte_offset = current_chunk_start;
-        done.byte_count         = current_chunk_bytes;
-        done.vertex_count       = uint32_t(current_chunk_bytes / INSTANCED_VERTEX_STRIDE_BYTES);
-        done.index_first_u32    = current_idx_start;
-        done.index_count        = current_idx_count;
-    }
-    // Drop trailing empty chunk (e.g. on a no-mesh model).
-    if (chunk_plans.back().byte_count == 0) chunk_plans.pop_back();
+    if (chunk_mesh_ids.back().empty()) chunk_mesh_ids.pop_back();
 
-    // Count instances per chunk so each chunk's visible_draws + prefix_sums
-    // buffers can be sized to ITS worst case, not the model-wide instance
-    // count × 2 (which over-allocated by ~4× on multi-chunk models — each
-    // visible instance only ever contributes one VisibleDraw entry, LOD0
-    // OR LOD1 not both).
-    std::vector<uint32_t> chunk_instance_count(chunk_plans.size(), 0);
+    std::vector<uint32_t> mesh_to_chunk(n_meshes, 0);
+    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
+        for (uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = uint32_t(ci);
+    }
+    std::vector<uint32_t> chunk_instance_count(chunk_mesh_ids.size(), 0);
     for (const auto& inst : data.instances) {
-        if (inst.mesh_id < m.mesh_chunk_idx.size()) {
-            ++chunk_instance_count[m.mesh_chunk_idx[inst.mesh_id]];
-        }
+        if (inst.mesh_id < n_meshes) ++chunk_instance_count[mesh_to_chunk[inst.mesh_id]];
     }
 
-    // ---- Allocate per-chunk buffers + upload vertex + index slices -----
-    m.chunks.resize(chunk_plans.size());
-    for (size_t ci = 0; ci < chunk_plans.size(); ++ci) {
-        const ChunkPlan& plan = chunk_plans[ci];
+    // ---- Allocate per-chunk pool ranges and upload per-mesh slices ------
+    m.chunks.resize(chunk_mesh_ids.size());
+    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
         WgpuModelGpuData::Chunk& c = m.chunks[ci];
-        c.vertex_count    = plan.vertex_count;
-        c.index_first_u32 = plan.index_first_u32;
-        c.index_count     = plan.index_count;
+        c.mesh_ids = std::move(chunk_mesh_ids[ci]);
 
-        // Vertex bytes: claim a pool range, upload via queueWriteBuffer.
-        // Storage binding offsets must align to 256 B (WebGPU spec floor
-        // — minStorageBufferOffsetAlignment); WgpuBufferPool inserts the
-        // necessary pre-pad. Failure here is fatal for the model: a fresh
-        // applyCachedModel can't proceed without VRAM, so we bail with
-        // a clear log and let the caller see it as a load failure.
-        c.vertex_slice = pool_.alloc(plan.byte_count, 256);
+        // Walk meshes in chunk-local layout order, computing each mesh's
+        // chunk-local offsets and the chunk's aggregate vertex/index totals.
+        uint32_t chunk_local_v = 0;
+        uint32_t chunk_local_i = 0;
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = data.meshes[mi];
+            m.mesh_chunk_idx[mi]                 = uint32_t(ci);
+            m.mesh_chunk_local_base_vertex[mi]   = chunk_local_v;
+            m.mesh_chunk_local_ebo_first_u32[mi] = chunk_local_i;
+            chunk_local_v += mesh.vertex_count;
+            chunk_local_i += mesh.index_count;
+        }
+        c.vertex_count     = chunk_local_v;
+        c.vertex_byte_size = uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
+        c.index_count      = chunk_local_i;
+
+        c.vertex_slice = pool_.alloc(c.vertex_byte_size, 256);
         if (!c.vertex_slice.valid()) {
             qWarning().noquote().nospace()
                 << "[wgpu] pool OOM: chunk " << ci << " needed "
-                << plan.byte_count << " B for vertices, pool free="
+                << c.vertex_byte_size << " B for vertices, pool free="
                 << pool_.total_free_bytes() << " B across "
                 << pool_.sub_buffer_count() << " sub-buffer(s); aborting model load";
             releaseWgpuModelGpuData(m, pool_);
             return;
         }
-        wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
-                             c.vertex_slice.offset,
-                             data.vertices.data() + plan.source_byte_offset,
-                             plan.byte_count);
-        m.vram_bytes_vbo += plan.byte_count;
-
-        // Per-chunk index slice — same dance, from the model's indices[].
-        const size_t chunk_index_bytes = size_t(plan.index_count) * sizeof(uint32_t);
-        if (chunk_index_bytes > 0) {
-            c.index_slice = pool_.alloc(chunk_index_bytes, 256);
+        if (c.index_count > 0) {
+            c.index_slice = pool_.alloc(c.index_count * sizeof(uint32_t), 256);
             if (!c.index_slice.valid()) {
                 qWarning().noquote().nospace()
                     << "[wgpu] pool OOM: chunk " << ci << " needed "
-                    << chunk_index_bytes << " B for indices, pool free="
-                    << pool_.total_free_bytes() << " B across "
-                    << pool_.sub_buffer_count() << " sub-buffer(s); aborting model load";
+                    << (c.index_count * sizeof(uint32_t))
+                    << " B for indices, pool free=" << pool_.total_free_bytes()
+                    << " B across " << pool_.sub_buffer_count()
+                    << " sub-buffer(s); aborting model load";
                 releaseWgpuModelGpuData(m, pool_);
                 return;
             }
-            wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
-                                 c.index_slice.offset,
-                                 data.indices.data() + plan.index_first_u32,
-                                 chunk_index_bytes);
-            m.vram_bytes_ebo += chunk_index_bytes;
         }
+
+        // Gather each mesh's bytes from data.vertices / data.indices and
+        // write into the pool at chunk-local offsets. Multiple small
+        // queueWriteBuffer calls per chunk; wgpu batches them efficiently.
+        uint64_t v_off = 0;
+        uint64_t i_off = 0;
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = data.meshes[mi];
+            const size_t v_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (v_bytes > 0) {
+                wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
+                                     c.vertex_slice.offset + v_off,
+                                     data.vertices.data() + mesh.vbo_byte_offset,
+                                     v_bytes);
+                v_off += v_bytes;
+            }
+            const size_t i_bytes = size_t(mesh.index_count) * sizeof(uint32_t);
+            if (i_bytes > 0) {
+                wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
+                                     c.index_slice.offset + i_off,
+                                     data.indices.data() + (mesh.ebo_byte_offset / sizeof(uint32_t)),
+                                     i_bytes);
+                i_off += i_bytes;
+            }
+        }
+        m.vram_bytes_vbo += c.vertex_byte_size;
+        m.vram_bytes_ebo += c.index_count * sizeof(uint32_t);
     }
 
     // Derive MeshGpu[] (vec4 aabb_min + vec4 aabb_max) from MeshInfo's
@@ -3399,18 +3421,32 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
     if (c.is_resident) return true;
     if (m.streaming_file_path.empty()) return false;
 
-    // Vertex slice.
+    // Build scatter-gather ranges from this chunk's mesh_ids. Spatial
+    // chunk planning sorted meshes by world centroid, so the chunk's
+    // mesh ranges are NOT contiguous in the sidecar file — we need a
+    // multi-range read.
+    std::vector<std::pair<uint64_t, uint64_t>> v_ranges;
+    std::vector<std::pair<uint64_t, uint64_t>> i_ranges;
+    v_ranges.reserve(c.mesh_ids.size());
+    i_ranges.reserve(c.mesh_ids.size());
+    for (uint32_t mi : c.mesh_ids) {
+        const MeshInfo& mesh = m.meshes[mi];
+        const uint64_t v_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        if (v_bytes > 0) v_ranges.emplace_back(uint64_t(mesh.vbo_byte_offset), v_bytes);
+        if (mesh.index_count > 0) {
+            i_ranges.emplace_back(uint64_t(mesh.ebo_byte_offset / sizeof(uint32_t)),
+                                  uint64_t(mesh.index_count));
+        }
+    }
+
     std::vector<uint8_t> vbytes;
-    if (!readSidecarVertexChunk(m.streaming_file_path,
-                                m.streaming_vertex_section_offset,
-                                c.vertex_byte_offset,
-                                c.vertex_byte_size,
-                                vbytes)) {
+    if (!readSidecarVertexRanges(m.streaming_file_path,
+                                 m.streaming_vertex_section_offset,
+                                 v_ranges, vbytes)) {
         qWarning().noquote().nospace()
             << "[wgpu stream] failed to read vertex chunk " << chunk_idx
-            << " from " << QString::fromStdString(m.streaming_file_path)
-            << " (offset=" << c.vertex_byte_offset
-            << " size=" << c.vertex_byte_size << ")";
+            << " (" << v_ranges.size() << " ranges, total "
+            << c.vertex_byte_size << " B)";
         return false;
     }
     // Claim a pool range for the vertex bytes and upload.
@@ -3426,20 +3462,16 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
                          vbytes.data(), vbytes.size());
     m.vram_bytes_vbo += vbytes.size();
 
-    // Index slice. The byte-range read comes from
-    // streaming_index_section_offset + index_first_u32 * 4 (set by
-    // applyCachedModelStreaming alongside the vertex offset).
+    // Index slice — scatter-gather from the same mesh_ids list.
     if (c.index_count > 0) {
         std::vector<uint32_t> idx;
-        if (!readSidecarIndexChunk(m.streaming_file_path,
-                                   m.streaming_index_section_offset,
-                                   c.index_first_u32,
-                                   c.index_count,
-                                   idx)) {
+        if (!readSidecarIndexRanges(m.streaming_file_path,
+                                    m.streaming_index_section_offset,
+                                    i_ranges, idx)) {
             qWarning().noquote().nospace()
                 << "[wgpu stream] failed to read index chunk " << chunk_idx
-                << " (first=" << c.index_first_u32
-                << " count=" << c.index_count << ")";
+                << " (" << i_ranges.size() << " ranges, total "
+                << c.index_count << " indices)";
             // Return the vertex slice to the pool so we don't leak.
             pool_.free(c.vertex_slice);
             m.vram_bytes_vbo -= c.vertex_slice.size;

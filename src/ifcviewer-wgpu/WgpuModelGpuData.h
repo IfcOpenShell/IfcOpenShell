@@ -46,10 +46,18 @@
 // 1–3 chunks), which is invisible compared to per-frame GPU work.
 //
 // At INSTANCED_VERTEX_STRIDE_BYTES = 12 B/vertex this caps a chunk at
-// 11.18 M vertices. A mesh whose vertex range is bigger than this can't fit
-// in any chunk and would need splitting — typical IFC meshes are nowhere
-// near (hundreds of verts), and applyCachedModel asserts loudly if it ever
-// happens.
+// ~11 M vertices. Tuned for the pre-v14 scatter-gather streaming model:
+// spatial chunk planning means each chunk's bytes are NOT contiguous in
+// the sidecar, so per-load I/O cost scales with mesh count per chunk
+// (one fseek+fread per file gap). Bigger chunks = more meshes per
+// chunk = more seeks per load, BUT also fewer chunks total = fewer
+// loads per frame as orbit shifts the visible set. The latter
+// dominates: 128 MB chunks → ~16 chunks per pool → 1-2 loads per
+// frame → ~20-30 ms stream cost. Smaller chunks (32 / 8 MB) bring
+// finer eviction granularity but explode the loads-per-frame count.
+// Sidecar v14 (on-disk spatial reorder) is the proper fix — once
+// chunks ARE file-contiguous, the per-mesh seek cost vanishes and we
+// can drop the chunk size back to ~8 MB for sharp eviction.
 static constexpr uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 128ull * 1024 * 1024;
 
 struct WgpuModelGpuData {
@@ -116,28 +124,38 @@ struct WgpuModelGpuData {
         // Render and pick skip chunks where !is_resident.
         bool     is_resident                  = true;
 
-        // Where the chunk's vertex bytes live in the sidecar (offsets
-        // relative to vertex_section_offset on the model). Populated by
-        // the streaming loader; zeroed for the non-streaming path.
-        uint64_t vertex_byte_offset           = 0;  // 0 == start of vertex section
+        // Aggregate vertex / index sizes across all meshes in this chunk
+        // (sum of mesh.vertex_count * stride / mesh.index_count for each
+        // mesh in mesh_ids). Used to size the pool allocation and to
+        // compute the cull's per-chunk free-room check. Per-mesh layout
+        // is recovered by walking mesh_ids and the model's MeshInfo[].
         uint64_t vertex_byte_size             = 0;
-
-        // Same for indices. index_first_u32 is in u32 units relative to
-        // the start of the index section (sidecar stores raw u32 indices,
-        // no byte-level offset is needed beyond multiplying by 4).
-        uint64_t index_first_u32              = 0;
         uint64_t index_count                  = 0;
 
         // World-space AABB covering every instance whose mesh lives in
-        // this chunk. Used by cull to reject whole chunks against the
-        // frustum before iterating instances — and by the streaming
-        // loader to prioritise which non-resident chunks to fetch first.
+        // this chunk. With spatial chunk planning this AABB is tight
+        // (chunks group meshes by world centroid, not mesh-id), so the
+        // distance-based evictor can meaningfully tell chunks apart.
+        // Used by cull to reject whole chunks against the frustum before
+        // iterating instances — and by the streaming loader to
+        // prioritise which non-resident chunks to fetch first.
         float    aabb_min[3]                  = {  std::numeric_limits<float>::infinity(),
                                                     std::numeric_limits<float>::infinity(),
                                                     std::numeric_limits<float>::infinity() };
         float    aabb_max[3]                  = { -std::numeric_limits<float>::infinity(),
                                                    -std::numeric_limits<float>::infinity(),
                                                    -std::numeric_limits<float>::infinity() };
+
+        // Mesh IDs assigned to this chunk, in chunk-local layout order.
+        // Spatial chunk planning sorts meshes by world centroid first,
+        // so this list is not in mesh-id order in general — each mesh's
+        // bytes live at scattered offsets in the sidecar file. The
+        // loader walks this list to scatter-gather the chunk's vertex
+        // + index bytes; mesh_chunk_local_base_vertex /
+        // mesh_chunk_local_ebo_first_u32 are computed in this same
+        // order at planning time so the cull's VisibleDrawGpu entries
+        // point at the correct chunk-local offsets.
+        std::vector<uint32_t> mesh_ids;
 
         // LRU marker for streaming eviction. Updated to the window's
         // streaming_frame_idx_ every frame the chunk is rendered (i.e.
