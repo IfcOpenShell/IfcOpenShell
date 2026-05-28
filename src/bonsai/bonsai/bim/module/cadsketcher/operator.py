@@ -143,6 +143,8 @@ _IFC_TAG_TYPE_KEY = {
     "IfcPile": "IfcPileType",
 }
 
+_VALID_WALL_MEMBER_OFFSETS = {"EXTERIOR", "CENTER", "INTERIOR"}
+
 
 def _tpg_get_param_field(raw_value, ifc_tag, param_key):
     """Return the value of *param_key* from the `p` JSON of the *ifc_tag* entry."""
@@ -181,6 +183,23 @@ def _get_group_type_guid(sketch, slvs_index, ifc_tag, type_key):
             continue
         if group.get_member(slvs_index) is not None:
             return _tpg_get_param_field(group.guid, ifc_tag, type_key)
+    return ""
+
+
+def _get_wall_member_offset(sketch, slvs_index):
+    """Return wall member offset enum from member TAG params for *slvs_index*."""
+    if sketch is None:
+        return ""
+
+    for group in sketch.groups:
+        if not _group_has_active_tag(group, "IfcWall"):
+            continue
+        member = group.get_member(slvs_index)
+        if member is None:
+            continue
+        value = _tpg_get_param_field(member.guid, "IfcWall", "offset_type_vertical").upper()
+        if value in _VALID_WALL_MEMBER_OFFSETS:
+            return value
     return ""
 
 
@@ -730,6 +749,7 @@ class CADSketcherWallTypeItem(PropertyGroup):
     type_label: StringProperty(
         name="Type Label", default="(no type — set via Edit TAG Parameters)", options={"SKIP_SAVE"}
     )
+    member_offset: StringProperty(name="Member Offset", default="", options={"SKIP_SAVE"})
     height: FloatProperty(name="Height", default=3.0, min=0.1, unit="LENGTH")
 
 
@@ -928,6 +948,7 @@ class FetchCADSketcher(Operator):
             type_guid = _get_group_type_guid(sketch, line.slvs_index, "IfcWall", "IfcWallType")
             item.type_guid = type_guid
             item.type_label = _resolve_type_label(ifc_file, type_guid)
+            item.member_offset = _get_wall_member_offset(sketch, line.slvs_index)
             # Pre-populate height from existing IFC geometry if available
             line_guid = _entity_guid(sketch, line.slvs_index, "IfcWall")
             if ifc_file and line_guid:
@@ -1216,6 +1237,7 @@ class FetchCADSketcher(Operator):
                 row.label(text=item.label)
                 row.prop(item, "height", text="H")
                 row.label(text=item.type_label)
+                row.label(text=item.member_offset or "—")
 
         if self.wall_run_items:
             layout.separator()
@@ -1385,6 +1407,7 @@ class FetchCADSketcher(Operator):
         # Build slvs_index → IfcWallType and height mappings from dialog selections
         wall_type_map = {}
         wall_height_map = {}
+        wall_member_offset_map = {}
         for item in self.wall_type_items:
             wall_type_resolved = _resolve_type_from_guid(ifc_file, item.type_guid)
             if wall_type_resolved is None:
@@ -1395,6 +1418,9 @@ class FetchCADSketcher(Operator):
                 continue
             wall_type_map[item.slvs_index] = wall_type_resolved
             wall_height_map[item.slvs_index] = item.height
+            member_offset = (item.member_offset or "").upper()
+            if member_offset in _VALID_WALL_MEMBER_OFFSETS:
+                wall_member_offset_map[item.slvs_index] = member_offset
 
         sketch_index = sketch.slvs_index
         sse = context.scene.sketcher.entities
@@ -1406,6 +1432,7 @@ class FetchCADSketcher(Operator):
         )
 
         wall_pairs = []  # [(sketch_line, blender_obj), ...]
+        walls_to_recalculate = []
         for line in wall_lines:
             wall_type = wall_type_map.get(line.slvs_index, None)
             if wall_type is None:
@@ -1415,8 +1442,18 @@ class FetchCADSketcher(Operator):
                 line, ifc_file, unit_scale, body_context, axis_context, wall_type, wall_height, sketch=sketch
             )
             if obj is not None:
+                member_offset = wall_member_offset_map.get(line.slvs_index, "")
+                if member_offset:
+                    try:
+                        tool.Model.offset_wall(obj, member_offset)
+                        walls_to_recalculate.append(obj)
+                    except Exception:
+                        pass
                 wall_pairs.append((line, obj))
                 created += 1
+
+        if walls_to_recalculate:
+            tool.Model.recalculate_walls(walls_to_recalculate)
 
         # Join walls that share a sketch endpoint
         if len(wall_pairs) > 1:
@@ -1445,6 +1482,7 @@ class FetchCADSketcher(Operator):
             if poly is None:
                 continue
             run_pairs = []
+            run_walls_to_recalculate = []
             for j in range(poly.segment_count):
                 seg_idx = int(poly.segment_indices[j])
                 if seg_idx == -1:
@@ -1458,8 +1496,17 @@ class FetchCADSketcher(Operator):
                     seg, ifc_file, unit_scale, body_context, axis_context, run_type, run_height, sketch=sketch
                 )
                 if obj is not None:
+                    member_offset = _get_wall_member_offset(sketch, seg.slvs_index)
+                    if member_offset:
+                        try:
+                            tool.Model.offset_wall(obj, member_offset)
+                            run_walls_to_recalculate.append(obj)
+                        except Exception:
+                            pass
                     run_pairs.append((seg, obj))
                     created += 1
+            if run_walls_to_recalculate:
+                tool.Model.recalculate_walls(run_walls_to_recalculate)
             if len(run_pairs) > 1:
                 try:
                     from bonsai.bim.module.model.wall import DumbWallJoiner
