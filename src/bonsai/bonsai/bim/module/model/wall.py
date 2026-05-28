@@ -2133,6 +2133,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gz.hide = self.is_gizmo_hidden_by_modal(gz)
             world_pos = mw @ Vector((cursor_local.x, 0.0, local_z))
             gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
+            _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
 
     def _update_icon_row_extras(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
         """Position the wall-specific icons in the icon row.
@@ -2193,6 +2194,32 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             self.toggle_openings_gizmo.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
         else:
             self.toggle_openings_gizmo.hide = True
+
+
+def _apply_wall_extend_flips(
+    gz: bpy.types.Gizmo,
+    group: "GizmoWallEdition",
+    world_pos: Vector,
+    mw: Matrix,
+    cursor_local: Vector,
+    props: "BIMWallProperties",
+    billboard_rot: Matrix,
+) -> None:
+    """Mirror the wall's extend arrows so each points toward the end the click will move.
+
+    Extend-X: arrow points away from the wall endpoint that the operator would
+    keep fixed, accounting for the camera's screen-X orientation. Extend-Z:
+    arrow flips downward when the cursor sits below the wall top."""
+    if gz is group.extend_x_gizmo:
+        if props.length > 0 and cursor_local.x > props.anchor_x + props.length / 2:
+            reference_x = props.anchor_x
+        else:
+            reference_x = props.anchor_x + props.length
+        reference_world = mw @ Vector((reference_x, 0.0, 0.0))
+        if gizmo.should_flip_extend_arrow(world_pos, reference_world, billboard_rot):
+            gz.matrix_basis = gz.matrix_basis @ gizmo.EXTEND_FLIP_MIRROR_X
+    elif gz is group.extend_z_gizmo and cursor_local.z < props.height - gizmo.EXTEND_FLIP_EPSILON:
+        gz.matrix_basis = gz.matrix_basis @ gizmo.EXTEND_FLIP_MIRROR_Y
 
 
 def _commit_active_wall_edit_if_any(context: bpy.types.Context) -> bpy.types.Object | None:
