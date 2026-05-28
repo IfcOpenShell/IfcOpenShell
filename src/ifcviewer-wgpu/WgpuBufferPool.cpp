@@ -37,6 +37,7 @@ void WgpuBufferPool::configure(WGPUInstance instance, WGPUDevice device,
     device_                  = device;
     usage_                   = usage;
     per_sub_buffer_capacity_ = per_sub_buffer_capacity;
+    last_growth_size_        = per_sub_buffer_capacity;
     label_prefix_            = label_prefix ? label_prefix : "";
 }
 
@@ -49,78 +50,86 @@ void WgpuBufferPool::destroy() {
     instance_                = nullptr;
     usage_                   = 0;
     per_sub_buffer_capacity_ = 0;
+    last_growth_size_        = 0;
     growth_disabled_         = false;
     label_prefix_.clear();
 }
 
 bool WgpuBufferPool::addSubBuffer() {
     if (!device_ || per_sub_buffer_capacity_ == 0) return false;
-    // A previous addSubBuffer at this capacity was refused — don't retry
-    // every alloc and re-log. The driver's per-allocation cap won't move
-    // without something freeing first, which only destroy() represents.
     if (growth_disabled_) return false;
 
-    // wgpu-native classifies "Not enough memory left" as Validation, not
-    // OutOfMemory — so we push both filters (nested: OOM inner, Validation
-    // outer). Either firing means the driver refused the allocation.
-    wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
-    wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
+    // 64 MB floor: smaller sub-buffers aren't worth the per-allocation
+    // bookkeeping cost (one bind group per chunk, free-list overhead).
+    // If the driver won't grant even 64 MB the pool is genuinely at
+    // its ceiling; growth_disabled_ latches and future grow attempts
+    // skip the doomed retry.
+    constexpr uint64_t MIN_SUB_BUFFER_BYTES = 64ull * 1024 * 1024;
+    uint64_t try_size = last_growth_size_ > 0
+                      ? last_growth_size_
+                      : per_sub_buffer_capacity_;
+    if (try_size < MIN_SUB_BUFFER_BYTES) try_size = MIN_SUB_BUFFER_BYTES;
 
-    char label[128];
-    std::snprintf(label, sizeof(label), "%s.sub%zu",
-                  label_prefix_.c_str(), sub_pools_.size());
+    while (try_size >= MIN_SUB_BUFFER_BYTES) {
+        // wgpu-native classifies "Not enough memory left" as Validation,
+        // not OutOfMemory. Nested scopes: OOM inner, Validation outer.
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
 
-    WGPUBufferDescriptor desc = {};
-    desc.usage       = usage_;
-    desc.size        = per_sub_buffer_capacity_;
-    desc.label.data  = label;
-    desc.label.length = std::strlen(label);
-    WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
+        char label[128];
+        std::snprintf(label, sizeof(label), "%s.sub%zu",
+                      label_prefix_.c_str(), sub_pools_.size());
 
-    struct PopResult { bool done = false; bool error = false; };
-    auto pop = [&](PopResult& pr) {
-        WGPUPopErrorScopeCallbackInfo pcb = {};
-        pcb.mode = WGPUCallbackMode_AllowProcessEvents;
-        pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
-                          WGPUStringView, void* ud1, void* /*ud2*/) {
-            auto* p = static_cast<PopResult*>(ud1);
-            p->done = true;
-            p->error = (type != WGPUErrorType_NoError);
+        WGPUBufferDescriptor desc = {};
+        desc.usage        = usage_;
+        desc.size         = try_size;
+        desc.label.data   = label;
+        desc.label.length = std::strlen(label);
+        WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
+
+        struct PopResult { bool done = false; bool error = false; };
+        auto pop = [&](PopResult& pr) {
+            WGPUPopErrorScopeCallbackInfo pcb = {};
+            pcb.mode = WGPUCallbackMode_AllowProcessEvents;
+            pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
+                              WGPUStringView, void* ud1, void* /*ud2*/) {
+                auto* p = static_cast<PopResult*>(ud1);
+                p->done  = true;
+                p->error = (type != WGPUErrorType_NoError);
+            };
+            pcb.userdata1 = &pr;
+            wgpuDevicePopErrorScope(device_, pcb);
+            while (!pr.done) wgpuInstanceProcessEvents(instance_);
         };
-        pcb.userdata1 = &pr;
-        wgpuDevicePopErrorScope(device_, pcb);
-        while (!pr.done) wgpuInstanceProcessEvents(instance_);
-    };
-    PopResult oom_pop, validation_pop;
-    pop(oom_pop);
-    pop(validation_pop);
+        PopResult oom_pop, validation_pop;
+        pop(oom_pop);
+        pop(validation_pop);
 
-    if (!buf || oom_pop.error || validation_pop.error) {
+        if (buf && !oom_pop.error && !validation_pop.error) {
+            SubPool sp;
+            sp.buffer   = buf;
+            sp.capacity = try_size;
+            sp.used     = 0;
+            sp.free_ranges.push_back({0, try_size});
+            sub_pools_.push_back(std::move(sp));
+            last_growth_size_ = try_size;
+            qInfo().noquote().nospace()
+                << "[wgpu pool] added sub-buffer " << (sub_pools_.size() - 1)
+                << " (" << (try_size / (1024 * 1024)) << " MB); pool total now "
+                << (total_capacity_bytes() / (1024 * 1024)) << " MB";
+            return true;
+        }
         if (buf) wgpuBufferRelease(buf);
-        // Log once — set growth_disabled_ so subsequent allocs don't
-        // re-try at this size. The pool runs at its hardware-limited
-        // ceiling from here; eviction handles the rest.
-        qInfo().noquote().nospace()
-            << "[wgpu pool] driver refused sub-buffer " << sub_pools_.size()
-            << " at " << (per_sub_buffer_capacity_ / (1024 * 1024))
-            << " MB; pool capped at " << (total_capacity_bytes() / (1024 * 1024))
-            << " MB across " << sub_pools_.size() << " sub-buffer(s) — growth disabled";
-        growth_disabled_ = true;
-        return false;
+        try_size /= 2;
     }
 
-    SubPool sp;
-    sp.buffer   = buf;
-    sp.capacity = per_sub_buffer_capacity_;
-    sp.used     = 0;
-    sp.free_ranges.push_back({0, per_sub_buffer_capacity_});
-    sub_pools_.push_back(std::move(sp));
-
     qInfo().noquote().nospace()
-        << "[wgpu pool] added sub-buffer " << (sub_pools_.size() - 1)
-        << " (" << (per_sub_buffer_capacity_ / (1024 * 1024)) << " MB); pool total now "
-        << (total_capacity_bytes() / (1024 * 1024)) << " MB";
-    return true;
+        << "[wgpu pool] driver refused growth even at "
+        << (MIN_SUB_BUFFER_BYTES / (1024 * 1024)) << " MB; pool capped at "
+        << (total_capacity_bytes() / (1024 * 1024))
+        << " MB across " << sub_pools_.size() << " sub-buffer(s) — growth disabled";
+    growth_disabled_ = true;
+    return false;
 }
 
 WgpuBufferPool::Slice WgpuBufferPool::alloc(uint64_t size, uint64_t align) {

@@ -3588,11 +3588,11 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // avoids wasted evict-then-fail loops.
     auto pool_can_fit = [&](uint64_t bytes) -> bool {
         if (pool_.largest_free_run_bytes() >= bytes) return true;
-        // Growth might still rescue us — but only if growth hasn't been
-        // refused at this size already. After a refusal, eviction is the
-        // sole path; the eviction loop must run until largest_free_run
-        // catches up.
-        if (pool_.can_grow() && pool_.per_sub_buffer_capacity_bytes() >= bytes) return true;
+        // Growth might still rescue us. Use next_growth_size_bytes()
+        // rather than per_sub_buffer_capacity_bytes() — after a refusal
+        // at e.g. 2 GB, halve-on-failure pushes the next achievable
+        // sub-buffer down to 1 GB; saying "fits if ≤2 GB" would lie.
+        if (pool_.can_grow() && pool_.next_growth_size_bytes() >= bytes) return true;
         return false;
     };
 

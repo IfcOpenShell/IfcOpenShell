@@ -97,10 +97,18 @@ public:
     // Per-sub-buffer count, for diagnostics / logging.
     size_t   sub_buffer_count() const { return sub_pools_.size(); }
     uint64_t per_sub_buffer_capacity_bytes() const { return per_sub_buffer_capacity_; }
+    // Best estimate of the size a *future* sub-buffer would land at:
+    // last_growth_size_ if we've ever grown (or just been configured),
+    // else the configured per_sub_buffer_capacity. After the driver
+    // refuses a size, halve-on-failure in addSubBuffer pushes this down
+    // so callers' "can this chunk fit via growth?" check stays honest.
+    uint64_t next_growth_size_bytes() const {
+        return last_growth_size_ > 0 ? last_growth_size_ : per_sub_buffer_capacity_;
+    }
     // Whether the pool can still attempt to add a sub-buffer. Flips to
-    // false the first time addSubBuffer is refused — eviction callers
-    // need this to know whether a future alloc could rescue them by
-    // growing, or whether eviction is the only path.
+    // false the first time addSubBuffer is refused even at the floor
+    // size — eviction callers need this to know whether a future alloc
+    // could rescue them, or whether eviction is the only path.
     bool     can_grow() const { return !growth_disabled_ && per_sub_buffer_capacity_ > 0; }
 
 private:
@@ -112,12 +120,18 @@ private:
         std::vector<FreeRange> free_ranges;
     };
 
-    // Append a new sub-buffer at per_sub_buffer_capacity_, wrapped in an
-    // OOM/Validation error scope so a failed allocation doesn't take the
-    // device down. Returns false on driver OOM (caller should treat as
-    // "pool is at its hardware-limited maximum"). After a failure, sets
-    // growth_disabled_ so subsequent allocs don't keep retrying (and
-    // log-spamming) at the same size that just refused.
+    // Append a new sub-buffer to the pool. Starts at last_growth_size_
+    // (initially per_sub_buffer_capacity_) and halves on driver refusal
+    // before giving up — many Vulkan drivers cap single VkDeviceMemory
+    // allocations at a couple GB (e.g. NVIDIA: maxStorageBufferBindingSize
+    // is exactly 2 GB on consumer GeForce cards) or refuse big contiguous
+    // allocations once heap is fragmented, but happily grant smaller ones.
+    // Halving turns "stop at first refused 2 GB" into "2 GB + 1 GB + …",
+    // which on a 4 GB card lets us reach 3 GB total instead of 2 GB.
+    // Wrapped in OOM/Validation error scopes so failed attempts don't
+    // take the device down. Returns true on success at some size
+    // ≥ MIN_SUB_BUFFER_BYTES; false only when even the minimum size is
+    // refused, at which point growth_disabled_ latches.
     bool addSubBuffer();
 
     std::vector<SubPool> sub_pools_;
@@ -126,6 +140,13 @@ private:
     WGPUDevice       device_                   = nullptr;
     WGPUBufferUsage  usage_                    = 0;
     uint64_t         per_sub_buffer_capacity_  = 0;
+    // The largest size addSubBuffer last *succeeded* at, in bytes.
+    // Starts at per_sub_buffer_capacity_ (the probe's discovered max)
+    // and decays as the driver refuses larger allocations. Future grow
+    // attempts start from here rather than re-trying the max every
+    // time — once the driver has refused 2 GB, retrying 2 GB on every
+    // subsequent grow is wasted work.
+    uint64_t         last_growth_size_         = 0;
     bool             growth_disabled_          = false;
     std::string      label_prefix_;
 };
