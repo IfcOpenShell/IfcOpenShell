@@ -135,6 +135,7 @@ class Collector(bonsai.core.tool.Collector):
 
         if element.is_a("IfcFeatureElementSubtraction"):
             obj.display_type = "WIRE"
+            obj.display.show_shadows = False
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:

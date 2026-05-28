@@ -422,6 +422,29 @@ class Geometry(bonsai.core.tool.Geometry):
             del mesh["ios_edges"]
 
     @classmethod
+    def get_dissolved_edges(
+        cls,
+        mesh: bpy.types.Mesh,
+        angle_limit: float = radians(1.0),
+    ) -> tuple[list[Vector], list[tuple[int, int]]]:
+        # Read-only on `mesh`: builds a throwaway bmesh, dissolves coplanar
+        # edges while preserving material seams, returns wire-overlay data.
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.dissolve_limit(
+            bm,
+            angle_limit=angle_limit,
+            verts=bm.verts,
+            edges=bm.edges,
+            delimit={"MATERIAL"},
+        )
+        bm.verts.index_update()
+        verts = [v.co.copy() for v in bm.verts]
+        edges = [(e.verts[0].index, e.verts[1].index) for e in bm.edges]
+        bm.free()
+        return verts, edges
+
+    @classmethod
     def apply_item_ids_as_vertex_groups(cls, obj: bpy.types.Object) -> None:
         """Save mesh-object item_ids as vertex groups in format 'ios_item_id_xxxx'.
 
