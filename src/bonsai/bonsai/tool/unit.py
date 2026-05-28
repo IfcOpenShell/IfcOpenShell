@@ -199,8 +199,8 @@ class Unit(bonsai.core.tool.Unit):
                 if inches is None:
                     inches = 0
 
-                # If feet is negative, inches should also be negative (subtractive)
-                if feet < 0:
+                # If feet is negative (including -0), inches should also be negative (subtractive)
+                if math.copysign(1, feet) < 0:
                     inches = -inches
 
                 # Convert to meters
