@@ -132,6 +132,87 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
     return buf;
 }
 
+// Interleave the low 21 bits of v with two zero bits between each,
+// returning bits at positions 0, 3, 6, ..., 60 — one axis of a
+// standard 21-bit-per-axis 3D Morton code. ORing three of these
+// shifted by 0, 1, 2 gives a 63-bit (x, y, z)-interleaved code; the
+// resulting integer ordering puts spatially-close points close in
+// the sorted sequence (the classic Z-order curve).
+static uint64_t mortonSplit21(uint32_t v) {
+    uint64_t r = v & 0x1FFFFFu;
+    r = (r | r << 32) & 0x001F00000000FFFFULL;
+    r = (r | r << 16) & 0x001F0000FF0000FFULL;
+    r = (r | r << 8)  & 0x100F00F00F00F00FULL;
+    r = (r | r << 4)  & 0x10C30C30C30C30C3ULL;
+    r = (r | r << 2)  & 0x1249249249249249ULL;
+    return r;
+}
+
+static uint64_t mortonCode3D(uint32_t x, uint32_t y, uint32_t z) {
+    return mortonSplit21(x) | (mortonSplit21(y) << 1) | (mortonSplit21(z) << 2);
+}
+
+// Return a mesh-id permutation sorted by 3D Morton (Z-order) code over
+// the meshes' centroids. Replaces a lexicographic (z, y, x) sort,
+// which was effectively a 1D Z-slab traversal — chunks ended up
+// spanning the whole XY extent of the model, ~50m × 50m × 0.5m for a
+// typical building. Morton clusters spatially in all 3 axes, so each
+// chunk's AABB becomes a tight 3D voxel — small enough that
+// per-chunk frustum / contribution / HiZ rejection becomes meaningful
+// (a 1km-wide AABB never gets occluded; a 10m voxel often does).
+//
+// Meshes with no instances get a Morton code of 0 and sink to the
+// front; they contribute no geometry / AABBs so where they land in
+// the chunk plan doesn't matter.
+static std::vector<uint32_t> sortMeshIdsByMorton(
+        std::size_t n_meshes,
+        const std::vector<float>&    mesh_cx,
+        const std::vector<float>&    mesh_cy,
+        const std::vector<float>&    mesh_cz,
+        const std::vector<uint32_t>& mesh_inst_count) {
+    // Per-model bounds over centroids. Quantising relative to these
+    // gives the Morton code its full 21-bit-per-axis resolution
+    // (~2 M bins per axis = sub-millimetre on a kilometre-scale scene,
+    // way more than we need; the cost is the same regardless).
+    float bmin[3] = {  std::numeric_limits<float>::infinity(),
+                       std::numeric_limits<float>::infinity(),
+                       std::numeric_limits<float>::infinity() };
+    float bmax[3] = { -std::numeric_limits<float>::infinity(),
+                      -std::numeric_limits<float>::infinity(),
+                      -std::numeric_limits<float>::infinity() };
+    for (std::size_t i = 0; i < n_meshes; ++i) {
+        if (mesh_inst_count[i] == 0) continue;
+        bmin[0] = std::min(bmin[0], mesh_cx[i]); bmax[0] = std::max(bmax[0], mesh_cx[i]);
+        bmin[1] = std::min(bmin[1], mesh_cy[i]); bmax[1] = std::max(bmax[1], mesh_cy[i]);
+        bmin[2] = std::min(bmin[2], mesh_cz[i]); bmax[2] = std::max(bmax[2], mesh_cz[i]);
+    }
+    const float ext[3] = {
+        std::max(bmax[0] - bmin[0], 1e-3f),
+        std::max(bmax[1] - bmin[1], 1e-3f),
+        std::max(bmax[2] - bmin[2], 1e-3f),
+    };
+    constexpr uint32_t MORTON_BITS = 21;
+    constexpr uint32_t MORTON_MAX  = (1u << MORTON_BITS) - 1u;
+
+    std::vector<uint64_t> codes(n_meshes, 0);
+    for (uint32_t i = 0; i < uint32_t(n_meshes); ++i) {
+        if (mesh_inst_count[i] == 0) continue;
+        const float nx = (mesh_cx[i] - bmin[0]) / ext[0];
+        const float ny = (mesh_cy[i] - bmin[1]) / ext[1];
+        const float nz = (mesh_cz[i] - bmin[2]) / ext[2];
+        const uint32_t qx = std::min(uint32_t(nx * float(MORTON_MAX + 1u)), MORTON_MAX);
+        const uint32_t qy = std::min(uint32_t(ny * float(MORTON_MAX + 1u)), MORTON_MAX);
+        const uint32_t qz = std::min(uint32_t(nz * float(MORTON_MAX + 1u)), MORTON_MAX);
+        codes[i] = mortonCode3D(qx, qy, qz);
+    }
+
+    std::vector<uint32_t> sorted(n_meshes);
+    std::iota(sorted.begin(), sorted.end(), 0u);
+    std::stable_sort(sorted.begin(), sorted.end(),
+        [&](uint32_t a, uint32_t b) { return codes[a] < codes[b]; });
+    return sorted;
+}
+
 void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
     for (auto& c : m.chunks) {
         if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
@@ -595,19 +676,13 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         }
     }
 
-    // Sort mesh indices by centroid. Lexicographic (z, y, x) is cheap and
-    // gives reasonable spatial locality — a Morton/Hilbert encode would
-    // be tighter but this is enough to make per-chunk AABBs much smaller
-    // than the model AABB. Stable sort to keep mesh-id order as the
-    // tiebreaker when many meshes coincide (instanced repeat geometry).
-    std::vector<uint32_t> sorted_mesh_ids(n_meshes);
-    std::iota(sorted_mesh_ids.begin(), sorted_mesh_ids.end(), 0u);
-    std::stable_sort(sorted_mesh_ids.begin(), sorted_mesh_ids.end(),
-        [&](uint32_t a, uint32_t b) {
-            if (mesh_cz[a] != mesh_cz[b]) return mesh_cz[a] < mesh_cz[b];
-            if (mesh_cy[a] != mesh_cy[b]) return mesh_cy[a] < mesh_cy[b];
-            return mesh_cx[a] < mesh_cx[b];
-        });
+    // Sort mesh indices by 3D Morton (Z-order) code over centroids — gives
+    // tight 3D voxel chunks instead of the XY-slab chunks the previous
+    // lex (z, y, x) sort produced. Tight AABBs are a prerequisite for
+    // per-chunk frustum / contribution / HiZ rejection actually
+    // discriminating between near and far chunks of the same model.
+    std::vector<uint32_t> sorted_mesh_ids =
+        sortMeshIdsByMorton(n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
 
     // Greedy pack sorted meshes into chunks.
     std::vector<std::vector<uint32_t>> chunk_mesh_ids;
@@ -851,14 +926,10 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         }
     }
 
-    std::vector<uint32_t> sorted_mesh_ids(n_meshes);
-    std::iota(sorted_mesh_ids.begin(), sorted_mesh_ids.end(), 0u);
-    std::stable_sort(sorted_mesh_ids.begin(), sorted_mesh_ids.end(),
-        [&](uint32_t a, uint32_t b) {
-            if (mesh_cz[a] != mesh_cz[b]) return mesh_cz[a] < mesh_cz[b];
-            if (mesh_cy[a] != mesh_cy[b]) return mesh_cy[a] < mesh_cy[b];
-            return mesh_cx[a] < mesh_cx[b];
-        });
+    // Morton sort (see sortMeshIdsByMorton above) — same logic as the
+    // streaming path; gives tight 3D voxel chunks instead of XY slabs.
+    std::vector<uint32_t> sorted_mesh_ids =
+        sortMeshIdsByMorton(n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
 
     std::vector<std::vector<uint32_t>> chunk_mesh_ids;
     chunk_mesh_ids.push_back({});

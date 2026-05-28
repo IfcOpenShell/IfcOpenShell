@@ -45,19 +45,21 @@
 // 1–3 chunks), which is invisible compared to per-frame GPU work.
 //
 // At INSTANCED_VERTEX_STRIDE_BYTES = 12 B/vertex this caps a chunk at
-// ~11 M vertices. Tuned for the pre-v14 scatter-gather streaming model:
-// spatial chunk planning means each chunk's bytes are NOT contiguous in
-// the sidecar, so per-load I/O cost scales with mesh count per chunk
-// (one fseek+fread per file gap). Bigger chunks = more meshes per
-// chunk = more seeks per load, BUT also fewer chunks total = fewer
-// loads per frame as orbit shifts the visible set. The latter
-// dominates: 128 MB chunks → ~16 chunks per pool → 1-2 loads per
-// frame → ~20-30 ms stream cost. Smaller chunks (32 / 8 MB) bring
-// finer eviction granularity but explode the loads-per-frame count.
-// Sidecar v14 (on-disk spatial reorder) is the proper fix — once
-// chunks ARE file-contiguous, the per-mesh seek cost vanishes and we
-// can drop the chunk size back to ~8 MB for sharp eviction.
-static constexpr uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 128ull * 1024 * 1024;
+// ~1.4 M vertices. 16 MB is the sweet spot once background-thread I/O
+// (WgpuStreamingThread) is in place: scatter-gather per-mesh seeks
+// happen on the worker, not the render thread, so smaller chunks
+// (and thus more per-frame loads as orbit shifts) no longer stall
+// rendering. The win is much finer pool-allocation granularity —
+// a 3 GB pool fits ~190 chunks vs ~21 at 128 MB — so visible
+// geometry is far less likely to get "trapped" behind invisible
+// chunkmates. Pre-async this size gave 7 fps (the sync loads blocked
+// the render thread); now it's bounded by cull cost not stream cost.
+//
+// Sidecar v14 (on-disk spatial reorder) would let us go smaller still
+// (~4 MB) with single-fread chunk loads, but the difference between
+// 16 MB and 4 MB is much smaller than the difference between 128 MB
+// and 16 MB.
+static constexpr uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 16ull * 1024 * 1024;
 
 struct WgpuModelGpuData {
     // std430 layout: 16 bytes per entry, naturally aligned. base_vertex is
