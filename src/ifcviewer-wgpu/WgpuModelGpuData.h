@@ -30,6 +30,7 @@
 
 #include "BvhAccel.h"
 #include "InstancedGeometry.h"
+#include "WgpuBufferPool.h"
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
@@ -77,16 +78,13 @@ struct WgpuModelGpuData {
     // needs them. Non-streaming path always sets is_resident=true and
     // populates pool ranges at applyCachedModel time.
     struct Chunk {
-        // Pool-allocated vertex bytes. When resident, pool_vertex_size > 0
-        // and the range [pool_vertex_offset, pool_vertex_offset + pool_vertex_size)
-        // in WgpuViewportWindow::pool_ holds this chunk's vertex_storage.
-        // When non-resident, both are 0.
-        uint64_t      pool_vertex_offset      = 0;
-        uint64_t      pool_vertex_size        = 0;
-        // Pool-allocated index bytes. Same lifetime as the vertex range —
-        // either both resident or both freed.
-        uint64_t      pool_index_offset       = 0;
-        uint64_t      pool_index_size         = 0;
+        // Pool-allocated vertex + index bytes. Both slices land in the
+        // shared WgpuViewportWindow::pool_; the slice tells us which
+        // sub-buffer they live in (the pool may span multiple sub-buffers
+        // when scenes exceed wgpu's single-buffer cap). When non-resident,
+        // both .size are 0.
+        WgpuBufferPool::Slice vertex_slice;
+        WgpuBufferPool::Slice index_slice;
 
         WGPUBuffer    visible_draws_buffer    = nullptr;
         WGPUBuffer    prefix_sums_buffer      = nullptr;
@@ -98,8 +96,17 @@ struct WgpuModelGpuData {
         size_t        prefix_sums_capacity    = 0;
 
         // Per-frame, populated by cullModelCpuCompute and consumed by render().
+        // total_visible_* are post-frustum + contribution + HiZ — used to size
+        // the actual draw call. frustum_visible_count is bumped immediately
+        // after the frustum check (before contribution / HiZ), and is what
+        // driveStreamingLoads keys on for residency decisions. Streaming
+        // must NOT use the HiZ-post counters: HiZ visibility flips
+        // frame-to-frame as occluders shift, which would otherwise thrash
+        // the loader (evict-then-reload every frame even with the camera
+        // stationary, killing FPS and producing visible flicker).
         uint32_t      total_visible_vertices  = 0;
         uint32_t      total_visible_draws     = 0;
+        uint32_t      frustum_visible_count   = 0;
 
         std::vector<VisibleDrawGpu> visible_draws_scratch;
         std::vector<uint32_t>       prefix_sums_scratch;
@@ -189,8 +196,6 @@ struct WgpuModelGpuData {
 
     bool hidden = false;
 };
-
-class WgpuBufferPool;
 
 // Release every wgpu handle in `m` (including per-chunk and per-model pool
 // ranges via `pool.free()`) and clear its size mirrors. Safe to call

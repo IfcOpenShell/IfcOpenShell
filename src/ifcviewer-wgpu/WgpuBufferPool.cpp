@@ -19,6 +19,8 @@
 
 #include "WgpuBufferPool.h"
 
+#include <QtDebug>
+
 #include <cassert>
 #include <cstring>
 
@@ -26,105 +28,189 @@ WgpuBufferPool::~WgpuBufferPool() {
     destroy();
 }
 
-bool WgpuBufferPool::init(WGPUDevice device, uint64_t capacity_bytes,
-                          WGPUBufferUsage usage, const char* label) {
+void WgpuBufferPool::configure(WGPUInstance instance, WGPUDevice device,
+                               WGPUBufferUsage usage,
+                               uint64_t per_sub_buffer_capacity,
+                               const char* label_prefix) {
     destroy();
-    if (capacity_bytes == 0) return false;
-
-    WGPUBufferDescriptor desc = {};
-    desc.usage = usage;
-    desc.size  = capacity_bytes;
-    if (label) {
-        desc.label.data   = label;
-        desc.label.length = std::strlen(label);
-    }
-    buffer_ = wgpuDeviceCreateBuffer(device, &desc);
-    if (!buffer_) return false;
-
-    capacity_ = capacity_bytes;
-    used_     = 0;
-    free_ranges_.clear();
-    free_ranges_.push_back({0, capacity_bytes});
-    return true;
+    instance_                = instance;
+    device_                  = device;
+    usage_                   = usage;
+    per_sub_buffer_capacity_ = per_sub_buffer_capacity;
+    label_prefix_            = label_prefix ? label_prefix : "";
 }
 
 void WgpuBufferPool::destroy() {
-    if (buffer_) {
-        wgpuBufferRelease(buffer_);
-        buffer_ = nullptr;
+    for (auto& sp : sub_pools_) {
+        if (sp.buffer) wgpuBufferRelease(sp.buffer);
     }
-    capacity_ = 0;
-    used_     = 0;
-    free_ranges_.clear();
+    sub_pools_.clear();
+    device_                  = nullptr;
+    instance_                = nullptr;
+    usage_                   = 0;
+    per_sub_buffer_capacity_ = 0;
+    growth_disabled_         = false;
+    label_prefix_.clear();
 }
 
-bool WgpuBufferPool::alloc(uint64_t size, uint64_t align, uint64_t* out_offset) {
-    if (size == 0 || align == 0) return false;
-    // First-fit: scan free ranges, pick the first that fits with alignment.
-    for (size_t i = 0; i < free_ranges_.size(); ++i) {
-        const FreeRange& r = free_ranges_[i];
-        const uint64_t aligned = (r.offset + (align - 1)) & ~(align - 1);
-        const uint64_t pad     = aligned - r.offset;
-        if (pad >= r.size)            continue;          // alignment alone won't fit
-        if (size > r.size - pad)      continue;          // payload won't fit
+bool WgpuBufferPool::addSubBuffer() {
+    if (!device_ || per_sub_buffer_capacity_ == 0) return false;
+    // A previous addSubBuffer at this capacity was refused — don't retry
+    // every alloc and re-log. The driver's per-allocation cap won't move
+    // without something freeing first, which only destroy() represents.
+    if (growth_disabled_) return false;
 
-        // Split the range. Three resulting pieces:
-        //   [r.offset, aligned)              -> pre-pad, returned to free list
-        //   [aligned,  aligned + size)       -> the allocation (claimed)
-        //   [aligned + size, r.offset + r.size) -> post-pad, returned to free list
-        const uint64_t post_off  = aligned + size;
-        const uint64_t post_size = (r.offset + r.size) - post_off;
+    // wgpu-native classifies "Not enough memory left" as Validation, not
+    // OutOfMemory — so we push both filters (nested: OOM inner, Validation
+    // outer). Either firing means the driver refused the allocation.
+    wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
+    wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
 
-        // Mutate in place: replace the matched range with the pre-pad
-        // (or erase it if there's no pre-pad), then optionally insert
-        // the post-pad immediately after.
-        if (pad == 0 && post_size == 0) {
-            free_ranges_.erase(free_ranges_.begin() + i);
-        } else if (pad == 0) {
-            free_ranges_[i] = {post_off, post_size};
-        } else if (post_size == 0) {
-            free_ranges_[i] = {r.offset, pad};
-        } else {
-            free_ranges_[i] = {r.offset, pad};
-            free_ranges_.insert(free_ranges_.begin() + i + 1, {post_off, post_size});
+    char label[128];
+    std::snprintf(label, sizeof(label), "%s.sub%zu",
+                  label_prefix_.c_str(), sub_pools_.size());
+
+    WGPUBufferDescriptor desc = {};
+    desc.usage       = usage_;
+    desc.size        = per_sub_buffer_capacity_;
+    desc.label.data  = label;
+    desc.label.length = std::strlen(label);
+    WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
+
+    struct PopResult { bool done = false; bool error = false; };
+    auto pop = [&](PopResult& pr) {
+        WGPUPopErrorScopeCallbackInfo pcb = {};
+        pcb.mode = WGPUCallbackMode_AllowProcessEvents;
+        pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
+                          WGPUStringView, void* ud1, void* /*ud2*/) {
+            auto* p = static_cast<PopResult*>(ud1);
+            p->done = true;
+            p->error = (type != WGPUErrorType_NoError);
+        };
+        pcb.userdata1 = &pr;
+        wgpuDevicePopErrorScope(device_, pcb);
+        while (!pr.done) wgpuInstanceProcessEvents(instance_);
+    };
+    PopResult oom_pop, validation_pop;
+    pop(oom_pop);
+    pop(validation_pop);
+
+    if (!buf || oom_pop.error || validation_pop.error) {
+        if (buf) wgpuBufferRelease(buf);
+        // Log once — set growth_disabled_ so subsequent allocs don't
+        // re-try at this size. The pool runs at its hardware-limited
+        // ceiling from here; eviction handles the rest.
+        qInfo().noquote().nospace()
+            << "[wgpu pool] driver refused sub-buffer " << sub_pools_.size()
+            << " at " << (per_sub_buffer_capacity_ / (1024 * 1024))
+            << " MB; pool capped at " << (total_capacity_bytes() / (1024 * 1024))
+            << " MB across " << sub_pools_.size() << " sub-buffer(s) — growth disabled";
+        growth_disabled_ = true;
+        return false;
+    }
+
+    SubPool sp;
+    sp.buffer   = buf;
+    sp.capacity = per_sub_buffer_capacity_;
+    sp.used     = 0;
+    sp.free_ranges.push_back({0, per_sub_buffer_capacity_});
+    sub_pools_.push_back(std::move(sp));
+
+    qInfo().noquote().nospace()
+        << "[wgpu pool] added sub-buffer " << (sub_pools_.size() - 1)
+        << " (" << (per_sub_buffer_capacity_ / (1024 * 1024)) << " MB); pool total now "
+        << (total_capacity_bytes() / (1024 * 1024)) << " MB";
+    return true;
+}
+
+WgpuBufferPool::Slice WgpuBufferPool::alloc(uint64_t size, uint64_t align) {
+    Slice out;
+    if (size == 0 || align == 0) return out;
+
+    // First-fit across all sub-buffers. When none fits, try to grow by
+    // adding another sub-buffer and retry once.
+    for (int attempt = 0; attempt < 2; ++attempt) {
+        for (size_t sp_idx = 0; sp_idx < sub_pools_.size(); ++sp_idx) {
+            SubPool& sp = sub_pools_[sp_idx];
+            for (size_t i = 0; i < sp.free_ranges.size(); ++i) {
+                const FreeRange& r = sp.free_ranges[i];
+                const uint64_t aligned = (r.offset + (align - 1)) & ~(align - 1);
+                const uint64_t pad     = aligned - r.offset;
+                if (pad >= r.size)           continue;
+                if (size > r.size - pad)     continue;
+
+                const uint64_t post_off  = aligned + size;
+                const uint64_t post_size = (r.offset + r.size) - post_off;
+
+                if (pad == 0 && post_size == 0) {
+                    sp.free_ranges.erase(sp.free_ranges.begin() + i);
+                } else if (pad == 0) {
+                    sp.free_ranges[i] = {post_off, post_size};
+                } else if (post_size == 0) {
+                    sp.free_ranges[i] = {r.offset, pad};
+                } else {
+                    sp.free_ranges[i] = {r.offset, pad};
+                    sp.free_ranges.insert(sp.free_ranges.begin() + i + 1,
+                                          {post_off, post_size});
+                }
+
+                sp.used += size;
+                out.buffer  = sp.buffer;
+                out.offset  = aligned;
+                out.size    = size;
+                out.sub_idx = int(sp_idx);
+                return out;
+            }
         }
-
-        used_ += size;  // pre-/post-pad remain in free_ranges_, not used_
-        *out_offset = aligned;
-        return true;
+        // Existing sub-buffers can't fit. Grow once before giving up.
+        if (attempt == 0) {
+            if (!addSubBuffer()) break;
+        }
     }
-    return false;
+    return out;
 }
 
-void WgpuBufferPool::free(uint64_t offset, uint64_t size) {
-    if (size == 0) return;
-    assert(offset + size <= capacity_);
+void WgpuBufferPool::free(const Slice& s) {
+    if (!s.valid())                                       return;
+    if (s.sub_idx < 0 || size_t(s.sub_idx) >= sub_pools_.size()) return;
+    SubPool& sp = sub_pools_[size_t(s.sub_idx)];
+    assert(s.offset + s.size <= sp.capacity);
 
-    // Find insertion point: first range whose offset > released offset.
     size_t i = 0;
-    while (i < free_ranges_.size() && free_ranges_[i].offset < offset) ++i;
-    free_ranges_.insert(free_ranges_.begin() + i, {offset, size});
-    used_ -= size;
+    while (i < sp.free_ranges.size() && sp.free_ranges[i].offset < s.offset) ++i;
+    sp.free_ranges.insert(sp.free_ranges.begin() + i, {s.offset, s.size});
+    sp.used -= s.size;
 
-    // Coalesce with right neighbour first (so subsequent left-coalesce
-    // sees the merged range).
-    if (i + 1 < free_ranges_.size()
-        && free_ranges_[i].offset + free_ranges_[i].size == free_ranges_[i + 1].offset) {
-        free_ranges_[i].size += free_ranges_[i + 1].size;
-        free_ranges_.erase(free_ranges_.begin() + i + 1);
+    if (i + 1 < sp.free_ranges.size()
+        && sp.free_ranges[i].offset + sp.free_ranges[i].size == sp.free_ranges[i + 1].offset) {
+        sp.free_ranges[i].size += sp.free_ranges[i + 1].size;
+        sp.free_ranges.erase(sp.free_ranges.begin() + i + 1);
     }
-    // Coalesce with left neighbour.
     if (i > 0
-        && free_ranges_[i - 1].offset + free_ranges_[i - 1].size == free_ranges_[i].offset) {
-        free_ranges_[i - 1].size += free_ranges_[i].size;
-        free_ranges_.erase(free_ranges_.begin() + i);
+        && sp.free_ranges[i - 1].offset + sp.free_ranges[i - 1].size == sp.free_ranges[i].offset) {
+        sp.free_ranges[i - 1].size += sp.free_ranges[i].size;
+        sp.free_ranges.erase(sp.free_ranges.begin() + i);
     }
+}
+
+uint64_t WgpuBufferPool::total_capacity_bytes() const {
+    uint64_t s = 0;
+    for (const auto& sp : sub_pools_) s += sp.capacity;
+    return s;
+}
+
+uint64_t WgpuBufferPool::total_used_bytes() const {
+    uint64_t s = 0;
+    for (const auto& sp : sub_pools_) s += sp.used;
+    return s;
 }
 
 uint64_t WgpuBufferPool::largest_free_run_bytes() const {
     uint64_t m = 0;
-    for (const auto& r : free_ranges_) {
-        if (r.size > m) m = r.size;
+    for (const auto& sp : sub_pools_) {
+        for (const auto& r : sp.free_ranges) {
+            if (r.size > m) m = r.size;
+        }
     }
     return m;
 }

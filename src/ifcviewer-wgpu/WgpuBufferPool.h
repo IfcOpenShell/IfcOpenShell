@@ -23,64 +23,111 @@
 #include <webgpu/webgpu.h>
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
-// Single-buffer sub-allocator. Owns one WGPUBuffer of fixed capacity and
-// hands out byte ranges within it. Replaces the per-chunk
-// wgpuDeviceCreateBuffer/Release pattern, which on wgpu-native triggers
-// gpu-alloc-rs fragmentation (one VkDeviceMemory per buffer with
-// rounding overhead) and OOMs the device well below physical VRAM.
+// Multi-sub-buffer sub-allocator. Owns one or more fixed-size WGPUBuffers
+// and hands out byte ranges within them.
+//
+// Why multiple sub-buffers: WebGPU caps any single buffer at
+// `limits.maxBufferSize`, which on wgpu-native + Vulkan tops out
+// around 2 GB regardless of how much GPU memory exists. The GL backend
+// reaches 4+ GB by letting the driver sub-allocate across many
+// VkDeviceMemory blocks behind one logical GL buffer; here we do the
+// same explicitly — `per_sub_buffer_capacity` (set from a probe) is the
+// largest single buffer that allocates cleanly, and the pool grows
+// lazily by adding more sub-buffers of that size when alloc demand
+// exceeds what existing sub-buffers can fit.
 //
 // Lifetime model: alloc/free are immediate. WebGPU guarantees that
 // queue.writeBuffer to a just-freed range is correctly serialised against
 // any prior submitted GPU reads — we never need to fence frees ourselves.
 //
-// Allocator: sorted free list with adjacent-range coalescing, first-fit.
-// Adequate for the chunk workload (a few hundred allocations of broadly
-// similar size); revisit if a workload demonstrates worst-case behaviour.
+// Allocator: per-sub-buffer sorted free list with adjacent-range
+// coalescing, first-fit across sub-buffers. Adequate for the chunk
+// workload (a few hundred allocations of broadly similar size).
 class WgpuBufferPool {
 public:
+    // A handle to a previously-allocated range. Includes the underlying
+    // sub-buffer so callers (bind-group builders, queueWriteBuffer) can
+    // address the correct buffer; includes sub_idx so free() knows which
+    // sub-pool's bookkeeping to update.
+    struct Slice {
+        WGPUBuffer buffer = nullptr;
+        uint64_t   offset = 0;
+        uint64_t   size   = 0;
+        int        sub_idx = -1;
+        bool valid() const { return size > 0 && buffer != nullptr; }
+    };
+
     WgpuBufferPool() = default;
     ~WgpuBufferPool();
 
     WgpuBufferPool(const WgpuBufferPool&)            = delete;
     WgpuBufferPool& operator=(const WgpuBufferPool&) = delete;
 
-    // Allocate the underlying buffer at the given capacity. `usage` must
-    // include CopyDst (alloc'd ranges are populated via queueWriteBuffer).
-    // Returns false if creation failed (caller can retry at smaller size).
-    bool init(WGPUDevice device, uint64_t capacity_bytes,
-              WGPUBufferUsage usage, const char* label);
+    // Record the device + usage + sub-buffer size. Does NOT allocate any
+    // sub-buffer here — that happens lazily on first alloc(). `instance`
+    // is needed so the pool can drain async PopErrorScope events when
+    // probing whether a new sub-buffer can be created.
+    void configure(WGPUInstance instance, WGPUDevice device,
+                   WGPUBufferUsage usage,
+                   uint64_t per_sub_buffer_capacity,
+                   const char* label_prefix);
     void destroy();
 
     // Sub-allocate a range of `size` bytes, aligned to `align` (must be
     // a power of two; typical: 256 for storage-buffer binding offsets).
-    // On success returns true and writes the byte offset to *out_offset.
-    // On failure (no free range fits) returns false; *out_offset is
-    // unchanged.
-    bool alloc(uint64_t size, uint64_t align, uint64_t* out_offset);
-    // Free a previously-allocated range. (offset, size) must exactly
-    // match a prior alloc(); freeing a partial range is unsupported.
-    void free(uint64_t offset, uint64_t size);
+    // Tries every existing sub-buffer; if none can fit, attempts to add
+    // a new sub-buffer at per_sub_buffer_capacity. Returns an invalid
+    // Slice (size == 0) if no sub-buffer fits and growth fails.
+    Slice alloc(uint64_t size, uint64_t align);
+    // Return a slice to the free list. Coalesces with adjacent free
+    // ranges in the same sub-buffer.
+    void  free(const Slice& s);
 
-    WGPUBuffer buffer()         const { return buffer_; }
-    uint64_t   capacity_bytes() const { return capacity_; }
-    uint64_t   used_bytes()     const { return used_; }
-    uint64_t   free_bytes()     const { return capacity_ - used_; }
-    // Largest contiguous free run. Useful for evictor heuristics ("can
-    // this allocation even fit, ever, without eviction?").
-    uint64_t   largest_free_run_bytes() const;
+    // Tally summed across every sub-buffer.
+    uint64_t total_capacity_bytes() const;
+    uint64_t total_used_bytes()     const;
+    uint64_t total_free_bytes()     const { return total_capacity_bytes() - total_used_bytes(); }
+    // Largest contiguous free run across all sub-buffers. Useful for
+    // evictor heuristics ("can this allocation even fit, ever, without
+    // eviction or growth?").
+    uint64_t largest_free_run_bytes() const;
+    // Per-sub-buffer count, for diagnostics / logging.
+    size_t   sub_buffer_count() const { return sub_pools_.size(); }
+    uint64_t per_sub_buffer_capacity_bytes() const { return per_sub_buffer_capacity_; }
+    // Whether the pool can still attempt to add a sub-buffer. Flips to
+    // false the first time addSubBuffer is refused — eviction callers
+    // need this to know whether a future alloc could rescue them by
+    // growing, or whether eviction is the only path.
+    bool     can_grow() const { return !growth_disabled_ && per_sub_buffer_capacity_ > 0; }
 
 private:
     struct FreeRange { uint64_t offset; uint64_t size; };
+    struct SubPool {
+        WGPUBuffer             buffer = nullptr;
+        uint64_t               capacity = 0;
+        uint64_t               used = 0;
+        std::vector<FreeRange> free_ranges;
+    };
 
-    // Sorted by offset, non-overlapping, non-adjacent (coalesced on
-    // every free). Empty when the pool is fully allocated.
-    std::vector<FreeRange> free_ranges_;
+    // Append a new sub-buffer at per_sub_buffer_capacity_, wrapped in an
+    // OOM/Validation error scope so a failed allocation doesn't take the
+    // device down. Returns false on driver OOM (caller should treat as
+    // "pool is at its hardware-limited maximum"). After a failure, sets
+    // growth_disabled_ so subsequent allocs don't keep retrying (and
+    // log-spamming) at the same size that just refused.
+    bool addSubBuffer();
 
-    WGPUBuffer buffer_   = nullptr;
-    uint64_t   capacity_ = 0;
-    uint64_t   used_     = 0;
+    std::vector<SubPool> sub_pools_;
+
+    WGPUInstance     instance_                 = nullptr;
+    WGPUDevice       device_                   = nullptr;
+    WGPUBufferUsage  usage_                    = 0;
+    uint64_t         per_sub_buffer_capacity_  = 0;
+    bool             growth_disabled_          = false;
+    std::string      label_prefix_;
 };
 
 #endif  // WGPUBUFFERPOOL_H

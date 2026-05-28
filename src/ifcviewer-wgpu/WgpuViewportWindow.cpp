@@ -135,15 +135,13 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
     for (auto& c : m.chunks) {
         if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
-        if (c.pool_vertex_size > 0) {
-            pool.free(c.pool_vertex_offset, c.pool_vertex_size);
-            c.pool_vertex_offset = 0;
-            c.pool_vertex_size   = 0;
+        if (c.vertex_slice.valid()) {
+            pool.free(c.vertex_slice);
+            c.vertex_slice = {};
         }
-        if (c.pool_index_size > 0) {
-            pool.free(c.pool_index_offset, c.pool_index_size);
-            c.pool_index_offset = 0;
-            c.pool_index_size   = 0;
+        if (c.index_slice.valid()) {
+            pool.free(c.index_slice);
+            c.index_slice = {};
         }
         if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
         if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
@@ -926,17 +924,18 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         // necessary pre-pad. Failure here is fatal for the model: a fresh
         // applyCachedModel can't proceed without VRAM, so we bail with
         // a clear log and let the caller see it as a load failure.
-        if (!pool_.alloc(plan.byte_count, 256, &c.pool_vertex_offset)) {
+        c.vertex_slice = pool_.alloc(plan.byte_count, 256);
+        if (!c.vertex_slice.valid()) {
             qWarning().noquote().nospace()
                 << "[wgpu] pool OOM: chunk " << ci << " needed "
                 << plan.byte_count << " B for vertices, pool free="
-                << pool_.free_bytes() << " B; aborting model load";
+                << pool_.total_free_bytes() << " B across "
+                << pool_.sub_buffer_count() << " sub-buffer(s); aborting model load";
             releaseWgpuModelGpuData(m, pool_);
             return;
         }
-        c.pool_vertex_size = plan.byte_count;
-        wgpuQueueWriteBuffer(queue_, pool_.buffer(),
-                             c.pool_vertex_offset,
+        wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
+                             c.vertex_slice.offset,
                              data.vertices.data() + plan.source_byte_offset,
                              plan.byte_count);
         m.vram_bytes_vbo += plan.byte_count;
@@ -944,17 +943,18 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         // Per-chunk index slice — same dance, from the model's indices[].
         const size_t chunk_index_bytes = size_t(plan.index_count) * sizeof(uint32_t);
         if (chunk_index_bytes > 0) {
-            if (!pool_.alloc(chunk_index_bytes, 256, &c.pool_index_offset)) {
+            c.index_slice = pool_.alloc(chunk_index_bytes, 256);
+            if (!c.index_slice.valid()) {
                 qWarning().noquote().nospace()
                     << "[wgpu] pool OOM: chunk " << ci << " needed "
                     << chunk_index_bytes << " B for indices, pool free="
-                    << pool_.free_bytes() << " B; aborting model load";
+                    << pool_.total_free_bytes() << " B across "
+                    << pool_.sub_buffer_count() << " sub-buffer(s); aborting model load";
                 releaseWgpuModelGpuData(m, pool_);
                 return;
             }
-            c.pool_index_size = chunk_index_bytes;
-            wgpuQueueWriteBuffer(queue_, pool_.buffer(),
-                                 c.pool_index_offset,
+            wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
+                                 c.index_slice.offset,
                                  data.indices.data() + plan.index_first_u32,
                                  chunk_index_bytes);
             m.vram_bytes_ebo += chunk_index_bytes;
@@ -1351,8 +1351,14 @@ bool WgpuViewportWindow::probeAndCreatePool() {
         wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
         wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
 
-        const bool init_ok = pool_.init(device_, try_size, pool_usage,
-                                        "ifcviewer-wgpu.streaming_pool");
+        // Test allocation. If it survives both scopes, this size works
+        // and becomes the pool's per-sub-buffer capacity.
+        WGPUBufferDescriptor desc = {};
+        desc.usage             = pool_usage;
+        desc.size              = try_size;
+        desc.label.data        = "ifcviewer-wgpu.pool_probe";
+        desc.label.length      = std::strlen("ifcviewer-wgpu.pool_probe");
+        WGPUBuffer probe_buf   = wgpuDeviceCreateBuffer(device_, &desc);
 
         struct PopResult { bool done = false; bool error = false; };
         auto pop = [&](PopResult& pr) {
@@ -1372,17 +1378,21 @@ bool WgpuViewportWindow::probeAndCreatePool() {
         pop(oom_pop);
         pop(validation_pop);
 
-        if (init_ok && !oom_pop.error && !validation_pop.error) {
+        if (probe_buf) wgpuBufferRelease(probe_buf);
+        if (probe_buf && !oom_pop.error && !validation_pop.error) {
+            // Per-sub-buffer capacity locked in; the pool can grow
+            // beyond this by allocating more sub-buffers of the same
+            // size on demand (up to whatever the driver lets us total).
+            pool_.configure(instance_, device_, pool_usage, try_size,
+                            "ifcviewer-wgpu.pool");
             qInfo().noquote()
-                << "wgpu: streaming pool capacity ="
+                << "wgpu: pool per-sub-buffer capacity ="
                 << (try_size / (1024 * 1024)) << "MB"
                 << "(device maxBufferSize ="
-                << (device_limits.maxBufferSize / (1024 * 1024)) << "MB)";
+                << (device_limits.maxBufferSize / (1024 * 1024))
+                << "MB); pool will grow on demand";
             return true;
         }
-        // Tear down the failed pool and halve. The init may have left
-        // the buffer handle in an invalid state — destroy() releases it.
-        pool_.destroy();
         try_size /= 2;
     }
 
@@ -2467,6 +2477,8 @@ void WgpuViewportWindow::setBenchmarkFrames(int frames) {
     bench_total_    = std::max(0, frames);
     bench_count_    = 0;
     bench_yaw_start_ = camera_yaw_deg_;
+    bench_warm_streak_       = 0;
+    bench_warm_frames_total_ = 0;
     bench_frame_ms_.clear();
     bench_frame_ms_.reserve(size_t(bench_total_));
     if (isExposed() && bench_total_ > 0) requestUpdate();
@@ -2495,6 +2507,7 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         c.prefix_sums_scratch.push_back(0);
         c.total_visible_vertices = 0;
         c.total_visible_draws    = 0;
+        c.frustum_visible_count  = 0;
     }
 
     // Per-chunk running vertex count (used to populate that chunk's prefix
@@ -2513,6 +2526,12 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         // descended this far means *some* leaves are visible, but not
         // necessarily this one.
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+
+        // Bump the chunk's frustum-only counter before contribution / HiZ.
+        // This is the signal driveStreamingLoads keys residency on — stable
+        // across frames when the camera doesn't move, so the loader doesn't
+        // thrash on HiZ visibility flicker.
+        ++m.chunks[m.mesh_chunk_idx[inst.mesh_id]].frustum_visible_count;
 
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
 
@@ -2778,10 +2797,19 @@ void WgpuViewportWindow::render() {
         }
     }
 
+    // Stop the cull-only timer before streaming, so the benchmark
+    // attribution doesn't lump disk I/O into "cull".
+    const double cull_only_ms = double(cull_timer.nsecsElapsed()) / 1e6;
+
     // Streaming: bring non-resident chunks that the cull just flagged
     // visible into residency. Runs before draw encoding so newly-loaded
-    // chunks render the same frame.
+    // chunks render the same frame. Timed separately because synchronous
+    // disk reads here can dwarf the cull itself on big scenes.
+    QElapsedTimer stream_timer;
+    if (bench_total_ > 0) stream_timer.start();
     driveStreamingLoads();
+    const double stream_ms = (bench_total_ > 0)
+        ? double(stream_timer.nsecsElapsed()) / 1e6 : 0.0;
 
     // Snapshot camera state for next frame's motion detection.
     prev_camera_target_[0] = camera_target_[0];
@@ -2792,7 +2820,8 @@ void WgpuViewportWindow::render() {
     prev_camera_pitch_deg_ = camera_pitch_deg_;
     has_prev_camera_       = true;
     if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
-        bench_cull_ms_total_ += double(cull_timer.nsecsElapsed()) / 1e6;
+        bench_cull_ms_total_   += cull_only_ms;
+        bench_stream_ms_total_ += stream_ms;
     }
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
@@ -2992,6 +3021,39 @@ void WgpuViewportWindow::render() {
 
     // ---- Benchmark integration + auto-quit -------------------------------
     if (bench_total_ > 0) {
+        // Cold-load gate: don't start the orbit sweep until streaming has
+        // converged for a few consecutive frames. Converged = 0 loads.
+        // bench_warm_done_ latches on first satisfaction so the gate is
+        // evaluated only during warmup, not every frame after.
+        if (!bench_warm_done_) {
+            constexpr int CONVERGE_FRAMES_REQUIRED = 5;
+            constexpr int MAX_WARM_FRAMES          = 600;
+            if (streaming_loads_this_frame_ > 0) {
+                bench_warm_streak_ = 0;
+            } else {
+                ++bench_warm_streak_;
+            }
+            ++bench_warm_frames_total_;
+            const bool converged = bench_warm_streak_ >= CONVERGE_FRAMES_REQUIRED;
+            const bool timed_out = bench_warm_frames_total_ >= MAX_WARM_FRAMES;
+            if (converged) {
+                qInfo().noquote().nospace()
+                    << "[bench warm] converged after "
+                    << bench_warm_frames_total_ << " frames";
+                bench_warm_done_ = true;
+            } else if (timed_out) {
+                qWarning().noquote().nospace()
+                    << "[bench warm] timed out after " << bench_warm_frames_total_
+                    << " frames without convergence (last loads="
+                    << streaming_loads_this_frame_
+                    << "); starting bench anyway";
+                bench_warm_done_ = true;
+            } else {
+                requestUpdate();
+                return;
+            }
+        }
+
         const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
 
         // Warm-up frames are dropped from the sample. The yaw advance starts
@@ -3014,8 +3076,9 @@ void WgpuViewportWindow::render() {
                 total_meshes    += mo.mesh_count;
             }
             const double mb = 1.0 / (1024.0 * 1024.0);
-            const double cull_ms = bench_cull_ms_total_
-                / double(std::max(1, bench_count_ - bench_warmup_ + 1));
+            const double avg_n  = double(std::max(1, bench_count_ - bench_warmup_ + 1));
+            const double cull_ms   = bench_cull_ms_total_   / avg_n;
+            const double stream_ms = bench_stream_ms_total_ / avg_n;
             qInfo().noquote().nospace()
                 << "[frame] " << QString::number(ms > 0 ? 1000.0f / ms : 0.0f, 'f', 1) << " fps"
                 << "  " << QString::number(ms, 'f', 2) << " ms"
@@ -3025,6 +3088,7 @@ void WgpuViewportWindow::render() {
                 << "  sub_draws " << last_sub_draws_
                 << "  hiz_rej " << hiz_reject_count_
                 << "  cull[wall " << QString::number(cull_ms, 'f', 2) << "]ms"
+                << "  stream[" << QString::number(stream_ms, 'f', 2) << "]ms"
                 << "  vram " << QString::number(double(total_vbo + total_ebo + total_ssbo) * mb, 'f', 1) << "MB"
                 << " (vbo " << QString::number(double(total_vbo) * mb, 'f', 1)
                 << " + ebo " << QString::number(double(total_ebo) * mb, 'f', 1)
@@ -3071,6 +3135,7 @@ void WgpuViewportWindow::render() {
             const double n = double(std::max(1, bench_total_));
             qInfo().noquote().nospace()
                 << "  per-frame avg ms: cull=" << bench_cull_ms_total_ / n
+                << "  stream=" << bench_stream_ms_total_ / n
                 << "  hiz_readback=" << bench_hiz_readback_ms_total_ / n
                 << "  hiz=" << (hiz_enabled_ ? "on" : "off");
             qInfo().noquote() << "=== END BENCHMARK ===\n";
@@ -3284,20 +3349,22 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
         wgpuBindGroupRelease(c.bind_group);
         c.bind_group = nullptr;
     }
-    if (c.pool_vertex_size == 0 || c.pool_index_size == 0
+    if (!c.vertex_slice.valid() || !c.index_slice.valid()
         || !c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform
         || !m.mesh_storage || !m.instance_storage) {
         return;
     }
 
     WGPUBindGroupEntry entries[7] = {};
-    // vertices and indices live in the shared pool buffer at chunk-specific
-    // (offset, size) ranges; the other entries are still per-chunk small
-    // buffers (visible_draws/prefix_sums/uniform) or per-model (mesh/instance).
+    // vertices and indices live in the shared pool. Each slice carries
+    // the specific sub-buffer it landed in (the pool may span several
+    // when scenes exceed wgpu's single-buffer cap). The other entries
+    // are still per-chunk small buffers (visible_draws/prefix_sums/uniform)
+    // or per-model (mesh/instance).
     entries[0].binding = 0;
-    entries[0].buffer  = pool_.buffer();
-    entries[0].offset  = c.pool_vertex_offset;
-    entries[0].size    = c.pool_vertex_size;
+    entries[0].buffer  = c.vertex_slice.buffer;
+    entries[0].offset  = c.vertex_slice.offset;
+    entries[0].size    = c.vertex_slice.size;
     entries[1].binding = 1;
     entries[1].buffer  = m.mesh_storage;
     entries[1].size    = WGPU_WHOLE_SIZE;
@@ -3305,9 +3372,9 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
     entries[2].buffer  = m.instance_storage;
     entries[2].size    = WGPU_WHOLE_SIZE;
     entries[3].binding = 3;
-    entries[3].buffer  = pool_.buffer();
-    entries[3].offset  = c.pool_index_offset;
-    entries[3].size    = c.pool_index_size;
+    entries[3].buffer  = c.index_slice.buffer;
+    entries[3].offset  = c.index_slice.offset;
+    entries[3].size    = c.index_slice.size;
     entries[4].binding = 4;
     entries[4].buffer  = c.visible_draws_buffer;
     entries[4].size    = WGPU_WHOLE_SIZE;
@@ -3347,15 +3414,15 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
         return false;
     }
     // Claim a pool range for the vertex bytes and upload.
-    if (!pool_.alloc(vbytes.size(), 256, &c.pool_vertex_offset)) {
+    c.vertex_slice = pool_.alloc(vbytes.size(), 256);
+    if (!c.vertex_slice.valid()) {
         // No room — caller (driveStreamingLoads) should have evicted
         // first. This branch is a safety net for the very-first-frame
         // case where pool eviction may not have caught up.
         return false;
     }
-    c.pool_vertex_size = vbytes.size();
-    wgpuQueueWriteBuffer(queue_, pool_.buffer(),
-                         c.pool_vertex_offset,
+    wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
+                         c.vertex_slice.offset,
                          vbytes.data(), vbytes.size());
     m.vram_bytes_vbo += vbytes.size();
 
@@ -3374,23 +3441,21 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
                 << " (first=" << c.index_first_u32
                 << " count=" << c.index_count << ")";
             // Return the vertex slice to the pool so we don't leak.
-            pool_.free(c.pool_vertex_offset, c.pool_vertex_size);
-            c.pool_vertex_offset = 0;
-            c.pool_vertex_size   = 0;
-            m.vram_bytes_vbo    -= vbytes.size();
+            pool_.free(c.vertex_slice);
+            m.vram_bytes_vbo -= c.vertex_slice.size;
+            c.vertex_slice = {};
             return false;
         }
         const size_t ibytes = idx.size() * sizeof(uint32_t);
-        if (!pool_.alloc(ibytes, 256, &c.pool_index_offset)) {
-            pool_.free(c.pool_vertex_offset, c.pool_vertex_size);
-            c.pool_vertex_offset = 0;
-            c.pool_vertex_size   = 0;
-            m.vram_bytes_vbo    -= vbytes.size();
+        c.index_slice = pool_.alloc(ibytes, 256);
+        if (!c.index_slice.valid()) {
+            pool_.free(c.vertex_slice);
+            m.vram_bytes_vbo -= c.vertex_slice.size;
+            c.vertex_slice = {};
             return false;
         }
-        c.pool_index_size = ibytes;
-        wgpuQueueWriteBuffer(queue_, pool_.buffer(),
-                             c.pool_index_offset,
+        wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
+                             c.index_slice.offset,
                              idx.data(), ibytes);
         m.vram_bytes_ebo += ibytes;
     }
@@ -3409,17 +3474,15 @@ void WgpuViewportWindow::unloadChunk(WgpuModelGpuData& m, size_t chunk_idx) {
         wgpuBindGroupRelease(c.bind_group);
         c.bind_group = nullptr;
     }
-    if (c.pool_vertex_size > 0) {
-        m.vram_bytes_vbo -= c.pool_vertex_size;
-        pool_.free(c.pool_vertex_offset, c.pool_vertex_size);
-        c.pool_vertex_offset = 0;
-        c.pool_vertex_size   = 0;
+    if (c.vertex_slice.valid()) {
+        m.vram_bytes_vbo -= c.vertex_slice.size;
+        pool_.free(c.vertex_slice);
+        c.vertex_slice = {};
     }
-    if (c.pool_index_size > 0) {
-        m.vram_bytes_ebo -= c.pool_index_size;
-        pool_.free(c.pool_index_offset, c.pool_index_size);
-        c.pool_index_offset = 0;
-        c.pool_index_size   = 0;
+    if (c.index_slice.valid()) {
+        m.vram_bytes_ebo -= c.index_slice.size;
+        pool_.free(c.index_slice);
+        c.index_slice = {};
     }
     // Clear per-frame visibility so the chunk doesn't get re-rendered or
     // re-evicted on the same frame; cull will set it again next time
@@ -3438,11 +3501,14 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // Refresh LRU stamps for every resident chunk the cull just touched.
     // Doing this before the load loop means newly-loaded chunks (which
     // get stamped inside the load path) and already-resident-visible
-    // chunks share a single coherent timeline.
+    // chunks share a single coherent timeline. We stamp on FRUSTUM
+    // visibility, not the HiZ-post total_visible_draws — same reason as
+    // residency: HiZ flicker would otherwise un-stamp chunks that should
+    // stay resident.
     for (auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
         for (auto& c : m.chunks) {
-            if (c.is_resident && c.total_visible_draws > 0) {
+            if (c.is_resident && c.frustum_visible_count > 0) {
                 c.last_visible_frame_idx = streaming_frame_idx_;
             }
         }
@@ -3477,11 +3543,20 @@ void WgpuViewportWindow::driveStreamingLoads() {
 
     // The pool needs `need` contiguous bytes free for both the vertex and
     // index allocations a load requires. Fragmentation matters: a chunk
-    // may fit total-free-bytes but not largest_free_run_bytes(). We don't
-    // try to predict fragmentation perfectly — the load will simply fail
-    // and trigger another eviction round next frame.
+    // may fit total-free-bytes but not largest_free_run_bytes(). With
+    // multi-sub-buffer pools, an alloc can also succeed by growing the
+    // pool (adding a new sub-buffer at per_sub_buffer_capacity_bytes()),
+    // so a chunk also "fits" if it's smaller than one fresh sub-buffer.
+    // The actual alloc handles the growth attempt; this predicate only
+    // avoids wasted evict-then-fail loops.
     auto pool_can_fit = [&](uint64_t bytes) -> bool {
-        return pool_.largest_free_run_bytes() >= bytes;
+        if (pool_.largest_free_run_bytes() >= bytes) return true;
+        // Growth might still rescue us — but only if growth hasn't been
+        // refused at this size already. After a refusal, eviction is the
+        // sole path; the eviction loop must run until largest_free_run
+        // catches up.
+        if (pool_.can_grow() && pool_.per_sub_buffer_capacity_bytes() >= bytes) return true;
+        return false;
     };
 
     // Phase-1 evictor: drop the LRU non-visible resident chunk. Skips
@@ -3514,10 +3589,19 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // want to load. Without the distance check this would loop forever
     // swapping pairs; with it, residency monotonically converges to the
     // closest visible chunks that fit the pool.
+    // Require a meaningful distance gap before evicting. Without this,
+    // chunks clustered at similar distances (e.g. three chunks all
+    // ~370 m from the camera) oscillate forever: each frame the "closest
+    // candidate" is fractionally closer than some resident, triggering a
+    // swap that doesn't actually improve the picture. 21% in dist² ≈
+    // 10% in linear distance — a 370 m chunk only evicts a >407 m
+    // resident, not a 371 m one.
+    constexpr float EVICT_DIST2_RATIO = 1.21f;
     auto evict_farthest_than = [&](float candidate_dist2) -> bool {
+        const float threshold_dist2 = candidate_dist2 * EVICT_DIST2_RATIO;
         WgpuModelGpuData* victim_m = nullptr;
         size_t            victim_ci = 0;
-        float             victim_dist2 = candidate_dist2;
+        float             victim_dist2 = threshold_dist2;
         for (auto& [mid, m] : models_gpu_) {
             for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
                 auto& c = m.chunks[ci];
@@ -3535,56 +3619,87 @@ void WgpuViewportWindow::driveStreamingLoads() {
         return true;
     };
 
+    // Gather candidates: every non-resident frustum-visible chunk. Sort
+    // by distance (closest first) so processing converges monotonically —
+    // each successful swap replaces a far resident with a closer
+    // candidate, and when the next candidate is farther than every
+    // remaining resident, we stop. Without sorting, the load loop
+    // visits candidates in arbitrary (model/chunk-id) order, which
+    // creates an infinite swap cycle on scenes where the frustum-visible
+    // set exceeds pool capacity: each frame loads 4 random candidates
+    // and evicts 4 random residents, getting nowhere.
+    struct Candidate { WgpuModelGpuData* m; size_t ci; float dist2; };
+    std::vector<Candidate> candidates;
+    candidates.reserve(64);
     for (auto& [mid, m] : models_gpu_) {
         if (m.streaming_file_path.empty() || m.hidden) continue;
         for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
             auto& c = m.chunks[ci];
-            if (c.is_resident) continue;
-            // Only load chunks the cull just marked visible — keeps fetch
-            // priority aligned with what the camera actually sees.
-            if (c.total_visible_draws == 0) continue;
-            if (loads >= MAX_STREAMING_LOADS_PER_FRAME) {
-                more_pending = true;
-                break;
-            }
-
-            // Make room. Phase 1: drop LRU non-visible. Phase 2: if still
-            // pool-tight, drop the farthest-from-eye visible chunk that is
-            // strictly farther than the candidate we want to load. The
-            // largest-free-run check is conservative — pool may have N MB
-            // free across many small holes that no chunk can use.
-            const uint64_t need = c.vertex_byte_size
-                                + c.index_count * sizeof(uint32_t);
-            while (!pool_can_fit(c.vertex_byte_size)
-                   || (c.index_count > 0
-                       && !pool_can_fit(c.index_count * sizeof(uint32_t)))
-                   || pool_.free_bytes() < need) {
-                if (evict_one_lru())                                continue;
-                if (evict_farthest_than(chunk_center_dist2(c)))     continue;
-                break;  // nothing left we're willing to evict
-            }
-            if (!pool_can_fit(c.vertex_byte_size)
-                || (c.index_count > 0
-                    && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
-                // Candidate is farther than every resident — skip it.
-                // We'll come back to it if it gets closer.
-                more_pending = true;
-                continue;
-            }
-
-            if (loadChunkBytesAndUploadGpu(m, ci)) {
-                ++loads;
-                // Stamp the just-loaded chunk so eviction this frame
-                // can't immediately yank it back out.
-                c.last_visible_frame_idx = streaming_frame_idx_;
-            }
+            if (c.is_resident)                       continue;
+            if (c.frustum_visible_count == 0)        continue;
+            candidates.push_back({&m, ci, chunk_center_dist2(c)});
         }
-        if (more_pending && loads >= MAX_STREAMING_LOADS_PER_FRAME) break;
     }
-    // Keep the frame loop running until all visible chunks are resident
-    // (or the budget definitively prevents that, in which case residency
-    // converges to the closest visible chunks that fit).
-    if (more_pending) requestUpdate();
+    std::sort(candidates.begin(), candidates.end(),
+              [](const Candidate& a, const Candidate& b) {
+                  return a.dist2 < b.dist2;
+              });
+
+    for (const Candidate& cand : candidates) {
+        if (loads >= MAX_STREAMING_LOADS_PER_FRAME) {
+            more_pending = true;
+            break;
+        }
+        auto& c = cand.m->chunks[cand.ci];
+
+        // Make room. Phase 1: drop LRU non-visible (chunks resident from
+        // a previous viewpoint that aren't frustum-visible now). Phase 2:
+        // drop the farthest-from-eye resident that's strictly farther
+        // than this candidate. With distance-sorted candidates, phase 2
+        // monotonically converges — once the next candidate is farther
+        // than every resident, evict_farthest_than fails for it and all
+        // subsequent (even farther) candidates, and we stop.
+        const uint64_t need = c.vertex_byte_size
+                            + c.index_count * sizeof(uint32_t);
+        while (!pool_can_fit(c.vertex_byte_size)
+               || (c.index_count > 0
+                   && !pool_can_fit(c.index_count * sizeof(uint32_t)))
+               || pool_.total_free_bytes() < need) {
+            if (evict_one_lru())                            continue;
+            if (evict_farthest_than(cand.dist2))            continue;
+            break;
+        }
+        if (!pool_can_fit(c.vertex_byte_size)
+            || (c.index_count > 0
+                && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
+            // This candidate doesn't fit. Sorted-by-distance means every
+            // remaining candidate is farther, so none of them will fit
+            // either — bail out of the whole loop rather than waste
+            // iterations probing each one.
+            more_pending = true;
+            break;
+        }
+
+        if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
+            ++loads;
+            c.last_visible_frame_idx = streaming_frame_idx_;
+        }
+    }
+    // Keep the frame loop running only while we're making progress.
+    // When loads == 0 (whether because everything fits or because the
+    // pool is at its hardware cap and the rest of the visible set
+    // can't fit), the loader has converged — let the renderer go idle
+    // until something actually changes (camera move, model add/remove
+    // triggers their own requestUpdate). Spinning here would burn the
+    // CPU forever on scenes whose visible set exceeds the pool.
+    if (loads > 0) requestUpdate();
+
+    // Surface per-frame activity for the bench harness to gate the
+    // orbit sweep against cold-load. We only export loads — more_pending
+    // can stay true forever in the can't-fit case and is not a "done"
+    // signal.
+    streaming_loads_this_frame_ = loads;
+    streaming_more_pending_     = more_pending;
 }
 
 // -----------------------------------------------------------------------------

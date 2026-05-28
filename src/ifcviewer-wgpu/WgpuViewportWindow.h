@@ -422,6 +422,21 @@ public:
     // the old hand-picked streaming_vram_budget_bytes_ knob entirely.
     WgpuBufferPool pool_;
 
+    // Per-frame streaming activity, written by driveStreamingLoads,
+    // consumed by the benchmark harness to delay the orbit sweep until
+    // the initial cold-load settles. `loads` = chunks brought resident
+    // this frame; `more_pending` = the loader wants to keep going.
+    int  streaming_loads_this_frame_ = 0;
+    bool streaming_more_pending_     = false;
+
+    // Bench warm-phase counters. We wait until N consecutive frames with
+    // 0 loads (convergence) before starting the orbit sweep, capped by
+    // MAX_WARM_FRAMES so chronically thrashing scenes still produce
+    // numbers. Both reset implicitly per bench run via setBenchmarkFrames.
+    int  bench_warm_streak_          = 0;
+    int  bench_warm_frames_total_    = 0;
+    bool bench_warm_done_            = false;  // latch: once true, gate is open for this run
+
 private:
 
     // Switch to LOD1 when an instance's projected bounding-sphere radius
@@ -495,6 +510,7 @@ private:
     // distinct slice of render() so we can attribute frame cost. Totals
     // across the timed window are divided by bench_total_ on print.
     double   bench_cull_ms_total_     = 0.0;
+    double   bench_stream_ms_total_   = 0.0;  // driveStreamingLoads only
     double   bench_hiz_readback_ms_total_ = 0.0;
     double   bench_submit_ms_total_   = 0.0;
 };
