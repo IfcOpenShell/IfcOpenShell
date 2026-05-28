@@ -54,10 +54,6 @@ int main(int argc, char* argv[]) {
         "Request the WebGPU mandatory floor limits (128MB max storage binding) "
         "instead of the adapter's actual max. Use to verify scenes fit through "
         "browser constraints."});
-    parser.addOption({"bvh",
-        "Enable BVH-walk cull. Off by default — currently a regression on "
-        "dense camera-looking-at-everything scenes; may help on sprawling "
-        "federations where most of the scene is off-screen."});
     parser.addOption({"streaming",
         "Enable streaming sidecar load. Reads metadata-only at load time; "
         "vertex chunks are deferred and loaded on demand as they become "
@@ -68,7 +64,6 @@ int main(int argc, char* argv[]) {
     viewport->resize(1280, 800);
     if (parser.isSet("no-hiz"))     viewport->hiz_enabled_      = false;
     if (parser.isSet("web-limits")) viewport->web_limits_       = true;
-    if (parser.isSet("bvh"))        viewport->bvh_enabled_      = true;
     if (parser.isSet("streaming"))  viewport->streaming_enabled_ = true;
 
     QWidget* container = QWidget::createWindowContainer(viewport);

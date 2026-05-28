@@ -28,7 +28,6 @@
 #include <string>
 #include <vector>
 
-#include "BvhAccel.h"
 #include "InstancedGeometry.h"
 #include "WgpuBufferPool.h"
 
@@ -157,6 +156,14 @@ struct WgpuModelGpuData {
         // point at the correct chunk-local offsets.
         std::vector<uint32_t> mesh_ids;
 
+        // Instance indices belonging to this chunk (i.e. whose mesh lives
+        // in this chunk). Built at chunk-planning time. Lets cull iterate
+        // chunks as the outer loop, frustum-test the chunk AABB once,
+        // and skip every instance inside in one shot when the chunk is
+        // off-screen — far cheaper than the per-instance frustum check
+        // on flat-scan culls of 1M+ instance scenes.
+        std::vector<uint32_t> instance_ids;
+
         // LRU marker for streaming eviction. Updated to the window's
         // streaming_frame_idx_ every frame the chunk is rendered (i.e.
         // total_visible_draws > 0). The evictor picks the smallest value
@@ -205,12 +212,11 @@ struct WgpuModelGpuData {
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceCpu> instances;
 
-    // Per-model BVH over the instances' world AABBs. Built once at
-    // applyCachedModel; consumed by cullModelCpuCompute to reject whole
-    // subtrees against frustum + HiZ without descending. Critical for
-    // 100+ model / 1M+ instance scenes — turns O(N) per-instance cull
-    // into ~O(visible_count + log N).
-    ModelBvh bvh;
+    // Spatial chunk-cull replaced the per-model BVH walk — chunks are
+    // already a one-level spatial partition of the instances, so a
+    // single frustum test per chunk gives the same wholesale-reject
+    // win without the BVH's per-node traversal overhead. The BVH field
+    // is gone; cull iterates m.chunks instead.
 
     bool hidden = false;
 };

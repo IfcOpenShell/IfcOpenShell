@@ -159,8 +159,6 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
     m.instance_count = 0;
     m.meshes.clear();
     m.instances.clear();
-    m.bvh.nodes.clear();
-    m.bvh.item_indices.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -759,9 +757,16 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.meshes    = std::move(metadata.meta.meshes);
     m.instances = std::move(metadata.meta.instances);
 
-    // Compute per-chunk world AABBs from instance world AABBs grouped by
-    // their mesh's chunk. Used to chunk-cull and prioritise streaming.
-    for (const auto& inst : m.instances) {
+    // Compute per-chunk world AABBs + instance-id lists from the
+    // instances grouped by their mesh's chunk. The AABBs are used to
+    // chunk-cull (cull skips every instance in a chunk whose AABB is
+    // outside the frustum) and to prioritise streaming. instance_ids
+    // lets cull iterate the chunk's instances when the chunk passes.
+    for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
+        m.chunks[ci].instance_ids.reserve(m.instances.size() / m.chunks.size() + 4);
+    }
+    for (uint32_t inst_idx = 0; inst_idx < uint32_t(m.instances.size()); ++inst_idx) {
+        const auto& inst = m.instances[inst_idx];
         if (inst.mesh_id >= m.mesh_chunk_idx.size()) continue;
         const uint32_t ci = m.mesh_chunk_idx[inst.mesh_id];
         if (ci >= m.chunks.size()) continue;
@@ -770,6 +775,7 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
             c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
             c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
         }
+        c.instance_ids.push_back(inst_idx);
     }
 
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
@@ -778,24 +784,6 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     // Bind groups can't be built yet — they need vertex_storage from each
     // chunk's load. The per-frame loader (commit 4) will buildModelBindGroup
     // after a chunk becomes resident.
-
-    // BVH built from instance world AABBs (unchanged from non-streaming).
-    {
-        std::vector<BvhItem> items;
-        items.reserve(mref.instances.size());
-        for (const auto& inst : mref.instances) {
-            BvhItem it;
-            it.aabb_min[0] = inst.world_aabb_min[0];
-            it.aabb_min[1] = inst.world_aabb_min[1];
-            it.aabb_min[2] = inst.world_aabb_min[2];
-            it.aabb_max[0] = inst.world_aabb_max[0];
-            it.aabb_max[1] = inst.world_aabb_max[1];
-            it.aabb_max[2] = inst.world_aabb_max[2];
-            it.model_id    = model_id;
-            items.push_back(it);
-        }
-        mref.bvh = buildModelBvhOne(items, model_id);
-    }
 
     qInfo().noquote().nospace()
         << "[wgpu stream] applyCachedModelStreaming mid=" << model_id
@@ -1081,29 +1069,29 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
 
+    // Per-chunk world AABB + instance-id list. Same logic as the
+    // streaming path. Lets cull frustum-test each chunk's AABB once
+    // and skip every instance inside in one shot when the chunk is
+    // off-screen.
+    for (auto& c : m.chunks) {
+        c.instance_ids.reserve(m.instances.size() / m.chunks.size() + 4);
+    }
+    for (uint32_t inst_idx = 0; inst_idx < uint32_t(m.instances.size()); ++inst_idx) {
+        const auto& inst = m.instances[inst_idx];
+        if (inst.mesh_id >= m.mesh_chunk_idx.size()) continue;
+        const uint32_t ci = m.mesh_chunk_idx[inst.mesh_id];
+        if (ci >= m.chunks.size()) continue;
+        auto& c = m.chunks[ci];
+        for (int a = 0; a < 3; ++a) {
+            c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
+            c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
+        }
+        c.instance_ids.push_back(inst_idx);
+    }
+
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
     WgpuModelGpuData& mref = inserted->second;
     buildModelBindGroup(mref);
-
-    // Build per-model BVH over the instances' world AABBs. Once-per-load
-    // cost; used every frame by the cull to reject whole subtrees against
-    // frustum + HiZ.
-    {
-        std::vector<BvhItem> items;
-        items.reserve(mref.instances.size());
-        for (const auto& inst : mref.instances) {
-            BvhItem it;
-            it.aabb_min[0] = inst.world_aabb_min[0];
-            it.aabb_min[1] = inst.world_aabb_min[1];
-            it.aabb_min[2] = inst.world_aabb_min[2];
-            it.aabb_max[0] = inst.world_aabb_max[0];
-            it.aabb_max[1] = inst.world_aabb_max[1];
-            it.aabb_max[2] = inst.world_aabb_max[2];
-            it.model_id    = model_id;
-            items.push_back(it);
-        }
-        mref.bvh = buildModelBvhOne(items, model_id);
-    }
 
     // Cumulative VRAM across all loaded models so the user can see where
     // the wall is hit when streaming into a multi-GB scene.
@@ -2622,39 +2610,19 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
     };
 
-    // BVH-driven walk: stack-based DFS through the per-model BVH.
-    // Interior nodes do FRUSTUM ONLY — HiZ at an interior node rarely
-    // rejects because the big subtree AABB spans many HiZ mip cells, and
-    // we'd pay the test cost without saving anything. HiZ runs per-instance
-    // at the leaf (already in process_instance via the inner test order).
-    //
-    // Falls back to a flat linear scan when the BVH is disabled (bvh_enabled_
-    // default off because dense scenes regress under the walk overhead;
-    // see task #15) or absent (empty BVH).
-    if (!bvh_enabled_ || m.bvh.nodes.empty()) {
-        for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
-            process_instance(i);
-        }
-    } else {
-        std::vector<uint32_t> stack;
-        stack.reserve(64);
-        stack.push_back(0);
-        while (!stack.empty()) {
-            const uint32_t ni = stack.back();
-            stack.pop_back();
-            const BvhNode& node = m.bvh.nodes[ni];
-            if (!aabbInFrustum(node.aabb_min, node.aabb_max, planes)) continue;
-            if (node.count > 0) {
-                // Leaf — handle items inline (no scratch buffer).
-                for (uint32_t i = 0; i < node.count; ++i) {
-                    process_instance(m.bvh.item_indices[node.right_or_first + i]);
-                }
-            } else {
-                // Interior: descend both children (Left=ni+1, Right=right_or_first).
-                stack.push_back(ni + 1);
-                stack.push_back(node.right_or_first);
-            }
-        }
+    // Chunk-driven walk: frustum-test each chunk's AABB once, and skip
+    // every instance inside in one shot when the chunk is off-screen.
+    // With spatial chunk planning (~hundreds of tight per-chunk AABBs
+    // per scene) this rejects most instances without ever touching them
+    // individually — a strict superset of the previous BVH walk's win,
+    // because the chunk partition is already a one-level spatial BVH
+    // with zero traversal overhead. The per-model BVH built at load
+    // time is now unused by cull; it stays around as dead weight until
+    // the cleanup pass removes it.
+    for (auto& c : m.chunks) {
+        if (c.instance_ids.empty()) continue;
+        if (!aabbInFrustum(c.aabb_min, c.aabb_max, planes)) continue;
+        for (uint32_t i : c.instance_ids) process_instance(i);
     }
 
     for (size_t ci = 0; ci < m.chunks.size(); ++ci) {

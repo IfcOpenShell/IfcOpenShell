@@ -394,14 +394,6 @@ public:
     // scene fits through the constraints a browser will impose.
     bool web_limits_ = false;
 
-    // BVH-walk cull. Default OFF: the BVH adds ~17ms walk overhead on
-    // dense centred-camera scenes without rejecting enough subtrees to
-    // compensate (every subtree's AABB straddles the frustum). It MAY help
-    // on spatially-separated scenes (e.g. distant camera looking at one
-    // model in a sprawling federation). Toggle on via --bvh to measure.
-    // Real default-on requires further tuning — see task #15.
-    bool bvh_enabled_ = false;
-
     // Streaming load (task #16). When enabled, queueLoadSidecar routes
     // through the metadata-only reader: mesh dict + instance dict + georef
     // load immediately; per-chunk vertex bytes are read + uploaded on
