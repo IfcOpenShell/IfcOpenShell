@@ -893,7 +893,7 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
-                row, "Extend Height", "C_E", "Extend wall height to 3D cursor Z position", ui_context
+                row, "Extend to Cursor", "C_E", "Extend profile/extrusion to 3D cursor", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             if AuthoringData.data["active_class"] in (
@@ -944,6 +944,11 @@ class EditObjectUI:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
                     cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_walls_to_underside.__doc__, ui_context
+                )
+            if AuthoringData.data["has_extrusion"]:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(
+                    row, "Extend to Cursor", "C_E", "Extend extrusion to 3D cursor", ui_context
                 )
 
         if AuthoringData.data["is_flippable_element"]:
