@@ -926,6 +926,13 @@ class FetchCADSketcher(Operator):
 
     def invoke(self, context, event):
         ifc_file = tool.Ifc.get()
+        # Fetch shows BIM-linked Blender objects, so keep CAD Sketcher visibility flag in sync.
+        if hasattr(context.scene, "sketcher"):
+            context.scene.sketcher.sketch_show_objects = True
+        scene_named_default = bpy.data.scenes.get("Scene")
+        if scene_named_default and hasattr(scene_named_default, "sketcher"):
+            scene_named_default.sketcher.sketch_show_objects = True
+
         sketch = context.scene.sketcher.active_sketch
         sketch_index = sketch.slvs_index
 
