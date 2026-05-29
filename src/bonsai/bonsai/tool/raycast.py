@@ -888,6 +888,15 @@ class Raycast(bonsai.core.tool.Raycast):
     def create_snap_obj(cls, obj):
         if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
             return None
+        # Evict cached entries whose Blender object has since been freed.
+        valid = []
+        for s in cls.snap_objs:
+            try:
+                _ = s.obj.name
+                valid.append(s)
+            except ReferenceError:
+                pass
+        cls.snap_objs[:] = valid
         for i, snap_obj in enumerate(cls.snap_objs):
             if obj.name == snap_obj.obj.name:
                 # Handle objects modified while a modal operator is active.
