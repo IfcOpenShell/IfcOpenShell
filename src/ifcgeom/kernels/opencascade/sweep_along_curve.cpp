@@ -300,7 +300,11 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 
 	if (applied_temporary_offset) {
         gp_Trsf trsf;
-        trsf.SetTranslation(gp_Vec(-mean.x(), -mean.y(), -mean.z()));
+        // Restore original position: add back the mean subtracted from the
+        // directrix points above. Previously negated, which placed the swept
+        // solid at -mean instead of its original location for geometry far
+        // from the origin.
+        trsf.SetTranslation(gp_Vec(mean.x(), mean.y(), mean.z()));
         result.Move(trsf);
     }
 
