@@ -143,19 +143,6 @@ private:
     float chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
                             const QMatrix4x4& vp_mat) const;
 
-    // Octree-style spatial planner. Produces (a) per-bucket mesh_ids — a
-    // mesh may appear in multiple buckets if its instances scattered, and
-    // (b) per-instance bucket assignment. Each bucket carries its own
-    // mesh data in its chunk pool slice (duplicated when shared). Stop
-    // condition: bucket's union vertex bytes ≤ WGPU_CHUNK_VERTEX_BYTES_LIMIT
-    // and instance count ≤ spatial_max_instances_. See task #55.
-    struct SpatialPlan {
-        std::vector<std::vector<uint32_t>> chunk_mesh_ids;
-        std::vector<uint32_t>              instance_to_chunk;
-    };
-    SpatialPlan planSpatialChunks(const std::vector<InstanceCpu>& instances,
-                                  const std::vector<MeshInfo>& meshes) const;
-
 public:
 
     // Queue a one-shot framebuffer capture: the next rendered frame is
@@ -535,20 +522,6 @@ private:
     // measurement (does std::async actually parallelize on this libstdc++?
     // and is per-model the right granularity?).
     bool  cull_threads_enabled_     = true;
-
-    // WGPU_SPATIAL_BUCKETS=1 swaps the streaming chunk planner from the
-    // mesh-keyed Morton+greedy algorithm to an octree-style spatial
-    // subdivision of INSTANCES. Same mesh may appear in multiple buckets
-    // (data duplicated) when its instances scatter — this is the central
-    // trade for tight per-chunk AABBs that actually match what cull and
-    // priority code want. See task #55.
-    bool  spatial_buckets_enabled_  = false;
-    // Stop-subdividing thresholds for the octree planner. A cell becomes a
-    // leaf bucket when (a) the union vertex bytes of meshes its instances
-    // reference fits the chunk budget, AND (b) instance count is below the
-    // cap. Tunable via WGPU_SPATIAL_BUCKET_MAX_INSTS env var so we can
-    // sweep without rebuild during the prototype phase.
-    uint32_t spatial_max_instances_ = 5000;
 
 public:
     // Master switch for HiZ occlusion. OFF by default — has two issues vs
