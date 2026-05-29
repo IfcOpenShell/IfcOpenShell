@@ -1029,9 +1029,10 @@ class FetchCADSketcher(Operator):
                 item.type_guid = type_guid
                 item.type_label = _resolve_type_label(ifc_file, type_guid)
 
-        # Populate per-slab-path entries
+
+        # Populate per-slab-path entries (aggregate all groups)
         self.slab_type_items.clear()
-        for i, poly in enumerate(self._get_slab_path_groups(context, sketch)):
+        for i, poly in enumerate(_group_path_proxies(sketch, sse, "IfcSlab", "ANY")):
             item = self.slab_type_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Slab {i + 1}")
@@ -1039,9 +1040,9 @@ class FetchCADSketcher(Operator):
             item.type_guid = type_guid
             item.type_label = _resolve_type_label(ifc_file, type_guid)
 
-        # Populate per-covering-path entries
+        # Populate per-covering-path entries (aggregate all groups)
         self.covering_items.clear()
-        for i, poly in enumerate(self._get_covering_path_groups(context, sketch)):
+        for i, poly in enumerate(_group_path_proxies(sketch, sse, "IfcCovering", "ANY")):
             item = self.covering_items.add()
             item.slvs_index = poly.slvs_index
             item.label = _entity_label(poly, f"Covering {i + 1}")
@@ -1226,12 +1227,14 @@ class FetchCADSketcher(Operator):
 
         return context.window_manager.invoke_props_dialog(self, width=420)
 
+
+
     def draw(self, context):
         layout = self.layout
-
+        # Walls
         if self.wall_type_items:
             layout.separator()
-            layout.label(text="Wall Types")
+            layout.label(text="Walls")
             col = layout.column(align=True)
             for item in self.wall_type_items:
                 row = col.row(align=True)
@@ -1240,35 +1243,17 @@ class FetchCADSketcher(Operator):
                 row.label(text=item.type_label)
                 row.label(text=item.member_offset or "—")
 
-        if self.wall_run_items:
-            layout.separator()
-            layout.label(text="Wall Runs (plan)")
-            col = layout.column(align=True)
-            for item in self.wall_run_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.prop(item, "height", text="H")
-                row.label(text=item.type_label)
-
-        if self.wall_elevation_items:
-            layout.separator()
-            layout.label(text="Wall Elevations")
-            col = layout.column(align=True)
-            for item in self.wall_elevation_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.prop(item, "height", text="H")
-                row.label(text=item.type_label)
-
+        # Slabs
         if self.slab_type_items:
             layout.separator()
-            layout.label(text="Slab Types")
+            layout.label(text="Slabs")
             col = layout.column(align=True)
             for item in self.slab_type_items:
                 row = col.row(align=True)
                 row.label(text=item.label)
                 row.label(text=item.type_label)
 
+        # Coverings
         if self.covering_items:
             layout.separator()
             layout.label(text="Coverings")
@@ -1278,117 +1263,6 @@ class FetchCADSketcher(Operator):
                 row.label(text=item.label)
                 row.label(text=item.type_label)
 
-        if self.plate_items:
-            layout.separator()
-            layout.label(text="Plates")
-            col = layout.column(align=True)
-            for item in self.plate_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.opening_items:
-            layout.separator()
-            layout.label(text="Openings")
-            col = layout.column(align=True)
-            for item in self.opening_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.prop(item, "host_id", text="")
-
-        if self.window_items:
-            layout.separator()
-            layout.label(text="Windows")
-            col = layout.column(align=True)
-            for item in self.window_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-                row.prop(item, "host_id", text="")
-
-        if self.door_items:
-            layout.separator()
-            layout.label(text="Doors")
-            col = layout.column(align=True)
-            for item in self.door_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-                row.prop(item, "host_id", text="")
-
-        if self.beam_items:
-            layout.separator()
-            layout.label(text="Beams")
-            col = layout.column(align=True)
-            for item in self.beam_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.beam_run_items:
-            layout.separator()
-            layout.label(text="Beam Runs")
-            col = layout.column(align=True)
-            for item in self.beam_run_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.member_items:
-            layout.separator()
-            layout.label(text="Members")
-            col = layout.column(align=True)
-            for item in self.member_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.member_run_items:
-            layout.separator()
-            layout.label(text="Member Runs")
-            col = layout.column(align=True)
-            for item in self.member_run_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.footing_items:
-            layout.separator()
-            layout.label(text="Footings")
-            col = layout.column(align=True)
-            for item in self.footing_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.footing_run_items:
-            layout.separator()
-            layout.label(text="Footing Runs")
-            col = layout.column(align=True)
-            for item in self.footing_run_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.label(text=item.type_label)
-
-        if self.column_items:
-            layout.separator()
-            layout.label(text="Columns")
-            col = layout.column(align=True)
-            for item in self.column_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.prop(item, "height", text="H")
-                row.label(text=item.type_label)
-
-        if self.pile_items:
-            layout.separator()
-            layout.label(text="Piles")
-            col = layout.column(align=True)
-            for item in self.pile_items:
-                row = col.row(align=True)
-                row.label(text=item.label)
-                row.prop(item, "height", text="D")
-                row.label(text=item.type_label)
 
     def execute(self, context):
         # Apply on confirmation so opening/cancelling the popup does not mutate scene visibility.
