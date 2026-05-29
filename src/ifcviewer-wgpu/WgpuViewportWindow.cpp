@@ -684,46 +684,75 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         }
     }
 
-    // Sort mesh indices by 3D Morton (Z-order) code over centroids — gives
-    // tight 3D voxel chunks instead of the XY-slab chunks the previous
-    // lex (z, y, x) sort produced. Tight AABBs are a prerequisite for
-    // per-chunk frustum / contribution / HiZ rejection actually
-    // discriminating between near and far chunks of the same model.
-    std::vector<uint32_t> sorted_mesh_ids =
-        sortMeshIdsByMorton(n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
-
-    // Greedy pack sorted meshes into chunks.
+    // Chunk planning. Default is mesh-keyed Morton-sort + greedy pack
+    // (each mesh in exactly one chunk). WGPU_SPATIAL_BUCKETS=1 swaps to
+    // octree-style instance bucketing (a mesh may appear in multiple
+    // chunks if its instances scatter — its vertex/index data gets
+    // duplicated across those chunks' pool slices). The downstream
+    // chunk-construction loop is identical either way; both branches
+    // produce chunk_mesh_ids (per-chunk mesh list) and
+    // instance_to_chunk (per-instance bucket index).
     std::vector<std::vector<uint32_t>> chunk_mesh_ids;
-    chunk_mesh_ids.push_back({});
-    uint64_t current_chunk_bytes = 0;
-    for (uint32_t mi : sorted_mesh_ids) {
-        const MeshInfo& mesh = metadata.meta.meshes[mi];
-        const uint64_t mesh_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (current_chunk_bytes > 0
-            && current_chunk_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
-            chunk_mesh_ids.push_back({});
-            current_chunk_bytes = 0;
-        }
-        chunk_mesh_ids.back().push_back(mi);
-        current_chunk_bytes += mesh_bytes;
-    }
-    if (chunk_mesh_ids.back().empty()) chunk_mesh_ids.pop_back();
+    std::vector<uint32_t>              instance_to_chunk;
+    instance_to_chunk.assign(metadata.meta.instances.size(), 0);
 
-    // Per-chunk instance count (used to right-size visible_draws / prefix
-    // buffers per chunk). Each instance belongs to one mesh's chunk.
-    std::vector<uint32_t> mesh_to_chunk(n_meshes, 0);
-    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-        for (uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = uint32_t(ci);
+    if (spatial_buckets_enabled_) {
+        SpatialPlan plan = planSpatialChunks(metadata.meta.instances,
+                                             metadata.meta.meshes);
+        chunk_mesh_ids    = std::move(plan.chunk_mesh_ids);
+        instance_to_chunk = std::move(plan.instance_to_chunk);
+        qInfo().noquote().nospace()
+            << "[wgpu spatial] mid=" << model_id << " produced "
+            << chunk_mesh_ids.size() << " spatial buckets from "
+            << metadata.meta.instances.size() << " instances";
+    } else {
+        // Mesh-keyed: sort meshes by 3D Morton code over centroids, then
+        // greedy-pack into chunks ≤ WGPU_CHUNK_VERTEX_BYTES_LIMIT.
+        std::vector<uint32_t> sorted_mesh_ids =
+            sortMeshIdsByMorton(n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
+        chunk_mesh_ids.push_back({});
+        uint64_t current_chunk_bytes = 0;
+        for (uint32_t mi : sorted_mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mi];
+            const uint64_t mesh_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (current_chunk_bytes > 0
+                && current_chunk_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
+                chunk_mesh_ids.push_back({});
+                current_chunk_bytes = 0;
+            }
+            chunk_mesh_ids.back().push_back(mi);
+            current_chunk_bytes += mesh_bytes;
+        }
+        if (chunk_mesh_ids.back().empty()) chunk_mesh_ids.pop_back();
+        // Derive instance_to_chunk via mesh_id → chunk lookup table.
+        std::vector<uint32_t> mesh_to_chunk(n_meshes, 0);
+        for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
+            for (uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = uint32_t(ci);
+        }
+        for (size_t i = 0; i < metadata.meta.instances.size(); ++i) {
+            const uint32_t mi = metadata.meta.instances[i].mesh_id;
+            if (mi < n_meshes) instance_to_chunk[i] = mesh_to_chunk[mi];
+        }
     }
+
     std::vector<uint32_t> chunk_instance_count(chunk_mesh_ids.size(), 0);
-    for (const auto& inst : metadata.meta.instances) {
-        if (inst.mesh_id < n_meshes) ++chunk_instance_count[mesh_to_chunk[inst.mesh_id]];
+    for (size_t i = 0; i < instance_to_chunk.size(); ++i) {
+        const uint32_t ci = instance_to_chunk[i];
+        if (ci < chunk_instance_count.size()) ++chunk_instance_count[ci];
     }
 
     // ---- Allocate per-chunk state. NO pool slices yet (chunks are
     // non-resident); the per-frame loader brings them in as cull marks
     // them visible.
     m.chunks.resize(chunk_mesh_ids.size());
+    // Per-chunk per-mesh chunk-local offsets. Built during the chunk
+    // construction loop, consumed by the post-loop per-instance array
+    // population. Under spatial bucketing the same mesh_id can land in
+    // multiple chunks at different offsets, so this can't be a per-mesh
+    // global — it has to be per-(chunk, mesh).
+    struct MeshLocal { uint32_t base_vertex; uint32_t ebo_first; uint32_t lod1_first; };
+    std::vector<std::unordered_map<uint32_t, MeshLocal>>
+        chunk_mesh_offsets(chunk_mesh_ids.size());
     for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
         WgpuModelGpuData::Chunk& c = m.chunks[ci];
         c.mesh_ids    = std::move(chunk_mesh_ids[ci]);
@@ -743,6 +772,7 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
             m.mesh_chunk_idx[mi]                 = uint32_t(ci);
             m.mesh_chunk_local_base_vertex[mi]   = chunk_local_v;
             m.mesh_chunk_local_ebo_first_u32[mi] = chunk_local_i;
+            chunk_mesh_offsets[ci][mi] = MeshLocal{chunk_local_v, chunk_local_i, 0};
             chunk_local_v += mesh.vertex_count;
             chunk_local_i += mesh.index_count;
         }
@@ -751,6 +781,7 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
             const MeshInfo& mesh = metadata.meta.meshes[mi];
             if (mesh.lod1_index_count == 0) continue;
             m.mesh_chunk_local_lod1_first_u32[mi] = chunk_local_i + chunk_local_lod1;
+            chunk_mesh_offsets[ci][mi].lod1_first = chunk_local_i + chunk_local_lod1;
             chunk_local_lod1 += mesh.lod1_index_count;
         }
         c.vertex_count     = chunk_local_v;
@@ -847,17 +878,16 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.instances = std::move(metadata.meta.instances);
 
     // Compute per-chunk world AABBs + instance-id lists from the
-    // instances grouped by their mesh's chunk. The AABBs are used to
-    // chunk-cull (cull skips every instance in a chunk whose AABB is
-    // outside the frustum) and to prioritise streaming. instance_ids
-    // lets cull iterate the chunk's instances when the chunk passes.
+    // instance_to_chunk mapping. Under spatial bucketing this captures
+    // each bucket's actual instance extent; under mesh-keyed it's
+    // equivalent to the old mesh_chunk_idx lookup since one mesh → one
+    // chunk → instances all land identically.
     for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
         m.chunks[ci].instance_ids.reserve(m.instances.size() / m.chunks.size() + 4);
     }
     for (uint32_t inst_idx = 0; inst_idx < uint32_t(m.instances.size()); ++inst_idx) {
         const auto& inst = m.instances[inst_idx];
-        if (inst.mesh_id >= m.mesh_chunk_idx.size()) continue;
-        const uint32_t ci = m.mesh_chunk_idx[inst.mesh_id];
+        const uint32_t ci = instance_to_chunk[inst_idx];
         if (ci >= m.chunks.size()) continue;
         auto& c = m.chunks[ci];
         for (int a = 0; a < 3; ++a) {
@@ -867,10 +897,14 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         c.instance_ids.push_back(inst_idx);
     }
 
-    // Resolve per-instance chunk lookups by translating from the per-mesh
-    // arrays. Cull reads these directly, so the spatial-bucket planner
-    // (which can place the same mesh in multiple chunks under #55) will
-    // populate them without going through mesh_chunk_idx[].
+    // Populate per-instance arrays from the per-chunk per-mesh offsets
+    // computed during chunk construction. Works for both planners:
+    //   - mesh-keyed: each mesh in one chunk, offsets match the old
+    //     per-mesh-array translation exactly (pixel-identical)
+    //   - spatial: the same mesh_id may appear in different chunks at
+    //     different offsets; the per-chunk table holds each chunk's own
+    //     local offsets, so instance_*[i] reflects the chunk that
+    //     instance i's bucket landed in
     {
         const size_t n_inst = m.instances.size();
         m.instance_chunk_idx.assign(n_inst, 0);
@@ -878,12 +912,15 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         m.instance_ebo_first_u32.assign(n_inst, 0);
         m.instance_lod1_first_u32.assign(n_inst, 0);
         for (size_t i = 0; i < n_inst; ++i) {
+            const uint32_t ci = instance_to_chunk[i];
             const uint32_t mi = m.instances[i].mesh_id;
-            if (mi >= m.mesh_chunk_idx.size()) continue;
-            m.instance_chunk_idx[i]      = m.mesh_chunk_idx[mi];
-            m.instance_base_vertex[i]    = m.mesh_chunk_local_base_vertex[mi];
-            m.instance_ebo_first_u32[i]  = m.mesh_chunk_local_ebo_first_u32[mi];
-            m.instance_lod1_first_u32[i] = m.mesh_chunk_local_lod1_first_u32[mi];
+            if (ci >= chunk_mesh_offsets.size()) continue;
+            auto it = chunk_mesh_offsets[ci].find(mi);
+            if (it == chunk_mesh_offsets[ci].end()) continue;
+            m.instance_chunk_idx[i]      = ci;
+            m.instance_base_vertex[i]    = it->second.base_vertex;
+            m.instance_ebo_first_u32[i]  = it->second.ebo_first;
+            m.instance_lod1_first_u32[i] = it->second.lod1_first;
         }
     }
 
@@ -1372,6 +1409,19 @@ bool WgpuViewportWindow::initWgpu() {
             qInfo().noquote() << "[wgpu stream] WGPU_STREAM_DEBUG=1 — per-frame "
                                  "[stream-debug] log enabled";
         }
+    }
+    if (const char* s = std::getenv("WGPU_SPATIAL_BUCKETS")) {
+        spatial_buckets_enabled_ = (s[0] == '1');
+        if (spatial_buckets_enabled_) {
+            qInfo() << "[wgpu] WGPU_SPATIAL_BUCKETS=1 — using octree-style "
+                       "instance bucketing for the streaming planner";
+        }
+    }
+    if (const char* s = std::getenv("WGPU_SPATIAL_BUCKET_MAX_INSTS")) {
+        const long v = std::strtol(s, nullptr, 10);
+        if (v > 0) spatial_max_instances_ = uint32_t(v);
+        qInfo().noquote().nospace()
+            << "[wgpu] WGPU_SPATIAL_BUCKET_MAX_INSTS=" << spatial_max_instances_;
     }
     if (const char* s = std::getenv("WGPU_CULL_THREADS")) {
         // "0" disables std::async dispatch — every model is culled on the
@@ -5008,6 +5058,132 @@ float WgpuViewportWindow::chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
     ymax = std::min(ymax, float(configured_h_));
     if (xmax <= xmin || ymax <= ymin) return 0.0f;
     return (xmax - xmin) * (ymax - ymin);
+}
+
+WgpuViewportWindow::SpatialPlan WgpuViewportWindow::planSpatialChunks(
+        const std::vector<InstanceCpu>& instances,
+        const std::vector<MeshInfo>& meshes) const {
+    SpatialPlan out;
+    if (instances.empty()) return out;
+
+    const size_t n_inst = instances.size();
+    out.instance_to_chunk.assign(n_inst, 0);
+
+    // Per-instance centroid + AABB → we'll split by centroid, but the
+    // unique-mesh-bytes test uses the actual mesh table.
+    auto inst_center = [&](uint32_t i) {
+        return std::array<float, 3>{
+            0.5f * (instances[i].world_aabb_min[0] + instances[i].world_aabb_max[0]),
+            0.5f * (instances[i].world_aabb_min[1] + instances[i].world_aabb_max[1]),
+            0.5f * (instances[i].world_aabb_min[2] + instances[i].world_aabb_max[2])};
+    };
+
+    // Initial work item: all instances + their union AABB.
+    struct WorkItem {
+        std::vector<uint32_t> instance_ids;
+        float                 aabb_min[3];
+        float                 aabb_max[3];
+    };
+    WorkItem root;
+    root.instance_ids.reserve(n_inst);
+    for (int a = 0; a < 3; ++a) {
+        root.aabb_min[a] =  std::numeric_limits<float>::infinity();
+        root.aabb_max[a] = -std::numeric_limits<float>::infinity();
+    }
+    for (uint32_t i = 0; i < uint32_t(n_inst); ++i) {
+        root.instance_ids.push_back(i);
+        for (int a = 0; a < 3; ++a) {
+            root.aabb_min[a] = std::min(root.aabb_min[a], instances[i].world_aabb_min[a]);
+            root.aabb_max[a] = std::max(root.aabb_max[a], instances[i].world_aabb_max[a]);
+        }
+    }
+
+    // Computes the total vertex bytes of the unique meshes referenced by
+    // a bucket. Used as the primary stop condition.
+    auto bucket_vertex_bytes = [&](const std::vector<uint32_t>& inst_ids) -> uint64_t {
+        std::set<uint32_t> mesh_ids;
+        for (uint32_t i : inst_ids) {
+            if (instances[i].mesh_id < meshes.size()) {
+                mesh_ids.insert(instances[i].mesh_id);
+            }
+        }
+        uint64_t total = 0;
+        for (uint32_t mi : mesh_ids) {
+            total += uint64_t(meshes[mi].vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        }
+        return total;
+    };
+
+    // Emit a leaf bucket from a work item.
+    auto emit_leaf = [&](WorkItem&& w) {
+        const uint32_t ci = uint32_t(out.chunk_mesh_ids.size());
+        std::set<uint32_t> unique_meshes;
+        for (uint32_t i : w.instance_ids) {
+            out.instance_to_chunk[i] = ci;
+            if (instances[i].mesh_id < meshes.size()) {
+                unique_meshes.insert(instances[i].mesh_id);
+            }
+        }
+        out.chunk_mesh_ids.emplace_back(unique_meshes.begin(), unique_meshes.end());
+    };
+
+    // Octree subdivision via a work stack. A bucket is final when it fits
+    // the byte budget AND the instance cap. Degenerate cases (1 instance
+    // but still too big — e.g. a single huge mesh) also terminate to
+    // avoid infinite recursion.
+    std::vector<WorkItem> stack;
+    stack.push_back(std::move(root));
+    while (!stack.empty()) {
+        WorkItem w = std::move(stack.back());
+        stack.pop_back();
+
+        const uint64_t vbytes = bucket_vertex_bytes(w.instance_ids);
+        const bool fits_bytes = vbytes <= WGPU_CHUNK_VERTEX_BYTES_LIMIT;
+        const bool fits_count = w.instance_ids.size() <= spatial_max_instances_;
+        if ((fits_bytes && fits_count) || w.instance_ids.size() <= 1) {
+            emit_leaf(std::move(w));
+            continue;
+        }
+
+        // Split into 8 octants around centre. Empty octants skipped.
+        const float cx = 0.5f * (w.aabb_min[0] + w.aabb_max[0]);
+        const float cy = 0.5f * (w.aabb_min[1] + w.aabb_max[1]);
+        const float cz = 0.5f * (w.aabb_min[2] + w.aabb_max[2]);
+        WorkItem octs[8];
+        for (auto& o : octs) {
+            for (int a = 0; a < 3; ++a) {
+                o.aabb_min[a] =  std::numeric_limits<float>::infinity();
+                o.aabb_max[a] = -std::numeric_limits<float>::infinity();
+            }
+        }
+        for (uint32_t i : w.instance_ids) {
+            const auto c = inst_center(i);
+            const int idx = (c[0] > cx ? 1 : 0)
+                          | (c[1] > cy ? 2 : 0)
+                          | (c[2] > cz ? 4 : 0);
+            octs[idx].instance_ids.push_back(i);
+            for (int a = 0; a < 3; ++a) {
+                octs[idx].aabb_min[a] = std::min(octs[idx].aabb_min[a], instances[i].world_aabb_min[a]);
+                octs[idx].aabb_max[a] = std::max(octs[idx].aabb_max[a], instances[i].world_aabb_max[a]);
+            }
+        }
+
+        // Pathological case: every instance falls into the SAME octant —
+        // centroids cluster but AABBs still span. Emit the leaf as-is
+        // rather than infinite-recurse. Common cause: many instances
+        // sharing one mesh that's a long thin slab spanning the bucket.
+        int non_empty = 0;
+        for (const auto& o : octs) if (!o.instance_ids.empty()) ++non_empty;
+        if (non_empty <= 1) {
+            emit_leaf(std::move(w));
+            continue;
+        }
+
+        for (auto& o : octs) {
+            if (!o.instance_ids.empty()) stack.push_back(std::move(o));
+        }
+    }
+    return out;
 }
 
 void WgpuViewportWindow::applyNavPreset(const char* name) {
