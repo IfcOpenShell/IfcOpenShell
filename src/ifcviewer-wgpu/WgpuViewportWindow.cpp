@@ -74,6 +74,7 @@ static inline float srgbToLinear(float s) {
 // stride in the capture path.
 static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
 
+
 // Forward declaration — defined below alongside updateFrameUniforms. Used
 // by render() to extract camera/frustum state without duplicating the math.
 static QVector3D orbitEye(const float target[3], float dist,
@@ -1410,6 +1411,13 @@ bool WgpuViewportWindow::initWgpu() {
                                  "[stream-debug] log enabled";
         }
     }
+    if (const char* s = std::getenv("WGPU_HIZ")) {
+        if (s[0] == '1') {
+            hiz_enabled_ = true;
+            qInfo() << "[wgpu] WGPU_HIZ=1 — HiZ occlusion culling enabled "
+                       "(disabled by default; see task #58)";
+        }
+    }
     if (const char* s = std::getenv("WGPU_SPATIAL_BUCKETS")) {
         spatial_buckets_enabled_ = (s[0] == '1');
         if (spatial_buckets_enabled_) {
@@ -2649,8 +2657,15 @@ void WgpuViewportWindow::drainHizReadbacks() {
                 hiz_mip_h_.push_back(h);
                 total += w * h;
                 if (w == 1 && h == 1) break;
-                w = std::max(1u, w / 2u);
-                h = std::max(1u, h / 2u);
+                // Ceil rather than floor when halving. With floor a mip-0
+                // row of H0-1 maps to ly = (H0-1)>>level which can land
+                // outside floor(H0/2^level) entirely — the bottom (and
+                // right) rows of mip 0 then never propagate into coarse
+                // mips, so lookups for AABBs near those edges land in an
+                // empty sample range with the initial max_d=0 and reject
+                // everything. Ceil gives every parent row a child texel.
+                w = std::max(1u, (w + 1u) / 2u);
+                h = std::max(1u, (h + 1u) / 2u);
             }
             hiz_pyramid_.assign(total, 0.0f);
         }
@@ -2734,8 +2749,9 @@ bool WgpuViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3])
     if (min_z < 0.0f) return false;  // crosses near plane
 
     // Convert NDC AABB to pyramid-pixel AABB at mip 0.
-    // NDC y is +up; texture y is +down (matches our resolve shader's
-    // y-flip via clip_pos.y = -y).
+    // NDC y is +up; HiZ-texture y is +down (the resolve shader's
+    // builtin-position fragment coords are framebuffer-space which
+    // is +Y-down). v = 0.5 * (1 - ny) gives the mapping.
     const uint32_t W0 = hiz_mip_w_[0];
     const uint32_t H0 = hiz_mip_h_[0];
     const float u_lo =  0.5f * (nx_lo + 1.0f);
@@ -2756,10 +2772,19 @@ bool WgpuViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3])
 
     const uint32_t lw = hiz_mip_w_[level];
     const uint32_t lh = hiz_mip_h_[level];
-    const int lx0 = std::max(0, int(x0) >> level);
-    const int ly0 = std::max(0, int(y0) >> level);
-    const int lx1 = std::min(int(lw) - 1, int(x1) >> level);
-    const int ly1 = std::min(int(lh) - 1, int(y1) >> level);
+    // Clamp BOTH endpoints to the mip's valid range. ly0 / lx0 also need
+    // to be clamped on the upper end — without that, an AABB whose
+    // bottom touches NDC y = -1 (or right touches +1) shifts to a child
+    // texel index that exceeds the mip's dimensions, the loop never
+    // iterates, and max_d stays at its 0.0 initial value → false reject.
+    // The ceil-mip construction above prevents this in the common case,
+    // but this guard makes the lookup robust to any future mip-sizing
+    // change too.
+    const int lx0 = std::clamp(int(x0) >> level, 0, int(lw) - 1);
+    const int ly0 = std::clamp(int(y0) >> level, 0, int(lh) - 1);
+    const int lx1 = std::clamp(int(x1) >> level, 0, int(lw) - 1);
+    const int ly1 = std::clamp(int(y1) >> level, 0, int(lh) - 1);
+    if (lx0 > lx1 || ly0 > ly1) return false;  // empty sample range
 
     const float* level_data = &hiz_pyramid_[hiz_mip_offset_[level]];
     float max_d = 0.0f;
@@ -2771,7 +2796,32 @@ bool WgpuViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3])
 
     // AABB occluded iff its nearest projected z is BEHIND the depth pyramid's
     // coverage (greater in WebGPU's [0,1] z, where 0 is near, 1 is far).
-    return min_z > max_d;
+    // No epsilon: min_z is a strict lower bound on the AABB's actual mesh
+    // depth (it's the closest corner of the conservative bounding box), so
+    // min_z > max_d implies actual_mesh_depth > max_d.
+    const bool rejected = (min_z > max_d);
+
+    // WGPU_HIZ_TRACE diagnostic. Decrement the shared budget atomically
+    // and log when this rejection got a slot. Logs target the post-stop
+    // false-rejection class of bug — fields are everything needed to
+    // reconstruct the decision: AABB world bounds, screen NDC bounds,
+    // mip level and sample rect, max_d sampled, min_z computed, gap.
+    if (rejected && hiz_trace_budget_.load(std::memory_order_relaxed) > 0) {
+        int prev = hiz_trace_budget_.fetch_sub(1, std::memory_order_relaxed);
+        if (prev > 0) {
+            qInfo().noquote().nospace()
+                << "[hiz reject] aabb_min=(" << mn[0] << "," << mn[1] << "," << mn[2] << ")"
+                << " aabb_max=(" << mx[0] << "," << mx[1] << "," << mx[2] << ")"
+                << " ndc_x=[" << nx_lo << "," << nx_hi << "]"
+                << " ndc_y=[" << ny_lo << "," << ny_hi << "]"
+                << " min_z=" << min_z << " max_d=" << max_d
+                << " gap=" << (min_z - max_d)
+                << " level=" << level
+                << " sample=(" << lx0 << "," << ly0 << ")-(" << lx1 << "," << ly1 << ")"
+                << " mip=" << lw << "x" << lh;
+        }
+    }
+    return rejected;
 }
 
 void WgpuViewportWindow::setBenchmarkFrames(int frames) {
@@ -2787,7 +2837,10 @@ void WgpuViewportWindow::setBenchmarkFrames(int frames) {
 
 uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                                                  const float planes[6][4],
-                                                 const float eye[3], const float forward[3],
+                                                 const float eye[3],
+                                                 const float forward[3],
+                                                 const float right[3],
+                                                 const float up[3],
                                                  float focal_px,
                                                  float min_radius_px,
                                                  float lod1_threshold_px,
@@ -2809,6 +2862,7 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         c.total_visible_vertices = 0;
         c.total_visible_draws    = 0;
         c.frustum_visible_count  = 0;
+        c.current_priority       = 0.0f;
     }
 
     // Per-chunk running vertex count (used to populate that chunk's prefix
@@ -2828,20 +2882,38 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         // necessarily this one.
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
 
+        const uint32_t chunk_idx = m.instance_chunk_idx[i];
+        WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
+
         // Bump the chunk's frustum-only counter before contribution / HiZ.
-        // This is the signal driveStreamingLoads keys residency on — stable
-        // across frames when the camera doesn't move, so the loader doesn't
-        // thrash on HiZ visibility flicker.
-        ++m.chunks[m.instance_chunk_idx[i]].frustum_visible_count;
+        // Stable across frames when the camera doesn't move, so the
+        // streaming loader doesn't thrash on HiZ visibility flicker.
+        ++c.frustum_visible_count;
 
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
 
-        // Projected bounding-sphere radius in pixels — shared between the
-        // contribution-cull and LOD-pick decisions. Computed before HiZ so
-        // contribution can short-circuit the per-instance HiZ projection
-        // (which is the bulk of cull cost on dense scenes).
+        // Two screen-space metrics computed per instance:
+        //
+        //   projected_px  — sphere-radius projection. Cheap, conservative
+        //                   (over-estimates). Used by the contribution
+        //                   gate (`projected_px < min_radius_px`) and
+        //                   LOD pick. Conservative-over is the right
+        //                   failure mode there: we'd rather draw a tiny
+        //                   sub-pixel sliver than wrongly skip it.
+        //   box_area_px2  — AABB-rectangle projection. Tight. Used only
+        //                   by the streaming priority accumulator. BIM
+        //                   geometry is thin-in-one-axis (slabs, pipes,
+        //                   columns, windows); a sphere bounding a flat
+        //                   ocean plane over-states screen footprint by
+        //                   100×+ when viewed edge-on, which made occluded
+        //                   far geometry steal residency from close,
+        //                   visible structural elements (e.g. bracing).
+        //
+        // We accumulate BEFORE contribution / HiZ rejection because
+        // streaming asks "do we want this chunk's bytes resident", not
+        // "do we draw it this frame".
         float projected_px = std::numeric_limits<float>::infinity();
-        if (contrib_enabled || (lod_enabled && mesh.lod1_index_count > 0)) {
+        {
             const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
             const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
             const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
@@ -2854,6 +2926,26 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                                + forward[2] * (cz - eye[2]);
             if (view_z > 1e-3f) {
                 projected_px = radius_world * focal_px / view_z;
+
+                // World-AABB half-extents projected onto camera right/up.
+                // Each |basis · world_axis| term is the contribution of
+                // that world axis to that screen axis (e.g. a horizontal
+                // ocean plane's Z extent collapses to ~0 in screen-x when
+                // viewed edge-on).
+                const float hex = 0.5f * ex;
+                const float hey = 0.5f * ey;
+                const float hez = 0.5f * ez;
+                const float view_he_x = std::fabs(right[0]) * hex
+                                      + std::fabs(right[1]) * hey
+                                      + std::fabs(right[2]) * hez;
+                const float view_he_y = std::fabs(up[0])    * hex
+                                      + std::fabs(up[1])    * hey
+                                      + std::fabs(up[2])    * hez;
+                const float inv_z = focal_px / view_z;
+                const float box_area_px2 = 4.0f
+                                         * view_he_x * inv_z
+                                         * view_he_y * inv_z;
+                c.current_priority += box_area_px2;
             }
         }
 
@@ -2880,12 +2972,9 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         // them directly. When use_lod1, ebo_first_u32 routes into the LOD1
         // section of the chunk's index slice (which is packed after the
         // LOD0 section at chunk-build time); the shader is oblivious to
-        // the LOD split. Lookups are per-INSTANCE (not per-mesh) so the
-        // spatial-bucket planner (#55) can duplicate a mesh into multiple
-        // chunks; each instance still resolves to exactly one chunk.
-        const uint32_t chunk_idx = m.instance_chunk_idx[i];
-        WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
-
+        // the LOD split. (chunk_idx and c were resolved at the top of
+        // process_instance so the priority accumulator could reach the
+        // chunk before contribution / HiZ rejected this instance.)
         WgpuModelGpuData::VisibleDrawGpu d;
         d.mesh_id       = inst.mesh_id;
         d.instance_idx  = i;
@@ -3034,8 +3123,18 @@ void WgpuViewportWindow::render() {
         // pixels. focal_px maps view-space depth to projected radius:
         //   projected_px = world_radius * focal_px / view_z.
         const QVector3D fwd_q = (target - eye).normalized();
-        const float eye_a[3] = { eye.x(),  eye.y(),  eye.z()  };
-        const float fwd_a[3] = { fwd_q.x(), fwd_q.y(), fwd_q.z() };
+        // World-up convention: Z-up. Near the poles lookAt degenerates,
+        // so swap to Y-up — mirrors buildViewProj's pitch gate at line
+        // 4701 so cull's camera basis matches the actual view matrix.
+        const QVector3D world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                     ? QVector3D(0.0f, 1.0f, 0.0f)
+                                     : QVector3D(0.0f, 0.0f, 1.0f);
+        const QVector3D right_q  = QVector3D::crossProduct(fwd_q, world_up).normalized();
+        const QVector3D up_q     = QVector3D::crossProduct(right_q, fwd_q).normalized();
+        const float eye_a[3]   = { eye.x(),     eye.y(),     eye.z()    };
+        const float fwd_a[3]   = { fwd_q.x(),   fwd_q.y(),   fwd_q.z()  };
+        const float right_a[3] = { right_q.x(), right_q.y(), right_q.z() };
+        const float up_a[3]    = { up_q.x(),    up_q.y(),    up_q.z()    };
         const float focal_px = (configured_h_ > 0)
             ? (0.5f * float(configured_h_)
                 / std::tan(qDegreesToRadians(camera_fov_y_deg_) * 0.5f))
@@ -3058,6 +3157,63 @@ void WgpuViewportWindow::render() {
             use_motion_threshold ? motion_min_pixel_radius_ : min_pixel_radius_;
         last_cull_was_motion_ = use_motion_threshold;
 
+        // HiZ stale-VP gate. The depth pyramid is async — the pyramid
+        // resident in hiz_pyramid_ was captured one or more frames ago
+        // at hiz_vp_. If the current VP differs, AABBs project through
+        // a stale matrix to wrong screen-space positions and sample
+        // depth captured for what was at THOSE positions in the old
+        // view — incorrect rejections. Strict by default: HiZ on only
+        // when current VP exactly matches the pyramid's. WGPU_HIZ_MOTION=1
+        // trusts the stale pyramid across motion (matches GL's default
+        // behaviour; the env var name mirrors GL's IFC_HIZ_MOTION knob
+        // but the wgpu default is inverted toward strictness).
+        static const bool hiz_trust_stale = []{
+            const char* e = std::getenv("WGPU_HIZ_MOTION");
+            return e && e[0] == '1';
+        }();
+        const bool hiz_vp_matches = hiz_valid_
+            && (hiz_trust_stale || hiz_vp_ == vp_this_frame);
+        const bool hiz_for_this_frame = hiz_enabled_ && hiz_vp_matches;
+
+        // WGPU_HIZ_TRACE: arm rejection logging when HiZ is about to
+        // fire post-settle. Reports per-frame budget, dumps a snapshot
+        // of the pyramid's bottom rows (the band the post-stop bug
+        // manifests in), and the per-rejection details land via the
+        // hiz_trace_budget_ atomic checked inside aabbOccludedByHiz.
+        static const bool hiz_trace_on = []{
+            const char* e = std::getenv("WGPU_HIZ_TRACE");
+            return e && e[0] == '1';
+        }();
+        if (hiz_trace_on && hiz_for_this_frame) {
+            constexpr int kHizTracePerFrame = 12;
+            hiz_trace_budget_.store(kHizTracePerFrame, std::memory_order_relaxed);
+            // One-shot per-frame log so the user can correlate rejections
+            // with what they were looking at.
+            qInfo().noquote().nospace()
+                << "[hiz trace] frame: vp_match="
+                << (hiz_vp_ == vp_this_frame ? "exact" : "loose")
+                << " pyramid_mip0=" << hiz_mip_w_[0] << "x" << hiz_mip_h_[0]
+                << " budget=" << kHizTracePerFrame;
+            // Dump the bottom 3 rows of mip 0, evenly sampled across width.
+            // If the bug is "pyramid bottom rows hold near-zero depth"
+            // these values will be visibly small.
+            const uint32_t W0 = hiz_mip_w_[0];
+            const uint32_t H0 = hiz_mip_h_[0];
+            const float* L0 = &hiz_pyramid_[hiz_mip_offset_[0]];
+            for (int dy = 2; dy >= 0; --dy) {
+                const uint32_t y = H0 - 1 - uint32_t(dy);
+                QString row;
+                for (int s = 0; s < 8; ++s) {
+                    const uint32_t x = (s * (W0 - 1)) / 7;
+                    row += QString::asprintf("%.4f ", L0[y * W0 + x]);
+                }
+                qInfo().noquote().nospace()
+                    << "[hiz trace] pyramid row " << y << " (8 samples): " << row;
+            }
+        } else if (hiz_trace_on) {
+            hiz_trace_budget_.store(0, std::memory_order_relaxed);
+        }
+
         // Cull each model on its own worker thread. wgpu queue writes are
         // serialised on the main thread after the parallel compute joins —
         // wgpu-native doesn't guarantee thread-safety on queue ops.
@@ -3069,12 +3225,13 @@ void WgpuViewportWindow::render() {
                 if (m.hidden) continue;
                 auto& m_ref = m;
                 futures.emplace_back(mid, std::async(std::launch::async,
-                    [this, &m_ref, &planes, &eye_a, &fwd_a,
-                     focal_px, effective_min_px]() {
+                    [this, &m_ref, &planes, &eye_a, &fwd_a, &right_a, &up_a,
+                     focal_px, effective_min_px, hiz_for_this_frame]() {
                         return cullModelCpuCompute(
-                            m_ref, planes, eye_a, fwd_a, focal_px,
+                            m_ref, planes, eye_a, fwd_a, right_a, up_a,
+                            focal_px,
                             effective_min_px, lod1_pixel_threshold_,
-                            hiz_enabled_);
+                            hiz_for_this_frame);
                     }));
             }
             for (auto& [mid, fut] : futures) {
@@ -3084,9 +3241,9 @@ void WgpuViewportWindow::render() {
             for (auto& [mid, m] : models_gpu_) {
                 if (m.hidden) continue;
                 hiz_reject_count_ += cullModelCpuCompute(
-                    m, planes, eye_a, fwd_a, focal_px,
+                    m, planes, eye_a, fwd_a, right_a, up_a, focal_px,
                     effective_min_px, lod1_pixel_threshold_,
-                    hiz_enabled_);
+                    hiz_for_this_frame);
             }
         }
 
@@ -4210,21 +4367,18 @@ void WgpuViewportWindow::driveStreamingLoads() {
         }
     }
 
-    // Build the camera's view-projection so we can project AABB corners
-    // to actual screen-space pixels. Same helper as cull/render so an
-    // ortho or near-vertical view scores chunks the same way.
+    // Build the camera's view-projection (still needed for the AABB-based
+    // diagnostic dump in the tracking output below). Cull/render use the
+    // same helper.
     QMatrix4x4 v_mat, p_mat;
     buildViewProj(v_mat, p_mat);
     const QMatrix4x4 vp_mat = p_mat * v_mat;
 
-    // Chunk priority = projected pixel area of the AABB on screen.
-    // "What would this chunk's AABB cover if rendered solid given the
-    // current camera and viewport." Replaces the prior bounding-sphere-
-    // radius² metric, which was a 3D approximation — it treated a
-    // 322 × 55 × 5 m slab as a 163 m sphere, same huge priority face-on
-    // or edge-on, even though edge-on covers far fewer pixels.
+    // chunk.current_priority was accumulated during cullModelCpuCompute
+    // (one add per frustum-passing instance). No standalone walk needed
+    // here; the candidate/resident priority lambdas just read it.
     auto chunk_screen_area_px = [&](const WgpuModelGpuData::Chunk& c) -> float {
-        return chunkScreenAreaPx(c, vp_mat);
+        return c.current_priority;
     };
 
     // Resident chunks: contribution × visibility_history (floored), so
@@ -5479,10 +5633,15 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
             if (!event->isAutoRepeat()) {
                 const bool was_empty = fps_keys_held_.isEmpty();
                 fps_keys_held_.insert(key);
-                if (was_empty) {
-                    fps_last_tick_.restart();
-                    requestUpdate();
-                }
+                if (was_empty) fps_last_tick_.restart();
+                // ALWAYS kick the render loop, not just on first key.
+                // If Shift was pressed first (Shift-alone doesn't move →
+                // fpsIntegrate exits early without requesting another
+                // frame, so the loop dies), and Q is pressed next, the
+                // old "only on was_empty" trigger missed it and Q never
+                // integrated. Re-arming requestUpdate per keypress is
+                // free (Qt coalesces) and resolves the deadlock.
+                requestUpdate();
             }
             return;
         default: break;

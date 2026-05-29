@@ -210,6 +210,14 @@ struct WgpuModelGpuData {
         // with load_count >> 1 has been cycling — used by the stream
         // debug log (WGPU_STREAM_DEBUG=1) to surface thrash.
         uint32_t load_count                   = 0;
+        // Per-frame instance-aware priority. Sum of px² projected
+        // contributions of every instance owned by this chunk —
+        // captures the chunk's actual on-screen footprint, not the
+        // (often loose) AABB union projection. Computed once per
+        // frame at the top of driveStreamingLoads from the camera
+        // state; the candidate/resident priority lambdas just read
+        // this. See task #57 for the rationale.
+        float    current_priority             = 0.0f;
     };
     std::vector<Chunk> chunks;
 

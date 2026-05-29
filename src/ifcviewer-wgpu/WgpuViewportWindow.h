@@ -30,6 +30,7 @@
 
 #include <webgpu/webgpu.h>
 
+#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <unordered_map>
@@ -294,9 +295,19 @@ private:
     // vertices. Touches no wgpu state, so this can run on a worker thread
     // (multiple models culled in parallel). Returns the number of HiZ
     // rejections accumulated (caller adds to the per-frame stat).
+    // right/up are world-space camera basis vectors (orthonormal with
+    // forward). Used by the streaming priority accumulator to project
+    // each instance's world AABB to a screen-space rectangle — far
+    // tighter than a bounding-sphere projection for BIM geometry, which
+    // is overwhelmingly thin-in-one-axis (pipes, columns, slabs,
+    // windows). Sphere projection is kept for contribution / LOD picks
+    // because conservative-over is the right failure mode there.
     uint32_t cullModelCpuCompute(WgpuModelGpuData& m,
                                  const float planes[6][4],
-                                 const float eye[3], const float forward[3],
+                                 const float eye[3],
+                                 const float forward[3],
+                                 const float right[3],
+                                 const float up[3],
                                  float focal_px,
                                  float min_radius_px,
                                  float lod1_threshold_px,
@@ -432,6 +443,13 @@ private:
     bool                  hiz_valid_         = false;
     uint32_t              hiz_reject_count_  = 0;  // per-frame stat
 
+    // WGPU_HIZ_TRACE=1 — diagnostic logging budget shared across the
+    // parallel cull threads. Set to a non-zero count at start of cull
+    // when tracing is on; each rejection in aabbOccludedByHiz atomically
+    // decrements and logs while >0. Atomic because cull dispatches one
+    // thread per model.
+    mutable std::atomic<int> hiz_trace_budget_{0};
+
     QColor background_color_ = QColor("#202329");
 
     // Camera (orbit, right-handed Y-up world → wait, BIM is +Z up).
@@ -533,9 +551,17 @@ private:
     uint32_t spatial_max_instances_ = 5000;
 
 public:
-    // Master switch for HiZ occlusion. Set false to skip the depth resolve
-    // + readback + cull test entirely (matches IFC_NO_HIZ in the GL backend).
-    bool hiz_enabled_ = true;
+    // Master switch for HiZ occlusion. OFF by default — has two issues vs
+    // the GL backend on this codepath (see task #58):
+    //   (1) Correctness: bottom-edge AABBs get falsely rejected as the
+    //       camera rotates. Math review didn't pin it down; root cause
+    //       likely needs RenderDoc capture of the pyramid.
+    //   (2) Perf: HiZ ON costs ~2.5 ms more cull time than HiZ OFF on
+    //       the federation bench but only saves ~1 ms of raster work
+    //       because our indirect-draw iterates the visible_draws buffer
+    //       regardless. Net 9% slower (49.7 vs 54.2 fps).
+    // Opt-in via WGPU_HIZ=1.
+    bool hiz_enabled_ = false;
 
     // When true, initWgpu requests the WebGPU mandatory floor limits
     // (maxStorageBufferBindingSize=128MB, maxBufferSize=256MB) instead of
