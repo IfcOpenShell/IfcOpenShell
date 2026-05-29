@@ -926,12 +926,6 @@ class FetchCADSketcher(Operator):
 
     def invoke(self, context, event):
         ifc_file = tool.Ifc.get()
-        # Fetch shows BIM-linked Blender objects, so keep CAD Sketcher visibility flag in sync.
-        if hasattr(context.scene, "sketcher"):
-            context.scene.sketcher.sketch_show_objects = True
-        scene_named_default = bpy.data.scenes.get("Scene")
-        if scene_named_default and hasattr(scene_named_default, "sketcher"):
-            scene_named_default.sketcher.sketch_show_objects = True
 
         sketch = context.scene.sketcher.active_sketch
         sketch_index = sketch.slvs_index
@@ -1397,6 +1391,13 @@ class FetchCADSketcher(Operator):
                 row.label(text=item.type_label)
 
     def execute(self, context):
+        # Apply on confirmation so opening/cancelling the popup does not mutate scene visibility.
+        if hasattr(context.scene, "sketcher"):
+            context.scene.sketcher.sketch_show_objects = True
+        scene_named_default = bpy.data.scenes.get("Scene")
+        if scene_named_default and hasattr(scene_named_default, "sketcher"):
+            scene_named_default.sketcher.sketch_show_objects = True
+
         ifc_file = tool.Ifc.get()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
         sketch = context.scene.sketcher.active_sketch
