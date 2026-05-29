@@ -18,7 +18,7 @@
 
 import bpy
 
-from . import operator, ui
+from . import operator
 
 classes = (
     operator.CADSketcherWallTypeItem,
@@ -34,8 +34,6 @@ classes = (
     operator.CADSketcherColumnItem,
     operator.CADSketcherPileItem,
     operator.FetchCADSketcher,
-    ui.SetSketchRole,
-    ui.BIM_PT_cadsketcher,
 )
 
 
