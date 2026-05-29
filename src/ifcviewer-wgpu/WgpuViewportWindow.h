@@ -400,6 +400,12 @@ private:
     float min_pixel_radius_        = 3.0f;
     float motion_min_pixel_radius_ = 15.0f;
 
+    // Whether driveCull dispatches per-model work via std::async. ON by
+    // default; setting WGPU_CULL_THREADS=0 forces sequential cull for
+    // measurement (does std::async actually parallelize on this libstdc++?
+    // and is per-model the right granularity?).
+    bool  cull_threads_enabled_     = true;
+
 public:
     // Master switch for HiZ occlusion. Set false to skip the depth resolve
     // + readback + cull test entirely (matches IFC_NO_HIZ in the GL backend).
@@ -444,6 +450,16 @@ public:
     // this frame; `more_pending` = the loader wants to keep going.
     int  streaming_loads_this_frame_ = 0;
     bool streaming_more_pending_     = false;
+
+    // Per-frame streaming counters for WGPU_STREAM_DEBUG. Mutated inside
+    // driveStreamingLoads, consumed by the per-frame debug print and the
+    // bench-warm timeout dump.
+    int  streaming_candidates_this_frame_      = 0;
+    int  streaming_evictions_lru_this_frame_   = 0;
+    int  streaming_evictions_pri_this_frame_   = 0;
+    int  streaming_drained_this_frame_         = 0;
+    int  streaming_blocked_oom_this_frame_     = 0;
+    bool streaming_debug_                      = false;  // WGPU_STREAM_DEBUG=1
 
     // Bench warm-phase counters. We wait until N consecutive frames with
     // 0 loads (convergence) before starting the orbit sweep, capped by
@@ -534,6 +550,8 @@ private:
     // bench) so the periodic [frame] heartbeat log can show cull /
     // stream cost without needing the bench averaging machinery.
     double   last_cull_ms_            = 0.0;
+    double   last_cull_compute_ms_    = 0.0;  // parallel per-model cull
+    double   last_cull_upload_ms_     = 0.0;  // sequential queueWriteBuffer pass
     double   last_stream_ms_          = 0.0;
 
     // Tick count for the interactive (non-bench) [frame] heartbeat log.

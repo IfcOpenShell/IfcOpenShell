@@ -1321,6 +1321,22 @@ bool WgpuViewportWindow::initWgpu() {
         qInfo().noquote().nospace()
             << "[wgpu cull] WGPU_MIN_PX_MOTION=" << motion_min_pixel_radius_;
     }
+    if (const char* s = std::getenv("WGPU_STREAM_DEBUG")) {
+        streaming_debug_ = (s[0] == '1');
+        if (streaming_debug_) {
+            qInfo().noquote() << "[wgpu stream] WGPU_STREAM_DEBUG=1 — per-frame "
+                                 "[stream-debug] log enabled";
+        }
+    }
+    if (const char* s = std::getenv("WGPU_CULL_THREADS")) {
+        // "0" disables std::async dispatch — every model is culled on the
+        // main thread, sequentially. Used to measure speedup vs the
+        // parallel-per-model path. Any non-"0" value keeps parallelism on.
+        cull_threads_enabled_ = (s[0] != '0');
+        qInfo().noquote().nospace()
+            << "[wgpu cull] WGPU_CULL_THREADS=" << s
+            << " (parallelism " << (cull_threads_enabled_ ? "ON" : "OFF") << ")";
+    }
 
     instance_ = wgpuCreateInstance(nullptr);
     if (!instance_) {
@@ -2888,23 +2904,42 @@ void WgpuViewportWindow::render() {
         // Cull each model on its own worker thread. wgpu queue writes are
         // serialised on the main thread after the parallel compute joins —
         // wgpu-native doesn't guarantee thread-safety on queue ops.
-        std::vector<std::pair<uint32_t, std::future<uint32_t>>> futures;
-        futures.reserve(models_gpu_.size());
-        for (auto& [mid, m] : models_gpu_) {
-            if (m.hidden) continue;
-            auto& m_ref = m;
-            futures.emplace_back(mid, std::async(std::launch::async,
-                [this, &m_ref, &planes, &eye_a, &fwd_a,
-                 focal_px, effective_min_px]() {
-                    return cullModelCpuCompute(
-                        m_ref, planes, eye_a, fwd_a, focal_px,
-                        effective_min_px, lod1_pixel_threshold_,
-                        hiz_enabled_);
-                }));
+        // WGPU_CULL_THREADS=0 forces the sequential path for measurement.
+        if (cull_threads_enabled_) {
+            std::vector<std::pair<uint32_t, std::future<uint32_t>>> futures;
+            futures.reserve(models_gpu_.size());
+            for (auto& [mid, m] : models_gpu_) {
+                if (m.hidden) continue;
+                auto& m_ref = m;
+                futures.emplace_back(mid, std::async(std::launch::async,
+                    [this, &m_ref, &planes, &eye_a, &fwd_a,
+                     focal_px, effective_min_px]() {
+                        return cullModelCpuCompute(
+                            m_ref, planes, eye_a, fwd_a, focal_px,
+                            effective_min_px, lod1_pixel_threshold_,
+                            hiz_enabled_);
+                    }));
+            }
+            for (auto& [mid, fut] : futures) {
+                hiz_reject_count_ += fut.get();
+            }
+        } else {
+            for (auto& [mid, m] : models_gpu_) {
+                if (m.hidden) continue;
+                hiz_reject_count_ += cullModelCpuCompute(
+                    m, planes, eye_a, fwd_a, focal_px,
+                    effective_min_px, lod1_pixel_threshold_,
+                    hiz_enabled_);
+            }
         }
-        for (auto& [mid, fut] : futures) {
-            hiz_reject_count_ += fut.get();
-        }
+
+        // Split timer: how much of the "cull" cost is the upload phase
+        // (sequential queueWriteBuffer × 3 per resident chunk × ~120
+        // chunks ≈ 360 wgpu calls/frame). If upload >> compute the parallel
+        // cull is doing its job and the bottleneck is somewhere else.
+        const double cull_compute_ms = double(cull_timer.nsecsElapsed()) / 1e6;
+        QElapsedTimer upload_timer;
+        upload_timer.start();
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
             cullModelCpuUpload(m);
@@ -2915,6 +2950,8 @@ void WgpuViewportWindow::render() {
                 if (c.total_visible_draws > 0) last_sub_draws_ += 1;
             }
         }
+        last_cull_compute_ms_ = cull_compute_ms;
+        last_cull_upload_ms_  = double(upload_timer.nsecsElapsed()) / 1e6;
     }
 
     // Stop the cull-only timer before streaming, so the benchmark
@@ -3415,11 +3452,85 @@ void WgpuViewportWindow::render() {
                     << bench_warm_frames_total_ << " frames";
                 bench_warm_done_ = true;
             } else if (timed_out) {
+                // Walk every chunk in every model to summarise the steady-
+                // state shape: how many frustum-visible chunks are missing,
+                // how many residents have load_count > 1 (cycled), the
+                // chunk that's been re-loaded the most times, total pool
+                // usage. This is the smoking gun for working-set > pool:
+                // high "missing" with high "cycled" means we're stuck in
+                // an evict-reload loop. Low "missing" with low "cycled"
+                // means convergence just needs more frames.
+                size_t total_chunks = 0;
+                size_t resident = 0;
+                size_t missing_visible = 0;
+                size_t cycled = 0;
+                uint32_t max_load = 0;
+                for (const auto& [mid, m] : models_gpu_) {
+                    for (const auto& c : m.chunks) {
+                        ++total_chunks;
+                        if (c.is_resident) ++resident;
+                        else if (c.frustum_visible_count > 0) ++missing_visible;
+                        if (c.load_count > 1) ++cycled;
+                        if (c.load_count > max_load) max_load = c.load_count;
+                    }
+                }
+                const double mb = 1.0 / (1024.0 * 1024.0);
+                // Estimate the typical "would fit" pressure: avg byte size
+                // of the missing-visible chunks. If that's much larger than
+                // largest_free_run, fragmentation is the smoking gun even
+                // when total_free would be enough.
+                uint64_t missing_bytes_total = 0;
+                uint32_t missing_count_for_avg = 0;
+                for (const auto& [mid, m] : models_gpu_) {
+                    for (const auto& c : m.chunks) {
+                        if (!c.is_resident && c.frustum_visible_count > 0) {
+                            missing_bytes_total += c.vertex_byte_size
+                                                 + c.index_count * sizeof(uint32_t);
+                            ++missing_count_for_avg;
+                        }
+                    }
+                }
+                const uint64_t avg_missing_bytes = missing_count_for_avg > 0
+                    ? missing_bytes_total / missing_count_for_avg : 0;
+                const uint64_t largest_free = pool_.largest_free_run_bytes();
+                const bool fragmented = missing_visible > 0
+                                      && avg_missing_bytes > largest_free
+                                      && pool_.total_free_bytes() > avg_missing_bytes;
+
+                const char* diag;
+                if (fragmented) {
+                    diag = "POOL FRAGMENTED (total free OK but no contiguous run big enough)";
+                } else if (missing_visible > 0 && cycled > 10) {
+                    diag = "WORKING SET > POOL (thrashing — many chunks cycling)";
+                } else if (missing_visible > 0 && max_load > 5) {
+                    diag = "FEW-CHUNK CYCLE (one+ chunks keep reloading, likely hysteresis-boundary)";
+                } else if (missing_visible > 0) {
+                    diag = "still loading (try MAX_WARM_FRAMES↑)";
+                } else {
+                    diag = "converged, just below the gate's 5-frame streak";
+                }
                 qWarning().noquote().nospace()
                     << "[bench warm] timed out after " << bench_warm_frames_total_
                     << " frames without convergence (last loads="
-                    << streaming_loads_this_frame_
-                    << "); starting bench anyway";
+                    << streaming_loads_this_frame_ << ")\n"
+                    << "  chunks: " << resident << " resident, "
+                    << missing_visible << " visible-but-missing, "
+                    << total_chunks << " total\n"
+                    << "  cycled (loaded >1×): " << cycled
+                    << ", max load_count: " << max_load << "\n"
+                    << "  pool: "
+                    << QString::number(double(pool_.total_used_bytes()) * mb, 'f', 0)
+                    << " / "
+                    << QString::number(double(pool_.total_capacity_bytes()) * mb, 'f', 0)
+                    << " MB used, "
+                    << QString::number(double(largest_free) * mb, 'f', 0)
+                    << " MB largest free run, "
+                    << QString::number(double(pool_.total_free_bytes()) * mb, 'f', 0)
+                    << " MB total free\n"
+                    << "  avg missing chunk: "
+                    << QString::number(double(avg_missing_bytes) * mb, 'f', 1) << " MB\n"
+                    << "  diagnosis: " << diag
+                    << "; starting bench anyway";
                 bench_warm_done_ = true;
             } else {
                 requestUpdate();
@@ -3460,7 +3571,9 @@ void WgpuViewportWindow::render() {
                 << "  meshes " << total_meshes
                 << "  sub_draws " << last_sub_draws_
                 << "  hiz_rej " << hiz_reject_count_
-                << "  cull[wall " << QString::number(cull_ms, 'f', 2) << "]ms"
+                << "  cull[wall " << QString::number(cull_ms, 'f', 2)
+                << " | compute " << QString::number(last_cull_compute_ms_, 'f', 2)
+                << " upload " << QString::number(last_cull_upload_ms_, 'f', 2) << "]ms"
                 << "  stream[" << QString::number(stream_ms, 'f', 2) << "]ms"
                 << "  vram " << QString::number(double(total_vbo + total_ebo + total_ssbo) * mb, 'f', 1) << "MB"
                 << " (vbo " << QString::number(double(total_vbo) * mb, 'f', 1)
@@ -4045,6 +4158,13 @@ void WgpuViewportWindow::driveStreamingLoads() {
     int loads = 0;
     bool more_pending = false;
 
+    // Reset per-frame counters used by WGPU_STREAM_DEBUG output.
+    streaming_candidates_this_frame_    = 0;
+    streaming_evictions_lru_this_frame_ = 0;
+    streaming_evictions_pri_this_frame_ = 0;
+    streaming_drained_this_frame_       = 0;
+    streaming_blocked_oom_this_frame_   = 0;
+
     // The pool needs `need` contiguous bytes free for both the vertex and
     // index allocations a load requires. Fragmentation matters: a chunk
     // may fit total-free-bytes but not largest_free_run_bytes(). With
@@ -4084,6 +4204,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
         }
         if (!victim_m) return false;
         unloadChunk(*victim_m, victim_ci);
+        ++streaming_evictions_lru_this_frame_;
         return true;
     };
 
@@ -4116,6 +4237,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
         }
         if (!victim_m) return false;
         unloadChunk(*victim_m, victim_ci);
+        ++streaming_evictions_pri_this_frame_;
         return true;
     };
 
@@ -4151,6 +4273,8 @@ void WgpuViewportWindow::driveStreamingLoads() {
                 continue;
             }
             ++loads;
+            ++streaming_drained_this_frame_;
+            ++c.load_count;
             c.last_visible_frame_idx = streaming_frame_idx_;
         }
     }
@@ -4174,6 +4298,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
             candidates.push_back({&m, ci, mid, candidate_priority(c)});
         }
     }
+    streaming_candidates_this_frame_ = int(candidates.size());
     std::sort(candidates.begin(), candidates.end(),
               [](const Candidate& a, const Candidate& b) {
                   return a.priority > b.priority;  // biggest first
@@ -4202,6 +4327,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
                 && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
             // Sorted-by-priority: every remaining candidate has equal
             // or lower priority, so eviction won't succeed for them either.
+            ++streaming_blocked_oom_this_frame_;
             more_pending = true;
             break;
         }
@@ -4238,6 +4364,33 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // signal.
     streaming_loads_this_frame_ = loads;
     streaming_more_pending_     = more_pending;
+
+    if (streaming_debug_) {
+        // Cheap per-frame breakdown so a thrash cycle's shape becomes
+        // visible — high candidates + high evictions + low net loads is
+        // the smoking gun for "working set > pool".
+        size_t resident = 0;
+        uint32_t max_load_count = 0;
+        size_t   cycled = 0;          // chunks loaded > 1 time this session
+        for (const auto& [mid, m] : models_gpu_) {
+            for (const auto& c : m.chunks) {
+                if (c.is_resident) ++resident;
+                if (c.load_count > max_load_count) max_load_count = c.load_count;
+                if (c.load_count > 1) ++cycled;
+            }
+        }
+        qInfo().noquote().nospace()
+            << "[stream-debug] f" << streaming_frame_idx_
+            << " cands=" << streaming_candidates_this_frame_
+            << " enq=" << enqueued
+            << " drained=" << streaming_drained_this_frame_
+            << " ev_lru=" << streaming_evictions_lru_this_frame_
+            << " ev_pri=" << streaming_evictions_pri_this_frame_
+            << " blocked=" << streaming_blocked_oom_this_frame_
+            << " resident=" << resident
+            << " cycled=" << cycled
+            << " max_load=" << max_load_count;
+    }
 }
 
 // -----------------------------------------------------------------------------

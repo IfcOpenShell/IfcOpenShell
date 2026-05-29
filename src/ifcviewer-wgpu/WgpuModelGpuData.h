@@ -205,6 +205,11 @@ struct WgpuModelGpuData {
         // ranked position 20 in the missing list) from ever getting
         // attempted.
         uint64_t loaded_frame_idx             = 0;
+        // How many times this chunk has been (re-)loaded over the
+        // session. Bumped each successful applyStreamedChunk. A chunk
+        // with load_count >> 1 has been cycling — used by the stream
+        // debug log (WGPU_STREAM_DEBUG=1) to surface thrash.
+        uint32_t load_count                   = 0;
     };
     std::vector<Chunk> chunks;
 
