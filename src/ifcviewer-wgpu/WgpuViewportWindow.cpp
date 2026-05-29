@@ -40,6 +40,7 @@
 #include <cstring>
 #include <future>
 #include <limits>
+#include <set>
 #include <utility>
 
 // -----------------------------------------------------------------------------
@@ -1337,6 +1338,25 @@ bool WgpuViewportWindow::initWgpu() {
             << "[wgpu cull] WGPU_CULL_THREADS=" << s
             << " (parallelism " << (cull_threads_enabled_ ? "ON" : "OFF") << ")";
     }
+    if (const char* s = std::getenv("WGPU_FLY_DEBUG")) {
+        fly_debug_ = (s[0] == '1');
+        if (fly_debug_) {
+            qInfo() << "[wgpu fly] WGPU_FLY_DEBUG=1 — per-frame [fly] dt log enabled";
+        }
+    }
+    // Mouse-nav preset (matches GL AppSettings::NavPreset). blender default,
+    // rhino or revit as alternatives. Selection always stays on LMB.
+    const char* nav_env = std::getenv("WGPU_NAV_PRESET");
+    applyNavPreset(nav_env ? nav_env : "blender");
+    qInfo().noquote().nospace()
+        << "[wgpu nav] preset=" << (nav_env ? nav_env : "blender")
+        << " (orbit "
+        << (orbit_button_ == Qt::RightButton ? "RMB" : "MMB")
+        << (orbit_mods_ & Qt::ShiftModifier ? "+Shift" : "")
+        << ", pan "
+        << (pan_button_ == Qt::RightButton ? "RMB" : "MMB")
+        << (pan_mods_ & Qt::ShiftModifier ? "+Shift" : "")
+        << ")";
 
     instance_ = wgpuCreateInstance(nullptr);
     if (!instance_) {
@@ -1638,7 +1658,45 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     cfg.usage       = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
     cfg.width       = uint32_t(width_px);
     cfg.height      = uint32_t(height_px);
-    cfg.presentMode = WGPUPresentMode_Fifo;
+    // Present mode. WGPU_PRESENT_MODE=fifo|fifo_relaxed|mailbox|immediate
+    // (default fifo). Recommended for fly-mode stutter: fifo_relaxed.
+    //   fifo          — strict vsync. Frame waiting > display refresh
+    //                   pushes the present to the NEXT refresh, producing
+    //                   the visible "double-frame" jump when cull or
+    //                   chunk-apply briefly exceeds budget.
+    //   fifo_relaxed  — adaptive vsync. Syncs to display when frame hits
+    //                   the budget; allows tear when it doesn't. Removes
+    //                   the missed-vsync stutter while keeping smooth
+    //                   presentation when we're under budget. Best
+    //                   compromise for the fly-mode jitter case.
+    //   mailbox       — uncapped, last-frame-wins, no tearing. Not
+    //                   supported on Vulkan + NVIDIA on Linux (falls
+    //                   back to Fifo); use fifo_relaxed instead there.
+    //   immediate     — uncapped, frames presented as soon as ready,
+    //                   may tear. Useful for raw-throughput benchmarking.
+    WGPUPresentMode pm = WGPUPresentMode_Fifo;
+    const char* pm_name = "fifo";
+    if (const char* s = std::getenv("WGPU_PRESENT_MODE")) {
+        if (std::strcmp(s, "fifo_relaxed") == 0) {
+            pm = WGPUPresentMode_FifoRelaxed; pm_name = "fifo_relaxed";
+        } else if (std::strcmp(s, "mailbox") == 0) {
+            pm = WGPUPresentMode_Mailbox;     pm_name = "mailbox";
+        } else if (std::strcmp(s, "immediate") == 0) {
+            pm = WGPUPresentMode_Immediate;   pm_name = "immediate";
+        } else if (std::strcmp(s, "fifo") != 0) {
+            qWarning().noquote().nospace()
+                << "[wgpu] unknown WGPU_PRESENT_MODE=" << s
+                << " (expected fifo|fifo_relaxed|mailbox|immediate); using fifo";
+        }
+    }
+    cfg.presentMode = pm;
+    if (pm != WGPUPresentMode_Fifo && !surface_configured_) {
+        qInfo().noquote().nospace()
+            << "[wgpu] present mode = " << pm_name
+            << (pm == WGPUPresentMode_FifoRelaxed
+                  ? " (adaptive vsync — sync if in budget, tear if not)"
+                  : " (vsync OFF — framerate uncapped)");
+    }
     cfg.alphaMode   = WGPUCompositeAlphaMode_Auto;
 
     wgpuSurfaceConfigure(surface_, &cfg);
@@ -2814,6 +2872,12 @@ void WgpuViewportWindow::render() {
     QElapsedTimer frame_timer;
     frame_timer.start();
 
+    // Advance fly-mode camera by wall-clock dt since the last frame so the
+    // frame we're about to render already reflects the move. Driving this
+    // from render() (rather than a QTimer) means a long frame costs one
+    // missed step, not a backlog.
+    fpsIntegrate();
+
     // Drain any HiZ async readbacks that completed since last frame so the
     // pyramid is as fresh as it can be before cull runs.
     if (hiz_enabled_) drainHizReadbacks();
@@ -2863,12 +2927,9 @@ void WgpuViewportWindow::render() {
         const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
         const QVector3D eye = orbitEye(camera_target_, camera_distance_,
                                        camera_yaw_deg_, camera_pitch_deg_);
-        QMatrix4x4 v; v.lookAt(eye, target, QVector3D(0.0f, 0.0f, 1.0f));
-        const float aspect = (configured_h_ > 0)
-                                ? float(configured_w_) / float(configured_h_) : 1.0f;
-        QMatrix4x4 p; p.perspective(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
-        QMatrix4x4 z; z(2, 2) = 0.5f; z(2, 3) = 0.5f;
-        const QMatrix4x4 vp = z * p * v;
+        QMatrix4x4 v, p;
+        buildViewProj(v, p);
+        const QMatrix4x4 vp = p * v;
         vp_this_frame = vp;
         float planes[6][4];
         extractFrustumPlanes(vp.constData(), planes);
@@ -3246,16 +3307,9 @@ void WgpuViewportWindow::render() {
                 // — same metric driveStreamingLoads uses for priority,
                 // duplicated here so the heartbeat dump can show what
                 // the loader is actually scoring chunks at.
-                const QVector3D target_dbg(camera_target_[0], camera_target_[1], camera_target_[2]);
-                const QVector3D eye_dbg = orbitEye(camera_target_, camera_distance_,
-                                                   camera_yaw_deg_, camera_pitch_deg_);
-                QMatrix4x4 v_dbg; v_dbg.lookAt(eye_dbg, target_dbg, QVector3D(0.0f, 0.0f, 1.0f));
-                const float aspect_dbg = (configured_h_ > 0)
-                    ? float(configured_w_) / float(configured_h_) : 1.0f;
-                QMatrix4x4 p_dbg; p_dbg.perspective(camera_fov_y_deg_, aspect_dbg,
-                                                    camera_near_, camera_far_);
-                QMatrix4x4 z_dbg; z_dbg(2, 2) = 0.5f; z_dbg(2, 3) = 0.5f;
-                const QMatrix4x4 vp_dbg = z_dbg * p_dbg * v_dbg;
+                QMatrix4x4 v_dbg, p_dbg;
+                buildViewProj(v_dbg, p_dbg);
+                const QMatrix4x4 vp_dbg = p_dbg * v_dbg;
                 auto chunk_priority_px2 = [&](const WgpuModelGpuData::Chunk& c) -> float {
                     if (configured_w_ <= 0 || configured_h_ <= 0 ||
                         c.aabb_min[0] > c.aabb_max[0]) return 0.0f;
@@ -4061,17 +4115,11 @@ void WgpuViewportWindow::driveStreamingLoads() {
     }
 
     // Build the camera's view-projection so we can project AABB corners
-    // to actual screen-space pixels. Same matrix sequence as cull.
-    const QVector3D target_q(camera_target_[0], camera_target_[1], camera_target_[2]);
-    const QVector3D eye   = orbitEye(camera_target_, camera_distance_,
-                                     camera_yaw_deg_, camera_pitch_deg_);
-    QMatrix4x4 v_mat; v_mat.lookAt(eye, target_q, QVector3D(0.0f, 0.0f, 1.0f));
-    const float aspect = (configured_h_ > 0)
-        ? float(configured_w_) / float(configured_h_) : 1.0f;
-    QMatrix4x4 p_mat; p_mat.perspective(camera_fov_y_deg_, aspect,
-                                        camera_near_, camera_far_);
-    QMatrix4x4 z_mat; z_mat(2, 2) = 0.5f; z_mat(2, 3) = 0.5f;
-    const QMatrix4x4 vp_mat = z_mat * p_mat * v_mat;
+    // to actual screen-space pixels. Same helper as cull/render so an
+    // ortho or near-vertical view scores chunks the same way.
+    QMatrix4x4 v_mat, p_mat;
+    buildViewProj(v_mat, p_mat);
+    const QMatrix4x4 vp_mat = p_mat * v_mat;
 
     // Chunk priority = projected pixel area of the AABB on screen.
     // "What would this chunk's AABB cover if rendered solid given the
@@ -4080,43 +4128,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // 322 × 55 × 5 m slab as a 163 m sphere, same huge priority face-on
     // or edge-on, even though edge-on covers far fewer pixels.
     auto chunk_screen_area_px = [&](const WgpuModelGpuData::Chunk& c) -> float {
-        if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
-        if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
-        float xmin = std::numeric_limits<float>::infinity();
-        float ymin = std::numeric_limits<float>::infinity();
-        float xmax = -std::numeric_limits<float>::infinity();
-        float ymax = -std::numeric_limits<float>::infinity();
-        int corners_in_front = 0;
-        for (int i = 0; i < 8; ++i) {
-            const QVector4D corner_world(
-                (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
-                (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
-                (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
-                1.0f);
-            const QVector4D clip = vp_mat * corner_world;
-            // w ≤ 0 = corner is behind the camera. We drop it rather
-            // than try to clip-and-reproject; chunks fully behind get
-            // 0 area (correct), chunks partially behind underestimate
-            // (acceptable for an eviction heuristic).
-            if (clip.w() <= 1e-3f) continue;
-            ++corners_in_front;
-            const float ndc_x = clip.x() / clip.w();
-            const float ndc_y = clip.y() / clip.w();
-            const float px_x  = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
-            const float px_y  = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
-            xmin = std::min(xmin, px_x);
-            ymin = std::min(ymin, px_y);
-            xmax = std::max(xmax, px_x);
-            ymax = std::max(ymax, px_y);
-        }
-        if (corners_in_front == 0) return 0.0f;
-        // Clamp to viewport — off-screen area doesn't count.
-        xmin = std::max(xmin, 0.0f);
-        ymin = std::max(ymin, 0.0f);
-        xmax = std::min(xmax, float(configured_w_));
-        ymax = std::min(ymax, float(configured_h_));
-        if (xmax <= xmin || ymax <= ymin) return 0.0f;
-        return (xmax - xmin) * (ymax - ymin);
+        return chunkScreenAreaPx(c, vp_mat);
     };
 
     // Resident chunks: contribution × visibility_history (floored), so
@@ -4365,6 +4377,82 @@ void WgpuViewportWindow::driveStreamingLoads() {
     streaming_loads_this_frame_ = loads;
     streaming_more_pending_     = more_pending;
 
+    // Click-and-track diagnostic. When the user picked an object, we noted
+    // which chunk holds it. If that chunk has just transitioned resident
+    // → evicted, dump the priority + pool state at the moment of loss so
+    // we can see WHY it lost (was the new candidate higher priority? did
+    // the pool fail to fit anyone? did frustum visibility just go to 0?).
+    if (tracked_chunk_idx_ != SIZE_MAX) {
+        auto it = models_gpu_.find(tracked_chunk_mid_);
+        if (it != models_gpu_.end()
+            && tracked_chunk_idx_ < it->second.chunks.size()) {
+            const auto& m = it->second;
+            const auto& c = m.chunks[tracked_chunk_idx_];
+            if (tracked_was_resident_ && !c.is_resident) {
+                const double mb = 1.0 / (1024.0 * 1024.0);
+                const float my_area  = chunkScreenAreaPx(c, vp_mat);
+                const uint64_t my_bytes = c.vertex_byte_size
+                                        + c.index_count * sizeof(uint32_t);
+                qInfo().noquote().nospace()
+                    << "[track] chunk " << tracked_chunk_idx_
+                    << " (object " << tracked_object_id_
+                    << ", model " << tracked_chunk_mid_
+                    << ") EVICTED this frame";
+                qInfo().noquote().nospace()
+                    << "  area=" << QString::number(my_area, 'f', 0) << "px²"
+                    << " frustum_vis=" << c.frustum_visible_count
+                    << " hist=" << QString::number(c.visibility_history, 'f', 2)
+                    << " load_count=" << c.load_count
+                    << " size=" << QString::number(double(my_bytes) * mb, 'f', 1) << "MB";
+                qInfo().noquote().nospace()
+                    << "  chunk aabb "
+                    << QString::number(c.aabb_max[0] - c.aabb_min[0], 'f', 1) << "×"
+                    << QString::number(c.aabb_max[1] - c.aabb_min[1], 'f', 1) << "×"
+                    << QString::number(c.aabb_max[2] - c.aabb_min[2], 'f', 1) << "m"
+                    << " centre=("
+                    << QString::number(0.5f * (c.aabb_min[0] + c.aabb_max[0]), 'f', 1) << ","
+                    << QString::number(0.5f * (c.aabb_min[1] + c.aabb_max[1]), 'f', 1) << ","
+                    << QString::number(0.5f * (c.aabb_min[2] + c.aabb_max[2]), 'f', 1) << ")";
+                qInfo().noquote().nospace()
+                    << "  pool used="
+                    << QString::number(double(pool_.total_used_bytes()) * mb, 'f', 0)
+                    << "/"
+                    << QString::number(double(pool_.total_capacity_bytes()) * mb, 'f', 0)
+                    << "MB largest_free="
+                    << QString::number(double(pool_.largest_free_run_bytes()) * mb, 'f', 1) << "MB";
+                qInfo().noquote().nospace()
+                    << "  this-frame: cands=" << streaming_candidates_this_frame_
+                    << " enq=" << enqueued
+                    << " ev_lru=" << streaming_evictions_lru_this_frame_
+                    << " ev_pri=" << streaming_evictions_pri_this_frame_
+                    << " blocked=" << streaming_blocked_oom_this_frame_;
+
+                // Top 5 candidates by priority — see which chunk(s) outscored ours.
+                struct Stat { uint32_t mid; size_t ci; float area; };
+                std::vector<Stat> all;
+                all.reserve(64);
+                for (const auto& [mid2, m2] : models_gpu_) {
+                    for (size_t ci2 = 0; ci2 < m2.chunks.size(); ++ci2) {
+                        const auto& cc = m2.chunks[ci2];
+                        if (cc.is_resident)                continue;
+                        if (cc.frustum_visible_count == 0) continue;
+                        all.push_back({mid2, ci2, chunkScreenAreaPx(cc, vp_mat)});
+                    }
+                }
+                std::sort(all.begin(), all.end(),
+                          [](const Stat& a, const Stat& b){ return a.area > b.area; });
+                const size_t n = std::min<size_t>(5, all.size());
+                for (size_t i = 0; i < n; ++i) {
+                    qInfo().noquote().nospace()
+                        << "  top cand #" << i << ": model " << all[i].mid
+                        << " chunk " << all[i].ci
+                        << " area=" << QString::number(all[i].area, 'f', 0) << "px²";
+                }
+            }
+            tracked_was_resident_ = c.is_resident;
+        }
+    }
+
     if (streaming_debug_) {
         // Cheap per-frame breakdown so a thrash cycle's shape becomes
         // visible — high candidates + high evictions + low net loads is
@@ -4484,27 +4572,55 @@ static QVector3D orbitEye(const float target[3], float dist,
                      target[2] + dist * sp);
 }
 
-void WgpuViewportWindow::updateFrameUniforms() {
+// Shared camera-math helper. Every site that needs (view, proj) for cull,
+// streaming projection, pick, or render uniforms calls this so the
+// projection_ortho_ toggle and the near-vertical up-vector switch land
+// identically everywhere.
+void WgpuViewportWindow::buildViewProj(QMatrix4x4& view_out,
+                                        QMatrix4x4& proj_out) const {
     const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
     const QVector3D eye = orbitEye(camera_target_, camera_distance_,
                                    camera_yaw_deg_, camera_pitch_deg_);
-
-    QMatrix4x4 view;
-    view.lookAt(eye, target, QVector3D(0.0f, 0.0f, 1.0f));
+    // Within 1° of straight-up/down, switch up from world +Z to world +Y
+    // so lookAt's side vector doesn't degenerate (forward × up → 0). Mirrors
+    // GL ViewportWindow::updateCamera; the standard-view top/bottom hotkeys
+    // land at pitch = ±90° exactly so this is the path that keeps them
+    // well-conditioned.
+    const QVector3D up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                       ? QVector3D(0.0f, 1.0f, 0.0f)
+                       : QVector3D(0.0f, 0.0f, 1.0f);
+    view_out.setToIdentity();
+    view_out.lookAt(eye, target, up);
 
     const float aspect = (configured_h_ > 0)
                             ? float(configured_w_) / float(configured_h_)
                             : 1.0f;
-    QMatrix4x4 proj;
-    proj.perspective(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
-
+    QMatrix4x4 p;
+    if (projection_ortho_) {
+        // Size the ortho box so the same world rectangle fills the view as
+        // the perspective camera at the pivot's distance. Toggling at any
+        // zoom keeps framing identical. Mirrors GL.
+        const float half_h = camera_distance_
+            * std::tan(qDegreesToRadians(camera_fov_y_deg_ * 0.5f));
+        const float half_w = half_h * aspect;
+        const float depth  = camera_distance_ * 10.0f;
+        p.ortho(-half_w, half_w, -half_h, half_h, -depth, depth);
+    } else {
+        p.perspective(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
+    }
     // Qt builds a GL-style projection (clip-z in [-1, 1]); WebGPU expects
     // clip-z in [0, 1]. Pre-multiply by a remap matrix that maps [-1,1] → [0,1].
-    QMatrix4x4 z_remap;  // identity
+    QMatrix4x4 z_remap;
     z_remap(2, 2) = 0.5f;
     z_remap(2, 3) = 0.5f;
+    proj_out = z_remap * p;
+}
 
-    const QMatrix4x4 view_proj = z_remap * proj * view;
+void WgpuViewportWindow::updateFrameUniforms() {
+    QMatrix4x4 view, proj;
+    buildViewProj(view, proj);
+
+    const QMatrix4x4 view_proj = proj * view;
 
     FrameUniforms u = {};
     std::memcpy(u.view_proj, view_proj.constData(), 16 * sizeof(float));
@@ -4594,6 +4710,277 @@ void WgpuViewportWindow::viewAll() {
     if (isExposed()) requestUpdate();
 }
 
+void WgpuViewportWindow::frameAabb(const float mn[3], const float mx[3],
+                                    float padding) {
+    const float cx = 0.5f * (mn[0] + mx[0]);
+    const float cy = 0.5f * (mn[1] + mx[1]);
+    const float cz = 0.5f * (mn[2] + mx[2]);
+    camera_target_[0] = cx;
+    camera_target_[1] = cy;
+    camera_target_[2] = cz;
+
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx*dx + dy*dy + dz*dz);
+
+    if (radius > 1e-4f) {
+        const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
+        const float tan_half = std::tan(fovy_rad * 0.5f);
+        if (tan_half > 1e-6f) {
+            const int   h          = std::max(configured_h_, 1);
+            const float aspect     = float(std::max(configured_w_, 1)) / float(h);
+            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+            camera_distance_ = std::max(0.1f, (radius / (tan_half * min_aspect)) * padding);
+        }
+    }
+    if (isExposed()) requestUpdate();
+}
+
+bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
+                                            float mn[3], float mx[3]) const {
+    bool any = false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& inst : m.instances) {
+            if (inst.object_id != object_id) continue;
+            for (int i = 0; i < 3; ++i) {
+                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
+                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
+            }
+            any = true;
+        }
+    }
+    return any;
+}
+
+void WgpuViewportWindow::focusOnSelectedObject() {
+    if (fps_mode_) return;
+    if (selection_.count() == 0) {
+        qInfo() << "[wgpu] focus: no object selected";
+        return;
+    }
+    float lo[3] = {  std::numeric_limits<float>::infinity(),
+                     std::numeric_limits<float>::infinity(),
+                     std::numeric_limits<float>::infinity() };
+    float hi[3] = { -std::numeric_limits<float>::infinity(),
+                    -std::numeric_limits<float>::infinity(),
+                    -std::numeric_limits<float>::infinity() };
+    bool any = false;
+    for (uint32_t id : selection_.ids()) {
+        float mn[3], mx[3];
+        if (!computeObjectAabb(id, mn, mx)) continue;
+        for (int i = 0; i < 3; ++i) {
+            lo[i] = std::min(lo[i], mn[i]);
+            hi[i] = std::max(hi[i], mx[i]);
+        }
+        any = true;
+    }
+    if (!any) {
+        qInfo() << "[wgpu] focus: no AABB available";
+        return;
+    }
+    frameAabb(lo, hi, 1.30f);
+}
+
+void WgpuViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
+    // Bypasses the orbit-pitch clamp so top/bottom land exactly at ±90°.
+    // buildViewProj() picks the up vector based on |pitch| so lookAt stays
+    // well-conditioned at the poles.
+    camera_yaw_deg_   = yaw_deg;
+    camera_pitch_deg_ = pitch_deg;
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::toggleProjection() {
+    projection_ortho_ = !projection_ortho_;
+    qInfo() << "[wgpu] projection:" << (projection_ortho_ ? "ortho" : "perspective");
+    if (isExposed()) requestUpdate();
+}
+
+QString WgpuViewportWindow::cameraString() const {
+    return QString("%1,%2,%3,%4,%5,%6")
+        .arg(camera_target_[0], 0, 'f', 4)
+        .arg(camera_target_[1], 0, 'f', 4)
+        .arg(camera_target_[2], 0, 'f', 4)
+        .arg(camera_distance_,  0, 'f', 4)
+        .arg(camera_yaw_deg_,   0, 'f', 2)
+        .arg(camera_pitch_deg_, 0, 'f', 2);
+}
+
+void WgpuViewportWindow::enterFpsMode() {
+    if (fps_mode_) return;
+    fps_mode_ = true;
+    fps_keys_held_.clear();
+    fps_press_center_ = QPoint(width() / 2, height() / 2);
+    fps_ignore_next_mouse_move_ = true;
+    fps_last_tick_.start();
+    setCursor(Qt::BlankCursor);
+    QCursor::setPos(mapToGlobal(fps_press_center_));
+    qInfo() << "[wgpu] fly mode active — WASD/QE to move, Shift to boost, Esc to exit";
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::exitFpsMode() {
+    if (!fps_mode_) return;
+    fps_mode_ = false;
+    fps_keys_held_.clear();
+    setCursor(Qt::ArrowCursor);
+    qInfo() << "[wgpu] fly mode off";
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::fpsIntegrate() {
+    if (!fps_mode_ || fps_keys_held_.isEmpty()) return;
+
+    const qint64 elapsed_ns = fps_last_tick_.nsecsElapsed();
+    fps_last_tick_.restart();
+    if (elapsed_ns <= 0) return;
+    // Clamp dt ceiling so a long stall doesn't warp the camera by a frame's
+    // worth of speed (matches GL fps_move_speed_'s 0.1s clamp).
+    float dt = float(double(elapsed_ns) / 1e9);
+    if (dt > 0.1f) dt = 0.1f;
+
+    // Forward = orbit eye -> target, kept as the camera's view direction in
+    // fly mode too so a Shift+F right after orbiting doesn't snap to a new
+    // heading. WASD moves in the screen plane; QE rises/falls along world +Z.
+    const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                   camera_yaw_deg_, camera_pitch_deg_);
+    QVector3D forward = (target - eye); forward.normalize();
+    // When looking straight up/down, cross(forward, worldZ) degenerates;
+    // fall back to worldY so right doesn't go NaN and WASD still works.
+    const QVector3D world_up(0.0f, 0.0f, 1.0f);
+    const QVector3D right_basis = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                ? QVector3D(0.0f, 1.0f, 0.0f)
+                                : world_up;
+    QVector3D right = QVector3D::crossProduct(forward, right_basis);
+    right.normalize();
+
+    QVector3D move(0, 0, 0);
+    if (fps_keys_held_.contains(Qt::Key_W)) move += forward;
+    if (fps_keys_held_.contains(Qt::Key_S)) move -= forward;
+    if (fps_keys_held_.contains(Qt::Key_D)) move += right;
+    if (fps_keys_held_.contains(Qt::Key_A)) move -= right;
+    if (fps_keys_held_.contains(Qt::Key_E)) move += world_up;
+    if (fps_keys_held_.contains(Qt::Key_Q)) move -= world_up;
+    if (move.isNull()) return;
+    move.normalize();
+
+    // Absolute m/s, scrollwheel-adjustable (Blender / GL convention).
+    // Scaling with camera_distance_ produced "stuttery" speed on big scenes
+    // because distance varies frame-to-frame (and worse, wheel zoom kept
+    // changing it underneath fly mode).
+    const float speed = fps_move_speed_
+                      * (fps_keys_held_.contains(Qt::Key_Shift) ? 5.0f : 1.0f);
+    const QVector3D delta = move * (speed * dt);
+
+    camera_target_[0] += delta.x();
+    camera_target_[1] += delta.y();
+    camera_target_[2] += delta.z();
+    requestUpdate();
+
+    if (fly_debug_) {
+        // dt timeline: see if values jitter (under/over-integration symptoms).
+        // Show in ms with 2dp so small jumps are visible.
+        const qint64 since_render_ns = fly_render_clock_.isValid()
+                                     ? fly_render_clock_.nsecsElapsed() : 0;
+        fly_render_clock_.restart();
+        qInfo().noquote().nospace()
+            << "[fly] dt=" << QString::number(dt * 1000.0f, 'f', 2) << "ms"
+            << " render_gap=" << QString::number(double(since_render_ns) / 1e6, 'f', 2) << "ms"
+            << " keys=" << fps_keys_held_.size()
+            << " speed=" << QString::number(speed, 'f', 2) << "m/s"
+            << " delta=" << QString::number(delta.length(), 'f', 4) << "m";
+    }
+}
+
+float WgpuViewportWindow::chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
+                                             const QMatrix4x4& vp_mat) const {
+    if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
+    if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
+    const float full_area = float(configured_w_) * float(configured_h_);
+
+    // A chunk's AABB is the UNION of every instance's world AABB it
+    // contains — typically much bigger than any single instance. On a
+    // BIM floor plate it's commonly 200-400m on a side. With the camera
+    // standing inside a building, that AABB straddles the near plane:
+    // most corners sit behind the camera, the loop below silently drops
+    // them, and the projected bbox of the surviving in-front corners is
+    // a tiny fraction of what the chunk's actual on-screen geometry
+    // covers. The chunk then loses every eviction fight against smaller
+    // chunks whose AABBs sit entirely in front of the camera. Result:
+    // big floor/slab chunks pop in/out as the camera tilts a few degrees.
+    //
+    // Two short-circuits stop that. Eye-inside-AABB → assume full
+    // viewport (mirrors GL's contribution-cull short-circuit). Any
+    // corner behind near plane (AABB straddles) → also full viewport;
+    // the chunk's true on-screen extent is unmeasurable from 8 corners
+    // alone once any are behind, so over-prioritise rather than
+    // under-prioritise.
+    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                   camera_yaw_deg_, camera_pitch_deg_);
+    if (eye.x() >= c.aabb_min[0] && eye.x() <= c.aabb_max[0] &&
+        eye.y() >= c.aabb_min[1] && eye.y() <= c.aabb_max[1] &&
+        eye.z() >= c.aabb_min[2] && eye.z() <= c.aabb_max[2]) {
+        return full_area;
+    }
+
+    float xmin = std::numeric_limits<float>::infinity();
+    float ymin = std::numeric_limits<float>::infinity();
+    float xmax = -std::numeric_limits<float>::infinity();
+    float ymax = -std::numeric_limits<float>::infinity();
+    int corners_in_front = 0;
+    int corners_behind   = 0;
+    for (int i = 0; i < 8; ++i) {
+        const QVector4D corner_world(
+            (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
+            (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
+            (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
+            1.0f);
+        const QVector4D clip = vp_mat * corner_world;
+        if (clip.w() <= 1e-3f) { ++corners_behind; continue; }
+        ++corners_in_front;
+        const float ndc_x = clip.x() / clip.w();
+        const float ndc_y = clip.y() / clip.w();
+        const float px_x  = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
+        const float px_y  = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
+        xmin = std::min(xmin, px_x);
+        ymin = std::min(ymin, px_y);
+        xmax = std::max(xmax, px_x);
+        ymax = std::max(ymax, px_y);
+    }
+    if (corners_in_front == 0) return 0.0f;
+    if (corners_behind > 0)    return full_area;
+
+    xmin = std::max(xmin, 0.0f);
+    ymin = std::max(ymin, 0.0f);
+    xmax = std::min(xmax, float(configured_w_));
+    ymax = std::min(ymax, float(configured_h_));
+    if (xmax <= xmin || ymax <= ymin) return 0.0f;
+    return (xmax - xmin) * (ymax - ymin);
+}
+
+void WgpuViewportWindow::applyNavPreset(const char* name) {
+    // Matches GL AppSettings::NavPreset semantics exactly.
+    //   blender — Orbit MMB,        Pan Shift+MMB   (default)
+    //   rhino   — Orbit RMB,        Pan Shift+RMB
+    //   revit   — Orbit Shift+MMB,  Pan MMB
+    if (name && std::strcmp(name, "rhino") == 0) {
+        orbit_button_ = Qt::RightButton;  orbit_mods_ = Qt::NoModifier;
+        pan_button_   = Qt::RightButton;  pan_mods_   = Qt::ShiftModifier;
+    } else if (name && std::strcmp(name, "revit") == 0) {
+        orbit_button_ = Qt::MiddleButton; orbit_mods_ = Qt::ShiftModifier;
+        pan_button_   = Qt::MiddleButton; pan_mods_   = Qt::NoModifier;
+    } else {
+        orbit_button_ = Qt::MiddleButton; orbit_mods_ = Qt::NoModifier;
+        pan_button_   = Qt::MiddleButton; pan_mods_   = Qt::ShiftModifier;
+    }
+}
+
 // -----------------------------------------------------------------------------
 // One-shot framebuffer capture → PNG
 // -----------------------------------------------------------------------------
@@ -4635,10 +5022,31 @@ void WgpuViewportWindow::captureNextFrameToPng(const QString& path, bool quit_af
 #include <QWheelEvent>
 
 void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
+    // In fly mode mouse-look is the only nav; clicking exits fly to match
+    // Blender behaviour, then the click also acts as the orbit-mode click.
+    if (fps_mode_) {
+        exitFpsMode();
+        // fall through to normal handling
+    }
+
     nav_active_button_ = event->button();
     nav_last_pos_      = event->position().toPoint();
     nav_press_pos_     = nav_last_pos_;
     nav_dragged_       = false;
+
+    // Classify the drag against the active nav preset. LMB stays free for
+    // selection in every preset (pick on release-without-drag). The modifier
+    // is captured at press time so a mid-drag Shift release doesn't switch
+    // axes (matches GL ViewportWindow behaviour).
+    nav_drag_kind_ = NavDrag::Inactive;
+    const auto mods = event->modifiers();
+    if (event->button() == orbit_button_
+        && (mods & Qt::KeyboardModifierMask) == orbit_mods_) {
+        nav_drag_kind_ = NavDrag::Orbit;
+    } else if (event->button() == pan_button_
+            && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
+        nav_drag_kind_ = NavDrag::Pan;
+    }
 }
 
 void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
@@ -4670,13 +5078,113 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 qInfo().noquote().nospace()
                     << "[wgpu pick] replace object_id=" << id;
             }
+            // Track this object's chunk for the disappear-diagnostic.
+            // Enumerate EVERY (model, chunk) the object's instances land in:
+            // an IFC object can have multiple representations (visual,
+            // structural, MEP …) which can split across chunks. Tracking
+            // only the first found leads to confused diagnostics when the
+            // visual you SEE disappear lives in a chunk we never tracked.
+            if (id != 0) {
+                tracked_object_id_ = id;
+                tracked_chunk_idx_ = SIZE_MAX;  // legacy "primary" slot
+                tracked_chunk_mid_ = 0;
+                std::set<std::pair<uint32_t, size_t>> seen;
+                qInfo().noquote().nospace()
+                    << "[track] object " << id << " — enumerating chunks:";
+                for (auto& [mid, m] : models_gpu_) {
+                    for (const auto& inst : m.instances) {
+                        if (inst.object_id != id) continue;
+                        if (inst.mesh_id >= m.mesh_chunk_idx.size()) continue;
+                        const size_t ci = m.mesh_chunk_idx[inst.mesh_id];
+                        if (!seen.insert({mid, ci}).second) continue;
+                        const auto& c = m.chunks[ci];
+                        qInfo().noquote().nospace()
+                            << "  model " << mid << " chunk " << ci
+                            << "  inst_aabb "
+                            << QString::number(inst.world_aabb_max[0] - inst.world_aabb_min[0], 'f', 1)
+                            << "×"
+                            << QString::number(inst.world_aabb_max[1] - inst.world_aabb_min[1], 'f', 1)
+                            << "×"
+                            << QString::number(inst.world_aabb_max[2] - inst.world_aabb_min[2], 'f', 1) << "m"
+                            << "  chunk_aabb "
+                            << QString::number(c.aabb_max[0] - c.aabb_min[0], 'f', 1) << "×"
+                            << QString::number(c.aabb_max[1] - c.aabb_min[1], 'f', 1) << "×"
+                            << QString::number(c.aabb_max[2] - c.aabb_min[2], 'f', 1) << "m"
+                            << "  resident=" << (c.is_resident ? "Y" : "N");
+                        // First hit becomes the "primary" slot the
+                        // eviction watcher uses. Good enough until we wire
+                        // a multi-chunk watcher.
+                        if (tracked_chunk_idx_ == SIZE_MAX) {
+                            tracked_chunk_mid_    = mid;
+                            tracked_chunk_idx_    = ci;
+                            tracked_was_resident_ = c.is_resident;
+                        }
+                    }
+                }
+                if (tracked_chunk_idx_ == SIZE_MAX) {
+                    qInfo() << "  (object_id not matched to any instance)";
+                }
+            } else {
+                tracked_object_id_ = 0;
+                tracked_chunk_idx_ = SIZE_MAX;
+            }
             requestUpdate();
         }
         nav_active_button_ = Qt::NoButton;
+        nav_drag_kind_     = NavDrag::Inactive;
     }
 }
 
 void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
+    // Fly-mode mouse-look: turn the camera in place (eye stays put).
+    // The orbit fields (camera_target_/distance/yaw/pitch) are still our
+    // single source of truth — but to interpret yaw/pitch as the camera's
+    // *look* direction (FPS-style, not orbit-style) we have to snap
+    // camera_target_ to a new position whenever yaw/pitch change so
+    // orbitEye() resolves to the same eye we had before. Otherwise eye
+    // orbits the (unchanged) target and the camera circles the room.
+    if (fps_mode_) {
+        if (fps_ignore_next_mouse_move_) {
+            fps_ignore_next_mouse_move_ = false;
+            return;
+        }
+        const QPoint pos = event->position().toPoint();
+        const int dx = pos.x() - fps_press_center_.x();
+        const int dy = pos.y() - fps_press_center_.y();
+
+        // Save eye BEFORE rotating so we can pin it after.
+        const QVector3D pinned_eye = orbitEye(camera_target_, camera_distance_,
+                                              camera_yaw_deg_, camera_pitch_deg_);
+
+        // Convention: mouse-up looks up, mouse-down looks down (non-inverted).
+        // orbitEye stores pitch with sin(pitch) controlling eye.z relative to
+        // target → larger pitch = eye higher = looking down. To make mouse-up
+        // (dy<0) look up (i.e. raise pitch in our stored convention so the
+        // camera tilts down toward the target… wait, with eye pinned in FPS
+        // mode the relationship inverts: increasing pitch pulls *target* up,
+        // which means forward tilts down). Net: dy>0 (down) increases pitch
+        // → forward tilts down → looking down. `+=` is correct here even
+        // though orbit-mode also uses `+=` for the opposite visual reason.
+        camera_yaw_deg_   -= float(dx) * 0.2f;
+        camera_pitch_deg_ += float(dy) * 0.2f;
+        camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
+
+        // Re-derive target so orbitEye(target, dist, new_yaw, new_pitch) ==
+        // pinned_eye. eye = target + dist*(cp*cy, cp*sy, sp) → invert.
+        const float yaw = qDegreesToRadians(camera_yaw_deg_);
+        const float pit = qDegreesToRadians(camera_pitch_deg_);
+        const float cp = std::cos(pit), sp = std::sin(pit);
+        const float cy = std::cos(yaw), sy = std::sin(yaw);
+        camera_target_[0] = pinned_eye.x() - camera_distance_ * cp * cy;
+        camera_target_[1] = pinned_eye.y() - camera_distance_ * cp * sy;
+        camera_target_[2] = pinned_eye.z() - camera_distance_ * sp;
+
+        fps_ignore_next_mouse_move_ = true;
+        QCursor::setPos(mapToGlobal(fps_press_center_));
+        requestUpdate();
+        return;
+    }
+
     if (nav_active_button_ == Qt::NoButton) return;
 
     const QPoint pos = event->position().toPoint();
@@ -4684,31 +5192,38 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     const int dy = pos.y() - nav_last_pos_.y();
     nav_last_pos_ = pos;
 
-    // Promote to drag past 3 px so a wobbly click doesn't get reclassified.
+    // Promote to drag past 3 px so a wobbly click doesn't get reclassified
+    // (otherwise an LMB click drifts a few pixels and never registers as a
+    // pick on release).
     if (!nav_dragged_) {
         const int adx = std::abs(pos.x() - nav_press_pos_.x());
         const int ady = std::abs(pos.y() - nav_press_pos_.y());
         if (adx + ady > 3) nav_dragged_ = true;
     }
 
-    if (nav_active_button_ == Qt::LeftButton) {
-        // Orbit. Sign convention matches the GL viewport: drag-right rotates
-        // the world right (yaw -= dx), drag-down tilts the camera up so we
-        // see more of the object's top (pitch += dy). 0.4 deg/px feels right
-        // for a 1280-wide window.
+    if (nav_drag_kind_ == NavDrag::Orbit) {
+        // Drag-right rotates the world right (yaw -= dx), drag-down tilts
+        // the camera up so we see more of the object's top (pitch += dy).
+        // 0.4 deg/px matches GL ViewportWindow.
         camera_yaw_deg_   -= float(dx) * 0.4f;
         camera_pitch_deg_ += float(dy) * 0.4f;
         camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
         requestUpdate();
-    } else if (nav_active_button_ == Qt::MiddleButton) {
+    } else if (nav_drag_kind_ == NavDrag::Pan) {
         // Pan in the camera's screen-space plane. World units per pixel
         // tracks the view-frustum width at the pivot's depth so panning
-        // feels constant regardless of zoom.
+        // feels constant regardless of zoom. Within 1° of straight up/down
+        // the world-Z up-reference degenerates (cross with forward is the
+        // zero vector → NaN), so switch to world-Y up — matches the
+        // up-vector switch in buildViewProj so top/bottom views still pan.
         const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
         const QVector3D eye = orbitEye(camera_target_, camera_distance_,
                                        camera_yaw_deg_, camera_pitch_deg_);
         const QVector3D fwd   = (target - eye).normalized();
-        const QVector3D right = QVector3D::crossProduct(fwd, QVector3D(0, 0, 1)).normalized();
+        const QVector3D world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                 ? QVector3D(0.0f, 1.0f, 0.0f)
+                                 : QVector3D(0.0f, 0.0f, 1.0f);
+        const QVector3D right = QVector3D::crossProduct(fwd, world_up).normalized();
         const QVector3D up    = QVector3D::crossProduct(right, fwd).normalized();
 
         const float half_h_world = camera_distance_
@@ -4727,34 +5242,45 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
-    // Visibility shortcuts, modelled on the GL viewer:
-    //   H         — hide selected
-    //   Shift+H   — show all (clear hidden set)
-    //   I         — isolate selected (hide everything not currently selected)
-    // None of these are useful without a selection (except show-all), so we
-    // skip silently rather than burning a cull on an empty mutation.
     const auto mods = event->modifiers();
-    const int key   = event->key();
+    const int  key  = event->key();
 
-    if (key == Qt::Key_H && (mods & Qt::ShiftModifier)) {
+    // Fly-mode keys come first so WASD/QE/Shift don't leak to shortcuts.
+    if (fps_mode_) {
+        if (key == Qt::Key_Escape && !event->isAutoRepeat()) {
+            exitFpsMode();
+            return;
+        }
+        switch (key) {
+        case Qt::Key_W: case Qt::Key_A: case Qt::Key_S: case Qt::Key_D:
+        case Qt::Key_Q: case Qt::Key_E: case Qt::Key_Shift:
+            if (!event->isAutoRepeat()) {
+                const bool was_empty = fps_keys_held_.isEmpty();
+                fps_keys_held_.insert(key);
+                if (was_empty) {
+                    fps_last_tick_.restart();
+                    requestUpdate();
+                }
+            }
+            return;
+        default: break;
+        }
+    }
+
+    // Bonsai shortcuts (mirror MainWindow.cpp bind_shortcut table):
+    //   H        — hide selected
+    //   Shift+H  — isolate selected
+    //   Alt+H    — show all (clear hidden set)
+    //   Shift+F  — enter fly mode (Esc exits)
+    if (key == Qt::Key_H && mods == Qt::AltModifier) {
         if (visibility_.hiddenCount() == 0) return;
         visibility_.clear();
         qInfo() << "[wgpu] show all";
         requestUpdate();
         return;
     }
-    if (key == Qt::Key_H) {
+    if (key == Qt::Key_H && mods == Qt::ShiftModifier) {
         if (selection_.count() == 0) return;
-        for (uint32_t id : selection_.ids()) visibility_.hide(id);
-        const size_t n = selection_.count();
-        selection_.clear();   // hiding deselects, matching GL behaviour
-        qInfo().noquote().nospace() << "[wgpu] hid " << n << " selected";
-        requestUpdate();
-        return;
-    }
-    if (key == Qt::Key_I) {
-        if (selection_.count() == 0) return;
-        // Walk every instance across all models; hide those NOT in selection.
         size_t hidden_now = 0;
         for (auto& [mid, m] : models_gpu_) {
             for (const auto& inst : m.instances) {
@@ -4770,16 +5296,78 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
         requestUpdate();
         return;
     }
+    if (key == Qt::Key_H && mods == Qt::NoModifier) {
+        if (selection_.count() == 0) return;
+        for (uint32_t id : selection_.ids()) visibility_.hide(id);
+        const size_t n = selection_.count();
+        selection_.clear();   // hiding deselects, matching GL behaviour
+        qInfo().noquote().nospace() << "[wgpu] hid " << n << " selected";
+        requestUpdate();
+        return;
+    }
+    if (key == Qt::Key_F && mods == Qt::ShiftModifier && !event->isAutoRepeat()) {
+        enterFpsMode();
+        return;
+    }
+
+    // GL-parity viewport hotkeys.
+    if (key == Qt::Key_F && mods == Qt::NoModifier && !event->isAutoRepeat()) {
+        focusOnSelectedObject();
+        return;
+    }
+    if (key == Qt::Key_Home && !event->isAutoRepeat()) {
+        viewAll();
+        return;
+    }
+    if (key == Qt::Key_P && mods == Qt::NoModifier && !event->isAutoRepeat()) {
+        toggleProjection();
+        return;
+    }
+    if (key == Qt::Key_C && !(mods & Qt::ControlModifier)) {
+        qInfo("--camera %s", qPrintable(cameraString()));
+        return;
+    }
+    // Standard axis-aligned views: X/Y/Z look from +axis, Shift+X/Y/Z from
+    // negative side. Top/bottom use pitch ±90°; buildViewProj's up-vector
+    // switch keeps lookAt non-degenerate at the poles.
+    if ((key == Qt::Key_X || key == Qt::Key_Y || key == Qt::Key_Z)
+        && (mods == Qt::NoModifier || mods == Qt::ShiftModifier)
+        && !event->isAutoRepeat()) {
+        const bool neg = (mods & Qt::ShiftModifier);
+        switch (key) {
+        case Qt::Key_X: setStandardView(neg ? 180.0f : 0.0f,   0.0f); break;
+        case Qt::Key_Y: setStandardView(neg ? 270.0f : 90.0f,  0.0f); break;
+        case Qt::Key_Z: setStandardView(camera_yaw_deg_, neg ? -90.0f : 90.0f); break;
+        }
+        return;
+    }
 
     QWindow::keyPressEvent(event);
 }
 
+void WgpuViewportWindow::keyReleaseEvent(QKeyEvent* event) {
+    if (fps_mode_ && !event->isAutoRepeat()) {
+        fps_keys_held_.remove(event->key());
+    }
+    QWindow::keyReleaseEvent(event);
+}
+
 void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
-    // 120 = one notch on a typical mouse. Each notch zooms ~12% in/out;
-    // sign matches conventional "wheel up = zoom in".
     const float notches = float(event->angleDelta().y()) / 120.0f;
-    const float factor  = std::pow(0.9f, notches);
-    camera_distance_ = std::max(0.01f, camera_distance_ * factor);
+    // In fly mode, the wheel adjusts fps_move_speed_ (Blender / GL
+    // convention). Up = faster (×1.25 per notch), down = slower (×0.8).
+    // Zooming would re-aim the orbit pivot and yank speed (if it were
+    // distance-scaled) — neither belongs in a free-fly camera.
+    if (fps_mode_) {
+        const float factor = std::pow(1.25f, notches);
+        fps_move_speed_ = std::clamp(fps_move_speed_ * factor, 0.05f, 1000.0f);
+        qInfo().noquote().nospace()
+            << "[wgpu] fly speed: " << QString::number(fps_move_speed_, 'f', 2) << " m/s";
+        return;
+    }
+    // Orbit mode: each notch zooms ~10% in/out; sign matches "wheel up = in".
+    const float factor = std::pow(0.9f, notches);
+    camera_distance_   = std::max(0.01f, camera_distance_ * factor);
     requestUpdate();
 }
 

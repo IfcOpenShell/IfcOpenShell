@@ -22,8 +22,10 @@
 
 #include <QWindow>
 #include <QColor>
+#include <QElapsedTimer>
 #include <QMatrix4x4>
 #include <QPoint>
+#include <QSet>
 #include <QString>
 
 #include <webgpu/webgpu.h>
@@ -98,6 +100,50 @@ public:
     void setCamera(float tx, float ty, float tz,
                    float dist, float yaw_deg, float pitch_deg);
 
+    // GL-parity camera helpers. setStandardView snaps to an axis-aligned
+    // angle without re-framing (used by X/Y/Z keys). focusOnSelectedObject
+    // frames the union AABB of the current selection. toggleProjection
+    // flips perspective <-> orthographic. cameraString formats the current
+    // state for a --camera CLI arg.
+    void    setStandardView(float yaw_deg, float pitch_deg);
+    void    focusOnSelectedObject();
+    void    toggleProjection();
+    QString cameraString() const;
+
+    // FPS / fly mode. enterFpsMode swaps the orbit camera for a WASD/QE
+    // free-fly camera (hotkey: Shift+F). exitFpsMode restores the orbit
+    // pivot and reveals the cursor. Mouse-look uses raw deltas (cursor is
+    // hidden and recentered each frame).
+    void enterFpsMode();
+    void exitFpsMode();
+    bool fpsMode() const { return fps_mode_; }
+
+private:
+    // Common camera math used by render, cull, streaming, and pick. Produces
+    // the view matrix and a WebGPU-correct projection (z mapped to [0, 1]).
+    // Single helper so projection_ortho_ and the up-vector switch at near-
+    // vertical pitch land identically everywhere.
+    void buildViewProj(QMatrix4x4& view_out, QMatrix4x4& proj_out) const;
+    // Per-frame WASD integration when fps_mode_ is true. Called near the
+    // top of render() so the displayed frame already reflects movement.
+    void fpsIntegrate();
+    // Build the camera AABB for a single object across all loaded models.
+    bool computeObjectAabb(uint32_t object_id,
+                           float mn[3], float mx[3]) const;
+    // Re-aim the orbit camera so the bounding sphere of [mn, mx] fits.
+    void frameAabb(const float mn[3], const float mx[3], float padding);
+    // Resolve nav_preset_ env var to orbit/pan bindings.
+    void applyNavPreset(const char* name);
+
+    // Project the chunk's world-space AABB through `vp_mat` and return the
+    // 2D pixel area covered on screen. This is the streaming loader's
+    // chunk-priority metric — extracted from driveStreamingLoads as a
+    // member so the click-and-track diagnostic can compare scores.
+    float chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
+                            const QMatrix4x4& vp_mat) const;
+
+public:
+
     // Queue a one-shot framebuffer capture: the next rendered frame is
     // copied back to host memory and saved to `path` as PNG. If
     // `quit_after` is true, QCoreApplication::quit() is called once the
@@ -120,6 +166,7 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
     void wheelEvent(QWheelEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 
 private:
     bool initWgpu();
@@ -378,6 +425,58 @@ private:
     // Mirrors the GL viewport's defaults; mouse navigation lands later.
     float camera_target_[3] = { 0.0f, 0.0f, 0.0f };
     float camera_distance_  = 50.0f;
+
+    // Perspective by default; toggleProjection() (P key) flips this. When
+    // true, the per-frame projection builder uses an orthographic matrix
+    // sized by camera_distance_ × tan(fov/2) so toggling looks like a
+    // smooth swap rather than a jump in apparent size.
+    bool  projection_ortho_ = false;
+
+    // Fly / FPS-mode state. Mirrors GL ViewportWindow::CameraMode::Fps.
+    // While fps_mode_ is true: cursor is hidden, mouse-look uses raw
+    // deltas, fps_keys_held_ accumulates pressed W/A/S/D/Q/E/Shift, and
+    // render() integrates a movement step each frame from those keys.
+    // exit via Esc (also any unrelated key click) — recenter the cursor
+    // back at fps_press_center_ so the orbit camera resumes cleanly.
+    bool         fps_mode_                    = false;
+    QSet<int>    fps_keys_held_;
+    QElapsedTimer fps_last_tick_;
+    QPoint       fps_press_center_;
+    bool         fps_ignore_next_mouse_move_  = false;
+    // Fly base speed in m/s at no-modifier (Shift gives a 5× boost). Default
+    // 5.0 matches GL fps_move_speed_. Scrollwheel in fly mode adjusts this
+    // by ×1.25 / ×0.8 per notch, Blender-style — wheel does NOT zoom while
+    // in fly mode (which would change camera_distance_ underneath us and
+    // make speed jitter if speed were distance-scaled).
+    float        fps_move_speed_              = 5.0f;
+    // Per-frame [fly] dt log when WGPU_FLY_DEBUG=1. Diagnoses stutter:
+    // print dt of each fpsIntegrate call and the prior render's elapsed
+    // ms. Off by default (env-gated) so the normal log stays clean.
+    bool         fly_debug_                   = false;
+    QElapsedTimer fly_render_clock_;
+
+    // Click-and-track diagnostic: when a pick lands, stash the chunk
+    // that holds the picked object. driveStreamingLoads watches for that
+    // chunk's `is_resident` flipping true→false and dumps the priority
+    // / pool stats at the moment of eviction so we can see why it lost.
+    uint32_t     tracked_object_id_           = 0;
+    uint32_t     tracked_chunk_mid_           = 0;
+    size_t       tracked_chunk_idx_           = SIZE_MAX;
+    bool         tracked_was_resident_        = false;
+
+    // Mouse-navigation bindings — mirrors GL's NavBindings + currentNavBindings().
+    // Selection stays on LMB for every preset (none of the presets steal it),
+    // so the click-vs-drag distinction at mouseReleaseEvent's pick path keeps
+    // working. Set at init from WGPU_NAV_PRESET=blender|rhino|revit (default
+    // blender, matching GL's AppSettings::NavPreset::Blender default).
+    Qt::MouseButton       orbit_button_ = Qt::MiddleButton;
+    Qt::KeyboardModifiers orbit_mods_   = Qt::NoModifier;
+    Qt::MouseButton       pan_button_   = Qt::MiddleButton;
+    Qt::KeyboardModifiers pan_mods_     = Qt::ShiftModifier;
+    // Set by mousePressEvent based on which binding matched; consumed by
+    // mouseMoveEvent so mid-drag modifier changes don't switch axes.
+    enum class NavDrag : uint8_t { Inactive, Orbit, Pan };
+    NavDrag nav_drag_kind_ = NavDrag::Inactive;
     float camera_yaw_deg_   = 45.0f;
     float camera_pitch_deg_ = 30.0f;
     float camera_fov_y_deg_ = 45.0f;
