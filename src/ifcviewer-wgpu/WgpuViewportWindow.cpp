@@ -235,6 +235,10 @@ void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
     m.mesh_chunk_local_base_vertex.clear();
     m.mesh_chunk_local_ebo_first_u32.clear();
     m.mesh_chunk_local_lod1_first_u32.clear();
+    m.instance_chunk_idx.clear();
+    m.instance_base_vertex.clear();
+    m.instance_ebo_first_u32.clear();
+    m.instance_lod1_first_u32.clear();
     if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
     if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
     m.vertex_bytes   = 0;
@@ -863,6 +867,26 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
         c.instance_ids.push_back(inst_idx);
     }
 
+    // Resolve per-instance chunk lookups by translating from the per-mesh
+    // arrays. Cull reads these directly, so the spatial-bucket planner
+    // (which can place the same mesh in multiple chunks under #55) will
+    // populate them without going through mesh_chunk_idx[].
+    {
+        const size_t n_inst = m.instances.size();
+        m.instance_chunk_idx.assign(n_inst, 0);
+        m.instance_base_vertex.assign(n_inst, 0);
+        m.instance_ebo_first_u32.assign(n_inst, 0);
+        m.instance_lod1_first_u32.assign(n_inst, 0);
+        for (size_t i = 0; i < n_inst; ++i) {
+            const uint32_t mi = m.instances[i].mesh_id;
+            if (mi >= m.mesh_chunk_idx.size()) continue;
+            m.instance_chunk_idx[i]      = m.mesh_chunk_idx[mi];
+            m.instance_base_vertex[i]    = m.mesh_chunk_local_base_vertex[mi];
+            m.instance_ebo_first_u32[i]  = m.mesh_chunk_local_ebo_first_u32[mi];
+            m.instance_lod1_first_u32[i] = m.mesh_chunk_local_lod1_first_u32[mi];
+        }
+    }
+
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
     WgpuModelGpuData& mref = inserted->second;
 
@@ -1187,6 +1211,26 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
             c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
         }
         c.instance_ids.push_back(inst_idx);
+    }
+
+    // Resolve per-instance chunk lookups by translating from the per-mesh
+    // arrays. Cull reads these directly, so the spatial-bucket planner
+    // (which can place the same mesh in multiple chunks under #55) will
+    // populate them without going through mesh_chunk_idx[].
+    {
+        const size_t n_inst = m.instances.size();
+        m.instance_chunk_idx.assign(n_inst, 0);
+        m.instance_base_vertex.assign(n_inst, 0);
+        m.instance_ebo_first_u32.assign(n_inst, 0);
+        m.instance_lod1_first_u32.assign(n_inst, 0);
+        for (size_t i = 0; i < n_inst; ++i) {
+            const uint32_t mi = m.instances[i].mesh_id;
+            if (mi >= m.mesh_chunk_idx.size()) continue;
+            m.instance_chunk_idx[i]      = m.mesh_chunk_idx[mi];
+            m.instance_base_vertex[i]    = m.mesh_chunk_local_base_vertex[mi];
+            m.instance_ebo_first_u32[i]  = m.mesh_chunk_local_ebo_first_u32[mi];
+            m.instance_lod1_first_u32[i] = m.mesh_chunk_local_lod1_first_u32[mi];
+        }
     }
 
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
@@ -2738,7 +2782,7 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         // This is the signal driveStreamingLoads keys residency on — stable
         // across frames when the camera doesn't move, so the loader doesn't
         // thrash on HiZ visibility flicker.
-        ++m.chunks[m.mesh_chunk_idx[inst.mesh_id]].frustum_visible_count;
+        ++m.chunks[m.instance_chunk_idx[i]].frustum_visible_count;
 
         const MeshInfo& mesh = m.meshes[inst.mesh_id];
 
@@ -2779,23 +2823,25 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
                             && mesh.lod1_index_count > 0
                             && projected_px < lod1_threshold_px;
 
-        // Emit one VisibleDraw entry into the chunk that owns this mesh's
-        // vertex range. base_vertex AND ebo_first_u32 are both CHUNK-LOCAL
-        // — the chunk's bind group points at its own vertex_storage and
-        // index_buffer slices so the shader indexes them directly. When
-        // use_lod1, ebo_first_u32 routes into the LOD1 section of the
-        // chunk's index slice (which is packed after the LOD0 section at
-        // chunk-build time); the shader is oblivious to the LOD split.
-        const uint32_t chunk_idx = m.mesh_chunk_idx[inst.mesh_id];
+        // Emit one VisibleDraw entry into the chunk that owns this
+        // instance's vertex range. base_vertex AND ebo_first_u32 are both
+        // CHUNK-LOCAL — the chunk's bind group points at its own
+        // vertex_storage and index_buffer slices so the shader indexes
+        // them directly. When use_lod1, ebo_first_u32 routes into the LOD1
+        // section of the chunk's index slice (which is packed after the
+        // LOD0 section at chunk-build time); the shader is oblivious to
+        // the LOD split. Lookups are per-INSTANCE (not per-mesh) so the
+        // spatial-bucket planner (#55) can duplicate a mesh into multiple
+        // chunks; each instance still resolves to exactly one chunk.
+        const uint32_t chunk_idx = m.instance_chunk_idx[i];
         WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         WgpuModelGpuData::VisibleDrawGpu d;
         d.mesh_id       = inst.mesh_id;
         d.instance_idx  = i;
-        d.ebo_first_u32 = use_lod1
-                              ? m.mesh_chunk_local_lod1_first_u32[inst.mesh_id]
-                              : m.mesh_chunk_local_ebo_first_u32[inst.mesh_id];
-        d.base_vertex   = m.mesh_chunk_local_base_vertex[inst.mesh_id];
+        d.ebo_first_u32 = use_lod1 ? m.instance_lod1_first_u32[i]
+                                   : m.instance_ebo_first_u32[i];
+        d.base_vertex   = m.instance_base_vertex[i];
         c.visible_draws_scratch.push_back(d);
 
         const uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count

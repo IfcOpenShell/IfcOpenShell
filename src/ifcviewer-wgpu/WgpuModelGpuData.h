@@ -232,6 +232,21 @@ struct WgpuModelGpuData {
     // entries for meshes without LOD1 are 0 and unused.
     std::vector<uint32_t> mesh_chunk_local_lod1_first_u32;
 
+    // Per-INSTANCE chunk lookup tables. Mirror the per-mesh arrays above,
+    // but resolved at planning time so cull can read them directly without
+    // routing through mesh_id. The split exists because the spatial-
+    // bucketing planner (#55) can place the same mesh in multiple chunks
+    // (mesh data duplicated when its instances live in different buckets)
+    // — under that scheme `mesh_chunk_idx[mesh_id]` is ambiguous, but
+    // `instance_chunk_idx[instance_id]` is always exactly one chunk.
+    // The mesh-keyed planner populates these by translation
+    // (instance_chunk_idx[i] = mesh_chunk_idx[instances[i].mesh_id]);
+    // the spatial-bucket planner populates them directly.
+    std::vector<uint32_t> instance_chunk_idx;
+    std::vector<uint32_t> instance_base_vertex;
+    std::vector<uint32_t> instance_ebo_first_u32;
+    std::vector<uint32_t> instance_lod1_first_u32;
+
     // Model-shared buffers. Mesh + instance storage are small (<10 MB on
     // any real scene we've seen); the chunked index buffer lives in Chunk
     // alongside vertex_storage so streaming can defer both together.
