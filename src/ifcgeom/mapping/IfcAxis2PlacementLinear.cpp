@@ -60,12 +60,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
     } else if (!hasAxis && hasRef) {
         taxonomy::direction3::ptr r = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
         refDirection = *r->components_;
-        Eigen::Vector3d up(0, 0, 1);
-        axis = refDirection.cross(up.cross(refDirection));
+        axis = m->components().col(2).head<3>(); // Axis is the curve normal when omitted
     } else if (!hasAxis && !hasRef) {
         refDirection = m->components().col(0).head<3>(); // RefDirection is the curve tangent when omitted
-        Eigen::Vector3d up(0, 0, 1);
-        axis = refDirection.cross(up.cross(refDirection));
+        axis = m->components().col(2).head<3>(); // Axis is the curve normal when omitted
     } else {
         taxonomy::direction3::ptr a = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
         axis = *a->components_;
