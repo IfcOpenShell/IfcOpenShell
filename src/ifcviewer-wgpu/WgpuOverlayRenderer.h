@@ -20,8 +20,10 @@
 #ifndef WGPUOVERLAYRENDERER_H
 #define WGPUOVERLAYRENDERER_H
 
+#include <QHash>
 #include <QMatrix4x4>
 #include <QPoint>
+#include <QString>
 #include <QVector3D>
 
 #include <webgpu/webgpu.h>
@@ -141,6 +143,28 @@ public:
     void encodeOverlayPoints(WGPURenderPassEncoder pass,
                              const WgpuOverlayFrame& f);
 
+    // World-anchored text label. Mirrors GL OverlayRenderer::Label so
+    // measure-tool readouts can target either backend.
+    struct Label {
+        float   world_pos[3];
+        QString text;
+    };
+    void setOverlayLabels(const std::vector<Label>& labels);
+
+    // Top-left HUD text (tool prompts, length / area readouts). Empty
+    // string hides it. Each newline starts a new line in the same rect.
+    void setHudText(const QString& text);
+
+    // Encode all currently-set labels + the HUD. Per-string textures are
+    // rasterised via QPainter into a small QImage on first sight and
+    // cached by content; per-frame work is just projection, vertex
+    // assembly, and one draw per visible label. Drawn on the resolved
+    // surface (no depth test, no MSAA), so labels stack on top of every
+    // overlay above.
+    void encodeLabels(WGPUCommandEncoder enc,
+                      WGPUTextureView surface_view,
+                      const WgpuOverlayFrame& f);
+
     // ---- After the edge silhouette pass, on the resolved surface ----
 
     // Corner axis gizmo (bottom-left, 110×110 px). Independent ortho
@@ -169,6 +193,24 @@ private:
     bool buildMarquee();
     bool buildOverlayLines();
     bool buildOverlayPoints();
+    bool buildLabels();
+
+    // Rasterise a single string at `font_pt` with dark-grey padded
+    // background + white text, upload as an RGBA8 texture, build the
+    // matching bind group. Width/height are the texture's physical-pixel
+    // dimensions and are also what encodeLabels uses to size the quad.
+    struct LabelTexture {
+        WGPUTexture     texture    = nullptr;
+        WGPUTextureView view       = nullptr;
+        WGPUBindGroup   bind_group = nullptr;
+        int             width_px   = 0;
+        int             height_px  = 0;
+    };
+    LabelTexture* getOrCreateLabelTexture(const QString& cache_key,
+                                          const QString& text,
+                                          int font_pt,
+                                          int dpr);
+    void releaseLabelTextures();
 
     WGPUInstance        instance_       = nullptr;
     WGPUDevice          device_         = nullptr;
@@ -247,6 +289,23 @@ private:
     WGPUBuffer          overlay_point_uniform_buffer_  = nullptr;
     WGPUBindGroup       overlay_point_bind_group_      = nullptr;
     uint32_t            overlay_point_vertex_count_    = 0;
+
+    // ---- Labels + HUD text (textured quads, cached by content) ----
+    // One QPainter-rasterised QImage per unique text string, uploaded as
+    // an RGBA8 texture and re-used across frames. Per-frame work is
+    // projection + vertex assembly + draws; no allocation in the steady
+    // state. Bind groups are layout-shared across all label textures so
+    // every cache entry holds its own bind_group ready to bind.
+    WGPUShaderModule    label_shader_module_    = nullptr;
+    WGPUBindGroupLayout label_bgl_              = nullptr;
+    WGPUPipelineLayout  label_pipeline_layout_  = nullptr;
+    WGPURenderPipeline  label_pipeline_         = nullptr;
+    WGPUSampler         label_sampler_          = nullptr;
+    WGPUBuffer          label_vertex_buffer_    = nullptr;
+    uint64_t            label_vertex_capacity_  = 0;
+    QHash<QString, LabelTexture> label_tex_cache_;
+    std::vector<Label>  labels_;
+    QString             hud_text_;
 };
 
 #endif  // WGPUOVERLAYRENDERER_H

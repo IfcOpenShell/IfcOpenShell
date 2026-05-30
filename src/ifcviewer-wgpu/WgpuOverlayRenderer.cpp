@@ -19,6 +19,11 @@
 
 #include "WgpuOverlayRenderer.h"
 
+#include <QFont>
+#include <QFontMetrics>
+#include <QImage>
+#include <QPainter>
+#include <QStringList>
 #include <QtMath>
 
 #include <algorithm>
@@ -375,6 +380,34 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 }
 )WGSL";
 
+// Label shader: textured quads in screen space. Each visible label/HUD
+// item contributes 6 vertices (NDC position + uv); a pre-rasterised
+// QImage carrying both the dark-grey background fill and the white
+// text occupies the bound texture. Standard alpha blend.
+static const char* LABELS_WGSL = R"WGSL(
+@group(0) @binding(0) var samp: sampler;
+@group(0) @binding(1) var tex:  texture_2d<f32>;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) uv: vec2<f32>,
+};
+
+@vertex
+fn vs_main(@location(0) ndc: vec2<f32>,
+           @location(1) uv:  vec2<f32>) -> VsOut {
+    var out: VsOut;
+    out.clip_pos = vec4<f32>(ndc, 0.0, 1.0);
+    out.uv       = uv;
+    return out;
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    return textureSample(tex, samp, in.uv);
+}
+)WGSL";
+
 // -----------------------------------------------------------------------------
 // Construction / destruction
 // -----------------------------------------------------------------------------
@@ -396,6 +429,7 @@ bool WgpuOverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
     if (!buildMarquee())           return false;
     if (!buildOverlayLines())      return false;
     if (!buildOverlayPoints())     return false;
+    if (!buildLabels())            return false;
     return true;
 }
 
@@ -453,6 +487,18 @@ void WgpuOverlayRenderer::destroy() {
     if (overlay_point_vertex_buffer_)   { wgpuBufferRelease(overlay_point_vertex_buffer_);          overlay_point_vertex_buffer_ = nullptr; }
     overlay_point_vertex_capacity_ = 0;
     overlay_point_vertex_count_    = 0;
+
+    // Labels + HUD
+    releaseLabelTextures();
+    if (label_sampler_)          { wgpuSamplerRelease(label_sampler_);                 label_sampler_ = nullptr; }
+    if (label_pipeline_)         { wgpuRenderPipelineRelease(label_pipeline_);         label_pipeline_ = nullptr; }
+    if (label_shader_module_)    { wgpuShaderModuleRelease(label_shader_module_);      label_shader_module_ = nullptr; }
+    if (label_pipeline_layout_)  { wgpuPipelineLayoutRelease(label_pipeline_layout_);  label_pipeline_layout_ = nullptr; }
+    if (label_bgl_)              { wgpuBindGroupLayoutRelease(label_bgl_);             label_bgl_ = nullptr; }
+    if (label_vertex_buffer_)    { wgpuBufferRelease(label_vertex_buffer_);            label_vertex_buffer_ = nullptr; }
+    label_vertex_capacity_ = 0;
+    labels_.clear();
+    hud_text_.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -1646,4 +1692,357 @@ void WgpuOverlayRenderer::encodeOverlayPoints(WGPURenderPassEncoder pass,
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, overlay_point_vertex_buffer_,
                                          0, WGPU_WHOLE_SIZE);
     wgpuRenderPassEncoderDraw(pass, overlay_point_vertex_count_, 1, 0, 0);
+}
+
+// -----------------------------------------------------------------------------
+// Labels + HUD text (textured quads, content-cached)
+// -----------------------------------------------------------------------------
+
+bool WgpuOverlayRenderer::buildLabels() {
+    {
+        WGPUSamplerDescriptor sd = {};
+        sd.minFilter    = WGPUFilterMode_Linear;
+        sd.magFilter    = WGPUFilterMode_Linear;
+        sd.mipmapFilter = WGPUMipmapFilterMode_Nearest;
+        sd.addressModeU = WGPUAddressMode_ClampToEdge;
+        sd.addressModeV = WGPUAddressMode_ClampToEdge;
+        sd.addressModeW = WGPUAddressMode_ClampToEdge;
+        sd.lodMinClamp  = 0.0f;
+        sd.lodMaxClamp  = 0.0f;
+        sd.maxAnisotropy = 1;
+        sd.label = svFromCStr("ifcviewer-wgpu.label_sampler");
+        label_sampler_ = wgpuDeviceCreateSampler(device_, &sd);
+    }
+    {
+        WGPUBindGroupLayoutEntry entries[2] = {};
+        entries[0].binding    = 0;
+        entries[0].visibility = WGPUShaderStage_Fragment;
+        entries[0].sampler.type = WGPUSamplerBindingType_Filtering;
+        entries[1].binding    = 1;
+        entries[1].visibility = WGPUShaderStage_Fragment;
+        entries[1].texture.sampleType    = WGPUTextureSampleType_Float;
+        entries[1].texture.viewDimension = WGPUTextureViewDimension_2D;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 2;
+        bgl_desc.entries    = entries;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.label_bgl");
+        label_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &label_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.label_pipeline_layout");
+        label_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(LABELS_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.label_wgsl");
+        label_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 256;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.label_vbo");
+        label_vertex_buffer_   = wgpuDeviceCreateBuffer(device_, &bdesc);
+        label_vertex_capacity_ = 256;
+    }
+
+    // Per-vertex: vec2 NDC + vec2 uv = 16 B stride.
+    WGPUVertexAttribute attribs[2] = {};
+    attribs[0].format = WGPUVertexFormat_Float32x2; attribs[0].offset = 0; attribs[0].shaderLocation = 0;
+    attribs[1].format = WGPUVertexFormat_Float32x2; attribs[1].offset = 8; attribs[1].shaderLocation = 1;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 16;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 2;
+    vbl.attributes     = attribs;
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = label_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = label_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.label_pipeline");
+    rp_desc.vertex.module       = label_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    label_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    return label_pipeline_ != nullptr;
+}
+
+void WgpuOverlayRenderer::releaseLabelTextures() {
+    for (auto it = label_tex_cache_.begin(); it != label_tex_cache_.end(); ++it) {
+        if (it.value().bind_group) wgpuBindGroupRelease(it.value().bind_group);
+        if (it.value().view)       wgpuTextureViewRelease(it.value().view);
+        if (it.value().texture)    wgpuTextureRelease(it.value().texture);
+    }
+    label_tex_cache_.clear();
+}
+
+void WgpuOverlayRenderer::setOverlayLabels(const std::vector<Label>& labels) {
+    labels_ = labels;
+}
+
+void WgpuOverlayRenderer::setHudText(const QString& text) {
+    hud_text_ = text;
+}
+
+WgpuOverlayRenderer::LabelTexture*
+WgpuOverlayRenderer::getOrCreateLabelTexture(const QString& cache_key,
+                                             const QString& text,
+                                             int font_pt,
+                                             int dpr) {
+    auto it = label_tex_cache_.find(cache_key);
+    if (it != label_tex_cache_.end()) return &it.value();
+
+    // Rasterise: dark-grey rounded background (matches GL's #141414) +
+    // white antialiased text. Pixel-size everything by `dpr` so the
+    // texture is sharp on HiDPI surfaces.
+    QFont font;
+    font.setPointSize(font_pt);
+    font.setStyleHint(QFont::SansSerif);
+    QFontMetrics fm(font);
+    const QStringList lines = text.split('\n');
+    int text_w_logical = 0;
+    for (const auto& ln : lines) {
+        text_w_logical = std::max(text_w_logical, fm.horizontalAdvance(ln));
+    }
+    const int line_h_logical = fm.height();
+    const int text_h_logical = line_h_logical * lines.size();
+    const int pad_x_logical  = 6;
+    const int pad_y_logical  = 3;
+    const int w_logical = text_w_logical + 2 * pad_x_logical;
+    const int h_logical = text_h_logical + 2 * pad_y_logical;
+    const int w_px = std::max(1, w_logical * dpr);
+    const int h_px = std::max(1, h_logical * dpr);
+
+    QImage img(w_px, h_px, QImage::Format_RGBA8888_Premultiplied);
+    img.setDevicePixelRatio(dpr);
+    img.fill(Qt::transparent);
+    {
+        QPainter painter(&img);
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setRenderHint(QPainter::TextAntialiasing, true);
+        // Background: opaque dark-grey, no border.
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(20, 20, 20, 235));
+        painter.drawRoundedRect(QRect(0, 0, w_logical, h_logical), 3, 3);
+        // Text: white.
+        painter.setPen(Qt::white);
+        painter.setFont(font);
+        painter.drawText(QRect(pad_x_logical, pad_y_logical,
+                               text_w_logical, text_h_logical),
+                         Qt::AlignLeft | Qt::AlignTop, text);
+    }
+
+    // Convert QImage's row layout (BGRA in Premultiplied? actually RGBA8888
+    // is byte-order RGBA, so safe) into a wgpu-friendly tightly-packed
+    // buffer with bytesPerRow padded to a 256-byte multiple (wgpu copy
+    // alignment requirement only for B2T, but Queue.writeTexture has the
+    // same constraint via bytesPerRow alignment to 256 when used with
+    // wgpuQueueWriteTexture? — actually wgpuQueueWriteTexture has NO 256
+    // alignment requirement, only buffer-based copies do). So we can pass
+    // img.bits() directly with bytesPerRow = w_px * 4.
+
+    LabelTexture entry;
+    entry.width_px  = w_px;
+    entry.height_px = h_px;
+
+    WGPUTextureDescriptor td = {};
+    td.usage         = WGPUTextureUsage_TextureBinding | WGPUTextureUsage_CopyDst;
+    td.dimension     = WGPUTextureDimension_2D;
+    td.format        = WGPUTextureFormat_RGBA8Unorm;
+    td.size.width    = uint32_t(w_px);
+    td.size.height   = uint32_t(h_px);
+    td.size.depthOrArrayLayers = 1;
+    td.mipLevelCount = 1;
+    td.sampleCount   = 1;
+    td.label         = svFromCStr("ifcviewer-wgpu.label_texture");
+    entry.texture = wgpuDeviceCreateTexture(device_, &td);
+
+    WGPUTexelCopyTextureInfo dst = {};
+    dst.texture  = entry.texture;
+    dst.aspect   = WGPUTextureAspect_All;
+    WGPUTexelCopyBufferLayout layout = {};
+    layout.bytesPerRow  = uint32_t(w_px) * 4;
+    layout.rowsPerImage = uint32_t(h_px);
+    WGPUExtent3D extent = { uint32_t(w_px), uint32_t(h_px), 1 };
+    wgpuQueueWriteTexture(queue_, &dst, img.constBits(),
+                          size_t(w_px) * size_t(h_px) * 4,
+                          &layout, &extent);
+
+    WGPUTextureViewDescriptor tvd = {};
+    tvd.format      = WGPUTextureFormat_RGBA8Unorm;
+    tvd.dimension   = WGPUTextureViewDimension_2D;
+    tvd.baseMipLevel = 0;
+    tvd.mipLevelCount = 1;
+    tvd.baseArrayLayer = 0;
+    tvd.arrayLayerCount = 1;
+    tvd.aspect = WGPUTextureAspect_All;
+    tvd.label  = svFromCStr("ifcviewer-wgpu.label_view");
+    entry.view = wgpuTextureCreateView(entry.texture, &tvd);
+
+    WGPUBindGroupEntry bge[2] = {};
+    bge[0].binding = 0;
+    bge[0].sampler = label_sampler_;
+    bge[1].binding = 1;
+    bge[1].textureView = entry.view;
+    WGPUBindGroupDescriptor bgd = {};
+    bgd.layout     = label_bgl_;
+    bgd.entryCount = 2;
+    bgd.entries    = bge;
+    bgd.label      = svFromCStr("ifcviewer-wgpu.label_bind_group");
+    entry.bind_group = wgpuDeviceCreateBindGroup(device_, &bgd);
+
+    auto inserted = label_tex_cache_.insert(cache_key, entry);
+    return &inserted.value();
+}
+
+void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
+                                       WGPUTextureView surface_view,
+                                       const WgpuOverlayFrame& f) {
+    if (!label_pipeline_ || !surface_view) return;
+    if (labels_.empty() && hud_text_.isEmpty()) return;
+    if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
+
+    const int   dpr   = std::max(1, f.device_pixel_ratio);
+    const float w_phys = float(f.viewport_w_px);
+    const float h_phys = float(f.viewport_h_px);
+
+    // Resolve each label/HUD to (texture, NDC quad), expanding into the
+    // per-frame vertex buffer.
+    struct DrawRec { LabelTexture* tex; uint32_t first_vertex; };
+    std::vector<DrawRec> draws;
+    std::vector<float>   verts;
+    draws.reserve(labels_.size() + 1);
+    verts.reserve((labels_.size() + 1) * 6 * 4);
+
+    auto push_quad = [&](LabelTexture* tex, float nx0, float ny0,
+                                            float nx1, float ny1) {
+        // Two triangles, top-left at (nx0, ny0) (NDC Y up).
+        // UV layout: (0,0) at top-left of image → flip Y because NDC Y
+        // increases upward but image V increases downward.
+        const float u0 = 0.0f, u1 = 1.0f, v0 = 0.0f, v1 = 1.0f;
+        draws.push_back({tex, uint32_t(verts.size() / 4)});
+        const float quad[24] = {
+            nx0, ny0, u0, v0,   nx1, ny0, u1, v0,   nx0, ny1, u0, v1,
+            nx0, ny1, u0, v1,   nx1, ny0, u1, v0,   nx1, ny1, u1, v1,
+        };
+        verts.insert(verts.end(), quad, quad + 24);
+    };
+
+    // World-anchored labels at point size 9 (matches GL OverlayRenderer).
+    for (const auto& lbl : labels_) {
+        const float* p = lbl.world_pos;
+        const float* m = f.view_proj.constData();
+        // Column-major: M[col*4 + row].
+        const float wx = m[0]*p[0] + m[4]*p[1] + m[8]*p[2]  + m[12];
+        const float wy = m[1]*p[0] + m[5]*p[1] + m[9]*p[2]  + m[13];
+        const float ww = m[3]*p[0] + m[7]*p[1] + m[11]*p[2] + m[15];
+        if (ww <= 0.0f) continue;
+        const float ndc_x = wx / ww;
+        const float ndc_y = wy / ww;
+        if (ndc_x < -1.0f || ndc_x > 1.0f
+         || ndc_y < -1.0f || ndc_y > 1.0f) continue;
+        const float sx_phys = (ndc_x * 0.5f + 0.5f) * w_phys;
+        const float sy_phys = (1.0f - (ndc_y * 0.5f + 0.5f)) * h_phys;
+        const QString key = QStringLiteral("L9:") + lbl.text;
+        LabelTexture* tex = getOrCreateLabelTexture(key, lbl.text, 9, dpr);
+        if (!tex) continue;
+        const float wq = float(tex->width_px);
+        const float hq = float(tex->height_px);
+        const float lx_phys = sx_phys - wq * 0.5f;
+        const float ly_phys = sy_phys - hq * 0.5f;
+        const float nx0 = (lx_phys / w_phys) * 2.0f - 1.0f;
+        const float nx1 = ((lx_phys + wq) / w_phys) * 2.0f - 1.0f;
+        const float ny0 = 1.0f - 2.0f * ly_phys / h_phys;          // top
+        const float ny1 = 1.0f - 2.0f * (ly_phys + hq) / h_phys;   // bottom
+        push_quad(tex, nx0, ny0, nx1, ny1);
+    }
+
+    // HUD: top-left, point size 11 (matches GL OverlayRenderer).
+    if (!hud_text_.isEmpty()) {
+        const QString key = QStringLiteral("H11:") + hud_text_;
+        LabelTexture* tex = getOrCreateLabelTexture(key, hud_text_, 11, dpr);
+        if (tex) {
+            const float margin_phys = 12.0f * float(dpr);
+            const float lx_phys = margin_phys;
+            const float ly_phys = margin_phys;
+            const float wq = float(tex->width_px);
+            const float hq = float(tex->height_px);
+            const float nx0 = (lx_phys / w_phys) * 2.0f - 1.0f;
+            const float nx1 = ((lx_phys + wq) / w_phys) * 2.0f - 1.0f;
+            const float ny0 = 1.0f - 2.0f * ly_phys / h_phys;
+            const float ny1 = 1.0f - 2.0f * (ly_phys + hq) / h_phys;
+            push_quad(tex, nx0, ny0, nx1, ny1);
+        }
+    }
+
+    if (draws.empty()) return;
+
+    // Grow + upload the per-frame vertex buffer.
+    const uint64_t bytes = uint64_t(verts.size()) * sizeof(float);
+    if (bytes > label_vertex_capacity_) {
+        const uint64_t new_cap = bytes + bytes / 2;
+        if (label_vertex_buffer_) wgpuBufferRelease(label_vertex_buffer_);
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = new_cap;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.label_vbo");
+        label_vertex_buffer_   = wgpuDeviceCreateBuffer(device_, &bdesc);
+        label_vertex_capacity_ = new_cap;
+    }
+    wgpuQueueWriteBuffer(queue_, label_vertex_buffer_, 0,
+                         verts.data(), size_t(bytes));
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = surface_view;
+    color.loadOp     = WGPULoadOp_Load;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = { 0, 0, 0, 1 };
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.label_pass");
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+
+    wgpuRenderPassEncoderSetPipeline(pass, label_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, label_vertex_buffer_,
+                                         0, WGPU_WHOLE_SIZE);
+    for (const auto& d : draws) {
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, d.tex->bind_group, 0, nullptr);
+        wgpuRenderPassEncoderDraw(pass, 6, 1, d.first_vertex, 0);
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
 }

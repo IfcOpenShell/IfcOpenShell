@@ -2849,6 +2849,17 @@ void WgpuViewportWindow::setOverlayPoints(const std::vector<float>& world_xyz,
     if (isExposed()) requestUpdate();
 }
 
+void WgpuViewportWindow::setOverlayLabels(
+        const std::vector<WgpuOverlayRenderer::Label>& labels) {
+    overlays_.setOverlayLabels(labels);
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::setHudText(const QString& text) {
+    overlays_.setHudText(text);
+    if (isExposed()) requestUpdate();
+}
+
 // Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
 // Returns false if behind the camera.
 static bool projectWorldToLogicalScreen(const QMatrix4x4& vp,
@@ -3992,6 +4003,10 @@ void WgpuViewportWindow::render() {
                             box_select_start_pos_,
                             box_select_current_pos_,
                             box_select_active_);
+
+    // Labels + HUD text. Drawn last so they stack on top of every other
+    // overlay (no depth test, alpha-blended on the resolved surface).
+    overlays_.encodeLabels(enc, view, overlay_frame);
 
     // ---- HiZ: resolve MSAA depth → small single-sample → ping-pong slot
     int hiz_submitted_slot = -1;

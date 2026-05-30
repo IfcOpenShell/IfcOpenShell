@@ -292,6 +292,8 @@ private:
                            float stroke_r, float stroke_g,
                            float stroke_b, float stroke_a,
                            float stroke_extra);
+    void  setOverlayLabels(const std::vector<WgpuOverlayRenderer::Label>& labels);
+    void  setHudText(const QString& text);
 
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
