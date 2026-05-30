@@ -1674,6 +1674,14 @@ def billboarded_at(world_pos: Vector, billboard_rot: Matrix, scale: float = DEFA
     return Matrix.Translation(world_pos) @ billboard_rot @ Matrix.Scale(scale, 4)
 
 
+def get_screen_up(billboard_rot: Matrix) -> Vector:
+    """Camera's screen-up direction in world space — local +Y of the billboard
+    rotation. Use to lift a gizmo above an anchor in a way that stays
+    perpendicular to the view plane (world +Z collapses to zero on-screen in
+    top-down view and lands lifted gizmos on top of their anchors)."""
+    return billboard_rot @ Vector((0.0, 1.0, 0.0))
+
+
 # Dead-band on the screen-X delta — prevents flicker when the gizmo sits on the
 # element origin.
 EXTEND_FLIP_EPSILON = 1e-4

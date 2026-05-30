@@ -93,6 +93,8 @@ classes = (
     wall.GizmoWallAddOpening,
     wall.GizmoWallEdition,
     wall.GizmoWallExtendVertically,
+    wall.GizmoWallFilletPreview,
+    wall.GizmoWallFilletReedit,
     wall.GizmoWallJoinIntersection,
     wall.GizmoWallUnjoinSingle,
     wall.JoinWallsIntersection,
@@ -105,6 +107,11 @@ classes = (
     wall.ToggleWallOpenings,
     wall.UnjoinWallPathConnection,
     wall.UnjoinWalls,
+    wall.EnableWallFilletPreview,
+    wall.FinishWallFilletPreview,
+    wall.CancelWallFilletPreview,
+    wall.EnableWallFilletPreviewFromCorner,
+    wall.CreateWallFillet,
     opening.AddBoolean,
     opening.CloneOpening,
     opening.EditOpenings,
@@ -165,6 +172,8 @@ classes = (
     prop.BIMWallProperties,
     prop.BIMPolylineProperties,
     prop.BIMExternalParametricGeometryProperties,
+    prop.BIMWallFilletPreviewProperties,
+    prop.BIMPreviewProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_wall,
@@ -295,6 +304,7 @@ def register():
     bpy.types.Object.BIMExternalParametricGeometryProperties = bpy.props.PointerProperty(
         type=prop.BIMExternalParametricGeometryProperties
     )
+    bpy.types.Scene.BIMPreviewProperties = bpy.props.PointerProperty(type=prop.BIMPreviewProperties)
 
     bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
@@ -313,6 +323,7 @@ def unregister():
     del bpy.types.Object.BIMSverchokProperties
     tool.Parametric.unregister_object_properties()
     del bpy.types.Object.BIMExternalParametricGeometryProperties
+    del bpy.types.Scene.BIMPreviewProperties
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
