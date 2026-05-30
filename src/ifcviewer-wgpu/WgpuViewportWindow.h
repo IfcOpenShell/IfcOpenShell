@@ -281,6 +281,12 @@ private:
     void  removeSectionPlane(int index);
     void  clearSectionPlanes();
     int   sectionPlaneCount() const { return int(section_planes_.size()); }
+
+    // Overlay primitives. Mirror GL ViewportWindow so the Measurement +
+    // dimension tools can target either backend through one API.
+    // Empty groups clears the current set.
+    void  setOverlayLines(const std::vector<WgpuOverlayRenderer::LineGroup>& groups);
+
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
     // Resolves the just-rendered MSAA depth into the small single-sample

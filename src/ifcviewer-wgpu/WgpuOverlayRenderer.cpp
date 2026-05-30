@@ -258,6 +258,76 @@ fn fs_fill() -> @location(0) vec4<f32> {
 }
 )WGSL";
 
+// Overlay-line shader: world-space segments expanded into screen-space
+// quads. Same expansion strategy as the GL OverlayRenderer LINE_VS/FS pair —
+// per-vertex (a, b, side, along), per-fragment signed-perpendicular distance
+// for stroke pick and arc length for dash. Lives in its own module because
+// the FS needs the dash/stroke logic that the shared thick-line helper
+// doesn't carry (axis / section / marquee never dash).
+static const char* OVERLAY_LINES_WGSL = R"WGSL(
+struct LineUniforms {
+    view_proj:      mat4x4<f32>,
+    inner_color:    vec4<f32>,
+    stroke_color:   vec4<f32>,
+    viewport_size:  vec2<f32>,
+    line_width_px:  f32,    // inner full-width (px)
+    stroke_extra:   f32,    // halo per side (px)
+    dash_period_px: f32,    // 0 = solid
+    dash_on_ratio:  f32,
+};
+@group(0) @binding(0) var<uniform> u: LineUniforms;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) dist_px:  f32,    // signed perpendicular distance (px)
+    @location(1) along_px: f32,    // arc length from segment start (px)
+};
+
+@vertex
+fn vs_main(@location(0) a:     vec3<f32>,
+           @location(1) b:     vec3<f32>,
+           @location(2) side:  f32,
+           @location(3) along: f32) -> VsOut {
+    let clip_a = u.view_proj * vec4<f32>(a, 1.0);
+    let clip_b = u.view_proj * vec4<f32>(b, 1.0);
+    let s_a = (clip_a.xy / clip_a.w) * 0.5 * u.viewport_size;
+    let s_b = (clip_b.xy / clip_b.w) * 0.5 * u.viewport_size;
+    let delta = s_b - s_a;
+    let len   = length(delta);
+    var dir   = vec2<f32>(1.0, 0.0);
+    if (len > 1e-6) { dir = delta / len; }
+    let perp = vec2<f32>(-dir.y, dir.x);
+
+    let clip_self = mix(clip_a, clip_b, along);
+    var s_self    = (clip_self.xy / clip_self.w) * 0.5 * u.viewport_size;
+    let half_total = u.line_width_px * 0.5 + u.stroke_extra;
+    s_self = s_self + perp * side * half_total;
+
+    let ndc_out = s_self / (u.viewport_size * 0.5);
+    var out: VsOut;
+    out.clip_pos = vec4<f32>(ndc_out * clip_self.w, clip_self.z, clip_self.w);
+    out.dist_px  = side * half_total;
+    out.along_px = along * len;
+    return out;
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    if (u.dash_period_px > 0.0) {
+        let t = in.along_px - floor(in.along_px / u.dash_period_px) * u.dash_period_px;
+        if (t > u.dash_period_px * u.dash_on_ratio) { discard; }
+    }
+    let ad         = abs(in.dist_px);
+    let half_inner = u.line_width_px * 0.5;
+    let total      = half_inner + u.stroke_extra;
+    if (ad > total) { discard; }
+    var col = u.inner_color;
+    if (ad > half_inner) { col = u.stroke_color; }
+    let outer_a = smoothstep(total, total - 1.0, ad);
+    return vec4<f32>(col.xyz, col.w * outer_a);
+}
+)WGSL";
+
 // -----------------------------------------------------------------------------
 // Construction / destruction
 // -----------------------------------------------------------------------------
@@ -277,6 +347,7 @@ bool WgpuOverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
     if (!buildAxisIndicator())     return false;
     if (!buildSectionVisualizer()) return false;
     if (!buildMarquee())           return false;
+    if (!buildOverlayLines())      return false;
     return true;
 }
 
@@ -311,6 +382,18 @@ void WgpuOverlayRenderer::destroy() {
     if (marquee_uniform_buffer_)     { wgpuBufferRelease(marquee_uniform_buffer_);             marquee_uniform_buffer_ = nullptr; }
     if (marquee_vertex_buffer_)      { wgpuBufferRelease(marquee_vertex_buffer_);              marquee_vertex_buffer_ = nullptr; }
     if (marquee_fill_vertex_buffer_) { wgpuBufferRelease(marquee_fill_vertex_buffer_);         marquee_fill_vertex_buffer_ = nullptr; }
+
+    // Overlay lines
+    if (overlay_line_bind_group_)      { wgpuBindGroupRelease(overlay_line_bind_group_);          overlay_line_bind_group_ = nullptr; }
+    if (overlay_line_pipeline_)        { wgpuRenderPipelineRelease(overlay_line_pipeline_);       overlay_line_pipeline_ = nullptr; }
+    if (overlay_line_shader_module_)   { wgpuShaderModuleRelease(overlay_line_shader_module_);    overlay_line_shader_module_ = nullptr; }
+    if (overlay_line_pipeline_layout_) { wgpuPipelineLayoutRelease(overlay_line_pipeline_layout_); overlay_line_pipeline_layout_ = nullptr; }
+    if (overlay_line_bgl_)             { wgpuBindGroupLayoutRelease(overlay_line_bgl_);           overlay_line_bgl_ = nullptr; }
+    if (overlay_line_uniform_buffer_)  { wgpuBufferRelease(overlay_line_uniform_buffer_);         overlay_line_uniform_buffer_ = nullptr; }
+    if (overlay_line_vertex_buffer_)   { wgpuBufferRelease(overlay_line_vertex_buffer_);          overlay_line_vertex_buffer_ = nullptr; }
+    overlay_line_vertex_capacity_ = 0;
+    overlay_line_uniform_slots_   = 0;
+    overlay_line_draws_.clear();
 }
 
 // -----------------------------------------------------------------------------
@@ -1024,4 +1107,275 @@ void WgpuOverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
 
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
+}
+
+// -----------------------------------------------------------------------------
+// Overlay lines
+// -----------------------------------------------------------------------------
+
+bool WgpuOverlayRenderer::buildOverlayLines() {
+    // Empty initial buffers — both grow on demand inside setOverlayLines.
+    // Use a tiny starter capacity so the very first set call doesn't have
+    // to special-case "buffer is null."
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 256;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.overlay_line_vbo");
+        overlay_line_vertex_buffer_   = wgpuDeviceCreateBuffer(device_, &bdesc);
+        overlay_line_vertex_capacity_ = 256;
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = kOverlayLineUniformSlotSize;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.overlay_line_uniforms");
+        overlay_line_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        overlay_line_uniform_slots_  = 1;
+    }
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 1;
+        entry.buffer.minBindingSize   = 128;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.overlay_line_bgl");
+        overlay_line_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &overlay_line_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.overlay_line_pipeline_layout");
+        overlay_line_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = overlay_line_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = 128;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = overlay_line_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.overlay_line_bind_group");
+        overlay_line_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(OVERLAY_LINES_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.overlay_line_wgsl");
+        overlay_line_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    // Per-vertex layout: (a.xyz, b.xyz, side, along) = 8 floats = 32 bytes.
+    WGPUVertexAttribute attribs[4] = {};
+    attribs[0].format = WGPUVertexFormat_Float32x3; attribs[0].offset = 0;  attribs[0].shaderLocation = 0;
+    attribs[1].format = WGPUVertexFormat_Float32x3; attribs[1].offset = 12; attribs[1].shaderLocation = 1;
+    attribs[2].format = WGPUVertexFormat_Float32;   attribs[2].offset = 24; attribs[2].shaderLocation = 2;
+    attribs[3].format = WGPUVertexFormat_Float32;   attribs[3].offset = 28; attribs[3].shaderLocation = 3;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 32;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 4;
+    vbl.attributes     = attribs;
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = overlay_line_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    // Depth-tested against the main MSAA depth so lines correctly hide
+    // behind geometry; depth-write off so they don't occlude later
+    // overlays.
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_False;
+    depth.depthCompare         = WGPUCompareFunction_LessEqual;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = overlay_line_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.overlay_line_pipeline");
+    rp_desc.vertex.module       = overlay_line_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = uint32_t(sample_count_);
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    overlay_line_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    return overlay_line_pipeline_ != nullptr;
+}
+
+void WgpuOverlayRenderer::setOverlayLines(const std::vector<LineGroup>& groups) {
+    overlay_line_draws_.clear();
+    if (groups.empty()) return;
+
+    // Per-segment expansion: 6 vertices × 8 floats = 48 floats per segment.
+    // Each vertex carries (a.xyz, b.xyz, side, along) where (side, along)
+    // selects one of six fixed corners of the screen-space quad.
+    static const float CORNERS[6][2] = {
+        {-1.0f, 0.0f}, {+1.0f, 0.0f}, {-1.0f, 1.0f},
+        {-1.0f, 1.0f}, {+1.0f, 0.0f}, {+1.0f, 1.0f},
+    };
+
+    std::vector<float> verts;
+    uint32_t first_vertex = 0;
+    overlay_line_draws_.reserve(groups.size());
+    for (const auto& g : groups) {
+        if (g.world_xyz.size() < 6) {
+            overlay_line_draws_.push_back({first_vertex, 0});
+            continue;
+        }
+        const size_t n_segs = g.world_xyz.size() / 6;
+        const uint32_t group_vcount = uint32_t(n_segs) * 6;
+        verts.reserve(verts.size() + size_t(group_vcount) * 8);
+        for (size_t s = 0; s < n_segs; ++s) {
+            const float* a = &g.world_xyz[s * 6 + 0];
+            const float* b = &g.world_xyz[s * 6 + 3];
+            for (int c = 0; c < 6; ++c) {
+                verts.push_back(a[0]); verts.push_back(a[1]); verts.push_back(a[2]);
+                verts.push_back(b[0]); verts.push_back(b[1]); verts.push_back(b[2]);
+                verts.push_back(CORNERS[c][0]);
+                verts.push_back(CORNERS[c][1]);
+            }
+        }
+        overlay_line_draws_.push_back({first_vertex, group_vcount});
+        first_vertex += group_vcount;
+    }
+
+    // Grow vertex buffer if needed (1.5× headroom so steady-state setters
+    // don't re-allocate every frame).
+    const uint64_t bytes = uint64_t(verts.size()) * sizeof(float);
+    if (bytes > overlay_line_vertex_capacity_) {
+        const uint64_t new_cap = bytes + bytes / 2;
+        if (overlay_line_vertex_buffer_) {
+            wgpuBufferRelease(overlay_line_vertex_buffer_);
+        }
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = new_cap;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.overlay_line_vbo");
+        overlay_line_vertex_buffer_   = wgpuDeviceCreateBuffer(device_, &bdesc);
+        overlay_line_vertex_capacity_ = new_cap;
+    }
+    if (bytes > 0) {
+        wgpuQueueWriteBuffer(queue_, overlay_line_vertex_buffer_, 0,
+                             verts.data(), size_t(bytes));
+    }
+
+    // Grow uniform buffer to one 256-byte slot per group; re-create the
+    // bind group on each grow so the dynamic-offset stride still binds
+    // exactly 128 bytes per group (the WGSL struct size).
+    if (uint32_t(groups.size()) > overlay_line_uniform_slots_) {
+        const uint32_t new_slots = uint32_t(groups.size());
+        if (overlay_line_uniform_buffer_) {
+            wgpuBufferRelease(overlay_line_uniform_buffer_);
+        }
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = uint64_t(new_slots) * kOverlayLineUniformSlotSize;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.overlay_line_uniforms");
+        overlay_line_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        overlay_line_uniform_slots_  = new_slots;
+
+        if (overlay_line_bind_group_) {
+            wgpuBindGroupRelease(overlay_line_bind_group_);
+        }
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = overlay_line_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = 128;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = overlay_line_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.overlay_line_bind_group");
+        overlay_line_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+
+    // Pack each group's static slot tail (everything after the per-frame
+    // view_proj). Layout matches WGSL LineUniforms (see OVERLAY_LINES_WGSL):
+    //   [  0..64) view_proj      (written per-frame)
+    //   [ 64..80) inner_color
+    //   [ 80..96) stroke_color
+    //   [ 96..104) viewport_size (written per-frame)
+    //   [104..108) line_width_px
+    //   [108..112) stroke_extra
+    //   [112..116) dash_period_px
+    //   [116..120) dash_on_ratio
+    for (size_t i = 0; i < groups.size(); ++i) {
+        const auto& g = groups[i];
+        const uint64_t slot_off = uint64_t(i) * kOverlayLineUniformSlotSize;
+        uint8_t slot_tail[56] = {};  // bytes [64..120)
+        std::memcpy(slot_tail + 0,  g.color,        16);  //  64.. 80
+        std::memcpy(slot_tail + 16, g.stroke_color, 16);  //  80.. 96
+        // viewport_size occupies [96..104) — written per-frame.
+        std::memcpy(slot_tail + 40, &g.line_width,     4);  // 104..108
+        std::memcpy(slot_tail + 44, &g.stroke_extra,   4);  // 108..112
+        std::memcpy(slot_tail + 48, &g.dash_period_px, 4);  // 112..116
+        std::memcpy(slot_tail + 52, &g.dash_on_ratio,  4);  // 116..120
+        wgpuQueueWriteBuffer(queue_, overlay_line_uniform_buffer_,
+                             slot_off + 64, slot_tail, sizeof(slot_tail));
+    }
+}
+
+void WgpuOverlayRenderer::encodeOverlayLines(WGPURenderPassEncoder pass,
+                                             const WgpuOverlayFrame& f) {
+    if (!overlay_line_pipeline_ || overlay_line_draws_.empty()) return;
+    if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
+
+    // Per-frame slot prefix: view_proj (64 B) into [0..64), viewport_size
+    // (8 B) into [96..104). The static [64..96) and [104..120) ranges were
+    // filled by setOverlayLines so we don't touch them again.
+    float vp[16];
+    std::memcpy(vp, f.view_proj.constData(), sizeof(vp));
+    const float viewport[2] = { float(f.viewport_w_px),
+                                float(f.viewport_h_px) };
+
+    wgpuRenderPassEncoderSetPipeline(pass, overlay_line_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, overlay_line_vertex_buffer_,
+                                         0, WGPU_WHOLE_SIZE);
+
+    for (size_t i = 0; i < overlay_line_draws_.size(); ++i) {
+        const auto& d = overlay_line_draws_[i];
+        if (d.vertex_count == 0) continue;
+        const uint64_t slot_off = uint64_t(i) * kOverlayLineUniformSlotSize;
+        wgpuQueueWriteBuffer(queue_, overlay_line_uniform_buffer_,
+                             slot_off + 0, vp, sizeof(vp));
+        wgpuQueueWriteBuffer(queue_, overlay_line_uniform_buffer_,
+                             slot_off + 96, viewport, sizeof(viewport));
+        const uint32_t dynamic_offsets[1] = { uint32_t(slot_off) };
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, overlay_line_bind_group_,
+                                          1, dynamic_offsets);
+        wgpuRenderPassEncoderDraw(pass, d.vertex_count, 1, d.first_vertex, 0);
+    }
 }

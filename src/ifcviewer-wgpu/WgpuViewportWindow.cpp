@@ -2831,6 +2831,12 @@ void WgpuViewportWindow::clearSectionPlanes() {
     if (isExposed()) requestUpdate();
 }
 
+void WgpuViewportWindow::setOverlayLines(
+        const std::vector<WgpuOverlayRenderer::LineGroup>& groups) {
+    overlays_.setOverlayLines(groups);
+    if (isExposed()) requestUpdate();
+}
+
 // Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
 // Returns false if behind the camera.
 static bool projectWorldToLogicalScreen(const QMatrix4x4& vp,
@@ -3941,6 +3947,12 @@ void WgpuViewportWindow::render() {
     // depth interaction is correct — the indicator vanishes behind closer
     // surfaces. Visibility is driven by orbit/wheel UI handlers.
     overlays_.encodePivot(pass, overlay_frame, pivot_indicator_visible_);
+
+    // Overlay line groups (measurement / dimension annotation lines).
+    // Depth-tested against geometry so they hide behind closer surfaces;
+    // depth-write off so the corner gizmo + marquee can still draw over
+    // them on the resolved surface afterwards.
+    overlays_.encodeOverlayLines(pass, overlay_frame);
 
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);

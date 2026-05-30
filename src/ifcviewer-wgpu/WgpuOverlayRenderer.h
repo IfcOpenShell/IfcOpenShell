@@ -95,6 +95,33 @@ public:
                              const WgpuOverlayFrame& f,
                              const std::vector<WgpuSectionPlane>& planes);
 
+    // One stylistic group of world-space line segments. Mirrors GL
+    // OverlayRenderer::LineGroup so callers can target either backend
+    // with one struct.
+    struct LineGroup {
+        std::vector<float> world_xyz;          // 6 floats per segment (a, b)
+        float color[4]        = {1, 1, 1, 1};  // inner color
+        float stroke_color[4] = {0, 0, 0, 1};  // halo (alpha 0 = no stroke)
+        float line_width      = 1.5f;          // inner full-width (px)
+        float stroke_extra    = 0.5f;          // halo per side (px)
+        float dash_period_px  = 0.0f;          // 0 = solid
+        float dash_on_ratio   = 0.6f;          // [0..1], only when period > 0
+    };
+
+    // Replace the overlay-line set. Each call CPU-expands every segment
+    // into six vertices (two triangles), uploads the concatenated
+    // expanded buffer once, and writes one uniform slot per group; the
+    // next encodeOverlayLines() draws them in order. Empty `groups`
+    // clears the set so subsequent encodes are no-ops.
+    void setOverlayLines(const std::vector<LineGroup>& groups);
+
+    // Encode the most-recently set line groups. One draw per group with
+    // a dynamic uniform offset; the shader handles stroke + dash from
+    // per-group uniforms. Drawn inside the main MSAA pass so the lines
+    // are depth-tested against geometry.
+    void encodeOverlayLines(WGPURenderPassEncoder pass,
+                            const WgpuOverlayFrame& f);
+
     // ---- After the edge silhouette pass, on the resolved surface ----
 
     // Corner axis gizmo (bottom-left, 110×110 px). Independent ortho
@@ -121,6 +148,7 @@ private:
     bool buildAxisIndicator();
     bool buildSectionVisualizer();
     bool buildMarquee();
+    bool buildOverlayLines();
 
     WGPUInstance        instance_       = nullptr;
     WGPUDevice          device_         = nullptr;
@@ -161,6 +189,30 @@ private:
     WGPUBuffer          marquee_fill_vertex_buffer_ = nullptr;
     WGPUBuffer          marquee_uniform_buffer_     = nullptr;
     WGPUBindGroup       marquee_bind_group_         = nullptr;
+
+    // ---- Overlay lines (per-group dynamic offset, resizable buffers) ----
+    // Vertex buffer holds the concatenated expansion of every group's
+    // segments (8 floats × 6 verts per segment). Uniform buffer holds
+    // one 256-byte slot per group; the bind group binds a single 128-byte
+    // window that the encoder rebinds via dynamic offset.
+    WGPUShaderModule    overlay_line_shader_module_   = nullptr;
+    WGPUBindGroupLayout overlay_line_bgl_             = nullptr;
+    WGPUPipelineLayout  overlay_line_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  overlay_line_pipeline_        = nullptr;
+    WGPUBuffer          overlay_line_vertex_buffer_   = nullptr;
+    uint64_t            overlay_line_vertex_capacity_ = 0;
+    WGPUBuffer          overlay_line_uniform_buffer_  = nullptr;
+    uint32_t            overlay_line_uniform_slots_   = 0;
+    WGPUBindGroup       overlay_line_bind_group_      = nullptr;
+    static constexpr uint32_t kOverlayLineUniformSlotSize = 256;
+
+    // Per-group draw record. setOverlayLines() populates one per
+    // LineGroup; encodeOverlayLines() iterates and issues one draw each.
+    struct OverlayLineDraw {
+        uint32_t first_vertex = 0;
+        uint32_t vertex_count = 0;
+    };
+    std::vector<OverlayLineDraw> overlay_line_draws_;
 };
 
 #endif  // WGPUOVERLAYRENDERER_H
