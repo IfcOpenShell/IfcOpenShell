@@ -35,6 +35,7 @@
 #include <cstdint>
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "SidecarCache.h"
 #include "WgpuBufferPool.h"
@@ -266,6 +267,11 @@ private:
                        QVector3D& world_pos_out,
                        QVector3D& world_normal_out,
                        float* aabb_radius_out = nullptr);
+    // Rectangle pick: render the pick pass, copy the rect region of the
+    // R32UInt color attachment, and return every unique non-zero
+    // object_id covered. `rect` is in physical pixels (post-DPR), already
+    // clipped to the framebuffer by the caller.
+    std::vector<uint32_t> picksInRect(int x, int y, int w, int h);
 
     // Section-cutting tool. Mirrors the GL ViewportWindow API:
     //   K           toggle (sectionToolActive / toggleSectionTool)
@@ -461,6 +467,22 @@ private:
     WGPURenderPipeline  axis_pivot_pipeline_      = nullptr;
     WGPURenderPipeline  axis_pivot_xray_pipeline_ = nullptr;
     WGPURenderPipeline  axis_corner_pipeline_     = nullptr;
+    // Marquee overlay (drag-rect for box-select). Renders on the resolved
+    // surface after the corner gizmo. Uses a 4-segment unit-quad VBO; the
+    // shader maps unit coords to NDC via per-frame uniform (rect min/max
+    // in NDC + colour + viewport + line width).
+    WGPUShaderModule    marquee_shader_module_    = nullptr;
+    WGPUBindGroupLayout marquee_bgl_              = nullptr;
+    WGPUPipelineLayout  marquee_pipeline_layout_  = nullptr;
+    WGPURenderPipeline  marquee_pipeline_         = nullptr;  // outline (thick line + AA)
+    WGPURenderPipeline  marquee_fill_pipeline_    = nullptr;  // translucent quad fill
+    WGPUBuffer          marquee_vertex_buffer_    = nullptr;  // outline geometry
+    WGPUBuffer          marquee_fill_vertex_buffer_ = nullptr; // 6-vert quad
+    WGPUBuffer          marquee_uniform_buffer_   = nullptr;
+    WGPUBindGroup       marquee_bind_group_       = nullptr;
+    bool  buildMarquee();
+    void  encodeMarquee(WGPUCommandEncoder enc, WGPUTextureView surface_view);
+    void  releaseMarquee();
     WGPUBuffer          axis_vertex_buffer_       = nullptr;  // 6 × 24 B
     WGPUBuffer          axis_uniform_buffer_      = nullptr;  // 3 × 256 B slots
     WGPUBindGroup       axis_bind_group_          = nullptr;  // dynamic-offset
@@ -500,6 +522,22 @@ private:
     };
     std::vector<SectionPlane> section_planes_;
     bool                      section_tool_active_  = false;
+
+    // Marquee box-select. Armed on LMB press (when no other tool consumes
+    // the click), becomes active after the cursor moves past
+    // kBoxSelectThresholdPx — until then a release still routes through
+    // the single-pick path. Press-time modifiers decide the set op at
+    // release: plain → replace, Shift → add, Ctrl → remove.
+    bool                       box_select_armed_      = false;
+    bool                       box_select_active_     = false;
+    QPoint                     box_select_start_pos_;     // logical px
+    QPoint                     box_select_current_pos_;   // logical px
+    Qt::KeyboardModifiers      box_select_press_mods_ = Qt::NoModifier;
+    static constexpr int       kBoxSelectThresholdPx  = 5;
+    // R32UInt staging for the rect-pick. Sized to the largest rect we've
+    // seen so far (padded to 256 bpr), regrown if a bigger rect arrives.
+    WGPUBuffer                 box_pick_staging_buffer_   = nullptr;
+    uint64_t                   box_pick_staging_capacity_ = 0;
     // Drag-to-move state for the arrow gizmo. While `section_drag_active_`
     // is true, mouseMoveEvent calls updateSectionDrag instead of letting
     // the press fall through to the orbit/pan handlers.

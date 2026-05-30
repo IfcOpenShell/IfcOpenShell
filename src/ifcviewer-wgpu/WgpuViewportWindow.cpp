@@ -1616,6 +1616,7 @@ bool WgpuViewportWindow::initWgpu() {
     if (!buildEdgePipeline()) return false;
     if (!buildAxisIndicator()) return false;
     if (!buildSectionVisualizer()) return false;
+    if (!buildMarquee()) return false;
     if (!buildPickPipeline()) return false;
 
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
@@ -2648,6 +2649,318 @@ void WgpuViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_m
 }
 
 // -----------------------------------------------------------------------------
+// Marquee overlay (drag-rect for box-select)
+// -----------------------------------------------------------------------------
+//
+// 4-segment unit-quad VBO; the vertex shader maps (0..1)² unit coords to NDC
+// via the per-frame uniform (rect.min, rect.max in NDC, both in [-1, 1]
+// with +y up). Reuses thick_line_clip / fs_main from the shared header so
+// the rect has analytical AA and reads cleanly against any background.
+
+static const char* MARQUEE_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+struct MarqueeUniforms {
+    rect_min:      vec2<f32>,
+    rect_max:      vec2<f32>,
+    color:         vec4<f32>,
+    viewport_size: vec2<f32>,
+    line_width_px: f32,
+    fill_alpha:    f32,   // multiplier on color.a for the translucent fill pass
+};
+
+@group(0) @binding(0) var<uniform> u: MarqueeUniforms;
+
+// Outline (thick line + AA).
+@vertex
+fn vs_main(@location(0) start_uv: vec2<f32>,
+           @location(1) end_uv:   vec2<f32>,
+           @location(2) t:        f32,
+           @location(3) side:     f32) -> VsOut {
+    let p_start = vec4<f32>(mix(u.rect_min, u.rect_max, start_uv), 0.0, 1.0);
+    let p_end   = vec4<f32>(mix(u.rect_min, u.rect_max, end_uv),   0.0, 1.0);
+    var out: VsOut;
+    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
+                                    u.viewport_size, u.line_width_px);
+    out.color    = u.color;
+    out.side_t   = side;
+    return out;
+}
+
+// Fill (flat translucent quad). Drawn before the outline so the outline
+// renders on top with full opacity.
+struct VsFillOut {
+    @builtin(position) clip_pos: vec4<f32>,
+};
+
+@vertex
+fn vs_fill(@location(0) pos_uv: vec2<f32>) -> VsFillOut {
+    var out: VsFillOut;
+    let p = mix(u.rect_min, u.rect_max, pos_uv);
+    out.clip_pos = vec4<f32>(p, 0.0, 1.0);
+    return out;
+}
+
+@fragment
+fn fs_fill() -> @location(0) vec4<f32> {
+    return vec4<f32>(u.color.xyz, u.color.w * u.fill_alpha);
+}
+)WGSL";
+
+bool WgpuViewportWindow::buildMarquee() {
+    // VBO: 4 line segments (top/right/bottom/left of the unit quad),
+    // each expanded into a 6-vertex thick-line. Per vertex (6 floats =
+    // 24 bytes): start_uv(vec2) + end_uv(vec2) + t(f32) + side(f32).
+    struct Seg { std::array<float, 2> s, e; };
+    static const Seg segs[] = {
+        { {0, 0}, {1, 0} },  // top
+        { {1, 0}, {1, 1} },  // right
+        { {1, 1}, {0, 1} },  // bottom
+        { {0, 1}, {0, 0} },  // left
+    };
+    std::vector<float> verts;
+    verts.reserve(std::size(segs) * 6 * 6);
+    auto push_v = [&](const Seg& s, float t, float side) {
+        verts.insert(verts.end(), { s.s[0], s.s[1], s.e[0], s.e[1], t, side });
+    };
+    for (const auto& s : segs) {
+        push_v(s, 0.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, -1.f);
+        push_v(s, 1.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, +1.f);
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = verts.size() * sizeof(float);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.marquee_vbo");
+        marquee_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, marquee_vertex_buffer_, 0,
+                             verts.data(), verts.size() * sizeof(float));
+    }
+    // Fill VBO: 6 verts of a unit-quad triangle list.
+    static const float fill_verts[] = {
+        0, 0,   1, 0,   1, 1,
+        0, 0,   1, 1,   0, 1,
+    };
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = sizeof(fill_verts);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.marquee_fill_vbo");
+        marquee_fill_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, marquee_fill_vertex_buffer_, 0,
+                             fill_verts, sizeof(fill_verts));
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 64;  // vec2 + vec2 + vec4 + vec2 + f32 + f32 = 48 B + pad
+        bdesc.label = svFromCStr("ifcviewer-wgpu.marquee_uniforms");
+        marquee_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 0;
+        entry.buffer.minBindingSize   = 48;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.marquee_bgl");
+        marquee_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &marquee_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.marquee_pipeline_layout");
+        marquee_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = marquee_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = 64;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = marquee_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.marquee_bind_group");
+        marquee_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(MARQUEE_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.marquee_wgsl");
+        marquee_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    // Vertex layout: start_uv(vec2) + end_uv(vec2) + t(f32) + side(f32),
+    // stride 24.
+    WGPUVertexAttribute attribs[4] = {};
+    attribs[0].format = WGPUVertexFormat_Float32x2; attribs[0].offset = 0;  attribs[0].shaderLocation = 0;
+    attribs[1].format = WGPUVertexFormat_Float32x2; attribs[1].offset = 8;  attribs[1].shaderLocation = 1;
+    attribs[2].format = WGPUVertexFormat_Float32;   attribs[2].offset = 16; attribs[2].shaderLocation = 2;
+    attribs[3].format = WGPUVertexFormat_Float32;   attribs[3].offset = 20; attribs[3].shaderLocation = 3;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 24;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 4;
+    vbl.attributes     = attribs;
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = marquee_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = marquee_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.marquee_pipeline");
+    rp_desc.vertex.module       = marquee_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    marquee_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+
+    // ---- Fill pipeline (translucent quad, vs_fill / fs_fill) ----
+    WGPUVertexAttribute fill_attribs[1] = {};
+    fill_attribs[0].format = WGPUVertexFormat_Float32x2;  // pos_uv
+    fill_attribs[0].offset = 0;
+    fill_attribs[0].shaderLocation = 0;
+    WGPUVertexBufferLayout fill_vbl = {};
+    fill_vbl.arrayStride    = 8;
+    fill_vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    fill_vbl.attributeCount = 1;
+    fill_vbl.attributes     = fill_attribs;
+
+    WGPUFragmentState fill_frag = {};
+    fill_frag.module      = marquee_shader_module_;
+    fill_frag.entryPoint  = svFromCStr("fs_fill");
+    fill_frag.targetCount = 1;
+    fill_frag.targets     = &ct;
+
+    WGPURenderPipelineDescriptor fill_rp_desc = rp_desc;
+    fill_rp_desc.label              = svFromCStr("ifcviewer-wgpu.marquee_fill_pipeline");
+    fill_rp_desc.vertex.entryPoint  = svFromCStr("vs_fill");
+    fill_rp_desc.vertex.bufferCount = 1;
+    fill_rp_desc.vertex.buffers     = &fill_vbl;
+    fill_rp_desc.fragment           = &fill_frag;
+    marquee_fill_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &fill_rp_desc);
+
+    return marquee_pipeline_ != nullptr && marquee_fill_pipeline_ != nullptr;
+}
+
+void WgpuViewportWindow::encodeMarquee(WGPUCommandEncoder enc,
+                                       WGPUTextureView surface_view) {
+    if (!marquee_pipeline_ || !surface_view) return;
+    if (!box_select_active_) return;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return;
+
+    // Logical-pixel rect → NDC. Qt mouse y goes top→bottom; NDC y goes
+    // bottom→top, hence the (1 - 2y/h) flip.
+    const float w = float(configured_w_);
+    const float h = float(configured_h_);
+    const float dpr = float(std::max(1, int(devicePixelRatio())));
+    const float lx0 = float(std::min(box_select_start_pos_.x(),
+                                     box_select_current_pos_.x())) * dpr;
+    const float ly0 = float(std::min(box_select_start_pos_.y(),
+                                     box_select_current_pos_.y())) * dpr;
+    const float lx1 = float(std::max(box_select_start_pos_.x(),
+                                     box_select_current_pos_.x())) * dpr;
+    const float ly1 = float(std::max(box_select_start_pos_.y(),
+                                     box_select_current_pos_.y())) * dpr;
+    if (lx1 <= lx0 || ly1 <= ly0) return;
+
+    const float nx0 = (lx0 / w) * 2.0f - 1.0f;
+    const float nx1 = (lx1 / w) * 2.0f - 1.0f;
+    // y: pixel 0 is top, so NDC y = 1 - 2*py/h
+    const float ny_top    = 1.0f - 2.0f * ly0 / h;
+    const float ny_bottom = 1.0f - 2.0f * ly1 / h;
+    // The vs shader expects rect_max y > rect_min y in NDC; the rect_uv
+    // y = 0 maps to rect_min y. Top corner gets uv.y = 0, bottom gets
+    // uv.y = 1. So rect_min.y = ny_top, rect_max.y = ny_bottom.
+    // Bonsai decorator_color_special (axis +Z blue): 0.157, 0.565, 1.000.
+    // Outline alpha 0.95; fill_alpha (multiplied onto that) gives ~0.15
+    // alpha in the fill so the underlying scene reads through.
+    float uniforms[16] = {};
+    uniforms[0]  = nx0;       uniforms[1]  = ny_top;     // rect_min  @ 0
+    uniforms[2]  = nx1;       uniforms[3]  = ny_bottom;  // rect_max  @ 8
+    uniforms[4]  = 0.157f;    uniforms[5]  = 0.565f;     // color.rg  @ 16
+    uniforms[6]  = 1.000f;    uniforms[7]  = 0.95f;      // color.ba
+    uniforms[8]  = w;         uniforms[9]  = h;          // viewport_size @ 32
+    uniforms[10] = 3.0f * dpr;                           // line_width_px @ 40
+    uniforms[11] = 0.20f;                                // fill_alpha    @ 44
+    wgpuQueueWriteBuffer(queue_, marquee_uniform_buffer_, 0,
+                         uniforms, 12 * sizeof(float));
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = surface_view;
+    color.loadOp     = WGPULoadOp_Load;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = { 0, 0, 0, 1 };
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.marquee_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, marquee_bind_group_, 0, nullptr);
+
+    // Pass 1: translucent fill (underneath the outline).
+    wgpuRenderPassEncoderSetPipeline(pass, marquee_fill_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, marquee_fill_vertex_buffer_,
+                                         0, WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderDraw(pass, 6, 1, 0, 0);
+
+    // Pass 2: thick-line outline.
+    wgpuRenderPassEncoderSetPipeline(pass, marquee_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, marquee_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderDraw(pass, 24, 1, 0, 0);
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
+void WgpuViewportWindow::releaseMarquee() {
+    if (marquee_bind_group_)         { wgpuBindGroupRelease(marquee_bind_group_);             marquee_bind_group_ = nullptr; }
+    if (marquee_pipeline_)           { wgpuRenderPipelineRelease(marquee_pipeline_);          marquee_pipeline_ = nullptr; }
+    if (marquee_fill_pipeline_)      { wgpuRenderPipelineRelease(marquee_fill_pipeline_);     marquee_fill_pipeline_ = nullptr; }
+    if (marquee_shader_module_)      { wgpuShaderModuleRelease(marquee_shader_module_);       marquee_shader_module_ = nullptr; }
+    if (marquee_pipeline_layout_)    { wgpuPipelineLayoutRelease(marquee_pipeline_layout_);   marquee_pipeline_layout_ = nullptr; }
+    if (marquee_bgl_)                { wgpuBindGroupLayoutRelease(marquee_bgl_);              marquee_bgl_ = nullptr; }
+    if (marquee_uniform_buffer_)     { wgpuBufferRelease(marquee_uniform_buffer_);            marquee_uniform_buffer_ = nullptr; }
+    if (marquee_vertex_buffer_)      { wgpuBufferRelease(marquee_vertex_buffer_);             marquee_vertex_buffer_ = nullptr; }
+    if (marquee_fill_vertex_buffer_) { wgpuBufferRelease(marquee_fill_vertex_buffer_);        marquee_fill_vertex_buffer_ = nullptr; }
+    if (box_pick_staging_buffer_)    { wgpuBufferRelease(box_pick_staging_buffer_);           box_pick_staging_buffer_ = nullptr; }
+    box_pick_staging_capacity_ = 0;
+}
+
+// -----------------------------------------------------------------------------
 // Section plane visualisation
 // -----------------------------------------------------------------------------
 //
@@ -3332,6 +3645,150 @@ static bool rayAABBHit(const QVector3D& origin, const QVector3D& dir,
         face_normal = n;
     }
     return true;
+}
+
+std::vector<uint32_t> WgpuViewportWindow::picksInRect(int x, int y, int w, int h) {
+    std::vector<uint32_t> out;
+    if (w <= 0 || h <= 0) return out;
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return out;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return out;
+    // Clip to framebuffer.
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > configured_w_) w = configured_w_ - x;
+    if (y + h > configured_h_) h = configured_h_ - y;
+    if (w <= 0 || h <= 0) return out;
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_) return out;
+
+    // Padded bytes-per-row for the rect region. R32UInt = 4 B/texel.
+    const uint64_t unpadded_bpr = uint64_t(w) * 4;
+    const uint64_t padded_bpr   = (unpadded_bpr + WGPU_BYTES_PER_ROW_ALIGN - 1)
+                                  / WGPU_BYTES_PER_ROW_ALIGN
+                                  * WGPU_BYTES_PER_ROW_ALIGN;
+    const uint64_t needed_bytes = padded_bpr * uint64_t(h);
+    if (needed_bytes > box_pick_staging_capacity_) {
+        if (box_pick_staging_buffer_) {
+            wgpuBufferRelease(box_pick_staging_buffer_);
+            box_pick_staging_buffer_ = nullptr;
+        }
+        // 2× grow heuristic — rectangle picks are rare so the slight
+        // overshoot on the first grow doesn't matter.
+        const uint64_t cap = std::max<uint64_t>(needed_bytes * 2, 64 * 1024);
+        WGPUBufferDescriptor sb = {};
+        sb.size  = cap;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.box_pick_staging");
+        box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+        box_pick_staging_capacity_ = cap;
+    }
+    if (!box_pick_staging_buffer_) return out;
+
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    // Same pick pass setup as pickObjectAt, but with two color targets
+    // (R32UInt object_id + RGBA16F normal — we discard the normal here).
+    WGPURenderPassColorAttachment color[2] = {};
+    color[0].view       = pick_color_view_;
+    color[0].loadOp     = WGPULoadOp_Clear;
+    color[0].storeOp    = WGPUStoreOp_Store;
+    color[0].clearValue = { 0, 0, 0, 0 };
+    color[0].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    color[1].view       = pick_normal_view_;
+    color[1].loadOp     = WGPULoadOp_Clear;
+    color[1].storeOp    = WGPUStoreOp_Store;
+    color[1].clearValue = { 0.5, 0.5, 0.5, 0 };
+    color[1].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view            = pick_depth_view_;
+    depth.depthLoadOp     = WGPULoadOp_Clear;
+    depth.depthStoreOp    = WGPUStoreOp_Store;
+    depth.depthClearValue = 1.0f;
+    depth.stencilLoadOp   = WGPULoadOp_Undefined;
+    depth.stencilStoreOp  = WGPUStoreOp_Undefined;
+    depth.stencilReadOnly = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 2;
+    pass_desc.colorAttachments       = color;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.box_pick_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    // Copy the rect region of the color attachment to the staging buffer.
+    // Color formats allow arbitrary subrect copies (unlike Depth32Float).
+    WGPUTexelCopyTextureInfo src = {};
+    src.texture  = pick_color_texture_;
+    src.aspect   = WGPUTextureAspect_All;
+    src.origin.x = uint32_t(x);
+    src.origin.y = uint32_t(y);
+
+    WGPUTexelCopyBufferInfo dst = {};
+    dst.buffer              = box_pick_staging_buffer_;
+    dst.layout.bytesPerRow  = uint32_t(padded_bpr);
+    dst.layout.rowsPerImage = uint32_t(h);
+
+    WGPUExtent3D extent = {};
+    extent.width  = uint32_t(w);
+    extent.height = uint32_t(h);
+    extent.depthOrArrayLayers = 1;
+
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read,
+                       0, needed_bytes, mcb);
+    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    if (!req.ok) return out;
+
+    const uint8_t* mapped = static_cast<const uint8_t*>(
+        wgpuBufferGetConstMappedRange(box_pick_staging_buffer_, 0, needed_bytes));
+    std::unordered_set<uint32_t> seen;
+    if (mapped) {
+        for (int row = 0; row < h; ++row) {
+            const uint32_t* line = reinterpret_cast<const uint32_t*>(
+                mapped + size_t(row) * size_t(padded_bpr));
+            for (int col = 0; col < w; ++col) {
+                const uint32_t id = line[col];
+                if (id != 0) seen.insert(id);
+            }
+        }
+    }
+    wgpuBufferUnmap(box_pick_staging_buffer_);
+
+    out.reserve(seen.size());
+    for (uint32_t id : seen) out.push_back(id);
+    return out;
 }
 
 bool WgpuViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
@@ -4580,6 +5037,11 @@ void WgpuViewportWindow::render() {
     // Corner axis gizmo. Encoded after the edge pass on the resolved
     // surface, so the laplacian can't darken its lines or its background.
     encodeCornerAxisGizmo(enc, view);
+
+    // Marquee box-select drag rect (visible only while a drag is active).
+    // Drawn on the resolved surface so the rect outline isn't affected by
+    // the edge silhouette pass.
+    encodeMarquee(enc, view);
 
     // ---- HiZ: resolve MSAA depth → small single-sample → ping-pong slot
     int hiz_submitted_slot = -1;
@@ -6557,6 +7019,18 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
         nav_drag_kind_ = NavDrag::Pan;
         setPivotIndicatorVisible(true);
+    } else if (event->button() == Qt::LeftButton
+            && !section_tool_active_
+            && nav_drag_kind_ == NavDrag::Inactive) {
+        // Arm marquee box-select. Plain / Shift / Ctrl LMB without a tool
+        // intercepting the click; if the cursor never moves past the
+        // threshold this stays armed-only and the release falls through
+        // to single-pick.
+        box_select_armed_      = true;
+        box_select_active_     = false;
+        box_select_start_pos_  = nav_press_pos_;
+        box_select_current_pos_ = nav_press_pos_;
+        box_select_press_mods_ = mods;
     }
 }
 
@@ -6566,6 +7040,46 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         section_drag_index_  = -1;
         nav_active_button_   = Qt::NoButton;
         return;
+    }
+    // Marquee finalisation: only commit when the drag actually became
+    // active (cursor moved past threshold). Press-time mods decide the
+    // set op so a mid-drag Shift release doesn't flip the behaviour.
+    if (box_select_armed_ && event->button() == Qt::LeftButton) {
+        const bool was_active = box_select_active_;
+        box_select_armed_  = false;
+        box_select_active_ = false;
+        if (was_active) {
+            const float dpr = float(devicePixelRatio());
+            const int x0 = int(std::min(box_select_start_pos_.x(),
+                                        box_select_current_pos_.x()) * dpr);
+            const int y0 = int(std::min(box_select_start_pos_.y(),
+                                        box_select_current_pos_.y()) * dpr);
+            const int x1 = int(std::max(box_select_start_pos_.x(),
+                                        box_select_current_pos_.x()) * dpr);
+            const int y1 = int(std::max(box_select_start_pos_.y(),
+                                        box_select_current_pos_.y()) * dpr);
+            const auto ids = picksInRect(x0, y0, x1 - x0, y1 - y0);
+            const auto mods = box_select_press_mods_;
+            if (mods & Qt::ShiftModifier) {
+                for (uint32_t id : ids) selection_.add(id);
+                qInfo().noquote().nospace()
+                    << "[wgpu marquee] +add " << ids.size() << " object_ids";
+            } else if (mods & Qt::ControlModifier) {
+                for (uint32_t id : ids) selection_.remove(id);
+                qInfo().noquote().nospace()
+                    << "[wgpu marquee] -remove " << ids.size() << " object_ids";
+            } else {
+                selection_.clear();
+                for (uint32_t id : ids) selection_.add(id);
+                qInfo().noquote().nospace()
+                    << "[wgpu marquee] replace " << ids.size() << " object_ids";
+            }
+            nav_active_button_ = Qt::NoButton;
+            nav_drag_kind_     = NavDrag::Inactive;
+            requestUpdate();
+            return;
+        }
+        // armed but not active → fall through to single-click pick below.
     }
     if (event->button() == nav_active_button_) {
         // LMB-click without drag → pick the object under the cursor and
@@ -6686,6 +7200,23 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     if (section_drag_active_) {
         const QPoint pos = event->position().toPoint();
         updateSectionDrag(pos.x(), pos.y());
+        return;
+    }
+
+    // Marquee box-select: track the current cursor and promote to active
+    // once the press has moved past the manhattan threshold. Active
+    // marquee triggers requestUpdate every frame the cursor moves so the
+    // rect re-renders.
+    if (box_select_armed_) {
+        const QPoint pos = event->position().toPoint();
+        box_select_current_pos_ = pos;
+        if (!box_select_active_) {
+            if ((pos - box_select_start_pos_).manhattanLength()
+                >= kBoxSelectThresholdPx) {
+                box_select_active_ = true;
+            }
+        }
+        if (box_select_active_) requestUpdate();
         return;
     }
 
@@ -6972,6 +7503,7 @@ void WgpuViewportWindow::shutdown() {
     releaseHizResources();
     releaseEdgeResources();
     releaseSectionVisualizer();
+    releaseMarquee();
     releasePickResources();
 
     if (frame_bind_group_)        { wgpuBindGroupRelease(frame_bind_group_);          frame_bind_group_ = nullptr; }
