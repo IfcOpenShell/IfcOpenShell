@@ -19,6 +19,7 @@
 import bpy
 from bpy.types import Menu, Panel, UIList
 
+import ifcopenshell.util.unit
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
@@ -483,10 +484,32 @@ class BIM_PT_placement(Panel):
             row.label(text="No Object Placement Found")
             return
 
+        is_imperial = False
+        if tool.Ifc.get():
+            length_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
+            if length_unit and length_unit.Name != "METRE":
+                is_imperial = True
+
         row = self.layout.row()
-        row.prop(context.active_object, "location", text="Location")
+        row.label(text="Location:")
+
+        if is_imperial:
+            loc = context.active_object.location
+            for i, (axis, comp) in enumerate(zip("XYZ", (loc.x, loc.y, loc.z))):
+                split = self.layout.split(factor=0.6)
+                split.prop(context.active_object, "location", index=i, text=axis)
+                sub = split.row()
+                sub.enabled = False
+                sub.alignment = "LEFT"
+                sub.label(text=tool.Unit.format_distance(comp))
+        else:
+            for i, axis in enumerate("XYZ"):
+                self.layout.prop(context.active_object, "location", index=i, text=axis)
+
         row = self.layout.row()
-        row.prop(context.active_object, "rotation_euler", text="Rotation")
+        row.label(text="Rotation:")
+        for i, axis in enumerate("XYZ"):
+            self.layout.prop(context.active_object, "rotation_euler", index=i, text=axis)
 
         if props.blender_offset_type != "NONE":
             row = self.layout.row(align=True)
