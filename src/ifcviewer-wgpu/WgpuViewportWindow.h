@@ -27,6 +27,7 @@
 #include <QPoint>
 #include <QSet>
 #include <QString>
+#include <QTimer>
 
 #include <webgpu/webgpu.h>
 
@@ -218,6 +219,19 @@ private:
     bool  buildHizPipeline();
     bool  buildEdgePipeline();
     void  encodeEdgePass(WGPUCommandEncoder enc, WGPUTextureView surface_view);
+    bool  buildAxisIndicator();
+    // Encode the pivot indicator inside the main MSAA render pass — runs
+    // after geometry so depth interaction is correct.
+    void  encodePivotIndicator(WGPURenderPassEncoder pass,
+                               const QMatrix4x4& view_proj);
+    // Encode the corner gizmo on the resolved single-sample surface,
+    // after the edge silhouette pass. Uses setViewport for the corner box.
+    void  encodeCornerAxisGizmo(WGPUCommandEncoder enc,
+                                WGPUTextureView surface_view);
+    // Show/hide the pivot indicator. hide_after_ms > 0 starts the
+    // single-shot auto-hide timer used by the wheel-zoom afterglow;
+    // drag callers pass 0 and toggle manually on press/release.
+    void  setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     void  releaseEdgeResources();
 
     bool  buildPickPipeline();
@@ -398,6 +412,30 @@ private:
     WGPURenderPipeline  edge_pipeline_        = nullptr;
     WGPUBindGroup       edge_bind_group_      = nullptr;
     bool                edges_enabled_        = true;
+
+    // Axis indicator overlay — drives both the corner gizmo and the
+    // orbit pivot indicator from the SAME 6-vertex unit cross + shader.
+    // One uniform buffer with three 256-byte-aligned slots
+    // (slot 0 = corner, slot 1 = pivot visible, slot 2 = pivot x-ray),
+    // one bind group with a dynamic offset, three pipelines that differ
+    // only in render-target / depth setup:
+    //   axis_pivot_pipeline_:      MSAA + depth LessEqual    (visible α=1)
+    //   axis_pivot_xray_pipeline_: MSAA + depth GreaterEqual (occluded α≈0.3)
+    //   axis_corner_pipeline_:     resolved, no depth, sampleCount=1
+    // The pivot's x-ray pass renders first so the visible pass overdraws
+    // it where geometry isn't in the way. Matches GL's renderPivotIndicator.
+    WGPUShaderModule    axis_shader_module_       = nullptr;
+    WGPUBindGroupLayout axis_bgl_                 = nullptr;
+    WGPUPipelineLayout  axis_pipeline_layout_     = nullptr;
+    WGPURenderPipeline  axis_pivot_pipeline_      = nullptr;
+    WGPURenderPipeline  axis_pivot_xray_pipeline_ = nullptr;
+    WGPURenderPipeline  axis_corner_pipeline_     = nullptr;
+    WGPUBuffer          axis_vertex_buffer_       = nullptr;  // 6 × 24 B
+    WGPUBuffer          axis_uniform_buffer_      = nullptr;  // 3 × 256 B slots
+    WGPUBindGroup       axis_bind_group_          = nullptr;  // dynamic-offset
+    static constexpr uint32_t kAxisUniformSlotSize = 256;
+    bool                pivot_indicator_visible_    = false;
+    QTimer*             pivot_indicator_hide_timer_ = nullptr;
 
     // Pick pass (stage 4). Single-sample R32UInt target + depth, vertex-
     // pulled from the same visible_draws / instances buffers as the main

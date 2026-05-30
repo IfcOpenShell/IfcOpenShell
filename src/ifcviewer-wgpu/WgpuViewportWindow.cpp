@@ -1546,6 +1546,7 @@ bool WgpuViewportWindow::initWgpu() {
     if (!buildPipelines()) return false;
     if (!buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
+    if (!buildAxisIndicator()) return false;
     if (!buildPickPipeline()) return false;
 
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
@@ -2094,12 +2095,497 @@ void WgpuViewportWindow::encodeEdgePass(WGPUCommandEncoder enc,
     wgpuRenderPassEncoderRelease(pass);
 }
 
+// -----------------------------------------------------------------------------
+// Axis indicator: corner gizmo + orbit pivot
+// -----------------------------------------------------------------------------
+//
+// One shader and one 6-vertex unit-cross VBO drive both the camera-orientation
+// gizmo in the bottom-left and the orbit-pivot marker at camera_target. The
+// vertex shader transforms each vertex as `mvp * (origin + position * arm)`
+// so the same primitive serves both:
+//
+//   corner: mvp = ortho × lookAt(camera_dir) — camera-orientation only,
+//           origin = 0, arm = 1, viewport set to a small corner box.
+//   pivot : mvp = main view-proj,
+//           origin = camera_target, arm = 30 logical px in world units.
+//
+// Two pipelines: pivot draws inside the main MSAA render pass after geometry
+// so depth interaction is correct; corner draws on the resolved surface after
+// the edge silhouette pass so the laplacian can't darken its lines.
+
+static const char* AXIS_WGSL = R"(
+struct AxisUniforms {
+    mvp:           mat4x4<f32>,
+    origin:        vec3<f32>,
+    arm:           f32,
+    alpha:         f32,
+    line_width_px: f32,
+    viewport_size: vec2<f32>,
+};
+
+@group(0) @binding(0) var<uniform> u: AxisUniforms;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) color:  vec3<f32>,
+    @location(1) alpha:  f32,
+    // Signed perpendicular position across the quad (±1 at the long
+    // edges, 0 down the line's centre). The rasterizer interpolates it,
+    // and the fragment shader uses |side_t| + fwidth() as a 1-pixel
+    // smoothstep so the line has analytically anti-aliased edges
+    // without needing MSAA on the corner gizmo's resolved-surface pass.
+    @location(2) side_t: f32,
+};
+
+// Each axis is a 4-vertex quad expanded in SCREEN space from a notional
+// line segment. Every vertex carries BOTH endpoints (start, end) so the
+// screen-space direction is computed consistently as `s_end - s_start`
+// regardless of which end this vertex sits at. `t` selects which end
+// (0 = start, 1 = end) for the base projected point; `side` is +1/-1
+// for the two sides of the perpendicular offset. Computing direction
+// from this vertex to the other (a previous design) flipped sign at
+// the end → the quad became a bowtie. `clip.w` is preserved so depth
+// interpolation stays correct.
+@vertex
+fn vs_main(@location(0) start: vec3<f32>,
+           @location(1) end:   vec3<f32>,
+           @location(2) col:   vec3<f32>,
+           @location(3) t:     f32,
+           @location(4) side:  f32) -> VsOut {
+    let p_start = u.mvp * vec4<f32>(u.origin + start * u.arm, 1.0);
+    let p_end   = u.mvp * vec4<f32>(u.origin + end   * u.arm, 1.0);
+    let p_here  = mix(p_start, p_end, t);
+
+    let s_start = (p_start.xy / p_start.w) * u.viewport_size * 0.5;
+    let s_end   = (p_end.xy   / p_end.w  ) * u.viewport_size * 0.5;
+    let dir  = normalize(s_end - s_start);
+    let perp = vec2<f32>(-dir.y, dir.x);
+
+    let off_pixels = perp * (u.line_width_px * 0.5) * side;
+    let off_ndc    = off_pixels * 2.0 / u.viewport_size;
+    var out: VsOut;
+    out.clip_pos = vec4<f32>(p_here.xy + off_ndc * p_here.w,
+                             p_here.zw);
+    out.color  = col;
+    out.alpha  = u.alpha;
+    out.side_t = side;
+    return out;
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    // |side_t| is 0 at line centre, 1 at the long edges. fwidth gives
+    // the per-pixel change — smoothing across that range gives a single
+    // pixel of analytical AA along the perpendicular.
+    let d  = abs(in.side_t);
+    let aa = fwidth(in.side_t);
+    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+    return vec4<f32>(in.color, in.alpha * coverage);
+}
+)";
+
+bool WgpuViewportWindow::buildAxisIndicator() {
+    // Vertex buffer: three positive-axis rays, each expanded into a
+    // 4-corner quad (6 vertices in triangle-list order) so the vertex
+    // shader can offset by `line_width / 2` pixels in screen space.
+    // Per vertex (11 floats = 44 bytes):
+    //   start (vec3) — the line's start endpoint (same for all 6 verts of an axis)
+    //   end   (vec3) — the line's end endpoint   (same for all 6 verts of an axis)
+    //   col   (vec3) — RGB
+    //   t     (f32)  — 0 if this vertex sits at `start`, 1 if at `end`
+    //   side  (f32)  — -1 or +1, which half of the perpendicular
+    //
+    // The 6-vertex ordering for the two triangles of each quad is
+    //   (start,-1) (start,+1) (end,-1)   (end,-1) (start,+1) (end,+1)
+    // — a standard triangle-list two-tri quad split.
+    static const float axis_verts[] = {
+        //  start         end           color (RGB)         t    side
+        // ---- +X (red) — start=(0,0,0), end=(1,0,0) ----
+         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  0.f,  -1.f,
+         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  0.f,  +1.f,
+         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  1.f,  -1.f,
+         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  1.f,  -1.f,
+         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  0.f,  +1.f,
+         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  1.f,  +1.f,
+
+        // ---- +Y (green) — start=(0,0,0), end=(0,1,0) ----
+         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  0.f,  -1.f,
+         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  0.f,  +1.f,
+         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  1.f,  -1.f,
+         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  1.f,  -1.f,
+         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  0.f,  +1.f,
+         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  1.f,  +1.f,
+
+        // ---- +Z (blue) — start=(0,0,0), end=(0,0,1) ----
+         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  0.f,  -1.f,
+         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  0.f,  +1.f,
+         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  1.f,  -1.f,
+         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  1.f,  -1.f,
+         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  0.f,  +1.f,
+         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  1.f,  +1.f,
+    };
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = sizeof(axis_verts);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.axis_vbo");
+        axis_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, axis_vertex_buffer_, 0, axis_verts, sizeof(axis_verts));
+    }
+
+    // Uniform buffer: three 256-byte-aligned slots
+    // (slot 0 = corner, slot 1 = pivot visible, slot 2 = pivot x-ray)
+    // addressed via a dynamic offset on the bind group.
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 3u * kAxisUniformSlotSize;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.axis_uniforms");
+        axis_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+
+    // Bind group layout: single uniform with dynamic offset.
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 1;
+        entry.buffer.minBindingSize   = 96;  // mat4 + vec3 + f32 + f32 + f32 + vec2 (struct size = 96)
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.axis_bgl");
+        axis_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+
+    // Pipeline layout.
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &axis_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.axis_pipeline_layout");
+        axis_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+
+    // Bind group: one binding pointing at slot 0 (size = slot size; offset
+    // selected dynamically at setBindGroup time).
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = axis_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = kAxisUniformSlotSize;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = axis_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.axis_bind_group");
+        axis_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+
+    // Shader module (shared between both pipelines).
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(AXIS_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.axis_wgsl");
+        axis_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    // Vertex layout: start(vec3) + end(vec3) + col(vec3) + t(f32) + side(f32),
+    // interleaved, stride 44.
+    WGPUVertexAttribute attribs[5] = {};
+    attribs[0].format         = WGPUVertexFormat_Float32x3;  // start
+    attribs[0].offset         = 0;
+    attribs[0].shaderLocation = 0;
+    attribs[1].format         = WGPUVertexFormat_Float32x3;  // end
+    attribs[1].offset         = 12;
+    attribs[1].shaderLocation = 1;
+    attribs[2].format         = WGPUVertexFormat_Float32x3;  // color
+    attribs[2].offset         = 24;
+    attribs[2].shaderLocation = 2;
+    attribs[3].format         = WGPUVertexFormat_Float32;    // t
+    attribs[3].offset         = 36;
+    attribs[3].shaderLocation = 3;
+    attribs[4].format         = WGPUVertexFormat_Float32;    // side
+    attribs[4].offset         = 40;
+    attribs[4].shaderLocation = 4;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 44;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 5;
+    vbl.attributes     = attribs;
+
+    // Standard alpha blend so the corner gizmo can soften over the resolved
+    // background and the pivot can fade against scene colour.
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    // ---- Pivot pipelines: MSAA color + depth, both x-ray + visible ----
+    // The two pipelines differ only in depthCompare: GreaterEqual lets the
+    // x-ray pass land only on pixels where the scene's depth is AT or NEARER
+    // than the pivot (so we know the pivot is behind something there); the
+    // visible pass uses LessEqual to land where the pivot is in front. We
+    // build them in a small helper-like inline block to share state.
+    auto build_pivot = [&](WGPUCompareFunction cmp, const char* label,
+                           WGPURenderPipeline& out) {
+        WGPUColorTargetState ct = {};
+        ct.format    = surface_format_;
+        ct.blend     = &blend;
+        ct.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = axis_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_main");
+        frag.targetCount = 1;
+        frag.targets     = &ct;
+
+        WGPUDepthStencilState depth = {};
+        depth.format               = WGPUTextureFormat_Depth32Float;
+        depth.depthWriteEnabled    = WGPUOptionalBool_False;
+        depth.depthCompare         = cmp;
+        depth.stencilFront.compare = WGPUCompareFunction_Always;
+        depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout              = axis_pipeline_layout_;
+        rp_desc.label               = svFromCStr(label);
+        rp_desc.vertex.module       = axis_shader_module_;
+        rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount  = 1;
+        rp_desc.vertex.buffers      = &vbl;
+        rp_desc.fragment            = &frag;
+        rp_desc.depthStencil        = &depth;
+        rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode  = WGPUCullMode_None;
+        rp_desc.multisample.count   = SAMPLE_COUNT;
+        rp_desc.multisample.mask    = 0xFFFFFFFFu;
+        out = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    };
+    build_pivot(WGPUCompareFunction_LessEqual,
+                "ifcviewer-wgpu.axis_pivot_pipeline",
+                axis_pivot_pipeline_);
+    build_pivot(WGPUCompareFunction_GreaterEqual,
+                "ifcviewer-wgpu.axis_pivot_xray_pipeline",
+                axis_pivot_xray_pipeline_);
+
+    // ---- Corner pipeline: resolved surface, no depth, sampleCount=1 ----
+    {
+        WGPUColorTargetState ct = {};
+        ct.format    = surface_format_;
+        ct.blend     = &blend;
+        ct.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = axis_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_main");
+        frag.targetCount = 1;
+        frag.targets     = &ct;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout              = axis_pipeline_layout_;
+        rp_desc.label               = svFromCStr("ifcviewer-wgpu.axis_corner_pipeline");
+        rp_desc.vertex.module       = axis_shader_module_;
+        rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount  = 1;
+        rp_desc.vertex.buffers      = &vbl;
+        rp_desc.fragment            = &frag;
+        rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode  = WGPUCullMode_None;
+        rp_desc.multisample.count   = 1;
+        rp_desc.multisample.mask    = 0xFFFFFFFFu;
+        axis_corner_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    }
+
+    return axis_pivot_pipeline_ && axis_pivot_xray_pipeline_
+        && axis_corner_pipeline_;
+}
+
+// Pack a 256-byte uniform slot. Layout matches the WGSL AxisUniforms
+// struct's natural alignment: mat4 + vec3 + f32 + f32 + f32 + vec2.
+static void packAxisUniform(uint8_t* dst,
+                            const QMatrix4x4& mvp,
+                            const QVector3D& origin,
+                            float arm, float alpha,
+                            float line_width_px,
+                            float viewport_w, float viewport_h) {
+    std::memset(dst, 0, 256);
+    std::memcpy(dst, mvp.constData(), 16 * sizeof(float));   // 0..64  mvp
+    float ox = origin.x(), oy = origin.y(), oz = origin.z();
+    std::memcpy(dst + 64, &ox, sizeof(float));               // 64..68 origin.x
+    std::memcpy(dst + 68, &oy, sizeof(float));               // 68..72 origin.y
+    std::memcpy(dst + 72, &oz, sizeof(float));               // 72..76 origin.z
+    std::memcpy(dst + 76, &arm,           sizeof(float));    // 76..80 arm
+    std::memcpy(dst + 80, &alpha,         sizeof(float));    // 80..84 alpha
+    std::memcpy(dst + 84, &line_width_px, sizeof(float));    // 84..88 line_width_px
+    std::memcpy(dst + 88, &viewport_w,    sizeof(float));    // 88..92 viewport.x
+    std::memcpy(dst + 92, &viewport_h,    sizeof(float));    // 92..96 viewport.y
+}
+
+void WgpuViewportWindow::encodePivotIndicator(WGPURenderPassEncoder pass,
+                                              const QMatrix4x4& view_proj) {
+    if (!pivot_indicator_visible_ || !axis_pivot_pipeline_
+        || !axis_pivot_xray_pipeline_) return;
+    if (configured_h_ <= 0) return;
+
+    // Arm length = 30 logical px projected into world space at the pivot's
+    // distance. world_per_pixel matches GL's renderPivotIndicator math:
+    // 2 · d · tan(fovy/2) / viewport_h (ortho's box height collapses to the
+    // same formula because we size it from camera_distance at the pivot).
+    const float fovy_rad       = qDegreesToRadians(camera_fov_y_deg_);
+    const float world_per_pixel = camera_distance_ * std::tan(fovy_rad * 0.5f)
+                                   * 2.0f / float(configured_h_);
+    const float arm_pixels = 30.0f * float(devicePixelRatio());
+    const float arm_world  = arm_pixels * world_per_pixel;
+
+    const QVector3D origin(camera_target_[0], camera_target_[1], camera_target_[2]);
+
+    // Slot 1 = visible (α=1), slot 2 = x-ray (α=0.30). Identical except for
+    // alpha — write both so a single bind group can dispatch both draws.
+    const float dpr = float(devicePixelRatio());
+    const float line_w = 2.5f * dpr;
+    const float vw = float(configured_w_);
+    const float vh = float(configured_h_);
+    uint8_t slot_visible[256];
+    uint8_t slot_xray[256];
+    packAxisUniform(slot_visible, view_proj, origin, arm_world, 1.00f, line_w, vw, vh);
+    packAxisUniform(slot_xray,    view_proj, origin, arm_world, 0.30f, line_w, vw, vh);
+    const uint32_t visible_off = 1u * kAxisUniformSlotSize;
+    const uint32_t xray_off    = 2u * kAxisUniformSlotSize;
+    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, visible_off,
+                         slot_visible, sizeof(slot_visible));
+    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, xray_off,
+                         slot_xray, sizeof(slot_xray));
+
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, axis_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+
+    // Pass 1: dim x-ray for the occluded portion.
+    wgpuRenderPassEncoderSetPipeline(pass, axis_pivot_xray_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &xray_off);
+    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
+
+    // Pass 2: full-alpha visible portion.
+    wgpuRenderPassEncoderSetPipeline(pass, axis_pivot_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &visible_off);
+    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
+}
+
+void WgpuViewportWindow::encodeCornerAxisGizmo(WGPUCommandEncoder enc,
+                                               WGPUTextureView surface_view) {
+    if (!axis_corner_pipeline_ || !surface_view) return;
+    const int dpr = std::max(1, int(devicePixelRatio()));
+    const uint32_t gizmo_size = uint32_t(110 * dpr);
+    const uint32_t margin     = uint32_t(10 * dpr);
+    if (gizmo_size == 0 || configured_w_ <= 0 || configured_h_ <= 0) return;
+    // Pin to the BOTTOM-LEFT corner. WebGPU framebuffer y goes top→bottom,
+    // so a bottom-left corner sits at y = height - margin - gizmo_size.
+    const uint32_t fb_h = uint32_t(configured_h_);
+    if (gizmo_size + margin > fb_h) return;
+    const uint32_t y = fb_h - margin - gizmo_size;
+
+    // Build the gizmo's MVP: a small ortho box looking at the origin from
+    // the camera's direction. The eye direction matches GL's renderAxisGizmo
+    // exactly (yaw/pitch → unit forward, world-up = +Z). Near the poles the
+    // up axis collapses against the look direction, so swap to Y-up there —
+    // mirrors buildViewProj's identical fallback for the main projection.
+    const float yaw_rad   = qDegreesToRadians(camera_yaw_deg_);
+    const float pitch_rad = qDegreesToRadians(camera_pitch_deg_);
+    const QVector3D eye_dir(std::cos(pitch_rad) * std::cos(yaw_rad),
+                            std::cos(pitch_rad) * std::sin(yaw_rad),
+                            std::sin(pitch_rad));
+    const QVector3D world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                 ? QVector3D(0.0f, 1.0f, 0.0f)
+                                 : QVector3D(0.0f, 0.0f, 1.0f);
+    QMatrix4x4 gv;
+    gv.lookAt(eye_dir * 3.0f, QVector3D(0, 0, 0), world_up);
+    QMatrix4x4 gp;
+    gp.ortho(-1.4f, 1.4f, -1.4f, 1.4f, 0.1f, 10.0f);
+    // Match the main projection's z-remap so the gizmo's NDC z falls in
+    // [0, 1] (WebGPU) rather than [-1, 1] (Qt's GL-style projection).
+    QMatrix4x4 z_remap;
+    z_remap(2, 2) = 0.5f;
+    z_remap(2, 3) = 0.5f;
+    const QMatrix4x4 mvp = z_remap * gp * gv;
+
+    // line_width and viewport_size are in the gizmo's local viewport (not
+    // the framebuffer), because the vertex-shader perpendicular offset is
+    // computed in NDC and NDC is per-viewport.
+    uint8_t slot[256];
+    const float line_w = 2.5f * float(dpr);
+    packAxisUniform(slot, mvp, QVector3D(0, 0, 0), 1.0f, 1.0f, line_w,
+                    float(gizmo_size), float(gizmo_size));
+    const uint32_t slot_offset = 0u;  // corner lives in slot 0
+    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, slot_offset, slot, sizeof(slot));
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = surface_view;
+    color.loadOp     = WGPULoadOp_Load;     // preserve what was drawn before
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = { 0.0, 0.0, 0.0, 1.0 };
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.corner_axis_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetViewport(pass, float(margin), float(y),
+                                     float(gizmo_size), float(gizmo_size),
+                                     0.0f, 1.0f);
+    wgpuRenderPassEncoderSetPipeline(pass, axis_corner_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, axis_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &slot_offset);
+    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
+void WgpuViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
+    if (!pivot_indicator_hide_timer_) {
+        pivot_indicator_hide_timer_ = new QTimer(this);
+        pivot_indicator_hide_timer_->setSingleShot(true);
+        QObject::connect(pivot_indicator_hide_timer_, &QTimer::timeout, this,
+                         [this]() {
+                             pivot_indicator_visible_ = false;
+                             requestUpdate();
+                         });
+    }
+    pivot_indicator_visible_ = visible;
+    if (visible && hide_after_ms > 0) {
+        pivot_indicator_hide_timer_->start(hide_after_ms);
+    } else {
+        pivot_indicator_hide_timer_->stop();
+    }
+    requestUpdate();
+}
+
 void WgpuViewportWindow::releaseEdgeResources() {
     if (edge_bind_group_)      { wgpuBindGroupRelease(edge_bind_group_);      edge_bind_group_ = nullptr; }
     if (edge_pipeline_)        { wgpuRenderPipelineRelease(edge_pipeline_);   edge_pipeline_ = nullptr; }
     if (edge_shader_module_)   { wgpuShaderModuleRelease(edge_shader_module_);edge_shader_module_ = nullptr; }
     if (edge_pipeline_layout_) { wgpuPipelineLayoutRelease(edge_pipeline_layout_); edge_pipeline_layout_ = nullptr; }
     if (edge_bgl_)             { wgpuBindGroupLayoutRelease(edge_bgl_);       edge_bgl_ = nullptr; }
+
+    if (axis_bind_group_)         { wgpuBindGroupRelease(axis_bind_group_);              axis_bind_group_ = nullptr; }
+    if (axis_pivot_pipeline_)     { wgpuRenderPipelineRelease(axis_pivot_pipeline_);     axis_pivot_pipeline_ = nullptr; }
+    if (axis_pivot_xray_pipeline_){ wgpuRenderPipelineRelease(axis_pivot_xray_pipeline_); axis_pivot_xray_pipeline_ = nullptr; }
+    if (axis_corner_pipeline_)    { wgpuRenderPipelineRelease(axis_corner_pipeline_);    axis_corner_pipeline_ = nullptr; }
+    if (axis_shader_module_)    { wgpuShaderModuleRelease(axis_shader_module_);   axis_shader_module_ = nullptr; }
+    if (axis_pipeline_layout_)  { wgpuPipelineLayoutRelease(axis_pipeline_layout_); axis_pipeline_layout_ = nullptr; }
+    if (axis_bgl_)              { wgpuBindGroupLayoutRelease(axis_bgl_);          axis_bgl_ = nullptr; }
+    if (axis_uniform_buffer_)   { wgpuBufferRelease(axis_uniform_buffer_);        axis_uniform_buffer_ = nullptr; }
+    if (axis_vertex_buffer_)    { wgpuBufferRelease(axis_vertex_buffer_);         axis_vertex_buffer_ = nullptr; }
 }
 
 // -----------------------------------------------------------------------------
@@ -3315,6 +3801,11 @@ void WgpuViewportWindow::render() {
         }
     }
 
+    // Pivot indicator. Encoded inside the main MSAA pass after geometry so
+    // depth interaction is correct — the indicator vanishes behind closer
+    // surfaces. Visibility is driven by orbit/wheel UI handlers.
+    encodePivotIndicator(pass, vp_this_frame);
+
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
 
@@ -3324,6 +3815,10 @@ void WgpuViewportWindow::render() {
     if (edges_enabled_) {
         encodeEdgePass(enc, view);
     }
+
+    // Corner axis gizmo. Encoded after the edge pass on the resolved
+    // surface, so the laplacian can't darken its lines or its background.
+    encodeCornerAxisGizmo(enc, view);
 
     // ---- HiZ: resolve MSAA depth → small single-sample → ping-pong slot
     int hiz_submitted_slot = -1;
@@ -5263,9 +5758,11 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
     if (event->button() == orbit_button_
         && (mods & Qt::KeyboardModifierMask) == orbit_mods_) {
         nav_drag_kind_ = NavDrag::Orbit;
+        setPivotIndicatorVisible(true);  // hidden again on release
     } else if (event->button() == pan_button_
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
         nav_drag_kind_ = NavDrag::Pan;
+        setPivotIndicatorVisible(true);
     }
 }
 
@@ -5352,6 +5849,8 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         }
         nav_active_button_ = Qt::NoButton;
         nav_drag_kind_     = NavDrag::Inactive;
+        // Drag is over — hide the pivot indicator without afterglow.
+        setPivotIndicatorVisible(false);
     }
 }
 
@@ -5593,6 +6092,9 @@ void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
     // Orbit mode: each notch zooms ~10% in/out; sign matches "wheel up = in".
     const float factor = std::pow(0.9f, notches);
     camera_distance_   = std::max(0.01f, camera_distance_ * factor);
+    // Pivot afterglow on wheel — visible for 600 ms so the user can see
+    // what they're zooming around without holding a drag.
+    setPivotIndicatorVisible(true, 600);
     requestUpdate();
 }
 
