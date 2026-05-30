@@ -248,8 +248,39 @@ private:
     // Synchronous pick: encodes a one-shot R32UInt render of the current
     // visible_draws against the click pixel, copies the single texel back,
     // waits, and returns the object_id (0 if nothing was hit). Call from
-    // the main thread between renders.
-    uint32_t pickObjectAt(int x_pixels, int y_pixels);
+    // the main thread between renders. When `normal_out` is non-null, the
+    // pick pass's RGBA16F normal MRT is also sampled at the same pixel
+    // (decoded from ×0.5+0.5 packing) so the section tool can drop
+    // perpendicular cuts.
+    uint32_t pickObjectAt(int x_pixels, int y_pixels,
+                          QVector3D* normal_out = nullptr);
+    // Pick + ray-cast — returns the object's id, the world-space point
+    // where the pick-pixel pillar enters that instance's AABB, and a
+    // camera-facing normal. Returns false on a background miss. We do
+    // CPU ray-AABB rather than reading per-pixel depth because WebGPU's
+    // copyTextureToBuffer for Depth32Float requires copying the whole
+    // mip extent — wasteful per click — and ray-vs-AABB lands close
+    // enough to the click for the section tool's "drop a plane here" UX.
+    bool pickSurfaceAt(int x_pixels, int y_pixels,
+                       uint32_t& object_id_out,
+                       QVector3D& world_pos_out,
+                       QVector3D& world_normal_out,
+                       float* aabb_radius_out = nullptr);
+
+    // Section-cutting tool. Mirrors the GL ViewportWindow API:
+    //   K           toggle (sectionToolActive / toggleSectionTool)
+    //   Shift+K     clearSectionPlanes
+    //   click       addSectionPlaneAtSurface (when tool active)
+    //   Del/Backspace removeSectionPlane (most recent, when tool active)
+    //   Esc         deactivate tool
+    bool  sectionToolActive() const { return section_tool_active_; }
+    void  toggleSectionTool();
+    bool  addSectionPlaneAtSurface(const QVector3D& point,
+                                   const QVector3D& normal,
+                                   float visual_radius = 0.0f);
+    void  removeSectionPlane(int index);
+    void  clearSectionPlanes();
+    int   sectionPlaneCount() const { return int(section_planes_.size()); }
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
     // Resolves the just-rendered MSAA depth into the small single-sample
@@ -445,11 +476,63 @@ private:
     WGPURenderPipeline pick_pipeline_       = nullptr;
     WGPUTexture        pick_color_texture_  = nullptr;
     WGPUTextureView    pick_color_view_     = nullptr;
+    // Second pick MRT: RGBA16F packed world-space normal. Sampled by
+    // pickSurfaceAt so section cuts are perpendicular to the actual
+    // picked triangle (rather than the AABB face that contains it).
+    WGPUTexture        pick_normal_texture_         = nullptr;
+    WGPUTextureView    pick_normal_view_            = nullptr;
+    WGPUBuffer         pick_normal_staging_buffer_  = nullptr;  // 256 B (one RGBA16F texel padded)
     WGPUTexture        pick_depth_texture_  = nullptr;
     WGPUTextureView    pick_depth_view_     = nullptr;
     WGPUBuffer         pick_staging_buffer_ = nullptr;  // 256 B (single texel + bytes-per-row pad)
     int                pick_w_              = 0;
     int                pick_h_              = 0;
+
+    // Section-cutting state. Each plane is (n, d) with normal n in world
+    // space and signed distance d = -dot(n, point_on_plane); a point P is
+    // on the kept side iff dot(n, P) + d <= 0. The vector mirrors GL's
+    // ViewportWindow::section_planes_.
+    struct SectionPlane {
+        QVector3D n;            // unit normal
+        float     d;            // -dot(n, origin)
+        QVector3D origin;       // surface point at the moment the plane was added
+        float     visual_radius; // half-extent for the gizmo quad (set from the picked instance's AABB diagonal)
+    };
+    std::vector<SectionPlane> section_planes_;
+    bool                      section_tool_active_  = false;
+    // Drag-to-move state for the arrow gizmo. While `section_drag_active_`
+    // is true, mouseMoveEvent calls updateSectionDrag instead of letting
+    // the press fall through to the orbit/pan handlers.
+    bool                      section_drag_active_  = false;
+    int                       section_drag_index_   = -1;
+    QPoint                    section_drag_start_mouse_;
+    QVector3D                 section_drag_start_origin_;
+    // Mirrors GL ViewportWindow::hitTestSectionGizmo: returns the index of
+    // the plane whose arrow gizmo is within grab_px of (x, y), or -1.
+    int   hitTestSectionGizmo(int x, int y) const;
+    // Mirrors GL ViewportWindow::updateSectionDrag: projects the cursor
+    // delta onto the plane's normal in screen space and slides the plane
+    // along that direction.
+    void  updateSectionDrag(int x, int y);
+
+    // Section plane visualisation. Renders one translucent quad per active
+    // plane, sized to the scene AABB so the cut is visible at any zoom.
+    // Built once (unit quad in plane-local space), oriented per-plane in
+    // the vertex shader from u_origin + tangent/bitangent (derived from
+    // the plane normal). Two passes: a back-facing fill (alpha 0.18) for
+    // the "behind geometry" hint plus a front-facing fill (alpha 0.35).
+    WGPUShaderModule    section_shader_module_   = nullptr;
+    WGPUBindGroupLayout section_bgl_             = nullptr;
+    WGPUPipelineLayout  section_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  section_pipeline_        = nullptr;
+    WGPUBuffer          section_vertex_buffer_   = nullptr;
+    WGPUBuffer          section_uniform_buffer_  = nullptr;
+    WGPUBindGroup       section_bind_group_      = nullptr;
+    static constexpr uint32_t kSectionUniformSlotSize = 256;
+    bool  buildSectionVisualizer();
+    void  encodeSectionPlanes(WGPURenderPassEncoder pass,
+                              const QMatrix4x4& view_proj);
+    void  releaseSectionVisualizer();
 
     enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
     static constexpr int HIZ_SLOTS = 2;

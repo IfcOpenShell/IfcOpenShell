@@ -48,15 +48,25 @@
 // std140-ish layout: every member naturally 16-aligned, struct stride = 96.
 // -----------------------------------------------------------------------------
 
+// Section-cutting cap. Matches GL ViewportWindow's MaxSectionPlanes.
+static constexpr int kMaxSectionPlanes = 6;
+
 struct FrameUniforms {
     float view_proj[16];
     float light_dir[4];     // xyz = unit dir toward light, w unused
     float fill_dir[4];      // xyz = secondary fill dir
     float sky_color[4];     // xyz = sky-tint ambient, w unused
     float ground_color[4];  // xyz = ground-tint ambient, w unused
+    int   clip_count;       // active section-plane count (≤ kMaxSectionPlanes)
+    int   _pad_clip[3];     // pad to 16-byte alignment for the array below
+    float clip_planes[kMaxSectionPlanes][4]; // xyz = world-space unit normal, w = plane offset
 };
-static_assert(sizeof(FrameUniforms) == 16 * sizeof(float) + 4 * 4 * sizeof(float),
-              "FrameUniforms must match WGSL layout (mat4 + 4xvec4)");
+static_assert(sizeof(FrameUniforms)
+                  == 16 * sizeof(float)
+                   + 4 * 4 * sizeof(float)
+                   + 4 * sizeof(int)
+                   + kMaxSectionPlanes * 4 * sizeof(float),
+              "FrameUniforms must match WGSL layout");
 
 // Inverse of sRGB encoding. wgpu-native's Vulkan swap chain on X11 treats
 // BGRA8Unorm as sRGB-output (encodes shader output linear→sRGB on write,
@@ -286,7 +296,30 @@ struct FrameUniforms {
     fill_dir:     vec4<f32>,
     sky_color:    vec4<f32>,
     ground_color: vec4<f32>,
+    clip_count:   i32,
+    // Three scalar i32 pads instead of vec3<i32>: vec3 has 16-byte
+    // alignment so it would also pad the SUBSEQUENT clip_planes start
+    // up to offset 160. Three i32s pad to 144 with no further nudge,
+    // matching the tightly-packed C++ FrameUniforms (240 B).
+    _pad_clip_0:  i32,
+    _pad_clip_1:  i32,
+    _pad_clip_2:  i32,
+    clip_planes:  array<vec4<f32>, 6>,
 };
+
+// Returns true if `world` lies on the positive (clipped-away) side of any
+// active section plane. Each plane is (n.xyz, d) and clips where
+// dot(n, world) + d > 0. Both the main and pick fragments discard with
+// this predicate so cuts are visible AND consistent with selection.
+fn is_section_clipped(world: vec3<f32>) -> bool {
+    let n = u_frame.clip_count;
+    if (n == 0) { return false; }
+    for (var i = 0; i < n; i = i + 1) {
+        let p = u_frame.clip_planes[i];
+        if (dot(p.xyz, world) + p.w > 0.0) { return true; }
+    }
+    return false;
+}
 
 struct VisibleDraw {
     mesh_id:        u32,
@@ -436,6 +469,8 @@ fn srgbToLinear(s: vec3<f32>) -> vec3<f32> {
 
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    if (is_section_clipped(in.world_pos)) { discard; }
+
     var n = normalize(in.normal);
 
     // World +Z is up (BIM convention). Hemisphere ambient: faces pointing
@@ -475,6 +510,18 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 struct VsOutPick {
     @builtin(position) clip_pos: vec4<f32>,
     @location(0) @interpolate(flat) object_id: u32,
+    @location(1) world_pos: vec3<f32>,
+    @location(2) normal:    vec3<f32>,
+};
+
+// Section tool needs the actual per-fragment normal (the AABB face was
+// too coarse for diagonal geometry). Two color attachments — R32UInt
+// object_id at @location(0), RGBA16F packed normal at @location(1).
+// We multiply-by-0.5+0.5 so unsigned half-floats keep the sign without
+// extra channel allocation.
+struct FsOutPick {
+    @location(0) object_id: u32,
+    @location(1) normal:    vec4<f32>,
 };
 
 @vertex
@@ -483,6 +530,8 @@ fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
     if (vid >= u_model.total_vertex_count) {
         out.clip_pos  = vec4<f32>(0.0, 0.0, 0.0, 0.0);
         out.object_id = 0u;
+        out.world_pos = vec3<f32>(0.0, 0.0, 0.0);
+        out.normal    = vec3<f32>(0.0, 0.0, 1.0);
         return out;
     }
 
@@ -504,14 +553,33 @@ fn vs_pick(@builtin(vertex_index) vid: u32) -> VsOutPick {
     let pos_local = mix(mq.aabb_min.xyz, mq.aabb_max.xyz, pos_norm);
     let world4    = inst.transform * vec4<f32>(pos_local, 1.0);
 
+    // Decode the same octahedral normal as vs_main — pick needs it so
+    // the section tool can drop perpendicular cuts.
+    let nx = f32(extractI8(w1, 2u)) / 127.0;
+    let ny = f32(extractI8(w1, 3u)) / 127.0;
+    let n_local = octDecode(vec2<f32>(nx, ny));
+    let rot = mat3x3<f32>(inst.transform[0].xyz,
+                          inst.transform[1].xyz,
+                          inst.transform[2].xyz);
+    let n_world = normalize(rot * n_local);
+    let det = determinant(rot);
+    let n_final = select(n_world, -n_world, det < 0.0);
+
     out.clip_pos  = u_frame.view_proj * world4;
     out.object_id = inst.object_id;
+    out.world_pos = world4.xyz;
+    out.normal    = n_final;
     return out;
 }
 
 @fragment
-fn fs_pick(in: VsOutPick) -> @location(0) u32 {
-    return in.object_id;
+fn fs_pick(in: VsOutPick) -> FsOutPick {
+    if (is_section_clipped(in.world_pos)) { discard; }
+    var out: FsOutPick;
+    out.object_id = in.object_id;
+    // Pack signed normal into RGBA16F (unsigned-ish half range) as ×0.5+0.5.
+    out.normal = vec4<f32>(normalize(in.normal) * 0.5 + vec3<f32>(0.5), 1.0);
+    return out;
 }
 )";
 
@@ -1547,6 +1615,7 @@ bool WgpuViewportWindow::initWgpu() {
     if (!buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
     if (!buildAxisIndicator()) return false;
+    if (!buildSectionVisualizer()) return false;
     if (!buildPickPipeline()) return false;
 
     qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
@@ -2570,6 +2639,353 @@ void WgpuViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_m
     requestUpdate();
 }
 
+// -----------------------------------------------------------------------------
+// Section plane visualisation
+// -----------------------------------------------------------------------------
+//
+// Each active plane is drawn as a quad sized to span the scene's AABB so the
+// cut is visible at any zoom. The quad is a unit square in plane-local space;
+// the vertex shader builds tangent / bitangent from the plane normal and
+// places the quad at u_origin. Two draws per plane share one pipeline:
+// a back-face fill at lower alpha gives an "occluded" hint when the camera
+// sees the back of the plane (matches what GL's plane gizmo does visually).
+// 6 active-plane × 1 quad × 6 verts = 36 verts max per frame, trivial.
+
+// Matches GL's section gizmo (2 × 2 m wireframe quad outline + arrow shaft
+// + 4-line arrow head) but with screen-space thick-line expansion so the
+// gizmo reads cleanly against busy BIM geometry. Same technique the axis
+// indicator uses: per-vertex (start, end, t, side, colour) and the vertex
+// shader offsets by ±line_width/2 along the screen-space perpendicular.
+static const char* SECTION_WGSL = R"(
+struct SectionUniforms {
+    mvp:           mat4x4<f32>,
+    origin:        vec3<f32>,
+    half_size:     f32,
+    tangent:       vec3<f32>,
+    line_width_px: f32,
+    bitangent:     vec3<f32>,
+    _pad1:         f32,
+    normal:        vec3<f32>,
+    _pad2:         f32,
+    tint:          vec4<f32>,
+    viewport_size: vec2<f32>,
+    _pad3:         vec2<f32>,
+};
+
+@group(0) @binding(0) var<uniform> u: SectionUniforms;
+
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) color:  vec4<f32>,
+    @location(1) side_t: f32,
+};
+
+fn plane_to_world(p: vec3<f32>) -> vec3<f32> {
+    return u.origin + (u.tangent * p.x + u.bitangent * p.y + u.normal * p.z)
+                      * u.half_size;
+}
+
+@vertex
+fn vs_main(@location(0) start_local: vec3<f32>,
+           @location(1) end_local:   vec3<f32>,
+           @location(2) col:         vec3<f32>,
+           @location(3) t:           f32,
+           @location(4) side:        f32) -> VsOut {
+    let p_start = u.mvp * vec4<f32>(plane_to_world(start_local), 1.0);
+    let p_end   = u.mvp * vec4<f32>(plane_to_world(end_local),   1.0);
+    let p_here  = mix(p_start, p_end, t);
+
+    let s_start = (p_start.xy / p_start.w) * u.viewport_size * 0.5;
+    let s_end   = (p_end.xy   / p_end.w  ) * u.viewport_size * 0.5;
+    let dir  = normalize(s_end - s_start);
+    let perp = vec2<f32>(-dir.y, dir.x);
+
+    let off_pixels = perp * (u.line_width_px * 0.5) * side;
+    let off_ndc    = off_pixels * 2.0 / u.viewport_size;
+    var out: VsOut;
+    out.clip_pos = vec4<f32>(p_here.xy + off_ndc * p_here.w, p_here.zw);
+    out.color    = vec4<f32>(col * u.tint.xyz, u.tint.w);
+    out.side_t   = side;
+    return out;
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    let d  = abs(in.side_t);
+    let aa = fwidth(in.side_t);
+    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+    return vec4<f32>(in.color.xyz, in.color.w * coverage);
+}
+)";
+
+bool WgpuViewportWindow::buildSectionVisualizer() {
+    // 9 line segments (4 quad-outline + 1 arrow shaft + 4 arrow head),
+    // each expanded into a 6-vertex thick-line quad by the vertex shader.
+    // Per vertex (11 floats = 44 B):
+    //   start_local (vec3) — segment's start point in plane-local space
+    //   end_local   (vec3) — segment's end   point in plane-local space
+    //   col         (vec3) — RGB
+    //   t           (f32)  — 0 at start, 1 at end
+    //   side        (f32)  — -1 or +1, which half of the perpendicular
+    struct Seg {
+        std::array<float, 3> s, e;
+        std::array<float, 3> c;
+    };
+    static const Seg segs[] = {
+        // ---- quad outline (white) ----
+        { {-1, -1, 0}, { 1, -1, 0}, {1, 1, 1} },
+        { { 1, -1, 0}, { 1,  1, 0}, {1, 1, 1} },
+        { { 1,  1, 0}, {-1,  1, 0}, {1, 1, 1} },
+        { {-1,  1, 0}, {-1, -1, 0}, {1, 1, 1} },
+        // ---- arrow shaft along +n (yellow) ----
+        { { 0, 0, 0}, { 0, 0, 1}, {1.0f, 0.85f, 0.20f} },
+        // ---- arrow head: 4 diagonals from tip to ring at z = 0.78 ----
+        { { 0, 0, 1}, {-0.18f,  0,     0.78f}, {1.0f, 0.85f, 0.20f} },
+        { { 0, 0, 1}, { 0.18f,  0,     0.78f}, {1.0f, 0.85f, 0.20f} },
+        { { 0, 0, 1}, { 0,     -0.18f, 0.78f}, {1.0f, 0.85f, 0.20f} },
+        { { 0, 0, 1}, { 0,      0.18f, 0.78f}, {1.0f, 0.85f, 0.20f} },
+    };
+    constexpr size_t kVertsPerSegment = 6;     // (start,-1) (start,+1) (end,-1)   (end,-1) (start,+1) (end,+1)
+    constexpr size_t kFloatsPerVertex = 11;    // start.xyz, end.xyz, col.xyz, t, side
+    std::vector<float> verts;
+    verts.reserve(std::size(segs) * kVertsPerSegment * kFloatsPerVertex);
+    auto push_v = [&](const Seg& s, float t, float side) {
+        verts.insert(verts.end(), { s.s[0], s.s[1], s.s[2],
+                                     s.e[0], s.e[1], s.e[2],
+                                     s.c[0], s.c[1], s.c[2],
+                                     t, side });
+    };
+    for (const auto& s : segs) {
+        push_v(s, 0.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, -1.f);
+        push_v(s, 1.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, +1.f);
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = verts.size() * sizeof(float);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.section_gizmo_vbo");
+        section_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, section_vertex_buffer_, 0,
+                             verts.data(), verts.size() * sizeof(float));
+    }
+
+    // Uniform buffer: one slot per plane (cap at kMaxSectionPlanes).
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = uint64_t(kMaxSectionPlanes) * kSectionUniformSlotSize;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.section_uniforms");
+        section_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+
+    // Bind group layout: single uniform with dynamic offset (slot index ×
+    // 256 chosen at setBindGroup time).
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 1;
+        entry.buffer.minBindingSize   = 160;  // mat4 + 4×(vec3+pad) + vec4 + vec2 + pad = 160 B
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.section_bgl");
+        section_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &section_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.section_pipeline_layout");
+        section_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = section_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = kSectionUniformSlotSize;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = section_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.section_bind_group");
+        section_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(SECTION_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.section_wgsl");
+        section_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    // start_local + end_local + col + t + side, interleaved, stride 44.
+    WGPUVertexAttribute attribs[5] = {};
+    attribs[0].format         = WGPUVertexFormat_Float32x3;  // start_local
+    attribs[0].offset         = 0;
+    attribs[0].shaderLocation = 0;
+    attribs[1].format         = WGPUVertexFormat_Float32x3;  // end_local
+    attribs[1].offset         = 12;
+    attribs[1].shaderLocation = 1;
+    attribs[2].format         = WGPUVertexFormat_Float32x3;  // color
+    attribs[2].offset         = 24;
+    attribs[2].shaderLocation = 2;
+    attribs[3].format         = WGPUVertexFormat_Float32;    // t
+    attribs[3].offset         = 36;
+    attribs[3].shaderLocation = 3;
+    attribs[4].format         = WGPUVertexFormat_Float32;    // side
+    attribs[4].offset         = 40;
+    attribs[4].shaderLocation = 4;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 44;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 5;
+    vbl.attributes     = attribs;
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = section_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    // Depth: respect scene depth so half the plane is behind opaque
+    // geometry (giving the "this is where it cuts" hint), but don't
+    // write depth ourselves so further translucent draws aren't blocked.
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_False;
+    depth.depthCompare         = WGPUCompareFunction_LessEqual;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = section_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.section_pipeline");
+    rp_desc.vertex.module       = section_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = SAMPLE_COUNT;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    section_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+
+    return section_pipeline_ != nullptr;
+}
+
+// Pack a 256-byte uniform slot for one section plane. Layout matches WGSL
+// SectionUniforms: mat4 + 4 × (vec3 + scalar pad) + vec4 + vec2 + 8 B pad
+// = 160 B used.
+static void packSectionUniform(uint8_t* dst,
+                               const QMatrix4x4& mvp,
+                               const QVector3D& origin, float half_size,
+                               const QVector3D& tangent, float line_width_px,
+                               const QVector3D& bitangent,
+                               const QVector3D& normal,
+                               float r, float g, float b, float a,
+                               float viewport_w, float viewport_h) {
+    std::memset(dst, 0, 256);
+    std::memcpy(dst, mvp.constData(), 16 * sizeof(float));
+    auto put_vec3_pad = [&](size_t off, const QVector3D& v, float pad_val) {
+        float vx = v.x(), vy = v.y(), vz = v.z();
+        std::memcpy(dst + off + 0,  &vx, sizeof(float));
+        std::memcpy(dst + off + 4,  &vy, sizeof(float));
+        std::memcpy(dst + off + 8,  &vz, sizeof(float));
+        std::memcpy(dst + off + 12, &pad_val, sizeof(float));
+    };
+    put_vec3_pad(64,  origin,    half_size);      // 64..80
+    put_vec3_pad(80,  tangent,   line_width_px);  // 80..96
+    put_vec3_pad(96,  bitangent, 0.0f);           // 96..112
+    put_vec3_pad(112, normal,    0.0f);           // 112..128
+    float tint[4] = { r, g, b, a };
+    std::memcpy(dst + 128, tint, sizeof(tint));   // 128..144
+    std::memcpy(dst + 144, &viewport_w, sizeof(float));   // 144..148
+    std::memcpy(dst + 148, &viewport_h, sizeof(float));   // 148..152
+}
+
+void WgpuViewportWindow::encodeSectionPlanes(WGPURenderPassEncoder pass,
+                                             const QMatrix4x4& view_proj) {
+    if (!section_pipeline_ || section_planes_.empty()) return;
+
+    wgpuRenderPassEncoderSetPipeline(pass, section_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, section_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+
+    const int n = std::min<int>(int(section_planes_.size()), kMaxSectionPlanes);
+    for (int i = 0; i < n; ++i) {
+        const SectionPlane& p = section_planes_[i];
+
+        // Stable in-plane basis: anyOrthogonal picks the world axis least
+        // parallel to n so the cross-product stays well-conditioned at
+        // any orientation. tangent → "u" axis, bitangent → "v" axis.
+        QVector3D nn = p.n.normalized();
+        const float ax = std::abs(nn.x()), ay = std::abs(nn.y()), az = std::abs(nn.z());
+        QVector3D seed = (ax < ay && ax < az) ? QVector3D(1, 0, 0)
+                       : (ay < az)             ? QVector3D(0, 1, 0)
+                                               : QVector3D(0, 0, 1);
+        QVector3D tangent = QVector3D::crossProduct(nn, seed);
+        if (tangent.lengthSquared() < 1e-12f) tangent = QVector3D(1, 0, 0);
+        tangent.normalize();
+        QVector3D bitangent = QVector3D::crossProduct(nn, tangent).normalized();
+
+        // Fixed 1 m half-size matches GL's renderSectionPlanes constant
+        // (kHalfSize = 1.0). Per-plane visual_radius from the picked AABB
+        // is no longer used here — the GL gizmo is a small marker, not a
+        // sheet sized to the cut subject.
+        const float half_size = 1.0f;
+        const float dpr       = float(std::max(1, int(devicePixelRatio())));
+        const float line_w    = 3.0f * dpr;
+        const float vw        = float(configured_w_);
+        const float vh        = float(configured_h_);
+
+        uint8_t slot[256];
+        // GL palette: warm yellow-orange tint, alpha 0.85 — slightly
+        // bolder than the GL default so the thick-line + AA reads cleanly.
+        packSectionUniform(slot, view_proj, p.origin, half_size,
+                           tangent, line_w, bitangent, nn,
+                           1.0f, 0.85f, 0.40f, 0.85f,
+                           vw, vh);
+        const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlotSize;
+        wgpuQueueWriteBuffer(queue_, section_uniform_buffer_,
+                             slot_offset, slot, sizeof(slot));
+
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, section_bind_group_,
+                                          1, &slot_offset);
+        // 9 segments × 6 verts (2 triangles each) = 54 vertices.
+        wgpuRenderPassEncoderDraw(pass, 54, 1, 0, 0);
+    }
+}
+
+void WgpuViewportWindow::releaseSectionVisualizer() {
+    if (section_bind_group_)     { wgpuBindGroupRelease(section_bind_group_);          section_bind_group_ = nullptr; }
+    if (section_pipeline_)       { wgpuRenderPipelineRelease(section_pipeline_);       section_pipeline_ = nullptr; }
+    if (section_shader_module_)  { wgpuShaderModuleRelease(section_shader_module_);    section_shader_module_ = nullptr; }
+    if (section_pipeline_layout_){ wgpuPipelineLayoutRelease(section_pipeline_layout_); section_pipeline_layout_ = nullptr; }
+    if (section_bgl_)            { wgpuBindGroupLayoutRelease(section_bgl_);           section_bgl_ = nullptr; }
+    if (section_uniform_buffer_) { wgpuBufferRelease(section_uniform_buffer_);         section_uniform_buffer_ = nullptr; }
+    if (section_vertex_buffer_)  { wgpuBufferRelease(section_vertex_buffer_);          section_vertex_buffer_ = nullptr; }
+}
+
 void WgpuViewportWindow::releaseEdgeResources() {
     if (edge_bind_group_)      { wgpuBindGroupRelease(edge_bind_group_);      edge_bind_group_ = nullptr; }
     if (edge_pipeline_)        { wgpuRenderPipelineRelease(edge_pipeline_);   edge_pipeline_ = nullptr; }
@@ -2598,15 +3014,20 @@ void WgpuViewportWindow::releaseEdgeResources() {
 // the render target attachments (single-sample, surface-sized pick FBO).
 
 bool WgpuViewportWindow::buildPickPipeline() {
-    WGPUColorTargetState color_target = {};
-    color_target.format    = WGPUTextureFormat_R32Uint;
-    color_target.writeMask = WGPUColorWriteMask_All;
+    // Two color attachments: R32UInt for object_id, RGBA16F for the
+    // packed world-space normal so the section tool can drop perpendicular
+    // cuts at the picked pixel.
+    WGPUColorTargetState color_targets[2] = {};
+    color_targets[0].format    = WGPUTextureFormat_R32Uint;
+    color_targets[0].writeMask = WGPUColorWriteMask_All;
+    color_targets[1].format    = WGPUTextureFormat_RGBA16Float;
+    color_targets[1].writeMask = WGPUColorWriteMask_All;
 
     WGPUFragmentState frag = {};
     frag.module      = main_shader_module_;
     frag.entryPoint  = svFromCStr("fs_pick");
-    frag.targetCount = 1;
-    frag.targets     = &color_target;
+    frag.targetCount = 2;
+    frag.targets     = color_targets;
 
     WGPUDepthStencilState depth = {};
     depth.format               = WGPUTextureFormat_Depth32Float;
@@ -2641,10 +3062,12 @@ void WgpuViewportWindow::ensurePickAttachments(int w, int h) {
     if (w <= 0 || h <= 0) return;
     if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
 
-    if (pick_color_view_)    { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
-    if (pick_color_texture_) { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
-    if (pick_depth_view_)    { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
-    if (pick_depth_texture_) { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
+    if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
+    if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
+    if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
+    if (pick_normal_texture_) { wgpuTextureRelease(pick_normal_texture_); pick_normal_texture_ = nullptr; }
+    if (pick_depth_view_)     { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
+    if (pick_depth_texture_)  { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
 
     WGPUTextureDescriptor cdesc = {};
     cdesc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
@@ -2658,6 +3081,12 @@ void WgpuViewportWindow::ensurePickAttachments(int w, int h) {
     cdesc.label         = svFromCStr("ifcviewer-wgpu.pick_color");
     pick_color_texture_ = wgpuDeviceCreateTexture(device_, &cdesc);
     pick_color_view_    = wgpuTextureCreateView(pick_color_texture_, nullptr);
+
+    WGPUTextureDescriptor ndesc = cdesc;
+    ndesc.format = WGPUTextureFormat_RGBA16Float;
+    ndesc.label  = svFromCStr("ifcviewer-wgpu.pick_normal");
+    pick_normal_texture_ = wgpuDeviceCreateTexture(device_, &ndesc);
+    pick_normal_view_    = wgpuTextureCreateView(pick_normal_texture_, nullptr);
 
     WGPUTextureDescriptor ddesc = {};
     ddesc.usage         = WGPUTextureUsage_RenderAttachment;
@@ -2687,22 +3116,33 @@ void WgpuViewportWindow::ensurePickAttachments(int w, int h) {
         sb.label = svFromCStr("ifcviewer-wgpu.pick_staging");
         pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
     }
-
+    if (!pick_normal_staging_buffer_) {
+        WGPUBufferDescriptor sb = {};
+        sb.size  = 256;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.pick_normal_staging");
+        pick_normal_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+    }
     pick_w_ = w;
     pick_h_ = h;
 }
 
 void WgpuViewportWindow::releasePickResources() {
-    if (pick_color_view_)    { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
-    if (pick_color_texture_) { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
-    if (pick_depth_view_)    { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
-    if (pick_depth_texture_) { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
-    if (pick_staging_buffer_){ wgpuBufferRelease(pick_staging_buffer_);  pick_staging_buffer_ = nullptr; }
-    if (pick_pipeline_)      { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
+    if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
+    if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
+    if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
+    if (pick_normal_texture_) { wgpuTextureRelease(pick_normal_texture_); pick_normal_texture_ = nullptr; }
+    if (pick_depth_view_)     { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
+    if (pick_depth_texture_)  { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
+    if (pick_staging_buffer_) { wgpuBufferRelease(pick_staging_buffer_);  pick_staging_buffer_ = nullptr; }
+    if (pick_normal_staging_buffer_) { wgpuBufferRelease(pick_normal_staging_buffer_); pick_normal_staging_buffer_ = nullptr; }
+    if (pick_pipeline_)       { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
     pick_w_ = pick_h_ = 0;
 }
 
-uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
+uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels,
+                                          QVector3D* normal_out) {
+    if (normal_out) *normal_out = QVector3D(0, 0, 1);
     if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
     if (configured_w_ <= 0 || configured_h_ <= 0) return 0;
     if (x_pixels < 0 || y_pixels < 0 ||
@@ -2710,6 +3150,7 @@ uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
 
     ensurePickAttachments(configured_w_, configured_h_);
     if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+    if (normal_out && !pick_normal_staging_buffer_) return 0;
 
     // The current frame's visible_draws are already on the GPU (uploaded
     // by the last render's cullModelCpuUpload), and the per-model bind
@@ -2717,12 +3158,17 @@ uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
-    WGPURenderPassColorAttachment color = {};
-    color.view       = pick_color_view_;
-    color.loadOp     = WGPULoadOp_Clear;
-    color.storeOp    = WGPUStoreOp_Store;
-    color.clearValue = { 0.0, 0.0, 0.0, 0.0 };  // object_id == 0 means miss
-    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    WGPURenderPassColorAttachment color[2] = {};
+    color[0].view       = pick_color_view_;
+    color[0].loadOp     = WGPULoadOp_Clear;
+    color[0].storeOp    = WGPUStoreOp_Store;
+    color[0].clearValue = { 0.0, 0.0, 0.0, 0.0 };  // object_id == 0 means miss
+    color[0].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    color[1].view       = pick_normal_view_;
+    color[1].loadOp     = WGPULoadOp_Clear;
+    color[1].storeOp    = WGPUStoreOp_Store;
+    color[1].clearValue = { 0.5, 0.5, 0.5, 0.0 };  // packed-zero normal at miss
+    color[1].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
     WGPURenderPassDepthStencilAttachment depth = {};
     depth.view              = pick_depth_view_;
@@ -2734,8 +3180,8 @@ uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
     depth.stencilReadOnly   = true;
 
     WGPURenderPassDescriptor pass_desc = {};
-    pass_desc.colorAttachmentCount   = 1;
-    pass_desc.colorAttachments       = &color;
+    pass_desc.colorAttachmentCount   = 2;
+    pass_desc.colorAttachments       = color;
     pass_desc.depthStencilAttachment = &depth;
     pass_desc.label                  = svFromCStr("ifcviewer-wgpu.pick_pass");
 
@@ -2772,6 +3218,23 @@ uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
 
     wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
 
+    // Optionally copy the normal texel too. RGBA16F is a color format (no
+    // full-mip-extent restriction) so a 1×1 copy is fine.
+    if (normal_out) {
+        WGPUTexelCopyTextureInfo nsrc = {};
+        nsrc.texture  = pick_normal_texture_;
+        nsrc.aspect   = WGPUTextureAspect_All;
+        nsrc.origin.x = uint32_t(x_pixels);
+        nsrc.origin.y = uint32_t(y_pixels);
+
+        WGPUTexelCopyBufferInfo ndst = {};
+        ndst.buffer              = pick_normal_staging_buffer_;
+        ndst.layout.bytesPerRow  = 256;
+        ndst.layout.rowsPerImage = 1;
+
+        wgpuCommandEncoderCopyTextureToBuffer(enc, &nsrc, &ndst, &extent);
+    }
+
     WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
     wgpuQueueSubmit(queue_, 1, &cmd);
     wgpuCommandBufferRelease(cmd);
@@ -2800,7 +3263,325 @@ uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels) {
     const uint32_t object_id = mapped ? mapped[0] : 0u;
     wgpuBufferUnmap(pick_staging_buffer_);
 
+    if (normal_out && object_id != 0) {
+        MapReq nreq;
+        WGPUBufferMapCallbackInfo ncb = mcb;
+        ncb.userdata1 = &nreq;
+        wgpuBufferMapAsync(pick_normal_staging_buffer_, WGPUMapMode_Read, 0, 256, ncb);
+        while (!nreq.done) wgpuInstanceProcessEvents(instance_);
+        if (nreq.ok) {
+            // RGBA16F = 4 × half-floats per texel = 8 bytes. Decode the
+            // first texel (xyz channels) and undo the ×0.5+0.5 sign pack
+            // from fs_pick.
+            const uint16_t* halves = static_cast<const uint16_t*>(
+                wgpuBufferGetConstMappedRange(pick_normal_staging_buffer_, 0, 256));
+            if (halves) {
+                auto h2f = [](uint16_t h) -> float {
+                    // IEEE 754 half → float. Standard bit-fiddle, no STL
+                    // helper in pre-C++23.
+                    const uint32_t sign     = uint32_t(h & 0x8000u) << 16;
+                    uint32_t       exponent = uint32_t(h & 0x7C00u) >> 10;
+                    uint32_t       mantissa = uint32_t(h & 0x03FFu);
+                    if (exponent == 0) {
+                        if (mantissa == 0) {
+                            union { uint32_t u; float f; } v{ sign };
+                            return v.f;
+                        }
+                        while ((mantissa & 0x0400u) == 0) {
+                            mantissa <<= 1;
+                            --exponent;
+                        }
+                        ++exponent;
+                        mantissa &= 0x03FFu;
+                    } else if (exponent == 0x1Fu) {
+                        exponent = 0xFFu;
+                    } else {
+                        exponent += (127u - 15u);
+                    }
+                    const uint32_t bits = sign | (exponent << 23) | (mantissa << 13);
+                    union { uint32_t u; float f; } v{ bits };
+                    return v.f;
+                };
+                const float nx = h2f(halves[0]) * 2.0f - 1.0f;
+                const float ny = h2f(halves[1]) * 2.0f - 1.0f;
+                const float nz = h2f(halves[2]) * 2.0f - 1.0f;
+                QVector3D n(nx, ny, nz);
+                if (n.lengthSquared() > 1e-6f) *normal_out = n.normalized();
+            }
+            wgpuBufferUnmap(pick_normal_staging_buffer_);
+        }
+    }
+
     return object_id;
+}
+
+// Slab-method ray-AABB intersection. Returns t_enter (the ray parameter at
+// the first hit, clamped to >= 0 so origins inside the box land at t = 0)
+// and the axis-aligned face normal at the entry: ±X / ±Y / ±Z depending on
+// which slab dominated t_min. The face normal is what the section tool
+// uses for surface-perpendicular cuts — for BIM geometry that's almost
+// always axis-aligned (walls, slabs, columns) this matches the user's
+// expectation; for diagonal or curved geometry it falls back to the
+// closest of {±X, ±Y, ±Z}, which is still a usable cut direction.
+static bool rayAABBHit(const QVector3D& origin, const QVector3D& dir,
+                       const float mn[3], const float mx[3],
+                       float& t_enter, QVector3D& face_normal) {
+    float t_min = -std::numeric_limits<float>::infinity();
+    float t_max =  std::numeric_limits<float>::infinity();
+    const float o[3] = { origin.x(), origin.y(), origin.z() };
+    const float d[3] = { dir.x(),    dir.y(),    dir.z()    };
+    int   hit_axis = -1;
+    float hit_sign = 0.0f;  // +1 = ray entered through min-side of slab → outward normal is -axis
+    for (int i = 0; i < 3; ++i) {
+        if (std::abs(d[i]) < 1e-8f) {
+            if (o[i] < mn[i] || o[i] > mx[i]) return false;
+            continue;
+        }
+        float t1 = (mn[i] - o[i]) / d[i];
+        float t2 = (mx[i] - o[i]) / d[i];
+        float sign_for_t1 = -1.0f;  // ray hits min slab → outward normal points along -axis
+        if (t1 > t2) { std::swap(t1, t2); sign_for_t1 = +1.0f; }
+        if (t1 > t_min) {
+            t_min    = t1;
+            hit_axis = i;
+            hit_sign = sign_for_t1;
+        }
+        t_max = std::min(t_max, t2);
+        if (t_min > t_max) return false;
+    }
+    if (t_max < 0.0f) return false;
+    t_enter = std::max(t_min, 0.0f);
+
+    if (hit_axis < 0) {
+        face_normal = -dir;  // ray origin inside the box on all axes — fallback
+    } else {
+        QVector3D n(0, 0, 0);
+        n[hit_axis] = hit_sign;
+        face_normal = n;
+    }
+    return true;
+}
+
+bool WgpuViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
+                                       uint32_t& object_id_out,
+                                       QVector3D& world_pos_out,
+                                       QVector3D& world_normal_out,
+                                       float* aabb_radius_out) {
+    if (aabb_radius_out) *aabb_radius_out = 0.0f;
+    QVector3D picked_normal(0, 0, 1);
+    const uint32_t id = pickObjectAt(x_pixels, y_pixels, &picked_normal);
+    if (id == 0) return false;
+
+    // Build the ray through the clicked pixel: shoot from the camera eye
+    // toward the unprojected far-plane point. WebGPU forbids partial copies
+    // of Depth32Float (must cover the full mip extent), so reading per-pixel
+    // depth would cost a per-click full-texture readback — instead we
+    // ray-cast against the AABB of every instance carrying the picked
+    // object_id and take the closest hit. Equally accurate for the section
+    // tool's "drop a plane where I clicked" UX, no readback at all.
+    QMatrix4x4 view, proj;
+    buildViewProj(view, proj);
+    bool ok = false;
+    const QMatrix4x4 inv_vp = (proj * view).inverted(&ok);
+    if (!ok) return false;
+
+    const float ndc_x = (2.0f * float(x_pixels) / float(configured_w_)) - 1.0f;
+    const float ndc_y = 1.0f - (2.0f * float(y_pixels) / float(configured_h_));
+    // Unproject the far-plane corner (NDC z = 1 for WebGPU) of the
+    // pick-pixel pillar to get a point on the ray.
+    const QVector4D far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
+    const QVector4D far_w   = inv_vp * far_clip;
+    if (std::abs(far_w.w()) < 1e-6f) return false;
+    const QVector3D far_world = far_w.toVector3D() / far_w.w();
+
+    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                   camera_yaw_deg_, camera_pitch_deg_);
+    QVector3D ray_dir = far_world - eye;
+    if (ray_dir.lengthSquared() < 1e-8f) return false;
+    ray_dir.normalize();
+
+    float best_t = std::numeric_limits<float>::infinity();
+    QVector3D best_point;
+    QVector3D best_normal;
+    float     best_radius = 0.0f;
+    bool found = false;
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& inst : m.instances) {
+            if (inst.object_id != id) continue;
+            float t = 0.0f;
+            QVector3D n;
+            if (!rayAABBHit(eye, ray_dir,
+                            inst.world_aabb_min, inst.world_aabb_max,
+                            t, n)) continue;
+            if (t < best_t) {
+                best_t      = t;
+                best_point  = eye + ray_dir * t;
+                best_normal = n;
+                const float dx = inst.world_aabb_max[0] - inst.world_aabb_min[0];
+                const float dy = inst.world_aabb_max[1] - inst.world_aabb_min[1];
+                const float dz = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+                best_radius = 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+                found       = true;
+            }
+        }
+    }
+    if (!found) return false;
+
+    if (aabb_radius_out) *aabb_radius_out = best_radius;
+
+    world_pos_out    = best_point;
+    // Prefer the per-fragment normal from the pick MRT (matches the actual
+    // picked triangle), fall back to the AABB-face normal if the pick pass
+    // returned a degenerate vector (e.g. background sliver). The auto-flip
+    // in addSectionPlaneAtSurface re-orients toward the camera.
+    world_normal_out = (picked_normal.lengthSquared() > 1e-3f)
+                         ? picked_normal : best_normal;
+    object_id_out    = id;
+    return true;
+}
+
+// -----------------------------------------------------------------------------
+// Section cutting state
+// -----------------------------------------------------------------------------
+
+void WgpuViewportWindow::toggleSectionTool() {
+    section_tool_active_ = !section_tool_active_;
+    qInfo().noquote() << "[wgpu section] tool"
+                      << (section_tool_active_ ? "active" : "off");
+    if (isExposed()) requestUpdate();
+}
+
+bool WgpuViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
+                                                  const QVector3D& normal,
+                                                  float visual_radius) {
+    if (int(section_planes_.size()) >= kMaxSectionPlanes) {
+        qWarning("[wgpu section] cap reached (%d planes)", kMaxSectionPlanes);
+        return false;
+    }
+    QVector3D n = normal;
+    if (n.lengthSquared() < 1e-8f) return false;
+    n.normalize();
+    // Auto-flip the normal so the camera-facing half gets cut away — that
+    // way the first click always reveals the surface the user just clicked.
+    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+                                   camera_yaw_deg_, camera_pitch_deg_);
+    const QVector3D eye_dir = eye - point;
+    if (QVector3D::dotProduct(n, eye_dir) < 0.0f) n = -n;
+
+    SectionPlane p;
+    p.n             = n;
+    p.origin        = point;
+    p.d             = -QVector3D::dotProduct(n, point);
+    p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
+    section_planes_.push_back(p);
+    qInfo().noquote().nospace()
+        << "[wgpu section] added plane #" << section_planes_.size() - 1
+        << " origin=(" << point.x() << "," << point.y() << "," << point.z() << ")"
+        << " normal=(" << n.x() << "," << n.y() << "," << n.z() << ")";
+    if (isExposed()) requestUpdate();
+    return true;
+}
+
+void WgpuViewportWindow::removeSectionPlane(int index) {
+    if (index < 0 || index >= int(section_planes_.size())) return;
+    section_planes_.erase(section_planes_.begin() + index);
+    qInfo().noquote() << "[wgpu section] removed plane" << index;
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::clearSectionPlanes() {
+    if (section_planes_.empty()) return;
+    section_planes_.clear();
+    qInfo() << "[wgpu section] cleared all planes";
+    if (isExposed()) requestUpdate();
+}
+
+// Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
+// Returns false if behind the camera.
+static bool projectWorldToLogicalScreen(const QMatrix4x4& vp,
+                                        const QVector3D& world,
+                                        int win_w, int win_h,
+                                        QVector2D& out) {
+    const QVector4D clip = vp * QVector4D(world, 1.0f);
+    if (clip.w() <= 0.0f) return false;
+    const float invw = 1.0f / clip.w();
+    out = QVector2D(
+        (clip.x() * invw * 0.5f + 0.5f) * float(win_w),
+        (1.0f - (clip.y() * invw * 0.5f + 0.5f)) * float(win_h));
+    return true;
+}
+
+int WgpuViewportWindow::hitTestSectionGizmo(int x, int y) const {
+    if (section_planes_.empty()) return -1;
+    const int w = width();
+    const int h = height();
+    if (w <= 0 || h <= 0) return -1;
+    QMatrix4x4 view, proj;
+    buildViewProj(view, proj);
+    const QMatrix4x4 vp = proj * view;
+    const float grab_px = 12.0f;
+    int   best    = -1;
+    float best_d2 = grab_px * grab_px;
+    for (int i = 0; i < int(section_planes_.size()); ++i) {
+        const SectionPlane& p = section_planes_[i];
+        QVector2D s_origin, s_tip;
+        if (!projectWorldToLogicalScreen(vp, p.origin,
+                                         w, h, s_origin)) continue;
+        // The gizmo's arrow extends along +n by exactly 1 m in world
+        // space — encodeSectionPlanes uses half_size = 1.0 to scale a
+        // plane-local arrow tip at z = 1. Mirror that here.
+        if (!projectWorldToLogicalScreen(vp, p.origin + p.n * 1.0f,
+                                         w, h, s_tip)) continue;
+        const QVector2D q{float(x), float(y)};
+        const QVector2D ab = s_tip - s_origin;
+        const float ab_len2 = ab.lengthSquared();
+        if (ab_len2 < 1e-3f) continue;
+        float t = QVector2D::dotProduct(q - s_origin, ab) / ab_len2;
+        t = std::clamp(t, 0.0f, 1.0f);
+        const QVector2D proj_pt = s_origin + ab * t;
+        const float d2 = (q - proj_pt).lengthSquared();
+        if (d2 < best_d2) { best_d2 = d2; best = i; }
+    }
+    return best;
+}
+
+void WgpuViewportWindow::updateSectionDrag(int x, int y) {
+    if (!section_drag_active_) return;
+    if (section_drag_index_ < 0
+        || section_drag_index_ >= int(section_planes_.size())) return;
+    SectionPlane& p = section_planes_[section_drag_index_];
+
+    const int w = width();
+    const int h = height();
+    if (w <= 0 || h <= 0) return;
+    QMatrix4x4 view, proj;
+    buildViewProj(view, proj);
+    const QMatrix4x4 vp = proj * view;
+
+    // Re-project the press-time origin and origin + n to screen space.
+    // The press-time origin is what `start` should be relative to — so the
+    // plane slides smoothly even as the camera moves (we re-project every
+    // frame to handle mid-drag camera rotation cleanly).
+    QVector2D s_origin, s_n;
+    if (!projectWorldToLogicalScreen(vp, section_drag_start_origin_,
+                                     w, h, s_origin)) return;
+    if (!projectWorldToLogicalScreen(vp, section_drag_start_origin_ + p.n,
+                                     w, h, s_n)) return;
+    const QVector2D screen_axis = s_n - s_origin;
+    const float screen_axis_len2 = screen_axis.lengthSquared();
+    if (screen_axis_len2 < 1e-3f) return;  // arrow is edge-on
+
+    // Project pixel delta onto the screen-space axis; convert to metres
+    // via (delta · axis) / |axis|² (axis is 1 m long in world space).
+    const QVector2D delta_px(float(x - section_drag_start_mouse_.x()),
+                             float(y - section_drag_start_mouse_.y()));
+    const float meters = QVector2D::dotProduct(delta_px, screen_axis)
+                         / screen_axis_len2;
+
+    p.origin = section_drag_start_origin_ + p.n * meters;
+    p.d      = -QVector3D::dotProduct(p.n, p.origin);
+    requestUpdate();
 }
 
 bool WgpuViewportWindow::buildHizPipeline() {
@@ -3800,6 +4581,14 @@ void WgpuViewportWindow::render() {
             }
         }
     }
+
+    // Section planes — translucent overlay quads showing where each
+    // active clip plane cuts. Drawn inside the main MSAA pass with
+    // depth-LessEqual + writeMask off so they participate in depth tests
+    // (half hides behind closer geometry) without depth-blocking further
+    // overlays. Discard inside the shaders honours the clip itself, so
+    // the visible portion of the quad is always the kept-side region.
+    encodeSectionPlanes(pass, vp_this_frame);
 
     // Pivot indicator. Encoded inside the main MSAA pass after geometry so
     // depth interaction is correct — the indicator vanishes behind closer
@@ -5351,6 +6140,19 @@ void WgpuViewportWindow::updateFrameUniforms() {
     u.sky_color   [0] = 0.55f; u.sky_color   [1] = 0.60f; u.sky_color   [2] = 0.70f;
     u.ground_color[0] = 0.35f; u.ground_color[1] = 0.32f; u.ground_color[2] = 0.28f;
 
+    // Pack active section planes. `is_section_clipped` (WGSL) reads
+    // u.clip_count and u.clip_planes[0..clip_count) and discards
+    // fragments on the positive side.
+    const int n = std::min<int>(int(section_planes_.size()), kMaxSectionPlanes);
+    u.clip_count = n;
+    for (int i = 0; i < n; ++i) {
+        const SectionPlane& p = section_planes_[i];
+        u.clip_planes[i][0] = p.n.x();
+        u.clip_planes[i][1] = p.n.y();
+        u.clip_planes[i][2] = p.n.z();
+        u.clip_planes[i][3] = p.d;
+    }
+
     wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
 }
 
@@ -5749,6 +6551,26 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
     nav_press_pos_     = nav_last_pos_;
     nav_dragged_       = false;
 
+    // Section tool: claim a plain-LMB press if it lands on one of the
+    // plane gizmos' arrows. Suppresses nav classification so the drag
+    // doesn't also rotate the camera.
+    if (section_tool_active_
+        && event->button() == Qt::LeftButton
+        && event->modifiers() == Qt::NoModifier) {
+        const QPoint lp = event->position().toPoint();
+        const int hit = hitTestSectionGizmo(lp.x(), lp.y());
+        if (hit >= 0) {
+            section_drag_active_       = true;
+            section_drag_index_        = hit;
+            section_drag_start_mouse_  = lp;
+            section_drag_start_origin_ = section_planes_[hit].origin;
+            nav_drag_kind_             = NavDrag::Inactive;
+            qInfo().noquote().nospace()
+                << "[wgpu section] drag start: plane=" << hit;
+            return;
+        }
+    }
+
     // Classify the drag against the active nav preset. LMB stays free for
     // selection in every preset (pick on release-without-drag). The modifier
     // is captured at press time so a mid-drag Shift release doesn't switch
@@ -5767,6 +6589,12 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
 }
 
 void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
+    if (section_drag_active_ && event->button() == Qt::LeftButton) {
+        section_drag_active_ = false;
+        section_drag_index_  = -1;
+        nav_active_button_   = Qt::NoButton;
+        return;
+    }
     if (event->button() == nav_active_button_) {
         // LMB-click without drag → pick the object under the cursor and
         // route through the selection state. Shift = add, Ctrl = remove,
@@ -5775,6 +6603,31 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
             const QPoint pos = event->position().toPoint();
             const int px = int(pos.x() * devicePixelRatio());
             const int py = int(pos.y() * devicePixelRatio());
+
+            // Section tool intercepts plain LMB clicks (with no modifier)
+            // to drop a plane at the picked surface. Shift/Ctrl still go
+            // through selection so the user can manipulate the existing
+            // set while the tool is open.
+            if (section_tool_active_
+                && event->modifiers() == Qt::NoModifier) {
+                uint32_t hit_id = 0;
+                QVector3D hit_pos, hit_normal;
+                float hit_radius = 0.0f;
+                if (pickSurfaceAt(px, py, hit_id, hit_pos, hit_normal,
+                                  &hit_radius)) {
+                    // Pad the gizmo a bit beyond the AABB so the cut reads
+                    // as a "cap" rather than ending right at the boundary.
+                    addSectionPlaneAtSurface(hit_pos, hit_normal,
+                                             hit_radius * 1.5f);
+                } else {
+                    qInfo().noquote() << "[wgpu section] click missed (no surface)";
+                }
+                nav_active_button_ = Qt::NoButton;
+                nav_drag_kind_     = NavDrag::Inactive;
+                setPivotIndicatorVisible(false);
+                return;
+            }
+
             const uint32_t id = pickObjectAt(px, py);
             const auto mods = event->modifiers();
             if (id == 0) {
@@ -5855,6 +6708,15 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
 }
 
 void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
+    // Section drag intercepts the move handler entirely: the orbit/pan
+    // classification already declined this drag in mousePressEvent, so all
+    // we have to do is slide the plane along its normal.
+    if (section_drag_active_) {
+        const QPoint pos = event->position().toPoint();
+        updateSectionDrag(pos.x(), pos.y());
+        return;
+    }
+
     // Fly-mode mouse-look: turn the camera in place (eye stays put).
     // The orbit fields (camera_target_/distance/yaw/pitch) are still our
     // single source of truth — but to interpret yaw/pitch as the camera's
@@ -6034,6 +6896,31 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
         return;
     }
 
+    // Section tool. K toggles the tool; Shift+K clears all planes. When
+    // the tool is active, click adds a plane at the surface (handled in
+    // mouseReleaseEvent), Esc deactivates, Del/Backspace removes the
+    // most recently added plane. Mirrors GL ViewportWindow + Bonsai's
+    // bind_shortcut(K / Shift+K) bindings.
+    if (key == Qt::Key_K && !event->isAutoRepeat()) {
+        if (mods == Qt::ShiftModifier) {
+            clearSectionPlanes();
+        } else if (mods == Qt::NoModifier) {
+            toggleSectionTool();
+        }
+        return;
+    }
+    if (section_tool_active_ && !event->isAutoRepeat()) {
+        if (key == Qt::Key_Escape) {
+            toggleSectionTool();
+            return;
+        }
+        if ((key == Qt::Key_Delete || key == Qt::Key_Backspace)
+            && !section_planes_.empty()) {
+            removeSectionPlane(int(section_planes_.size()) - 1);
+            return;
+        }
+    }
+
     // GL-parity viewport hotkeys.
     if (key == Qt::Key_F && mods == Qt::NoModifier && !event->isAutoRepeat()) {
         focusOnSelectedObject();
@@ -6112,6 +6999,7 @@ void WgpuViewportWindow::shutdown() {
     releaseMsaaColorTexture();
     releaseHizResources();
     releaseEdgeResources();
+    releaseSectionVisualizer();
     releasePickResources();
 
     if (frame_bind_group_)        { wgpuBindGroupRelease(frame_bind_group_);          frame_bind_group_ = nullptr; }
