@@ -284,8 +284,14 @@ private:
 
     // Overlay primitives. Mirror GL ViewportWindow so the Measurement +
     // dimension tools can target either backend through one API.
-    // Empty groups clears the current set.
+    // Empty inputs clears the corresponding set.
     void  setOverlayLines(const std::vector<WgpuOverlayRenderer::LineGroup>& groups);
+    void  setOverlayPoints(const std::vector<float>& world_xyz,
+                           float r, float g, float b, float a,
+                           float pixel_size,
+                           float stroke_r, float stroke_g,
+                           float stroke_b, float stroke_a,
+                           float stroke_extra);
 
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();

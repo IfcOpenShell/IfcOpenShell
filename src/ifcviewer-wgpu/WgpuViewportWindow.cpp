@@ -2837,6 +2837,18 @@ void WgpuViewportWindow::setOverlayLines(
     if (isExposed()) requestUpdate();
 }
 
+void WgpuViewportWindow::setOverlayPoints(const std::vector<float>& world_xyz,
+                                          float r, float g, float b, float a,
+                                          float pixel_size,
+                                          float stroke_r, float stroke_g,
+                                          float stroke_b, float stroke_a,
+                                          float stroke_extra) {
+    overlays_.setOverlayPoints(world_xyz, r, g, b, a, pixel_size,
+                               stroke_r, stroke_g, stroke_b, stroke_a,
+                               stroke_extra);
+    if (isExposed()) requestUpdate();
+}
+
 // Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
 // Returns false if behind the camera.
 static bool projectWorldToLogicalScreen(const QMatrix4x4& vp,
@@ -3953,6 +3965,11 @@ void WgpuViewportWindow::render() {
     // depth-write off so the corner gizmo + marquee can still draw over
     // them on the resolved surface afterwards.
     overlays_.encodeOverlayLines(pass, overlay_frame);
+
+    // Overlay point sprites (measurement endpoints, snap candidates).
+    // Drawn after lines so the sprite halo correctly covers any line
+    // ends at the same world position.
+    overlays_.encodeOverlayPoints(pass, overlay_frame);
 
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);

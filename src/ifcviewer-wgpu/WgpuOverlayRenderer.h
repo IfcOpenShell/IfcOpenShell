@@ -122,6 +122,25 @@ public:
     void encodeOverlayLines(WGPURenderPassEncoder pass,
                             const WgpuOverlayFrame& f);
 
+    // Replace the overlay-point set. World-space positions are CPU-
+    // expanded into screen-space quads at encode time. `pixel_size` is
+    // the inner-disc diameter (px); when `stroke_a > 0` each quad picks
+    // up a `stroke_extra`-pixel halo per side. Empty `world_xyz` clears
+    // the set. Mirrors GL OverlayRenderer::setOverlayPoints.
+    void setOverlayPoints(const std::vector<float>& world_xyz,
+                          float r, float g, float b, float a,
+                          float pixel_size,
+                          float stroke_r, float stroke_g,
+                          float stroke_b, float stroke_a,
+                          float stroke_extra);
+
+    // Encode the most-recently set point list. Single draw covering all
+    // points; the shader does the sprite-distance pick + AA. Drawn
+    // inside the main MSAA pass so depth-test correctly hides points
+    // behind closer geometry.
+    void encodeOverlayPoints(WGPURenderPassEncoder pass,
+                             const WgpuOverlayFrame& f);
+
     // ---- After the edge silhouette pass, on the resolved surface ----
 
     // Corner axis gizmo (bottom-left, 110×110 px). Independent ortho
@@ -149,6 +168,7 @@ private:
     bool buildSectionVisualizer();
     bool buildMarquee();
     bool buildOverlayLines();
+    bool buildOverlayPoints();
 
     WGPUInstance        instance_       = nullptr;
     WGPUDevice          device_         = nullptr;
@@ -213,6 +233,20 @@ private:
         uint32_t vertex_count = 0;
     };
     std::vector<OverlayLineDraw> overlay_line_draws_;
+
+    // ---- Overlay points (sprite-style, quad-expanded per point) ----
+    // Single draw per encode covering every point in the set. Vertex
+    // buffer holds 6 verts × 8 bytes per point (vec3 world + vec2 corner).
+    // Uniforms are global to the set (one inner + one stroke color).
+    WGPUShaderModule    overlay_point_shader_module_   = nullptr;
+    WGPUBindGroupLayout overlay_point_bgl_             = nullptr;
+    WGPUPipelineLayout  overlay_point_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  overlay_point_pipeline_        = nullptr;
+    WGPUBuffer          overlay_point_vertex_buffer_   = nullptr;
+    uint64_t            overlay_point_vertex_capacity_ = 0;
+    WGPUBuffer          overlay_point_uniform_buffer_  = nullptr;
+    WGPUBindGroup       overlay_point_bind_group_      = nullptr;
+    uint32_t            overlay_point_vertex_count_    = 0;
 };
 
 #endif  // WGPUOVERLAYRENDERER_H
