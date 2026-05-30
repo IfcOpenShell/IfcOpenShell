@@ -1,0 +1,1027 @@
+/********************************************************************************
+ *                                                                              *
+ * This file is part of IfcOpenShell.                                           *
+ *                                                                              *
+ * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ * it under the terms of the Lesser GNU General Public License as published by  *
+ * the Free Software Foundation, either version 3.0 of the License, or          *
+ * (at your option) any later version.                                          *
+ *                                                                              *
+ * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
+ * Lesser GNU General Public License for more details.                          *
+ *                                                                              *
+ * You should have received a copy of the Lesser GNU General Public License     *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
+ *                                                                              *
+ ********************************************************************************/
+
+#include "WgpuOverlayRenderer.h"
+
+#include <QtMath>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstring>
+#include <vector>
+
+// -----------------------------------------------------------------------------
+// Local helpers
+// -----------------------------------------------------------------------------
+
+namespace {
+
+WGPUStringView svFromCStr(const char* s) {
+    WGPUStringView v{};
+    v.data   = s;
+    v.length = std::strlen(s);
+    return v;
+}
+
+// Populate `attribs[5]` with the standard thick-line vertex layout:
+//   loc 0: start (vec3 @ 0)   loc 1: end   (vec3 @ 12)
+//   loc 2: col   (vec3 @ 24)  loc 3: t     (f32  @ 36)
+//   loc 4: side  (f32  @ 40)
+// Returns a WGPUVertexBufferLayout aliasing the caller-owned `attribs`.
+WGPUVertexBufferLayout thickLineVertexLayout(WGPUVertexAttribute attribs[5]) {
+    attribs[0].format = WGPUVertexFormat_Float32x3; attribs[0].offset = 0;  attribs[0].shaderLocation = 0;
+    attribs[1].format = WGPUVertexFormat_Float32x3; attribs[1].offset = 12; attribs[1].shaderLocation = 1;
+    attribs[2].format = WGPUVertexFormat_Float32x3; attribs[2].offset = 24; attribs[2].shaderLocation = 2;
+    attribs[3].format = WGPUVertexFormat_Float32;   attribs[3].offset = 36; attribs[3].shaderLocation = 3;
+    attribs[4].format = WGPUVertexFormat_Float32;   attribs[4].offset = 40; attribs[4].shaderLocation = 4;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 44;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 5;
+    vbl.attributes     = attribs;
+    return vbl;
+}
+
+// Pack the axis uniform's 256-byte slot. Layout matches WGSL AxisUniforms:
+// mat4 + vec3 + f32 + f32 + f32 + vec2 = 96 B used, padded to 256.
+void packAxisUniform(uint8_t* dst,
+                     const QMatrix4x4& mvp, const QVector3D& origin,
+                     float arm, float alpha, float line_width_px,
+                     float viewport_w, float viewport_h) {
+    std::memset(dst, 0, 256);
+    std::memcpy(dst, mvp.constData(), 16 * sizeof(float));
+    float ox = origin.x(), oy = origin.y(), oz = origin.z();
+    std::memcpy(dst + 64, &ox, sizeof(float));
+    std::memcpy(dst + 68, &oy, sizeof(float));
+    std::memcpy(dst + 72, &oz, sizeof(float));
+    std::memcpy(dst + 76, &arm,           sizeof(float));
+    std::memcpy(dst + 80, &alpha,         sizeof(float));
+    std::memcpy(dst + 84, &line_width_px, sizeof(float));
+    std::memcpy(dst + 88, &viewport_w,    sizeof(float));
+    std::memcpy(dst + 92, &viewport_h,    sizeof(float));
+}
+
+// Pack the section uniform's 256-byte slot. Layout matches WGSL
+// SectionUniforms: mat4 + 4×(vec3 + scalar pad) + vec4 + vec2 + 8 B pad
+// = 160 B used, padded to 256.
+void packSectionUniform(uint8_t* dst,
+                        const QMatrix4x4& mvp,
+                        const QVector3D& origin, float half_size,
+                        const QVector3D& tangent, float line_width_px,
+                        const QVector3D& bitangent,
+                        const QVector3D& normal,
+                        float r, float g, float b, float a,
+                        float viewport_w, float viewport_h) {
+    std::memset(dst, 0, 256);
+    std::memcpy(dst, mvp.constData(), 16 * sizeof(float));
+    auto put_vec3_pad = [&](size_t off, const QVector3D& v, float pad_val) {
+        float vx = v.x(), vy = v.y(), vz = v.z();
+        std::memcpy(dst + off + 0,  &vx, sizeof(float));
+        std::memcpy(dst + off + 4,  &vy, sizeof(float));
+        std::memcpy(dst + off + 8,  &vz, sizeof(float));
+        std::memcpy(dst + off + 12, &pad_val, sizeof(float));
+    };
+    put_vec3_pad(64,  origin,    half_size);
+    put_vec3_pad(80,  tangent,   line_width_px);
+    put_vec3_pad(96,  bitangent, 0.0f);
+    put_vec3_pad(112, normal,    0.0f);
+    float tint[4] = { r, g, b, a };
+    std::memcpy(dst + 128, tint, sizeof(tint));
+    std::memcpy(dst + 144, &viewport_w, sizeof(float));
+    std::memcpy(dst + 148, &viewport_h, sizeof(float));
+}
+
+}  // namespace
+
+// -----------------------------------------------------------------------------
+// Shared WGSL — VsOut + thick_line_clip helper + fs_main AA fragment
+// -----------------------------------------------------------------------------
+
+#define THICK_LINE_HELPERS_WGSL R"WGSL(
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) color:  vec4<f32>,
+    @location(1) side_t: f32,
+};
+
+fn thick_line_clip(p_start: vec4<f32>, p_end: vec4<f32>,
+                   t: f32, side: f32,
+                   viewport_size: vec2<f32>,
+                   line_width_px: f32) -> vec4<f32> {
+    let p_here = mix(p_start, p_end, t);
+    let s_start = (p_start.xy / p_start.w) * viewport_size * 0.5;
+    let s_end   = (p_end.xy   / p_end.w  ) * viewport_size * 0.5;
+    let dir  = normalize(s_end - s_start);
+    let perp = vec2<f32>(-dir.y, dir.x);
+    let off_pixels = perp * (line_width_px * 0.5) * side;
+    let off_ndc    = off_pixels * 2.0 / viewport_size;
+    return vec4<f32>(p_here.xy + off_ndc * p_here.w, p_here.zw);
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    let d  = abs(in.side_t);
+    let aa = fwidth(in.side_t);
+    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+    return vec4<f32>(in.color.xyz, in.color.w * coverage);
+}
+)WGSL"
+
+static const char* AXIS_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+struct AxisUniforms {
+    mvp:           mat4x4<f32>,
+    origin:        vec3<f32>,
+    arm:           f32,
+    alpha:         f32,
+    line_width_px: f32,
+    viewport_size: vec2<f32>,
+};
+
+@group(0) @binding(0) var<uniform> u: AxisUniforms;
+
+@vertex
+fn vs_main(@location(0) start: vec3<f32>,
+           @location(1) end:   vec3<f32>,
+           @location(2) col:   vec3<f32>,
+           @location(3) t:     f32,
+           @location(4) side:  f32) -> VsOut {
+    let p_start = u.mvp * vec4<f32>(u.origin + start * u.arm, 1.0);
+    let p_end   = u.mvp * vec4<f32>(u.origin + end   * u.arm, 1.0);
+    var out: VsOut;
+    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
+                                    u.viewport_size, u.line_width_px);
+    out.color  = vec4<f32>(col, u.alpha);
+    out.side_t = side;
+    return out;
+}
+)WGSL";
+
+static const char* SECTION_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+struct SectionUniforms {
+    mvp:           mat4x4<f32>,
+    origin:        vec3<f32>,
+    half_size:     f32,
+    tangent:       vec3<f32>,
+    line_width_px: f32,
+    bitangent:     vec3<f32>,
+    _pad1:         f32,
+    normal:        vec3<f32>,
+    _pad2:         f32,
+    tint:          vec4<f32>,
+    viewport_size: vec2<f32>,
+    _pad3:         vec2<f32>,
+};
+
+@group(0) @binding(0) var<uniform> u: SectionUniforms;
+
+fn plane_to_world(p: vec3<f32>) -> vec3<f32> {
+    return u.origin + (u.tangent * p.x + u.bitangent * p.y + u.normal * p.z)
+                      * u.half_size;
+}
+
+@vertex
+fn vs_main(@location(0) start_local: vec3<f32>,
+           @location(1) end_local:   vec3<f32>,
+           @location(2) col:         vec3<f32>,
+           @location(3) t:           f32,
+           @location(4) side:        f32) -> VsOut {
+    let p_start = u.mvp * vec4<f32>(plane_to_world(start_local), 1.0);
+    let p_end   = u.mvp * vec4<f32>(plane_to_world(end_local),   1.0);
+    var out: VsOut;
+    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
+                                    u.viewport_size, u.line_width_px);
+    out.color    = vec4<f32>(col * u.tint.xyz, u.tint.w);
+    out.side_t   = side;
+    return out;
+}
+)WGSL";
+
+static const char* MARQUEE_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+struct MarqueeUniforms {
+    rect_min:      vec2<f32>,
+    rect_max:      vec2<f32>,
+    color:         vec4<f32>,
+    viewport_size: vec2<f32>,
+    line_width_px: f32,
+    fill_alpha:    f32,
+};
+
+@group(0) @binding(0) var<uniform> u: MarqueeUniforms;
+
+@vertex
+fn vs_main(@location(0) start_uv: vec2<f32>,
+           @location(1) end_uv:   vec2<f32>,
+           @location(2) t:        f32,
+           @location(3) side:     f32) -> VsOut {
+    let p_start = vec4<f32>(mix(u.rect_min, u.rect_max, start_uv), 0.0, 1.0);
+    let p_end   = vec4<f32>(mix(u.rect_min, u.rect_max, end_uv),   0.0, 1.0);
+    var out: VsOut;
+    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
+                                    u.viewport_size, u.line_width_px);
+    out.color    = u.color;
+    out.side_t   = side;
+    return out;
+}
+
+struct VsFillOut {
+    @builtin(position) clip_pos: vec4<f32>,
+};
+
+@vertex
+fn vs_fill(@location(0) pos_uv: vec2<f32>) -> VsFillOut {
+    var out: VsFillOut;
+    let p = mix(u.rect_min, u.rect_max, pos_uv);
+    out.clip_pos = vec4<f32>(p, 0.0, 1.0);
+    return out;
+}
+
+@fragment
+fn fs_fill() -> @location(0) vec4<f32> {
+    return vec4<f32>(u.color.xyz, u.color.w * u.fill_alpha);
+}
+)WGSL";
+
+// -----------------------------------------------------------------------------
+// Construction / destruction
+// -----------------------------------------------------------------------------
+
+WgpuOverlayRenderer::~WgpuOverlayRenderer() {
+    destroy();
+}
+
+bool WgpuOverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
+                               WGPUQueue queue, WGPUTextureFormat surface_format,
+                               int sample_count) {
+    instance_       = instance;
+    device_         = device;
+    queue_          = queue;
+    surface_format_ = surface_format;
+    sample_count_   = sample_count;
+    if (!buildAxisIndicator())     return false;
+    if (!buildSectionVisualizer()) return false;
+    if (!buildMarquee())           return false;
+    return true;
+}
+
+void WgpuOverlayRenderer::destroy() {
+    // Axis indicator
+    if (axis_bind_group_)         { wgpuBindGroupRelease(axis_bind_group_);              axis_bind_group_ = nullptr; }
+    if (axis_pivot_pipeline_)     { wgpuRenderPipelineRelease(axis_pivot_pipeline_);     axis_pivot_pipeline_ = nullptr; }
+    if (axis_pivot_xray_pipeline_){ wgpuRenderPipelineRelease(axis_pivot_xray_pipeline_); axis_pivot_xray_pipeline_ = nullptr; }
+    if (axis_corner_pipeline_)    { wgpuRenderPipelineRelease(axis_corner_pipeline_);    axis_corner_pipeline_ = nullptr; }
+    if (axis_shader_module_)      { wgpuShaderModuleRelease(axis_shader_module_);        axis_shader_module_ = nullptr; }
+    if (axis_pipeline_layout_)    { wgpuPipelineLayoutRelease(axis_pipeline_layout_);    axis_pipeline_layout_ = nullptr; }
+    if (axis_bgl_)                { wgpuBindGroupLayoutRelease(axis_bgl_);               axis_bgl_ = nullptr; }
+    if (axis_uniform_buffer_)     { wgpuBufferRelease(axis_uniform_buffer_);             axis_uniform_buffer_ = nullptr; }
+    if (axis_vertex_buffer_)      { wgpuBufferRelease(axis_vertex_buffer_);              axis_vertex_buffer_ = nullptr; }
+
+    // Section visualizer
+    if (section_bind_group_)      { wgpuBindGroupRelease(section_bind_group_);          section_bind_group_ = nullptr; }
+    if (section_pipeline_)        { wgpuRenderPipelineRelease(section_pipeline_);       section_pipeline_ = nullptr; }
+    if (section_shader_module_)   { wgpuShaderModuleRelease(section_shader_module_);    section_shader_module_ = nullptr; }
+    if (section_pipeline_layout_) { wgpuPipelineLayoutRelease(section_pipeline_layout_); section_pipeline_layout_ = nullptr; }
+    if (section_bgl_)             { wgpuBindGroupLayoutRelease(section_bgl_);           section_bgl_ = nullptr; }
+    if (section_uniform_buffer_)  { wgpuBufferRelease(section_uniform_buffer_);         section_uniform_buffer_ = nullptr; }
+    if (section_vertex_buffer_)   { wgpuBufferRelease(section_vertex_buffer_);          section_vertex_buffer_ = nullptr; }
+
+    // Marquee
+    if (marquee_bind_group_)         { wgpuBindGroupRelease(marquee_bind_group_);              marquee_bind_group_ = nullptr; }
+    if (marquee_pipeline_)           { wgpuRenderPipelineRelease(marquee_pipeline_);           marquee_pipeline_ = nullptr; }
+    if (marquee_fill_pipeline_)      { wgpuRenderPipelineRelease(marquee_fill_pipeline_);      marquee_fill_pipeline_ = nullptr; }
+    if (marquee_shader_module_)      { wgpuShaderModuleRelease(marquee_shader_module_);        marquee_shader_module_ = nullptr; }
+    if (marquee_pipeline_layout_)    { wgpuPipelineLayoutRelease(marquee_pipeline_layout_);    marquee_pipeline_layout_ = nullptr; }
+    if (marquee_bgl_)                { wgpuBindGroupLayoutRelease(marquee_bgl_);               marquee_bgl_ = nullptr; }
+    if (marquee_uniform_buffer_)     { wgpuBufferRelease(marquee_uniform_buffer_);             marquee_uniform_buffer_ = nullptr; }
+    if (marquee_vertex_buffer_)      { wgpuBufferRelease(marquee_vertex_buffer_);              marquee_vertex_buffer_ = nullptr; }
+    if (marquee_fill_vertex_buffer_) { wgpuBufferRelease(marquee_fill_vertex_buffer_);         marquee_fill_vertex_buffer_ = nullptr; }
+}
+
+// -----------------------------------------------------------------------------
+// Axis indicator
+// -----------------------------------------------------------------------------
+
+bool WgpuOverlayRenderer::buildAxisIndicator() {
+    // Bonsai decorator palette (src/bonsai/bonsai/bim/ui.py:593+):
+    //   decorator_color_error    = (1.000, 0.200, 0.322) — red    → +X
+    //   decorator_color_selected = (0.545, 0.863, 0.000) — green  → +Y
+    //   decorator_color_special  = (0.157, 0.565, 1.000) — blue   → +Z
+    // Same palette is reused for the section gizmo + marquee so all overlay
+    // colours come from one canonical source.
+    static const float axis_verts[] = {
+        //  start         end           color (RGB — Bonsai decorators)  t    side
+        // ---- +X red ----
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  -1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  +1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  -1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  -1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  +1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  +1.f,
+        // ---- +Y green ----
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  -1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  +1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  -1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  -1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  +1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  +1.f,
+        // ---- +Z blue ----
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  -1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  +1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  -1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  -1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  +1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  +1.f,
+    };
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = sizeof(axis_verts);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.axis_vbo");
+        axis_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, axis_vertex_buffer_, 0, axis_verts, sizeof(axis_verts));
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 3u * kAxisUniformSlotSize;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.axis_uniforms");
+        axis_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 1;
+        entry.buffer.minBindingSize   = 96;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.axis_bgl");
+        axis_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &axis_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.axis_pipeline_layout");
+        axis_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = axis_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = kAxisUniformSlotSize;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = axis_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.axis_bind_group");
+        axis_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(AXIS_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.axis_wgsl");
+        axis_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    WGPUVertexAttribute attribs[5] = {};
+    WGPUVertexBufferLayout vbl = thickLineVertexLayout(attribs);
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    auto build_pivot = [&](WGPUCompareFunction cmp, const char* label,
+                           WGPURenderPipeline& out) {
+        WGPUColorTargetState ct = {};
+        ct.format    = surface_format_;
+        ct.blend     = &blend;
+        ct.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = axis_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_main");
+        frag.targetCount = 1;
+        frag.targets     = &ct;
+
+        WGPUDepthStencilState depth = {};
+        depth.format               = WGPUTextureFormat_Depth32Float;
+        depth.depthWriteEnabled    = WGPUOptionalBool_False;
+        depth.depthCompare         = cmp;
+        depth.stencilFront.compare = WGPUCompareFunction_Always;
+        depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout              = axis_pipeline_layout_;
+        rp_desc.label               = svFromCStr(label);
+        rp_desc.vertex.module       = axis_shader_module_;
+        rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount  = 1;
+        rp_desc.vertex.buffers      = &vbl;
+        rp_desc.fragment            = &frag;
+        rp_desc.depthStencil        = &depth;
+        rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode  = WGPUCullMode_None;
+        rp_desc.multisample.count   = uint32_t(sample_count_);
+        rp_desc.multisample.mask    = 0xFFFFFFFFu;
+        out = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    };
+    build_pivot(WGPUCompareFunction_LessEqual,
+                "ifcviewer-wgpu.axis_pivot_pipeline",
+                axis_pivot_pipeline_);
+    build_pivot(WGPUCompareFunction_GreaterEqual,
+                "ifcviewer-wgpu.axis_pivot_xray_pipeline",
+                axis_pivot_xray_pipeline_);
+
+    // Corner: resolved surface, no depth, sampleCount=1.
+    {
+        WGPUColorTargetState ct = {};
+        ct.format    = surface_format_;
+        ct.blend     = &blend;
+        ct.writeMask = WGPUColorWriteMask_All;
+
+        WGPUFragmentState frag = {};
+        frag.module      = axis_shader_module_;
+        frag.entryPoint  = svFromCStr("fs_main");
+        frag.targetCount = 1;
+        frag.targets     = &ct;
+
+        WGPURenderPipelineDescriptor rp_desc = {};
+        rp_desc.layout              = axis_pipeline_layout_;
+        rp_desc.label               = svFromCStr("ifcviewer-wgpu.axis_corner_pipeline");
+        rp_desc.vertex.module       = axis_shader_module_;
+        rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+        rp_desc.vertex.bufferCount  = 1;
+        rp_desc.vertex.buffers      = &vbl;
+        rp_desc.fragment            = &frag;
+        rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+        rp_desc.primitive.cullMode  = WGPUCullMode_None;
+        rp_desc.multisample.count   = 1;
+        rp_desc.multisample.mask    = 0xFFFFFFFFu;
+        axis_corner_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    }
+
+    return axis_pivot_pipeline_ && axis_pivot_xray_pipeline_
+        && axis_corner_pipeline_;
+}
+
+void WgpuOverlayRenderer::encodePivot(WGPURenderPassEncoder pass,
+                                      const WgpuOverlayFrame& f,
+                                      bool visible) {
+    if (!visible || !axis_pivot_pipeline_ || !axis_pivot_xray_pipeline_) return;
+    if (f.viewport_h_px <= 0) return;
+
+    // Arm length = 30 logical px projected into world at the pivot's distance.
+    const float fovy_rad        = qDegreesToRadians(f.camera_fov_y_deg);
+    const float world_per_pixel = f.camera_distance * std::tan(fovy_rad * 0.5f)
+                                  * 2.0f / float(f.viewport_h_px);
+    const float arm_pixels = 30.0f * float(f.device_pixel_ratio);
+    const float arm_world  = arm_pixels * world_per_pixel;
+
+    const float dpr     = float(f.device_pixel_ratio);
+    const float line_w  = 2.5f * dpr;
+    const float vw      = float(f.viewport_w_px);
+    const float vh      = float(f.viewport_h_px);
+
+    uint8_t slot_visible[256];
+    uint8_t slot_xray[256];
+    packAxisUniform(slot_visible, f.view_proj, f.camera_target, arm_world,
+                    1.00f, line_w, vw, vh);
+    packAxisUniform(slot_xray,    f.view_proj, f.camera_target, arm_world,
+                    0.30f, line_w, vw, vh);
+    const uint32_t visible_off = 1u * kAxisUniformSlotSize;
+    const uint32_t xray_off    = 2u * kAxisUniformSlotSize;
+    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, visible_off,
+                         slot_visible, sizeof(slot_visible));
+    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, xray_off,
+                         slot_xray, sizeof(slot_xray));
+
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, axis_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderSetPipeline(pass, axis_pivot_xray_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &xray_off);
+    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
+    wgpuRenderPassEncoderSetPipeline(pass, axis_pivot_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &visible_off);
+    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
+}
+
+void WgpuOverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
+                                           WGPUTextureView surface_view,
+                                           const WgpuOverlayFrame& f) {
+    if (!axis_corner_pipeline_ || !surface_view) return;
+    const int dpr = std::max(1, f.device_pixel_ratio);
+    const uint32_t gizmo_size = uint32_t(110 * dpr);
+    const uint32_t margin     = uint32_t(10 * dpr);
+    if (gizmo_size == 0 || f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
+    // Bottom-left in WebGPU framebuffer space (y down).
+    const uint32_t fb_h = uint32_t(f.viewport_h_px);
+    if (gizmo_size + margin > fb_h) return;
+    const uint32_t y = fb_h - margin - gizmo_size;
+
+    // Independent ortho projection from the camera's direction. Near the
+    // poles the up axis collapses against the look direction, so swap to
+    // Y-up there — mirrors buildViewProj's identical fix on the viewport.
+    const float yaw_rad   = qDegreesToRadians(f.camera_yaw_deg);
+    const float pitch_rad = qDegreesToRadians(f.camera_pitch_deg);
+    const QVector3D eye_dir(std::cos(pitch_rad) * std::cos(yaw_rad),
+                            std::cos(pitch_rad) * std::sin(yaw_rad),
+                            std::sin(pitch_rad));
+    const QVector3D world_up = (std::abs(f.camera_pitch_deg) >= 89.0f)
+                                 ? QVector3D(0.0f, 1.0f, 0.0f)
+                                 : QVector3D(0.0f, 0.0f, 1.0f);
+    QMatrix4x4 gv;
+    gv.lookAt(eye_dir * 3.0f, QVector3D(0, 0, 0), world_up);
+    QMatrix4x4 gp;
+    gp.ortho(-1.4f, 1.4f, -1.4f, 1.4f, 0.1f, 10.0f);
+    QMatrix4x4 z_remap;
+    z_remap(2, 2) = 0.5f;
+    z_remap(2, 3) = 0.5f;
+    const QMatrix4x4 mvp = z_remap * gp * gv;
+
+    uint8_t slot[256];
+    const float line_w = 2.5f * float(dpr);
+    packAxisUniform(slot, mvp, QVector3D(0, 0, 0), 1.0f, 1.0f, line_w,
+                    float(gizmo_size), float(gizmo_size));
+    const uint32_t slot_offset = 0u;
+    wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, slot_offset, slot, sizeof(slot));
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = surface_view;
+    color.loadOp     = WGPULoadOp_Load;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = { 0.0, 0.0, 0.0, 1.0 };
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.corner_axis_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetViewport(pass, float(margin), float(y),
+                                     float(gizmo_size), float(gizmo_size),
+                                     0.0f, 1.0f);
+    wgpuRenderPassEncoderSetPipeline(pass, axis_corner_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, axis_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, axis_bind_group_, 1, &slot_offset);
+    wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}
+
+// -----------------------------------------------------------------------------
+// Section plane visualizer
+// -----------------------------------------------------------------------------
+
+bool WgpuOverlayRenderer::buildSectionVisualizer() {
+    struct Seg {
+        std::array<float, 3> s, e;
+        std::array<float, 3> c;
+    };
+    static constexpr std::array<float, 3> kSectionRed = {1.000f, 0.200f, 0.322f};
+    static const Seg segs[] = {
+        // ---- quad outline ----
+        { {-1, -1, 0}, { 1, -1, 0}, kSectionRed },
+        { { 1, -1, 0}, { 1,  1, 0}, kSectionRed },
+        { { 1,  1, 0}, {-1,  1, 0}, kSectionRed },
+        { {-1,  1, 0}, {-1, -1, 0}, kSectionRed },
+        // ---- arrow shaft along +n ----
+        { { 0, 0, 0}, { 0, 0, 1}, kSectionRed },
+        // ---- arrow head: 4 diagonals from tip to ring at z = 0.78 ----
+        { { 0, 0, 1}, {-0.18f,  0,     0.78f}, kSectionRed },
+        { { 0, 0, 1}, { 0.18f,  0,     0.78f}, kSectionRed },
+        { { 0, 0, 1}, { 0,     -0.18f, 0.78f}, kSectionRed },
+        { { 0, 0, 1}, { 0,      0.18f, 0.78f}, kSectionRed },
+    };
+    std::vector<float> verts;
+    verts.reserve(std::size(segs) * 6 * 11);
+    auto push_v = [&](const Seg& s, float t, float side) {
+        verts.insert(verts.end(), { s.s[0], s.s[1], s.s[2],
+                                     s.e[0], s.e[1], s.e[2],
+                                     s.c[0], s.c[1], s.c[2],
+                                     t, side });
+    };
+    for (const auto& s : segs) {
+        push_v(s, 0.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, -1.f);
+        push_v(s, 1.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, +1.f);
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = verts.size() * sizeof(float);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.section_gizmo_vbo");
+        section_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, section_vertex_buffer_, 0,
+                             verts.data(), verts.size() * sizeof(float));
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = uint64_t(kMaxSectionPlanes) * kSectionUniformSlotSize;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.section_uniforms");
+        section_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 1;
+        entry.buffer.minBindingSize   = 160;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.section_bgl");
+        section_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &section_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.section_pipeline_layout");
+        section_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = section_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = kSectionUniformSlotSize;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = section_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.section_bind_group");
+        section_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(SECTION_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.section_wgsl");
+        section_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    WGPUVertexAttribute attribs[5] = {};
+    WGPUVertexBufferLayout vbl = thickLineVertexLayout(attribs);
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = section_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_False;
+    depth.depthCompare         = WGPUCompareFunction_LessEqual;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = section_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.section_pipeline");
+    rp_desc.vertex.module       = section_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = uint32_t(sample_count_);
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    section_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+
+    return section_pipeline_ != nullptr;
+}
+
+void WgpuOverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
+                                              const WgpuOverlayFrame& f,
+                                              const std::vector<WgpuSectionPlane>& planes) {
+    if (!section_pipeline_ || planes.empty()) return;
+
+    wgpuRenderPassEncoderSetPipeline(pass, section_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, section_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+
+    const int n = std::min<int>(int(planes.size()), kMaxSectionPlanes);
+    for (int i = 0; i < n; ++i) {
+        const WgpuSectionPlane& p = planes[i];
+
+        // Stable in-plane basis: pick the world axis least parallel to n
+        // so the cross-product stays well-conditioned at any orientation.
+        QVector3D nn = p.n.normalized();
+        const float ax = std::abs(nn.x()), ay = std::abs(nn.y()), az = std::abs(nn.z());
+        QVector3D seed = (ax < ay && ax < az) ? QVector3D(1, 0, 0)
+                       : (ay < az)             ? QVector3D(0, 1, 0)
+                                               : QVector3D(0, 0, 1);
+        QVector3D tangent = QVector3D::crossProduct(nn, seed);
+        if (tangent.lengthSquared() < 1e-12f) tangent = QVector3D(1, 0, 0);
+        tangent.normalize();
+        QVector3D bitangent = QVector3D::crossProduct(nn, tangent).normalized();
+
+        // Fixed 1 m half-size matches GL's renderSectionPlanes constant.
+        const float half_size = 1.0f;
+        const float dpr       = float(std::max(1, f.device_pixel_ratio));
+        const float line_w    = 5.0f * dpr;
+        const float vw        = float(f.viewport_w_px);
+        const float vh        = float(f.viewport_h_px);
+
+        uint8_t slot[256];
+        // Neutral tint — actual colours come from the per-vertex VBO
+        // (red quad outline + red arrow). Tint stays available for a
+        // future "selected" multiplier.
+        packSectionUniform(slot, f.view_proj, p.origin, half_size,
+                           tangent, line_w, bitangent, nn,
+                           1.0f, 1.0f, 1.0f, 1.0f,
+                           vw, vh);
+        const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlotSize;
+        wgpuQueueWriteBuffer(queue_, section_uniform_buffer_,
+                             slot_offset, slot, sizeof(slot));
+
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, section_bind_group_,
+                                          1, &slot_offset);
+        wgpuRenderPassEncoderDraw(pass, 54, 1, 0, 0);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Marquee
+// -----------------------------------------------------------------------------
+
+bool WgpuOverlayRenderer::buildMarquee() {
+    struct Seg { std::array<float, 2> s, e; };
+    static const Seg segs[] = {
+        { {0, 0}, {1, 0} },
+        { {1, 0}, {1, 1} },
+        { {1, 1}, {0, 1} },
+        { {0, 1}, {0, 0} },
+    };
+    std::vector<float> verts;
+    verts.reserve(std::size(segs) * 6 * 6);
+    auto push_v = [&](const Seg& s, float t, float side) {
+        verts.insert(verts.end(), { s.s[0], s.s[1], s.e[0], s.e[1], t, side });
+    };
+    for (const auto& s : segs) {
+        push_v(s, 0.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, -1.f);
+        push_v(s, 1.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, +1.f);
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = verts.size() * sizeof(float);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.marquee_vbo");
+        marquee_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, marquee_vertex_buffer_, 0,
+                             verts.data(), verts.size() * sizeof(float));
+    }
+    static const float fill_verts[] = {
+        0, 0,   1, 0,   1, 1,
+        0, 0,   1, 1,   0, 1,
+    };
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = sizeof(fill_verts);
+        bdesc.label = svFromCStr("ifcviewer-wgpu.marquee_fill_vbo");
+        marquee_fill_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+        wgpuQueueWriteBuffer(queue_, marquee_fill_vertex_buffer_, 0,
+                             fill_verts, sizeof(fill_verts));
+    }
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 64;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.marquee_uniforms");
+        marquee_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type             = WGPUBufferBindingType_Uniform;
+        entry.buffer.hasDynamicOffset = 0;
+        entry.buffer.minBindingSize   = 48;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.marquee_bgl");
+        marquee_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &marquee_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.marquee_pipeline_layout");
+        marquee_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = marquee_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = 64;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = marquee_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.marquee_bind_group");
+        marquee_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(MARQUEE_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.marquee_wgsl");
+        marquee_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    // Vertex layout: start_uv(vec2) + end_uv(vec2) + t(f32) + side(f32),
+    // stride 24.
+    WGPUVertexAttribute attribs[4] = {};
+    attribs[0].format = WGPUVertexFormat_Float32x2; attribs[0].offset = 0;  attribs[0].shaderLocation = 0;
+    attribs[1].format = WGPUVertexFormat_Float32x2; attribs[1].offset = 8;  attribs[1].shaderLocation = 1;
+    attribs[2].format = WGPUVertexFormat_Float32;   attribs[2].offset = 16; attribs[2].shaderLocation = 2;
+    attribs[3].format = WGPUVertexFormat_Float32;   attribs[3].offset = 20; attribs[3].shaderLocation = 3;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 24;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 4;
+    vbl.attributes     = attribs;
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = marquee_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = marquee_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.marquee_pipeline");
+    rp_desc.vertex.module       = marquee_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    marquee_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+
+    WGPUVertexAttribute fill_attribs[1] = {};
+    fill_attribs[0].format = WGPUVertexFormat_Float32x2;
+    fill_attribs[0].offset = 0;
+    fill_attribs[0].shaderLocation = 0;
+    WGPUVertexBufferLayout fill_vbl = {};
+    fill_vbl.arrayStride    = 8;
+    fill_vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    fill_vbl.attributeCount = 1;
+    fill_vbl.attributes     = fill_attribs;
+
+    WGPUFragmentState fill_frag = {};
+    fill_frag.module      = marquee_shader_module_;
+    fill_frag.entryPoint  = svFromCStr("fs_fill");
+    fill_frag.targetCount = 1;
+    fill_frag.targets     = &ct;
+
+    WGPURenderPipelineDescriptor fill_rp_desc = rp_desc;
+    fill_rp_desc.label              = svFromCStr("ifcviewer-wgpu.marquee_fill_pipeline");
+    fill_rp_desc.vertex.entryPoint  = svFromCStr("vs_fill");
+    fill_rp_desc.vertex.bufferCount = 1;
+    fill_rp_desc.vertex.buffers     = &fill_vbl;
+    fill_rp_desc.fragment           = &fill_frag;
+    marquee_fill_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &fill_rp_desc);
+
+    return marquee_pipeline_ != nullptr && marquee_fill_pipeline_ != nullptr;
+}
+
+void WgpuOverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
+                                        WGPUTextureView surface_view,
+                                        const WgpuOverlayFrame& f,
+                                        QPoint start_logical_px,
+                                        QPoint current_logical_px,
+                                        bool active) {
+    if (!marquee_pipeline_ || !surface_view) return;
+    if (!active) return;
+    if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
+
+    const float w = float(f.viewport_w_px);
+    const float h = float(f.viewport_h_px);
+    const float dpr = float(std::max(1, f.device_pixel_ratio));
+    const float lx0 = float(std::min(start_logical_px.x(),
+                                     current_logical_px.x())) * dpr;
+    const float ly0 = float(std::min(start_logical_px.y(),
+                                     current_logical_px.y())) * dpr;
+    const float lx1 = float(std::max(start_logical_px.x(),
+                                     current_logical_px.x())) * dpr;
+    const float ly1 = float(std::max(start_logical_px.y(),
+                                     current_logical_px.y())) * dpr;
+    if (lx1 <= lx0 || ly1 <= ly0) return;
+
+    const float nx0 = (lx0 / w) * 2.0f - 1.0f;
+    const float nx1 = (lx1 / w) * 2.0f - 1.0f;
+    const float ny_top    = 1.0f - 2.0f * ly0 / h;
+    const float ny_bottom = 1.0f - 2.0f * ly1 / h;
+
+    // Bonsai decorator_color_special (axis +Z blue): 0.157, 0.565, 1.000.
+    // Outline alpha 0.95; fill_alpha (multiplied onto that) gives ~0.19
+    // alpha for the translucent fill.
+    float uniforms[16] = {};
+    uniforms[0]  = nx0;       uniforms[1]  = ny_top;
+    uniforms[2]  = nx1;       uniforms[3]  = ny_bottom;
+    uniforms[4]  = 0.157f;    uniforms[5]  = 0.565f;
+    uniforms[6]  = 1.000f;    uniforms[7]  = 0.95f;
+    uniforms[8]  = w;         uniforms[9]  = h;
+    uniforms[10] = 3.0f * dpr;
+    uniforms[11] = 0.20f;
+    wgpuQueueWriteBuffer(queue_, marquee_uniform_buffer_, 0,
+                         uniforms, 12 * sizeof(float));
+
+    WGPURenderPassColorAttachment color = {};
+    color.view       = surface_view;
+    color.loadOp     = WGPULoadOp_Load;
+    color.storeOp    = WGPUStoreOp_Store;
+    color.clearValue = { 0, 0, 0, 1 };
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.label                = svFromCStr("ifcviewer-wgpu.marquee_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, marquee_bind_group_, 0, nullptr);
+
+    wgpuRenderPassEncoderSetPipeline(pass, marquee_fill_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, marquee_fill_vertex_buffer_,
+                                         0, WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderDraw(pass, 6, 1, 0, 0);
+
+    wgpuRenderPassEncoderSetPipeline(pass, marquee_pipeline_);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, marquee_vertex_buffer_, 0,
+                                         WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderDraw(pass, 24, 1, 0, 0);
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+}

@@ -40,6 +40,7 @@
 #include "SidecarCache.h"
 #include "WgpuBufferPool.h"
 #include "WgpuModelGpuData.h"
+#include "WgpuOverlayRenderer.h"
 #include "WgpuSelectionState.h"
 #include "WgpuStreamingThread.h"
 #include "WgpuVisibilityState.h"
@@ -220,18 +221,11 @@ private:
     bool  buildHizPipeline();
     bool  buildEdgePipeline();
     void  encodeEdgePass(WGPUCommandEncoder enc, WGPUTextureView surface_view);
-    bool  buildAxisIndicator();
-    // Encode the pivot indicator inside the main MSAA render pass — runs
-    // after geometry so depth interaction is correct.
-    void  encodePivotIndicator(WGPURenderPassEncoder pass,
-                               const QMatrix4x4& view_proj);
-    // Encode the corner gizmo on the resolved single-sample surface,
-    // after the edge silhouette pass. Uses setViewport for the corner box.
-    void  encodeCornerAxisGizmo(WGPUCommandEncoder enc,
-                                WGPUTextureView surface_view);
     // Show/hide the pivot indicator. hide_after_ms > 0 starts the
     // single-shot auto-hide timer used by the wheel-zoom afterglow;
-    // drag callers pass 0 and toggle manually on press/release.
+    // drag callers pass 0 and toggle manually on press/release. The
+    // actual gizmo rendering lives in WgpuOverlayRenderer — this just
+    // manages the UI-side visibility timer.
     void  setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     void  releaseEdgeResources();
 
@@ -450,45 +444,16 @@ private:
     WGPUBindGroup       edge_bind_group_      = nullptr;
     bool                edges_enabled_        = true;
 
-    // Axis indicator overlay — drives both the corner gizmo and the
-    // orbit pivot indicator from the SAME 6-vertex unit cross + shader.
-    // One uniform buffer with three 256-byte-aligned slots
-    // (slot 0 = corner, slot 1 = pivot visible, slot 2 = pivot x-ray),
-    // one bind group with a dynamic offset, three pipelines that differ
-    // only in render-target / depth setup:
-    //   axis_pivot_pipeline_:      MSAA + depth LessEqual    (visible α=1)
-    //   axis_pivot_xray_pipeline_: MSAA + depth GreaterEqual (occluded α≈0.3)
-    //   axis_corner_pipeline_:     resolved, no depth, sampleCount=1
-    // The pivot's x-ray pass renders first so the visible pass overdraws
-    // it where geometry isn't in the way. Matches GL's renderPivotIndicator.
-    WGPUShaderModule    axis_shader_module_       = nullptr;
-    WGPUBindGroupLayout axis_bgl_                 = nullptr;
-    WGPUPipelineLayout  axis_pipeline_layout_     = nullptr;
-    WGPURenderPipeline  axis_pivot_pipeline_      = nullptr;
-    WGPURenderPipeline  axis_pivot_xray_pipeline_ = nullptr;
-    WGPURenderPipeline  axis_corner_pipeline_     = nullptr;
-    // Marquee overlay (drag-rect for box-select). Renders on the resolved
-    // surface after the corner gizmo. Uses a 4-segment unit-quad VBO; the
-    // shader maps unit coords to NDC via per-frame uniform (rect min/max
-    // in NDC + colour + viewport + line width).
-    WGPUShaderModule    marquee_shader_module_    = nullptr;
-    WGPUBindGroupLayout marquee_bgl_              = nullptr;
-    WGPUPipelineLayout  marquee_pipeline_layout_  = nullptr;
-    WGPURenderPipeline  marquee_pipeline_         = nullptr;  // outline (thick line + AA)
-    WGPURenderPipeline  marquee_fill_pipeline_    = nullptr;  // translucent quad fill
-    WGPUBuffer          marquee_vertex_buffer_    = nullptr;  // outline geometry
-    WGPUBuffer          marquee_fill_vertex_buffer_ = nullptr; // 6-vert quad
-    WGPUBuffer          marquee_uniform_buffer_   = nullptr;
-    WGPUBindGroup       marquee_bind_group_       = nullptr;
-    bool  buildMarquee();
-    void  encodeMarquee(WGPUCommandEncoder enc, WGPUTextureView surface_view);
-    void  releaseMarquee();
-    WGPUBuffer          axis_vertex_buffer_       = nullptr;  // 6 × 24 B
-    WGPUBuffer          axis_uniform_buffer_      = nullptr;  // 3 × 256 B slots
-    WGPUBindGroup       axis_bind_group_          = nullptr;  // dynamic-offset
-    static constexpr uint32_t kAxisUniformSlotSize = 256;
+    // Pivot visibility state — the gizmo itself lives in overlays_.
+    // The timer auto-hides the pivot after a wheel-zoom afterglow.
     bool                pivot_indicator_visible_    = false;
     QTimer*             pivot_indicator_hide_timer_ = nullptr;
+
+    // All viewport overlays (axis indicator, section gizmos, marquee
+    // rect) — pipelines + shaders + buffers + encoders. The viewport
+    // builds a WgpuOverlayFrame each frame and asks the renderer to
+    // encode each overlay; see WgpuOverlayRenderer.h.
+    WgpuOverlayRenderer overlays_;
 
     // Pick pass (stage 4). Single-sample R32UInt target + depth, vertex-
     // pulled from the same visible_draws / instances buffers as the main
@@ -510,18 +475,11 @@ private:
     int                pick_w_              = 0;
     int                pick_h_              = 0;
 
-    // Section-cutting state. Each plane is (n, d) with normal n in world
-    // space and signed distance d = -dot(n, point_on_plane); a point P is
-    // on the kept side iff dot(n, P) + d <= 0. The vector mirrors GL's
-    // ViewportWindow::section_planes_.
-    struct SectionPlane {
-        QVector3D n;            // unit normal
-        float     d;            // -dot(n, origin)
-        QVector3D origin;       // surface point at the moment the plane was added
-        float     visual_radius; // half-extent for the gizmo quad (set from the picked instance's AABB diagonal)
-    };
-    std::vector<SectionPlane> section_planes_;
-    bool                      section_tool_active_  = false;
+    // Section-cutting state. WgpuSectionPlane lives in WgpuOverlayRenderer.h
+    // because the visualiser reads it; the viewport owns the authoritative
+    // vector that the section tool mutates.
+    std::vector<WgpuSectionPlane> section_planes_;
+    bool                          section_tool_active_  = false;
 
     // Marquee box-select. Armed on LMB press (when no other tool consumes
     // the click), becomes active after the cursor moves past
@@ -552,25 +510,6 @@ private:
     // delta onto the plane's normal in screen space and slides the plane
     // along that direction.
     void  updateSectionDrag(int x, int y);
-
-    // Section plane visualisation. Renders one translucent quad per active
-    // plane, sized to the scene AABB so the cut is visible at any zoom.
-    // Built once (unit quad in plane-local space), oriented per-plane in
-    // the vertex shader from u_origin + tangent/bitangent (derived from
-    // the plane normal). Two passes: a back-facing fill (alpha 0.18) for
-    // the "behind geometry" hint plus a front-facing fill (alpha 0.35).
-    WGPUShaderModule    section_shader_module_   = nullptr;
-    WGPUBindGroupLayout section_bgl_             = nullptr;
-    WGPUPipelineLayout  section_pipeline_layout_ = nullptr;
-    WGPURenderPipeline  section_pipeline_        = nullptr;
-    WGPUBuffer          section_vertex_buffer_   = nullptr;
-    WGPUBuffer          section_uniform_buffer_  = nullptr;
-    WGPUBindGroup       section_bind_group_      = nullptr;
-    static constexpr uint32_t kSectionUniformSlotSize = 256;
-    bool  buildSectionVisualizer();
-    void  encodeSectionPlanes(WGPURenderPassEncoder pass,
-                              const QMatrix4x4& view_proj);
-    void  releaseSectionVisualizer();
 
     enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
     static constexpr int HIZ_SLOTS = 2;
