@@ -2182,7 +2182,50 @@ void WgpuViewportWindow::encodeEdgePass(WGPUCommandEncoder enc,
 // so depth interaction is correct; corner draws on the resolved surface after
 // the edge silhouette pass so the laplacian can't darken its lines.
 
-static const char* AXIS_WGSL = R"(
+// Shared by every thick-line gizmo (axis indicator, section plane
+// gizmo, future overlays). Provides:
+//   - VsOut: rasterizer carry — clip_pos, rgba colour, side_t for AA
+//   - thick_line_clip(p_start, p_end, t, side, viewport_size,
+//                     line_width_px): the actual screen-space expansion.
+//     Every vertex carries BOTH endpoints; expanding from
+//     `s_end - s_start` (NOT this vertex vs the other) keeps the
+//     perpendicular consistent so the quad stays a rectangle and not
+//     a bowtie. clip.w is preserved so depth interpolation stays correct.
+//   - fs_main: analytical 1-pixel AA via |side_t| + fwidth() —
+//     interpolated across the perpendicular, smoothstep over its
+//     per-fragment derivative gives a smooth edge regardless of MSAA.
+// Pasted into each shader as a prefix via adjacent string literals.
+#define THICK_LINE_HELPERS_WGSL R"WGSL(
+struct VsOut {
+    @builtin(position) clip_pos: vec4<f32>,
+    @location(0) color:  vec4<f32>,
+    @location(1) side_t: f32,
+};
+
+fn thick_line_clip(p_start: vec4<f32>, p_end: vec4<f32>,
+                   t: f32, side: f32,
+                   viewport_size: vec2<f32>,
+                   line_width_px: f32) -> vec4<f32> {
+    let p_here = mix(p_start, p_end, t);
+    let s_start = (p_start.xy / p_start.w) * viewport_size * 0.5;
+    let s_end   = (p_end.xy   / p_end.w  ) * viewport_size * 0.5;
+    let dir  = normalize(s_end - s_start);
+    let perp = vec2<f32>(-dir.y, dir.x);
+    let off_pixels = perp * (line_width_px * 0.5) * side;
+    let off_ndc    = off_pixels * 2.0 / viewport_size;
+    return vec4<f32>(p_here.xy + off_ndc * p_here.w, p_here.zw);
+}
+
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    let d  = abs(in.side_t);
+    let aa = fwidth(in.side_t);
+    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
+    return vec4<f32>(in.color.xyz, in.color.w * coverage);
+}
+)WGSL"
+
+static const char* AXIS_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
 struct AxisUniforms {
     mvp:           mat4x4<f32>,
     origin:        vec3<f32>,
@@ -2194,27 +2237,6 @@ struct AxisUniforms {
 
 @group(0) @binding(0) var<uniform> u: AxisUniforms;
 
-struct VsOut {
-    @builtin(position) clip_pos: vec4<f32>,
-    @location(0) color:  vec3<f32>,
-    @location(1) alpha:  f32,
-    // Signed perpendicular position across the quad (±1 at the long
-    // edges, 0 down the line's centre). The rasterizer interpolates it,
-    // and the fragment shader uses |side_t| + fwidth() as a 1-pixel
-    // smoothstep so the line has analytically anti-aliased edges
-    // without needing MSAA on the corner gizmo's resolved-surface pass.
-    @location(2) side_t: f32,
-};
-
-// Each axis is a 4-vertex quad expanded in SCREEN space from a notional
-// line segment. Every vertex carries BOTH endpoints (start, end) so the
-// screen-space direction is computed consistently as `s_end - s_start`
-// regardless of which end this vertex sits at. `t` selects which end
-// (0 = start, 1 = end) for the base projected point; `side` is +1/-1
-// for the two sides of the perpendicular offset. Computing direction
-// from this vertex to the other (a previous design) flipped sign at
-// the end → the quad became a bowtie. `clip.w` is preserved so depth
-// interpolation stays correct.
 @vertex
 fn vs_main(@location(0) start: vec3<f32>,
            @location(1) end:   vec3<f32>,
@@ -2223,37 +2245,44 @@ fn vs_main(@location(0) start: vec3<f32>,
            @location(4) side:  f32) -> VsOut {
     let p_start = u.mvp * vec4<f32>(u.origin + start * u.arm, 1.0);
     let p_end   = u.mvp * vec4<f32>(u.origin + end   * u.arm, 1.0);
-    let p_here  = mix(p_start, p_end, t);
-
-    let s_start = (p_start.xy / p_start.w) * u.viewport_size * 0.5;
-    let s_end   = (p_end.xy   / p_end.w  ) * u.viewport_size * 0.5;
-    let dir  = normalize(s_end - s_start);
-    let perp = vec2<f32>(-dir.y, dir.x);
-
-    let off_pixels = perp * (u.line_width_px * 0.5) * side;
-    let off_ndc    = off_pixels * 2.0 / u.viewport_size;
     var out: VsOut;
-    out.clip_pos = vec4<f32>(p_here.xy + off_ndc * p_here.w,
-                             p_here.zw);
-    out.color  = col;
-    out.alpha  = u.alpha;
+    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
+                                    u.viewport_size, u.line_width_px);
+    out.color  = vec4<f32>(col, u.alpha);
     out.side_t = side;
     return out;
 }
+)WGSL";
 
-@fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    // |side_t| is 0 at line centre, 1 at the long edges. fwidth gives
-    // the per-pixel change — smoothing across that range gives a single
-    // pixel of analytical AA along the perpendicular.
-    let d  = abs(in.side_t);
-    let aa = fwidth(in.side_t);
-    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
-    return vec4<f32>(in.color, in.alpha * coverage);
+// Populate `attribs[5]` with the standard thick-line layout:
+//   loc 0: start (vec3 @ 0)
+//   loc 1: end   (vec3 @ 12)
+//   loc 2: col   (vec3 @ 24)
+//   loc 3: t     (f32  @ 36)
+//   loc 4: side  (f32  @ 40)
+// Returns a WGPUVertexBufferLayout aliasing the caller-owned `attribs`.
+static WGPUVertexBufferLayout thickLineVertexLayout(WGPUVertexAttribute attribs[5]) {
+    attribs[0].format = WGPUVertexFormat_Float32x3; attribs[0].offset = 0;  attribs[0].shaderLocation = 0;
+    attribs[1].format = WGPUVertexFormat_Float32x3; attribs[1].offset = 12; attribs[1].shaderLocation = 1;
+    attribs[2].format = WGPUVertexFormat_Float32x3; attribs[2].offset = 24; attribs[2].shaderLocation = 2;
+    attribs[3].format = WGPUVertexFormat_Float32;   attribs[3].offset = 36; attribs[3].shaderLocation = 3;
+    attribs[4].format = WGPUVertexFormat_Float32;   attribs[4].offset = 40; attribs[4].shaderLocation = 4;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 44;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 5;
+    vbl.attributes     = attribs;
+    return vbl;
 }
-)";
 
 bool WgpuViewportWindow::buildAxisIndicator() {
+    // Bonsai decorator palette (src/bonsai/bonsai/bim/ui.py:593+):
+    //   decorator_color_error    = (1.000, 0.200, 0.322) — red    → +X
+    //   decorator_color_selected = (0.545, 0.863, 0.000) — green  → +Y
+    //   decorator_color_special  = (0.157, 0.565, 1.000) — blue   → +Z
+    // Same palette is reused for the section gizmo so all overlay colours
+    // come from one canonical source.
+    //
     // Vertex buffer: three positive-axis rays, each expanded into a
     // 4-corner quad (6 vertices in triangle-list order) so the vertex
     // shader can offset by `line_width / 2` pixels in screen space.
@@ -2268,30 +2297,30 @@ bool WgpuViewportWindow::buildAxisIndicator() {
     //   (start,-1) (start,+1) (end,-1)   (end,-1) (start,+1) (end,+1)
     // — a standard triangle-list two-tri quad split.
     static const float axis_verts[] = {
-        //  start         end           color (RGB)         t    side
-        // ---- +X (red) — start=(0,0,0), end=(1,0,0) ----
-         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  0.f,  -1.f,
-         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  0.f,  +1.f,
-         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  1.f,  -1.f,
-         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  1.f,  -1.f,
-         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  0.f,  +1.f,
-         0,0,0,         1,0,0,        1.00f, 0.15f, 0.15f,  1.f,  +1.f,
+        //  start         end           color (RGB — Bonsai decorators)  t    side
+        // ---- +X (decorator red) — start=(0,0,0), end=(1,0,0) ----
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  -1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  +1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  -1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  -1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  0.f,  +1.f,
+         0,0,0,         1,0,0,        1.000f, 0.200f, 0.322f,  1.f,  +1.f,
 
-        // ---- +Y (green) — start=(0,0,0), end=(0,1,0) ----
-         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  0.f,  -1.f,
-         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  0.f,  +1.f,
-         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  1.f,  -1.f,
-         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  1.f,  -1.f,
-         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  0.f,  +1.f,
-         0,0,0,         0,1,0,        0.15f, 0.85f, 0.20f,  1.f,  +1.f,
+        // ---- +Y (decorator green) — start=(0,0,0), end=(0,1,0) ----
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  -1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  +1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  -1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  -1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  0.f,  +1.f,
+         0,0,0,         0,1,0,        0.545f, 0.863f, 0.000f,  1.f,  +1.f,
 
-        // ---- +Z (blue) — start=(0,0,0), end=(0,0,1) ----
-         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  0.f,  -1.f,
-         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  0.f,  +1.f,
-         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  1.f,  -1.f,
-         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  1.f,  -1.f,
-         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  0.f,  +1.f,
-         0,0,0,         0,0,1,        0.20f, 0.40f, 1.00f,  1.f,  +1.f,
+        // ---- +Z (decorator blue) — start=(0,0,0), end=(0,0,1) ----
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  -1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  +1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  -1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  -1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  0.f,  +1.f,
+         0,0,0,         0,0,1,        0.157f, 0.565f, 1.000f,  1.f,  +1.f,
     };
     {
         WGPUBufferDescriptor bdesc = {};
@@ -2364,29 +2393,8 @@ bool WgpuViewportWindow::buildAxisIndicator() {
         axis_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
     }
 
-    // Vertex layout: start(vec3) + end(vec3) + col(vec3) + t(f32) + side(f32),
-    // interleaved, stride 44.
     WGPUVertexAttribute attribs[5] = {};
-    attribs[0].format         = WGPUVertexFormat_Float32x3;  // start
-    attribs[0].offset         = 0;
-    attribs[0].shaderLocation = 0;
-    attribs[1].format         = WGPUVertexFormat_Float32x3;  // end
-    attribs[1].offset         = 12;
-    attribs[1].shaderLocation = 1;
-    attribs[2].format         = WGPUVertexFormat_Float32x3;  // color
-    attribs[2].offset         = 24;
-    attribs[2].shaderLocation = 2;
-    attribs[3].format         = WGPUVertexFormat_Float32;    // t
-    attribs[3].offset         = 36;
-    attribs[3].shaderLocation = 3;
-    attribs[4].format         = WGPUVertexFormat_Float32;    // side
-    attribs[4].offset         = 40;
-    attribs[4].shaderLocation = 4;
-    WGPUVertexBufferLayout vbl = {};
-    vbl.arrayStride    = 44;
-    vbl.stepMode       = WGPUVertexStepMode_Vertex;
-    vbl.attributeCount = 5;
-    vbl.attributes     = attribs;
+    WGPUVertexBufferLayout vbl = thickLineVertexLayout(attribs);
 
     // Standard alpha blend so the corner gizmo can soften over the resolved
     // background and the pivot can fade against scene colour.
@@ -2651,12 +2659,11 @@ void WgpuViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_m
 // sees the back of the plane (matches what GL's plane gizmo does visually).
 // 6 active-plane × 1 quad × 6 verts = 36 verts max per frame, trivial.
 
-// Matches GL's section gizmo (2 × 2 m wireframe quad outline + arrow shaft
-// + 4-line arrow head) but with screen-space thick-line expansion so the
-// gizmo reads cleanly against busy BIM geometry. Same technique the axis
-// indicator uses: per-vertex (start, end, t, side, colour) and the vertex
-// shader offsets by ±line_width/2 along the screen-space perpendicular.
-static const char* SECTION_WGSL = R"(
+// GL's section gizmo (2 × 2 m wireframe quad outline + arrow shaft + 4-line
+// arrow head) rendered as thick lines so it stays visible against busy
+// BIM geometry. Shares VsOut, thick_line_clip and fs_main with the axis
+// indicator via THICK_LINE_HELPERS_WGSL.
+static const char* SECTION_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
 struct SectionUniforms {
     mvp:           mat4x4<f32>,
     origin:        vec3<f32>,
@@ -2674,12 +2681,6 @@ struct SectionUniforms {
 
 @group(0) @binding(0) var<uniform> u: SectionUniforms;
 
-struct VsOut {
-    @builtin(position) clip_pos: vec4<f32>,
-    @location(0) color:  vec4<f32>,
-    @location(1) side_t: f32,
-};
-
 fn plane_to_world(p: vec3<f32>) -> vec3<f32> {
     return u.origin + (u.tangent * p.x + u.bitangent * p.y + u.normal * p.z)
                       * u.half_size;
@@ -2693,30 +2694,14 @@ fn vs_main(@location(0) start_local: vec3<f32>,
            @location(4) side:        f32) -> VsOut {
     let p_start = u.mvp * vec4<f32>(plane_to_world(start_local), 1.0);
     let p_end   = u.mvp * vec4<f32>(plane_to_world(end_local),   1.0);
-    let p_here  = mix(p_start, p_end, t);
-
-    let s_start = (p_start.xy / p_start.w) * u.viewport_size * 0.5;
-    let s_end   = (p_end.xy   / p_end.w  ) * u.viewport_size * 0.5;
-    let dir  = normalize(s_end - s_start);
-    let perp = vec2<f32>(-dir.y, dir.x);
-
-    let off_pixels = perp * (u.line_width_px * 0.5) * side;
-    let off_ndc    = off_pixels * 2.0 / u.viewport_size;
     var out: VsOut;
-    out.clip_pos = vec4<f32>(p_here.xy + off_ndc * p_here.w, p_here.zw);
+    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
+                                    u.viewport_size, u.line_width_px);
     out.color    = vec4<f32>(col * u.tint.xyz, u.tint.w);
     out.side_t   = side;
     return out;
 }
-
-@fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    let d  = abs(in.side_t);
-    let aa = fwidth(in.side_t);
-    let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
-    return vec4<f32>(in.color.xyz, in.color.w * coverage);
-}
-)";
+)WGSL";
 
 bool WgpuViewportWindow::buildSectionVisualizer() {
     // 9 line segments (4 quad-outline + 1 arrow shaft + 4 arrow head),
@@ -2731,19 +2716,24 @@ bool WgpuViewportWindow::buildSectionVisualizer() {
         std::array<float, 3> s, e;
         std::array<float, 3> c;
     };
+    // Entire gizmo uses Bonsai's decorator_color_error red so it reads
+    // against any geometry. White quad + yellow arrow (GL's defaults)
+    // disappeared into light surfaces; one consistent saturated red is
+    // both more visible and visually identifies "this is a tool overlay".
+    static constexpr std::array<float, 3> kSectionRed = {1.000f, 0.200f, 0.322f};
     static const Seg segs[] = {
-        // ---- quad outline (white) ----
-        { {-1, -1, 0}, { 1, -1, 0}, {1, 1, 1} },
-        { { 1, -1, 0}, { 1,  1, 0}, {1, 1, 1} },
-        { { 1,  1, 0}, {-1,  1, 0}, {1, 1, 1} },
-        { {-1,  1, 0}, {-1, -1, 0}, {1, 1, 1} },
-        // ---- arrow shaft along +n (yellow) ----
-        { { 0, 0, 0}, { 0, 0, 1}, {1.0f, 0.85f, 0.20f} },
+        // ---- quad outline ----
+        { {-1, -1, 0}, { 1, -1, 0}, kSectionRed },
+        { { 1, -1, 0}, { 1,  1, 0}, kSectionRed },
+        { { 1,  1, 0}, {-1,  1, 0}, kSectionRed },
+        { {-1,  1, 0}, {-1, -1, 0}, kSectionRed },
+        // ---- arrow shaft along +n ----
+        { { 0, 0, 0}, { 0, 0, 1}, kSectionRed },
         // ---- arrow head: 4 diagonals from tip to ring at z = 0.78 ----
-        { { 0, 0, 1}, {-0.18f,  0,     0.78f}, {1.0f, 0.85f, 0.20f} },
-        { { 0, 0, 1}, { 0.18f,  0,     0.78f}, {1.0f, 0.85f, 0.20f} },
-        { { 0, 0, 1}, { 0,     -0.18f, 0.78f}, {1.0f, 0.85f, 0.20f} },
-        { { 0, 0, 1}, { 0,      0.18f, 0.78f}, {1.0f, 0.85f, 0.20f} },
+        { { 0, 0, 1}, {-0.18f,  0,     0.78f}, kSectionRed },
+        { { 0, 0, 1}, { 0.18f,  0,     0.78f}, kSectionRed },
+        { { 0, 0, 1}, { 0,     -0.18f, 0.78f}, kSectionRed },
+        { { 0, 0, 1}, { 0,      0.18f, 0.78f}, kSectionRed },
     };
     constexpr size_t kVertsPerSegment = 6;     // (start,-1) (start,+1) (end,-1)   (end,-1) (start,+1) (end,+1)
     constexpr size_t kFloatsPerVertex = 11;    // start.xyz, end.xyz, col.xyz, t, side
@@ -2823,28 +2813,8 @@ bool WgpuViewportWindow::buildSectionVisualizer() {
         section_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
     }
 
-    // start_local + end_local + col + t + side, interleaved, stride 44.
     WGPUVertexAttribute attribs[5] = {};
-    attribs[0].format         = WGPUVertexFormat_Float32x3;  // start_local
-    attribs[0].offset         = 0;
-    attribs[0].shaderLocation = 0;
-    attribs[1].format         = WGPUVertexFormat_Float32x3;  // end_local
-    attribs[1].offset         = 12;
-    attribs[1].shaderLocation = 1;
-    attribs[2].format         = WGPUVertexFormat_Float32x3;  // color
-    attribs[2].offset         = 24;
-    attribs[2].shaderLocation = 2;
-    attribs[3].format         = WGPUVertexFormat_Float32;    // t
-    attribs[3].offset         = 36;
-    attribs[3].shaderLocation = 3;
-    attribs[4].format         = WGPUVertexFormat_Float32;    // side
-    attribs[4].offset         = 40;
-    attribs[4].shaderLocation = 4;
-    WGPUVertexBufferLayout vbl = {};
-    vbl.arrayStride    = 44;
-    vbl.stepMode       = WGPUVertexStepMode_Vertex;
-    vbl.attributeCount = 5;
-    vbl.attributes     = attribs;
+    WGPUVertexBufferLayout vbl = thickLineVertexLayout(attribs);
 
     WGPUBlendState blend = {};
     blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
@@ -2954,16 +2924,18 @@ void WgpuViewportWindow::encodeSectionPlanes(WGPURenderPassEncoder pass,
         // sheet sized to the cut subject.
         const float half_size = 1.0f;
         const float dpr       = float(std::max(1, int(devicePixelRatio())));
-        const float line_w    = 3.0f * dpr;
+        const float line_w    = 5.0f * dpr;
         const float vw        = float(configured_w_);
         const float vh        = float(configured_h_);
 
         uint8_t slot[256];
-        // GL palette: warm yellow-orange tint, alpha 0.85 — slightly
-        // bolder than the GL default so the thick-line + AA reads cleanly.
+        // Neutral tint — actual colours come from the per-vertex VBO
+        // (white quad outline + red arrow). Tint stays available for a
+        // future "selected" multiplier; alpha controls the whole gizmo's
+        // opacity.
         packSectionUniform(slot, view_proj, p.origin, half_size,
                            tangent, line_w, bitangent, nn,
-                           1.0f, 0.85f, 0.40f, 0.85f,
+                           1.0f, 1.0f, 1.0f, 1.0f,
                            vw, vh);
         const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlotSize;
         wgpuQueueWriteBuffer(queue_, section_uniform_buffer_,
