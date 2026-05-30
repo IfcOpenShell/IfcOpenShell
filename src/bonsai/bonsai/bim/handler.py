@@ -46,6 +46,7 @@ from bonsai.bim.module.model.decorator import (
     BoundingBoxDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
+    WallFilletPreviewDecorator,
 )
 from bonsai.bim.module.model.preview_base import discard_pending_previews
 from bonsai.bim.module.nest.decorator import NestDecorator
@@ -462,6 +463,7 @@ def _install_viewport_overlays() -> None:
     NestDecorator.uninstall()
     WallAxisDecorator.uninstall()
     SlabDirectionDecorator.uninstall()
+    WallFilletPreviewDecorator.uninstall()
     uninstall_decorator_cache_handlers()
     try:
         if georeference_props.should_visualise:
@@ -476,6 +478,10 @@ def _install_viewport_overlays() -> None:
             SlabDirectionDecorator.install(bpy.context)
         if model_props.show_bounding_box:
             BoundingBoxDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on Scene.BIMPreviewProperties.
+        # wall_fillet.is_active, so installation has no cost when no preview
+        # is open. No corresponding addon-preference toggle.
+        WallFilletPreviewDecorator.install(bpy.context)
     finally:
         install_decorator_cache_handlers()
 
