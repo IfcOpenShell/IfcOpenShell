@@ -302,6 +302,15 @@ class SelectSimilarContainer(bpy.types.Operator):
             is_recursive=self.is_recursive,
         )
         self.is_recursive = True  # <-- forcibly reset
+
+        element = tool.Ifc.get_entity(context.active_object)
+        if element:
+            container = tool.Spatial.get_container(element)
+            if container:
+                result = f'location="{container.Name}"'
+                bpy.context.window_manager.clipboard = result
+                self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
