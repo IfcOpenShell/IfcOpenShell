@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any
 import bpy
 from bpy.types import Panel
 
+import ifcopenshell.util.unit
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
@@ -303,6 +304,8 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
             if props.is_editing:
                 calculated_params = tool.Model.get_active_stair_calculated_params()
                 row = self.layout.row(align=True)
@@ -322,16 +325,25 @@ class BIM_PT_stair(bpy.types.Panel):
                         row.label(text=f"{prop_name}:")
                         row = self.layout.row(align=True)
                         for prop_value_item in prop_value:
-                            row.label(text=str(prop_value_item))
+                            if isinstance(prop_value_item, float):
+                                row.label(text=tool.Unit.format_distance(prop_value_item * si_conversion))
+                            else:
+                                row.label(text=str(prop_value_item))
                     else:
                         row.label(text=prop_name)
-                        row.label(text=str(prop_value))
+                        if isinstance(prop_value, float):
+                            row.label(text=tool.Unit.format_distance(prop_value * si_conversion))
+                        else:
+                            row.label(text=str(prop_value))
 
             # calculated properties
             for prop_name, prop_value in calculated_params.items():
                 row = self.layout.row(align=True)
                 row.label(text=prop_name)
-                row.label(text=str(prop_value))
+                if isinstance(prop_value, float):
+                    row.label(text=tool.Unit.format_distance(prop_value * si_conversion))
+                else:
+                    row.label(text=str(prop_value))
         else:
             row = self.layout.row()
             row.label(text="No Stair Found")
