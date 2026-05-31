@@ -5283,6 +5283,14 @@ class BaseParametricGizmoGroup:
             return False
         if not tool.Blender.are_viewport_gizmos_enabled():
             return False
+        # Hide every parametric gizmo while any preview is open — the preview
+        # is the only interactive surface in that mode, sister gizmos would
+        # compete for screen space and let the user trigger mutations that
+        # would race the preview's in-progress draft.
+        from bonsai.bim.module.model import preview_base
+
+        if preview_base.any_preview_active(context):
+            return False
         if cls.gizmo_pref_name:
             prefs = tool.Blender.get_addon_preferences()
             feature_prefs = getattr(prefs.gizmos, cls.gizmo_pref_name, None)
