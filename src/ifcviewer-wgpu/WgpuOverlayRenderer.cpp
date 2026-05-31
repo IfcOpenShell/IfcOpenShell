@@ -23,6 +23,7 @@
 #include <QFontMetrics>
 #include <QImage>
 #include <QPainter>
+#include <QSet>
 #include <QStringList>
 #include <QtMath>
 
@@ -1930,28 +1931,44 @@ void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
                                        WGPUTextureView surface_view,
                                        const WgpuOverlayFrame& f) {
     if (!label_pipeline_ || !surface_view) return;
-    if (labels_.empty() && hud_text_.isEmpty()) return;
+    if (labels_.empty() && hud_text_.isEmpty()) {
+        // Selection cleared / tool exited — drop the cache so we don't
+        // pin GPU memory for unreferenced strings until destroy().
+        releaseLabelTextures();
+        return;
+    }
     if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
 
     const int   dpr   = std::max(1, f.device_pixel_ratio);
     const float w_phys = float(f.viewport_w_px);
     const float h_phys = float(f.viewport_h_px);
 
-    // Resolve each label/HUD to (texture, NDC quad), expanding into the
-    // per-frame vertex buffer.
-    struct DrawRec { LabelTexture* tex; uint32_t first_vertex; };
+    // Track which cache keys we touched this frame so we can evict
+    // stale entries afterwards — measure tools push a new string per
+    // object on every selection mutation, so without pruning the cache
+    // grows by O(selections_seen) over the session.
+    QSet<QString> used_keys;
+
+    // Resolve each label/HUD to (bind_group, NDC quad), expanding into
+    // the per-frame vertex buffer. Store the WGPUBindGroup handle by
+    // value — getOrCreateLabelTexture may insert into label_tex_cache_
+    // and trigger a QHash rehash, which invalidates any LabelTexture*
+    // captured from earlier iterations. The handle itself is a stable
+    // wgpu-side pointer that stays valid as long as the cache holds it,
+    // and we don't evict mid-encode.
+    struct DrawRec { WGPUBindGroup bind_group; uint32_t first_vertex; };
     std::vector<DrawRec> draws;
     std::vector<float>   verts;
     draws.reserve(labels_.size() + 1);
     verts.reserve((labels_.size() + 1) * 6 * 4);
 
-    auto push_quad = [&](LabelTexture* tex, float nx0, float ny0,
+    auto push_quad = [&](WGPUBindGroup bg, float nx0, float ny0,
                                             float nx1, float ny1) {
         // Two triangles, top-left at (nx0, ny0) (NDC Y up).
         // UV layout: (0,0) at top-left of image → flip Y because NDC Y
         // increases upward but image V increases downward.
         const float u0 = 0.0f, u1 = 1.0f, v0 = 0.0f, v1 = 1.0f;
-        draws.push_back({tex, uint32_t(verts.size() / 4)});
+        draws.push_back({bg, uint32_t(verts.size() / 4)});
         const float quad[24] = {
             nx0, ny0, u0, v0,   nx1, ny0, u1, v0,   nx0, ny1, u0, v1,
             nx0, ny1, u0, v1,   nx1, ny0, u1, v0,   nx1, ny1, u1, v1,
@@ -1975,8 +1992,12 @@ void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
         const float sx_phys = (ndc_x * 0.5f + 0.5f) * w_phys;
         const float sy_phys = (1.0f - (ndc_y * 0.5f + 0.5f)) * h_phys;
         const QString key = QStringLiteral("L9:") + lbl.text;
+        used_keys.insert(key);
         LabelTexture* tex = getOrCreateLabelTexture(key, lbl.text, 9, dpr);
         if (!tex) continue;
+        // Snapshot the fields we need NOW — `tex` may be invalidated by
+        // the next getOrCreateLabelTexture call's hash rehash.
+        const WGPUBindGroup bg = tex->bind_group;
         const float wq = float(tex->width_px);
         const float hq = float(tex->height_px);
         const float lx_phys = sx_phys - wq * 0.5f;
@@ -1985,14 +2006,16 @@ void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
         const float nx1 = ((lx_phys + wq) / w_phys) * 2.0f - 1.0f;
         const float ny0 = 1.0f - 2.0f * ly_phys / h_phys;          // top
         const float ny1 = 1.0f - 2.0f * (ly_phys + hq) / h_phys;   // bottom
-        push_quad(tex, nx0, ny0, nx1, ny1);
+        push_quad(bg, nx0, ny0, nx1, ny1);
     }
 
     // HUD: top-left, point size 11 (matches GL OverlayRenderer).
     if (!hud_text_.isEmpty()) {
         const QString key = QStringLiteral("H11:") + hud_text_;
+        used_keys.insert(key);
         LabelTexture* tex = getOrCreateLabelTexture(key, hud_text_, 11, dpr);
         if (tex) {
+            const WGPUBindGroup bg = tex->bind_group;
             const float margin_phys = 12.0f * float(dpr);
             const float lx_phys = margin_phys;
             const float ly_phys = margin_phys;
@@ -2002,7 +2025,7 @@ void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
             const float nx1 = ((lx_phys + wq) / w_phys) * 2.0f - 1.0f;
             const float ny0 = 1.0f - 2.0f * ly_phys / h_phys;
             const float ny1 = 1.0f - 2.0f * (ly_phys + hq) / h_phys;
-            push_quad(tex, nx0, ny0, nx1, ny1);
+            push_quad(bg, nx0, ny0, nx1, ny1);
         }
     }
 
@@ -2040,9 +2063,26 @@ void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, label_vertex_buffer_,
                                          0, WGPU_WHOLE_SIZE);
     for (const auto& d : draws) {
-        wgpuRenderPassEncoderSetBindGroup(pass, 0, d.tex->bind_group, 0, nullptr);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, d.bind_group, 0, nullptr);
         wgpuRenderPassEncoderDraw(pass, 6, 1, d.first_vertex, 0);
     }
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
+
+    // Evict cache entries that weren't referenced this frame. Measure
+    // tools push a fresh string per object on every selection mutation,
+    // so without this the cache grows by O(unique strings seen) for
+    // the session.
+    if (label_tex_cache_.size() > used_keys.size()) {
+        for (auto it = label_tex_cache_.begin(); it != label_tex_cache_.end(); ) {
+            if (used_keys.contains(it.key())) {
+                ++it;
+                continue;
+            }
+            if (it.value().bind_group) wgpuBindGroupRelease(it.value().bind_group);
+            if (it.value().view)       wgpuTextureViewRelease(it.value().view);
+            if (it.value().texture)    wgpuTextureRelease(it.value().texture);
+            it = label_tex_cache_.erase(it);
+        }
+    }
 }

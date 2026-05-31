@@ -295,6 +295,27 @@ private:
     void  setOverlayLabels(const std::vector<WgpuOverlayRenderer::Label>& labels);
     void  setHudText(const QString& text);
 
+    // Measurement tools. Mirrors GL ViewportWindow::ToolMode. Volume is
+    // the first ported tool — selection-driven (LMB pick / marquee /
+    // Shift/Ctrl set ops drive the readout), no clicks-to-place. V
+    // toggles, Esc exits.
+    // NoTool (not None) because X11/X.h #define's None as 0L; including
+    // it transitively via Qt's xcb back-end breaks any enum named None.
+    enum class ToolMode { NoTool, Volume };
+    ToolMode toolMode() const { return tool_mode_; }
+    void     setToolMode(ToolMode m);
+
+    // Sum of mesh-local volumes (m³) of every instance whose object_id
+    // is in `object_ids`. Each instance is scaled by |det(placement_3x3)|
+    // to pick up mapped-item scale/mirror; signed-tetrahedra absolute
+    // value means winding is ignored. Volumes are precomputed at
+    // applyCachedModel — this call is just lookups + multiplies.
+    double volumeOfObjects(const std::vector<uint32_t>& object_ids) const;
+    // Per-object variant. Used by the Volume tool to drive both the
+    // total HUD and the per-object overlay labels at AABB centres.
+    std::vector<std::pair<uint32_t, double>>
+        volumesPerObject(const std::vector<uint32_t>& object_ids) const;
+
     void  ensureHizTextures(int viewport_w, int viewport_h);
     void  releaseHizResources();
     // Resolves the just-rendered MSAA depth into the small single-sample
@@ -468,6 +489,15 @@ private:
     // builds a WgpuOverlayFrame each frame and asks the renderer to
     // encode each overlay; see WgpuOverlayRenderer.h.
     WgpuOverlayRenderer overlays_;
+
+    // Active measurement tool. setToolMode() / setSelection mutations
+    // both funnel into updateVolumeReadout() which pushes the HUD +
+    // per-object labels into overlays_.
+    ToolMode tool_mode_ = ToolMode::NoTool;
+    // Recompute the volume HUD + per-object labels from the current
+    // selection. No-op unless tool_mode_ == Volume; on the first call
+    // after entering Volume mode this primes the overlay.
+    void updateVolumeReadout();
 
     // Pick pass (stage 4). Single-sample R32UInt target + depth, vertex-
     // pulled from the same visible_draws / instances buffers as the main

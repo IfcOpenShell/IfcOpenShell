@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "InstancedGeometry.h"
@@ -279,6 +280,18 @@ struct WgpuModelGpuData {
     // CPU side, kept for cull / picking / federation recompose.
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceCpu> instances;
+
+    // Local-frame volume (m³) of every mesh, indexed by mesh_id. Computed
+    // once at applyCachedModel via signed-tetrahedra-from-origin on the
+    // raw vertex+index data; reused by the Volume measurement tool to
+    // avoid re-reading the GPU buffers per click. Empty in streaming mode
+    // until the chunk holding the mesh has been delivered.
+    std::vector<double> mesh_local_volumes;
+
+    // object_id (globally rebased) → instance index in `instances`.
+    // Populated alongside the instance vector so the Volume tool can do
+    // O(1) instance lookup instead of linear-scanning every model.
+    std::unordered_map<uint32_t, uint32_t> object_id_to_instance;
 
     // Spatial chunk-cull replaced the per-model BVH walk — chunks are
     // already a one-level spatial partition of the instances, so a

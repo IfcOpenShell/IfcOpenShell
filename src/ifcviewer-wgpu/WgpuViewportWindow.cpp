@@ -91,6 +91,13 @@ static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
 static QVector3D orbitEye(const float target[3], float dist,
                           float yaw_deg, float pitch_deg);
 
+// Forward declaration — defined alongside the Volume tool. Called from
+// both applyCachedModel (full load) and applyStreamedChunk (per-chunk
+// fill in streaming mode) so the same quantised-bytes path runs in both.
+static double computeMeshLocalVolumeQuantised(
+        const MeshInfo& mesh,
+        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices);
+
 // -----------------------------------------------------------------------------
 // Small helpers
 // -----------------------------------------------------------------------------
@@ -930,6 +937,20 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.meshes    = std::move(metadata.meta.meshes);
     m.instances = std::move(metadata.meta.instances);
 
+    // Streaming defers per-mesh vertex data until the owning chunk is
+    // loaded, so mesh-local volumes can't be precomputed here. Volume
+    // tool returns 0 for unloaded meshes; once we add lazy per-chunk
+    // volume computation this assign() becomes the seed.
+    m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
+
+    // object_id → instance index lookup. Volume tool reads it on every
+    // selection mutation; per-pick latency stays O(K) instead of O(K*N).
+    m.object_id_to_instance.clear();
+    m.object_id_to_instance.reserve(m.instances.size());
+    for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
+        m.object_id_to_instance.emplace(m.instances[i].object_id, i);
+    }
+
     // Compute per-chunk world AABBs + instance-id lists from the
     // instance_to_chunk mapping. Under spatial bucketing this captures
     // each bucket's actual instance extent; under mesh-keyed it's
@@ -1282,6 +1303,29 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     // Hand off CPU mirrors (cull / picking will need them later).
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
+
+    // Mesh-local volumes (m³). Computed once per mesh by signed-tetrahedra-
+    // from-origin over the LOD0 triangles; the Volume measurement tool
+    // later just multiplies by |det(placement_3x3)| per instance. Helper
+    // works on raw quantised bytes so the streaming path can reuse it.
+    m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
+    for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
+        const MeshInfo& mesh = m.meshes[mi];
+        if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
+        const uint8_t*  vbase = data.vertices.data() + mesh.vbo_byte_offset;
+        const uint32_t* ibase = data.indices.data()
+                              + (mesh.ebo_byte_offset / sizeof(uint32_t));
+        m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
+            mesh, vbase, ibase, mesh.index_count);
+    }
+
+    // object_id → instance index lookup. Volume tool reads it on every
+    // selection mutation; per-pick latency stays O(K) instead of O(K*N).
+    m.object_id_to_instance.clear();
+    m.object_id_to_instance.reserve(m.instances.size());
+    for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
+        m.object_id_to_instance.emplace(m.instances[i].object_id, i);
+    }
 
     // Per-chunk world AABB + instance-id list. Same logic as the
     // streaming path. Lets cull frustum-test each chunk's AABB once
@@ -2858,6 +2902,181 @@ void WgpuViewportWindow::setOverlayLabels(
 void WgpuViewportWindow::setHudText(const QString& text) {
     overlays_.setHudText(text);
     if (isExposed()) requestUpdate();
+}
+
+// |det(upper-left 3×3)| of a column-major 4×4 placement. Picks up
+// mapped-item scale / mirror so a uniformly-scaled clone of a 1 m³ mesh
+// reports its actual volume.
+static double det3OfPlacement(const double M[16]) {
+    const double m00 = M[0],  m10 = M[1],  m20 = M[2];
+    const double m01 = M[4],  m11 = M[5],  m21 = M[6];
+    const double m02 = M[8],  m12 = M[9],  m22 = M[10];
+    return m00 * (m11 * m22 - m12 * m21)
+         - m01 * (m10 * m22 - m12 * m20)
+         + m02 * (m10 * m21 - m11 * m20);
+}
+
+// Local-frame volume of a mesh from its raw quantised vertex+index bytes.
+// `vbase` points at the first vertex (12 B/vertex, 3×uint16 pos quantised
+// against mesh.local_aabb), `ibase` at the first u32 index in mesh-local
+// numbering, `n_indices` is the LOD0 index count. Signed-tetrahedra-
+// from-origin → |sum|/6 so winding doesn't matter. Same algorithm as
+// Bonsai's meshLocalVolume; takes the dequant step from
+// INSTANCED_VERTEX_STRIDE_BYTES layout.
+static double computeMeshLocalVolumeQuantised(
+        const MeshInfo& mesh,
+        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices) {
+    if (n_indices < 3 || vbase == nullptr || ibase == nullptr) return 0.0;
+    const float ax = mesh.local_aabb_min[0];
+    const float ay = mesh.local_aabb_min[1];
+    const float az = mesh.local_aabb_min[2];
+    const float ex = mesh.local_aabb_max[0] - ax;
+    const float ey = mesh.local_aabb_max[1] - ay;
+    const float ez = mesh.local_aabb_max[2] - az;
+    const float inv_q = 1.0f / 65535.0f;
+    auto dequant = [&](uint32_t vi, double out[3]) {
+        const uint8_t* v = vbase + size_t(vi) * INSTANCED_VERTEX_STRIDE_BYTES;
+        uint16_t qx, qy, qz;
+        std::memcpy(&qx, v + 0, 2);
+        std::memcpy(&qy, v + 2, 2);
+        std::memcpy(&qz, v + 4, 2);
+        out[0] = double(ax + float(qx) * inv_q * ex);
+        out[1] = double(ay + float(qy) * inv_q * ey);
+        out[2] = double(az + float(qz) * inv_q * ez);
+    };
+    double sum = 0.0;
+    for (uint32_t i = 0; i + 2 < n_indices; i += 3) {
+        double p0[3], p1[3], p2[3];
+        dequant(ibase[i + 0], p0);
+        dequant(ibase[i + 1], p1);
+        dequant(ibase[i + 2], p2);
+        const double cx = p1[1] * p2[2] - p1[2] * p2[1];
+        const double cy = p1[2] * p2[0] - p1[0] * p2[2];
+        const double cz = p1[0] * p2[1] - p1[1] * p2[0];
+        sum += p0[0] * cx + p0[1] * cy + p0[2] * cz;
+    }
+    return std::abs(sum) / 6.0;
+}
+
+void WgpuViewportWindow::setToolMode(ToolMode m) {
+    if (tool_mode_ == m) return;
+    tool_mode_ = m;
+    switch (tool_mode_) {
+    case ToolMode::NoTool:
+        // Drop any HUD/labels the previous tool left behind. We don't
+        // own the GL backend's per-tool clear callbacks, so the tool's
+        // own state lives in the overlay renderer.
+        overlays_.setHudText(QString());
+        overlays_.setOverlayLabels({});
+        qInfo() << "[wgpu measure] tool off";
+        break;
+    case ToolMode::Volume:
+        qInfo() << "[wgpu measure] volume tool — pick / marquee objects, Esc to exit";
+        updateVolumeReadout();
+        break;
+    }
+    if (isExposed()) requestUpdate();
+}
+
+double WgpuViewportWindow::volumeOfObjects(
+        const std::vector<uint32_t>& object_ids) const {
+    if (object_ids.empty()) return 0.0;
+    double total = 0.0;
+    for (uint32_t oid : object_ids) {
+        for (const auto& [mid, m] : models_gpu_) {
+            auto it = m.object_id_to_instance.find(oid);
+            if (it == m.object_id_to_instance.end()) continue;
+            const InstanceCpu& inst = m.instances[it->second];
+            if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
+            const double v_local = m.mesh_local_volumes[inst.mesh_id];
+            const double det = std::abs(det3OfPlacement(inst.placement_transformation));
+            total += v_local * det;
+            break;  // object_id is globally unique → at most one hit
+        }
+    }
+    return total;
+}
+
+std::vector<std::pair<uint32_t, double>>
+WgpuViewportWindow::volumesPerObject(
+        const std::vector<uint32_t>& object_ids) const {
+    std::vector<std::pair<uint32_t, double>> out;
+    if (object_ids.empty()) return out;
+    out.reserve(object_ids.size());
+    for (uint32_t oid : object_ids) {
+        for (const auto& [mid, m] : models_gpu_) {
+            auto it = m.object_id_to_instance.find(oid);
+            if (it == m.object_id_to_instance.end()) continue;
+            const InstanceCpu& inst = m.instances[it->second];
+            if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
+            const double v_local = m.mesh_local_volumes[inst.mesh_id];
+            const double det = std::abs(det3OfPlacement(inst.placement_transformation));
+            out.emplace_back(oid, v_local * det);
+            break;
+        }
+    }
+    return out;
+}
+
+void WgpuViewportWindow::updateVolumeReadout() {
+    if (tool_mode_ != ToolMode::Volume) return;
+
+    const auto& sel = selection_.ids();
+    if (sel.empty()) {
+        overlays_.setHudText(QString());
+        overlays_.setOverlayLabels({});
+        return;
+    }
+
+    const std::vector<uint32_t> ids(sel.begin(), sel.end());
+    const auto per_obj = volumesPerObject(ids);
+
+    // Per-object label cap. Each label allocates one wgpu texture +
+    // bind group on first sight; rendering thousands of unique
+    // "X.XXXX m³" strings drives the label-texture cache off a cliff
+    // and the QPainter rasterise per label dominates the click cost.
+    // The HUD total stays correct above the cap — only the per-object
+    // overlay labels are suppressed. 200 fits a normal multi-object
+    // selection and keeps both memory and per-frame draw count bounded.
+    static constexpr size_t kMaxPerObjectLabels = 200;
+    const bool show_labels = per_obj.size() <= kMaxPerObjectLabels;
+
+    double total = 0.0;
+    std::vector<WgpuOverlayRenderer::Label> labels;
+    if (show_labels) labels.reserve(per_obj.size());
+    for (const auto& [oid, v] : per_obj) {
+        total += v;
+        if (!show_labels) continue;
+        // O(1) instance lookup via object_id_to_instance, then read the
+        // world AABB from the cached InstanceCpu directly — same data
+        // computeObjectAabb's linear scan would have produced for the
+        // first matching instance. For label placement at the AABB
+        // centre this is identical-looking; only the rare multi-
+        // representation object_id sees a slightly smaller union.
+        for (const auto& [mid, m] : models_gpu_) {
+            auto it = m.object_id_to_instance.find(oid);
+            if (it == m.object_id_to_instance.end()) continue;
+            const InstanceCpu& inst = m.instances[it->second];
+            WgpuOverlayRenderer::Label lbl;
+            lbl.world_pos[0] = (inst.world_aabb_min[0] + inst.world_aabb_max[0]) * 0.5f;
+            lbl.world_pos[1] = (inst.world_aabb_min[1] + inst.world_aabb_max[1]) * 0.5f;
+            lbl.world_pos[2] = (inst.world_aabb_min[2] + inst.world_aabb_max[2]) * 0.5f;
+            lbl.text = QString::number(v, 'f', 4) + QStringLiteral(" m³");
+            labels.push_back(std::move(lbl));
+            break;
+        }
+    }
+
+    QString hud = QStringLiteral("Volume: %1 m³  (%2 object%3)")
+        .arg(total, 0, 'f', 4)
+        .arg(per_obj.size())
+        .arg(per_obj.size() == 1 ? "" : "s");
+    if (!show_labels) {
+        hud += QStringLiteral("\n(per-object labels hidden above %1)")
+            .arg(kMaxPerObjectLabels);
+    }
+    overlays_.setHudText(hud);
+    overlays_.setOverlayLabels(labels);
 }
 
 // Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
@@ -4925,6 +5144,39 @@ bool WgpuViewportWindow::applyStreamedChunk(
     c.is_resident      = true;
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
+
+    // Mesh-local volumes for the meshes in this chunk. applyCachedModelStreaming
+    // left them zero because the bytes weren't in memory yet; the first
+    // chunk to deliver each mesh fills it in. Spatial-bucket mode may
+    // re-enter for the same mesh from a different chunk — the != 0 guard
+    // skips the redundant work. Indices are mesh-local (numbered against
+    // the mesh's own vertex range), so vbase + ibase are per-mesh slices
+    // into the chunk's freshly-arrived bytes.
+    bool filled_volume = false;
+    if (!m.mesh_local_volumes.empty() && !idx.empty()) {
+        for (uint32_t mi : c.mesh_ids) {
+            if (mi >= m.meshes.size() || mi >= m.mesh_local_volumes.size()) continue;
+            if (m.mesh_local_volumes[mi] != 0.0) continue;
+            const MeshInfo& mesh = m.meshes[mi];
+            if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
+            const size_t v_off = size_t(m.mesh_chunk_local_base_vertex[mi])
+                               * INSTANCED_VERTEX_STRIDE_BYTES;
+            const size_t i_off = m.mesh_chunk_local_ebo_first_u32[mi];
+            const size_t v_end = v_off
+                + size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (v_end > vbytes.size()) continue;
+            if (i_off + mesh.index_count > idx.size()) continue;
+            m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
+                mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count);
+            filled_volume = true;
+        }
+    }
+    // If the user is staring at a Volume readout while chunks page in,
+    // refresh as soon as a chunk delivers a mesh we just filled — they'd
+    // otherwise see 0 m³ for the whole selection until they click again.
+    if (filled_volume && tool_mode_ == ToolMode::Volume) {
+        updateVolumeReadout();
+    }
     return true;
 }
 
@@ -6041,6 +6293,7 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
             }
             nav_active_button_ = Qt::NoButton;
             nav_drag_kind_     = NavDrag::Inactive;
+            updateVolumeReadout();
             requestUpdate();
             return;
         }
@@ -6149,6 +6402,7 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 tracked_object_id_ = 0;
                 tracked_chunk_idx_ = SIZE_MAX;
             }
+            updateVolumeReadout();
             requestUpdate();
         }
         nav_active_button_ = Qt::NoButton;
@@ -6387,6 +6641,19 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
             removeSectionPlane(int(section_planes_.size()) - 1);
             return;
         }
+    }
+
+    // Measurement tools. V toggles Volume; Esc exits whichever tool is
+    // active. Mirrors GL ViewportWindow + Bonsai's bind_shortcut(V).
+    if (key == Qt::Key_V && mods == Qt::NoModifier && !event->isAutoRepeat()) {
+        setToolMode(tool_mode_ == ToolMode::Volume ? ToolMode::NoTool
+                                                   : ToolMode::Volume);
+        return;
+    }
+    if (tool_mode_ != ToolMode::NoTool && key == Qt::Key_Escape
+        && !event->isAutoRepeat()) {
+        setToolMode(ToolMode::NoTool);
+        return;
     }
 
     // GL-parity viewport hotkeys.
