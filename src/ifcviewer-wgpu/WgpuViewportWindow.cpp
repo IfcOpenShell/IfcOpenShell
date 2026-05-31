@@ -19,6 +19,7 @@
 
 #include "WgpuViewportWindow.h"
 #include "WgpuAreaMeasurement.h"
+#include "WgpuLengthMeasurement.h"
 #include "WgpuStreamingLoader.h"
 
 #include <QGuiApplication>
@@ -102,6 +103,54 @@ static double computeMeshLocalVolumeQuantised(
         const MeshInfo& mesh,
         const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
         WgpuModelGpuData::MeshTriangles* out_tris);
+
+// Ray-AABB (slab) + ray-triangle (Möller-Trumbore). Used by raycast()
+// AND by pickMeshLocalAt to refine the AABB-coarse surface hit into a
+// real triangle hit — see pickMeshLocalAt's refinement block.
+
+// Slab method ray-AABB. inv_d is precomputed 1/dir per axis.
+static bool rayAabbSlab(const float ro[3], const float inv_d[3],
+                        const float bmin[3], const float bmax[3]) {
+    float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
+    for (int i = 0; i < 3; ++i) {
+        const float t1 = (bmin[i] - ro[i]) * inv_d[i];
+        const float t2 = (bmax[i] - ro[i]) * inv_d[i];
+        tmin = std::max(tmin, std::min(t1, t2));
+        tmax = std::min(tmax, std::max(t1, t2));
+    }
+    return tmax >= tmin && tmax >= 0.0f;
+}
+
+// Möller-Trumbore. Returns true on hit; t is in dir-units.
+static bool rayTriMT(const float ro[3], const float rd[3],
+                     const float v0[3], const float v1[3], const float v2[3],
+                     float& t_out) {
+    constexpr float EPS = 1e-7f;
+    const float e1[3] = {v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2]};
+    const float e2[3] = {v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2]};
+    const float h[3]  = {
+        rd[1]*e2[2] - rd[2]*e2[1],
+        rd[2]*e2[0] - rd[0]*e2[2],
+        rd[0]*e2[1] - rd[1]*e2[0]
+    };
+    const float a = e1[0]*h[0] + e1[1]*h[1] + e1[2]*h[2];
+    if (a > -EPS && a < EPS) return false;
+    const float f = 1.0f / a;
+    const float s[3] = {ro[0]-v0[0], ro[1]-v0[1], ro[2]-v0[2]};
+    const float u = f * (s[0]*h[0] + s[1]*h[1] + s[2]*h[2]);
+    if (u < 0.0f || u > 1.0f) return false;
+    const float q[3] = {
+        s[1]*e1[2] - s[2]*e1[1],
+        s[2]*e1[0] - s[0]*e1[2],
+        s[0]*e1[1] - s[1]*e1[0]
+    };
+    const float v = f * (rd[0]*q[0] + rd[1]*q[1] + rd[2]*q[2]);
+    if (v < 0.0f || u + v > 1.0f) return false;
+    const float t = f * (e2[0]*q[0] + e2[1]*q[1] + e2[2]*q[2]);
+    if (t <= EPS) return false;
+    t_out = t;
+    return true;
+}
 
 // -----------------------------------------------------------------------------
 // Small helpers
@@ -2956,9 +3005,117 @@ bool WgpuViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
         bool ok = false;
         const QMatrix4x4 Ti = T.inverted(&ok);
         if (!ok) return false;
-        const QVector4D mp = Ti * QVector4D(world_pos.x(), world_pos.y(), world_pos.z(), 1.0f);
 
         if (inst.mesh_id >= m.meshes.size()) return false;
+
+        // pickSurfaceAt returns a bounding-box hit (WebGPU bans the
+        // depth readback that would give us a real surface point), so
+        // world_pos sits on the AABB face — not on any triangle of the
+        // mesh. Refine against the picked instance's CPU mesh shadow:
+        // re-project the click into a world ray and Möller-Trumbore it
+        // against every triangle of this mesh. On a hit, replace
+        // world_pos with the real surface point and world_normal with
+        // the transformed face normal. Without this, the Area/Length
+        // BFS seeds with whatever triangle is closest to the AABB
+        // corner — often a perpendicular face, which produces
+        // bounding-box-shaped patches instead of surface patches.
+        QVector3D refined_world_pos    = world_pos;
+        QVector3D refined_world_normal = world_normal;
+        if (inst.mesh_id < m.mesh_triangles_cache.size()) {
+            const auto& tris = m.mesh_triangles_cache[inst.mesh_id];
+            if (!tris.indices.empty() && configured_w_ > 0 && configured_h_ > 0) {
+                QMatrix4x4 view, proj;
+                buildViewProj(view, proj);
+                bool inv_ok = false;
+                const QMatrix4x4 inv_vp = (proj * view).inverted(&inv_ok);
+                if (inv_ok) {
+                    const float ndc_x = (2.0f * float(x) / float(configured_w_)) - 1.0f;
+                    const float ndc_y = 1.0f - (2.0f * float(y) / float(configured_h_));
+                    const QVector4D far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
+                    const QVector4D far_w = inv_vp * far_clip;
+                    if (std::abs(far_w.w()) >= 1e-6f) {
+                        const QVector3D far_world = far_w.toVector3D() / far_w.w();
+                        const QVector3D eye = orbitEye(
+                            camera_target_, camera_distance_,
+                            camera_yaw_deg_, camera_pitch_deg_);
+                        QVector3D ray_dir = far_world - eye;
+                        if (ray_dir.lengthSquared() > 1e-8f) {
+                            ray_dir.normalize();
+                            // Inverse-transform the world ray into mesh-local.
+                            const QVector4D ro_l4 = Ti * QVector4D(eye.x(),     eye.y(),     eye.z(),     1.0f);
+                            const QVector4D rd_l4 = Ti * QVector4D(ray_dir.x(), ray_dir.y(), ray_dir.z(), 0.0f);
+                            const float ro_l[3] = { ro_l4.x(), ro_l4.y(), ro_l4.z() };
+                            const float rd_l[3] = { rd_l4.x(), rd_l4.y(), rd_l4.z() };
+                            const float ldn = std::sqrt(
+                                rd_l[0]*rd_l[0] + rd_l[1]*rd_l[1] + rd_l[2]*rd_l[2]);
+                            if (ldn > 0.0f) {
+                                float best_t_world = std::numeric_limits<float>::infinity();
+                                uint32_t best_tri = UINT32_MAX;
+                                const size_t n_tris = tris.indices.size() / 3;
+                                for (size_t t = 0; t < n_tris; ++t) {
+                                    const uint32_t ia = tris.indices[3 * t + 0];
+                                    const uint32_t ib = tris.indices[3 * t + 1];
+                                    const uint32_t ic = tris.indices[3 * t + 2];
+                                    if (3 * ia + 2 >= tris.positions.size()
+                                     || 3 * ib + 2 >= tris.positions.size()
+                                     || 3 * ic + 2 >= tris.positions.size()) continue;
+                                    const float* va = &tris.positions[3 * ia];
+                                    const float* vb = &tris.positions[3 * ib];
+                                    const float* vc = &tris.positions[3 * ic];
+                                    float t_local = 0.0f;
+                                    if (!rayTriMT(ro_l, rd_l, va, vb, vc, t_local)) continue;
+                                    const float t_world = t_local / ldn;
+                                    if (t_world < best_t_world) {
+                                        best_t_world = t_world;
+                                        best_tri     = uint32_t(t);
+                                    }
+                                }
+                                if (best_tri != UINT32_MAX) {
+                                    refined_world_pos = eye + ray_dir * best_t_world;
+                                    // Face normal of the chosen tri,
+                                    // transformed back to world.
+                                    const uint32_t ia = tris.indices[3 * best_tri + 0];
+                                    const uint32_t ib = tris.indices[3 * best_tri + 1];
+                                    const uint32_t ic = tris.indices[3 * best_tri + 2];
+                                    const float* va = &tris.positions[3 * ia];
+                                    const float* vb = &tris.positions[3 * ib];
+                                    const float* vc = &tris.positions[3 * ic];
+                                    const float bax = vb[0]-va[0], bay = vb[1]-va[1], baz = vb[2]-va[2];
+                                    const float cax = vc[0]-va[0], cay = vc[1]-va[1], caz = vc[2]-va[2];
+                                    float n_local[3] = {
+                                        bay*caz - baz*cay,
+                                        baz*cax - bax*caz,
+                                        bax*cay - bay*cax,
+                                    };
+                                    const float nl = std::sqrt(
+                                        n_local[0]*n_local[0]
+                                      + n_local[1]*n_local[1]
+                                      + n_local[2]*n_local[2]);
+                                    if (nl > 0.0f) {
+                                        n_local[0] /= nl;
+                                        n_local[1] /= nl;
+                                        n_local[2] /= nl;
+                                    }
+                                    const float* M = inst.transform;
+                                    QVector3D n_world(
+                                        M[0]*n_local[0] + M[4]*n_local[1] + M[8] *n_local[2],
+                                        M[1]*n_local[0] + M[5]*n_local[1] + M[9] *n_local[2],
+                                        M[2]*n_local[0] + M[6]*n_local[1] + M[10]*n_local[2]);
+                                    if (n_world.lengthSquared() > 1e-12f) {
+                                        n_world.normalize();
+                                        refined_world_normal = n_world;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const QVector4D mp = Ti * QVector4D(refined_world_pos.x(),
+                                            refined_world_pos.y(),
+                                            refined_world_pos.z(), 1.0f);
 
         out.object_id     = obj_id;
         out.model_id      = mid;
@@ -2966,12 +3123,12 @@ bool WgpuViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
         out.mesh_local[0] = mp.x();
         out.mesh_local[1] = mp.y();
         out.mesh_local[2] = mp.z();
-        out.world_pos [0] = world_pos.x();
-        out.world_pos [1] = world_pos.y();
-        out.world_pos [2] = world_pos.z();
-        out.world_normal[0] = world_normal.x();
-        out.world_normal[1] = world_normal.y();
-        out.world_normal[2] = world_normal.z();
+        out.world_pos [0] = refined_world_pos.x();
+        out.world_pos [1] = refined_world_pos.y();
+        out.world_pos [2] = refined_world_pos.z();
+        out.world_normal[0] = refined_world_normal.x();
+        out.world_normal[1] = refined_world_normal.y();
+        out.world_normal[2] = refined_world_normal.z();
         std::memcpy(out.composed_transform, inst.transform,
                     sizeof(out.composed_transform));
         return true;
@@ -2983,6 +3140,155 @@ void WgpuViewportWindow::onAreaPick(int x_phys, int y_phys, bool alt) {
     if (!area_tool_) return;
     area_tool_->onPick(*this, x_phys, y_phys, alt);
     updateAreaHud();
+}
+
+bool WgpuViewportWindow::meshLocalToGlobal(uint32_t object_id,
+                                           const float mesh_local[3],
+                                           double global_out[3]) const {
+    // Find the instance via the per-model object_id_to_instance map.
+    // Use the live map key (`mid`) — see pickMeshLocalAt comment about
+    // stale InstanceCpu::model_id from sidecar writes.
+    for (const auto& [mid, m] : models_gpu_) {
+        auto it = m.object_id_to_instance.find(object_id);
+        if (it == m.object_id_to_instance.end()) continue;
+        const InstanceCpu& inst = m.instances[it->second];
+        // GL composes coordinate_operation · placement · local; the wgpu
+        // viewer doesn't carry per-model CoordinateOperation yet, so
+        // apply just the placement_transformation (double precision —
+        // matches the IFC's own world coordinates for a non-federated
+        // load).
+        const double* P = inst.placement_transformation;  // column-major
+        const double lx = double(mesh_local[0]);
+        const double ly = double(mesh_local[1]);
+        const double lz = double(mesh_local[2]);
+        global_out[0] = P[0]*lx + P[4]*ly + P[8]*lz  + P[12];
+        global_out[1] = P[1]*lx + P[5]*ly + P[9]*lz  + P[13];
+        global_out[2] = P[2]*lx + P[6]*ly + P[10]*lz + P[14];
+        return true;
+    }
+    return false;
+}
+
+bool WgpuViewportWindow::raycast(const float origin[3], const float dir[3],
+                                 RaycastHit& out) const {
+    // World-AABB cull per instance, then transform the ray into the
+    // mesh's local frame and intersect every triangle. No BVH — typical
+    // BIM scenes have enough AABB-cull to make this acceptable (~ms);
+    // a per-model BVH would be the next optimisation.
+    float inv_d[3] = {
+        std::abs(dir[0]) > 1e-20f ? 1.0f / dir[0] : std::numeric_limits<float>::infinity(),
+        std::abs(dir[1]) > 1e-20f ? 1.0f / dir[1] : std::numeric_limits<float>::infinity(),
+        std::abs(dir[2]) > 1e-20f ? 1.0f / dir[2] : std::numeric_limits<float>::infinity(),
+    };
+
+    float best_t = std::numeric_limits<float>::infinity();
+    uint32_t best_oid = 0;
+    float    best_normal[3] = {0, 0, 0};
+
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (uint32_t inst_idx = 0; inst_idx < uint32_t(m.instances.size()); ++inst_idx) {
+            const InstanceCpu& inst = m.instances[inst_idx];
+            if (!rayAabbSlab(origin, inv_d, inst.world_aabb_min, inst.world_aabb_max)) {
+                continue;
+            }
+            if (inst.mesh_id >= m.mesh_triangles_cache.size()) continue;
+            const auto& tris = m.mesh_triangles_cache[inst.mesh_id];
+            if (tris.indices.empty()) continue;
+
+            // Transform ray into mesh-local frame. We need both a point
+            // (origin) and a direction (dir) inverse-transformed; dir is
+            // a vector so the translation drops out.
+            QMatrix4x4 T(inst.transform[0],  inst.transform[4],  inst.transform[8],  inst.transform[12],
+                         inst.transform[1],  inst.transform[5],  inst.transform[9],  inst.transform[13],
+                         inst.transform[2],  inst.transform[6],  inst.transform[10], inst.transform[14],
+                         inst.transform[3],  inst.transform[7],  inst.transform[11], inst.transform[15]);
+            bool ok = false;
+            const QMatrix4x4 Ti = T.inverted(&ok);
+            if (!ok) continue;
+            const QVector4D ro_local4 = Ti * QVector4D(origin[0], origin[1], origin[2], 1.0f);
+            const QVector4D rd_local4 = Ti * QVector4D(dir[0],    dir[1],    dir[2],    0.0f);
+            const float ro_local[3] = { ro_local4.x(), ro_local4.y(), ro_local4.z() };
+            const float rd_local[3] = { rd_local4.x(), rd_local4.y(), rd_local4.z() };
+
+            const size_t n_tris = tris.indices.size() / 3;
+            for (size_t t = 0; t < n_tris; ++t) {
+                const uint32_t ia = tris.indices[3 * t + 0];
+                const uint32_t ib = tris.indices[3 * t + 1];
+                const uint32_t ic = tris.indices[3 * t + 2];
+                if (3 * ia + 2 >= tris.positions.size()
+                 || 3 * ib + 2 >= tris.positions.size()
+                 || 3 * ic + 2 >= tris.positions.size()) continue;
+                const float* va = &tris.positions[3 * ia];
+                const float* vb = &tris.positions[3 * ib];
+                const float* vc = &tris.positions[3 * ic];
+                float t_local = 0.0f;
+                if (!rayTriMT(ro_local, rd_local, va, vb, vc, t_local)) continue;
+                // Convert t_local into world units. Because we
+                // inverse-transformed dir without normalising, world-t =
+                // local-t × (|world-dir| / |local-dir|). The caller
+                // guarantees world-dir is unit; we compute local-dir
+                // length here.
+                const float ldn = std::sqrt(rd_local[0]*rd_local[0]
+                                          + rd_local[1]*rd_local[1]
+                                          + rd_local[2]*rd_local[2]);
+                if (ldn <= 0.0f) continue;
+                const float t_world = t_local / ldn;
+                if (t_world >= best_t) continue;
+                best_t   = t_world;
+                best_oid = inst.object_id;
+
+                // Mesh-local triangle normal → world via the transform's
+                // rotation block. Same column-major math as
+                // applyCachedModel uses for AABB normals.
+                const float bax = vb[0]-va[0], bay = vb[1]-va[1], baz = vb[2]-va[2];
+                const float cax = vc[0]-va[0], cay = vc[1]-va[1], caz = vc[2]-va[2];
+                float n_local[3] = {
+                    bay * caz - baz * cay,
+                    baz * cax - bax * caz,
+                    bax * cay - bay * cax,
+                };
+                const float nl = std::sqrt(n_local[0]*n_local[0]
+                                         + n_local[1]*n_local[1]
+                                         + n_local[2]*n_local[2]);
+                if (nl > 0.0f) { n_local[0] /= nl; n_local[1] /= nl; n_local[2] /= nl; }
+                // Normal transform = inverse-transpose; for a rigid +
+                // uniform-scale transform the upper-left 3×3 is fine.
+                const float* M = inst.transform;
+                best_normal[0] = M[0]*n_local[0] + M[4]*n_local[1] + M[8]*n_local[2];
+                best_normal[1] = M[1]*n_local[0] + M[5]*n_local[1] + M[9]*n_local[2];
+                best_normal[2] = M[2]*n_local[0] + M[6]*n_local[1] + M[10]*n_local[2];
+                const float wnl = std::sqrt(best_normal[0]*best_normal[0]
+                                          + best_normal[1]*best_normal[1]
+                                          + best_normal[2]*best_normal[2]);
+                if (wnl > 0.0f) {
+                    best_normal[0] /= wnl;
+                    best_normal[1] /= wnl;
+                    best_normal[2] /= wnl;
+                }
+            }
+        }
+    }
+    if (!std::isfinite(best_t)) return false;
+    out.object_id    = best_oid;
+    out.distance     = best_t;
+    out.world_pos[0] = origin[0] + best_t * dir[0];
+    out.world_pos[1] = origin[1] + best_t * dir[1];
+    out.world_pos[2] = origin[2] + best_t * dir[2];
+    out.world_normal[0] = best_normal[0];
+    out.world_normal[1] = best_normal[1];
+    out.world_normal[2] = best_normal[2];
+    return true;
+}
+
+void WgpuViewportWindow::onLengthPick(int x_phys, int y_phys, bool alt) {
+    if (!length_tool_) return;
+    length_tool_->onPick(*this, x_phys, y_phys, alt);
+}
+
+void WgpuViewportWindow::onLengthBackspace() {
+    if (!length_tool_) return;
+    length_tool_->removeLastPoint(*this);
 }
 
 void WgpuViewportWindow::updateAreaHud() {
@@ -3076,9 +3382,12 @@ void WgpuViewportWindow::setToolMode(ToolMode m) {
     // Always tear down the previous tool's overlay artefacts before
     // switching — easier than per-from-state branching, and the new
     // tool re-primes whatever it owns on its first update.
-    if (area_tool_) area_tool_->clear(*this);
+    if (area_tool_)   area_tool_->clear(*this);
+    if (length_tool_) length_tool_->clear(*this);
     overlays_.setHudText(QString());
     overlays_.setOverlayLabels({});
+    overlays_.setOverlayLines({});
+    overlays_.setOverlayPoints({}, 0,0,0,0, 0, 0,0,0,0, 0);
     overlays_.setHighlightTriangles({}, 0, 0, 0, 0);
 
     switch (tool_mode_) {
@@ -3087,12 +3396,18 @@ void WgpuViewportWindow::setToolMode(ToolMode m) {
         break;
     case ToolMode::Volume:
         qInfo() << "[wgpu measure] volume tool — pick / marquee objects, Esc to exit";
+        overlays_.setHudText(QStringLiteral("Volume: 0.0000 m³  (0 objects)"));
         updateVolumeReadout();
         break;
     case ToolMode::Area:
         if (!area_tool_) area_tool_ = std::make_unique<WgpuAreaMeasurement>();
         qInfo() << "[wgpu measure] area tool — LMB pick coplanar patch, Alt+LMB single tri, click again to remove, Esc exits";
         overlays_.setHudText(QStringLiteral("Area: 0.0000 m²  (0 tris)"));
+        break;
+    case ToolMode::Length:
+        if (!length_tool_) length_tool_ = std::make_unique<WgpuLengthMeasurement>();
+        qInfo() << "[wgpu measure] length tool — LMB add point, Backspace remove last, Esc exits";
+        overlays_.setHudText(QStringLiteral("Length tool: click first point"));
         break;
     }
     if (isExposed()) requestUpdate();
@@ -6370,6 +6685,7 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
     } else if (event->button() == Qt::LeftButton
             && !section_tool_active_
             && tool_mode_ != ToolMode::Area
+            && tool_mode_ != ToolMode::Length
             && nav_drag_kind_ == NavDrag::Inactive) {
         // Arm marquee box-select. Plain / Shift / Ctrl LMB without a tool
         // intercepting the click; if the cursor never moves past the
@@ -6474,6 +6790,20 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                  || event->modifiers() == Qt::AltModifier)) {
                 const bool alt = (event->modifiers() & Qt::AltModifier) != 0;
                 onAreaPick(px, py, alt);
+                nav_active_button_ = Qt::NoButton;
+                nav_drag_kind_     = NavDrag::Inactive;
+                setPivotIndicatorVisible(false);
+                return;
+            }
+
+            // Length tool: plain LMB appends a world-space pick point;
+            // the readout adapts to the running count (laser / distance
+            // / angle / polygon). Shift/Ctrl fall through to selection.
+            if (tool_mode_ == ToolMode::Length
+                && (event->modifiers() == Qt::NoModifier
+                 || event->modifiers() == Qt::AltModifier)) {
+                const bool alt = (event->modifiers() & Qt::AltModifier) != 0;
+                onLengthPick(px, py, alt);
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
                 setPivotIndicatorVisible(false);
@@ -6802,6 +7132,17 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
     if (key == Qt::Key_A && mods == Qt::NoModifier && !event->isAutoRepeat()) {
         setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::NoTool
                                                  : ToolMode::Area);
+        return;
+    }
+    if (key == Qt::Key_L && mods == Qt::NoModifier && !event->isAutoRepeat()) {
+        setToolMode(tool_mode_ == ToolMode::Length ? ToolMode::NoTool
+                                                   : ToolMode::Length);
+        return;
+    }
+    if (tool_mode_ == ToolMode::Length
+        && (key == Qt::Key_Backspace || key == Qt::Key_Delete)
+        && !event->isAutoRepeat()) {
+        onLengthBackspace();
         return;
     }
     if (tool_mode_ != ToolMode::NoTool && key == Qt::Key_Escape

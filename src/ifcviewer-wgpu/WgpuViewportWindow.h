@@ -326,14 +326,39 @@ public:
     };
     bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
 
+    // Resolve a mesh-local point to a (placement-applied) global frame.
+    // Matches GL ViewportWindow::meshLocalToGlobal's shape so the Length
+    // tool's ENH readout ports unchanged. The wgpu viewer doesn't carry
+    // per-model CoordinateOperation yet, so this currently outputs
+    // placement_transformation · mesh_local (i.e. the IFC's own world
+    // coords pre-georeferencing); ENH and IFC-world coincide for the
+    // non-federated case the minimal viewer handles today.
+    bool meshLocalToGlobal(uint32_t object_id, const float mesh_local[3],
+                           double global_out[3]) const;
+
+    // CPU world-space raycast. Brute-force: per-instance world-AABB
+    // reject, then ray-into-mesh-local + Möller-Trumbore against the
+    // CPU mesh shadow. `dir` must be a unit vector — distance is the
+    // ray's t parameter, which equals world distance only at |dir|=1.
+    // Used by the Length tool's 1-point laser-measure overlay to find
+    // the ceiling/floor counterpart of a horizontal-surface click.
+    struct RaycastHit {
+        uint32_t object_id      = 0;
+        float    distance       = 0.0f;
+        float    world_pos[3]   = {0, 0, 0};
+        float    world_normal[3]= {0, 0, 0};
+    };
+    bool raycast(const float origin[3], const float dir[3], RaycastHit& out) const;
+
     // Measurement tools. Mirrors GL ViewportWindow::ToolMode. Volume is
     // selection-driven (LMB / marquee). Area is click-to-accumulate:
     // each LMB picks a triangle and either adds or removes its
     // coplanar patch via BFS over shared edges; Alt+LMB skips the BFS.
-    // V/A toggle, Esc exits.
+    // V/A/L toggle, Esc exits. Length consumes Backspace too for
+    // remove-last-point semantics.
     // NoTool (not None) because X11/X.h #define's None as 0L; including
     // it transitively via Qt's xcb back-end breaks any enum named None.
-    enum class ToolMode { NoTool, Volume, Area };
+    enum class ToolMode { NoTool, Volume, Area, Length };
     ToolMode toolMode() const { return tool_mode_; }
     void     setToolMode(ToolMode m);
 
@@ -538,6 +563,14 @@ private:
     std::unique_ptr<class WgpuAreaMeasurement> area_tool_;
     void onAreaPick(int x_phys, int y_phys, bool alt);
     void updateAreaHud();
+
+    // Length tool state lives in WgpuLengthMeasurement. Same lifecycle
+    // pattern: lazily constructed on first L press, cleared on tool
+    // exit, click handler routes LMB through onLengthPick + Backspace
+    // through onLengthBackspace.
+    std::unique_ptr<class WgpuLengthMeasurement> length_tool_;
+    void onLengthPick(int x_phys, int y_phys, bool alt);
+    void onLengthBackspace();
 
     // Pick pass (stage 4). Single-sample R32UInt target + depth, vertex-
     // pulled from the same visible_draws / instances buffers as the main
