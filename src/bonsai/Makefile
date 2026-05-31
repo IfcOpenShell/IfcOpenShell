@@ -192,7 +192,11 @@ endif
 	# Provides networkx graph analysis for project dependency calculations
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download networkx --dest=./wheels
 	# Required by IFCDiff
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download deepdiff --dest=./wheels
+	# Pinned <9.1: deepdiff 9.1.0 adds cachebox<6,>=5.2 which only ships macOS x86_64
+	# wheels for macosx_10_12+ and is incompatible with our macos py311 --platform
+	# macosx_10_10_x86_64 target. Revisit once the macos py311 platform tag is bumped
+	# to 10_13 (matching py312/py313).
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "deepdiff<9.1" --dest=./wheels
 	# Required by IFCCSV and ifcopenshell.util.selector
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lark --dest=./wheels
 	# Required by IFC4D
