@@ -206,6 +206,27 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return {"FINISHED"}
 
     @classmethod
+    def save_previous_selection(cls) -> None:
+        props = cls.get_aggregate_props()
+        props.previously_selected_objects.clear()
+        for obj in bpy.context.selected_objects:
+            entry = props.previously_selected_objects.add()
+            entry.obj = obj
+
+    @classmethod
+    def restore_previous_selection(cls) -> None:
+        props = cls.get_aggregate_props()
+        for obj in bpy.context.selected_objects:
+            obj.select_set(False)
+        for entry in props.previously_selected_objects:
+            if entry.obj:
+                try:
+                    entry.obj.select_set(True)
+                except Exception:
+                    pass
+        props.previously_selected_objects.clear()
+
+    @classmethod
     def disable_aggregate_mode(cls):
         context = bpy.context
         props = cls.get_aggregate_props()
