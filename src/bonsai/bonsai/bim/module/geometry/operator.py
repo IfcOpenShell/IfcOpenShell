@@ -2366,6 +2366,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     {"INFO"},
                     f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
                 )
+                obj.select_set(False)
                 return
             tool.Ifc.link(item, obj.data)
             self.enable_edit_mode(context)

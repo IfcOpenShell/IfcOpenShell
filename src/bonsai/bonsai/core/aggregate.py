@@ -93,6 +93,8 @@ def enter_aggregate_mode(
     aggregator: type[tool.Aggregate],
     obj: bpy.types.Object,
 ):
+    if not aggregator.get_aggregate_props().in_aggregate_mode:
+        aggregator.save_previous_selection()
     aggregator.update_previous_aggregate_mode_state()
     if aggregator.get_higher_aggregate():
         aggregator.disable_aggregate_mode()
@@ -107,6 +109,7 @@ def exit_aggregate_mode(aggregator: type[tool.Aggregate]):
         aggregator.enable_aggregate_mode(new_obj)
     else:
         aggregator.disable_aggregate_mode()
+        aggregator.restore_previous_selection()
 
 
 class IncompatibleAggregateError(Exception):
