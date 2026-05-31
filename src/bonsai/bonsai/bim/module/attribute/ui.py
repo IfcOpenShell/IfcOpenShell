@@ -48,12 +48,14 @@ def draw_ui(context: bpy.types.Context, layout: bpy.types.UILayout, attributes) 
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
 
+        element = tool.Ifc.get_entity(obj)
+        key_prefix = "type." if (element and element.is_a("IfcTypeObject")) else ""
         for attribute in attributes:
             row = layout.row(align=True)
             row.label(text=attribute["name"])
             value = bonsai.bim.helper.get_display_value(attribute["value"])
             op = row.operator("bim.select_similar", text=value, icon="NONE", emboss=False)
-            op.key = attribute["name"]
+            op.key = key_prefix + attribute["name"]
 
     # TODO: reimplement, see #1222
     # if "IfcSite/" in context.active_object.name or "IfcBuilding/" in context.active_object.name:
