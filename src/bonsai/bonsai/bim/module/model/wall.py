@@ -142,33 +142,11 @@ def _restore_wall_mesh_if_dirty(obj: bpy.types.Object) -> None:
     props.mesh_dirty = False
 
 
-def _validate_wall_for_parametric_edit(obj: bpy.types.Object) -> str | None:
-    """Return ``None`` if the wall is parametrically editable, else a user-facing reason
-    string explaining what's missing. Reports the *specific* gap rather than a generic
-    'not parametric' so the user knows whether to fix the material layer set, swap the
-    body representation, or pick a different object."""
-    element = tool.Ifc.get_entity(obj)
-    if not element:
-        return "Object is not an IFC element."
-    if not element.is_a("IfcWall"):
-        return f"Object is an {element.is_a()}, not an IfcWall."
-    if tool.Model.get_usage_type(element) != "LAYER2":
-        return "Wall has no IfcMaterialLayerSetUsage with LayerSetDirection AXIS2 (required for parametric editing)."
-    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-    if not representation:
-        return "Wall has no Model/Body/MODEL_VIEW representation to drive parametric dimensions."
-    if not tool.Model.get_extrusion(representation):
-        return (
-            "Wall body is not an IfcExtrudedAreaSolid " "(e.g. a brep mesh or boolean result without a base extrusion)."
-        )
-    return None
-
-
 def _read_wall_state_into_props(obj: bpy.types.Object, props: "BIMWallProperties") -> None:
     """Populate the draft props from current IFC state. Caller must have validated the
-    wall via ``_validate_wall_for_parametric_edit`` first — this function assumes the
+    wall via ``tool.Wall.validate_for_parametric_edit`` first — this function assumes the
     wall has a LAYER2 usage and an extruded MODEL_VIEW body."""
-    geom = _read_wall_geometry(obj)
+    geom = tool.Wall.read_geometry(obj)
     assert geom
 
     props.anchor_x = geom["anchor_x"]
@@ -195,7 +173,7 @@ def _maybe_resync_wall_props_from_ifc(obj: "bpy.types.Object | None") -> None:
     No-op during a draft session; the draft is then the source of truth."""
     if obj is None:
         return
-    if _validate_wall_for_parametric_edit(obj) is not None:
+    if tool.Wall.validate_for_parametric_edit(obj) is not None:
         return
     props = tool.Model.get_wall_props(obj)
     if props.is_editing:
@@ -1750,7 +1728,7 @@ class EnableEditingWall(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         if not obj:
             return {"CANCELLED"}
-        reason = _validate_wall_for_parametric_edit(obj)
+        reason = tool.Wall.validate_for_parametric_edit(obj)
         if reason:
             self.report({"WARNING"}, f"Cannot edit wall parametrically: {reason}")
             return {"CANCELLED"}
@@ -2390,35 +2368,10 @@ class ToggleWallOpenings(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def _read_wall_geometry(obj: bpy.types.Object) -> dict | None:
-    """Live-read wall geometry from IFC. Returns ``None`` if the wall is not a LAYER2 extruded wall."""
-    element = tool.Ifc.get_entity(obj)
-    if not element or not tool.Blender.Modifier.is_wall(element):
-        return None
-    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-    if not representation:
-        return None
-    extrusion = tool.Model.get_extrusion(representation)
-    if not extrusion:
-        return None
-    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    p1, p2 = ifcopenshell.util.representation.get_reference_line(element)
-    layer_params = tool.Model.get_material_layer_parameters(element)
-    x_angle = tool.Model.get_existing_x_angle(extrusion)
-    return {
-        "anchor_x": p1[0] * unit_scale,
-        "length": (p2[0] - p1[0]) * unit_scale,
-        "height": core.vertical_height_from_extrusion_depth(extrusion.Depth * unit_scale, x_angle),
-        "x_angle": x_angle,
-        "thickness": layer_params["thickness"],
-        "offset": layer_params["offset"],
-    }
-
-
 def _wall_axis_world_segment_from_geom(obj: bpy.types.Object, geom: dict) -> tuple[Vector, Vector]:
     """Compose the world-space axis segment from an already-read ``geom`` dict.
     Used by the billboarding gizmo groups so a single cached IFC read drives both
-    ``_read_wall_geometry`` *and* the segment, avoiding two reads per wall per frame."""
+    ``tool.Wall.read_geometry`` *and* the segment, avoiding two reads per wall per frame."""
     p1_local = Vector((geom["anchor_x"], 0.0, 0.0))
     p2_local = Vector((geom["anchor_x"] + geom["length"], 0.0, 0.0))
     return obj.matrix_world @ p1_local, obj.matrix_world @ p2_local
@@ -2440,7 +2393,7 @@ class _WallGeomCachedBillboardingMixin(gizmo.BillboardingGizmoGroupMixin):
 
 
 def _get_wall_geom_cached(group: "bpy.types.GizmoGroup", obj: bpy.types.Object) -> dict | None:
-    """Per-gizmo-group memoised ``_read_wall_geometry``. Without this, a
+    """Per-gizmo-group memoised ``tool.Wall.read_geometry``. Without this, a
     billboarding gizmo group re-runs the IFC read on every camera orbit frame —
     ~120 IFC queries per second per wall, which is unwieldy on dense models.
 
@@ -2462,7 +2415,7 @@ def _get_wall_geom_cached(group: "bpy.types.GizmoGroup", obj: bpy.types.Object) 
         group._wall_geom_cache_gen = current_gen
     key = obj.name
     if key not in cache:
-        cache[key] = _read_wall_geometry(obj)
+        cache[key] = tool.Wall.read_geometry(obj)
     return cache[key]
 
 
@@ -3493,12 +3446,6 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
     # Hide the gizmo when walls are nearly parallel (intersection would be unreasonably far).
     # cos(2°) ≈ 0.9994 → walls within ~2° of parallel are treated as parallel for this purpose.
     PARALLEL_DOT_THRESHOLD = 0.9994
-    # The intersection must be within this many *wall-lengths* of the NEAREST endpoint
-    # of each wall. This filters out the case where two walls are offset from world
-    # origin and their extrapolated axes happen to cross at a point that isn't near
-    # either wall's actual endpoints (which previously caused the icon to land at
-    # world origin for walls whose axes coincidentally converged there).
-    MAX_DISTANCE_TO_ENDPOINT_FACTOR = 0.75
     # Perpendicular tolerance (m) for treating two parallel wall axes as collinear.
     COLLINEAR_LINE_TOLERANCE = 0.05
 
@@ -3592,8 +3539,13 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             self.fillet_icon.hide = True
             return
 
-        # State 3: non-parallel walls whose axes meet near each wall's endpoint
-        # → show Join at the floor + Extend-to-Wall at the active wall's top.
+        # State 3: non-parallel walls → show Join at the floor + Extend-to-Wall
+        # at the active wall's top. PARALLEL_DOT_THRESHOLD (cos 2°) is the only
+        # bound that matters: walls within 2° of parallel produce extrusion
+        # joints that race toward infinity, so project_axis_intersection
+        # returns None and hits the early-return below. Beyond that, any
+        # crossing is geometrically valid — distance from the nearest endpoint
+        # is the user's concern, not ours.
         intersection_tuple = core.project_axis_intersection(
             (tuple(seg_a[0]), tuple(seg_a[1])),
             (tuple(seg_b[0]), tuple(seg_b[1])),
@@ -3603,16 +3555,6 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             self._hide_all()
             return
         intersection = Vector(intersection_tuple)
-        len_a = (seg_a[1] - seg_a[0]).length
-        len_b = (seg_b[1] - seg_b[0]).length
-        near_a = min((intersection - seg_a[0]).length, (intersection - seg_a[1]).length)
-        near_b = min((intersection - seg_b[0]).length, (intersection - seg_b[1]).length)
-        if (
-            near_a > len_a * self.MAX_DISTANCE_TO_ENDPOINT_FACTOR
-            or near_b > len_b * self.MAX_DISTANCE_TO_ENDPOINT_FACTOR
-        ):
-            self._hide_all()
-            return
 
         # Join sits on the floor (lowest endpoint Z across both wall axes), exactly
         # where the corner meets the ground — no visibility lift.
@@ -3624,7 +3566,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         # Extend-to-Wall sits at the active wall's top, same XY as the join icon —
         # the Z gap is what differentiates "join at corner" from "extend into other".
         active = context.active_object if context.active_object in selected else None
-        geom = _read_wall_geometry(active) if active else None
+        geom = tool.Wall.read_geometry(active) if active else None
         if geom is None:
             self.extend_to_wall_icon.hide = True
         else:
@@ -4053,13 +3995,12 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         element = tool.Ifc.get_entity(active)
         if element is None or not element.is_a("IfcWall"):
             return False
-        if not tool.Parametric.is_fillet_corner_wall(element):
-            return False
-        # Both neighbour connections must still exist for the re-edit to
-        # recover the original corner.
-        has_a = any(r.is_a("IfcRelConnectsPathElements") for r in getattr(element, "ConnectedFrom", []))
-        has_b = any(r.is_a("IfcRelConnectsPathElements") for r in getattr(element, "ConnectedTo", []))
-        return has_a and has_b
+        # IsFilletCorner pset is the authoritative signal — the re-edit
+        # operator separately verifies both neighbour connections exist and
+        # reports a user-facing error if either side has been disconnected
+        # since creation. Validating that here would hide the pen icon
+        # silently, leaving the user with no obvious next step.
+        return tool.Parametric.is_fillet_corner_wall(element)
 
     def setup(self, context: bpy.types.Context) -> None:
         prefs = tool.Blender.get_addon_preferences()
