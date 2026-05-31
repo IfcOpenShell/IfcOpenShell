@@ -288,6 +288,24 @@ struct WgpuModelGpuData {
     // until the chunk holding the mesh has been delivered.
     std::vector<double> mesh_local_volumes;
 
+    // CPU shadow of each mesh's mesh-local positions + LOD0 indices.
+    // Populated at applyCachedModel (or per-chunk in streaming) from
+    // the same raw vertex bytes the volume calc dequantises. The Area
+    // measurement tool reads this directly — no GPU readback, matching
+    // the Volume tool's policy.
+    //
+    // Doubles per-vertex memory (12 B/vert GPU + 12 B/vert CPU). The
+    // alternative is a wgpu mapAsync readback per first-touched mesh,
+    // which adds async plumbing and a per-click stall; pay the memory
+    // upfront instead. Trim by sizing each entry down at population
+    // (reserve exact). For huge federations this can be a real
+    // working-set cost — revisit if it shows up in profiles.
+    struct MeshTriangles {
+        std::vector<float>    positions;  // 3 * vertex_count, mesh-local
+        std::vector<uint32_t> indices;    // 3 * triangle_count, LOD0
+    };
+    std::vector<MeshTriangles> mesh_triangles_cache;
+
     // object_id (globally rebased) → instance index in `instances`.
     // Populated alongside the instance vector so the Volume tool can do
     // O(1) instance lookup instead of linear-scanning every model.

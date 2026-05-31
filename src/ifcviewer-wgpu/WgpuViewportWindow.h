@@ -34,6 +34,7 @@
 #include <atomic>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -282,6 +283,7 @@ private:
     void  clearSectionPlanes();
     int   sectionPlaneCount() const { return int(section_planes_.size()); }
 
+public:
     // Overlay primitives. Mirror GL ViewportWindow so the Measurement +
     // dimension tools can target either backend through one API.
     // Empty inputs clears the corresponding set.
@@ -294,14 +296,44 @@ private:
                            float stroke_extra);
     void  setOverlayLabels(const std::vector<WgpuOverlayRenderer::Label>& labels);
     void  setHudText(const QString& text);
+    // Translucent world-space triangle overlay (Area-tool patch shading).
+    // Empty list disables; color is RGBA in [0, 1].
+    void  setHighlightTriangles(const std::vector<float>& world_xyz,
+                                float r, float g, float b, float a);
+
+    // CPU mesh shadow: positions (3 floats/vert, mesh-local) + indices
+    // (LOD0). Populated at applyCachedModel / applyStreamedChunk —
+    // returns false if the mesh isn't loaded yet (streaming) or the
+    // (model_id, mesh_id) pair doesn't resolve. Matches the GL
+    // ViewportWindow::MeshTriangles + readbackMeshTriangles shape so
+    // the measure tools port verbatim.
+    using MeshTriangles = WgpuModelGpuData::MeshTriangles;
+    bool  readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+                                MeshTriangles& out) const;
+
+    // Pick + resolve to mesh-local space. Runs pickSurfaceAt to get the
+    // world-space hit, then inverts the instance's composed transform
+    // to express the hit in the mesh's own coordinates — what
+    // readbackMeshTriangles returns. Returns false on miss.
+    struct MeshLocalPick {
+        uint32_t object_id = 0;
+        uint32_t model_id  = 0;
+        uint32_t mesh_id   = 0;
+        float    mesh_local [3] = {0, 0, 0};
+        float    world_pos  [3] = {0, 0, 0};
+        float    world_normal[3] = {0, 0, 0};
+        float    composed_transform[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+    };
+    bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
 
     // Measurement tools. Mirrors GL ViewportWindow::ToolMode. Volume is
-    // the first ported tool — selection-driven (LMB pick / marquee /
-    // Shift/Ctrl set ops drive the readout), no clicks-to-place. V
-    // toggles, Esc exits.
+    // selection-driven (LMB / marquee). Area is click-to-accumulate:
+    // each LMB picks a triangle and either adds or removes its
+    // coplanar patch via BFS over shared edges; Alt+LMB skips the BFS.
+    // V/A toggle, Esc exits.
     // NoTool (not None) because X11/X.h #define's None as 0L; including
     // it transitively via Qt's xcb back-end breaks any enum named None.
-    enum class ToolMode { NoTool, Volume };
+    enum class ToolMode { NoTool, Volume, Area };
     ToolMode toolMode() const { return tool_mode_; }
     void     setToolMode(ToolMode m);
 
@@ -311,6 +343,7 @@ private:
     // value means winding is ignored. Volumes are precomputed at
     // applyCachedModel — this call is just lookups + multiplies.
     double volumeOfObjects(const std::vector<uint32_t>& object_ids) const;
+private:
     // Per-object variant. Used by the Volume tool to drive both the
     // total HUD and the per-object overlay labels at AABB centres.
     std::vector<std::pair<uint32_t, double>>
@@ -498,6 +531,13 @@ private:
     // selection. No-op unless tool_mode_ == Volume; on the first call
     // after entering Volume mode this primes the overlay.
     void updateVolumeReadout();
+
+    // Area tool state lives in WgpuAreaMeasurement (header below). The
+    // viewport owns it for the session and routes LMB picks in Area
+    // mode through onAreaPick.
+    std::unique_ptr<class WgpuAreaMeasurement> area_tool_;
+    void onAreaPick(int x_phys, int y_phys, bool alt);
+    void updateAreaHud();
 
     // Pick pass (stage 4). Single-sample R32UInt target + depth, vertex-
     // pulled from the same visible_draws / instances buffers as the main

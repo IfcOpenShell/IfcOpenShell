@@ -381,6 +381,28 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 }
 )WGSL";
 
+// Highlight-triangle shader: world-space triangle list, translucent
+// uniform fill. view_proj projects to clip; fragment outputs the
+// per-set RGBA tint. Depth-test honours occlusion against geometry;
+// depth-write off so subsequent overlays can still draw on top.
+static const char* HIGHLIGHT_TRIANGLES_WGSL = R"WGSL(
+struct HiUniforms {
+    view_proj: mat4x4<f32>,
+    color:     vec4<f32>,
+};
+@group(0) @binding(0) var<uniform> u: HiUniforms;
+
+@vertex
+fn vs_main(@location(0) pos: vec3<f32>) -> @builtin(position) vec4<f32> {
+    return u.view_proj * vec4<f32>(pos, 1.0);
+}
+
+@fragment
+fn fs_main() -> @location(0) vec4<f32> {
+    return u.color;
+}
+)WGSL";
+
 // Label shader: textured quads in screen space. Each visible label/HUD
 // item contributes 6 vertices (NDC position + uv); a pre-rasterised
 // QImage carrying both the dark-grey background fill and the white
@@ -430,6 +452,7 @@ bool WgpuOverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
     if (!buildMarquee())           return false;
     if (!buildOverlayLines())      return false;
     if (!buildOverlayPoints())     return false;
+    if (!buildHighlightTriangles()) return false;
     if (!buildLabels())            return false;
     return true;
 }
@@ -488,6 +511,18 @@ void WgpuOverlayRenderer::destroy() {
     if (overlay_point_vertex_buffer_)   { wgpuBufferRelease(overlay_point_vertex_buffer_);          overlay_point_vertex_buffer_ = nullptr; }
     overlay_point_vertex_capacity_ = 0;
     overlay_point_vertex_count_    = 0;
+
+    // Highlight triangles
+    if (highlight_bind_group_)      { wgpuBindGroupRelease(highlight_bind_group_);          highlight_bind_group_ = nullptr; }
+    if (highlight_pipeline_)        { wgpuRenderPipelineRelease(highlight_pipeline_);       highlight_pipeline_ = nullptr; }
+    if (highlight_shader_module_)   { wgpuShaderModuleRelease(highlight_shader_module_);    highlight_shader_module_ = nullptr; }
+    if (highlight_pipeline_layout_) { wgpuPipelineLayoutRelease(highlight_pipeline_layout_); highlight_pipeline_layout_ = nullptr; }
+    if (highlight_bgl_)             { wgpuBindGroupLayoutRelease(highlight_bgl_);           highlight_bgl_ = nullptr; }
+    if (highlight_uniform_buffer_)  { wgpuBufferRelease(highlight_uniform_buffer_);         highlight_uniform_buffer_ = nullptr; }
+    if (highlight_vertex_buffer_)   { wgpuBufferRelease(highlight_vertex_buffer_);          highlight_vertex_buffer_ = nullptr; }
+    highlight_vertex_capacity_ = 0;
+    highlight_vertex_count_    = 0;
+    highlight_color_[0] = highlight_color_[1] = highlight_color_[2] = highlight_color_[3] = 0.0f;
 
     // Labels + HUD
     releaseLabelTextures();
@@ -1693,6 +1728,169 @@ void WgpuOverlayRenderer::encodeOverlayPoints(WGPURenderPassEncoder pass,
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, overlay_point_vertex_buffer_,
                                          0, WGPU_WHOLE_SIZE);
     wgpuRenderPassEncoderDraw(pass, overlay_point_vertex_count_, 1, 0, 0);
+}
+
+// -----------------------------------------------------------------------------
+// Highlight triangles (translucent world-space triangle list)
+// -----------------------------------------------------------------------------
+
+bool WgpuOverlayRenderer::buildHighlightTriangles() {
+    {
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 256;  // grows in setHighlightTriangles
+        bdesc.label = svFromCStr("ifcviewer-wgpu.highlight_vbo");
+        highlight_vertex_buffer_   = wgpuDeviceCreateBuffer(device_, &bdesc);
+        highlight_vertex_capacity_ = 256;
+    }
+    {
+        // WGSL HiUniforms: mat4(64) + vec4(16) = 80 B; struct rounds up
+        // to 16-multiple = 80 B already. Allocate 256 for slack.
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
+        bdesc.size  = 256;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.highlight_uniforms");
+        highlight_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
+    }
+    {
+        WGPUBindGroupLayoutEntry entry = {};
+        entry.binding    = 0;
+        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
+        entry.buffer.type           = WGPUBufferBindingType_Uniform;
+        entry.buffer.minBindingSize = 80;
+        WGPUBindGroupLayoutDescriptor bgl_desc = {};
+        bgl_desc.entryCount = 1;
+        bgl_desc.entries    = &entry;
+        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.highlight_bgl");
+        highlight_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+    }
+    {
+        WGPUPipelineLayoutDescriptor pl_desc = {};
+        pl_desc.bindGroupLayoutCount = 1;
+        pl_desc.bindGroupLayouts     = &highlight_bgl_;
+        pl_desc.label                = svFromCStr("ifcviewer-wgpu.highlight_pipeline_layout");
+        highlight_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+    }
+    {
+        WGPUBindGroupEntry entry = {};
+        entry.binding = 0;
+        entry.buffer  = highlight_uniform_buffer_;
+        entry.offset  = 0;
+        entry.size    = 80;
+        WGPUBindGroupDescriptor bg_desc = {};
+        bg_desc.layout     = highlight_bgl_;
+        bg_desc.entryCount = 1;
+        bg_desc.entries    = &entry;
+        bg_desc.label      = svFromCStr("ifcviewer-wgpu.highlight_bind_group");
+        highlight_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
+    }
+    {
+        WGPUShaderSourceWGSL wgsl_src = {};
+        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
+        wgsl_src.code        = svFromCStr(HIGHLIGHT_TRIANGLES_WGSL);
+        WGPUShaderModuleDescriptor sm_desc = {};
+        sm_desc.nextInChain = &wgsl_src.chain;
+        sm_desc.label       = svFromCStr("ifcviewer-wgpu.highlight_wgsl");
+        highlight_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+    }
+
+    WGPUVertexAttribute attribs[1] = {};
+    attribs[0].format = WGPUVertexFormat_Float32x3;
+    attribs[0].offset = 0;
+    attribs[0].shaderLocation = 0;
+    WGPUVertexBufferLayout vbl = {};
+    vbl.arrayStride    = 12;
+    vbl.stepMode       = WGPUVertexStepMode_Vertex;
+    vbl.attributeCount = 1;
+    vbl.attributes     = attribs;
+
+    WGPUBlendState blend = {};
+    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.color.operation = WGPUBlendOperation_Add;
+    blend.alpha.srcFactor = WGPUBlendFactor_One;
+    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState ct = {};
+    ct.format    = surface_format_;
+    ct.blend     = &blend;
+    ct.writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = highlight_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_main");
+    frag.targetCount = 1;
+    frag.targets     = &ct;
+
+    // Depth-tested but no depth-write — patches sit behind closer
+    // geometry but later overlays (axis gizmo, labels) still draw over.
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_False;
+    depth.depthCompare         = WGPUCompareFunction_LessEqual;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = highlight_pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.highlight_pipeline");
+    rp_desc.vertex.module       = highlight_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
+    rp_desc.vertex.bufferCount  = 1;
+    rp_desc.vertex.buffers      = &vbl;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_None;
+    rp_desc.multisample.count   = uint32_t(sample_count_);
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+    highlight_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    return highlight_pipeline_ != nullptr;
+}
+
+void WgpuOverlayRenderer::setHighlightTriangles(
+        const std::vector<float>& world_xyz,
+        float r, float g, float b, float a) {
+    highlight_color_[0] = r;
+    highlight_color_[1] = g;
+    highlight_color_[2] = b;
+    highlight_color_[3] = a;
+    const size_t n_floats = world_xyz.size();
+    if (n_floats < 9 || (n_floats % 9) != 0 || a <= 0.0f) {
+        highlight_vertex_count_ = 0;
+        return;
+    }
+    const uint64_t bytes = uint64_t(n_floats) * sizeof(float);
+    if (bytes > highlight_vertex_capacity_) {
+        const uint64_t new_cap = bytes + bytes / 2;
+        if (highlight_vertex_buffer_) wgpuBufferRelease(highlight_vertex_buffer_);
+        WGPUBufferDescriptor bdesc = {};
+        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
+        bdesc.size  = new_cap;
+        bdesc.label = svFromCStr("ifcviewer-wgpu.highlight_vbo");
+        highlight_vertex_buffer_   = wgpuDeviceCreateBuffer(device_, &bdesc);
+        highlight_vertex_capacity_ = new_cap;
+    }
+    wgpuQueueWriteBuffer(queue_, highlight_vertex_buffer_, 0,
+                         world_xyz.data(), size_t(bytes));
+    highlight_vertex_count_ = uint32_t(n_floats / 3);
+}
+
+void WgpuOverlayRenderer::encodeHighlightTriangles(WGPURenderPassEncoder pass,
+                                                   const WgpuOverlayFrame& f) {
+    if (!highlight_pipeline_ || highlight_vertex_count_ == 0) return;
+    // Pack mat4 + vec4 into the slot. mat4 is column-major 16 floats.
+    uint8_t slot[80] = {};
+    std::memcpy(slot, f.view_proj.constData(), 16 * sizeof(float));
+    std::memcpy(slot + 64, highlight_color_, 4 * sizeof(float));
+    wgpuQueueWriteBuffer(queue_, highlight_uniform_buffer_, 0, slot, sizeof(slot));
+
+    wgpuRenderPassEncoderSetPipeline(pass, highlight_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, highlight_bind_group_, 0, nullptr);
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, highlight_vertex_buffer_,
+                                         0, WGPU_WHOLE_SIZE);
+    wgpuRenderPassEncoderDraw(pass, highlight_vertex_count_, 1, 0, 0);
 }
 
 // -----------------------------------------------------------------------------

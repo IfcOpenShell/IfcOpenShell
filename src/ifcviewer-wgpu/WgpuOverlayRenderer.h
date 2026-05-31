@@ -97,6 +97,18 @@ public:
                              const WgpuOverlayFrame& f,
                              const std::vector<WgpuSectionPlane>& planes);
 
+    // Replace the highlight-triangle list. `world_xyz` is 3 floats per
+    // vertex, 3 vertices per triangle, in world space (post-composed-
+    // transform). Empty disables the overlay. Color is RGBA in [0, 1] —
+    // alpha < 1 gives the translucent patch shading the Area tool uses.
+    // Drawn inside the main MSAA pass so depth-test hides patches
+    // behind closer geometry; depth-write stays off so later overlays
+    // can still draw over the highlight.
+    void setHighlightTriangles(const std::vector<float>& world_xyz,
+                               float r, float g, float b, float a);
+    void encodeHighlightTriangles(WGPURenderPassEncoder pass,
+                                  const WgpuOverlayFrame& f);
+
     // One stylistic group of world-space line segments. Mirrors GL
     // OverlayRenderer::LineGroup so callers can target either backend
     // with one struct.
@@ -193,6 +205,7 @@ private:
     bool buildMarquee();
     bool buildOverlayLines();
     bool buildOverlayPoints();
+    bool buildHighlightTriangles();
     bool buildLabels();
 
     // Rasterise a single string at `font_pt` with dark-grey padded
@@ -289,6 +302,21 @@ private:
     WGPUBuffer          overlay_point_uniform_buffer_  = nullptr;
     WGPUBindGroup       overlay_point_bind_group_      = nullptr;
     uint32_t            overlay_point_vertex_count_    = 0;
+
+    // ---- Highlight triangles (translucent world-space triangle list) ----
+    // One pipeline + one uniform buffer (view_proj + RGBA tint). Vertex
+    // buffer grows on demand to fit the current set; empty set ⇒ encode
+    // is a no-op.
+    WGPUShaderModule    highlight_shader_module_   = nullptr;
+    WGPUBindGroupLayout highlight_bgl_             = nullptr;
+    WGPUPipelineLayout  highlight_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  highlight_pipeline_        = nullptr;
+    WGPUBuffer          highlight_vertex_buffer_   = nullptr;
+    uint64_t            highlight_vertex_capacity_ = 0;
+    WGPUBuffer          highlight_uniform_buffer_  = nullptr;
+    WGPUBindGroup       highlight_bind_group_      = nullptr;
+    uint32_t            highlight_vertex_count_    = 0;
+    float               highlight_color_[4]        = {0, 0, 0, 0};
 
     // ---- Labels + HUD text (textured quads, cached by content) ----
     // One QPainter-rasterised QImage per unique text string, uploaded as

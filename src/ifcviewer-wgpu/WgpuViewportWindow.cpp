@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "WgpuViewportWindow.h"
+#include "WgpuAreaMeasurement.h"
 #include "WgpuStreamingLoader.h"
 
 #include <QGuiApplication>
@@ -94,9 +95,13 @@ static QVector3D orbitEye(const float target[3], float dist,
 // Forward declaration — defined alongside the Volume tool. Called from
 // both applyCachedModel (full load) and applyStreamedChunk (per-chunk
 // fill in streaming mode) so the same quantised-bytes path runs in both.
+// Also writes the dequantised positions + index copy into `out_tris`
+// so the Area tool's CPU shadow is built in the same pass — the loop
+// already touches every vertex, so the marginal cost is one memcpy.
 static double computeMeshLocalVolumeQuantised(
         const MeshInfo& mesh,
-        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices);
+        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
+        WgpuModelGpuData::MeshTriangles* out_tris);
 
 // -----------------------------------------------------------------------------
 // Small helpers
@@ -938,10 +943,11 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     m.instances = std::move(metadata.meta.instances);
 
     // Streaming defers per-mesh vertex data until the owning chunk is
-    // loaded, so mesh-local volumes can't be precomputed here. Volume
-    // tool returns 0 for unloaded meshes; once we add lazy per-chunk
-    // volume computation this assign() becomes the seed.
+    // loaded, so mesh-local volumes + the Area-tool CPU shadow can't
+    // be precomputed here. Both fill in per-chunk inside
+    // applyStreamedChunk as the bytes arrive.
     m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
+    m.mesh_triangles_cache.assign(m.meshes.size(), WgpuModelGpuData::MeshTriangles{});
 
     // object_id → instance index lookup. Volume tool reads it on every
     // selection mutation; per-pick latency stays O(K) instead of O(K*N).
@@ -1304,11 +1310,12 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
     m.meshes    = std::move(data.meshes);
     m.instances = std::move(data.instances);
 
-    // Mesh-local volumes (m³). Computed once per mesh by signed-tetrahedra-
-    // from-origin over the LOD0 triangles; the Volume measurement tool
-    // later just multiplies by |det(placement_3x3)| per instance. Helper
-    // works on raw quantised bytes so the streaming path can reuse it.
+    // Mesh-local volumes (m³) + CPU mesh shadow for the Area tool.
+    // Both come from the same dequant pass per mesh — see
+    // computeMeshLocalVolumeQuantised. Helper works on raw quantised
+    // bytes so the streaming path can reuse it.
     m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
+    m.mesh_triangles_cache.assign(m.meshes.size(), WgpuModelGpuData::MeshTriangles{});
     for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
         const MeshInfo& mesh = m.meshes[mi];
         if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
@@ -1316,7 +1323,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
         const uint32_t* ibase = data.indices.data()
                               + (mesh.ebo_byte_offset / sizeof(uint32_t));
         m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
-            mesh, vbase, ibase, mesh.index_count);
+            mesh, vbase, ibase, mesh.index_count, &m.mesh_triangles_cache[mi]);
     }
 
     // object_id → instance index lookup. Volume tool reads it on every
@@ -2904,6 +2911,89 @@ void WgpuViewportWindow::setHudText(const QString& text) {
     if (isExposed()) requestUpdate();
 }
 
+void WgpuViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
+                                               float r, float g, float b, float a) {
+    overlays_.setHighlightTriangles(world_xyz, r, g, b, a);
+    if (isExposed()) requestUpdate();
+}
+
+bool WgpuViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+                                               MeshTriangles& out) const {
+    auto mit = models_gpu_.find(model_id);
+    if (mit == models_gpu_.end()) return false;
+    const WgpuModelGpuData& m = mit->second;
+    if (mesh_id >= m.mesh_triangles_cache.size()) return false;
+    const auto& src = m.mesh_triangles_cache[mesh_id];
+    if (src.indices.empty() || src.positions.empty()) return false;
+    // Copy out — callers iterate freely without worrying about lifetime
+    // (streaming may evict a chunk and rebuild the shadow on next load).
+    out = src;
+    return true;
+}
+
+bool WgpuViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
+    uint32_t obj_id = 0;
+    QVector3D world_pos, world_normal;
+    if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
+
+    // O(1) instance lookup via object_id_to_instance — see also the
+    // Volume tool. composed_transform is the float `inst.transform`,
+    // already the per-frame world placement.
+    //
+    // Use the OUTER mid (the live map key) rather than inst.model_id —
+    // the InstanceCpu's model_id field is whatever the GL streamer
+    // wrote at sidecar-write time, which is stale across sessions and
+    // doesn't match the current load's globally-rebased model id.
+    for (const auto& [mid, m] : models_gpu_) {
+        auto it = m.object_id_to_instance.find(obj_id);
+        if (it == m.object_id_to_instance.end()) continue;
+        const InstanceCpu& inst = m.instances[it->second];
+
+        QMatrix4x4 T(inst.transform[0],  inst.transform[4],  inst.transform[8],  inst.transform[12],
+                     inst.transform[1],  inst.transform[5],  inst.transform[9],  inst.transform[13],
+                     inst.transform[2],  inst.transform[6],  inst.transform[10], inst.transform[14],
+                     inst.transform[3],  inst.transform[7],  inst.transform[11], inst.transform[15]);
+        bool ok = false;
+        const QMatrix4x4 Ti = T.inverted(&ok);
+        if (!ok) return false;
+        const QVector4D mp = Ti * QVector4D(world_pos.x(), world_pos.y(), world_pos.z(), 1.0f);
+
+        if (inst.mesh_id >= m.meshes.size()) return false;
+
+        out.object_id     = obj_id;
+        out.model_id      = mid;
+        out.mesh_id       = inst.mesh_id;
+        out.mesh_local[0] = mp.x();
+        out.mesh_local[1] = mp.y();
+        out.mesh_local[2] = mp.z();
+        out.world_pos [0] = world_pos.x();
+        out.world_pos [1] = world_pos.y();
+        out.world_pos [2] = world_pos.z();
+        out.world_normal[0] = world_normal.x();
+        out.world_normal[1] = world_normal.y();
+        out.world_normal[2] = world_normal.z();
+        std::memcpy(out.composed_transform, inst.transform,
+                    sizeof(out.composed_transform));
+        return true;
+    }
+    return false;
+}
+
+void WgpuViewportWindow::onAreaPick(int x_phys, int y_phys, bool alt) {
+    if (!area_tool_) return;
+    area_tool_->onPick(*this, x_phys, y_phys, alt);
+    updateAreaHud();
+}
+
+void WgpuViewportWindow::updateAreaHud() {
+    if (tool_mode_ != ToolMode::Area || !area_tool_) return;
+    overlays_.setHudText(
+        QStringLiteral("Area: %1 m²  (%2 tris)")
+            .arg(area_tool_->totalArea(), 0, 'f', 4)
+            .arg(area_tool_->triangleCount()));
+    if (isExposed()) requestUpdate();
+}
+
 // |det(upper-left 3×3)| of a column-major 4×4 placement. Picks up
 // mapped-item scale / mirror so a uniformly-scaled clone of a 1 m³ mesh
 // reports its actual volume.
@@ -2923,9 +3013,14 @@ static double det3OfPlacement(const double M[16]) {
 // from-origin → |sum|/6 so winding doesn't matter. Same algorithm as
 // Bonsai's meshLocalVolume; takes the dequant step from
 // INSTANCED_VERTEX_STRIDE_BYTES layout.
+//
+// When `out_tris` is non-null, dequantised positions + the LOD0 index
+// copy are written into it for the Area tool's CPU shadow. Avoids a
+// second pass over every vertex.
 static double computeMeshLocalVolumeQuantised(
         const MeshInfo& mesh,
-        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices) {
+        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
+        WgpuModelGpuData::MeshTriangles* out_tris) {
     if (n_indices < 3 || vbase == nullptr || ibase == nullptr) return 0.0;
     const float ax = mesh.local_aabb_min[0];
     const float ay = mesh.local_aabb_min[1];
@@ -2934,26 +3029,43 @@ static double computeMeshLocalVolumeQuantised(
     const float ey = mesh.local_aabb_max[1] - ay;
     const float ez = mesh.local_aabb_max[2] - az;
     const float inv_q = 1.0f / 65535.0f;
-    auto dequant = [&](uint32_t vi, double out[3]) {
-        const uint8_t* v = vbase + size_t(vi) * INSTANCED_VERTEX_STRIDE_BYTES;
+
+    // Eager-dequant every vertex once into a stack-allocated scratch
+    // (small per-mesh — bounded by mesh.vertex_count, typically tens
+    // to thousands). The Area shadow needs the same floats, so writing
+    // to scratch + memcpying out is cheaper than dequantising twice.
+    std::vector<float> positions;
+    positions.resize(size_t(mesh.vertex_count) * 3);
+    for (uint32_t v = 0; v < mesh.vertex_count; ++v) {
+        const uint8_t* p = vbase + size_t(v) * INSTANCED_VERTEX_STRIDE_BYTES;
         uint16_t qx, qy, qz;
-        std::memcpy(&qx, v + 0, 2);
-        std::memcpy(&qy, v + 2, 2);
-        std::memcpy(&qz, v + 4, 2);
-        out[0] = double(ax + float(qx) * inv_q * ex);
-        out[1] = double(ay + float(qy) * inv_q * ey);
-        out[2] = double(az + float(qz) * inv_q * ez);
-    };
+        std::memcpy(&qx, p + 0, 2);
+        std::memcpy(&qy, p + 2, 2);
+        std::memcpy(&qz, p + 4, 2);
+        positions[3 * v + 0] = ax + float(qx) * inv_q * ex;
+        positions[3 * v + 1] = ay + float(qy) * inv_q * ey;
+        positions[3 * v + 2] = az + float(qz) * inv_q * ez;
+    }
+
     double sum = 0.0;
     for (uint32_t i = 0; i + 2 < n_indices; i += 3) {
-        double p0[3], p1[3], p2[3];
-        dequant(ibase[i + 0], p0);
-        dequant(ibase[i + 1], p1);
-        dequant(ibase[i + 2], p2);
-        const double cx = p1[1] * p2[2] - p1[2] * p2[1];
-        const double cy = p1[2] * p2[0] - p1[0] * p2[2];
-        const double cz = p1[0] * p2[1] - p1[1] * p2[0];
-        sum += p0[0] * cx + p0[1] * cy + p0[2] * cz;
+        const uint32_t i0 = ibase[i + 0];
+        const uint32_t i1 = ibase[i + 1];
+        const uint32_t i2 = ibase[i + 2];
+        if (i0 >= mesh.vertex_count || i1 >= mesh.vertex_count
+         || i2 >= mesh.vertex_count) continue;
+        const float* p0 = &positions[3 * i0];
+        const float* p1 = &positions[3 * i1];
+        const float* p2 = &positions[3 * i2];
+        const double cx = double(p1[1]) * p2[2] - double(p1[2]) * p2[1];
+        const double cy = double(p1[2]) * p2[0] - double(p1[0]) * p2[2];
+        const double cz = double(p1[0]) * p2[1] - double(p1[1]) * p2[0];
+        sum += double(p0[0]) * cx + double(p0[1]) * cy + double(p0[2]) * cz;
+    }
+
+    if (out_tris) {
+        out_tris->positions = std::move(positions);
+        out_tris->indices.assign(ibase, ibase + n_indices);
     }
     return std::abs(sum) / 6.0;
 }
@@ -2961,18 +3073,26 @@ static double computeMeshLocalVolumeQuantised(
 void WgpuViewportWindow::setToolMode(ToolMode m) {
     if (tool_mode_ == m) return;
     tool_mode_ = m;
+    // Always tear down the previous tool's overlay artefacts before
+    // switching — easier than per-from-state branching, and the new
+    // tool re-primes whatever it owns on its first update.
+    if (area_tool_) area_tool_->clear(*this);
+    overlays_.setHudText(QString());
+    overlays_.setOverlayLabels({});
+    overlays_.setHighlightTriangles({}, 0, 0, 0, 0);
+
     switch (tool_mode_) {
     case ToolMode::NoTool:
-        // Drop any HUD/labels the previous tool left behind. We don't
-        // own the GL backend's per-tool clear callbacks, so the tool's
-        // own state lives in the overlay renderer.
-        overlays_.setHudText(QString());
-        overlays_.setOverlayLabels({});
         qInfo() << "[wgpu measure] tool off";
         break;
     case ToolMode::Volume:
         qInfo() << "[wgpu measure] volume tool — pick / marquee objects, Esc to exit";
         updateVolumeReadout();
+        break;
+    case ToolMode::Area:
+        if (!area_tool_) area_tool_ = std::make_unique<WgpuAreaMeasurement>();
+        qInfo() << "[wgpu measure] area tool — LMB pick coplanar patch, Alt+LMB single tri, click again to remove, Esc exits";
+        overlays_.setHudText(QStringLiteral("Area: 0.0000 m²  (0 tris)"));
         break;
     }
     if (isExposed()) requestUpdate();
@@ -4185,6 +4305,12 @@ void WgpuViewportWindow::render() {
     // active clip plane cuts. Drawn inside the main MSAA pass.
     overlays_.encodeSectionGizmos(pass, overlay_frame, section_planes_);
 
+    // Highlight triangles (Area-tool patch shading). Drawn inside the
+    // main MSAA pass so depth-test correctly hides patches behind closer
+    // geometry; depth-write off so the corner gizmo / labels still render
+    // on top.
+    overlays_.encodeHighlightTriangles(pass, overlay_frame);
+
     // Pivot indicator. Encoded inside the main MSAA pass after geometry so
     // depth interaction is correct — the indicator vanishes behind closer
     // surfaces. Visibility is driven by orbit/wheel UI handlers.
@@ -5166,8 +5292,13 @@ bool WgpuViewportWindow::applyStreamedChunk(
                 + size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
             if (v_end > vbytes.size()) continue;
             if (i_off + mesh.index_count > idx.size()) continue;
+            WgpuModelGpuData::MeshTriangles* tris =
+                (mi < m.mesh_triangles_cache.size())
+                    ? &m.mesh_triangles_cache[mi]
+                    : nullptr;
             m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
-                mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count);
+                mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count,
+                tris);
             filled_volume = true;
         }
     }
@@ -6238,6 +6369,7 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
         setPivotIndicatorVisible(true);
     } else if (event->button() == Qt::LeftButton
             && !section_tool_active_
+            && tool_mode_ != ToolMode::Area
             && nav_drag_kind_ == NavDrag::Inactive) {
         // Arm marquee box-select. Plain / Shift / Ctrl LMB without a tool
         // intercepting the click; if the cursor never moves past the
@@ -6326,6 +6458,22 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 } else {
                     qInfo().noquote() << "[wgpu section] click missed (no surface)";
                 }
+                nav_active_button_ = Qt::NoButton;
+                nav_drag_kind_     = NavDrag::Inactive;
+                setPivotIndicatorVisible(false);
+                return;
+            }
+
+            // Area tool: plain LMB resolves to (instance, triangle) and
+            // accumulates the coplanar patch; Alt+LMB skips BFS for a
+            // single-triangle accumulate. Re-clicking inside a previously
+            // accumulated patch removes it. Shift/Ctrl fall through to
+            // selection so the user can still manage selection state.
+            if (tool_mode_ == ToolMode::Area
+                && (event->modifiers() == Qt::NoModifier
+                 || event->modifiers() == Qt::AltModifier)) {
+                const bool alt = (event->modifiers() & Qt::AltModifier) != 0;
+                onAreaPick(px, py, alt);
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
                 setPivotIndicatorVisible(false);
@@ -6643,11 +6791,17 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
         }
     }
 
-    // Measurement tools. V toggles Volume; Esc exits whichever tool is
-    // active. Mirrors GL ViewportWindow + Bonsai's bind_shortcut(V).
+    // Measurement tools. V toggles Volume, A toggles Area; Esc exits
+    // whichever tool is active. Mirrors GL ViewportWindow + Bonsai's
+    // bind_shortcut(V) / bind_shortcut(A).
     if (key == Qt::Key_V && mods == Qt::NoModifier && !event->isAutoRepeat()) {
         setToolMode(tool_mode_ == ToolMode::Volume ? ToolMode::NoTool
                                                    : ToolMode::Volume);
+        return;
+    }
+    if (key == Qt::Key_A && mods == Qt::NoModifier && !event->isAutoRepeat()) {
+        setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::NoTool
+                                                 : ToolMode::Area);
         return;
     }
     if (tool_mode_ != ToolMode::NoTool && key == Qt::Key_Escape
