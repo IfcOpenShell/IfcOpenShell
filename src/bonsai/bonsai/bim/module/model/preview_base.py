@@ -60,8 +60,12 @@ def get_preview_props(context: bpy.types.Context, attr: str):
     Returns ``None`` if the umbrella isn't attached yet — true briefly
     during addon register and during plug-out, so polls / draw callbacks
     must defend against ``None`` rather than assuming the prop is always
-    available."""
-    preview = getattr(context.scene, "BIMPreviewProperties", None)
+    available. Also tolerates contexts without a ``scene`` attribute
+    (test mocks built from ``SimpleNamespace``)."""
+    scene = getattr(context, "scene", None)
+    if scene is None:
+        return None
+    preview = getattr(scene, "BIMPreviewProperties", None)
     return getattr(preview, attr, None) if preview is not None else None
 
 

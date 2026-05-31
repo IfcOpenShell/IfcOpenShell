@@ -63,6 +63,7 @@ import bonsai.core.project as core
 import bonsai.tool as tool
 from bonsai.bim import export_ifc, import_ifc
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.decorator import FaceAreaDecorator, PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
@@ -1935,6 +1936,10 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
     def _execute(self, context):
         committed, failed_commits = tool.Parametric.commit_pending_edits()
+        # Previews are session-transient — discard rather than commit. Sibling
+        # gizmo polls gate on each preview's is_active flag, and a stuck flag
+        # persisted through the save would silently hide them on reload.
+        preview_base.discard_pending_previews(context.scene)
         # Suffix is appended to the IFC save-success report below so the auto-commit
         # info isn't immediately overwritten by the success message in Blender's
         # status bar (only the latest self.report({"INFO"}, ...) sticks).

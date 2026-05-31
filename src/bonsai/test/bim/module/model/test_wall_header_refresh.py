@@ -75,7 +75,7 @@ def test_geom_generation_invalidates_wall_geom_cache():
     sentinel_a = {"length": 1.0, "height": 2.0, "x_angle": 0.0}
     sentinel_b = {"length": 1.5, "height": 2.5, "x_angle": 0.0}
 
-    with patch.object(wall_mod, "_read_wall_geometry", side_effect=[sentinel_a, sentinel_b]):
+    with patch.object(tool.Wall, "read_geometry", side_effect=[sentinel_a, sentinel_b]):
         first = wall_mod._get_wall_geom_cached(group, fake_obj)
         assert first is sentinel_a
         # Same call without a generation bump must hit the cache (no extra read).
