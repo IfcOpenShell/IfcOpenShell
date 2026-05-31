@@ -67,6 +67,19 @@ _FILLET_DEFAULT_LEG_FRACTION = 0.25  # Quarter of the shorter available leg — 
 _FILLET_MIN_RADIUS_M = 0.001  # Lower bound — anything smaller renders as a single pixel at common viewport scales.
 
 
+def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
+    """Common pre-flight gate every wall gizmo group's ``poll`` runs first:
+    viewport gizmos are enabled AND no preview is active. Centralises the
+    two checks every wall gizmo group otherwise duplicates inline; returning
+    ``False`` here short-circuits the caller's poll before any per-feature
+    selection inspection runs."""
+    if not tool.Blender.are_viewport_gizmos_enabled():
+        return False
+    if preview_base.any_preview_active(context):
+        return False
+    return True
+
+
 def regenerate_wall_mesh_from_props(obj: bpy.types.Object) -> None:
     """Rebuild ``obj.data`` as a preview box from ``BIMWallProperties`` without touching IFC.
 
@@ -3336,8 +3349,7 @@ class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = tool.Blender.get_addon_preferences()
-        if not prefs.gizmos.draw_gizmos_in_3d_viewport:
+        if not _wall_gizmo_poll_gate(context):
             return False
         selected = tool.Blender.get_selected_objects()
         if len(selected) != 2:
@@ -3405,8 +3417,7 @@ class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = tool.Blender.get_addon_preferences()
-        if not prefs.gizmos.draw_gizmos_in_3d_viewport:
+        if not _wall_gizmo_poll_gate(context):
             return False
         selected = tool.Blender.get_selected_objects()
         if len(selected) != 2:
@@ -3493,8 +3504,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        prefs = tool.Blender.get_addon_preferences()
-        if not prefs.gizmos.draw_gizmos_in_3d_viewport:
+        if not _wall_gizmo_poll_gate(context):
             return False
         selected = tool.Blender.get_selected_objects()
         if len(selected) != 2:
@@ -3664,7 +3674,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not tool.Blender.are_viewport_gizmos_enabled():
+        if not _wall_gizmo_poll_gate(context):
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:
@@ -4032,9 +4042,7 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not tool.Blender.are_viewport_gizmos_enabled():
-            return False
-        if _wall_fillet_preview_active(context):
+        if not _wall_gizmo_poll_gate(context):
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:

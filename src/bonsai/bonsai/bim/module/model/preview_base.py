@@ -74,6 +74,17 @@ def is_preview_active(context: bpy.types.Context, attr: str) -> bool:
     return bool(props is not None and props.is_active)
 
 
+def any_preview_active(context: bpy.types.Context) -> bool:
+    """``True`` if any registered preview is currently open. Sister gizmo
+    polls call this to hide themselves uniformly during ANY preview, so a
+    new preview registered in ``PREVIEW_CANCEL_OPS`` automatically gates
+    every parametric gizmo without each one growing a specific check."""
+    for attr, _op_name in PREVIEW_CANCEL_OPS:
+        if is_preview_active(context, attr):
+            return True
+    return False
+
+
 # --- Lazy closure factories --------------------------------------------------
 #
 # Used by preview gizmo groups when wiring ``BIM_GT_gizmo_dimension``'s
