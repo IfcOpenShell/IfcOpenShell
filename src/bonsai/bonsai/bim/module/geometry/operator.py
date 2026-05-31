@@ -2269,6 +2269,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 gprops = tool.Geometry.get_geometry_props()
                 if gprops.representation_obj:
                     tool.Geometry.disable_item_mode()
+                    if active_obj := bpy.context.active_object:
+                        active_obj.select_set(False)
                 else:
                     bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
                 return {"FINISHED"}
@@ -2355,6 +2357,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             and usage in ("LAYER1", "LAYER2")
         ):
             self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
+            obj.select_set(False)
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
