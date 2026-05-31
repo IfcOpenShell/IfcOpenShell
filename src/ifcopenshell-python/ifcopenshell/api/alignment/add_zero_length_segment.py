@@ -18,14 +18,12 @@
 
 import math
 
-import numpy as np
-
 import ifcopenshell
 import ifcopenshell.api.alignment
+from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
+from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
 import ifcopenshell.api.nest
-import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as wrapper
-import ifcopenshell.util.alignment
 import ifcopenshell.util.unit
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._get_segment_start_point_label import (
@@ -42,14 +40,13 @@ from ifcopenshell.api.alignment._update_curve_segment_transition_code import (
 )
 
 
-def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, include_referent: bool = True) -> bool:
+def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance) -> bool:
     """
     Adds a zero length segment to the end of a layout.
 
     If the layout already has a zero length segment, nothing is changed.
 
     :param layout: An IfcAlignmentHorizontal, IfcAlignmentVertical, IfcAlignmentCant, IfcCompositeCurve, IfcGradientCurve, IfcSegmentedReferenceCurve
-    :param include_referent: If True, an IfcReferent representing the ending point of the layout is included for IfcLinearElement layouts (i.e. business logic)
     :return: True if segment is added
     """
 
@@ -74,28 +71,6 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
         return False
 
     if layout.is_a("IfcCompositeCurve") or layout.is_a("IfcGradientCurve") or layout.is_a("IfcSegmentedReferenceCurve"):
-        x = 0.0
-        y = 0.0
-        dx = 1.0
-        dy = 0.0
-        segment_start = 0.0
-
-        last_segment = None
-        if layout.Segments and 0 < len(layout.Segments):
-            # If there are segments, get the last segment and compute the end point and tangent direction
-            # because this becomes of placement of the zero length segment
-            last_segment = layout.Segments[-1]
-            settings = ifcopenshell.geom.settings()
-            fn = wrapper.map_shape(settings, last_segment.wrapped_data)
-            eval = wrapper.function_item_evaluator(settings, fn)
-            e = np.array(eval.evaluate(fn.end()))
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-            e[:3, 3] /= unit_scale
-            x = float(e[0, 3])
-            y = float(e[1, 3])
-            dx = float(e[0, 0])
-            dy = float(e[1, 0])
-
         parent_curve = file.createIfcLine(
             Pnt=file.createIfcCartesianPoint(Coordinates=((0.0, 0.0))),
             Dir=file.createIfcVector(
@@ -103,21 +78,35 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                 Magnitude=1.0,
             ),
         )
+        if layout.is_a("IfcSegmentedReferenceCurve"):
+            placement = file.createIfcAxis2Placement3D(
+                Location=file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                RefDirection=file.createIfcDirection((1.0, 0.0, 0.0)),
+                Axis=file.createIfcDirection((0.0, 0.0, 1.0)),
+            )
+        else:
+            placement = file.createIfcAxis2Placement2D(
+                Location=file.createIfcCartesianPoint((0.0, 0.0)),
+                RefDirection=file.createIfcDirection((1.0, 0.0)),
+            )
+
         zero_length_curve_segment = file.createIfcCurveSegment(
             Transition="DISCONTINUOUS",
-            Placement=file.createIfcAxis2Placement2D(
-                Location=file.createIfcCartesianPoint((x, y)),
-                RefDirection=file.createIfcDirection((dx, dy)),
-            ),
+            Placement=placement,
             SegmentStart=file.createIfcLengthMeasure(0.0),
             SegmentLength=file.createIfcLengthMeasure(0.0),
             ParentCurve=parent_curve,
         )
 
-        layout.Segments += (zero_length_curve_segment,)
-
-        if last_segment:
+        if layout.Segments and 0 < len(layout.Segments):
+            # If there are segments, get the last segment and compute the end point and tangent direction
+            # because this becomes of placement of the zero length segment
+            last_segment = layout.Segments[-1]
+            end_point = _get_segment_endpoint(file, last_segment)
+            _update_zero_length_segment_placement(file, zero_length_curve_segment, end_point)
             _update_curve_segment_transition_code(last_segment, zero_length_curve_segment)
+
+        layout.Segments += (zero_length_curve_segment,)
 
         # add zero length segments to base curves
         if layout.is_a("IfcSegmentedReferenceCurve"):
@@ -139,21 +128,13 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                     break
 
             if last_segment:
-                file.begin_transaction()  # use a transaction so we can discard any temporary IFC entities created
+                e = _get_segment_endpoint(file, last_segment)
 
-                settings = ifcopenshell.geom.settings()
-                mapped_segments = _map_alignment_horizontal_segment(file, last_segment)
-                geometry_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
-                fn = wrapper.map_shape(settings, geometry_segment.wrapped_data)
-                eval = wrapper.function_item_evaluator(settings, fn)
-                e = np.array(eval.evaluate(fn.end()))
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
                 x = float(e[0, 3]) / unit_scale
                 y = float(e[1, 3]) / unit_scale
                 dx = float(e[0, 0])
                 dy = float(e[1, 0])
-
-                file.discard_transaction()
 
             angle_unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file, "PLANEANGLEUNIT")
             design_parameters = file.createIfcAlignmentHorizontalSegment(
@@ -178,21 +159,13 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
                     break
 
             if last_segment:
-                file.begin_transaction()
                 last_segment_dist_along = (
                     last_segment.DesignParameters.StartDistAlong + last_segment.DesignParameters.HorizontalLength
                 )
                 last_segment_end_gradient = last_segment.DesignParameters.EndGradient
-                settings = ifcopenshell.geom.settings()
-                mapped_segments = _map_alignment_vertical_segment(file, last_segment)
-                geometry_segment = mapped_segments[0] if mapped_segments[1] == None else mapped_segments[1]
-                fn = wrapper.map_shape(settings, geometry_segment.wrapped_data)
-                eval = wrapper.function_item_evaluator(settings, fn)
-                e = np.array(eval.evaluate(fn.end()))
+                e = _get_segment_endpoint(file, last_segment)
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
                 last_segment_height = float(e[1, 3]) / unit_scale
-
-                file.discard_transaction()
 
             design_parameters = file.createIfcAlignmentVerticalSegment(
                 StartDistAlong=last_segment_dist_along,
@@ -239,14 +212,5 @@ def add_zero_length_segment(file: ifcopenshell.file, layout: entity_instance, in
             )
 
         ifcopenshell.api.nest.assign_object(file, related_objects=[zero_length_curve_segment], relating_object=layout)
-
-        if include_referent:
-            alignment = ifcopenshell.api.alignment.get_alignment(layout)
-            station = ifcopenshell.api.alignment.get_alignment_start_station(file, alignment)
-            name = f"{_get_segment_start_point_label(zero_length_curve_segment,None)} ({ifcopenshell.util.alignment.station_as_string(file,station)})"
-            referent = ifcopenshell.api.alignment.add_stationing_referent(
-                file, alignment, 0.0, station, name, zero_length_curve_segment
-            )
-            referent.Description = f"Positions zero length segment {zero_length_curve_segment.id()}"
 
     return True

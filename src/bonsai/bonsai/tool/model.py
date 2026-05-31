@@ -15,12 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
 import collections.abc
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
 from math import atan, cos, degrees, pi, radians
 from typing import (
@@ -37,9 +39,11 @@ from typing import (
 import bmesh
 import bpy
 import ifcopenshell
+import ifcopenshell.api.feature
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.element
@@ -58,6 +62,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
+from bonsai.tool.cad import VTX_PRECISION, WELD_TOLERANCE
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
@@ -77,6 +82,7 @@ if TYPE_CHECKING:
         BIMRoofProperties,
         BIMStairProperties,
         BIMSverchokProperties,
+        BIMWallProperties,
         BIMWindowProperties,
     )
 
@@ -97,6 +103,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
         return obj.BIMStairProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_wall_props(cls, obj: bpy.types.Object) -> BIMWallProperties:
+        return obj.BIMWallProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
@@ -122,6 +132,35 @@ class Model(bonsai.core.tool.Model):
     def get_polyline_props(cls) -> BIMPolylineProperties:
         assert (scene := bpy.context.scene)
         return scene.BIMPolylineProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def resolve_active_props_for_edit(
+        cls,
+        context: bpy.types.Context,
+        props_getter: Callable[[bpy.types.Object], Any],
+        *,
+        subtype: Optional[tuple[str, Any]] = None,
+    ) -> Optional[tuple[bpy.types.Object, Any]]:
+        """Resolve ``(obj, props)`` for an operator that acts on the active
+        object only while a parametric edit is active.
+
+        Returns ``None`` (the operator should ``return {"CANCELLED"}``) when
+        any of these fail:
+        - no active object,
+        - ``props.is_editing`` is False,
+        - ``subtype`` is given as ``(attr, value)`` and ``props.<attr> != value``.
+        """
+        obj = context.active_object
+        if not obj:
+            return None
+        props = props_getter(obj)
+        if not getattr(props, "is_editing", False):
+            return None
+        if subtype is not None:
+            attr, value = subtype
+            if getattr(props, attr, None) != value:
+                return None
+        return obj, props
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -792,7 +831,7 @@ class Model(bonsai.core.tool.Model):
         assert element or representation, "Either element or representation must be provided."
         if representation is None:
             assert element
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            representation = tool.Geometry.get_body_representation(element)
             if not representation:
                 return []
         booleans = []
@@ -813,7 +852,7 @@ class Model(bonsai.core.tool.Model):
             return []
         boolean_ids = json.loads(pset["Data"])
         if representation is None:
-            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            representation = tool.Geometry.get_body_representation(element)
             if not representation:
                 return []
         booleans = [b for b in cls.get_booleans(element, representation) if b.id() in boolean_ids]
@@ -902,7 +941,7 @@ class Model(bonsai.core.tool.Model):
                 # Revolved area check should happen inside bim.enable_editing_extrusion_axis
                 # but keep it here to trigger import_representation_items,
                 # so users will be able to at least move IfcRevolvedAreaSolid, until there will be a full support.
-                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                body = tool.Geometry.get_body_representation(element)
                 if body and any(
                     i.is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_base_items(body)
                 ):
@@ -1015,7 +1054,14 @@ class Model(bonsai.core.tool.Model):
     def handle_array_on_copied_element(
         cls, element: ifcopenshell.entity_instance, array_data: Optional[dict[str, Any]] = None
     ) -> None:
-        """if no `array_data` is provided then an array will be removed from the element"""
+        """Post-copy hook: decide what to do with the BBIM_Array pset a copy
+        inherits from its source.
+
+        - ``array_data=None`` — detach the copy from any array. Removes the
+          inherited BBIM_Array pset and any CHILD_OF constraint.
+        - ``array_data`` provided — promote the copy to a fresh array parent
+          with an empty children list, using the provided layer config.
+        """
 
         if array_data is None:
             array_pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
@@ -1059,8 +1105,8 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
             for i in range(len(array_data)):
-                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
-            tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+                tool.Array.set_children_lock_state(element, i, True)
+            tool.Array.constrain_children_to_parent(element)
 
     @classmethod
     def regenerate_array(
@@ -1097,12 +1143,17 @@ class Model(bonsai.core.tool.Model):
                 offset = base_offset * i
 
                 for obj in obj_stack:
+                    # IndexError when child_i is past the recorded children list
+                    # (count grew); RuntimeError when by_guid finds no entity (the
+                    # child was deleted outside the array op); AssertionError when
+                    # the IFC entity exists but its Blender object was unlinked.
+                    # All three fall through to duplication.
                     try:
                         global_id = array["children"][child_i]
                         child_element = tool.Ifc.get().by_guid(global_id)
                         child_obj = tool.Ifc.get_object(child_element)
                         assert child_obj
-                    except:
+                    except (IndexError, RuntimeError, AssertionError):
                         old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
                         child_element = next(iter(old_to_new.values()))[0]
                         child_obj = tool.Ifc.get_object(child_element)
@@ -1139,14 +1190,24 @@ class Model(bonsai.core.tool.Model):
             removed_children = set(existing_children) - set(array["children"])
             for removed_child in removed_children:
                 element = tool.Ifc.get().by_guid(removed_child)
+                # Strip any wall/slab opening cut by this child before deletion,
+                # so the host's HasOpenings shrinks symmetrically with count.
+                if getattr(element, "FillsVoids", None):
+                    ifcopenshell.api.feature.remove_feature(
+                        tool.Ifc.get(), feature=element.FillsVoids[0].RelatingOpeningElement
+                    )
                 obj = tool.Ifc.get_object(element)
                 if obj:
                     tool.Geometry.delete_ifc_object(obj)
+
+            if array.get("per_child_opening", array.get("mirror_to_host", True)) and children_elements:
+                cls.mirror_parent_void_fillings_to_children(parent_element, children_elements)
 
             if array_i in array_layers_to_apply:
                 for child_element in children_elements:
                     pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
                     ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=child_element, pset=pset)
+                    cls.unshare_opening_representation(child_element)
 
                 array["children"] = []
                 array["count"] = 1
@@ -1158,6 +1219,112 @@ class Model(bonsai.core.tool.Model):
         ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
         )
+
+        # Post-condition: parent is selected on return. duplicate_ifc_objects
+        # deselects the source on every call inside the regen loop; without
+        # this restore, callers get a deselected parent for arrays with N >= 2.
+        # TODO: batch the per-child duplicate_ifc_objects([parent]) calls into
+        # a single N-way duplicate — N depsgraph churns + N select/deselect
+        # flips is wasteful, and a batched duplicate would also remove the
+        # need for this restore.
+        parent_obj.select_set(True)
+
+    @classmethod
+    def mirror_parent_void_fillings_to_children(
+        cls,
+        parent_element: ifcopenshell.entity_instance,
+        children_elements: Sequence[ifcopenshell.entity_instance],
+    ) -> None:
+        """Replicate the parent's FillsVoids → host chain onto each array child.
+
+        For each child, tears down any stale opening, creates a new
+        IfcOpeningElement at the child's current placement, reuses the parent's
+        opening representation as a MappedRepresentation, and adds the
+        void + filling pair so the host element is cut once per child.
+
+        No-op when the parent is not a filling, when the host element cannot
+        be resolved, or when the children list is empty. Opt out via the
+        per-layer ``per_child_opening`` flag on ``BBIM_Array.Data`` (legacy
+        key ``mirror_to_host`` still honoured for round-trip with older files).
+        """
+        host = tool.Spatial.get_host_element(parent_element)
+        if host is None or not children_elements:
+            return
+
+        ifc_file = tool.Ifc.get()
+        parent_opening = parent_element.FillsVoids[0].RelatingOpeningElement
+        parent_opening_rep = ifcopenshell.util.representation.get_representation(
+            parent_opening, "Model", "Body", "MODEL_VIEW"
+        )
+        if parent_opening_rep is None:
+            return
+        parent_opening_rep = ifcopenshell.util.representation.resolve_representation(parent_opening_rep)
+
+        for child in children_elements:
+            if getattr(child, "FillsVoids", None):
+                ifcopenshell.api.feature.remove_feature(ifc_file, feature=child.FillsVoids[0].RelatingOpeningElement)
+            child_obj = tool.Ifc.get_object(child)
+            if child_obj is None:
+                continue
+
+            new_opening = ifcopenshell.api.root.create_entity(
+                ifc_file,
+                ifc_class="IfcOpeningElement",
+                predefined_type="OPENING",
+                name="Opening",
+            )
+            ifcopenshell.api.geometry.edit_object_placement(
+                ifc_file,
+                product=new_opening,
+                matrix=np.array(child_obj.matrix_world),
+                is_si=True,
+            )
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                ifc_file, representation=parent_opening_rep
+            )
+            ifcopenshell.api.geometry.assign_representation(
+                ifc_file, product=new_opening, representation=mapped_representation
+            )
+            ifcopenshell.api.feature.add_feature(ifc_file, feature=new_opening, element=host)
+            ifcopenshell.api.feature.add_filling(ifc_file, opening=new_opening, element=child)
+
+        # Openings affect every sub-element of an aggregate, not just the named host.
+        voided_objs: list[bpy.types.Object] = []
+        host_obj = tool.Ifc.get_object(host)
+        if host_obj is not None:
+            voided_objs.append(host_obj)
+        for subelement in tool.Aggregate.get_parts_recursively(host):
+            subobj = tool.Ifc.get_object(subelement)
+            if subobj is not None:
+                voided_objs.append(subobj)
+
+        for voided_obj in voided_objs:
+            if not voided_obj.data:
+                continue
+            voided_element = tool.Ifc.get_entity(voided_obj)
+            if voided_element is None:
+                continue
+            context = tool.Geometry.get_active_representation_context(voided_obj)
+            representation = tool.Geometry.get_representation_by_context(voided_element, context)
+            if representation is None:
+                continue
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc, tool.Geometry, obj=voided_obj, representation=representation
+            )
+
+    @classmethod
+    def unshare_opening_representation(cls, filling: ifcopenshell.entity_instance) -> None:
+        """Detach a filling's opening representation from any shared mapped body.
+
+        Required when a Bonsai array child is promoted to an independent
+        object: the array's per-child opening mirror builds each child's
+        opening representation as an ``IfcMappedRepresentation`` over the
+        parent opening's body. Without this detach, a later edit replacing
+        the parent body rewrites the shared ``IfcRepresentationMap`` and
+        reshapes the former-child's opening too."""
+        if not getattr(filling, "FillsVoids", None):
+            return
+        tool.Geometry.detach_representation(filling.FillsVoids[0].RelatingOpeningElement)
 
     @classmethod
     def replace_object_ifc_representation(
@@ -1305,8 +1472,8 @@ class Model(bonsai.core.tool.Model):
         return [obj for obj in tool.Blender.get_selected_objects() if tool.Ifc.get_entity(obj)]
 
     @classmethod
-    def has_selected_ifc_objects(cls) -> bool:
-        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects())
+    def has_selected_ifc_objects(cls, include_active: bool = True) -> bool:
+        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects(include_active=include_active))
 
     @classmethod
     def get_selected_mesh_objects(cls) -> list[bpy.types.Object]:
@@ -1355,8 +1522,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def sync_object_ifc_position(cls, obj: bpy.types.Object) -> None:
         """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
-        if tool.Ifc.is_moved(obj):
-            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        tool.Geometry.commit_placement_if_moved(obj)
 
     @classmethod
     def get_element_matrix(cls, element: ifcopenshell.entity_instance, keep_local: bool = False) -> Matrix:
@@ -1388,7 +1554,7 @@ class Model(bonsai.core.tool.Model):
             if not obj.data:
                 continue
             element = tool.Ifc.get_entity(obj)
-            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            body = tool.Geometry.get_body_representation(element)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
@@ -1504,6 +1670,10 @@ class Model(bonsai.core.tool.Model):
         "TRIPLE_PANEL_HORIZONTAL",
         "TRIPLE_PANEL_VERTICAL",
     ]
+
+    RoofGenerationMethod = Literal["HEIGHT", "ANGLE"]
+
+    RailingType = Literal["FRAMELESS_PANEL", "WALL_MOUNTED_HANDRAIL"]
 
     @classmethod
     def generate_stair_2d_profile(
@@ -1756,7 +1926,7 @@ class Model(bonsai.core.tool.Model):
         from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
         ifc_file = tool.Ifc.get()
-        fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
+        fillings = {e: tool.Ifc.get_object(e) for e in tool.Array.get_parametric_propagation_targets(element)}
 
         voided_objs = set()
         has_replaced_opening_representation = False
@@ -1898,7 +2068,9 @@ class Model(bonsai.core.tool.Model):
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+        # Looser than auto_detect_curves' VTX_PRECISION: profiles must close into
+        # a single loop, so nearly-coincident endpoints should snap together.
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=WELD_TOLERANCE)
         bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
 
         # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
@@ -2126,7 +2298,7 @@ class Model(bonsai.core.tool.Model):
 
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=VTX_PRECISION)
         bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
 
         # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
@@ -2345,6 +2517,12 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_existing_x_angle(cls, extrusion: ifcopenshell.entity_instance) -> float:
+        """Signed slope of the extrusion's direction in the y-z plane (radians).
+
+        Assumes extrusion directions lie in the y-z plane (LAYER2 wall and
+        LAYER3 slab convention). For inverted extrusions (z ≤ 0), adds π to
+        preserve angular continuity for callers consuming the angle via
+        cos/sin."""
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         vector = Vector((0, 1))
         x_angle = vector.angle_signed(Vector((y, z)))
@@ -2693,6 +2871,10 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def recreate_wall(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        # FIXME(PR4): the fillet-corner branch lands with PR4's
+        # `regenerate_fillet_corner_wall` (bim/module/model/wall.py). On v0.8.0
+        # the function doesn't exist; falling through to the straight-extrusion
+        # path preserves v0.8.0 behaviour for fillet walls until PR4 ships.
         rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -2713,28 +2895,29 @@ class Model(bonsai.core.tool.Model):
         queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
         for wall in walls:
             element = tool.Ifc.get_entity(wall)
-            if tool.Ifc.is_moved(wall):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall)
+            tool.Geometry.commit_placement_if_moved(wall)
             queue.add((element, wall))
             for rel in getattr(element, "ConnectedTo", []):
                 obj = tool.Ifc.get_object(rel.RelatedElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                tool.Geometry.commit_placement_if_moved(obj)
                 queue.add((rel.RelatedElement, obj))
             for rel in getattr(element, "ConnectedFrom", []):
                 obj = tool.Ifc.get_object(rel.RelatingElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                tool.Geometry.commit_placement_if_moved(obj)
                 queue.add((rel.RelatingElement, obj))
         for element, wall in queue:
-            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
-                # Use layer custom offset
+            if not wall:
+                continue
+            is_layer2_usage = tool.Model.get_usage_type(element) == "LAYER2"
+            is_fillet_corner = bool(ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "IsFilletCorner"))
+            if not (is_layer2_usage or is_fillet_corner):
+                continue
+            if is_layer2_usage:
                 custom_offset = tool.Model.get_material_layer_custom_offset(element, wall)
                 material = ifcopenshell.util.element.get_material(element)
                 if material.is_a("IfcMaterialLayerSetUsage") and custom_offset is not None:
                     material.OffsetFromReferenceLine = custom_offset
-
-                cls.recreate_wall(element, wall)
+            cls.recreate_wall(element, wall)
 
     @classmethod
     def regenerate_slab(cls, obj: bpy.types.Object) -> None:

@@ -15,12 +15,13 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
 import contextlib
 import importlib
-import json
 import os
 import platform
 import subprocess
@@ -28,7 +29,7 @@ import sys
 import tempfile
 import traceback
 import types
-from collections.abc import Callable, Generator, Iterable, Sequence, Sized
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence, Sized
 from datetime import datetime
 from functools import cache, lru_cache
 from pathlib import Path
@@ -45,7 +46,6 @@ from typing import (
 
 import bmesh
 import bpy
-import ifcopenshell.api
 import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
@@ -55,12 +55,12 @@ from mathutils import Matrix, Vector
 import bonsai.bim
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import IFC_CONNECTED_TYPE
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
     from sun_position.properties import SunPosProperties
 
+    from bonsai.bim.ifc import IFC_CONNECTED_TYPE
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.constraint.prop import (
         BIMConstraintProperties,
@@ -96,6 +96,19 @@ VIEWPORT_ATTRIBUTES = [
 ]
 
 OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
+
+_RAILING_MODIFIER_IFC_CLASSES = ("IfcRailing", "IfcRailingType")
+_STAIR_MODIFIER_IFC_CLASSES = (
+    "IfcStairFlight",
+    "IfcStairFlightType",
+    "IfcMember",
+    "IfcMemberType",
+    "IfcStair",
+    "IfcStairType",
+)
+_WINDOW_MODIFIER_IFC_CLASSES = ("IfcWindow", "IfcWindowType", "IfcWindowStyle")
+_DOOR_MODIFIER_IFC_CLASSES = ("IfcDoor", "IfcDoorType", "IfcDoorStyle")
+_ROOF_MODIFIER_IFC_CLASSES = ("IfcRoof", "IfcRoofType")
 
 
 class Blender(bonsai.core.tool.Blender):
@@ -416,6 +429,189 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.wm.tool_set_by_id(name=tool_name)
 
     @classmethod
+    def are_viewport_gizmos_enabled(cls) -> bool:
+        """Central gate every Bonsai gizmo poll / decorator draw checks before
+        rendering. Centralises the read of
+        ``gizmos.draw_gizmos_in_3d_viewport`` from addon preferences."""
+        return cls.get_addon_preferences().gizmos.draw_gizmos_in_3d_viewport
+
+    class DecoratorColors(NamedTuple):
+        selected: tuple
+        unselected: tuple
+        special: tuple
+        error: tuple
+        background: tuple
+
+    @classmethod
+    def get_decorator_colors(cls) -> Blender.DecoratorColors:
+        """The five ``decorator_color_*`` fields read together so each viewport
+        decorator's draw callback resolves them in one call instead of five."""
+        prefs = cls.get_addon_preferences()
+        return cls.DecoratorColors(
+            selected=prefs.decorator_color_selected,
+            unselected=prefs.decorator_color_unselected,
+            special=prefs.decorator_color_special,
+            error=prefs.decorator_color_error,
+            background=prefs.decorator_color_background,
+        )
+
+    class ViewportDecorator:
+        """Shared ``SpaceView3D.draw_handler_add`` lifecycle for feature decorators.
+
+        Single-handler subclasses set ``draw_method`` (default ``"draw"``); the
+        handler binds at ``POST_VIEW``. Multi-handler subclasses set
+        ``draw_methods`` to a tuple of ``(method_name, phase)`` pairs; when it
+        is non-``None`` it supersedes ``draw_method``.
+
+        Decorators whose ``install`` must accept extra arguments (e.g. a callback
+        or a precomputed bmesh) override ``install`` themselves."""
+
+        draw_method: str = "draw"
+        draw_methods: tuple[tuple[str, str], ...] | None = None
+
+        def __init_subclass__(cls, **kwargs):
+            super().__init_subclass__(**kwargs)
+            cls.handlers = []
+            cls.is_installed = False
+            # Fail loudly at class-definition time if draw_method / draw_methods
+            # names an attribute the class doesn't expose. Without this, a typo
+            # only surfaces on the first redraw — as a silent missing-attribute
+            # handler — which may be far from the offending declaration.
+            method_names = (
+                tuple(name for name, _phase in cls.draw_methods) if cls.draw_methods is not None else (cls.draw_method,)
+            )
+            for name in method_names:
+                if getattr(cls, name, None) is None:
+                    raise TypeError(f"{cls.__name__}: draw method {name!r} is declared but not defined on the class")
+
+        @classmethod
+        def install(cls, context: bpy.types.Context) -> None:
+            if cls.is_installed:
+                cls.uninstall()
+            handler = cls()
+            bindings = cls.draw_methods if cls.draw_methods is not None else ((cls.draw_method, "POST_VIEW"),)
+            # Rollback partial registrations on any draw_handler_add failure, so
+            # cls.handlers never ends up holding a half-installed set.
+            added: list = []
+            try:
+                for method_name, phase in bindings:
+                    added.append(
+                        bpy.types.SpaceView3D.draw_handler_add(
+                            getattr(handler, method_name), (context,), "WINDOW", phase
+                        )
+                    )
+            except Exception:
+                for h in added:
+                    try:
+                        bpy.types.SpaceView3D.draw_handler_remove(h, "WINDOW")
+                    except ValueError:
+                        pass
+                raise
+            cls.handlers = added
+            cls.is_installed = True
+
+        @classmethod
+        def uninstall(cls) -> None:
+            for h in cls.handlers:
+                try:
+                    bpy.types.SpaceView3D.draw_handler_remove(h, "WINDOW")
+                except ValueError:
+                    pass
+            cls.handlers.clear()
+            cls.is_installed = False
+
+        @staticmethod
+        def _lookup_active_instance(gizmo_cls: type, context: bpy.types.Context) -> Optional[Any]:
+            """Return the live ``GizmoGroup`` instance registered under
+            ``context.region``, or ``None`` if there isn't one. The per-region
+            weakref dict on the gizmo class is populated by ``setup()``; multi-
+            viewport setups put one entry per region in it so each region's
+            decorator sees only its own region's hover state."""
+            instances = getattr(gizmo_cls, "_active_instances", None)
+            if not instances:
+                return None
+            region = getattr(context, "region", None)
+            if region is None:
+                return None
+            ref = instances.get(region.as_pointer())
+            if ref is None:
+                return None
+            return ref()
+
+        def _cursor_icon_hovered(self, gizmo_cls: type, attr_name: str, context: bpy.types.Context) -> bool:
+            """True iff the gizmo group instance in the current region exposes a gizmo
+            under ``attr_name`` that reports as highlighted. Any access exception is
+            swallowed so a transient bpy-state hiccup never breaks the draw loop."""
+            inst = self._lookup_active_instance(gizmo_cls, context)
+            if inst is None:
+                return False
+            try:
+                return bool(getattr(inst, attr_name).is_highlight)
+            except (AttributeError, ReferenceError):
+                return False
+
+        @classmethod
+        def sync_all(
+            cls,
+            context: bpy.types.Context,
+            enabled: Mapping[type[Blender.ViewportDecorator], bool],
+        ) -> None:
+            """Drive each listed decorator to its desired install state in one call.
+
+            Each entry whose value is ``True`` ends up installed; each entry whose
+            value is ``False`` ends up uninstalled. Pass ``True`` for always-on
+            overlays so they survive subsequent file loads."""
+            for decorator_cls, should_install in enabled.items():
+                if should_install:
+                    decorator_cls.install(context)
+                else:
+                    decorator_cls.uninstall()
+
+    @classmethod
+    def is_view_top_down(cls, context: bpy.types.Context, threshold: float = 0.9659) -> bool:
+        """True when the viewport camera is looking ~straight down (or up) the world Z axis.
+
+        Default threshold of 0.9659 = cos(15°) — a 15° tilt cone around ±world Z.
+        Above the threshold the world-Z axis projects to a small fraction of its
+        true length on screen, so callers that lay icons or markers out along
+        world Z should switch to a screen-space offset and any gizmo whose intent
+        is specifically "vertical" loses its visual cue. The cone is kept narrow
+        so vertical-intent gizmos stay visible across the typical orbit range of
+        3D viewport work and drop out only near genuine plan view."""
+        rv3d = context.region_data
+        if rv3d is None:
+            return False
+        view_forward = Vector(rv3d.view_matrix.inverted().col[2][:3]).normalized()
+        return abs(view_forward.z) > threshold
+
+    @classmethod
+    def top_down_factor(cls, context: bpy.types.Context, threshold: float = 0.9659) -> float:
+        """Continuous 0–1 ramp matching ``is_view_top_down``'s cone: 0 outside the
+        cone, ramping linearly to 1 at strict alignment with world Z. Callers that
+        want a proportional effect (an icon-stack lift growing as the view
+        approaches plan) use this in place of the boolean to avoid a one-frame
+        visual jump as the camera crosses the threshold."""
+        rv3d = context.region_data
+        if rv3d is None:
+            return 0.0
+        view_forward = Vector(rv3d.view_matrix.inverted().col[2][:3]).normalized()
+        alignment = abs(view_forward.z)
+        if alignment <= threshold:
+            return 0.0
+        return (alignment - threshold) / (1.0 - threshold)
+
+    @classmethod
+    def get_screen_up_world(cls, context: bpy.types.Context) -> Vector:
+        """World-space direction corresponding to the camera's up axis (screen-vertical).
+
+        Returns ``+Y`` when region data is unavailable so callers can compute an
+        offset without a guard branch."""
+        rv3d = context.region_data
+        if rv3d is None:
+            return Vector((0.0, 1.0, 0.0))
+        return Vector(rv3d.view_matrix.inverted().col[1][:3]).normalized()
+
+    @classmethod
     def get_shader_editor_context(cls) -> Union[dict[str, Any], None]:
         for screen in bpy.data.screens:
             for area in screen.areas:
@@ -484,9 +680,13 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def update_all_viewports(cls, context: bpy.types.Context | None = None) -> None:
+        """Tag every visible 3D viewport for redraw. Silent no-op when no
+        screen attached (background mode, plug-out, mid-load_post)."""
         context = context or bpy.context
-        assert context.screen
-        for area in context.screen.areas:
+        screen = getattr(context, "screen", None)
+        if screen is None:
+            return
+        for area in screen.areas:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
 
@@ -635,10 +835,11 @@ class Blender(bonsai.core.tool.Blender):
         op_text = "" if ui_context == "TOOL_HEADER" else text
         modifier_icon, modifier_str = cls.KEY_MODIFIERS.get(modifier, ("NONE", ""))
 
-        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
         module = sys.modules[module_name]
         icon_previews: Union[bpy.utils.previews.ImagePreviewCollection, None]
         icon_previews = getattr(module, "custom_icon_previews", None)
+
+        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
         if icon_previews:
             custom_icon = icon_previews.get(text.upper().replace(" ", "_"), icon_previews["IFC"]).icon_id
             op = row.operator(operator_to_use, text=op_text, icon_value=custom_icon)
@@ -646,6 +847,7 @@ class Blender(bonsai.core.tool.Blender):
             op = row.operator(operator_to_use, text=op_text)
         if ui_context != "TOOL_HEADER":
             row.label(text="", icon=modifier_icon)
+            row.separator(factor=1)
             row.label(text="", icon=f"EVENT_{key}")
 
         if operator_to_use == hotkey_operator:
@@ -1130,6 +1332,74 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     class Modifier:
+        # ----------------------------------------------------------------------
+        # FIXME(PR5): backward-compat shims for callers still using the
+        # pre-refactor API. The is_<type> predicates now live on tool.Parametric;
+        # the Array helper bag now lives on tool.Array. PR4 migrates each caller;
+        # this whole shim block is removed in PR5's cleanup.
+        # ----------------------------------------------------------------------
+
+        @classmethod
+        def is_door(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_door(element)
+
+        @classmethod
+        def is_railing(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_railing(element)
+
+        @classmethod
+        def is_roof(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_roof(element)
+
+        @classmethod
+        def is_stair(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_stair(element)
+
+        @classmethod
+        def is_wall(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_wall(element)
+
+        @classmethod
+        def is_window(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_window(element)
+
+        class Array:
+            @classmethod
+            def bake_children_transform(cls, parent_element: ifcopenshell.entity_instance, item: int) -> None:
+                tool.Array.bake_children_transform(parent_element, item)
+
+            @classmethod
+            def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
+                tool.Array.constrain_children_to_parent(parent_element)
+
+            @classmethod
+            def get_all_children_objects(cls, parent_element: ifcopenshell.entity_instance) -> list:
+                return tool.Array.get_all_children_objects(parent_element)
+
+            @classmethod
+            def get_all_objects(cls, parent_element: ifcopenshell.entity_instance) -> list:
+                return tool.Array.get_all_objects(parent_element)
+
+            @classmethod
+            def get_children_objects(cls, modifier_data: dict) -> list:
+                return tool.Array.get_children_objects(modifier_data)
+
+            @classmethod
+            def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance):
+                return tool.Array.get_modifiers_data(parent_element)
+
+            @classmethod
+            def remove_constraints(cls, parent_element: ifcopenshell.entity_instance) -> None:
+                tool.Array.remove_constraints(parent_element)
+
+            @classmethod
+            def set_children_lock_state(
+                cls, parent_element: ifcopenshell.entity_instance, item: int, lock: bool
+            ) -> None:
+                tool.Array.set_children_lock_state(parent_element, item, lock)
+
+        # ----------------------------------------------------------------------
+
         @classmethod
         def try_applying_edit_mode(cls, obj: bpy.types.Object, element: entity_instance) -> bool:
             """Tries to validate the current BIM modifier parameters for the active object
@@ -1137,20 +1407,18 @@ class Blender(bonsai.core.tool.Blender):
 
             :return: True if an action was taken, False otherwise
             """
-            if cls.is_roof(element):
-                if cls.is_editing_roof_parameters(obj):
-                    bpy.ops.bim.finish_editing_roof()
+            # roof and railing both finalize then drop into path-edit mode — handle
+            # them before the generic finish dispatch so the path transition runs.
+            if tool.Parametric.is_roof(element):
+                if tool.Parametric.ROOF.is_editing(obj):
+                    tool.Parametric.run_bim_op(tool.Parametric.ROOF.finish_op)
                 bpy.ops.bim.enable_editing_roof_path()
-            elif cls.is_railing(element):
-                if cls.is_editing_railing_parameters(obj):
-                    bpy.ops.bim.finish_editing_railing()
+            elif tool.Parametric.is_railing(element):
+                if tool.Parametric.RAILING.is_editing(obj):
+                    tool.Parametric.run_bim_op(tool.Parametric.RAILING.finish_op)
                 bpy.ops.bim.enable_editing_railing_path()
-            elif cls.is_editing_stair_parameters(obj):
-                bpy.ops.bim.finish_editing_stair()
-            elif cls.is_editing_door_parameters(obj):
-                bpy.ops.bim.finish_editing_door()
-            elif cls.is_editing_window_parameters(obj):
-                bpy.ops.bim.finish_editing_window()
+            elif feature := tool.Parametric.is_object_editing(obj):
+                tool.Parametric.run_bim_op(feature.finish_op)
             else:
                 return False
             return True
@@ -1161,68 +1429,80 @@ class Blender(bonsai.core.tool.Blender):
 
             :return: True if an action was taken, False otherwise
             """
+            # Path-edit modes are distinct from parametric draft modes; handle them first.
             if cls.is_editing_railing_path(obj):
                 bpy.ops.bim.cancel_editing_railing_path()
             elif cls.is_editing_roof_path(obj):
                 bpy.ops.bim.cancel_editing_roof_path()
-            elif cls.is_editing_railing_parameters(obj):
-                bpy.ops.bim.cancel_editing_railing()
-            elif cls.is_editing_door_parameters(obj):
-                bpy.ops.bim.cancel_editing_door()
-            elif cls.is_editing_window_parameters(obj):
-                bpy.ops.bim.cancel_editing_window()
-            elif cls.is_editing_roof_parameters(obj):
-                bpy.ops.bim.cancel_editing_roof()
-            elif cls.is_editing_stair_parameters(obj):
-                bpy.ops.bim.cancel_editing_stair()
+            elif feature := tool.Parametric.is_object_editing(obj):
+                tool.Parametric.run_bim_op(feature.cancel_op)
             else:
                 return False
             return True
 
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj: bpy.types.Object) -> bool:
-            return tool.Blender.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
+            return tool.Blender.is_object_an_ifc_class(obj, _RAILING_MODIFIER_IFC_CLASSES)
 
         @classmethod
         def is_eligible_for_stair_modifier(cls, obj: bpy.types.Object) -> bool:
-            return tool.Blender.is_object_an_ifc_class(
-                obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType", "IfcStair", "IfcStairType")
-            )
+            return tool.Blender.is_object_an_ifc_class(obj, _STAIR_MODIFIER_IFC_CLASSES)
 
         @classmethod
         def is_eligible_for_window_modifier(cls, obj: bpy.types.Object) -> bool:
-            return tool.Blender.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
+            return tool.Blender.is_object_an_ifc_class(obj, _WINDOW_MODIFIER_IFC_CLASSES)
 
         @classmethod
         def is_eligible_for_door_modifier(cls, obj: bpy.types.Object) -> bool:
-            return tool.Blender.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
+            return tool.Blender.is_object_an_ifc_class(obj, _DOOR_MODIFIER_IFC_CLASSES)
 
         @classmethod
         def is_eligible_for_roof_modifier(cls, obj: bpy.types.Object) -> bool:
-            return tool.Blender.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
+            return tool.Blender.is_object_an_ifc_class(obj, _ROOF_MODIFIER_IFC_CLASSES)
 
         @classmethod
-        def is_railing(cls, element: entity_instance) -> bool:
-            return tool.Pset.get_element_pset(element, "BBIM_Railing")
+        def is_array_child(cls, element: entity_instance) -> bool:
+            """True if element is a CHILD of a Bonsai parametric array.
+
+            Children are managed replicas regenerated from the parent's pset —
+            their parametric attributes (door dimensions, wall lengths, …) are
+            overwritten on the next ``regenerate_array``. Parametric gizmo
+            groups skip children via this predicate in ``poll``.
+
+            This sits on a different axis from ``tool.Parametric.is_array``:
+            cardinality (parent vs child) is orthogonal to feature kind, and
+            an arrayed wall fires both ``is_wall`` and ``is_array`` on the
+            same element."""
+            if element is None:
+                return False
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                return False
+            parent_guid = pset.get("Parent")
+            return parent_guid is not None and parent_guid != element.GlobalId
 
         @classmethod
-        def is_roof(cls, element: entity_instance) -> bool:
-            return tool.Pset.get_element_pset(element, "BBIM_Roof")
+        def is_slab(cls, element: entity_instance) -> bool:
+            """A slab is host-eligible for the parametric add-opening gizmo if
+            it is an IfcSlab with LAYER3 usage.
+
+            Slabs carry no proprietary BBIM_Slab pset — their parametric state
+            lives in standard IFC (extrusion depth, IfcMaterialLayerSetUsage
+            with LayerSetDirection AXIS3). Any LAYER3 slab qualifies."""
+            if element is None or not element.is_a("IfcSlab"):
+                return False
+            return tool.Model.get_usage_type(element) == "LAYER3"
 
         @classmethod
-        def is_window(cls, element: entity_instance) -> bool:
-            return tool.Pset.get_element_pset(element, "BBIM_Window")
+        def is_pipe_segment(cls, element: entity_instance) -> bool:
+            return element is not None and element.is_a("IfcPipeSegment")
 
         @classmethod
-        def is_door(cls, element: entity_instance) -> bool:
-            return tool.Pset.get_element_pset(element, "BBIM_Door")
+        def is_duct_segment(cls, element: entity_instance) -> bool:
+            return element is not None and element.is_a("IfcDuctSegment")
 
         @classmethod
-        def is_stair(cls, element: entity_instance) -> bool:
-            return tool.Pset.get_element_pset(element, "BBIM_Stair")
-
-        @classmethod
-        def is_editing_railing_path(cls, obj: bpy.types.Object):
+        def is_editing_railing_path(cls, obj: bpy.types.Object) -> bool:
             props = tool.Model.get_railing_props(obj)
             return props.is_editing_path
 
@@ -1232,106 +1512,9 @@ class Blender(bonsai.core.tool.Blender):
             return props.is_editing_path
 
         @classmethod
-        def is_editing_railing_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_railing_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_roof_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_roof_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_window_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_window_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_door_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_door_props(obj)
-            return props.is_editing
-
-        @classmethod
-        def is_editing_stair_parameters(cls, obj: bpy.types.Object) -> bool:
-            props = tool.Model.get_stair_props(obj)
-            return props.is_editing
-
-        @classmethod
         def is_modifier_with_non_editable_path(cls, element: entity_instance) -> bool:
-            return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
-
-        class Array:
-            @classmethod
-            def bake_children_transform(cls, parent_element: entity_instance, item: int) -> None:
-                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
-                children = cls.get_children_objects(modifier_data)
-                for child in children:
-                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
-                    if constraint:
-                        with bpy.context.temp_override(object=child):
-                            bpy.ops.constraint.apply(constraint=constraint.name, owner="OBJECT")
-
-            @classmethod
-            def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                if not (parent_obj := tool.Ifc.get_object(parent_element)):
-                    return  # Filtered out, arrayed void, etc
-                assert isinstance(parent_obj, bpy.types.Object)
-                children = cls.get_all_children_objects(parent_element)
-                for child in children:
-                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
-                    if constraint:
-                        child.constraints.remove(constraint)
-                    constraint = child.constraints.new("CHILD_OF")
-                    constraint.name = "BBIM_Array_CHILD_OF"
-                    assert isinstance(constraint, bpy.types.ChildOfConstraint)
-                    constraint.target = parent_obj
-
-            @classmethod
-            def set_children_lock_state(
-                cls, parent_element: ifcopenshell.entity_instance, item: int, lock_state: bool = True
-            ) -> None:
-                modifier_data = list(cls.get_modifiers_data(parent_element))[item]
-                children = cls.get_children_objects(modifier_data)
-                for child_obj in children:
-                    Blender.lock_transform(child_obj, lock_state)
-
-            @classmethod
-            def remove_constraints(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                children = cls.get_all_children_objects(parent_element)
-                for child in children:
-                    constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
-                    if constraint:
-                        child.constraints.remove(constraint)
-
-            @classmethod
-            def get_all_objects(cls, parent_element: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
-                parent_obj = tool.Ifc.get_object(parent_element)
-                assert isinstance(parent_obj, bpy.types.Object)
-                children_objects = list(cls.get_all_children_objects(parent_element))
-                array_objects = [parent_obj] + children_objects  # We ensure the parent is at index 0
-                return array_objects
-
-            @classmethod
-            def get_all_children_objects(
-                cls, parent_element: ifcopenshell.entity_instance
-            ) -> Generator[bpy.types.Object, None, None]:
-                for array_modifier in cls.get_modifiers_data(parent_element):
-                    yield from cls.get_children_objects(array_modifier)
-
-            @classmethod
-            def get_modifiers_data(
-                cls, parent_element: ifcopenshell.entity_instance
-            ) -> Generator[dict[str, Any], None, None]:
-                array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
-                yield from json.loads(array_pset["Data"])
-
-            @classmethod
-            def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object, None, None]:
-                child_guid: str
-                for child_guid in modifier_data["children"]:
-                    child_obj = tool.Blender.get_object_from_guid(child_guid)
-                    if child_obj:
-                        yield child_obj
+            feature = tool.Parametric.find_for_element(element)
+            return bool(feature and feature.has_non_editable_path)
 
     class Attribute:
         @classmethod

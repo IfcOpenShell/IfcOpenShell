@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any
 import bpy
 from bpy.types import Panel
 
+import ifcopenshell.util.unit
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
@@ -303,6 +304,8 @@ class BIM_PT_stair(bpy.types.Panel):
             row = self.layout.row(align=True)
             row.label(text="Stair parameters", icon="IPO_CONSTANT")
 
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
             if props.is_editing:
                 calculated_params = tool.Model.get_active_stair_calculated_params()
                 row = self.layout.row(align=True)
@@ -322,20 +325,59 @@ class BIM_PT_stair(bpy.types.Panel):
                         row.label(text=f"{prop_name}:")
                         row = self.layout.row(align=True)
                         for prop_value_item in prop_value:
-                            row.label(text=str(prop_value_item))
+                            if isinstance(prop_value_item, float):
+                                row.label(text=tool.Unit.format_distance(prop_value_item * si_conversion))
+                            else:
+                                row.label(text=str(prop_value_item))
                     else:
                         row.label(text=prop_name)
-                        row.label(text=str(prop_value))
+                        if isinstance(prop_value, float):
+                            row.label(text=tool.Unit.format_distance(prop_value * si_conversion))
+                        else:
+                            row.label(text=str(prop_value))
 
             # calculated properties
             for prop_name, prop_value in calculated_params.items():
                 row = self.layout.row(align=True)
                 row.label(text=prop_name)
-                row.label(text=str(prop_value))
+                if isinstance(prop_value, float):
+                    row.label(text=tool.Unit.format_distance(prop_value * si_conversion))
+                else:
+                    row.label(text=str(prop_value))
         else:
             row = self.layout.row()
             row.label(text="No Stair Found")
             row.operator("bim.add_stair", icon="ADD", text="")
+
+
+class BIM_PT_wall(bpy.types.Panel):
+    bl_label = "Wall"
+    bl_idname = "BIM_PT_wall"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if not obj:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return bool(element) and tool.Blender.Modifier.is_wall(element)
+
+    def draw(self, context):
+        obj = context.active_object
+        if obj is None:
+            return
+        props = tool.Model.get_wall_props(obj)
+        row = self.layout.row(align=True)
+        if props.is_editing:
+            row.operator("bim.finish_editing_wall", icon="CHECKMARK", text="Finish Editing")
+            row.operator("bim.cancel_editing_wall", icon="CANCEL", text="")
+        else:
+            row.operator("bim.enable_editing_wall", icon="GREASEPENCIL", text="Edit Wall")
 
 
 class BIM_PT_sverchok(bpy.types.Panel):

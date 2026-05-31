@@ -91,6 +91,32 @@ class Spatial(bonsai.core.tool.Spatial):
         return element
 
     @classmethod
+    def get_host_element(cls, filling: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        """The building element that hosts a filling (door/window) via the
+        standard ``FillsVoids → RelatingOpeningElement → VoidsElements →
+        RelatingBuildingElement`` chain, with safety guards at each hop.
+        Returns ``None`` if any link is missing, or if the given entity is
+        not a fillable type (no ``FillsVoids`` inverse).
+
+        For the wall-only case (gizmos that only make sense on walls), use
+        `get_host_wall` which adds an ``IfcWall`` type filter on top of this."""
+        if not getattr(filling, "FillsVoids", None):
+            return None
+        opening = filling.FillsVoids[0].RelatingOpeningElement
+        if not opening.VoidsElements:
+            return None
+        return opening.VoidsElements[0].RelatingBuildingElement
+
+    @classmethod
+    def get_host_wall(cls, filling: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
+        """The ``IfcWall`` that hosts a filling (door/window), or ``None``.
+
+        Walls only — fillings hosted in slabs / roofs / arbitrary elements
+        produce ``None`` so wall-offset callers stay opted out cleanly."""
+        host = cls.get_host_element(filling)
+        return host if host and host.is_a("IfcWall") else None
+
+    @classmethod
     def can_contain(cls, container: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
         if tool.Ifc.get_schema() == "IFC2X3":
             if not container.is_a("IfcSpatialStructureElement"):

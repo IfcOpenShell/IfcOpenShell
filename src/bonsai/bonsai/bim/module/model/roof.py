@@ -34,6 +34,7 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.model.data import RoofData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.parametric_lifecycle import PathPreservingEditMixin
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
@@ -608,61 +609,59 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.add_body_representation(obj)
 
 
-class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_roof"
-    bl_label = "Enable Editing Roof"
-    bl_options = {"REGISTER"}
+class _RoofEditMixin(PathPreservingEditMixin):
+    """Type-specific hooks for roof parametric-edit operators. Single-object
+    (active_object). ``path_data`` is preserved through the edit; the separate
+    ``Enable/Finish/CancelEditingRoofPath`` operators handle path editing."""
 
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        props = tool.Model.get_roof_props(obj)
-        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
-        # required since we could load pset from .ifc and BIMRoofProperties won't be set
-        props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = True
-        return {"FINISHED"}
+    pset_name = "BBIM_Roof"
 
+    @classmethod
+    def _is_element_type(cls, element):
+        return tool.Blender.Modifier.is_roof(element)
 
-class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.cancel_editing_roof"
-    bl_label = "Cancel Editing Roof"
-    bl_options = {"REGISTER"}
+    @classmethod
+    def _get_props(cls, obj: bpy.types.Object):
+        return tool.Model.get_roof_props(obj)
 
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
-        props = tool.Model.get_roof_props(obj)
+    @classmethod
+    def _update_pset(cls, element, data: dict) -> None:
+        update_bbim_roof_pset(element, data)
 
-        # restore previous settings since editing was canceled
-        props.set_props_kwargs_from_ifc_data(data)
+    @classmethod
+    def _update_modifier_ifc_data(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        update_roof_modifier_ifc_data(context)
+
+    @classmethod
+    def _update_modifier_bmesh(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
         update_roof_modifier_bmesh(obj)
 
-        props.is_editing = False
-        return {"FINISHED"}
 
-
-class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.finish_editing_roof"
-    bl_label = "Finish Editing Roof"
-    bl_options = {"REGISTER"}
+class EnableEditingRoof(_RoofEditMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_roof"
+    bl_label = "Enable Editing Roof"
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        props = tool.Model.get_roof_props(obj)
+        return self._enable_targets(context)
 
-        pset_data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")
-        path_data = pset_data["data_dict"]["path_data"]
 
-        roof_data = props.get_general_kwargs(convert_to_project_units=True)
-        roof_data["path_data"] = path_data
-        props.is_editing = False
+class CancelEditingRoof(_RoofEditMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.cancel_editing_roof"
+    bl_label = "Cancel Editing Roof"
+    bl_options = {"REGISTER", "UNDO"}
 
-        update_bbim_roof_pset(element, roof_data)
-        update_roof_modifier_ifc_data(context)
-        return {"FINISHED"}
+    def _execute(self, context):
+        return self._cancel_targets(context)
+
+
+class FinishEditingRoof(_RoofEditMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.finish_editing_roof"
+    bl_label = "Finish Editing Roof"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        return self._finish_targets(context)
 
 
 class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):

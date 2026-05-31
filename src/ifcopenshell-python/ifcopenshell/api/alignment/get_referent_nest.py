@@ -22,11 +22,11 @@ from ifcopenshell import entity_instance
 
 def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> entity_instance:
     """
-    Searches for the IfcRelNest that contains IfcReferent. If one is not found, a empty IfcRelNests is created.
+    Searches for the IfcRelNest that contains IfcReferent.
 
     :param file:
     :param alignment: The IfcAlignment which hosts IfcReferent
-    :return: Returns the IfcRelNests.
+    :return: Returns the IfcRelNests or None
     """
     if not alignment.is_a("IfcAlignment"):
         raise TypeError(f"Expected IfcAlignment, instead received {alignment.is_a()}")
@@ -36,5 +36,4 @@ def get_referent_nest(file: ifcopenshell.file, alignment: entity_instance) -> en
             if related_object.is_a("IfcReferent"):
                 return nest
 
-    nest = file.createIfcRelNests(GlobalId=ifcopenshell.guid.new(), RelatingObject=alignment, RelatedObjects=[])
-    return nest
+    return None

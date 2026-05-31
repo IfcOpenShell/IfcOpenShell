@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import importlib
 import os
@@ -25,7 +27,19 @@ import bpy
 import bpy.utils.previews
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
-from . import handler, operator, prop, ui
+from . import handler, operator, parametric_lifecycle, prop, ui
+
+
+def _parametric_gizmo_preference_classes() -> list[type]:
+    """Resolves the registry-driven ``GizmoPreferences<X>`` classes for the
+    ``classes`` list below. ``import bonsai.tool`` is kept local to surface
+    the load-order constraint: it relies on ``from . import handler, …``
+    above having primed the
+    ``tool/ifc.py → bim/ifc.py → bim/handler.py → bonsai.tool`` cycle."""
+    import bonsai.tool as tool
+
+    return tool.Parametric.iter_gizmo_preference_classes(ui)
+
 
 try:
     from bonsai.translations import translations_dict
@@ -157,9 +171,10 @@ classes = [
     ui.BIM_UL_tab_visibilities,
     ui.BIM_UL_panel_visibilities,
     ui.DocPreferences,
-    ui.GizmoPreferencesDoor,  # Register before GizmoPreferences
-    ui.GizmoPreferencesWindow,  # Register before GizmoPreferences
-    ui.GizmoPreferencesStair,  # Register before GizmoPreferences
+    # Per-parametric-type ``GizmoPreferences<Name>`` classes — must register
+    # before ``ui.GizmoPreferences`` which holds the matching PointerProperty
+    # fields. Driven by ``tool.Parametric.EDIT_TYPES``.
+    *_parametric_gizmo_preference_classes(),
     ui.GizmoPreferences,
     # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel
@@ -268,6 +283,8 @@ def register():
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)
+    # Must follow the two appends above so regenerators see restored IFC state.
+    parametric_lifecycle.install_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
@@ -325,6 +342,7 @@ def unregister():
 
     unregister_classes(classes)
 
+    parametric_lifecycle.uninstall_parametric_lifecycle_handlers()
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
     del bpy.types.Scene.BIMProperties

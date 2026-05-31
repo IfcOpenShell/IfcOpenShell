@@ -416,6 +416,17 @@ class Drawing:
 
 
 @interface
+class Duplicate:
+    def get_decomposition_relationships(cls, objs): pass
+    def get_connection_relationships(cls, objs): pass
+    def get_port_connection_relationships(cls, objs): pass
+    def recreate_decompositions(cls, relationships, old_to_new): pass
+    def recreate_connections(cls, relationship, old_to_new): pass
+    def recreate_port_connections(cls, snapshot, old_to_new): pass
+    def consume_warnings(cls): pass
+
+
+@interface
 class Feature:
     def add_feature(cls, featured_obj, featured_objs): pass
 
@@ -445,8 +456,10 @@ class Geometry:
     def get_representation_name(cls, representation): pass
     def get_styles(cls, obj): pass
     def get_total_representation_items(cls, obj): pass
+    def has_axis_representation(cls, element): pass
     def has_data_users(cls, data): pass
     def has_material_style_override(cls, obj): pass
+    def has_material_styles(cls, element): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
@@ -777,6 +790,12 @@ class Profile:
 
 
 @interface
+class Parametric:
+    def get_geom_generation(cls) -> int: pass
+    def refresh_post_commit(cls) -> None: pass
+
+
+@interface
 class Pset:
     def add_proposed_property(cls, name, value, props): pass
     def cast_string_to_primitive(cls, value: str): pass
@@ -859,7 +878,6 @@ class Root:
     def assign_body_styles(cls, element, obj): pass
     def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
-    def get_decomposition_relationships(cls, objs): pass
     def get_default_container(cls): pass
     def get_element_representation(cls, element, context): pass
     def get_element_type(cls, element): pass
@@ -873,7 +891,6 @@ class Root:
     def is_in_nest_mode(cls, element): pass
     def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
-    def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def set_object_name(cls, obj, element): pass
 
@@ -1017,6 +1034,8 @@ class Spatial:
     def get_container(cls, element): pass
     def get_decomposed_elements(cls, container, recursive): pass
     def get_decomposition(cls, element): pass
+    def get_host_element(cls, filling): pass
+    def get_host_wall(cls, filling): pass
     def get_object_matrix(cls, obj): pass
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def get_root_element(cls, element): pass
@@ -1137,6 +1156,8 @@ class Style:
 @interface
 class Surveyor:
     def get_absolute_matrix(cls, obj): pass
+    def get_z_rotation(cls, obj): pass
+    def set_z_rotation(cls, obj, z): pass
 
 
 @interface
@@ -1201,6 +1222,42 @@ class Voider:
     def set_void_display(cls, opening_obj): pass
     def unvoid(cls, opening_obj): pass
     def void(cls, opening_obj, building_obj): pass
+
+
+@interface
+class Array:
+    def bake_children_transform(cls, parent_element, item): pass
+    def constrain_children_to_parent(cls, parent_element): pass
+    def get_all_children_objects(cls, parent_element): pass
+    def get_all_objects(cls, parent_element): pass
+    def get_child_layer_index(cls, child_element): pass
+    def get_children_objects(cls, modifier_data): pass
+    def get_modifiers_data(cls, parent_element): pass
+    def get_parent_element(cls, element): pass
+    def get_parent_object(cls, element): pass
+    def remove_constraints(cls, parent_element): pass
+    def set_children_lock_state(cls, parent_element, item, lock_state): pass
+
+
+@interface
+class Slab:
+    def read_geometry(cls, obj): pass
+
+
+@interface
+class Wall:
+    def collinear_boundary_world(cls, seg_a, seg_b): pass
+    def compute_wall_fillet_geometry(cls, wall_a_obj, wall_b_obj, radius, arc_resolution): pass
+    def get_axis_local_extent(cls, wall): pass
+    def get_length_and_height(cls, wall): pass
+    def get_world_reference_line(cls, obj): pass
+    def get_x_angle(cls, wall): pass
+    def has_layer2_usage(cls, wall): pass
+    def is_straight_axis(cls, wall): pass
+    def path_connection_location_world(cls, seg_self, self_conn_type, seg_other, other_conn_type, parallel_threshold): pass
+    def read_geometry(cls, obj): pass
+    def validate_for_parametric_edit(cls, obj): pass
+    def walk_connected_walls(cls, start_element, node_cap): pass
 
 
 @interface

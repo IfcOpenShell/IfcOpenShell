@@ -37,7 +37,9 @@ def test_add_vertical_alignment():
     assert len(layout_nest.RelatedObjects) == 1
     assert layout_nest.RelatedObjects[0].is_a("IfcAlignmentHorizontal")
     referent_nest = ifcopenshell.api.alignment.get_referent_nest(file, alignment)
-    assert len(referent_nest.RelatedObjects) == 2
+    assert (
+        len(referent_nest.RelatedObjects) == 1
+    )  # the alignment creates the stationing nest and it has one referent to defined the stationing for the alignment
     assert referent_nest.RelatedObjects[0].is_a("IfcReferent")
 
     curve = ifcopenshell.api.alignment.get_curve(alignment)
@@ -62,7 +64,7 @@ def test_add_vertical_alignment():
 
     for child_alignment in alignment.IsDecomposedBy[0].RelatedObjects:
         assert child_alignment.is_a("IfcAlignment")
-        assert len(child_alignment.IsNestedBy) == 2
+        assert len(child_alignment.IsNestedBy) == 1
         child_layout_nest = ifcopenshell.api.alignment.get_alignment_layout_nest(child_alignment)
         assert len(child_layout_nest.RelatedObjects) == 1  # The IfcAlignmentVertical
         assert child_layout_nest.RelatedObjects[0].is_a("IfcAlignmentVertical")

@@ -35,6 +35,15 @@ import ifcopenshell.util.unit
 
 PRECISION = 1.0e-5
 
+# Numpy axis-index helpers for 3D coordinates. Use these instead of redefining
+# local copies in every geometry-builder module — they index ``np.ndarray``
+# vectors of shape ``(3,)`` or ``(N, 3)``.
+NP_X, NP_Y, NP_Z = 0, 1, 2
+NP_XY = slice(2)
+NP_XZ = [0, 2]
+NP_YZ = [1, 2]
+NP_YX = [1, 0]
+
 
 if TYPE_CHECKING:
     # NOTE: mathutils is never used at runtime in ifcopenshell,
@@ -1826,7 +1835,7 @@ class ShapeBuilder:
         end_half_dim: np.ndarray,
         angle: float,
         profile_offset: VectorType = (0.0, 0.0),
-        verbose: bool = True,
+        verbose: bool = False,
     ) -> Optional[float]:
         """Get the transition length for two profile half-dimensions, an angle, and an XY offset.
 
@@ -1838,7 +1847,9 @@ class ShapeBuilder:
         :param end_half_dim: Half-dimensions of the end profile in the same format.
         :param angle: Maximum allowed transition angle, in degrees.
         :param profile_offset: 2D XY offset between the centrelines of the start and end profiles.
-        :param verbose: If True, print diagnostic values during calculation.
+        :param verbose: If True, print diagnostic values during calculation. Default is False —
+            the prints are debug-only output; enabling them spams the console on every transition
+            geometry computation (which fires per-fitting on IFC load).
         :return: Transition length in project length units, or ``None`` if no valid length exists
             for the given angle and offset.
         """
@@ -1899,7 +1910,7 @@ class ShapeBuilder:
         end_profile: bool = False,
         length: Optional[float] = None,
         angle: Optional[float] = None,
-        verbose: bool = True,
+        verbose: bool = False,
     ) -> Union[float, None]:
         """Calculate MEP transition length from angle, or transition angle from length.
 

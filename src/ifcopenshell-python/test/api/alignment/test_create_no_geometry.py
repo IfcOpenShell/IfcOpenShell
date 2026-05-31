@@ -50,7 +50,14 @@ def test_create_no_geometry():
         PredefinedType="LINE",
     )
     end = ifcopenshell.api.alignment.create_layout_segment(file, horizontal_alignment, design_parameters)
-    assert end == None
+
+    x = end[0, 3]
+    y = end[1, 3]
+    z = end[2, 3]
+
+    assert x == 100.0
+    assert y == 0.0
+    assert z == 0.0
 
     design_parameters = file.createIfcAlignmentVerticalSegment(
         StartDistAlong=0.0,
@@ -61,7 +68,14 @@ def test_create_no_geometry():
         PredefinedType="CONSTANTGRADIENT",
     )
     end = ifcopenshell.api.alignment.create_layout_segment(file, vertical_alignment, design_parameters)
-    assert end == None
+
+    x = end[0, 3]
+    y = end[1, 3]
+    z = end[2, 3]
+
+    assert x == 50.0
+    assert y == 20.0 + 50.0 * 1.0 / 100.0
+    assert z == 0.0
 
 
 test_create_no_geometry()
