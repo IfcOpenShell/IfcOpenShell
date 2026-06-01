@@ -63,6 +63,10 @@ jobs:
 
       - name: Configure (standalone wgpu, tests on)
         shell: bash
+        # The top-level CMakeLists.txt unconditionally find_package's
+        # CGAL/OpenCASCADE/etc. before our BUILD_BONSAIVIEWER gate kicks
+        # in, so we explicitly disable every IfcGeom/IfcParse/IfcPython
+        # subproject — we only want IfcViewerWgpu + its state tests.
         run: |
           QT_PREFIX="$(brew --prefix qt)"
           cmake -B build \
@@ -72,6 +76,14 @@ jobs:
             -DBUILD_BONSAIVIEWER=OFF \
             -DBUILD_BONSAIVIEWER_WGPU=ON \
             -DBUILD_BONSAIVIEWER_TESTS=ON \
+            -DBUILD_IFCGEOM=OFF \
+            -DBUILD_IFCPYTHON=OFF \
+            -DBUILD_CONVERT=OFF \
+            -DBUILD_EXAMPLES=OFF \
+            -DBUILD_GEOMSERVER=OFF \
+            -DWITH_OPENCASCADE=OFF \
+            -DWITH_CGAL=OFF \
+            -DCOLLADA_SUPPORT=OFF \
             -DCMAKE_PREFIX_PATH="${QT_PREFIX}" \
             -DQT_DIR="${QT_PREFIX}" \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
@@ -88,7 +100,9 @@ jobs:
 
       - name: Run state tests
         working-directory: build
-        run: ctest --output-on-failure -R "wgpu"
+        # No -R filter: only wgpu state tests are built in this config,
+        # so ctest discovers exactly those.
+        run: ctest --output-on-failure
 
       - name: Upload CMake configure log on failure
         if: failure()
