@@ -45,5 +45,12 @@ if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
     )
 endif()
 
-install(TARGETS IfcViewerWgpuMinimal EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+# MACOSX_BUNDLE targets require BUNDLE DESTINATION at install time even
+# when nobody is going to run `make install` (CMake validates the rule
+# at configure). Provide one alongside the regular bin/ runtime path.
+install(TARGETS IfcViewerWgpuMinimal
+    EXPORT  ${IFCOPENSHELL_EXPORT_TARGETS}
+    RUNTIME DESTINATION bin
+    BUNDLE  DESTINATION bin
+)
 ifcopenshell_deploy_qt_runtime(IfcViewerWgpuMinimal)
