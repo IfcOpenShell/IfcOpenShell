@@ -38,6 +38,12 @@ if(WITH_MESH_OPTIMIZER)
             ${IFCVIEWER_SRC}/LodBuilder.cpp
         LIBS meshoptimizer::meshoptimizer
     )
+    # LodBuilder.cpp's body is guarded behind WITH_MESH_OPTIMIZER; without
+    # the define the test compiles the no-op stub and the buildLods
+    # assertions fail. The IfcViewer library propagates this define via
+    # target_compile_definitions but the test compiles LodBuilder.cpp
+    # standalone, so the test target has to set it explicitly.
+    target_compile_definitions(test_lod_builder PRIVATE -DWITH_MESH_OPTIMIZER)
 endif()
 
 add_ifcviewer_unit_test(test_sidecar_cache
