@@ -681,24 +681,25 @@ if(BUILD_IFCGEOM)
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
-if(BUILD_BONSAIVIEWER)
-    if(BUILD_BONSAIVIEWER_TESTS)
-        # Catch2 v3 — fetched on demand. Test option is OFF by default so the
-        # default build remains offline-capable.
-        include(FetchContent)
-        FetchContent_Declare(
-            Catch2
-            GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-            GIT_TAG        v3.5.4
-            GIT_SHALLOW    TRUE
-        )
-        FetchContent_MakeAvailable(Catch2)
-        list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-        include(CTest)
-        include(Catch)
-        enable_testing()
-    endif()
+# Catch2 fetch hoisted out of BUILD_BONSAIVIEWER so the standalone wgpu
+# build can also enable BUILD_BONSAIVIEWER_TESTS. Test option is OFF by
+# default so the default build remains offline-capable.
+if(BUILD_BONSAIVIEWER_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v3.5.4
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(Catch2)
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    include(CTest)
+    include(Catch)
+    enable_testing()
+endif()
 
+if(BUILD_BONSAIVIEWER)
     # Wgpu subprojects added first because IfcViewer's SceneLoader now
     # links against IfcViewerWgpu; the target must exist when IfcViewer's
     # CMakeLists runs.

@@ -1,0 +1,101 @@
+name: wgpu sanity (macOS)
+
+# Lightweight compile-only check for the wgpu backend on macOS. Skips the
+# IfcViewerWgpuMinimal executable (its surface creation has no Metal path
+# yet — see task #32) and just confirms IfcViewerWgpu links and the pure-
+# CPU state tests pass.
+#
+# Goal: catch portability regressions in the wgpu source on Apple Silicon
+# / Intel Mac without needing the full IfcGeom + OCCT + Python toolchain
+# that build_osx.yml carries. Runs in ~5 minutes.
+
+on:
+  push:
+    branches:
+      - ifcviewer-wgpu
+      - main
+      - v0.8.0
+    paths:
+      - 'src/ifcviewer-wgpu/**'
+      - 'src/ifcviewer/SidecarCache.*'
+      - 'src/ifcviewer/InstancedGeometry.h'
+      - 'src/ifcviewer/VertexQuantization.h'
+      - 'cmake/CMakeLists.txt'
+      - '.github/workflows/ci-wgpu-mac.yml'
+  pull_request:
+    paths:
+      - 'src/ifcviewer-wgpu/**'
+      - 'src/ifcviewer/SidecarCache.*'
+      - 'src/ifcviewer/InstancedGeometry.h'
+      - 'src/ifcviewer/VertexQuantization.h'
+      - 'cmake/CMakeLists.txt'
+      - '.github/workflows/ci-wgpu-mac.yml'
+  workflow_dispatch:
+
+jobs:
+  build_wgpu_mac:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Install dependencies via Homebrew
+        run: |
+          brew update
+          # qt installs Qt6 currently; eigen is header-only.
+          brew install qt eigen
+          # patchelf isn't on mac — wgpu-native's SONAME workaround is
+          # Linux-only and CMake guards on UNIX AND NOT APPLE so this is fine.
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2.22
+        with:
+          key: mac-wgpu-${{ matrix.arch }}
+
+      - name: Configure (standalone wgpu, tests on)
+        shell: bash
+        run: |
+          QT_PREFIX="$(brew --prefix qt)"
+          cmake -B build \
+            -S cmake \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_BONSAIVIEWER=OFF \
+            -DBUILD_BONSAIVIEWER_WGPU=ON \
+            -DBUILD_BONSAIVIEWER_TESTS=ON \
+            -DCMAKE_PREFIX_PATH="${QT_PREFIX}" \
+            -DQT_DIR="${QT_PREFIX}" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build IfcViewerWgpu + state tests
+        # Skip IfcViewerWgpuMinimal: its createSurface has no Metal path
+        # yet (task #32). Static lib compiles cleanly because the X11 /
+        # Wayland surface blocks are wrapped in #if defined(Q_OS_LINUX).
+        run: |
+          cmake --build build \
+            --target IfcViewerWgpu test_wgpu_selection test_wgpu_visibility \
+            -- -j
+
+      - name: Run state tests
+        working-directory: build
+        run: ctest --output-on-failure -R "wgpu"
+
+      - name: Upload CMake configure log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmake-log-${{ matrix.arch }}
+          path: |
+            build/CMakeCache.txt
+            build/CMakeFiles/CMakeConfigureLog.yaml
+          retention-days: 14
