@@ -51,8 +51,11 @@ jobs:
       - name: Install dependencies via Homebrew
         run: |
           brew update
-          # qt installs Qt6 currently; eigen is header-only.
-          brew install qt eigen
+          # qt installs Qt6; eigen is header-only. Boost is required by
+          # the top-level CMakeLists unconditionally (line 328) even when
+          # IfcGeom/IfcPython are off — until ifcviewer-core is extracted
+          # (task #12) we have to humour it.
+          brew install qt eigen boost
           # patchelf isn't on mac — wgpu-native's SONAME workaround is
           # Linux-only and CMake guards on UNIX AND NOT APPLE so this is fine.
 
