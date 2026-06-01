@@ -362,7 +362,7 @@ endif
 
 .PHONY: test-modal
 test-modal:
-	blender --enable-event-simulate --python test/modal/test_modal.py
+	blender --enable-event-simulate --python test/modal/test_modal.py --window-maximized
 
 # Reregistering test is not added to the standard test suite because during unregister
 # Blender removes all Bonsai dependencies breaking dev-environment symlinks.
