@@ -3630,7 +3630,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         self.unjoin_op_props = []
         for _ in range(self.POOL_SIZE):
             icon = self.setup_icon_gizmo(
-                "VIEW3D_GT_unjoin", default_color, highlight_color, "bim.unjoin_wall_path_connection"
+                "VIEW3D_GT_link_toggle", default_color, highlight_color, "bim.unjoin_wall_path_connection"
             )
             icon.hide = True
             self.unjoin_icons.append(icon)

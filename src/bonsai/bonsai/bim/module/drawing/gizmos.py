@@ -3215,6 +3215,114 @@ class GizmoArc(StaticTrisGizmoMixin, bpy.types.Gizmo):
     tris = ARC_TRIS_DEFAULT
 
 
+def _link_toggle_icon_tris(broken: bool) -> tuple[tuple[float, float, float], ...]:
+    """Two filled dots joined by a horizontal connector. ``broken=False``
+    draws a single continuous bar between the dots' inner edges;
+    ``broken=True`` shears the two halves vertically — the left dot AND
+    its stub slip down as a unit, the right dot AND its stub slip up,
+    with a horizontal gap at the centre.
+
+    Each half moves as a cohesive piece so the stub stays attached to its
+    dot at the same y, reading as a snapped link whose two halves slid
+    apart rather than as bent stubs jutting out of stationary dots."""
+    dot_cx = 0.30
+    dot_r = 0.10
+    bar_half_thickness = 0.04
+    # Inner edge of each dot — the intact bar joins the dot edges, not the
+    # centres, so the dot + bar reads as one continuous shape.
+    bar_inner_x = dot_cx - dot_r
+    segments = 12
+    # Vertical shear applied to each half when broken. Zero in the intact
+    # form keeps both halves on the centerline.
+    half_offset_y = 0.08 if broken else 0.0
+
+    tris: list[tuple[float, float, float]] = []
+    for sign in (-1, 1):
+        cx = sign * dot_cx
+        cy = sign * half_offset_y
+        for i in range(segments):
+            a1 = (2.0 * math.pi) * (i / segments)
+            a2 = (2.0 * math.pi) * ((i + 1) / segments)
+            p1 = (cx + dot_r * math.cos(a1), cy + dot_r * math.sin(a1))
+            p2 = (cx + dot_r * math.cos(a2), cy + dot_r * math.sin(a2))
+            tris.append((cx, cy, 0.0))
+            tris.append((p1[0], p1[1], 0.0))
+            tris.append((p2[0], p2[1], 0.0))
+
+    if broken:
+        # Stubs reach inward into the dot's interior so they read as rooted
+        # in the dot rather than floating off its edge after the slip.
+        stub_outer_x = 0.27
+        stub_inner_x = 0.06
+        tris.extend(
+            rect_tris(
+                -stub_outer_x,
+                -half_offset_y - bar_half_thickness,
+                -stub_inner_x,
+                -half_offset_y + bar_half_thickness,
+            )
+        )
+        tris.extend(
+            rect_tris(
+                stub_inner_x,
+                half_offset_y - bar_half_thickness,
+                stub_outer_x,
+                half_offset_y + bar_half_thickness,
+            )
+        )
+    else:
+        tris.extend(rect_tris(-bar_inner_x, -bar_half_thickness, bar_inner_x, bar_half_thickness))
+
+    return tuple(tris)
+
+
+LINK_TRIS_INTACT = _link_toggle_icon_tris(broken=False)
+LINK_TRIS_BROKEN = _link_toggle_icon_tris(broken=True)
+
+
+class GizmoLinkToggle(StaticTrisGizmoMixin, bpy.types.Gizmo):
+    """Two-state link glyph: default reads as a connected link (two dots +
+    intact connector); hover swaps to a broken link (same dots + severed
+    connector) to signal that a click will sever the underlying connection.
+
+    Single-click gizmo — the target operator is bound via
+    ``target_set_operator`` by the owning group. The hover swap is purely
+    visual; the click target is the same in both states. The glyph is
+    feature-agnostic — any path / link / pair-of-connected-items context can
+    reuse it for a sever-this-connection affordance."""
+
+    bl_idname = "VIEW3D_GT_link_toggle"
+    __slots__ = ("custom_shape",)
+    # Bbox source for the hit shape. The broken form's vertically-sheared
+    # halves give it the larger bbox of the two states, so using it as the
+    # hit-shape source guarantees the clickable area covers either form —
+    # the cursor doesn't lose hover at the offset dots' outer edges.
+    tris = LINK_TRIS_BROKEN
+
+    # Per-class batch cache: one entry per highlight state. The mixin parent
+    # caches one batch per class via ``_get_static_tris_batch``; the per-state
+    # swap needs a second batch, so this class keeps its own cache.
+    _batch_cache: ClassVar[dict[bool, "gpu.types.GPUBatch"]] = {}
+
+    def draw(self, context: bpy.types.Context) -> None:
+        broken = bool(self.is_highlight)
+        batch = type(self)._batch_cache.get(broken)
+        if batch is None:
+            tris = LINK_TRIS_BROKEN if broken else LINK_TRIS_INTACT
+            batch = batch_for_shader(_get_static_tris_shader(), "TRIS", {"pos": tris})
+            type(self)._batch_cache[broken] = batch
+        # Icon body forced fully opaque so the dark outline behind doesn't
+        # bleed through and grey out the glyph.
+        color = (*self.color_highlight, 1.0) if broken else (*self.color, 1.0)
+        draw_tris_with_outline(
+            batch,
+            self.matrix_basis @ self.matrix_offset,
+            color,
+            self.outline_width,
+            self.outline_alpha,
+        )
+
+
 def _fillet_icon_tris() -> tuple[tuple[float, float, float], ...]:
     """Filled L-glyph with a smoothly rounded corner — two perpendicular
     wall bars joined by a constant-thickness arc band."""
