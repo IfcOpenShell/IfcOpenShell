@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 from math import cos, pi, radians, sin, tan
 from typing import Any, Literal
@@ -41,6 +42,7 @@ from mathutils import Matrix, Quaternion, Vector
 
 import bonsai.core.geometry
 import bonsai.tool as tool
+from bonsai.bim.decorator_cache import TokenCache
 from bonsai.bim.module.drawing.helper import format_distance
 
 
@@ -2177,3 +2179,313 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
         d1 = (p1.x - intersection[0]) ** 2 + (p1.y - intersection[1]) ** 2 + (p1.z - intersection[2]) ** 2
         d2 = (p2.x - intersection[0]) ** 2 + (p2.y - intersection[1]) ** 2 + (p2.z - intersection[2]) ** 2
         return p2 if d2 >= d1 else p1
+
+
+_BBOX_EDGES = (
+    (0, 1), (1, 2), (2, 3), (3, 0),
+    (4, 5), (5, 6), (6, 7), (7, 4),
+    (0, 4), (1, 5), (2, 6), (3, 7),
+)  # fmt: skip
+
+
+def bbox_world_edges(
+    obj: bpy.types.Object,
+) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+    """Return world-space (start, end) tuples for the 12 edges of ``obj``'s
+    bounding box. Empty list if the object has no bound_box (e.g. Empties)."""
+    if not obj.bound_box:
+        return []
+    mw = obj.matrix_world
+    corners = [mw @ Vector(c) for c in obj.bound_box]
+    return [(tuple(corners[a]), tuple(corners[b])) for a, b in _BBOX_EDGES]
+
+
+def draw_polyline_segments(
+    context: bpy.types.Context,
+    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+    color_rgb: tuple[float, float, float],
+    alpha: float,
+    line_width: float,
+) -> None:
+    """Render ``segments`` as one anti-aliased LINES batch in world space."""
+    if not segments:
+        return
+    verts: list[tuple[float, float, float]] = []
+    indices: list[tuple[int, int]] = []
+    for start, end in segments:
+        base = len(verts)
+        verts.append(start)
+        verts.append(end)
+        indices.append((base, base + 1))
+    if not tool.Blender.validate_shader_batch_data(verts, indices):
+        return
+    region = getattr(context, "region", None)
+    if region is None:
+        return
+    shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+    shader.bind()
+    shader.uniform_float("viewportSize", (region.width, region.height))
+    shader.uniform_float("lineWidth", line_width)
+    shader.uniform_float("color", (*color_rgb, alpha))
+    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.blend_set("NONE")
+
+
+_ARRAY_LAYER_BBOX_LINE_WIDTH = 1.8
+_ARRAY_LAYER_BBOX_LINE_ALPHA = 0.8
+_ARRAY_LAYER_BBOX_MAX_CHILDREN = 200
+
+
+def draw_array_layer_children_bbox(
+    context: bpy.types.Context,
+    parent_element: ifcopenshell.entity_instance,
+    layer_index: int,
+    max_children: int = _ARRAY_LAYER_BBOX_MAX_CHILDREN,
+) -> None:
+    """Paint a wireframe bbox around every child of one array layer in the
+    same 3D pass. Called inline from gizmo ``draw()`` methods so the highlight
+    tracks the hover cursor one-for-one — no POST_VIEW handler, no timing lag.
+
+    Total: silently no-ops on missing pset, unparseable JSON, out-of-range
+    layer index, unresolvable child GUIDs, or empty child geometry."""
+    if layer_index < 0:
+        return
+    data_text = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array", "Data")
+    if not data_text:
+        return
+    try:
+        layers = json.loads(data_text)
+    except (ValueError, TypeError):
+        return
+    if layer_index >= len(layers):
+        return
+    child_guids = layers[layer_index].get("children", [])
+    if not child_guids:
+        return
+    ifc_file = tool.Ifc.get()
+    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+    for guid in child_guids[:max_children]:
+        try:
+            child_element = ifc_file.by_guid(guid)
+        except RuntimeError:
+            continue
+        child_obj = tool.Ifc.get_object(child_element)
+        if child_obj is None:
+            continue
+        segments.extend(bbox_world_edges(child_obj))
+    if not segments:
+        return
+    prefs = tool.Blender.get_addon_preferences()
+    color = prefs.decorator_color_special[:3]
+    draw_polyline_segments(
+        context,
+        segments,
+        color,
+        _ARRAY_LAYER_BBOX_LINE_ALPHA,
+        _ARRAY_LAYER_BBOX_LINE_WIDTH,
+    )
+
+
+class ArrayPreviewDecorator(tool.Blender.ViewportDecorator):
+    """Faint bbox wireframe at each future array instance during the edit lifecycle.
+    Pure GPU preview gated on the array's draft props — no IFC mutation."""
+
+    LINE_WIDTH = 1.2
+    LINE_ALPHA = 0.45
+    MAX_PREVIEW_INSTANCES = 200
+
+    def draw(self, context: bpy.types.Context) -> None:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return
+        prefs = tool.Blender.get_addon_preferences()
+        obj = context.active_object
+        if obj is None or not obj.bound_box:
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element or not tool.Parametric.is_array(element):
+            return
+        props = tool.Model.get_array_props(obj)
+        if not props.is_editing:
+            return
+        count = int(props.count)
+        if count <= 1 or count > self.MAX_PREVIEW_INSTANCES:
+            return
+
+        segments = self._compute_segments(obj, props, count)
+        if not segments:
+            return
+
+        color = prefs.decorator_color_selected[:3]
+        draw_polyline_segments(context, segments, color, self.LINE_ALPHA, self.LINE_WIDTH)
+
+    def _compute_segments(
+        self,
+        parent_obj: bpy.types.Object,
+        props,
+        count: int,
+    ) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+        """World-space (start, end) line segments for the bbox edges of
+        every future instance (i = 1 … count-1; i = 0 is the parent itself).
+        props.x/y/z are SI — the edit-lifecycle Enable hydrates them via
+        si_conversion, so no unit_scale multiplier here."""
+        offset = Vector((props.x, props.y, props.z))
+        if props.method == "DISTRIBUTE":
+            divider = (count - 1) if count > 1 else 1
+            offset = offset / divider
+
+        parent_mw = parent_obj.matrix_world
+        parent_corners = [Vector(c) for c in parent_obj.bound_box]
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+        for i in range(1, count):
+            delta = offset * i
+            child_mw = parent_mw.copy()
+            if props.use_local_space:
+                child_mw.translation = parent_mw @ delta
+            else:
+                child_mw.translation = parent_mw.translation + delta
+            world_corners = [child_mw @ corner for corner in parent_corners]
+            for a, b in _BBOX_EDGES:
+                segments.append((tuple(world_corners[a]), tuple(world_corners[b])))
+        return segments
+
+
+class ArraySelectionHighlightDecorator(tool.Blender.ViewportDecorator):
+    """Bounding-box overlay surfacing the array family of the selected object.
+
+    Two activation modes:
+
+    - **Child selected** — parent drawn in the addon's *special*
+      decorator color (bright accent); other siblings in the *unselected*
+      color at lower alpha so the parent stands out. The selected child
+      itself keeps Blender's standard selection outline.
+    - **Parent selected** (idle, not editing) — every existing child drawn
+      in the *unselected* color at lower alpha. The parent is already
+      visually flagged by Blender's selection outline. Suppressed during
+      an active array edit lifecycle so the live preview wireframes don't
+      double-draw with the existing-children overlay."""
+
+    LINE_WIDTH = 1.5
+    PARENT_ALPHA = 0.7
+    SIBLING_ALPHA = 0.35
+    MAX_SIBLINGS = 200
+
+    def __init__(self) -> None:
+        self._family_cache: TokenCache = TokenCache()
+
+    def draw(self, context: bpy.types.Context) -> None:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return
+        prefs = tool.Blender.get_addon_preferences()
+        obj = context.active_object
+        if obj is None:
+            return
+        if not obj.select_get():
+            return
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        if tool.Blender.Modifier.is_array_child(element):
+            self._draw_for_child(context, prefs, element, obj)
+        elif tool.Parametric.is_array(element):
+            props = tool.Model.get_array_props(obj)
+            if not props.is_editing:
+                self._draw_for_parent(context, prefs, element, obj)
+
+    def _draw_for_child(self, context, prefs, element, obj):
+        family = self._resolve_family_for_child(obj, element)
+        if family is None:
+            return
+        parent_obj, sibling_objs = family
+
+        parent_segments = bbox_world_edges(parent_obj)
+        if parent_segments:
+            draw_polyline_segments(
+                context,
+                parent_segments,
+                prefs.decorator_color_special[:3],
+                self.PARENT_ALPHA,
+                self.LINE_WIDTH,
+            )
+        self._draw_siblings(context, prefs, sibling_objs)
+
+    def _draw_for_parent(self, context, prefs, element, obj):
+        child_objs = self._resolve_children_for_parent(obj, element)
+        self._draw_siblings(context, prefs, child_objs)
+
+    def _resolve_family_for_child(self, obj, element):
+        return self._family_cache.get_or_compute(
+            ("child", obj.session_uid, element.id()),
+            lambda: self._collect_family_from_child(element, obj),
+        )
+
+    def _resolve_children_for_parent(self, obj, element):
+        return (
+            self._family_cache.get_or_compute(
+                ("parent", obj.session_uid, element.id()),
+                lambda: self._collect_children(element, exclude=obj),
+            )
+            or []
+        )
+
+    def _draw_siblings(self, context, prefs, sibling_objs):
+        if not sibling_objs:
+            return
+        if len(sibling_objs) > self.MAX_SIBLINGS:
+            sibling_objs = sibling_objs[: self.MAX_SIBLINGS]
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+        for sib_obj in sibling_objs:
+            segments.extend(bbox_world_edges(sib_obj))
+        draw_polyline_segments(
+            context,
+            segments,
+            prefs.decorator_color_unselected[:3],
+            self.SIBLING_ALPHA,
+            self.LINE_WIDTH,
+        )
+
+    def _collect_family_from_child(self, element, obj):
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        if not pset:
+            return None
+        parent_guid = pset.get("Parent")
+        if not parent_guid:
+            return None
+        try:
+            parent_element = tool.Ifc.get().by_guid(parent_guid)
+        except RuntimeError:
+            return None
+        parent_obj = tool.Ifc.get_object(parent_element)
+        if not parent_obj:
+            return None
+        siblings = self._collect_children(parent_element, exclude=obj, also_exclude=parent_obj)
+        return parent_obj, siblings
+
+    def _collect_children(self, parent_element, exclude=None, also_exclude=None):
+        parent_data_text = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array", "Data")
+        if not parent_data_text:
+            return []
+        try:
+            layers = json.loads(parent_data_text)
+        except (ValueError, TypeError):
+            return []
+        children: list[bpy.types.Object] = []
+        seen_ids: set[int] = set()
+        if exclude is not None:
+            seen_ids.add(id(exclude))
+        if also_exclude is not None:
+            seen_ids.add(id(also_exclude))
+        for layer in layers:
+            for child_guid in layer.get("children", []):
+                try:
+                    child_element = tool.Ifc.get().by_guid(child_guid)
+                except RuntimeError:
+                    continue
+                child_obj = tool.Ifc.get_object(child_element)
+                if child_obj is None or id(child_obj) in seen_ids:
+                    continue
+                seen_ids.add(id(child_obj))
+                children.append(child_obj)
+        return children

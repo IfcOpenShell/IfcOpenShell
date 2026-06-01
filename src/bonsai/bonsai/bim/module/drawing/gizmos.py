@@ -5916,14 +5916,25 @@ class BaseParametricGizmoGroup:
                     billboard_rot=billboard_rot,
                     scale=0.30,
                 )
-            # Array gizmo integration is in-progress: the icon binds to
-            # bim.add_array_from_feature_edit but the array-from-parametric-draft
-            # operator + per-feature gizmo positioning haven't fully landed.
-            # Force-hide the icon while parametric-item editing is active to
-            # keep the user from triggering a half-wired add-array flow. Drop
-            # this gate when array integration completes.
+            # ARRAY button sits past the last feature-specific icon. Each
+            # gizmo group declares its own ``FEATURE_ICON_MAX_X`` (default
+            # 0.87 past the cycle slot; wall / stair override it) so the
+            # ARRAY button never lands on top of a rotate / tread-lock icon.
             if hasattr(self, "array_gizmo"):
-                self.array_gizmo.hide = True
+                self.array_gizmo.hide = self.is_gizmo_hidden_by_modal(self.array_gizmo)
+                # 30% smaller than the editing-icon-row default (0.50 → 0.35):
+                # the array button is a tertiary affordance compared to the
+                # primary pen / validate / cancel triad, and the smaller
+                # footprint keeps the edit-mode row from sprawling.
+                self.set_icon_gizmo_position(
+                    "array_gizmo",
+                    mw=mw,
+                    x=self.ICON_VALIDATE_X + self.FEATURE_ICON_MAX_X + self.ICON_ARRAY_GAP,
+                    y=icon_y,
+                    z=icon_z,
+                    billboard_rot=billboard_rot,
+                    scale=0.35,
+                )
         else:
             # ``hide_pen_button = True`` keeps the pen permanently hidden — for
             # groups whose edit-mode entry is already provided by another widget

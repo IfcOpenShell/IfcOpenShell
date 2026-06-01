@@ -147,17 +147,17 @@ class Parametric(bonsai.core.tool.Parametric):
             self._data.clear()
             self._gen = None
 
-    # FIXME(PR4): array / pipe_segment / duct_segment land with their
-    # finish/cancel operators in PR4. Adding them to EDIT_TYPES without those
-    # operators makes auto-commit-on-save dispatch bim.finish_editing_<name>
-    # for objects flagged as in-edit, which then raises because the operator
-    # doesn't exist. PR4 re-adds the three entries together with the operators.
+    # FIXME(PR5): pipe_segment / duct_segment land with their finish/cancel
+    # operators in the MEP slice of PR5 (PR5d). Until then they stay out of
+    # EDIT_TYPES so auto-commit-on-save doesn't try to dispatch a
+    # non-existent operator.
     EDIT_TYPES: list[ParametricObject] = [
         ParametricObject("door", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("window", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("stair", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("railing", supports_build_edit_lifecycle=True),
         ParametricObject("roof", supports_build_edit_lifecycle=True),
+        ParametricObject("array", supports_build_edit_lifecycle=True),
         ParametricObject("wall"),
     ]
 
@@ -169,6 +169,7 @@ class Parametric(bonsai.core.tool.Parametric):
     STAIR: ClassVar[ParametricObject]
     RAILING: ClassVar[ParametricObject]
     ROOF: ClassVar[ParametricObject]
+    ARRAY: ClassVar[ParametricObject]
     WALL: ClassVar[ParametricObject]
 
     _geom_generation: int = 0

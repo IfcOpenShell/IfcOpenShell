@@ -43,6 +43,8 @@ from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import (
+    ArrayPreviewDecorator,
+    ArraySelectionHighlightDecorator,
     BoundingBoxDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
@@ -464,6 +466,8 @@ def _install_viewport_overlays() -> None:
     WallAxisDecorator.uninstall()
     SlabDirectionDecorator.uninstall()
     WallFilletPreviewDecorator.uninstall()
+    ArrayPreviewDecorator.uninstall()
+    ArraySelectionHighlightDecorator.uninstall()
     uninstall_decorator_cache_handlers()
     try:
         if georeference_props.should_visualise:
@@ -482,6 +486,13 @@ def _install_viewport_overlays() -> None:
         # wall_fillet.is_active, so installation has no cost when no preview
         # is open. No corresponding addon-preference toggle.
         WallFilletPreviewDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on the active object's array
+        # family membership, so installation has no cost when no array
+        # element is selected.
+        ArraySelectionHighlightDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on props.is_editing — only
+        # paints during an active array edit lifecycle.
+        ArrayPreviewDecorator.install(bpy.context)
     finally:
         install_decorator_cache_handlers()
 
