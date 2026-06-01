@@ -4862,13 +4862,43 @@ void WgpuViewportWindow::render() {
             lod0_dbg_no_lod1_count_ = 0;
             lod1_dbg_tris_saved_ = 0;
 
-            // Every ~120 frames, when something's missing, dump the
-            // top-8 models by missing-chunk count + top/bottom chunks
-            // by priority. The priorities settle the question: is the
-            // metric correctly scoring the missing chunks lower than
-            // residents, or is something else (bug, hysteresis, etc.)
-            // preventing valid swaps?
-            if (chunks_missing > 0 && (interactive_frame_count_ % 30) == 0) {
+            // Lightweight stream-health summary, every ~5s (300 frames at
+            // 60 fps / 5s at 60), only when there's something missing AND
+            // something cycling. Single line — no multi-line spew. Tells
+            // the user "working set > pool, this many chunks thrashing"
+            // without the deep-dump volume.
+            if (chunks_missing > 0
+                && (interactive_frame_count_ % 300) == 0) {
+                size_t cycled = 0;
+                uint32_t max_load = 0;
+                for (const auto& [mid, mo] : models_gpu_) {
+                    for (const auto& c : mo.chunks) {
+                        if (c.load_count > 1) ++cycled;
+                        if (c.load_count > max_load) max_load = c.load_count;
+                    }
+                }
+                if (cycled > 0 || max_load > 1) {
+                    const char* diag = (cycled > 10)
+                        ? "thrashing — working set > pool"
+                        : (max_load > 5)
+                            ? "few chunks cycling (hysteresis boundary)"
+                            : "loading";
+                    qInfo().noquote().nospace()
+                        << "[stream] " << chunks_resident << " resident, "
+                        << chunks_missing << " missing, " << cycled
+                        << " cycled (max load=" << max_load << ")"
+                        << " — " << diag;
+                }
+            }
+            // Verbose investigation dump — top-8 models by missing-count,
+            // top 20 missing chunks by priority, bottom 5 residents by
+            // effective priority, every chunk of a tracked model. Volume
+            // is too high for steady-state console; gated behind
+            // WGPU_STREAM_DEEP_DEBUG so it stays available when something
+            // needs investigating but doesn't drown the normal log.
+            if (chunks_missing > 0
+                && std::getenv("WGPU_STREAM_DEEP_DEBUG") != nullptr
+                && (interactive_frame_count_ % 120) == 0) {
                 // Build the camera VP matrix and project AABB corners
                 // — same metric driveStreamingLoads uses for priority,
                 // duplicated here so the heartbeat dump can show what
@@ -5011,33 +5041,6 @@ void WgpuViewportWindow::render() {
                         << QString::number(p.ey, 'f', 1) << "x"
                         << QString::number(p.ez, 'f', 1) << "m"
                         << "  in " << p.name;
-                }
-                // Dump every chunk of the bracing model so we can see
-                // whether its priority is genuinely low (metric faithful)
-                // or unexpectedly high (metric broken). Hardcoded model
-                // name match is fine for this one-off investigation.
-                qInfo().noquote() << "  [brace.ifc (bracing) all chunks]";
-                for (const auto& [mid, mo] : models_gpu_) {
-                    QFileInfo fi(QString::fromStdString(mo.streaming_file_path));
-                    if (!fi.completeBaseName().contains(QStringLiteral("brace.ifc"))) continue;
-                    for (size_t ci = 0; ci < mo.chunks.size(); ++ci) {
-                        const auto& c = mo.chunks[ci];
-                        const float pri = chunk_priority_px2(c);
-                        qInfo().noquote().nospace()
-                            << "    chunk " << ci
-                            << "  pri=" << QString::number(pri, 'f', 0) << "px²"
-                            << "  resident=" << (c.is_resident ? "Y" : "N")
-                            << "  loading=" << (c.is_loading  ? "Y" : "N")
-                            << "  frustum=" << c.frustum_visible_count
-                            << "  hist=" << QString::number(c.visibility_history, 'f', 2)
-                            << "  aabb=" << QString::number(c.aabb_max[0]-c.aabb_min[0], 'f', 1) << "x"
-                            << QString::number(c.aabb_max[1]-c.aabb_min[1], 'f', 1) << "x"
-                            << QString::number(c.aabb_max[2]-c.aabb_min[2], 'f', 1) << "m"
-                            << "  centre=("
-                            << QString::number(0.5f*(c.aabb_min[0]+c.aabb_max[0]), 'f', 1) << ","
-                            << QString::number(0.5f*(c.aabb_min[1]+c.aabb_max[1]), 'f', 1) << ","
-                            << QString::number(0.5f*(c.aabb_min[2]+c.aabb_max[2]), 'f', 1) << ")";
-                    }
                 }
             }
         }
@@ -5831,9 +5834,17 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // Area metric is much more discriminating than radius, so we can
     // afford a bigger gap and still leave room for genuine swaps.
     constexpr float EVICT_PRIORITY_RATIO = 2.0f;
-    auto evict_lowest_priority_than = [&](float cand_priority) -> bool {
+    // WGPU_STREAM_EVICT_LOG=1 — log every priority-eviction with the
+    // (candidate, victim) pair and detect direct A→B→A 2-cycles. Noisy
+    // when working-set > pool; gated separately from WGPU_STREAM_DEEP_DEBUG
+    // so you can run one without the other.
+    static const bool evict_log =
+        std::getenv("WGPU_STREAM_EVICT_LOG") != nullptr;
+    auto evict_lowest_priority_than = [&](uint32_t cand_mid,
+                                          uint32_t cand_ci,
+                                          float    cand_priority) -> bool {
         const float threshold = cand_priority / EVICT_PRIORITY_RATIO;
-        WgpuModelGpuData* victim_m = nullptr;
+        WgpuModelGpuData* victim_m  = nullptr;
         size_t            victim_ci = 0;
         float             victim_priority = threshold;
         for (auto& [mid, m] : models_gpu_) {
@@ -5849,10 +5860,50 @@ void WgpuViewportWindow::driveStreamingLoads() {
             }
         }
         if (!victim_m) return false;
+
+        auto& victim = victim_m->chunks[victim_ci];
+
+        if (evict_log) {
+            QFileInfo cand_fi(QString::fromStdString(
+                models_gpu_.at(cand_mid).streaming_file_path));
+            QFileInfo vic_fi(QString::fromStdString(victim_m->streaming_file_path));
+            // 2-cycle detection: this victim was previously evicted by
+            // THIS exact candidate. That's the smoking gun for a swap-
+            // loop — A pushes B out, B comes back as candidate, B
+            // pushes A out, A comes back as candidate, …
+            const bool is_2_cycle =
+                   victim.last_evicted_by_model_id == cand_mid
+                && victim.last_evicted_by_chunk_idx == cand_ci
+                && victim.load_count > 1;
+            qInfo().noquote().nospace()
+                << (is_2_cycle ? "[evict 2-cycle] " : "[evict] ")
+                << "kicked chunk " << victim_ci
+                << " of " << vic_fi.completeBaseName()
+                << " (eff=" << QString::number(victim_priority, 'f', 0)
+                << ", load_count=" << victim.load_count
+                << ") for chunk " << cand_ci
+                << " of " << cand_fi.completeBaseName()
+                << " (pri=" << QString::number(cand_priority, 'f', 0)
+                << ", threshold=" << QString::number(threshold, 'f', 0) << ")";
+        }
+
+        victim.last_evicted_by_model_id  = cand_mid;
+        victim.last_evicted_by_chunk_idx = cand_ci;
+        victim.last_evicted_by_priority  = cand_priority;
+        victim.last_evicted_frame_idx    = streaming_frame_idx_;
+
         unloadChunk(*victim_m, victim_ci);
         ++streaming_evictions_pri_this_frame_;
         return true;
     };
+
+    // Cooldown duration for chunks that hit OOM (at can-fit time or at
+    // apply time). 180 frames ≈ 3s at 60 fps. Web-friendly: caps re-
+    // fetches of a chronically-unfittable chunk's byte range at one
+    // every ~3 seconds, instead of every frame. If the pool layout
+    // changes within the cooldown (other chunks evicted, fragmentation
+    // resolved) the chunk re-attempts once the cooldown expires.
+    constexpr uint64_t BLOCKED_COOLDOWN_FRAMES = 180;
 
     // ---- Drain worker results -------------------------------------------
     // Apply any chunk reads that the streaming thread finished since
@@ -5880,15 +5931,42 @@ void WgpuViewportWindow::driveStreamingLoads() {
                 continue;
             }
             if (!applyStreamedChunk(m, res.chunk_idx, res.vbytes, res.idx)) {
-                // Pool OOM at apply time — eviction had freed less than
-                // we needed by the time the result returned. Next frame's
-                // loader will re-enqueue if still wanted.
+                // Pool OOM at apply time — pool fragmented further
+                // between enqueue and worker-result. Set the same
+                // cooldown as the enqueue-time block: we just paid for
+                // a disk read / web fetch and discarded it; without
+                // the cooldown the same byte range would be re-fetched
+                // every frame until pool layout changes.
+                c.blocked_cooldown_until_frame_idx =
+                    streaming_frame_idx_ + BLOCKED_COOLDOWN_FRAMES;
+                if (evict_log) {
+                    QFileInfo fi(QString::fromStdString(m.streaming_file_path));
+                    qInfo().noquote().nospace()
+                        << "[blocked-apply] chunk " << res.chunk_idx
+                        << " of " << fi.completeBaseName()
+                        << " — pool OOM at apply, fetched bytes discarded"
+                        << " — cooldown " << BLOCKED_COOLDOWN_FRAMES << "f";
+                }
                 continue;
             }
             ++loads;
             ++streaming_drained_this_frame_;
             ++c.load_count;
             c.last_visible_frame_idx = streaming_frame_idx_;
+            // Thrash watch — fire once per power-of-≈3 threshold (3, 10,
+            // 30, 100). A chunk that crosses 10 has been re-loaded 10×
+            // this session; that points at either pool saturation or a
+            // hysteresis boundary keeping it on the evict/load edge.
+            // One line per crossing per chunk — bounded in noise.
+            const uint32_t lc = c.load_count;
+            if (lc == 3 || lc == 10 || lc == 30 || lc == 100
+             || (lc > 100 && (lc % 100) == 0)) {
+                QFileInfo fi(QString::fromStdString(m.streaming_file_path));
+                qInfo().noquote().nospace()
+                    << "[stream thrash] chunk " << res.chunk_idx
+                    << " of " << fi.completeBaseName()
+                    << " loaded " << lc << "× — pool saturated?";
+            }
         }
     }
 
@@ -5908,6 +5986,9 @@ void WgpuViewportWindow::driveStreamingLoads() {
             if (c.is_resident)                       continue;
             if (c.is_loading)                        continue;
             if (c.frustum_visible_count == 0)        continue;
+            // Cooldown after a previous OOM. Skip — don't waste a fetch
+            // or an enqueue slot on a chunk we just learned doesn't fit.
+            if (c.blocked_cooldown_until_frame_idx > streaming_frame_idx_) continue;
             candidates.push_back({&m, ci, mid, candidate_priority(c)});
         }
     }
@@ -5931,18 +6012,46 @@ void WgpuViewportWindow::driveStreamingLoads() {
                || (c.index_count > 0
                    && !pool_can_fit(c.index_count * sizeof(uint32_t)))
                || pool_.total_free_bytes() < need) {
-            if (evict_one_lru())                                       continue;
-            if (evict_lowest_priority_than(cand.priority))             continue;
+            if (evict_one_lru())                                                continue;
+            if (evict_lowest_priority_than(cand.mid, uint32_t(cand.ci),
+                                           cand.priority))                      continue;
             break;
         }
         if (!pool_can_fit(c.vertex_byte_size)
             || (c.index_count > 0
                 && !pool_can_fit(c.index_count * sizeof(uint32_t)))) {
-            // Sorted-by-priority: every remaining candidate has equal
-            // or lower priority, so eviction won't succeed for them either.
+            // Block + cooldown. The break-here-on-block logic was
+            // wrong: it assumed lower-priority candidates can't beat
+            // this one, which is true for *priority* eviction but not
+            // for *size-based fitting*. A smaller candidate may slot
+            // happily into a 24 MB hole even when the 31 MB candidate
+            // can't. Continue to the next candidate; the cooldown stops
+            // the chronically-blocked chunk from re-entering candidacy
+            // every frame (would otherwise burn web bandwidth on the
+            // same wasted fetches).
             ++streaming_blocked_oom_this_frame_;
+            c.blocked_cooldown_until_frame_idx =
+                streaming_frame_idx_ + BLOCKED_COOLDOWN_FRAMES;
+            if (evict_log) {
+                const uint64_t v_bytes = c.vertex_byte_size;
+                const uint64_t i_bytes = c.index_count * sizeof(uint32_t);
+                const double mb = 1.0 / (1024.0 * 1024.0);
+                QFileInfo fi(QString::fromStdString(cand.m->streaming_file_path));
+                qInfo().noquote().nospace()
+                    << "[blocked] chunk " << cand.ci
+                    << " of " << fi.completeBaseName()
+                    << " (pri=" << QString::number(cand.priority, 'f', 0)
+                    << ") — needs v=" << QString::number(double(v_bytes) * mb, 'f', 1)
+                    << " MB + i=" << QString::number(double(i_bytes) * mb, 'f', 1)
+                    << " MB; pool largest_free="
+                    << QString::number(double(pool_.largest_free_run_bytes()) * mb, 'f', 1)
+                    << " MB total_free="
+                    << QString::number(double(pool_.total_free_bytes()) * mb, 'f', 1)
+                    << " MB can_grow=" << (pool_.can_grow() ? "Y" : "N")
+                    << " — cooldown " << BLOCKED_COOLDOWN_FRAMES << "f";
+            }
             more_pending = true;
-            break;
+            continue;
         }
 
         // Sync fallback when a screenshot is pending: the deferred-capture

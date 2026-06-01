@@ -211,6 +211,29 @@ struct WgpuModelGpuData {
         // with load_count >> 1 has been cycling — used by the stream
         // debug log (WGPU_STREAM_DEBUG=1) to surface thrash.
         uint32_t load_count                   = 0;
+        // Eviction attribution — who pushed this chunk out the last
+        // time? Filled by evict_lowest_priority_than when the chunk is
+        // unloaded. Read by the cycle-detection logger when this chunk
+        // re-enters as a candidate so we can spot A→B→A 2-cycles. Zero
+        // for chunks that were never evicted or were LRU-evicted (the
+        // latter doesn't have an obvious "evictor" — just a slot
+        // pressure event).
+        uint32_t last_evicted_by_model_id     = 0;
+        uint32_t last_evicted_by_chunk_idx    = UINT32_MAX;
+        float    last_evicted_by_priority     = 0.0f;
+        // Frame at which this chunk was most recently evicted, so the
+        // cycle log only fires when re-entry is "soon" (cache thrash)
+        // rather than "minutes later" (legitimate camera move).
+        uint64_t last_evicted_frame_idx       = 0;
+        // Cooldown frame: if streaming_frame_idx_ < this, skip the
+        // chunk in the candidate gather. Set when a candidate is
+        // blocked OOM (eviction exhausted, still doesn't fit) OR when
+        // applyStreamedChunk fails on the drained worker result. Caps
+        // web bandwidth waste at one fetch per cooldown for chunks
+        // that genuinely can't fit in the current pool state; the
+        // cooldown expires naturally so the chunk re-enters when
+        // pool layout has had a chance to change.
+        uint64_t blocked_cooldown_until_frame_idx = 0;
         // Per-frame instance-aware priority. Sum of px² projected
         // contributions of every instance owned by this chunk —
         // captures the chunk's actual on-screen footprint, not the
