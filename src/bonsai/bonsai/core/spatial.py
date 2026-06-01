@@ -67,7 +67,8 @@ def assign_container(
     if products := [e for e in root_elements if spatial.can_contain(container, root_element)]:
         ifc.run("spatial.assign_container", products=products, relating_structure=container)
     for element in all_elements:
-        collector.assign(ifc.get_object(element))
+        if obj := ifc.get_object(element):
+            collector.assign(obj)
 
 
 def enable_editing_container(spatial: type[tool.Spatial], obj: bpy.types.Object) -> None:
