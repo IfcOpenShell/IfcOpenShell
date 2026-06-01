@@ -379,3 +379,129 @@ class Input3DCursorZArray(bpy.types.Operator):
         else:
             props.z = cursor.location.z - obj.location.z
         return {"FINISHED"}
+
+
+class EnableEditingParametric(bpy.types.Operator):
+    """Pen-icon dispatcher: fires the gizmo group's per-feature edit operator.
+
+    Bound to every parametric gizmo group's pen icon. The gizmo group's own
+    ``enable_editing_operator`` (``bim.enable_editing_door``, ``…_wall``, …)
+    is passed as ``feature_enable_op`` at setup time and invoked here. The
+    indirection lets one gizmo class serve all features without per-feature
+    subclasses."""
+
+    bl_idname = "bim.enable_editing_parametric"
+    bl_label = "Enable Editing"
+    bl_description = "Edit this object's parameters"
+    bl_options = {"REGISTER", "UNDO"}
+
+    feature_enable_op: bpy.props.StringProperty(
+        default="",
+        description="Operator bl_idname to invoke (e.g., 'bim.enable_editing_door').",
+    )
+
+    def execute(self, context):
+        # Malformed ``feature_enable_op`` (missing dot) would otherwise crash
+        # the unpack with ValueError; treat the same as the empty-string case.
+        parts = self.feature_enable_op.split(".", 1)
+        if len(parts) != 2:
+            return {"CANCELLED"}
+        domain, opname = parts
+        return getattr(getattr(bpy.ops, domain), opname)("INVOKE_DEFAULT")
+
+
+class AddArrayFromFeatureEdit(bpy.types.Operator, tool.Ifc.Operator):
+    """Commit any in-progress feature edit and add an array with
+    gizmo-friendly defaults (count=2, offset = bbox extent along the axis).
+
+    Modifier-aware: plain click → X, Shift → Y, Ctrl → Z. Callers can pass
+    ``axis="X"`` via EXEC_DEFAULT to bypass the modifier read.
+
+    All three chained operators (feature finish + add_array + enable_editing)
+    run inside one transaction for a single undo step."""
+
+    bl_idname = "bim.add_array_from_feature_edit"
+    bl_label = "Add Array"
+    bl_description = (
+        "Click: add an array along X.\n" "Shift+Click: add an array along Y.\n" "Ctrl+Click: add an array along Z"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    axis: bpy.props.EnumProperty(
+        name="Offset Axis",
+        items=[
+            ("X", "X", "Offset along the object's X axis (bbox X extent)"),
+            ("Y", "Y", "Offset along the object's Y axis (bbox Y extent)"),
+            ("Z", "Z", "Offset along the object's Z axis (bbox Z extent)"),
+        ],
+        default="X",
+    )
+
+    # Minimum offset to use when the object's bbox extent is tiny — prevents
+    # the second instance from visually overlapping the parent on small
+    # annotations / openings (0.3m ≈ a clearly-separated next-instance distance).
+    MIN_DEFAULT_OFFSET = 0.3
+
+    def invoke(self, context, event):
+        # Modifier-aware axis pick: X by default, Shift → Y, Ctrl → Z.
+        if event.shift:
+            self.axis = "Y"
+        elif event.ctrl:
+            self.axis = "Z"
+        else:
+            self.axis = "X"
+        return self.execute(context)
+
+    def _execute(self, context):
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        # Commit any in-progress parametric edit lifecycle on this object first — the
+        # user expects "Add Array" to also finalise whatever they were editing
+        # so they don't lose their draft changes.
+        editing = tool.Parametric.is_object_editing(obj, skip_name="array")
+        if editing is not None:
+            finish_op_name = editing.finish_op.removeprefix("bim.")
+            getattr(bpy.ops.bim, finish_op_name)("INVOKE_DEFAULT")
+        # Bounding-box derived offset along the chosen axis, converted from
+        # Blender SI (meters) to IFC project units (which is what
+        # ``BBIM_Array.Data`` stores; the regenerator multiplies by
+        # unit_scale on the way out).
+        axis_idx = "XYZ".index(self.axis)
+        if obj.bound_box:
+            bbox_extent_si = max(c[axis_idx] for c in obj.bound_box) - min(c[axis_idx] for c in obj.bound_box)
+        else:
+            bbox_extent_si = 1.0
+        bbox_extent_si = max(bbox_extent_si, self.MIN_DEFAULT_OFFSET)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        offset_project = bbox_extent_si / si_conversion if si_conversion else bbox_extent_si
+        add_kwargs = {"count": 2, "x": 0.0, "y": 0.0, "z": 0.0}
+        add_kwargs[self.axis.lower()] = offset_project
+        result = bpy.ops.bim.add_array(**add_kwargs)
+        if result != {"FINISHED"}:
+            return result
+        # Restore selection to just the parent. ``regenerate_array`` calls
+        # ``tool.Geometry.duplicate_ifc_objects`` which leaves the newly-created
+        # child selected alongside the parent. The edit-lifecycle gizmos poll on a
+        # single-selected parent, so with both selected the gizmos wouldn't
+        # surface and "ARRAY → enter edit" would feel broken.
+        tool.Blender.select_and_activate_single_object(context, active_object=obj)
+        # Chain straight into array edit for the newly-added layer (always the
+        # last entry in the pset's Data list, by AddArray's append semantics).
+        # The user's expectation after clicking ARRAY is "I want to tweak this
+        # array now" — entering edit mode immediately collapses the 2-click
+        # discover-then-edit flow into one.
+        element = tool.Ifc.get_entity(obj)
+        if element is None:
+            return {"FINISHED"}
+        data_text = ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data")
+        if not data_text:
+            return {"FINISHED"}
+        try:
+            layers = json.loads(data_text)
+        except (ValueError, TypeError):
+            return {"FINISHED"}
+        if not layers:
+            return {"FINISHED"}
+        bpy.ops.bim.enable_editing_array("INVOKE_DEFAULT", item=len(layers) - 1)
+        return {"FINISHED"}

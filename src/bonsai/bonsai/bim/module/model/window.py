@@ -558,8 +558,8 @@ class CycleWindowType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixi
     bl_label = "Cycle Window Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    element_checker = "is_window"
-    props_getter = "get_window_props"
+    element_checker = tool.Parametric.is_window
+    props_getter = tool.Model.get_window_props
     type_literal = tool.Model.WindowType
     type_attr = "window_type"
 
@@ -745,7 +745,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         DimensionGizmoConfig(attr_name="lining_offset", axis=(0, 1, 0), min_value=-10.0),
     ]
 
-    props_getter = "get_window_props"
+    props_getter = tool.Model.get_window_props
     gizmo_pref_name = "window"
 
     @classmethod
