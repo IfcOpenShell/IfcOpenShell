@@ -286,8 +286,6 @@ def test_snap_far_from_origin(window):
     assert_msg = "snap_type should be 'Vertex'"
     assert snap_point.snap_type == "Vertex", assert_msg
     _assert_pass(assert_msg)
-    print(snap_point.x)
-    print(round(snap_point.x, 3))
     assert_msg = "x should be 1000000"
     assert round(snap_point.x, 3) == 1000.0, assert_msg
     _assert_pass(assert_msg)
