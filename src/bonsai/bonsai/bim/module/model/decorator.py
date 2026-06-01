@@ -2233,8 +2233,8 @@ def draw_polyline_segments(
     gpu.state.blend_set("NONE")
 
 
-_ARRAY_LAYER_BBOX_LINE_WIDTH = 1.8
-_ARRAY_LAYER_BBOX_LINE_ALPHA = 0.8
+_BBOX_HIGHLIGHT_LINE_WIDTH = 1.8
+_BBOX_HIGHLIGHT_LINE_ALPHA = 0.8
 _ARRAY_LAYER_BBOX_MAX_CHILDREN = 200
 
 
@@ -2283,8 +2283,31 @@ def draw_array_layer_children_bbox(
         context,
         segments,
         color,
-        _ARRAY_LAYER_BBOX_LINE_ALPHA,
-        _ARRAY_LAYER_BBOX_LINE_WIDTH,
+        _BBOX_HIGHLIGHT_LINE_ALPHA,
+        _BBOX_HIGHLIGHT_LINE_WIDTH,
+    )
+
+
+def draw_wall_partner_bbox(
+    context: bpy.types.Context,
+    partner_obj: bpy.types.Object,
+) -> None:
+    """Paint a wireframe bbox around ``partner_obj`` in the same 3D pass.
+    Called inline from gizmo ``draw()`` methods so the highlight tracks the
+    hover cursor one-for-one — no POST_VIEW handler, no timing lag.
+
+    Silently no-ops if the object has no bounding box (e.g. Empties)."""
+    segments = bbox_world_edges(partner_obj)
+    if not segments:
+        return
+    prefs = tool.Blender.get_addon_preferences()
+    color = prefs.decorator_color_special[:3]
+    draw_polyline_segments(
+        context,
+        segments,
+        color,
+        _BBOX_HIGHLIGHT_LINE_ALPHA,
+        _BBOX_HIGHLIGHT_LINE_WIDTH,
     )
 
 

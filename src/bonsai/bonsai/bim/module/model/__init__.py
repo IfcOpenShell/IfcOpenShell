@@ -108,6 +108,7 @@ classes = (
     wall.GizmoWallFilletPreview,
     wall.GizmoWallFilletReedit,
     wall.GizmoWallJoinIntersection,
+    wall.GizmoWallLinkToggle,
     wall.GizmoWallUnjoinSingle,
     wall.JoinWallsIntersection,
     wall.MergeWall,

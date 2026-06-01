@@ -28,6 +28,7 @@ rule is."""
 
 import ast
 import inspect
+import textwrap
 
 import pytest
 
@@ -58,4 +59,34 @@ def test_iter_path_connections_uses_path_connectable_predicate():
         "_iter_path_connections must NOT call .is_wall on partner elements — "
         "that strict predicate drops fillet-corner walls. Use "
         "is_path_connectable_wall instead."
+    )
+
+
+def test_gizmo_wall_link_toggle_invokes_partner_bbox_helper():
+    """The wall subclass must call draw_wall_partner_bbox when its hover
+    state is active. Without this contract the partner-wall highlight
+    silently regresses if someone "tidies" the draw() override away."""
+    from bonsai.bim.module.model import wall as wall_module
+
+    source = textwrap.dedent(inspect.getsource(wall_module.GizmoWallLinkToggle.draw))
+    tree = ast.parse(source)
+    attr_names = {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+    call_names: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Attribute):
+            call_names.add(node.func.attr)
+        elif isinstance(node.func, ast.Name):
+            call_names.add(node.func.id)
+
+    assert "is_highlight" in attr_names, (
+        "GizmoWallLinkToggle.draw must gate its highlight call on self.is_highlight — "
+        "without it the partner outline would draw every frame, not just on hover."
+    )
+    assert "draw_wall_partner_bbox" in call_names, (
+        "GizmoWallLinkToggle.draw must call draw_wall_partner_bbox to render the "
+        "partner outline. The shared composite in decorator.py is the canonical "
+        "trigger for this feature; replacing it with an ad-hoc draw call would "
+        "drift from the array-children bbox styling."
     )

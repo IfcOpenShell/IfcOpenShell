@@ -3546,6 +3546,36 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         self.merge_icon.hide = True
 
 
+class GizmoWallLinkToggle(gizmo.GizmoLinkToggle, bpy.types.Gizmo):
+    """Link-toggle glyph with a partner-wall highlight on hover. The owning
+    gizmo group writes the partner Blender object onto each icon every frame
+    via ``partner_obj``; on ``is_highlight`` the partner's bbox is outlined
+    inline so the user sees which wall the click will disconnect from
+    before committing.
+
+    The partner reference is stashed on the gizmo instance rather than
+    read back from the bound operator handle because Blender's Gizmo API
+    exposes ``target_set_operator`` for binding but no symmetric getter."""
+
+    bl_idname = "VIEW3D_GT_wall_link_toggle"
+    __slots__ = ("partner_obj",)
+
+    def setup(self) -> None:
+        super().setup()
+        self.partner_obj = None
+
+    def draw(self, context: bpy.types.Context) -> None:
+        super().draw(context)
+        if not self.is_highlight:
+            return
+        partner = self.partner_obj
+        if partner is None:
+            return
+        from bonsai.bim.module.model.decorator import draw_wall_partner_bbox
+
+        draw_wall_partner_bbox(context, partner)
+
+
 class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
     """Activates when exactly one LAYER2 wall is selected. Surfaces an unjoin icon at
     every join location inferred from the wall's IfcRelConnectsPathElements inverse
@@ -3600,7 +3630,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         self.unjoin_op_props = []
         for _ in range(self.POOL_SIZE):
             icon = self.setup_icon_gizmo(
-                "VIEW3D_GT_link_toggle", default_color, highlight_color, "bim.unjoin_wall_path_connection"
+                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.unjoin_wall_path_connection"
             )
             icon.hide = True
             self.unjoin_icons.append(icon)
@@ -3652,6 +3682,11 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             # save/reload, and any sit-in-the-undo-stack interlude between dispatch
             # and execute.
             self.unjoin_op_props[slot_idx].other_wall_guid = other_elem.GlobalId
+            # Mirror the partner reference onto the icon itself so its draw()
+            # can outline the partner on hover without a Gizmo-side getter on
+            # the bound operator (the API exposes target_set_operator with
+            # no symmetric reader).
+            icon.partner_obj = other_obj
 
 
 class GizmoWallFilletPreview(bpy.types.GizmoGroup):
