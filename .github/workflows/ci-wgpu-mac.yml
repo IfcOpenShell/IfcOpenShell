@@ -17,6 +17,8 @@ on:
       - v0.8.0
     paths:
       - 'src/ifcviewer-wgpu/**'
+      - 'src/ifcviewer-wgpu-minimal/**'
+      - 'src/wgpu-mem-probe/**'
       - 'src/ifcviewer/SidecarCache.*'
       - 'src/ifcviewer/InstancedGeometry.h'
       - 'src/ifcviewer/VertexQuantization.h'
@@ -25,6 +27,8 @@ on:
   pull_request:
     paths:
       - 'src/ifcviewer-wgpu/**'
+      - 'src/ifcviewer-wgpu-minimal/**'
+      - 'src/wgpu-mem-probe/**'
       - 'src/ifcviewer/SidecarCache.*'
       - 'src/ifcviewer/InstancedGeometry.h'
       - 'src/ifcviewer/VertexQuantization.h'
