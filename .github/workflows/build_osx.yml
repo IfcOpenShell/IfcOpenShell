@@ -83,8 +83,14 @@ jobs:
           fi
           set -o pipefail
           export QT_DIR="$(brew --prefix qt)"
+          # IFCOS_BUILD_PYTHON_WRAPPER=off skips IfcOpenShell-Python on
+          # macOS until the plug-in refactor's CREATE_BUNDLE install rule
+          # actually drops ifcopenshell.document.rdb.dylib into
+          # site-packages/ifcopenshell/ (see the commit that added this
+          # gate for the full history + the rocksdb/macdeployqt write-up).
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
             BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
+            IFCOS_BUILD_PYTHON_WRAPPER=off \
             python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
             | tee build.log
 

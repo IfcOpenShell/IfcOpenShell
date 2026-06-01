@@ -409,6 +409,14 @@ if not explicit_targets and not BUILD_BONSAIVIEWER:
     targets.difference_update({"BonsaiViewer", "qt6"})
 if BUILD_BONSAIVIEWER:
     targets.update(gather_dependencies("BonsaiViewer"))
+
+# Opt-out for the Python wrapper. Currently used by the bonsai CI workflow
+# on macOS, where the post-plug-in-refactor wrapper hard-links
+# ifcopenshell.document.rdb.dylib but the CREATE_BUNDLE install rule does
+# not actually drop the dylib next to the wrapper in site-packages — see
+# the commit message that introduced this gate.
+if os.environ.get("IFCOS_BUILD_PYTHON_WRAPPER", "on").lower() in {"0", "off", "false", "no"}:
+    targets.discard("IfcOpenShell-Python")
 if WASM:
     SKIP_TARGETS_FOR_WASM = {
         "rocksdb",
