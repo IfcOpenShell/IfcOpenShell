@@ -16,12 +16,11 @@ jobs:
             build_branch: windows-x64
             zip_suffix: win64
 
-          - arch: ARM64
-            runs_on: windows-11-arm
-            deps_dir: _deps-vs2022-ARM64-installed
-            vcvars: '"C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"'
-            build_branch: windows-arm64
-            zip_suffix: win-arm64
+          # ARM64 dropped while BonsaiViewer is on: wgpu-native does not
+          # ship a Windows-ARM64 binary, so IfcViewerWgpu's link step fails
+          # with ~60 unresolved wgpu* externs. Re-enable when upstream
+          # publishes that target (or when we add ARM64 to the wgpu-native
+          # FetchContent URL allowlist).
 
     runs-on: ${{ matrix.runs_on }}
 

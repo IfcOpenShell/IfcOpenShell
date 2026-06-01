@@ -31,6 +31,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <string>
 #include <vector>
 
 // -----------------------------------------------------------------------------
@@ -120,7 +121,10 @@ void packSectionUniform(uint8_t* dst,
 // Shared WGSL — VsOut + thick_line_clip helper + fs_main AA fragment
 // -----------------------------------------------------------------------------
 
-#define THICK_LINE_HELPERS_WGSL R"WGSL(
+// NB: defined as a `static const char* const` (not a `#define`) because GCC 11
+// (Rocky Linux manylinux runner) does not parse a multi-line raw string inside
+// a `#define` body — newer GCC and Clang handle it fine.
+static const char* const THICK_LINE_HELPERS_WGSL = R"WGSL(
 struct VsOut {
     @builtin(position) clip_pos: vec4<f32>,
     @location(0) color:  vec4<f32>,
@@ -148,9 +152,9 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let coverage = 1.0 - smoothstep(1.0 - aa, 1.0, d);
     return vec4<f32>(in.color.xyz, in.color.w * coverage);
 }
-)WGSL"
+)WGSL";
 
-static const char* AXIS_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+static const std::string AXIS_WGSL = std::string(THICK_LINE_HELPERS_WGSL) + R"WGSL(
 struct AxisUniforms {
     mvp:           mat4x4<f32>,
     origin:        vec3<f32>,
@@ -179,7 +183,7 @@ fn vs_main(@location(0) start: vec3<f32>,
 }
 )WGSL";
 
-static const char* SECTION_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+static const std::string SECTION_WGSL = std::string(THICK_LINE_HELPERS_WGSL) + R"WGSL(
 struct SectionUniforms {
     mvp:           mat4x4<f32>,
     origin:        vec3<f32>,
@@ -219,7 +223,7 @@ fn vs_main(@location(0) start_local: vec3<f32>,
 }
 )WGSL";
 
-static const char* MARQUEE_WGSL = THICK_LINE_HELPERS_WGSL R"WGSL(
+static const std::string MARQUEE_WGSL = std::string(THICK_LINE_HELPERS_WGSL) + R"WGSL(
 struct MarqueeUniforms {
     rect_min:      vec2<f32>,
     rect_max:      vec2<f32>,
@@ -623,7 +627,7 @@ bool WgpuOverlayRenderer::buildAxisIndicator() {
     {
         WGPUShaderSourceWGSL wgsl_src = {};
         wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
-        wgsl_src.code        = svFromCStr(AXIS_WGSL);
+        wgsl_src.code        = svFromCStr(AXIS_WGSL.c_str());
         WGPUShaderModuleDescriptor sm_desc = {};
         sm_desc.nextInChain = &wgsl_src.chain;
         sm_desc.label       = svFromCStr("ifcviewer-wgpu.axis_wgsl");
@@ -909,7 +913,7 @@ bool WgpuOverlayRenderer::buildSectionVisualizer() {
     {
         WGPUShaderSourceWGSL wgsl_src = {};
         wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
-        wgsl_src.code        = svFromCStr(SECTION_WGSL);
+        wgsl_src.code        = svFromCStr(SECTION_WGSL.c_str());
         WGPUShaderModuleDescriptor sm_desc = {};
         sm_desc.nextInChain = &wgsl_src.chain;
         sm_desc.label       = svFromCStr("ifcviewer-wgpu.section_wgsl");
@@ -1099,7 +1103,7 @@ bool WgpuOverlayRenderer::buildMarquee() {
     {
         WGPUShaderSourceWGSL wgsl_src = {};
         wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
-        wgsl_src.code        = svFromCStr(MARQUEE_WGSL);
+        wgsl_src.code        = svFromCStr(MARQUEE_WGSL.c_str());
         WGPUShaderModuleDescriptor sm_desc = {};
         sm_desc.nextInChain = &wgsl_src.chain;
         sm_desc.label       = svFromCStr("ifcviewer-wgpu.marquee_wgsl");

@@ -10,10 +10,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos
-            runner: macos-14
-            arch: x64
-            oldarch: 
+          # x64 (Intel cross-compile) dropped while wgpu Qt is required:
+          # the runner is arm64 so `brew --prefix qt` returns the arm64
+          # prefix; we'd need a separate x86_64 Qt install under
+          # /usr/local to cross-build BonsaiViewer. Revisit if Intel-Mac
+          # demand resurfaces.
           - os: macos
             runner: macos-14
             arch: arm64

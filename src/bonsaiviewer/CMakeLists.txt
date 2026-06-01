@@ -133,5 +133,11 @@ target_link_libraries(BonsaiViewer PRIVATE
     Qt${QT_VERSION}::Widgets
 )
 
-install(TARGETS BonsaiViewer EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+# MACOSX_BUNDLE targets require BUNDLE DESTINATION at install time even when
+# nobody runs `make install` (CMake validates the rule at configure).
+install(TARGETS BonsaiViewer
+    EXPORT  ${IFCOPENSHELL_EXPORT_TARGETS}
+    RUNTIME DESTINATION bin
+    BUNDLE  DESTINATION bin
+)
 ifcopenshell_deploy_qt_runtime(BonsaiViewer)
