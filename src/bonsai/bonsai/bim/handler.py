@@ -151,7 +151,14 @@ def update_bim_tool_props():
                 return
 
             if is_bim_tool:
-                props.ifc_class = element_type.is_a()
+                try:
+                    props.ifc_class = element_type.is_a()
+                except TypeError:
+                    # ifc_class only lists element/space types present in the model, so an
+                    # unsupported type (e.g. a raw IfcTypeProduct) or a stale item list mid-
+                    # rebuild raises `enum "<class>" not found`. Skip rather than crash the
+                    # handler — it re-fires on the next selection and the panel resyncs.
+                    pass
 
             # Only assign when the target enum is the one that lists this type — otherwise
             # we hit `enum "<id>" not found in (...)` if the user selects an element of a
