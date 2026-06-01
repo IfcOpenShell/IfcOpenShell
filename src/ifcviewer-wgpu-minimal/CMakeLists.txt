@@ -45,12 +45,14 @@ if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
     )
 endif()
 
-# MACOSX_BUNDLE targets require BUNDLE DESTINATION at install time even
-# when nobody is going to run `make install` (CMake validates the rule
-# at configure). Provide one alongside the regular bin/ runtime path.
+# BUNDLE DESTINATION must be "." (install-prefix root) on macOS — Qt's
+# deploy generator emits `macdeployqt IfcViewerWgpuMinimal.app` (no
+# path prefix), which resolves only when the .app sits at the install
+# root. With `bin/` it can't find the bundle and the install/strip
+# step fails.
 install(TARGETS IfcViewerWgpuMinimal
     EXPORT  ${IFCOPENSHELL_EXPORT_TARGETS}
     RUNTIME DESTINATION bin
-    BUNDLE  DESTINATION bin
+    BUNDLE  DESTINATION .
 )
 ifcopenshell_deploy_qt_runtime(IfcViewerWgpuMinimal)

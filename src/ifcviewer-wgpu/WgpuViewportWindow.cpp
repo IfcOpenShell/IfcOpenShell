@@ -3136,9 +3136,13 @@ bool WgpuViewportWindow::meshLocalToGlobal(uint32_t object_id,
         using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
         const Eigen::Matrix4d P =
             Eigen::Map<const Mat4dCol>(inst.placement_transformation);
-        const Eigen::Vector4d local(double(mesh_local[0]),
-                                    double(mesh_local[1]),
-                                    double(mesh_local[2]),
+        // static_cast (not `double(...)`) to dodge GCC 11's most-vexing-parse:
+        // `Vector4d local(double(mesh_local[0]),…)` is otherwise read as a
+        // function declaration of `local` whose parameter is `double mesh_local[0]`,
+        // shadowing the outer `mesh_local` parameter.
+        const Eigen::Vector4d local(static_cast<double>(mesh_local[0]),
+                                    static_cast<double>(mesh_local[1]),
+                                    static_cast<double>(mesh_local[2]),
                                     1.0);
         const Eigen::Vector3d global =
             (m.coordinate_operation_meters * P * local).head<3>();

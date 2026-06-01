@@ -133,11 +133,12 @@ target_link_libraries(BonsaiViewer PRIVATE
     Qt${QT_VERSION}::Widgets
 )
 
-# MACOSX_BUNDLE targets require BUNDLE DESTINATION at install time even when
-# nobody runs `make install` (CMake validates the rule at configure).
+# BUNDLE DESTINATION must be "." (install-prefix root) on macOS — Qt's
+# deploy generator emits `macdeployqt BonsaiViewer.app` (no path
+# prefix), which resolves only when the .app sits at the install root.
 install(TARGETS BonsaiViewer
     EXPORT  ${IFCOPENSHELL_EXPORT_TARGETS}
     RUNTIME DESTINATION bin
-    BUNDLE  DESTINATION bin
+    BUNDLE  DESTINATION .
 )
 ifcopenshell_deploy_qt_runtime(BonsaiViewer)

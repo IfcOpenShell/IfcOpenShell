@@ -20,6 +20,7 @@
 #ifndef WGPUAREAMEASUREMENT_H
 #define WGPUAREAMEASUREMENT_H
 
+#include <cstddef>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
