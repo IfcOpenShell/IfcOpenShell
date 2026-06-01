@@ -20,7 +20,7 @@
 
 #include "Panel.h"
 
-#include "../../../ifcviewer/ViewportWindow.h"
+#include "../../../ifcviewer-wgpu/WgpuViewportWindow.h"
 
 #include <QFrame>
 #include <QVBoxLayout>
@@ -47,7 +47,7 @@ ViewportPanel::ViewportPanel(QWidget* parent)
     frame_layout->setContentsMargins(0, 0, 0, 0);
     frame_layout->setSpacing(0);
 
-    viewport_ = new ViewportWindow();
+    viewport_ = new WgpuViewportWindow();
     viewport_container_ = QWidget::createWindowContainer(viewport_, frame);
     viewport_container_->setMinimumSize(400, 300);
     viewport_container_->setFocusPolicy(Qt::StrongFocus);

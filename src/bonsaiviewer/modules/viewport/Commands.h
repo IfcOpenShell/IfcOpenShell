@@ -21,27 +21,27 @@
 #ifndef IFCINTERFACE_MODULES_VIEWPORT_COMMANDS_H
 #define IFCINTERFACE_MODULES_VIEWPORT_COMMANDS_H
 
-class ViewportWindow;
+class WgpuViewportWindow;
 namespace bonsaiviewer { class SessionState; }
 
 namespace bonsaiviewer::modules::viewport::commands {
 
-void setHome(SessionState& session, ViewportWindow& vp);
-void goHome(SessionState& session, ViewportWindow& vp);
-void viewSelected(ViewportWindow& vp);
+void setHome(SessionState& session, WgpuViewportWindow& vp);
+void goHome(SessionState& session, WgpuViewportWindow& vp);
+void viewSelected(WgpuViewportWindow& vp);
 
-void fly(SessionState& session, ViewportWindow& vp);
-void toggleSection(SessionState& session, ViewportWindow& vp);
-void clearSection(SessionState& session, ViewportWindow& vp);
+void fly(SessionState& session, WgpuViewportWindow& vp);
+void toggleSection(SessionState& session, WgpuViewportWindow& vp);
+void clearSection(SessionState& session, WgpuViewportWindow& vp);
 
-void toggleDistance(ViewportWindow& vp);
-void toggleArea(ViewportWindow& vp);
-void toggleVolume(ViewportWindow& vp);
+void toggleDistance(WgpuViewportWindow& vp);
+void toggleArea(WgpuViewportWindow& vp);
+void toggleVolume(WgpuViewportWindow& vp);
 
-void hideSelected(ViewportWindow& vp);
-void isolateSelected(ViewportWindow& vp);
-void showAll(ViewportWindow& vp);
-void invertVisibility(ViewportWindow& vp);
+void hideSelected(WgpuViewportWindow& vp);
+void isolateSelected(WgpuViewportWindow& vp);
+void showAll(WgpuViewportWindow& vp);
+void invertVisibility(WgpuViewportWindow& vp);
 
 } // namespace bonsaiviewer::modules::viewport::commands
 

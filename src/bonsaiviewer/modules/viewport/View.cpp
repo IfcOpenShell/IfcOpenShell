@@ -24,8 +24,8 @@
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
-#include "../../../ifcviewer/ViewportWindow.h"
-#include "../../../ifcviewer/OverlayRenderer.h"
+#include "../../../ifcviewer-wgpu/WgpuViewportWindow.h"
+#include "../../../ifcviewer-wgpu/WgpuOverlayRenderer.h"
 #include "../../Measurement.h"
 
 #include <Eigen/Dense>
@@ -36,7 +36,7 @@
 namespace bonsaiviewer::modules::viewport {
 
 ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
-                           ViewportWindow* viewport,
+                           WgpuViewportWindow* viewport,
                            QObject* parent)
     : QObject(parent)
     , session_state_(session_state)
@@ -59,54 +59,54 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
     connect(session_state_, &SessionState::modelGeometryReady,    this, [this](uint32_t) { refresh(); });
 
     // Measurement tools — input-driven, share the View's lifetime.
-    connect(viewport_, &ViewportWindow::surfacePickedInTool, this,
+    connect(viewport_, &WgpuViewportWindow::surfacePickedInTool, this,
             [this](int x, int y, int modifiers) {
         const bool alt = (modifiers & Qt::AltModifier) != 0;
         switch (viewport_->toolMode()) {
-        case ViewportWindow::ToolMode::Area:
+        case WgpuViewportWindow::ToolMode::Area:
             area_measurement_->onPick(*viewport_, x, y, alt);
             viewport_->setHudText(QString("Area: %1 m²  (%2 tris)")
                 .arg(area_measurement_->totalArea(), 0, 'f', 4)
                 .arg(area_measurement_->triangleCount()));
             break;
-        case ViewportWindow::ToolMode::Length:
+        case WgpuViewportWindow::ToolMode::Length:
             length_measurement_->onPick(*viewport_, x, y, alt);
             break;
-        case ViewportWindow::ToolMode::None:
-        case ViewportWindow::ToolMode::Volume:
+        case WgpuViewportWindow::ToolMode::NoTool:
+        case WgpuViewportWindow::ToolMode::Volume:
             break;
         }
     });
-    connect(viewport_, &ViewportWindow::toolModeChanged, this,
-            [this](ViewportWindow::ToolMode mode) {
+    connect(viewport_, &WgpuViewportWindow::toolModeChanged, this,
+            [this](WgpuViewportWindow::ToolMode mode) {
         area_measurement_->clear(*viewport_);
         length_measurement_->clear(*viewport_);
         switch (mode) {
-        case ViewportWindow::ToolMode::None:
+        case WgpuViewportWindow::ToolMode::NoTool:
             viewport_->setHudText(QString());
             viewport_->setOverlayLabels({});
             session_state_->setStatusMessage("Measure", "Measurement tool off");
             break;
-        case ViewportWindow::ToolMode::Length:
+        case WgpuViewportWindow::ToolMode::Length:
             viewport_->setHudText("Length tool: click first point");
             session_state_->setStatusMessage("Measure", "Length tool: LMB add point, Backspace remove last, Esc exits");
             break;
-        case ViewportWindow::ToolMode::Area:
+        case WgpuViewportWindow::ToolMode::Area:
             viewport_->setHudText("Area: 0.0000 m²  (0 tris)");
             session_state_->setStatusMessage("Measure", "Area tool: LMB add, Alt+LMB single tri, click again to remove, Esc exits");
             break;
-        case ViewportWindow::ToolMode::Volume:
+        case WgpuViewportWindow::ToolMode::Volume:
             session_state_->setStatusMessage("Measure", "Volume tool: click / box-select objects, Esc exits");
             updateVolumeReadout();
             break;
         }
     });
-    connect(viewport_, &ViewportWindow::toolBackspacePressed, this, [this]() {
-        if (viewport_->toolMode() == ViewportWindow::ToolMode::Length) {
+    connect(viewport_, &WgpuViewportWindow::toolBackspacePressed, this, [this]() {
+        if (viewport_->toolMode() == WgpuViewportWindow::ToolMode::Length) {
             length_measurement_->removeLastPoint(*viewport_);
         }
     });
-    connect(viewport_, &ViewportWindow::objectPicked, this, [this](uint32_t) {
+    connect(viewport_, &WgpuViewportWindow::objectPicked, this, [this](uint32_t) {
         updateVolumeReadout();
     });
 
@@ -194,7 +194,7 @@ void ViewportView::maybeGuessFederatedFalseOrigin(uint32_t mid) {
 }
 
 void ViewportView::updateVolumeReadout() {
-    if (viewport_->toolMode() != ViewportWindow::ToolMode::Volume) return;
+    if (viewport_->toolMode() != WgpuViewportWindow::ToolMode::Volume) return;
 
     const auto& sel = viewport_->selection().selectionIds();
     if (sel.empty()) {
@@ -207,13 +207,13 @@ void ViewportView::updateVolumeReadout() {
     const auto per_obj = volumesPerObject(*viewport_, ids);
 
     double total = 0.0;
-    std::vector<OverlayRenderer::Label> labels;
+    std::vector<WgpuOverlayRenderer::Label> labels;
     labels.reserve(per_obj.size());
     for (const auto& [oid, v] : per_obj) {
         total += v;
         QVector3D mn, mx;
         if (!viewport_->computeObjectAabb(oid, mn, mx)) continue;
-        OverlayRenderer::Label lbl;
+        WgpuOverlayRenderer::Label lbl;
         const QVector3D c = (mn + mx) * 0.5f;
         lbl.world_pos[0] = c.x();
         lbl.world_pos[1] = c.y();

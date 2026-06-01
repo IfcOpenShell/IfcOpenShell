@@ -37,7 +37,7 @@ void SceneLoader::setShouldWriteSidecar(bool enabled) {
     should_write_sidecar_ = enabled;
 }
 
-SceneLoader::SceneLoader(ViewportWindow* viewport, QObject* parent)
+SceneLoader::SceneLoader(WgpuViewportWindow* viewport, QObject* parent)
     : QObject(parent), viewport_(viewport)
 {
     connect(&element_poll_timer_, &QTimer::timeout,
@@ -189,11 +189,11 @@ void SceneLoader::startNextLoad() {
     joinSidecarThread();
     sidecar_read_thread_ = std::thread([this, ifc_path, mid, is_sidecar_source]() {
         QElapsedTimer rt; rt.start();
-        auto cached = readSidecar(ifc_path);
-        qDebug("  Sidecar read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
-        auto result = std::make_shared<std::optional<SidecarData>>(std::move(cached));
+        auto cached = readSidecarMetadataOnly(ifc_path);
+        qDebug("  Sidecar metadata read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
+        auto result = std::make_shared<std::optional<StreamingSidecar>>(std::move(cached));
         QMetaObject::invokeMethod(this, [this, mid, result, is_sidecar_source]() {
-            if (*result && !(*result)->instances.empty()) {
+            if (*result && !(*result)->meta.instances.empty()) {
                 applySidecarData(mid, std::move(**result));
                 if (!is_sidecar_source) {
                     startDataSourceLoad(mid);
@@ -233,36 +233,37 @@ void SceneLoader::startStreamLoadFor(uint32_t mid) {
         m.file_path.toStdString(), next_object_id_, loading_model_id_);
 }
 
-void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
+void SceneLoader::applySidecarData(uint32_t mid, StreamingSidecar metadata) {
     auto it = models_.find(mid);
     if (it == models_.end()) return;
     auto& model = it->second;
+    SidecarData& d = metadata.meta;
 
-    qDebug("Sidecar hit: %s (%zu verts, %zu indices, %zu meshes, %zu instances, %zu elements)",
+    qDebug("Sidecar hit: %s (%zu metadata bytes, %zu indices, %zu meshes, %zu instances, %zu elements)",
            model.file_path.toStdString().c_str(),
-           data.vertices.size() / INSTANCED_VERTEX_STRIDE_BYTES,
-           data.indices.size(),
-           data.meshes.size(),
-           data.instances.size(),
-           data.elements.size());
+           size_t(metadata.vertex_total_bytes),
+           size_t(metadata.index_total_count),
+           d.meshes.size(),
+           d.instances.size(),
+           d.elements.size());
 
     // Rebase object/model IDs onto the current session's ID space.  Two
     // cached models both starting at object_id=1 would collide otherwise.
     uint32_t min_oid = UINT32_MAX;
-    for (const auto& pe : data.elements) {
+    for (const auto& pe : d.elements) {
         if (pe.object_id < min_oid) min_oid = pe.object_id;
     }
     uint32_t oid_offset = 0;
-    if (!data.elements.empty() && min_oid < UINT32_MAX) {
+    if (!d.elements.empty() && min_oid < UINT32_MAX) {
         oid_offset = next_object_id_ - min_oid;
     }
-    for (auto& pe : data.elements) {
+    for (auto& pe : d.elements) {
         pe.object_id += oid_offset;
         pe.model_id   = mid;
         if (pe.object_id >= next_object_id_)
             next_object_id_ = pe.object_id + 1;
     }
-    for (auto& inst : data.instances) {
+    for (auto& inst : d.instances) {
         inst.object_id += oid_offset;
         inst.model_id   = mid;
     }
@@ -273,26 +274,26 @@ void SceneLoader::applySidecarData(uint32_t mid, SidecarData data) {
     // .ifc/.rdb sibling is absent.
     {
         ModelGeoref& gr = model.georef;
-        gr.has_coordinate_operation = data.has_coordinate_operation != 0;
+        gr.has_coordinate_operation = d.has_coordinate_operation != 0;
         Eigen::Map<const Eigen::Matrix<double, 4, 4, Eigen::ColMajor>> M(
-            data.coordinate_operation_meters);
+            d.coordinate_operation_meters);
         gr.coordinate_operation_meters     = M;
-        gr.units.project_length_to_meters  = data.project_length_to_meters;
-        gr.units.map_unit_to_meters        = data.map_unit_to_meters;
+        gr.units.project_length_to_meters  = d.project_length_to_meters;
+        gr.units.map_unit_to_meters        = d.map_unit_to_meters;
         model.has_georef                   = true;
     }
 
-    if (!data.instances.empty() && !model.has_first_placement) {
+    if (!d.instances.empty() && !model.has_first_placement) {
         using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
         model.first_placement =
-            Eigen::Map<const Mat4dCol>(data.instances[0].placement_transformation);
+            Eigen::Map<const Mat4dCol>(d.instances[0].placement_transformation);
         model.has_first_placement = true;
     }
 
-    std::vector<PackedElementInfo> elements = std::move(data.elements);
-    std::string stbl                        = std::move(data.string_table);
+    std::vector<PackedElementInfo> elements = std::move(d.elements);
+    std::string stbl                        = std::move(d.string_table);
 
-    viewport_->applyCachedModel(mid, std::move(data));
+    viewport_->applyCachedModel(mid, std::move(metadata));
 
     emit sidecarElementsReady(mid, std::move(elements), std::move(stbl));
 
@@ -397,8 +398,11 @@ void SceneLoader::onStreamerFinished() {
             next_object_id_ = m.streamer->lastObjectId();
             viewport_->finalizeModel(mid);
 
-            // Sidecar finalize + LOD application + disk write. Runs on the
-            // GUI thread so applyLodExtension's GL touches are safe.
+            // Sidecar finalize + disk write. Wgpu has no live LOD1 apply —
+            // LOD1 indices land in the on-disk sidecar and are picked up
+            // on the *next* open of this file; first-session view is
+            // LOD0-only. Acceptable trade-off vs reallocating chunk index
+            // slices live to splice LOD1 in.
             if (m.sidecar_builder) {
                 ModelGeoref georef;
                 if (auto* file = m.streamer->ifcFile()) {
@@ -406,7 +410,6 @@ void SceneLoader::onStreamerFinished() {
                 }
                 QElapsedTimer wt; wt.start();
                 SidecarData data = m.sidecar_builder->finalize(georef, m.streamed_elements);
-                viewport_->applyLodExtension(mid, data);
                 const bool ok = writeSidecar(m.file_path.toStdString(), data);
                 qDebug("  Sidecar finalize + write: %lld ms (%s)",
                        wt.elapsed(), ok ? "ok" : "FAILED");

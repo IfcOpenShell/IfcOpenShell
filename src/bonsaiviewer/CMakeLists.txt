@@ -121,7 +121,11 @@ set_target_properties(BonsaiViewer PROPERTIES
 )
 
 target_link_libraries(BonsaiViewer PRIVATE
+    # IfcViewer still ships SceneLoader / Federation / GeometryStreamer /
+    # SidecarBuilder until the GL ViewportWindow is deleted. IfcViewerWgpu
+    # ships the live render path. Both link cleanly side-by-side.
     IfcViewer
+    IfcViewerWgpu
     Qt${QT_VERSION}::Core
     Qt${QT_VERSION}::CorePrivate
     Qt${QT_VERSION}::Gui

@@ -26,7 +26,7 @@
 #include "../../components/Panel.h"
 
 class QTreeView;
-class ViewportWindow;
+class WgpuViewportWindow;
 namespace bonsaiviewer { class SessionState; }
 
 namespace bonsaiviewer::modules::models {
@@ -41,7 +41,7 @@ class ModelsPanel : public components::Panel {
     Q_OBJECT
 public:
     explicit ModelsPanel(bonsaiviewer::SessionState* session_state,
-                         ViewportWindow* viewport,
+                         WgpuViewportWindow* viewport,
                          QWidget* parent = nullptr);
 
     // Owned externally (the View constructs and owns the model). The panel
@@ -52,7 +52,7 @@ private:
     void applyColumnLayout();
 
     bonsaiviewer::SessionState* session_state_ = nullptr;
-    ViewportWindow* viewport_ = nullptr;
+    WgpuViewportWindow* viewport_ = nullptr;
     QTreeView* tree_ = nullptr;
     FederationItemModel* model_ = nullptr;
 };

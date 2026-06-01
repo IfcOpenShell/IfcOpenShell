@@ -220,7 +220,7 @@ private:
 } // namespace
 
 ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
-                         ViewportWindow* viewport,
+                         WgpuViewportWindow* viewport,
                          QWidget* parent)
     : components::Panel("Models", nullptr, parent, true)
     , session_state_(session_state)

@@ -23,7 +23,7 @@
 
 #include <QWidget>
 
-class ViewportWindow;
+class WgpuViewportWindow;
 
 namespace bonsaiviewer::modules::viewport {
 
@@ -33,10 +33,10 @@ class ViewportPanel : public QWidget {
 public:
     explicit ViewportPanel(QWidget* parent = nullptr);
 
-    ViewportWindow* viewport() const { return viewport_; }
+    WgpuViewportWindow* viewport() const { return viewport_; }
 
 private:
-    ViewportWindow* viewport_ = nullptr;
+    WgpuViewportWindow* viewport_ = nullptr;
     QWidget* viewport_container_ = nullptr;
 };
 

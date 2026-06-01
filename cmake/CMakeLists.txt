@@ -71,9 +71,18 @@ option(BUILD_EXAMPLES "Build example applications." ON)
 option(BUILD_GEOMSERVER "Build IfcGeomServer executable (Open CASCADE is required)." ON)
 option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
+option(BUILD_IFCMODEL_UI "Build minimal Qt IFC model UI prototype" OFF)
 option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
 option(BUILD_BONSAIVIEWER_TESTS "Build unit tests for Bonsai Viewer core (fetches Catch2 v3)" OFF)
 option(BUILD_BONSAIVIEWER_WGPU "Build the experimental wgpu backend (fetches wgpu-native binary release)" OFF)
+# IfcViewer (the GL static lib) now links against IfcViewerWgpu because
+# SceneLoader drives the wgpu viewport. Auto-enable the wgpu subproject
+# whenever BUILD_BONSAIVIEWER is on so the link target exists.
+if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
+    message(STATUS "BUILD_BONSAIVIEWER implies BUILD_BONSAIVIEWER_WGPU "
+                   "(SceneLoader uses WgpuViewportWindow); auto-enabling.")
+    set(BUILD_BONSAIVIEWER_WGPU ON)
+endif()
 option(BUILD_PACKAGE "" OFF)
 
 option(
@@ -645,6 +654,10 @@ if(BUILD_QTVIEWER)
     add_subdirectory(../src/qtviewer qtviewer)
 endif()
 
+if(BUILD_IFCMODEL_UI)
+    add_subdirectory(../src/ifcmodel-ui ifcmodel-ui)
+endif()
+
 if(BUILD_IFCGEOM)
     # install(FILES ${IFCGEOM_H_FILES}
     #     DESTINATION ${INCLUDEDIR}/ifcgeom
@@ -686,17 +699,20 @@ if(BUILD_BONSAIVIEWER)
         enable_testing()
     endif()
 
+    # Wgpu subprojects added first because IfcViewer's SceneLoader now
+    # links against IfcViewerWgpu; the target must exist when IfcViewer's
+    # CMakeLists runs.
+    if(BUILD_BONSAIVIEWER_WGPU)
+        add_subdirectory(../src/ifcviewer-wgpu ifcviewer-wgpu)
+        add_subdirectory(../src/ifcviewer-wgpu-minimal ifcviewer-wgpu-minimal)
+    endif()
     add_subdirectory(../src/ifcviewer ifcviewer)
-    add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
     add_subdirectory(../src/bonsaiviewer bonsaiviewer)
 endif()
 
-# The wgpu backend is gated independently of BUILD_BONSAIVIEWER: it shares
-# Qt but does not depend on the GL viewer's static lib, so a developer can
-# build it on its own to iterate on the port without compiling IfcGeom etc.
-# However most stages of the port will reference Federation/SceneLoader
-# headers from src/ifcviewer, so in practice it ships alongside.
-if(BUILD_BONSAIVIEWER_WGPU)
+# Standalone wgpu build (no GL viewer / no bonsai) still supported for
+# fast iteration on the port.
+if(BUILD_BONSAIVIEWER_WGPU AND NOT BUILD_BONSAIVIEWER)
     add_subdirectory(../src/ifcviewer-wgpu ifcviewer-wgpu)
     add_subdirectory(../src/ifcviewer-wgpu-minimal ifcviewer-wgpu-minimal)
     add_subdirectory(../src/wgpu-mem-probe wgpu-mem-probe)

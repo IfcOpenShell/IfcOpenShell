@@ -24,7 +24,7 @@
 #include <QString>
 
 class QWidget;
-class ViewportWindow;
+class WgpuViewportWindow;
 namespace bonsaiviewer { class SessionState; }
 
 namespace bonsaiviewer::modules::project::commands {
@@ -32,21 +32,21 @@ namespace bonsaiviewer::modules::project::commands {
 // User-facing commands. Each owns its own dialogs and confirmations; each
 // emits exactly one notify() at the end (projectReset / projectOpened /
 // projectSaved) so views refresh once per command.
-bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp);
-bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+bool newProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp);
+bool openProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp);
 // Open a specific .ifcfed by path, bypassing the file dialog. Used by the
 // "Open Recent" menu. Same dirty-check / load / cloud-resolve flow as
 // openProject; returns false if the load failed or was cancelled.
-bool openProjectPath(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path);
+bool openProjectPath(SessionState& s, QWidget& host, WgpuViewportWindow& vp, const QString& path);
 // Pick a connector, then call pull_ifcfed_interactive and open the resulting
 // .ifcfed as a fresh project. Non-local models in the loaded federation are
 // resolved asynchronously via pull_models.
-bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+bool openCloudProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp);
 // pull_ifcfed using the current project's .ifcfed.manifest. Re-downloads
 // the .ifcfed from the same cloud target it came from (typically without
 // user interaction), then opens it like a fresh project — discarding any
 // local edits after the usual dirty-check prompt.
-bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp);
+bool syncCloudProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp);
 bool saveProject(SessionState& s, QWidget& host);
 bool saveProjectAs(SessionState& s, QWidget& host);
 // Push the current federation to the cloud target named in its manifest

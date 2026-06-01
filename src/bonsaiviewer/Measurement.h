@@ -22,7 +22,7 @@
 #define IFCINTERFACE_MEASUREMENT_H
 
 #include <cstddef>
-#include "ViewportWindow.h"
+#include "WgpuViewportWindow.h"
 #include <QString>
 #include <array>
 #include <cstdint>
@@ -36,7 +36,7 @@
 // taken as the absolute value of the signed-tetrahedra sum, so winding
 // convention does not matter.  Returns 0.0 for empty input or when nothing
 // resolves.  Recomputes from scratch on every call — no cache.
-double volumeOfObjects(ViewportWindow& vp,
+double volumeOfObjects(WgpuViewportWindow& vp,
                        const std::vector<uint32_t>& object_ids);
 
 // Per-object volumes (m³).  Same algorithm as volumeOfObjects but
@@ -45,11 +45,11 @@ double volumeOfObjects(ViewportWindow& vp,
 // Used by MainWindow's volume readout to drive both the total HUD and
 // the per-object overlay labels.
 std::vector<std::pair<uint32_t, double>>
-volumesPerObject(ViewportWindow& vp,
+volumesPerObject(WgpuViewportWindow& vp,
                  const std::vector<uint32_t>& object_ids);
 
 // Click-to-accumulate area measurement.  Each pick resolves the screen
-// click to a (instance, triangle) using ViewportWindow's primitives,
+// click to a (instance, triangle) using WgpuViewportWindow's primitives,
 // expands it into the connected coplanar patch (BFS over shared edges,
 // dot(normal, seed_normal) > 0.9999), then either adds or removes that
 // patch from the running set depending on whether the seed triangle was
@@ -58,7 +58,7 @@ volumesPerObject(ViewportWindow& vp,
 // separate patches and their areas are summed.
 //
 // On every pick the world-space triangles of the running set are pushed
-// to ViewportWindow::setHighlightTriangles for in-viewport shading.
+// to WgpuViewportWindow::setHighlightTriangles for in-viewport shading.
 // State is cleared on construction, on clear(), and is expected to be
 // reset by the host (e.g. when the viewport's area tool toggles off).
 class AreaMeasurement {
@@ -68,11 +68,11 @@ public:
     // Main entry point: handle one click in area-tool mode.  alt = true
     // suppresses BFS expansion.  Logs the per-click delta and running total
     // via qInfo.  Misses are silent.
-    void onPick(ViewportWindow& vp, int x, int y, bool alt);
+    void onPick(WgpuViewportWindow& vp, int x, int y, bool alt);
 
     // Wipe all accumulated triangles, per-mesh adjacency caches, and the
     // viewport overlay.
-    void clear(ViewportWindow& vp);
+    void clear(WgpuViewportWindow& vp);
 
     double totalArea() const { return total_area_m2_; }
     size_t triangleCount() const { return selected_.size(); }
@@ -89,7 +89,7 @@ private:
         // edge_key (min<<32 | max) → list of triangle indices touching it.
         std::unordered_map<uint64_t, std::vector<uint32_t>> edges;
     };
-    MeshCache* meshCache(ViewportWindow& vp, uint32_t model_id, uint32_t mesh_id);
+    MeshCache* meshCache(WgpuViewportWindow& vp, uint32_t model_id, uint32_t mesh_id);
 
     // Per-selected-triangle record.  The composed transform is captured at
     // pick time so the overlay rebuild doesn't have to re-query the
@@ -109,7 +109,7 @@ private:
         return (uint64_t(object_id) << 32) | uint64_t(tri);
     }
 
-    void rebuildHighlight(ViewportWindow& vp);
+    void rebuildHighlight(WgpuViewportWindow& vp);
 
     std::unordered_map<uint64_t, MeshCache>    mesh_cache_;
     std::unordered_map<uint64_t, SelectedTri>  selected_;
@@ -138,15 +138,15 @@ class LengthMeasurement {
 public:
     LengthMeasurement();
 
-    void onPick(ViewportWindow& vp, int x, int y, bool alt);
-    void removeLastPoint(ViewportWindow& vp);
-    void clear(ViewportWindow& vp);
+    void onPick(WgpuViewportWindow& vp, int x, int y, bool alt);
+    void removeLastPoint(WgpuViewportWindow& vp);
+    void clear(WgpuViewportWindow& vp);
 
     size_t pointCount() const { return points_.size(); }
 
 private:
-    void rebuildOverlay(ViewportWindow& vp);
-    void rebuildLaserOverlay(ViewportWindow& vp);
+    void rebuildOverlay(WgpuViewportWindow& vp);
+    void rebuildLaserOverlay(WgpuViewportWindow& vp);
     QString formatReadout() const;
 
     std::vector<std::array<float, 3>> points_;
@@ -156,7 +156,7 @@ private:
     // updated afterwards.  Used by the 1-pt laser BFS to re-locate the
     // mesh-local position of points_[0] without re-picking.  Stays valid
     // while points_[0] does (pop_back never touches the first element).
-    ViewportWindow::MeshLocalPick first_pick_{};
+    WgpuViewportWindow::MeshLocalPick first_pick_{};
 };
 
 #endif // IFCINTERFACE_MEASUREMENT_H

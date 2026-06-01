@@ -28,7 +28,7 @@
 
 class Federation;
 class SceneLoader;
-class ViewportWindow;
+class WgpuViewportWindow;
 
 namespace bonsaiviewer {
 
@@ -44,7 +44,7 @@ public:
 
     // Owned by SessionState once it can be tied to a viewport. Wires
     // loader → element registry signals internally. Call exactly once.
-    void createLoader(ViewportWindow* viewport);
+    void createLoader(WgpuViewportWindow* viewport);
 
     Federation* federation() const { return federation_; }
     SceneLoader* loader() const { return loader_; }

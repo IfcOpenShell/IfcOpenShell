@@ -23,9 +23,7 @@ set(QT_VERSION 6 CACHE STRING "Qt version")
 # IfcViewerLib always needs OpenGL in addition to Core/Gui/Widgets. We don't
 # use the CACHE'd QT_COMPONENTS here because it may have been set by another
 # target (e.g. qtviewer) without the OpenGL component.
-find_package(Qt${QT_VERSION} COMPONENTS Core Gui Widgets OpenGL REQUIRED PATHS ${QT_DIR})
-
-find_package(OpenGL REQUIRED)
+find_package(Qt${QT_VERSION} COMPONENTS Core Gui REQUIRED PATHS ${QT_DIR})
 
 file(GLOB IFCVIEWER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB IFCVIEWER_H_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
@@ -59,10 +57,10 @@ target_link_libraries(IfcViewer PUBLIC
     ${CGAL_LIBRARIES}
     Qt${QT_VERSION}::Core
     Qt${QT_VERSION}::Gui
-    Qt${QT_VERSION}::Widgets
-    Qt${QT_VERSION}::OpenGL
-    OpenGL::GL
     ${MESH_OPTIMIZER_LIB}
+    # SceneLoader drives WgpuViewportWindow; the wgpu lib also provides
+    # the include path for WgpuViewportWindow.h that SceneLoader.h pulls in.
+    IfcViewerWgpu
 )
 
 if(UNIX AND NOT APPLE)

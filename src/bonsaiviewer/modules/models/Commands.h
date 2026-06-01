@@ -28,7 +28,7 @@
 #include <cstdint>
 
 class QWidget;
-class ViewportWindow;
+class WgpuViewportWindow;
 namespace bonsaiviewer { class SessionState; }
 
 namespace bonsaiviewer::modules::models::commands {
@@ -41,7 +41,7 @@ void renameGroup(SessionState& s, QWidget& host, const QString& group_id);
 void moveGroup(SessionState& s, const QString& id, const QString& parent_group_id);
 void moveModels(SessionState& s, const QStringList& ids, const QString& parent_group_id);
 void removeGroup(SessionState& s, QWidget& host, const QString& group_id);
-void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QString& fed_id);
+void removeModel(SessionState& s, WgpuViewportWindow& vp, QWidget& host, const QString& fed_id);
 void addModel(SessionState& s, QWidget& host);
 // Connector picker → pull_models_interactive → addCloudModel + load.
 // Reachable from AddModelDialog's CloudModel button; the underlying call

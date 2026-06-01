@@ -30,7 +30,7 @@
 #include "../models/Commands.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
-#include "../../../ifcviewer/ViewportWindow.h"
+#include "../../../ifcviewer-wgpu/WgpuViewportWindow.h"
 
 #include <QDebug>
 #include <QDir>
@@ -53,7 +53,7 @@ namespace {
 // Pure helper — clears the loaded scene without emitting any signals. The
 // caller (newProject / openProject) emits projectReset / projectOpened once
 // the whole flow finishes.
-void clearScene(SessionState& s, ViewportWindow& vp) {
+void clearScene(SessionState& s, WgpuViewportWindow& vp) {
     vp.setSelectedObjectId(0);
     s.setSelectedObjectId(0);
     for (uint32_t mid : s.modelIds()) {
@@ -88,7 +88,7 @@ bool confirmDiscardIfDirty(SessionState& s, QWidget& host) {
 //   - if no scene entry exists yet (initial open), queue a load.
 // Per spec, connector errors are not surfaced to the user; the connector
 // has already shown its own UI.
-void resolveCloudModels(SessionState& s, ViewportWindow& vp) {
+void resolveCloudModels(SessionState& s, WgpuViewportWindow& vp) {
     auto* fed = s.federation();
     QHash<QString, QStringList> connector_to_fed_ids;
     for (const auto& m : fed->models()) {
@@ -99,7 +99,7 @@ void resolveCloudModels(SessionState& s, ViewportWindow& vp) {
 
     auto* registry = s.connectorRegistry();
     QPointer<SessionState> sguard(&s);
-    QPointer<ViewportWindow> vguard(&vp);
+    QPointer<WgpuViewportWindow> vguard(&vp);
 
     for (auto it = connector_to_fed_ids.constBegin();
               it != connector_to_fed_ids.constEnd(); ++it) {
@@ -203,7 +203,7 @@ bool isIfcfedUnchanged(const QString& current_path, const QString& candidate_pat
     return a.readAll() == b.readAll();
 }
 
-bool openProjectAt(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path) {
+bool openProjectAt(SessionState& s, QWidget& host, WgpuViewportWindow& vp, const QString& path) {
     SceneLoader* loader = s.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(
@@ -268,7 +268,7 @@ bool saveProjectTo(SessionState& s, QWidget& host, const QString& path) {
 
 } // namespace
 
-bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
+bool newProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp) {
     SceneLoader* loader = s.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(
@@ -285,7 +285,7 @@ bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     return true;
 }
 
-bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
+bool openProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp) {
     QFileDialog file_dialog(&host, "Open Project");
     file_dialog.setFileMode(QFileDialog::ExistingFile);
     file_dialog.setNameFilter("IFC Federation (*.ifcfed);;All Files (*)");
@@ -297,12 +297,12 @@ bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     return openProjectAt(s, host, vp, path);
 }
 
-bool openProjectPath(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path) {
+bool openProjectPath(SessionState& s, QWidget& host, WgpuViewportWindow& vp, const QString& path) {
     if (path.isEmpty()) return false;
     return openProjectAt(s, host, vp, path);
 }
 
-bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
+bool openCloudProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp) {
     SceneLoader* loader = s.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(
@@ -341,7 +341,7 @@ bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
 
     QPointer<SessionState> sguard(&s);
     QPointer<QWidget> hguard(&host);
-    QPointer<ViewportWindow> vguard(&vp);
+    QPointer<WgpuViewportWindow> vguard(&vp);
 
     proc->call("pull_ifcfed_interactive", QJsonValue(),
         [sguard, hguard, vguard, connector_id](const QJsonValue& result) {
@@ -371,7 +371,7 @@ bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     return true;
 }
 
-bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
+bool syncCloudProject(SessionState& s, QWidget& host, WgpuViewportWindow& vp) {
     auto* fed = s.federation();
 
     // Per spec, sync has two independent phases — refreshing the .ifcfed
@@ -429,7 +429,7 @@ bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
 
     QPointer<SessionState> sguard(&s);
     QPointer<QWidget> hguard(&host);
-    QPointer<ViewportWindow> vguard(&vp);
+    QPointer<WgpuViewportWindow> vguard(&vp);
     const QString current_path = fed->filePath();
 
     proc->call("pull_ifcfed", fed->manifest(),

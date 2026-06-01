@@ -31,7 +31,7 @@
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer/SidecarBuilder.h"
-#include "../../../ifcviewer/ViewportWindow.h"
+#include "../../../ifcviewer-wgpu/WgpuViewportWindow.h"
 #include "../../../ifcgeom/Serializer.h"
 #include "../../../serializers/document_serializer_plugin.h"
 
@@ -148,7 +148,7 @@ void removeGroup(SessionState& s, QWidget& host, const QString& group_id) {
     s.setStatusMessage("Models", "Group removed");
 }
 
-void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QString& fed_id) {
+void removeModel(SessionState& s, WgpuViewportWindow& vp, QWidget& host, const QString& fed_id) {
     const Federation::Model* model = s.federation()->findById(fed_id);
     const QString label = model ? model->display_name : fed_id;
     const auto choice = QMessageBox::question(

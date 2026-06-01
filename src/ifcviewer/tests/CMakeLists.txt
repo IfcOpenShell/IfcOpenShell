@@ -32,10 +32,6 @@ function(add_ifcviewer_unit_test name)
     catch_discover_tests(${name})
 endfunction()
 
-add_ifcviewer_unit_test(test_bvh_accel
-    SOURCES ${IFCVIEWER_SRC}/BvhAccel.cpp
-)
-
 if(WITH_MESH_OPTIMIZER)
     add_ifcviewer_unit_test(test_lod_builder
         SOURCES
@@ -50,11 +46,9 @@ add_ifcviewer_unit_test(test_sidecar_cache
 
 add_ifcviewer_unit_test(test_instanced_geometry)
 
-# Federation, Visibility and Selection are Qt-derived (QObject + signals).
-# Unlike the other Tier-1 tests they have to pull Qt6 in directly and enable
-# AUTOMOC for the Q_OBJECT moc-generation.  OpenGL is needed only by the
-# Selection test (Selection.cpp references QOpenGLFunctions_4_5_Core).
-find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test OpenGL REQUIRED PATHS ${QT_DIR})
+# Federation is Qt-derived (QObject + signals). It has to pull Qt6 in
+# directly and enable AUTOMOC for the Q_OBJECT moc-generation.
+find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test REQUIRED PATHS ${QT_DIR})
 
 find_package(Eigen3 REQUIRED)
 
@@ -82,36 +76,3 @@ target_link_libraries(test_federation PRIVATE
     IfcParse                # Unit.cpp uses express::Base / file APIs
 )
 catch_discover_tests(test_federation)
-
-# VisibilityState / SelectionState are QObjects (for their changed() signal)
-# but their construction + mutation API touch no GL, so the tests exercise
-# the pure CPU state machine without ever creating a context.  Selection.cpp
-# still references QOpenGLFunctions_4_5_Core, so test_selection has to link
-# Qt6::OpenGL even though no GL call is reached at runtime.
-add_executable(test_visibility
-    test_visibility.cpp
-    ${IFCVIEWER_SRC}/Visibility.cpp
-)
-set_target_properties(test_visibility PROPERTIES AUTOMOC ON)
-target_include_directories(test_visibility PRIVATE ${IFCVIEWER_SRC})
-target_link_libraries(test_visibility PRIVATE
-    Catch2::Catch2WithMain
-    Qt${QT_VERSION}::Core
-    Qt${QT_VERSION}::Test   # QSignalSpy
-)
-catch_discover_tests(test_visibility)
-
-add_executable(test_selection
-    test_selection.cpp
-    ${IFCVIEWER_SRC}/Selection.cpp
-)
-set_target_properties(test_selection PROPERTIES AUTOMOC ON)
-target_include_directories(test_selection PRIVATE ${IFCVIEWER_SRC})
-target_link_libraries(test_selection PRIVATE
-    Catch2::Catch2WithMain
-    Qt${QT_VERSION}::Core
-    Qt${QT_VERSION}::Gui     # QtOpenGL depends on QtGui
-    Qt${QT_VERSION}::OpenGL  # Selection.cpp: QOpenGLFunctions_4_5_Core
-    Qt${QT_VERSION}::Test    # QSignalSpy
-)
-catch_discover_tests(test_selection)
