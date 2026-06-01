@@ -171,6 +171,18 @@ jobs:
               rm -rf "$package_dir"
           done
 
+          # .app bundles (e.g. BonsaiViewer.app) live at the install-prefix
+          # root because their install rule uses `BUNDLE DESTINATION "."` —
+          # that's the layout Qt's macdeployqt expects. macdeployqt has
+          # already embedded the Qt frameworks inside each bundle during
+          # install/strip, so we zip the .app as-is.
+          find "$install_root" -maxdepth 1 -type d -name "*.app" | while read app_path; do
+              app=`basename "$app_path" .app`
+              pushd "$install_root" > /dev/null
+              zip -qq -r "$HOME/output/${app}-${VERSION}-${GITHUB_SHA:0:7}-macos${{ matrix.oldarch }}64.zip" "$(basename "$app_path")"
+              popd > /dev/null
+          done
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
