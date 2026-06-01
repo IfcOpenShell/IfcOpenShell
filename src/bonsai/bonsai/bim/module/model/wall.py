@@ -2651,7 +2651,17 @@ def _apply_fillet_corner_geometry(
     if body_context is None:
         return None
 
-    x_dir = chord.normalized()
+    # Project the chord to the XY plane for the local-frame X axis. The
+    # corner wall's Z axis is hardcoded to world Z below, so an XY-aligned
+    # X axis is required for an orthonormal rotation matrix. Without the
+    # projection, any chord Z component (walls placed at different
+    # elevations) leaves x_dir non-orthogonal to z_dir and Blender's
+    # Euler decomposition surfaces the skew as spurious sub-degree X/Y
+    # rotations on the corner.
+    chord_xy = Vector((chord.x, chord.y, 0.0))
+    if chord_xy.length < 1e-6:
+        return None
+    x_dir = chord_xy.normalized()
     z_dir = Vector((0.0, 0.0, 1.0))
     y_dir = z_dir.cross(x_dir).normalized()
     corner_obj.matrix_world = Matrix(
