@@ -100,10 +100,11 @@ jobs:
         # Skip IfcViewerWgpuMinimal: its createSurface has no Metal path
         # yet (task #32). Static lib compiles cleanly because the X11 /
         # Wayland surface blocks are wrapped in #if defined(Q_OS_LINUX).
+        # No `-- -j N`: Ninja parallelises by default (it rejects bare
+        # `-j` unlike make).
         run: |
           cmake --build build \
-            --target IfcViewerWgpu test_wgpu_selection test_wgpu_visibility \
-            -- -j
+            --target IfcViewerWgpu test_wgpu_selection test_wgpu_visibility
 
       - name: Run state tests
         working-directory: build
