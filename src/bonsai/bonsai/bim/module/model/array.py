@@ -28,7 +28,7 @@ from mathutils import Matrix, Vector
 
 import bonsai.bim.module.drawing.gizmos as gizmo
 import bonsai.tool as tool
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
 from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
 
 
@@ -1132,21 +1132,52 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     # collapses to a single per-feature pen.
     hide_pen_button = True
 
-    # Local-X positions of the editing-row extras (count label + adjuster icons).
-    # Layout left-to-right at the same Y/Z as validate (ICON_VALIDATE_X = 0.0) and
-    # cancel (ICON_VALIDATE_X + ICON_CANCEL_X = 0.5):
-    #   validate | cancel | xN | - | + | method-toggle | trash.
-    # Spacing mirrors stair's editing-row constants so the icons match in visual rhythm.
-    # Trash sits past the method toggle with a slightly wider gap so the destructive
-    # action stays visually separated from the routine edit controls.
+    # Editing row layout: validate | cancel | xN | - | + | method | trash.
+    # The count-label (xN) gizmo sits at the cycle slot (X = 0.87), positioned
+    # manually in ``_refresh_element_specific`` because it's a label that
+    # replaces the cycle icon rather than a row slot. The +/-/method/trash
+    # icons live in ``feature_slots`` below — the base class assigns X
+    # positions from tuple order; the trash carries ``extra_gap_before`` to
+    # visually separate the destructive action from the routine controls.
     ICON_NUMBER_X = 0.87
-    ICON_MINUS_X = 1.24
-    ICON_PLUS_X = 1.61
-    ICON_METHOD_X = 1.98
-    ICON_DELETE_X = 2.55
     # Render scale for the +/- and method-toggle icons — ~70% of the standard
     # 0.5 used for validate/cancel. Makes the helpers look secondary.
     ICON_HELPER_SCALE = 0.35
+
+    feature_slots: ClassVar[tuple[IconSlot, ...]] = (
+        IconSlot(
+            name="count_minus",
+            gizmo_idname="VIEW3D_GT_minus",
+            operator="bim.adjust_array_count",
+            scale=ICON_HELPER_SCALE,
+            color=(1.0, 0.2, 0.2),
+            operator_props=(("increment", -1),),
+        ),
+        IconSlot(
+            name="count_plus",
+            gizmo_idname="VIEW3D_GT_plus",
+            operator="bim.adjust_array_count",
+            scale=ICON_HELPER_SCALE,
+            color=(0.1, 0.8, 0.1),
+            operator_props=(("increment", 1),),
+        ),
+        IconSlot(
+            name="method",
+            gizmo_idname="VIEW3D_GT_cycle",
+            operator="bim.toggle_array_method",
+            scale=ICON_HELPER_SCALE,
+        ),
+        IconSlot(
+            name="delete",
+            gizmo_idname="VIEW3D_GT_trash",
+            operator="bim.remove_array_layer_from_edit",
+            scale=ICON_HELPER_SCALE,
+            color=(1.0, 0.2, 0.2),
+            # Extra gap so the destructive action stays visually separated
+            # from the routine edit controls — matches the prior 0.57 gap.
+            extra_gap_before=0.20,
+        ),
+    )
 
     # Per-layer ARRAY icons — one shown in idle state per existing array
     # layer, surfaced to the right of the pen. Pre-allocated at setup time
@@ -1249,36 +1280,23 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return tool.Parametric.is_array(element)
 
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
-        """Create the +/- count adjusters, the method toggle, and the
-        per-layer ARRAY entry icons (one per existing array layer)."""
-        self.count_plus_gizmo = self.create_icon_gizmo(
-            "VIEW3D_GT_plus", self.COLOR_GREEN, "bim.adjust_array_count", increment=1
-        )
-        self.count_minus_gizmo = self.create_icon_gizmo(
-            "VIEW3D_GT_minus", self.COLOR_RED, "bim.adjust_array_count", increment=-1
-        )
-        # Method toggle uses the cycle icon (circular arrow) — same affordance
-        # the stair / roof type-cycle gizmos use, signalling "click to swap".
+        """Create the world-space count label and per-layer ARRAY entry icons.
+        The +/- count adjusters, method toggle, and delete button live in
+        ``feature_slots`` and are auto-created by the base class."""
         default_color, highlight_color = self.get_decoration_colors()
-        self.method_gizmo = self.create_icon_gizmo("VIEW3D_GT_cycle", default_color, "bim.toggle_array_method")
         # World-space count display for the edit row. Click opens a numeric
         # input dialog (``bim.input_array_count``) so the user can type a
         # value directly instead of clicking +/- repeatedly. Renders the same
         # ``xN`` glyph as the idle-state per-layer icons for visual consistency.
+        # Sits at the cycle slot — it's a label that replaces the cycle icon,
+        # not a row slot, so it's positioned manually below rather than via
+        # ``feature_slots``.
         self.count_label_gizmo = self.gizmos.new("BIM_GT_array_layer_indicator")
         self.count_label_gizmo.use_draw_scale = False
         self.count_label_gizmo.color = default_color
         self.count_label_gizmo.color_highlight = highlight_color
         self.count_label_gizmo.alpha = 0.8
         self.count_label_gizmo.target_set_operator("bim.input_array_count")
-        # Destructive delete button at the far right of the edit row — red
-        # like the minus gizmo so the user reads "destructive" before the
-        # tooltip even appears. The dispatcher cancels the in-progress edit
-        # first (clearing edit state + unhiding children) then removes the
-        # layer in one click.
-        self.delete_gizmo = self.create_icon_gizmo(
-            "VIEW3D_GT_trash", self.COLOR_RED, "bim.remove_array_layer_from_edit"
-        )
 
         # Per-layer ARRAY icons — pre-allocated up to ``MAX_LAYER_GIZMOS`` and
         # shown/hidden in ``_refresh_element_specific`` based on the actual
@@ -1354,25 +1372,21 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return match is not None and match.name != "array"
 
     def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props) -> None:
-        """Position the editing-row extras and the per-layer ARRAY icons.
+        """Position the count label and per-layer ARRAY icons.
 
         Idle (``not props.is_editing``): show one ARRAY icon per existing
-        array layer to the right of the pen. The +/-, method, and editing-row
-        icons stay hidden.
+        array layer to the right of the pen. The +/-, method, and delete
+        slot icons stay hidden (handled by the base).
 
-        Active edit: show the editing row (validate, cancel, − / +, method);
-        hide the per-layer icons so they don't clutter the edit UX."""
+        Active edit: show the count label; hide the per-layer icons. The
+        +/-, method, and delete icons are positioned by the base class
+        via the slot layout — no manual positioning needed here."""
         icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
         icon_y = self.get_icon_y_offset(context, mw)
         billboard_rot = self._frame_billboard_rot
 
         if not props.is_editing:
-            # Idle: show one ARRAY icon per existing layer. Per-edit helpers off.
-            self.count_plus_gizmo.hide = True
-            self.count_minus_gizmo.hide = True
-            self.method_gizmo.hide = True
             self.count_label_gizmo.hide = True
-            self.delete_gizmo.hide = True
             layers = self._read_array_layers(context)
             layer_count = min(len(layers), self.MAX_LAYER_GIZMOS)
             # Feature-aware start X — pushes the layer icons past any
@@ -1399,34 +1413,10 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
                 gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot, scale=0.5)
             return
 
-        # Active edit: hide the layer icons, show the editing row. The
-        # layer-hover bbox lives inside each layer gizmo's draw method, so
-        # hiding the gizmos is enough to stop the hover highlight too.
+        # Active edit: hide the layer icons, show the count label. The
+        # +/-, method, and delete slot icons are positioned by the base.
         for gz in self.layer_gizmos:
             gz.hide = True
-        # Same Y/Z as the validate/cancel icons set by the base
-        # ``update_editing_gizmos`` — they form one horizontal row. Helper
-        # icons (+/-, method) use ``ICON_HELPER_SCALE`` so they look secondary.
-        for gizmo_name, local_x in (
-            ("count_minus_gizmo", self.ICON_VALIDATE_X + self.ICON_MINUS_X),
-            ("count_plus_gizmo", self.ICON_VALIDATE_X + self.ICON_PLUS_X),
-            ("method_gizmo", self.ICON_VALIDATE_X + self.ICON_METHOD_X),
-            ("delete_gizmo", self.ICON_VALIDATE_X + self.ICON_DELETE_X),
-        ):
-            gizmo_obj = getattr(self, gizmo_name)
-            if self.is_gizmo_hidden_by_modal(gizmo_obj):
-                gizmo_obj.hide = True
-                continue
-            gizmo_obj.hide = False
-            self.set_icon_gizmo_position(
-                gizmo_name,
-                mw=mw,
-                x=local_x,
-                y=icon_y,
-                z=icon_z,
-                billboard_rot=billboard_rot,
-                scale=self.ICON_HELPER_SCALE,
-            )
         # Clickable world-space ``xN`` between cancel and minus. Mirrors the
         # draft ``props.count`` so the displayed value tracks +/- drags live.
         if self.is_gizmo_hidden_by_modal(self.count_label_gizmo):
@@ -1492,26 +1482,19 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return cls._FEATURE_IDLE_MAX_X.get(match.name, 0.0)
 
 
-class GizmoArrayChild(bpy.types.GizmoGroup):
-    """Three helper icons surfaced on each array child, mirroring the panel
-    actions for that array — Regenerate, Select Parent, Select All Array Objects.
+class GizmoArrayChild(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
+    """Two navigation icons on each array child:
 
-    Standalone gizmo group (not a ``BaseParametricGizmoGroup`` subclass) because
-    the base's ``poll`` early-returns on array children (the mutual-exclusion
-    safeguard for the per-feature gizmo groups) and none of the editing-lifecycle
-    scaffolding applies — there's nothing to edit on a managed replica.
-
-    Two navigation icons:
     - ``VIEW3D_GT_array_parent`` (hierarchy tree) → modifier-aware select via
       ``bim.array_parent_gizmo_click``: click selects the parent, Shift+click
       selects the whole family, Ctrl+click selects only the children.
     - ``VIEW3D_GT_array_all`` (2×2 grid) → jump to the parent and enter
-      array edit (mirrors the per-layer ARRAY icon on the parent, so the
-      child has a one-click path into the same edit flow).
+      array edit.
 
-    Regenerate isn't surfaced here — it's a maintenance action the panel
-    still exposes, and adding it as a child gizmo just clutters the viewport
-    without giving anything the panel doesn't."""
+    Standalone gizmo group (not a ``BaseParametricGizmoGroup`` subclass)
+    because the base's ``poll`` early-returns on array children — there's
+    nothing to edit on a managed replica. Regenerate isn't surfaced as a
+    child gizmo; the panel still exposes it."""
 
     bl_idname = "OBJECT_GGT_bim_array_child"
     bl_label = "Array Child Helpers"
@@ -1525,7 +1508,6 @@ class GizmoArrayChild(bpy.types.GizmoGroup):
     ICON_ALL_X = 0.5
     ICON_Z_OFFSET = 0.5
     ICON_SCALE = 0.5
-    ICON_ALPHA = 0.8
 
     @classmethod
     def poll(cls, context):
@@ -1542,32 +1524,15 @@ class GizmoArrayChild(bpy.types.GizmoGroup):
         return tool.Blender.Modifier.is_array_child(element)
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorator_color_unselected[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
-        self.parent_gizmo = self._make_icon(
+        default_color, highlight_color = self.get_unselected_decoration_colors()
+        self.parent_gizmo = self.setup_icon_gizmo(
             "VIEW3D_GT_array_parent", default_color, highlight_color, "bim.array_parent_gizmo_click"
         )
-        self.all_gizmo = self._make_icon(
+        self.all_gizmo = self.setup_icon_gizmo(
             "VIEW3D_GT_array_all", default_color, highlight_color, "bim.edit_array_from_child"
         )
 
-    def _make_icon(
-        self,
-        gizmo_type: str,
-        color: tuple[float, float, float],
-        highlight_color: tuple[float, float, float],
-        operator: str,
-    ) -> bpy.types.Gizmo:
-        gz = self.gizmos.new(gizmo_type)
-        gz.use_draw_scale = False
-        gz.color = color
-        gz.color_highlight = highlight_color
-        gz.alpha = self.ICON_ALPHA
-        gz.target_set_operator(operator)
-        return gz
-
-    def draw_prepare(self, context: bpy.types.Context) -> None:
+    def position_gizmos(self, context: bpy.types.Context) -> None:
         obj = context.active_object
         if obj is None or not obj.bound_box:
             return

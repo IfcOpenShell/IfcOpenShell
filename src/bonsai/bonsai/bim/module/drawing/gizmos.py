@@ -4924,10 +4924,114 @@ class BillboardingGizmoGroupMixin:
         """Convenience wrapper over `setup_icon_gizmo` for subclasses."""
         return setup_icon_gizmo(self, gizmo_type, color, highlight_color, operator, alpha)
 
+    def get_decoration_colors(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Standard (default, highlight) color pair for active-state gizmos.
+        Pulls from the addon preferences — same source consumed by every
+        Bonsai decorator. Hover-class gizmos that should not pull focus
+        should use ``get_unselected_decoration_colors`` instead."""
+        prefs = tool.Blender.get_addon_preferences()
+        return prefs.decorations_colour[:3], prefs.decorator_color_selected[:3]
+
+    def get_unselected_decoration_colors(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Lower-priority (unselected default, highlight) pair for gizmos
+        that surface on already-selected geometry and shouldn't compete
+        visually with the selection outline (e.g. array-child navigation)."""
+        prefs = tool.Blender.get_addon_preferences()
+        return prefs.decorator_color_unselected[:3], prefs.decorator_color_selected[:3]
+
     def position_gizmos(self, context: bpy.types.Context) -> None:
         raise NotImplementedError(
             f"{type(self).__name__} must implement position_gizmos(context) when using BillboardingGizmoGroupMixin."
         )
+
+
+@dataclass(frozen=True)
+class IconSlot:
+    """One slot in a parametric edit gizmo's icon toolbar row.
+
+    The slot's X coordinate is COMPUTED from its index in ``feature_slots`` —
+    never set explicitly. Adding an icon is a one-line append; the layout
+    manager resolves the X. Hidden slots STILL CONSUME their X position so
+    toggling a visibility preference doesn't shift the row.
+
+    Fields:
+
+    - ``gizmo_idname`` — for single-icon slots, the full Blender gizmo
+      idname. For multi-variant slots, EITHER a string PREFIX that auto-
+      suffixes ``_<variant>`` per member (the common case — e.g.
+      ``"VIEW3D_GT_lock"`` + variants ``("open", "closed")`` becomes
+      ``VIEW3D_GT_lock_open`` / ``VIEW3D_GT_lock_closed``) OR a tuple of
+      explicit idnames matching the variant count when the variants
+      don't share a prefix. Attributes created on the gizmo group are
+      ``self.<name>_gizmo`` for single slots, ``self.<name>_<variant>_gizmo``
+      for each variant in multi-variant slots.
+    - ``variants`` — variant suffixes, e.g. ``("open", "closed")`` for a
+      lock pair, ``("exterior", "center", "interior")`` for a baseline
+      cycle. Empty tuple = single icon.
+    - ``color`` — RGB tuple. ``None`` falls back to the gizmo group's default
+      decoration color. Use the group's ``COLOR_RED`` / ``COLOR_GREEN`` /
+      ``COLOR_BLUE`` literals for state-coded icons.
+    - ``visibility_pref`` — attribute name read off ``get_gizmo_prefs()``.
+      Slot is hidden when that pref is falsy. ``None`` = always visible
+      during edit.
+    - ``extra_gap_before`` — extra spacing past the default uniform gap, in
+      meters. Use sparingly — e.g. to visually separate a destructive
+      action (trash) from the routine edit controls.
+    - ``operator_props`` — tuple of (key, value) pairs forwarded to
+      ``target_set_operator``'s return value (e.g. ``increment=1`` for a
+      +/- adjuster, ``property_name="..."`` for a generic toggle)."""
+
+    name: str
+    gizmo_idname: str | tuple[str, ...]
+    operator: str
+    # Matches DEFAULT_BILLBOARD_SCALE — the scale validate/cancel render at,
+    # so slots that don't override land at the same visual size by default.
+    # Helper icons (+/- count adjusters, lock pairs, delete) override with
+    # smaller values (0.20 - 0.35) to signal secondary affordance.
+    scale: float = DEFAULT_BILLBOARD_SCALE
+    color: tuple[float, float, float] | None = None
+    variants: tuple[str, ...] = ()
+    visibility_pref: str | None = None
+    extra_gap_before: float = 0.0
+    operator_props: tuple[tuple[str, Any], ...] = ()
+
+    def __post_init__(self) -> None:
+        # Validate shape at class-definition time so a typo doesn't surface
+        # as a runtime error in the gizmo group's setup() three layers deep.
+        if self.variants:
+            if isinstance(self.gizmo_idname, str):
+                pass  # prefix form — idname auto-suffixed per variant
+            elif isinstance(self.gizmo_idname, tuple) and len(self.gizmo_idname) == len(self.variants):
+                pass  # explicit-tuple form
+            else:
+                raise TypeError(
+                    f"IconSlot({self.name!r}): variants={self.variants} requires gizmo_idname "
+                    f"to be either a string prefix (auto-suffixed as <prefix>_<variant>) or a "
+                    f"tuple of {len(self.variants)} explicit idnames, got {self.gizmo_idname!r}"
+                )
+        elif not isinstance(self.gizmo_idname, str):
+            raise TypeError(
+                f"IconSlot({self.name!r}): single-icon slot requires gizmo_idname str, "
+                f"got {self.gizmo_idname!r} (set variants=(...) if you want a multi-variant slot)"
+            )
+
+    def variant_idnames(self) -> tuple[str, ...]:
+        """Resolve per-variant gizmo idnames. For prefix form, suffix each
+        variant onto the prefix; for tuple form, return as is. Single-icon
+        slots return a one-element tuple containing the idname."""
+        if not self.variants:
+            assert isinstance(self.gizmo_idname, str)
+            return (self.gizmo_idname,)
+        if isinstance(self.gizmo_idname, str):
+            return tuple(f"{self.gizmo_idname}_{variant}" for variant in self.variants)
+        return self.gizmo_idname
+
+    def gizmo_attrs(self) -> tuple[str, ...]:
+        """Names of every ``self.*`` attribute this slot writes during setup.
+        Returns one for a single slot, N for an N-variant slot."""
+        if self.variants:
+            return tuple(f"{self.name}_{variant}_gizmo" for variant in self.variants)
+        return (f"{self.name}_gizmo",)
 
 
 class BaseParametricGizmoGroup:
@@ -5028,17 +5132,14 @@ class BaseParametricGizmoGroup:
     ICON_VALIDATE_X = 0.0  # X position of validate (checkmark) icon
     ICON_CANCEL_X = 0.5  # X offset from validate for cancel (X) icon
     ICON_CYCLE_X = 0.87  # X offset from validate for cycle (arrow) icon
-    # Rightmost local-X used by feature-specific icons (across both idle and
-    # edit states). Subclasses override when they add icons past the cycle
-    # slot at 0.87 — currently wall (rotate at 1.24) and stair (minus at
-    # 1.98). Drives both the ARRAY button position (this class) AND the
-    # array-layer-icons start position (``GizmoArrayEdition`` runtime lookup),
-    # so non-colliding features get a tight layout while wall / stair shift
-    # the array-related slots outward to avoid stomping on the rotate /
-    # tread-lock / +/- icons.
-    FEATURE_ICON_MAX_X: float = 0.87
-    # Gap between the last feature icon and the ARRAY button (or the first
-    # array layer icon in idle state).
+    # Subclasses append to declare feature icons in the edit-mode toolbar row.
+    # The layout manager assigns each slot an X position from its tuple
+    # index — adding a new icon is a one-line append, no hardcoded X
+    # constant, no "remember to bump the right edge" rule. The trailing
+    # ARRAY button is positioned past the last slot automatically.
+    feature_slots: ClassVar[tuple[IconSlot, ...]] = ()
+    # Gap between adjacent slots past the leading validate/cancel/cycle
+    # triplet, AND between the last slot and the ARRAY button.
     ICON_ARRAY_GAP: float = 0.37
     ICON_Z_OFFSET = 0.5  # Height above element for icons
     ICON_Y_OFFSET = GIZMO_OFFSET * 2  # Y offset to keep icons clear of geometry
@@ -5059,6 +5160,37 @@ class BaseParametricGizmoGroup:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         BaseParametricGizmoGroup.REGISTRY.append(cls)
+
+    @classmethod
+    def _slot_x_positions(cls) -> dict[str, float]:
+        """Map each ``feature_slot`` name to its X coordinate in the row.
+
+        Slots are laid out from the cycle position onward at uniform
+        ``ICON_ARRAY_GAP`` spacing, plus any per-slot ``extra_gap_before``.
+        When the cycle slot is unused (no ``cycle_type_operator`` /
+        ``pick_type_operator``), the first feature slot collapses into the
+        cycle position so the row stays tight — that's how wall's baseline
+        triplet ends up at X=0.87 without a gap before it. Tuple order is
+        the only thing that controls X; rearranging the tuple rearranges
+        the row."""
+        positions: dict[str, float] = {}
+        has_cycle = bool(cls.cycle_type_operator) or bool(cls.pick_type_operator)
+        next_x = (cls.ICON_CYCLE_X + cls.ICON_ARRAY_GAP) if has_cycle else cls.ICON_CYCLE_X
+        for slot in cls.feature_slots:
+            next_x += slot.extra_gap_before
+            positions[slot.name] = next_x
+            next_x += cls.ICON_ARRAY_GAP
+        return positions
+
+    @classmethod
+    def _feature_row_right_edge(cls) -> float:
+        """Right edge of the feature icon row, fed to the trailing ARRAY
+        button's X. Computed strictly from slot order + gaps; empty
+        ``feature_slots`` collapses to the cycle position."""
+        positions = cls._slot_x_positions()
+        if not positions:
+            return cls.ICON_CYCLE_X
+        return max(positions.values())
 
     @classmethod
     def pick_visible_anchor(cls, context: bpy.types.Context, world_base: Vector, world_top: Vector) -> Vector:
@@ -5762,6 +5894,17 @@ class BaseParametricGizmoGroup:
                 "VIEW3D_GT_menu", default_color, self.pick_type_operator, highlight_color
             )
 
+        # Feature-specific edit-row icons. Subclasses declare them via
+        # ``feature_slots``; multi-variant slots create one gizmo per
+        # variant at the same X (e.g. a lock pair, a baseline triplet) and
+        # the subclass picks which is visible per frame.
+        for slot in self.feature_slots:
+            slot_color = slot.color if slot.color is not None else default_color
+            kwargs = dict(slot.operator_props)
+            for attr, idname in zip(slot.gizmo_attrs(), slot.variant_idnames()):
+                gz = self.create_icon_gizmo(idname, slot_color, slot.operator, **kwargs)
+                setattr(self, attr, gz)
+
         # ARRAY button — visible during the feature edit lifecycle only (positioned by
         # ``update_editing_gizmos``). Click commits the current edit and adds a
         # Blender-vanilla-defaulted array (count=2, X-offset = bbox extent). The
@@ -6024,10 +6167,51 @@ class BaseParametricGizmoGroup:
                     billboard_rot=billboard_rot,
                     scale=0.30,
                 )
-            # ARRAY button sits past the last feature-specific icon. Each
-            # gizmo group declares its own ``FEATURE_ICON_MAX_X`` (default
-            # 0.87 past the cycle slot; wall / stair override it) so the
-            # ARRAY button never lands on top of a rotate / tread-lock icon.
+            # Feature slots: per-class IconSlot tuples driven by tuple order.
+            # Hidden slots STILL CONSUME their X position — toggling a pref
+            # mustn't reflow the row (otherwise the array button drifts left
+            # whenever a user disables the rotate icon).
+            slot_positions = self._slot_x_positions()
+            # Only fetch prefs if some slot has a visibility_pref — groups
+            # without a prefs entry (e.g. array) would raise on the lookup.
+            needs_prefs = any(slot.visibility_pref for slot in self.feature_slots)
+            gizmo_prefs = self.get_gizmo_prefs() if needs_prefs else None
+            for slot in self.feature_slots:
+                slot_x = self.ICON_VALIDATE_X + slot_positions[slot.name]
+                attrs = slot.gizmo_attrs()
+                if slot.visibility_pref and not getattr(gizmo_prefs, slot.visibility_pref, True):
+                    for attr in attrs:
+                        gz = getattr(self, attr, None)
+                        if gz is not None:
+                            gz.hide = True
+                    continue
+                if slot.variants:
+                    # Multi-variant slot: write matrix on every variant member
+                    # at the same anchor so a state flip never reveals a stale
+                    # pose. The subclass's per-frame hook picks which member
+                    # is visible — this loop doesn't toggle hide flags.
+                    world_pos = mw @ Vector((slot_x, icon_y, icon_z))
+                    matrix = billboarded_at(world_pos, billboard_rot, scale=slot.scale)
+                    for attr in attrs:
+                        gz = getattr(self, attr, None)
+                        if gz is not None:
+                            gz.matrix_basis = matrix
+                    continue
+                gz = getattr(self, attrs[0], None)
+                if gz is None:
+                    continue
+                gz.hide = self.is_gizmo_hidden_by_modal(gz)
+                self.set_icon_gizmo_position(
+                    attrs[0],
+                    mw=mw,
+                    x=slot_x,
+                    y=icon_y,
+                    z=icon_z,
+                    billboard_rot=billboard_rot,
+                    scale=slot.scale,
+                )
+            # ARRAY button sits past the last feature-specific icon. Slot-based
+            # subclasses derive the right edge from the slot count.
             if hasattr(self, "array_gizmo"):
                 self.array_gizmo.hide = self.is_gizmo_hidden_by_modal(self.array_gizmo)
                 # 30% smaller than the editing-icon-row default (0.50 → 0.35):
@@ -6037,7 +6221,7 @@ class BaseParametricGizmoGroup:
                 self.set_icon_gizmo_position(
                     "array_gizmo",
                     mw=mw,
-                    x=self.ICON_VALIDATE_X + self.FEATURE_ICON_MAX_X + self.ICON_ARRAY_GAP,
+                    x=self.ICON_VALIDATE_X + self._feature_row_right_edge() + self.ICON_ARRAY_GAP,
                     y=icon_y,
                     z=icon_z,
                     billboard_rot=billboard_rot,
@@ -6061,6 +6245,11 @@ class BaseParametricGizmoGroup:
             self.cancel_gizmo.hide = True
             if self.cycle_type_operator or self.pick_type_operator:
                 self.cycle_gizmo.hide = True
+            for slot in self.feature_slots:
+                for attr in slot.gizmo_attrs():
+                    gz = getattr(self, attr, None)
+                    if gz is not None:
+                        gz.hide = True
             if hasattr(self, "array_gizmo"):
                 self.array_gizmo.hide = True
 

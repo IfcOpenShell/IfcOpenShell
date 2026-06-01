@@ -53,7 +53,7 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing import gizmos as gizmo
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
 from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
@@ -1988,19 +1988,27 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             (0, 0, 1),
         )
 
-    # X offsets in the editing icon row, additive from ICON_VALIDATE_X (0.0).
-    # Matches the cadence used by the base class (0.0 / 0.5 / 0.87 = step ≈ 0.37).
-    # The baseline icons (EXT / CEN / INT) all share ICON_CYCLE_X — only one is
-    # ever visible at a time so they don't overlap.
-    ICON_ROTATE_X = 1.24
-
-    # Mapping from BIMWallProperties.desired_offset_baseline value to the
-    # attribute on `self` that holds the corresponding state icon.
-    _BASELINE_GIZMO_ATTRS: ClassVar[dict[str, str]] = {
-        "EXTERIOR": "offset_exterior_gizmo",
-        "CENTER": "offset_center_gizmo",
-        "INTERIOR": "offset_interior_gizmo",
-    }
+    # Row layout: validate / cancel / baseline-triplet / rotate / array.
+    # Wall has no ``cycle_type_operator``, so the cycle slot collapses and
+    # the baseline triplet takes the cycle X position (0.87). Rotate
+    # follows at 1.24. Both slots are declared here — the layout manager
+    # assigns the X positions from tuple order.
+    feature_slots: ClassVar[tuple[IconSlot, ...]] = (
+        IconSlot(
+            name="baseline",
+            gizmo_idname="VIEW3D_GT_offset",
+            variants=("exterior", "center", "interior"),
+            operator="bim.cycle_wall_offset",
+            visibility_pref="cycle",
+        ),
+        IconSlot(
+            name="rotate",
+            gizmo_idname="VIEW3D_GT_cycle",
+            operator="bim.rotate_wall_90",
+            scale=0.30,
+            visibility_pref="rotate",
+        ),
+    )
 
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
         """Wall-specific gizmos.
@@ -2015,16 +2023,15 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
           wall top (Z=height in wall-local). Clicking extends the wall's height to
           the cursor's Z.
 
-        Icon-row (always visible during edit mode, fixed position):
+        Idle-row icon outside the toolbar slot system:
 
-        - ``offset_{exterior,center,interior}_gizmo`` — three state-specific icons,
-          only one visible at a time. Reflects ``props.desired_offset_baseline``.
-          Clicking any of them cycles the baseline (the operator is the same).
-        - ``rotate_gizmo`` — rotates the wall 90° around Z (Shift+R). Uses the
-          revolving-arrows icon now that the cycle slot is occupied by the
-          stateful baseline icons.
-        - ``toggle_openings_gizmo`` — toggles opening fill visibility (Alt+O).
-        """
+        - ``toggle_openings_gizmo`` — toggles opening fill visibility (Alt+O),
+          surfaced in idle state next to the pen.
+
+        The baseline-state triplet (exterior/center/interior) and the rotate-90
+        icon live in ``feature_slots`` — the base class handles creation and
+        edit-row positioning; this group only picks variant visibility per
+        frame in ``_update_icon_row_extras``."""
         default_color, highlight_color = self.get_decoration_colors()
         self.split_gizmo = self._setup_icon_gizmo(
             "VIEW3D_GT_split",
@@ -2042,26 +2049,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "VIEW3D_GT_extend_vertical",
             default_color,
             "bim.extend_wall_height_to_cursor",
-            highlight_color,
-        )
-        # Three baseline-state icons — only one is visible at a time, picked by
-        # the current props.desired_offset_baseline. All point to the same cycle
-        # operator so clicking any of them advances the cycle.
-        for baseline, attr_name in self._BASELINE_GIZMO_ATTRS.items():
-            setattr(
-                self,
-                attr_name,
-                self._setup_icon_gizmo(
-                    f"VIEW3D_GT_offset_{baseline.lower()}",
-                    default_color,
-                    "bim.cycle_wall_offset",
-                    highlight_color,
-                ),
-            )
-        self.rotate_gizmo = self._setup_icon_gizmo(
-            "VIEW3D_GT_cycle",
-            default_color,
-            "bim.rotate_wall_90",
             highlight_color,
         )
         self.toggle_openings_gizmo = self._setup_icon_gizmo(
@@ -2132,57 +2119,48 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
             _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
 
+    # Map ``props.desired_offset_baseline`` (storage form) to the slot variant
+    # name. Centralised here so the variant strings stay aligned with the slot
+    # declaration in feature_slots.
+    _BASELINE_TO_VARIANT: ClassVar[dict[str, str]] = {
+        "EXTERIOR": "exterior",
+        "CENTER": "center",
+        "INTERIOR": "interior",
+    }
+
     def _update_icon_row_extras(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
-        """Position the wall-specific icons in the icon row.
+        """Pick which baseline variant is visible during edit, and position
+        the idle-row toggle-openings icon.
 
-        Edit-mode icons (visible only when ``props.is_editing``):
+        Baseline triplet: the base class's slot loop already wrote a billboard
+        matrix on each variant member at the same X (the cycle slot, since
+        wall has no ``cycle_type_operator``). This hook only flips ``hide``
+        on each member based on ``props.desired_offset_baseline`` so exactly
+        one variant shows. The rotate-90 icon is a single-icon feature slot
+        and is fully handled by the base.
 
-        - Three baseline icons (Exterior / Centreline / Interior) share the cycle
-          slot — only the one matching ``props.desired_offset_baseline`` shows.
-        - Rotate-90 icon at ``ICON_ROTATE_X``.
-
-        Non-edit-mode icons (visible alongside the pen icon, hidden during edit):
-
-        - Toggle-openings icon next to the pen. Lives outside edit mode because
-          opening visibility is a viewport-display concern, not a wall-edit action.
-
-        Calls ``billboarded_at`` directly rather than routing through
-        ``set_icon_gizmo_position`` because the icon row has wall-specific
-        visibility/state branching (baseline-indicator selection, edit-mode
-        toggle for opening-visibility) that the helper does not model."""
-        if not hasattr(self, "rotate_gizmo"):
+        Toggle-openings is NOT in the slot system — it surfaces in IDLE
+        state (alongside the pen, not in the edit row), so it's positioned
+        manually here."""
+        if not hasattr(self, "toggle_openings_gizmo"):
             return
         gizmo_prefs = self.get_gizmo_prefs()
         icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
         icon_y = self.get_icon_y_offset(context, mw)
         billboard_rot = self._frame_billboard_rot
 
-        # --- Edit-mode icons (baseline indicator + rotate-90) ---
-        if props.is_editing:
-            # Stateful baseline indicator at the cycle slot. Show exactly one of the
-            # three icons (the one matching the current baseline), hide the others.
-            for baseline, attr in self._BASELINE_GIZMO_ATTRS.items():
-                gz = getattr(self, attr)
-                if gizmo_prefs.cycle and baseline == props.desired_offset_baseline:
-                    gz.hide = self.is_gizmo_hidden_by_modal(gz)
-                    world_pos = mw @ Vector((self.ICON_VALIDATE_X + self.ICON_CYCLE_X, icon_y, icon_z))
-                    gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
-                else:
-                    gz.hide = True
-            if gizmo_prefs.rotate:
-                self.rotate_gizmo.hide = self.is_gizmo_hidden_by_modal(self.rotate_gizmo)
-                world_pos = mw @ Vector((self.ICON_VALIDATE_X + self.ICON_ROTATE_X, icon_y, icon_z))
-                # VIEW3D_GT_cycle is authored for the base class's 0.30 scale; at 0.5
-                # it looks roughly 2x too big next to the validate / cancel icons.
-                self.rotate_gizmo.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot, scale=0.30)
+        # --- Baseline variant visibility ---
+        active_variant = self._BASELINE_TO_VARIANT.get(props.desired_offset_baseline)
+        for variant in ("exterior", "center", "interior"):
+            gz = getattr(self, f"baseline_{variant}_gizmo", None)
+            if gz is None:
+                continue
+            if props.is_editing and gizmo_prefs.cycle and variant == active_variant:
+                gz.hide = self.is_gizmo_hidden_by_modal(gz)
             else:
-                self.rotate_gizmo.hide = True
-        else:
-            for attr in self._BASELINE_GIZMO_ATTRS.values():
-                getattr(self, attr).hide = True
-            self.rotate_gizmo.hide = True
+                gz.hide = True
 
-        # --- Non-edit-mode icons (toggle openings) ---
+        # --- Idle-row toggle-openings (outside the slot system) ---
         # Sits at the slot the cancel icon occupies during editing — that way the
         # pen + openings pair is compact and visually grouped.
         if not props.is_editing and gizmo_prefs.toggle_openings:
@@ -3309,9 +3287,7 @@ class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
         return True
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
+        default_color, highlight_color = self.get_decoration_colors()
         self.add_opening_icon = self.setup_icon_gizmo(
             "VIEW3D_GT_add_opening", default_color, highlight_color, "bim.add_opening"
         )
@@ -3376,9 +3352,7 @@ class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         return True
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
+        default_color, highlight_color = self.get_decoration_colors()
         self.extend_vertical_icon = self.setup_icon_gizmo(
             "VIEW3D_GT_extend_vertical",
             default_color,
@@ -3456,9 +3430,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
     ICON_STACK_OFFSET_Y: ClassVar[float] = 0.4
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
+        default_color, highlight_color = self.get_decoration_colors()
         self.unjoin_icon = self.setup_icon_gizmo("VIEW3D_GT_split", default_color, highlight_color, "bim.unjoin_walls")
         self.merge_icon = self.setup_icon_gizmo("VIEW3D_GT_merge", default_color, highlight_color, "bim.merge_wall")
         self.join_icon = self.setup_icon_gizmo(
@@ -3618,9 +3590,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         return True
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
+        default_color, highlight_color = self.get_decoration_colors()
         # Bind the operator on each pool icon ONCE at setup time and keep the returned
         # OperatorProperties handles. target_set_operator allocates a fresh handle on
         # every call, so calling it from position_gizmos (which fires every redraw
@@ -3720,9 +3690,7 @@ class GizmoWallFilletPreview(bpy.types.GizmoGroup):
         return True
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = tuple(prefs.decorations_colour[:3])
-        highlight_color = tuple(prefs.decorator_color_selected[:3])
+        default_color, highlight_color = self.get_decoration_colors()
 
         # Lazy-fetched closures re-resolve the Scene per call so the freed-RNA
         # crash on file open / undo doesn't hit the gizmo callbacks.
@@ -3991,9 +3959,7 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         return tool.Parametric.is_fillet_corner_wall(element)
 
     def setup(self, context: bpy.types.Context) -> None:
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = prefs.decorations_colour[:3]
-        highlight_color = prefs.decorator_color_selected[:3]
+        default_color, highlight_color = self.get_decoration_colors()
         self.edit_icon = self.setup_icon_gizmo(
             "VIEW3D_GT_pen",
             default_color,
