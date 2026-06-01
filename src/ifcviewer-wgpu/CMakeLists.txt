@@ -22,6 +22,10 @@ message("Running CMakeLists.txt in /src/ifcviewer-wgpu")
 set(QT_VERSION 6 CACHE STRING "Qt version")
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui REQUIRED PATHS ${QT_DIR})
 
+# Eigen3 for the federation hooks (setModelTransformation etc.) and the
+# per-model coordinate-operation matrices stored on WgpuModelGpuData.
+find_package(Eigen3 REQUIRED)
+
 # wgpu-native — fetched as a pre-built binary release from upstream.
 # Pin the version with WGPU_NATIVE_VERSION; bump to pull a newer release.
 set(WGPU_NATIVE_VERSION "v29.0.0.0" CACHE STRING "wgpu-native release tag")
@@ -127,6 +131,7 @@ target_link_libraries(IfcViewerWgpu PUBLIC
     Qt${QT_VERSION}::Core
     Qt${QT_VERSION}::Gui
     wgpu_native
+    Eigen3::Eigen
 )
 
 # Qt platform-handle access (QNativeInterface::QX11Application etc.) is in

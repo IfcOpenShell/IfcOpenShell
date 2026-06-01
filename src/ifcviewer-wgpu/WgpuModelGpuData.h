@@ -22,6 +22,8 @@
 
 #include <webgpu/webgpu.h>
 
+#include <Eigen/Dense>
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -341,6 +343,15 @@ struct WgpuModelGpuData {
     // is gone; cull iterates m.chunks instead.
 
     bool hidden = false;
+
+    // Per-model federation matrices in metres. Default identity → no
+    // per-model contribution to the composed transform. See bonsai's
+    // Federation.h for the full pipeline composition order. Stored
+    // here so setModelCoordinateOperation / setModelTransformation
+    // have somewhere to land; the recompose-and-reupload pass that
+    // would actually apply them is deferred.
+    Eigen::Matrix4d coordinate_operation_meters = Eigen::Matrix4d::Identity();
+    Eigen::Matrix4d model_transformation_meters = Eigen::Matrix4d::Identity();
 };
 
 // Release every wgpu handle in `m` (including per-chunk and per-model pool

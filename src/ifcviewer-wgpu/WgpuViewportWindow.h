@@ -31,6 +31,8 @@
 
 #include <webgpu/webgpu.h>
 
+#include <Eigen/Dense>
+
 #include <atomic>
 #include <cstdint>
 #include <deque>
@@ -68,28 +70,57 @@ public:
     // normalises stem → .ifcview).
     void queueLoadSidecar(const QString& path);
 
-    // Synchronous load + GPU upload. Requires wgpu init to have completed
-    // (i.e. the window has been exposed at least once). Returns the
-    // assigned model_id, or 0 on failure. Routes through the streaming
-    // loader when streaming_enabled_, else the legacy full-load path.
+    // Synchronous metadata load + GPU upload. Requires wgpu init to have
+    // completed (i.e. the window has been exposed at least once). Returns
+    // the assigned model_id, or 0 on failure. Reads metadata only (mesh
+    // dict + instance dict + georef); per-chunk vertex / index bytes are
+    // read on demand by the per-frame loader as chunks become visible.
     uint32_t loadSidecar(const QString& path);
 
-    // Restore a finalised model from a SidecarData struct: allocate wgpu
-    // buffers, upload vertex/index/mesh/instance bytes, register in
-    // models_gpu_. Replaces any existing state for model_id.
-    void applyCachedModel(uint32_t model_id, SidecarData data);
+    // Allocates per-chunk small buffers and the model-shared mesh /
+    // instance storage upfront, but leaves each chunk's pool ranges
+    // unclaimed and is_resident=false. The per-frame loader
+    // (driveStreamingLoads) sub-allocates the chunk's vertex + index
+    // ranges from pool_ on demand as cull flags them visible.
+    void applyCachedModel(uint32_t model_id,
+                          struct StreamingSidecar metadata);
 
-    // Streaming variant: takes a StreamingSidecar (metadata only — no
-    // vertex / index bytes). Allocates per-chunk small buffers and the
-    // model-shared mesh / instance storage upfront, but leaves each
-    // chunk's pool ranges unclaimed and is_resident=false. The per-frame
-    // loader (driveStreamingLoads) sub-allocates the chunk's vertex +
-    // index ranges from pool_ on demand as cull flags them visible.
-    void applyCachedModelStreaming(uint32_t model_id,
-                                   struct StreamingSidecar metadata);
+    // Direct-IFC ingestion (mirrors GL ViewportWindow). The host (typically
+    // a GeometryStreamer running on a worker) calls uploadMeshChunk +
+    // uploadInstanceChunk once per representation / placement as the IFC
+    // triangulates; finalizeModel commits when the iterator finishes.
+    // Staged in CPU memory; finalizeModel runs the chunk planner over the
+    // staged data, allocates pool slices, and uploads — same render path
+    // as a sidecar load. Bytes are gathered from memory (no disk I/O), so
+    // every chunk lands `is_resident=true` immediately. The streamer's
+    // model_id is passed through unchanged; the viewport's globally-unique
+    // object_id rebasing happens at finalize time.
+    void uploadMeshChunk(const struct MeshChunk& chunk);
+    void uploadInstanceChunk(const struct InstanceChunk& chunk);
+    void finalizeModel(uint32_t model_id);
 
     void removeModel(uint32_t model_id);
     void resetScene();
+
+    // Model-level visibility. Mirrors the GL ViewportWindow API — flips
+    // WgpuModelGpuData::hidden, which every render/pick/cull pass already
+    // consults. requestUpdate() so the change is visible immediately.
+    void hideModel(uint32_t model_id);
+    void showModel(uint32_t model_id);
+
+    // Federation pipeline: composed instance transform =
+    //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+    //                                              · placement_transformation
+    // Wgpu does not yet recompose instances against these matrices —
+    // composeInstanceFromPlacement is still placement-only — so the
+    // setters store the input and post requestUpdate(). Bonsai-side
+    // integration compiles against these signatures; visual georef parity
+    // arrives with the recompose+SSBO-rewrite work tracked separately.
+    void setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters);
+    void setModelCoordinateOperation(uint32_t model_id,
+                                     const Eigen::Matrix4d& matrix_meters);
+    void setModelTransformation(uint32_t model_id,
+                                const Eigen::Matrix4d& matrix_meters);
 
     size_t modelCount() const { return models_gpu_.size(); }
 
@@ -113,7 +144,38 @@ public:
     void    setStandardView(float yaw_deg, float pitch_deg);
     void    focusOnSelectedObject();
     void    toggleProjection();
+    bool    projectionOrtho() const { return projection_ortho_; }
     QString cameraString() const;
+
+    // Snapshot of the orbit camera. Mirrors GL ViewportWindow::CameraState
+    // so bonsai's "save view" / "restore view" commands port unchanged.
+    struct CameraState {
+        QVector3D target;
+        float distance;
+        float yaw;    // degrees
+        float pitch;  // degrees
+    };
+    CameraState cameraState() const;
+
+    // Tool toggles: flip between NoTool and the named tool. Wrappers
+    // around setToolMode so bonsai's verb actions stay terse.
+    void toggleAreaTool();
+    void toggleLengthTool();
+    void toggleVolumeTool();
+
+    // Element-level visibility verbs. The fine-grained per-id mutations
+    // go through visibility_; these high-level methods are what bonsai's
+    // Commands.cpp calls. Hidden elements are dropped from cull (no draw,
+    // no depth, no pick).
+    void hideSelectedElements();
+    void isolateSelectedElements();
+    void showAllElements();
+    void invertElementVisibility();
+
+    // Replace the selection with {id} (or clear if id == 0). Used by
+    // SessionState mirroring and by project commands that drop selection
+    // on model removal. Wrapper around selection_.replace / clear.
+    void setSelectedObjectId(uint32_t id);
 
     // FPS / fly mode. enterFpsMode swaps the orbit camera for a WASD/QE
     // free-fly camera (hotkey: Shift+F). exitFpsMode restores the orbit
@@ -135,6 +197,13 @@ private:
     // Build the camera AABB for a single object across all loaded models.
     bool computeObjectAabb(uint32_t object_id,
                            float mn[3], float mx[3]) const;
+public:
+    // QVector3D overload — matches GL ViewportWindow::computeObjectAabb so
+    // bonsai's volume readout / focus callers compile unchanged. Just a
+    // thin wrapper around the float[3] version.
+    bool computeObjectAabb(uint32_t object_id,
+                           QVector3D& mn, QVector3D& mx) const;
+private:
     // Re-aim the orbit camera so the bounding sphere of [mn, mx] fits.
     void frameAabb(const float mn[3], const float mx[3], float padding);
     // Resolve nav_preset_ env var to orbit/pan bindings.
@@ -268,6 +337,7 @@ private:
     // clipped to the framebuffer by the caller.
     std::vector<uint32_t> picksInRect(int x, int y, int w, int h);
 
+public:
     // Section-cutting tool. Mirrors the GL ViewportWindow API:
     //   K           toggle (sectionToolActive / toggleSectionTool)
     //   Shift+K     clearSectionPlanes
@@ -282,8 +352,6 @@ private:
     void  removeSectionPlane(int index);
     void  clearSectionPlanes();
     int   sectionPlaneCount() const { return int(section_planes_.size()); }
-
-public:
     // Overlay primitives. Mirror GL ViewportWindow so the Measurement +
     // dimension tools can target either backend through one API.
     // Empty inputs clears the corresponding set.
@@ -310,6 +378,23 @@ public:
     using MeshTriangles = WgpuModelGpuData::MeshTriangles;
     bool  readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
                                 MeshTriangles& out) const;
+
+    // Pure CPU lookup: object_id → owning model + mesh + raw placement
+    // matrix (column-major, pre-CoordinateOperation / FederatedFalseOrigin
+    // / ModelTransformation). Mirrors GL ViewportWindow::InstanceLookup
+    // so Measurement.cpp ports unchanged.
+    struct InstanceLookup {
+        uint32_t model_id = 0;
+        uint32_t mesh_id  = 0;
+        double   placement_transformation[16]{};
+    };
+    bool findInstance(uint32_t object_id, InstanceLookup& out) const;
+
+    // Selection accessor. Exposed for callers (bonsai's volume readout)
+    // that need to read selectionIds() / activeObjectId(). Mutation goes
+    // through the existing setSelection / pick paths.
+    WgpuSelectionState&       selection()       { return selection_; }
+    const WgpuSelectionState& selection() const { return selection_; }
 
     // Pick + resolve to mesh-local space. Runs pickSurfaceAt to get the
     // world-space hit, then inverts the instance's composed transform
@@ -359,8 +444,44 @@ public:
     // NoTool (not None) because X11/X.h #define's None as 0L; including
     // it transitively via Qt's xcb back-end breaks any enum named None.
     enum class ToolMode { NoTool, Volume, Area, Length };
+    Q_ENUM(ToolMode)
     ToolMode toolMode() const { return tool_mode_; }
     void     setToolMode(ToolMode m);
+
+    // Per-frame snapshot of cull / scene stats, emitted via
+    // frameStatsUpdated at the end of each render(). Mirrors GL
+    // ViewportWindow::FrameStats so bonsai's status bar binding ports
+    // unchanged. gl_draw_calls is the wgpu draw-call count (named for
+    // continuity with the GL field bonsai's status format string uses).
+    struct FrameStats {
+        float    fps;
+        float    frame_time_ms;
+        uint32_t total_objects;
+        uint32_t visible_objects;
+        uint32_t total_triangles;
+        uint32_t visible_triangles;
+        uint32_t unique_meshes;
+        uint32_t gl_draw_calls;        // wgpu draw-call count; name kept for bonsai parity
+        uint32_t indirect_sub_draws;   // sub-draws packed into the chunk-indirect lists
+    };
+
+signals:
+    // Selection moved by a pick / marquee. Emitted with the active id
+    // (0 = miss). Bonsai mirrors this into SessionState.
+    void objectPicked(uint32_t object_id);
+    void frameStatsUpdated(const WgpuViewportWindow::FrameStats& stats);
+    // Emitted instead of objectPicked when an Area / Length tool is
+    // active. The host branches on toolMode() and calls
+    // pickMeshLocalAt(x, y, ...) for hit details. Coordinates are in
+    // physical pixels (post-DPR).
+    void surfacePickedInTool(int x, int y, int modifiers);
+    // Emitted whenever the active tool changes (incl. on→off).
+    void toolModeChanged(WgpuViewportWindow::ToolMode mode);
+    // Backspace/Delete pressed while a tool is active. Length tool's
+    // remove-last-point; other tools may ignore.
+    void toolBackspacePressed();
+
+public:
 
     // Sum of mesh-local volumes (m³) of every instance whose object_id
     // is in `object_ids`. Each instance is scaled by |det(placement_3x3)|
@@ -441,6 +562,22 @@ private:
     // per-model uniform. Main-thread only (wgpu queue ops are not all
     // thread-safe).
     void     cullModelCpuUpload(WgpuModelGpuData& m);
+
+    // Compose one instance's `transform` (float[16] column-major) from
+    //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
+    //                                              · placement_transformation
+    // and recompute its world AABB from the mesh's local AABB. Maths runs
+    // in double; the cast to float happens last so large IFC placements
+    // get cancelled by the federation false origin before precision is
+    // narrowed. Mirrors GL ViewportWindow::composeInstanceFromPlacement.
+    void composeInstanceFromPlacement(InstanceCpu& inst,
+                                      const WgpuModelGpuData& m) const;
+
+    // Walk every instance of `model_id`, recompose its transform from the
+    // current federation matrices, refresh per-chunk world AABBs, and
+    // re-upload InstanceGpu[] into m.instance_storage. No-op if the model
+    // is unknown, has no instances, or wgpu init hasn't completed.
+    void recomposeAndUploadModel(uint32_t model_id);
 
     bool wgpu_initialized_ = false;
     bool surface_configured_ = false;
@@ -757,14 +894,6 @@ public:
     // scene fits through the constraints a browser will impose.
     bool web_limits_ = false;
 
-    // Streaming load (task #16). When enabled, queueLoadSidecar routes
-    // through the metadata-only reader: mesh dict + instance dict + georef
-    // load immediately; per-chunk vertex bytes are read + uploaded on
-    // demand by the per-frame loader as chunks become frustum-visible.
-    // Default OFF so existing behaviour (synchronous full load) is
-    // preserved; --streaming opts in.
-    bool streaming_enabled_ = false;
-
     // Monotonic frame counter, bumped at the top of driveStreamingLoads.
     // Used as the LRU key for chunk eviction.
     uint64_t streaming_frame_idx_           = 0;
@@ -826,6 +955,15 @@ private:
 
     // Sidecar paths queued before init completes.
     std::deque<QString> pending_sidecars_;
+
+    // Direct-IFC staging buffers, keyed by streamer model_id. Populated
+    // by uploadMeshChunk / uploadInstanceChunk; consumed and cleared by
+    // finalizeModel. Shape matches SidecarData so the same chunk-planner
+    // + apply flow services both sidecar and direct-IFC loads. Held by
+    // unique_ptr so emplace / erase don't copy the (potentially huge)
+    // vertex byte vector when the map rehashes.
+    std::unordered_map<uint32_t, std::unique_ptr<SidecarData>>
+        pending_direct_loads_;
 
     // Set after the first model load triggers a viewAll(); prevents
     // subsequent loads from snapping the camera away from where the
@@ -897,6 +1035,20 @@ private:
     // Tick count for the interactive (non-bench) [frame] heartbeat log.
     // Increments every render() and prints stats every N frames.
     int      interactive_frame_count_ = 0;
+
+    // Rolling 60-sample frame-time window for the smoothed fps emitted
+    // via frameStatsUpdated. Index wraps; sum kept incrementally to
+    // avoid a per-frame reduction.
+    static constexpr int FRAME_TIME_WINDOW = 60;
+    double   frame_time_ms_window_[FRAME_TIME_WINDOW] = {};
+    int      frame_time_ms_count_  = 0;
+    int      frame_time_ms_head_   = 0;
+    double   frame_time_ms_sum_    = 0.0;
+
+    // FederatedFalseOrigin matrix, in metres. Default identity. Stored
+    // but not yet applied to per-instance composed transforms — the
+    // recompose pass arrives with the federation-load OOM work.
+    Eigen::Matrix4d federated_false_origin_meters_ = Eigen::Matrix4d::Identity();
 
     // Per-frame LOD selection counts, mutated from cullModelCpuCompute
     // and reset after the [frame] heartbeat prints them. Keeps an eye

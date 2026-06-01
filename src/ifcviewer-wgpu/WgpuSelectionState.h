@@ -77,7 +77,9 @@ public:
 
     bool contains(uint32_t id) const { return ids_.count(id) > 0; }
     uint32_t activeId() const         { return active_; }
-    const std::unordered_set<uint32_t>& ids() const { return ids_; }
+    // Named selectionIds() rather than ids() so bonsai's
+    // `viewport_->selection().selectionIds()` compiles unchanged.
+    const std::unordered_set<uint32_t>& selectionIds() const { return ids_; }
     size_t count() const              { return ids_.size(); }
 
     bool dirty() const { return dirty_; }

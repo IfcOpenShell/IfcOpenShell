@@ -21,6 +21,7 @@
 #include "WgpuAreaMeasurement.h"
 #include "WgpuLengthMeasurement.h"
 #include "WgpuStreamingLoader.h"
+#include "VertexQuantization.h"
 
 #include <QGuiApplication>
 #include <QResizeEvent>
@@ -109,6 +110,32 @@ static double computeMeshLocalVolumeQuantised(
 // real triangle hit — see pickMeshLocalAt's refinement block.
 
 // Slab method ray-AABB. inv_d is precomputed 1/dir per axis.
+// Transform the 8 corners of [local_min, local_max] through the
+// column-major 4x4 `M` and bound the result in world space. Used after a
+// federation-matrix change so per-instance world AABBs (and the chunk
+// AABBs derived from them) reflect the recomposed transform.
+static void worldAabbFromLocalVp(const float local_min[3],
+                                 const float local_max[3],
+                                 const float M[16],
+                                 float out_min[3], float out_max[3]) {
+    out_min[0] = out_min[1] = out_min[2] =  std::numeric_limits<float>::max();
+    out_max[0] = out_max[1] = out_max[2] = -std::numeric_limits<float>::max();
+    for (int c = 0; c < 8; ++c) {
+        const float x = (c & 1) ? local_max[0] : local_min[0];
+        const float y = (c & 2) ? local_max[1] : local_min[1];
+        const float z = (c & 4) ? local_max[2] : local_min[2];
+        const float wx = M[0]*x + M[4]*y + M[8] *z + M[12];
+        const float wy = M[1]*x + M[5]*y + M[9] *z + M[13];
+        const float wz = M[2]*x + M[6]*y + M[10]*z + M[14];
+        if (wx < out_min[0]) out_min[0] = wx;
+        if (wx > out_max[0]) out_max[0] = wx;
+        if (wy < out_min[1]) out_min[1] = wy;
+        if (wy > out_max[1]) out_max[1] = wy;
+        if (wz < out_min[2]) out_min[2] = wz;
+        if (wz > out_max[2]) out_max[2] = wz;
+    }
+}
+
 static bool rayAabbSlab(const float ro[3], const float inv_d[3],
                         const float bmin[3], const float bmax[3]) {
     float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
@@ -701,22 +728,11 @@ uint32_t WgpuViewportWindow::loadSidecar(const QString& path) {
         resolved = QDir::homePath() + resolved.mid(1);
     }
 
-    // Streaming path: load metadata only, chunks stay non-resident until
-    // the per-frame loader brings them in. Falls back to legacy full-load
-    // when streaming_enabled_ is off (default).
-    if (streaming_enabled_) {
-        auto meta_opt = readSidecarMetadataOnly(resolved.toStdString());
-        if (!meta_opt) {
-            qWarning().noquote() << "Failed to stream-read sidecar metadata:" << resolved;
-            return 0;
-        }
-        const uint32_t mid = next_model_id_++;
-        applyCachedModelStreaming(mid, std::move(*meta_opt));
-        return mid;
-    }
-
-    auto data_opt = readSidecar(resolved.toStdString());
-    if (!data_opt) {
+    // Metadata-only read: mesh dict + instance dict + georef. Per-chunk
+    // vertex/index bytes are deferred to the per-frame loader as chunks
+    // become frustum-visible.
+    auto meta_opt = readSidecarMetadataOnly(resolved.toStdString());
+    if (!meta_opt) {
         // Triage: distinguish missing file from magic/version mismatch by
         // peeking the header ourselves, so users know which to fix.
         QFile f(resolved);
@@ -747,21 +763,21 @@ uint32_t WgpuViewportWindow::loadSidecar(const QString& path) {
                 qWarning().noquote() << "Sidecar endianness mismatch:" << resolved
                                      << "(cross-platform load not supported)";
             } else {
-                qWarning().noquote() << "Sidecar read failed past the header:" << resolved;
+                qWarning().noquote() << "Sidecar metadata read failed past the header:" << resolved;
             }
         }
         return 0;
     }
 
     const uint32_t mid = next_model_id_++;
-    applyCachedModel(mid, std::move(*data_opt));
+    applyCachedModel(mid, std::move(*meta_opt));
     return mid;
 }
 
-void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
-                                                   StreamingSidecar metadata) {
+void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
+                                          StreamingSidecar metadata) {
     if (!device_ || !queue_) {
-        qWarning() << "applyCachedModelStreaming without an initialised device";
+        qWarning() << "applyCachedModel without an initialised device";
         return;
     }
 
@@ -1061,7 +1077,7 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     // after a chunk becomes resident.
 
     qInfo().noquote().nospace()
-        << "[wgpu stream] applyCachedModelStreaming mid=" << model_id
+        << "[wgpu stream] applyCachedModel mid=" << model_id
         << " verts=" << mref.vertex_bytes << "B (deferred)"
         << " idx="   << mref.index_count
         << " meshes=" << mref.mesh_count
@@ -1076,388 +1092,211 @@ void WgpuViewportWindow::applyCachedModelStreaming(uint32_t model_id,
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::applyCachedModel(uint32_t model_id, SidecarData data) {
+// -----------------------------------------------------------------------------
+// Direct-IFC ingestion (mirrors GL ViewportWindow::uploadMeshChunk /
+// uploadInstanceChunk / finalizeModel). Streamer pushes chunks; we stage
+// them into a SidecarData-shaped buffer and commit at finalize via the
+// same chunk planner the sidecar load uses.
+// -----------------------------------------------------------------------------
+
+static SidecarData& getOrCreateDirectStaging(
+        std::unordered_map<uint32_t, std::unique_ptr<SidecarData>>& staging,
+        uint32_t model_id) {
+    auto it = staging.find(model_id);
+    if (it == staging.end()) {
+        auto [it_new, _] = staging.emplace(
+            model_id, std::make_unique<SidecarData>());
+        return *it_new->second;
+    }
+    return *it->second;
+}
+
+void WgpuViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
+    if (chunk.vertices.empty() || chunk.indices.empty()) return;
+    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
+
+    // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
+    // Same quantisation as SidecarBuilder::onMeshReady so direct-load and
+    // sidecar-load produce byte-identical GPU buffers.
+    const size_t n_verts = chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
+
+    float bmin[3] = {  std::numeric_limits<float>::infinity(),
+                       std::numeric_limits<float>::infinity(),
+                       std::numeric_limits<float>::infinity() };
+    float bmax[3] = { -std::numeric_limits<float>::infinity(),
+                      -std::numeric_limits<float>::infinity(),
+                      -std::numeric_limits<float>::infinity() };
+    for (size_t i = 0; i < n_verts; ++i) {
+        const float* v = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
+        for (int a = 0; a < 3; ++a) {
+            if (v[a] < bmin[a]) bmin[a] = v[a];
+            if (v[a] > bmax[a]) bmax[a] = v[a];
+        }
+    }
+    float extent_recip[3];
+    for (int a = 0; a < 3; ++a) {
+        const float ext = bmax[a] - bmin[a];
+        extent_recip[a] = ext > 0.0f ? 1.0f / ext : 0.0f;
+    }
+
+    const size_t vb_offset = s.vertices.size();
+    s.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
+    for (size_t i = 0; i < n_verts; ++i) {
+        quantizeVertex(chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
+                       bmin, extent_recip,
+                       s.vertices.data() + vb_offset
+                           + i * INSTANCED_VERTEX_STRIDE_BYTES);
+    }
+
+    const size_t ib_offset = s.indices.size();
+    s.indices.insert(s.indices.end(),
+                     chunk.indices.begin(), chunk.indices.end());
+
+    MeshInfo info{};
+    info.vbo_byte_offset = uint32_t(vb_offset);
+    info.vertex_count    = uint32_t(n_verts);
+    info.ebo_byte_offset = uint32_t(ib_offset * sizeof(uint32_t));
+    info.index_count     = uint32_t(chunk.indices.size());
+    for (int a = 0; a < 3; ++a) {
+        info.local_aabb_min[a] = bmin[a];
+        info.local_aabb_max[a] = bmax[a];
+    }
+    info.first_instance       = 0;
+    info.instance_count       = 0;
+    info.lod1_ebo_byte_offset = 0;
+    info.lod1_index_count     = 0;
+
+    if (s.meshes.size() <= chunk.local_mesh_id) {
+        s.meshes.resize(chunk.local_mesh_id + 1);
+    }
+    s.meshes[chunk.local_mesh_id] = info;
+}
+
+void WgpuViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
+    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
+
+    InstanceCpu inst{};
+    inst.mesh_id              = chunk.local_mesh_id;
+    inst.object_id            = chunk.object_id;
+    inst.color_override_rgba8 = chunk.color_override_rgba8;
+    inst.model_id             = chunk.model_id;
+    std::memcpy(inst.placement_transformation, chunk.transform,
+                sizeof(inst.placement_transformation));
+    for (int i = 0; i < 16; ++i) {
+        inst.transform[i] = float(chunk.transform[i]);
+    }
+    std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
+    std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
+
+    s.instances.push_back(inst);
+}
+
+void WgpuViewportWindow::finalizeModel(uint32_t model_id) {
+    auto it = pending_direct_loads_.find(model_id);
+    if (it == pending_direct_loads_.end()) {
+        qWarning().nospace()
+            << "[wgpu direct] finalizeModel(" << model_id
+            << ") with no staged data; skipping";
+        return;
+    }
+    // Move the staging out so the apply path can std::move from it without
+    // leaving a half-moved entry in the map mid-call.
+    std::unique_ptr<SidecarData> staging_ptr = std::move(it->second);
+    pending_direct_loads_.erase(it);
+    SidecarData& s = *staging_ptr;
+
     if (!device_ || !queue_) {
-        qWarning() << "applyCachedModel without an initialised device";
+        qWarning() << "[wgpu direct] finalizeModel without an initialised device";
+        return;
+    }
+    if (s.meshes.empty() || s.instances.empty()) {
+        qInfo().nospace() << "[wgpu direct] finalizeModel(" << model_id
+                          << "): empty staging (meshes=" << s.meshes.size()
+                          << " instances=" << s.instances.size() << ")";
         return;
     }
 
-    // Replace any existing state for this id.
-    auto it = models_gpu_.find(model_id);
-    if (it != models_gpu_.end()) {
-        releaseWgpuModelGpuData(it->second, pool_);
-        models_gpu_.erase(it);
+    // Build a StreamingSidecar around the staging so applyCachedModel can
+    // run its chunk planner over the same shape it expects from on-disk
+    // metadata. file_path is left empty — the streaming worker key off
+    // that to skip these chunks (they're already resident after the
+    // applyStreamedChunk loop below).
+    StreamingSidecar metadata;
+    metadata.meta = std::move(s);
+    metadata.vertex_section_offset = 0;
+    metadata.vertex_total_bytes    = metadata.meta.vertices.size();
+    metadata.index_section_offset  = 0;
+    metadata.index_total_count     = metadata.meta.indices.size();
+    metadata.file_path.clear();
+
+    // applyCachedModel consumes meta.meshes / meta.instances (via std::move
+    // inside). The raw vertex / index bytes stay on `metadata.meta` until
+    // we gather them per-chunk below.
+    std::vector<uint8_t>  raw_vertices = std::move(metadata.meta.vertices);
+    std::vector<uint32_t> raw_indices  = std::move(metadata.meta.indices);
+
+    applyCachedModel(model_id, std::move(metadata));
+
+    auto model_it = models_gpu_.find(model_id);
+    if (model_it == models_gpu_.end()) {
+        qWarning().nospace()
+            << "[wgpu direct] finalizeModel(" << model_id
+            << "): applyCachedModel produced no model entry";
+        return;
     }
+    WgpuModelGpuData& m = model_it->second;
 
-    WgpuModelGpuData m;
-    m.vertex_bytes   = data.vertices.size();
-    m.index_count    = uint32_t(data.indices.size());
-    m.mesh_count     = uint32_t(data.meshes.size());
-    m.instance_count = uint32_t(data.instances.size());
-
-    // ---- Spatial chunk plan ----------------------------------------------
-    // Identical algorithm to applyCachedModelStreaming: sort meshes by
-    // world-space centroid, then greedy-pack into chunks of
-    // ≤WGPU_CHUNK_VERTEX_BYTES_LIMIT. Each chunk's mesh_ids list defines
-    // the chunk-local layout order. Non-streaming differs only in that
-    // vertex+index bytes are already in memory (data.vertices,
-    // data.indices), so we gather them with per-mesh queueWriteBuffer
-    // calls instead of scatter-gather disk reads.
-    const size_t n_meshes = data.meshes.size();
-    m.mesh_chunk_idx.assign(n_meshes, 0);
-    m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
-    m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
-    m.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
-
-    std::vector<float>    mesh_cx(n_meshes, 0.0f),
-                          mesh_cy(n_meshes, 0.0f),
-                          mesh_cz(n_meshes, 0.0f);
-    std::vector<uint32_t> mesh_inst_count(n_meshes, 0);
-    for (const auto& inst : data.instances) {
-        if (inst.mesh_id >= n_meshes) continue;
-        mesh_cx[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
-        mesh_cy[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
-        mesh_cz[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
-        ++mesh_inst_count[inst.mesh_id];
-    }
-    for (size_t i = 0; i < n_meshes; ++i) {
-        if (mesh_inst_count[i] > 0) {
-            const float inv = 1.0f / float(mesh_inst_count[i]);
-            mesh_cx[i] *= inv; mesh_cy[i] *= inv; mesh_cz[i] *= inv;
-        }
-    }
-
-    // Morton sort (see sortMeshIdsByMorton above) — same logic as the
-    // streaming path; gives tight 3D voxel chunks instead of XY slabs.
-    std::vector<uint32_t> sorted_mesh_ids =
-        sortMeshIdsByMorton(n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
-
-    std::vector<std::vector<uint32_t>> chunk_mesh_ids;
-    chunk_mesh_ids.push_back({});
-    uint64_t current_chunk_bytes = 0;
-    for (uint32_t mi : sorted_mesh_ids) {
-        const MeshInfo& mesh = data.meshes[mi];
-        const uint64_t mesh_vertex_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
-            qWarning().noquote().nospace()
-                << "Mesh #" << mi << " has " << mesh_vertex_bytes
-                << " B — exceeds chunk limit " << WGPU_CHUNK_VERTEX_BYTES_LIMIT
-                << ". Mesh-splitting is not implemented.";
-        }
-        if (current_chunk_bytes > 0
-            && current_chunk_bytes + mesh_vertex_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
-            chunk_mesh_ids.push_back({});
-            current_chunk_bytes = 0;
-        }
-        chunk_mesh_ids.back().push_back(mi);
-        current_chunk_bytes += mesh_vertex_bytes;
-    }
-    if (chunk_mesh_ids.back().empty()) chunk_mesh_ids.pop_back();
-
-    std::vector<uint32_t> mesh_to_chunk(n_meshes, 0);
-    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-        for (uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = uint32_t(ci);
-    }
-    std::vector<uint32_t> chunk_instance_count(chunk_mesh_ids.size(), 0);
-    for (const auto& inst : data.instances) {
-        if (inst.mesh_id < n_meshes) ++chunk_instance_count[mesh_to_chunk[inst.mesh_id]];
-    }
-
-    // ---- Allocate per-chunk pool ranges and upload per-mesh slices ------
-    m.chunks.resize(chunk_mesh_ids.size());
-    for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-        WgpuModelGpuData::Chunk& c = m.chunks[ci];
-        c.mesh_ids = std::move(chunk_mesh_ids[ci]);
-
-        // Walk meshes in chunk-local layout order, computing each mesh's
-        // chunk-local offsets and the chunk's aggregate vertex/index totals.
-        // LOD1 indices (if any mesh has them baked) pack AFTER all the
-        // LOD0 indices in the chunk's index slice — single slice carries
-        // both LODs, cull picks per-instance by chunk-local u32 offset.
-        uint32_t chunk_local_v = 0;
-        uint32_t chunk_local_i = 0;
-        for (uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = data.meshes[mi];
-            m.mesh_chunk_idx[mi]                 = uint32_t(ci);
-            m.mesh_chunk_local_base_vertex[mi]   = chunk_local_v;
-            m.mesh_chunk_local_ebo_first_u32[mi] = chunk_local_i;
-            chunk_local_v += mesh.vertex_count;
-            chunk_local_i += mesh.index_count;
-        }
-        uint32_t chunk_local_lod1 = 0;
-        for (uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = data.meshes[mi];
-            if (mesh.lod1_index_count == 0) continue;
-            m.mesh_chunk_local_lod1_first_u32[mi] = chunk_local_i + chunk_local_lod1;
-            chunk_local_lod1 += mesh.lod1_index_count;
-        }
-        c.vertex_count     = chunk_local_v;
-        c.vertex_byte_size = uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
-        c.index_count      = chunk_local_i + chunk_local_lod1;
-        c.lod1_index_count = chunk_local_lod1;
-
-        c.vertex_slice = pool_.alloc(c.vertex_byte_size, 256);
-        if (!c.vertex_slice.valid()) {
-            qWarning().noquote().nospace()
-                << "[wgpu] pool OOM: chunk " << ci << " needed "
-                << c.vertex_byte_size << " B for vertices, pool free="
-                << pool_.total_free_bytes() << " B across "
-                << pool_.sub_buffer_count() << " sub-buffer(s); aborting model load";
-            releaseWgpuModelGpuData(m, pool_);
-            return;
-        }
-        if (c.index_count > 0) {
-            c.index_slice = pool_.alloc(c.index_count * sizeof(uint32_t), 256);
-            if (!c.index_slice.valid()) {
-                qWarning().noquote().nospace()
-                    << "[wgpu] pool OOM: chunk " << ci << " needed "
-                    << (c.index_count * sizeof(uint32_t))
-                    << " B for indices, pool free=" << pool_.total_free_bytes()
-                    << " B across " << pool_.sub_buffer_count()
-                    << " sub-buffer(s); aborting model load";
-                releaseWgpuModelGpuData(m, pool_);
-                return;
-            }
-        }
-
-        // Gather each mesh's bytes from data.vertices / data.indices and
-        // write into the pool at chunk-local offsets. Multiple small
-        // queueWriteBuffer calls per chunk; wgpu batches them efficiently.
-        uint64_t v_off = 0;
-        uint64_t i_off = 0;
-        for (uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = data.meshes[mi];
-            const size_t v_bytes = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-            if (v_bytes > 0) {
-                wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
-                                     c.vertex_slice.offset + v_off,
-                                     data.vertices.data() + mesh.vbo_byte_offset,
-                                     v_bytes);
-                v_off += v_bytes;
-            }
-            const size_t i_bytes = size_t(mesh.index_count) * sizeof(uint32_t);
-            if (i_bytes > 0) {
-                wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
-                                     c.index_slice.offset + i_off,
-                                     data.indices.data() + (mesh.ebo_byte_offset / sizeof(uint32_t)),
-                                     i_bytes);
-                i_off += i_bytes;
-            }
-        }
-        // LOD1 indices second, packed after all LOD0 indices in the slice.
-        // mesh_chunk_local_lod1_first_u32[mi] already encodes this layout —
-        // we just have to copy in the same order it was assigned.
-        for (uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = data.meshes[mi];
-            if (mesh.lod1_index_count == 0) continue;
-            const size_t l1_bytes = size_t(mesh.lod1_index_count) * sizeof(uint32_t);
-            wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
-                                 c.index_slice.offset + i_off,
-                                 data.indices.data() + (mesh.lod1_ebo_byte_offset / sizeof(uint32_t)),
-                                 l1_bytes);
-            i_off += l1_bytes;
-        }
-        m.vram_bytes_vbo += c.vertex_byte_size;
-        m.vram_bytes_ebo += c.index_count * sizeof(uint32_t);
-    }
-
-    // Derive MeshGpu[] (vec4 aabb_min + vec4 aabb_max) from MeshInfo's
-    // local_aabb_*. Mirrors the GL backend's mesh_info_ssbo population.
-    std::vector<MeshGpu> mesh_gpu;
-    mesh_gpu.reserve(data.meshes.size());
-    for (const auto& mi : data.meshes) {
-        MeshGpu mg = {};
-        mg.aabb_min[0] = mi.local_aabb_min[0];
-        mg.aabb_min[1] = mi.local_aabb_min[1];
-        mg.aabb_min[2] = mi.local_aabb_min[2];
-        mg.aabb_min[3] = 0.0f;
-        mg.aabb_max[0] = mi.local_aabb_max[0];
-        mg.aabb_max[1] = mi.local_aabb_max[1];
-        mg.aabb_max[2] = mi.local_aabb_max[2];
-        mg.aabb_max[3] = 0.0f;
-        mesh_gpu.push_back(mg);
-    }
-    const size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
-    m.mesh_storage = createBufferWithData(
-        device_, queue_,
-        mesh_gpu.data(), mesh_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.mesh_storage");
-    m.vram_bytes_ssbo += mesh_storage_bytes;
-
-    // Derive InstanceGpu[] from InstanceCpu[]. Rebase each instance's
-    // object_id by next_object_id_ so picks are globally unambiguous
-    // across multiple loaded sidecars (each sidecar's local IDs start
-    // from 1 and would otherwise collide).
-    const uint32_t object_id_base = next_object_id_;
-    uint32_t max_local_id = 0;
-    std::vector<InstanceGpu> inst_gpu;
-    inst_gpu.reserve(data.instances.size());
-    for (auto& ic : data.instances) {
-        if (ic.object_id > max_local_id) max_local_id = ic.object_id;
-        // Rebase in the CPU mirror too so future cull / picks see the
-        // global id consistently.
-        ic.object_id = object_id_base + ic.object_id;
-        InstanceGpu ig = {};
-        std::memcpy(ig.transform, ic.transform, sizeof(ig.transform));
-        ig.object_id            = ic.object_id;
-        ig.color_override_rgba8 = ic.color_override_rgba8;
-        ig.mesh_id              = ic.mesh_id;
-        inst_gpu.push_back(ig);
-    }
-    next_object_id_ = object_id_base + max_local_id + 1;
-    const size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
-    m.instance_storage = createBufferWithData(
-        device_, queue_,
-        inst_gpu.data(), inst_storage_bytes,
-        WGPUBufferUsage_Storage,
-        "model.instance_storage");
-    m.vram_bytes_ssbo += inst_storage_bytes;
-
-    // Per-chunk buffers for cross-mesh vertex pulling. Each chunk is sized
-    // to its own worst case (instances whose mesh lives in that chunk) —
-    // each visible instance only ever contributes ONE VisibleDraw entry
-    // (LOD0 OR LOD1), so the previous instance_count × 2 cap was a 4×
-    // over-allocation on multi-chunk models. Tight sizing also keeps total
-    // VRAM down on dense scenes.
+    // Gather each chunk's vertex + index bytes from the staged buffers
+    // using the per-mesh chunk-local offsets the planner just produced.
+    // Same layout as makeChunkRequest's v_ranges/i_ranges, but the source
+    // is memory not a sidecar file.
+    size_t chunks_uploaded = 0;
     for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        WgpuModelGpuData::Chunk& c = m.chunks[ci];
-
-        const size_t chunk_inst = std::max<size_t>(chunk_instance_count[ci], 1);
-        const size_t draws_bytes = chunk_inst * sizeof(WgpuModelGpuData::VisibleDrawGpu);
-        const size_t ps_cap      = chunk_inst + 1;
-        const size_t ps_bytes    = ps_cap * sizeof(uint32_t);
-
-        WGPUBufferDescriptor vd_desc = {};
-        vd_desc.size  = std::max<uint64_t>(draws_bytes, 16);
-        vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        vd_desc.label = svFromCStr("model.chunk.visible_draws");
-        c.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
-        c.visible_draws_capacity = chunk_inst;
-        m.vram_bytes_ssbo += vd_desc.size;
-
-        WGPUBufferDescriptor ps_desc = {};
-        ps_desc.size  = std::max<uint64_t>(ps_bytes, 16);
-        ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
-        ps_desc.label = svFromCStr("model.chunk.prefix_sums");
-        c.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-        c.prefix_sums_capacity = ps_cap;
-        m.vram_bytes_ssbo += ps_desc.size;
-
-        WGPUBufferDescriptor mu_desc = {};
-        mu_desc.size  = 16;
-        mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-        mu_desc.label = svFromCStr("model.chunk.uniform");
-        c.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
-        m.vram_bytes_ssbo += 16;
-
-        c.visible_draws_scratch.reserve(chunk_inst);
-        c.prefix_sums_scratch.reserve(ps_cap);
-    }
-
-    // Hand off CPU mirrors (cull / picking will need them later).
-    m.meshes    = std::move(data.meshes);
-    m.instances = std::move(data.instances);
-
-    // Mesh-local volumes (m³) + CPU mesh shadow for the Area tool.
-    // Both come from the same dequant pass per mesh — see
-    // computeMeshLocalVolumeQuantised. Helper works on raw quantised
-    // bytes so the streaming path can reuse it.
-    m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
-    m.mesh_triangles_cache.assign(m.meshes.size(), WgpuModelGpuData::MeshTriangles{});
-    for (size_t mi = 0; mi < m.meshes.size(); ++mi) {
-        const MeshInfo& mesh = m.meshes[mi];
-        if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
-        const uint8_t*  vbase = data.vertices.data() + mesh.vbo_byte_offset;
-        const uint32_t* ibase = data.indices.data()
-                              + (mesh.ebo_byte_offset / sizeof(uint32_t));
-        m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
-            mesh, vbase, ibase, mesh.index_count, &m.mesh_triangles_cache[mi]);
-    }
-
-    // object_id → instance index lookup. Volume tool reads it on every
-    // selection mutation; per-pick latency stays O(K) instead of O(K*N).
-    m.object_id_to_instance.clear();
-    m.object_id_to_instance.reserve(m.instances.size());
-    for (uint32_t i = 0; i < uint32_t(m.instances.size()); ++i) {
-        m.object_id_to_instance.emplace(m.instances[i].object_id, i);
-    }
-
-    // Per-chunk world AABB + instance-id list. Same logic as the
-    // streaming path. Lets cull frustum-test each chunk's AABB once
-    // and skip every instance inside in one shot when the chunk is
-    // off-screen.
-    for (auto& c : m.chunks) {
-        c.instance_ids.reserve(m.instances.size() / m.chunks.size() + 4);
-    }
-    for (uint32_t inst_idx = 0; inst_idx < uint32_t(m.instances.size()); ++inst_idx) {
-        const auto& inst = m.instances[inst_idx];
-        if (inst.mesh_id >= m.mesh_chunk_idx.size()) continue;
-        const uint32_t ci = m.mesh_chunk_idx[inst.mesh_id];
-        if (ci >= m.chunks.size()) continue;
         auto& c = m.chunks[ci];
-        for (int a = 0; a < 3; ++a) {
-            c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
-            c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
+        if (c.mesh_ids.empty()) continue;
+
+        std::vector<uint8_t>  vbytes(c.vertex_byte_size);
+        std::vector<uint32_t> idx;
+        idx.reserve(c.index_count);
+
+        for (uint32_t mi : c.mesh_ids) {
+            const MeshInfo& mesh = m.meshes[mi];
+            const size_t vsz = size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (vsz > 0) {
+                const size_t dst_off = size_t(m.mesh_chunk_local_base_vertex[mi])
+                                     * INSTANCED_VERTEX_STRIDE_BYTES;
+                std::memcpy(vbytes.data() + dst_off,
+                            raw_vertices.data() + mesh.vbo_byte_offset, vsz);
+            }
+            if (mesh.index_count > 0) {
+                const uint32_t* src = raw_indices.data()
+                                    + (mesh.ebo_byte_offset / sizeof(uint32_t));
+                idx.insert(idx.end(), src, src + mesh.index_count);
+            }
         }
-        c.instance_ids.push_back(inst_idx);
-    }
+        // LOD1 indices: streamer doesn't emit them, but the planner reserves
+        // space for them in the chunk's index slice when m.meshes[mi]
+        // .lod1_index_count > 0. Direct-load never has LOD1, so this is a
+        // no-op walk; left here so the layout stays parallel to the
+        // sidecar gather.
 
-    // Resolve per-instance chunk lookups by translating from the per-mesh
-    // arrays. Cull reads these directly, so the spatial-bucket planner
-    // (which can place the same mesh in multiple chunks under #55) will
-    // populate them without going through mesh_chunk_idx[].
-    {
-        const size_t n_inst = m.instances.size();
-        m.instance_chunk_idx.assign(n_inst, 0);
-        m.instance_base_vertex.assign(n_inst, 0);
-        m.instance_ebo_first_u32.assign(n_inst, 0);
-        m.instance_lod1_first_u32.assign(n_inst, 0);
-        for (size_t i = 0; i < n_inst; ++i) {
-            const uint32_t mi = m.instances[i].mesh_id;
-            if (mi >= m.mesh_chunk_idx.size()) continue;
-            m.instance_chunk_idx[i]      = m.mesh_chunk_idx[mi];
-            m.instance_base_vertex[i]    = m.mesh_chunk_local_base_vertex[mi];
-            m.instance_ebo_first_u32[i]  = m.mesh_chunk_local_ebo_first_u32[mi];
-            m.instance_lod1_first_u32[i] = m.mesh_chunk_local_lod1_first_u32[mi];
+        if (!applyStreamedChunk(m, ci, vbytes, idx)) {
+            qWarning().nospace()
+                << "[wgpu direct] finalizeModel(" << model_id
+                << "): applyStreamedChunk failed on chunk " << ci
+                << " (pool OOM?)";
+            continue;
         }
+        ++chunks_uploaded;
     }
 
-    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
-    WgpuModelGpuData& mref = inserted->second;
-    buildModelBindGroup(mref);
-
-    // Cumulative VRAM across all loaded models so the user can see where
-    // the wall is hit when streaming into a multi-GB scene.
-    uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
-    for (const auto& [mid_other, mo] : models_gpu_) {
-        total_vbo  += mo.vram_bytes_vbo;
-        total_ebo  += mo.vram_bytes_ebo;
-        total_ssbo += mo.vram_bytes_ssbo;
-    }
-    const double mb = 1.0 / (1024.0 * 1024.0);
-    qInfo().noquote().nospace()
-        << "[wgpu] applyCachedModel mid=" << model_id
-        << " verts=" << mref.vertex_bytes << "B"
-        << " idx="   << mref.index_count
-        << " meshes=" << mref.mesh_count
-        << " instances=" << mref.instance_count
-        << " chunks=" << mref.chunks.size()
-        << " | model vram=" << QString::number(double(mref.vram_bytes_vbo
-                                                  + mref.vram_bytes_ebo
-                                                  + mref.vram_bytes_ssbo) * mb, 'f', 1) << "MB"
-        << "  total vram="  << QString::number(double(total_vbo + total_ebo + total_ssbo) * mb, 'f', 1) << "MB"
-        << " (vbo "  << QString::number(double(total_vbo)  * mb, 'f', 1)
-        << " + ebo " << QString::number(double(total_ebo)  * mb, 'f', 1)
-        << " + ssbo "<< QString::number(double(total_ssbo) * mb, 'f', 1) << ")";
-
-    if (!initial_view_applied_) {
-        viewAll();
-        initial_view_applied_ = true;
-    }
-    // Grow selection_flags_ to cover the new id range.
-    ensureSelectionFlagsBuffer();
-    if (isExposed()) requestUpdate();
+    qInfo().nospace()
+        << "[wgpu direct] finalizeModel mid=" << model_id
+        << " meshes=" << m.meshes.size()
+        << " instances=" << m.instances.size()
+        << " chunks=" << chunks_uploaded << "/" << m.chunks.size()
+        << " verts=" << raw_vertices.size() << "B"
+        << " idx=" << raw_indices.size();
 }
 
 void WgpuViewportWindow::removeModel(uint32_t model_id) {
@@ -1472,6 +1311,143 @@ void WgpuViewportWindow::resetScene() {
     for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::hideModel(uint32_t model_id) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end() || it->second.hidden) return;
+    it->second.hidden = true;
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::showModel(uint32_t model_id) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end() || !it->second.hidden) return;
+    it->second.hidden = false;
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
+    if (federated_false_origin_meters_ == matrix_meters) return;
+    federated_false_origin_meters_ = matrix_meters;
+    for (auto& kv : models_gpu_) recomposeAndUploadModel(kv.first);
+}
+
+void WgpuViewportWindow::setModelCoordinateOperation(uint32_t model_id,
+                                                     const Eigen::Matrix4d& matrix_meters) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    if (it->second.coordinate_operation_meters == matrix_meters) return;
+    it->second.coordinate_operation_meters = matrix_meters;
+    recomposeAndUploadModel(model_id);
+}
+
+void WgpuViewportWindow::setModelTransformation(uint32_t model_id,
+                                                const Eigen::Matrix4d& matrix_meters) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    if (it->second.model_transformation_meters == matrix_meters) return;
+    it->second.model_transformation_meters = matrix_meters;
+    recomposeAndUploadModel(model_id);
+}
+
+void WgpuViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
+                                                       const WgpuModelGpuData& m) const {
+    // Maths in double; narrow at the end so a large IFC placement
+    // gets cancelled by federated_false_origin_meters_ before the
+    // float cast loses precision.
+    using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
+    using Mat4fCol = Eigen::Matrix<float,  4, 4, Eigen::ColMajor>;
+    const Eigen::Matrix4d P =
+        Eigen::Map<const Mat4dCol>(inst.placement_transformation);
+
+    const Eigen::Matrix4d composed =
+        federated_false_origin_meters_ *
+        m.model_transformation_meters *
+        m.coordinate_operation_meters *
+        P;
+
+    Eigen::Map<Mat4fCol> T_f(inst.transform);
+    T_f = composed.cast<float>();
+
+    if (inst.mesh_id < m.meshes.size()) {
+        const MeshInfo& mi = m.meshes[inst.mesh_id];
+        worldAabbFromLocalVp(mi.local_aabb_min, mi.local_aabb_max,
+                             inst.transform,
+                             inst.world_aabb_min, inst.world_aabb_max);
+    } else {
+        for (int a = 0; a < 3; ++a) {
+            inst.world_aabb_min[a] = 0.0f;
+            inst.world_aabb_max[a] = 0.0f;
+        }
+    }
+}
+
+void WgpuViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
+    if (!wgpu_initialized_) return;
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    WgpuModelGpuData& m = it->second;
+    if (m.instances.empty() || m.instance_storage == nullptr) return;
+
+    std::vector<InstanceGpu> gpu(m.instances.size());
+    for (size_t i = 0; i < m.instances.size(); ++i) {
+        InstanceCpu& inst = m.instances[i];
+        composeInstanceFromPlacement(inst, m);
+
+        InstanceGpu& dst = gpu[i];
+        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
+        dst.object_id            = inst.object_id;
+        dst.color_override_rgba8 = inst.color_override_rgba8;
+        dst.mesh_id              = inst.mesh_id;
+        dst._pad1                = 0;
+    }
+    wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
+                         gpu.data(), gpu.size() * sizeof(InstanceGpu));
+
+    // Per-chunk world AABBs are derived from instance world AABBs; they
+    // drive chunk-level frustum cull and the streaming priority, so they
+    // must follow the recompose. Reset to ±inf and re-fold every chunk's
+    // instances. Streaming chunks that haven't yet been assigned
+    // instance_ids (extremely rare path) just stay at ±inf and naturally
+    // fall out of frustum tests until the next load completes.
+    for (auto& c : m.chunks) {
+        c.aabb_min[0] = c.aabb_min[1] = c.aabb_min[2] =
+             std::numeric_limits<float>::infinity();
+        c.aabb_max[0] = c.aabb_max[1] = c.aabb_max[2] =
+            -std::numeric_limits<float>::infinity();
+        for (uint32_t inst_idx : c.instance_ids) {
+            if (inst_idx >= m.instances.size()) continue;
+            const InstanceCpu& inst = m.instances[inst_idx];
+            for (int a = 0; a < 3; ++a) {
+                c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
+                c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
+            }
+        }
+    }
+
+    if (isExposed()) requestUpdate();
+}
+
+bool WgpuViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
+    if (object_id == 0) return false;
+    for (const auto& [mid, m] : models_gpu_) {
+        auto it = m.object_id_to_instance.find(object_id);
+        if (it == m.object_id_to_instance.end()) continue;
+        const uint32_t inst_idx = it->second;
+        if (inst_idx >= m.instances.size()) continue;
+        const InstanceCpu& inst = m.instances[inst_idx];
+        out.model_id = mid;
+        out.mesh_id  = inst.mesh_id;
+        // InstanceCpu::placement_transformation is already double[16]
+        // column-major (large IFC placements need double precision until
+        // FederatedFalseOrigin cancels them); copy straight through.
+        std::memcpy(out.placement_transformation,
+                    inst.placement_transformation,
+                    sizeof(out.placement_transformation));
+        return true;
+    }
+    return false;
 }
 
 void WgpuViewportWindow::flushPendingSidecarQueue() {
@@ -1698,7 +1674,7 @@ bool WgpuViewportWindow::initWgpu() {
     }
 
     // Background loader for streaming reads — must outlive any
-    // applyCachedModelStreaming call so we can drain results into the
+    // applyCachedModel call so we can drain results into the
     // pool. Stopped in shutdown() before pool_.destroy().
     streaming_thread_.start();
 
@@ -3152,18 +3128,23 @@ bool WgpuViewportWindow::meshLocalToGlobal(uint32_t object_id,
         auto it = m.object_id_to_instance.find(object_id);
         if (it == m.object_id_to_instance.end()) continue;
         const InstanceCpu& inst = m.instances[it->second];
-        // GL composes coordinate_operation · placement · local; the wgpu
-        // viewer doesn't carry per-model CoordinateOperation yet, so
-        // apply just the placement_transformation (double precision —
-        // matches the IFC's own world coordinates for a non-federated
-        // load).
-        const double* P = inst.placement_transformation;  // column-major
-        const double lx = double(mesh_local[0]);
-        const double ly = double(mesh_local[1]);
-        const double lz = double(mesh_local[2]);
-        global_out[0] = P[0]*lx + P[4]*ly + P[8]*lz  + P[12];
-        global_out[1] = P[1]*lx + P[5]*ly + P[9]*lz  + P[13];
-        global_out[2] = P[2]*lx + P[6]*ly + P[10]*lz + P[14];
+        // CoordinateOperation · placement · local — gives the IFC's own
+        // georeferenced world frame (ENH). Excludes FederatedFalseOrigin
+        // and ModelTransformation, matching the GL meshLocalToGlobal
+        // contract. Runs in double so large IFC placements don't lose
+        // precision before the CoordinateOperation cancels them.
+        using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
+        const Eigen::Matrix4d P =
+            Eigen::Map<const Mat4dCol>(inst.placement_transformation);
+        const Eigen::Vector4d local(double(mesh_local[0]),
+                                    double(mesh_local[1]),
+                                    double(mesh_local[2]),
+                                    1.0);
+        const Eigen::Vector3d global =
+            (m.coordinate_operation_meters * P * local).head<3>();
+        global_out[0] = global.x();
+        global_out[1] = global.y();
+        global_out[2] = global.z();
         return true;
     }
     return false;
@@ -3287,8 +3268,10 @@ void WgpuViewportWindow::onLengthPick(int x_phys, int y_phys, bool alt) {
 }
 
 void WgpuViewportWindow::onLengthBackspace() {
-    if (!length_tool_) return;
-    length_tool_->removeLastPoint(*this);
+    if (length_tool_) length_tool_->removeLastPoint(*this);
+    // External listeners (bonsai's tool router) also want to know — the
+    // GL viewport emits this on the same key path.
+    emit toolBackspacePressed();
 }
 
 void WgpuViewportWindow::updateAreaHud() {
@@ -3376,9 +3359,88 @@ static double computeMeshLocalVolumeQuantised(
     return std::abs(sum) / 6.0;
 }
 
+void WgpuViewportWindow::toggleAreaTool() {
+    setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::NoTool : ToolMode::Area);
+}
+
+void WgpuViewportWindow::toggleLengthTool() {
+    setToolMode(tool_mode_ == ToolMode::Length ? ToolMode::NoTool : ToolMode::Length);
+}
+
+void WgpuViewportWindow::toggleVolumeTool() {
+    setToolMode(tool_mode_ == ToolMode::Volume ? ToolMode::NoTool : ToolMode::Volume);
+}
+
+void WgpuViewportWindow::setSelectedObjectId(uint32_t id) {
+    if (id == 0) selection_.clear();
+    else         selection_.replace(id);
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::hideSelectedElements() {
+    if (selection_.count() == 0) return;
+    for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
+    selection_.clear();
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::isolateSelectedElements() {
+    if (selection_.count() == 0) return;
+    // Hide every object in a visible model that isn't in the selection.
+    // Model-hidden objects stay model-hidden — element-level hiding on
+    // top of that is redundant and just bloats hidden_ids_.
+    const auto& sel_ids = selection_.selectionIds();
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id == 0) continue;
+            if (sel_ids.find(inst.object_id) == sel_ids.end()) {
+                visibility_.hide(inst.object_id);
+            }
+        }
+    }
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::showAllElements() {
+    if (visibility_.hiddenCount() == 0) return;
+    visibility_.clear();
+    if (isExposed()) requestUpdate();
+}
+
+void WgpuViewportWindow::invertElementVisibility() {
+    // Compute the new hidden set: every live object_id in a visible model
+    // that ISN'T currently hidden. Then swap. Done in two passes so we
+    // don't mutate the set we're iterating over.
+    std::vector<uint32_t> to_hide;
+    to_hide.reserve(1024);
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id == 0) continue;
+            if (!visibility_.isHidden(inst.object_id)) {
+                to_hide.push_back(inst.object_id);
+            }
+        }
+    }
+    visibility_.clear();
+    for (uint32_t id : to_hide) visibility_.hide(id);
+    if (isExposed()) requestUpdate();
+}
+
+WgpuViewportWindow::CameraState WgpuViewportWindow::cameraState() const {
+    return CameraState{
+        QVector3D(camera_target_[0], camera_target_[1], camera_target_[2]),
+        camera_distance_,
+        camera_yaw_deg_,
+        camera_pitch_deg_,
+    };
+}
+
 void WgpuViewportWindow::setToolMode(ToolMode m) {
     if (tool_mode_ == m) return;
     tool_mode_ = m;
+    emit toolModeChanged(m);
     // Always tear down the previous tool's overlay artefacts before
     // switching — easier than per-from-state branching, and the new
     // tool re-primes whatever it owns on its first update.
@@ -3456,7 +3518,7 @@ WgpuViewportWindow::volumesPerObject(
 void WgpuViewportWindow::updateVolumeReadout() {
     if (tool_mode_ != ToolMode::Volume) return;
 
-    const auto& sel = selection_.ids();
+    const auto& sel = selection_.selectionIds();
     if (sel.empty()) {
         overlays_.setHudText(QString());
         overlays_.setOverlayLabels({});
@@ -4782,6 +4844,52 @@ void WgpuViewportWindow::render() {
         if (quit_after) QCoreApplication::quit();
     }
 
+    // Emit per-frame stats before present so external listeners (bonsai's
+    // status bar) see fresh numbers in the same UI tick. fps is a
+    // rolling 60-sample average; the first window after startup is
+    // computed against the partial sample count so the readout settles
+    // immediately rather than starting at 0.
+    {
+        const double this_frame_ms =
+            double(frame_timer.nsecsElapsed()) / 1e6;
+        frame_time_ms_sum_ -= frame_time_ms_window_[frame_time_ms_head_];
+        frame_time_ms_window_[frame_time_ms_head_] = this_frame_ms;
+        frame_time_ms_sum_ += this_frame_ms;
+        frame_time_ms_head_ = (frame_time_ms_head_ + 1) % FRAME_TIME_WINDOW;
+        if (frame_time_ms_count_ < FRAME_TIME_WINDOW) ++frame_time_ms_count_;
+        const double avg_ms = frame_time_ms_count_ > 0
+            ? frame_time_ms_sum_ / double(frame_time_ms_count_)
+            : 0.0;
+
+        uint32_t total_obj = 0, total_tri = 0, total_meshes = 0;
+        for (const auto& [mid, mm] : models_gpu_) {
+            total_obj    += uint32_t(mm.instances.size());
+            total_tri    += mm.index_count / 3;
+            total_meshes += uint32_t(mm.meshes.size());
+        }
+
+        FrameStats stats;
+        stats.fps               = avg_ms > 0.0 ? float(1000.0 / avg_ms) : 0.0f;
+        stats.frame_time_ms     = float(avg_ms);
+        stats.total_objects     = total_obj;
+        stats.visible_objects   = last_visible_objects_;
+        stats.total_triangles   = total_tri;
+        stats.visible_triangles = last_visible_triangles_;
+        stats.unique_meshes     = total_meshes;
+        // Wgpu does one indirect dispatch per resident chunk; mirror that
+        // into the GL-named field bonsai's status string consumes.
+        uint32_t draw_calls = 0;
+        for (const auto& [mid, mm] : models_gpu_) {
+            if (mm.hidden) continue;
+            for (const auto& c : mm.chunks) {
+                if (c.is_resident && c.total_visible_draws > 0) ++draw_calls;
+            }
+        }
+        stats.gl_draw_calls      = draw_calls;
+        stats.indirect_sub_draws = last_sub_draws_;
+        emit frameStatsUpdated(stats);
+    }
+
     wgpuSurfacePresent(surface_);
     wgpuTextureRelease(surf_tex.texture);
 
@@ -5589,7 +5697,7 @@ bool WgpuViewportWindow::applyStreamedChunk(
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
 
-    // Mesh-local volumes for the meshes in this chunk. applyCachedModelStreaming
+    // Mesh-local volumes for the meshes in this chunk. applyCachedModel
     // left them zero because the bytes weren't in memory yet; the first
     // chunk to deliver each mesh fills it in. Spatial-bucket mode may
     // re-enter for the same mesh from a different chunk — the != 0 guard
@@ -6461,6 +6569,15 @@ void WgpuViewportWindow::frameAabb(const float mn[3], const float mx[3],
 }
 
 bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
+                                           QVector3D& mn, QVector3D& mx) const {
+    float fmin[3], fmax[3];
+    if (!computeObjectAabb(object_id, fmin, fmax)) return false;
+    mn = QVector3D(fmin[0], fmin[1], fmin[2]);
+    mx = QVector3D(fmax[0], fmax[1], fmax[2]);
+    return true;
+}
+
+bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
                                             float mn[3], float mx[3]) const {
     bool any = false;
     for (int i = 0; i < 3; ++i) {
@@ -6493,7 +6610,7 @@ void WgpuViewportWindow::focusOnSelectedObject() {
                     -std::numeric_limits<float>::infinity(),
                     -std::numeric_limits<float>::infinity() };
     bool any = false;
-    for (uint32_t id : selection_.ids()) {
+    for (uint32_t id : selection_.selectionIds()) {
         float mn[3], mx[3];
         if (!computeObjectAabb(id, mn, mx)) continue;
         for (int i = 0; i < 3; ++i) {
@@ -6899,6 +7016,7 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                  || event->modifiers() == Qt::AltModifier)) {
                 const bool alt = (event->modifiers() & Qt::AltModifier) != 0;
                 onAreaPick(px, py, alt);
+                emit surfacePickedInTool(px, py, int(event->modifiers()));
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
                 setPivotIndicatorVisible(false);
@@ -6913,6 +7031,7 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                  || event->modifiers() == Qt::AltModifier)) {
                 const bool alt = (event->modifiers() & Qt::AltModifier) != 0;
                 onLengthPick(px, py, alt);
+                emit surfacePickedInTool(px, py, int(event->modifiers()));
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
                 setPivotIndicatorVisible(false);
@@ -6939,6 +7058,11 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 qInfo().noquote().nospace()
                     << "[wgpu pick] replace object_id=" << id;
             }
+            // Notify external listeners (bonsai mirrors picks into
+            // SessionState). Emit even on miss (id == 0) so a clear
+            // round-trips, matching the GL backend's emit-active-id
+            // semantics.
+            emit objectPicked(id);
             // Track this object's chunk for the disappear-diagnostic.
             // Enumerate EVERY (model, chunk) the object's instances land in:
             // an IFC object can have multiple representations (visual,
@@ -7193,7 +7317,7 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
     }
     if (key == Qt::Key_H && mods == Qt::NoModifier) {
         if (selection_.count() == 0) return;
-        for (uint32_t id : selection_.ids()) visibility_.hide(id);
+        for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
         const size_t n = selection_.count();
         selection_.clear();   // hiding deselects, matching GL behaviour
         qInfo().noquote().nospace() << "[wgpu] hid " << n << " selected";
