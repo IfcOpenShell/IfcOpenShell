@@ -1363,6 +1363,10 @@ class Blender(bonsai.core.tool.Blender):
         def is_window(cls, element: entity_instance) -> bool:
             return tool.Parametric.is_window(element)
 
+        @classmethod
+        def is_array(cls, element: entity_instance) -> bool:
+            return tool.Parametric.is_array(element)
+
         class Array:
             @classmethod
             def bake_children_transform(cls, parent_element: ifcopenshell.entity_instance, item: int) -> None:

@@ -103,8 +103,12 @@ def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> 
 
 
 def update_relating_array_from_object(self: "BIMArrayProperties", context: bpy.types.Context) -> None:
-    bpy.ops.bim.enable_editing_array(item=self.is_editing)
-    return
+    # Skip the cleanup-time clear: Finish/Cancel sets relating_array_object back to None,
+    # which has no source to hydrate from. Only the user-driven pick (None → some array)
+    # should auto-enter edit on the picked source's layer 0.
+    if self.relating_array_object is None:
+        return
+    bpy.ops.bim.enable_editing_array(item=0)
 
 
 def is_object_array_applicable(self: "BIMArrayProperties", obj: bpy.types.Object) -> bool:
@@ -397,8 +401,13 @@ class BIMModelProperties(PropertyGroup):
 
 
 class BIMArrayProperties(PropertyGroup):
-    is_editing: bpy.props.IntProperty(
-        default=-1, description="Currently edited array index. -1 if not in array editing mode."
+    is_editing: bpy.props.BoolProperty(
+        default=False,
+        description="True while an array layer is in parametric edit mode. The specific layer is in editing_item_index.",
+    )
+    editing_item_index: bpy.props.IntProperty(
+        default=-1,
+        description="Index of the array layer currently being edited; -1 when not in edit mode.",
     )
     count: bpy.props.IntProperty(name="Count", default=0, min=0)
     x: bpy.props.FloatProperty(name="X", default=0, subtype="DISTANCE")
@@ -414,6 +423,15 @@ class BIMArrayProperties(PropertyGroup):
         name="Method",
         default="OFFSET",
     )
+    per_child_opening: bpy.props.BoolProperty(
+        name="Per-Child Opening",
+        description=(
+            "When the array parent fills a wall (or any voidable host), give each array child its own opening + "
+            "filling pair so the host is cut once per child. Disable to leave the host uncut by the children — "
+            "only the parent's original opening remains"
+        ),
+        default=True,
+    )
     relating_array_object: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Copy Array Properties",
@@ -422,13 +440,15 @@ class BIMArrayProperties(PropertyGroup):
     )
 
     if TYPE_CHECKING:
-        is_editing: int
+        is_editing: bool
+        editing_item_index: int
         count: int
         x: float
         y: float
         z: float
         use_local_space: bool
         method: Literal["OFFSET", "DISTRIBUTE"]
+        per_child_opening: bool
         sync_children: bool
         relating_array_object: Union[bpy.types.Object, None]
 
