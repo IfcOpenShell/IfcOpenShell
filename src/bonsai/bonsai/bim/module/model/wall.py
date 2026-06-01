@@ -2490,18 +2490,18 @@ def _iter_path_connections(
         if not rel.is_a("IfcRelConnectsPathElements"):
             continue
         other = rel.RelatedElement
-        # `Modifier.is_wall(None)` raises on `None.is_a(...)` — guard before the
-        # predicate runs. Malformed / partial IFC files can leave a rel's element
-        # ref unset, and the gizmo loop must survive a stray None rather than
-        # crashing the per-frame `position_gizmos`.
-        if other is None or not tool.Blender.Modifier.is_wall(other):
+        # Malformed / partial IFC files can leave a rel's element ref unset.
+        # The partner predicate calls `.is_a(...)` on its argument, so a None
+        # would raise mid-frame and silently break the gizmo group — guard
+        # before the predicate runs.
+        if other is None or not tool.Parametric.is_path_connectable_wall(other):
             continue
         out.append((other, rel.RelatingConnectionType, rel.RelatedConnectionType))
     for rel in getattr(elem, "ConnectedFrom", []):
         if not rel.is_a("IfcRelConnectsPathElements"):
             continue
         other = rel.RelatingElement
-        if other is None or not tool.Blender.Modifier.is_wall(other):
+        if other is None or not tool.Parametric.is_path_connectable_wall(other):
             continue
         out.append((other, rel.RelatedConnectionType, rel.RelatingConnectionType))
     return out
