@@ -156,3 +156,7 @@ if(NOT WIN32)
 else()
     install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_runtime}" DESTINATION bin)
 endif()
+
+if(BUILD_BONSAIVIEWER_TESTS)
+    add_subdirectory(tests)
+endif()
