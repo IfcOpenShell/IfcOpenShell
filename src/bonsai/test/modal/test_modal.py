@@ -20,6 +20,7 @@
 import inspect
 import os
 import sys
+import time
 
 import bpy
 import ifcopenshell
@@ -113,21 +114,25 @@ def new_project():
     props.template_file = "0"
     tool.Blender.get_addon_preferences().should_play_chaching_sound = False
 
+def get_area_and_region(window):
+    area = next(area for area in window.screen.areas if area.type == "VIEW_3D")
+    region = next(region for region in area.regions if region.type == "WINDOW")
+    return area, region
 
-def test_snap_object_detection(window, x, y):
+def test_snap_object_detection(window):
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    area, region = get_area_and_region(window)
+    x = round(area.width * 0.5 + area.x)
+    y = round(area.height * 0.54 + area.y)
+
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
 
     measure_settings = tool.Project.get_measure_tool_settings()
     measure_settings.measurement_type = "POLYLINE"
     for obj in tool.Blender.get_selected_objects():
         obj.select_set(False)
-    for area in bpy.context.screen.areas:
-        if area.type == "VIEW_3D":
-            for region in area.regions:
-                if region.type == "WINDOW":
-                    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
-                        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
-                    break
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
 
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
@@ -156,9 +161,66 @@ def test_snap_object_detection(window, x, y):
     yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
 
+def test_snap_partially_behind_camera(window):
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    area, region = get_area_and_region(window)
+    x = round(area.width * 0.20 + area.x)
+    y = round(area.height * 0.15 + area.y)
 
-def test_snap_in_xray_mode(window, x, y):
-    area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+    yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+
+    measure_settings = tool.Project.get_measure_tool_settings()
+    measure_settings.measurement_type = "POLYLINE"
+    for obj in tool.Blender.get_selected_objects():
+        obj.select_set(False)
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
+
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+    snap_point = tool.Model.get_polyline_props().snap_mouse_point[0]
+    assert_msg = "First click should have a snap_object"
+    assert snap_point.snap_object, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "snap_object should be a string with the object name"
+    assert type(snap_point.snap_object) == str, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "snap_type should be 'Edge'"
+    assert snap_point.snap_type == "Edge", assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "Object should be an IfcSlab"
+    assert snap_point.snap_object.split("/")[0] == "IfcSlab", assert_msg
+    _assert_pass(assert_msg)
+
+    offset = 200
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x + offset, y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x - offset, y)
+    snap_point = tool.Model.get_polyline_props().snap_mouse_point[0]
+    assert_msg = "Second click should have a snap_object"
+    assert snap_point.snap_object, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "snap_object should be a string with the object name"
+    assert type(snap_point.snap_object) == str, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "snap_type should be 'Face'"
+    assert snap_point.snap_type == "Face", assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "Object should be an IfcSlab"
+    assert snap_point.snap_object.split("/")[0] == "IfcSlab", assert_msg
+    _assert_pass(assert_msg)
+
+    yield from preset_event_simulate(window, "RET", "TAP", x, y)
+    yield "FINISHED"
+
+def test_snap_in_xray_mode(window):
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    area, region = get_area_and_region(window)
+    x = round(area.width * 0.68+ area.x)
+    y = round(area.height * 0.54 + area.y)
+
     area.spaces[0].shading.show_xray = True
 
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
@@ -167,13 +229,8 @@ def test_snap_in_xray_mode(window, x, y):
     measure_settings.measurement_type = "POLYLINE"
     for obj in tool.Blender.get_selected_objects():
         obj.select_set(False)
-    for area in bpy.context.screen.areas:
-        if area.type == "VIEW_3D":
-            for region in area.regions:
-                if region.type == "WINDOW":
-                    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
-                        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
-                    break
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
 
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
@@ -187,29 +244,76 @@ def test_snap_in_xray_mode(window, x, y):
     assert_msg = "Object should be an IfcFurniture"
     assert snap_point.snap_object.split("/")[0] == "IfcFurniture", assert_msg
     _assert_pass(assert_msg)
+    
+    yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
 
+def test_snap_far_from_origin(window):
+    bpy.context.view_layer.objects.active = None
+    bpy.ops.object.select_all(action="DESELECT")
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    area, region = get_area_and_region(window)
+    x = round(area.width * 0.155 + area.x)
+    y = round(area.height * 0.18 + area.y)
+
+    yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+
+    bpy.data.objects['IfcBuildingElementProxy/Cube'].select_set(True)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        bpy.ops.view3d.view_selected()
+
+
+    measure_settings = tool.Project.get_measure_tool_settings()
+    measure_settings.measurement_type = "POLYLINE"
+    for obj in tool.Blender.get_selected_objects():
+        obj.select_set(False)
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
+
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+    yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+    snap_point = tool.Model.get_polyline_props().snap_mouse_point[0]
+    assert_msg = "First click should have a snap_object"
+    assert snap_point.snap_object, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "snap_object should be a string with the object name"
+    assert type(snap_point.snap_object) == str, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "snap_type should be 'Vertex'"
+    assert snap_point.snap_type == "Vertex", assert_msg
+    _assert_pass(assert_msg)
+    print(snap_point.x)
+    print(round(snap_point.x, 3))
+    assert_msg = "x should be 1000000"
+    assert round(snap_point.x, 3) == 1000.0, assert_msg
+    _assert_pass(assert_msg)
+    assert_msg = "y should be 1000000"
+    assert round(snap_point.y, 3) == 1000.0, assert_msg
+    _assert_pass(assert_msg)
+
+    yield from preset_event_simulate(window, "RET", "TAP", x, y)
+    yield "FINISHED"
 
 def test_draw_polyline_wall(window, x, y):
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+    area, region = get_area_and_region(window)
 
     for obj in tool.Blender.get_selected_objects():
         obj.select_set(False)
-    for area in bpy.context.screen.areas:
-        if area.type == "VIEW_3D":
-            for region in area.regions:
-                if region.type == "WINDOW":
-                    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
-                        props = tool.Model.get_model_props()
-                        ifc = tool.Ifc.get()
-                        relating_type = ifc.by_type("IfcWallType")[0]
+    with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+        props = tool.Model.get_model_props()
+        ifc = tool.Ifc.get()
+        relating_type = ifc.by_type("IfcWallType")[0]
 
-                        if tool.Model.get_usage_type(relating_type) == "LAYER2":
-                            props.ifc_class = "IfcWallType"
-                            props.relating_type_id = str(relating_type.id())
+        if tool.Model.get_usage_type(relating_type) == "LAYER2":
+            props.ifc_class = "IfcWallType"
+            props.relating_type_id = str(relating_type.id())
 
-                        bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
-                    break
+        bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
 
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
@@ -251,8 +355,10 @@ def run_tests():
         bpy.ops.bim.load_project(filepath=filepath)
         window = _get_valid_window()
         test_queue = [
-            lambda w=window: test_snap_object_detection(w, 960, 540),
-            lambda w=window: test_snap_in_xray_mode(w, 1200, 540),
+            lambda w=window: test_snap_object_detection(w),
+            lambda w=window: test_snap_partially_behind_camera(w),
+            lambda w=window: test_snap_in_xray_mode(w),
+            lambda w=window: test_snap_far_from_origin(w),
         ]
     else:
         cleanup()
@@ -266,7 +372,7 @@ def run_tests():
         run_iter_from_timer(
             test_fn(),
             on_complete=_next,
-            on_error=lambda e: _handle_error(e, lambda: None),
+            on_error=lambda e: _handle_error(e, _next),
         )
 
     _next()
