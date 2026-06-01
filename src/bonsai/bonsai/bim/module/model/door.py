@@ -893,15 +893,8 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     def update_swing_gizmos(self, mw: Matrix, props: "BIMDoorProperties") -> None:
         """Update swing gizmo position and color based on editing state."""
-        prefs = self.get_addon_prefs()
-        door_gizmo_prefs = prefs.gizmos.door
-
-        door_type_visible = self.update_gizmo_visibility(
-            self.gizmo_door_type, props.is_editing, door_gizmo_prefs.swing_arc
-        )
-        flip_arc_visible = self.update_gizmo_visibility(
-            self.gizmo_flip_arc, props.is_editing, door_gizmo_prefs.flip_arc
-        )
+        door_type_visible = self.update_gizmo_visibility(self.gizmo_door_type, props.is_editing)
+        flip_arc_visible = self.update_gizmo_visibility(self.gizmo_flip_arc, props.is_editing)
 
         if not door_type_visible and not flip_arc_visible:
             return

@@ -275,202 +275,33 @@ class BIM_UL_panel_visibilities(bpy.types.UIList):
         row.prop(item, "is_bookmarked", text="", icon="SOLO_ON" if item.is_bookmarked else "SOLO_OFF", emboss=False)
 
 
-class GizmoPreferencesDoor(bpy.types.PropertyGroup):
-    """Property group for door gizmo visibility settings."""
-
-    overall_height: BoolProperty(name="Overall Height", default=True)
-    overall_width: BoolProperty(name="Overall Width", default=True)
-    threshold_thickness: BoolProperty(name="Threshold Thickness", default=True)
-    threshold_depth: BoolProperty(name="Threshold Depth", default=True)
-    threshold_offset: BoolProperty(name="Threshold Offset", default=True)
-    lining_offset: BoolProperty(name="Lining Offset", default=True)
-    lining_depth: BoolProperty(name="Lining Depth", default=True)
-    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
-    transom_offset: BoolProperty(name="Transom Offset", default=True)
-    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
-    casing_thickness: BoolProperty(name="Casing Thickness", default=True)
-    casing_depth: BoolProperty(name="Casing Depth", default=True)
-    swing_arc: BoolProperty(name="Swing Arc", default=True, description="Show door swing direction arc")
-    flip_arc: BoolProperty(name="Flip Arc", default=True, description="Show flip door orientation arc")
-
-    if TYPE_CHECKING:
-        overall_height: bool
-        overall_width: bool
-        threshold_thickness: bool
-        threshold_depth: bool
-        threshold_offset: bool
-        lining_offset: bool
-        lining_depth: bool
-        lining_thickness: bool
-        transom_offset: bool
-        transom_thickness: bool
-        casing_thickness: bool
-        casing_depth: bool
-        swing_arc: bool
-        flip_arc: bool
-
-
-class GizmoPreferencesWindow(bpy.types.PropertyGroup):
-    """Property group for window gizmo visibility settings."""
-
-    overall_height: BoolProperty(name="Overall Height", default=True)
-    overall_width: BoolProperty(name="Overall Width", default=True)
-    lining_offset: BoolProperty(name="Lining Offset", default=True)
-    lining_depth: BoolProperty(name="Lining Depth", default=True)
-    lining_thickness: BoolProperty(name="Lining Thickness", default=True)
-    lining_to_panel_offset_x: BoolProperty(name="Lining to Panel Offset X", default=True)
-    lining_to_panel_offset_y: BoolProperty(name="Lining to Panel Offset Y", default=True)
-    frame_depth: BoolProperty(name="Frame Depth", default=True)
-    frame_thickness: BoolProperty(name="Frame Thickness", default=True)
-    mullion_thickness: BoolProperty(name="Mullion Thickness", default=True)
-    first_mullion_offset: BoolProperty(name="First Mullion Offset", default=True)
-    second_mullion_offset: BoolProperty(name="Second Mullion Offset", default=True)
-    transom_thickness: BoolProperty(name="Transom Thickness", default=True)
-    first_transom_offset: BoolProperty(name="First Transom Offset", default=True)
-    second_transom_offset: BoolProperty(name="Second Transom Offset", default=True)
-
-    if TYPE_CHECKING:
-        overall_height: bool
-        overall_width: bool
-        lining_offset: bool
-        lining_depth: bool
-        lining_thickness: bool
-        lining_to_panel_offset_x: bool
-        lining_to_panel_offset_y: bool
-        frame_depth: bool
-        frame_thickness: bool
-        mullion_thickness: bool
-        first_mullion_offset: bool
-        second_mullion_offset: bool
-        transom_thickness: bool
-        first_transom_offset: bool
-        second_transom_offset: bool
-
-
-class GizmoPreferencesStair(bpy.types.PropertyGroup):
-    """Property group for stair gizmo visibility settings."""
-
-    width: BoolProperty(name="Width", default=True)
-    height: BoolProperty(name="Height", default=True)
-    tread_run: BoolProperty(name="Tread Run", default=True)
-    tread_depth: BoolProperty(name="Tread Depth", default=True)
-    riser_height: BoolProperty(name="Riser Height", default=True)
-    nosing_length: BoolProperty(name="Nosing Length", default=True)
-    nosing_depth: BoolProperty(name="Nosing Depth", default=True)
-    total_length_target: BoolProperty(name="Total Length Target", default=True)
-    base_slab_depth: BoolProperty(name="Base Slab Depth", default=True)
-    top_slab_depth: BoolProperty(name="Top Slab Depth", default=True)
-    lock: BoolProperty(name="Total Length Lock", default=True)
-    plus: BoolProperty(name="Add Tread (+)", default=True)
-    minus: BoolProperty(name="Remove Tread (-)", default=True)
-    cycle: BoolProperty(name="Cycle Stair Type", default=True)
-
-    if TYPE_CHECKING:
-        width: bool
-        height: bool
-        tread_run: bool
-        tread_depth: bool
-        riser_height: bool
-        nosing_length: bool
-        nosing_depth: bool
-        total_length_target: bool
-        base_slab_depth: bool
-        top_slab_depth: bool
-        lock: bool
-        plus: bool
-        minus: bool
-        cycle: bool
-
-
-class GizmoPreferencesWall(bpy.types.PropertyGroup):
-    """Property group for wall gizmo visibility settings."""
-
-    length: BoolProperty(
-        name="Length",
-        default=True,
-        description="Show the length dimension gizmo along the wall axis.",
-    )
-    height: BoolProperty(
-        name="Height",
-        default=True,
-        description="Show the height dimension gizmo at the wall's start endpoint.",
-    )
-    height_end: BoolProperty(
-        name="Height (far end, walls > 5m)",
-        default=True,
-        description=(
-            "Show a second height gizmo at the wall's far end so long walls don't "
-            "require panning to reach the handle."
-        ),
-    )
-    x_angle: BoolProperty(
-        name="Slope",
-        default=True,
-        description="Show the slope gizmo at the wall top measuring horizontal displacement of the top face.",
-    )
-    cycle: BoolProperty(
-        name="Cycle Offset Baseline",
-        default=True,
-        description="Show the baseline-state icon (Exterior / Centreline / Interior) in the editing icon row.",
-    )
-    scissors: BoolProperty(
-        name="Split at cursor",
-        default=True,
-        description="Show the split icon at the 3D cursor when it lies within the wall's length range.",
-    )
-    extend: BoolProperty(
-        name="Extend length to cursor X",
-        default=True,
-        description="Show the extend-length icon at the 3D cursor's projected wall-axis X.",
-    )
-    extend_height: BoolProperty(
-        name="Extend height to cursor Z",
-        default=True,
-        description="Show the extend-height icon at the 3D cursor's Z, on the wall axis.",
-    )
-    rotate: BoolProperty(
-        name="Rotate 90°",
-        default=True,
-        description="Show the rotate-90 icon in the editing icon row (rotates the wall around its Z axis).",
-    )
-    toggle_openings: BoolProperty(
-        name="Toggle Openings",
-        default=True,
-        description="Show the toggle-openings icon next to the pen (toggles opening fill visibility in the viewport).",
-    )
-
-    if TYPE_CHECKING:
-        length: bool
-        height: bool
-        height_end: bool
-        x_angle: bool
-        cycle: bool
-        scissors: bool
-        extend: bool
-        extend_height: bool
-        rotate: bool
-        toggle_openings: bool
-
-
 class GizmoPreferences(bpy.types.PropertyGroup):
-    """Property group for all gizmo visibility settings."""
+    """Aggregator for parametric gizmo visibility settings. One flat bool per
+    parametric feature; controls whether that feature's gizmo group polls
+    visible in the viewport."""
 
     draw_gizmos_in_3d_viewport: BoolProperty(
         name="Draw Gizmos In 3D Viewport",
         default=True,
         description="Show interactive gizmos in the 3D viewport for parametric elements",
     )
-    door: bpy.props.PointerProperty(type=GizmoPreferencesDoor)
-    window: bpy.props.PointerProperty(type=GizmoPreferencesWindow)
-    stair: bpy.props.PointerProperty(type=GizmoPreferencesStair)
-    wall: bpy.props.PointerProperty(type=GizmoPreferencesWall)
+    door: BoolProperty(name="Door", default=True)
+    window: BoolProperty(name="Window", default=True)
+    stair: BoolProperty(name="Stair", default=True)
+    railing: BoolProperty(name="Railing", default=True)
+    roof: BoolProperty(name="Roof", default=True)
+    array: BoolProperty(name="Array", default=True)
+    wall: BoolProperty(name="Wall", default=True)
 
     if TYPE_CHECKING:
         draw_gizmos_in_3d_viewport: bool
-        door: GizmoPreferencesDoor
-        window: GizmoPreferencesWindow
-        stair: GizmoPreferencesStair
-        wall: GizmoPreferencesWall
+        door: bool
+        window: bool
+        stair: bool
+        railing: bool
+        roof: bool
+        array: bool
+        wall: bool
 
 
 class DocPreferences(bpy.types.PropertyGroup):
@@ -913,61 +744,13 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             )
 
     def draw_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        """Render one enabled-toggle per parametric feature."""
         layout.label(text="Toggle visibility of gizmos in editing mode")
         box = layout.box()
-        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Door", self.draw_door_gizmo_parameters)
-        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Window", self.draw_window_gizmo_parameters)
-        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Stair", self.draw_stair_gizmo_parameters)
-        bonsai.bim.helper.draw_expandable_panel(box, context, "Parametric Wall", self.draw_wall_gizmo_parameters)
-
-    def _draw_parametric_gizmo_parameters(
-        self,
-        layout: bpy.types.UILayout,
-        gizmo_pg: bpy.types.PropertyGroup,
-        dimension_gizmo_class: type,
-        special_gizmo_names: frozenset[str] = frozenset(),
-    ) -> None:
-        """Draw the per-element gizmo visibility toggles. Surfaces every annotation
-        on ``gizmo_pg`` that either maps to one of ``dimension_gizmo_class``'s
-        dimension gizmos or is named in ``special_gizmo_names`` (non-dimension icons
-        like baseline cycle, scissors, rotate, …)."""
-        visible_names = {p.attr_name for p in dimension_gizmo_class.dimension_gizmo_props} | special_gizmo_names
-        try:
-            annotations = gizmo_pg.__annotations__
-        except AttributeError:
-            annotations = type(gizmo_pg).__annotations__
-        for prop in annotations:
-            if prop in visible_names:
-                layout.prop(gizmo_pg, prop)
-
-    def draw_door_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        from bonsai.bim.module.model.door import GizmoDoorEdition
-
-        self._draw_parametric_gizmo_parameters(
-            layout, self.gizmos.door, GizmoDoorEdition, frozenset({"swing_arc", "flip_arc"})
-        )
-
-    def draw_window_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        from bonsai.bim.module.model.window import GizmoWindowEdition
-
-        self._draw_parametric_gizmo_parameters(layout, self.gizmos.window, GizmoWindowEdition)
-
-    def draw_stair_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        from bonsai.bim.module.model.stair import GizmoStairEdition
-
-        self._draw_parametric_gizmo_parameters(
-            layout, self.gizmos.stair, GizmoStairEdition, frozenset({"lock", "plus", "minus", "cycle"})
-        )
-
-    def draw_wall_gizmo_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        from bonsai.bim.module.model.wall import GizmoWallEdition
-
-        self._draw_parametric_gizmo_parameters(
-            layout,
-            self.gizmos.wall,
-            GizmoWallEdition,
-            frozenset({"cycle", "scissors", "extend", "extend_height", "rotate", "toggle_openings"}),
-        )
+        annotations = type(self.gizmos).__annotations__
+        for feature in tool.Parametric.EDIT_TYPES:
+            if feature.name in annotations:
+                box.prop(self.gizmos, feature.name)
 
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "occurrence_name_style")

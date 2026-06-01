@@ -28,7 +28,12 @@ from mathutils import Matrix, Vector
 
 import bonsai.bim.module.drawing.gizmos as gizmo
 import bonsai.tool as tool
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
+from bonsai.bim.module.drawing.gizmos import (
+    COLOR_GREEN,
+    COLOR_RED,
+    DimensionGizmoConfig,
+    IconSlot,
+)
 from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
 
 
@@ -1150,7 +1155,7 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gizmo_idname="VIEW3D_GT_minus",
             operator="bim.adjust_array_count",
             scale=ICON_HELPER_SCALE,
-            color=(1.0, 0.2, 0.2),
+            color=COLOR_RED,
             operator_props=(("increment", -1),),
         ),
         IconSlot(
@@ -1158,7 +1163,7 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gizmo_idname="VIEW3D_GT_plus",
             operator="bim.adjust_array_count",
             scale=ICON_HELPER_SCALE,
-            color=(0.1, 0.8, 0.1),
+            color=COLOR_GREEN,
             operator_props=(("increment", 1),),
         ),
         IconSlot(
@@ -1172,7 +1177,7 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gizmo_idname="VIEW3D_GT_trash",
             operator="bim.remove_array_layer_from_edit",
             scale=ICON_HELPER_SCALE,
-            color=(1.0, 0.2, 0.2),
+            color=COLOR_RED,
             # Extra gap so the destructive action stays visually separated
             # from the routine edit controls — matches the prior 0.57 gap.
             extra_gap_before=0.20,

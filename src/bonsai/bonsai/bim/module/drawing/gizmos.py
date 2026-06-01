@@ -143,6 +143,16 @@ DOOR_SWING_ANGLE_MAX = 90.0
 # Default scale factor for billboarded icons (Blender-unit visual size).
 DEFAULT_BILLBOARD_SCALE = 0.5
 
+# Shared gizmo color constants. Re-exported as class attributes on
+# BaseParametricGizmoGroup so callers can use either ``self.COLOR_GREEN``
+# from inside a gizmo group or the module-level constant from a class body
+# (e.g. IconSlot declarations) without a forward-reference issue. Match
+# Blender's axis convention: X=red, Y=green, Z=blue.
+COLOR_RED = (1.0, 0.2, 0.2)
+COLOR_GREEN = (0.1, 0.8, 0.1)
+COLOR_BLUE = (0.3, 0.3, 1.0)
+COLOR_NEUTRAL = (1.0, 1.0, 1.0)
+
 PRECISION_MODE_MULTIPLIER = 0.1
 
 RAY_CAST_DISTANCE = 1000
@@ -4971,9 +4981,6 @@ class IconSlot:
     - ``color`` — RGB tuple. ``None`` falls back to the gizmo group's default
       decoration color. Use the group's ``COLOR_RED`` / ``COLOR_GREEN`` /
       ``COLOR_BLUE`` literals for state-coded icons.
-    - ``visibility_pref`` — attribute name read off ``get_gizmo_prefs()``.
-      Slot is hidden when that pref is falsy. ``None`` = always visible
-      during edit.
     - ``extra_gap_before`` — extra spacing past the default uniform gap, in
       meters. Use sparingly — e.g. to visually separate a destructive
       action (trash) from the routine edit controls.
@@ -4991,7 +4998,6 @@ class IconSlot:
     scale: float = DEFAULT_BILLBOARD_SCALE
     color: tuple[float, float, float] | None = None
     variants: tuple[str, ...] = ()
-    visibility_pref: str | None = None
     extra_gap_before: float = 0.0
     operator_props: tuple[tuple[str, Any], ...] = ()
 
@@ -5109,11 +5115,13 @@ class BaseParametricGizmoGroup:
     """
 
     # === Gizmo Colors ===
-    # Match Blender axis convention: X=red, Y=green, Z=blue
-    COLOR_RED = (1.0, 0.2, 0.2)
-    COLOR_GREEN = (0.1, 0.8, 0.1)
-    COLOR_BLUE = (0.3, 0.3, 1.0)
-    COLOR_NEUTRAL = (1.0, 1.0, 1.0)
+    # Aliased to the module-level constants so subclass class bodies can
+    # reference either spelling. Match Blender's axis convention:
+    # X=red, Y=green, Z=blue.
+    COLOR_RED = COLOR_RED
+    COLOR_GREEN = COLOR_GREEN
+    COLOR_BLUE = COLOR_BLUE
+    COLOR_NEUTRAL = COLOR_NEUTRAL
 
     # === Dimension Gizmo Layout (meters) ===
     ARROW_SCALE = 0.25  # Scale factor for arrow gizmos
@@ -5271,27 +5279,13 @@ class BaseParametricGizmoGroup:
         from_neg_y, from_neg_x = self.get_local_view_direction(context, world_matrix)
         return ViewDirection(from_negative_y=from_neg_y, from_negative_x=from_neg_x)
 
-    def update_gizmo_visibility(self, gizmo: bpy.types.Gizmo, is_editing: bool, pref_enabled: bool) -> bool:
-        """Update gizmo visibility based on modal state, editing state, and preference.
-
-        Consolidates the common pattern:
-            if hidden_by_modal:
-                gizmo.hide = True
-            else:
-                gizmo.hide = not is_editing or not pref_enabled
-
-        Args:
-            gizmo: The gizmo to update visibility for
-            is_editing: Whether the element is currently being edited
-            pref_enabled: Whether this gizmo type is enabled in preferences
-
-        Returns:
-            True if the gizmo is now visible (not hidden), False otherwise
-        """
+    def update_gizmo_visibility(self, gizmo: bpy.types.Gizmo, is_editing: bool) -> bool:
+        """Hide ``gizmo`` when not editing or when a modal owns the viewport.
+        Returns True if the gizmo is now visible."""
         if self.is_gizmo_hidden_by_modal(gizmo):
             gizmo.hide = True
             return False
-        gizmo.hide = not is_editing or not pref_enabled
+        gizmo.hide = not is_editing
         return not gizmo.hide
 
     def get_y_position_for_view(
@@ -5533,8 +5527,7 @@ class BaseParametricGizmoGroup:
             return False
         if cls.gizmo_pref_name:
             prefs = tool.Blender.get_addon_preferences()
-            feature_prefs = getattr(prefs.gizmos, cls.gizmo_pref_name, None)
-            if feature_prefs is not None and not getattr(feature_prefs, "enabled", True):
+            if not getattr(prefs.gizmos, cls.gizmo_pref_name, True):
                 return False
         if len(tool.Blender.get_selected_objects()) != 1:
             return False
@@ -5623,8 +5616,9 @@ class BaseParametricGizmoGroup:
         """
         pass
 
-    # Subclass should define these class attributes for metadata-driven dispatch
-    # If not defined, subclass must override get_props() and get_gizmo_prefs()
+    # Subclass should define these class attributes for metadata-driven dispatch.
+    # ``gizmo_pref_name`` matches a flat BoolProperty field on
+    # ``GizmoPreferences`` and gates the whole gizmo group's poll.
     props_getter: Callable[[bpy.types.Object], bpy.types.PropertyGroup] | None = None
     gizmo_pref_name: str | None = None  # e.g., "door"
 
@@ -5658,18 +5652,6 @@ class BaseParametricGizmoGroup:
         """
         prefs = self.get_addon_prefs()
         return prefs.decorations_colour[:3], prefs.decorator_color_selected[:3]
-
-    def get_gizmo_prefs(self) -> Any:
-        """Get gizmo preferences for this element type.
-
-        Subclass can either:
-        1. Define class attribute `gizmo_pref_name` (e.g., "door")
-        2. Override this method directly
-        """
-        if self.gizmo_pref_name:
-            prefs = self.get_addon_prefs()
-            return getattr(prefs.gizmos, self.gizmo_pref_name)
-        raise NotImplementedError("Subclass must define gizmo_pref_name or override get_gizmo_prefs()")
 
     def is_setup_complete(self) -> bool:
         """Check if gizmo setup has been completed.
@@ -6168,23 +6150,13 @@ class BaseParametricGizmoGroup:
                     scale=0.30,
                 )
             # Feature slots: per-class IconSlot tuples driven by tuple order.
-            # Hidden slots STILL CONSUME their X position — toggling a pref
-            # mustn't reflow the row (otherwise the array button drifts left
-            # whenever a user disables the rotate icon).
+            # Whole-feature visibility is gated upstream by ``poll()`` against
+            # ``prefs.gizmos.<feature>``; positioning happens unconditionally
+            # whenever the gizmo group polls visible.
             slot_positions = self._slot_x_positions()
-            # Only fetch prefs if some slot has a visibility_pref — groups
-            # without a prefs entry (e.g. array) would raise on the lookup.
-            needs_prefs = any(slot.visibility_pref for slot in self.feature_slots)
-            gizmo_prefs = self.get_gizmo_prefs() if needs_prefs else None
             for slot in self.feature_slots:
                 slot_x = self.ICON_VALIDATE_X + slot_positions[slot.name]
                 attrs = slot.gizmo_attrs()
-                if slot.visibility_pref and not getattr(gizmo_prefs, slot.visibility_pref, True):
-                    for attr in attrs:
-                        gz = getattr(self, attr, None)
-                        if gz is not None:
-                            gz.hide = True
-                    continue
                 if slot.variants:
                     # Multi-variant slot: write matrix on every variant member
                     # at the same anchor so a state flip never reveals a stale
