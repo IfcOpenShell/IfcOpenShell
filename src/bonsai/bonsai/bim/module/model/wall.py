@@ -2475,28 +2475,6 @@ def _collinear_boundary_world(seg_a: tuple[Vector, Vector], seg_b: tuple[Vector,
     )
 
 
-def _path_connection_location_world(
-    seg_self: tuple[Vector, Vector],
-    self_conn_type: str,
-    seg_other: tuple[Vector, Vector],
-    other_conn_type: str,
-    parallel_threshold: float = 0.9994,
-) -> Vector:
-    """Vector wrapper around `core.compute_path_connection_location`. Used by the
-    single-wall unjoin gizmo group to place one icon per ``IfcRelConnectsPathElements``
-    at its physical join point (an endpoint of the end-connected wall, or the
-    axis intersection for an ATPATH/ATPATH cross junction)."""
-    return Vector(
-        core.compute_path_connection_location(
-            (tuple(seg_self[0]), tuple(seg_self[1])),
-            self_conn_type,
-            (tuple(seg_other[0]), tuple(seg_other[1])),
-            other_conn_type,
-            parallel_threshold,
-        )
-    )
-
-
 def _iter_path_connections(
     elem: ifcopenshell.entity_instance,
 ) -> list[tuple[ifcopenshell.entity_instance, str, str]]:
