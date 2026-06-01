@@ -117,6 +117,7 @@ def regenerate_wall_mesh_from_props(obj: bpy.types.Object) -> None:
     bm.faces.new([verts[1], verts[5], verts[6], verts[2]])
 
     assert isinstance(obj.data, bpy.types.Mesh)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     bm.to_mesh(obj.data)
     bm.free()
     obj.data.update()
@@ -1999,14 +2000,12 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gizmo_idname="VIEW3D_GT_offset",
             variants=("exterior", "center", "interior"),
             operator="bim.cycle_wall_offset",
-            visibility_pref="cycle",
         ),
         IconSlot(
             name="rotate",
             gizmo_idname="VIEW3D_GT_cycle",
             operator="bim.rotate_wall_90",
             scale=0.30,
-            visibility_pref="rotate",
         ),
     )
 
@@ -2077,7 +2076,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         collide with split, so extend-Z gets bumped further to clear it."""
         if not hasattr(self, "split_gizmo"):
             return
-        gizmo_prefs = self.get_gizmo_prefs()
         all_gizmos = (self.extend_x_gizmo, self.extend_z_gizmo, self.split_gizmo)
         if not props.is_editing:
             for gz in all_gizmos:
@@ -2090,13 +2088,12 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         # Candidates ordered by priority (lowest first). Each is (gizmo, local_z).
         # The local X and Y are common: at the cursor's projected X on the axis.
-        # Only "active" gizmos (enabled + applicable) participate in placement.
-        candidates: list[tuple[bpy.types.Gizmo, float]] = []
-        if gizmo_prefs.extend:
-            candidates.append((self.extend_x_gizmo, 0.0))
-        if gizmo_prefs.extend_height:
-            candidates.append((self.extend_z_gizmo, cursor_local.z))
-        if in_range and gizmo_prefs.scissors:
+        # Split only joins when the cursor sits inside the wall's length range.
+        candidates: list[tuple[bpy.types.Gizmo, float]] = [
+            (self.extend_x_gizmo, 0.0),
+            (self.extend_z_gizmo, cursor_local.z),
+        ]
+        if in_range:
             candidates.append((self.split_gizmo, props.height))
 
         # Resolve collisions: walk in priority order and ensure each gizmo's
@@ -2144,7 +2141,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         manually here."""
         if not hasattr(self, "toggle_openings_gizmo"):
             return
-        gizmo_prefs = self.get_gizmo_prefs()
         icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
         icon_y = self.get_icon_y_offset(context, mw)
         billboard_rot = self._frame_billboard_rot
@@ -2155,7 +2151,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gz = getattr(self, f"baseline_{variant}_gizmo", None)
             if gz is None:
                 continue
-            if props.is_editing and gizmo_prefs.cycle and variant == active_variant:
+            if props.is_editing and variant == active_variant:
                 gz.hide = self.is_gizmo_hidden_by_modal(gz)
             else:
                 gz.hide = True
@@ -2163,7 +2159,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         # --- Idle-row toggle-openings (outside the slot system) ---
         # Sits at the slot the cancel icon occupies during editing — that way the
         # pen + openings pair is compact and visually grouped.
-        if not props.is_editing and gizmo_prefs.toggle_openings:
+        if not props.is_editing:
             self.toggle_openings_gizmo.hide = self.is_gizmo_hidden_by_modal(self.toggle_openings_gizmo)
             world_pos = mw @ Vector((self.ICON_VALIDATE_X + self.ICON_CANCEL_X, icon_y, icon_z))
             self.toggle_openings_gizmo.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)

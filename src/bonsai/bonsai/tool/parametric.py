@@ -383,29 +383,6 @@ class Parametric(bonsai.core.tool.Parametric):
             if hasattr(bpy.types.Object, feature.props_attr):
                 delattr(bpy.types.Object, feature.props_attr)
 
-    @classmethod
-    def iter_gizmo_preference_classes(cls, ui_module) -> list[type]:
-        """``GizmoPreferences<Name>`` classes that exist on ``ui_module`` for
-        every registry entry, plus the shared ``GizmoPreferencesFeature`` if
-        present. Order matches ``EDIT_TYPES``. Used by ``bim/__init__.py`` to
-        inject the per-type ``GizmoPreferences<X>`` classes at the correct
-        point — before ``ui.GizmoPreferences``, which references them via
-        ``PointerProperty``."""
-        # FIXME(PR5): drop the per-feature loop once PR4 consolidates
-        # bim/ui.py to use a single shared GizmoPreferencesFeature class
-        # and rewrites GizmoPreferences accordingly. The shared-class
-        # branch is the forward-compat path; the per-feature loop keeps
-        # v0.8.0's bim/ui.py working until then.
-        out: list[type] = []
-        for feature in cls.EDIT_TYPES:
-            gpref = getattr(ui_module, f"GizmoPreferences{feature.name.capitalize()}", None)
-            if gpref is not None:
-                out.append(gpref)
-        shared = getattr(ui_module, "GizmoPreferencesFeature", None)
-        if shared is not None:
-            out.append(shared)
-        return out
-
     # --- Feature-kind predicates ------------------------------------------------
     # One predicate per registered parametric type. Each is total: accepts any
     # IFC entity (or None), returns a bool, never raises. Predicates live with

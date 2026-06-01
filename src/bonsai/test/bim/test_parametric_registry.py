@@ -22,9 +22,10 @@
 
 The registry is the single source of truth for which parametric element types
 exist. Every consumer (auto-commit on save, finish/cancel chains, the
-``PointerProperty`` attachment, the ``GizmoPreferences<X>`` registration) derives
-identifiers from each entry's short ``name`` token. Forget any downstream
-registration and the silent-desync the framework exists to prevent will ship.
+``PointerProperty`` attachment, the ``GizmoPreferences`` per-feature toggle)
+derives identifiers from each entry's short ``name`` token. Forget any
+downstream registration and the silent-desync the framework exists to prevent
+will ship.
 
 These tests pin the registry-to-runtime contract: for every entry the operator
 ``bl_idname``s resolve to registered ``bpy.ops.bim.*`` callables, the
@@ -122,19 +123,14 @@ def test_every_predicate_does_not_raise_on_non_matching_element(registry):
     )
 
 
-def test_gizmo_preferences_attached_when_class_exists(registry):
-    """For every registry entry whose ``GizmoPreferences<Name>`` class exists in
-    ``bonsai.bim.ui``, the matching sub-PointerProperty must be declared on
-    ``ui.GizmoPreferences`` under the registry entry's ``name`` token.
-
-    Catches the silent-skip behaviour of the registry-driven gizmo-prefs
-    discovery: a typo in the class name or a dropped registration would
-    otherwise produce a missing sub-panel at runtime with no error.
-    Entries without a ``GizmoPreferences<Name>`` class are allowed — not
-    every parametric type ships gizmo prefs.
+def test_gizmo_preferences_field_per_registry_entry(registry):
+    """Every registry entry must have a matching ``<name>: BoolProperty`` field
+    on ``ui.GizmoPreferences`` so the addon-preferences UI auto-renders a
+    toggle for it and ``BaseParametricGizmoGroup.poll`` can gate the whole
+    gizmo group on ``prefs.gizmos.<name>``.
 
     Checks ``__annotations__`` rather than ``hasattr`` because Blender's
-    PropertyGroup syntax (``field: bpy.props.PointerProperty(...)``) is an
+    PropertyGroup syntax (``field: bpy.props.BoolProperty(...)``) is an
     annotation-only assignment — the attribute only materialises on the
     class after Blender's metaclass installs the bpy_struct descriptor,
     which depends on registration timing. Reading ``__annotations__``
@@ -142,16 +138,9 @@ def test_gizmo_preferences_attached_when_class_exists(registry):
     from bonsai.bim import ui
 
     annotations = getattr(ui.GizmoPreferences, "__annotations__", {})
-    missing = []
-    for feature in registry:
-        prefs_class_name = f"GizmoPreferences{feature.name.capitalize()}"
-        if not hasattr(ui, prefs_class_name):
-            continue
-        if feature.name not in annotations:
-            missing.append((feature.name, prefs_class_name))
+    missing = [feature.name for feature in registry if feature.name not in annotations]
     assert not missing, (
-        f"ui.GizmoPreferences missing sub-PointerProperty field(s) for: {missing} — "
-        f"each registered ``GizmoPreferences<Name>`` class must have a matching "
-        f"``<name>: PointerProperty(type=GizmoPreferences<Name>)`` field on "
-        f"``ui.GizmoPreferences``"
+        f"ui.GizmoPreferences missing BoolProperty field(s) for: {missing} — "
+        f"each registry entry must have a matching ``<name>: BoolProperty(...)`` "
+        f"field on ``ui.GizmoPreferences`` so the preferences UI surfaces a toggle"
     )

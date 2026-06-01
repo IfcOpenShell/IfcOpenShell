@@ -31,7 +31,12 @@ from mathutils import Matrix, Vector
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
+from bonsai.bim.module.drawing.gizmos import (
+    COLOR_GREEN,
+    COLOR_RED,
+    DimensionGizmoConfig,
+    IconSlot,
+)
 from bonsai.tool.numeric_input import (
     IntegerInputState,
     run_integer_input_modal,
@@ -484,7 +489,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gizmo_idname="VIEW3D_GT_plus",
             operator="bim.adjust_stair_treads",
             scale=ICON_PLUS_MINUS_SCALE,
-            color=(0.1, 0.8, 0.1),
+            color=COLOR_GREEN,
             operator_props=(("increment", 1),),
         ),
         IconSlot(
@@ -492,7 +497,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             gizmo_idname="VIEW3D_GT_minus",
             operator="bim.adjust_stair_treads",
             scale=ICON_PLUS_MINUS_SCALE,
-            color=(1.0, 0.2, 0.2),
+            color=COLOR_RED,
             operator_props=(("increment", -1),),
         ),
     )
@@ -639,9 +644,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         the dimension-positioning hook."""
         if not hasattr(self, "total_length_lock_open_gizmo"):
             return
-        gizmo_prefs = self.get_gizmo_prefs()
-        visible = props.is_editing and gizmo_prefs.lock
-        if not visible:
+        if not props.is_editing:
             self.total_length_lock_open_gizmo.hide = True
             self.total_length_lock_closed_gizmo.hide = True
             return
@@ -656,11 +659,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         flip can't reveal both at once."""
         if not hasattr(self, "tread_lock_open_gizmo"):
             return
-        gizmo_prefs = self.get_gizmo_prefs()
-        visible = props.is_editing and gizmo_prefs.lock
-        # When the pref or edit state hides the slot, hide both members; the
-        # base loop already wrote their matrices so re-showing later is safe.
-        if not visible:
+        if not props.is_editing:
             self.tread_lock_open_gizmo.hide = True
             self.tread_lock_closed_gizmo.hide = True
             return
@@ -671,12 +670,9 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         """Update visibility of +/- tread count gizmos. Positioning is handled in _update_editing_icon_positions."""
         if not hasattr(self, "plus_gizmo") or not hasattr(self, "minus_gizmo"):
             return
-        gizmo_prefs = self.get_gizmo_prefs()
-        self.update_gizmo_visibility(self.plus_gizmo, props.is_editing, gizmo_prefs.plus)
+        self.update_gizmo_visibility(self.plus_gizmo, props.is_editing)
         # Minus has additional condition: number_of_treads > 1
-        self.update_gizmo_visibility(
-            self.minus_gizmo, props.is_editing and props.number_of_treads > 1, gizmo_prefs.minus
-        )
+        self.update_gizmo_visibility(self.minus_gizmo, props.is_editing and props.number_of_treads > 1)
 
     def _update_dimension_gizmo_positions(
         self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
