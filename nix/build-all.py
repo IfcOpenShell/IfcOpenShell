@@ -143,7 +143,8 @@ USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 BUILD_BONSAIVIEWER = os.getenv("BUILD_BONSAIVIEWER", "").lower() in {"1", "on", "true", "yes"}
 
-PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+# PYTHON_VERSIONS = ["3.10.3", "3.11.8", "3.12.1", "3.13.6", "3.14.0"]
+PYTHON_VERSIONS = ["3.11.8"]
 JSON_VERSION = "3.11.3"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
@@ -798,6 +799,25 @@ def get_qt6_aqt_config() -> "tuple[str, str, str]":
 
 
 def install_qt6() -> str:
+    # If the caller pre-set QT_DIR (e.g. macOS CI using Homebrew-installed
+    # Qt6), validate it points at a real Qt6 install and skip aqtinstall
+    # entirely. The aqt download is only wired for Linux; on macOS/Windows
+    # the supported flow is a pre-installed Qt6 advertised via QT_DIR.
+    preset_qt_dir = os.environ.get("QT_DIR", "").strip()
+    if preset_qt_dir:
+        preset_qt_config = (
+            Path(preset_qt_dir) / "lib" / "cmake" / "Qt6" / "Qt6Config.cmake"
+        )
+        if preset_qt_config.exists():
+            logger.info(
+                f"Using pre-set QT_DIR={preset_qt_dir}, skipping aqt install"
+            )
+            return preset_qt_dir
+        logger.warning(
+            f"QT_DIR={preset_qt_dir} is set but {preset_qt_config} not found; "
+            f"falling through to aqtinstall"
+        )
+
     host, qt_arch, install_suffix = get_qt6_aqt_config()
     qt_install_root = INSTALL_DIR / f"qt6-{QT6_VERSION}-{install_suffix}"
     qt_dir = qt_install_root / QT6_VERSION / install_suffix
@@ -1603,6 +1623,9 @@ if "IfcOpenShell-Python" in targets:
             # cp: /Users/runner/work/IfcOpenShell/IfcOpenShell/build/Darwin/x86_64/10.15/install/ifcopenshell/python-3.9.11: No such file or directory
             # D'oh this was just due to a missing f-string f but doesn't hurt to keep it in.
             run(["mkdir", "-p", os.path.join(DEPS_DIR, "install", "ifcopenshell")])
-            run([cp, "-R", module_dir, os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")])
+            dest = os.path.join(DEPS_DIR, "install", "ifcopenshell", f"python-{python_version}")
+            if os.path.exists(dest):
+                shutil.rmtree(dest)
+            run([cp, "-R", module_dir, dest])
 
 logger.info("\rBuilt IfcOpenShell...\n\n")

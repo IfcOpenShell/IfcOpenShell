@@ -39,6 +39,10 @@ jobs:
           brew update
           # preinstalled: xz, cmake
           brew install git bison autoconf automake libffi findutils
+          # qt brings in Qt6 + Svg; nix/build-all.py honours pre-set
+          # QT_DIR so BonsaiViewer doesn't try to aqtinstall (which is
+          # Linux-only).
+          brew install qt
           echo "$(brew --prefix findutils)/libexec/gnubin" >> $GITHUB_PATH
           # Mac is using bison 2.5 by default, but we need 3.5+ for swig.
           echo "$(brew --prefix bison)/bin" >> $GITHUB_PATH
@@ -77,7 +81,9 @@ jobs:
             /usr/local/bin/brew install gettext openssl
           fi
           set -o pipefail
+          export QT_DIR="$(brew --prefix qt)"
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
+            BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
             python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
             | tee build.log
 
