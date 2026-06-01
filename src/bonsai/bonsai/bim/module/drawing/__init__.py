@@ -141,6 +141,7 @@ classes = (
     gizmos.GizmoLockOpen,
     gizmos.GizmoLockClosed,
     gizmos.GizmoArc,
+    gizmos.GizmoLinkToggle,
     gizmos.GizmoFillet,
     gizmos.GizmoWallCornerIcon,
     gizmos.GizmoWallTeeIcon,
