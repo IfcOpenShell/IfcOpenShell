@@ -1808,6 +1808,16 @@ bool WgpuViewportWindow::probeAndCreatePool() {
 #  if __has_include(<wayland-client-core.h>)
 #    include <wayland-client-core.h>
 #  endif
+#elif defined(Q_OS_WIN)
+// HINSTANCE for the surface descriptor. NOMINMAX + LEAN_AND_MEAN keep
+// <windows.h>'s preprocessor pollution out of Eigen / std::min,max.
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
+#  ifndef WIN32_LEAN_AND_MEAN
+#    define WIN32_LEAN_AND_MEAN
+#  endif
+#  include <windows.h>
 #endif
 
 bool WgpuViewportWindow::createSurface() {
@@ -1852,9 +1862,19 @@ bool WgpuViewportWindow::createSurface() {
         qWarning().noquote() << "Unsupported Qt platform for wgpu surface:" << platform;
         return false;
     }
+#elif defined(Q_OS_WIN)
+    // wgpu-native maps WGPUSurfaceSourceWindowsHWND.hwnd to a Win32 HWND
+    // it never dereferences directly (it only hands the handle to D3D12 /
+    // Vulkan WSI). winId() is the HWND for top-level Qt windows on the
+    // Windows platform plugin, returned as WId (== quintptr).
+    WGPUSurfaceSourceWindowsHWND hwndsrc = {};
+    hwndsrc.chain.sType = WGPUSType_SurfaceSourceWindowsHWND;
+    hwndsrc.hinstance = ::GetModuleHandleW(nullptr);
+    hwndsrc.hwnd      = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
+    surface_desc.nextInChain = &hwndsrc.chain;
+    surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
 #else
-    // macOS / Windows native-handle wiring lands when those targets become
-    // active. Stage-1 development happens on Linux.
+    // macOS Metal surface wiring lands with task #32.
     qWarning() << "wgpu surface creation not yet wired for this platform";
     return false;
 #endif
