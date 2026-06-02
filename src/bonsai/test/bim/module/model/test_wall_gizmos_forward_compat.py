@@ -41,7 +41,7 @@ def test_iter_path_connections_uses_path_connectable_predicate():
     poll. Strict ``is_wall`` rejects fillet-corner walls (which have no
     LAYER2 usage by IFC spec), so a regression to ``is_wall`` would silently
     drop fillet partners from the connection list — visible to the user as
-    "the corner looks unconnected from the adjacent wall's selection.\""""
+    "the corner looks unconnected from the adjacent wall's selection.\" """
     from bonsai.bim.module.model.wall import _iter_path_connections
 
     source = inspect.getsource(_iter_path_connections)
@@ -89,4 +89,73 @@ def test_gizmo_wall_link_toggle_invokes_partner_bbox_helper():
         "partner outline. The shared composite in decorator.py is the canonical "
         "trigger for this feature; replacing it with an ad-hoc draw call would "
         "drift from the array-children bbox styling."
+    )
+
+
+def test_every_wall_gizmo_group_resolves_get_decoration_colors():
+    """Any wall ``GizmoGroup`` whose ``setup()`` reads decoration colours via
+    ``self.get_decoration_colors()`` must inherit from a mixin that supplies
+    it (``gizmo.BaseParametricGizmoGroup`` or ``gizmo.BillboardingGizmoGroupMixin``).
+    Without the mixin the call AttributeErrors inside ``setup()``, Blender
+    logs the failure and skips the rest of ``setup()``, and every later
+    ``draw_prepare()`` blows up on whichever attribute the truncated setup
+    failed to assign — a silent, runtime-only regression that no other test
+    catches."""
+    import bpy
+
+    from bonsai.bim.module.model import wall as wall_module
+
+    offenders: list[str] = []
+    for name in dir(wall_module):
+        cls = getattr(wall_module, name)
+        if not inspect.isclass(cls):
+            continue
+        if inspect.getmodule(cls) is not wall_module:
+            continue
+        if not issubclass(cls, bpy.types.GizmoGroup):
+            continue
+        setup = cls.__dict__.get("setup")
+        if setup is None:
+            continue
+        try:
+            src = inspect.getsource(setup)
+        except (OSError, TypeError):
+            continue
+        if "self.get_decoration_colors()" not in src:
+            continue
+        if not hasattr(cls, "get_decoration_colors"):
+            offenders.append(cls.__name__)
+
+    assert not offenders, (
+        f"GizmoGroup subclasses {offenders} call self.get_decoration_colors() in "
+        "setup() but inherit from no class that provides it. Add "
+        "gizmo.BillboardingGizmoGroupMixin (or gizmo.BaseParametricGizmoGroup) to "
+        "the class bases — both define get_decoration_colors and are the canonical "
+        "wall-gizmo mixins."
+    )
+
+
+def test_gizmo_wall_add_opening_accepts_fillet_corner_active():
+    """``GizmoWallAddOpening.poll`` must gate on ``is_path_connectable_wall``,
+    not the strict ``is_wall`` predicate. Fillet-corner walls carry no LAYER2
+    usage by IFC spec, so the strict predicate rejects them and the
+    add-opening icon never surfaces over a curved corner — symmetry with the
+    join / unjoin / extend wall gizmos (all of which already poll on the
+    looser predicate) is required for the user to drop openings into fillet
+    corners at all."""
+    from bonsai.bim.module.model.wall import GizmoWallAddOpening
+
+    source = textwrap.dedent(inspect.getsource(GizmoWallAddOpening.poll))
+    tree = ast.parse(source)
+    attr_names = {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
+
+    assert "is_path_connectable_wall" in attr_names, (
+        "GizmoWallAddOpening.poll must gate on tool.Parametric.is_path_connectable_wall "
+        "for both the active element and the partner-exclusion check. The strict "
+        "is_wall predicate hides the add-opening gizmo over every fillet-corner wall."
+    )
+    assert "is_wall" not in attr_names, (
+        "GizmoWallAddOpening.poll must NOT call .is_wall — that strict predicate "
+        "drops fillet-corner walls. Use is_path_connectable_wall instead, matching "
+        "the host gate every other wall-state gizmo group uses."
     )

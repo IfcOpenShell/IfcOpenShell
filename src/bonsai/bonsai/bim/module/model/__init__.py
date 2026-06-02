@@ -104,6 +104,7 @@ classes = (
     wall.GizmoWallExtendVertically,
     wall.GizmoWallFilletPreview,
     wall.GizmoWallFilletReedit,
+    wall.GizmoWallFilletToggleOpenings,
     wall.GizmoWallJoinIntersection,
     wall.GizmoWallLinkToggle,
     wall.GizmoWallUnjoinSingle,

@@ -3273,12 +3273,12 @@ class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
         if active is None or active not in selected:
             return False
         element = tool.Ifc.get_entity(active)
-        if not element or not tool.Blender.Modifier.is_wall(element):
+        if not element or not tool.Parametric.is_path_connectable_wall(element):
             return False
         other = next(o for o in selected if o is not active)
         # If the other object is also a wall, the wall-join gizmo handles it instead.
         other_element = tool.Ifc.get_entity(other)
-        if other_element and tool.Blender.Modifier.is_wall(other_element):
+        if other_element and tool.Parametric.is_path_connectable_wall(other_element):
             return False
         return True
 
@@ -3685,7 +3685,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             icon.partner_obj = other_obj
 
 
-class GizmoWallFilletPreview(bpy.types.GizmoGroup):
+class GizmoWallFilletPreview(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
     """Gizmo group for the wall-fillet preview: radius dimension widget +
     trim-length dimension widget + validate / cancel icons.
 
@@ -3731,7 +3731,7 @@ class GizmoWallFilletPreview(bpy.types.GizmoGroup):
         gz.move_get_cb = preview_base.make_dim_getter(_props_callback, "radius")
         gz.move_set_cb = preview_base.make_dim_setter(_props_callback, "radius")
         # Set `axis` only (NOT `local_axis`) so `get_axis_direction` falls
-        # through to the world-space direction we set in `_position_gizmos`.
+        # through to the world-space direction set per frame on each gizmo.
         # The preview spans world space independent of either wall's local
         # frame, so the active-object transform that `local_axis` would go
         # through is the wrong frame.
@@ -3756,10 +3756,9 @@ class GizmoWallFilletPreview(bpy.types.GizmoGroup):
         self.radius_dim = gz
 
         # Sweep angle is geometrically invariant during drag (depends only on
-        # the angle between the two walls). Cached here per-frame from
-        # `_position_gizmos` so the trim getter / setter can convert
-        # trim_length ↔ radius via `tan(sweep/2)` without re-running the full
-        # geometry pipeline on every drag tick.
+        # the angle between the two walls). Cached per frame so the trim
+        # getter / setter can convert trim_length ↔ radius via tan(sweep/2)
+        # without re-running the full geometry pipeline on every drag tick.
         self._sweep_angle = math.pi / 2
 
         # Trim-length widget expresses the SAME single DOF as the radius
@@ -3839,13 +3838,7 @@ class GizmoWallFilletPreview(bpy.types.GizmoGroup):
 
         return _set
 
-    def refresh(self, context: bpy.types.Context) -> None:
-        self._position_gizmos(context)
-
-    def draw_prepare(self, context: bpy.types.Context) -> None:
-        self._position_gizmos(context)
-
-    def _position_gizmos(self, context: bpy.types.Context) -> None:
+    def position_gizmos(self, context: bpy.types.Context) -> None:
         wall_a_obj, wall_b_obj = _wall_fillet_preview_walls(context)
         if wall_a_obj is None or wall_b_obj is None:
             for gz in (self.radius_dim, self.trim_dim, self.validate_icon, self.cancel_icon):
@@ -4014,6 +4007,69 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         anchor = Vector((origin.x, origin.y, top_z))
         self.edit_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot)
         self.edit_icon.hide = False
+
+
+class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
+    """Surfaces the show / hide openings icon on a fillet-corner wall.
+
+    GizmoWallEdition's idle row already exposes this toggle for LAYER2 walls,
+    but its poll routes through the parametric edit pipeline which by IFC
+    spec rejects fillet corners (their banana body is hand-built and would be
+    flattened by the parametric regen). The openings toggle itself is a
+    viewport-state action independent of the body, so a parallel poll keeps
+    it available without re-opening the parametric edits."""
+
+    bl_idname = "OBJECT_GGT_bim_wall_fillet_toggle_openings"
+    bl_label = "Fillet Wall Toggle Openings Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    ICON_TOP_LIFT: ClassVar[float] = 0.15
+    # Screen-space X offset from the pen icon so the two stack horizontally
+    # rather than overlap at the chord midpoint.
+    ICON_OFFSET_X: ClassVar[float] = 0.4
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        if not _wall_gizmo_poll_gate(context):
+            return False
+        active = tool.Blender.get_active_object(is_selected=True)
+        if active is None:
+            return False
+        if len(list(tool.Blender.get_selected_objects())) != 1:
+            return False
+        element = tool.Ifc.get_entity(active)
+        if element is None or not element.is_a("IfcWall"):
+            return False
+        return tool.Parametric.is_fillet_corner_wall(element)
+
+    def setup(self, context: bpy.types.Context) -> None:
+        default_color, highlight_color = self.get_decoration_colors()
+        self.toggle_openings_icon = self.setup_icon_gizmo(
+            "VIEW3D_GT_add_opening",
+            default_color,
+            highlight_color,
+            "bim.toggle_wall_openings",
+        )
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 1:
+            self.toggle_openings_icon.hide = True
+            return
+        corner_obj = selected[0]
+        geom = _get_wall_geom_cached(self, corner_obj)
+        if geom is None:
+            self.toggle_openings_icon.hide = True
+            return
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        origin = corner_obj.matrix_world.translation
+        top_z = origin.z + (geom.get("height") or 3.0) + self.ICON_TOP_LIFT
+        anchor = Vector((origin.x, origin.y, top_z))
+        offset_x = billboard_rot @ Vector((self.ICON_OFFSET_X, 0.0, 0.0))
+        self.toggle_openings_icon.matrix_basis = gizmo.billboarded_at(anchor + offset_x, billboard_rot)
+        self.toggle_openings_icon.hide = False
 
 
 class JoinWallsIntersection(bpy.types.Operator, tool.Ifc.Operator):
