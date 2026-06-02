@@ -644,12 +644,8 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
-    """Toggle door swing direction and optionally flip door geometry.
-
-    Shift+Click (when flip_geometry=True): Flip geometry only without changing door direction"""
-
     bl_idname = "bim.toggle_door_swing"
-    bl_label = "Toggle Door Swing"
+    bl_label = "Change Door Swing"
     bl_options = {"REGISTER", "UNDO"}
 
     flip_geometry: bpy.props.BoolProperty(name="Flip Geometry", default=False)
@@ -659,6 +655,15 @@ class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
     skip_direction_change: bpy.props.BoolProperty(
         name="Skip Direction Change", default=False, options={"HIDDEN", "SKIP_SAVE"}
     )
+
+    @classmethod
+    def description(cls, context: bpy.types.Context, properties: bpy.types.OperatorProperties) -> str:
+        if properties.flip_geometry:
+            return (
+                "Swing the door from the opposite side of the wall. "
+                "Shift+click: mirror the door without changing which side it opens to"
+            )
+        return "Move the door hinge to the opposite side"
 
     def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         self.skip_direction_change = event.shift
@@ -835,6 +840,35 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
     ]
 
+    # Big quarter-arc hit shapes cover much of the door face — without a
+    # negative select_bias they would steal clicks from the small dimension
+    # and edit gizmos drawn on top of them.
+    SWING_ARC_SELECT_BIAS = -1000.0
+    swing_arc_operator = "bim.toggle_door_swing"
+
+    swing_arc_props = [
+        gizmo.SwingArcConfig(
+            name="primary",
+            visibility_condition=lambda p: p.is_editing and "SLIDING" not in p.door_type,
+            hinge_x=lambda p: (
+                p.overall_width if p.door_type.endswith("RIGHT") and "DOUBLE_DOOR" not in p.door_type else 0.0
+            ),
+            hinge_y=lambda p: p.lining_offset,
+            panel_width=lambda p: p.overall_width / 2 if "DOUBLE_DOOR" in p.door_type else p.overall_width,
+            x_mirror=lambda p: p.door_type.endswith("RIGHT") and "DOUBLE_DOOR" not in p.door_type,
+        ),
+        gizmo.SwingArcConfig(
+            name="secondary",
+            visibility_condition=lambda p: p.is_editing
+            and "DOUBLE_DOOR" in p.door_type
+            and "SLIDING" not in p.door_type,
+            hinge_x=lambda p: p.overall_width,
+            hinge_y=lambda p: p.lining_offset,
+            panel_width=lambda p: p.overall_width / 2,
+            x_mirror=lambda _p: True,
+        ),
+    ]
+
     props_getter = tool.Model.get_door_props
     gizmo_pref_name = "door"
 
@@ -858,22 +892,20 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return (furthest_y, furthest_y)
 
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
-        """Create door-specific swing arc gizmos."""
-        prefs = tool.Blender.get_addon_preferences()
-        inactive_color = prefs.decorator_color_background[:3]
-        special_color = prefs.decorator_color_special[:3]
+        """Create one (main, flip) swing-arc pair per ``swing_arc_props`` entry.
 
-        self.gizmo_door_type = self.create_arc_gizmo(
-            special_color,
-            "bim.toggle_door_swing",
-            flip_geometry=False,
-        )
-        self.gizmo_flip_arc = self.create_arc_gizmo(
-            inactive_color,
-            "bim.toggle_door_swing",
-            flip_geometry=True,
-            flip_local_axes="XY",
-        )
+        Stored as ``self.gizmo_swing_arc_<name>`` and ``self.gizmo_swing_arc_<name>_flip``
+        and pinned to ``SWING_ARC_SELECT_BIAS`` so other door gizmos win selection."""
+        prefs = tool.Blender.get_addon_preferences()
+        main_color = prefs.decorator_color_special[:3]
+        flip_color = prefs.decorator_color_background[:3]
+        for cfg in self.swing_arc_props:
+            main = self.create_arc_gizmo(main_color, self.swing_arc_operator, flip_geometry=False)
+            flip = self.create_arc_gizmo(flip_color, self.swing_arc_operator, flip_geometry=True)
+            for gz in (main, flip):
+                gz.select_bias = self.SWING_ARC_SELECT_BIAS
+            setattr(self, f"gizmo_swing_arc_{cfg.name}", main)
+            setattr(self, f"gizmo_swing_arc_{cfg.name}_flip", flip)
 
     def _refresh_element_specific(
         self, context: bpy.types.Context, mw: Matrix, props: "BIMDoorProperties"  # noqa: ARG002
@@ -892,22 +924,23 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self._update_view_dependent_dimensions(context, mw, props)
 
     def update_swing_gizmos(self, mw: Matrix, props: "BIMDoorProperties") -> None:
-        """Update swing gizmo position and color based on editing state."""
-        door_type_visible = self.update_gizmo_visibility(self.gizmo_door_type, props.is_editing)
-        flip_arc_visible = self.update_gizmo_visibility(self.gizmo_flip_arc, props.is_editing)
-
-        if not door_type_visible and not flip_arc_visible:
-            return
-
-        swing_x_offset = props.overall_width if "RIGHT" in props.door_type else 0.0
-        base_swing_transform = Matrix.Translation(V_(swing_x_offset, props.lining_offset, 0)) @ Matrix.Scale(
-            props.overall_width, 4
-        )
-
-        if door_type_visible:
-            self.gizmo_door_type.matrix_basis = mw @ base_swing_transform
-            self.gizmo_door_type.color = prefs.decorations_colour[:3]
-
-        if flip_arc_visible:
-            mirror_y = Matrix.Scale(-1, 4, (0, 1, 0))
-            self.gizmo_flip_arc.matrix_basis = mw @ base_swing_transform @ mirror_y
+        """Position each declared swing-arc pair per its config + props state."""
+        mirror_y = Matrix.Scale(-1, 4, (0, 1, 0))
+        for cfg in self.swing_arc_props:
+            main = getattr(self, f"gizmo_swing_arc_{cfg.name}")
+            flip = getattr(self, f"gizmo_swing_arc_{cfg.name}_flip")
+            show = cfg.visibility_condition(props)
+            main_visible = self.update_gizmo_visibility(main, show)
+            flip_visible = self.update_gizmo_visibility(flip, show)
+            if not (main_visible or flip_visible):
+                continue
+            x_flip = Matrix.Scale(-1, 4, (1, 0, 0)) if cfg.x_mirror(props) else Matrix.Identity(4)
+            transform = (
+                Matrix.Translation(V_(cfg.hinge_x(props), cfg.hinge_y(props), 0))
+                @ Matrix.Scale(cfg.panel_width(props), 4)
+                @ x_flip
+            )
+            if main_visible:
+                main.matrix_basis = mw @ transform
+            if flip_visible:
+                flip.matrix_basis = mw @ transform @ mirror_y
