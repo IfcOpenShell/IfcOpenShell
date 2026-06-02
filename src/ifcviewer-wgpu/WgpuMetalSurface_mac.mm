@@ -7,7 +7,10 @@
 
 #if defined(__APPLE__)
 
-#import <AppKit/NSView.h>
+// The AppKit umbrella header pulls in NSWindow so `view.window`'s
+// `backingScaleFactor` resolves — `<AppKit/NSView.h>` alone only
+// forward-declares NSWindow.
+#import <AppKit/AppKit.h>
 #import <QuartzCore/CAMetalLayer.h>
 
 void* wgpu_macos_attach_metal_layer(void* nsview_ptr) {
