@@ -689,16 +689,26 @@ WgpuViewportWindow::WgpuViewportWindow(QWindow* parent)
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //
-    // - Linux/Windows: OpenGLSurface gives us a hardware-rendering-ready
-    //   native window (XCB/HWND); we never bind a GL context on top.
-    // - macOS: MetalSurface tells Qt to back the NSView with a
-    //   CAMetalLayer, which wgpu-native wraps via
-    //   WGPUSurfaceSourceMetalLayer in createSurface().
-#if defined(Q_OS_MAC)
-    setSurfaceType(QSurface::MetalSurface);
-#else
+    // - All platforms: OpenGLSurface gives us a hardware-rendering-ready
+    //   native window (XCB/HWND/NSView). We never bind a GL context on
+    //   top.
+    //
+    // - macOS specifically: we *don't* use QSurface::MetalSurface even
+    //   though it'd be the "obvious" choice. Doing so makes Qt install
+    //   its own CAMetalLayer subclass (QMetalLayer) on the NSView and
+    //   keep an internal reference to it. Once wgpu-native (Rust) bridge-
+    //   retains that layer and re-publishes its drawable pool in
+    //   configureSurface, Qt's QMetalLayer winds up deallocated while
+    //   Qt's internal reference still points at it, and the next Qt
+    //   expose event aborts with:
+    //     *** -[QMetalLayer displayLock]:
+    //         message sent to deallocated instance ...
+    //   With OpenGLSurface (which on macOS still gives us a layer-backed
+    //   NSView), Qt doesn't install QMetalLayer; the
+    //   WgpuMetalSurface_mac.mm bridge attaches a vanilla CAMetalLayer
+    //   we fully own, and wgpu-native can do its lifetime gymnastics
+    //   without stepping on Qt's bookkeeping.
     setSurfaceType(QSurface::OpenGLSurface);
-#endif
 }
 
 WgpuViewportWindow::~WgpuViewportWindow() {
