@@ -3450,11 +3450,14 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         default_color, highlight_color = self.get_decoration_colors()
         self.unjoin_icon = self.setup_icon_gizmo("VIEW3D_GT_split", default_color, highlight_color, "bim.unjoin_walls")
         self.merge_icon = self.setup_icon_gizmo("VIEW3D_GT_merge", default_color, highlight_color, "bim.merge_wall")
+        # L-corner glyph reads as "join at the corner"; differentiated from
+        # the T glyph (extend) by where the bars meet (corner vs midline).
         self.join_icon = self.setup_icon_gizmo(
-            "VIEW3D_GT_merge", default_color, highlight_color, "bim.join_walls_intersection"
+            "VIEW3D_GT_wall_corner", default_color, highlight_color, "bim.join_walls_intersection"
         )
+        # T-junction glyph reads as "extend this wall into the other's side".
         self.extend_to_wall_icon = self.setup_icon_gizmo(
-            "VIEW3D_GT_extend", default_color, highlight_color, "bim.extend_walls_to_wall"
+            "VIEW3D_GT_wall_tee", default_color, highlight_color, "bim.extend_walls_to_wall"
         )
         # Fillet entry — shows in the same two states (joined / intersect)
         # where rounding the corner is well-defined. Click enters the preview
@@ -3485,27 +3488,22 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         seg_a = _wall_axis_world_segment_from_geom(selected[0], geom_a)
         seg_b = _wall_axis_world_segment_from_geom(selected[1], geom_b)
         billboard_rot = gizmo.get_billboard_rotation(context)
+        screen_up = gizmo.get_screen_up(billboard_rot)
+        anchor_z = self._stack_anchor_z(context, selected, geom_a, geom_b)
 
-        # State 1: walls are already joined → show Unjoin only, at the shared
-        # corner's floor Z (no visibility lift — user expects the icon to sit
-        # exactly at the corner, not floating above it).
+        # State 1: walls are already joined → Unjoin (bottom) + Fillet (above).
         if _are_walls_joined(elem_a, elem_b):
             corner = _collinear_boundary_world(seg_a, seg_b)
-            self.unjoin_icon.matrix_basis = gizmo.billboarded_at(corner, billboard_rot)
-            self.unjoin_icon.hide = False
+            anchor = Vector((corner.x, corner.y, anchor_z))
+            self._stack_at(anchor, screen_up, billboard_rot, (self.unjoin_icon, self.fillet_icon))
             self.merge_icon.hide = True
             self.join_icon.hide = True
             self.extend_to_wall_icon.hide = True
-            # Fillet entry stacked above the unjoin icon in screen-up.
-            screen_up = gizmo.get_screen_up(billboard_rot)
-            self.fillet_icon.matrix_basis = gizmo.billboarded_at(
-                corner + screen_up * self.ICON_STACK_OFFSET_Y, billboard_rot
-            )
-            self.fillet_icon.hide = False
             return
 
         # State 2: walls are collinear (parallel axes on the same line) → show Merge
-        # at the boundary midpoint between them, at floor Z (no visibility lift).
+        # at the boundary midpoint between them. No stack; single icon at the
+        # geometric boundary makes the merge target unambiguous.
         if _are_walls_collinear(seg_a, seg_b, self.PARALLEL_DOT_THRESHOLD, self.COLLINEAR_LINE_TOLERANCE):
             boundary = _collinear_boundary_world(seg_a, seg_b)
             self.merge_icon.matrix_basis = gizmo.billboarded_at(boundary, billboard_rot)
@@ -3516,13 +3514,12 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             self.fillet_icon.hide = True
             return
 
-        # State 3: non-parallel walls → show Join at the floor + Extend-to-Wall
-        # at the active wall's top. PARALLEL_DOT_THRESHOLD (cos 2°) is the only
-        # bound that matters: walls within 2° of parallel produce extrusion
-        # joints that race toward infinity, so project_axis_intersection
-        # returns None and hits the early-return below. Beyond that, any
-        # crossing is geometrically valid — distance from the nearest endpoint
-        # is the user's concern, not ours.
+        # State 3: non-parallel walls → Join (L, bottom) + Extend-to-Wall (T)
+        # + Fillet (top) stacked along screen-up at the wall-top anchor.
+        # PARALLEL_DOT_THRESHOLD (cos 2°) is the only bound that matters:
+        # walls within 2° of parallel produce extrusion joints that race
+        # toward infinity, so project_axis_intersection returns None and the
+        # early-return below hides the whole group.
         intersection_tuple = core.project_axis_intersection(
             (tuple(seg_a[0]), tuple(seg_a[1])),
             (tuple(seg_b[0]), tuple(seg_b[1])),
@@ -3532,35 +3529,43 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             self._hide_all()
             return
         intersection = Vector(intersection_tuple)
-
-        # Join sits on the floor (lowest endpoint Z across both wall axes), exactly
-        # where the corner meets the ground — no visibility lift.
-        floor_z = min(seg_a[0].z, seg_a[1].z, seg_b[0].z, seg_b[1].z)
-        join_world = Vector((intersection.x, intersection.y, floor_z))
-        self.join_icon.matrix_basis = gizmo.billboarded_at(join_world, billboard_rot)
-        self.join_icon.hide = False
-
-        # Extend-to-Wall sits at the active wall's top, same XY as the join icon —
-        # the Z gap is what differentiates "join at corner" from "extend into other".
-        active = context.active_object if context.active_object in selected else None
-        geom = tool.Wall.read_geometry(active) if active else None
-        if geom is None:
-            self.extend_to_wall_icon.hide = True
-        else:
-            active_top_z = active.matrix_world.translation.z + geom["height"]
-            extend_world = Vector((intersection.x, intersection.y, active_top_z))
-            self.extend_to_wall_icon.matrix_basis = gizmo.billboarded_at(extend_world, billboard_rot)
-            self.extend_to_wall_icon.hide = False
-
-        # Fillet entry stacked above the join icon in screen-up.
-        screen_up = gizmo.get_screen_up(billboard_rot)
-        self.fillet_icon.matrix_basis = gizmo.billboarded_at(
-            join_world + screen_up * self.ICON_STACK_OFFSET_Y, billboard_rot
-        )
-        self.fillet_icon.hide = False
-
+        anchor = Vector((intersection.x, intersection.y, anchor_z))
+        self._stack_at(anchor, screen_up, billboard_rot, (self.extend_to_wall_icon, self.join_icon, self.fillet_icon))
         self.unjoin_icon.hide = True
         self.merge_icon.hide = True
+
+    def _stack_anchor_z(
+        self,
+        context: bpy.types.Context,
+        selected: list[bpy.types.Object],
+        geom_a: dict,
+        geom_b: dict,
+    ) -> float:
+        # Wall-top Z is the bottom of the screen-up stack — high enough that
+        # the icons sit on top of the wall instead of clipping into it.
+        # Prefer the active wall's top (the height the user is operating on);
+        # fall back to the taller of the two if the active object isn't one
+        # of the selected walls (mid-selection-transition frame).
+        active = context.active_object if context.active_object in selected else None
+        if active is selected[0]:
+            return active.matrix_world.translation.z + geom_a["height"]
+        if active is selected[1]:
+            return active.matrix_world.translation.z + geom_b["height"]
+        return max(
+            selected[0].matrix_world.translation.z + geom_a["height"],
+            selected[1].matrix_world.translation.z + geom_b["height"],
+        )
+
+    def _stack_at(
+        self,
+        anchor: Vector,
+        screen_up: Vector,
+        billboard_rot: Matrix,
+        icons: tuple[bpy.types.Gizmo, ...],
+    ) -> None:
+        for k, icon in enumerate(icons):
+            icon.matrix_basis = gizmo.billboarded_at(anchor + screen_up * (self.ICON_STACK_OFFSET_Y * k), billboard_rot)
+            icon.hide = False
 
 
 class GizmoWallLinkToggle(gizmo.GizmoLinkToggle, bpy.types.Gizmo):
