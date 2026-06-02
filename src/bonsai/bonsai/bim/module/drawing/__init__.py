@@ -154,6 +154,7 @@ classes = (
     gizmos.GizmoArrayParent,
     gizmos.GizmoArrayAll,
     gizmos.GizmoArrayLayerIndicator,
+    gizmos.GizmoCountLabel,
     gizmos.GizmoMerge,
     gizmos.GizmoSplit,
     gizmos.GizmoUnjoin,

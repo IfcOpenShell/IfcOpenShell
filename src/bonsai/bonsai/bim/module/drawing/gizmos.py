@@ -3871,6 +3871,44 @@ class GizmoArrayLayerIndicator(bpy.types.Gizmo):
         draw_array_layer_children_bbox(context, parent_element, self._layer_index)
 
 
+class GizmoCountLabel(bpy.types.Gizmo):
+    """``xN`` text label rendered from 7-segment digit triangles.
+
+    Mirrors a caller-supplied integer (set via :meth:`set_count`) into a
+    live count badge. No icon glyph; the gizmo is the number alone."""
+
+    bl_idname = "BIM_GT_count_label"
+
+    __slots__ = ("custom_shape", "_count", "_built_count", "_outlined_batch")
+
+    def setup(self) -> None:
+        self._count = 0
+        self._built_count = -1
+        tris = _count_label_tris(self._count, 0.0, 0.0)
+        self.custom_shape = self.new_custom_shape("TRIS", tris)
+        self._outlined_batch = batch_for_shader(_get_static_tris_shader(), "TRIS", {"pos": tris})
+        self._built_count = 0
+
+    def set_count(self, count: int) -> None:
+        self._count = int(count)
+
+    def _ensure_shape(self) -> None:
+        if self._built_count != self._count:
+            tris = _count_label_tris(self._count, 0.0, 0.0)
+            self.custom_shape = self.new_custom_shape("TRIS", tris)
+            self._outlined_batch = batch_for_shader(_get_static_tris_shader(), "TRIS", {"pos": tris})
+            self._built_count = self._count
+
+    def draw(self, context: bpy.types.Context) -> None:
+        self._ensure_shape()
+        color = (*self.color_highlight, 1.0) if self.is_highlight else (*self.color, 1.0)
+        draw_tris_with_outline(self._outlined_batch, self.matrix_basis @ self.matrix_offset, color)
+
+    def draw_select(self, context: bpy.types.Context, select_id: int) -> None:
+        self._ensure_shape()
+        self.draw_custom_shape(self.custom_shape, select_id=select_id)
+
+
 class GizmoMerge(StaticTrisGizmoMixin, bpy.types.Gizmo):
     """Two arrows pointing inward toward each other — conveys joining/merging elements."""
 
@@ -4986,11 +5024,16 @@ class IconSlot:
       action (trash) from the routine edit controls.
     - ``operator_props`` — tuple of (key, value) pairs forwarded to
       ``target_set_operator``'s return value (e.g. ``increment=1`` for a
-      +/- adjuster, ``property_name="..."`` for a generic toggle)."""
+      +/- adjuster, ``property_name="..."`` for a generic toggle).
+    - ``placeholder`` — when ``True``, the slot reserves an X position in
+      the row but no auto-managed gizmo is created. Subclasses look the X
+      up via ``_slot_x_positions()[name]`` to place their own dynamically-
+      built gizmos (e.g. a live count label). ``gizmo_idname`` / ``operator``
+      are unused for placeholders."""
 
     name: str
-    gizmo_idname: str | tuple[str, ...]
-    operator: str
+    gizmo_idname: str | tuple[str, ...] = ""
+    operator: str = ""
     # Matches DEFAULT_BILLBOARD_SCALE — the scale validate/cancel render at,
     # so slots that don't override land at the same visual size by default.
     # Helper icons (+/- count adjusters, lock pairs, delete) override with
@@ -5000,10 +5043,13 @@ class IconSlot:
     variants: tuple[str, ...] = ()
     extra_gap_before: float = 0.0
     operator_props: tuple[tuple[str, Any], ...] = ()
+    placeholder: bool = False
 
     def __post_init__(self) -> None:
         # Validate shape at class-definition time so a typo doesn't surface
         # as a runtime error in the gizmo group's setup() three layers deep.
+        if self.placeholder:
+            return
         if self.variants:
             if isinstance(self.gizmo_idname, str):
                 pass  # prefix form — idname auto-suffixed per variant
@@ -5015,10 +5061,11 @@ class IconSlot:
                     f"to be either a string prefix (auto-suffixed as <prefix>_<variant>) or a "
                     f"tuple of {len(self.variants)} explicit idnames, got {self.gizmo_idname!r}"
                 )
-        elif not isinstance(self.gizmo_idname, str):
+        elif not isinstance(self.gizmo_idname, str) or not self.gizmo_idname:
             raise TypeError(
                 f"IconSlot({self.name!r}): single-icon slot requires gizmo_idname str, "
-                f"got {self.gizmo_idname!r} (set variants=(...) if you want a multi-variant slot)"
+                f"got {self.gizmo_idname!r} (set variants=(...) if you want a multi-variant "
+                f"slot, or placeholder=True for a reserved-position slot)"
             )
 
     def variant_idnames(self) -> tuple[str, ...]:
@@ -5034,7 +5081,10 @@ class IconSlot:
 
     def gizmo_attrs(self) -> tuple[str, ...]:
         """Names of every ``self.*`` attribute this slot writes during setup.
-        Returns one for a single slot, N for an N-variant slot."""
+        Returns one for a single slot, N for an N-variant slot, and an empty
+        tuple for placeholder slots (which reserve X without an auto-gizmo)."""
+        if self.placeholder:
+            return ()
         if self.variants:
             return tuple(f"{self.name}_{variant}_gizmo" for variant in self.variants)
         return (f"{self.name}_gizmo",)
@@ -5879,8 +5929,12 @@ class BaseParametricGizmoGroup:
         # Feature-specific edit-row icons. Subclasses declare them via
         # ``feature_slots``; multi-variant slots create one gizmo per
         # variant at the same X (e.g. a lock pair, a baseline triplet) and
-        # the subclass picks which is visible per frame.
+        # the subclass picks which is visible per frame. Placeholder slots
+        # only reserve an X position — the subclass creates its own gizmo
+        # there in ``setup_element_specific_gizmos``.
         for slot in self.feature_slots:
+            if slot.placeholder:
+                continue
             slot_color = slot.color if slot.color is not None else default_color
             kwargs = dict(slot.operator_props)
             for attr, idname in zip(slot.gizmo_attrs(), slot.variant_idnames()):
@@ -6155,6 +6209,8 @@ class BaseParametricGizmoGroup:
             # whenever the gizmo group polls visible.
             slot_positions = self._slot_x_positions()
             for slot in self.feature_slots:
+                if slot.placeholder:
+                    continue
                 slot_x = self.ICON_VALIDATE_X + slot_positions[slot.name]
                 attrs = slot.gizmo_attrs()
                 if slot.variants:
