@@ -373,26 +373,38 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        verts_2d = [
-            view3d_utils.location_3d_to_region_2d(region, rv3d, v) for v in snap_obj.verts_3d
-        ]  # Numpy version is worst in performance
-
+        snap_obj._ensure_bvh()
         intersected = snap_obj.raycast_boxes(
             context, event, snap_obj.root, intersected=[], rays=(ray_origin, ray_direction)
         )
+
+        # Collect edges from intersected BVH boxes
         edges = []
         for it in intersected:
             edges.extend(it.edges)
         edges = set(edges)
 
+        # Build only the vertices indices that belong to these edges
+        verts_idx: set[int] = set()
+        for e in edges:
+            ev = snap_obj.obj.data.edges[e].vertices
+            verts_idx.add(ev[0])
+            verts_idx.add(ev[1])
+
+        # Lazily project only the needed vertices to 2D screen space
+        verts_2d: dict[int, Vector] = {}
+        for idx in verts_idx:
+            v2d = view3d_utils.location_3d_to_region_2d(region, rv3d, snap_obj.verts_3d[idx])
+            if v2d is not None:
+                verts_2d[idx] = v2d
+
         edge_verts = {}
         for e in edges:
-            verts_idx = tuple(snap_obj.obj.data.edges[e].vertices)
-            verts = snap_obj.obj.data.vertices
-            v1 = snap_obj.obj.matrix_world @ verts[verts_idx[0]].co
-            v1_2d = verts_2d[verts_idx[0]]
-            v2 = snap_obj.obj.matrix_world @ verts[verts_idx[1]].co
-            v2_2d = verts_2d[verts_idx[1]]
+            verts_idx = snap_obj.obj.data.edges[e].vertices
+            v1 = snap_obj.verts_3d[verts_idx[0]]
+            v2 = snap_obj.verts_3d[verts_idx[1]]
+            v1_2d = verts_2d.get(verts_idx[0])
+            v2_2d = verts_2d.get(verts_idx[1])
             if (v1_2d is None) ^ (v2_2d is None):
                 point, _ = cls.intersect_edge_region_border(region, context.space_data, rv3d, v1, v2)
                 if v1_2d is None:
@@ -404,10 +416,16 @@ class Raycast(bonsai.core.tool.Raycast):
 
         snap_threshold = 10.0
 
-        for i, point in enumerate(verts_2d):
-            if not point:
-                continue
-            distance = (Vector(mouse_pos) - point).length
+        # Check all vertices for proximity to mouse position.
+        # Re-use the 2D projections already computed for edge endpoints.
+        for i, v3d in enumerate(snap_obj.verts_3d):
+            if i in verts_2d:
+                v2d = verts_2d[i]
+            else:
+                v2d = view3d_utils.location_3d_to_region_2d(region, rv3d, v3d)
+                if v2d is None:
+                    continue
+            distance = (Vector(mouse_pos) - v2d).length
             if distance <= snap_threshold:
                 snap_point = {
                     "object": snap_obj.obj,
@@ -800,6 +818,30 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
+    def process_wireframe_snap_obj(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        snap_obj,
+        ray_origin: Vector,
+        closest_snaps: list,
+    ):
+        snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
+        hit_obj = None
+        hit = None
+        if snap_points:
+            closest_length_squared = float("inf")
+            for point in snap_points:
+                point["group"] = "Wireframe"
+                closest_snaps.append(point)
+                length = (point["point"] - ray_origin).length_squared
+                if length < closest_length_squared:
+                    closest_length_squared = length
+                    hit = point["point"]
+                    hit_obj = point["object"]
+        return hit_obj, hit
+
+    @classmethod
     def ray_cast_and_get_closest_to_camera_snaps(
         cls,
         context: bpy.types.Context,
@@ -813,35 +855,43 @@ class Raycast(bonsai.core.tool.Raycast):
 
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
+        space = context.space_data
+        xray_mode = (space.shading.type == "SOLID" and space.shading.show_xray) or (
+            space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
+        )
+
         closest_snaps = []
-        hit = None
 
-        for snap_obj in objs_to_raycast:
-            if snap_obj.obj.type in {"EMPTY", "CURVE"} or (
-                hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0
-            ):
-                # For wireframe objects we have to test all the snaps to see which is closer
-                snap_points = tool.Raycast.ray_cast_by_proximity_2d(context, event, snap_obj)
-                closest_wf_hit = None
-                closest_wf_length_squared = 1.0
-                closest_wf_point = None
-                if snap_points:
-                    for point in snap_points:
-                        point["group"] = "Wireframe"
-                        closest_snaps.append(point)
-                        length = (point["point"] - ray_origin).length_squared
-                        if closest_wf_hit is None or length < closest_wf_length_squared:
-                            closest_wf_length_squared = length
-                            closest_wf_hit = point["point"]
-                            closest_wf_point = point
+        if not xray_mode and objs_to_raycast:
+            # Non-xray - only the closest solid object's Face snap is kept by
+            # the caller (detect_snapping_points).  Process solids in distance
+            # order and stop at the first hit to minimise raycasts.
+            wireframe_objs = []
+            solid_objs = []
+            for snap_obj in objs_to_raycast:
+                if snap_obj.obj.type in {"EMPTY", "CURVE"} or (
+                    hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0
+                ):
+                    wireframe_objs.append(snap_obj)
+                else:
+                    solid_objs.append(snap_obj)
 
-                    if closest_wf_point:
-                        hit_obj = closest_wf_point["object"]
-                        hit = closest_wf_point["point"]
-                        face_index = None
+            # Rough distance - object origin to ray origin
+            solid_objs.sort(key=lambda so: (so.obj.matrix_world.translation - ray_origin).length_squared)
 
-            else:
-                # Solid objects
+            # Process wireframe objects first (all of them, always collected)
+            for snap_obj in wireframe_objs:
+                hit_obj, hit = cls.process_wireframe_snap_obj(context, event, snap_obj, ray_origin, closest_snaps)
+                if hit is not None:
+                    length_squared = (hit - ray_origin).length_squared
+                    if closest_obj is None or length_squared < closest_length_squared:
+                        closest_length_squared = length_squared
+                        closest_obj = hit_obj
+                        closest_hit = hit
+                        closest_face_index = None
+
+            # Process solid objects in distance order, stop at first hit
+            for snap_obj in solid_objs:
                 hit_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, snap_obj.obj)
 
                 if hit:
@@ -855,14 +905,45 @@ class Raycast(bonsai.core.tool.Raycast):
                     }
                     closest_snaps.append(snap_point)
 
-            # Here we test which is closer, including wireframe and solid objects
-            if hit is not None:
-                length_squared = (hit - ray_origin).length_squared
-                if closest_obj is None or length_squared < closest_length_squared:
-                    closest_length_squared = length_squared
-                    closest_obj = hit_obj
-                    closest_hit = hit
-                    closest_face_index = face_index
+                    length_squared = (hit - ray_origin).length_squared
+                    if closest_obj is None or length_squared < closest_length_squared:
+                        closest_length_squared = length_squared
+                        closest_obj = hit_obj
+                        closest_hit = hit
+                        closest_face_index = face_index
+
+                    break
+
+        else:
+            # Xray mode - process all objects (all snaps are kept by the caller)
+            for snap_obj in objs_to_raycast:
+                if snap_obj.obj.type in {"EMPTY", "CURVE"} or (
+                    hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0
+                ):
+                    hit_obj, hit = cls.process_wireframe_snap_obj(context, event, snap_obj, ray_origin, closest_snaps)
+                    face_index = None
+                else:
+                    # Solid objects
+                    hit_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, snap_obj.obj)
+
+                    if hit:
+                        snap_point = {
+                            "point": hit,
+                            "type": "Face",
+                            "group": "Object",
+                            "object": hit_obj,
+                            "face_index": face_index,
+                            "distance": 9,  # High value so it has low priority
+                        }
+                        closest_snaps.append(snap_point)
+
+                if hit is not None:
+                    length_squared = (hit - ray_origin).length_squared
+                    if closest_obj is None or length_squared < closest_length_squared:
+                        closest_length_squared = length_squared
+                        closest_obj = hit_obj
+                        closest_hit = hit
+                        closest_face_index = face_index
 
         # Label snaps from the closest object
         if closest_obj is not None:
@@ -936,11 +1017,18 @@ class SnapObj:
     def __init__(self, obj: bpy.types.Object):
         self.__class__.all.append(self)
         self.obj = obj
-        self.root = self._create_root_node()
-        self.root.edges = [e.index for e in obj.data.edges]
-        self.split_box(self.root, 0)
+        self.root = None
+        self._bvh_built = False
         self.verts_3d = [obj.matrix_world @ v.co for v in obj.data.vertices]
         self.snap_points = []
+
+    def _ensure_bvh(self):
+        if self._bvh_built:
+            return
+        self.root = self._create_root_node()
+        self.root.edges = [e.index for e in self.obj.data.edges]
+        self.split_box(self.root, 0)
+        self._bvh_built = True
 
     def __clear_all__():
         for instance in SnapObj.all:

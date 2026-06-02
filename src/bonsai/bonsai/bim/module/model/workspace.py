@@ -969,7 +969,9 @@ class EditObjectUI:
 
         if PortData.data["total_ports"] > 0:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
+            )
 
     @classmethod
     def draw_void(cls, context, row):
@@ -1294,9 +1296,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.generate_space()
             return
         if self.active_material_usage == "LAYER2":
-            bpy.ops.bim.recalculate_wall()
+            if element and tool.Model.has_underside_connection(element):
+                bpy.ops.bim.regenerate_wall_to_underside()
+            else:
+                bpy.ops.bim.recalculate_wall()
         elif self.active_material_usage == "LAYER3":
             bpy.ops.bim.recalculate_slab()
+            wall_objs = tool.Model.get_connected_wall_objs(element)
+            if wall_objs:
+                core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, wall_objs)
         elif tool.System.get_ports(element):
             bpy.ops.bim.regenerate_distribution_element()
         elif self.active_material_usage == "PROFILE":

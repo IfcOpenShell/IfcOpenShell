@@ -161,23 +161,73 @@ def align_objects(
     model.align_objects(reference_obj, objs, align_type)
 
 
+def regenerate_wall_to_underside(
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    model: type[tool.Model],
+    wall_objs: list[bpy.types.Object],
+) -> None:
+    """Re-clip walls to their connected underside objects after the slab has moved."""
+    clipped_objs = []
+    for obj in wall_objs:
+        wall = ifc.get_entity(obj)
+        slab_objs = model.get_connected_slab_objs(wall)
+        if not slab_objs:
+            continue
+        if ifc.is_moved(obj):
+            geometry.run_edit_object_placement(obj=obj)
+        # Sync each slab's Blender mesh to its current IFC representation before
+        # reading face geometry, so a changed profile is picked up correctly.
+        model.reload_body_representation(slab_objs)
+        model.remove_wall_to_underside_booleans(wall)
+        for slab_obj in slab_objs:
+            clip = model.get_slab_clipping_bmesh(slab_obj)
+            if clip:
+                model.clip_wall_to_slab(wall, clip)
+        clipped_objs.append(obj)
+    if clipped_objs:
+        model.reload_body_representation(clipped_objs)
+
+
 def extend_wall_to_slab(
     ifc: type[tool.Ifc],
     geometry: type[tool.Geometry],
     model: type[tool.Model],
-    slab_obj: bpy.types.Object,
+    slab_objs: list[bpy.types.Object],
     wall_objs: list[bpy.types.Object],
 ) -> None:
-    if not (clip := model.get_slab_clipping_bmesh(slab_obj)):
-        return  # Nothing to clip?
-    slab = ifc.get_entity(slab_obj)
+    # If any wall is currently in item mode, exit it before modifying the
+    # representation. Leaving stale item objects around causes delete_ifc_item
+    # to later remove the extrusion (or other pre-boolean items) from inside
+    # the boolean chain, corrupting the IFC model.
+    geom_props = geometry.get_geometry_props()
+    if geom_props.representation_obj in wall_objs:
+        geometry.disable_item_mode()
+    clipped_walls = []
     for obj in wall_objs:
         if ifc.is_moved(obj):
             geometry.run_edit_object_placement(obj=obj)
         wall = ifc.get_entity(obj)
-        model.clip_wall_to_slab(wall, clip)
-        model.connect_wall_to_slab(wall, slab)
-    model.reload_body_representation(wall_objs)
+        # Merge previously connected slabs with newly requested ones so that
+        # re-running the operator never produces duplicate booleans and never
+        # silently discards clips that were applied in an earlier call.
+        existing = model.get_connected_slab_objs(wall)
+        seen = {id(s) for s in existing}
+        all_slab_objs = list(existing) + [s for s in slab_objs if id(s) not in seen]
+        # Remove stale booleans once, then re-clip against the full set.
+        model.remove_wall_to_underside_booleans(wall)
+        did_clip = False
+        for slab_obj in all_slab_objs:
+            clip = model.get_slab_clipping_bmesh(slab_obj)
+            if not clip:
+                continue
+            model.clip_wall_to_slab(wall, clip)
+            model.connect_wall_to_slab(wall, ifc.get_entity(slab_obj))
+            did_clip = True
+        if did_clip:
+            clipped_walls.append(obj)
+    if clipped_walls:
+        model.reload_body_representation(clipped_walls)
 
 
 class RequireTwoWallsError(Exception):
