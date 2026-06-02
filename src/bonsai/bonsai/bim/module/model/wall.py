@@ -2090,12 +2090,19 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     def _update_cursor_gizmos(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
         """Position the cursor-anchored icons (extend-X / extend-Z / split) on the wall
-        axis at the cursor's projected X, each at the Z its action would land at.
+        axis at the cursor's projected X.
 
-        When two icons want the same Z (within ``CURSOR_STACK_OFFSET``), bump the
-        lower-priority one upward so both stay clickable. Priority low → high:
-        extend-X, extend-Z, split. Bumps cascade — bumping extend-Z up can in turn
-        collide with split, so extend-Z gets bumped further to clear it."""
+        Two branches by view orientation:
+
+        - **Non-top-down**: world-Z stacking. Each icon sits at the Z its
+          action would land at (extend-X at floor, extend-Z at cursor Z,
+          split at wall top). Colliding icons stack at ``CURSOR_STACK_OFFSET``
+          increments; priority low → high: extend-X, extend-Z, split.
+        - **Top-down (plan view)**: world-Z collapses to one screen point,
+          so the world-Z stack would invisibly pile every icon on top of
+          ``extend_x``. Drop ``extend_z`` (vertical intent has no readable
+          cue when looking down +Z) and stack the rest along screen-up at
+          the floor anchor."""
         if not hasattr(self, "split_gizmo"):
             return
         all_gizmos = (self.extend_x_gizmo, self.extend_z_gizmo, self.split_gizmo)
@@ -2107,16 +2114,17 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         cursor_local = mw.inverted() @ cursor_world
         in_range = props.anchor_x < cursor_local.x < props.anchor_x + props.length
         billboard_rot = self._frame_billboard_rot
+        top_down = tool.Blender.is_view_top_down(context)
 
         # Candidates ordered by priority (lowest first). Each is (gizmo, local_z).
-        # The local X and Y are common: at the cursor's projected X on the axis.
-        # Split only joins when the cursor sits inside the wall's length range.
-        candidates: list[tuple[bpy.types.Gizmo, float]] = [
-            (self.extend_x_gizmo, 0.0),
-            (self.extend_z_gizmo, cursor_local.z),
-        ]
+        candidates: list[tuple[bpy.types.Gizmo, float]] = [(self.extend_x_gizmo, 0.0)]
+        if not top_down:
+            candidates.append((self.extend_z_gizmo, cursor_local.z))
         if in_range:
-            candidates.append((self.split_gizmo, props.height))
+            # Vertical (world-Z) height → wall-local Z so the icon lands on
+            # the slanted top edge for sloped walls (x_angle != 0).
+            split_local_z = core.extrusion_depth_from_vertical_height(props.height, props.x_angle)
+            candidates.append((self.split_gizmo, split_local_z))
 
         # Resolve collisions: walk in priority order and ensure each gizmo's
         # final Z is at least CURSOR_STACK_OFFSET above the previous one (when
@@ -2126,12 +2134,22 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             final_z = desired_z
             for _, prev_z in resolved:
                 if abs(final_z - prev_z) < self.CURSOR_STACK_OFFSET:
-                    # Bump up to clear the previous gizmo's slot.
                     final_z = prev_z + self.CURSOR_STACK_OFFSET
             resolved.append((gz, final_z))
 
         for gz in all_gizmos:
             gz.hide = True
+        if top_down:
+            # Swap world-Z stacking for screen-up stacking so each icon stays
+            # individually clickable when the camera projects world Z to zero.
+            screen_up = tool.Blender.get_screen_up_world(context)
+            base_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
+            for index, (gz, _local_z) in enumerate(resolved):
+                gz.hide = self.is_gizmo_hidden_by_modal(gz)
+                world_pos = base_world + screen_up * (index * self.CURSOR_STACK_OFFSET)
+                gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
+                _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
+            return
         for gz, local_z in resolved:
             gz.hide = self.is_gizmo_hidden_by_modal(gz)
             world_pos = mw @ Vector((cursor_local.x, 0.0, local_z))
