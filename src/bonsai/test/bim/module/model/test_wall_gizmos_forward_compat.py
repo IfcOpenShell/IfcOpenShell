@@ -159,3 +159,54 @@ def test_gizmo_wall_add_opening_accepts_fillet_corner_active():
         "drops fillet-corner walls. Use is_path_connectable_wall instead, matching "
         "the host gate every other wall-state gizmo group uses."
     )
+
+
+def test_join_intersection_uses_l_and_t_glyphs():
+    """``GizmoWallJoinIntersection.setup`` must bind the join icon to the L
+    glyph (``VIEW3D_GT_wall_corner``) and the extend-to icon to the T glyph
+    (``VIEW3D_GT_wall_tee``). The L / T pair makes the corner-join vs
+    extend-into-side distinction read at a glance — a regression to the
+    arrow-merge glyph for both icons makes them visually indistinguishable
+    once they're stacked at the same XY."""
+    from bonsai.bim.module.model.wall import GizmoWallJoinIntersection
+
+    source = textwrap.dedent(inspect.getsource(GizmoWallJoinIntersection.setup))
+    assert '"VIEW3D_GT_wall_corner"' in source, (
+        "GizmoWallJoinIntersection.setup must bind join_icon to VIEW3D_GT_wall_corner "
+        "(the L glyph). The arrow-merge glyph (VIEW3D_GT_merge) is the collinear-merge "
+        "case and was visually ambiguous with the extend-to icon when both were stacked."
+    )
+    assert '"VIEW3D_GT_wall_tee"' in source, (
+        "GizmoWallJoinIntersection.setup must bind extend_to_wall_icon to "
+        "VIEW3D_GT_wall_tee (the T glyph). The arrow-extend glyph was visually "
+        "ambiguous with the join icon when both were stacked."
+    )
+
+
+def test_join_intersection_stacks_along_screen_up_in_both_states():
+    """``GizmoWallJoinIntersection.position_gizmos`` must route both the
+    joined (unjoin + fillet) and the intersecting (join + extend + fillet)
+    states through ``_stack_at`` so the icons stay individually clickable
+    in any view, including top / plan view where world-Z separation
+    collapses to zero on screen. A regression that re-introduces a
+    per-state ``billboarded_at(corner, ...)`` write outside ``_stack_at``
+    silently flattens the stack back onto one screen pixel."""
+    from bonsai.bim.module.model.wall import GizmoWallJoinIntersection
+
+    source = textwrap.dedent(inspect.getsource(GizmoWallJoinIntersection.position_gizmos))
+    tree = ast.parse(source)
+    call_names: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Attribute):
+            call_names.add(node.func.attr)
+        elif isinstance(node.func, ast.Name):
+            call_names.add(node.func.id)
+
+    assert "_stack_at" in call_names, (
+        "GizmoWallJoinIntersection.position_gizmos must call self._stack_at to "
+        "lay icons along screen-up at the wall-top anchor. Direct "
+        "billboarded_at writes for the join/unjoin/extend/fillet icons bypass "
+        "the stacking contract and re-introduce the top-view collapse bug."
+    )
