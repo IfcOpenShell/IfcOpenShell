@@ -155,3 +155,37 @@ install(TARGETS BonsaiViewer
     BUNDLE  DESTINATION .
 )
 ifcopenshell_deploy_qt_runtime(BonsaiViewer)
+
+# Stage IfcOpenShell plug-ins (schemas, kernels, mappings, serializers —
+# anything named ifcopenshell.*.dylib) into the .app bundle's
+# Frameworks/ directory on macOS. These are dlopen-only deps so
+# macdeployqt does not follow them automatically. The upstream
+# install(TARGETS …) rules place them at <prefix>/lib/ (outside the
+# bundle).
+#
+# Frameworks/ is the standard macOS app-bundle location for shared
+# libraries the app pulls in at runtime — it's where macdeployqt
+# already deposited libIfcParse/libIfcGeom/etc. as linked deps, and
+# the BonsaiViewer exe's INSTALL_RPATH (@executable_path/../Frameworks)
+# points there. With the plug-in loader's primary search path being
+# dirname(libIfcParse) (= Frameworks/ inside the bundle), placing the
+# plug-ins alongside libIfcParse means they're found on the first
+# probe — no fallback search needed.
+#
+# Subdirectory order in cmake/CMakeLists.txt guarantees that ifcparse/
+# / ifcgeom/ / serializers/ are add_subdirectory'd before bonsaiviewer/,
+# so by the time this install rule fires the *.dylib files are already
+# on disk under <prefix>/lib/.
+if(APPLE)
+    install(CODE [[
+        file(GLOB _ifc_plugins
+             "${CMAKE_INSTALL_PREFIX}/lib/ifcopenshell.*.dylib")
+        if(_ifc_plugins)
+            message(STATUS "Staging IfcOpenShell plug-ins into BonsaiViewer.app/Contents/Frameworks")
+            file(COPY ${_ifc_plugins}
+                 DESTINATION "${CMAKE_INSTALL_PREFIX}/BonsaiViewer.app/Contents/Frameworks")
+        else()
+            message(WARNING "No ifcopenshell.*.dylib plug-ins found in lib/ — BonsaiViewer.app will fail at the first IFC load")
+        endif()
+    ]])
+endif()

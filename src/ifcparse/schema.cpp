@@ -205,8 +205,20 @@ ifcopenshell::plugin::metadata ifcopenshell::schema_plugin_metadata(const std::s
 	return metadata;
 }
 
+// Stable anchor symbol inside libIfcParse for plugin::module_directory()'s
+// dladdr/GetModuleHandleEx lookup. A variable (vs. a function pointer) has
+// exactly one canonical address inside its defining module — function
+// pointers can resolve to a PLT/stub copy in the consumer binary on some
+// toolchains (observed on macOS arm64: `&load_schema_plugins` resolved
+// inside BonsaiViewer.exe instead of libIfcParse.dylib, so dladdr returned
+// the exe's directory and the plugin search path ended up at
+// BonsaiViewer.app/Contents/MacOS/ instead of wherever libIfcParse — and
+// therefore the schema plug-ins — actually lived).
+extern "C" IFC_PARSE_API char ifcopenshell_libifcparse_anchor;
+IFC_PARSE_API char ifcopenshell_libifcparse_anchor = 0;
+
 std::filesystem::path ifcopenshell::schema_plugin_directory() {
-	return plugin::module_directory(reinterpret_cast<const void*>(&ifcopenshell::load_schema_plugins));
+	return plugin::module_directory(&ifcopenshell_libifcparse_anchor);
 }
 
 void ifcopenshell::load_schema_plugins(schema_registry& registry) {

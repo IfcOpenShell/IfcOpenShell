@@ -344,6 +344,27 @@ PLUGIN_API std::filesystem::path ifcopenshell::plugin::add_search_paths_or_defau
 	plugin_debug("using default plugin search path from module directory");
 	const auto path = default_search_path();
 	manager.add_search_path(path);
+
+	// Bundle-aware fallback search paths. The primary search path is
+	// dirname(libIfcParse) which works for the flat layouts we get on
+	// Linux ($prefix/lib/) and Windows ($prefix/bin/) — plug-ins live
+	// next to libIfcParse there. macOS app bundles put libIfcParse
+	// somewhere inside Contents/ (Frameworks/ by macdeployqt
+	// convention, MacOS/ if the install rule co-locates it with the
+	// exe) and the plug-ins typically live in a sibling directory,
+	// not the same one. Probe the Apple-canonical PlugIns/ first,
+	// then Frameworks/ (where macdeployqt deposits non-Qt @rpath
+	// deps) and MacOS/ (next-to-exe layout). Duplicate primary paths
+	// are harmless — discover_exact short-circuits on first hit.
+#ifdef __APPLE__
+	if (!path.empty()) {
+		const auto parent = path.parent_path();
+		manager.add_search_path(parent / "PlugIns");
+		manager.add_search_path(parent / "Frameworks");
+		manager.add_search_path(parent / "MacOS");
+	}
+#endif
+
 	return path;
 }
 
