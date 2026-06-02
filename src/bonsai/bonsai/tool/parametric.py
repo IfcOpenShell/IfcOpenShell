@@ -183,11 +183,12 @@ class Parametric(bonsai.core.tool.Parametric):
         """Post-commit hook for ``tool.Ifc.Operator``: re-syncs scene-level
         workspace-tool header fields from current IFC state and bumps the
         geometry generation counter so caches keyed off it drop stale
-        entries on the next draw."""
+        entries on the next draw. Header-only — user-intent enums are
+        re-targeted on selection change, not here."""
         import bonsai.bim.handler  # late import: bim.handler imports tool.*
 
         cls._geom_generation += 1
-        bonsai.bim.handler.update_bim_tool_props()
+        bonsai.bim.handler.refresh_bim_tool_headers()
         tool.Blender.update_all_viewports()
 
     @classmethod
