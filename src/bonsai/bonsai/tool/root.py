@@ -393,7 +393,7 @@ class Root(bonsai.core.tool.Root):
                 # Make sure that the array children also get reassigned to the correct aggregate
                 pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
                 if pset:
-                    array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
+                    array_children = tool.Array.get_all_children_objects(new[0])
                     for obj in array_children:
                         bonsai.core.aggregate.assign_object(
                             tool.Ifc,

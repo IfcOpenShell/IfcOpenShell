@@ -631,7 +631,7 @@ class _RoofEditMixin(PathPreservingEditMixin):
 
     @classmethod
     def _is_element_type(cls, element):
-        return tool.Blender.Modifier.is_roof(element)
+        return tool.Parametric.is_roof(element)
 
     @classmethod
     def _get_props(cls, obj: bpy.types.Object):

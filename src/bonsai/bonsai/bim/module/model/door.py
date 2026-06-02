@@ -580,7 +580,7 @@ class _DoorEditMixin(FeatureModifierEditMixin):
 
     @classmethod
     def _is_element_type(cls, element):
-        return tool.Blender.Modifier.is_door(element)
+        return tool.Parametric.is_door(element)
 
     @classmethod
     def _get_props(cls, obj: bpy.types.Object):
@@ -629,7 +629,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
     def remove_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         assert element
-        if not tool.Blender.Modifier.is_door(element):
+        if not tool.Parametric.is_door(element):
             return
         props = tool.Model.get_door_props(obj)
         props.is_editing = False
@@ -691,7 +691,7 @@ class ToggleDoorSwing(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             return {"CANCELLED"}
 
-        is_door = tool.Blender.Modifier.is_door(element)
+        is_door = tool.Parametric.is_door(element)
 
         if self.flip_geometry:
             tool.Geometry.flip_object(obj, self.flip_local_axes)
@@ -874,7 +874,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_door(element)
+        return tool.Parametric.is_door(element)
 
     def get_icon_y_extent(self, props: "BIMDoorProperties") -> tuple[float, float]:
         """Get Y extents for door icon positioning.
