@@ -173,10 +173,20 @@ install(FILES ${IFCVIEWER_WGPU_H_FILES}
 # Install the wgpu_native shared library so the deployed runtime can find it.
 # At build/run-from-build-tree time CMake adds wgpu_native_SOURCE_DIR to the
 # binary's rpath automatically (IMPORTED_LOCATION dirname).
-if(NOT WIN32)
-    install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_lib}" DESTINATION lib)
-else()
+#
+# macOS: drop libwgpu_native.dylib straight into BonsaiViewer.app's
+# Frameworks/. The exe has `LC_LOAD_DYLIB @rpath/libwgpu_native.dylib`
+# (baked from the dylib's install_name), and BonsaiViewer's
+# INSTALL_RPATH is set to @executable_path/../Frameworks — together
+# they resolve at launch without depending on macdeployqt to follow
+# non-Qt @rpath references.
+if(WIN32)
     install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_runtime}" DESTINATION bin)
+elseif(APPLE AND BUILD_BONSAIVIEWER)
+    install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_lib}"
+            DESTINATION "BonsaiViewer.app/Contents/Frameworks")
+else()
+    install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_lib}" DESTINATION lib)
 endif()
 
 if(BUILD_BONSAIVIEWER_TESTS)

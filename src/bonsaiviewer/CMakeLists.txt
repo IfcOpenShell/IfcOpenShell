@@ -120,6 +120,19 @@ set_target_properties(BonsaiViewer PROPERTIES
     MACOSX_BUNDLE ON
 )
 
+# macOS bundle runtime layout. BonsaiViewer's exe has
+# `LC_LOAD_DYLIB @rpath/libwgpu_native.dylib` (CMake bakes that in from
+# the dylib's own install_name). Without an LC_RPATH entry pointing at
+# the bundle's Frameworks/ dir, dyld aborts at launch with
+# "no LC_RPATH's found". Set the standard macOS app-bundle rpath so
+# the load resolves; the wgpu CMakeLists installs the dylib straight
+# into BonsaiViewer.app/Contents/Frameworks for us.
+if(APPLE)
+    set_target_properties(BonsaiViewer PROPERTIES
+        INSTALL_RPATH "@executable_path/../Frameworks"
+    )
+endif()
+
 target_link_libraries(BonsaiViewer PRIVATE
     # IfcViewer still ships SceneLoader / Federation / GeometryStreamer /
     # SidecarBuilder until the GL ViewportWindow is deleted. IfcViewerWgpu
