@@ -108,6 +108,16 @@ file(GLOB IFCVIEWER_WGPU_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB IFCVIEWER_WGPU_H_FILES   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 set(IFCVIEWER_WGPU_FILES ${IFCVIEWER_WGPU_CPP_FILES} ${IFCVIEWER_WGPU_H_FILES})
 
+# Cocoa bridge for the CAMetalLayer surface attach — Objective-C++.
+# Only compiled into the target on Apple platforms; CMake handles `.mm`
+# natively once OBJCXX is enabled.
+if(APPLE)
+    enable_language(OBJCXX)
+    list(APPEND IFCVIEWER_WGPU_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/WgpuMetalSurface_mac.mm
+    )
+endif()
+
 # Intentional source-level borrowing from the GL backend until ifcviewer-core
 # is extracted (task #12). SidecarCache + InstancedGeometry have zero Qt /
 # OCCT / IFC-parse deps, so compiling them directly into IfcViewerWgpu is
@@ -144,6 +154,14 @@ target_link_libraries(IfcViewerWgpu PUBLIC
 if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
     target_link_libraries(IfcViewerWgpu PUBLIC Threads::Threads)
+endif()
+
+# Cocoa + QuartzCore for WgpuMetalSurface_mac.mm (NSView, CAMetalLayer).
+if(APPLE)
+    target_link_libraries(IfcViewerWgpu PUBLIC
+        "-framework Cocoa"
+        "-framework QuartzCore"
+    )
 endif()
 
 install(TARGETS IfcViewerWgpu EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})

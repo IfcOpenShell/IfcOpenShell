@@ -686,11 +686,19 @@ static WGPUStringView svFromCStr(const char* s) {
 
 WgpuViewportWindow::WgpuViewportWindow(QWindow* parent)
     : QWindow(parent) {
-    // wgpu doesn't need a GL context; we just need a real native window that
-    // the platform window manager has actually created. OpenGLSurface is the
-    // most portable way to ask Qt for a hardware-rendering-ready native
-    // window — we never bind a GL context on top of it.
+    // wgpu doesn't need a GL context; we just need a real native window
+    // whose backing layer matches the GPU API wgpu will drive.
+    //
+    // - Linux/Windows: OpenGLSurface gives us a hardware-rendering-ready
+    //   native window (XCB/HWND); we never bind a GL context on top.
+    // - macOS: MetalSurface tells Qt to back the NSView with a
+    //   CAMetalLayer, which wgpu-native wraps via
+    //   WGPUSurfaceSourceMetalLayer in createSurface().
+#if defined(Q_OS_MAC)
+    setSurfaceType(QSurface::MetalSurface);
+#else
     setSurfaceType(QSurface::OpenGLSurface);
+#endif
 }
 
 WgpuViewportWindow::~WgpuViewportWindow() {
@@ -1818,6 +1826,10 @@ bool WgpuViewportWindow::probeAndCreatePool() {
 #    define WIN32_LEAN_AND_MEAN
 #  endif
 #  include <windows.h>
+#elif defined(Q_OS_MAC)
+// Cocoa bridge declared in WgpuMetalSurface_mac.h, implemented in the
+// adjacent .mm file. Keeps Objective-C out of this pure-C++ TU.
+#  include "WgpuMetalSurface_mac.h"
 #endif
 
 bool WgpuViewportWindow::createSurface() {
@@ -1873,8 +1885,23 @@ bool WgpuViewportWindow::createSurface() {
     hwndsrc.hwnd      = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
     surface_desc.nextInChain = &hwndsrc.chain;
     surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
+#elif defined(Q_OS_MAC)
+    // QWindow::winId() returns the backing NSView* on macOS (as WId,
+    // which is quintptr — same width as void* on all macOS arches we
+    // care about). Hand it to the Cocoa bridge to attach a
+    // CAMetalLayer, then wrap that layer in WGPUSurfaceSourceMetalLayer.
+    void* nsview = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
+    void* layer  = wgpu_macos_attach_metal_layer(nsview);
+    if (!layer) {
+        qWarning() << "Could not attach CAMetalLayer to the Qt NSView";
+        return false;
+    }
+    WGPUSurfaceSourceMetalLayer metalsrc = {};
+    metalsrc.chain.sType = WGPUSType_SurfaceSourceMetalLayer;
+    metalsrc.layer = layer;
+    surface_desc.nextInChain = &metalsrc.chain;
+    surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
 #else
-    // macOS Metal surface wiring lands with task #32.
     qWarning() << "wgpu surface creation not yet wired for this platform";
     return false;
 #endif
