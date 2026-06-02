@@ -22,6 +22,7 @@
 
 import copy
 import math
+import weakref
 from collections.abc import Iterable
 from math import atan2, cos, degrees, pi, sin
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union, get_args
@@ -2470,6 +2471,25 @@ def _collinear_boundary_world(seg_a: tuple[Vector, Vector], seg_b: tuple[Vector,
     )
 
 
+def _classify_wall_join_state(
+    elem_a: ifcopenshell.entity_instance,
+    elem_b: ifcopenshell.entity_instance,
+    seg_a: tuple[Vector, Vector],
+    seg_b: tuple[Vector, Vector],
+    parallel_threshold: float,
+    collinear_tolerance: float,
+) -> "tuple[core.WallJoinState, Optional[tuple[float, float, float]]]":
+    """``(state, intersection)`` — intersection is non-``None`` only on
+    the ``"intersect"`` branch."""
+    return core.classify_wall_join_state(
+        (tuple(seg_a[0]), tuple(seg_a[1])),
+        (tuple(seg_b[0]), tuple(seg_b[1])),
+        are_joined=_are_walls_joined(elem_a, elem_b),
+        parallel_threshold=parallel_threshold,
+        collinear_tolerance=collinear_tolerance,
+    )
+
+
 def _iter_path_connections(
     elem: ifcopenshell.entity_instance,
 ) -> list[tuple[ifcopenshell.entity_instance, str, str]]:
@@ -3446,6 +3466,13 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
     # join/unjoin icon at any view angle.
     ICON_STACK_OFFSET_Y: ClassVar[float] = 0.4
 
+    # Per-region weakref map populated in ``setup()``. The wall-join preview
+    # decorator dereferences this each draw to read live ``is_highlight``
+    # state off the join / extend-to-wall / fillet icons in the same region
+    # it's currently drawing in, so the preview lines can switch to
+    # ``decorator_color_selected`` while the user hovers a target.
+    _active_instances: ClassVar["dict[int, weakref.ReferenceType[GizmoWallJoinIntersection]]"] = {}
+
     def setup(self, context: bpy.types.Context) -> None:
         default_color, highlight_color = self.get_decoration_colors()
         self.unjoin_icon = self.setup_icon_gizmo("VIEW3D_GT_split", default_color, highlight_color, "bim.unjoin_walls")
@@ -3465,6 +3492,8 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         self.fillet_icon = self.setup_icon_gizmo(
             "VIEW3D_GT_fillet", default_color, highlight_color, "bim.enable_wall_fillet_preview"
         )
+        if context.region is not None:
+            type(self)._active_instances[context.region.as_pointer()] = weakref.ref(self)
 
     def _all_icons(self) -> tuple[bpy.types.Gizmo, ...]:
         return (self.unjoin_icon, self.merge_icon, self.join_icon, self.extend_to_wall_icon, self.fillet_icon)
