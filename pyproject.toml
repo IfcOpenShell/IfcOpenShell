@@ -43,6 +43,7 @@ exclude = [
 # then they will be inherited by projects' .toml files.
 # This allows using assuming different Python version for different projects.
 [tool.ruff]
+line-length = 120
 exclude = [
     # Submodules.
     "src/ifcopenshell-python/ifcopenshell/express",
