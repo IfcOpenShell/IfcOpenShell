@@ -35,6 +35,7 @@ __all__ = [  # noqa: RUF022 (unsorted `__all__`)
     "CoordinateSpace",
     "ModalState",
     "DimensionGizmoConfig",
+    "SwingArcConfig",
     "ViewDirection",
     "GizmoModalContext",
     "get_modal_context",
@@ -1299,6 +1300,38 @@ class IconActionConfig:
     icon: str
     operator: str
     visibility_condition: Callable[[Any], bool] | None = None
+
+
+@dataclass(slots=True)
+class SwingArcConfig:
+    """Declarative config for one swing-arc panel — a pair of ``GizmoArc``
+    instances representing a single hinged panel's two possible open sides.
+
+    Each entry produces two gizmos at setup time:
+      - ``self.gizmo_swing_arc_<name>``: main arc on the active swing side
+      - ``self.gizmo_swing_arc_<name>_flip``: Y-mirror of the main, on the
+        opposite side of the hinge line
+
+    Both gizmos hide together when ``visibility_condition(props)`` is False.
+    When visible, each arc's ``matrix_basis`` is:
+
+        Translation(hinge_x(props), hinge_y(props), 0)
+            @ Scale(panel_width(props), 4)
+            @ (Scale(-1, X) if x_mirror(props) else Identity)
+            @ (Scale(-1, Y) if this is the flip arc else Identity)
+
+    The arc geometry (``GizmoArc.tris``) is a unit quarter-arc sweeping
+    counterclockwise from +X to +Y with its hinge at the origin, so the
+    transforms above translate the hinge into world position, scale to
+    panel size, and mirror across the hinge line as needed.
+    """
+
+    name: str
+    visibility_condition: Callable[[Any], bool]
+    hinge_x: Callable[[Any], float]
+    hinge_y: Callable[[Any], float]
+    panel_width: Callable[[Any], float]
+    x_mirror: Callable[[Any], bool]
 
 
 class SnapManager:
