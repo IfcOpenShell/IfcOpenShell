@@ -88,10 +88,15 @@ jobs:
           # actually drops ifcopenshell.document.rdb.dylib into
           # site-packages/ifcopenshell/ (see the commit that added this
           # gate for the full history + the rocksdb/macdeployqt write-up).
+          # --shared mirrors build_rocky.yml after 27249770e: builds
+          # IfcOpenShell as shared libs so each plug-in dylib references
+          # libIfcParse / libIfcGeom via @rpath instead of statically
+          # embedding them — the dominant size win for BonsaiViewer.app
+          # (per-plugin libs go from ~30-50 MB to a few MB).
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
             BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
             IFCOS_BUILD_PYTHON_WRAPPER=off \
-            python3 ./nix/build-all.py -v --diskcleanup ${MAC_INTEL} \
+            python3 ./nix/build-all.py -v --diskcleanup --shared ${MAC_INTEL} \
             | tee build.log
 
       - name: Upload Build Logs

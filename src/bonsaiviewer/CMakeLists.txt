@@ -180,6 +180,13 @@ if(APPLE)
     install(CODE [[
         file(GLOB _ifc_plugins
              "${CMAKE_INSTALL_PREFIX}/lib/ifcopenshell.*.dylib")
+        # Skip ifcopenshell.geometry.writer.*.dylib — those are heavy
+        # schema-specific OBJ / glTF / DAE / STP / IGS / SVG / TTL export
+        # converters. BonsaiViewer is a viewer; it never writes geometry
+        # out, so they're pure deadweight. Mirrors the Rocky workflow's
+        # filter in `stage_runtime_payload` (see 27249770e). Cuts the
+        # macOS .app by ~100-150 MB.
+        list(FILTER _ifc_plugins EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
         if(_ifc_plugins)
             message(STATUS "Staging IfcOpenShell plug-ins into BonsaiViewer.app/Contents/Frameworks")
             file(COPY ${_ifc_plugins}
