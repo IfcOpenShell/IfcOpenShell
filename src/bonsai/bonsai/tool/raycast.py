@@ -373,27 +373,42 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        verts_2d = [
-            view3d_utils.location_3d_to_region_2d(region, rv3d, v) for v in snap_obj.verts_3d
-        ]  # Numpy version is worst in performance
 
         snap_obj._ensure_bvh()
         intersected = snap_obj.raycast_boxes(
             context, event, snap_obj.root, intersected=[], rays=(ray_origin, ray_direction)
         )
+
+        # Collect edges from intersected BVH boxes
         edges = []
         for it in intersected:
             edges.extend(it.edges)
         edges = set(edges)
 
+        # Build only the vertices indices that belong to these edges
+        verts_idx: set[int] = set()
+        for e in edges:
+            ev = snap_obj.obj.data.edges[e].vertices
+            verts_idx.add(ev[0])
+            verts_idx.add(ev[1])
+
+        # Lazily project only the needed vertices to 2D screen space
+        verts_2d: dict[int, Vector] = {}
+        for idx in verts_idx:
+            v2d = view3d_utils.location_3d_to_region_2d(
+                region, rv3d, snap_obj.verts_3d[idx]
+            )
+            if v2d is not None:
+                verts_2d[idx] = v2d
+
+
         edge_verts = {}
         for e in edges:
-            verts_idx = tuple(snap_obj.obj.data.edges[e].vertices)
-            verts = snap_obj.obj.data.vertices
-            v1 = snap_obj.obj.matrix_world @ verts[verts_idx[0]].co
-            v1_2d = verts_2d[verts_idx[0]]
-            v2 = snap_obj.obj.matrix_world @ verts[verts_idx[1]].co
-            v2_2d = verts_2d[verts_idx[1]]
+            verts_idx = snap_obj.obj.data.edges[e].vertices
+            v1 = snap_obj.verts_3d[verts_idx[0]]
+            v2 = snap_obj.verts_3d[verts_idx[1]]
+            v1_2d = verts_2d.get(verts_idx[0])
+            v2_2d = verts_2d.get(verts_idx[1])
             if (v1_2d is None) ^ (v2_2d is None):
                 point, _ = cls.intersect_edge_region_border(region, context.space_data, rv3d, v1, v2)
                 if v1_2d is None:
@@ -405,10 +420,16 @@ class Raycast(bonsai.core.tool.Raycast):
 
         snap_threshold = 10.0
 
-        for i, point in enumerate(verts_2d):
-            if not point:
-                continue
-            distance = (Vector(mouse_pos) - point).length
+        # Check all vertices for proximity to mouse position.
+        # Re-use the 2D projections already computed for edge endpoints.
+        for i, v3d in enumerate(snap_obj.verts_3d):
+            if i in verts_2d:
+                v2d = verts_2d[i]
+            else:
+                v2d = view3d_utils.location_3d_to_region_2d(region, rv3d, v3d)
+                if v2d is None:
+                    continue
+            distance = (Vector(mouse_pos) - v2d).length
             if distance <= snap_threshold:
                 snap_point = {
                     "object": snap_obj.obj,
