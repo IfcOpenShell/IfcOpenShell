@@ -1927,43 +1927,58 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     cfg.width       = uint32_t(width_px);
     cfg.height      = uint32_t(height_px);
     // Present mode. WGPU_PRESENT_MODE=fifo|fifo_relaxed|mailbox|immediate
-    // (default fifo). Recommended for fly-mode stutter: fifo_relaxed.
-    //   fifo          — strict vsync. Frame waiting > display refresh
-    //                   pushes the present to the NEXT refresh, producing
-    //                   the visible "double-frame" jump when cull or
-    //                   chunk-apply briefly exceeds budget.
-    //   fifo_relaxed  — adaptive vsync. Syncs to display when frame hits
-    //                   the budget; allows tear when it doesn't. Removes
-    //                   the missed-vsync stutter while keeping smooth
-    //                   presentation when we're under budget. Best
-    //                   compromise for the fly-mode jitter case.
-    //   mailbox       — uncapped, last-frame-wins, no tearing. Not
-    //                   supported on Vulkan + NVIDIA on Linux (falls
-    //                   back to Fifo); use fifo_relaxed instead there.
-    //   immediate     — uncapped, frames presented as soon as ready,
-    //                   may tear. Useful for raw-throughput benchmarking.
-    WGPUPresentMode pm = WGPUPresentMode_Fifo;
-    const char* pm_name = "fifo";
+    // overrides; default is mailbox.
+    //   mailbox       — DEFAULT. Vsync-aligned (no tearing), one-frame
+    //                   queue (last-frame-wins). ~16ms input→display
+    //                   latency. wgpu-native falls back to fifo
+    //                   automatically on backends that don't implement
+    //                   it (Vulkan + NVIDIA on Linux is the historical
+    //                   one).
+    //   fifo          — strict vsync, 2–3 frame DXGI/swapchain queue
+    //                   (~50ms latency). Most power-efficient, but
+    //                   visibly laggy for cursor-bound interactions
+    //                   (marquee, pivot, orbit). Was the stage-1 default
+    //                   because Fifo is the only mode the WebGPU spec
+    //                   *requires* backends to support.
+    //   fifo_relaxed  — adaptive vsync. Tears when a frame misses the
+    //                   refresh deadline, smooth otherwise. Useful in
+    //                   the fly-mode-jitter case where Fifo would
+    //                   double-frame on a missed vsync.
+    //   immediate     — no vsync at all. Frames presented as soon as
+    //                   ready, may tear on motion. Useful for raw
+    //                   throughput benchmarking.
+    WGPUPresentMode pm = WGPUPresentMode_Mailbox;
+    const char* pm_name = "mailbox";
     if (const char* s = std::getenv("WGPU_PRESENT_MODE")) {
-        if (std::strcmp(s, "fifo_relaxed") == 0) {
+        if (std::strcmp(s, "fifo") == 0) {
+            pm = WGPUPresentMode_Fifo;        pm_name = "fifo";
+        } else if (std::strcmp(s, "fifo_relaxed") == 0) {
             pm = WGPUPresentMode_FifoRelaxed; pm_name = "fifo_relaxed";
         } else if (std::strcmp(s, "mailbox") == 0) {
             pm = WGPUPresentMode_Mailbox;     pm_name = "mailbox";
         } else if (std::strcmp(s, "immediate") == 0) {
             pm = WGPUPresentMode_Immediate;   pm_name = "immediate";
-        } else if (std::strcmp(s, "fifo") != 0) {
+        } else {
             qWarning().noquote().nospace()
                 << "[wgpu] unknown WGPU_PRESENT_MODE=" << s
-                << " (expected fifo|fifo_relaxed|mailbox|immediate); using fifo";
+                << " (expected fifo|fifo_relaxed|mailbox|immediate); using mailbox";
         }
     }
     cfg.presentMode = pm;
-    if (pm != WGPUPresentMode_Fifo && !surface_configured_) {
-        qInfo().noquote().nospace()
-            << "[wgpu] present mode = " << pm_name
-            << (pm == WGPUPresentMode_FifoRelaxed
-                  ? " (adaptive vsync — sync if in budget, tear if not)"
-                  : " (vsync OFF — framerate uncapped)");
+    if (!surface_configured_) {
+        const char* note = "";
+        switch (pm) {
+            case WGPUPresentMode_Mailbox:
+                note = " (vsync-aligned, no queue lag — default)"; break;
+            case WGPUPresentMode_Fifo:
+                note = " (strict vsync, may queue 2–3 frames)";    break;
+            case WGPUPresentMode_FifoRelaxed:
+                note = " (adaptive vsync — sync if in budget, tear if not)"; break;
+            case WGPUPresentMode_Immediate:
+                note = " (vsync OFF — framerate uncapped, may tear)";        break;
+            default: break;
+        }
+        qInfo().noquote().nospace() << "[wgpu] present mode = " << pm_name << note;
     }
     cfg.alphaMode   = WGPUCompositeAlphaMode_Auto;
 
