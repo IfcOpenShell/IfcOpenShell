@@ -118,19 +118,13 @@ def active_object_callback():
 
 
 def update_bim_tool_props():
-    """update BIM Tools props (such as extrusion_depth, length and x_angle) when active object changes"""
-    obj = bpy.context.active_object
-
-    # bunch of checks to see if we're in a valid state
-    if not obj:
+    """Selection-driven BIM Tool sync: re-target user-intent enums
+    (ifc_class, relating_type_id) AND refresh header values
+    (extrusion_depth, length, x_angle) for the new active object."""
+    ctx = _resolve_bim_tool_context()
+    if ctx is None:
         return
-    mode = bpy.context.mode
-    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-    if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
-        return
-    element = tool.Ifc.get_entity(obj)
-    if not element:
-        return
+    obj, current_tool, element = ctx
 
     props = tool.Model.get_model_props()
     aprops = tool.Drawing.get_annotation_props()
@@ -153,7 +147,14 @@ def update_bim_tool_props():
                 return
 
             if is_bim_tool:
-                props.ifc_class = element_type.is_a()
+                try:
+                    props.ifc_class = element_type.is_a()
+                except TypeError:
+                    # ifc_class only lists element/space types present in the model, so an
+                    # unsupported type (e.g. a raw IfcTypeProduct) or a stale item list mid-
+                    # rebuild raises `enum "<class>" not found`. Skip rather than crash the
+                    # handler — it re-fires on the next selection and the panel resyncs.
+                    pass
 
             # Only assign when the target enum is the one that lists this type — otherwise
             # we hit `enum "<id>" not found in (...)` if the user selects an element of a
@@ -173,6 +174,43 @@ def update_bim_tool_props():
     if is_annotation_tool:
         return
 
+    _read_headers_into_props(obj, element)
+
+
+def refresh_bim_tool_headers():
+    """Commit-driven refresh of BIM Tool header values (extrusion_depth,
+    length, x_angle) from the active object's IFC geometry. Must not
+    write user-intent enums — those encode 'what to build next' and
+    would silently reset on every IFC commit."""
+    ctx = _resolve_bim_tool_context()
+    if ctx is None:
+        return
+    obj, current_tool, element = ctx
+    if current_tool.idname == "bim.annotation_tool":
+        return
+    _read_headers_into_props(obj, element)
+
+
+def _resolve_bim_tool_context():
+    """Return ``(obj, current_tool, element)`` when an active BIM workspace
+    tool sees a resolvable IFC element; ``None`` otherwise."""
+    obj = bpy.context.active_object
+    if not obj:
+        return None
+    mode = bpy.context.mode
+    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
+    if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
+        return None
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return None
+    return obj, current_tool, element
+
+
+def _read_headers_into_props(obj, element):
+    """Populate ``BIMModelProperties`` header values from the active
+    object's IFC extrusion. Enum-safe: writes only header floats, never
+    user-intent enum slots, so it is safe to call on the post-commit hook."""
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
         return
@@ -190,6 +228,7 @@ def update_bim_tool_props():
     if not AuthoringData.is_loaded:
         AuthoringData.load()
 
+    props = tool.Model.get_model_props()
     if AuthoringData.data["active_material_usage"] == "LAYER2":
         x_angle = get_x_angle(extrusion)
         axis = tool.Model.get_wall_axis(obj)["reference"]
