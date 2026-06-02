@@ -37,6 +37,7 @@ from bonsai.bim.module.drawing.gizmos import (
     DimensionGizmoConfig,
     IconSlot,
 )
+from bonsai.bim.parametric_lifecycle import IntegerInputDialogMixin
 from bonsai.tool.numeric_input import (
     IntegerInputState,
     run_integer_input_modal,
@@ -383,6 +384,20 @@ class AdjustStairTreads(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class InputStairTreads(IntegerInputDialogMixin, bpy.types.Operator):
+    """Popup-dialog entry point for typing a new ``number_of_treads`` value.
+    Bound to the world-space ``xN`` count label in the stair edit row."""
+
+    bl_idname = "bim.input_stair_treads"
+    bl_label = "Set Number of Treads"
+    bl_description = "Type the number of treads for this stair"
+    bl_options = {"REGISTER", "UNDO"}
+
+    number_of_treads: IntProperty(name="Number of Treads", default=1, min=1)
+    attr_name = "number_of_treads"
+    props_getter = staticmethod(tool.Model.get_stair_props)
+
+
 class SetStairTreads(bpy.types.Operator):
     """Set the number of treads to a specific value."""
 
@@ -468,11 +483,12 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     bl_options = {"3D", "PERSISTENT"}
 
     # === Stair-Specific Icon Layout ===
-    # Row order: [Validate] [Cancel] [Cycle] [TreadLock] [Plus] [Minus]
+    # Row order: [Validate] [Cancel] [Cycle] [TreadLock] [xN] [Plus] [Minus]
     # The base class assigns X positions from ``feature_slots`` tuple order —
     # adding an icon is a one-line append, no hardcoded X constant.
     ICON_PLUS_MINUS_SCALE = 0.24  # Scale for plus/minus icons (slightly larger)
     ICON_CYCLE_SCALE = 0.3  # Scale for cycle type icon
+    ICON_COUNT_LABEL_SCALE = 0.36  # Scale for the xN tread-count label
     ICON_Z_OFFSET = 0.5  # Z offset above geometry for editing icons
 
     feature_slots: ClassVar[tuple[IconSlot, ...]] = (
@@ -484,6 +500,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             color=(1.0, 1.0, 1.0),
             operator_props=(("property_name", "custom_tread_lock"),),
         ),
+        IconSlot(name="tread_count_label", placeholder=True),
         IconSlot(
             name="plus",
             gizmo_idname="VIEW3D_GT_plus",
@@ -618,16 +635,28 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         return tool.Blender.Modifier.is_stair(element)
 
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
-        """Create the total-length lock as an open/closed pair. Click toggles
+        """Create the total-length lock as an open/closed pair plus the
+        ``xN`` tread-count label. Lock click toggles
         ``props.total_length_lock``; the per-frame update hook picks which
         member is visible. Anchored to the stair's far X end (not the edit
         row) so it's positioned by ``_update_lock_gizmo_position`` rather
-        than the toolbar slot system."""
+        than the toolbar slot system.
+
+        The count label binds to ``bim.input_stair_treads`` (popup dialog)
+        for click-to-type input and sits at the X reserved by the
+        ``tread_count_label`` placeholder slot in ``feature_slots``."""
         self.total_length_lock_open_gizmo, self.total_length_lock_closed_gizmo = self.create_icon_gizmo_lock_pair(
             "bim.toggle_stair_property",
             self.COLOR_BLUE,
             property_name="total_length_lock",
         )
+        default_color, highlight_color = self.get_decoration_colors()
+        self.tread_count_label_gizmo = self.gizmos.new("BIM_GT_count_label")
+        self.tread_count_label_gizmo.use_draw_scale = False
+        self.tread_count_label_gizmo.color = default_color
+        self.tread_count_label_gizmo.color_highlight = highlight_color
+        self.tread_count_label_gizmo.alpha = 0.8
+        self.tread_count_label_gizmo.target_set_operator("bim.input_stair_treads")
 
     def _refresh_element_specific(
         self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
@@ -667,12 +696,15 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.tread_lock_closed_gizmo.hide = not props.custom_tread_lock
 
     def update_tread_count_gizmos(self, props: "BIMStairProperties") -> None:
-        """Update visibility of +/- tread count gizmos. Positioning is handled in _update_editing_icon_positions."""
+        """Update visibility of the +/- tread count gizmos and the ``xN``
+        label. Positioning is handled in ``_update_editing_icon_positions``."""
         if not hasattr(self, "plus_gizmo") or not hasattr(self, "minus_gizmo"):
             return
         self.update_gizmo_visibility(self.plus_gizmo, props.is_editing)
         # Minus has additional condition: number_of_treads > 1
         self.update_gizmo_visibility(self.minus_gizmo, props.is_editing and props.number_of_treads > 1)
+        if hasattr(self, "tread_count_label_gizmo"):
+            self.update_gizmo_visibility(self.tread_count_label_gizmo, props.is_editing)
 
     def _update_dimension_gizmo_positions(
         self, context: bpy.types.Context, mw: Matrix, props: "BIMStairProperties"  # noqa: ARG002
@@ -800,3 +832,14 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.set_icon_gizmo_position(
             "minus_gizmo", mw, slot_x["minus"], y_pos, icon_z, billboard_rot, scale=self.ICON_PLUS_MINUS_SCALE
         )
+        if hasattr(self, "tread_count_label_gizmo"):
+            self.tread_count_label_gizmo.set_count(int(props.number_of_treads))
+            self.set_icon_gizmo_position(
+                "tread_count_label_gizmo",
+                mw,
+                slot_x["tread_count_label"],
+                y_pos,
+                icon_z,
+                billboard_rot,
+                scale=self.ICON_COUNT_LABEL_SCALE,
+            )

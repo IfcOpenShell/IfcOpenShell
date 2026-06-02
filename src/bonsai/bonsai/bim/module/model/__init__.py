@@ -210,6 +210,7 @@ classes = (
     stair.ToggleStairProperty,
     stair.AdjustStairTreads,
     stair.SetStairTreads,
+    stair.InputStairTreads,
     stair.CycleStairType,
     stair.GizmoStairEdition,
     sverchok_modifier.CreateNewSverchokGraph,

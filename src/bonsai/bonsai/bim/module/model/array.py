@@ -34,7 +34,10 @@ from bonsai.bim.module.drawing.gizmos import (
     DimensionGizmoConfig,
     IconSlot,
 )
-from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
+from bonsai.bim.parametric_lifecycle import (
+    IntegerInputDialogMixin,
+    ParametricEditMixinBase,
+)
 
 
 def _wipe_array_children(layers: list) -> None:
@@ -1052,11 +1055,10 @@ class RemoveArrayLayerFromEdit(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class InputArrayCount(bpy.types.Operator):
-    """Open a number-input dialog so the user can type a new ``count`` during
-    an active edit lifecycle. Bound to the world-space count gizmo in the edit
-    row (between cancel and minus) — for users who'd rather type a value than
-    repeatedly click +/-."""
+class InputArrayCount(IntegerInputDialogMixin, bpy.types.Operator):
+    """Popup-dialog entry point for typing a new draft ``count`` during an
+    active array edit lifecycle. Bound to the world-space count gizmo in
+    the edit row."""
 
     bl_idname = "bim.input_array_count"
     bl_label = "Set Array Count"
@@ -1064,26 +1066,9 @@ class InputArrayCount(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     count: bpy.props.IntProperty(name="Count", default=1, min=1)
-
-    def invoke(self, context, event):
-        obj = context.active_object
-        if not obj:
-            return {"CANCELLED"}
-        props = tool.Model.get_array_props(obj)
-        if not props.is_editing:
-            return {"CANCELLED"}
-        self.count = max(1, props.count)
-        return context.window_manager.invoke_props_dialog(self)
-
-    def execute(self, context):
-        obj = context.active_object
-        if not obj:
-            return {"CANCELLED"}
-        props = tool.Model.get_array_props(obj)
-        if not props.is_editing:
-            return {"CANCELLED"}
-        props.count = max(1, self.count)
-        return {"FINISHED"}
+    attr_name = "count"
+    props_getter = staticmethod(tool.Model.get_array_props)
+    requires_editing = True
 
 
 class AdjustArrayCount(bpy.types.Operator):
@@ -1138,18 +1123,18 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     hide_pen_button = True
 
     # Editing row layout: validate | cancel | xN | - | + | method | trash.
-    # The count-label (xN) gizmo sits at the cycle slot (X = 0.87), positioned
-    # manually in ``_refresh_element_specific`` because it's a label that
-    # replaces the cycle icon rather than a row slot. The +/-/method/trash
-    # icons live in ``feature_slots`` below — the base class assigns X
-    # positions from tuple order; the trash carries ``extra_gap_before`` to
-    # visually separate the destructive action from the routine controls.
-    ICON_NUMBER_X = 0.87
+    # The ``count_label`` placeholder reserves the position for the
+    # dynamically-built ``xN`` gizmo; the +/-/method/trash icons live in
+    # ``feature_slots`` below and the base class assigns X positions from
+    # tuple order. The trash carries ``extra_gap_before`` to visually
+    # separate the destructive action from the routine controls.
+
     # Render scale for the +/- and method-toggle icons — ~70% of the standard
     # 0.5 used for validate/cancel. Makes the helpers look secondary.
     ICON_HELPER_SCALE = 0.35
 
     feature_slots: ClassVar[tuple[IconSlot, ...]] = (
+        IconSlot(name="count_label", placeholder=True),
         IconSlot(
             name="count_minus",
             gizmo_idname="VIEW3D_GT_minus",
@@ -1290,12 +1275,11 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ``feature_slots`` and are auto-created by the base class."""
         default_color, highlight_color = self.get_decoration_colors()
         # World-space count display for the edit row. Click opens a numeric
-        # input dialog (``bim.input_array_count``) so the user can type a
-        # value directly instead of clicking +/- repeatedly. Renders the same
-        # ``xN`` glyph as the idle-state per-layer icons for visual consistency.
-        # Sits at the cycle slot — it's a label that replaces the cycle icon,
-        # not a row slot, so it's positioned manually below rather than via
-        # ``feature_slots``.
+        # input dialog so the user can type a value directly instead of
+        # clicking +/- repeatedly. Renders the same ``xN`` glyph as the
+        # idle-state per-layer icons for visual consistency. Position is
+        # reserved by the ``count_label`` placeholder slot in
+        # ``feature_slots``; the matrix is set per-frame below.
         self.count_label_gizmo = self.gizmos.new("BIM_GT_array_layer_indicator")
         self.count_label_gizmo.use_draw_scale = False
         self.count_label_gizmo.color = default_color
@@ -1431,7 +1415,7 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             self.count_label_gizmo.set_count(int(props.count))
             world_pos = mw @ Vector(
                 (
-                    self.ICON_VALIDATE_X + self.ICON_NUMBER_X,
+                    self.ICON_VALIDATE_X + self._slot_x_positions()["count_label"],
                     icon_y,
                     icon_z,
                 )
