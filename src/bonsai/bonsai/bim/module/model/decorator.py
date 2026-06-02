@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import math
 from math import cos, pi, radians, sin, tan
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 import blf
 import bmesh
@@ -2512,3 +2512,287 @@ class ArraySelectionHighlightDecorator(tool.Blender.ViewportDecorator):
                 seen_ids.add(id(child_obj))
                 children.append(child_obj)
         return children
+
+
+class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
+    """Hover-gated preview lines that visualise where a click-to-act wall
+    gizmo's operator would move the wall geometry. Four state machines:
+
+    - **Join intersection** — when exactly two non-joined, non-collinear,
+      non-parallel LAYER2 walls are selected, draws one line from each wall's
+      nearest axis endpoint to the projected XY intersection. Each line stays
+      at its own wall's axis Z (so for walls on different storeys the lines
+      stay horizontal at their own floor levels). Mirrors the visibility of
+      the Join + Extend-to-Wall icons in ``GizmoWallJoinIntersection``.
+    - **Extend to cursor** — when a single LAYER2 wall is selected and the
+      ``extend`` wall-gizmo pref is enabled, draws one line from the wall's
+      nearer axis endpoint to the 3D cursor's projected X on the wall axis.
+      Mirrors the visibility of the ``extend_x_gizmo`` icon in
+      ``GizmoWallEdition``.
+    - **Extend Z to cursor** — one preview line at the cursor's projected X
+      from wall base to the cursor's Z, visualising the new total height.
+      Hover-gated on ``extend_z_gizmo``.
+    - **Split at cursor** — one world-vertical line at the cursor's projected X
+      from wall base to wall top, visualising the cut plane. Hover-gated on
+      ``split_gizmo``.
+
+    Purely a visual cue — hidden by the same gizmo-preferences toggle as the
+    icons themselves."""
+
+    draw_method = "draw_lines"
+
+    LINE_WIDTH = 1.5
+    LINE_ALPHA = 0.8
+
+    def draw_lines(self, context: bpy.types.Context) -> None:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return
+        prefs = tool.Blender.get_addon_preferences()
+        # Each preview path is mutually exclusive on selection count, so they
+        # can short-circuit cheaply without coordinating.
+        self._draw_join_preview(context, prefs)
+        self._draw_cursor_extend_preview(context, prefs)
+        self._draw_cursor_extend_z_preview(context, prefs)
+        self._draw_cursor_split_preview(context, prefs)
+
+    def _stroke(
+        self,
+        context: bpy.types.Context,
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+        color_rgb: tuple[float, float, float],
+    ) -> None:
+        _stroke_lines_alpha(context, segments, color_rgb, self.LINE_WIDTH, self.LINE_ALPHA)
+
+    def _draw_join_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Render four preview lines per wall pair — two at each wall's base
+        Z, two at each wall's top Z — extending each axis to the projected
+        intersection. Two lines per wall (base + top) communicate the full
+        plane that the join/extend operator would weld at, not just the
+        floor edge.
+
+        Hover colour:
+        - **Join or Fillet hover** → all four lines light up (both walls
+          converge at the corner; fillet is a symmetric round of the same
+          corner).
+        - **Extend-to-Wall hover** → only the base+top of the non-active
+          wall (the wall the default-direction operator would extend).
+        - Otherwise → ``decorations_colour``."""
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 2:
+            return
+        elem_a = tool.Ifc.get_entity(selected[0])
+        elem_b = tool.Ifc.get_entity(selected[1])
+        if elem_a is None or elem_b is None:
+            return
+        if not tool.Parametric.is_path_connectable_wall(elem_a) or not tool.Parametric.is_path_connectable_wall(elem_b):
+            return
+        # Lazy import to avoid a circular wall.py ↔ decorator.py dependency at
+        # module load. The wall helpers are module-private but stable; the
+        # gizmo group and this decorator are the only callers, both routing
+        # through ``_classify_wall_join_state`` for state-machine consistency.
+        from bonsai.bim.module.model.wall import (
+            GizmoWallJoinIntersection,
+            _classify_wall_join_state,
+            _wall_axis_world_segment_from_geom,
+        )
+        from bonsai.core import model as core_model
+
+        geom_a = tool.Wall.read_geometry(selected[0])
+        geom_b = tool.Wall.read_geometry(selected[1])
+        if geom_a is None or geom_b is None:
+            return
+        seg_a = _wall_axis_world_segment_from_geom(selected[0], geom_a)
+        seg_b = _wall_axis_world_segment_from_geom(selected[1], geom_b)
+        parallel_threshold = core_model.PARALLEL_DOT_THRESHOLD
+        collinear_tolerance = core_model.COLLINEAR_LINE_TOLERANCE
+        # Only the "intersect" state shows preview lines — joined / collinear /
+        # parallel each have their own gizmo icons but no extension preview.
+        state, intersection_tuple = _classify_wall_join_state(
+            elem_a, elem_b, seg_a, seg_b, parallel_threshold, collinear_tolerance
+        )
+        if state != "intersect":
+            return
+        assert intersection_tuple is not None  # tightened by the "intersect" branch
+        floor_lines = core_model.wall_join_preview_lines(
+            (tuple(seg_a[0]), tuple(seg_a[1])),
+            (tuple(seg_b[0]), tuple(seg_b[1])),
+            intersection_tuple,
+        )
+        # Top lines mirror the floor lines but lifted by each wall's height
+        # (world Z, since wall axes are stored at the wall's base elevation
+        # and ``height`` is the world-space extrusion above that base).
+        height_a = geom_a.get("height", 0.0)
+        height_b = geom_b.get("height", 0.0)
+        wall_a_floor, wall_b_floor = floor_lines
+
+        def _lift(seg: tuple, dz: float) -> tuple:
+            (sx, sy, sz), (ex, ey, ez) = seg
+            return ((sx, sy, sz + dz), (ex, ey, ez + dz))
+
+        wall_a_top = _lift(wall_a_floor, height_a)
+        wall_b_top = _lift(wall_b_floor, height_b)
+        # Hover semantic by operation:
+        #   • Join / Fillet hover → all four lines (symmetric corner-meet).
+        #   • Extend-to-Wall hover → only the wall the default-direction
+        #     operator would actually move (the non-active wall) — both its
+        #     base and top lines highlight.
+        join_hovered, extend_hovered, fillet_hovered = self._join_group_hover_state(GizmoWallJoinIntersection, context)
+        default = tuple(prefs.decorations_colour[:3])
+        selected_rgb = tuple(prefs.decorator_color_selected[:3])
+        all_lines = [wall_a_floor, wall_a_top, wall_b_floor, wall_b_top]
+
+        if join_hovered or fillet_hovered:
+            self._stroke(context, all_lines, selected_rgb)
+            return
+
+        if extend_hovered:
+            extended_idx = self._extended_wall_index(context, selected)
+            if extended_idx is not None:
+                extended_lines = [wall_a_floor, wall_a_top] if extended_idx == 0 else [wall_b_floor, wall_b_top]
+                untouched_lines = [wall_b_floor, wall_b_top] if extended_idx == 0 else [wall_a_floor, wall_a_top]
+                self._stroke(context, untouched_lines, default)
+                self._stroke(context, extended_lines, selected_rgb)
+                return
+
+        self._stroke(context, all_lines, default)
+
+    @staticmethod
+    def _extended_wall_index(context: bpy.types.Context, selected: list[bpy.types.Object]) -> Optional[int]:
+        """Index of the non-active wall in ``selected``, or ``None``."""
+        active = context.active_object
+        if active is selected[0]:
+            return 1
+        if active is selected[1]:
+            return 0
+        return None
+
+    def _join_group_hover_state(self, gizmo_cls: type, context: bpy.types.Context) -> tuple[bool, bool, bool]:
+        """Return ``(join_hovered, extend_to_wall_hovered, fillet_hovered)``
+        from the ``GizmoWallJoinIntersection`` instance in **the same region**
+        the decorator is currently drawing in. Returns ``(False, False,
+        False)`` when that region has no live gizmo group (poll → False,
+        weakref cleared, or no setup yet). Read-only; any access exception
+        is swallowed so a transient bpy-state hiccup never breaks the draw
+        loop."""
+        inst = self._lookup_active_instance(gizmo_cls, context)
+        if inst is None:
+            return False, False, False
+        try:
+            return (
+                bool(inst.join_icon.is_highlight),
+                bool(inst.extend_to_wall_icon.is_highlight),
+                bool(inst.fillet_icon.is_highlight),
+            )
+        except (AttributeError, ReferenceError):
+            return False, False, False
+
+    def _active_layer2_wall_for_gizmo_preview(
+        self, context: bpy.types.Context, prefs: Any
+    ) -> Optional[bpy.types.Object]:
+        """Active object iff it is the sole selected object, is a LAYER2 IfcWall,
+        and the wall feature's gizmo prefs are enabled. Otherwise ``None``.
+        Shared guard for every cursor-anchored extend-preview path so each one
+        short-circuits on the same conditions the gizmo group itself uses."""
+        gizmo_prefs = getattr(prefs.gizmos, "wall", None)
+        if gizmo_prefs is None or not getattr(gizmo_prefs, "enabled", True):
+            return None
+        active = context.active_object
+        if active is None:
+            return None
+        selected = list(tool.Blender.get_selected_objects())
+        if active not in selected or len(selected) != 1:
+            return None
+        element = tool.Ifc.get_entity(active)
+        if element is None or not tool.Parametric.is_wall(element):
+            return None
+        if tool.Model.get_usage_type(element) != "LAYER2":
+            return None
+        return active
+
+    def _draw_cursor_extend_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Render the extend-X preview line only while the cursor-anchored
+        extend-X icon gizmo is hovered. The line runs from the wall's nearer
+        axis endpoint to the cursor's projected X on the wall axis, both
+        clamped to wall-local Y=0 Z=0 so the line stays on the wall's floor
+        edge regardless of cursor Z."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        from bonsai.bim.module.model.wall import GizmoWallEdition
+
+        if not self._cursor_icon_hovered(GizmoWallEdition, "extend_x_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        anchor_x = geom.get("anchor_x", 0.0)
+        length = geom.get("length", 0.0)
+        if length <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        start_x = anchor_x
+        end_x = anchor_x + length
+        nearest_x = start_x if abs(cursor_local.x - start_x) < abs(cursor_local.x - end_x) else end_x
+        start_world = mw @ Vector((nearest_x, 0.0, 0.0))
+        end_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
+        if (end_world - start_world).length < 1e-6:
+            return
+        self._stroke(context, [(tuple(start_world), tuple(end_world))], tuple(prefs.decorator_color_selected[:3]))
+
+    def _draw_cursor_split_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Render one line at the cursor's projected X, from wall base to wall top
+        along the wall's local Z — the cut plane the split operator would commit.
+        Hover-gated on the split icon; coloured with the destructive-action warning
+        red to match the icon's own hover signal."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        from bonsai.bim.module.model.wall import GizmoWallEdition
+
+        if not self._cursor_icon_hovered(GizmoWallEdition, "split_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        anchor_x = geom.get("anchor_x", 0.0)
+        length = geom.get("length", 0.0)
+        height = geom.get("height", 0.0)
+        if length <= 0 or height <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        if not (anchor_x < cursor_local.x < anchor_x + length):
+            return
+        bottom_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
+        top_world = mw @ Vector((cursor_local.x, 0.0, height))
+        self._stroke(context, [(tuple(bottom_world), tuple(top_world))], tuple(prefs.decorator_color_error[:3]))
+
+    def _draw_cursor_extend_z_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Render one preview line at the cursor's projected X on the wall axis,
+        from the wall base to the gizmo's local Z — the new total height the
+        extend-Z operator would commit. Hover-gated on the extend-Z icon."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        from bonsai.bim.module.model.wall import GizmoWallEdition
+
+        if not self._cursor_icon_hovered(GizmoWallEdition, "extend_z_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        length = geom.get("length", 0.0)
+        height = geom.get("height", 0.0)
+        if length <= 0 or height <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        # New height must be > 0 for the operator to commit.
+        if cursor_local.z <= 0:
+            return
+        if abs(cursor_local.z - height) < 1e-6:
+            return
+        base_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
+        top_world = mw @ Vector((cursor_local.x, 0.0, cursor_local.z))
+        self._stroke(context, [(tuple(base_world), tuple(top_world))], tuple(prefs.decorator_color_selected[:3]))

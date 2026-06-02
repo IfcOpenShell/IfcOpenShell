@@ -49,6 +49,7 @@ from bonsai.bim.module.model.decorator import (
     SlabDirectionDecorator,
     WallAxisDecorator,
     WallFilletPreviewDecorator,
+    WallGizmoPreviewDecorator,
 )
 from bonsai.bim.module.model.preview_base import discard_pending_previews
 from bonsai.bim.module.nest.decorator import NestDecorator
@@ -505,6 +506,7 @@ def _install_viewport_overlays() -> None:
     WallAxisDecorator.uninstall()
     SlabDirectionDecorator.uninstall()
     WallFilletPreviewDecorator.uninstall()
+    WallGizmoPreviewDecorator.uninstall()
     ArrayPreviewDecorator.uninstall()
     ArraySelectionHighlightDecorator.uninstall()
     uninstall_decorator_cache_handlers()
@@ -525,6 +527,10 @@ def _install_viewport_overlays() -> None:
         # wall_fillet.is_active, so installation has no cost when no preview
         # is open. No corresponding addon-preference toggle.
         WallFilletPreviewDecorator.install(bpy.context)
+        # Always-installed: draw_lines() self-polls on selection + hover state
+        # for join / extend-to-wall / cursor-extend / cursor-split previews.
+        # Free when no preview-eligible state is active.
+        WallGizmoPreviewDecorator.install(bpy.context)
         # Always-installed: draw() self-polls on the active object's array
         # family membership, so installation has no cost when no array
         # element is selected.
