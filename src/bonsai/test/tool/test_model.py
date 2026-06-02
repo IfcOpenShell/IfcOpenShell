@@ -605,7 +605,7 @@ class TestUsingArrays(NewFile):
         props.count = 4
         props.x = 4
         props.sync_children = sync_children
-        bpy.ops.bim.edit_array(item=0)
+        bpy.ops.bim.finish_editing_array()
 
         if add_second_layer:
             bpy.ops.bim.add_array()
@@ -614,7 +614,7 @@ class TestUsingArrays(NewFile):
             props.count = 3
             props.y = 4
             props.sync_children = sync_children
-            bpy.ops.bim.edit_array(item=1)
+            bpy.ops.bim.finish_editing_array()
 
     def test_remove_array_last_to_first(self):
         self.setup_array(add_second_layer=True)

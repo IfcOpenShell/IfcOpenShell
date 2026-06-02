@@ -51,10 +51,7 @@ from . import (
 classes = (
     array.AddArray,
     array.CancelEditingArray,
-    array.DisableEditingArray,
-    array.EditArray,
     array.EnableEditingArray,
-    array.EnableEditingArrayItem,
     array.FinishEditingArray,
     array.ApplyArray,
     array.RegenerateArray,
