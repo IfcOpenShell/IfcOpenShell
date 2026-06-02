@@ -1216,7 +1216,7 @@ class Loader(bonsai.core.tool.Loader):
     ) -> bool:
         items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
         if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-            if tool.Blender.Modifier.is_railing(element):
+            if tool.Parametric.is_railing(element):
                 return False
             return True
         elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
@@ -1224,7 +1224,7 @@ class Loader(bonsai.core.tool.Loader):
             and len({i.is_a() for i in items}) == 1
             and len({i.Radius for i in items}) == 1
         ):
-            if tool.Blender.Modifier.is_railing(element):
+            if tool.Parametric.is_railing(element):
                 return False
             return True
         return False
