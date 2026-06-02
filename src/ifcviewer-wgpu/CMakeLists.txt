@@ -32,7 +32,11 @@ set(WGPU_NATIVE_VERSION "v29.0.0.0" CACHE STRING "wgpu-native release tag")
 
 # Pick the right release archive for the host platform.
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(_wgpu_archive "wgpu-windows-x86_64-msvc-release.zip")
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "ARM64|aarch64")
+        set(_wgpu_archive "wgpu-windows-aarch64-msvc-release.zip")
+    else()
+        set(_wgpu_archive "wgpu-windows-x86_64-msvc-release.zip")
+    endif()
     set(_wgpu_lib     "wgpu_native.dll.lib")
     set(_wgpu_runtime "wgpu_native.dll")
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
