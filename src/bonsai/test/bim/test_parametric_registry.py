@@ -30,7 +30,7 @@ will ship.
 These tests pin the registry-to-runtime contract: for every entry the operator
 ``bl_idname``s resolve to registered ``bpy.ops.bim.*`` callables, the
 ``PropertyGroup`` class is attached to ``bpy.types.Object``, and the per-type
-predicate exists on `tool.Blender.Modifier`."""
+predicate exists on `tool.Parametric`."""
 
 import types
 
@@ -82,11 +82,11 @@ def test_every_entry_has_property_group_attached(registry):
     )
 
 
-def test_every_entry_has_modifier_predicate(registry):
+def test_every_entry_has_parametric_predicate(registry):
     from bonsai import tool
 
-    missing = [e.name for e in registry if getattr(tool.Blender.Modifier, f"is_{e.name}", None) is None]
-    assert not missing, f"tool.Blender.Modifier missing is_<name> predicates: {missing}"
+    missing = [e.name for e in registry if getattr(tool.Parametric, f"is_{e.name}", None) is None]
+    assert not missing, f"tool.Parametric missing is_<name> predicates: {missing}"
 
 
 def test_every_predicate_does_not_raise_on_non_matching_element(registry):
@@ -109,7 +109,7 @@ def test_every_predicate_does_not_raise_on_non_matching_element(registry):
 
     raised = []
     for feature in registry:
-        predicate = getattr(tool.Blender.Modifier, f"is_{feature.name}", None)
+        predicate = getattr(tool.Parametric, f"is_{feature.name}", None)
         if predicate is None:
             continue
         try:

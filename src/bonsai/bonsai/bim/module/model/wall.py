@@ -1939,7 +1939,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_wall(element)
+        return tool.Parametric.is_wall(element)
 
     def get_icon_y_extent(self, props: "BIMWallProperties") -> tuple[float, float]:
         far = props.offset + props.thickness + 2 * self.GIZMO_OFFSET
@@ -3416,7 +3416,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             return False
         for o in selected:
             element = tool.Ifc.get_entity(o)
-            if not element or not tool.Blender.Modifier.is_wall(element):
+            if not element or not tool.Parametric.is_wall(element):
                 return False
         return True
 

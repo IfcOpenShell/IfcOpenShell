@@ -491,7 +491,7 @@ class _WindowEditMixin(FeatureModifierEditMixin):
 
     @classmethod
     def _is_element_type(cls, element):
-        return tool.Blender.Modifier.is_window(element)
+        return tool.Parametric.is_window(element)
 
     @classmethod
     def _get_props(cls, obj: bpy.types.Object):
@@ -750,7 +750,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_window(element)
+        return tool.Parametric.is_window(element)
 
     def get_icon_y_extent(self, props: "BIMWindowProperties") -> tuple[float, float]:
         """Get Y extents for window icon positioning.

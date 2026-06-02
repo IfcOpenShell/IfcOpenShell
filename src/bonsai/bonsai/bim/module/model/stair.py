@@ -632,7 +632,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_stair(element)
+        return tool.Parametric.is_stair(element)
 
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
         """Create the total-length lock as an open/closed pair plus the

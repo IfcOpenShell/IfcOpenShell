@@ -365,7 +365,7 @@ class BIM_PT_wall(bpy.types.Panel):
         if not obj:
             return False
         element = tool.Ifc.get_entity(obj)
-        return bool(element) and tool.Blender.Modifier.is_wall(element)
+        return bool(element) and tool.Parametric.is_wall(element)
 
     def draw(self, context):
         obj = context.active_object
