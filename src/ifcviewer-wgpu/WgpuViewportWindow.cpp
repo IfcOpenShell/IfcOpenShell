@@ -1947,23 +1947,60 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     //   immediate     — no vsync at all. Frames presented as soon as
     //                   ready, may tear on motion. Useful for raw
     //                   throughput benchmarking.
-    WGPUPresentMode pm = WGPUPresentMode_Mailbox;
+    // Preference order. Override with WGPU_PRESENT_MODE=...; otherwise we
+    // try Mailbox → FifoRelaxed → Immediate → Fifo and pick the first
+    // mode actually advertised by the surface. Asking for a mode that
+    // the backend doesn't list aborts the process (wgpu-native panics
+    // from Rust at wgpuSurfaceConfigure). On Metal in particular only
+    // Fifo + Immediate are exposed today, so a static Mailbox default
+    // crashes there.
+    WGPUPresentMode preferred[4] = {
+        WGPUPresentMode_Mailbox,
+        WGPUPresentMode_FifoRelaxed,
+        WGPUPresentMode_Immediate,
+        WGPUPresentMode_Fifo,
+    };
     const char* pm_name = "mailbox";
     if (const char* s = std::getenv("WGPU_PRESENT_MODE")) {
-        if (std::strcmp(s, "fifo") == 0) {
-            pm = WGPUPresentMode_Fifo;        pm_name = "fifo";
-        } else if (std::strcmp(s, "fifo_relaxed") == 0) {
-            pm = WGPUPresentMode_FifoRelaxed; pm_name = "fifo_relaxed";
-        } else if (std::strcmp(s, "mailbox") == 0) {
-            pm = WGPUPresentMode_Mailbox;     pm_name = "mailbox";
-        } else if (std::strcmp(s, "immediate") == 0) {
-            pm = WGPUPresentMode_Immediate;   pm_name = "immediate";
-        } else {
+        WGPUPresentMode override_pm = WGPUPresentMode_Fifo;
+        bool known = true;
+        if      (std::strcmp(s, "fifo") == 0)         { override_pm = WGPUPresentMode_Fifo;        pm_name = "fifo"; }
+        else if (std::strcmp(s, "fifo_relaxed") == 0) { override_pm = WGPUPresentMode_FifoRelaxed; pm_name = "fifo_relaxed"; }
+        else if (std::strcmp(s, "mailbox") == 0)      { override_pm = WGPUPresentMode_Mailbox;     pm_name = "mailbox"; }
+        else if (std::strcmp(s, "immediate") == 0)    { override_pm = WGPUPresentMode_Immediate;   pm_name = "immediate"; }
+        else {
+            known = false;
             qWarning().noquote().nospace()
                 << "[wgpu] unknown WGPU_PRESENT_MODE=" << s
-                << " (expected fifo|fifo_relaxed|mailbox|immediate); using mailbox";
+                << " (expected fifo|fifo_relaxed|mailbox|immediate); falling back to preference order";
+        }
+        if (known) {
+            preferred[0] = override_pm;
+            preferred[1] = WGPUPresentMode_Fifo; // Fifo is the only guaranteed-supported mode
+            preferred[2] = preferred[3] = WGPUPresentMode_Fifo;
         }
     }
+
+    WGPUSurfaceCapabilities caps = {};
+    wgpuSurfaceGetCapabilities(surface_, adapter_, &caps);
+    auto supports = [&](WGPUPresentMode mode) {
+        for (size_t i = 0; i < caps.presentModeCount; ++i) {
+            if (caps.presentModes[i] == mode) return true;
+        }
+        return false;
+    };
+    WGPUPresentMode pm = WGPUPresentMode_Fifo; // spec-guaranteed fallback
+    for (WGPUPresentMode candidate : preferred) {
+        if (supports(candidate)) { pm = candidate; break; }
+    }
+    switch (pm) {
+        case WGPUPresentMode_Mailbox:      pm_name = "mailbox";      break;
+        case WGPUPresentMode_FifoRelaxed:  pm_name = "fifo_relaxed"; break;
+        case WGPUPresentMode_Immediate:    pm_name = "immediate";    break;
+        case WGPUPresentMode_Fifo:         pm_name = "fifo";         break;
+        default: break;
+    }
+    wgpuSurfaceCapabilitiesFreeMembers(caps);
     cfg.presentMode = pm;
     if (!surface_configured_) {
         const char* note = "";
