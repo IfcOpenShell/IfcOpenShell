@@ -156,21 +156,37 @@ install(TARGETS BonsaiViewer
 )
 ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 
-# Stage IfcOpenShell plug-ins (schemas, kernels, mappings, serializers —
-# anything named ifcopenshell.*.dylib) into the .app bundle's
-# Frameworks/ directory on macOS. These are dlopen-only deps so
-# macdeployqt does not follow them automatically. The upstream
-# install(TARGETS …) rules place them at <prefix>/lib/ (outside the
-# bundle).
+# Stage IfcOpenShell dylibs into the .app bundle's Frameworks/ directory.
 #
-# Frameworks/ is the standard macOS app-bundle location for shared
-# libraries the app pulls in at runtime — it's where macdeployqt
-# already deposited libIfcParse/libIfcGeom/etc. as linked deps, and
-# the BonsaiViewer exe's INSTALL_RPATH (@executable_path/../Frameworks)
-# points there. With the plug-in loader's primary search path being
-# dirname(libIfcParse) (= Frameworks/ inside the bundle), placing the
-# plug-ins alongside libIfcParse means they're found on the first
-# probe — no fallback search needed.
+# Two flavours sit alongside each other in <prefix>/lib/ after install:
+#
+#   1. Linked core libs (lib*.dylib) — IfcParse, IfcGeom (output-named
+#      libifcopenshell.geometry.dylib), IfcViewer, plug-in / mapping /
+#      kernel shared libs. With --shared these are runtime @rpath deps
+#      of BonsaiViewer.exe. macdeployqt is *supposed* to follow them
+#      but in practice misses non-Qt @rpath deps when the source lib
+#      lives outside the standard system / Qt prefixes, so we stage
+#      them explicitly. (In a static build these are absent from lib/
+#      and the glob just no-ops, so this rule is safe in both modes.)
+#
+#   2. Plug-ins (ifcopenshell.*.dylib, no `lib` prefix) — dlopen-only
+#      deps the plug-in loader resolves at runtime. macdeployqt has
+#      no way to know about these.
+#
+# Both kinds get a flat copy into Contents/Frameworks/. The plug-in
+# loader's primary search path is dirname(libIfcParse) (= Frameworks/
+# inside the bundle), so plug-ins and core libs both find each other
+# on the first probe.
+#
+# The geometry-writer filter drops ifcopenshell.geometry.writer.*.dylib
+# (the per-schema OBJ / glTF / DAE / STP / IGS / SVG / TTL export
+# converters — heavy, viewer-irrelevant). Mirrors the Rocky workflow's
+# filter in `stage_runtime_payload` (see 27249770e).
+#
+# <prefix>/lib/ is IfcOpenShell-exclusive — Qt / boost / eigen live in
+# their own brew / build prefixes — so a broad *.dylib glob is safe
+# here and automatically picks up any future shared libs without
+# needing to maintain an explicit name list.
 #
 # Subdirectory order in cmake/CMakeLists.txt guarantees that ifcparse/
 # / ifcgeom/ / serializers/ are add_subdirectory'd before bonsaiviewer/,
@@ -178,21 +194,14 @@ ifcopenshell_deploy_qt_runtime(BonsaiViewer)
 # on disk under <prefix>/lib/.
 if(APPLE)
     install(CODE [[
-        file(GLOB _ifc_plugins
-             "${CMAKE_INSTALL_PREFIX}/lib/ifcopenshell.*.dylib")
-        # Skip ifcopenshell.geometry.writer.*.dylib — those are heavy
-        # schema-specific OBJ / glTF / DAE / STP / IGS / SVG / TTL export
-        # converters. BonsaiViewer is a viewer; it never writes geometry
-        # out, so they're pure deadweight. Mirrors the Rocky workflow's
-        # filter in `stage_runtime_payload` (see 27249770e). Cuts the
-        # macOS .app by ~100-150 MB.
-        list(FILTER _ifc_plugins EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
-        if(_ifc_plugins)
-            message(STATUS "Staging IfcOpenShell plug-ins into BonsaiViewer.app/Contents/Frameworks")
-            file(COPY ${_ifc_plugins}
-                 DESTINATION "${CMAKE_INSTALL_PREFIX}/BonsaiViewer.app/Contents/Frameworks")
+        set(_fw "${CMAKE_INSTALL_PREFIX}/BonsaiViewer.app/Contents/Frameworks")
+        file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
+        if(_ifc_dylibs)
+            message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into BonsaiViewer.app/Contents/Frameworks")
+            file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
         else()
-            message(WARNING "No ifcopenshell.*.dylib plug-ins found in lib/ — BonsaiViewer.app will fail at the first IFC load")
+            message(WARNING "No IfcOpenShell *.dylib found in lib/ — BonsaiViewer.app will fail to launch (missing @rpath linked deps) or at IFC load time (missing plug-ins)")
         endif()
     ]])
 endif()
