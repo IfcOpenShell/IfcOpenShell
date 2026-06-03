@@ -53,7 +53,7 @@ private:
     void applyCoordinateOperation(uint32_t mid);
     void applyModelTransformation(uint32_t mid);
     void applyModelVisibility(uint32_t mid);
-    void maybeGuessFederatedFalseOrigin(uint32_t mid);
+    void tryGuessFirstModelFalseOrigin(uint32_t mid);
     void updateVolumeReadout();
 
     bonsaiviewer::SessionState* session_state_ = nullptr;

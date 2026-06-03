@@ -33,6 +33,13 @@ SessionState::SessionState(QObject* parent)
     , element_registry_(new ElementRegistry(this))
     , connector_registry_(new modules::connectors::ConnectorRegistry(this))
 {
+    // Relay specific Federation mutations onto the SessionState bus. Views
+    // subscribe to SessionState signals only — Federation stays a back-end
+    // detail. Doing the relay here (instead of having every mutation site
+    // manually call notifyFederationChanged) keeps the "emit point" at one
+    // hop from the data change and rules out emit-in-slot recursion bugs.
+    connect(federation_, &Federation::federatedFalseOriginChanged,
+            this, &SessionState::notifyFederationChanged);
 }
 
 void SessionState::createLoader(WgpuViewportWindow* viewport) {
