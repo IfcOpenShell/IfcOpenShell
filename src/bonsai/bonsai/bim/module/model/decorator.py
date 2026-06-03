@@ -2069,6 +2069,47 @@ def _stroke_lines_alpha(
     gpu.state.blend_set("NONE")
 
 
+def _fill_quads_alpha(
+    context: bpy.types.Context,
+    quads: list[
+        tuple[
+            tuple[float, float, float],
+            tuple[float, float, float],
+            tuple[float, float, float],
+            tuple[float, float, float],
+        ]
+    ],
+    color_rgb: tuple[float, float, float],
+    alpha: float,
+) -> None:
+    """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
+    order) as one TRIS batch with two triangles per quad. Companion to
+    ``_stroke_lines_alpha`` for filled previews."""
+    if not quads:
+        return
+    verts: list[tuple[float, float, float]] = []
+    indices: list[tuple[int, int, int]] = []
+    for quad in quads:
+        if len(quad) != 4:
+            continue
+        base = len(verts)
+        verts.extend(tuple(v) for v in quad)
+        indices.append((base, base + 1, base + 2))
+        indices.append((base, base + 2, base + 3))
+    if not tool.Blender.validate_shader_batch_data(verts, indices):
+        return
+    region = getattr(context, "region", None)
+    if region is None:
+        return
+    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+    shader.bind()
+    shader.uniform_float("color", (*color_rgb, alpha))
+    batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=indices)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.blend_set("NONE")
+
+
 class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
     """GPU preview lines for the wall-fillet flow.
 
@@ -2543,6 +2584,9 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
 
     LINE_WIDTH = 1.5
     LINE_ALPHA = 0.8
+    # Semi-transparent so the wall body and surrounding geometry stay visible
+    # under the preview quads.
+    QUAD_ALPHA = 0.25
 
     def draw_lines(self, context: bpy.types.Context) -> None:
         if not tool.Blender.are_viewport_gizmos_enabled():
@@ -2562,6 +2606,38 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         color_rgb: tuple[float, float, float],
     ) -> None:
         _stroke_lines_alpha(context, segments, color_rgb, self.LINE_WIDTH, self.LINE_ALPHA)
+
+    def _fill(
+        self,
+        context: bpy.types.Context,
+        quads: list[
+            tuple[
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+            ]
+        ],
+        color_rgb: tuple[float, float, float],
+    ) -> None:
+        _fill_quads_alpha(context, quads, color_rgb, self.QUAD_ALPHA)
+
+    @staticmethod
+    def _wall_floor_quad(mw: Matrix, x0: float, x1: float, y0: float, y1: float) -> tuple[
+        tuple[float, float, float],
+        tuple[float, float, float],
+        tuple[float, float, float],
+        tuple[float, float, float],
+    ]:
+        """4 world-space corners of a Z=0 wall-local rectangle, CCW when
+        viewed from +Z. Used for top-down floor-projection quads so the
+        extend / split previews stay legible from plan view."""
+        return (
+            tuple(mw @ Vector((x0, y0, 0.0))),
+            tuple(mw @ Vector((x1, y0, 0.0))),
+            tuple(mw @ Vector((x1, y1, 0.0))),
+            tuple(mw @ Vector((x0, y1, 0.0))),
+        )
 
     def _draw_join_preview(self, context: bpy.types.Context, prefs: Any) -> None:
         """Render four preview lines per wall pair — two at each wall's base
@@ -2710,11 +2786,18 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         return active
 
     def _draw_cursor_extend_preview(self, context: bpy.types.Context, prefs: Any) -> None:
-        """Render the extend-X preview line only while the cursor-anchored
-        extend-X icon gizmo is hovered. The line runs from the wall's nearer
-        axis endpoint to the cursor's projected X on the wall axis, both
-        clamped to wall-local Y=0 Z=0 so the line stays on the wall's floor
-        edge regardless of cursor Z."""
+        """Hover-gated floor-plane preview for the extend-X icon. Quads sit
+        on the Z=0 plane spanning the wall's ``offset`` to
+        ``offset + thickness`` Y band so the operator's effect reads from
+        plan view without side-view clutter:
+
+        - **Cursor outside ``[anchor_x, anchor_x+length]`` (grow)**: one
+          green ``decorator_color_selected`` quad over the extension
+          (nearer endpoint → cursor X).
+        - **Cursor inside the wall extent (shrink)**: green quad for the
+          portion that REMAINS (cursor X → farther endpoint) + red
+          ``decorator_color_error`` quad for the portion the operator
+          REMOVES (nearer endpoint → cursor X)."""
         active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
         if active is None:
             return
@@ -2727,21 +2810,35 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
             return
         anchor_x = geom.get("anchor_x", 0.0)
         length = geom.get("length", 0.0)
-        if length <= 0:
+        offset = geom.get("offset", 0.0)
+        thickness = geom.get("thickness", 0.0)
+        if length <= 0 or thickness <= 0:
             return
         mw = active.matrix_world
         cursor_local = mw.inverted() @ context.scene.cursor.location
+        y_floor_0 = offset
+        y_floor_1 = offset + thickness
         start_x = anchor_x
         end_x = anchor_x + length
+        keep_color = tuple(prefs.decorator_color_selected[:3])
         nearest_x = start_x if abs(cursor_local.x - start_x) < abs(cursor_local.x - end_x) else end_x
-        start_world = mw @ Vector((nearest_x, 0.0, 0.0))
-        end_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
-        if (end_world - start_world).length < 1e-6:
+
+        def emit(x0: float, x1: float, color: tuple[float, float, float]) -> None:
+            if abs(x1 - x0) < 1e-6:
+                return
+            lo, hi = (x0, x1) if x0 < x1 else (x1, x0)
+            self._fill(context, [self._wall_floor_quad(mw, lo, hi, y_floor_0, y_floor_1)], color)
+
+        if start_x < cursor_local.x < end_x:
+            remove_color = tuple(prefs.decorator_color_error[:3])
+            farthest_x = end_x if nearest_x == start_x else start_x
+            emit(nearest_x, cursor_local.x, remove_color)
+            emit(cursor_local.x, farthest_x, keep_color)
             return
-        self._stroke(context, [(tuple(start_world), tuple(end_world))], tuple(prefs.decorator_color_selected[:3]))
+        emit(nearest_x, cursor_local.x, keep_color)
 
     def _draw_cursor_split_preview(self, context: bpy.types.Context, prefs: Any) -> None:
-        """Render one line at the cursor's projected X, from wall base to wall top
+        """Render one red line at the cursor's projected X, from wall base to wall top
         along the wall's local Z — the cut plane the split operator would commit.
         Hover-gated on the split icon; coloured with the destructive-action warning
         red to match the icon's own hover signal."""
@@ -2769,9 +2866,18 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         self._stroke(context, [(tuple(bottom_world), tuple(top_world))], tuple(prefs.decorator_color_error[:3]))
 
     def _draw_cursor_extend_z_preview(self, context: bpy.types.Context, prefs: Any) -> None:
-        """Render one preview line at the cursor's projected X on the wall axis,
-        from the wall base to the gizmo's local Z — the new total height the
-        extend-Z operator would commit. Hover-gated on the extend-Z icon."""
+        """Hover-gated vertical-line preview for the extend-Z icon at the
+        cursor's projected X on the wall axis (y=0 reference-line plane).
+
+        Two cases by cursor Z relative to the wall's current height:
+
+        - **Cursor Z above the wall top (grow)**: one green
+          ``decorator_color_selected`` segment from z=height to z=cursor.z
+          (the new vertical material).
+        - **Cursor Z inside ``(0, height)`` (shrink)**: two segments —
+          green from z=0 to z=cursor.z (the portion that REMAINS), red
+          ``decorator_color_error`` from z=cursor.z to z=height (the
+          portion the operator REMOVES)."""
         active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
         if active is None:
             return
@@ -2793,6 +2899,17 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
             return
         if abs(cursor_local.z - height) < 1e-6:
             return
-        base_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
-        top_world = mw @ Vector((cursor_local.x, 0.0, cursor_local.z))
-        self._stroke(context, [(tuple(base_world), tuple(top_world))], tuple(prefs.decorator_color_selected[:3]))
+        keep_color = tuple(prefs.decorator_color_selected[:3])
+        cursor_x = cursor_local.x
+
+        def stroke(z0: float, z1: float, color: tuple[float, float, float]) -> None:
+            a = mw @ Vector((cursor_x, 0.0, z0))
+            b = mw @ Vector((cursor_x, 0.0, z1))
+            self._stroke(context, [(tuple(a), tuple(b))], color)
+
+        if cursor_local.z > height:
+            stroke(height, cursor_local.z, keep_color)
+            return
+        remove_color = tuple(prefs.decorator_color_error[:3])
+        stroke(0.0, cursor_local.z, keep_color)
+        stroke(cursor_local.z, height, remove_color)

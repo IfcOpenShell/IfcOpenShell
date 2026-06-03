@@ -2011,6 +2011,13 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             (0, 0, 1),
         )
 
+    # Per-region weakref map populated in ``setup_element_specific_gizmos``.
+    # The ``WallGizmoPreviewDecorator`` dereferences this each draw to read
+    # live ``is_highlight`` state off the cursor icons (extend-X / extend-Z
+    # / split) in the same region it's currently drawing in, so the GPU
+    # axis-preview lines only render while the matching icon is hovered.
+    _active_instances: ClassVar["dict[int, weakref.ReferenceType[GizmoWallEdition]]"] = {}
+
     # Row layout: validate / cancel / baseline-triplet / rotate / array.
     # Wall has no ``cycle_type_operator``, so the cycle slot collapses and
     # the baseline triplet takes the cycle X position (0.87). Rotate
@@ -2073,6 +2080,8 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             highlight_color,
         )
         self.setup_pen_row_toggle_openings_icon()
+        if context.region is not None:
+            type(self)._active_instances[context.region.as_pointer()] = weakref.ref(self)
 
     def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
         """Position cursor-anchored gizmos and the wall-specific icon-row extras."""
@@ -2086,6 +2095,14 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     def _update_cursor_gizmos(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
         """Position the cursor-anchored icons (extend-X / extend-Z / split) on the wall
         axis at the cursor's projected X.
+
+        Always visible when a parametric wall is selected — not gated on edit
+        mode. The three operators (``bim.extend_wall_to_cursor`` /
+        ``bim.extend_wall_height_to_cursor`` / ``bim.split_wall_at_cursor``)
+        all poll on wall-selected and commit any pending wall edit before
+        acting, so single-click without entering edit mode is the canonical
+        flow. The ``WallGizmoPreviewDecorator`` keeps the viewport clean by
+        only drawing the action's guide line on hover.
 
         Two branches by view orientation:
 
@@ -2101,10 +2118,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         if not hasattr(self, "split_gizmo"):
             return
         all_gizmos = (self.extend_x_gizmo, self.extend_z_gizmo, self.split_gizmo)
-        if not props.is_editing:
-            for gz in all_gizmos:
-                gz.hide = True
-            return
         cursor_world = context.scene.cursor.location
         cursor_local = mw.inverted() @ cursor_world
         in_range = props.anchor_x < cursor_local.x < props.anchor_x + props.length
@@ -2252,9 +2265,11 @@ class SplitWallAtCursor(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context: bpy.types.Context) -> set[str]:
         # Applies any pending wall edit first so the split operates on the committed
         # geometry rather than the draft preview box.
-        if _commit_active_wall_edit_if_any(context) is None:
+        obj = _commit_active_wall_edit_if_any(context)
+        if obj is None:
             return {"CANCELLED"}
         bpy.ops.bim.split_wall()
+        _maybe_resync_wall_props_from_ifc(obj)
         return {"FINISHED"}
 
 
@@ -2282,6 +2297,7 @@ class ExtendWallToCursor(bpy.types.Operator, tool.Ifc.Operator):
             tool.Model,
             context.scene.cursor.location,
         )
+        _resync_walls_after_mutation(tool.Blender.get_selected_objects())
         return {"FINISHED"}
 
 
@@ -2313,6 +2329,7 @@ class ExtendWallHeightToCursor(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         with bpy.context.temp_override(active_object=obj, selected_objects=[obj]):
             bpy.ops.bim.change_extrusion_depth(depth=new_height)
+        _maybe_resync_wall_props_from_ifc(obj)
         return {"FINISHED"}
 
 
