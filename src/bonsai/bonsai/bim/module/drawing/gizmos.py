@@ -105,16 +105,6 @@ from mathutils.kdtree import KDTree
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
 
-# Backward-compat re-exports — these mixins moved to bim.parametric_lifecycle
-# in the gizmos.py framework refactor. PR4 callers (CycleDoorType / CycleWindowType
-# / CycleStairType) still spell gizmo.CycleTypeMixin; the re-export keeps the
-# old access path alive until PR4 rewrites the import. PR5 cleanup drops these.
-from bonsai.bim.parametric_lifecycle import (  # noqa: F401, E402
-    CycleTypeMixin,
-    PickTypeMixin,
-    TypeAccessorBase,
-)
-
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
 SNAP_MAX_RADIUS = 50.0
@@ -4225,7 +4215,8 @@ def _generate_menu_tris() -> tuple[tuple[float, float, float], ...]:
 class GizmoMenu(StaticTrisGizmoMixin, bpy.types.Gizmo):
     """Hamburger-stack menu icon — 'open a picker to choose from many options'.
 
-    For enums with 5+ values; use ``GizmoCycle`` for 2-4."""
+    For enums with 3+ values; use ``GizmoCycle`` for exactly 2 (where the
+    advance-one-per-click semantic stays predictable)."""
 
     bl_idname = "VIEW3D_GT_menu"
 
