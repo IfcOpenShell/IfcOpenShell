@@ -37,7 +37,7 @@ from bonsai.bim.module.drawing.gizmos import (
     DimensionGizmoConfig,
     IconSlot,
 )
-from bonsai.bim.parametric_lifecycle import IntegerInputDialogMixin
+from bonsai.bim.parametric_lifecycle import IntegerInputDialogMixin, PickTypeMixin
 from bonsai.tool.numeric_input import (
     IntegerInputState,
     run_integer_input_modal,
@@ -443,11 +443,11 @@ class SetStairTreads(bpy.types.Operator):
         return f"Number of Treads: {input_str}_{validity}  |  Enter to confirm, Esc to cancel"
 
 
-class CycleStairType(bpy.types.Operator, gizmo.CycleTypeMixin):
-    """Cycle through stair types. Shift+click to cycle in reverse."""
+class PickStairType(bpy.types.Operator, PickTypeMixin):
+    """Pick a stair type from a popup menu."""
 
-    bl_idname = "bim.cycle_stair_type"
-    bl_label = "Cycle Stair Type"
+    bl_idname = "bim.pick_stair_type"
+    bl_label = "Pick Stair Type"
     bl_options = {"REGISTER", "UNDO"}
 
     props_getter = tool.Model.get_stair_props
@@ -456,7 +456,7 @@ class CycleStairType(bpy.types.Operator, gizmo.CycleTypeMixin):
     skip_element_check = True
 
     def execute(self, context: bpy.types.Context) -> set[str]:
-        return self._cycle_type(context)
+        return self._pick_type(context)
 
 
 # Tread run accessors - callbacks that delegate to BIMStairProperties methods
@@ -522,7 +522,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     enable_editing_operator = "bim.enable_editing_stair"
     finish_editing_operator = "bim.finish_editing_stair"
     cancel_editing_operator = "bim.cancel_editing_stair"
-    cycle_type_operator = "bim.cycle_stair_type"
+    pick_type_operator = "bim.pick_stair_type"
 
     def get_icon_y_extent(self, props: "BIMStairProperties") -> tuple[float, float]:
         """Get Y extents for stair icon positioning.
