@@ -737,6 +737,29 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         tool.Root.reload_item_decorator()
 
 
+class ToggleHostOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_host_openings"
+    bl_label = "Toggle Openings"
+    bl_description = "Show or hide opening fills (doors and windows) in the viewport\n\nHotkey: Alt+O"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        # Opening visibility is independent of host geometry — don't commit any
+        # active parametric edit; the user can keep editing the host.
+        if tool.Model.get_model_props().openings:
+            bpy.ops.bim.edit_openings(apply_all=True)
+        else:
+            bpy.ops.bim.show_openings()
+        return {"FINISHED"}
+
+
 class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_openings"
     bl_label = "Show Openings"

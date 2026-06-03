@@ -135,29 +135,30 @@ def test_every_wall_gizmo_group_resolves_get_decoration_colors():
     )
 
 
-def test_gizmo_wall_add_opening_accepts_fillet_corner_active():
-    """``GizmoWallAddOpening.poll`` must gate on ``is_path_connectable_wall``,
-    not the strict ``is_wall`` predicate. Fillet-corner walls carry no LAYER2
-    usage by IFC spec, so the strict predicate rejects them and the
-    add-opening icon never surfaces over a curved corner — symmetry with the
-    join / unjoin / extend wall gizmos (all of which already poll on the
-    looser predicate) is required for the user to drop openings into fillet
+def test_host_add_opening_accepts_fillet_corner_active():
+    """``is_supported_host`` (the gate ``GizmoHostAddOpening.poll`` dispatches
+    through) must classify walls via ``is_path_connectable_wall``, not the
+    strict ``is_wall`` predicate. Fillet-corner walls carry no LAYER2 usage
+    by IFC spec, so the strict predicate rejects them and the add-opening
+    icon never surfaces over a curved corner — symmetry with the join /
+    unjoin / extend wall gizmos (all of which already poll on the looser
+    predicate) is required for the user to drop openings into fillet
     corners at all."""
-    from bonsai.bim.module.model.wall import GizmoWallAddOpening
+    from bonsai.bim.module.model.host_add_opening_gizmo import is_supported_host
 
-    source = textwrap.dedent(inspect.getsource(GizmoWallAddOpening.poll))
+    source = textwrap.dedent(inspect.getsource(is_supported_host))
     tree = ast.parse(source)
     attr_names = {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
 
     assert "is_path_connectable_wall" in attr_names, (
-        "GizmoWallAddOpening.poll must gate on tool.Parametric.is_path_connectable_wall "
-        "for both the active element and the partner-exclusion check. The strict "
-        "is_wall predicate hides the add-opening gizmo over every fillet-corner wall."
+        "is_supported_host must gate walls on tool.Parametric.is_path_connectable_wall. "
+        "The strict is_wall predicate hides the add-opening gizmo over every "
+        "fillet-corner wall."
     )
     assert "is_wall" not in attr_names, (
-        "GizmoWallAddOpening.poll must NOT call .is_wall — that strict predicate "
-        "drops fillet-corner walls. Use is_path_connectable_wall instead, matching "
-        "the host gate every other wall-state gizmo group uses."
+        "is_supported_host must NOT call .is_wall — that strict predicate drops "
+        "fillet-corner walls. Use is_path_connectable_wall instead, matching the "
+        "host gate every other wall-state gizmo group uses."
     )
 
 

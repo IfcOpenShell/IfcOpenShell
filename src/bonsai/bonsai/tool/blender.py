@@ -894,6 +894,34 @@ class Blender(bonsai.core.tool.Blender):
         return bbox_dict
 
     @classmethod
+    def get_object_world_bounding_box(cls, obj: bpy.types.Object) -> dict[str, Union[float, Vector]]:
+        """Same shape as ``get_object_bounding_box`` but with ``matrix_world``
+        applied — extents are computed across the 8 transformed corners, so
+        a rotated or scaled object reports its actual world-axis AABB rather
+        than the misleading transform of the local-space corners.
+
+        ``bound_box[0]`` / ``bound_box[6]`` are the local min/max corners but
+        do NOT correspond to the world AABB extremes once the object is
+        rotated, so min/max must be taken per-axis across all 8 corners."""
+        corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+        xs = [c.x for c in corners]
+        ys = [c.y for c in corners]
+        zs = [c.z for c in corners]
+        min_point = Vector((min(xs), min(ys), min(zs)))
+        max_point = Vector((max(xs), max(ys), max(zs)))
+        return {
+            "min_x": min_point.x,
+            "max_x": max_point.x,
+            "min_y": min_point.y,
+            "max_y": max_point.y,
+            "min_z": min_point.z,
+            "max_z": max_point.z,
+            "min_point": min_point,
+            "max_point": max_point,
+            "center": (min_point + max_point) / 2,
+        }
+
+    @classmethod
     def select_and_activate_single_object(cls, context: bpy.types.Context, active_object: bpy.types.Object) -> None:
         for obj in context.selected_objects:
             obj.select_set(False)
