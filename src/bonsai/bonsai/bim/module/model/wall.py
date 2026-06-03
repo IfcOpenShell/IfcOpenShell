@@ -191,7 +191,29 @@ def _resync_walls_after_mutation(objs: Iterable["bpy.types.Object | None"]) -> N
         _maybe_resync_wall_props_from_ifc(obj)
 
 
-class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
+class _CommitWallDraftsFirstMixin:
+    """Operator mixin that flushes any in-progress wall parametric drafts in
+    the current selection before delegating to the subclass's ``_perform``.
+
+    Centralises the inline ``_commit_pending_wall_edits_for_selection(context)``
+    call that every multi-wall operator (unjoin, unjoin-path-connection,
+    extend-to-underside, extend-to-wall, split, merge, join-intersection)
+    used to repeat at the top of ``_execute``. Subclasses implement
+    ``_perform`` instead of ``_execute``; the IFC transaction opened by
+    ``tool.Ifc.Operator.execute`` wraps both the commit and the perform.
+
+    Place this BEFORE ``bpy.types.Operator`` in the bases tuple so the
+    mixin's ``_execute`` resolves first in the MRO."""
+
+    def _execute(self, context: bpy.types.Context):
+        _commit_pending_wall_edits_for_selection(context)
+        return self._perform(context)
+
+    def _perform(self, context: bpy.types.Context):
+        raise NotImplementedError("Subclasses of _CommitWallDraftsFirstMixin must implement _perform.")
+
+
+class UnjoinWalls(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unjoin_walls"
     bl_label = "Unjoin Walls"
     bl_description = "Unjoin the selected walls"
@@ -204,13 +226,12 @@ class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context):
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context):
         core.unjoin_walls(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
         _resync_walls_after_mutation(tool.Blender.get_selected_objects())
 
 
-class UnjoinWallPathConnection(bpy.types.Operator, tool.Ifc.Operator):
+class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     """Surgical counterpart to `UnjoinWalls`: disconnect the active wall from one
     specific partner wall, leaving the active wall's other connections intact. The
     partner is identified by IFC GlobalId — invariant under Blender-object renames,
@@ -231,8 +252,7 @@ class UnjoinWallPathConnection(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context):
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context):
         active = tool.Blender.get_active_object(is_selected=True)
         if not active:
             self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
@@ -284,7 +304,7 @@ class UnjoinWallPathConnection(bpy.types.Operator, tool.Ifc.Operator):
         _resync_walls_after_mutation([active, other])
 
 
-class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
+class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_walls_to_underside"
     bl_label = "Extend Walls To Underside"
     bl_description = "Extend and clip selected walls at the bottom faces of an object"
@@ -297,11 +317,7 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context):
-        # Match the sibling ops (UnjoinWalls / MergeWall / ExtendWallsToWall): if any
-        # of the selected walls has an in-progress parametric draft, commit it before
-        # extending, so the slab clip operates on the just-finalised IFC state.
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context):
         slabs: list[bpy.types.Object] = []
         walls: list[bpy.types.Object] = []
         for obj in tool.Blender.get_selected_objects():
@@ -337,14 +353,13 @@ class RegenerateWallToUnderside(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Please select at least one LAYER2 element")
 
 
-class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
+class ExtendWallsToWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_walls_to_wall"
     bl_label = "Extend Walls To Wall"
     bl_description = "Extend and trim selected walls to another wall"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context):
         target_obj = None
         objs = []
         if (
@@ -557,7 +572,7 @@ class FlipWall(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
+class SplitWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_wall"
     bl_label = "Split Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -572,8 +587,7 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context):
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context):
         selected_objs = tool.Model.get_selected_mesh_objects()
         for obj in selected_objs:
             DumbWallJoiner().split(obj, context.scene.cursor.location)
@@ -581,7 +595,7 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
+class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.merge_wall"
     bl_label = "Merge Wall"
     bl_description = "Merge selected walls into one object"
@@ -601,8 +615,7 @@ class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context):
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context):
         active_obj = context.active_object
         assert active_obj
         selected_objs = tool.Model.get_selected_mesh_objects()
@@ -2241,11 +2254,10 @@ def _commit_active_wall_edit_if_any(context: bpy.types.Context) -> bpy.types.Obj
 
 
 def _commit_pending_wall_edits_for_selection(context: bpy.types.Context) -> None:  # noqa: ARG001
-    """Thin wall-scoped alias for `tool.Parametric.commit_pending_edits_for_selection`.
+    """Thin wall-scoped alias for ``tool.Parametric.commit_pending_edits_for_selection``.
 
-    Kept as a named helper because every multi-wall operator (split / join / merge /
-    unjoin / extend-to-wall …) calls it at the top of ``_execute``; centralising the
-    ``names=("wall",)`` filter here means the registry name is touched in one place."""
+    Encapsulates the ``names=("wall",)`` filter so the registry name is
+    touched in exactly one place."""
     tool.Parametric.commit_pending_edits_for_selection(names=("wall",))
 
 
@@ -4053,7 +4065,7 @@ class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboa
         self.toggle_openings_icon.hide = False
 
 
-class JoinWallsIntersection(bpy.types.Operator, tool.Ifc.Operator):
+class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.join_walls_intersection"
     bl_label = "Join Walls at Corner"
     bl_description = "Join two walls at their corner"
@@ -4066,8 +4078,7 @@ class JoinWallsIntersection(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
-    def _execute(self, context: bpy.types.Context) -> set[str]:
-        _commit_pending_wall_edits_for_selection(context)
+    def _perform(self, context: bpy.types.Context) -> set[str]:
         try:
             core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
         except core.RequireTwoWallsError as e:
