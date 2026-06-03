@@ -2072,12 +2072,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "bim.extend_wall_height_to_cursor",
             highlight_color,
         )
-        self.toggle_openings_gizmo = self._setup_icon_gizmo(
-            "VIEW3D_GT_add_opening",
-            default_color,
-            "bim.toggle_wall_openings",
-            highlight_color,
-        )
+        self.setup_pen_row_toggle_openings_icon()
 
     def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
         """Position cursor-anchored gizmos and the wall-specific icon-row extras."""
@@ -2178,14 +2173,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         Toggle-openings is NOT in the slot system — it surfaces in IDLE
         state (alongside the pen, not in the edit row), so it's positioned
-        manually here."""
-        if not hasattr(self, "toggle_openings_gizmo"):
-            return
-        icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
-        icon_y = self.get_icon_y_offset(context, mw)
-        billboard_rot = self._frame_billboard_rot
-
-        # --- Baseline variant visibility ---
+        via the base's shared helper here."""
         active_variant = self._BASELINE_TO_VARIANT.get(props.desired_offset_baseline)
         for variant in ("exterior", "center", "interior"):
             gz = getattr(self, f"baseline_{variant}_gizmo", None)
@@ -2195,16 +2183,7 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
                 gz.hide = self.is_gizmo_hidden_by_modal(gz)
             else:
                 gz.hide = True
-
-        # --- Idle-row toggle-openings (outside the slot system) ---
-        # Sits at the slot the cancel icon occupies during editing — that way the
-        # pen + openings pair is compact and visually grouped.
-        if not props.is_editing:
-            self.toggle_openings_gizmo.hide = self.is_gizmo_hidden_by_modal(self.toggle_openings_gizmo)
-            world_pos = mw @ Vector((self.ICON_VALIDATE_X + self.ICON_CANCEL_X, icon_y, icon_z))
-            self.toggle_openings_gizmo.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
-        else:
-            self.toggle_openings_gizmo.hide = True
+        self.update_pen_row_toggle_openings_icon(context, mw, props)
 
 
 def _apply_wall_extend_flips(
@@ -2356,29 +2335,6 @@ class RotateWall90(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         with bpy.context.temp_override(active_object=obj, selected_objects=[obj]):
             bpy.ops.bim.rotate_90(axis="Z")
-        return {"FINISHED"}
-
-
-class ToggleWallOpenings(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.toggle_wall_openings"
-    bl_label = "Toggle Openings"
-    bl_description = "Show or hide opening fills (doors and windows) in the viewport"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not tool.Model.has_selected_ifc_objects():
-            cls.poll_message_set("No IFC objects selected.")
-            return False
-        return True
-
-    def _execute(self, context: bpy.types.Context) -> set[str]:
-        # Opening visibility is independent of wall geometry — don't commit the
-        # active wall edit; the user can keep editing the wall.
-        if tool.Model.get_model_props().openings:
-            bpy.ops.bim.edit_openings(apply_all=True)
-        else:
-            bpy.ops.bim.show_openings()
         return {"FINISHED"}
 
 
@@ -3305,71 +3261,6 @@ def _wall_fillet_preview_walls(context: bpy.types.Context):
     return wall_a_obj, wall_b_obj
 
 
-class GizmoWallAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
-    """Activates when a wall (active) and one non-wall blender object are co-selected.
-
-    Renders a single icon above the wall at the wall-local X corresponding to the other
-    object's projected origin. Clicking dispatches `bim.add_opening`, which lets the
-    existing FilledOpeningGenerator decide how the opening is applied.
-
-    Per-frame positioning via `BillboardingGizmoGroupMixin` ensures the icon
-    keeps facing the camera as the viewport is orbited."""
-
-    bl_idname = "OBJECT_GGT_bim_wall_add_opening"
-    bl_label = "Wall Add Opening Gizmo"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "WINDOW"
-    bl_options = {"3D", "PERSISTENT"}
-
-    @classmethod
-    def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_gizmo_poll_gate(context):
-            return False
-        selected = tool.Blender.get_selected_objects()
-        if len(selected) != 2:
-            return False
-        active = context.active_object
-        if active is None or active not in selected:
-            return False
-        element = tool.Ifc.get_entity(active)
-        if not element or not tool.Parametric.is_path_connectable_wall(element):
-            return False
-        other = next(o for o in selected if o is not active)
-        # If the other object is also a wall, the wall-join gizmo handles it instead.
-        other_element = tool.Ifc.get_entity(other)
-        if other_element and tool.Parametric.is_path_connectable_wall(other_element):
-            return False
-        return True
-
-    def setup(self, context: bpy.types.Context) -> None:
-        default_color, highlight_color = self.get_decoration_colors()
-        self.add_opening_icon = self.setup_icon_gizmo(
-            "VIEW3D_GT_add_opening", default_color, highlight_color, "bim.add_opening"
-        )
-
-    def position_gizmos(self, context: bpy.types.Context) -> None:
-        wall_obj = context.active_object
-        if not wall_obj:
-            return
-        selected = tool.Blender.get_selected_objects()
-        other = next((o for o in selected if o is not wall_obj), None)
-        if not other:
-            return
-        geom = _get_wall_geom_cached(self, wall_obj)
-        if not geom:
-            return
-        mw = wall_obj.matrix_world
-        wall_local = mw.inverted() @ other.matrix_world.translation
-        local_x = max(geom["anchor_x"], min(wall_local.x, geom["anchor_x"] + geom["length"]))
-        # Place the icon on the camera-facing side of the wall, like the pen icon
-        # does for parametric edits — orbit the camera past the wall and the icon
-        # jumps to the visible face instead of being stranded behind it.
-        icon_y = _wall_camera_facing_icon_y(context, mw, geom)
-        icon_z = geom["height"] + gizmo.BaseParametricGizmoGroup.ICON_Z_OFFSET
-        world_pos = mw @ Vector((local_x, icon_y, icon_z))
-        self.add_opening_icon.matrix_basis = gizmo.billboarded_at(world_pos, gizmo.get_billboard_rotation(context))
-
-
 class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
     """Activates when a LAYER3 element (typically a slab) is active and a LAYER2
     wall is co-selected. Mirrors the N-panel ``Extend To Underside`` button (which
@@ -4123,7 +4014,7 @@ class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboa
             "VIEW3D_GT_add_opening",
             default_color,
             highlight_color,
-            "bim.toggle_wall_openings",
+            "bim.toggle_host_openings",
         )
 
     def position_gizmos(self, context: bpy.types.Context) -> None:

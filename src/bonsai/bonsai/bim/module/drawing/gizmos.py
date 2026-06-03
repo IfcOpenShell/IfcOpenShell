@@ -1501,24 +1501,11 @@ class SnapManager:
         nearby_objects = []
 
         for obj in mesh_objects:
-            bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-            if not bbox_corners:
+            if not obj.bound_box:
                 continue
-
-            bbox_min = Vector(
-                (
-                    min(c.x for c in bbox_corners),
-                    min(c.y for c in bbox_corners),
-                    min(c.z for c in bbox_corners),
-                )
-            )
-            bbox_max = Vector(
-                (
-                    max(c.x for c in bbox_corners),
-                    max(c.y for c in bbox_corners),
-                    max(c.z for c in bbox_corners),
-                )
-            )
+            bbox = tool.Blender.get_object_world_bounding_box(obj)
+            bbox_min = bbox["min_point"]
+            bbox_max = bbox["max_point"]
 
             closest = Vector(
                 (
@@ -5754,6 +5741,45 @@ class BaseParametricGizmoGroup:
 
     def get_element_height(self, props) -> float:
         return getattr(props, "overall_height", getattr(props, "height", 1.0))
+
+    def setup_pen_row_toggle_openings_icon(self) -> None:
+        """Create ``self.toggle_openings_gizmo`` bound to
+        ``bim.toggle_host_openings``. Subclasses call this from
+        ``setup_element_specific_gizmos`` to opt their host into the shared
+        idle-row toggle; pair with
+        ``update_pen_row_toggle_openings_icon`` in
+        ``_refresh_element_specific``."""
+        default_color, highlight_color = self.get_decoration_colors()
+        self.toggle_openings_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_add_opening",
+            default_color,
+            "bim.toggle_host_openings",
+            highlight_color,
+        )
+
+    def update_pen_row_toggle_openings_icon(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
+        """Position ``self.toggle_openings_gizmo`` at the cancel-slot X next
+        to the pen in idle state; hide during edit (the validate/cancel row
+        owns that X) and when the active host carries no openings.
+
+        Subclasses opt in by calling
+        ``setup_pen_row_toggle_openings_icon`` in
+        ``setup_element_specific_gizmos`` and this method from
+        ``_refresh_element_specific``. No-op for groups that never
+        created the icon."""
+        if not hasattr(self, "toggle_openings_gizmo"):
+            return
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj) if obj is not None else None
+        has_openings = element is not None and tool.Geometry.has_openings(element)
+        if props.is_editing or not has_openings:
+            self.toggle_openings_gizmo.hide = True
+            return
+        self.toggle_openings_gizmo.hide = self.is_gizmo_hidden_by_modal(self.toggle_openings_gizmo)
+        icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
+        icon_y = self.get_icon_y_offset(context, mw)
+        world_pos = mw @ Vector((self.ICON_VALIDATE_X + self.ICON_CANCEL_X, icon_y, icon_z))
+        self.toggle_openings_gizmo.matrix_basis = billboarded_at(world_pos, self._frame_billboard_rot)
 
     def is_gizmo_hidden_by_modal(self, gizmo: bpy.types.Gizmo) -> bool:
         """Check if a gizmo should be hidden because a modal operator is active.
