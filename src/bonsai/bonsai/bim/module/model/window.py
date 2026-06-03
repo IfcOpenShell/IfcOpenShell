@@ -39,6 +39,7 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.model.wall_offset_gizmos import WALL_OFFSET_GIZMO_CONFIGS
 from bonsai.bim.parametric_lifecycle import FeatureModifierEditMixin
 
 if TYPE_CHECKING:
@@ -743,6 +744,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
         # lining_offset is handled specially in _update_dimension_gizmo_positions due to negative value support
         DimensionGizmoConfig(attr_name="lining_offset", axis=(0, 1, 0), min_value=-10.0),
+        *WALL_OFFSET_GIZMO_CONFIGS,
     ]
 
     props_getter = tool.Model.get_window_props

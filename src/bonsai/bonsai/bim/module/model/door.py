@@ -37,6 +37,7 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.model.wall_offset_gizmos import WALL_OFFSET_GIZMO_CONFIGS
 from bonsai.bim.module.model.window import create_bm_box, create_bm_window
 from bonsai.bim.parametric_lifecycle import FeatureModifierEditMixin
 
@@ -838,6 +839,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
                 p.get_transom_window_center_z(),
             ),
         ),
+        *WALL_OFFSET_GIZMO_CONFIGS,
     ]
 
     # Big quarter-arc hit shapes cover much of the door face — without a
