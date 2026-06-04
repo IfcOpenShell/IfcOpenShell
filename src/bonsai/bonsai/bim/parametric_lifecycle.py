@@ -61,7 +61,7 @@ Pattern selection (which approach a new feature should adopt):
     The authoritative list of registered parametric types — and which use
     `build_edit_lifecycle` vs. standalone operators — lives in
     `tool/parametric.py`'s `EDIT_TYPES` and is enforced by the registry
-    contract tests in `test/bim/test_parametric_registry.py`.
+    contract tests.
 
 This module hosts operator-side mixins that import ``bonsai.tool`` freely.
 The lightweight parametric registry consumed at addon-enable time must stay
