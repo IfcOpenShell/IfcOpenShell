@@ -105,9 +105,61 @@ endif()
 set(WGPU_NATIVE_LIB_DIR "${wgpu_native_SOURCE_DIR}/lib" CACHE INTERNAL
     "Directory containing the wgpu-native shared library")
 
-file(GLOB IFCVIEWER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-file(GLOB IFCVIEWER_H_FILES   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-set(IFCVIEWER_FILES ${IFCVIEWER_CPP_FILES} ${IFCVIEWER_H_FILES})
+# IfcViewerCore: the Qt-free, OpenCASCADE-free runtime subset. Buffer
+# pool, chunk planner, instance composition, sidecar cache, streaming
+# I/O, LOD builder, vertex quantisation — everything needed to load a
+# pre-baked .ifcview sidecar, manage GPU memory, and feed the cull/draw
+# loop without dragging Qt, IfcGeom, OpenCASCADE, CGAL, or Boost into
+# the build. The Emscripten/web target (src/ifcviewer-web) links only
+# IfcViewerCore; the desktop IfcViewer library below adds Qt-coupled
+# pieces (ViewportWindow, OverlayRenderer, Federation, etc.) on top.
+#
+# Keep this list explicit (no glob) — the boundary is the whole point.
+set(IFCVIEWER_CORE_SOURCES
+    BufferPool.cpp
+    ChunkPlanner.cpp
+    InstanceCompose.cpp
+    LodBuilder.cpp
+    SidecarCache.cpp
+    StreamingLoader.cpp
+    StreamingThread.cpp
+)
+set(IFCVIEWER_CORE_HEADERS
+    BufferPool.h
+    ChunkPlanner.h
+    InstanceCompose.h
+    InstancedGeometry.h
+    LodBuilder.h
+    ModelGpuData.h
+    SelectionState.h
+    SidecarCache.h
+    StreamingLoader.h
+    StreamingThread.h
+    VertexQuantization.h
+    VisibilityState.h
+)
+list(TRANSFORM IFCVIEWER_CORE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+list(TRANSFORM IFCVIEWER_CORE_HEADERS PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+
+add_library(IfcViewerCore STATIC ${IFCVIEWER_CORE_SOURCES} ${IFCVIEWER_CORE_HEADERS})
+target_include_directories(IfcViewerCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(IfcViewerCore PUBLIC
+    Eigen3::Eigen
+    wgpu_native
+    ${MESH_OPTIMIZER_LIB}   # set below if WITH_MESH_OPTIMIZER
+)
+if(UNIX AND NOT APPLE)
+    find_package(Threads REQUIRED)
+    target_link_libraries(IfcViewerCore PUBLIC Threads::Threads)
+endif()
+install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+
+# IfcViewer: the Qt + IfcGeom + OpenCASCADE shell — everything in this
+# directory NOT already pulled into IfcViewerCore above.
+file(GLOB _ifcviewer_all_cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file(GLOB _ifcviewer_all_h   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+set(IFCVIEWER_FILES ${_ifcviewer_all_cpp} ${_ifcviewer_all_h})
+list(REMOVE_ITEM IFCVIEWER_FILES ${IFCVIEWER_CORE_SOURCES} ${IFCVIEWER_CORE_HEADERS})
 
 # Cocoa bridge for the CAMetalLayer surface attach — Objective-C++.
 # Only compiled into the target on Apple platforms; CMake handles `.mm`
@@ -131,6 +183,8 @@ if (WITH_MESH_OPTIMIZER)
     find_package(meshoptimizer REQUIRED)
     set(MESH_OPTIMIZER_LIB meshoptimizer::meshoptimizer)
     target_compile_definitions(IfcViewer PUBLIC -DWITH_MESH_OPTIMIZER)
+    target_compile_definitions(IfcViewerCore PUBLIC -DWITH_MESH_OPTIMIZER)
+    target_link_libraries(IfcViewerCore PUBLIC meshoptimizer::meshoptimizer)
 endif()
 
 # Consumers include headers as `#include "ViewportWindow.h"`, so expose this
@@ -140,6 +194,7 @@ target_include_directories(IfcViewer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(IfcViewer ${kernel_libraries} ${mapping_libraries})
 
 target_link_libraries(IfcViewer PUBLIC
+    IfcViewerCore
     IfcUtil
     IfcGeom
     IfcParse
@@ -150,7 +205,6 @@ target_link_libraries(IfcViewer PUBLIC
     Qt${QT_VERSION}::Gui
     Eigen3::Eigen
     wgpu_native
-    ${MESH_OPTIMIZER_LIB}
 )
 
 # Qt platform-handle access (QNativeInterface::QX11Application etc.) is in
