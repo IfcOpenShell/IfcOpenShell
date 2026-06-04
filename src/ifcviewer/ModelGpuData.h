@@ -120,8 +120,32 @@ struct ModelGpuData {
         uint32_t      total_visible_draws     = 0;
         uint32_t      frustum_visible_count   = 0;
 
+        // Opaque-first partition counts.  The cull loop fills
+        // visible_draws_scratch with all opaque visible instances first,
+        // then all transparent ones; cumulative prefix_sums_scratch spans
+        // both. The opaque-pass draw call uses firstVertex=0 and
+        // vertexCount=opaque_visible_vertices; the transparent-pass draw
+        // call uses firstVertex=opaque_visible_vertices and
+        // vertexCount=(total_visible_vertices - opaque_visible_vertices).
+        // 0 means no opaque (transparent-only chunk) or no transparent
+        // (opaque-only chunk) — the render loop skips empty halves.
+        uint32_t      opaque_visible_vertices = 0;
+        uint32_t      opaque_visible_draws    = 0;
+
         std::vector<VisibleDrawGpu> visible_draws_scratch;
         std::vector<uint32_t>       prefix_sums_scratch;
+
+        // Transient transparent-half scratch. Populated alongside
+        // visible_draws_scratch during cull (the cull loop routes each
+        // visible instance to opaque or transparent based on the
+        // mesh_has_alpha + color_override_rgba8 classification). After
+        // the chunk's instances are walked, the post-process step appends
+        // these entries onto visible_draws_scratch and continues the
+        // prefix-sum sequence, yielding a single buffer/upload with
+        // [opaque-draws][transparent-draws] partitioning. Cleared at the
+        // start of each cull alongside visible_draws_scratch.
+        std::vector<VisibleDrawGpu> visible_draws_scratch_transparent;
+        std::vector<uint32_t>       transparent_per_draw_vertex_counts;
 
         // Residency. Streaming sets is_resident=false at applyCachedModel
         // and flips true once the chunk's vertex bytes are uploaded.
@@ -305,6 +329,21 @@ struct ModelGpuData {
     // CPU side, kept for cull / picking / federation recompose.
     std::vector<MeshInfo>    meshes;
     std::vector<InstanceCpu> instances;
+
+    // Per-mesh "any vertex has alpha < 255?" flag, indexed by mesh_id.
+    // Populated at uploadMeshChunk / applyStreamedChunk as vertex bytes
+    // become CPU-resident. Used at cull time to classify each instance
+    // into the opaque or transparent draw partition: an instance with
+    // color_override_rgba8==0 (the "use baked vertex color" sentinel)
+    // routes to the transparent pass iff its mesh has alpha; an instance
+    // with a non-zero override uses the override's alpha byte instead.
+    // 0 means false (opaque mesh), non-zero means true (any-vertex-alpha
+    // < 255). Initial size matches meshes.size(); entries default to 0
+    // until a vertex chunk arrives for that mesh, so a transparent mesh
+    // is briefly mis-classified as opaque between instance compose and
+    // chunk arrival — corrected on the next cull tick once the chunk
+    // lands.
+    std::vector<uint8_t> mesh_has_alpha;
 
     // Local-frame volume (m³) of every mesh, indexed by mesh_id. Computed
     // once at applyCachedModel via signed-tetrahedra-from-origin on the

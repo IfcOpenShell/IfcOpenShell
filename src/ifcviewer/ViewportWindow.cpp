@@ -64,12 +64,15 @@ struct FrameUniforms {
     int   clip_count;       // active section-plane count (≤ kMaxSectionPlanes)
     int   _pad_clip[3];     // pad to 16-byte alignment for the array below
     float clip_planes[kMaxSectionPlanes][4]; // xyz = world-space unit normal, w = plane offset
+    float xray_alpha_cap;   // X-ray mode: fragment alpha clamped to min(in.color.a, cap)
+    float _pad_xray[3];     // pad to 16-byte alignment so the struct stays vec4-aligned
 };
 static_assert(sizeof(FrameUniforms)
                   == 16 * sizeof(float)
                    + 4 * 4 * sizeof(float)
                    + 4 * sizeof(int)
-                   + kMaxSectionPlanes * 4 * sizeof(float),
+                   + kMaxSectionPlanes * 4 * sizeof(float)
+                   + 4 * sizeof(float),
               "FrameUniforms must match WGSL layout");
 
 // Inverse of sRGB encoding. wgpu-native's Vulkan swap chain on X11 treats
@@ -394,6 +397,16 @@ struct FrameUniforms {
     _pad_clip_1:  i32,
     _pad_clip_2:  i32,
     clip_planes:  array<vec4<f32>, 6>,
+    // X-ray mode cap. fs_main clamps `out.a = min(in.color.a, xray_alpha_cap)`.
+    // Default 1.0 (no effect — the min returns in.color.a). Alt+X drops it
+    // toward ~0.3 to translucent-everything. The cull classifier also
+    // routes every instance into the transparent pass when this is < 1
+    // so the blend stage actually fires (an opaque-pass fragment with
+    // capped alpha would still overwrite the back buffer).
+    xray_alpha_cap: f32,
+    _pad_xray_0:  f32,
+    _pad_xray_1:  f32,
+    _pad_xray_2:  f32,
 };
 
 // Returns true if `world` lies on the positive (clipped-away) side of any
@@ -587,8 +600,12 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     }
 
     // Cancel the swap chain's implicit linear→sRGB encoding so the final
-    // bytes match the GL backend (see srgbToLinear above).
-    return vec4<f32>(srgbToLinear(color), in.color.a);
+    // bytes match the GL backend (see srgbToLinear above). Alpha is
+    // clamped to `xray_alpha_cap` (default 1.0 = no effect; X-ray sets
+    // it to ~0.3) so a global translucency override lands without
+    // touching any per-instance state.
+    let alpha_out = min(in.color.a, u_frame.xray_alpha_cap);
+    return vec4<f32>(srgbToLinear(color), alpha_out);
 }
 
 // --------------------------- Pick pipeline ---------------------------------
@@ -1031,6 +1048,9 @@ void ViewportWindow::applyCachedModel(uint32_t model_id,
     // applyStreamedChunk as the bytes arrive.
     m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
     m.mesh_triangles_cache.assign(m.meshes.size(), ModelGpuData::MeshTriangles{});
+    // Default: assume opaque. applyStreamedChunk flips entries to 1 as
+    // their bytes arrive and a vertex-alpha-byte < 255 is observed.
+    m.mesh_has_alpha.assign(m.meshes.size(), uint8_t(0));
 
     // object_id → instance index lookup. Volume tool reads it on every
     // selection mutation; per-pick latency stays O(K) instead of O(K*N).
@@ -4410,12 +4430,16 @@ uint32_t ViewportWindow::cullModelCpuCompute(ModelGpuData& m,
     // Reset per-chunk scratch + counters at the start of each cull.
     for (auto& c : m.chunks) {
         c.visible_draws_scratch.clear();
+        c.visible_draws_scratch_transparent.clear();
+        c.transparent_per_draw_vertex_counts.clear();
         c.prefix_sums_scratch.clear();
         c.prefix_sums_scratch.push_back(0);
-        c.total_visible_vertices = 0;
-        c.total_visible_draws    = 0;
-        c.frustum_visible_count  = 0;
-        c.current_priority       = 0.0f;
+        c.total_visible_vertices  = 0;
+        c.total_visible_draws     = 0;
+        c.opaque_visible_vertices = 0;
+        c.opaque_visible_draws    = 0;
+        c.frustum_visible_count   = 0;
+        c.current_priority        = 0.0f;
     }
 
     // Per-chunk running vertex count (used to populate that chunk's prefix
@@ -4534,12 +4558,45 @@ uint32_t ViewportWindow::cullModelCpuCompute(ModelGpuData& m,
         d.ebo_first_u32 = use_lod1 ? m.instance_lod1_first_u32[i]
                                    : m.instance_ebo_first_u32[i];
         d.base_vertex   = m.instance_base_vertex[i];
-        c.visible_draws_scratch.push_back(d);
 
         const uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count
                                                    : mesh.index_count;
-        running_vertex_count[chunk_idx] += entry_vert_count;
-        c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
+
+        // Opaque-vs-transparent classifier. Routes the draw into the
+        // chunk's opaque half (visible_draws_scratch) or its transparent
+        // half (visible_draws_scratch_transparent). Two cases:
+        //   * Instance has a non-zero color_override_rgba8 (selection
+        //     tint, X-ray override, …) — read its alpha byte directly.
+        //     The sentinel 0 means "use baked vertex color".
+        //   * Otherwise consult the mesh's has-alpha flag, populated at
+        //     chunk-arrival time by sampling vertex 0's alpha byte. False
+        //     while the mesh's vertex chunk hasn't arrived yet, so brand
+        //     new instances of transparent meshes are briefly drawn in
+        //     the opaque pass — corrects on the next cull tick.
+        const bool xray_active     = (xray_alpha_cap_ < 1.0f);
+        const bool override_active = (inst.color_override_rgba8 != 0u);
+        const bool is_transparent  = xray_active
+            ? true   // X-ray forces every instance into the transparent
+                     // pass so the fragment's alpha clamp (xray_alpha_cap)
+                     // actually goes through the blend stage.
+            : (override_active
+               ? (((inst.color_override_rgba8 >> 24) & 0xFFu) < 255u)
+               : (inst.mesh_id < m.mesh_has_alpha.size()
+                  && m.mesh_has_alpha[inst.mesh_id] != 0));
+
+        if (is_transparent) {
+            // Defer prefix-sum bookkeeping for transparent entries; they
+            // get appended (and their cumulative vertex counts continued)
+            // in the post-walk concat step. The vertex count for this
+            // entry is stashed alongside so we don't recompute use_lod1
+            // there.
+            c.visible_draws_scratch_transparent.push_back(d);
+            c.transparent_per_draw_vertex_counts.push_back(entry_vert_count);
+        } else {
+            c.visible_draws_scratch.push_back(d);
+            running_vertex_count[chunk_idx] += entry_vert_count;
+            c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
+        }
         if (use_lod1) {
             ++lod1_dbg_count_;
             lod1_dbg_tris_saved_ += (mesh.index_count > mesh.lod1_index_count
@@ -4569,6 +4626,30 @@ uint32_t ViewportWindow::cullModelCpuCompute(ModelGpuData& m,
 
     for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
         auto& c = m.chunks[ci];
+
+        // Snapshot the opaque-half size BEFORE appending transparent
+        // entries — these are the draw_count + vertex_count for the
+        // opaque-pass draw call.
+        c.opaque_visible_draws    = uint32_t(c.visible_draws_scratch.size());
+        c.opaque_visible_vertices = running_vertex_count[ci];
+
+        // Concatenate transparent entries onto the opaque half and
+        // continue the prefix-sum sequence. After this loop:
+        //   visible_draws_scratch  = [opaque-N][transparent-M]   (N+M total)
+        //   prefix_sums_scratch    has N+M+1 entries (the +1 is the
+        //                          implicit leading 0 added at reset)
+        //   total_visible_vertices = sum of every visible draw's count
+        //   total_visible_draws    = N + M
+        // The fragment-pipeline split lives in render() — opaque-pass
+        // draws [0, opaque_visible_vertices), transparent-pass draws
+        // [opaque_visible_vertices, total_visible_vertices) of the same
+        // shared buffer.
+        for (size_t k = 0; k < c.visible_draws_scratch_transparent.size(); ++k) {
+            c.visible_draws_scratch.push_back(
+                c.visible_draws_scratch_transparent[k]);
+            running_vertex_count[ci] += c.transparent_per_draw_vertex_counts[k];
+            c.prefix_sums_scratch.push_back(running_vertex_count[ci]);
+        }
         c.total_visible_draws    = uint32_t(c.visible_draws_scratch.size());
         c.total_visible_vertices = running_vertex_count[ci];
     }
@@ -4595,10 +4676,18 @@ void ViewportWindow::cullModelCpuUpload(ModelGpuData& m) {
                              c.prefix_sums_scratch.data(),
                              c.prefix_sums_scratch.size() * sizeof(uint32_t));
 
+        // per_chunk_uniform layout (vec4<u32> in the shader's u_model):
+        //   [0] total_visible_draws       (opaque + transparent)
+        //   [1] total_visible_vertices    (sum across the partition)
+        //   [2] opaque_visible_vertices   (firstVertex for transparent pass)
+        //   [3] opaque_visible_draws      (currently CPU-only; reserved
+        //                                  for a future GPU-side filter
+        //                                  if we ever want it)
         const uint32_t um[4] = {
             c.total_visible_draws,
             c.total_visible_vertices,
-            0, 0,
+            c.opaque_visible_vertices,
+            c.opaque_visible_draws,
         };
         wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
     }
@@ -4881,19 +4970,46 @@ void ViewportWindow::render() {
 
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
 
-    if (main_pipeline_ && frame_bind_group_ && !models_gpu_.empty()) {
+    // Two-pass main render: opaque first (depth write on, no blend), then
+    // transparent (depth write off, alpha blend on). Each chunk's
+    // visible_draws_scratch is laid out as [opaque][transparent]; the
+    // draw calls slice into the same shared buffer via firstVertex +
+    // vertexCount. Skip a half when it's empty.
+    if (main_pipeline_ && main_pipeline_transparent_
+        && frame_bind_group_ && !models_gpu_.empty()) {
+        // ---- Opaque pass ------------------------------------------------
         wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_);
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
-            // One drawcall per non-empty chunk. Each chunk binds its own
-            // vertex_storage + visible_draws + prefix_sums + uniform via
-            // its bind_group. The shader is identical across chunks.
             for (const auto& c : m.chunks) {
-                if (!c.bind_group || c.total_visible_vertices == 0) continue;
+                if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
                 wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
-                wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+                wgpuRenderPassEncoderDraw(pass,
+                                          c.opaque_visible_vertices,
+                                          1, 0, 0);
+            }
+        }
+
+        // ---- Transparent pass ------------------------------------------
+        // Same bind groups, different pipeline. Each chunk's transparent
+        // range starts at firstVertex = opaque_visible_vertices and runs
+        // for (total - opaque) vertices.
+        wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_transparent_);
+        // Frame bind group is already set; bind group 0 layout is identical.
+
+        for (const auto& [mid, m] : models_gpu_) {
+            if (m.hidden) continue;
+            for (const auto& c : m.chunks) {
+                if (!c.bind_group) continue;
+                const uint32_t transparent_verts =
+                    c.total_visible_vertices - c.opaque_visible_vertices;
+                if (transparent_verts == 0) continue;
+                wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+                wgpuRenderPassEncoderDraw(pass,
+                                          transparent_verts, 1,
+                                          c.opaque_visible_vertices, 0);
             }
         }
     }
@@ -5705,6 +5821,58 @@ bool ViewportWindow::buildPipelines() {
         return false;
     }
 
+    // ---- Transparent variant of the main pipeline ----------------------
+    // Same shader, same layout, same vertex pulling, same depth test —
+    // differs only in:
+    //   * depth.depthWriteEnabled = False (we still depth-test against
+    //     the opaque pass's z-buffer, but the transparent fragment's z
+    //     doesn't write, so further-back geometry behind the glass still
+    //     paints over)
+    //   * color_target.blend = SrcAlpha / OneMinusSrcAlpha (standard
+    //     porter-duff "over" — premultiplied wouldn't help because our
+    //     vertex colours come in straight-alpha from the IFC iterator)
+    // No sort, no OIT — overlapping transparent surfaces of the same
+    // kind will produce order-dependent artefacts but for typical IFC
+    // glazing (panes that don't overlap much in screen space) the
+    // result is "good enough".
+    WGPUBlendState main_blend = {};
+    main_blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
+    main_blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    main_blend.color.operation = WGPUBlendOperation_Add;
+    main_blend.alpha.srcFactor = WGPUBlendFactor_One;
+    main_blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
+    main_blend.alpha.operation = WGPUBlendOperation_Add;
+
+    WGPUColorTargetState color_target_transparent = color_target;
+    color_target_transparent.blend = &main_blend;
+
+    WGPUFragmentState frag_transparent = frag;
+    frag_transparent.targets = &color_target_transparent;
+
+    // depthWriteEnabled stays True so the edge-detect pass (which samples
+    // depth_view_ to find silhouette discontinuities) can see window
+    // panes — leaving it False made transparent surfaces invisible to
+    // the edge detector, so windows ended up as edge-less "framed holes"
+    // and the edges of opaque geometry behind the glass painted through
+    // at full intensity. Trade-off: overlapping transparent surfaces
+    // become depth-test-occluded by the closer one, increasing order
+    // sensitivity. For BIM glass (panes that don't overlap in screen
+    // space) this is invisible; for scenes where it matters, the right
+    // fix is OIT or sort-by-distance, not turning depth write off.
+    WGPUDepthStencilState depth_transparent = depth;
+
+    WGPURenderPipelineDescriptor rp_desc_t = rp_desc;
+    rp_desc_t.label        = svFromCStr("ifcviewer-wgpu.main_pipeline_transparent");
+    rp_desc_t.fragment     = &frag_transparent;
+    rp_desc_t.depthStencil = &depth_transparent;
+
+    main_pipeline_transparent_ =
+        wgpuDeviceCreateRenderPipeline(device_, &rp_desc_t);
+    if (!main_pipeline_transparent_) {
+        qWarning() << "wgpu main transparent render pipeline creation failed";
+        return false;
+    }
+
     // ---- Per-frame uniform buffer ---------------------------------------
     WGPUBufferDescriptor fb_desc = {};
     fb_desc.size  = sizeof(FrameUniforms);
@@ -5932,6 +6100,40 @@ bool ViewportWindow::applyStreamedChunk(
     c.is_resident      = true;
     c.is_loading       = false;
     c.loaded_frame_idx = streaming_frame_idx_;
+
+    // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
+    // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
+    // classifier reads to route instances of this mesh to the transparent
+    // pass. Done here (vs. once at sidecar bake time) because for the
+    // streaming path the bytes only arrive now; the same code services
+    // both the worker-result drain and the sync first-frame fallback.
+    // O(verts-in-chunk) — typically a few k per chunk, dominated by the
+    // queueWriteBuffer above. Spatial-bucket re-entry for the same mesh
+    // from a different chunk overwrites — alpha is a per-mesh property
+    // so a redundant assign is correct; cheap.
+    if (m.mesh_has_alpha.size() == m.meshes.size()) {
+        for (uint32_t mi : c.mesh_ids) {
+            if (mi >= m.meshes.size()) continue;
+            const MeshInfo& mesh = m.meshes[mi];
+            if (mesh.vertex_count == 0) continue;
+            const size_t v_off = size_t(m.mesh_chunk_local_base_vertex[mi])
+                               * INSTANCED_VERTEX_STRIDE_BYTES;
+            const size_t v_end = v_off
+                + size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (v_end > vbytes.size()) continue;
+            bool any_alpha = false;
+            // Alpha byte sits in the high byte of the vertex's 3rd u32
+            // (shader: `w2 >> 24`), i.e. offset 11 within the 12-byte
+            // vertex record. See InstancedGeometry.h's vertex layout
+            // comment.
+            for (uint32_t v = 0; v < mesh.vertex_count && !any_alpha; ++v) {
+                const size_t a_off = v_off
+                    + size_t(v) * INSTANCED_VERTEX_STRIDE_BYTES + 11;
+                if (vbytes[a_off] < 255u) any_alpha = true;
+            }
+            m.mesh_has_alpha[mi] = any_alpha ? uint8_t(1) : uint8_t(0);
+        }
+    }
 
     // Mesh-local volumes for the meshes in this chunk. applyCachedModel
     // left them zero because the bytes weren't in memory yet; the first
@@ -6702,6 +6904,8 @@ void ViewportWindow::updateFrameUniforms() {
         u.clip_planes[i][2] = p.n.z();
         u.clip_planes[i][3] = p.d;
     }
+    u.xray_alpha_cap = xray_alpha_cap_;
+    u._pad_xray[0] = u._pad_xray[1] = u._pad_xray[2] = 0.0f;
 
     wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
 }
@@ -7534,6 +7738,20 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         requestUpdate();
         return;
     }
+    // Alt+X — toggle global X-ray (translucent everything). The frame
+    // uniform `xray_alpha_cap` clamps `fs_main`'s output alpha; the cull
+    // classifier sees `xray_alpha_cap_ < 1` and routes every instance
+    // through the transparent pass so the blend actually fires.
+    if (key == Qt::Key_X && mods == Qt::AltModifier && !event->isAutoRepeat()) {
+        constexpr float kXrayOnCap = 0.3f;
+        xray_alpha_cap_ = (xray_alpha_cap_ < 1.0f) ? 1.0f : kXrayOnCap;
+        qInfo().noquote().nospace()
+            << "[wgpu] x-ray "
+            << (xray_alpha_cap_ < 1.0f ? "ON"  : "OFF")
+            << " (cap=" << xray_alpha_cap_ << ")";
+        requestUpdate();
+        return;
+    }
     if (key == Qt::Key_H && mods == Qt::ShiftModifier) {
         if (selection_.count() == 0) return;
         size_t hidden_now = 0;
@@ -7705,7 +7923,8 @@ void ViewportWindow::shutdown() {
     if (frame_uniform_buffer_)    { wgpuBufferRelease(frame_uniform_buffer_);         frame_uniform_buffer_ = nullptr; }
     if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
     selection_flags_capacity_ = 0;
-    if (main_pipeline_)        { wgpuRenderPipelineRelease(main_pipeline_);       main_pipeline_ = nullptr; }
+    if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
+    if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }

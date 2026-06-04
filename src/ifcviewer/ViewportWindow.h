@@ -627,6 +627,12 @@ private:
     WGPUBindGroupLayout    model_bgl_          = nullptr;  // group 1
     WGPUPipelineLayout     pipeline_layout_    = nullptr;
     WGPURenderPipeline     main_pipeline_      = nullptr;
+    // Transparent-pass pipeline. Same shader / layout / vertex-pulling as
+    // main_pipeline_; differs only in depthWriteEnabled=False and a
+    // SrcAlpha / OneMinusSrcAlpha blend on the color target. render()
+    // does the opaque pass with main_pipeline_ first, then this one
+    // over the transparent partition of each chunk's visible_draws.
+    WGPURenderPipeline     main_pipeline_transparent_ = nullptr;
 
     // Per-frame uniform (view-proj + lighting), bound at group 0.
     WGPUBuffer    frame_uniform_buffer_ = nullptr;
@@ -764,6 +770,15 @@ private:
     // vector that the section tool mutates.
     std::vector<SectionPlane> section_planes_;
     bool                          section_tool_active_  = false;
+
+    // X-ray mode. Default 1.0 = no effect (fragment shader clamps
+    // alpha = min(in.color.a, xray_alpha_cap_), which returns in.color.a
+    // when the cap is 1). Alt+X drops it to 0.3 to translucent the whole
+    // scene; pressing again restores 1.0. When < 1.0, the cull
+    // classifier also routes every instance into the transparent pass
+    // so the blend stage actually fires (an opaque-pass fragment with
+    // capped alpha would still overwrite the back buffer).
+    float                         xray_alpha_cap_       = 1.0f;
 
     // Marquee box-select. Armed on LMB press (when no other tool consumes
     // the click), becomes active after the cursor moves past
