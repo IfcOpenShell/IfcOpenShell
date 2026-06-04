@@ -39,6 +39,9 @@ files and viewer-oriented formats such as ``.ifcview`` and ``.rdbview``.
       :maxdepth: 2
 
       connectors/index
+      debug-output
+      env-vars
+      viewport_architecture
 
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community
 forums <https://community.osarch.org>`__. Something strange happening? Please
