@@ -23,6 +23,8 @@
 #include <QWidget>
 #include <QVBoxLayout>
 
+#include "Log.h"
+#include "LogQt.h"
 #include "ViewportWindow.h"
 
 // Stage-1 driver: opens a single window with the wgpu viewport embedded,
@@ -85,11 +87,12 @@ int main(int argc, char* argv[]) {
             if (ok) {
                 viewport->setCamera(v[0], v[1], v[2], v[3], v[4], v[5]);
             } else {
-                qWarning() << "--camera: failed to parse" << parser.value("camera");
+                Log::warn() << "--camera: failed to parse "
+                            << parser.value("camera");
             }
         } else {
-            qWarning() << "--camera: expected 6 comma-separated floats, got"
-                       << parts.size();
+            Log::warn() << "--camera: expected 6 comma-separated floats, got "
+                        << parts.size();
         }
     }
 

@@ -23,13 +23,14 @@
 #include "ChunkPlanner.h"
 #include "InstanceCompose.h"
 #include "LengthMeasurement.h"
+#include "Log.h"
+#include "LogQt.h"
 #include "StreamingLoader.h"
 #include "VertexQuantization.h"
 
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QResizeEvent>
-#include <QDebug>
 #include <QDir>
 #include <QElapsedTimer>
 #include <QFile>
@@ -175,11 +176,11 @@ static QString sv(WGPUStringView s) {
 static void onWgpuLog(WGPULogLevel level, WGPUStringView message, void* /*userdata*/) {
     const QString m = sv(message);
     switch (level) {
-        case WGPULogLevel_Error: qWarning().noquote() << "[wgpu err]"   << m; break;
-        case WGPULogLevel_Warn:  qWarning().noquote() << "[wgpu warn]"  << m; break;
-        case WGPULogLevel_Info:  qInfo   ().noquote() << "[wgpu info]"  << m; break;
-        case WGPULogLevel_Debug: qDebug  ().noquote() << "[wgpu dbg]"   << m; break;
-        case WGPULogLevel_Trace: qDebug  ().noquote() << "[wgpu trace]" << m; break;
+        case WGPULogLevel_Error: Log::warn().noquote() << "[wgpu err]"   << m; break;
+        case WGPULogLevel_Warn:  Log::warn().noquote() << "[wgpu warn]"  << m; break;
+        case WGPULogLevel_Info:  Log::info() << "[wgpu info] "  << m; break;
+        case WGPULogLevel_Debug: Log::info() << "[wgpu dbg] "   << m; break;
+        case WGPULogLevel_Trace: Log::info() << "[wgpu trace] " << m; break;
         default: break;
     }
 }
@@ -187,7 +188,7 @@ static void onWgpuLog(WGPULogLevel level, WGPUStringView message, void* /*userda
 static void onUncapturedError(WGPUDevice const* /*device*/,
                               WGPUErrorType type, WGPUStringView message,
                               void* /*ud1*/, void* /*ud2*/) {
-    qWarning().noquote() << "[wgpu device error" << int(type) << "]" << sv(message);
+    Log::warn().noquote() << "[wgpu device error" << int(type) << "]" << sv(message);
 }
 
 // Allocate a wgpu buffer of `size_bytes` with the given usage, and upload
@@ -698,7 +699,7 @@ void ViewportWindow::queueLoadSidecar(const QString& path) {
 
 uint32_t ViewportWindow::loadSidecar(const QString& path) {
     if (!wgpu_initialized_) {
-        qWarning().noquote() << "loadSidecar called before wgpu init:" << path;
+        Log::warn().noquote() << "loadSidecar called before wgpu init:" << path;
         return 0;
     }
 
@@ -719,33 +720,33 @@ uint32_t ViewportWindow::loadSidecar(const QString& path) {
         // peeking the header ourselves, so users know which to fix.
         QFile f(resolved);
         if (!f.exists()) {
-            qWarning().noquote() << "Sidecar not found:" << resolved;
+            Log::warn().noquote() << "Sidecar not found:" << resolved;
         } else if (!f.open(QIODevice::ReadOnly)) {
-            qWarning().noquote() << "Sidecar unreadable:" << resolved
+            Log::warn().noquote() << "Sidecar unreadable:" << resolved
                                  << "(" << f.errorString() << ")";
         } else {
             uint32_t header[3] = { 0, 0, 0 };
             const qint64 got = f.read(reinterpret_cast<char*>(header), sizeof(header));
             if (got < qint64(sizeof(header))) {
-                qWarning().noquote() << "Sidecar truncated:" << resolved
+                Log::warn().noquote() << "Sidecar truncated:" << resolved
                                      << "(only" << got << "bytes — expected ≥ 12)";
             } else if (header[0] != SIDECAR_MAGIC) {
-                qWarning().noquote().nospace()
+                Log::warn().noquote().nospace()
                     << "Sidecar magic mismatch: " << resolved
                     << " — got 0x" << QString::number(header[0], 16)
                     << ", expected 0x" << QString::number(SIDECAR_MAGIC, 16)
                     << " (\"IFVW\")";
             } else if (header[1] != SIDECAR_VERSION) {
-                qWarning().noquote().nospace()
+                Log::warn().noquote().nospace()
                     << "Sidecar schema mismatch: " << resolved
                     << " — file is v" << header[1]
                     << ", this build expects v" << SIDECAR_VERSION
                     << ". Re-bake the .ifc with a viewer at the matching schema.";
             } else if (header[2] != SIDECAR_ENDIAN) {
-                qWarning().noquote() << "Sidecar endianness mismatch:" << resolved
+                Log::warn().noquote() << "Sidecar endianness mismatch:" << resolved
                                      << "(cross-platform load not supported)";
             } else {
-                qWarning().noquote() << "Sidecar metadata read failed past the header:" << resolved;
+                Log::warn().noquote() << "Sidecar metadata read failed past the header:" << resolved;
             }
         }
         return 0;
@@ -759,7 +760,7 @@ uint32_t ViewportWindow::loadSidecar(const QString& path) {
 void ViewportWindow::applyCachedModel(uint32_t model_id,
                                           StreamingSidecar metadata) {
     if (!device_ || !queue_) {
-        qWarning() << "applyCachedModel without an initialised device";
+        Log::warn() << "applyCachedModel without an initialised device";
         return;
     }
 
@@ -1056,7 +1057,7 @@ void ViewportWindow::applyCachedModel(uint32_t model_id,
     // chunk's load. The per-frame loader (commit 4) will buildModelBindGroup
     // after a chunk becomes resident.
 
-    qInfo().noquote().nospace()
+    Log::info().noquote().nospace()
         << "[wgpu stream] applyCachedModel mid=" << model_id
         << " verts=" << mref.vertex_bytes << "B (deferred)"
         << " idx="   << mref.index_count
@@ -1174,7 +1175,7 @@ void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
 void ViewportWindow::finalizeModel(uint32_t model_id) {
     auto it = pending_direct_loads_.find(model_id);
     if (it == pending_direct_loads_.end()) {
-        qWarning().nospace()
+        Log::warn().nospace()
             << "[wgpu direct] finalizeModel(" << model_id
             << ") with no staged data; skipping";
         return;
@@ -1186,11 +1187,11 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
     SidecarData& s = *staging_ptr;
 
     if (!device_ || !queue_) {
-        qWarning() << "[wgpu direct] finalizeModel without an initialised device";
+        Log::warn() << "[wgpu direct] finalizeModel without an initialised device";
         return;
     }
     if (s.meshes.empty() || s.instances.empty()) {
-        qInfo().nospace() << "[wgpu direct] finalizeModel(" << model_id
+        Log::info().nospace() << "[wgpu direct] finalizeModel(" << model_id
                           << "): empty staging (meshes=" << s.meshes.size()
                           << " instances=" << s.instances.size() << ")";
         return;
@@ -1219,7 +1220,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
 
     auto model_it = models_gpu_.find(model_id);
     if (model_it == models_gpu_.end()) {
-        qWarning().nospace()
+        Log::warn().nospace()
             << "[wgpu direct] finalizeModel(" << model_id
             << "): applyCachedModel produced no model entry";
         return;
@@ -1261,7 +1262,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
         // sidecar gather.
 
         if (!applyStreamedChunk(m, ci, vbytes, idx)) {
-            qWarning().nospace()
+            Log::warn().nospace()
                 << "[wgpu direct] finalizeModel(" << model_id
                 << "): applyStreamedChunk failed on chunk " << ci
                 << " (pool OOM?)";
@@ -1270,7 +1271,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
         ++chunks_uploaded;
     }
 
-    qInfo().nospace()
+    Log::info().nospace()
         << "[wgpu direct] finalizeModel mid=" << model_id
         << " meshes=" << m.meshes.size()
         << " instances=" << m.instances.size()
@@ -1491,7 +1492,7 @@ void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
         }
     }
 
-    qInfo().noquote().nospace()
+    Log::info().noquote().nospace()
         << "[wgpu] frameOnFederatedOrigin model=" << model_id
         << " distance=" << camera_distance_
         << " (cap=" << max_distance_m << "m, model radius=" << radius << ")";
@@ -1516,7 +1517,7 @@ void ViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
 
     if (!wgpu_initialized_) {
         if (!initWgpu()) {
-            qWarning() << "wgpu init failed; viewport will not render";
+            Log::warn() << "wgpu init failed; viewport will not render";
             return;
         }
         wgpu_initialized_ = true;
@@ -1572,26 +1573,26 @@ bool ViewportWindow::initWgpu() {
     if (const char* s = std::getenv("WGPU_MIN_PX")) {
         const float v = float(std::atof(s));
         if (v >= 0.0f) min_pixel_radius_ = v;
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[wgpu cull] WGPU_MIN_PX=" << min_pixel_radius_;
     }
     if (const char* s = std::getenv("WGPU_MIN_PX_MOTION")) {
         const float v = float(std::atof(s));
         if (v >= 0.0f) motion_min_pixel_radius_ = v;
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[wgpu cull] WGPU_MIN_PX_MOTION=" << motion_min_pixel_radius_;
     }
     if (const char* s = std::getenv("WGPU_STREAM_DEBUG")) {
         streaming_debug_ = (s[0] == '1');
         if (streaming_debug_) {
-            qInfo().noquote() << "[wgpu stream] WGPU_STREAM_DEBUG=1 — per-frame "
+            Log::info().noquote() << "[wgpu stream] WGPU_STREAM_DEBUG=1 — per-frame "
                                  "[stream-debug] log enabled";
         }
     }
     if (const char* s = std::getenv("WGPU_HIZ")) {
         if (s[0] == '1') {
             hiz_enabled_ = true;
-            qInfo() << "[wgpu] WGPU_HIZ=1 — HiZ occlusion culling enabled "
+            Log::info() << "[wgpu] WGPU_HIZ=1 — HiZ occlusion culling enabled "
                        "(disabled by default; see task #58)";
         }
     }
@@ -1600,21 +1601,21 @@ bool ViewportWindow::initWgpu() {
         // main thread, sequentially. Used to measure speedup vs the
         // parallel-per-model path. Any non-"0" value keeps parallelism on.
         cull_threads_enabled_ = (s[0] != '0');
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[wgpu cull] WGPU_CULL_THREADS=" << s
             << " (parallelism " << (cull_threads_enabled_ ? "ON" : "OFF") << ")";
     }
     if (const char* s = std::getenv("WGPU_FLY_DEBUG")) {
         fly_debug_ = (s[0] == '1');
         if (fly_debug_) {
-            qInfo() << "[wgpu fly] WGPU_FLY_DEBUG=1 — per-frame [fly] dt log enabled";
+            Log::info() << "[wgpu fly] WGPU_FLY_DEBUG=1 — per-frame [fly] dt log enabled";
         }
     }
     // Mouse-nav preset (matches GL AppSettings::NavPreset). blender default,
     // rhino or revit as alternatives. Selection always stays on LMB.
     const char* nav_env = std::getenv("WGPU_NAV_PRESET");
     applyNavPreset(nav_env ? nav_env : "blender");
-    qInfo().noquote().nospace()
+    Log::info().noquote().nospace()
         << "[wgpu nav] preset=" << (nav_env ? nav_env : "blender")
         << " (orbit "
         << (orbit_button_ == Qt::RightButton ? "RMB" : "MMB")
@@ -1626,7 +1627,7 @@ bool ViewportWindow::initWgpu() {
 
     instance_ = wgpuCreateInstance(nullptr);
     if (!instance_) {
-        qWarning() << "wgpuCreateInstance returned null";
+        Log::warn() << "wgpuCreateInstance returned null";
         return false;
     }
 
@@ -1650,7 +1651,7 @@ bool ViewportWindow::initWgpu() {
             r->adapter = adapter;
             r->ok = true;
         } else {
-            qWarning().noquote() << "RequestAdapter failed:" << sv(message);
+            Log::warn().noquote() << "RequestAdapter failed:" << sv(message);
         }
     };
     acb.userdata1 = &areq;
@@ -1684,10 +1685,10 @@ bool ViewportWindow::initWgpu() {
     WGPUDeviceDescriptor dev_desc = {};
     dev_desc.requiredLimits = web_limits_ ? &web_floor_limits : &adapter_limits;
     if (web_limits_) {
-        qInfo() << "wgpu --web-limits: requesting browser-floor limits"
+        Log::info() << "wgpu --web-limits: requesting browser-floor limits"
                 << "(maxStorageBufferBindingSize=128MB, maxBufferSize=256MB)";
     }
-    // Surface uncaptured errors (validation failures etc.) into qWarning so
+    // Surface uncaptured errors (validation failures etc.) into Log::warn so
     // they're attributable rather than silently swallowed.
     dev_desc.uncapturedErrorCallbackInfo.callback = onUncapturedError;
 
@@ -1701,7 +1702,7 @@ bool ViewportWindow::initWgpu() {
             r->device = device;
             r->ok = true;
         } else {
-            qWarning().noquote() << "RequestDevice failed:" << sv(message);
+            Log::warn().noquote() << "RequestDevice failed:" << sv(message);
         }
     };
     dcb.userdata1 = &dreq;
@@ -1718,7 +1719,7 @@ bool ViewportWindow::initWgpu() {
     // runtime answers the question. Failure here is fatal — without any
     // pool we can't load chunks.
     if (!probeAndCreatePool()) {
-        qWarning() << "wgpu: streaming pool probe failed; cannot start";
+        Log::warn() << "wgpu: streaming pool probe failed; cannot start";
         return false;
     }
 
@@ -1731,7 +1732,7 @@ bool ViewportWindow::initWgpu() {
     WGPUSurfaceCapabilities caps = {};
     if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
         || caps.formatCount == 0) {
-        qWarning() << "wgpuSurfaceGetCapabilities returned no formats";
+        Log::warn() << "wgpuSurfaceGetCapabilities returned no formats";
         return false;
     }
     surface_format_ = caps.formats[0];  // preferred format per wgpu docs
@@ -1741,12 +1742,12 @@ bool ViewportWindow::initWgpu() {
     if (!buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
     if (!overlays_.init(instance_, device_, queue_, surface_format_, SAMPLE_COUNT)) {
-        qWarning() << "OverlayRenderer init failed";
+        Log::warn() << "OverlayRenderer init failed";
         return false;
     }
     if (!buildPickPipeline()) return false;
 
-    qInfo() << "wgpu init OK; surface format =" << int(surface_format_);
+    Log::info() << "wgpu init OK; surface format =" << int(surface_format_);
     return true;
 }
 
@@ -1824,7 +1825,7 @@ bool ViewportWindow::probeAndCreatePool() {
             // size on demand (up to whatever the driver lets us total).
             pool_.configure(instance_, device_, pool_usage, try_size,
                             "ifcviewer-wgpu.pool");
-            qInfo().noquote()
+            Log::info().noquote()
                 << "wgpu: pool per-sub-buffer capacity ="
                 << (try_size / (1024 * 1024)) << "MB"
                 << "(device maxBufferSize ="
@@ -1835,7 +1836,7 @@ bool ViewportWindow::probeAndCreatePool() {
         try_size /= 2;
     }
 
-    qWarning() << "wgpu: pool probe found no allocatable size >="
+    Log::warn() << "wgpu: pool probe found no allocatable size >="
                << (MIN_POOL_CAPACITY / (1024 * 1024)) << "MB";
     return false;
 }
@@ -1882,7 +1883,7 @@ bool ViewportWindow::createSurface() {
 #  if __has_include(<X11/Xlib.h>)
         auto* x11 = qApp->nativeInterface<QNativeInterface::QX11Application>();
         if (!x11 || !x11->display()) {
-            qWarning() << "Could not get X11 Display* from Qt";
+            Log::warn() << "Could not get X11 Display* from Qt";
             return false;
         }
         WGPUSurfaceSourceXlibWindow xlib = {};
@@ -1892,27 +1893,27 @@ bool ViewportWindow::createSurface() {
         surface_desc.nextInChain = &xlib.chain;
         surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
 #  else
-        qWarning() << "Built without Xlib headers; cannot create X11 surface";
+        Log::warn() << "Built without Xlib headers; cannot create X11 surface";
         return false;
 #  endif
     } else if (platform == "wayland") {
 #  if __has_include(<wayland-client-core.h>)
         auto* wl = qApp->nativeInterface<QNativeInterface::QWaylandApplication>();
         if (!wl || !wl->display()) {
-            qWarning() << "Could not get Wayland wl_display* from Qt";
+            Log::warn() << "Could not get Wayland wl_display* from Qt";
             return false;
         }
         // The wl_surface for a window is exposed via the QPA window-handle
         // accessor on the native interface (not the application-wide one).
         // For stage 1 we fail loud; stage-1.5 fills this in.
-        qWarning() << "Wayland wgpu surface creation not yet wired (stage 1.5)";
+        Log::warn() << "Wayland wgpu surface creation not yet wired (stage 1.5)";
         return false;
 #  else
-        qWarning() << "Built without Wayland headers; cannot create Wayland surface";
+        Log::warn() << "Built without Wayland headers; cannot create Wayland surface";
         return false;
 #  endif
     } else {
-        qWarning().noquote() << "Unsupported Qt platform for wgpu surface:" << platform;
+        Log::warn().noquote() << "Unsupported Qt platform for wgpu surface:" << platform;
         return false;
     }
 #elif defined(Q_OS_WIN)
@@ -1934,7 +1935,7 @@ bool ViewportWindow::createSurface() {
     void* nsview = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
     void* layer  = wgpu_macos_attach_metal_layer(nsview);
     if (!layer) {
-        qWarning() << "Could not attach CAMetalLayer to the Qt NSView";
+        Log::warn() << "Could not attach CAMetalLayer to the Qt NSView";
         return false;
     }
     WGPUSurfaceSourceMetalLayer metalsrc = {};
@@ -1943,12 +1944,12 @@ bool ViewportWindow::createSurface() {
     surface_desc.nextInChain = &metalsrc.chain;
     surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
 #else
-    qWarning() << "wgpu surface creation not yet wired for this platform";
+    Log::warn() << "wgpu surface creation not yet wired for this platform";
     return false;
 #endif
 
     if (!surface_) {
-        qWarning() << "wgpuInstanceCreateSurface returned null";
+        Log::warn() << "wgpuInstanceCreateSurface returned null";
         return false;
     }
     return true;
@@ -2024,7 +2025,7 @@ void ViewportWindow::configureSurface(int width_px, int height_px) {
         else if (std::strcmp(s, "immediate") == 0)    { override_pm = WGPUPresentMode_Immediate;   pm_name = "immediate"; }
         else {
             known = false;
-            qWarning().noquote().nospace()
+            Log::warn().noquote().nospace()
                 << "[wgpu] unknown WGPU_PRESENT_MODE=" << s
                 << " (expected fifo|fifo_relaxed|mailbox|immediate); falling back to preference order";
         }
@@ -2064,7 +2065,7 @@ void ViewportWindow::configureSurface(int width_px, int height_px) {
             if (i > 0) advertised += ", ";
             advertised += QString::fromLatin1(name);
         }
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[wgpu] surface advertises present modes: " << advertised;
     }
     WGPUPresentMode pm = WGPUPresentMode_Fifo; // spec-guaranteed fallback
@@ -2093,7 +2094,7 @@ void ViewportWindow::configureSurface(int width_px, int height_px) {
                 note = " (vsync OFF — framerate uncapped, may tear)";        break;
             default: break;
         }
-        qInfo().noquote().nospace() << "[wgpu] present mode = " << pm_name << note;
+        Log::info().noquote().nospace() << "[wgpu] present mode = " << pm_name << note;
     }
     cfg.alphaMode   = WGPUCompositeAlphaMode_Auto;
 
@@ -2376,7 +2377,7 @@ bool ViewportWindow::buildEdgePipeline() {
 
     edge_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
     if (!edge_pipeline_) {
-        qWarning() << "wgpu edge pipeline creation failed";
+        Log::warn() << "wgpu edge pipeline creation failed";
         return false;
     }
     return true;
@@ -2495,7 +2496,7 @@ bool ViewportWindow::buildPickPipeline() {
 
     pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
     if (!pick_pipeline_) {
-        qWarning() << "wgpu pick pipeline creation failed";
+        Log::warn() << "wgpu pick pipeline creation failed";
         return false;
     }
     return true;
@@ -3033,7 +3034,7 @@ bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
 
 void ViewportWindow::toggleSectionTool() {
     section_tool_active_ = !section_tool_active_;
-    qInfo().noquote() << "[wgpu section] tool"
+    Log::info().noquote() << "[wgpu section] tool"
                       << (section_tool_active_ ? "active" : "off");
     if (isExposed()) requestUpdate();
 }
@@ -3042,7 +3043,8 @@ bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
                                                   const Eigen::Vector3f& normal,
                                                   float visual_radius) {
     if (int(section_planes_.size()) >= kMaxSectionPlanes) {
-        qWarning("[wgpu section] cap reached (%d planes)", kMaxSectionPlanes);
+        std::fprintf(stderr, "[warn] [wgpu section] cap reached (%d planes)\n",
+                     kMaxSectionPlanes);
         return false;
     }
     Eigen::Vector3f n = normal;
@@ -3061,7 +3063,7 @@ bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
     p.d             = -n.dot(point);
     p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
     section_planes_.push_back(p);
-    qInfo().noquote().nospace()
+    Log::info().noquote().nospace()
         << "[wgpu section] added plane #" << section_planes_.size() - 1
         << " origin=(" << point.x() << "," << point.y() << "," << point.z() << ")"
         << " normal=(" << n.x() << "," << n.y() << "," << n.z() << ")";
@@ -3072,14 +3074,14 @@ bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
 void ViewportWindow::removeSectionPlane(int index) {
     if (index < 0 || index >= int(section_planes_.size())) return;
     section_planes_.erase(section_planes_.begin() + index);
-    qInfo().noquote() << "[wgpu section] removed plane" << index;
+    Log::info().noquote() << "[wgpu section] removed plane" << index;
     if (isExposed()) requestUpdate();
 }
 
 void ViewportWindow::clearSectionPlanes() {
     if (section_planes_.empty()) return;
     section_planes_.clear();
-    qInfo() << "[wgpu section] cleared all planes";
+    Log::info() << "[wgpu section] cleared all planes";
     if (isExposed()) requestUpdate();
 }
 
@@ -3628,21 +3630,21 @@ void ViewportWindow::setToolMode(ToolMode m) {
 
     switch (tool_mode_) {
     case ToolMode::NoTool:
-        qInfo() << "[wgpu measure] tool off";
+        Log::info() << "[wgpu measure] tool off";
         break;
     case ToolMode::Volume:
-        qInfo() << "[wgpu measure] volume tool — pick / marquee objects, Esc to exit";
+        Log::info() << "[wgpu measure] volume tool — pick / marquee objects, Esc to exit";
         overlays_.setHudText(QStringLiteral("Volume: 0.0000 m³  (0 objects)"));
         updateVolumeReadout();
         break;
     case ToolMode::Area:
         if (!area_tool_) area_tool_ = std::make_unique<AreaMeasurement>();
-        qInfo() << "[wgpu measure] area tool — LMB pick coplanar patch, Alt+LMB single tri, click again to remove, Esc exits";
+        Log::info() << "[wgpu measure] area tool — LMB pick coplanar patch, Alt+LMB single tri, click again to remove, Esc exits";
         overlays_.setHudText(QStringLiteral("Area: 0.0000 m²  (0 tris)"));
         break;
     case ToolMode::Length:
         if (!length_tool_) length_tool_ = std::make_unique<LengthMeasurement>();
-        qInfo() << "[wgpu measure] length tool — LMB add point, Backspace remove last, Esc exits";
+        Log::info() << "[wgpu measure] length tool — LMB add point, Backspace remove last, Esc exits";
         overlays_.setHudText(QStringLiteral("Length tool: click first point"));
         break;
     }
@@ -3901,7 +3903,7 @@ bool ViewportWindow::buildHizPipeline() {
 
     hiz_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
     if (!hiz_pipeline_) {
-        qWarning() << "wgpu hiz pipeline creation failed";
+        Log::warn() << "wgpu hiz pipeline creation failed";
         return false;
     }
 
@@ -4300,7 +4302,7 @@ bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) con
     if (rejected && hiz_trace_budget_.load(std::memory_order_relaxed) > 0) {
         int prev = hiz_trace_budget_.fetch_sub(1, std::memory_order_relaxed);
         if (prev > 0) {
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "[hiz reject] aabb_min=(" << mn[0] << "," << mn[1] << "," << mn[2] << ")"
                 << " aabb_max=(" << mx[0] << "," << mx[1] << "," << mx[2] << ")"
                 << " ndc_x=[" << nx_lo << "," << nx_hi << "]"
@@ -4648,7 +4650,7 @@ void ViewportWindow::render() {
             return;
         }
         default:
-            qWarning() << "GetCurrentTexture status" << int(surf_tex.status);
+            Log::warn() << "GetCurrentTexture status" << int(surf_tex.status);
             return;
     }
 
@@ -4749,7 +4751,7 @@ void ViewportWindow::render() {
             hiz_trace_budget_.store(kHizTracePerFrame, std::memory_order_relaxed);
             // One-shot per-frame log so the user can correlate rejections
             // with what they were looking at.
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "[hiz trace] frame: vp_match="
                 << (hiz_vp_ == vp_this_frame ? "exact" : "loose")
                 << " pyramid_mip0=" << hiz_mip_w_[0] << "x" << hiz_mip_h_[0]
@@ -4767,7 +4769,7 @@ void ViewportWindow::render() {
                     const uint32_t x = (s * (W0 - 1)) / 7;
                     row += QString::asprintf("%.4f ", L0[y * W0 + x]);
                 }
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[hiz trace] pyramid row " << y << " (8 samples): " << row;
             }
         } else if (hiz_trace_on) {
@@ -5060,7 +5062,7 @@ void ViewportWindow::render() {
             r->done = true;
             r->ok   = (status == WGPUMapAsyncStatus_Success);
             if (!r->ok) {
-                qWarning().noquote() << "wgpu MapAsync failed:" << sv(message);
+                Log::warn().noquote() << "wgpu MapAsync failed:" << sv(message);
             }
         };
         mcb.userdata1 = &req;
@@ -5099,10 +5101,10 @@ void ViewportWindow::render() {
             wgpuBufferUnmap(capture_buffer);
 
             if (img.save(pending_screenshot_path_, "PNG")) {
-                qInfo().noquote() << "[wgpu] saved screenshot:"
+                Log::info().noquote() << "[wgpu] saved screenshot:"
                                   << pending_screenshot_path_ << "(" << w << "x" << h << ")";
             } else {
-                qWarning().noquote() << "[wgpu] QImage::save failed for"
+                Log::warn().noquote() << "[wgpu] QImage::save failed for"
                                      << pending_screenshot_path_;
             }
         }
@@ -5219,7 +5221,7 @@ void ViewportWindow::render() {
                 }
             }
             const double mb = 1.0 / (1024.0 * 1024.0);
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "[frame] " << QString::number(ms > 0 ? 1000.0f / ms : 0.0f, 'f', 1) << " fps"
                 << "  " << QString::number(ms, 'f', 2) << " ms"
                 << "  obj " << last_visible_objects_ << "/" << total_instances
@@ -5261,7 +5263,7 @@ void ViewportWindow::render() {
                         : (max_load > 5)
                             ? "few chunks cycling (hysteresis boundary)"
                             : "loading";
-                    qInfo().noquote().nospace()
+                    Log::info().noquote().nospace()
                         << "[stream] " << chunks_resident << " resident, "
                         << chunks_missing << " missing, " << cycled
                         << " cycled (max load=" << max_load << ")"
@@ -5362,7 +5364,7 @@ void ViewportWindow::render() {
                                       const float hb = std::max(b.history, 0.05f);
                                       return a.priority * ha < b.priority * hb;
                                   });
-                qInfo().noquote() << "  [missing per model — top 8 by missing-count]";
+                Log::info().noquote() << "  [missing per model — top 8 by missing-count]";
                 struct Row {
                     QString name;
                     size_t  resident = 0;
@@ -5391,27 +5393,27 @@ void ViewportWindow::render() {
                 const size_t cap = std::min<size_t>(rows.size(), 8);
                 for (size_t i = 0; i < cap; ++i) {
                     const Row& r = rows[i];
-                    qInfo().noquote().nospace()
+                    Log::info().noquote().nospace()
                         << "    " << r.name
                         << "  resident=" << r.resident
                         << "  frustum=" << r.frustum
                         << "  missing=" << r.missing;
                 }
-                qInfo().noquote() << "  [top 20 MISSING chunks by priority (px², want these loaded)]";
+                Log::info().noquote() << "  [top 20 MISSING chunks by priority (px², want these loaded)]";
                 for (size_t i = 0; i < std::min<size_t>(20, missing_set.size()); ++i) {
                     const Probe& p = missing_set[i];
-                    qInfo().noquote().nospace()
+                    Log::info().noquote().nospace()
                         << "    pri=" << QString::number(p.priority, 'f', 0)
                         << "  aabb=" << QString::number(p.ex, 'f', 1) << "x"
                         << QString::number(p.ey, 'f', 1) << "x"
                         << QString::number(p.ez, 'f', 1) << "m"
                         << "  in " << p.name;
                 }
-                qInfo().noquote() << "  [bottom 5 RESIDENT chunks by effective priority (must beat with 2× hysteresis)]";
+                Log::info().noquote() << "  [bottom 5 RESIDENT chunks by effective priority (must beat with 2× hysteresis)]";
                 for (size_t i = 0; i < std::min<size_t>(5, resident_set.size()); ++i) {
                     const Probe& p = resident_set[i];
                     const float eff = p.priority * std::max(p.history, 0.05f);
-                    qInfo().noquote().nospace()
+                    Log::info().noquote().nospace()
                         << "    pri=" << QString::number(p.priority, 'f', 0)
                         << " hist=" << QString::number(p.history, 'f', 2)
                         << " eff=" << QString::number(eff, 'f', 0)
@@ -5448,7 +5450,7 @@ void ViewportWindow::render() {
             const bool converged = bench_warm_streak_ >= CONVERGE_FRAMES_REQUIRED;
             const bool timed_out = bench_warm_frames_total_ >= MAX_WARM_FRAMES;
             if (converged) {
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[bench warm] converged after "
                     << bench_warm_frames_total_ << " frames";
                 bench_warm_done_ = true;
@@ -5510,7 +5512,7 @@ void ViewportWindow::render() {
                 } else {
                     diag = "converged, just below the gate's 5-frame streak";
                 }
-                qWarning().noquote().nospace()
+                Log::warn().noquote().nospace()
                     << "[bench warm] timed out after " << bench_warm_frames_total_
                     << " frames without convergence (last loads="
                     << streaming_loads_this_frame_ << ")\n"
@@ -5564,7 +5566,7 @@ void ViewportWindow::render() {
             const double avg_n  = double(std::max(1, bench_count_ - bench_warmup_ + 1));
             const double cull_ms   = bench_cull_ms_total_   / avg_n;
             const double stream_ms = bench_stream_ms_total_ / avg_n;
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "[frame] " << QString::number(ms > 0 ? 1000.0f / ms : 0.0f, 'f', 1) << " fps"
                 << "  " << QString::number(ms, 'f', 2) << " ms"
                 << "  obj " << last_visible_objects_ << "/" << total_instances
@@ -5612,27 +5614,27 @@ void ViewportWindow::render() {
             const float p99    = pct(0.99);
 
             const float total_sweep = bench_yaw_speed_ * float(bench_total_);
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "\n=== BENCHMARK (" << bench_total_ << " frames, orbit "
                 << total_sweep << "° at " << bench_yaw_speed_ << "°/frame) ===";
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "  avg: "    << avg    << " ms (" << (avg    > 0 ? 1000.0f/avg    : 0.0f) << " fps)";
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "  median: " << median << " ms (" << (median > 0 ? 1000.0f/median : 0.0f) << " fps)";
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "  p1: "  << p1  << " ms  p99: " << p99 << " ms";
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "  last frame: obj " << last_visible_objects_
                 << "  tri " << last_visible_triangles_
                 << "  sub_draws " << last_sub_draws_
                 << "  hiz_rej " << hiz_reject_count_;
             const double n = double(std::max(1, bench_total_));
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "  per-frame avg ms: cull=" << bench_cull_ms_total_ / n
                 << "  stream=" << bench_stream_ms_total_ / n
                 << "  hiz_readback=" << bench_hiz_readback_ms_total_ / n
                 << "  hiz=" << (hiz_enabled_ ? "on" : "off");
-            qInfo().noquote() << "=== END BENCHMARK ===\n";
+            Log::info().noquote() << "=== END BENCHMARK ===\n";
 
             bench_total_ = 0;
             QCoreApplication::quit();
@@ -5735,7 +5737,7 @@ bool ViewportWindow::buildPipelines() {
 
     main_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
     if (!main_pipeline_) {
-        qWarning() << "wgpu main render pipeline creation failed";
+        Log::warn() << "wgpu main render pipeline creation failed";
         return false;
     }
 
@@ -5787,7 +5789,7 @@ bool ViewportWindow::buildPipelines() {
     main_pipeline_transparent_ =
         wgpuDeviceCreateRenderPipeline(device_, &rp_desc_t);
     if (!main_pipeline_transparent_) {
-        qWarning() << "wgpu main transparent render pipeline creation failed";
+        Log::warn() << "wgpu main transparent render pipeline creation failed";
         return false;
     }
 
@@ -6110,7 +6112,7 @@ bool ViewportWindow::loadChunkBytesAndUploadGpu(ModelGpuData& m, size_t chunk_id
         if (!readSidecarVertexRanges(req.file_path,
                                      req.vertex_section_offset,
                                      req.v_ranges, vbytes)) {
-            qWarning().noquote().nospace()
+            Log::warn().noquote().nospace()
                 << "[wgpu stream] failed to read vertex chunk " << chunk_idx
                 << " (" << req.v_ranges.size() << " ranges, total "
                 << c.vertex_byte_size << " B)";
@@ -6121,7 +6123,7 @@ bool ViewportWindow::loadChunkBytesAndUploadGpu(ModelGpuData& m, size_t chunk_id
         if (!readSidecarIndexRanges(req.file_path,
                                     req.index_section_offset,
                                     req.i_ranges, idx)) {
-            qWarning().noquote().nospace()
+            Log::warn().noquote().nospace()
                 << "[wgpu stream] failed to read index chunk " << chunk_idx
                 << " (" << req.i_ranges.size() << " ranges, total "
                 << c.index_count << " indices)";
@@ -6339,7 +6341,7 @@ void ViewportWindow::driveStreamingLoads() {
                    victim.last_evicted_by_model_id == cand_mid
                 && victim.last_evicted_by_chunk_idx == cand_ci
                 && victim.load_count > 1;
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << (is_2_cycle ? "[evict 2-cycle] " : "[evict] ")
                 << "kicked chunk " << victim_ci
                 << " of " << vic_fi.completeBaseName()
@@ -6389,7 +6391,7 @@ void ViewportWindow::driveStreamingLoads() {
             // been hidden). Clear the loading flag regardless.
             c.is_loading = false;
             if (!res.success) {
-                qWarning().noquote().nospace()
+                Log::warn().noquote().nospace()
                     << "[wgpu stream] worker read failed for model "
                     << res.model_id << " chunk " << res.chunk_idx;
                 continue;
@@ -6405,7 +6407,7 @@ void ViewportWindow::driveStreamingLoads() {
                     streaming_frame_idx_ + BLOCKED_COOLDOWN_FRAMES;
                 if (evict_log) {
                     QFileInfo fi(QString::fromStdString(m.streaming_file_path));
-                    qInfo().noquote().nospace()
+                    Log::info().noquote().nospace()
                         << "[blocked-apply] chunk " << res.chunk_idx
                         << " of " << fi.completeBaseName()
                         << " — pool OOM at apply, fetched bytes discarded"
@@ -6426,7 +6428,7 @@ void ViewportWindow::driveStreamingLoads() {
             if (lc == 3 || lc == 10 || lc == 30 || lc == 100
              || (lc > 100 && (lc % 100) == 0)) {
                 QFileInfo fi(QString::fromStdString(m.streaming_file_path));
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[stream thrash] chunk " << res.chunk_idx
                     << " of " << fi.completeBaseName()
                     << " loaded " << lc << "× — pool saturated?";
@@ -6501,7 +6503,7 @@ void ViewportWindow::driveStreamingLoads() {
                 const uint64_t i_bytes = c.index_count * sizeof(uint32_t);
                 const double mb = 1.0 / (1024.0 * 1024.0);
                 QFileInfo fi(QString::fromStdString(cand.m->streaming_file_path));
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[blocked] chunk " << cand.ci
                     << " of " << fi.completeBaseName()
                     << " (pri=" << QString::number(cand.priority, 'f', 0)
@@ -6567,18 +6569,18 @@ void ViewportWindow::driveStreamingLoads() {
                 const float my_area  = chunkScreenAreaPx(c, vp_mat);
                 const uint64_t my_bytes = c.vertex_byte_size
                                         + c.index_count * sizeof(uint32_t);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[track] chunk " << tracked_chunk_idx_
                     << " (object " << tracked_object_id_
                     << ", model " << tracked_chunk_mid_
                     << ") EVICTED this frame";
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "  area=" << QString::number(my_area, 'f', 0) << "px²"
                     << " frustum_vis=" << c.frustum_visible_count
                     << " hist=" << QString::number(c.visibility_history, 'f', 2)
                     << " load_count=" << c.load_count
                     << " size=" << QString::number(double(my_bytes) * mb, 'f', 1) << "MB";
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "  chunk aabb "
                     << QString::number(c.aabb_max[0] - c.aabb_min[0], 'f', 1) << "×"
                     << QString::number(c.aabb_max[1] - c.aabb_min[1], 'f', 1) << "×"
@@ -6587,14 +6589,14 @@ void ViewportWindow::driveStreamingLoads() {
                     << QString::number(0.5f * (c.aabb_min[0] + c.aabb_max[0]), 'f', 1) << ","
                     << QString::number(0.5f * (c.aabb_min[1] + c.aabb_max[1]), 'f', 1) << ","
                     << QString::number(0.5f * (c.aabb_min[2] + c.aabb_max[2]), 'f', 1) << ")";
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "  pool used="
                     << QString::number(double(pool_.total_used_bytes()) * mb, 'f', 0)
                     << "/"
                     << QString::number(double(pool_.total_capacity_bytes()) * mb, 'f', 0)
                     << "MB largest_free="
                     << QString::number(double(pool_.largest_free_run_bytes()) * mb, 'f', 1) << "MB";
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "  this-frame: cands=" << streaming_candidates_this_frame_
                     << " enq=" << enqueued
                     << " ev_lru=" << streaming_evictions_lru_this_frame_
@@ -6617,7 +6619,7 @@ void ViewportWindow::driveStreamingLoads() {
                           [](const Stat& a, const Stat& b){ return a.area > b.area; });
                 const size_t n = std::min<size_t>(5, all.size());
                 for (size_t i = 0; i < n; ++i) {
-                    qInfo().noquote().nospace()
+                    Log::info().noquote().nospace()
                         << "  top cand #" << i << ": model " << all[i].mid
                         << " chunk " << all[i].ci
                         << " area=" << QString::number(all[i].area, 'f', 0) << "px²";
@@ -6641,7 +6643,7 @@ void ViewportWindow::driveStreamingLoads() {
                 if (c.load_count > 1) ++cycled;
             }
         }
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[stream-debug] f" << streaming_frame_idx_
             << " cands=" << streaming_candidates_this_frame_
             << " enq=" << enqueued
@@ -6892,7 +6894,7 @@ void ViewportWindow::viewAll() {
         }
     }
 
-    qInfo().noquote().nospace()
+    Log::info().noquote().nospace()
         << "[wgpu] viewAll target=(" << cx << ", " << cy << ", " << cz << ")"
         << " distance=" << camera_distance_
         << " (scene radius=" << radius << ")";
@@ -6959,7 +6961,7 @@ bool ViewportWindow::computeObjectAabb(uint32_t object_id,
 void ViewportWindow::focusOnSelectedObject() {
     if (fps_mode_) return;
     if (selection_.count() == 0) {
-        qInfo() << "[wgpu] focus: no object selected";
+        Log::info() << "[wgpu] focus: no object selected";
         return;
     }
     float lo[3] = {  std::numeric_limits<float>::infinity(),
@@ -6979,7 +6981,7 @@ void ViewportWindow::focusOnSelectedObject() {
         any = true;
     }
     if (!any) {
-        qInfo() << "[wgpu] focus: no AABB available";
+        Log::info() << "[wgpu] focus: no AABB available";
         return;
     }
     frameAabb(lo, hi, 1.30f);
@@ -6996,7 +6998,7 @@ void ViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
 
 void ViewportWindow::toggleProjection() {
     projection_ortho_ = !projection_ortho_;
-    qInfo() << "[wgpu] projection:" << (projection_ortho_ ? "ortho" : "perspective");
+    Log::info() << "[wgpu] projection:" << (projection_ortho_ ? "ortho" : "perspective");
     if (isExposed()) requestUpdate();
 }
 
@@ -7019,7 +7021,7 @@ void ViewportWindow::enterFpsMode() {
     fps_last_tick_.start();
     setCursor(Qt::BlankCursor);
     QCursor::setPos(mapToGlobal(fps_press_center_));
-    qInfo() << "[wgpu] fly mode active — WASD/QE to move, Shift to boost, Esc to exit";
+    Log::info() << "[wgpu] fly mode active — WASD/QE to move, Shift to boost, Esc to exit";
     if (isExposed()) requestUpdate();
 }
 
@@ -7028,7 +7030,7 @@ void ViewportWindow::exitFpsMode() {
     fps_mode_ = false;
     fps_keys_held_.clear();
     setCursor(Qt::ArrowCursor);
-    qInfo() << "[wgpu] fly mode off";
+    Log::info() << "[wgpu] fly mode off";
     if (isExposed()) requestUpdate();
 }
 
@@ -7088,7 +7090,7 @@ void ViewportWindow::fpsIntegrate() {
         const qint64 since_render_ns = fly_render_clock_.isValid()
                                      ? fly_render_clock_.nsecsElapsed() : 0;
         fly_render_clock_.restart();
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[fly] dt=" << QString::number(dt * 1000.0f, 'f', 2) << "ms"
             << " render_gap=" << QString::number(double(since_render_ns) / 1e6, 'f', 2) << "ms"
             << " keys=" << fps_keys_held_.size()
@@ -7247,7 +7249,7 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
             section_drag_start_mouse_  = lp;
             section_drag_start_origin_ = section_planes_[hit].origin;
             nav_drag_kind_             = NavDrag::Inactive;
-            qInfo().noquote().nospace()
+            Log::info().noquote().nospace()
                 << "[wgpu section] drag start: plane=" << hit;
             return;
         }
@@ -7312,16 +7314,16 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
             const auto mods = box_select_press_mods_;
             if (mods & Qt::ShiftModifier) {
                 for (uint32_t id : ids) selection_.add(id);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[wgpu marquee] +add " << ids.size() << " object_ids";
             } else if (mods & Qt::ControlModifier) {
                 for (uint32_t id : ids) selection_.remove(id);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[wgpu marquee] -remove " << ids.size() << " object_ids";
             } else {
                 selection_.clear();
                 for (uint32_t id : ids) selection_.add(id);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[wgpu marquee] replace " << ids.size() << " object_ids";
             }
             nav_active_button_ = Qt::NoButton;
@@ -7357,7 +7359,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                     addSectionPlaneAtSurface(hit_pos, hit_normal,
                                              hit_radius * 1.5f);
                 } else {
-                    qInfo().noquote() << "[wgpu section] click missed (no surface)";
+                    Log::info().noquote() << "[wgpu section] click missed (no surface)";
                 }
                 nav_active_button_ = Qt::NoButton;
                 nav_drag_kind_     = NavDrag::Inactive;
@@ -7403,18 +7405,18 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 if (!(mods & (Qt::ShiftModifier | Qt::ControlModifier))) {
                     selection_.clear();
                 }
-                qInfo().noquote() << "[wgpu pick] miss";
+                Log::info().noquote() << "[wgpu pick] miss";
             } else if (mods & Qt::ControlModifier) {
                 selection_.remove(id);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[wgpu pick] -remove object_id=" << id;
             } else if (mods & Qt::ShiftModifier) {
                 selection_.add(id);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[wgpu pick] +add object_id=" << id;
             } else {
                 selection_.replace(id);
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[wgpu pick] replace object_id=" << id;
             }
             // Notify external listeners (bonsai mirrors picks into
@@ -7433,7 +7435,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 tracked_chunk_idx_ = SIZE_MAX;  // legacy "primary" slot
                 tracked_chunk_mid_ = 0;
                 std::set<std::pair<uint32_t, size_t>> seen;
-                qInfo().noquote().nospace()
+                Log::info().noquote().nospace()
                     << "[track] object " << id << " — enumerating chunks:";
                 for (auto& [mid, m] : models_gpu_) {
                     for (const auto& inst : m.instances) {
@@ -7442,7 +7444,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                         const size_t ci = m.mesh_chunk_idx[inst.mesh_id];
                         if (!seen.insert({mid, ci}).second) continue;
                         const auto& c = m.chunks[ci];
-                        qInfo().noquote().nospace()
+                        Log::info().noquote().nospace()
                             << "  model " << mid << " chunk " << ci
                             << "  inst_aabb "
                             << QString::number(inst.world_aabb_max[0] - inst.world_aabb_min[0], 'f', 1)
@@ -7466,7 +7468,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                     }
                 }
                 if (tracked_chunk_idx_ == SIZE_MAX) {
-                    qInfo() << "  (object_id not matched to any instance)";
+                    Log::info() << "  (object_id not matched to any instance)";
                 }
             } else {
                 tracked_object_id_ = 0;
@@ -7653,7 +7655,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     if (key == Qt::Key_H && mods == Qt::AltModifier) {
         if (visibility_.hiddenCount() == 0) return;
         visibility_.clear();
-        qInfo() << "[wgpu] show all";
+        Log::info() << "[wgpu] show all";
         requestUpdate();
         return;
     }
@@ -7664,7 +7666,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     if (key == Qt::Key_X && mods == Qt::AltModifier && !event->isAutoRepeat()) {
         constexpr float kXrayOnCap = 0.3f;
         xray_alpha_cap_ = (xray_alpha_cap_ < 1.0f) ? 1.0f : kXrayOnCap;
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[wgpu] x-ray "
             << (xray_alpha_cap_ < 1.0f ? "ON"  : "OFF")
             << " (cap=" << xray_alpha_cap_ << ")";
@@ -7683,7 +7685,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
                 }
             }
         }
-        qInfo().noquote().nospace() << "[wgpu] isolated " << selection_.count()
+        Log::info().noquote().nospace() << "[wgpu] isolated " << selection_.count()
                                     << " (hid " << hidden_now << " others)";
         requestUpdate();
         return;
@@ -7693,7 +7695,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
         const size_t n = selection_.count();
         selection_.clear();   // hiding deselects, matching GL behaviour
-        qInfo().noquote().nospace() << "[wgpu] hid " << n << " selected";
+        Log::info().noquote().nospace() << "[wgpu] hid " << n << " selected";
         requestUpdate();
         return;
     }
@@ -7771,7 +7773,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         return;
     }
     if (key == Qt::Key_C && !(mods & Qt::ControlModifier)) {
-        qInfo("--camera %s", qPrintable(cameraString()));
+        Log::info() << "--camera " << cameraString().toUtf8().constData();
         return;
     }
     // Standard axis-aligned views: X/Y/Z look from +axis, Shift+X/Y/Z from
@@ -7808,7 +7810,7 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
     if (fps_mode_) {
         const float factor = std::pow(1.25f, notches);
         fps_move_speed_ = std::clamp(fps_move_speed_ * factor, 0.05f, 1000.0f);
-        qInfo().noquote().nospace()
+        Log::info().noquote().nospace()
             << "[wgpu] fly speed: " << QString::number(fps_move_speed_, 'f', 2) << " m/s";
         return;
     }

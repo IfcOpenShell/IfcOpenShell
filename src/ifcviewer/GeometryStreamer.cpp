@@ -34,7 +34,7 @@
 #include <limits>
 #include <set>
 
-#include <QDebug>
+#include <cstdio>
 #include <QElapsedTimer>
 
 struct MaterialInfo {
@@ -453,9 +453,10 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
         return;
     }
     if (!gross_ids.empty()) {
-        qDebug("Excessive voids: %zu element(s) will be loaded without "
-               "opening subtractions",
-               gross_ids.size());
+        std::fprintf(stderr,
+            "[info] Excessive voids: %zu element(s) will be loaded without "
+            "opening subtractions\n",
+            gross_ids.size());
     }
 
     // Shared dedup + AABB state across passes — same geom.id() across
@@ -696,8 +697,9 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
     double dedup_ratio = total_meshes > 0
         ? static_cast<double>(total_shapes) / static_cast<double>(total_meshes) : 1.0;
-    qDebug("Streamer done: %s  %.2fs  shapes=%u  unique_meshes=%u  dedup=%.2fx",
-           path.c_str(), stream_timer.elapsed() / 1000.0,
-           total_shapes, total_meshes, dedup_ratio);
+    std::fprintf(stderr,
+        "[info] Streamer done: %s  %.2fs  shapes=%u  unique_meshes=%u  dedup=%.2fx\n",
+        path.c_str(), stream_timer.elapsed() / 1000.0,
+        total_shapes, total_meshes, dedup_ratio);
     succeeded_ = !cancel_requested_.load();
 }

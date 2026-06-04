@@ -22,7 +22,7 @@
 #include "OverlayRenderer.h"
 #include "ViewportWindow.h"
 
-#include <QDebug>
+#include <cstdio>
 #include <QString>
 
 #include <algorithm>
@@ -280,9 +280,10 @@ void AreaMeasurement::onPick(ViewportWindow& vp,
 
     rebuildHighlightAndLabels(vp);
 
-    qInfo("[wgpu area] %s%.6f m^2  (total: %.6f m^2, %zu tris)",
-          delta >= 0.0 ? "+" : "", delta,
-          total_area_m2_, selected_.size());
+    std::fprintf(stderr,
+        "[info] [wgpu area] %s%.6f m^2  (total: %.6f m^2, %zu tris)\n",
+        delta >= 0.0 ? "+" : "", delta,
+        total_area_m2_, selected_.size());
 }
 
 void AreaMeasurement::rebuildHighlightAndLabels(ViewportWindow& vp) {

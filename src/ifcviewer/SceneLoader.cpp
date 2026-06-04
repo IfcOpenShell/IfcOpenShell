@@ -22,7 +22,7 @@
 
 #include <QFileInfo>
 #include <QTimer>
-#include <QDebug>
+#include <cstdio>
 #include <QElapsedTimer>
 
 #include <memory>
@@ -184,7 +184,8 @@ void SceneLoader::startNextLoad() {
     sidecar_read_thread_ = std::thread([this, ifc_path, mid, is_sidecar_source]() {
         QElapsedTimer rt; rt.start();
         auto cached = readSidecarMetadataOnly(ifc_path);
-        qDebug("  Sidecar metadata read: %lld ms (%s)", rt.elapsed(), ifc_path.c_str());
+        std::fprintf(stderr, "[info]   Sidecar metadata read: %lld ms (%s)\n",
+                     (long long)rt.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<StreamingSidecar>>(std::move(cached));
         QMetaObject::invokeMethod(this, [this, mid, result, is_sidecar_source]() {
             if (*result && !(*result)->meta.instances.empty()) {
@@ -233,13 +234,14 @@ void SceneLoader::applySidecarData(uint32_t mid, StreamingSidecar metadata) {
     auto& model = it->second;
     SidecarData& d = metadata.meta;
 
-    qDebug("Sidecar hit: %s (%zu metadata bytes, %zu indices, %zu meshes, %zu instances, %zu elements)",
-           model.file_path.toStdString().c_str(),
-           size_t(metadata.vertex_total_bytes),
-           size_t(metadata.index_total_count),
-           d.meshes.size(),
-           d.instances.size(),
-           d.elements.size());
+    std::fprintf(stderr,
+        "[info] Sidecar hit: %s (%zu metadata bytes, %zu indices, %zu meshes, %zu instances, %zu elements)\n",
+        model.file_path.toStdString().c_str(),
+        size_t(metadata.vertex_total_bytes),
+        size_t(metadata.index_total_count),
+        d.meshes.size(),
+        d.instances.size(),
+        d.elements.size());
 
     // Rebase object/model IDs onto the current session's ID space.  Two
     // cached models both starting at object_id=1 would collide otherwise.
@@ -303,11 +305,12 @@ void SceneLoader::startDataSourceLoad(uint32_t mid) {
             file = std::make_unique<ifcopenshell::file>(
                 data_path_std, ifcopenshell::FT_AUTODETECT, /*read_only=*/true);
         } catch (const std::exception& e) {
-            qWarning("  Data source load failed: %s (%s)",
-                     data_path_std.c_str(), e.what());
+            std::fprintf(stderr, "[warn]   Data source load failed: %s (%s)\n",
+                         data_path_std.c_str(), e.what());
             return;
         }
-        qDebug("  Data source load: %lld ms (%s)", t.elapsed(), data_path_std.c_str());
+        std::fprintf(stderr, "[info]   Data source load: %lld ms (%s)\n",
+                     (long long)t.elapsed(), data_path_std.c_str());
 
         auto shared = std::make_shared<std::unique_ptr<ifcopenshell::file>>(std::move(file));
         QMetaObject::invokeMethod(this, [this, mid, shared]() {
@@ -390,8 +393,9 @@ void SceneLoader::onStreamerFinished() {
                 QElapsedTimer wt; wt.start();
                 SidecarData data = m.sidecar_builder->finalize(georef, m.streamed_elements);
                 const bool ok = writeSidecar(m.file_path.toStdString(), data);
-                qDebug("  Sidecar finalize + write: %lld ms (%s)",
-                       wt.elapsed(), ok ? "ok" : "FAILED");
+                std::fprintf(stderr,
+                    "[info]   Sidecar finalize + write: %lld ms (%s)\n",
+                    (long long)wt.elapsed(), ok ? "ok" : "FAILED");
                 m.sidecar_builder.reset();
                 m.streamed_elements.clear();
                 m.streamed_elements.shrink_to_fit();

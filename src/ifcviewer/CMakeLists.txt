@@ -149,9 +149,11 @@ set(IFCVIEWER_CORE_SOURCES
 )
 set(IFCVIEWER_CORE_HEADERS
     BufferPool.h
+    CameraMath.h
     ChunkPlanner.h
     InstanceCompose.h
     InstancedGeometry.h
+    Log.h
     LodBuilder.h
     ModelGpuData.h
     SelectionState.h
