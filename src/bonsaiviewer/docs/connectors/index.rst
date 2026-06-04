@@ -11,4 +11,4 @@ returns the metadata needed to keep them connected to the cloud source.
 
    cloud_sync_protocol
    autodesk
-   autodesk_packaging
+   autodesk_development
