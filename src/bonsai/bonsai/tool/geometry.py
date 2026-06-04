@@ -266,6 +266,8 @@ class Geometry(bonsai.core.tool.Geometry):
             return
         rep_obj = props.representation_obj
         assert (rep_obj := props.representation_obj) and (rep_element := tool.Ifc.get_entity(rep_obj))
+        if item.is_a("IfcTessellatedFaceSet"):
+            tool.Model.disconnect_slab_for_deleted_boolean(rep_element, item)
         cls.remove_representation_item(item, rep_element)
         cls.reload_representation(props.representation_obj)
         bpy.data.objects.remove(obj)

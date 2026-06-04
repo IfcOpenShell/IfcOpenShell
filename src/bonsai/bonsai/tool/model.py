@@ -87,6 +87,17 @@ if TYPE_CHECKING:
     )
 
 
+def _boolean_has_faceset(
+    ifc_file: ifcopenshell.file,
+    bool_id: int,
+    faceset: ifcopenshell.entity_instance,
+) -> bool:
+    try:
+        return ifc_file.by_id(bool_id).SecondOperand == faceset
+    except RuntimeError:
+        return False
+
+
 class Model(bonsai.core.tool.Model):
     @classmethod
     def get_model_props(cls) -> BIMModelProperties:
@@ -903,29 +914,41 @@ class Model(bonsai.core.tool.Model):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
-        boolean_ids = json.loads(pset["Data"])
+        raw = json.loads(pset["Data"])
+        # Data is either a legacy list of int IDs or a dict mapping str(id) -> slab_guid.
+        boolean_ids = set(raw) if isinstance(raw, list) else {int(k) for k in raw}
         if representation is None:
             representation = tool.Geometry.get_body_representation(element)
             if not representation:
                 return []
         all_chain_booleans = cls.get_booleans(element, representation)
-        booleans = [b for b in all_chain_booleans if b.id() in boolean_ids]
-        return booleans
+        return [b for b in all_chain_booleans if b.id() in boolean_ids]
 
     @classmethod
     def mark_manual_booleans(
-        cls, element: ifcopenshell.entity_instance, booleans: list[ifcopenshell.entity_instance]
+        cls,
+        element: ifcopenshell.entity_instance,
+        booleans: list[ifcopenshell.entity_instance],
+        slab: Optional[ifcopenshell.entity_instance] = None,
     ) -> None:
+        """Track ``booleans`` in the BBIM_Boolean pset, optionally associating each with ``slab``.
+
+        Data is stored as a dict mapping str(boolean_id) → slab GlobalId (or None for legacy).
+        """
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
-        boolean_ids = [b.id() for b in booleans]
+        slab_guid = slab.GlobalId if slab else None
+        new_entries = {str(b.id()): slab_guid for b in booleans}
         if pset_data:
             pset = tool.Ifc.get().by_id(pset_data["id"])
-            data = json.loads(pset_data["Data"])
-            data.extend(boolean_ids)
-            data = list(set(data))
+            raw = json.loads(pset_data["Data"])
+            # Migrate legacy list format in place.
+            if isinstance(raw, list):
+                raw = {str(i): None for i in raw}
+            raw.update(new_entries)
+            data = raw
         else:
             pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Boolean")
-            data = boolean_ids
+            data = new_entries
         data = tool.Ifc.get().createIfcText(json.dumps(data))
         ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
 
@@ -940,12 +963,14 @@ class Model(bonsai.core.tool.Model):
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return
-        data = set(json.loads(pset["Data"]))
-        data -= set(boolean_ids)
-        data = list(data)
+        raw = json.loads(pset["Data"])
+        if isinstance(raw, list):
+            raw = {str(i): None for i in raw}
+        for bool_id in boolean_ids:
+            raw.pop(str(bool_id), None)
         pset = tool.Ifc.get().by_id(pset["id"])
-        if data:
-            data = tool.Ifc.get().createIfcText(json.dumps(data))
+        if raw:
+            data = tool.Ifc.get().createIfcText(json.dumps(raw))
             ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
         else:
             ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
@@ -2636,7 +2661,12 @@ class Model(bonsai.core.tool.Model):
         return clipping_bm  # clipping_bm is in project units
 
     @classmethod
-    def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bmesh.types.BMesh) -> None:
+    def clip_wall_to_slab(
+        cls,
+        wall: ifcopenshell.entity_instance,
+        clipping_bm: bmesh.types.BMesh,
+        slab: Optional[ifcopenshell.entity_instance] = None,
+    ) -> None:
         matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
         bm = clipping_bm.copy()
         bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)
@@ -2710,15 +2740,65 @@ class Model(bonsai.core.tool.Model):
             extrusion.Depth = max_z / direction[2]
 
             if operands:
-                body_repr = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
                 booleans = ifcopenshell.api.geometry.add_boolean(ifc_file, first_item=extrusion, second_items=operands)
-                tool.Model.mark_manual_booleans(wall, booleans)
+                tool.Model.mark_manual_booleans(wall, booleans, slab=slab)
 
     @classmethod
     def connect_wall_to_slab(cls, wall: ifcopenshell.entity_instance, slab: ifcopenshell.entity_instance) -> None:
         ifcopenshell.api.geometry.connect_element(
             tool.Ifc.get(), relating_element=slab, related_element=wall, description="TOP"
         )
+
+    @classmethod
+    def disconnect_slab_for_deleted_boolean(
+        cls, wall: ifcopenshell.entity_instance, faceset: ifcopenshell.entity_instance
+    ) -> None:
+        """Remove IfcRelConnectsElements(TOP) for wall when a clip FaceSet is manually deleted.
+
+        When the user deletes an IfcPolygonalFaceSet item in item mode, the corresponding
+        IfcBooleanResult becomes orphaned (SecondOperand → None). Without removing the
+        IfcRelConnectsElements, regenerate_wall_to_underside would still find the slab as
+        connected and re-create the clip boolean. This method removes the slab connection
+        when all tracked booleans for this wall are gone.
+        """
+        pset = ifcopenshell.util.element.get_pset(wall, "BBIM_Boolean")
+        if not pset:
+            return
+        ifc_file = tool.Ifc.get()
+        raw = json.loads(pset["Data"])
+        if isinstance(raw, list):
+            raw = {str(i): None for i in raw}
+        # Find the tracked boolean whose SecondOperand is this FaceSet, and its slab guid.
+        matched_slab_guid = None
+        found = False
+        for bool_id_str, slab_guid in raw.items():
+            try:
+                b = ifc_file.by_id(int(bool_id_str))
+            except RuntimeError:
+                continue
+            if b.SecondOperand == faceset:
+                matched_slab_guid = slab_guid
+                found = True
+                break
+        if not found:
+            return
+        if matched_slab_guid is None:
+            # Legacy pset (no slab guid stored) — we can only unmark the one boolean we matched.
+            # We cannot safely identify which other booleans or connections belong to the same
+            # slab, so we leave them intact. Recreating the booleans via the operator will
+            # upgrade the pset to the new format and enable full per-slab tracking.
+            matched_bool_id = next(int(k) for k, v in raw.items() if v is None and _boolean_has_faceset(ifc_file, int(k), faceset))
+            cls.unmark_manual_booleans(wall, [matched_bool_id])
+            return
+        # Unmark ALL booleans that belong to the same slab (they share the same guid).
+        slab_bool_ids = [int(k) for k, v in raw.items() if v == matched_slab_guid]
+        cls.unmark_manual_booleans(wall, slab_bool_ids)
+        # Remove only the IfcRelConnectsElements for this specific slab.
+        for rel in list(wall.ConnectedFrom):
+            if not (rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP"):
+                continue
+            if rel.RelatingElement.GlobalId == matched_slab_guid:
+                ifc_file.remove(rel)
 
     @classmethod
     def get_epg_modifier(cls, obj: bpy.types.Object) -> Union[bpy.types.NodesModifier, None]:

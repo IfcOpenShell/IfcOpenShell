@@ -183,7 +183,7 @@ def regenerate_wall_to_underside(
         for slab_obj in slab_objs:
             clip = model.get_slab_clipping_bmesh(slab_obj)
             if clip:
-                model.clip_wall_to_slab(wall, clip)
+                model.clip_wall_to_slab(wall, clip, ifc.get_entity(slab_obj))
         clipped_objs.append(obj)
     if clipped_objs:
         model.reload_body_representation(clipped_objs)
@@ -221,7 +221,7 @@ def extend_wall_to_slab(
             clip = model.get_slab_clipping_bmesh(slab_obj)
             if not clip:
                 continue
-            model.clip_wall_to_slab(wall, clip)
+            model.clip_wall_to_slab(wall, clip, ifc.get_entity(slab_obj))
             model.connect_wall_to_slab(wall, ifc.get_entity(slab_obj))
             did_clip = True
         if did_clip:

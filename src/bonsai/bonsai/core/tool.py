@@ -673,7 +673,7 @@ class Misc:
 
 @interface
 class Model:
-    def clip_wall_to_slab(cls, element, bm): pass
+    def clip_wall_to_slab(cls, element, bm, slab=None): pass
     def connect_wall_to_slab(cls, wall, slab): pass
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
