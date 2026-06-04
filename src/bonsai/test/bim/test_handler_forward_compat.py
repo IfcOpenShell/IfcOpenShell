@@ -18,11 +18,12 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Forward-compat AST contracts for ``bonsai.bim.handler``.
+"""Forward-compat AST contracts for the BIM Tool refresh path.
 
-Pins structural invariants on the post-commit refresh path that no
-behavioural test can catch on its own — specifically, that the commit-
-driven refresh never writes user-intent enum slots."""
+Pins structural invariants that no behavioural test can catch on its own:
+the commit-driven header refresh fires only for the parametric validate-
+gizmo operators (``bim.finish_editing_<name>``), never universally — and
+the header writer never drifts into user-intent enum writes."""
 
 import ast
 from pathlib import Path
@@ -33,16 +34,12 @@ pytestmark = pytest.mark.model
 
 
 HANDLER_PATH = Path(__file__).parent.parent.parent / "bonsai" / "bim" / "handler.py"
+PARAMETRIC_PATH = HANDLER_PATH.parent.parent / "tool" / "parametric.py"
 
-# User-intent enums: encode the user's "what to build next" choice on the
-# BIM Tool panel. Writing them from a commit-driven path silently resets
-# the user's selection on every IFC mutation — selection-change is the
-# only legitimate caller.
+# User-intent enums encode the user's "what to build next" choice on the
+# BIM Tool panel. The header-only writer must never drift into enum writes;
+# user-intent enums are owned by the selection-change path.
 USER_INTENT_ENUM_ATTRS = frozenset({"ifc_class", "relating_type_id"})
-
-# Functions that must remain free of user-intent enum writes. Both are
-# reachable from ``tool.Parametric.refresh_post_commit``.
-ENUM_SAFE_FUNCTIONS = ("refresh_bim_tool_headers", "_read_headers_into_props")
 
 
 def _function_node(tree: ast.Module, name: str) -> ast.FunctionDef:
@@ -57,14 +54,13 @@ def handler_tree() -> ast.Module:
     return ast.parse(HANDLER_PATH.read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize("fn_name", ENUM_SAFE_FUNCTIONS)
-def test_commit_driven_function_does_not_write_user_intent_enums(handler_tree: ast.Module, fn_name: str) -> None:
-    """The commit-driven refresh path must never assign to user-intent
-    enum slots (``ifc_class``, ``relating_type_id``). Re-targeting these
-    from the post-commit hook silently overwrites the user's BIM Tool
-    panel selection on every IFC mutation; only selection-change callers
-    may write them."""
-    fn = _function_node(handler_tree, fn_name)
+def test_read_headers_into_props_writes_only_header_floats(handler_tree: ast.Module) -> None:
+    """``_read_headers_into_props`` is the header-only writer called from
+    the selection-driven refresh. It must not assign to user-intent enum
+    slots (``ifc_class``, ``relating_type_id``); those are the
+    'what to build next' choice and have their own targeted writes
+    earlier in ``update_bim_tool_props``."""
+    fn = _function_node(handler_tree, "_read_headers_into_props")
     offenders = []
     for node in ast.walk(fn):
         if not isinstance(node, ast.Assign):
@@ -75,32 +71,49 @@ def test_commit_driven_function_does_not_write_user_intent_enums(handler_tree: a
     if offenders:
         msgs = ", ".join(f"{attr} at line {line}" for attr, line in offenders)
         pytest.fail(
-            f"{fn_name!r} assigns to user-intent enum slot(s): {msgs}. "
-            f"Move this assignment to a selection-driven callback."
+            f"_read_headers_into_props assigns to user-intent enum slot(s): {msgs}. "
+            f"Header refresh must not re-target the user's BIM Tool panel selection."
         )
 
 
-def test_refresh_post_commit_calls_header_only_entrypoint(handler_tree: ast.Module) -> None:
-    """``tool.Parametric.refresh_post_commit`` must dispatch into
-    ``refresh_bim_tool_headers``, not ``update_bim_tool_props``.
-    The latter re-targets user-intent enums; routing the post-commit
-    hook through it silently resets the user's BIM Tool selection on
-    every IFC mutation and crashes on element types absent from the
-    ``ifc_class`` enum (e.g. ``IfcAnnotation``)."""
-    parametric_path = HANDLER_PATH.parent.parent / "tool" / "parametric.py"
-    parametric_tree = ast.parse(parametric_path.read_text(encoding="utf-8"))
+def test_refresh_post_commit_gates_header_refresh_on_edit_types_registry() -> None:
+    """``tool.Parametric.refresh_post_commit`` fires for every IFC
+    operator commit. Only operators whose ``bl_idname`` matches a
+    ``ParametricObject.finish_op`` in ``EDIT_TYPES`` (the validate-
+    gizmo path) must trigger a BIM Tool header refresh — selection
+    didn't change but the header values did. Other operators must
+    skip the refresh: they don't target an active-object header edit,
+    and their commit context may lack the view-layer attributes the
+    refresh reads.
+
+    The gate must consult the registry, not match a string prefix —
+    ``EDIT_TYPES`` is the canonical list of parametric features, and
+    querying it stays correct even if ``ParametricObject.finish_op``
+    changes its derivation rule."""
+    parametric_tree = ast.parse(PARAMETRIC_PATH.read_text(encoding="utf-8"))
     fn = _function_node(parametric_tree, "refresh_post_commit")
-    called_handler_attrs = {
-        node.func.attr
-        for node in ast.walk(fn)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and isinstance(node.func.value, ast.Attribute)
-        and node.func.value.attr == "handler"
-    }
-    assert (
-        "refresh_bim_tool_headers" in called_handler_attrs
-    ), "refresh_post_commit must call bonsai.bim.handler.refresh_bim_tool_headers"
-    assert "update_bim_tool_props" not in called_handler_attrs, (
-        "refresh_post_commit must not call update_bim_tool_props " "(re-targets user-intent enums on every commit)"
+    found_gated_call = False
+    for node in ast.walk(fn):
+        if not isinstance(node, ast.If):
+            continue
+        references_registry = any(
+            isinstance(sub, ast.Attribute) and sub.attr == "EDIT_TYPES" for sub in ast.walk(node.test)
+        )
+        if not references_registry:
+            continue
+        for body_node in ast.walk(node):
+            if (
+                isinstance(body_node, ast.Call)
+                and isinstance(body_node.func, ast.Attribute)
+                and body_node.func.attr == "refresh_bim_tool_headers"
+            ):
+                found_gated_call = True
+                break
+        if found_gated_call:
+            break
+    assert found_gated_call, (
+        "tool.Parametric.refresh_post_commit must gate refresh_bim_tool_headers on an "
+        "If whose test references EDIT_TYPES (the parametric registry). An ungated call "
+        "fires the refresh for commits in contexts that strip view-layer attributes; "
+        "a missing call silently drops the validate-gizmo header refresh."
     )

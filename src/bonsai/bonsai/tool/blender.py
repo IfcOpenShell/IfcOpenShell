@@ -229,15 +229,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
-        """Gets the active object
+        """Return the active object, or ``None`` when the current context
+        exposes neither ``active_object`` nor a ``view_layer`` (stripped
+        operator contexts).
 
         :param is_selected: If true, the active object also needs to be selected.
         """
-        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
-            if not is_selected:
-                return obj
-            if obj.select_get():
-                return obj
+        obj = getattr(bpy.context, "active_object", None)
+        if obj is None:
+            view_layer = getattr(bpy.context, "view_layer", None)
+            if view_layer is not None:
+                obj = view_layer.objects.active
+        if obj is None:
+            return None
+        if is_selected and not obj.select_get():
+            return None
+        return obj
 
     @classmethod
     def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
@@ -1977,6 +1984,18 @@ class Blender(bonsai.core.tool.Blender):
 
         dct = {cls.bl_idname: cls.ifc_element_type for cls in (BimTool.__subclasses__())}
         return types.MappingProxyType(dct)
+
+    @classmethod
+    @lru_cache
+    def get_property_header_tools(cls) -> frozenset[str]:
+        """``BimTool`` plus its parametric subclasses — the workspace
+        tools whose 3D-view / N-panel header surfaces BIM Tool property
+        floats (extrusion_depth, length, x_angle). ``AnnotationTool``
+        and the non-``BimTool`` workspace tools (spatial / structural /
+        cad / covering) are excluded by construction."""
+        from bonsai.bim.module.model.workspace import BimTool
+
+        return frozenset(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool]))
 
     @classmethod
     def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:

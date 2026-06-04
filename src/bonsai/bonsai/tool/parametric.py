@@ -179,17 +179,24 @@ class Parametric(bonsai.core.tool.Parametric):
         return cls._geom_generation
 
     @classmethod
-    def refresh_post_commit(cls) -> None:
-        """Post-commit hook for ``tool.Ifc.Operator``: re-syncs scene-level
-        workspace-tool header fields from current IFC state and bumps the
-        geometry generation counter so caches keyed off it drop stale
-        entries on the next draw. Header-only — user-intent enums are
-        re-targeted on selection change, not here."""
-        import bonsai.bim.handler  # late import: bim.handler imports tool.*
+    def refresh_post_commit(cls, operator: bpy.types.Operator) -> None:
+        """Post-commit hook for ``tool.Ifc.Operator``: bumps the geometry
+        generation counter so caches keyed off it drop stale entries on
+        the next draw, and tags viewports for redraw.
 
+        Additionally refreshes the BIM Tool header floats for the
+        validate-gizmo path — operators whose ``bl_idname`` is the
+        ``finish_op`` of an entry in ``EDIT_TYPES``. That is the only
+        commit class where selection didn't change but the header
+        values displayed did. Other operators skip the refresh: they
+        don't target an active-object header edit, and their commit
+        context may lack the view-layer attributes the refresh reads."""
         cls._geom_generation += 1
-        bonsai.bim.handler.refresh_bim_tool_headers()
         tool.Blender.update_all_viewports()
+        if operator.bl_idname in {feature.finish_op for feature in cls.EDIT_TYPES}:
+            import bonsai.bim.handler  # late import: bim.handler imports tool.*
+
+            bonsai.bim.handler.refresh_bim_tool_headers()
 
     @classmethod
     def find_by_name(cls, name: str) -> Optional[ParametricObject]:

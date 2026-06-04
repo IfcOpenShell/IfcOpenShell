@@ -179,27 +179,32 @@ def update_bim_tool_props():
 
 
 def refresh_bim_tool_headers():
-    """Commit-driven refresh of BIM Tool header values (extrusion_depth,
-    length, x_angle) from the active object's IFC geometry. Must not
-    write user-intent enums — those encode 'what to build next' and
-    would silently reset on every IFC commit."""
+    """Push the active IFC entity's current header float values
+    (extrusion_depth, length, x_angle) into ``BIMModelProperties``.
+    Enum-safe: never writes user-intent enum slots, which are owned by
+    the selection callback."""
     ctx = _resolve_bim_tool_context()
     if ctx is None:
         return
     obj, current_tool, element = ctx
-    if current_tool.idname == "bim.annotation_tool":
+    if current_tool.idname not in tool.Blender.get_property_header_tools():
         return
     _read_headers_into_props(obj, element)
 
 
 def _resolve_bim_tool_context():
     """Return ``(obj, current_tool, element)`` when an active BIM workspace
-    tool sees a resolvable IFC element; ``None`` otherwise."""
-    obj = bpy.context.active_object
+    tool sees a resolvable IFC element; ``None`` otherwise. Defensive
+    against stripped operator contexts — a missing ``active_object`` /
+    ``mode`` / ``workspace`` short-circuits to ``None`` instead of raising."""
+    obj = tool.Blender.get_active_object()
     if not obj:
         return None
-    mode = bpy.context.mode
-    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
+    mode = getattr(bpy.context, "mode", None)
+    workspace = getattr(bpy.context, "workspace", None)
+    if mode is None or workspace is None:
+        return None
+    current_tool = workspace.tools.from_space_view3d_mode(mode)
     if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
         return None
     element = tool.Ifc.get_entity(obj)
