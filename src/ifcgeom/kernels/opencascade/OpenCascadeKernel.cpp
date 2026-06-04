@@ -31,6 +31,8 @@
 #include <BOPAlgo_MakerVolume.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
 
+#include <optional>
+
 namespace {
 	struct opening_sorter {
 		bool operator()(const std::pair<double, TopoDS_Shape>& a, const std::pair<double, TopoDS_Shape>& b) const {
@@ -152,17 +154,25 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 					BOPAlgo_MakerVolume mv;
 					mv.AddArgument(entity_part);
 					mv.SetAvoidInternalShapes(true);
+					// mv.SetFuzzyValue(settings_.get<settings::Precision>().get());
+					std::optional<std::string> failure;
 					try {
 						mv.Perform();
+						auto entity_part_2 = mv.Shape();
 						if (mv.HasErrors()) {
-							logger::warning("Non-manifold first operand, --make-volume failed", entity);
+							failure = "BOPAlgo_MakerVolume reported errors";
+						} else if (IfcGeom::util::count(entity_part_2, TopAbs_FACE) == 0) {
+							failure = "Empty result (no faces) for BOPAlgo_MakerVolume; original was " + std::to_string(IfcGeom::util::count(entity_part, TopAbs_FACE));
 						} else {
-							entity_part = mv.Shape();
-							is_manifold = util::is_manifold(entity_part);
-							logger::warning("Successfully detected exterior volume to non-manifold first operand", entity);
+							is_manifold = util::is_manifold(entity_part_2);
+							logger::warning(std::string("Successfully detected exterior volume to non-manifold first operand; shape is now ") + (is_manifold ? std::string("manifold") : std::string("non-manifold")), entity);
+							entity_part = entity_part_2;
 						}
 					} catch (const Standard_Failure& e) {
-						logger::warning("MakeVolume failed: " + std::string(e.GetMessageString()), entity);
+						failure.emplace(e.GetMessageString());
+					}
+					if (failure) {
+						logger::warning("MakeVolume failed: " + *failure, entity);
 					}
 				} else {
 					logger::warning("Non-manifold first operand, use --make-volume to try and make manifold", entity);
