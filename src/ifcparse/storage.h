@@ -25,6 +25,8 @@ namespace rocksdb {
 
 #include <variant>
 #include <iterator>
+#include <cstdint>
+#include <cstring>
 #include <type_traits>
 #include <iostream>
 #include <vector>

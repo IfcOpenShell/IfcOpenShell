@@ -34,6 +34,7 @@
 #include <numeric>
 #include <functional>
 #include <cmath>
+#include <cstdint>
 
 #ifdef USE_BINARY
 #define write_shape write_binary
