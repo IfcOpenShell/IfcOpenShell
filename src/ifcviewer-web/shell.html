@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IfcViewer (web)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0f1117; color: #c8ccd6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #viewer-canvas { display: block; width: 100vw; height: 100vh; outline: none;
+    background: #1a1d24; }
+  #status { position: fixed; top: 8px; left: 12px; font-size: 12px;
+    background: rgba(20,22,28,.72); padding: 4px 8px; border-radius: 4px;
+    pointer-events: none; }
+  #status.error { background: rgba(120,30,30,.85); color: #fff; }
+</style>
+</head>
+<body>
+<canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<div id="status">Starting…</div>
+<script>
+  // Emscripten Module hook: route stderr to the status overlay so any
+  // wgpu init failure (no WebGPU, canvas missing, etc.) is visible
+  // without opening devtools.
+  var statusEl = document.getElementById('status');
+  var Module = {
+    canvas: document.getElementById('viewer-canvas'),
+    print:        function(t) { console.log(t); },
+    printErr:     function(t) {
+      console.warn(t);
+      // First non-empty stderr line replaces the "Starting…" tag; subsequent
+      // lines append. Anything containing "fail" / "error" flips us into
+      // the red error chip.
+      statusEl.textContent = t;
+      if (/fail|error|null/i.test(t)) statusEl.classList.add('error');
+    },
+    onRuntimeInitialized: function() {
+      statusEl.textContent = 'wasm loaded — waiting for WebGPU';
+    }
+  };
+  if (!navigator.gpu) {
+    statusEl.textContent = 'navigator.gpu is missing — open in a browser with WebGPU enabled';
+    statusEl.classList.add('error');
+  }
+</script>
+<!-- IfcViewerWeb.js is emitted alongside this shell by the emcc build;
+     `--shell-file` injects this HTML around it. -->
+{{{ SCRIPT }}}
+</body>
+</html>

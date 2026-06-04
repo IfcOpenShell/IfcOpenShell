@@ -19,15 +19,26 @@
 
 message("Running CMakeLists.txt in /src/ifcviewer")
 
-set(QT_VERSION 6 CACHE STRING "Qt version")
-find_package(Qt${QT_VERSION} COMPONENTS Core Gui REQUIRED PATHS ${QT_DIR})
+# Qt is desktop-only. Under Emscripten this directory is reached via
+# src/ifcviewer-web/CMakeLists.txt which only consumes IfcViewerCore;
+# the IfcViewer (Qt-using) target below is skipped entirely.
+if(NOT EMSCRIPTEN)
+    set(QT_VERSION 6 CACHE STRING "Qt version")
+    find_package(Qt${QT_VERSION} COMPONENTS Core Gui REQUIRED PATHS ${QT_DIR})
+endif()
 
 # Eigen3 — used by Federation matrices, ViewportWindow's instance compose,
 # the per-model coordinate-operation matrices stored on ModelGpuData, and
-# everywhere a 4x4 transform shows up.
+# everywhere a 4x4 transform shows up. Header-only, works under Emscripten.
 find_package(Eigen3 REQUIRED)
 
 # wgpu-native — fetched as a pre-built binary release from upstream.
+# Under Emscripten this whole block is skipped; the web build links
+# against Dawn's webgpu.h via the emdawnwebgpu port instead. The
+# `wgpu_native` link target is created as an INTERFACE in that branch
+# (see the end of this block) so consumers' target_link_libraries lines
+# work uniformly.
+if(NOT EMSCRIPTEN)
 # Pin the version with WGPU_NATIVE_VERSION; bump to pull a newer release.
 set(WGPU_NATIVE_VERSION "v29.0.0.0" CACHE STRING "wgpu-native release tag")
 
@@ -105,6 +116,17 @@ endif()
 set(WGPU_NATIVE_LIB_DIR "${wgpu_native_SOURCE_DIR}/lib" CACHE INTERNAL
     "Directory containing the wgpu-native shared library")
 
+else()  # EMSCRIPTEN — Dawn's webgpu.h via the emdawnwebgpu port instead.
+    # Marker interface so downstream `target_link_libraries(... wgpu_native)`
+    # lines work uniformly across desktop and web. Activating the
+    # emdawnwebgpu port both at compile and link via INTERFACE so any
+    # TU that #includes <webgpu/webgpu.h> picks up the port's vendored
+    # header without each target having to re-declare the flag.
+    add_library(wgpu_native INTERFACE)
+    target_compile_options(wgpu_native INTERFACE "--use-port=emdawnwebgpu")
+    target_link_options(wgpu_native INTERFACE "--use-port=emdawnwebgpu")
+endif()
+
 # IfcViewerCore: the Qt-free, OpenCASCADE-free runtime subset. Buffer
 # pool, chunk planner, instance composition, sidecar cache, streaming
 # I/O, LOD builder, vertex quantisation — everything needed to load a
@@ -155,7 +177,9 @@ endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 
 # IfcViewer: the Qt + IfcGeom + OpenCASCADE shell — everything in this
-# directory NOT already pulled into IfcViewerCore above.
+# directory NOT already pulled into IfcViewerCore above. Desktop-only;
+# Emscripten builds consume IfcViewerCore directly via src/ifcviewer-web.
+if(NOT EMSCRIPTEN)
 file(GLOB _ifcviewer_all_cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB _ifcviewer_all_h   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 set(IFCVIEWER_FILES ${_ifcviewer_all_cpp} ${_ifcviewer_all_h})
@@ -248,6 +272,8 @@ else()
     install(FILES "${wgpu_native_SOURCE_DIR}/lib/${_wgpu_lib}" DESTINATION lib)
 endif()
 
-if(BUILD_BONSAIVIEWER_TESTS)
+endif()  # NOT EMSCRIPTEN
+
+if(BUILD_BONSAIVIEWER_TESTS AND NOT EMSCRIPTEN)
     add_subdirectory(tests)
 endif()
