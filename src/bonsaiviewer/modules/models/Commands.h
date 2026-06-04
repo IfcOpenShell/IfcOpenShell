@@ -31,6 +31,23 @@ class QWidget;
 class WgpuViewportWindow;
 namespace bonsaiviewer { class SessionState; }
 
+namespace bonsaiviewer::modules::models {
+
+// Arm/consume pair for "the next model load should auto-guess the
+// federation's false origin." Add-model commands arm this when they're
+// about to add into an empty session; ViewportView consumes it on the
+// next modelGeometryReady. The flag has consume-on-read semantics so
+// the API is functions, not a raw bool (a peek-without-clear would
+// silently break the one-shot guarantee).
+//
+// Module-scoped (not on SessionState) because it's add-command intent —
+// SessionState shouldn't grow a field for every module's per-command
+// state. Lives next to the commands that arm it.
+void armFederatedFalseOriginGuess();
+bool consumeFederatedFalseOriginGuess();
+
+} // namespace bonsaiviewer::modules::models
+
 namespace bonsaiviewer::modules::models::commands {
 
 // User-facing commands. Each one is responsible for emitting any notify()

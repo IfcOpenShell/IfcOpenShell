@@ -1468,6 +1468,92 @@ bool WgpuViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) c
     return false;
 }
 
+bool WgpuViewportWindow::firstGeometryPointWorldM(uint32_t model_id,
+                                                  Eigen::Vector3d& out) const {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return false;
+    const WgpuModelGpuData& m = it->second;
+    if (m.instances.empty()) return false;
+
+    const InstanceCpu& inst0 = m.instances[0];
+    if (inst0.mesh_id >= m.meshes.size()) return false;
+    const MeshInfo& mesh0 = m.meshes[inst0.mesh_id];
+
+    // Mesh-local AABB centre — a point that's actually on the geometry.
+    // Using AABB centre (vs. literal vertex 0) gives a centroid-like
+    // anchor rather than a corner, which is more representative of where
+    // the mesh "is" for the false-origin guess.
+    const Eigen::Vector3d local_center_m(
+        0.5 * (double(mesh0.local_aabb_min[0]) + double(mesh0.local_aabb_max[0])),
+        0.5 * (double(mesh0.local_aabb_min[1]) + double(mesh0.local_aabb_max[1])),
+        0.5 * (double(mesh0.local_aabb_min[2]) + double(mesh0.local_aabb_max[2])));
+
+    // placement_transformation is double[16] column-major in metres,
+    // pre-CoordinateOperation / FederatedFalseOrigin / ModelTransformation
+    // (same convention as InstanceLookup above).
+    using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
+    const Eigen::Matrix4d P =
+        Eigen::Map<const Mat4dCol>(inst0.placement_transformation);
+    out = (P * local_center_m.homogeneous()).head<3>();
+    return true;
+}
+
+void WgpuViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
+                                                float max_distance_m) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    const WgpuModelGpuData& m = it->second;
+    if (m.instances.empty()) return;
+
+    float mn[3] = {  std::numeric_limits<float>::infinity(),
+                     std::numeric_limits<float>::infinity(),
+                     std::numeric_limits<float>::infinity() };
+    float mx[3] = { -std::numeric_limits<float>::infinity(),
+                    -std::numeric_limits<float>::infinity(),
+                    -std::numeric_limits<float>::infinity() };
+    for (const auto& inst : m.instances) {
+        for (int a = 0; a < 3; ++a) {
+            mn[a] = std::min(mn[a], inst.world_aabb_min[a]);
+            mx[a] = std::max(mx[a], inst.world_aabb_max[a]);
+        }
+    }
+
+    // The federated false origin sits at (0,0,0) in post-shift space
+    // by construction (federated_false_origin_meters_ inverts it into
+    // the instance compose); target it directly so the anchor point
+    // we used in the guess is dead-centre in the view.
+    camera_target_[0] = 0.0f;
+    camera_target_[1] = 0.0f;
+    camera_target_[2] = 0.0f;
+
+    // Distance: same viewAll() fit math (bounding sphere radius pulled
+    // just inside the tighter FOV with 1.10 padding), then clamped so
+    // a model with one crazy-coord outlier vertex doesn't pull the
+    // camera back so far that the real geometry becomes a pixel.
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+    if (radius > 1e-4f) {
+        const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
+        const float tan_half = std::tan(fovy_rad * 0.5f);
+        if (tan_half > 1e-6f) {
+            const int   h          = std::max(configured_h_, 1);
+            const float aspect     = float(std::max(configured_w_, 1)) / float(h);
+            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+            const float fit_dist   = (radius / (tan_half * min_aspect)) * 1.10f;
+            camera_distance_ = std::clamp(fit_dist, 0.1f, max_distance_m);
+        }
+    }
+
+    qInfo().noquote().nospace()
+        << "[wgpu] frameOnFederatedOrigin model=" << model_id
+        << " distance=" << camera_distance_
+        << " (cap=" << max_distance_m << "m, model radius=" << radius << ")";
+
+    if (isExposed()) requestUpdate();
+}
+
 void WgpuViewportWindow::flushPendingSidecarQueue() {
     while (!pending_sidecars_.empty()) {
         const QString p = pending_sidecars_.front();
@@ -1958,16 +2044,29 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
     //                   ready, may tear on motion. Useful for raw
     //                   throughput benchmarking.
     // Preference order. Override with WGPU_PRESENT_MODE=...; otherwise we
-    // try Mailbox → FifoRelaxed → Immediate → Fifo and pick the first
+    // try Mailbox → Immediate → FifoRelaxed → Fifo and pick the first
     // mode actually advertised by the surface. Asking for a mode that
     // the backend doesn't list aborts the process (wgpu-native panics
     // from Rust at wgpuSurfaceConfigure). On Metal in particular only
     // Fifo + Immediate are exposed today, so a static Mailbox default
     // crashes there.
+    //
+    // Why Immediate sits above FifoRelaxed: Mailbox is the right answer
+    // for an interactive viewer (vsync-aligned, no tearing, 1-frame
+    // queue) but a meaningful subset of Linux Vulkan stacks (some
+    // compositors, some driver/WSI combinations) silently don't expose
+    // it — see the "[wgpu] surface advertises present modes:" startup
+    // log. On those stacks, Fifo's 2-3 frame queue doubles input-to-
+    // photon latency the moment WASD activates, which on a 60 Hz
+    // display reads as judder during fly-mode mouse-look. Immediate
+    // can tear but keeps latency at one render-body, which preserves
+    // the responsive-feel that's the main reason to use a wgpu viewer.
+    // FifoRelaxed is the middle option — better latency than Fifo at
+    // the edge, can tear when over budget — kept as the next fallback.
     WGPUPresentMode preferred[4] = {
         WGPUPresentMode_Mailbox,
-        WGPUPresentMode_FifoRelaxed,
         WGPUPresentMode_Immediate,
+        WGPUPresentMode_FifoRelaxed,
         WGPUPresentMode_Fifo,
     };
     const char* pm_name = "mailbox";
@@ -1999,6 +2098,30 @@ void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
         }
         return false;
     };
+
+    // Log the full advertised set on first configure. Diagnostic for
+    // "WGPU_PRESENT_MODE=mailbox falls back to fifo" — if Mailbox is
+    // missing here, the driver/compositor doesn't expose it (drives the
+    // input-latency question; see WGPU_PRESENT_MODE notes above). If
+    // Mailbox is listed but we still pick Fifo, the preference order
+    // has a bug.
+    if (!surface_configured_) {
+        QString advertised;
+        for (size_t i = 0; i < caps.presentModeCount; ++i) {
+            const char* name = "?";
+            switch (caps.presentModes[i]) {
+                case WGPUPresentMode_Fifo:        name = "fifo";         break;
+                case WGPUPresentMode_FifoRelaxed: name = "fifo_relaxed"; break;
+                case WGPUPresentMode_Mailbox:     name = "mailbox";      break;
+                case WGPUPresentMode_Immediate:   name = "immediate";    break;
+                default: break;
+            }
+            if (i > 0) advertised += ", ";
+            advertised += QString::fromLatin1(name);
+        }
+        qInfo().noquote().nospace()
+            << "[wgpu] surface advertises present modes: " << advertised;
+    }
     WGPUPresentMode pm = WGPUPresentMode_Fifo; // spec-guaranteed fallback
     for (WGPUPresentMode candidate : preferred) {
         if (supports(candidate)) { pm = candidate; break; }

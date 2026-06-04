@@ -132,20 +132,24 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file);
 // Build a FederatedFalseOrigin guess so that a model lands near the
 // federation origin instead of out at its surveyor coordinates.  Designed
 // to work without an open IFC file so it's usable from sidecar-only loads
-// (the inputs are all derivable from the InstanceCpu cache + ModelGeoref).
+// (the inputs are all derivable from the resident MeshInfo + InstanceCpu
+// data + ModelGeoref).
 //
-// Position: `first_placement_meters` is the model's "anchor" placement —
-// typically the first instance's `placement_transformation`, which the
-// iterator already produces in metres (its `convert-back-units` default
-// is false).  The translation is lifted through
-// `georef.coordinate_operation_meters` when one is present, then
-// expressed in the federation unit.
+// Position: `first_geometry_point_m` is a point that actually lies on the
+// model's first instance's geometry, in metres, pre-CoordinateOperation —
+// typically the world-space centre of the first instance's mesh AABB
+// (instance0.placement_transformation * mesh.local_aabb_center).  We use
+// a real geometry point rather than the instance's placement translation
+// because IFC placements often live far from the actual geometry (long
+// ObjectPlacement chains, intermediate local coordinate systems).  The
+// point is lifted through `georef.coordinate_operation_meters` when one
+// is present, then expressed in the federation unit.
 //
 // Rotation: read directly from `georef.coordinate_operation_meters`
 // when `has_coordinate_operation` (this is the helmert grid-north
 // angle); otherwise zero.  Anticlockwise positive.
 FederatedFalseOrigin
-guessFederatedFalseOrigin(const Eigen::Matrix4d& first_placement_meters,
+guessFederatedFalseOrigin(const Eigen::Vector3d& first_geometry_point_m,
                           const ModelGeoref& georef,
                           const FederationConfig& fed_cfg);
 

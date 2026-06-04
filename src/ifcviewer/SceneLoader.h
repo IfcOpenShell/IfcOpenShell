@@ -94,14 +94,6 @@ public:
     // sidecar-hit path before the data-source thread populates the streamer).
     const ModelGeoref* modelGeoref(uint32_t mid);
 
-    // The placement_transformation (in metres, column-major 4x4) of the
-    // first instance the loader saw for `mid` — captured from the streamer's
-    // first InstanceChunk during a stream load, or from the cached
-    // InstanceCpu[0] on a sidecar hit.  Returns nullptr until at least one
-    // instance has been observed.  Used by the federation false-origin
-    // auto-guess to anchor the model without re-parsing the IFC.
-    const Eigen::Matrix4d* firstPlacement(uint32_t mid) const;
-
 signals:
     void progressChanged(int percent);
     void loadStarted(uint32_t mid, QString display_name);
@@ -155,12 +147,6 @@ private:
         // streamer has its IFC file loaded.
         ModelGeoref georef;
         bool        has_georef = false;
-
-        // The first instance's placement_transformation (in metres) — set
-        // once per model from either the sidecar's InstanceCpu[0] or the
-        // streamer's first InstanceChunk.
-        Eigen::Matrix4d first_placement     = Eigen::Matrix4d::Identity();
-        bool            has_first_placement = false;
 
         // Live-load sidecar accumulator. Constructed at the start of a
         // stream load when shouldWriteSidecar is on; null otherwise.

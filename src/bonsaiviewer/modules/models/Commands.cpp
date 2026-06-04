@@ -61,6 +61,24 @@
 
 #include <memory>
 
+namespace bonsaiviewer::modules::models {
+
+namespace {
+bool should_guess_federated_false_origin_ = false;
+} // namespace
+
+void armFederatedFalseOriginGuess() {
+    should_guess_federated_false_origin_ = true;
+}
+
+bool consumeFederatedFalseOriginGuess() {
+    const bool armed = should_guess_federated_false_origin_;
+    should_guess_federated_false_origin_ = false;
+    return armed;
+}
+
+} // namespace bonsaiviewer::modules::models
+
 namespace bonsaiviewer::modules::models::commands {
 
 namespace {
@@ -247,6 +265,15 @@ void addModel(SessionState& s, QWidget& host) {
         return;
     }
 
+    // Arm the false-origin guess if we're adding into a session with no
+    // models yet — the first model that finishes loading will set the
+    // origin via ViewportView. Checked here (before federation->addModel)
+    // because federation->addModel doesn't yet populate SessionState's
+    // model mapping; modelIds() reflects pre-add state at this point.
+    if (s.modelIds().isEmpty()) {
+        armFederatedFalseOriginGuess();
+    }
+
     QStringList accepted_paths;
     QStringList accepted_fed_ids;
     for (const auto& path : paths) {
@@ -290,6 +317,12 @@ void addModelFromCloud(SessionState& s, QWidget& host) {
     proc->call("pull_models_interactive", QJsonValue(),
         [sguard, connector_id](const QJsonValue& result) {
             if (!sguard) return;
+            // Arm before the first addCloudModel — modelIds() reflects the
+            // session state at the moment the connector returns, which is
+            // when the user's "add into empty session" intent applies.
+            if (sguard->modelIds().isEmpty()) {
+                armFederatedFalseOriginGuess();
+            }
             const QJsonArray arr = result.toArray();
             QStringList paths;
             QStringList fed_ids;

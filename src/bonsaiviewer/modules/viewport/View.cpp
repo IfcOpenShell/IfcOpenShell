@@ -22,6 +22,7 @@
 
 #include "../../ViewerSettings.h"
 #include "../../SessionState.h"
+#include "../models/Commands.h"
 #include "../../../ifcviewer/Federation.h"
 #include "../../../ifcviewer/SceneLoader.h"
 #include "../../../ifcviewer-wgpu/WgpuViewportWindow.h"
@@ -56,13 +57,18 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
     connect(session_state_, &SessionState::modelsChanged,          this, &ViewportView::refresh);
     connect(session_state_, &SessionState::federationChanged,      this, &ViewportView::refresh);
     connect(session_state_, &SessionState::visibilityChanged,      this, &ViewportView::refresh);
-    // modelGeometryReady is the right hook for "first model just finished
-    // loading" — count is already in modelIds() by the time the geometry
-    // signal lands. We try to auto-guess the false origin here (and only
-    // here — refresh() stays terminal) so a slot can't accidentally re-emit
-    // into itself through federationChanged.
+    // modelGeometryReady is the right hook for "a model finished loading"
+    // — by this point the loader has populated firstPlacement/modelGeoref,
+    // so the guess has the data it needs. Whether to actually guess is
+    // gated by the arm-flag set by the add-model commands when they're
+    // adding into an empty session (so batch-adds work too: arm once,
+    // first geometry-ready consumes the arm). refresh() stays terminal —
+    // any federation mutation from the guess propagates through
+    // SessionState's federatedFalseOriginChanged relay.
     connect(session_state_, &SessionState::modelGeometryReady,     this, [this](uint32_t mid) {
-        tryGuessFirstModelFalseOrigin(mid);
+        if (modules::models::consumeFederatedFalseOriginGuess()) {
+            guessFederatedFalseOriginFromFirstModel(mid);
+        }
         refresh();
     });
 
@@ -180,25 +186,28 @@ void ViewportView::applyModelVisibility(uint32_t mid) {
     }
 }
 
-// Auto-guess the federation's false origin when a model finishes loading,
-// scoped to the precise case where it's actually wanted: the just-loaded
-// model is the *only* model in the session and the false origin hasn't
-// been set yet. Re-firable: if the user removes the model and adds a new
-// one, and the previous load's guess didn't change the origin from
-// defaults (e.g. first-placement happened to land at the world origin —
-// see Holter Tower), the next load will retry.
+// Apply the federation false-origin guess from this model's first
+// placement. Called only when the add-model command armed the guess
+// (i.e. it was adding into an empty session); see the modelGeometryReady
+// connection above and modules::models::armFederatedFalseOriginGuess().
 //
-// This deliberately lives off the refresh() fan-in. refresh() is connected
-// to half a dozen signals; calling a federation mutator from inside it
-// stack-overflowed BonsaiViewer once the guess returned defaults, because
+// The internal guards (filePath, default origin, placement/georef
+// presence) are defense-in-depth, not the primary gate — that's the arm.
+// Order of checks matters: filePath skip protects project files
+// (federation owns origin); current==defaults skip protects a user who
+// previously set the origin manually and only later removed the model;
+// nullptr placement/georef skip handles loads where the loader hasn't
+// surfaced data yet (rare given the modelGeometryReady contract).
+//
+// Lives off the refresh() fan-in deliberately. refresh() is connected to
+// half a dozen signals; calling a federation mutator from inside it
+// stack-overflowed BonsaiViewer once the guess returned defaults because
 // the mutation re-emitted through SessionState → re-entered refresh().
 // Guessing only on the modelGeometryReady edge means a Federation
-// mutation here propagates through SessionState's normal relay
+// mutation here propagates through SessionState's federation relay
 // (federatedFalseOriginChanged → notifyFederationChanged) without
 // re-entering this function.
-void ViewportView::tryGuessFirstModelFalseOrigin(uint32_t mid) {
-    if (session_state_->modelIds().size() != 1) return;
-
+void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t mid) {
     Federation* federation = session_state_->federation();
     if (!federation->filePath().isEmpty()) return;
 
@@ -206,13 +215,26 @@ void ViewportView::tryGuessFirstModelFalseOrigin(uint32_t mid) {
     const FederatedFalseOrigin defaults;
     if (current.xyz != defaults.xyz || current.rz_deg != defaults.rz_deg) return;
 
-    SceneLoader* loader = session_state_->loader();
-    const Eigen::Matrix4d* placement = loader->firstPlacement(mid);
-    const ModelGeoref* georef = loader->modelGeoref(mid);
-    if (placement == nullptr || georef == nullptr) return;
+    Eigen::Vector3d first_geometry_point_m;
+    if (!viewport_->firstGeometryPointWorldM(mid, first_geometry_point_m)) return;
 
-    federation->setFederatedFalseOrigin(guessFederatedFalseOrigin(
-        *placement, *georef, federation->config()));
+    SceneLoader* loader = session_state_->loader();
+    const ModelGeoref* georef = loader->modelGeoref(mid);
+    if (georef == nullptr) return;
+
+    federation->setFederatedFalseOrigin(::guessFederatedFalseOrigin(
+        first_geometry_point_m, *georef, federation->config()));
+
+    // applyCachedModel's auto-viewAll already framed the camera against
+    // the pre-shift (surveyor) coordinates. The setFederatedFalseOrigin
+    // call above propagated through SessionState's federation relay →
+    // refresh() → viewport->setFederatedFalseOrigin → recomposeAndUpload
+    // (all synchronous Qt direct connections), which rewrote every
+    // instance's world AABB to its post-shift position. Re-target on
+    // (0,0,0) — the federated false origin in render space — capped at
+    // 100 m so a model with crazy-coord geometry can't pull the camera
+    // back into nothing.
+    viewport_->frameOnFederatedOrigin(mid, 100.0f);
 }
 
 void ViewportView::updateVolumeReadout() {

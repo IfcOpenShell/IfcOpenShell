@@ -390,6 +390,36 @@ public:
     };
     bool findInstance(uint32_t object_id, InstanceLookup& out) const;
 
+    // A point that actually lies on the model's first instance — the
+    // first instance's mesh AABB centre transformed by that instance's
+    // placement, in metres, pre-CoordinateOperation. Lookup only — the
+    // viewport already keeps the CPU-side MeshInfo + InstanceCpu around
+    // for picking / measurement; the federation false-origin guess
+    // (ViewportView::guessFederatedFalseOriginFromFirstModel) consumes
+    // this lazily on modelGeometryReady. Returns false when the model
+    // is unknown or has no instances.
+    bool firstGeometryPointWorldM(uint32_t model_id,
+                                  Eigen::Vector3d& out) const;
+
+    // Re-frame the camera onto the federated false origin in post-shift
+    // space. After ViewportView's first-model false-origin guess sets a
+    // federation origin and the resulting recomposeAndUploadModel runs,
+    // the federation false origin (in world coords) maps to (0,0,0) in
+    // render coords — so we target (0,0,0) and the first model's
+    // anchor point sits dead-centre.
+    //
+    // Distance comes from the model's post-shift AABB diagonal with the
+    // same padding math as viewAll(), but clamped to `max_distance_m`
+    // so a model with one crazy-coord outlier vertex (16 km AABB
+    // diagonal because of one bad triangle) can't pull the camera so
+    // far back that the bulk of the geometry becomes a single pixel.
+    // Yaw/pitch unchanged — preserves the user's current look direction.
+    //
+    // Unlike viewAll() this *never* iterates all loaded models — it
+    // frames around the specific model the guess fired for, ignoring
+    // models with bad coordinates elsewhere in the session.
+    void frameOnFederatedOrigin(uint32_t model_id, float max_distance_m);
+
     // Selection accessor. Exposed for callers (bonsai's volume readout)
     // that need to read selectionIds() / activeObjectId(). Mutation goes
     // through the existing setSelection / pick paths.
