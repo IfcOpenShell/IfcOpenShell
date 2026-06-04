@@ -7,8 +7,10 @@
 #endif
 
 #include <fstream>
+#include <memory>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <utility>
 
 /*
 ifcopenshell::IfcBaseClass* ifcopenshell::impl::rocks_db_file_storage::rocksdb_instance_iterator::operator*() const {
@@ -77,6 +79,25 @@ express::Base ifcopenshell::impl::rocks_db_file_storage::assert_existance(size_t
 }
 
 namespace {
+#ifdef IFOPSH_WITH_ROCKSDB
+    // Newer RocksDB releases changed DB::Open / DB::OpenForReadOnly to take
+    // std::unique_ptr<DB>*. Select whichever signature the installed headers expose.
+    template <typename Fn>
+    auto rocksdb_open(Fn&& open, rocksdb::DB*& db, int)
+        -> decltype(open(std::declval<std::unique_ptr<rocksdb::DB>*>())) {
+        std::unique_ptr<rocksdb::DB> owned;
+        auto status = open(&owned);
+        db = owned.release();
+        return status;
+    }
+
+    template <typename Fn>
+    auto rocksdb_open(Fn&& open, rocksdb::DB*& db, long)
+        -> decltype(open(std::declval<rocksdb::DB**>())) {
+        return open(&db);
+    }
+#endif
+
     rocksdb::DB* init_db(const std::string& filepath, bool readonly) {
         rocksdb::DB* db = nullptr;
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -113,9 +134,13 @@ namespace {
 
         rocksdb::Status status;
         if (readonly) {
-            status = rocksdb::DB::OpenForReadOnly(options, filepath, &db);
+            status = rocksdb_open([&](auto* dbptr) -> decltype(rocksdb::DB::OpenForReadOnly(options, filepath, dbptr)) {
+                return rocksdb::DB::OpenForReadOnly(options, filepath, dbptr);
+            }, db, 0);
         } else {
-            status = rocksdb::DB::Open(options, filepath, &db);
+            status = rocksdb_open([&](auto* dbptr) -> decltype(rocksdb::DB::Open(options, filepath, dbptr)) {
+                return rocksdb::DB::Open(options, filepath, dbptr);
+            }, db, 0);
         }
         if (!status.ok()) {
             return nullptr;

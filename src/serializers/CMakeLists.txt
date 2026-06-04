@@ -56,7 +56,7 @@ function(add_geometry_serializer_plugin target output_name)
 endfunction()
 
 if(WITH_ROCKSDB)
-    add_document_serializer_plugin(document_serializer_rdb "document.rdb" SOURCES document_rdb_plugin.cpp RocksDbSerializer.cpp LIBRARIES RocksDB::rocksdb)
+    add_document_serializer_plugin(document_serializer_rdb "document.rdb" SOURCES document_rdb_plugin.cpp RocksDbSerializer.cpp LIBRARIES ${IFCOPENSHELL_ROCKSDB_TARGET})
 endif()
 
 add_subdirectory(schema_dependent)
