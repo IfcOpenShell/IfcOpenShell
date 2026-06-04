@@ -21,7 +21,6 @@
 #define WGPUOVERLAYRENDERER_H
 
 #include <QHash>
-#include <QPoint>
 #include <QString>
 
 #include <Eigen/Dense>
@@ -189,8 +188,8 @@ public:
     void encodeMarquee(WGPUCommandEncoder enc,
                        WGPUTextureView surface_view,
                        const OverlayFrame& f,
-                       QPoint start_logical_px,
-                       QPoint current_logical_px,
+                       Eigen::Vector2i start_logical_px,
+                       Eigen::Vector2i current_logical_px,
                        bool active);
 
     // Shared with the viewport's main FrameUniforms: same cap so the

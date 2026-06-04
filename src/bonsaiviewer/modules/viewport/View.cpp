@@ -45,11 +45,14 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
     , length_measurement_(std::make_unique<LengthMeasurement>())
 {
     auto& settings = bonsaiviewer::ViewerSettings::instance();
-    connect(&settings, &bonsaiviewer::ViewerSettings::themeChanged, this, [this]() {
-        viewport_->setBackgroundColor(
-            QColor(bonsaiviewer::ViewerSettings::instance().color("viewport_background")));
-    });
-    viewport_->setBackgroundColor(QColor(settings.color("viewport_background")));
+    auto setBg = [this](const QString& name) {
+        const QColor c(bonsaiviewer::ViewerSettings::instance().color(name));
+        viewport_->setBackgroundColor(float(c.redF()), float(c.greenF()),
+                                      float(c.blueF()), float(c.alphaF()));
+    };
+    connect(&settings, &bonsaiviewer::ViewerSettings::themeChanged, this,
+            [setBg]() { setBg("viewport_background"); });
+    setBg("viewport_background");
 
     connect(session_state_, &SessionState::projectReset,           this, &ViewportView::refresh);
     connect(session_state_, &SessionState::projectOpened,          this, [this](const QString&) { refresh(); });

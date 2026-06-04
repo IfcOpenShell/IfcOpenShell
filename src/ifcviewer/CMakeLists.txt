@@ -155,6 +155,7 @@ set(IFCVIEWER_CORE_HEADERS
     InstancedGeometry.h
     Log.h
     LodBuilder.h
+    Stopwatch.h
     ModelGpuData.h
     SelectionState.h
     SidecarCache.h

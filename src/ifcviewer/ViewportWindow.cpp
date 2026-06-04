@@ -32,7 +32,6 @@
 #include <QGuiApplication>
 #include <QResizeEvent>
 #include <QDir>
-#include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
 #include <QtMath>
@@ -114,6 +113,14 @@ static double computeMeshLocalVolumeQuantised(
 // Ray-AABB (slab) + ray-triangle (Möller-Trumbore). Used by raycast()
 // AND by pickMeshLocalAt to refine the AABB-coarse surface hit into a
 // real triangle hit — see pickMeshLocalAt's refinement block.
+
+// Convert Qt's pixel-coord QPoint (event payload) to the Eigen::Vector2i
+// we store in member fields. The cast is mechanical but isolating it as
+// a helper keeps every event-handler site one line shorter.
+#include <QPoint>
+static inline Eigen::Vector2i toV2i(const QPoint& p) {
+    return Eigen::Vector2i(p.x(), p.y());
+}
 
 // Slab method ray-AABB. inv_d is precomputed 1/dir per axis.
 
@@ -680,8 +687,8 @@ void ViewportWindow::onToolBackspacePressed() {
     emit toolBackspacePressed();
 }
 
-void ViewportWindow::setBackgroundColor(const QColor& color) {
-    background_color_ = color;
+void ViewportWindow::setBackgroundColor(float r, float g, float b, float a) {
+    background_color_ = {r, g, b, a};
     if (isExposed()) requestUpdate();
 }
 
@@ -4625,7 +4632,7 @@ void ViewportWindow::cullModelCpuUpload(ModelGpuData& m) {
 void ViewportWindow::render() {
     // Time the whole render() body (cull + encode + present) for the
     // benchmark stats. Started before any wgpu work so cull is included.
-    QElapsedTimer frame_timer;
+    Stopwatch frame_timer;
     frame_timer.start();
 
     // Advance fly-mode camera by wall-clock dt since the last frame so the
@@ -4676,7 +4683,7 @@ void ViewportWindow::render() {
     last_visible_triangles_ = 0;
     last_sub_draws_         = 0;
     hiz_reject_count_       = 0;
-    QElapsedTimer cull_timer;
+    Stopwatch cull_timer;
     cull_timer.start();
     Eigen::Matrix4f vp_this_frame;
     {
@@ -4823,7 +4830,7 @@ void ViewportWindow::render() {
         // chunks ≈ 360 wgpu calls/frame). If upload >> compute the parallel
         // cull is doing its job and the bottleneck is somewhere else.
         const double cull_compute_ms = double(cull_timer.nsecsElapsed()) / 1e6;
-        QElapsedTimer upload_timer;
+        Stopwatch upload_timer;
         upload_timer.start();
         for (auto& [mid, m] : models_gpu_) {
             if (m.hidden) continue;
@@ -4848,7 +4855,7 @@ void ViewportWindow::render() {
     // visible into residency. Runs before draw encoding so newly-loaded
     // chunks render the same frame. Timed separately because synchronous
     // disk reads here can dwarf the cull itself on big scenes.
-    QElapsedTimer stream_timer;
+    Stopwatch stream_timer;
     stream_timer.start();
     driveStreamingLoads();
     const double stream_ms = double(stream_timer.nsecsElapsed()) / 1e6;
@@ -4875,9 +4882,9 @@ void ViewportWindow::render() {
     color.loadOp        = WGPULoadOp_Clear;
     color.storeOp       = WGPUStoreOp_Store;
     color.clearValue    = {
-        srgbToLinear(background_color_.redF()),
-        srgbToLinear(background_color_.greenF()),
-        srgbToLinear(background_color_.blueF()),
+        srgbToLinear(background_color_[0]),
+        srgbToLinear(background_color_[1]),
+        srgbToLinear(background_color_[2]),
         1.0,
     };
     color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
@@ -5186,7 +5193,7 @@ void ViewportWindow::render() {
     // frame. Drainage happens at the top of the *next* frame via
     // drainHizReadbacks(), giving the GPU at least one frame of headroom.
     if (hiz_enabled_ && hiz_submitted_slot >= 0) {
-        QElapsedTimer hiz_timer;
+        Stopwatch hiz_timer;
         if (bench_total_ > 0) hiz_timer.start();
         startHizMap(hiz_submitted_slot, vp_this_frame);
         if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
@@ -7024,11 +7031,11 @@ void ViewportWindow::enterFpsMode() {
     if (fps_mode_) return;
     fps_mode_ = true;
     fps_keys_held_.clear();
-    fps_press_center_ = QPoint(width() / 2, height() / 2);
+    fps_press_center_ = Eigen::Vector2i(width() / 2, height() / 2);
     fps_ignore_next_mouse_move_ = true;
     fps_last_tick_.start();
     setCursor(Qt::BlankCursor);
-    QCursor::setPos(mapToGlobal(fps_press_center_));
+    QCursor::setPos(mapToGlobal(QPoint(fps_press_center_.x(), fps_press_center_.y())));
     Log::info() << "[wgpu] fly mode active — WASD/QE to move, Shift to boost, Esc to exit";
     if (isExposed()) requestUpdate();
 }
@@ -7043,7 +7050,7 @@ void ViewportWindow::exitFpsMode() {
 }
 
 void ViewportWindow::fpsIntegrate() {
-    if (!fps_mode_ || fps_keys_held_.isEmpty()) return;
+    if (!fps_mode_ || fps_keys_held_.empty()) return;
 
     const qint64 elapsed_ns = fps_last_tick_.nsecsElapsed();
     fps_last_tick_.restart();
@@ -7070,12 +7077,12 @@ void ViewportWindow::fpsIntegrate() {
     right.normalize();
 
     Eigen::Vector3f move(0, 0, 0);
-    if (fps_keys_held_.contains(Qt::Key_W)) move += forward;
-    if (fps_keys_held_.contains(Qt::Key_S)) move -= forward;
-    if (fps_keys_held_.contains(Qt::Key_D)) move += right;
-    if (fps_keys_held_.contains(Qt::Key_A)) move -= right;
-    if (fps_keys_held_.contains(Qt::Key_E)) move += world_up;
-    if (fps_keys_held_.contains(Qt::Key_Q)) move -= world_up;
+    if (fps_keys_held_.count(Qt::Key_W)) move += forward;
+    if (fps_keys_held_.count(Qt::Key_S)) move -= forward;
+    if (fps_keys_held_.count(Qt::Key_D)) move += right;
+    if (fps_keys_held_.count(Qt::Key_A)) move -= right;
+    if (fps_keys_held_.count(Qt::Key_E)) move += world_up;
+    if (fps_keys_held_.count(Qt::Key_Q)) move -= world_up;
     if (move.isZero()) return;
     move.normalize();
 
@@ -7084,7 +7091,7 @@ void ViewportWindow::fpsIntegrate() {
     // because distance varies frame-to-frame (and worse, wheel zoom kept
     // changing it underneath fly mode).
     const float speed = fps_move_speed_
-                      * (fps_keys_held_.contains(Qt::Key_Shift) ? 5.0f : 1.0f);
+                      * (fps_keys_held_.count(Qt::Key_Shift) ? 5.0f : 1.0f);
     const Eigen::Vector3f delta = move * (speed * dt);
 
     camera_target_[0] += delta.x();
@@ -7239,7 +7246,7 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     }
 
     nav_active_button_ = event->button();
-    nav_last_pos_      = event->position().toPoint();
+    nav_last_pos_      = toV2i(event->position().toPoint());
     nav_press_pos_     = nav_last_pos_;
     nav_dragged_       = false;
 
@@ -7249,7 +7256,7 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     if (section_tool_active_
         && event->button() == Qt::LeftButton
         && event->modifiers() == Qt::NoModifier) {
-        const QPoint lp = event->position().toPoint();
+        const Eigen::Vector2i lp = toV2i(event->position().toPoint());
         const int hit = hitTestSectionGizmo(lp.x(), lp.y());
         if (hit >= 0) {
             section_drag_active_       = true;
@@ -7347,7 +7354,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         // route through the selection state. Shift = add, Ctrl = remove,
         // no modifier = replace. Empty-space click clears.
         if (event->button() == Qt::LeftButton && !nav_dragged_) {
-            const QPoint pos = event->position().toPoint();
+            const Eigen::Vector2i pos = toV2i(event->position().toPoint());
             const int px = int(pos.x() * devicePixelRatio());
             const int py = int(pos.y() * devicePixelRatio());
 
@@ -7497,7 +7504,7 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     // classification already declined this drag in mousePressEvent, so all
     // we have to do is slide the plane along its normal.
     if (section_drag_active_) {
-        const QPoint pos = event->position().toPoint();
+        const Eigen::Vector2i pos = toV2i(event->position().toPoint());
         updateSectionDrag(pos.x(), pos.y());
         return;
     }
@@ -7507,10 +7514,11 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     // marquee triggers requestUpdate every frame the cursor moves so the
     // rect re-renders.
     if (box_select_armed_) {
-        const QPoint pos = event->position().toPoint();
+        const Eigen::Vector2i pos = toV2i(event->position().toPoint());
         box_select_current_pos_ = pos;
         if (!box_select_active_) {
-            if ((pos - box_select_start_pos_).manhattanLength()
+            const Eigen::Vector2i diff = pos - box_select_start_pos_;
+            if (std::abs(diff.x()) + std::abs(diff.y())
                 >= kBoxSelectThresholdPx) {
                 box_select_active_ = true;
             }
@@ -7531,7 +7539,7 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
             fps_ignore_next_mouse_move_ = false;
             return;
         }
-        const QPoint pos = event->position().toPoint();
+        const Eigen::Vector2i pos = toV2i(event->position().toPoint());
         const int dx = pos.x() - fps_press_center_.x();
         const int dy = pos.y() - fps_press_center_.y();
 
@@ -7563,14 +7571,14 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
         camera_target_[2] = pinned_eye.z() - camera_distance_ * sp;
 
         fps_ignore_next_mouse_move_ = true;
-        QCursor::setPos(mapToGlobal(fps_press_center_));
+        QCursor::setPos(mapToGlobal(QPoint(fps_press_center_.x(), fps_press_center_.y())));
         requestUpdate();
         return;
     }
 
     if (nav_active_button_ == Qt::NoButton) return;
 
-    const QPoint pos = event->position().toPoint();
+    const Eigen::Vector2i pos = toV2i(event->position().toPoint());
     const int dx = pos.x() - nav_last_pos_.x();
     const int dy = pos.y() - nav_last_pos_.y();
     nav_last_pos_ = pos;
@@ -7638,7 +7646,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         case Qt::Key_W: case Qt::Key_A: case Qt::Key_S: case Qt::Key_D:
         case Qt::Key_Q: case Qt::Key_E: case Qt::Key_Shift:
             if (!event->isAutoRepeat()) {
-                const bool was_empty = fps_keys_held_.isEmpty();
+                const bool was_empty = fps_keys_held_.empty();
                 fps_keys_held_.insert(key);
                 if (was_empty) fps_last_tick_.restart();
                 // ALWAYS kick the render loop, not just on first key.
@@ -7804,7 +7812,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
 
 void ViewportWindow::keyReleaseEvent(QKeyEvent* event) {
     if (fps_mode_ && !event->isAutoRepeat()) {
-        fps_keys_held_.remove(event->key());
+        fps_keys_held_.erase(event->key());
     }
     QWindow::keyReleaseEvent(event);
 }

@@ -21,12 +21,12 @@
 #define WGPUVIEWPORTWINDOW_H
 
 #include <QWindow>
-#include <QColor>
-#include <QElapsedTimer>
-#include <QPoint>
-#include <QSet>
-#include <string>
 #include <QTimer>
+
+#include <string>
+#include <unordered_set>
+
+#include "Stopwatch.h"
 
 #include <webgpu/webgpu.h>
 
@@ -89,7 +89,7 @@ public:
     void  onToolModeChanged(int tool_mode) override;
     void  onToolBackspacePressed() override;
 
-    void setBackgroundColor(const QColor& color);
+    void setBackgroundColor(float r, float g, float b, float a = 1.0f);
 
     // Queue a sidecar path to be loaded after wgpu init completes. Safe to
     // call before the window is exposed. The path is resolved against the
@@ -811,8 +811,8 @@ private:
     // release: plain → replace, Shift → add, Ctrl → remove.
     bool                       box_select_armed_      = false;
     bool                       box_select_active_     = false;
-    QPoint                     box_select_start_pos_;     // logical px
-    QPoint                     box_select_current_pos_;   // logical px
+    Eigen::Vector2i                     box_select_start_pos_;     // logical px
+    Eigen::Vector2i                     box_select_current_pos_;   // logical px
     Qt::KeyboardModifiers      box_select_press_mods_ = Qt::NoModifier;
     static constexpr int       kBoxSelectThresholdPx  = 5;
     // R32UInt staging for the rect-pick. Sized to the largest rect we've
@@ -824,7 +824,7 @@ private:
     // the press fall through to the orbit/pan handlers.
     bool                      section_drag_active_  = false;
     int                       section_drag_index_   = -1;
-    QPoint                    section_drag_start_mouse_;
+    Eigen::Vector2i                    section_drag_start_mouse_;
     Eigen::Vector3f                 section_drag_start_origin_;
     // Mirrors GL ViewportWindow::hitTestSectionGizmo: returns the index of
     // the plane whose arrow gizmo is within grab_px of (x, y), or -1.
@@ -858,7 +858,8 @@ private:
     // thread per model.
     mutable std::atomic<int> hiz_trace_budget_{0};
 
-    QColor background_color_ = QColor("#202329");
+    // 0x20 / 0xff ≈ 0.125, 0x23 / 0xff ≈ 0.137, 0x29 / 0xff ≈ 0.161.
+    Eigen::Vector4f background_color_ = {0.125f, 0.137f, 0.161f, 1.0f};
 
     // Camera (orbit, right-handed Y-up world → wait, BIM is +Z up).
     // Mirrors the GL viewport's defaults; mouse navigation lands later.
@@ -878,9 +879,9 @@ private:
     // exit via Esc (also any unrelated key click) — recenter the cursor
     // back at fps_press_center_ so the orbit camera resumes cleanly.
     bool         fps_mode_                    = false;
-    QSet<int>    fps_keys_held_;
-    QElapsedTimer fps_last_tick_;
-    QPoint       fps_press_center_;
+    std::unordered_set<int> fps_keys_held_;
+    Stopwatch    fps_last_tick_;
+    Eigen::Vector2i       fps_press_center_;
     bool         fps_ignore_next_mouse_move_  = false;
     // Fly base speed in m/s at no-modifier (Shift gives a 5× boost). Default
     // 5.0 matches GL fps_move_speed_. Scrollwheel in fly mode adjusts this
@@ -892,7 +893,7 @@ private:
     // print dt of each fpsIntegrate call and the prior render's elapsed
     // ms. Off by default (env-gated) so the normal log stays clean.
     bool         fly_debug_                   = false;
-    QElapsedTimer fly_render_clock_;
+    Stopwatch    fly_render_clock_;
 
     // Click-and-track diagnostic: when a pick lands, stash the chunk
     // that holds the picked object. driveStreamingLoads watches for that
@@ -1064,8 +1065,8 @@ private:
     // LMB-click-without-drag picks the object under the cursor. No
     // Blender/Maya preset awareness yet — that arrives with AppSettings.
     Qt::MouseButton nav_active_button_ = Qt::NoButton;
-    QPoint          nav_last_pos_;
-    QPoint          nav_press_pos_;
+    Eigen::Vector2i          nav_last_pos_;
+    Eigen::Vector2i          nav_press_pos_;
     bool            nav_dragged_       = false;
 
     // Benchmark mode. setBenchmarkFrames(N) arms it; render() integrates the

@@ -1186,8 +1186,8 @@ bool OverlayRenderer::buildMarquee() {
 void OverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
                                         WGPUTextureView surface_view,
                                         const OverlayFrame& f,
-                                        QPoint start_logical_px,
-                                        QPoint current_logical_px,
+                                        Eigen::Vector2i start_logical_px,
+                                        Eigen::Vector2i current_logical_px,
                                         bool active) {
     if (!marquee_pipeline_ || !surface_view) return;
     if (!active) return;
