@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
     // Queue sidecars; they're loaded after wgpu init completes in
     // exposeEvent. Ordering matches the command line.
     for (const QString& path : parser.positionalArguments()) {
-        viewport->queueLoadSidecar(path);
+        viewport->queueLoadSidecar(path.toStdString());
     }
 
     if (parser.isSet("camera")) {
@@ -97,7 +97,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (parser.isSet("screenshot")) {
-        viewport->captureNextFrameToPng(parser.value("screenshot"),
+        viewport->captureNextFrameToPng(parser.value("screenshot").toStdString(),
                                         /*quit_after=*/true);
     }
     if (parser.isSet("benchmark")) {

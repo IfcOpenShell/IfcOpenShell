@@ -689,7 +689,7 @@ void ViewportWindow::setBackgroundColor(const QColor& color) {
 // Sidecar load + GPU upload
 // -----------------------------------------------------------------------------
 
-void ViewportWindow::queueLoadSidecar(const QString& path) {
+void ViewportWindow::queueLoadSidecar(const std::string& path) {
     if (wgpu_initialized_) {
         loadSidecar(path);
     } else {
@@ -697,7 +697,13 @@ void ViewportWindow::queueLoadSidecar(const QString& path) {
     }
 }
 
-uint32_t ViewportWindow::loadSidecar(const QString& path) {
+uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
+    // Internal implementation still uses Qt's path helpers (QDir tilde
+    // expansion, QFile readability checks, QFileInfo for absolute resolve).
+    // Bridging at the entry boundary keeps the public API Qt-free without
+    // a full internal rewrite — those will move to std::filesystem when
+    // ViewportCore lands (#84).
+    const QString path = QString::fromStdString(path_std);
     if (!wgpu_initialized_) {
         Log::warn().noquote() << "loadSidecar called before wgpu init:" << path;
         return 0;
@@ -1502,7 +1508,7 @@ void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
 
 void ViewportWindow::flushPendingSidecarQueue() {
     while (!pending_sidecars_.empty()) {
-        const QString p = pending_sidecars_.front();
+        const std::string p = pending_sidecars_.front();
         pending_sidecars_.pop_front();
         loadSidecar(p);
     }
@@ -3109,8 +3115,11 @@ void ViewportWindow::setOverlayLabels(
     if (isExposed()) requestUpdate();
 }
 
-void ViewportWindow::setHudText(const QString& text) {
-    overlays_.setHudText(text);
+void ViewportWindow::setHudText(const std::string& text) {
+    // OverlayRenderer still uses QString internally (Qt's QImage/QPainter
+    // rasterizes the HUD text). Conversion at the boundary keeps the
+    // public API Qt-free; OverlayRenderer's de-Qt comes later.
+    overlays_.setHudText(QString::fromStdString(text));
     if (isExposed()) requestUpdate();
 }
 
@@ -5011,7 +5020,7 @@ void ViewportWindow::render() {
     // ---- Optional capture: encode copy on the same command buffer -------
     WGPUBuffer    capture_buffer    = nullptr;
     uint32_t      capture_padded_bpr = 0;
-    const bool    want_capture       = !pending_screenshot_path_.isEmpty();
+    const bool    want_capture       = !pending_screenshot_path_.empty();
     if (want_capture) {
         const uint32_t row_bytes_unpadded = uint32_t(configured_w_) * 4u;
         capture_padded_bpr = uint32_t(
@@ -5100,11 +5109,12 @@ void ViewportWindow::render() {
             }
             wgpuBufferUnmap(capture_buffer);
 
-            if (img.save(pending_screenshot_path_, "PNG")) {
-                Log::info().noquote() << "[wgpu] saved screenshot:"
-                                  << pending_screenshot_path_ << "(" << w << "x" << h << ")";
+            const QString qpath = QString::fromStdString(pending_screenshot_path_);
+            if (img.save(qpath, "PNG")) {
+                Log::info().noquote() << "[wgpu] saved screenshot: "
+                                  << pending_screenshot_path_ << " (" << w << "x" << h << ")";
             } else {
-                Log::warn().noquote() << "[wgpu] QImage::save failed for"
+                Log::warn().noquote() << "[wgpu] QImage::save failed for "
                                      << pending_screenshot_path_;
             }
         }
@@ -6524,7 +6534,7 @@ void ViewportWindow::driveStreamingLoads() {
         // wait would let the window manager re-layout the window while we
         // wait, capturing at the wrong size. With sync loads the chunk
         // appears in the same frame we enqueue, no deferred-state to manage.
-        if (!pending_screenshot_path_.isEmpty()) {
+        if (!pending_screenshot_path_.empty()) {
             if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
                 ++enqueued;
                 c.last_visible_frame_idx = streaming_frame_idx_;
@@ -7002,14 +7012,12 @@ void ViewportWindow::toggleProjection() {
     if (isExposed()) requestUpdate();
 }
 
-QString ViewportWindow::cameraString() const {
-    return QString("%1,%2,%3,%4,%5,%6")
-        .arg(camera_target_[0], 0, 'f', 4)
-        .arg(camera_target_[1], 0, 'f', 4)
-        .arg(camera_target_[2], 0, 'f', 4)
-        .arg(camera_distance_,  0, 'f', 4)
-        .arg(camera_yaw_deg_,   0, 'f', 2)
-        .arg(camera_pitch_deg_, 0, 'f', 2);
+std::string ViewportWindow::cameraString() const {
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), "%.4f,%.4f,%.4f,%.4f,%.2f,%.2f",
+                  camera_target_[0], camera_target_[1], camera_target_[2],
+                  camera_distance_, camera_yaw_deg_, camera_pitch_deg_);
+    return std::string(buf);
 }
 
 void ViewportWindow::enterFpsMode() {
@@ -7202,7 +7210,7 @@ void ViewportWindow::applyNavPreset(const char* name) {
 #include <QImage>
 #include <QCoreApplication>
 
-void ViewportWindow::captureNextFrameToPng(const QString& path, bool quit_after) {
+void ViewportWindow::captureNextFrameToPng(const std::string& path, bool quit_after) {
     pending_screenshot_path_ = path;
     pending_screenshot_quit_ = quit_after;
     if (isExposed()) requestUpdate();
@@ -7773,7 +7781,7 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         return;
     }
     if (key == Qt::Key_C && !(mods & Qt::ControlModifier)) {
-        Log::info() << "--camera " << cameraString().toUtf8().constData();
+        Log::info() << "--camera " << cameraString();
         return;
     }
     // Standard axis-aligned views: X/Y/Z look from +axis, Shift+X/Y/Z from

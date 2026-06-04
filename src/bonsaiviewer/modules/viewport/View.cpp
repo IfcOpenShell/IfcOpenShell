@@ -80,7 +80,7 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
             area_measurement_->onPick(*viewport_, x, y, alt);
             viewport_->setHudText(QString("Area: %1 m²  (%2 tris)")
                 .arg(area_measurement_->totalArea(), 0, 'f', 4)
-                .arg(area_measurement_->triangleCount()));
+                .arg(area_measurement_->triangleCount()).toStdString());
             break;
         case ViewportWindow::ToolMode::Length:
             length_measurement_->onPick(*viewport_, x, y, alt);
@@ -96,7 +96,7 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
         length_measurement_->clear(*viewport_);
         switch (mode) {
         case ViewportWindow::ToolMode::NoTool:
-            viewport_->setHudText(QString());
+            viewport_->setHudText(std::string());
             viewport_->setOverlayLabels({});
             session_state_->setStatusMessage("Measure", "Measurement tool off");
             break;
@@ -241,7 +241,7 @@ void ViewportView::updateVolumeReadout() {
 
     const auto& sel = viewport_->selection().selectionIds();
     if (sel.empty()) {
-        viewport_->setHudText(QString());
+        viewport_->setHudText(std::string());
         viewport_->setOverlayLabels({});
         return;
     }
@@ -268,7 +268,7 @@ void ViewportView::updateVolumeReadout() {
     viewport_->setHudText(QString("Volume: %1 m³  (%2 object%3)")
         .arg(total, 0, 'f', 4)
         .arg(per_obj.size())
-        .arg(per_obj.size() == 1 ? "" : "s"));
+        .arg(per_obj.size() == 1 ? "" : "s").toStdString());
     viewport_->setOverlayLabels(labels);
 }
 

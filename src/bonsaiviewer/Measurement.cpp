@@ -662,7 +662,7 @@ void LengthMeasurement::clear(ViewportWindow& vp) {
     vp.setOverlayPoints({}, 0,0,0,0, 0, 0,0,0,0, 0);
     vp.setOverlayLines({});
     vp.setOverlayLabels({});
-    vp.setHudText(QString());
+    vp.setHudText(std::string());
 }
 
 void LengthMeasurement::onPick(ViewportWindow& vp, int x, int y, bool /*alt*/) {
@@ -805,7 +805,7 @@ void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
 
     vp.setOverlayLines(groups);
     vp.setOverlayLabels(labels);
-    vp.setHudText(formatReadout());
+    vp.setHudText(formatReadout().toStdString());
 }
 
 namespace {
@@ -1029,7 +1029,7 @@ void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
     pushDots(vp, std::vector<float>(wp, wp + 3));
     vp.setOverlayLines(groups);
     vp.setOverlayLabels(labels);
-    vp.setHudText(hud_lines.join('\n'));
+    vp.setHudText(hud_lines.join('\n').toStdString());
 }
 
 QString LengthMeasurement::formatReadout() const {

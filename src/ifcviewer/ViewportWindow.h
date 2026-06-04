@@ -25,7 +25,7 @@
 #include <QElapsedTimer>
 #include <QPoint>
 #include <QSet>
-#include <QString>
+#include <string>
 #include <QTimer>
 
 #include <webgpu/webgpu.h>
@@ -95,14 +95,14 @@ public:
     // call before the window is exposed. The path is resolved against the
     // working directory and read via SidecarCache::readSidecar (which
     // normalises stem → .ifcview).
-    void queueLoadSidecar(const QString& path);
+    void queueLoadSidecar(const std::string& path);
 
     // Synchronous metadata load + GPU upload. Requires wgpu init to have
     // completed (i.e. the window has been exposed at least once). Returns
     // the assigned model_id, or 0 on failure. Reads metadata only (mesh
     // dict + instance dict + georef); per-chunk vertex / index bytes are
     // read on demand by the per-frame loader as chunks become visible.
-    uint32_t loadSidecar(const QString& path);
+    uint32_t loadSidecar(const std::string& path);
 
     // Allocates per-chunk small buffers and the model-shared mesh /
     // instance storage upfront, but leaves each chunk's pool ranges
@@ -172,7 +172,7 @@ public:
     void    focusOnSelectedObject();
     void    toggleProjection();
     bool    projectionOrtho() const { return projection_ortho_; }
-    QString cameraString() const;
+    std::string cameraString() const;
 
     // Snapshot of the orbit camera. Mirrors GL ViewportWindow::CameraState
     // so bonsai's "save view" / "restore view" commands port unchanged.
@@ -250,7 +250,7 @@ public:
     // `quit_after` is true, QCoreApplication::quit() is called once the
     // PNG is written. Use this for headless verification and pixel-diff
     // parity testing against the GL backend.
-    void captureNextFrameToPng(const QString& path, bool quit_after = true);
+    void captureNextFrameToPng(const std::string& path, bool quit_after = true);
 
     // Benchmark mode: render N timed frames (after a small warmup), yaw-
     // sweeping the camera at 0.5°/frame, then print a stats block on
@@ -390,7 +390,7 @@ public:
                            float stroke_b, float stroke_a,
                            float stroke_extra);
     void  setOverlayLabels(const std::vector<OverlayRenderer::Label>& labels);
-    void  setHudText(const QString& text);
+    void  setHudText(const std::string& text);
     // Translucent world-space triangle overlay (Area-tool patch shading).
     // Empty list disables; color is RGBA in [0, 1].
     void  setHighlightTriangles(const std::vector<float>& world_xyz,
@@ -1023,7 +1023,7 @@ private:
     uint32_t next_object_id_ = 1;
 
     // Sidecar paths queued before init completes.
-    std::deque<QString> pending_sidecars_;
+    std::deque<std::string> pending_sidecars_;
 
     // Direct-IFC staging buffers, keyed by streamer model_id. Populated
     // by uploadMeshChunk / uploadInstanceChunk; consumed and cleared by
@@ -1057,7 +1057,7 @@ private:
     bool  last_cull_was_motion_    = false;
 
     // Pending one-shot screenshot, captured at the end of the next render().
-    QString pending_screenshot_path_;
+    std::string pending_screenshot_path_;
     bool    pending_screenshot_quit_ = false;
 
     // Mouse navigation state. LMB drag orbits, MMB drag pans, wheel zooms.
