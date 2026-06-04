@@ -137,19 +137,35 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 			bool is_manifold = util::is_manifold(entity_part);
 
 			if (!is_manifold) {
+				// force sewing, edge identity might have been mudied by FixAdvFace.FixOrientation.MSG5 to fix interior loop winding order
+				TopTools_ListOfShape list;
+				IfcGeom::util::shape_to_face_list(entity_part, list);
+				IfcGeom::util::create_solid_from_faces(list, entity_part, settings_.get<settings::Precision>().get(), true);
+				is_manifold = util::is_manifold(entity_part);
+				if (is_manifold) {
+					logger::warning("Successfully sewed non-manifold first operand", entity);
+				}
+			}
+
+			if (!is_manifold) {
 				if (settings_.get<settings::MakeVolume>().get()) {
 					BOPAlgo_MakerVolume mv;
 					mv.AddArgument(entity_part);
-					mv.Perform();
-					if (mv.HasErrors()) {
-						logger::warning("Non-manifold first operand, --make-volume failed");
-					} else {
-						entity_part = mv.Shape();
-						is_manifold = util::is_manifold(entity_part);
+					mv.SetAvoidInternalShapes(true);
+					try {
+						mv.Perform();
+						if (mv.HasErrors()) {
+							logger::warning("Non-manifold first operand, --make-volume failed", entity);
+						} else {
+							entity_part = mv.Shape();
+							is_manifold = util::is_manifold(entity_part);
+							logger::warning("Successfully detected exterior volume to non-manifold first operand", entity);
+						}
+					} catch (const Standard_Failure& e) {
+						logger::warning("MakeVolume failed: " + std::string(e.GetMessageString()), entity);
 					}
-				}
-				if (!is_manifold) {
-					logger::warning("Non-manifold first operand, use --make-volume to try and make manifold");
+				} else {
+					logger::warning("Non-manifold first operand, use --make-volume to try and make manifold", entity);
 				}
 			}
 
