@@ -89,7 +89,11 @@ jobs:
         shell: bash
         run: |
           VERSION=v`cat VERSION`
-          python3.11 -m pip install "src/bonsaiviewer-autodesk[build]"
+          # bonsaiviewer-autodesk is now a Rust connector. packaging/build.py
+          # invokes `cargo build --release` and stages the binary +
+          # connector.json into dist/autodesk/. Same on-disk shape as the
+          # old PyInstaller flow so the symlink + zip steps below
+          # continue to work unchanged.
           python3.11 src/bonsaiviewer-autodesk/packaging/build.py
           autodesk_connector_dir="$PWD/src/bonsaiviewer-autodesk/dist/autodesk"
           test -d "$autodesk_connector_dir"

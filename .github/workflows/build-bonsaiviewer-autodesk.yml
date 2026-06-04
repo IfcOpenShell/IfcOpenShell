@@ -13,14 +13,8 @@ on:
 
 jobs:
   test:
-    name: test-py${{ matrix.python-version }}
+    name: cargo-test
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Exercise the floor and a current version of the supported range
-        # (pyproject requires-python = ">=3.11").
-        python-version: ['3.11', '3.13']
 
     defaults:
       run:
@@ -29,20 +23,22 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v6
+      - uses: dtolnay/rust-toolchain@stable
+
+      # cargo-target reuse across runs. Massive cold-build speedup,
+      # cheap on the GitHub Actions cache budget.
+      - uses: Swatinem/rust-cache@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          workspaces: src/bonsaiviewer-autodesk
 
-      # The connector imports tkinter/customtkinter (via the test suite's
-      # connector coverage), so fail loudly here if Tk is missing.
-      - name: Verify tkinter is available
-        run: python -c "import tkinter; print('Tk', tkinter.TkVersion)"
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
 
-      - name: Install package and test deps
-        run: python -m pip install ".[test]"
+      - name: cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
-      - name: Run pytest
-        run: python -m pytest -q
+      - name: cargo test
+        run: cargo test --all-features
 
   build:
     name: ${{ matrix.os_label }}-${{ matrix.arch }}
@@ -77,21 +73,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/setup-python@v6
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
         with:
-          python-version: '3.12'
+          workspaces: src/bonsaiviewer-autodesk
 
-      # actions/setup-python ships Python with tkinter on all three OSes via
-      # python-build-standalone, but verify so a missing-tk regression fails
-      # the build loudly instead of inside PyInstaller.
-      - name: Verify tkinter is available
-        run: python -c "import tkinter; print('Tk', tkinter.TkVersion)"
-
-      - name: Install package and build deps
-        run: python -m pip install ".[build]"
-
+      # python3 is the runner default on all four hosts; packaging/build.py
+      # only uses stdlib (subprocess, shutil, zipfile, pathlib, platform),
+      # no pip-installable deps.
       - name: Build connector bundle
-        run: python packaging/build.py
+        run: python3 packaging/build.py
 
       - name: Upload connector zip
         uses: actions/upload-artifact@v7

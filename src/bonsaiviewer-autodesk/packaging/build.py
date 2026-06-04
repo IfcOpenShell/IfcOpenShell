@@ -1,38 +1,40 @@
 """Build the Autodesk connector bundle for the current OS.
 
-Each OS builds on itself (PyInstaller does not cross-compile). The output is a
-single zip ready to drop into the Bonsai Viewer connectors directory:
+Runs `cargo build --release` and packages the resulting binary +
+connector.json into the same layout the old PyInstaller flow produced,
+so build_viewer.sh and the CI workflows that already expected
+`dist/autodesk/` and `dist/autodesk-<os>-<arch>.zip` keep working
+unchanged:
 
     dist/autodesk-<os>-<arch>.zip
       autodesk/
         connector.json
         bonsaiviewer-autodesk[.exe]
-        _internal/...
+
+The Rust binary statically links its deps, so unlike the PyInstaller
+output there is no `_internal/` directory — single executable inside
+the autodesk/ folder.
 
 Usage:
 
-    pip install -e ".[build]"
     python packaging/build.py
 """
 
 from __future__ import annotations
 
-import json
 import platform
 import shutil
 import subprocess
-import sys
+import zipfile
 from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-PACKAGING_DIR = PROJECT_ROOT / "packaging"
-SPEC_FILE = PACKAGING_DIR / "bonsaiviewer-autodesk.spec"
-DIST_DIR = PROJECT_ROOT / "dist"
-BUILD_DIR = PROJECT_ROOT / "build"
+DIST_DIR     = PROJECT_ROOT / "dist"
+TARGET_DIR   = PROJECT_ROOT / "target" / "release"
 
 CONNECTOR_FOLDER_NAME = "autodesk"
-PYINSTALLER_OUTPUT_NAME = "bonsaiviewer-autodesk"
+BINARY_NAME           = "bonsaiviewer-autodesk"
 
 
 def _platform_tag() -> str:
@@ -55,66 +57,40 @@ def _platform_tag() -> str:
     return f"{os_name}-{arch}"
 
 
-def _clean() -> None:
-    for path in (DIST_DIR, BUILD_DIR):
-        if path.exists():
-            shutil.rmtree(path)
+def _binary_name_for_host() -> str:
+    return f"{BINARY_NAME}.exe" if platform.system() == "Windows" else BINARY_NAME
 
 
-def _run_pyinstaller() -> Path:
-    subprocess.check_call(
-        [
-            sys.executable,
-            "-m",
-            "PyInstaller",
-            str(SPEC_FILE),
-            "--noconfirm",
-            "--distpath",
-            str(DIST_DIR),
-            "--workpath",
-            str(BUILD_DIR),
-        ],
+def main() -> None:
+    if DIST_DIR.exists():
+        shutil.rmtree(DIST_DIR)
+
+    print("Running cargo build --release ...")
+    subprocess.run(
+        ["cargo", "build", "--release"],
         cwd=PROJECT_ROOT,
+        check=True,
     )
-    produced = DIST_DIR / PYINSTALLER_OUTPUT_NAME
-    if not produced.is_dir():
-        raise SystemExit(f"PyInstaller did not produce expected folder: {produced}")
-    return produced
 
+    bin_src = TARGET_DIR / _binary_name_for_host()
+    if not bin_src.exists():
+        raise FileNotFoundError(
+            f"cargo build did not produce expected binary at {bin_src}"
+        )
 
-def _assemble_connector_folder(pyinstaller_output: Path) -> Path:
-    connector_dir = DIST_DIR / CONNECTOR_FOLDER_NAME
-    if connector_dir.exists():
-        shutil.rmtree(connector_dir)
-    pyinstaller_output.rename(connector_dir)
+    bundle_dir = DIST_DIR / CONNECTOR_FOLDER_NAME
+    bundle_dir.mkdir(parents=True)
+    shutil.copy(PROJECT_ROOT / "connector.json", bundle_dir / "connector.json")
+    shutil.copy(bin_src, bundle_dir / _binary_name_for_host())
 
-    # The source-controlled connector.json uses the bare entry-point name so
-    # `pip install -e .` works for development. For the bundled folder, the
-    # binary lives next to connector.json, so rewrite `exec` to a relative path.
-    manifest = json.loads((PROJECT_ROOT / "connector.json").read_text(encoding="utf-8"))
-    binary_name = "bonsaiviewer-autodesk.exe" if platform.system() == "Windows" else "bonsaiviewer-autodesk"
-    manifest["exec"] = f"./{binary_name}"
-    (connector_dir / "connector.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-
-    return connector_dir
-
-
-def _zip_connector_folder(tag: str) -> Path:
-    archive_base = DIST_DIR / f"{CONNECTOR_FOLDER_NAME}-{tag}"
-    return Path(shutil.make_archive(str(archive_base), "zip", DIST_DIR, CONNECTOR_FOLDER_NAME))
-
-
-def main() -> int:
-    tag = _platform_tag()
-    print(f"Building Autodesk connector for {tag}")
-    _clean()
-    pyinstaller_output = _run_pyinstaller()
-    connector_dir = _assemble_connector_folder(pyinstaller_output)
-    archive = _zip_connector_folder(tag)
-    print(f"Connector folder: {connector_dir}")
-    print(f"Distribution zip: {archive}")
-    return 0
+    zip_path = DIST_DIR / f"autodesk-{_platform_tag()}.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for path in bundle_dir.rglob("*"):
+            if path.is_file():
+                zf.write(path, path.relative_to(DIST_DIR))
+    print(f"Wrote {zip_path}")
+    print(f"      {bundle_dir}")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
