@@ -17,19 +17,42 @@
 #                                                                              #
 ################################################################################
 
-# Tier-1 unit tests for the wgpu backend's pure-CPU state machines (selection,
-# visibility). Header-only subjects — the test binaries compile against the
-# class definitions directly, no link to IfcViewerWgpu needed and no
-# wgpu-native runtime involvement.
+message("Running CMakeLists.txt in /src/ifcviewer-minimal")
 
-set(IFCVIEWER_WGPU_SRC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+find_package(Qt${QT_VERSION} COMPONENTS Widgets REQUIRED PATHS ${QT_DIR})
 
-function(add_ifcviewer_wgpu_unit_test name)
-    add_executable(${name} ${name}.cpp)
-    target_include_directories(${name} PRIVATE ${IFCVIEWER_WGPU_SRC})
-    target_link_libraries(${name} PRIVATE Catch2::Catch2WithMain)
-    catch_discover_tests(${name})
-endfunction()
+file(GLOB IFCVIEWER_MIN_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 
-add_ifcviewer_wgpu_unit_test(test_wgpu_selection)
-add_ifcviewer_wgpu_unit_test(test_wgpu_visibility)
+add_executable(IfcViewerMinimal ${IFCVIEWER_MIN_CPP_FILES})
+
+set_target_properties(IfcViewerMinimal PROPERTIES
+    AUTOMOC ON
+    WIN32_EXECUTABLE ON
+    MACOSX_BUNDLE ON
+)
+
+target_link_libraries(IfcViewerMinimal PRIVATE
+    IfcViewer
+    Qt${QT_VERSION}::Widgets
+)
+
+# Pin the build-tree rpath so the executable finds libwgpu_native.so when
+# run directly out of build-viewer-wgpu/. The patched SONAME means DT_NEEDED
+# is just the basename, so a single rpath entry suffices.
+if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
+    set_target_properties(IfcViewerMinimal PROPERTIES
+        BUILD_RPATH "${WGPU_NATIVE_LIB_DIR}"
+    )
+endif()
+
+# BUNDLE DESTINATION must be "." (install-prefix root) on macOS — Qt's
+# deploy generator emits `macdeployqt IfcViewerMinimal.app` (no
+# path prefix), which resolves only when the .app sits at the install
+# root. With `bin/` it can't find the bundle and the install/strip
+# step fails.
+install(TARGETS IfcViewerMinimal
+    EXPORT  ${IFCOPENSHELL_EXPORT_TARGETS}
+    RUNTIME DESTINATION bin
+    BUNDLE  DESTINATION .
+)
+ifcopenshell_deploy_qt_runtime(IfcViewerMinimal)

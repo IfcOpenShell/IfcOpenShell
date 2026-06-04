@@ -17,24 +17,24 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "WgpuStreamingThread.h"
+#include "StreamingThread.h"
 
-#include "WgpuStreamingLoader.h"
+#include "StreamingLoader.h"
 
-WgpuStreamingThread::~WgpuStreamingThread() {
+StreamingThread::~StreamingThread() {
     stop();
 }
 
-void WgpuStreamingThread::start() {
+void StreamingThread::start() {
     std::unique_lock lk(mu_);
     if (running_) return;
     shutdown_ = false;
     running_  = true;
     lk.unlock();
-    worker_ = std::thread(&WgpuStreamingThread::workerLoop, this);
+    worker_ = std::thread(&StreamingThread::workerLoop, this);
 }
 
-void WgpuStreamingThread::stop() {
+void StreamingThread::stop() {
     {
         std::unique_lock lk(mu_);
         if (!running_) return;
@@ -48,7 +48,7 @@ void WgpuStreamingThread::stop() {
     results_.clear();
 }
 
-bool WgpuStreamingThread::enqueue(Request req) {
+bool StreamingThread::enqueue(Request req) {
     {
         std::unique_lock lk(mu_);
         if (!running_ || shutdown_) return false;
@@ -58,7 +58,7 @@ bool WgpuStreamingThread::enqueue(Request req) {
     return true;
 }
 
-std::vector<WgpuStreamingThread::Result> WgpuStreamingThread::drainResults() {
+std::vector<StreamingThread::Result> StreamingThread::drainResults() {
     std::vector<Result> out;
     {
         std::unique_lock lk(mu_);
@@ -71,12 +71,12 @@ std::vector<WgpuStreamingThread::Result> WgpuStreamingThread::drainResults() {
     return out;
 }
 
-std::size_t WgpuStreamingThread::inFlightApprox() const {
+std::size_t StreamingThread::inFlightApprox() const {
     std::unique_lock lk(mu_);
     return requests_.size() + (in_progress_ ? 1u : 0u);
 }
 
-void WgpuStreamingThread::workerLoop() {
+void StreamingThread::workerLoop() {
     for (;;) {
         Request req;
         {

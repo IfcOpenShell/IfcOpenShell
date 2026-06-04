@@ -22,11 +22,11 @@
 
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
-#include "../../../ifcviewer-wgpu/WgpuViewportWindow.h"
+#include "../../../ifcviewer/ViewportWindow.h"
 
 namespace bonsaiviewer::modules::viewport::commands {
 
-void setHome(SessionState& session, WgpuViewportWindow& vp) {
+void setHome(SessionState& session, ViewportWindow& vp) {
     auto camera = vp.cameraState();
     Federation::HomeView home_view;
     home_view.target = camera.target;
@@ -37,7 +37,7 @@ void setHome(SessionState& session, WgpuViewportWindow& vp) {
     session.setStatusMessage("Camera", "Home view updated");
 }
 
-void goHome(SessionState& session, WgpuViewportWindow& vp) {
+void goHome(SessionState& session, ViewportWindow& vp) {
     Federation* federation = session.federation();
     if (!federation->hasHomeView()) {
         session.setStatusMessage("Camera", "No home view set for this project");
@@ -50,52 +50,52 @@ void goHome(SessionState& session, WgpuViewportWindow& vp) {
     session.setStatusMessage("Camera", "Home view restored");
 }
 
-void viewSelected(WgpuViewportWindow& vp) {
+void viewSelected(ViewportWindow& vp) {
     vp.focusOnSelectedObject();
 }
 
-void fly(SessionState& session, WgpuViewportWindow& vp) {
+void fly(SessionState& session, ViewportWindow& vp) {
     vp.requestActivate();
     vp.enterFpsMode();
     session.setStatusMessage("Mode", "Fly mode active");
 }
 
-void toggleSection(SessionState& session, WgpuViewportWindow& vp) {
+void toggleSection(SessionState& session, ViewportWindow& vp) {
     vp.toggleSectionTool();
     session.setStatusMessage("Section",
         vp.sectionToolActive() ? "Section tool active" : "Section tool off");
 }
 
-void clearSection(SessionState& session, WgpuViewportWindow& vp) {
+void clearSection(SessionState& session, ViewportWindow& vp) {
     vp.clearSectionPlanes();
     session.setStatusMessage("Section", "Section planes cleared");
 }
 
-void toggleDistance(WgpuViewportWindow& vp) {
+void toggleDistance(ViewportWindow& vp) {
     vp.toggleLengthTool();
 }
 
-void toggleArea(WgpuViewportWindow& vp) {
+void toggleArea(ViewportWindow& vp) {
     vp.toggleAreaTool();
 }
 
-void toggleVolume(WgpuViewportWindow& vp) {
+void toggleVolume(ViewportWindow& vp) {
     vp.toggleVolumeTool();
 }
 
-void hideSelected(WgpuViewportWindow& vp) {
+void hideSelected(ViewportWindow& vp) {
     vp.hideSelectedElements();
 }
 
-void isolateSelected(WgpuViewportWindow& vp) {
+void isolateSelected(ViewportWindow& vp) {
     vp.isolateSelectedElements();
 }
 
-void showAll(WgpuViewportWindow& vp) {
+void showAll(ViewportWindow& vp) {
     vp.showAllElements();
 }
 
-void invertVisibility(WgpuViewportWindow& vp) {
+void invertVisibility(ViewportWindow& vp) {
     vp.invertElementVisibility();
 }
 

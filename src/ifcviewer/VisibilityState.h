@@ -32,7 +32,7 @@
 // from multiple cull worker threads are safe as long as no mutations
 // happen during render — which is the case here (input handlers
 // requestUpdate after mutating, render then reads).
-class WgpuVisibilityState {
+class VisibilityState {
 public:
     bool isHidden(uint32_t object_id) const {
         return hidden_ids_.count(object_id) > 0;

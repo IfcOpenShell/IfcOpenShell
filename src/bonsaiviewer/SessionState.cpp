@@ -42,7 +42,7 @@ SessionState::SessionState(QObject* parent)
             this, &SessionState::notifyFederationChanged);
 }
 
-void SessionState::createLoader(WgpuViewportWindow* viewport) {
+void SessionState::createLoader(ViewportWindow* viewport) {
     Q_ASSERT(!loader_);
     loader_ = new SceneLoader(viewport, this);
     loader_->setShouldReadSidecar(true);

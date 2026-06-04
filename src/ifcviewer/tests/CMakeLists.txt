@@ -52,6 +52,11 @@ add_ifcviewer_unit_test(test_sidecar_cache
 
 add_ifcviewer_unit_test(test_instanced_geometry)
 
+# Header-only state-machine tests for the renderer subsystems (selection,
+# visibility). Subjects are inline in their .h files, so no SOURCES needed.
+add_ifcviewer_unit_test(test_selection)
+add_ifcviewer_unit_test(test_visibility)
+
 # Federation is Qt-derived (QObject + signals). It has to pull Qt6 in
 # directly and enable AUTOMOC for the Q_OBJECT moc-generation.
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test REQUIRED PATHS ${QT_DIR})

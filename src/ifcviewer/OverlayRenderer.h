@@ -34,7 +34,7 @@
 // Per-frame snapshot of viewport state that every overlay needs. Built once
 // at the top of render() and passed by const-ref to each encodeX() call so
 // the overlay renderer never reaches back into the viewport.
-struct WgpuOverlayFrame {
+struct OverlayFrame {
     QMatrix4x4 view_proj;
     QVector3D  camera_target;
     float      camera_distance     = 5.0f;
@@ -50,7 +50,7 @@ struct WgpuOverlayFrame {
 // authoritative state vector (the section tool mutates it); the overlay
 // reads from a non-owning span every frame. Held by value because the
 // struct is small and copies happen at most six times per frame.
-struct WgpuSectionPlane {
+struct SectionPlane {
     QVector3D n;             // unit normal (camera-facing after auto-flip)
     float     d;             // -dot(n, origin)
     QVector3D origin;        // surface point at the moment the plane was added
@@ -61,7 +61,7 @@ struct WgpuSectionPlane {
 
 // All viewport overlays in one place: axis indicator (corner + pivot),
 // section plane gizmos, and the marquee drag rect. Mirrors GL's
-// OverlayRenderer split so WgpuViewportWindow.cpp doesn't have to
+// OverlayRenderer split so ViewportWindow.cpp doesn't have to
 // carry ~1.5k lines of pipeline plumbing.
 //
 // Lifecycle: init() once after the device is up, destroy() before the
@@ -69,13 +69,13 @@ struct WgpuSectionPlane {
 // uniforms get re-written.
 //
 // Threading: all calls are main-thread only — they touch the wgpu queue.
-class WgpuOverlayRenderer {
+class OverlayRenderer {
 public:
-    WgpuOverlayRenderer() = default;
-    ~WgpuOverlayRenderer();
+    OverlayRenderer() = default;
+    ~OverlayRenderer();
 
-    WgpuOverlayRenderer(const WgpuOverlayRenderer&)            = delete;
-    WgpuOverlayRenderer& operator=(const WgpuOverlayRenderer&) = delete;
+    OverlayRenderer(const OverlayRenderer&)            = delete;
+    OverlayRenderer& operator=(const OverlayRenderer&) = delete;
 
     bool init(WGPUInstance instance, WGPUDevice device, WGPUQueue queue,
               WGPUTextureFormat surface_format, int sample_count);
@@ -87,15 +87,15 @@ public:
     // Orbit pivot indicator. `visible` is the viewport's UI gate (orbit
     // drag / wheel-zoom afterglow). When false this is a cheap no-op.
     void encodePivot(WGPURenderPassEncoder pass,
-                     const WgpuOverlayFrame& f,
+                     const OverlayFrame& f,
                      bool visible);
 
     // Per-plane wireframe gizmo (2 × 2 m quad outline + arrow shaft +
     // arrow head). Drawn at each plane's origin in its local basis;
     // colour comes from Bonsai's decorator_color_error.
     void encodeSectionGizmos(WGPURenderPassEncoder pass,
-                             const WgpuOverlayFrame& f,
-                             const std::vector<WgpuSectionPlane>& planes);
+                             const OverlayFrame& f,
+                             const std::vector<SectionPlane>& planes);
 
     // Replace the highlight-triangle list. `world_xyz` is 3 floats per
     // vertex, 3 vertices per triangle, in world space (post-composed-
@@ -107,7 +107,7 @@ public:
     void setHighlightTriangles(const std::vector<float>& world_xyz,
                                float r, float g, float b, float a);
     void encodeHighlightTriangles(WGPURenderPassEncoder pass,
-                                  const WgpuOverlayFrame& f);
+                                  const OverlayFrame& f);
 
     // One stylistic group of world-space line segments. Mirrors GL
     // OverlayRenderer::LineGroup so callers can target either backend
@@ -134,7 +134,7 @@ public:
     // per-group uniforms. Drawn inside the main MSAA pass so the lines
     // are depth-tested against geometry.
     void encodeOverlayLines(WGPURenderPassEncoder pass,
-                            const WgpuOverlayFrame& f);
+                            const OverlayFrame& f);
 
     // Replace the overlay-point set. World-space positions are CPU-
     // expanded into screen-space quads at encode time. `pixel_size` is
@@ -153,7 +153,7 @@ public:
     // inside the main MSAA pass so depth-test correctly hides points
     // behind closer geometry.
     void encodeOverlayPoints(WGPURenderPassEncoder pass,
-                             const WgpuOverlayFrame& f);
+                             const OverlayFrame& f);
 
     // World-anchored text label. Mirrors GL OverlayRenderer::Label so
     // measure-tool readouts can target either backend.
@@ -175,7 +175,7 @@ public:
     // overlay above.
     void encodeLabels(WGPUCommandEncoder enc,
                       WGPUTextureView surface_view,
-                      const WgpuOverlayFrame& f);
+                      const OverlayFrame& f);
 
     // ---- After the edge silhouette pass, on the resolved surface ----
 
@@ -183,13 +183,13 @@ public:
     // projection — only the camera direction matters.
     void encodeCornerAxis(WGPUCommandEncoder enc,
                           WGPUTextureView surface_view,
-                          const WgpuOverlayFrame& f);
+                          const OverlayFrame& f);
 
     // Marquee box-select drag rect (translucent fill + thick outline).
     // No-op when `active` is false.
     void encodeMarquee(WGPUCommandEncoder enc,
                        WGPUTextureView surface_view,
-                       const WgpuOverlayFrame& f,
+                       const OverlayFrame& f,
                        QPoint start_logical_px,
                        QPoint current_logical_px,
                        bool active);

@@ -25,11 +25,11 @@
 #include <unordered_map>
 #include <vector>
 
-class WgpuViewportWindow;
+class ViewportWindow;
 
 // Click-to-accumulate area measurement for the wgpu viewport. Mirrors
 // src/bonsaiviewer/Measurement.h's AreaMeasurement: each pick resolves
-// to (instance, triangle) via WgpuViewportWindow::pickMeshLocalAt, then
+// to (instance, triangle) via ViewportWindow::pickMeshLocalAt, then
 // either adds or removes the connected coplanar patch (BFS over shared
 // edges, dot(normal, seed_normal) > 0.9999) depending on whether the
 // seed triangle was already in the running set. Alt-click skips the BFS.
@@ -37,18 +37,18 @@ class WgpuViewportWindow;
 // separate patches.
 //
 // On every mutation the world-space triangles of the running set are
-// pushed to WgpuViewportWindow::setHighlightTriangles for the
+// pushed to ViewportWindow::setHighlightTriangles for the
 // translucent cyan patch shading, and per-component "X.XXXX m²" labels
 // are pushed to setOverlayLabels at each connected component's
 // area-weighted centroid.
-class WgpuAreaMeasurement {
+class AreaMeasurement {
 public:
-    WgpuAreaMeasurement();
+    AreaMeasurement();
 
     // Pixel coords are physical (post-DPR), to match
-    // WgpuViewportWindow::pickMeshLocalAt's convention.
-    void onPick(WgpuViewportWindow& vp, int x_phys, int y_phys, bool alt);
-    void clear(WgpuViewportWindow& vp);
+    // ViewportWindow::pickMeshLocalAt's convention.
+    void onPick(ViewportWindow& vp, int x_phys, int y_phys, bool alt);
+    void clear(ViewportWindow& vp);
 
     double totalArea() const { return total_area_m2_; }
     size_t triangleCount() const { return selected_.size(); }
@@ -57,7 +57,7 @@ private:
     // Cached per-mesh derived data: triangle normals + areas + edge
     // adjacency. Computed once per (model, mesh) on first pick; the
     // raw positions + indices live in
-    // WgpuViewportWindow::readbackMeshTriangles' CPU shadow.
+    // ViewportWindow::readbackMeshTriangles' CPU shadow.
     struct MeshAdj {
         std::vector<float>    tri_normals;  // 3 floats per tri (unit, mesh-local)
         std::vector<float>    tri_areas;    // mesh-local area per tri
@@ -65,7 +65,7 @@ private:
         std::unordered_map<uint64_t, std::vector<uint32_t>> edges;
     };
     // Keyed by (model_id << 32) | mesh_id.
-    MeshAdj* meshAdj(WgpuViewportWindow& vp,
+    MeshAdj* meshAdj(ViewportWindow& vp,
                      uint32_t model_id, uint32_t mesh_id);
 
     // Per-selected-triangle record. The composed transform is captured
@@ -86,7 +86,7 @@ private:
         return (uint64_t(object_id) << 32) | uint64_t(tri);
     }
 
-    void rebuildHighlightAndLabels(WgpuViewportWindow& vp);
+    void rebuildHighlightAndLabels(ViewportWindow& vp);
 
     std::unordered_map<uint64_t, MeshAdj>     mesh_cache_;
     std::unordered_map<uint64_t, SelectedTri> selected_;

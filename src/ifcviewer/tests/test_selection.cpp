@@ -17,19 +17,19 @@
  *                                                                              *
  ********************************************************************************/
 
-// Tier-1 coverage of WgpuSelectionState — the CPU-side selection set + active
+// Tier-1 coverage of SelectionState — the CPU-side selection set + active
 // id used by the wgpu viewport. The class is pure stdlib (no Qt, no QObject),
 // so the test exercises the state machine directly. The GPU-side flags SSBO
 // is filled via fillFlagsArray; that pure-function path is also covered.
 
-#include "WgpuSelectionState.h"
+#include "SelectionState.h"
 
 #include <catch2/catch_test_macros.hpp>
 
 #include <vector>
 
-TEST_CASE("WgpuSelectionState starts empty with no active id", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+TEST_CASE("SelectionState starts empty with no active id", "[wgpu-selection]") {
+    SelectionState sel;
     REQUIRE(sel.count() == 0);
     REQUIRE(sel.activeId() == 0);
     REQUIRE_FALSE(sel.contains(1));
@@ -38,7 +38,7 @@ TEST_CASE("WgpuSelectionState starts empty with no active id", "[wgpu-selection]
 
 TEST_CASE("replace(id) selects a single id and makes it active",
           "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
 
     sel.replace(5);
     REQUIRE(sel.count() == 1);
@@ -48,7 +48,7 @@ TEST_CASE("replace(id) selects a single id and makes it active",
 }
 
 TEST_CASE("replace(0) clears the selection", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(5);
     sel.markClean();
 
@@ -59,7 +59,7 @@ TEST_CASE("replace(0) clears the selection", "[wgpu-selection]") {
 }
 
 TEST_CASE("add(id) appends to the set and steals active", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(1);
     sel.markClean();
 
@@ -75,7 +75,7 @@ TEST_CASE("add(id) appends to the set and steals active", "[wgpu-selection]") {
 }
 
 TEST_CASE("add(0) is ignored", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(1);
     sel.markClean();
 
@@ -86,7 +86,7 @@ TEST_CASE("add(0) is ignored", "[wgpu-selection]") {
 }
 
 TEST_CASE("remove(non-active) keeps active", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(1);
     sel.add(2);
     sel.add(3);
@@ -101,7 +101,7 @@ TEST_CASE("remove(non-active) keeps active", "[wgpu-selection]") {
 }
 
 TEST_CASE("remove(active) falls back to some remaining id", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(1);
     sel.add(2);
     sel.add(3);
@@ -119,7 +119,7 @@ TEST_CASE("remove(active) falls back to some remaining id", "[wgpu-selection]") 
 }
 
 TEST_CASE("remove(last id) clears active", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(7);
     REQUIRE(sel.activeId() == 7);
 
@@ -130,7 +130,7 @@ TEST_CASE("remove(last id) clears active", "[wgpu-selection]") {
 
 TEST_CASE("remove(non-existent) is a no-op for state, no dirty flag",
           "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(1);
     sel.markClean();
 
@@ -141,7 +141,7 @@ TEST_CASE("remove(non-existent) is a no-op for state, no dirty flag",
 }
 
 TEST_CASE("remove(0) is ignored", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(1);
     sel.markClean();
 
@@ -151,7 +151,7 @@ TEST_CASE("remove(0) is ignored", "[wgpu-selection]") {
 }
 
 TEST_CASE("toggle adds when absent, removes when present", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
 
     sel.toggle(5);
     REQUIRE(sel.contains(5));
@@ -171,7 +171,7 @@ TEST_CASE("toggle adds when absent, removes when present", "[wgpu-selection]") {
 }
 
 TEST_CASE("toggle(0) is ignored", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.markClean();
 
     sel.toggle(0);
@@ -180,7 +180,7 @@ TEST_CASE("toggle(0) is ignored", "[wgpu-selection]") {
 }
 
 TEST_CASE("clear empties; no-op when already empty", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
 
     sel.clear();                    // already empty
     REQUIRE_FALSE(sel.dirty());
@@ -194,7 +194,7 @@ TEST_CASE("clear empties; no-op when already empty", "[wgpu-selection]") {
 }
 
 TEST_CASE("markClean clears the dirty flag", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.replace(5);
     REQUIRE(sel.dirty());
 
@@ -207,7 +207,7 @@ TEST_CASE("markClean clears the dirty flag", "[wgpu-selection]") {
 }
 
 TEST_CASE("selectionIds returns the live set", "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.add(1);
     sel.add(2);
     sel.add(3);
@@ -221,7 +221,7 @@ TEST_CASE("selectionIds returns the live set", "[wgpu-selection]") {
 
 TEST_CASE("fillFlagsArray packs selected/active bits per object_id",
           "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.add(1);
     sel.add(3);   // active is now 3
 
@@ -241,7 +241,7 @@ TEST_CASE("fillFlagsArray packs selected/active bits per object_id",
 
 TEST_CASE("fillFlagsArray drops ids past the entries cap",
           "[wgpu-selection]") {
-    WgpuSelectionState sel;
+    SelectionState sel;
     sel.add(1);
     sel.add(100);   // active is 100
 

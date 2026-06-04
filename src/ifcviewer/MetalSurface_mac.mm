@@ -1,9 +1,9 @@
 /**
  * Objective-C++ implementation of the Cocoa bridge declared in
- * WgpuMetalSurface_mac.h. Compiled only on macOS.
+ * MetalSurface_mac.h. Compiled only on macOS.
  */
 
-#include "WgpuMetalSurface_mac.h"
+#include "MetalSurface_mac.h"
 
 #if defined(__APPLE__)
 

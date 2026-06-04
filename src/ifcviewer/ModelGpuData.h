@@ -32,7 +32,7 @@
 #include <vector>
 
 #include "InstancedGeometry.h"
-#include "WgpuBufferPool.h"
+#include "BufferPool.h"
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
@@ -49,7 +49,7 @@
 //
 // At INSTANCED_VERTEX_STRIDE_BYTES = 12 B/vertex this caps a chunk at
 // ~1.4 M vertices. 16 MB is the sweet spot once background-thread I/O
-// (WgpuStreamingThread) is in place: scatter-gather per-mesh seeks
+// (StreamingThread) is in place: scatter-gather per-mesh seeks
 // happen on the worker, not the render thread, so smaller chunks
 // (and thus more per-frame loads as orbit shifts) no longer stall
 // rendering. The win is much finer pool-allocation granularity —
@@ -64,7 +64,7 @@
 // and 16 MB.
 static constexpr uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 16ull * 1024 * 1024;
 
-struct WgpuModelGpuData {
+struct ModelGpuData {
     // std430 layout: 16 bytes per entry, naturally aligned. base_vertex is
     // CHUNK-LOCAL — the bound vertex_storage on that chunk's bind group
     // gives the right slice when the shader indexes vertices[].
@@ -77,7 +77,7 @@ struct WgpuModelGpuData {
     static_assert(sizeof(VisibleDrawGpu) == 16, "VisibleDrawGpu must be 16 bytes");
 
     // Per-chunk state. Each chunk references a vertex range and an
-    // index range inside WgpuViewportWindow::pool_, plus a small set of
+    // index range inside ViewportWindow::pool_, plus a small set of
     // per-frame buffers (visible_draws, prefix_sums, uniform) and a bind
     // group that binds the pool ranges alongside the model-shared
     // mesh/instance storage. Rendering issues one drawcall per non-empty
@@ -91,12 +91,12 @@ struct WgpuModelGpuData {
     // populates pool ranges at applyCachedModel time.
     struct Chunk {
         // Pool-allocated vertex + index bytes. Both slices land in the
-        // shared WgpuViewportWindow::pool_; the slice tells us which
+        // shared ViewportWindow::pool_; the slice tells us which
         // sub-buffer they live in (the pool may span multiple sub-buffers
         // when scenes exceed wgpu's single-buffer cap). When non-resident,
         // both .size are 0.
-        WgpuBufferPool::Slice vertex_slice;
-        WgpuBufferPool::Slice index_slice;
+        BufferPool::Slice vertex_slice;
+        BufferPool::Slice index_slice;
 
         WGPUBuffer    visible_draws_buffer    = nullptr;
         WGPUBuffer    prefix_sums_buffer      = nullptr;
@@ -357,6 +357,6 @@ struct WgpuModelGpuData {
 // Release every wgpu handle in `m` (including per-chunk and per-model pool
 // ranges via `pool.free()`) and clear its size mirrors. Safe to call
 // repeatedly; idempotent on already-released entries.
-void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool);
+void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool);
 
 #endif // WGPUMODELGPUDATA_H

@@ -41,7 +41,7 @@
 // joins. The Result destructor releases its byte vectors back to the
 // heap, so dropping unclaimed Results (e.g. when their model was
 // unloaded mid-flight) is a free operation.
-class WgpuStreamingThread {
+class StreamingThread {
 public:
     struct Request {
         uint32_t                                       model_id;
@@ -63,13 +63,13 @@ public:
         std::vector<uint32_t> idx;
     };
 
-    ~WgpuStreamingThread();
+    ~StreamingThread();
 
     // Spawn the worker thread. Safe to call once; subsequent calls are
     // no-ops while the worker is alive.
     void start();
     // Signal shutdown, wake the worker, join. Idempotent. Must be
-    // called before the WgpuBufferPool the results would upload into
+    // called before the BufferPool the results would upload into
     // is destroyed.
     void stop();
 

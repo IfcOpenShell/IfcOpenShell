@@ -17,10 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "WgpuViewportWindow.h"
-#include "WgpuAreaMeasurement.h"
-#include "WgpuLengthMeasurement.h"
-#include "WgpuStreamingLoader.h"
+#include "ViewportWindow.h"
+#include "AreaMeasurement.h"
+#include "LengthMeasurement.h"
+#include "StreamingLoader.h"
 #include "VertexQuantization.h"
 
 #include <QGuiApplication>
@@ -51,9 +51,9 @@
 // std140-ish layout: every member naturally 16-aligned, struct stride = 96.
 // -----------------------------------------------------------------------------
 
-// Section-cutting cap. Single source of truth lives in WgpuOverlayRenderer
+// Section-cutting cap. Single source of truth lives in OverlayRenderer
 // so the visualizer and the WGSL clip array agree by construction.
-static constexpr int kMaxSectionPlanes = WgpuOverlayRenderer::kMaxSectionPlanes;
+static constexpr int kMaxSectionPlanes = OverlayRenderer::kMaxSectionPlanes;
 
 struct FrameUniforms {
     float view_proj[16];
@@ -103,7 +103,7 @@ static QVector3D orbitEye(const float target[3], float dist,
 static double computeMeshLocalVolumeQuantised(
         const MeshInfo& mesh,
         const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
-        WgpuModelGpuData::MeshTriangles* out_tris);
+        ModelGpuData::MeshTriangles* out_tris);
 
 // Ray-AABB (slab) + ray-triangle (Möller-Trumbore). Used by raycast()
 // AND by pickMeshLocalAt to refine the AABB-coarse surface hit into a
@@ -315,7 +315,7 @@ static std::vector<uint32_t> sortMeshIdsByMorton(
     return sorted;
 }
 
-void releaseWgpuModelGpuData(WgpuModelGpuData& m, WgpuBufferPool& pool) {
+void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
     for (auto& c : m.chunks) {
         if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
         if (c.vertex_slice.valid()) {
@@ -684,7 +684,7 @@ static WGPUStringView svFromCStr(const char* s) {
 // Construction / destruction
 // -----------------------------------------------------------------------------
 
-WgpuViewportWindow::WgpuViewportWindow(QWindow* parent)
+ViewportWindow::ViewportWindow(QWindow* parent)
     : QWindow(parent) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
@@ -705,17 +705,17 @@ WgpuViewportWindow::WgpuViewportWindow(QWindow* parent)
     //         message sent to deallocated instance ...
     //   With OpenGLSurface (which on macOS still gives us a layer-backed
     //   NSView), Qt doesn't install QMetalLayer; the
-    //   WgpuMetalSurface_mac.mm bridge attaches a vanilla CAMetalLayer
+    //   MetalSurface_mac.mm bridge attaches a vanilla CAMetalLayer
     //   we fully own, and wgpu-native can do its lifetime gymnastics
     //   without stepping on Qt's bookkeeping.
     setSurfaceType(QSurface::OpenGLSurface);
 }
 
-WgpuViewportWindow::~WgpuViewportWindow() {
+ViewportWindow::~ViewportWindow() {
     shutdown();
 }
 
-void WgpuViewportWindow::setBackgroundColor(const QColor& color) {
+void ViewportWindow::setBackgroundColor(const QColor& color) {
     background_color_ = color;
     if (isExposed()) requestUpdate();
 }
@@ -724,7 +724,7 @@ void WgpuViewportWindow::setBackgroundColor(const QColor& color) {
 // Sidecar load + GPU upload
 // -----------------------------------------------------------------------------
 
-void WgpuViewportWindow::queueLoadSidecar(const QString& path) {
+void ViewportWindow::queueLoadSidecar(const QString& path) {
     if (wgpu_initialized_) {
         loadSidecar(path);
     } else {
@@ -732,7 +732,7 @@ void WgpuViewportWindow::queueLoadSidecar(const QString& path) {
     }
 }
 
-uint32_t WgpuViewportWindow::loadSidecar(const QString& path) {
+uint32_t ViewportWindow::loadSidecar(const QString& path) {
     if (!wgpu_initialized_) {
         qWarning().noquote() << "loadSidecar called before wgpu init:" << path;
         return 0;
@@ -792,7 +792,7 @@ uint32_t WgpuViewportWindow::loadSidecar(const QString& path) {
     return mid;
 }
 
-void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
+void ViewportWindow::applyCachedModel(uint32_t model_id,
                                           StreamingSidecar metadata) {
     if (!device_ || !queue_) {
         qWarning() << "applyCachedModel without an initialised device";
@@ -806,7 +806,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
         models_gpu_.erase(it);
     }
 
-    WgpuModelGpuData m;
+    ModelGpuData m;
     m.vertex_bytes   = metadata.vertex_total_bytes;
     m.index_count    = uint32_t(metadata.index_total_count);
     m.mesh_count     = uint32_t(metadata.meta.meshes.size());
@@ -902,7 +902,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
     std::vector<std::unordered_map<uint32_t, MeshLocal>>
         chunk_mesh_offsets(chunk_mesh_ids.size());
     for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-        WgpuModelGpuData::Chunk& c = m.chunks[ci];
+        ModelGpuData::Chunk& c = m.chunks[ci];
         c.mesh_ids    = std::move(chunk_mesh_ids[ci]);
         c.is_resident = false;                              // streaming
 
@@ -941,7 +941,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
         // them. visible_draws_buffer cap = chunk's instance count (worst-
         // case all visible, one entry each — LOD doesn't double-count).
         const size_t chunk_inst = std::max<size_t>(chunk_instance_count[ci], 1);
-        const size_t draws_bytes = chunk_inst * sizeof(WgpuModelGpuData::VisibleDrawGpu);
+        const size_t draws_bytes = chunk_inst * sizeof(ModelGpuData::VisibleDrawGpu);
         const size_t ps_bytes    = (chunk_inst + 1) * sizeof(uint32_t);
 
         WGPUBufferDescriptor vd_desc = {};
@@ -1030,7 +1030,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
     // be precomputed here. Both fill in per-chunk inside
     // applyStreamedChunk as the bytes arrive.
     m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
-    m.mesh_triangles_cache.assign(m.meshes.size(), WgpuModelGpuData::MeshTriangles{});
+    m.mesh_triangles_cache.assign(m.meshes.size(), ModelGpuData::MeshTriangles{});
 
     // object_id → instance index lookup. Volume tool reads it on every
     // selection mutation; per-pick latency stays O(K) instead of O(K*N).
@@ -1088,7 +1088,7 @@ void WgpuViewportWindow::applyCachedModel(uint32_t model_id,
     }
 
     auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
-    WgpuModelGpuData& mref = inserted->second;
+    ModelGpuData& mref = inserted->second;
 
     // Bind groups can't be built yet — they need vertex_storage from each
     // chunk's load. The per-frame loader (commit 4) will buildModelBindGroup
@@ -1129,7 +1129,7 @@ static SidecarData& getOrCreateDirectStaging(
     return *it->second;
 }
 
-void WgpuViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
+void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
     if (chunk.vertices.empty() || chunk.indices.empty()) return;
     SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
 
@@ -1190,7 +1190,7 @@ void WgpuViewportWindow::uploadMeshChunk(const MeshChunk& chunk) {
     s.meshes[chunk.local_mesh_id] = info;
 }
 
-void WgpuViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
+void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
 
     InstanceCpu inst{};
@@ -1209,7 +1209,7 @@ void WgpuViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) {
     s.instances.push_back(inst);
 }
 
-void WgpuViewportWindow::finalizeModel(uint32_t model_id) {
+void ViewportWindow::finalizeModel(uint32_t model_id) {
     auto it = pending_direct_loads_.find(model_id);
     if (it == pending_direct_loads_.end()) {
         qWarning().nospace()
@@ -1262,7 +1262,7 @@ void WgpuViewportWindow::finalizeModel(uint32_t model_id) {
             << "): applyCachedModel produced no model entry";
         return;
     }
-    WgpuModelGpuData& m = model_it->second;
+    ModelGpuData& m = model_it->second;
 
     // Gather each chunk's vertex + index bytes from the staged buffers
     // using the per-mesh chunk-local offsets the planner just produced.
@@ -1317,7 +1317,7 @@ void WgpuViewportWindow::finalizeModel(uint32_t model_id) {
         << " idx=" << raw_indices.size();
 }
 
-void WgpuViewportWindow::removeModel(uint32_t model_id) {
+void ViewportWindow::removeModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
     releaseWgpuModelGpuData(it->second, pool_);
@@ -1325,33 +1325,33 @@ void WgpuViewportWindow::removeModel(uint32_t model_id) {
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::resetScene() {
+void ViewportWindow::resetScene() {
     for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::hideModel(uint32_t model_id) {
+void ViewportWindow::hideModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end() || it->second.hidden) return;
     it->second.hidden = true;
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::showModel(uint32_t model_id) {
+void ViewportWindow::showModel(uint32_t model_id) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end() || !it->second.hidden) return;
     it->second.hidden = false;
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
+void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
     if (federated_false_origin_meters_ == matrix_meters) return;
     federated_false_origin_meters_ = matrix_meters;
     for (auto& kv : models_gpu_) recomposeAndUploadModel(kv.first);
 }
 
-void WgpuViewportWindow::setModelCoordinateOperation(uint32_t model_id,
+void ViewportWindow::setModelCoordinateOperation(uint32_t model_id,
                                                      const Eigen::Matrix4d& matrix_meters) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
@@ -1360,7 +1360,7 @@ void WgpuViewportWindow::setModelCoordinateOperation(uint32_t model_id,
     recomposeAndUploadModel(model_id);
 }
 
-void WgpuViewportWindow::setModelTransformation(uint32_t model_id,
+void ViewportWindow::setModelTransformation(uint32_t model_id,
                                                 const Eigen::Matrix4d& matrix_meters) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
@@ -1369,8 +1369,8 @@ void WgpuViewportWindow::setModelTransformation(uint32_t model_id,
     recomposeAndUploadModel(model_id);
 }
 
-void WgpuViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
-                                                       const WgpuModelGpuData& m) const {
+void ViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
+                                                       const ModelGpuData& m) const {
     // Maths in double; narrow at the end so a large IFC placement
     // gets cancelled by federated_false_origin_meters_ before the
     // float cast loses precision.
@@ -1401,11 +1401,11 @@ void WgpuViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
     }
 }
 
-void WgpuViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
+void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
     if (!wgpu_initialized_) return;
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
-    WgpuModelGpuData& m = it->second;
+    ModelGpuData& m = it->second;
     if (m.instances.empty() || m.instance_storage == nullptr) return;
 
     std::vector<InstanceGpu> gpu(m.instances.size());
@@ -1447,7 +1447,7 @@ void WgpuViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
     if (isExposed()) requestUpdate();
 }
 
-bool WgpuViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
+bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
     if (object_id == 0) return false;
     for (const auto& [mid, m] : models_gpu_) {
         auto it = m.object_id_to_instance.find(object_id);
@@ -1468,11 +1468,11 @@ bool WgpuViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) c
     return false;
 }
 
-bool WgpuViewportWindow::firstGeometryPointWorldM(uint32_t model_id,
+bool ViewportWindow::firstGeometryPointWorldM(uint32_t model_id,
                                                   Eigen::Vector3d& out) const {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return false;
-    const WgpuModelGpuData& m = it->second;
+    const ModelGpuData& m = it->second;
     if (m.instances.empty()) return false;
 
     const InstanceCpu& inst0 = m.instances[0];
@@ -1498,11 +1498,11 @@ bool WgpuViewportWindow::firstGeometryPointWorldM(uint32_t model_id,
     return true;
 }
 
-void WgpuViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
+void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
                                                 float max_distance_m) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
-    const WgpuModelGpuData& m = it->second;
+    const ModelGpuData& m = it->second;
     if (m.instances.empty()) return;
 
     float mn[3] = {  std::numeric_limits<float>::infinity(),
@@ -1554,7 +1554,7 @@ void WgpuViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::flushPendingSidecarQueue() {
+void ViewportWindow::flushPendingSidecarQueue() {
     while (!pending_sidecars_.empty()) {
         const QString p = pending_sidecars_.front();
         pending_sidecars_.pop_front();
@@ -1566,7 +1566,7 @@ void WgpuViewportWindow::flushPendingSidecarQueue() {
 // Lifecycle
 // -----------------------------------------------------------------------------
 
-void WgpuViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
+void ViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
     if (!isExposed()) return;
 
     if (!wgpu_initialized_) {
@@ -1588,7 +1588,7 @@ void WgpuViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
     requestUpdate();
 }
 
-void WgpuViewportWindow::resizeEvent(QResizeEvent* /*event*/) {
+void ViewportWindow::resizeEvent(QResizeEvent* /*event*/) {
     if (!wgpu_initialized_ || !isExposed()) return;
     const int w = int(width()  * devicePixelRatio());
     const int h = int(height() * devicePixelRatio());
@@ -1598,7 +1598,7 @@ void WgpuViewportWindow::resizeEvent(QResizeEvent* /*event*/) {
     }
 }
 
-bool WgpuViewportWindow::event(QEvent* event) {
+bool ViewportWindow::event(QEvent* event) {
     if (event->type() == QEvent::UpdateRequest) {
         if (wgpu_initialized_ && surface_configured_) {
             render();
@@ -1612,7 +1612,7 @@ bool WgpuViewportWindow::event(QEvent* event) {
 // wgpu init: instance, surface, adapter, device, queue
 // -----------------------------------------------------------------------------
 
-bool WgpuViewportWindow::initWgpu() {
+bool ViewportWindow::initWgpu() {
     // Optional: log everything wgpu-native says at warn+ so backend init
     // problems surface in the console rather than being swallowed.
     wgpuSetLogCallback(onWgpuLog, nullptr);
@@ -1796,7 +1796,7 @@ bool WgpuViewportWindow::initWgpu() {
     if (!buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
     if (!overlays_.init(instance_, device_, queue_, surface_format_, SAMPLE_COUNT)) {
-        qWarning() << "WgpuOverlayRenderer init failed";
+        qWarning() << "OverlayRenderer init failed";
         return false;
     }
     if (!buildPickPipeline()) return false;
@@ -1805,7 +1805,7 @@ bool WgpuViewportWindow::initWgpu() {
     return true;
 }
 
-bool WgpuViewportWindow::probeAndCreatePool() {
+bool ViewportWindow::probeAndCreatePool() {
     // Discover the largest single buffer the runtime will grant. We
     // descend from the device's advertised maxBufferSize because the
     // adapter promises that much per binding, but the underlying
@@ -1923,12 +1923,12 @@ bool WgpuViewportWindow::probeAndCreatePool() {
 #  endif
 #  include <windows.h>
 #elif defined(Q_OS_MAC)
-// Cocoa bridge declared in WgpuMetalSurface_mac.h, implemented in the
+// Cocoa bridge declared in MetalSurface_mac.h, implemented in the
 // adjacent .mm file. Keeps Objective-C out of this pure-C++ TU.
-#  include "WgpuMetalSurface_mac.h"
+#  include "MetalSurface_mac.h"
 #endif
 
-bool WgpuViewportWindow::createSurface() {
+bool ViewportWindow::createSurface() {
     WGPUSurfaceDescriptor surface_desc = {};
 
 #if defined(Q_OS_LINUX)
@@ -2013,7 +2013,7 @@ bool WgpuViewportWindow::createSurface() {
 // Surface (re)configure + render
 // -----------------------------------------------------------------------------
 
-void WgpuViewportWindow::configureSurface(int width_px, int height_px) {
+void ViewportWindow::configureSurface(int width_px, int height_px) {
     WGPUSurfaceConfiguration cfg = {};
     cfg.device      = device_;
     cfg.format      = surface_format_;
@@ -2365,7 +2365,7 @@ fn fs_main(@builtin(position) frag: vec4<f32>) -> @location(0) vec4<f32> {
 }
 )";
 
-bool WgpuViewportWindow::buildEdgePipeline() {
+bool ViewportWindow::buildEdgePipeline() {
     WGPUBindGroupLayoutEntry entries[1] = {};
     entries[0].binding = 0;
     entries[0].visibility = WGPUShaderStage_Fragment;
@@ -2437,7 +2437,7 @@ bool WgpuViewportWindow::buildEdgePipeline() {
     return true;
 }
 
-void WgpuViewportWindow::encodeEdgePass(WGPUCommandEncoder enc,
+void ViewportWindow::encodeEdgePass(WGPUCommandEncoder enc,
                                         WGPUTextureView surface_view) {
     if (!edges_enabled_ || !edge_pipeline_ || !depth_view_ || !surface_view) return;
 
@@ -2476,7 +2476,7 @@ void WgpuViewportWindow::encodeEdgePass(WGPUCommandEncoder enc,
 }
 
 // -----------------------------------------------------------------------------
-void WgpuViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
+void ViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_ms) {
     if (!pivot_indicator_hide_timer_) {
         pivot_indicator_hide_timer_ = new QTimer(this);
         pivot_indicator_hide_timer_->setSingleShot(true);
@@ -2494,7 +2494,7 @@ void WgpuViewportWindow::setPivotIndicatorVisible(bool visible, int hide_after_m
     }
     requestUpdate();
 }
-void WgpuViewportWindow::releaseEdgeResources() {
+void ViewportWindow::releaseEdgeResources() {
     if (edge_bind_group_)      { wgpuBindGroupRelease(edge_bind_group_);      edge_bind_group_ = nullptr; }
     if (edge_pipeline_)        { wgpuRenderPipelineRelease(edge_pipeline_);   edge_pipeline_ = nullptr; }
     if (edge_shader_module_)   { wgpuShaderModuleRelease(edge_shader_module_);edge_shader_module_ = nullptr; }
@@ -2511,7 +2511,7 @@ void WgpuViewportWindow::releaseEdgeResources() {
 // the main draw. Differences are in the fragment (one R32UInt output) and
 // the render target attachments (single-sample, surface-sized pick FBO).
 
-bool WgpuViewportWindow::buildPickPipeline() {
+bool ViewportWindow::buildPickPipeline() {
     // Two color attachments: R32UInt for object_id, RGBA16F for the
     // packed world-space normal so the section tool can drop perpendicular
     // cuts at the picked pixel.
@@ -2556,7 +2556,7 @@ bool WgpuViewportWindow::buildPickPipeline() {
     return true;
 }
 
-void WgpuViewportWindow::ensurePickAttachments(int w, int h) {
+void ViewportWindow::ensurePickAttachments(int w, int h) {
     if (w <= 0 || h <= 0) return;
     if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
 
@@ -2625,7 +2625,7 @@ void WgpuViewportWindow::ensurePickAttachments(int w, int h) {
     pick_h_ = h;
 }
 
-void WgpuViewportWindow::releasePickResources() {
+void ViewportWindow::releasePickResources() {
     if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
     if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
     if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
@@ -2638,7 +2638,7 @@ void WgpuViewportWindow::releasePickResources() {
     pick_w_ = pick_h_ = 0;
 }
 
-uint32_t WgpuViewportWindow::pickObjectAt(int x_pixels, int y_pixels,
+uint32_t ViewportWindow::pickObjectAt(int x_pixels, int y_pixels,
                                           QVector3D* normal_out) {
     if (normal_out) *normal_out = QVector3D(0, 0, 1);
     if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
@@ -2860,7 +2860,7 @@ static bool rayAABBHit(const QVector3D& origin, const QVector3D& dir,
     return true;
 }
 
-std::vector<uint32_t> WgpuViewportWindow::picksInRect(int x, int y, int w, int h) {
+std::vector<uint32_t> ViewportWindow::picksInRect(int x, int y, int w, int h) {
     std::vector<uint32_t> out;
     if (w <= 0 || h <= 0) return out;
     if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return out;
@@ -3004,7 +3004,7 @@ std::vector<uint32_t> WgpuViewportWindow::picksInRect(int x, int y, int w, int h
     return out;
 }
 
-bool WgpuViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
+bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
                                        uint32_t& object_id_out,
                                        QVector3D& world_pos_out,
                                        QVector3D& world_normal_out,
@@ -3087,14 +3087,14 @@ bool WgpuViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
 // Section cutting state
 // -----------------------------------------------------------------------------
 
-void WgpuViewportWindow::toggleSectionTool() {
+void ViewportWindow::toggleSectionTool() {
     section_tool_active_ = !section_tool_active_;
     qInfo().noquote() << "[wgpu section] tool"
                       << (section_tool_active_ ? "active" : "off");
     if (isExposed()) requestUpdate();
 }
 
-bool WgpuViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
+bool ViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
                                                   const QVector3D& normal,
                                                   float visual_radius) {
     if (int(section_planes_.size()) >= kMaxSectionPlanes) {
@@ -3111,7 +3111,7 @@ bool WgpuViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
     const QVector3D eye_dir = eye - point;
     if (QVector3D::dotProduct(n, eye_dir) < 0.0f) n = -n;
 
-    WgpuSectionPlane p;
+    SectionPlane p;
     p.n             = n;
     p.origin        = point;
     p.d             = -QVector3D::dotProduct(n, point);
@@ -3125,27 +3125,27 @@ bool WgpuViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
     return true;
 }
 
-void WgpuViewportWindow::removeSectionPlane(int index) {
+void ViewportWindow::removeSectionPlane(int index) {
     if (index < 0 || index >= int(section_planes_.size())) return;
     section_planes_.erase(section_planes_.begin() + index);
     qInfo().noquote() << "[wgpu section] removed plane" << index;
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::clearSectionPlanes() {
+void ViewportWindow::clearSectionPlanes() {
     if (section_planes_.empty()) return;
     section_planes_.clear();
     qInfo() << "[wgpu section] cleared all planes";
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::setOverlayLines(
-        const std::vector<WgpuOverlayRenderer::LineGroup>& groups) {
+void ViewportWindow::setOverlayLines(
+        const std::vector<OverlayRenderer::LineGroup>& groups) {
     overlays_.setOverlayLines(groups);
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::setOverlayPoints(const std::vector<float>& world_xyz,
+void ViewportWindow::setOverlayPoints(const std::vector<float>& world_xyz,
                                           float r, float g, float b, float a,
                                           float pixel_size,
                                           float stroke_r, float stroke_g,
@@ -3157,28 +3157,28 @@ void WgpuViewportWindow::setOverlayPoints(const std::vector<float>& world_xyz,
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::setOverlayLabels(
-        const std::vector<WgpuOverlayRenderer::Label>& labels) {
+void ViewportWindow::setOverlayLabels(
+        const std::vector<OverlayRenderer::Label>& labels) {
     overlays_.setOverlayLabels(labels);
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::setHudText(const QString& text) {
+void ViewportWindow::setHudText(const QString& text) {
     overlays_.setHudText(text);
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
+void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
                                                float r, float g, float b, float a) {
     overlays_.setHighlightTriangles(world_xyz, r, g, b, a);
     if (isExposed()) requestUpdate();
 }
 
-bool WgpuViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+bool ViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
                                                MeshTriangles& out) const {
     auto mit = models_gpu_.find(model_id);
     if (mit == models_gpu_.end()) return false;
-    const WgpuModelGpuData& m = mit->second;
+    const ModelGpuData& m = mit->second;
     if (mesh_id >= m.mesh_triangles_cache.size()) return false;
     const auto& src = m.mesh_triangles_cache[mesh_id];
     if (src.indices.empty() || src.positions.empty()) return false;
@@ -3188,7 +3188,7 @@ bool WgpuViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_
     return true;
 }
 
-bool WgpuViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
+bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     uint32_t obj_id = 0;
     QVector3D world_pos, world_normal;
     if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
@@ -3344,13 +3344,13 @@ bool WgpuViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     return false;
 }
 
-void WgpuViewportWindow::onAreaPick(int x_phys, int y_phys, bool alt) {
+void ViewportWindow::onAreaPick(int x_phys, int y_phys, bool alt) {
     if (!area_tool_) return;
     area_tool_->onPick(*this, x_phys, y_phys, alt);
     updateAreaHud();
 }
 
-bool WgpuViewportWindow::meshLocalToGlobal(uint32_t object_id,
+bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
                                            const float mesh_local[3],
                                            double global_out[3]) const {
     // Find the instance via the per-model object_id_to_instance map.
@@ -3386,7 +3386,7 @@ bool WgpuViewportWindow::meshLocalToGlobal(uint32_t object_id,
     return false;
 }
 
-bool WgpuViewportWindow::raycast(const float origin[3], const float dir[3],
+bool ViewportWindow::raycast(const float origin[3], const float dir[3],
                                  RaycastHit& out) const {
     // World-AABB cull per instance, then transform the ray into the
     // mesh's local frame and intersect every triangle. No BVH — typical
@@ -3498,19 +3498,19 @@ bool WgpuViewportWindow::raycast(const float origin[3], const float dir[3],
     return true;
 }
 
-void WgpuViewportWindow::onLengthPick(int x_phys, int y_phys, bool alt) {
+void ViewportWindow::onLengthPick(int x_phys, int y_phys, bool alt) {
     if (!length_tool_) return;
     length_tool_->onPick(*this, x_phys, y_phys, alt);
 }
 
-void WgpuViewportWindow::onLengthBackspace() {
+void ViewportWindow::onLengthBackspace() {
     if (length_tool_) length_tool_->removeLastPoint(*this);
     // External listeners (bonsai's tool router) also want to know — the
     // GL viewport emits this on the same key path.
     emit toolBackspacePressed();
 }
 
-void WgpuViewportWindow::updateAreaHud() {
+void ViewportWindow::updateAreaHud() {
     if (tool_mode_ != ToolMode::Area || !area_tool_) return;
     overlays_.setHudText(
         QStringLiteral("Area: %1 m²  (%2 tris)")
@@ -3545,7 +3545,7 @@ static double det3OfPlacement(const double M[16]) {
 static double computeMeshLocalVolumeQuantised(
         const MeshInfo& mesh,
         const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
-        WgpuModelGpuData::MeshTriangles* out_tris) {
+        ModelGpuData::MeshTriangles* out_tris) {
     if (n_indices < 3 || vbase == nullptr || ibase == nullptr) return 0.0;
     const float ax = mesh.local_aabb_min[0];
     const float ay = mesh.local_aabb_min[1];
@@ -3595,32 +3595,32 @@ static double computeMeshLocalVolumeQuantised(
     return std::abs(sum) / 6.0;
 }
 
-void WgpuViewportWindow::toggleAreaTool() {
+void ViewportWindow::toggleAreaTool() {
     setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::NoTool : ToolMode::Area);
 }
 
-void WgpuViewportWindow::toggleLengthTool() {
+void ViewportWindow::toggleLengthTool() {
     setToolMode(tool_mode_ == ToolMode::Length ? ToolMode::NoTool : ToolMode::Length);
 }
 
-void WgpuViewportWindow::toggleVolumeTool() {
+void ViewportWindow::toggleVolumeTool() {
     setToolMode(tool_mode_ == ToolMode::Volume ? ToolMode::NoTool : ToolMode::Volume);
 }
 
-void WgpuViewportWindow::setSelectedObjectId(uint32_t id) {
+void ViewportWindow::setSelectedObjectId(uint32_t id) {
     if (id == 0) selection_.clear();
     else         selection_.replace(id);
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::hideSelectedElements() {
+void ViewportWindow::hideSelectedElements() {
     if (selection_.count() == 0) return;
     for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
     selection_.clear();
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::isolateSelectedElements() {
+void ViewportWindow::isolateSelectedElements() {
     if (selection_.count() == 0) return;
     // Hide every object in a visible model that isn't in the selection.
     // Model-hidden objects stay model-hidden — element-level hiding on
@@ -3638,13 +3638,13 @@ void WgpuViewportWindow::isolateSelectedElements() {
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::showAllElements() {
+void ViewportWindow::showAllElements() {
     if (visibility_.hiddenCount() == 0) return;
     visibility_.clear();
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::invertElementVisibility() {
+void ViewportWindow::invertElementVisibility() {
     // Compute the new hidden set: every live object_id in a visible model
     // that ISN'T currently hidden. Then swap. Done in two passes so we
     // don't mutate the set we're iterating over.
@@ -3664,7 +3664,7 @@ void WgpuViewportWindow::invertElementVisibility() {
     if (isExposed()) requestUpdate();
 }
 
-WgpuViewportWindow::CameraState WgpuViewportWindow::cameraState() const {
+ViewportWindow::CameraState ViewportWindow::cameraState() const {
     return CameraState{
         QVector3D(camera_target_[0], camera_target_[1], camera_target_[2]),
         camera_distance_,
@@ -3673,7 +3673,7 @@ WgpuViewportWindow::CameraState WgpuViewportWindow::cameraState() const {
     };
 }
 
-void WgpuViewportWindow::setToolMode(ToolMode m) {
+void ViewportWindow::setToolMode(ToolMode m) {
     if (tool_mode_ == m) return;
     tool_mode_ = m;
     emit toolModeChanged(m);
@@ -3698,12 +3698,12 @@ void WgpuViewportWindow::setToolMode(ToolMode m) {
         updateVolumeReadout();
         break;
     case ToolMode::Area:
-        if (!area_tool_) area_tool_ = std::make_unique<WgpuAreaMeasurement>();
+        if (!area_tool_) area_tool_ = std::make_unique<AreaMeasurement>();
         qInfo() << "[wgpu measure] area tool — LMB pick coplanar patch, Alt+LMB single tri, click again to remove, Esc exits";
         overlays_.setHudText(QStringLiteral("Area: 0.0000 m²  (0 tris)"));
         break;
     case ToolMode::Length:
-        if (!length_tool_) length_tool_ = std::make_unique<WgpuLengthMeasurement>();
+        if (!length_tool_) length_tool_ = std::make_unique<LengthMeasurement>();
         qInfo() << "[wgpu measure] length tool — LMB add point, Backspace remove last, Esc exits";
         overlays_.setHudText(QStringLiteral("Length tool: click first point"));
         break;
@@ -3711,7 +3711,7 @@ void WgpuViewportWindow::setToolMode(ToolMode m) {
     if (isExposed()) requestUpdate();
 }
 
-double WgpuViewportWindow::volumeOfObjects(
+double ViewportWindow::volumeOfObjects(
         const std::vector<uint32_t>& object_ids) const {
     if (object_ids.empty()) return 0.0;
     double total = 0.0;
@@ -3731,7 +3731,7 @@ double WgpuViewportWindow::volumeOfObjects(
 }
 
 std::vector<std::pair<uint32_t, double>>
-WgpuViewportWindow::volumesPerObject(
+ViewportWindow::volumesPerObject(
         const std::vector<uint32_t>& object_ids) const {
     std::vector<std::pair<uint32_t, double>> out;
     if (object_ids.empty()) return out;
@@ -3751,7 +3751,7 @@ WgpuViewportWindow::volumesPerObject(
     return out;
 }
 
-void WgpuViewportWindow::updateVolumeReadout() {
+void ViewportWindow::updateVolumeReadout() {
     if (tool_mode_ != ToolMode::Volume) return;
 
     const auto& sel = selection_.selectionIds();
@@ -3775,7 +3775,7 @@ void WgpuViewportWindow::updateVolumeReadout() {
     const bool show_labels = per_obj.size() <= kMaxPerObjectLabels;
 
     double total = 0.0;
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::Label> labels;
     if (show_labels) labels.reserve(per_obj.size());
     for (const auto& [oid, v] : per_obj) {
         total += v;
@@ -3790,7 +3790,7 @@ void WgpuViewportWindow::updateVolumeReadout() {
             auto it = m.object_id_to_instance.find(oid);
             if (it == m.object_id_to_instance.end()) continue;
             const InstanceCpu& inst = m.instances[it->second];
-            WgpuOverlayRenderer::Label lbl;
+            OverlayRenderer::Label lbl;
             lbl.world_pos[0] = (inst.world_aabb_min[0] + inst.world_aabb_max[0]) * 0.5f;
             lbl.world_pos[1] = (inst.world_aabb_min[1] + inst.world_aabb_max[1]) * 0.5f;
             lbl.world_pos[2] = (inst.world_aabb_min[2] + inst.world_aabb_max[2]) * 0.5f;
@@ -3827,7 +3827,7 @@ static bool projectWorldToLogicalScreen(const QMatrix4x4& vp,
     return true;
 }
 
-int WgpuViewportWindow::hitTestSectionGizmo(int x, int y) const {
+int ViewportWindow::hitTestSectionGizmo(int x, int y) const {
     if (section_planes_.empty()) return -1;
     const int w = width();
     const int h = height();
@@ -3839,12 +3839,12 @@ int WgpuViewportWindow::hitTestSectionGizmo(int x, int y) const {
     int   best    = -1;
     float best_d2 = grab_px * grab_px;
     for (int i = 0; i < int(section_planes_.size()); ++i) {
-        const WgpuSectionPlane& p = section_planes_[i];
+        const SectionPlane& p = section_planes_[i];
         QVector2D s_origin, s_tip;
         if (!projectWorldToLogicalScreen(vp, p.origin,
                                          w, h, s_origin)) continue;
         // The gizmo's arrow extends along +n by exactly 1 m in world
-        // space — WgpuOverlayRenderer::encodeSectionGizmos uses
+        // space — OverlayRenderer::encodeSectionGizmos uses
         // half_size = 1.0 to scale a plane-local arrow tip at z = 1.
         // Mirror that here.
         if (!projectWorldToLogicalScreen(vp, p.origin + p.n * 1.0f,
@@ -3862,11 +3862,11 @@ int WgpuViewportWindow::hitTestSectionGizmo(int x, int y) const {
     return best;
 }
 
-void WgpuViewportWindow::updateSectionDrag(int x, int y) {
+void ViewportWindow::updateSectionDrag(int x, int y) {
     if (!section_drag_active_) return;
     if (section_drag_index_ < 0
         || section_drag_index_ >= int(section_planes_.size())) return;
-    WgpuSectionPlane& p = section_planes_[section_drag_index_];
+    SectionPlane& p = section_planes_[section_drag_index_];
 
     const int w = width();
     const int h = height();
@@ -3900,7 +3900,7 @@ void WgpuViewportWindow::updateSectionDrag(int x, int y) {
     requestUpdate();
 }
 
-bool WgpuViewportWindow::buildHizPipeline() {
+bool ViewportWindow::buildHizPipeline() {
     // Bind group layout: MSAA depth texture + small uniform.
     WGPUBindGroupLayoutEntry entries[2] = {};
     entries[0].binding = 0;
@@ -3976,7 +3976,7 @@ bool WgpuViewportWindow::buildHizPipeline() {
     return true;
 }
 
-void WgpuViewportWindow::ensureHizTextures(int viewport_w, int viewport_h) {
+void ViewportWindow::ensureHizTextures(int viewport_w, int viewport_h) {
     if (viewport_w <= 0 || viewport_h <= 0) return;
 
     const uint32_t dst_w = HIZ_BASE_W;
@@ -4041,7 +4041,7 @@ void WgpuViewportWindow::ensureHizTextures(int viewport_w, int viewport_h) {
     hiz_valid_     = false;  // pyramid stale until next readback
 }
 
-void WgpuViewportWindow::releaseHizResources() {
+void ViewportWindow::releaseHizResources() {
     if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
     if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
     if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
@@ -4069,7 +4069,7 @@ void WgpuViewportWindow::releaseHizResources() {
     hiz_mip_h_.clear();
 }
 
-int WgpuViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
+int ViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
     if (!hiz_enabled_ || !hiz_pipeline_ || !hiz_resolve_view_ || !depth_view_) return -1;
 
     // Pick an idle ping-pong slot. If both slots are in flight, skip the
@@ -4148,14 +4148,14 @@ int WgpuViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
     return slot;
 }
 
-void WgpuViewportWindow::startHizMap(int slot, const QMatrix4x4& vp_used) {
+void ViewportWindow::startHizMap(int slot, const QMatrix4x4& vp_used) {
     if (slot < 0 || slot >= HIZ_SLOTS) return;
     if (!hiz_staging_buffers_[slot] || hiz_resolve_w_ == 0) return;
 
     hiz_slot_vp_[slot]   = vp_used;
     hiz_slot_state_[slot] = HizSlotState::Mapping;
 
-    struct MapCtx { WgpuViewportWindow* self; int slot; };
+    struct MapCtx { ViewportWindow* self; int slot; };
     auto* ctx = new MapCtx{ this, slot };
 
     WGPUBufferMapCallbackInfo mcb = {};
@@ -4177,7 +4177,7 @@ void WgpuViewportWindow::startHizMap(int slot, const QMatrix4x4& vp_used) {
                        0, map_size, mcb);
 }
 
-void WgpuViewportWindow::drainHizReadbacks() {
+void ViewportWindow::drainHizReadbacks() {
     if (!hiz_enabled_ || hiz_resolve_w_ == 0) return;
     // Process any callbacks that have fired since last frame. Does NOT block:
     // wgpuInstanceProcessEvents returns immediately after running ready
@@ -4260,7 +4260,7 @@ void WgpuViewportWindow::drainHizReadbacks() {
     }
 }
 
-bool WgpuViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) const {
+bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) const {
     if (!hiz_valid_ || hiz_mip_offset_.empty()) return false;
 
     // Project the 8 corners of the AABB. Track:
@@ -4377,7 +4377,7 @@ bool WgpuViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3])
     return rejected;
 }
 
-void WgpuViewportWindow::setBenchmarkFrames(int frames) {
+void ViewportWindow::setBenchmarkFrames(int frames) {
     bench_total_    = std::max(0, frames);
     bench_count_    = 0;
     bench_yaw_start_ = camera_yaw_deg_;
@@ -4388,7 +4388,7 @@ void WgpuViewportWindow::setBenchmarkFrames(int frames) {
     if (isExposed() && bench_total_ > 0) requestUpdate();
 }
 
-uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
+uint32_t ViewportWindow::cullModelCpuCompute(ModelGpuData& m,
                                                  const float planes[6][4],
                                                  const float eye[3],
                                                  const float forward[3],
@@ -4436,7 +4436,7 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
 
         const uint32_t chunk_idx = m.instance_chunk_idx[i];
-        WgpuModelGpuData::Chunk& c = m.chunks[chunk_idx];
+        ModelGpuData::Chunk& c = m.chunks[chunk_idx];
 
         // Bump the chunk's frustum-only counter before contribution / HiZ.
         // Stable across frames when the camera doesn't move, so the
@@ -4528,7 +4528,7 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
         // the LOD split. (chunk_idx and c were resolved at the top of
         // process_instance so the priority accumulator could reach the
         // chunk before contribution / HiZ rejected this instance.)
-        WgpuModelGpuData::VisibleDrawGpu d;
+        ModelGpuData::VisibleDrawGpu d;
         d.mesh_id       = inst.mesh_id;
         d.instance_idx  = i;
         d.ebo_first_u32 = use_lod1 ? m.instance_lod1_first_u32[i]
@@ -4575,7 +4575,7 @@ uint32_t WgpuViewportWindow::cullModelCpuCompute(WgpuModelGpuData& m,
     return hiz_rejects;
 }
 
-void WgpuViewportWindow::cullModelCpuUpload(WgpuModelGpuData& m) {
+void ViewportWindow::cullModelCpuUpload(ModelGpuData& m) {
     for (auto& c : m.chunks) {
         if (!c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
 
@@ -4590,7 +4590,7 @@ void WgpuViewportWindow::cullModelCpuUpload(WgpuModelGpuData& m) {
         wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
                              c.visible_draws_scratch.data(),
                              c.visible_draws_scratch.size()
-                                 * sizeof(WgpuModelGpuData::VisibleDrawGpu));
+                                 * sizeof(ModelGpuData::VisibleDrawGpu));
         wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
                              c.prefix_sums_scratch.data(),
                              c.prefix_sums_scratch.size() * sizeof(uint32_t));
@@ -4604,7 +4604,7 @@ void WgpuViewportWindow::cullModelCpuUpload(WgpuModelGpuData& m) {
     }
 }
 
-void WgpuViewportWindow::render() {
+void ViewportWindow::render() {
     // Time the whole render() body (cull + encode + present) for the
     // benchmark stats. Started before any wgpu work so cull is included.
     QElapsedTimer frame_timer;
@@ -4899,9 +4899,9 @@ void WgpuViewportWindow::render() {
     }
 
     // Snapshot the per-frame inputs every overlay needs. Built once and
-    // passed by const-ref so WgpuOverlayRenderer never reaches back into
+    // passed by const-ref so OverlayRenderer never reaches back into
     // this viewport.
-    WgpuOverlayFrame overlay_frame;
+    OverlayFrame overlay_frame;
     overlay_frame.view_proj          = vp_this_frame;
     overlay_frame.camera_target      = QVector3D(camera_target_[0],
                                                  camera_target_[1],
@@ -5250,7 +5250,7 @@ void WgpuViewportWindow::render() {
                 QMatrix4x4 v_dbg, p_dbg;
                 buildViewProj(v_dbg, p_dbg);
                 const QMatrix4x4 vp_dbg = p_dbg * v_dbg;
-                auto chunk_priority_px2 = [&](const WgpuModelGpuData::Chunk& c) -> float {
+                auto chunk_priority_px2 = [&](const ModelGpuData::Chunk& c) -> float {
                     if (configured_w_ <= 0 || configured_h_ <= 0 ||
                         c.aabb_min[0] > c.aabb_max[0]) return 0.0f;
                     float xmin =  std::numeric_limits<float>::infinity();
@@ -5612,7 +5612,7 @@ void WgpuViewportWindow::render() {
 // Pipeline + bind-group layouts (built once after init)
 // -----------------------------------------------------------------------------
 
-bool WgpuViewportWindow::buildPipelines() {
+bool ViewportWindow::buildPipelines() {
     // ---- Bind group layouts ----------------------------------------------
     WGPUBindGroupLayoutEntry frame_entries[2] = {};
     frame_entries[0].binding = 0;
@@ -5719,7 +5719,7 @@ bool WgpuViewportWindow::buildPipelines() {
     return true;
 }
 
-void WgpuViewportWindow::ensureSelectionFlagsBuffer() {
+void ViewportWindow::ensureSelectionFlagsBuffer() {
     // Round up to at least 64 entries (256 B — minimum useful storage) and
     // grow geometrically when next_object_id_ outruns the current capacity.
     const uint32_t needed = std::max<uint32_t>(next_object_id_, 64);
@@ -5782,7 +5782,7 @@ void WgpuViewportWindow::ensureSelectionFlagsBuffer() {
     selection_.markClean();
 }
 
-void WgpuViewportWindow::uploadSelectionFlagsIfDirty() {
+void ViewportWindow::uploadSelectionFlagsIfDirty() {
     if (!selection_.dirty() || !selection_flags_buffer_) return;
     selection_flags_scratch_.assign(selection_flags_capacity_, 0);
     selection_.fillFlagsArray(selection_flags_scratch_, selection_flags_capacity_);
@@ -5792,7 +5792,7 @@ void WgpuViewportWindow::uploadSelectionFlagsIfDirty() {
     selection_.markClean();
 }
 
-void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
+void ViewportWindow::buildModelBindGroup(ModelGpuData& m) {
     if (!m.mesh_storage || !m.instance_storage) {
         // Empty model — no chunks, no bind groups; the draw loop will skip.
         return;
@@ -5802,7 +5802,7 @@ void WgpuViewportWindow::buildModelBindGroup(WgpuModelGpuData& m) {
     }
 }
 
-void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_idx) {
+void ViewportWindow::buildChunkBindGroup(ModelGpuData& m, size_t chunk_idx) {
     if (chunk_idx >= m.chunks.size()) return;
     auto& c = m.chunks[chunk_idx];
     if (c.bind_group) {
@@ -5857,10 +5857,10 @@ void WgpuViewportWindow::buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_i
 // derives scatter-gather byte/index ranges from each mesh's sidecar
 // offsets. Pure function of model + chunk metadata; safe to call from
 // the main thread.
-static WgpuStreamingThread::Request makeChunkRequest(
-        const WgpuModelGpuData& m, size_t chunk_idx, uint32_t model_id) {
+static StreamingThread::Request makeChunkRequest(
+        const ModelGpuData& m, size_t chunk_idx, uint32_t model_id) {
     const auto& c = m.chunks[chunk_idx];
-    WgpuStreamingThread::Request req;
+    StreamingThread::Request req;
     req.model_id              = model_id;
     req.chunk_idx             = chunk_idx;
     req.file_path             = m.streaming_file_path;
@@ -5900,8 +5900,8 @@ static WgpuStreamingThread::Request makeChunkRequest(
 // room first); on failure, no slices are claimed and is_resident
 // stays false. Called both from the worker-result drain (async) and
 // from loadChunkBytesAndUploadGpu (sync first-frame fallback).
-bool WgpuViewportWindow::applyStreamedChunk(
-        WgpuModelGpuData& m, size_t chunk_idx,
+bool ViewportWindow::applyStreamedChunk(
+        ModelGpuData& m, size_t chunk_idx,
         const std::vector<uint8_t>& vbytes,
         const std::vector<uint32_t>& idx) {
     auto& c = m.chunks[chunk_idx];
@@ -5954,7 +5954,7 @@ bool WgpuViewportWindow::applyStreamedChunk(
                 + size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
             if (v_end > vbytes.size()) continue;
             if (i_off + mesh.index_count > idx.size()) continue;
-            WgpuModelGpuData::MeshTriangles* tris =
+            ModelGpuData::MeshTriangles* tris =
                 (mi < m.mesh_triangles_cache.size())
                     ? &m.mesh_triangles_cache[mi]
                     : nullptr;
@@ -5973,7 +5973,7 @@ bool WgpuViewportWindow::applyStreamedChunk(
     return true;
 }
 
-bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx) {
+bool ViewportWindow::loadChunkBytesAndUploadGpu(ModelGpuData& m, size_t chunk_idx) {
     if (chunk_idx >= m.chunks.size()) return false;
     auto& c = m.chunks[chunk_idx];
     if (c.is_resident) return true;
@@ -5983,7 +5983,7 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
     // apply. Used only when the async path can't be — i.e. by the
     // screenshot test on first frame. Normal streaming goes through
     // driveStreamingLoads → streaming_thread_.
-    WgpuStreamingThread::Request req = makeChunkRequest(m, chunk_idx, /*mid*/ 0);
+    StreamingThread::Request req = makeChunkRequest(m, chunk_idx, /*mid*/ 0);
     std::vector<uint8_t>  vbytes;
     std::vector<uint32_t> idx;
     if (!req.v_ranges.empty()) {
@@ -6011,7 +6011,7 @@ bool WgpuViewportWindow::loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t 
     return applyStreamedChunk(m, chunk_idx, vbytes, idx);
 }
 
-void WgpuViewportWindow::unloadChunk(WgpuModelGpuData& m, size_t chunk_idx) {
+void ViewportWindow::unloadChunk(ModelGpuData& m, size_t chunk_idx) {
     if (chunk_idx >= m.chunks.size()) return;
     auto& c = m.chunks[chunk_idx];
     if (!c.is_resident) return;
@@ -6038,7 +6038,7 @@ void WgpuViewportWindow::unloadChunk(WgpuModelGpuData& m, size_t chunk_idx) {
     c.is_resident = false;
 }
 
-void WgpuViewportWindow::driveStreamingLoads() {
+void ViewportWindow::driveStreamingLoads() {
     // Bump LRU clock once per call. Resident-and-visible chunks get
     // stamped with this value below; the evictor uses it to find the
     // least-recently-visible non-visible resident chunk.
@@ -6075,7 +6075,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // chunk.current_priority was accumulated during cullModelCpuCompute
     // (one add per frustum-passing instance). No standalone walk needed
     // here; the candidate/resident priority lambdas just read it.
-    auto chunk_screen_area_px = [&](const WgpuModelGpuData::Chunk& c) -> float {
+    auto chunk_screen_area_px = [&](const ModelGpuData::Chunk& c) -> float {
         return c.current_priority;
     };
 
@@ -6097,14 +6097,14 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // visibility_history time to settle and breaks the cycle.
     constexpr float    HISTORY_FLOOR = 0.05f;
     constexpr uint64_t GRACE_FRAMES  = 30;
-    auto resident_priority = [&](const WgpuModelGpuData::Chunk& c) -> float {
+    auto resident_priority = [&](const ModelGpuData::Chunk& c) -> float {
         const uint64_t age = streaming_frame_idx_ - c.loaded_frame_idx;
         const float vis = (age < GRACE_FRAMES)
             ? 1.0f
             : std::max(c.visibility_history, HISTORY_FLOOR);
         return chunk_screen_area_px(c) * vis;
     };
-    auto candidate_priority = [&](const WgpuModelGpuData::Chunk& c) -> float {
+    auto candidate_priority = [&](const ModelGpuData::Chunk& c) -> float {
         return chunk_screen_area_px(c);
     };
 
@@ -6147,7 +6147,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // chunks stamped on streaming_frame_idx_ to avoid yanking what cull
     // just marked visible. Returns true iff a chunk was evicted.
     auto evict_one_lru = [&]() -> bool {
-        WgpuModelGpuData* victim_m = nullptr;
+        ModelGpuData* victim_m = nullptr;
         size_t            victim_ci = 0;
         uint64_t          victim_lru = std::numeric_limits<uint64_t>::max();
         for (auto& [mid, m] : models_gpu_) {
@@ -6188,7 +6188,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
                                           uint32_t cand_ci,
                                           float    cand_priority) -> bool {
         const float threshold = cand_priority / EVICT_PRIORITY_RATIO;
-        WgpuModelGpuData* victim_m  = nullptr;
+        ModelGpuData* victim_m  = nullptr;
         size_t            victim_ci = 0;
         float             victim_priority = threshold;
         for (auto& [mid, m] : models_gpu_) {
@@ -6320,7 +6320,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
     // screen-coverage chunks load first. Each enqueue makes room in
     // the pool by evicting low-priority residents (contribution ×
     // visibility_history); apply's alloc is best-effort.
-    struct Candidate { WgpuModelGpuData* m; size_t ci; uint32_t mid; float priority; };
+    struct Candidate { ModelGpuData* m; size_t ci; uint32_t mid; float priority; };
     std::vector<Candidate> candidates;
     candidates.reserve(64);
     for (auto& [mid, m] : models_gpu_) {
@@ -6539,7 +6539,7 @@ void WgpuViewportWindow::driveStreamingLoads() {
 // Depth attachment
 // -----------------------------------------------------------------------------
 
-void WgpuViewportWindow::ensureDepthTexture(int w, int h) {
+void ViewportWindow::ensureDepthTexture(int w, int h) {
     if (w == depth_w_ && h == depth_h_ && depth_view_) return;
     releaseDepthTexture();
 
@@ -6569,13 +6569,13 @@ void WgpuViewportWindow::ensureDepthTexture(int w, int h) {
     depth_h_ = h;
 }
 
-void WgpuViewportWindow::releaseDepthTexture() {
+void ViewportWindow::releaseDepthTexture() {
     if (depth_view_)    { wgpuTextureViewRelease(depth_view_); depth_view_ = nullptr; }
     if (depth_texture_) { wgpuTextureRelease(depth_texture_);  depth_texture_ = nullptr; }
     depth_w_ = depth_h_ = 0;
 }
 
-void WgpuViewportWindow::ensureMsaaColorTexture(int w, int h) {
+void ViewportWindow::ensureMsaaColorTexture(int w, int h) {
     if (w == msaa_w_ && h == msaa_h_ && msaa_color_view_) return;
     releaseMsaaColorTexture();
 
@@ -6596,7 +6596,7 @@ void WgpuViewportWindow::ensureMsaaColorTexture(int w, int h) {
     msaa_h_ = h;
 }
 
-void WgpuViewportWindow::releaseMsaaColorTexture() {
+void ViewportWindow::releaseMsaaColorTexture() {
     if (msaa_color_view_)    { wgpuTextureViewRelease(msaa_color_view_); msaa_color_view_ = nullptr; }
     if (msaa_color_texture_) { wgpuTextureRelease(msaa_color_texture_);  msaa_color_texture_ = nullptr; }
     msaa_w_ = msaa_h_ = 0;
@@ -6630,7 +6630,7 @@ static QVector3D orbitEye(const float target[3], float dist,
 // streaming projection, pick, or render uniforms calls this so the
 // projection_ortho_ toggle and the near-vertical up-vector switch land
 // identically everywhere.
-void WgpuViewportWindow::buildViewProj(QMatrix4x4& view_out,
+void ViewportWindow::buildViewProj(QMatrix4x4& view_out,
                                         QMatrix4x4& proj_out) const {
     const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
     const QVector3D eye = orbitEye(camera_target_, camera_distance_,
@@ -6670,7 +6670,7 @@ void WgpuViewportWindow::buildViewProj(QMatrix4x4& view_out,
     proj_out = z_remap * p;
 }
 
-void WgpuViewportWindow::updateFrameUniforms() {
+void ViewportWindow::updateFrameUniforms() {
     QMatrix4x4 view, proj;
     buildViewProj(view, proj);
 
@@ -6696,7 +6696,7 @@ void WgpuViewportWindow::updateFrameUniforms() {
     const int n = std::min<int>(int(section_planes_.size()), kMaxSectionPlanes);
     u.clip_count = n;
     for (int i = 0; i < n; ++i) {
-        const WgpuSectionPlane& p = section_planes_[i];
+        const SectionPlane& p = section_planes_[i];
         u.clip_planes[i][0] = p.n.x();
         u.clip_planes[i][1] = p.n.y();
         u.clip_planes[i][2] = p.n.z();
@@ -6706,7 +6706,7 @@ void WgpuViewportWindow::updateFrameUniforms() {
     wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
 }
 
-bool WgpuViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
+bool ViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
     bool any = false;
     for (int i = 0; i < 3; ++i) {
         mn[i] =  std::numeric_limits<float>::infinity();
@@ -6725,7 +6725,7 @@ bool WgpuViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
     return any;
 }
 
-void WgpuViewportWindow::setCamera(float tx, float ty, float tz,
+void ViewportWindow::setCamera(float tx, float ty, float tz,
                                    float dist, float yaw_deg, float pitch_deg) {
     camera_target_[0] = tx;
     camera_target_[1] = ty;
@@ -6739,7 +6739,7 @@ void WgpuViewportWindow::setCamera(float tx, float ty, float tz,
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::viewAll() {
+void ViewportWindow::viewAll() {
     float mn[3], mx[3];
     if (!computeSceneAabb(mn, mx)) return;
 
@@ -6777,7 +6777,7 @@ void WgpuViewportWindow::viewAll() {
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::frameAabb(const float mn[3], const float mx[3],
+void ViewportWindow::frameAabb(const float mn[3], const float mx[3],
                                     float padding) {
     const float cx = 0.5f * (mn[0] + mx[0]);
     const float cy = 0.5f * (mn[1] + mx[1]);
@@ -6804,7 +6804,7 @@ void WgpuViewportWindow::frameAabb(const float mn[3], const float mx[3],
     if (isExposed()) requestUpdate();
 }
 
-bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
+bool ViewportWindow::computeObjectAabb(uint32_t object_id,
                                            QVector3D& mn, QVector3D& mx) const {
     float fmin[3], fmax[3];
     if (!computeObjectAabb(object_id, fmin, fmax)) return false;
@@ -6813,7 +6813,7 @@ bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
     return true;
 }
 
-bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
+bool ViewportWindow::computeObjectAabb(uint32_t object_id,
                                             float mn[3], float mx[3]) const {
     bool any = false;
     for (int i = 0; i < 3; ++i) {
@@ -6833,7 +6833,7 @@ bool WgpuViewportWindow::computeObjectAabb(uint32_t object_id,
     return any;
 }
 
-void WgpuViewportWindow::focusOnSelectedObject() {
+void ViewportWindow::focusOnSelectedObject() {
     if (fps_mode_) return;
     if (selection_.count() == 0) {
         qInfo() << "[wgpu] focus: no object selected";
@@ -6862,7 +6862,7 @@ void WgpuViewportWindow::focusOnSelectedObject() {
     frameAabb(lo, hi, 1.30f);
 }
 
-void WgpuViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
+void ViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
     // Bypasses the orbit-pitch clamp so top/bottom land exactly at ±90°.
     // buildViewProj() picks the up vector based on |pitch| so lookAt stays
     // well-conditioned at the poles.
@@ -6871,13 +6871,13 @@ void WgpuViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::toggleProjection() {
+void ViewportWindow::toggleProjection() {
     projection_ortho_ = !projection_ortho_;
     qInfo() << "[wgpu] projection:" << (projection_ortho_ ? "ortho" : "perspective");
     if (isExposed()) requestUpdate();
 }
 
-QString WgpuViewportWindow::cameraString() const {
+QString ViewportWindow::cameraString() const {
     return QString("%1,%2,%3,%4,%5,%6")
         .arg(camera_target_[0], 0, 'f', 4)
         .arg(camera_target_[1], 0, 'f', 4)
@@ -6887,7 +6887,7 @@ QString WgpuViewportWindow::cameraString() const {
         .arg(camera_pitch_deg_, 0, 'f', 2);
 }
 
-void WgpuViewportWindow::enterFpsMode() {
+void ViewportWindow::enterFpsMode() {
     if (fps_mode_) return;
     fps_mode_ = true;
     fps_keys_held_.clear();
@@ -6900,7 +6900,7 @@ void WgpuViewportWindow::enterFpsMode() {
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::exitFpsMode() {
+void ViewportWindow::exitFpsMode() {
     if (!fps_mode_) return;
     fps_mode_ = false;
     fps_keys_held_.clear();
@@ -6909,7 +6909,7 @@ void WgpuViewportWindow::exitFpsMode() {
     if (isExposed()) requestUpdate();
 }
 
-void WgpuViewportWindow::fpsIntegrate() {
+void ViewportWindow::fpsIntegrate() {
     if (!fps_mode_ || fps_keys_held_.isEmpty()) return;
 
     const qint64 elapsed_ns = fps_last_tick_.nsecsElapsed();
@@ -6974,7 +6974,7 @@ void WgpuViewportWindow::fpsIntegrate() {
     }
 }
 
-float WgpuViewportWindow::chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
+float ViewportWindow::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
                                              const QMatrix4x4& vp_mat) const {
     if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
     if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
@@ -7040,7 +7040,7 @@ float WgpuViewportWindow::chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
     return (xmax - xmin) * (ymax - ymin);
 }
 
-void WgpuViewportWindow::applyNavPreset(const char* name) {
+void ViewportWindow::applyNavPreset(const char* name) {
     // Matches GL AppSettings::NavPreset semantics exactly.
     //   blender — Orbit MMB,        Pan Shift+MMB   (default)
     //   rhino   — Orbit RMB,        Pan Shift+RMB
@@ -7077,7 +7077,7 @@ void WgpuViewportWindow::applyNavPreset(const char* name) {
 #include <QImage>
 #include <QCoreApplication>
 
-void WgpuViewportWindow::captureNextFrameToPng(const QString& path, bool quit_after) {
+void ViewportWindow::captureNextFrameToPng(const QString& path, bool quit_after) {
     pending_screenshot_path_ = path;
     pending_screenshot_quit_ = quit_after;
     if (isExposed()) requestUpdate();
@@ -7097,7 +7097,7 @@ void WgpuViewportWindow::captureNextFrameToPng(const QString& path, bool quit_af
 #include <QMouseEvent>
 #include <QWheelEvent>
 
-void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
+void ViewportWindow::mousePressEvent(QMouseEvent* event) {
     // In fly mode mouse-look is the only nav; clicking exits fly to match
     // Blender behaviour, then the click also acts as the orbit-mode click.
     if (fps_mode_) {
@@ -7161,7 +7161,7 @@ void WgpuViewportWindow::mousePressEvent(QMouseEvent* event) {
     }
 }
 
-void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
+void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     if (section_drag_active_ && event->button() == Qt::LeftButton) {
         section_drag_active_ = false;
         section_drag_index_  = -1;
@@ -7359,7 +7359,7 @@ void WgpuViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     }
 }
 
-void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
+void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     // Section drag intercepts the move handler entirely: the orbit/pan
     // classification already declined this drag in mousePressEvent, so all
     // we have to do is slide the plane along its normal.
@@ -7491,7 +7491,7 @@ void WgpuViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     }
 }
 
-void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
+void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     const auto mods = event->modifiers();
     const int  key  = event->key();
 
@@ -7655,14 +7655,14 @@ void WgpuViewportWindow::keyPressEvent(QKeyEvent* event) {
     QWindow::keyPressEvent(event);
 }
 
-void WgpuViewportWindow::keyReleaseEvent(QKeyEvent* event) {
+void ViewportWindow::keyReleaseEvent(QKeyEvent* event) {
     if (fps_mode_ && !event->isAutoRepeat()) {
         fps_keys_held_.remove(event->key());
     }
     QWindow::keyReleaseEvent(event);
 }
 
-void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
+void ViewportWindow::wheelEvent(QWheelEvent* event) {
     const float notches = float(event->angleDelta().y()) / 120.0f;
     // In fly mode, the wheel adjusts fps_move_speed_ (Blender / GL
     // convention). Up = faster (×1.25 per notch), down = slower (×0.8).
@@ -7684,7 +7684,7 @@ void WgpuViewportWindow::wheelEvent(QWheelEvent* event) {
     requestUpdate();
 }
 
-void WgpuViewportWindow::shutdown() {
+void ViewportWindow::shutdown() {
     // Stop the streaming worker first so no late results land in the
     // pool after we've torn down the model state. Pending in-flight
     // reads are completed (worker drains its queue) then thread joins.

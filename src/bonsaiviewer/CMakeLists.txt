@@ -134,11 +134,10 @@ if(APPLE)
 endif()
 
 target_link_libraries(BonsaiViewer PRIVATE
-    # IfcViewer still ships SceneLoader / Federation / GeometryStreamer /
-    # SidecarBuilder until the GL ViewportWindow is deleted. IfcViewerWgpu
-    # ships the live render path. Both link cleanly side-by-side.
+    # IfcViewer is the unified scene + render lib (SceneLoader, Federation,
+    # GeometryStreamer, SidecarBuilder, ViewportWindow, OverlayRenderer,
+    # BufferPool, …) since the wgpu/ifcviewer merge.
     IfcViewer
-    IfcViewerWgpu
     Qt${QT_VERSION}::Core
     Qt${QT_VERSION}::CorePrivate
     Qt${QT_VERSION}::Gui

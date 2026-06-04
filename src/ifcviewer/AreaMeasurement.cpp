@@ -17,10 +17,10 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "WgpuAreaMeasurement.h"
+#include "AreaMeasurement.h"
 
-#include "WgpuOverlayRenderer.h"
-#include "WgpuViewportWindow.h"
+#include "OverlayRenderer.h"
+#include "ViewportWindow.h"
 
 #include <QDebug>
 #include <QString>
@@ -138,9 +138,9 @@ constexpr double kCoplanarDot = 0.9999;  // ~0.81° tolerance, matches GL
 
 }  // namespace
 
-WgpuAreaMeasurement::WgpuAreaMeasurement() = default;
+AreaMeasurement::AreaMeasurement() = default;
 
-void WgpuAreaMeasurement::clear(WgpuViewportWindow& vp) {
+void AreaMeasurement::clear(ViewportWindow& vp) {
     mesh_cache_.clear();
     selected_.clear();
     total_area_m2_ = 0.0;
@@ -148,8 +148,8 @@ void WgpuAreaMeasurement::clear(WgpuViewportWindow& vp) {
     vp.setOverlayLabels({});
 }
 
-WgpuAreaMeasurement::MeshAdj*
-WgpuAreaMeasurement::meshAdj(WgpuViewportWindow& vp,
+AreaMeasurement::MeshAdj*
+AreaMeasurement::meshAdj(ViewportWindow& vp,
                              uint32_t model_id, uint32_t mesh_id) {
     const uint64_t key = (uint64_t(model_id) << 32) | uint64_t(mesh_id);
     auto it = mesh_cache_.find(key);
@@ -159,7 +159,7 @@ WgpuAreaMeasurement::meshAdj(WgpuViewportWindow& vp,
     // them in the per-mesh cache (positions can be hundreds of KB each
     // and live in the viewport already), so just look them up freshly
     // each time the user picks a brand-new mesh.
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     if (!vp.readbackMeshTriangles(model_id, mesh_id, tris)) return nullptr;
     if (tris.indices.size() < 3) return nullptr;
 
@@ -190,12 +190,12 @@ WgpuAreaMeasurement::meshAdj(WgpuViewportWindow& vp,
     return &mesh_cache_.emplace(key, std::move(a)).first->second;
 }
 
-void WgpuAreaMeasurement::onPick(WgpuViewportWindow& vp,
+void AreaMeasurement::onPick(ViewportWindow& vp,
                                  int x_phys, int y_phys, bool alt) {
-    WgpuViewportWindow::MeshLocalPick pick;
+    ViewportWindow::MeshLocalPick pick;
     if (!vp.pickMeshLocalAt(x_phys, y_phys, pick)) return;
 
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     if (!vp.readbackMeshTriangles(pick.model_id, pick.mesh_id, tris)) return;
     const size_t n_tris = tris.indices.size() / 3;
     if (n_tris == 0) return;
@@ -285,7 +285,7 @@ void WgpuAreaMeasurement::onPick(WgpuViewportWindow& vp,
           total_area_m2_, selected_.size());
 }
 
-void WgpuAreaMeasurement::rebuildHighlightAndLabels(WgpuViewportWindow& vp) {
+void AreaMeasurement::rebuildHighlightAndLabels(ViewportWindow& vp) {
     // 1) Highlight triangle list — each selected tri's three vertices
     //    transformed by its captured composed_transform. Push as a
     //    flat world-space tri list; the overlay tints them translucent
@@ -295,20 +295,20 @@ void WgpuAreaMeasurement::rebuildHighlightAndLabels(WgpuViewportWindow& vp) {
 
     // Cache the latest MeshTriangles per (model,mesh) for this rebuild
     // to avoid repeated viewport lookups when many tris share a mesh.
-    std::unordered_map<uint64_t, WgpuViewportWindow::MeshTriangles> tris_cache;
+    std::unordered_map<uint64_t, ViewportWindow::MeshTriangles> tris_cache;
 
     auto get_tris = [&](uint32_t model_id, uint32_t mesh_id)
-                       -> WgpuViewportWindow::MeshTriangles* {
+                       -> ViewportWindow::MeshTriangles* {
         const uint64_t k = (uint64_t(model_id) << 32) | uint64_t(mesh_id);
         auto it = tris_cache.find(k);
         if (it != tris_cache.end()) return &it->second;
-        WgpuViewportWindow::MeshTriangles t;
+        ViewportWindow::MeshTriangles t;
         if (!vp.readbackMeshTriangles(model_id, mesh_id, t)) return nullptr;
         return &tris_cache.emplace(k, std::move(t)).first->second;
     };
 
     for (const auto& [key, sel] : selected_) {
-        WgpuViewportWindow::MeshTriangles* t = get_tris(sel.model_id, sel.mesh_id);
+        ViewportWindow::MeshTriangles* t = get_tris(sel.model_id, sel.mesh_id);
         if (!t) continue;
         if (size_t(sel.tri) * 3 + 2 >= t->indices.size()) continue;
         const float* M = sel.composed_transform;  // column-major
@@ -337,11 +337,11 @@ void WgpuAreaMeasurement::rebuildHighlightAndLabels(WgpuViewportWindow& vp) {
         by_object[object_id].push_back(&sel);
     }
 
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::Label> labels;
     for (const auto& [obj_id, sels] : by_object) {
         if (sels.empty()) continue;
         const SelectedTri& any = *sels[0];
-        WgpuViewportWindow::MeshTriangles* t = get_tris(any.model_id, any.mesh_id);
+        ViewportWindow::MeshTriangles* t = get_tris(any.model_id, any.mesh_id);
         if (!t) continue;
         MeshAdj* adj = meshAdj(vp, any.model_id, any.mesh_id);
         if (!adj) continue;
@@ -393,7 +393,7 @@ void WgpuAreaMeasurement::rebuildHighlightAndLabels(WgpuViewportWindow& vp) {
             cx /= area; cy /= area; cz /= area;
 
             const float* M = any.composed_transform;
-            WgpuOverlayRenderer::Label lbl;
+            OverlayRenderer::Label lbl;
             lbl.world_pos[0] = float(M[0]*cx + M[4]*cy + M[8]*cz  + M[12]);
             lbl.world_pos[1] = float(M[1]*cx + M[5]*cy + M[9]*cz  + M[13]);
             lbl.world_pos[2] = float(M[2]*cx + M[6]*cy + M[10]*cz + M[14]);

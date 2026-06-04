@@ -35,13 +35,13 @@
 #include <vector>
 
 #include "Federation.h"
-#include "../ifcviewer-wgpu/WgpuViewportWindow.h"
-#include "../ifcviewer-wgpu/WgpuStreamingLoader.h"
+#include "../ifcviewer/ViewportWindow.h"
+#include "../ifcviewer/StreamingLoader.h"
 #include "GeometryStreamer.h"
 #include "SidecarBuilder.h"
 #include "SidecarCache.h"
 
-// Drives IFC file loading into a WgpuViewportWindow.  Owns the per-model
+// Drives IFC file loading into a ViewportWindow.  Owns the per-model
 // GeometryStreamer, the load queue, the sidecar read thread, and the
 // next-free object_id counter used to rebase cached models onto the
 // current session's ID space.
@@ -55,7 +55,7 @@
 class SceneLoader : public QObject {
     Q_OBJECT
 public:
-    explicit SceneLoader(WgpuViewportWindow* viewport, QObject* parent = nullptr);
+    explicit SceneLoader(ViewportWindow* viewport, QObject* parent = nullptr);
     ~SceneLoader();
 
     // Sidecar cache use is opt-in per direction. Embedders that don't care
@@ -165,7 +165,7 @@ private:
     void applySidecarData(uint32_t mid, StreamingSidecar metadata);
     void startDataSourceLoad(uint32_t mid);
 
-    WgpuViewportWindow* viewport_ = nullptr;
+    ViewportWindow* viewport_ = nullptr;
     bool should_read_sidecar_ = false;
     bool should_write_sidecar_ = false;
     std::map<uint32_t, Model> models_;

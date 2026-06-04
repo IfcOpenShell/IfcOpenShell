@@ -17,9 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "WgpuLengthMeasurement.h"
+#include "LengthMeasurement.h"
 
-#include "WgpuOverlayRenderer.h"
+#include "OverlayRenderer.h"
 
 #include <QDebug>
 #include <QStringList>
@@ -292,10 +292,10 @@ constexpr float DOT_HALO      = 1.0f;
 constexpr float DASH_PERIOD   = 9.0f;   // px
 constexpr float DASH_ON_RATIO = 0.55f;  // 5 on, 4 off
 
-WgpuOverlayRenderer::LineGroup makeGroup(std::vector<float> xyz,
+OverlayRenderer::LineGroup makeGroup(std::vector<float> xyz,
                                          float r, float g, float b,
                                          bool dashed = false) {
-    WgpuOverlayRenderer::LineGroup gp;
+    OverlayRenderer::LineGroup gp;
     gp.world_xyz = std::move(xyz);
     gp.color[0] = r; gp.color[1] = g; gp.color[2] = b; gp.color[3] = 1.0f;
     gp.stroke_color[0] = 0.0f; gp.stroke_color[1] = 0.0f;
@@ -318,10 +318,10 @@ void pushSeg(std::vector<float>& xyz,
     xyz.insert(xyz.end(), b.begin(), b.end());
 }
 
-WgpuOverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
+OverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
                                      const std::array<float, 3>& b,
                                      const QString& text) {
-    WgpuOverlayRenderer::Label lbl;
+    OverlayRenderer::Label lbl;
     lbl.world_pos[0] = 0.5f * (a[0] + b[0]);
     lbl.world_pos[1] = 0.5f * (a[1] + b[1]);
     lbl.world_pos[2] = 0.5f * (a[2] + b[2]);
@@ -329,7 +329,7 @@ WgpuOverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
     return lbl;
 }
 
-void pushDots(WgpuViewportWindow& vp, const std::vector<float>& xyz) {
+void pushDots(ViewportWindow& vp, const std::vector<float>& xyz) {
     vp.setOverlayPoints(xyz,
                         /*inner*/  1.0f, 1.0f, 1.0f, 1.0f,
                         /*size*/   DOT_SIZE,
@@ -348,9 +348,9 @@ const char* dominantAxisLabel(const float v[3]) {
 
 }  // namespace
 
-WgpuLengthMeasurement::WgpuLengthMeasurement() = default;
+LengthMeasurement::LengthMeasurement() = default;
 
-void WgpuLengthMeasurement::clear(WgpuViewportWindow& vp) {
+void LengthMeasurement::clear(ViewportWindow& vp) {
     points_.clear();
     normals_.clear();
     vp.setOverlayPoints({}, 0,0,0,0, 0, 0,0,0,0, 0);
@@ -359,9 +359,9 @@ void WgpuLengthMeasurement::clear(WgpuViewportWindow& vp) {
     vp.setHudText(QString());
 }
 
-void WgpuLengthMeasurement::onPick(WgpuViewportWindow& vp,
+void LengthMeasurement::onPick(ViewportWindow& vp,
                                    int x_phys, int y_phys, bool /*alt*/) {
-    WgpuViewportWindow::MeshLocalPick pick;
+    ViewportWindow::MeshLocalPick pick;
     if (!vp.pickMeshLocalAt(x_phys, y_phys, pick)) return;
     points_.push_back({pick.world_pos[0], pick.world_pos[1], pick.world_pos[2]});
     normals_.push_back({pick.world_normal[0], pick.world_normal[1], pick.world_normal[2]});
@@ -371,14 +371,14 @@ void WgpuLengthMeasurement::onPick(WgpuViewportWindow& vp,
     rebuildOverlay(vp);
 }
 
-void WgpuLengthMeasurement::removeLastPoint(WgpuViewportWindow& vp) {
+void LengthMeasurement::removeLastPoint(ViewportWindow& vp) {
     if (points_.empty()) return;
     points_.pop_back();
     if (!normals_.empty()) normals_.pop_back();
     rebuildOverlay(vp);
 }
 
-void WgpuLengthMeasurement::rebuildOverlay(WgpuViewportWindow& vp) {
+void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
     if (points_.size() == 1 && normals_.size() == 1) {
         rebuildLaserOverlay(vp);
         return;
@@ -389,8 +389,8 @@ void WgpuLengthMeasurement::rebuildOverlay(WgpuViewportWindow& vp) {
     for (const auto& p : points_) pushDot(pts_xyz, p);
     pushDots(vp, pts_xyz);
 
-    std::vector<WgpuOverlayRenderer::LineGroup> groups;
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::LineGroup> groups;
+    std::vector<OverlayRenderer::Label> labels;
     const size_t n = points_.size();
 
     if (n == 2) {
@@ -489,7 +489,7 @@ void WgpuLengthMeasurement::rebuildOverlay(WgpuViewportWindow& vp) {
     vp.setHudText(formatReadout());
 }
 
-void WgpuLengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
+void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
     const auto& wp = first_pick_.world_pos;
     const auto& n  = first_pick_.world_normal;
 
@@ -519,8 +519,8 @@ void WgpuLengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
         n[0]*t1[1] - n[1]*t1[0],
     };
 
-    std::vector<WgpuOverlayRenderer::LineGroup> groups;
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::LineGroup> groups;
+    std::vector<OverlayRenderer::Label> labels;
     QStringList hud_lines;
     hud_lines << QStringLiteral("Laser measure (click another point for distance)");
     double enh[3] = {0.0, 0.0, 0.0};
@@ -532,7 +532,7 @@ void WgpuLengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
     }
 
     // Coplanar-patch BFS for face extent.
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     bool have_extent = false;
     double min_t1 = 0.0, max_t1 = 0.0, min_t2 = 0.0, max_t2 = 0.0;
     if (vp.readbackMeshTriangles(first_pick_.model_id, first_pick_.mesh_id, tris)) {
@@ -658,7 +658,7 @@ void WgpuLengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
             wp[1] + NUDGE * n[1],
             wp[2] + NUDGE * n[2],
         };
-        WgpuViewportWindow::RaycastHit hit;
+        ViewportWindow::RaycastHit hit;
         if (vp.raycast(ro, n, hit)) {
             const double dist = double(hit.distance) + double(NUDGE);
             const std::array<float, 3> a = {wp[0], wp[1], wp[2]};
@@ -682,7 +682,7 @@ void WgpuLengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
     vp.setHudText(hud_lines.join('\n'));
 }
 
-QString WgpuLengthMeasurement::formatReadout() const {
+QString LengthMeasurement::formatReadout() const {
     const size_t n = points_.size();
     if (n == 0) return QStringLiteral("Length tool: click first point");
     if (n == 1) return QStringLiteral("1 point  (click another)");

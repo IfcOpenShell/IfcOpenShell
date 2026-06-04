@@ -37,7 +37,7 @@ void SceneLoader::setShouldWriteSidecar(bool enabled) {
     should_write_sidecar_ = enabled;
 }
 
-SceneLoader::SceneLoader(WgpuViewportWindow* viewport, QObject* parent)
+SceneLoader::SceneLoader(ViewportWindow* viewport, QObject* parent)
     : QObject(parent), viewport_(viewport)
 {
     connect(&element_poll_timer_, &QTimer::timeout,

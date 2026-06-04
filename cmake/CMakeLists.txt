@@ -80,7 +80,7 @@ option(BUILD_BONSAIVIEWER_WGPU "Build the experimental wgpu backend (fetches wgp
 # whenever BUILD_BONSAIVIEWER is on so the link target exists.
 if(BUILD_BONSAIVIEWER AND NOT BUILD_BONSAIVIEWER_WGPU)
     message(STATUS "BUILD_BONSAIVIEWER implies BUILD_BONSAIVIEWER_WGPU "
-                   "(SceneLoader uses WgpuViewportWindow); auto-enabling.")
+                   "(SceneLoader uses ViewportWindow); auto-enabling.")
     set(BUILD_BONSAIVIEWER_WGPU ON)
 endif()
 option(BUILD_PACKAGE "" OFF)
@@ -700,22 +700,18 @@ if(BUILD_BONSAIVIEWER_TESTS)
 endif()
 
 if(BUILD_BONSAIVIEWER)
-    # Wgpu subprojects added first because IfcViewer's SceneLoader now
-    # links against IfcViewerWgpu; the target must exist when IfcViewer's
-    # CMakeLists runs.
-    if(BUILD_BONSAIVIEWER_WGPU)
-        add_subdirectory(../src/ifcviewer-wgpu ifcviewer-wgpu)
-        add_subdirectory(../src/ifcviewer-wgpu-minimal ifcviewer-wgpu-minimal)
-    endif()
+    # IfcViewer is the unified scene + render lib since the wgpu/ifcviewer
+    # merge — wgpu-native is fetched inside its CMakeLists.txt.
     add_subdirectory(../src/ifcviewer ifcviewer)
+    if(BUILD_BONSAIVIEWER_WGPU)
+        add_subdirectory(../src/ifcviewer-minimal ifcviewer-minimal)
+    endif()
     add_subdirectory(../src/bonsaiviewer bonsaiviewer)
 endif()
 
-# Standalone wgpu build (no GL viewer / no bonsai) still supported for
-# fast iteration on the port.
+# Standalone wgpu diagnostic tool (no bonsai) — fast iteration on
+# wgpu-native probing without the full bonsai build.
 if(BUILD_BONSAIVIEWER_WGPU AND NOT BUILD_BONSAIVIEWER)
-    add_subdirectory(../src/ifcviewer-wgpu ifcviewer-wgpu)
-    add_subdirectory(../src/ifcviewer-wgpu-minimal ifcviewer-wgpu-minimal)
     add_subdirectory(../src/wgpu-mem-probe wgpu-mem-probe)
 endif()
 

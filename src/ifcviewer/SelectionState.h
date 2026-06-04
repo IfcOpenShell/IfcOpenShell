@@ -36,7 +36,7 @@
 //
 // The GPU consumes a flat u32 array indexed by object_id: bit 0 = selected,
 // bit 1 = active. Sized to (max_object_id + 1) by the caller.
-class WgpuSelectionState {
+class SelectionState {
 public:
     void clear() {
         if (ids_.empty() && active_ == 0) return;

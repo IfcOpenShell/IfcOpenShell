@@ -46,7 +46,7 @@
 // Allocator: per-sub-buffer sorted free list with adjacent-range
 // coalescing, first-fit across sub-buffers. Adequate for the chunk
 // workload (a few hundred allocations of broadly similar size).
-class WgpuBufferPool {
+class BufferPool {
 public:
     // A handle to a previously-allocated range. Includes the underlying
     // sub-buffer so callers (bind-group builders, queueWriteBuffer) can
@@ -60,11 +60,11 @@ public:
         bool valid() const { return size > 0 && buffer != nullptr; }
     };
 
-    WgpuBufferPool() = default;
-    ~WgpuBufferPool();
+    BufferPool() = default;
+    ~BufferPool();
 
-    WgpuBufferPool(const WgpuBufferPool&)            = delete;
-    WgpuBufferPool& operator=(const WgpuBufferPool&) = delete;
+    BufferPool(const BufferPool&)            = delete;
+    BufferPool& operator=(const BufferPool&) = delete;
 
     // Record the device + usage + sub-buffer size. Does NOT allocate any
     // sub-buffer here — that happens lazily on first alloc(). `instance`

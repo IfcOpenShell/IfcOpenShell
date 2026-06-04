@@ -20,7 +20,7 @@
 
 #include "Measurement.h"
 
-#include "WgpuViewportWindow.h"
+#include "ViewportWindow.h"
 
 #include <QtGlobal>
 #include <Eigen/Dense>
@@ -35,7 +35,7 @@
 
 namespace {
 
-double meshLocalVolume(const WgpuViewportWindow::MeshTriangles& tris) {
+double meshLocalVolume(const ViewportWindow::MeshTriangles& tris) {
     // Signed tetrahedra from the origin: V = sum( a · (b × c) ) / 6.
     // Absolute value at the end so winding convention doesn't matter.
     double sum = 0.0;
@@ -67,7 +67,7 @@ double det3(const double M[16]) {
 
 } // namespace
 
-double volumeOfObjects(WgpuViewportWindow& vp,
+double volumeOfObjects(ViewportWindow& vp,
                        const std::vector<uint32_t>& object_ids) {
     if (object_ids.empty()) return 0.0;
 
@@ -77,14 +77,14 @@ double volumeOfObjects(WgpuViewportWindow& vp,
     std::unordered_map<uint64_t, std::vector<double>> by_mesh;
     by_mesh.reserve(object_ids.size());
     for (uint32_t oid : object_ids) {
-        WgpuViewportWindow::InstanceLookup lk;
+        ViewportWindow::InstanceLookup lk;
         if (!vp.findInstance(oid, lk)) continue;
         const uint64_t key = (uint64_t(lk.model_id) << 32) | lk.mesh_id;
         by_mesh[key].push_back(std::abs(det3(lk.placement_transformation)));
     }
 
     double total = 0.0;
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     for (const auto& [key, dets] : by_mesh) {
         const uint32_t model_id = uint32_t(key >> 32);
         const uint32_t mesh_id  = uint32_t(key & 0xffffffffu);
@@ -96,7 +96,7 @@ double volumeOfObjects(WgpuViewportWindow& vp,
 }
 
 std::vector<std::pair<uint32_t, double>>
-volumesPerObject(WgpuViewportWindow& vp,
+volumesPerObject(ViewportWindow& vp,
                  const std::vector<uint32_t>& object_ids) {
     std::vector<std::pair<uint32_t, double>> out;
     if (object_ids.empty()) return out;
@@ -108,9 +108,9 @@ volumesPerObject(WgpuViewportWindow& vp,
     std::unordered_map<uint64_t, double> mesh_vol_local;
     mesh_vol_local.reserve(object_ids.size());
 
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     for (uint32_t oid : object_ids) {
-        WgpuViewportWindow::InstanceLookup lk;
+        ViewportWindow::InstanceLookup lk;
         if (!vp.findInstance(oid, lk)) continue;
 
         const uint64_t key = (uint64_t(lk.model_id) << 32) | lk.mesh_id;
@@ -238,7 +238,7 @@ constexpr double kCoplanarDot = 0.9999;  // ~0.81° tolerance
 
 AreaMeasurement::AreaMeasurement() = default;
 
-void AreaMeasurement::clear(WgpuViewportWindow& vp) {
+void AreaMeasurement::clear(ViewportWindow& vp) {
     mesh_cache_.clear();
     selected_.clear();
     total_area_m2_ = 0.0;
@@ -246,7 +246,7 @@ void AreaMeasurement::clear(WgpuViewportWindow& vp) {
     vp.setOverlayLabels({});
 }
 
-void AreaMeasurement::rebuildHighlight(WgpuViewportWindow& vp) {
+void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
     // Push every selected triangle's three world-space vertices to the
     // overlay.  Mesh-local positions × per-instance composed transform.
     std::vector<float> world_xyz;
@@ -287,7 +287,7 @@ void AreaMeasurement::rebuildHighlight(WgpuViewportWindow& vp) {
         by_object[object_id].push_back(&sel);
     }
 
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::Label> labels;
     for (const auto& [obj_id, sels] : by_object) {
         if (sels.empty()) continue;
         // All tris belonging to one object share its mesh + transform.
@@ -350,7 +350,7 @@ void AreaMeasurement::rebuildHighlight(WgpuViewportWindow& vp) {
 
             // Centroid → world via the instance's composed transform.
             const float* M = any.composed_transform;
-            WgpuOverlayRenderer::Label lbl;
+            OverlayRenderer::Label lbl;
             lbl.world_pos[0] = float(M[0]*cx + M[4]*cy + M[8]*cz  + M[12]);
             lbl.world_pos[1] = float(M[1]*cx + M[5]*cy + M[9]*cz  + M[13]);
             lbl.world_pos[2] = float(M[2]*cx + M[6]*cy + M[10]*cz + M[14]);
@@ -361,14 +361,14 @@ void AreaMeasurement::rebuildHighlight(WgpuViewportWindow& vp) {
     vp.setOverlayLabels(labels);
 }
 
-AreaMeasurement::MeshCache* AreaMeasurement::meshCache(WgpuViewportWindow& vp,
+AreaMeasurement::MeshCache* AreaMeasurement::meshCache(ViewportWindow& vp,
                                                        uint32_t model_id,
                                                        uint32_t mesh_id) {
     const uint64_t key = (uint64_t(model_id) << 32) | uint64_t(mesh_id);
     auto it = mesh_cache_.find(key);
     if (it != mesh_cache_.end()) return &it->second;
 
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     if (!vp.readbackMeshTriangles(model_id, mesh_id, tris)) return nullptr;
 
     MeshCache c;
@@ -397,8 +397,8 @@ AreaMeasurement::MeshCache* AreaMeasurement::meshCache(WgpuViewportWindow& vp,
     return &mesh_cache_.emplace(key, std::move(c)).first->second;
 }
 
-void AreaMeasurement::onPick(WgpuViewportWindow& vp, int x, int y, bool alt) {
-    WgpuViewportWindow::MeshLocalPick pick;
+void AreaMeasurement::onPick(ViewportWindow& vp, int x, int y, bool alt) {
+    ViewportWindow::MeshLocalPick pick;
     if (!vp.pickMeshLocalAt(x, y, pick)) return;
 
     MeshCache* cache = meshCache(vp, pick.model_id, pick.mesh_id);
@@ -607,10 +607,10 @@ constexpr float DOT_HALO      = 1.0f;
 constexpr float DASH_PERIOD   = 9.0f;   // px
 constexpr float DASH_ON_RATIO = 0.55f;  // 5 on, 4 off
 
-WgpuOverlayRenderer::LineGroup makeGroup(std::vector<float> xyz,
+OverlayRenderer::LineGroup makeGroup(std::vector<float> xyz,
                                      float r, float g, float b,
                                      bool dashed = false) {
-    WgpuOverlayRenderer::LineGroup gp;
+    OverlayRenderer::LineGroup gp;
     gp.world_xyz = std::move(xyz);
     gp.color[0] = r; gp.color[1] = g; gp.color[2] = b; gp.color[3] = 1.0f;
     gp.stroke_color[0] = 0.0f; gp.stroke_color[1] = 0.0f;
@@ -635,10 +635,10 @@ void pushSeg(std::vector<float>& xyz,
     xyz.insert(xyz.end(), b.begin(), b.end());
 }
 
-WgpuOverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
+OverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
                                   const std::array<float, 3>& b,
                                   const QString& text) {
-    WgpuOverlayRenderer::Label lbl;
+    OverlayRenderer::Label lbl;
     lbl.world_pos[0] = 0.5f * (a[0] + b[0]);
     lbl.world_pos[1] = 0.5f * (a[1] + b[1]);
     lbl.world_pos[2] = 0.5f * (a[2] + b[2]);
@@ -646,7 +646,7 @@ WgpuOverlayRenderer::Label makeLabel(const std::array<float, 3>& a,
     return lbl;
 }
 
-void pushDots(WgpuViewportWindow& vp, const std::vector<float>& xyz) {
+void pushDots(ViewportWindow& vp, const std::vector<float>& xyz) {
     vp.setOverlayPoints(xyz,
                         /*inner*/  1.0f, 1.0f, 1.0f, 1.0f,
                         /*size*/   DOT_SIZE,
@@ -656,7 +656,7 @@ void pushDots(WgpuViewportWindow& vp, const std::vector<float>& xyz) {
 
 } // namespace
 
-void LengthMeasurement::clear(WgpuViewportWindow& vp) {
+void LengthMeasurement::clear(ViewportWindow& vp) {
     points_.clear();
     normals_.clear();
     vp.setOverlayPoints({}, 0,0,0,0, 0, 0,0,0,0, 0);
@@ -665,8 +665,8 @@ void LengthMeasurement::clear(WgpuViewportWindow& vp) {
     vp.setHudText(QString());
 }
 
-void LengthMeasurement::onPick(WgpuViewportWindow& vp, int x, int y, bool /*alt*/) {
-    WgpuViewportWindow::MeshLocalPick pick;
+void LengthMeasurement::onPick(ViewportWindow& vp, int x, int y, bool /*alt*/) {
+    ViewportWindow::MeshLocalPick pick;
     if (!vp.pickMeshLocalAt(x, y, pick)) return;
     points_.push_back({pick.world_pos[0], pick.world_pos[1], pick.world_pos[2]});
     normals_.push_back({pick.world_normal[0], pick.world_normal[1], pick.world_normal[2]});
@@ -676,14 +676,14 @@ void LengthMeasurement::onPick(WgpuViewportWindow& vp, int x, int y, bool /*alt*
     rebuildOverlay(vp);
 }
 
-void LengthMeasurement::removeLastPoint(WgpuViewportWindow& vp) {
+void LengthMeasurement::removeLastPoint(ViewportWindow& vp) {
     if (points_.empty()) return;
     points_.pop_back();
     if (!normals_.empty()) normals_.pop_back();
     rebuildOverlay(vp);
 }
 
-void LengthMeasurement::rebuildOverlay(WgpuViewportWindow& vp) {
+void LengthMeasurement::rebuildOverlay(ViewportWindow& vp) {
     if (points_.size() == 1 && normals_.size() == 1) {
         rebuildLaserOverlay(vp);
         return;
@@ -694,8 +694,8 @@ void LengthMeasurement::rebuildOverlay(WgpuViewportWindow& vp) {
     for (const auto& p : points_) pushDot(pts_xyz, p);
     pushDots(vp, pts_xyz);
 
-    std::vector<WgpuOverlayRenderer::LineGroup> groups;
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::LineGroup> groups;
+    std::vector<OverlayRenderer::Label> labels;
     const size_t n = points_.size();
 
     if (n == 2) {
@@ -823,7 +823,7 @@ const char* dominantAxisLabel(const float v[3]) {
 
 } // namespace
 
-void LengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
+void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
     const auto& wp = first_pick_.world_pos;       // float[3] world click
     const auto& n  = first_pick_.world_normal;    // float[3] world normal
 
@@ -855,8 +855,8 @@ void LengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
         n[0]*t1[1] - n[1]*t1[0],
     };
 
-    std::vector<WgpuOverlayRenderer::LineGroup> groups;
-    std::vector<WgpuOverlayRenderer::Label> labels;
+    std::vector<OverlayRenderer::LineGroup> groups;
+    std::vector<OverlayRenderer::Label> labels;
     QStringList hud_lines;
     hud_lines << QStringLiteral("Laser measure (click another point for distance)");
     double enh[3] = {0.0, 0.0, 0.0};
@@ -873,7 +873,7 @@ void LengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
     // co-normal neighbours, then project each patch vertex into the
     // (t1, t2) basis to get the bounding extent of the face.  Stops
     // exactly at the face edge (no overshoot into adjacent geometry).
-    WgpuViewportWindow::MeshTriangles tris;
+    ViewportWindow::MeshTriangles tris;
     bool have_extent = false;
     double min_t1 = 0.0, max_t1 = 0.0, min_t2 = 0.0, max_t2 = 0.0;
     if (vp.readbackMeshTriangles(first_pick_.model_id, first_pick_.mesh_id, tris)) {
@@ -1008,7 +1008,7 @@ void LengthMeasurement::rebuildLaserOverlay(WgpuViewportWindow& vp) {
             wp[1] + NUDGE * n[1],
             wp[2] + NUDGE * n[2],
         };
-        WgpuViewportWindow::RaycastHit hit;
+        ViewportWindow::RaycastHit hit;
         if (vp.raycast(ro, n, hit)) {
             const double dist = double(hit.distance) + double(NUDGE);
             const std::array<float, 3> a = {wp[0], wp[1], wp[2]};

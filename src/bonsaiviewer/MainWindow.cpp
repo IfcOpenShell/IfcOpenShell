@@ -22,7 +22,7 @@
 
 #include "../ifcviewer/AppSettings.h"
 #include "../ifcviewer/Federation.h"
-#include "../ifcviewer-wgpu/WgpuViewportWindow.h"
+#include "../ifcviewer/ViewportWindow.h"
 #include "SessionState.h"
 #include "components/Buttons.h"
 #include "components/Panel.h"
@@ -529,8 +529,8 @@ void MainWindow::setupLoader() {
         QMessageBox::warning(this, "Bonsai Viewer", message);
     });
 
-    connect(viewport_widget_->viewport(), &WgpuViewportWindow::frameStatsUpdated, this,
-            [this](const WgpuViewportWindow::FrameStats& s) {
+    connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
+            [this](const ViewportWindow::FrameStats& s) {
         if (!status_perf_label_->isVisible()) return;
         status_perf_label_->setText(
             QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri | %7 draws")
@@ -542,7 +542,7 @@ void MainWindow::setupLoader() {
                 .arg(s.total_triangles)
                 .arg(s.gl_draw_calls));
     });
-    connect(viewport_widget_->viewport(), &WgpuViewportWindow::objectPicked,
+    connect(viewport_widget_->viewport(), &ViewportWindow::objectPicked,
             this, [this](uint32_t object_id) {
         session_state_->setSelectedObjectId(object_id);
         session_state_->notifySelectionChanged();

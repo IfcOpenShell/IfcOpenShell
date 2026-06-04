@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "WgpuOverlayRenderer.h"
+#include "OverlayRenderer.h"
 
 #include <QFont>
 #include <QFontMetrics>
@@ -439,11 +439,11 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
 // Construction / destruction
 // -----------------------------------------------------------------------------
 
-WgpuOverlayRenderer::~WgpuOverlayRenderer() {
+OverlayRenderer::~OverlayRenderer() {
     destroy();
 }
 
-bool WgpuOverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
+bool OverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
                                WGPUQueue queue, WGPUTextureFormat surface_format,
                                int sample_count) {
     instance_       = instance;
@@ -461,7 +461,7 @@ bool WgpuOverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
     return true;
 }
 
-void WgpuOverlayRenderer::destroy() {
+void OverlayRenderer::destroy() {
     // Axis indicator
     if (axis_bind_group_)         { wgpuBindGroupRelease(axis_bind_group_);              axis_bind_group_ = nullptr; }
     if (axis_pivot_pipeline_)     { wgpuRenderPipelineRelease(axis_pivot_pipeline_);     axis_pivot_pipeline_ = nullptr; }
@@ -545,7 +545,7 @@ void WgpuOverlayRenderer::destroy() {
 // Axis indicator
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildAxisIndicator() {
+bool OverlayRenderer::buildAxisIndicator() {
     // Bonsai decorator palette (src/bonsai/bonsai/bim/ui.py:593+):
     //   decorator_color_error    = (1.000, 0.200, 0.322) — red    → +X
     //   decorator_color_selected = (0.545, 0.863, 0.000) — green  → +Y
@@ -719,8 +719,8 @@ bool WgpuOverlayRenderer::buildAxisIndicator() {
         && axis_corner_pipeline_;
 }
 
-void WgpuOverlayRenderer::encodePivot(WGPURenderPassEncoder pass,
-                                      const WgpuOverlayFrame& f,
+void OverlayRenderer::encodePivot(WGPURenderPassEncoder pass,
+                                      const OverlayFrame& f,
                                       bool visible) {
     if (!visible || !axis_pivot_pipeline_ || !axis_pivot_xray_pipeline_) return;
     if (f.viewport_h_px <= 0) return;
@@ -760,9 +760,9 @@ void WgpuOverlayRenderer::encodePivot(WGPURenderPassEncoder pass,
     wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
 }
 
-void WgpuOverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
+void OverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
                                            WGPUTextureView surface_view,
-                                           const WgpuOverlayFrame& f) {
+                                           const OverlayFrame& f) {
     if (!axis_corner_pipeline_ || !surface_view) return;
     const int dpr = std::max(1, f.device_pixel_ratio);
     const uint32_t gizmo_size = uint32_t(110 * dpr);
@@ -829,7 +829,7 @@ void WgpuOverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
 // Section plane visualizer
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildSectionVisualizer() {
+bool OverlayRenderer::buildSectionVisualizer() {
     struct Seg {
         std::array<float, 3> s, e;
         std::array<float, 3> c;
@@ -967,9 +967,9 @@ bool WgpuOverlayRenderer::buildSectionVisualizer() {
     return section_pipeline_ != nullptr;
 }
 
-void WgpuOverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
-                                              const WgpuOverlayFrame& f,
-                                              const std::vector<WgpuSectionPlane>& planes) {
+void OverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
+                                              const OverlayFrame& f,
+                                              const std::vector<SectionPlane>& planes) {
     if (!section_pipeline_ || planes.empty()) return;
 
     wgpuRenderPassEncoderSetPipeline(pass, section_pipeline_);
@@ -978,7 +978,7 @@ void WgpuOverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
 
     const int n = std::min<int>(int(planes.size()), kMaxSectionPlanes);
     for (int i = 0; i < n; ++i) {
-        const WgpuSectionPlane& p = planes[i];
+        const SectionPlane& p = planes[i];
 
         // Stable in-plane basis: pick the world axis least parallel to n
         // so the cross-product stays well-conditioned at any orientation.
@@ -1021,7 +1021,7 @@ void WgpuOverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
 // Marquee
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildMarquee() {
+bool OverlayRenderer::buildMarquee() {
     struct Seg { std::array<float, 2> s, e; };
     static const Seg segs[] = {
         { {0, 0}, {1, 0} },
@@ -1183,9 +1183,9 @@ bool WgpuOverlayRenderer::buildMarquee() {
     return marquee_pipeline_ != nullptr && marquee_fill_pipeline_ != nullptr;
 }
 
-void WgpuOverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
+void OverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
                                         WGPUTextureView surface_view,
-                                        const WgpuOverlayFrame& f,
+                                        const OverlayFrame& f,
                                         QPoint start_logical_px,
                                         QPoint current_logical_px,
                                         bool active) {
@@ -1258,7 +1258,7 @@ void WgpuOverlayRenderer::encodeMarquee(WGPUCommandEncoder enc,
 // Overlay lines
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildOverlayLines() {
+bool OverlayRenderer::buildOverlayLines() {
     // Empty initial buffers — both grow on demand inside setOverlayLines.
     // Use a tiny starter capacity so the very first set call doesn't have
     // to special-case "buffer is null."
@@ -1379,7 +1379,7 @@ bool WgpuOverlayRenderer::buildOverlayLines() {
     return overlay_line_pipeline_ != nullptr;
 }
 
-void WgpuOverlayRenderer::setOverlayLines(const std::vector<LineGroup>& groups) {
+void OverlayRenderer::setOverlayLines(const std::vector<LineGroup>& groups) {
     overlay_line_draws_.clear();
     if (groups.empty()) return;
 
@@ -1493,8 +1493,8 @@ void WgpuOverlayRenderer::setOverlayLines(const std::vector<LineGroup>& groups) 
     }
 }
 
-void WgpuOverlayRenderer::encodeOverlayLines(WGPURenderPassEncoder pass,
-                                             const WgpuOverlayFrame& f) {
+void OverlayRenderer::encodeOverlayLines(WGPURenderPassEncoder pass,
+                                             const OverlayFrame& f) {
     if (!overlay_line_pipeline_ || overlay_line_draws_.empty()) return;
     if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
 
@@ -1529,7 +1529,7 @@ void WgpuOverlayRenderer::encodeOverlayLines(WGPURenderPassEncoder pass,
 // Overlay points
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildOverlayPoints() {
+bool OverlayRenderer::buildOverlayPoints() {
     {
         WGPUBufferDescriptor bdesc = {};
         bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
@@ -1642,7 +1642,7 @@ bool WgpuOverlayRenderer::buildOverlayPoints() {
     return overlay_point_pipeline_ != nullptr;
 }
 
-void WgpuOverlayRenderer::setOverlayPoints(const std::vector<float>& world_xyz,
+void OverlayRenderer::setOverlayPoints(const std::vector<float>& world_xyz,
                                            float r, float g, float b, float a,
                                            float pixel_size,
                                            float stroke_r, float stroke_g,
@@ -1715,8 +1715,8 @@ void WgpuOverlayRenderer::setOverlayPoints(const std::vector<float>& world_xyz,
                          &inner_norm, sizeof(inner_norm));
 }
 
-void WgpuOverlayRenderer::encodeOverlayPoints(WGPURenderPassEncoder pass,
-                                              const WgpuOverlayFrame& f) {
+void OverlayRenderer::encodeOverlayPoints(WGPURenderPassEncoder pass,
+                                              const OverlayFrame& f) {
     if (!overlay_point_pipeline_ || overlay_point_vertex_count_ == 0) return;
     if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
 
@@ -1738,7 +1738,7 @@ void WgpuOverlayRenderer::encodeOverlayPoints(WGPURenderPassEncoder pass,
 // Highlight triangles (translucent world-space triangle list)
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildHighlightTriangles() {
+bool OverlayRenderer::buildHighlightTriangles() {
     {
         WGPUBufferDescriptor bdesc = {};
         bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
@@ -1853,7 +1853,7 @@ bool WgpuOverlayRenderer::buildHighlightTriangles() {
     return highlight_pipeline_ != nullptr;
 }
 
-void WgpuOverlayRenderer::setHighlightTriangles(
+void OverlayRenderer::setHighlightTriangles(
         const std::vector<float>& world_xyz,
         float r, float g, float b, float a) {
     highlight_color_[0] = r;
@@ -1881,8 +1881,8 @@ void WgpuOverlayRenderer::setHighlightTriangles(
     highlight_vertex_count_ = uint32_t(n_floats / 3);
 }
 
-void WgpuOverlayRenderer::encodeHighlightTriangles(WGPURenderPassEncoder pass,
-                                                   const WgpuOverlayFrame& f) {
+void OverlayRenderer::encodeHighlightTriangles(WGPURenderPassEncoder pass,
+                                                   const OverlayFrame& f) {
     if (!highlight_pipeline_ || highlight_vertex_count_ == 0) return;
     // Pack mat4 + vec4 into the slot. mat4 is column-major 16 floats.
     uint8_t slot[80] = {};
@@ -1901,7 +1901,7 @@ void WgpuOverlayRenderer::encodeHighlightTriangles(WGPURenderPassEncoder pass,
 // Labels + HUD text (textured quads, content-cached)
 // -----------------------------------------------------------------------------
 
-bool WgpuOverlayRenderer::buildLabels() {
+bool OverlayRenderer::buildLabels() {
     {
         WGPUSamplerDescriptor sd = {};
         sd.minFilter    = WGPUFilterMode_Linear;
@@ -2001,7 +2001,7 @@ bool WgpuOverlayRenderer::buildLabels() {
     return label_pipeline_ != nullptr;
 }
 
-void WgpuOverlayRenderer::releaseLabelTextures() {
+void OverlayRenderer::releaseLabelTextures() {
     for (auto it = label_tex_cache_.begin(); it != label_tex_cache_.end(); ++it) {
         if (it.value().bind_group) wgpuBindGroupRelease(it.value().bind_group);
         if (it.value().view)       wgpuTextureViewRelease(it.value().view);
@@ -2010,16 +2010,16 @@ void WgpuOverlayRenderer::releaseLabelTextures() {
     label_tex_cache_.clear();
 }
 
-void WgpuOverlayRenderer::setOverlayLabels(const std::vector<Label>& labels) {
+void OverlayRenderer::setOverlayLabels(const std::vector<Label>& labels) {
     labels_ = labels;
 }
 
-void WgpuOverlayRenderer::setHudText(const QString& text) {
+void OverlayRenderer::setHudText(const QString& text) {
     hud_text_ = text;
 }
 
-WgpuOverlayRenderer::LabelTexture*
-WgpuOverlayRenderer::getOrCreateLabelTexture(const QString& cache_key,
+OverlayRenderer::LabelTexture*
+OverlayRenderer::getOrCreateLabelTexture(const QString& cache_key,
                                              const QString& text,
                                              int font_pt,
                                              int dpr) {
@@ -2129,9 +2129,9 @@ WgpuOverlayRenderer::getOrCreateLabelTexture(const QString& cache_key,
     return &inserted.value();
 }
 
-void WgpuOverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
+void OverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
                                        WGPUTextureView surface_view,
-                                       const WgpuOverlayFrame& f) {
+                                       const OverlayFrame& f) {
     if (!label_pipeline_ || !surface_view) return;
     if (labels_.empty() && hud_text_.isEmpty()) {
         // Selection cleared / tool exited — drop the cache so we don't

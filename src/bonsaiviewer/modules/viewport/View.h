@@ -25,7 +25,7 @@
 #include <memory>
 
 namespace bonsaiviewer { class SessionState; }
-class WgpuViewportWindow;
+class ViewportWindow;
 class AreaMeasurement;
 class LengthMeasurement;
 
@@ -44,7 +44,7 @@ class ViewportView : public QObject {
 
 public:
     explicit ViewportView(bonsaiviewer::SessionState* session_state,
-                          WgpuViewportWindow* viewport,
+                          ViewportWindow* viewport,
                           QObject* parent = nullptr);
     ~ViewportView() override;
 
@@ -57,7 +57,7 @@ private:
     void updateVolumeReadout();
 
     bonsaiviewer::SessionState* session_state_ = nullptr;
-    WgpuViewportWindow* viewport_ = nullptr;
+    ViewportWindow* viewport_ = nullptr;
     std::unique_ptr<AreaMeasurement> area_measurement_;
     std::unique_ptr<LengthMeasurement> length_measurement_;
 };

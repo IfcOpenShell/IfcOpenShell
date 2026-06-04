@@ -17,18 +17,18 @@
  *                                                                              *
  ********************************************************************************/
 
-// Tier-1 coverage of WgpuVisibilityState — the per-element hidden-id set
+// Tier-1 coverage of VisibilityState — the per-element hidden-id set
 // consulted in cull. The class is pure stdlib; this test exercises its
 // primitives directly. Bulk hide/isolate/show-all semantics live in
-// WgpuViewportWindow (which composes WgpuVisibilityState + the model
+// ViewportWindow (which composes VisibilityState + the model
 // instance lists) and would need an integration test, not a Tier-1 unit.
 
-#include "WgpuVisibilityState.h"
+#include "VisibilityState.h"
 
 #include <catch2/catch_test_macros.hpp>
 
-TEST_CASE("WgpuVisibilityState starts empty", "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+TEST_CASE("VisibilityState starts empty", "[wgpu-visibility]") {
+    VisibilityState vis;
     REQUIRE(vis.hiddenCount() == 0);
     REQUIRE_FALSE(vis.isHidden(0));        // 0 is the "no object" sentinel
     REQUIRE_FALSE(vis.isHidden(1));
@@ -37,7 +37,7 @@ TEST_CASE("WgpuVisibilityState starts empty", "[wgpu-visibility]") {
 
 TEST_CASE("hide(id) records the id; isHidden reflects it",
           "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
 
     vis.hide(1);
     vis.hide(2);
@@ -51,7 +51,7 @@ TEST_CASE("hide(id) records the id; isHidden reflects it",
 }
 
 TEST_CASE("hide is idempotent", "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
 
     vis.hide(5);
     vis.hide(5);
@@ -62,7 +62,7 @@ TEST_CASE("hide is idempotent", "[wgpu-visibility]") {
 }
 
 TEST_CASE("hide(0) is ignored", "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
 
     vis.hide(0);
     REQUIRE(vis.hiddenCount() == 0);
@@ -71,7 +71,7 @@ TEST_CASE("hide(0) is ignored", "[wgpu-visibility]") {
 
 TEST_CASE("show(id) removes a previously hidden id",
           "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
     vis.hide(1);
     vis.hide(2);
 
@@ -82,7 +82,7 @@ TEST_CASE("show(id) removes a previously hidden id",
 }
 
 TEST_CASE("show(non-hidden) is a no-op", "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
     vis.hide(1);
 
     vis.show(99);                 // never hidden
@@ -91,7 +91,7 @@ TEST_CASE("show(non-hidden) is a no-op", "[wgpu-visibility]") {
 }
 
 TEST_CASE("clear() drops every hidden id", "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
     vis.hide(1);
     vis.hide(2);
     vis.hide(3);
@@ -104,7 +104,7 @@ TEST_CASE("clear() drops every hidden id", "[wgpu-visibility]") {
 }
 
 TEST_CASE("hiddenIds returns the live set", "[wgpu-visibility]") {
-    WgpuVisibilityState vis;
+    VisibilityState vis;
     vis.hide(10);
     vis.hide(20);
     vis.hide(30);

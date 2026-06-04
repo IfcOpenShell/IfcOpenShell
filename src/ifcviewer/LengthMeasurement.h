@@ -20,7 +20,7 @@
 #ifndef WGPULENGTHMEASUREMENT_H
 #define WGPULENGTHMEASUREMENT_H
 
-#include "WgpuViewportWindow.h"
+#include "ViewportWindow.h"
 
 #include <QString>
 
@@ -45,21 +45,21 @@
 // Pushes the running set as overlay points + the connecting polyline +
 // per-segment labels to the viewport; the multi-line HUD carries the
 // adaptive readout.
-class WgpuLengthMeasurement {
+class LengthMeasurement {
 public:
-    WgpuLengthMeasurement();
+    LengthMeasurement();
 
     // Pixel coords are physical (post-DPR). `alt` is currently unused
     // (kept for API symmetry with the Area tool).
-    void onPick(WgpuViewportWindow& vp, int x_phys, int y_phys, bool alt);
-    void removeLastPoint(WgpuViewportWindow& vp);
-    void clear(WgpuViewportWindow& vp);
+    void onPick(ViewportWindow& vp, int x_phys, int y_phys, bool alt);
+    void removeLastPoint(ViewportWindow& vp);
+    void clear(ViewportWindow& vp);
 
     size_t pointCount() const { return points_.size(); }
 
 private:
-    void rebuildOverlay(WgpuViewportWindow& vp);
-    void rebuildLaserOverlay(WgpuViewportWindow& vp);
+    void rebuildOverlay(ViewportWindow& vp);
+    void rebuildLaserOverlay(ViewportWindow& vp);
     QString formatReadout() const;
 
     std::vector<std::array<float, 3>> points_;
@@ -69,7 +69,7 @@ private:
     // updated afterwards. Used by the 1-pt laser BFS to locate the
     // mesh-local position of points_[0] without re-picking. Stays valid
     // while points_[0] does (pop_back never touches the first element).
-    WgpuViewportWindow::MeshLocalPick first_pick_{};
+    ViewportWindow::MeshLocalPick first_pick_{};
 };
 
 #endif  // WGPULENGTHMEASUREMENT_H

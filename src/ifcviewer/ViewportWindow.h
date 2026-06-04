@@ -41,12 +41,12 @@
 #include <unordered_set>
 
 #include "SidecarCache.h"
-#include "WgpuBufferPool.h"
-#include "WgpuModelGpuData.h"
-#include "WgpuOverlayRenderer.h"
-#include "WgpuSelectionState.h"
-#include "WgpuStreamingThread.h"
-#include "WgpuVisibilityState.h"
+#include "BufferPool.h"
+#include "ModelGpuData.h"
+#include "OverlayRenderer.h"
+#include "SelectionState.h"
+#include "StreamingThread.h"
+#include "VisibilityState.h"
 
 // Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
 // adapter/device, configures a surface against the platform-native window
@@ -56,11 +56,11 @@
 //
 // Mirrors the lifecycle shape of the GL ViewportWindow so subsequent stages
 // can grow this into a full IFC renderer without restructuring the host.
-class WgpuViewportWindow : public QWindow {
+class ViewportWindow : public QWindow {
     Q_OBJECT
 public:
-    explicit WgpuViewportWindow(QWindow* parent = nullptr);
-    ~WgpuViewportWindow();
+    explicit ViewportWindow(QWindow* parent = nullptr);
+    ~ViewportWindow();
 
     void setBackgroundColor(const QColor& color);
 
@@ -103,7 +103,7 @@ public:
     void resetScene();
 
     // Model-level visibility. Mirrors the GL ViewportWindow API — flips
-    // WgpuModelGpuData::hidden, which every render/pick/cull pass already
+    // ModelGpuData::hidden, which every render/pick/cull pass already
     // consults. requestUpdate() so the change is visible immediately.
     void hideModel(uint32_t model_id);
     void showModel(uint32_t model_id);
@@ -213,7 +213,7 @@ private:
     // 2D pixel area covered on screen. This is the streaming loader's
     // chunk-priority metric — extracted from driveStreamingLoads as a
     // member so the click-and-track diagnostic can compare scores.
-    float chunkScreenAreaPx(const WgpuModelGpuData::Chunk& c,
+    float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
                             const QMatrix4x4& vp_mat) const;
 
 public:
@@ -250,27 +250,27 @@ private:
     void shutdown();
 
     bool  buildPipelines();
-    void  buildModelBindGroup(WgpuModelGpuData& m);
-    void  buildChunkBindGroup(WgpuModelGpuData& m, size_t chunk_idx);
+    void  buildModelBindGroup(ModelGpuData& m);
+    void  buildChunkBindGroup(ModelGpuData& m, size_t chunk_idx);
     // Streaming: read the chunk's vertex + index bytes from disk,
     // sub-allocate ranges in pool_, queueWriteBuffer them in, build the
     // chunk's bind group, flip is_resident=true. Returns true on success;
     // false if either the disk read or a pool alloc fails (caller is
     // expected to have already evicted enough). No-op (returns true)
     // when already resident.
-    bool  loadChunkBytesAndUploadGpu(WgpuModelGpuData& m, size_t chunk_idx);
+    bool  loadChunkBytesAndUploadGpu(ModelGpuData& m, size_t chunk_idx);
     // Pool-allocate + queueWriteBuffer + build bind group for a chunk
     // whose vbytes/idx have already been read (by either the worker
     // thread's drained result or the sync fallback). Returns false on
     // pool OOM. Toggles is_resident=true / is_loading=false on success.
-    bool  applyStreamedChunk(WgpuModelGpuData& m, size_t chunk_idx,
+    bool  applyStreamedChunk(ModelGpuData& m, size_t chunk_idx,
                              const std::vector<uint8_t>& vbytes,
                              const std::vector<uint32_t>& idx);
     // Release a resident chunk's pool ranges + bind group; flip
     // is_resident=false. The chunk's CPU metadata (offsets, AABB,
     // visible-draw scratch) is retained so a subsequent
     // loadChunkBytesAndUploadGpu can bring it back without re-planning.
-    void  unloadChunk(WgpuModelGpuData& m, size_t chunk_idx);
+    void  unloadChunk(ModelGpuData& m, size_t chunk_idx);
     // Called from render() after cull: find non-resident chunks with
     // current visible draw counts > 0 and bring them resident. When the
     // pool is full, evicts LRU non-visible chunks first, then falls back
@@ -294,7 +294,7 @@ private:
     // Show/hide the pivot indicator. hide_after_ms > 0 starts the
     // single-shot auto-hide timer used by the wheel-zoom afterglow;
     // drag callers pass 0 and toggle manually on press/release. The
-    // actual gizmo rendering lives in WgpuOverlayRenderer — this just
+    // actual gizmo rendering lives in OverlayRenderer — this just
     // manages the UI-side visibility timer.
     void  setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
     void  releaseEdgeResources();
@@ -355,14 +355,14 @@ public:
     // Overlay primitives. Mirror GL ViewportWindow so the Measurement +
     // dimension tools can target either backend through one API.
     // Empty inputs clears the corresponding set.
-    void  setOverlayLines(const std::vector<WgpuOverlayRenderer::LineGroup>& groups);
+    void  setOverlayLines(const std::vector<OverlayRenderer::LineGroup>& groups);
     void  setOverlayPoints(const std::vector<float>& world_xyz,
                            float r, float g, float b, float a,
                            float pixel_size,
                            float stroke_r, float stroke_g,
                            float stroke_b, float stroke_a,
                            float stroke_extra);
-    void  setOverlayLabels(const std::vector<WgpuOverlayRenderer::Label>& labels);
+    void  setOverlayLabels(const std::vector<OverlayRenderer::Label>& labels);
     void  setHudText(const QString& text);
     // Translucent world-space triangle overlay (Area-tool patch shading).
     // Empty list disables; color is RGBA in [0, 1].
@@ -375,7 +375,7 @@ public:
     // (model_id, mesh_id) pair doesn't resolve. Matches the GL
     // ViewportWindow::MeshTriangles + readbackMeshTriangles shape so
     // the measure tools port verbatim.
-    using MeshTriangles = WgpuModelGpuData::MeshTriangles;
+    using MeshTriangles = ModelGpuData::MeshTriangles;
     bool  readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
                                 MeshTriangles& out) const;
 
@@ -423,8 +423,8 @@ public:
     // Selection accessor. Exposed for callers (bonsai's volume readout)
     // that need to read selectionIds() / activeObjectId(). Mutation goes
     // through the existing setSelection / pick paths.
-    WgpuSelectionState&       selection()       { return selection_; }
-    const WgpuSelectionState& selection() const { return selection_; }
+    SelectionState&       selection()       { return selection_; }
+    const SelectionState& selection() const { return selection_; }
 
     // Pick + resolve to mesh-local space. Runs pickSurfaceAt to get the
     // world-space hit, then inverts the instance's composed transform
@@ -499,14 +499,14 @@ signals:
     // Selection moved by a pick / marquee. Emitted with the active id
     // (0 = miss). Bonsai mirrors this into SessionState.
     void objectPicked(uint32_t object_id);
-    void frameStatsUpdated(const WgpuViewportWindow::FrameStats& stats);
+    void frameStatsUpdated(const ViewportWindow::FrameStats& stats);
     // Emitted instead of objectPicked when an Area / Length tool is
     // active. The host branches on toolMode() and calls
     // pickMeshLocalAt(x, y, ...) for hit details. Coordinates are in
     // physical pixels (post-DPR).
     void surfacePickedInTool(int x, int y, int modifiers);
     // Emitted whenever the active tool changes (incl. on→off).
-    void toolModeChanged(WgpuViewportWindow::ToolMode mode);
+    void toolModeChanged(ViewportWindow::ToolMode mode);
     // Backspace/Delete pressed while a tool is active. Length tool's
     // remove-last-point; other tools may ignore.
     void toolBackspacePressed();
@@ -578,7 +578,7 @@ private:
     // is overwhelmingly thin-in-one-axis (pipes, columns, slabs,
     // windows). Sphere projection is kept for contribution / LOD picks
     // because conservative-over is the right failure mode there.
-    uint32_t cullModelCpuCompute(WgpuModelGpuData& m,
+    uint32_t cullModelCpuCompute(ModelGpuData& m,
                                  const float planes[6][4],
                                  const float eye[3],
                                  const float forward[3],
@@ -591,7 +591,7 @@ private:
     // Upload phase: wgpuQueueWriteBuffer for visible_draws / prefix_sums /
     // per-model uniform. Main-thread only (wgpu queue ops are not all
     // thread-safe).
-    void     cullModelCpuUpload(WgpuModelGpuData& m);
+    void     cullModelCpuUpload(ModelGpuData& m);
 
     // Compose one instance's `transform` (float[16] column-major) from
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
@@ -601,7 +601,7 @@ private:
     // get cancelled by the federation false origin before precision is
     // narrowed. Mirrors GL ViewportWindow::composeInstanceFromPlacement.
     void composeInstanceFromPlacement(InstanceCpu& inst,
-                                      const WgpuModelGpuData& m) const;
+                                      const ModelGpuData& m) const;
 
     // Walk every instance of `model_id`, recompose its transform from the
     // current federation matrices, refresh per-chunk world AABBs, and
@@ -638,7 +638,7 @@ private:
     // frame bind group because object_ids are globally unique across models.
     WGPUBuffer         selection_flags_buffer_   = nullptr;
     uint32_t           selection_flags_capacity_ = 0;  // number of u32 entries
-    WgpuSelectionState selection_;
+    SelectionState selection_;
     std::vector<uint32_t> selection_flags_scratch_;
 
     // Per-element visibility. Consulted in cullModelCpuCompute to drop
@@ -646,7 +646,7 @@ private:
     // hidden geometry out of cost on every axis (no draw, no depth, no
     // pick). Mutated on the main thread between renders; cull workers
     // read concurrently which is safe as long as no concurrent writes.
-    WgpuVisibilityState visibility_;
+    VisibilityState visibility_;
 
     // Depth attachment (4× MSAA), recreated on surface resize.
     WGPUTexture     depth_texture_ = nullptr;
@@ -711,9 +711,9 @@ private:
 
     // All viewport overlays (axis indicator, section gizmos, marquee
     // rect) — pipelines + shaders + buffers + encoders. The viewport
-    // builds a WgpuOverlayFrame each frame and asks the renderer to
-    // encode each overlay; see WgpuOverlayRenderer.h.
-    WgpuOverlayRenderer overlays_;
+    // builds a OverlayFrame each frame and asks the renderer to
+    // encode each overlay; see OverlayRenderer.h.
+    OverlayRenderer overlays_;
 
     // Active measurement tool. setToolMode() / setSelection mutations
     // both funnel into updateVolumeReadout() which pushes the HUD +
@@ -724,18 +724,18 @@ private:
     // after entering Volume mode this primes the overlay.
     void updateVolumeReadout();
 
-    // Area tool state lives in WgpuAreaMeasurement (header below). The
+    // Area tool state lives in AreaMeasurement (header below). The
     // viewport owns it for the session and routes LMB picks in Area
     // mode through onAreaPick.
-    std::unique_ptr<class WgpuAreaMeasurement> area_tool_;
+    std::unique_ptr<class AreaMeasurement> area_tool_;
     void onAreaPick(int x_phys, int y_phys, bool alt);
     void updateAreaHud();
 
-    // Length tool state lives in WgpuLengthMeasurement. Same lifecycle
+    // Length tool state lives in LengthMeasurement. Same lifecycle
     // pattern: lazily constructed on first L press, cleared on tool
     // exit, click handler routes LMB through onLengthPick + Backspace
     // through onLengthBackspace.
-    std::unique_ptr<class WgpuLengthMeasurement> length_tool_;
+    std::unique_ptr<class LengthMeasurement> length_tool_;
     void onLengthPick(int x_phys, int y_phys, bool alt);
     void onLengthBackspace();
 
@@ -759,10 +759,10 @@ private:
     int                pick_w_              = 0;
     int                pick_h_              = 0;
 
-    // Section-cutting state. WgpuSectionPlane lives in WgpuOverlayRenderer.h
+    // Section-cutting state. SectionPlane lives in OverlayRenderer.h
     // because the visualiser reads it; the viewport owns the authoritative
     // vector that the section tool mutates.
-    std::vector<WgpuSectionPlane> section_planes_;
+    std::vector<SectionPlane> section_planes_;
     bool                          section_tool_active_  = false;
 
     // Marquee box-select. Armed on LMB press (when no other tool consumes
@@ -934,14 +934,14 @@ public:
     // ceiling that one-WGPUBuffer-per-chunk would otherwise hit. All
     // chunk allocations land here; nothing else uses the pool. Replaces
     // the old hand-picked streaming_vram_budget_bytes_ knob entirely.
-    WgpuBufferPool pool_;
+    BufferPool pool_;
 
     // Background worker that does scatter-gather chunk reads off the
     // render thread. driveStreamingLoads enqueues requests for visible
     // non-resident chunks and drains completed results into the pool
     // on subsequent frames. Kills the 100-300 ms per-frame stutters
     // that synchronous disk reads caused during orbit.
-    WgpuStreamingThread streaming_thread_;
+    StreamingThread streaming_thread_;
 
     // Per-frame streaming activity, written by driveStreamingLoads,
     // consumed by the benchmark harness to delay the orbit sweep until
@@ -976,7 +976,7 @@ private:
     float lod1_pixel_threshold_ = 30.0f;
 
     // Per-model state, keyed by viewport-assigned model_id.
-    std::unordered_map<uint32_t, WgpuModelGpuData> models_gpu_;
+    std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
     uint32_t next_model_id_  = 1;
     // Globally-unique object_id allocator. Each applyCachedModel rebases
     // the sidecar's local object_ids by base_object_id_so_far so picks

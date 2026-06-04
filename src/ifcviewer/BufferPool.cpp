@@ -17,18 +17,18 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "WgpuBufferPool.h"
+#include "BufferPool.h"
 
 #include <QtDebug>
 
 #include <cassert>
 #include <cstring>
 
-WgpuBufferPool::~WgpuBufferPool() {
+BufferPool::~BufferPool() {
     destroy();
 }
 
-void WgpuBufferPool::configure(WGPUInstance instance, WGPUDevice device,
+void BufferPool::configure(WGPUInstance instance, WGPUDevice device,
                                WGPUBufferUsage usage,
                                uint64_t per_sub_buffer_capacity,
                                const char* label_prefix) {
@@ -41,7 +41,7 @@ void WgpuBufferPool::configure(WGPUInstance instance, WGPUDevice device,
     label_prefix_            = label_prefix ? label_prefix : "";
 }
 
-void WgpuBufferPool::destroy() {
+void BufferPool::destroy() {
     for (auto& sp : sub_pools_) {
         if (sp.buffer) wgpuBufferRelease(sp.buffer);
     }
@@ -55,7 +55,7 @@ void WgpuBufferPool::destroy() {
     label_prefix_.clear();
 }
 
-bool WgpuBufferPool::addSubBuffer() {
+bool BufferPool::addSubBuffer() {
     if (!device_ || per_sub_buffer_capacity_ == 0) return false;
     if (growth_disabled_) return false;
 
@@ -132,7 +132,7 @@ bool WgpuBufferPool::addSubBuffer() {
     return false;
 }
 
-WgpuBufferPool::Slice WgpuBufferPool::alloc(uint64_t size, uint64_t align) {
+BufferPool::Slice BufferPool::alloc(uint64_t size, uint64_t align) {
     Slice out;
     if (size == 0 || align == 0) return out;
 
@@ -179,7 +179,7 @@ WgpuBufferPool::Slice WgpuBufferPool::alloc(uint64_t size, uint64_t align) {
     return out;
 }
 
-void WgpuBufferPool::free(const Slice& s) {
+void BufferPool::free(const Slice& s) {
     if (!s.valid())                                       return;
     if (s.sub_idx < 0 || size_t(s.sub_idx) >= sub_pools_.size()) return;
     SubPool& sp = sub_pools_[size_t(s.sub_idx)];
@@ -202,19 +202,19 @@ void WgpuBufferPool::free(const Slice& s) {
     }
 }
 
-uint64_t WgpuBufferPool::total_capacity_bytes() const {
+uint64_t BufferPool::total_capacity_bytes() const {
     uint64_t s = 0;
     for (const auto& sp : sub_pools_) s += sp.capacity;
     return s;
 }
 
-uint64_t WgpuBufferPool::total_used_bytes() const {
+uint64_t BufferPool::total_used_bytes() const {
     uint64_t s = 0;
     for (const auto& sp : sub_pools_) s += sp.used;
     return s;
 }
 
-uint64_t WgpuBufferPool::largest_free_run_bytes() const {
+uint64_t BufferPool::largest_free_run_bytes() const {
     uint64_t m = 0;
     for (const auto& sp : sub_pools_) {
         for (const auto& r : sp.free_ranges) {

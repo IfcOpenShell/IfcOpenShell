@@ -23,7 +23,7 @@
 #include <QWidget>
 #include <QVBoxLayout>
 
-#include "WgpuViewportWindow.h"
+#include "ViewportWindow.h"
 
 // Stage-1 driver: opens a single window with the wgpu viewport embedded,
 // clears to background colour, and exits on close. The shape mirrors
@@ -31,7 +31,7 @@
 // benchmark-comparable binary.
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
-    app.setApplicationName("IfcViewerWgpuMinimal");
+    app.setApplicationName("IfcViewerMinimal");
     app.setOrganizationName("IfcOpenShell");
 
     QCommandLineParser parser;
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
         "browser constraints."});
     parser.process(app);
 
-    auto* viewport = new WgpuViewportWindow;
+    auto* viewport = new ViewportWindow;
     viewport->resize(1280, 800);
     if (parser.isSet("no-hiz"))     viewport->hiz_enabled_      = false;
     if (parser.isSet("web-limits")) viewport->web_limits_       = true;

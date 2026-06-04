@@ -33,7 +33,7 @@
 // Streaming reader returns offsets to the two skipped sections so chunks
 // can be range-read on demand. File handle is closed before return.
 
-#include "WgpuStreamingLoader.h"
+#include "StreamingLoader.h"
 
 #include <algorithm>
 #include <cstdio>
