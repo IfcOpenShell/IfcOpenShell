@@ -23,6 +23,8 @@
 
 #include "../ifcparse/utils.h"
 
+#include <cstdint>
+
 #ifdef WITH_PROJ
 #include <proj.h>
 #endif

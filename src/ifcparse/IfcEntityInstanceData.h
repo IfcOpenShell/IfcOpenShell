@@ -36,6 +36,9 @@
 
 #endif
 
+#include <cstdint>
+#include <cstring>
+
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/logic/tribool.hpp>

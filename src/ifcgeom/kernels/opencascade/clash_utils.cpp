@@ -1,5 +1,7 @@
 #include "clash_utils.h"
 #include <cassert>
+#include <cstdint>
+#include <cfloat>
 
 #define GU_CULLING_EPSILON_RAY_TRIANGLE FLT_EPSILON*FLT_EPSILON
 #define PX_MAX_F32 3.4028234663852885981170418348452e+38F
