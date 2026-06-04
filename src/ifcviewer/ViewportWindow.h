@@ -47,6 +47,8 @@
 #include "OverlayRenderer.h"
 #include "SelectionState.h"
 #include "StreamingThread.h"
+#include "ViewportCore.h"
+#include "ViewportHost.h"
 #include "VisibilityState.h"
 
 // Stage-2 wgpu viewport: opens a native QWindow, brings up a wgpu instance/
@@ -57,11 +59,36 @@
 //
 // Mirrors the lifecycle shape of the GL ViewportWindow so subsequent stages
 // can grow this into a full IFC renderer without restructuring the host.
-class ViewportWindow : public QWindow {
+//
+// Also implements ViewportHost: as the Path-A refactor moves rendering
+// state out into ViewportCore, this class plays the embedder role
+// (provides the wgpu surface, schedules frames, forwards notifications
+// to Q_SIGNALS). The web target's host is the analog on the Emscripten
+// side. Today most state still lives here; the override implementations
+// at the bottom of the class are the bridge for whatever has already
+// moved.
+class ViewportWindow : public QWindow, public ViewportHost {
     Q_OBJECT
 public:
     explicit ViewportWindow(QWindow* parent = nullptr);
     ~ViewportWindow();
+
+    // --- ViewportHost ----------------------------------------------------
+    //
+    // Implementations live in ViewportWindow.cpp alongside the
+    // platform-specific surface code so the Qt + native window-handle
+    // bits stay co-located. Notification overrides (onObjectPicked
+    // etc.) forward to the existing Q_SIGNALS so bonsai-side consumers
+    // see no change.
+    WGPUSurface createSurface(WGPUInstance instance) override;
+    void  framebufferSize(int& width_px, int& height_px) const override;
+    float dpr() const override;
+    void  requestFrame() override;
+    void  quit() override;
+    void  onObjectPicked(uint32_t object_id) override;
+    void  onSurfacePickedInTool(int x_px, int y_px, int modifiers) override;
+    void  onToolModeChanged(int tool_mode) override;
+    void  onToolBackspacePressed() override;
 
     void setBackgroundColor(const QColor& color);
 

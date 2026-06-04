@@ -145,6 +145,7 @@ set(IFCVIEWER_CORE_SOURCES
     SidecarCache.cpp
     StreamingLoader.cpp
     StreamingThread.cpp
+    ViewportCore.cpp
 )
 set(IFCVIEWER_CORE_HEADERS
     BufferPool.h
@@ -158,6 +159,8 @@ set(IFCVIEWER_CORE_HEADERS
     StreamingLoader.h
     StreamingThread.h
     VertexQuantization.h
+    ViewportCore.h
+    ViewportHost.h
     VisibilityState.h
 )
 list(TRANSFORM IFCVIEWER_CORE_SOURCES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

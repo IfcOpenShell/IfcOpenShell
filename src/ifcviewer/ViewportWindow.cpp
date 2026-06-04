@@ -25,6 +25,7 @@
 #include "StreamingLoader.h"
 #include "VertexQuantization.h"
 
+#include <QCoreApplication>
 #include <QGuiApplication>
 #include <QResizeEvent>
 #include <QDebug>
@@ -626,6 +627,57 @@ ViewportWindow::ViewportWindow(QWindow* parent)
 
 ViewportWindow::~ViewportWindow() {
     shutdown();
+}
+
+// ---- ViewportHost overrides ------------------------------------------------
+//
+// Scaffolding for Path-A. ViewportCore is empty today, so these don't
+// yet have callers; the abstract methods exist only to define the
+// boundary that subsequent commits will rely on. Each notification
+// forwards to the existing Q_SIGNAL so bonsai-side consumers see no
+// change.
+
+WGPUSurface ViewportWindow::createSurface(WGPUInstance /*instance*/) {
+    // initWgpu() still drives surface creation through the private
+    // no-arg createSurface() helper that populates surface_. Once
+    // ViewportCore takes over the wgpu init flow it'll call this
+    // override instead and the private helper goes away; for now the
+    // override is a getter.
+    return surface_;
+}
+
+void ViewportWindow::framebufferSize(int& width_px, int& height_px) const {
+    const float r = float(QWindow::devicePixelRatio());
+    width_px  = int(QWindow::width()  * r);
+    height_px = int(QWindow::height() * r);
+}
+
+float ViewportWindow::dpr() const {
+    return float(QWindow::devicePixelRatio());
+}
+
+void ViewportWindow::requestFrame() {
+    requestUpdate();
+}
+
+void ViewportWindow::quit() {
+    QCoreApplication::quit();
+}
+
+void ViewportWindow::onObjectPicked(uint32_t object_id) {
+    emit objectPicked(object_id);
+}
+
+void ViewportWindow::onSurfacePickedInTool(int x_px, int y_px, int modifiers) {
+    emit surfacePickedInTool(x_px, y_px, modifiers);
+}
+
+void ViewportWindow::onToolModeChanged(int tool_mode) {
+    emit toolModeChanged(static_cast<ToolMode>(tool_mode));
+}
+
+void ViewportWindow::onToolBackspacePressed() {
+    emit toolBackspacePressed();
 }
 
 void ViewportWindow::setBackgroundColor(const QColor& color) {
