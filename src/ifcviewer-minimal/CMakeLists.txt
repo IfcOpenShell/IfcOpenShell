@@ -45,6 +45,16 @@ if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
     )
 endif()
 
+# macOS install-time rpath — same as BonsaiViewer.app: dyld looks in
+# IfcViewerMinimal.app/Contents/Frameworks for @rpath/* link deps
+# (libwgpu_native.dylib, libIfcParse.dylib, libifcopenshell.geometry.dylib,
+# …). The actual files get staged below via install(CODE).
+if(APPLE)
+    set_target_properties(IfcViewerMinimal PROPERTIES
+        INSTALL_RPATH "@executable_path/../Frameworks"
+    )
+endif()
+
 # BUNDLE DESTINATION must be "." (install-prefix root) on macOS — Qt's
 # deploy generator emits `macdeployqt IfcViewerMinimal.app` (no
 # path prefix), which resolves only when the .app sits at the install
@@ -56,3 +66,30 @@ install(TARGETS IfcViewerMinimal
     BUNDLE  DESTINATION .
 )
 ifcopenshell_deploy_qt_runtime(IfcViewerMinimal)
+
+# Mirror BonsaiViewer.app's bundle staging on macOS — see
+# src/bonsaiviewer/CMakeLists.txt for the long-form rationale (macdeployqt
+# doesn't follow non-Qt @rpath deps, the lib-prefixed core libs vs
+# ifcopenshell.* plug-in naming split, the geometry-writer EXCLUDE filter
+# that keeps the bundle small).
+if(APPLE)
+    # libwgpu_native.dylib lives in WGPU_NATIVE_LIB_DIR (set by
+    # src/ifcviewer/CMakeLists.txt). Glob it rather than hard-code the
+    # filename so we cover both libwgpu_native.dylib (and any future
+    # versioned name).
+    file(GLOB _wgpu_native_dylib "${WGPU_NATIVE_LIB_DIR}/libwgpu_native.*")
+    install(FILES ${_wgpu_native_dylib}
+            DESTINATION "IfcViewerMinimal.app/Contents/Frameworks")
+
+    install(CODE [[
+        set(_fw "${CMAKE_INSTALL_PREFIX}/IfcViewerMinimal.app/Contents/Frameworks")
+        file(GLOB _ifc_dylibs "${CMAKE_INSTALL_PREFIX}/lib/*.dylib")
+        list(FILTER _ifc_dylibs EXCLUDE REGEX "ifcopenshell\\.geometry\\.writer\\.")
+        if(_ifc_dylibs)
+            message(STATUS "Staging IfcOpenShell dylibs (linked core + plug-ins) into IfcViewerMinimal.app/Contents/Frameworks")
+            file(COPY ${_ifc_dylibs} DESTINATION "${_fw}")
+        else()
+            message(WARNING "No IfcOpenShell *.dylib found in lib/ — IfcViewerMinimal.app will fail to launch (missing @rpath linked deps) or at IFC load time (missing plug-ins)")
+        endif()
+    ]])
+endif()

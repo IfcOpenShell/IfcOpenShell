@@ -233,9 +233,24 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             endif()
 
             if(NOT WIN32 AND NOT WASM_BUILD)
-                set_target_properties(ifcopenshell_wrapper PROPERTIES
-                    INSTALL_RPATH "$ORIGIN"
-                )
+                # On Linux $ORIGIN expands to the directory of the loaded
+                # object (= site-packages/ifcopenshell/). macOS dyld doesn't
+                # expand $ORIGIN; the equivalent placeholder is
+                # @loader_path. Setting $ORIGIN on macOS bakes a literal
+                # "$ORIGIN" into LC_RPATH which resolves to nothing at
+                # runtime — the wrapper's `@rpath/ifcopenshell.document.rdb
+                # .dylib` LC_LOAD_DYLIB then fails to find the plug-in even
+                # though INSTALL(TARGETS … LIBRARY DESTINATION …/ifcopenshell)
+                # above has dropped it right next to the wrapper.
+                if(APPLE)
+                    set_target_properties(ifcopenshell_wrapper PROPERTIES
+                        INSTALL_RPATH "@loader_path"
+                    )
+                else()
+                    set_target_properties(ifcopenshell_wrapper PROPERTIES
+                        INSTALL_RPATH "$ORIGIN"
+                    )
+                endif()
             endif()
         endif()
 	if (MSVC)

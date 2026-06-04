@@ -83,19 +83,19 @@ jobs:
           fi
           set -o pipefail
           export QT_DIR="$(brew --prefix qt)"
-          # IFCOS_BUILD_PYTHON_WRAPPER=off skips IfcOpenShell-Python on
-          # macOS until the plug-in refactor's CREATE_BUNDLE install rule
-          # actually drops ifcopenshell.document.rdb.dylib into
-          # site-packages/ifcopenshell/ (see the commit that added this
-          # gate for the full history + the rocksdb/macdeployqt write-up).
           # --shared mirrors build_rocky.yml after 27249770e: builds
           # IfcOpenShell as shared libs so each plug-in dylib references
           # libIfcParse / libIfcGeom via @rpath instead of statically
           # embedding them — the dominant size win for BonsaiViewer.app
           # (per-plugin libs go from ~30-50 MB to a few MB).
+          #
+          # IfcOpenShell-Python is back on after the ifcwrap rpath fix:
+          # INSTALL_RPATH "$ORIGIN" is a Linux-ism that macOS dyld bakes
+          # in as a literal string, so `@rpath/ifcopenshell.document.rdb
+          # .dylib` failed to resolve at import time. ifcwrap now sets
+          # INSTALL_RPATH to "@loader_path" on Apple.
           CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release \
             BUILD_BONSAIVIEWER=ON QT_DIR="${QT_DIR}" \
-            IFCOS_BUILD_PYTHON_WRAPPER=off \
             python3 ./nix/build-all.py -v --diskcleanup --shared ${MAC_INTEL} \
             | tee build.log
 
