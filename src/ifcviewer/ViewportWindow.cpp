@@ -618,7 +618,22 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       queue_             (core_.queue_),
       surface_           (core_.surface_),
       surface_format_    (core_.surface_format_),
-      surface_configured_(core_.surface_configured_) {
+      surface_configured_(core_.surface_configured_),
+      main_shader_module_       (core_.main_shader_module_),
+      frame_bgl_                (core_.frame_bgl_),
+      model_bgl_                (core_.model_bgl_),
+      pipeline_layout_          (core_.pipeline_layout_),
+      main_pipeline_            (core_.main_pipeline_),
+      main_pipeline_transparent_(core_.main_pipeline_transparent_),
+      hiz_shader_module_   (core_.hiz_shader_module_),
+      hiz_bgl_             (core_.hiz_bgl_),
+      hiz_pipeline_layout_ (core_.hiz_pipeline_layout_),
+      hiz_pipeline_        (core_.hiz_pipeline_),
+      edge_shader_module_   (core_.edge_shader_module_),
+      edge_bgl_             (core_.edge_bgl_),
+      edge_pipeline_layout_ (core_.edge_pipeline_layout_),
+      edge_pipeline_        (core_.edge_pipeline_),
+      pick_pipeline_(core_.pick_pipeline_) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //

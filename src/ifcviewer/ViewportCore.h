@@ -69,6 +69,39 @@ private:
     WGPUSurface       surface_            = nullptr;
     WGPUTextureFormat surface_format_     = WGPUTextureFormat_Undefined;
     bool              surface_configured_ = false;
+
+    // ---- Pipelines + bind-group layouts (built once after init) -------------
+    //
+    // Main render pipeline group: one shader module + two bind group
+    // layouts (frame uniforms at group=0, per-model storages at
+    // group=1) feeding both the opaque-pass pipeline and the
+    // transparent-pass variant. The transparent pipeline shares the
+    // shader and layout; it differs only in depthWriteEnabled=False
+    // and the SrcAlpha / OneMinusSrcAlpha blend on the color target.
+    WGPUShaderModule    main_shader_module_       = nullptr;
+    WGPUBindGroupLayout frame_bgl_                = nullptr;  // group 0
+    WGPUBindGroupLayout model_bgl_                = nullptr;  // group 1
+    WGPUPipelineLayout  pipeline_layout_          = nullptr;
+    WGPURenderPipeline  main_pipeline_            = nullptr;
+    WGPURenderPipeline  main_pipeline_transparent_ = nullptr;
+
+    // HiZ occlusion-cull pipeline group. Downsamples MSAA depth into a
+    // mip pyramid; consumed by next-frame cull.
+    WGPUShaderModule    hiz_shader_module_   = nullptr;
+    WGPUBindGroupLayout hiz_bgl_             = nullptr;
+    WGPUPipelineLayout  hiz_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  hiz_pipeline_        = nullptr;
+
+    // Edge-silhouette pipeline group. Drawn after the main pass; reads
+    // the depth/normal attachments to emit dark outlines.
+    WGPUShaderModule    edge_shader_module_   = nullptr;
+    WGPUBindGroupLayout edge_bgl_             = nullptr;
+    WGPUPipelineLayout  edge_pipeline_layout_ = nullptr;
+    WGPURenderPipeline  edge_pipeline_        = nullptr;
+
+    // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
+    // main pass since the pick fragment also vertex-pulls instance data.
+    WGPURenderPipeline  pick_pipeline_ = nullptr;
 };
 
 #endif  // VIEWPORTCORE_H

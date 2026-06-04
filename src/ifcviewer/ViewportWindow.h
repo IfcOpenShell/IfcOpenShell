@@ -654,18 +654,16 @@ private:
     WGPUTextureFormat& surface_format_;
     bool&              surface_configured_;
 
-    // Render pipeline + bind group layouts (built once after init).
-    WGPUShaderModule       main_shader_module_ = nullptr;
-    WGPUBindGroupLayout    frame_bgl_          = nullptr;  // group 0
-    WGPUBindGroupLayout    model_bgl_          = nullptr;  // group 1
-    WGPUPipelineLayout     pipeline_layout_    = nullptr;
-    WGPURenderPipeline     main_pipeline_      = nullptr;
-    // Transparent-pass pipeline. Same shader / layout / vertex-pulling as
-    // main_pipeline_; differs only in depthWriteEnabled=False and a
-    // SrcAlpha / OneMinusSrcAlpha blend on the color target. render()
-    // does the opaque pass with main_pipeline_ first, then this one
-    // over the transparent partition of each chunk's visible_draws.
-    WGPURenderPipeline     main_pipeline_transparent_ = nullptr;
+    // Pipeline + bind-group-layout alias references — actual storage
+    // lives in core_ (see ViewportCore.h). Each goes away as the
+    // building method (buildPipelines / buildEdgePipeline /
+    // buildPickPipeline) migrates into ViewportCore.
+    WGPUShaderModule&    main_shader_module_;
+    WGPUBindGroupLayout& frame_bgl_;          // group 0
+    WGPUBindGroupLayout& model_bgl_;          // group 1
+    WGPUPipelineLayout&  pipeline_layout_;
+    WGPURenderPipeline&  main_pipeline_;
+    WGPURenderPipeline&  main_pipeline_transparent_;
 
     // Per-frame uniform (view-proj + lighting), bound at group 0.
     WGPUBuffer    frame_uniform_buffer_ = nullptr;
@@ -712,10 +710,11 @@ private:
     // GL's HiZ default is 256 wide; we match. Height tracks viewport aspect.
     static constexpr uint32_t HIZ_BASE_W = 256;
 
-    WGPUShaderModule    hiz_shader_module_   = nullptr;
-    WGPUBindGroupLayout hiz_bgl_             = nullptr;
-    WGPUPipelineLayout  hiz_pipeline_layout_ = nullptr;
-    WGPURenderPipeline  hiz_pipeline_        = nullptr;
+    // HiZ pipeline aliases (storage in core_).
+    WGPUShaderModule&    hiz_shader_module_;
+    WGPUBindGroupLayout& hiz_bgl_;
+    WGPUPipelineLayout&  hiz_pipeline_layout_;
+    WGPURenderPipeline&  hiz_pipeline_;
     WGPUBuffer          hiz_uniform_buffer_  = nullptr;
     WGPUBindGroup       hiz_bind_group_      = nullptr;
 
@@ -736,10 +735,11 @@ private:
     // texture in a fullscreen pass, computes a depth Laplacian, blends
     // dark lines into the resolved surface colour. Matches GL's
     // renderEdgePass() visually.
-    WGPUShaderModule    edge_shader_module_   = nullptr;
-    WGPUBindGroupLayout edge_bgl_             = nullptr;
-    WGPUPipelineLayout  edge_pipeline_layout_ = nullptr;
-    WGPURenderPipeline  edge_pipeline_        = nullptr;
+    // Edge silhouette pipeline aliases (storage in core_).
+    WGPUShaderModule&    edge_shader_module_;
+    WGPUBindGroupLayout& edge_bgl_;
+    WGPUPipelineLayout&  edge_pipeline_layout_;
+    WGPURenderPipeline&  edge_pipeline_;
     WGPUBindGroup       edge_bind_group_      = nullptr;
     bool                edges_enabled_        = true;
 
@@ -783,7 +783,8 @@ private:
     // pass — pick fragment outputs the instance's object_id. The pick
     // pipeline reuses pipeline_layout_ because it needs the same set of
     // bindings (frame uniform at group=0, per-model storages at group=1).
-    WGPURenderPipeline pick_pipeline_       = nullptr;
+    // Pick pipeline alias (storage in core_).
+    WGPURenderPipeline& pick_pipeline_;
     WGPUTexture        pick_color_texture_  = nullptr;
     WGPUTextureView    pick_color_view_     = nullptr;
     // Second pick MRT: RGBA16F packed world-space normal. Sampled by
