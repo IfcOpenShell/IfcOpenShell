@@ -19,6 +19,7 @@
 
 #include "ViewportWindow.h"
 #include "AreaMeasurement.h"
+#include "CameraMath.h"
 #include "ChunkPlanner.h"
 #include "InstanceCompose.h"
 #include "LengthMeasurement.h"
@@ -33,8 +34,6 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QFileInfo>
-#include <QMatrix4x4>
-#include <QVector3D>
 #include <QtMath>
 
 #include <webgpu/wgpu.h>  // wgpu-native extensions (logging, MULTI_DRAW_INDIRECT, …)
@@ -97,7 +96,7 @@ static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
 
 // Forward declaration — defined below alongside updateFrameUniforms. Used
 // by render() to extract camera/frustum state without duplicating the math.
-static QVector3D orbitEye(const float target[3], float dist,
+static Eigen::Vector3f orbitEye(const float target[3], float dist,
                           float yaw_deg, float pitch_deg);
 
 // Forward declaration — defined alongside the Volume tool. Called from
@@ -2585,8 +2584,8 @@ void ViewportWindow::releasePickResources() {
 }
 
 uint32_t ViewportWindow::pickObjectAt(int x_pixels, int y_pixels,
-                                          QVector3D* normal_out) {
-    if (normal_out) *normal_out = QVector3D(0, 0, 1);
+                                          Eigen::Vector3f* normal_out) {
+    if (normal_out) *normal_out = Eigen::Vector3f(0, 0, 1);
     if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
     if (configured_w_ <= 0 || configured_h_ <= 0) return 0;
     if (x_pixels < 0 || y_pixels < 0 ||
@@ -2749,8 +2748,8 @@ uint32_t ViewportWindow::pickObjectAt(int x_pixels, int y_pixels,
                 const float nx = h2f(halves[0]) * 2.0f - 1.0f;
                 const float ny = h2f(halves[1]) * 2.0f - 1.0f;
                 const float nz = h2f(halves[2]) * 2.0f - 1.0f;
-                QVector3D n(nx, ny, nz);
-                if (n.lengthSquared() > 1e-6f) *normal_out = n.normalized();
+                Eigen::Vector3f n(nx, ny, nz);
+                if (n.squaredNorm() > 1e-6f) *normal_out = n.normalized();
             }
             wgpuBufferUnmap(pick_normal_staging_buffer_);
         }
@@ -2767,9 +2766,9 @@ uint32_t ViewportWindow::pickObjectAt(int x_pixels, int y_pixels,
 // always axis-aligned (walls, slabs, columns) this matches the user's
 // expectation; for diagonal or curved geometry it falls back to the
 // closest of {±X, ±Y, ±Z}, which is still a usable cut direction.
-static bool rayAABBHit(const QVector3D& origin, const QVector3D& dir,
+static bool rayAABBHit(const Eigen::Vector3f& origin, const Eigen::Vector3f& dir,
                        const float mn[3], const float mx[3],
-                       float& t_enter, QVector3D& face_normal) {
+                       float& t_enter, Eigen::Vector3f& face_normal) {
     float t_min = -std::numeric_limits<float>::infinity();
     float t_max =  std::numeric_limits<float>::infinity();
     const float o[3] = { origin.x(), origin.y(), origin.z() };
@@ -2799,7 +2798,7 @@ static bool rayAABBHit(const QVector3D& origin, const QVector3D& dir,
     if (hit_axis < 0) {
         face_normal = -dir;  // ray origin inside the box on all axes — fallback
     } else {
-        QVector3D n(0, 0, 0);
+        Eigen::Vector3f n(0, 0, 0);
         n[hit_axis] = hit_sign;
         face_normal = n;
     }
@@ -2952,11 +2951,11 @@ std::vector<uint32_t> ViewportWindow::picksInRect(int x, int y, int w, int h) {
 
 bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
                                        uint32_t& object_id_out,
-                                       QVector3D& world_pos_out,
-                                       QVector3D& world_normal_out,
+                                       Eigen::Vector3f& world_pos_out,
+                                       Eigen::Vector3f& world_normal_out,
                                        float* aabb_radius_out) {
     if (aabb_radius_out) *aabb_radius_out = 0.0f;
-    QVector3D picked_normal(0, 0, 1);
+    Eigen::Vector3f picked_normal(0, 0, 1);
     const uint32_t id = pickObjectAt(x_pixels, y_pixels, &picked_normal);
     if (id == 0) return false;
 
@@ -2967,30 +2966,29 @@ bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
     // ray-cast against the AABB of every instance carrying the picked
     // object_id and take the closest hit. Equally accurate for the section
     // tool's "drop a plane where I clicked" UX, no readback at all.
-    QMatrix4x4 view, proj;
+    Eigen::Matrix4f view, proj;
     buildViewProj(view, proj);
-    bool ok = false;
-    const QMatrix4x4 inv_vp = (proj * view).inverted(&ok);
-    if (!ok) return false;
+    Eigen::Matrix4f inv_vp;
+    if (!tryInvert4f(proj * view, inv_vp)) return false;
 
     const float ndc_x = (2.0f * float(x_pixels) / float(configured_w_)) - 1.0f;
     const float ndc_y = 1.0f - (2.0f * float(y_pixels) / float(configured_h_));
     // Unproject the far-plane corner (NDC z = 1 for WebGPU) of the
     // pick-pixel pillar to get a point on the ray.
-    const QVector4D far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
-    const QVector4D far_w   = inv_vp * far_clip;
+    const Eigen::Vector4f far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
+    const Eigen::Vector4f far_w   = inv_vp * far_clip;
     if (std::abs(far_w.w()) < 1e-6f) return false;
-    const QVector3D far_world = far_w.toVector3D() / far_w.w();
+    const Eigen::Vector3f far_world = far_w.head<3>() / far_w.w();
 
-    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                    camera_yaw_deg_, camera_pitch_deg_);
-    QVector3D ray_dir = far_world - eye;
-    if (ray_dir.lengthSquared() < 1e-8f) return false;
+    Eigen::Vector3f ray_dir = far_world - eye;
+    if (ray_dir.squaredNorm() < 1e-8f) return false;
     ray_dir.normalize();
 
     float best_t = std::numeric_limits<float>::infinity();
-    QVector3D best_point;
-    QVector3D best_normal;
+    Eigen::Vector3f best_point;
+    Eigen::Vector3f best_normal;
     float     best_radius = 0.0f;
     bool found = false;
     for (const auto& [mid, m] : models_gpu_) {
@@ -2998,7 +2996,7 @@ bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
         for (const auto& inst : m.instances) {
             if (inst.object_id != id) continue;
             float t = 0.0f;
-            QVector3D n;
+            Eigen::Vector3f n;
             if (!rayAABBHit(eye, ray_dir,
                             inst.world_aabb_min, inst.world_aabb_max,
                             t, n)) continue;
@@ -3023,7 +3021,7 @@ bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
     // picked triangle), fall back to the AABB-face normal if the pick pass
     // returned a degenerate vector (e.g. background sliver). The auto-flip
     // in addSectionPlaneAtSurface re-orients toward the camera.
-    world_normal_out = (picked_normal.lengthSquared() > 1e-3f)
+    world_normal_out = (picked_normal.squaredNorm() > 1e-3f)
                          ? picked_normal : best_normal;
     object_id_out    = id;
     return true;
@@ -3040,27 +3038,27 @@ void ViewportWindow::toggleSectionTool() {
     if (isExposed()) requestUpdate();
 }
 
-bool ViewportWindow::addSectionPlaneAtSurface(const QVector3D& point,
-                                                  const QVector3D& normal,
+bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
+                                                  const Eigen::Vector3f& normal,
                                                   float visual_radius) {
     if (int(section_planes_.size()) >= kMaxSectionPlanes) {
         qWarning("[wgpu section] cap reached (%d planes)", kMaxSectionPlanes);
         return false;
     }
-    QVector3D n = normal;
-    if (n.lengthSquared() < 1e-8f) return false;
+    Eigen::Vector3f n = normal;
+    if (n.squaredNorm() < 1e-8f) return false;
     n.normalize();
     // Auto-flip the normal so the camera-facing half gets cut away — that
     // way the first click always reveals the surface the user just clicked.
-    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                    camera_yaw_deg_, camera_pitch_deg_);
-    const QVector3D eye_dir = eye - point;
-    if (QVector3D::dotProduct(n, eye_dir) < 0.0f) n = -n;
+    const Eigen::Vector3f eye_dir = eye - point;
+    if (n.dot(eye_dir) < 0.0f) n = -n;
 
     SectionPlane p;
     p.n             = n;
     p.origin        = point;
-    p.d             = -QVector3D::dotProduct(n, point);
+    p.d             = -n.dot(point);
     p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
     section_planes_.push_back(p);
     qInfo().noquote().nospace()
@@ -3136,7 +3134,7 @@ bool ViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
 
 bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     uint32_t obj_id = 0;
-    QVector3D world_pos, world_normal;
+    Eigen::Vector3f world_pos, world_normal;
     if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
 
     // O(1) instance lookup via object_id_to_instance — see also the
@@ -3152,13 +3150,12 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
         if (it == m.object_id_to_instance.end()) continue;
         const InstanceCpu& inst = m.instances[it->second];
 
-        QMatrix4x4 T(inst.transform[0],  inst.transform[4],  inst.transform[8],  inst.transform[12],
-                     inst.transform[1],  inst.transform[5],  inst.transform[9],  inst.transform[13],
-                     inst.transform[2],  inst.transform[6],  inst.transform[10], inst.transform[14],
-                     inst.transform[3],  inst.transform[7],  inst.transform[11], inst.transform[15]);
-        bool ok = false;
-        const QMatrix4x4 Ti = T.inverted(&ok);
-        if (!ok) return false;
+        // inst.transform is column-major float[16] — the GPU upload
+        // layout. Eigen::Matrix4f is also column-major by default, so
+        // a Map reads it directly with no element swizzling.
+        const Eigen::Matrix4f T = Eigen::Map<const Eigen::Matrix4f>(inst.transform);
+        Eigen::Matrix4f Ti;
+        if (!tryInvert4f(T, Ti)) return false;
 
         if (inst.mesh_id >= m.meshes.size()) return false;
 
@@ -3173,31 +3170,30 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
         // BFS seeds with whatever triangle is closest to the AABB
         // corner — often a perpendicular face, which produces
         // bounding-box-shaped patches instead of surface patches.
-        QVector3D refined_world_pos    = world_pos;
-        QVector3D refined_world_normal = world_normal;
+        Eigen::Vector3f refined_world_pos    = world_pos;
+        Eigen::Vector3f refined_world_normal = world_normal;
         if (inst.mesh_id < m.mesh_triangles_cache.size()) {
             const auto& tris = m.mesh_triangles_cache[inst.mesh_id];
             if (!tris.indices.empty() && configured_w_ > 0 && configured_h_ > 0) {
-                QMatrix4x4 view, proj;
+                Eigen::Matrix4f view, proj;
                 buildViewProj(view, proj);
-                bool inv_ok = false;
-                const QMatrix4x4 inv_vp = (proj * view).inverted(&inv_ok);
-                if (inv_ok) {
+                Eigen::Matrix4f inv_vp;
+                if (tryInvert4f(proj * view, inv_vp)) {
                     const float ndc_x = (2.0f * float(x) / float(configured_w_)) - 1.0f;
                     const float ndc_y = 1.0f - (2.0f * float(y) / float(configured_h_));
-                    const QVector4D far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
-                    const QVector4D far_w = inv_vp * far_clip;
+                    const Eigen::Vector4f far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
+                    const Eigen::Vector4f far_w = inv_vp * far_clip;
                     if (std::abs(far_w.w()) >= 1e-6f) {
-                        const QVector3D far_world = far_w.toVector3D() / far_w.w();
-                        const QVector3D eye = orbitEye(
+                        const Eigen::Vector3f far_world = far_w.head<3>() / far_w.w();
+                        const Eigen::Vector3f eye = orbitEye(
                             camera_target_, camera_distance_,
                             camera_yaw_deg_, camera_pitch_deg_);
-                        QVector3D ray_dir = far_world - eye;
-                        if (ray_dir.lengthSquared() > 1e-8f) {
+                        Eigen::Vector3f ray_dir = far_world - eye;
+                        if (ray_dir.squaredNorm() > 1e-8f) {
                             ray_dir.normalize();
                             // Inverse-transform the world ray into mesh-local.
-                            const QVector4D ro_l4 = Ti * QVector4D(eye.x(),     eye.y(),     eye.z(),     1.0f);
-                            const QVector4D rd_l4 = Ti * QVector4D(ray_dir.x(), ray_dir.y(), ray_dir.z(), 0.0f);
+                            const Eigen::Vector4f ro_l4 = Ti * Eigen::Vector4f(eye.x(),     eye.y(),     eye.z(),     1.0f);
+                            const Eigen::Vector4f rd_l4 = Ti * Eigen::Vector4f(ray_dir.x(), ray_dir.y(), ray_dir.z(), 0.0f);
                             const float ro_l[3] = { ro_l4.x(), ro_l4.y(), ro_l4.z() };
                             const float rd_l[3] = { rd_l4.x(), rd_l4.y(), rd_l4.z() };
                             const float ldn = std::sqrt(
@@ -3251,11 +3247,11 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
                                         n_local[2] /= nl;
                                     }
                                     const float* M = inst.transform;
-                                    QVector3D n_world(
+                                    Eigen::Vector3f n_world(
                                         M[0]*n_local[0] + M[4]*n_local[1] + M[8] *n_local[2],
                                         M[1]*n_local[0] + M[5]*n_local[1] + M[9] *n_local[2],
                                         M[2]*n_local[0] + M[6]*n_local[1] + M[10]*n_local[2]);
-                                    if (n_world.lengthSquared() > 1e-12f) {
+                                    if (n_world.squaredNorm() > 1e-12f) {
                                         n_world.normalize();
                                         refined_world_normal = n_world;
                                     }
@@ -3267,7 +3263,7 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
             }
         }
 
-        const QVector4D mp = Ti * QVector4D(refined_world_pos.x(),
+        const Eigen::Vector4f mp = Ti * Eigen::Vector4f(refined_world_pos.x(),
                                             refined_world_pos.y(),
                                             refined_world_pos.z(), 1.0f);
 
@@ -3362,15 +3358,11 @@ bool ViewportWindow::raycast(const float origin[3], const float dir[3],
             // Transform ray into mesh-local frame. We need both a point
             // (origin) and a direction (dir) inverse-transformed; dir is
             // a vector so the translation drops out.
-            QMatrix4x4 T(inst.transform[0],  inst.transform[4],  inst.transform[8],  inst.transform[12],
-                         inst.transform[1],  inst.transform[5],  inst.transform[9],  inst.transform[13],
-                         inst.transform[2],  inst.transform[6],  inst.transform[10], inst.transform[14],
-                         inst.transform[3],  inst.transform[7],  inst.transform[11], inst.transform[15]);
-            bool ok = false;
-            const QMatrix4x4 Ti = T.inverted(&ok);
-            if (!ok) continue;
-            const QVector4D ro_local4 = Ti * QVector4D(origin[0], origin[1], origin[2], 1.0f);
-            const QVector4D rd_local4 = Ti * QVector4D(dir[0],    dir[1],    dir[2],    0.0f);
+            const Eigen::Matrix4f T = Eigen::Map<const Eigen::Matrix4f>(inst.transform);
+            Eigen::Matrix4f Ti;
+            if (!tryInvert4f(T, Ti)) continue;
+            const Eigen::Vector4f ro_local4 = Ti * Eigen::Vector4f(origin[0], origin[1], origin[2], 1.0f);
+            const Eigen::Vector4f rd_local4 = Ti * Eigen::Vector4f(dir[0],    dir[1],    dir[2],    0.0f);
             const float ro_local[3] = { ro_local4.x(), ro_local4.y(), ro_local4.z() };
             const float rd_local[3] = { rd_local4.x(), rd_local4.y(), rd_local4.z() };
 
@@ -3612,7 +3604,7 @@ void ViewportWindow::invertElementVisibility() {
 
 ViewportWindow::CameraState ViewportWindow::cameraState() const {
     return CameraState{
-        QVector3D(camera_target_[0], camera_target_[1], camera_target_[2]),
+        Eigen::Vector3f(camera_target_[0], camera_target_[1], camera_target_[2]),
         camera_distance_,
         camera_yaw_deg_,
         camera_pitch_deg_,
@@ -3760,14 +3752,14 @@ void ViewportWindow::updateVolumeReadout() {
 
 // Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
 // Returns false if behind the camera.
-static bool projectWorldToLogicalScreen(const QMatrix4x4& vp,
-                                        const QVector3D& world,
+static bool projectWorldToLogicalScreen(const Eigen::Matrix4f& vp,
+                                        const Eigen::Vector3f& world,
                                         int win_w, int win_h,
-                                        QVector2D& out) {
-    const QVector4D clip = vp * QVector4D(world, 1.0f);
+                                        Eigen::Vector2f& out) {
+    const Eigen::Vector4f clip = vp * Eigen::Vector4f(world.x(), world.y(), world.z(), 1.0f);
     if (clip.w() <= 0.0f) return false;
     const float invw = 1.0f / clip.w();
-    out = QVector2D(
+    out = Eigen::Vector2f(
         (clip.x() * invw * 0.5f + 0.5f) * float(win_w),
         (1.0f - (clip.y() * invw * 0.5f + 0.5f)) * float(win_h));
     return true;
@@ -3778,15 +3770,15 @@ int ViewportWindow::hitTestSectionGizmo(int x, int y) const {
     const int w = width();
     const int h = height();
     if (w <= 0 || h <= 0) return -1;
-    QMatrix4x4 view, proj;
+    Eigen::Matrix4f view, proj;
     buildViewProj(view, proj);
-    const QMatrix4x4 vp = proj * view;
+    const Eigen::Matrix4f vp = proj * view;
     const float grab_px = 12.0f;
     int   best    = -1;
     float best_d2 = grab_px * grab_px;
     for (int i = 0; i < int(section_planes_.size()); ++i) {
         const SectionPlane& p = section_planes_[i];
-        QVector2D s_origin, s_tip;
+        Eigen::Vector2f s_origin, s_tip;
         if (!projectWorldToLogicalScreen(vp, p.origin,
                                          w, h, s_origin)) continue;
         // The gizmo's arrow extends along +n by exactly 1 m in world
@@ -3795,14 +3787,14 @@ int ViewportWindow::hitTestSectionGizmo(int x, int y) const {
         // Mirror that here.
         if (!projectWorldToLogicalScreen(vp, p.origin + p.n * 1.0f,
                                          w, h, s_tip)) continue;
-        const QVector2D q{float(x), float(y)};
-        const QVector2D ab = s_tip - s_origin;
-        const float ab_len2 = ab.lengthSquared();
+        const Eigen::Vector2f q{float(x), float(y)};
+        const Eigen::Vector2f ab = s_tip - s_origin;
+        const float ab_len2 = ab.squaredNorm();
         if (ab_len2 < 1e-3f) continue;
-        float t = QVector2D::dotProduct(q - s_origin, ab) / ab_len2;
+        float t = (q - s_origin).dot(ab) / ab_len2;
         t = std::clamp(t, 0.0f, 1.0f);
-        const QVector2D proj_pt = s_origin + ab * t;
-        const float d2 = (q - proj_pt).lengthSquared();
+        const Eigen::Vector2f proj_pt = s_origin + ab * t;
+        const float d2 = (q - proj_pt).squaredNorm();
         if (d2 < best_d2) { best_d2 = d2; best = i; }
     }
     return best;
@@ -3817,32 +3809,32 @@ void ViewportWindow::updateSectionDrag(int x, int y) {
     const int w = width();
     const int h = height();
     if (w <= 0 || h <= 0) return;
-    QMatrix4x4 view, proj;
+    Eigen::Matrix4f view, proj;
     buildViewProj(view, proj);
-    const QMatrix4x4 vp = proj * view;
+    const Eigen::Matrix4f vp = proj * view;
 
     // Re-project the press-time origin and origin + n to screen space.
     // The press-time origin is what `start` should be relative to — so the
     // plane slides smoothly even as the camera moves (we re-project every
     // frame to handle mid-drag camera rotation cleanly).
-    QVector2D s_origin, s_n;
+    Eigen::Vector2f s_origin, s_n;
     if (!projectWorldToLogicalScreen(vp, section_drag_start_origin_,
                                      w, h, s_origin)) return;
     if (!projectWorldToLogicalScreen(vp, section_drag_start_origin_ + p.n,
                                      w, h, s_n)) return;
-    const QVector2D screen_axis = s_n - s_origin;
-    const float screen_axis_len2 = screen_axis.lengthSquared();
+    const Eigen::Vector2f screen_axis = s_n - s_origin;
+    const float screen_axis_len2 = screen_axis.squaredNorm();
     if (screen_axis_len2 < 1e-3f) return;  // arrow is edge-on
 
     // Project pixel delta onto the screen-space axis; convert to metres
     // via (delta · axis) / |axis|² (axis is 1 m long in world space).
-    const QVector2D delta_px(float(x - section_drag_start_mouse_.x()),
+    const Eigen::Vector2f delta_px(float(x - section_drag_start_mouse_.x()),
                              float(y - section_drag_start_mouse_.y()));
-    const float meters = QVector2D::dotProduct(delta_px, screen_axis)
+    const float meters = delta_px.dot(screen_axis)
                          / screen_axis_len2;
 
     p.origin = section_drag_start_origin_ + p.n * meters;
-    p.d      = -QVector3D::dotProduct(p.n, p.origin);
+    p.d      = -p.n.dot(p.origin);
     requestUpdate();
 }
 
@@ -4094,7 +4086,7 @@ int ViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
     return slot;
 }
 
-void ViewportWindow::startHizMap(int slot, const QMatrix4x4& vp_used) {
+void ViewportWindow::startHizMap(int slot, const Eigen::Matrix4f& vp_used) {
     if (slot < 0 || slot >= HIZ_SLOTS) return;
     if (!hiz_staging_buffers_[slot] || hiz_resolve_w_ == 0) return;
 
@@ -4213,7 +4205,7 @@ bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) con
     //   - min/max NDC x,y (screen-space bounds)
     //   - min projected z (nearest point of the AABB to the camera)
     //   - whether any corner has clip.w <= 0 (AABB straddles near plane)
-    const float* m = hiz_vp_.constData();  // column-major
+    const float* m = hiz_vp_.data();  // column-major
     auto applyVp = [m](float x, float y, float z, float out[4]) {
         out[0] = m[0]*x + m[4]*y + m[8] *z + m[12];
         out[1] = m[1]*x + m[5]*y + m[9] *z + m[13];
@@ -4675,30 +4667,30 @@ void ViewportWindow::render() {
     hiz_reject_count_       = 0;
     QElapsedTimer cull_timer;
     cull_timer.start();
-    QMatrix4x4 vp_this_frame;
+    Eigen::Matrix4f vp_this_frame;
     {
-        const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
-        const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+        const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                        camera_yaw_deg_, camera_pitch_deg_);
-        QMatrix4x4 v, p;
+        Eigen::Matrix4f v, p;
         buildViewProj(v, p);
-        const QMatrix4x4 vp = p * v;
+        const Eigen::Matrix4f vp = p * v;
         vp_this_frame = vp;
         float planes[6][4];
-        extractFrustumPlanes(vp.constData(), planes);
+        extractFrustumPlanes(vp.data(), planes);
 
         // LOD pick inputs: world-space eye, unit forward, vertical focal in
         // pixels. focal_px maps view-space depth to projected radius:
         //   projected_px = world_radius * focal_px / view_z.
-        const QVector3D fwd_q = (target - eye).normalized();
+        const Eigen::Vector3f fwd_q = (target - eye).normalized();
         // World-up convention: Z-up. Near the poles lookAt degenerates,
         // so swap to Y-up — mirrors buildViewProj's pitch gate at line
         // 4701 so cull's camera basis matches the actual view matrix.
-        const QVector3D world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
-                                     ? QVector3D(0.0f, 1.0f, 0.0f)
-                                     : QVector3D(0.0f, 0.0f, 1.0f);
-        const QVector3D right_q  = QVector3D::crossProduct(fwd_q, world_up).normalized();
-        const QVector3D up_q     = QVector3D::crossProduct(right_q, fwd_q).normalized();
+        const Eigen::Vector3f world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                     ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                                     : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+        const Eigen::Vector3f right_q  = fwd_q.cross(world_up).normalized();
+        const Eigen::Vector3f up_q     = right_q.cross(fwd_q).normalized();
         const float eye_a[3]   = { eye.x(),     eye.y(),     eye.z()    };
         const float fwd_a[3]   = { fwd_q.x(),   fwd_q.y(),   fwd_q.z()  };
         const float right_a[3] = { right_q.x(), right_q.y(), right_q.z() };
@@ -4945,7 +4937,7 @@ void ViewportWindow::render() {
     // this viewport.
     OverlayFrame overlay_frame;
     overlay_frame.view_proj          = vp_this_frame;
-    overlay_frame.camera_target      = QVector3D(camera_target_[0],
+    overlay_frame.camera_target      = Eigen::Vector3f(camera_target_[0],
                                                  camera_target_[1],
                                                  camera_target_[2]);
     overlay_frame.camera_distance    = camera_distance_;
@@ -5289,9 +5281,9 @@ void ViewportWindow::render() {
                 // — same metric driveStreamingLoads uses for priority,
                 // duplicated here so the heartbeat dump can show what
                 // the loader is actually scoring chunks at.
-                QMatrix4x4 v_dbg, p_dbg;
+                Eigen::Matrix4f v_dbg, p_dbg;
                 buildViewProj(v_dbg, p_dbg);
-                const QMatrix4x4 vp_dbg = p_dbg * v_dbg;
+                const Eigen::Matrix4f vp_dbg = p_dbg * v_dbg;
                 auto chunk_priority_px2 = [&](const ModelGpuData::Chunk& c) -> float {
                     if (configured_w_ <= 0 || configured_h_ <= 0 ||
                         c.aabb_min[0] > c.aabb_max[0]) return 0.0f;
@@ -5301,12 +5293,12 @@ void ViewportWindow::render() {
                     float ymax = -std::numeric_limits<float>::infinity();
                     int   cif  = 0;
                     for (int i = 0; i < 8; ++i) {
-                        const QVector4D corner(
+                        const Eigen::Vector4f corner(
                             (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
                             (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
                             (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
                             1.0f);
-                        const QVector4D clip = vp_dbg * corner;
+                        const Eigen::Vector4f clip = vp_dbg * corner;
                         if (clip.w() <= 1e-3f) continue;
                         ++cif;
                         const float px_x = (clip.x() / clip.w() * 0.5f + 0.5f) * float(configured_w_);
@@ -6196,9 +6188,9 @@ void ViewportWindow::driveStreamingLoads() {
     // Build the camera's view-projection (still needed for the AABB-based
     // diagnostic dump in the tracking output below). Cull/render use the
     // same helper.
-    QMatrix4x4 v_mat, p_mat;
+    Eigen::Matrix4f v_mat, p_mat;
     buildViewProj(v_mat, p_mat);
-    const QMatrix4x4 vp_mat = p_mat * v_mat;
+    const Eigen::Matrix4f vp_mat = p_mat * v_mat;
 
     // chunk.current_priority was accumulated during cullModelCpuCompute
     // (one add per frustum-passing instance). No standalone walk needed
@@ -6738,7 +6730,7 @@ void ViewportWindow::releaseMsaaColorTexture() {
 // rotation about Z (positive = anticlockwise looking down +Z); pitch is
 // elevation above the XY plane.
 
-static QVector3D orbitEye(const float target[3], float dist,
+static Eigen::Vector3f orbitEye(const float target[3], float dist,
                           float yaw_deg, float pitch_deg) {
     // Matches the GL ViewportWindow::updateCamera convention exactly so the
     // orbit pivot, framing, and benchmark camera path align between backends.
@@ -6749,7 +6741,7 @@ static QVector3D orbitEye(const float target[3], float dist,
     const float pit = qDegreesToRadians(pitch_deg);
     const float cp = std::cos(pit), sp = std::sin(pit);
     const float cy = std::cos(yaw), sy = std::sin(yaw);
-    return QVector3D(target[0] + dist * cp * cy,
+    return Eigen::Vector3f(target[0] + dist * cp * cy,
                      target[1] + dist * cp * sy,
                      target[2] + dist * sp);
 }
@@ -6758,26 +6750,25 @@ static QVector3D orbitEye(const float target[3], float dist,
 // streaming projection, pick, or render uniforms calls this so the
 // projection_ortho_ toggle and the near-vertical up-vector switch land
 // identically everywhere.
-void ViewportWindow::buildViewProj(QMatrix4x4& view_out,
-                                        QMatrix4x4& proj_out) const {
-    const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
-    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+void ViewportWindow::buildViewProj(Eigen::Matrix4f& view_out,
+                                        Eigen::Matrix4f& proj_out) const {
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                    camera_yaw_deg_, camera_pitch_deg_);
     // Within 1° of straight-up/down, switch up from world +Z to world +Y
     // so lookAt's side vector doesn't degenerate (forward × up → 0). Mirrors
     // GL ViewportWindow::updateCamera; the standard-view top/bottom hotkeys
     // land at pitch = ±90° exactly so this is the path that keeps them
     // well-conditioned.
-    const QVector3D up = (std::abs(camera_pitch_deg_) >= 89.0f)
-                       ? QVector3D(0.0f, 1.0f, 0.0f)
-                       : QVector3D(0.0f, 0.0f, 1.0f);
-    view_out.setToIdentity();
-    view_out.lookAt(eye, target, up);
+    const Eigen::Vector3f up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                       ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                       : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+    view_out = lookAtRH(eye, target, up);
 
     const float aspect = (configured_h_ > 0)
                             ? float(configured_w_) / float(configured_h_)
                             : 1.0f;
-    QMatrix4x4 p;
+    Eigen::Matrix4f p;
     if (projection_ortho_) {
         // Size the ortho box so the same world rectangle fills the view as
         // the perspective camera at the pivot's distance. Toggling at any
@@ -6786,33 +6777,35 @@ void ViewportWindow::buildViewProj(QMatrix4x4& view_out,
             * std::tan(qDegreesToRadians(camera_fov_y_deg_ * 0.5f));
         const float half_w = half_h * aspect;
         const float depth  = camera_distance_ * 10.0f;
-        p.ortho(-half_w, half_w, -half_h, half_h, -depth, depth);
+        p = orthoGL(-half_w, half_w, -half_h, half_h, -depth, depth);
     } else {
-        p.perspective(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
+        p = perspectiveYFovGL(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
     }
-    // Qt builds a GL-style projection (clip-z in [-1, 1]); WebGPU expects
-    // clip-z in [0, 1]. Pre-multiply by a remap matrix that maps [-1,1] → [0,1].
-    QMatrix4x4 z_remap;
+    // The helpers above build a GL-style projection (clip-z in [-1, 1]);
+    // WebGPU expects clip-z in [0, 1]. Pre-multiply by a remap matrix
+    // that maps [-1,1] → [0,1]. Note we start z_remap from Identity()
+    // (Eigen doesn't zero-init); QMatrix4x4 used to do this implicitly.
+    Eigen::Matrix4f z_remap = Eigen::Matrix4f::Identity();
     z_remap(2, 2) = 0.5f;
     z_remap(2, 3) = 0.5f;
     proj_out = z_remap * p;
 }
 
 void ViewportWindow::updateFrameUniforms() {
-    QMatrix4x4 view, proj;
+    Eigen::Matrix4f view, proj;
     buildViewProj(view, proj);
 
-    const QMatrix4x4 view_proj = proj * view;
+    const Eigen::Matrix4f view_proj = proj * view;
 
     FrameUniforms u = {};
-    std::memcpy(u.view_proj, view_proj.constData(), 16 * sizeof(float));
+    std::memcpy(u.view_proj, view_proj.data(), 16 * sizeof(float));
 
     // Values match the GL viewport's main fragment shader so a side-by-side
     // diff of the two backends only shows what the wgpu pipeline has yet to
     // implement (edge silhouette pass, MSAA polish, etc.) — not lighting
     // model differences. Key + fill are ~unit-length, ~120° apart.
-    QVector3D L( 0.3f,  0.5f, 0.8f); L.normalize();
-    QVector3D F(-0.3f, -0.5f, 0.8f); F.normalize();
+    Eigen::Vector3f L( 0.3f,  0.5f, 0.8f); L.normalize();
+    Eigen::Vector3f F(-0.3f, -0.5f, 0.8f); F.normalize();
     u.light_dir[0] = L.x(); u.light_dir[1] = L.y(); u.light_dir[2] = L.z(); u.light_dir[3] = 0;
     u.fill_dir [0] = F.x(); u.fill_dir [1] = F.y(); u.fill_dir [2] = F.z(); u.fill_dir [3] = 0;
     u.sky_color   [0] = 0.55f; u.sky_color   [1] = 0.60f; u.sky_color   [2] = 0.70f;
@@ -6935,11 +6928,11 @@ void ViewportWindow::frameAabb(const float mn[3], const float mx[3],
 }
 
 bool ViewportWindow::computeObjectAabb(uint32_t object_id,
-                                           QVector3D& mn, QVector3D& mx) const {
+                                           Eigen::Vector3f& mn, Eigen::Vector3f& mx) const {
     float fmin[3], fmax[3];
     if (!computeObjectAabb(object_id, fmin, fmax)) return false;
-    mn = QVector3D(fmin[0], fmin[1], fmin[2]);
-    mx = QVector3D(fmax[0], fmax[1], fmax[2]);
+    mn = Eigen::Vector3f(fmin[0], fmin[1], fmin[2]);
+    mx = Eigen::Vector3f(fmax[0], fmax[1], fmax[2]);
     return true;
 }
 
@@ -7053,27 +7046,27 @@ void ViewportWindow::fpsIntegrate() {
     // Forward = orbit eye -> target, kept as the camera's view direction in
     // fly mode too so a Shift+F right after orbiting doesn't snap to a new
     // heading. WASD moves in the screen plane; QE rises/falls along world +Z.
-    const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
-    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                    camera_yaw_deg_, camera_pitch_deg_);
-    QVector3D forward = (target - eye); forward.normalize();
+    Eigen::Vector3f forward = (target - eye); forward.normalize();
     // When looking straight up/down, cross(forward, worldZ) degenerates;
     // fall back to worldY so right doesn't go NaN and WASD still works.
-    const QVector3D world_up(0.0f, 0.0f, 1.0f);
-    const QVector3D right_basis = (std::abs(camera_pitch_deg_) >= 89.0f)
-                                ? QVector3D(0.0f, 1.0f, 0.0f)
+    const Eigen::Vector3f world_up(0.0f, 0.0f, 1.0f);
+    const Eigen::Vector3f right_basis = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
                                 : world_up;
-    QVector3D right = QVector3D::crossProduct(forward, right_basis);
+    Eigen::Vector3f right = forward.cross(right_basis);
     right.normalize();
 
-    QVector3D move(0, 0, 0);
+    Eigen::Vector3f move(0, 0, 0);
     if (fps_keys_held_.contains(Qt::Key_W)) move += forward;
     if (fps_keys_held_.contains(Qt::Key_S)) move -= forward;
     if (fps_keys_held_.contains(Qt::Key_D)) move += right;
     if (fps_keys_held_.contains(Qt::Key_A)) move -= right;
     if (fps_keys_held_.contains(Qt::Key_E)) move += world_up;
     if (fps_keys_held_.contains(Qt::Key_Q)) move -= world_up;
-    if (move.isNull()) return;
+    if (move.isZero()) return;
     move.normalize();
 
     // Absolute m/s, scrollwheel-adjustable (Blender / GL convention).
@@ -7082,7 +7075,7 @@ void ViewportWindow::fpsIntegrate() {
     // changing it underneath fly mode).
     const float speed = fps_move_speed_
                       * (fps_keys_held_.contains(Qt::Key_Shift) ? 5.0f : 1.0f);
-    const QVector3D delta = move * (speed * dt);
+    const Eigen::Vector3f delta = move * (speed * dt);
 
     camera_target_[0] += delta.x();
     camera_target_[1] += delta.y();
@@ -7100,12 +7093,12 @@ void ViewportWindow::fpsIntegrate() {
             << " render_gap=" << QString::number(double(since_render_ns) / 1e6, 'f', 2) << "ms"
             << " keys=" << fps_keys_held_.size()
             << " speed=" << QString::number(speed, 'f', 2) << "m/s"
-            << " delta=" << QString::number(delta.length(), 'f', 4) << "m";
+            << " delta=" << QString::number(delta.norm(), 'f', 4) << "m";
     }
 }
 
 float ViewportWindow::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
-                                             const QMatrix4x4& vp_mat) const {
+                                             const Eigen::Matrix4f& vp_mat) const {
     if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
     if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
     const float full_area = float(configured_w_) * float(configured_h_);
@@ -7127,7 +7120,7 @@ float ViewportWindow::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     // the chunk's true on-screen extent is unmeasurable from 8 corners
     // alone once any are behind, so over-prioritise rather than
     // under-prioritise.
-    const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                    camera_yaw_deg_, camera_pitch_deg_);
     if (eye.x() >= c.aabb_min[0] && eye.x() <= c.aabb_max[0] &&
         eye.y() >= c.aabb_min[1] && eye.y() <= c.aabb_max[1] &&
@@ -7142,12 +7135,12 @@ float ViewportWindow::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     int corners_in_front = 0;
     int corners_behind   = 0;
     for (int i = 0; i < 8; ++i) {
-        const QVector4D corner_world(
+        const Eigen::Vector4f corner_world(
             (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
             (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
             (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
             1.0f);
-        const QVector4D clip = vp_mat * corner_world;
+        const Eigen::Vector4f clip = vp_mat * corner_world;
         if (clip.w() <= 1e-3f) { ++corners_behind; continue; }
         ++corners_in_front;
         const float ndc_x = clip.x() / clip.w();
@@ -7355,7 +7348,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
             if (section_tool_active_
                 && event->modifiers() == Qt::NoModifier) {
                 uint32_t hit_id = 0;
-                QVector3D hit_pos, hit_normal;
+                Eigen::Vector3f hit_pos, hit_normal;
                 float hit_radius = 0.0f;
                 if (pickSurfaceAt(px, py, hit_id, hit_pos, hit_normal,
                                   &hit_radius)) {
@@ -7533,7 +7526,7 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
         const int dy = pos.y() - fps_press_center_.y();
 
         // Save eye BEFORE rotating so we can pin it after.
-        const QVector3D pinned_eye = orbitEye(camera_target_, camera_distance_,
+        const Eigen::Vector3f pinned_eye = orbitEye(camera_target_, camera_distance_,
                                               camera_yaw_deg_, camera_pitch_deg_);
 
         // Convention: mouse-up looks up, mouse-down looks down (non-inverted).
@@ -7596,15 +7589,15 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
         // the world-Z up-reference degenerates (cross with forward is the
         // zero vector → NaN), so switch to world-Y up — matches the
         // up-vector switch in buildViewProj so top/bottom views still pan.
-        const QVector3D target(camera_target_[0], camera_target_[1], camera_target_[2]);
-        const QVector3D eye = orbitEye(camera_target_, camera_distance_,
+        const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                        camera_yaw_deg_, camera_pitch_deg_);
-        const QVector3D fwd   = (target - eye).normalized();
-        const QVector3D world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
-                                 ? QVector3D(0.0f, 1.0f, 0.0f)
-                                 : QVector3D(0.0f, 0.0f, 1.0f);
-        const QVector3D right = QVector3D::crossProduct(fwd, world_up).normalized();
-        const QVector3D up    = QVector3D::crossProduct(right, fwd).normalized();
+        const Eigen::Vector3f fwd   = (target - eye).normalized();
+        const Eigen::Vector3f world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                 ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                                 : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+        const Eigen::Vector3f right = fwd.cross(world_up).normalized();
+        const Eigen::Vector3f up    = right.cross(fwd).normalized();
 
         const float half_h_world = camera_distance_
             * std::tan(qDegreesToRadians(camera_fov_y_deg_) * 0.5f);
@@ -7612,7 +7605,7 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
             ? (2.0f * half_h_world / float(height()))
             : 0.0f;
 
-        const QVector3D shift = -right * (float(dx) * pan_per_pixel)
+        const Eigen::Vector3f shift = -right * (float(dx) * pan_per_pixel)
                               +  up    * (float(dy) * pan_per_pixel);
         camera_target_[0] += shift.x();
         camera_target_[1] += shift.y();

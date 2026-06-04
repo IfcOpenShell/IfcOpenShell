@@ -27,7 +27,6 @@
 #include <QString>
 #include <QStringList>
 #include <QDateTime>
-#include <QVector3D>
 
 #include <memory>
 #include <optional>
@@ -184,10 +183,10 @@ class Federation : public QObject {
     Q_OBJECT
 public:
     struct HomeView {
-        QVector3D target;
-        float distance = 50.0f;
-        float yaw = 45.0f;     // degrees
-        float pitch = 30.0f;   // degrees
+        Eigen::Vector3f target  = Eigen::Vector3f::Zero();
+        float distance          = 50.0f;
+        float yaw               = 45.0f;     // degrees
+        float pitch             = 30.0f;     // degrees
     };
 
     struct Model {

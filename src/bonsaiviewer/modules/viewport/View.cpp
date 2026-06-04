@@ -30,7 +30,6 @@
 #include "../../Measurement.h"
 
 #include <Eigen/Dense>
-#include <QVector3D>
 
 #include <vector>
 
@@ -255,10 +254,10 @@ void ViewportView::updateVolumeReadout() {
     labels.reserve(per_obj.size());
     for (const auto& [oid, v] : per_obj) {
         total += v;
-        QVector3D mn, mx;
+        Eigen::Vector3f mn, mx;
         if (!viewport_->computeObjectAabb(oid, mn, mx)) continue;
         OverlayRenderer::Label lbl;
-        const QVector3D c = (mn + mx) * 0.5f;
+        const Eigen::Vector3f c = (mn + mx) * 0.5f;
         lbl.world_pos[0] = c.x();
         lbl.world_pos[1] = c.y();
         lbl.world_pos[2] = c.z();

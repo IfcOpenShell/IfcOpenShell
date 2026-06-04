@@ -21,10 +21,10 @@
 #define WGPUOVERLAYRENDERER_H
 
 #include <QHash>
-#include <QMatrix4x4>
 #include <QPoint>
 #include <QString>
-#include <QVector3D>
+
+#include <Eigen/Dense>
 
 #include <webgpu/webgpu.h>
 
@@ -35,8 +35,8 @@
 // at the top of render() and passed by const-ref to each encodeX() call so
 // the overlay renderer never reaches back into the viewport.
 struct OverlayFrame {
-    QMatrix4x4 view_proj;
-    QVector3D  camera_target;
+    Eigen::Matrix4f view_proj      = Eigen::Matrix4f::Identity();
+    Eigen::Vector3f camera_target  = Eigen::Vector3f::Zero();
     float      camera_distance     = 5.0f;
     float      camera_yaw_deg      = 0.0f;
     float      camera_pitch_deg    = 0.0f;
@@ -51,12 +51,11 @@ struct OverlayFrame {
 // reads from a non-owning span every frame. Held by value because the
 // struct is small and copies happen at most six times per frame.
 struct SectionPlane {
-    QVector3D n;             // unit normal (camera-facing after auto-flip)
-    float     d;             // -dot(n, origin)
-    QVector3D origin;        // surface point at the moment the plane was added
-    float     visual_radius; // unused by the visualizer (kept here so the
-                             // section tool's state struct round-trips
-                             // through this overlay-facing definition).
+    Eigen::Vector3f n      = Eigen::Vector3f::UnitZ(); // unit normal
+    float           d      = 0.0f;                     // -dot(n, origin)
+    Eigen::Vector3f origin = Eigen::Vector3f::Zero();  // surface point at the
+                                                       // moment the plane was added
+    float    visual_radius = 0.0f;
 };
 
 // All viewport overlays in one place: axis indicator (corner + pivot),

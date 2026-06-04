@@ -719,9 +719,9 @@ bool Federation::load(const QString& path,
         QJsonArray ta = ho.value("target").toArray();
         HomeView v;
         if (ta.size() == 3) {
-            v.target = QVector3D(float(ta[0].toDouble()),
-                                 float(ta[1].toDouble()),
-                                 float(ta[2].toDouble()));
+            v.target = Eigen::Vector3f(float(ta[0].toDouble()),
+                                       float(ta[1].toDouble()),
+                                       float(ta[2].toDouble()));
         }
         v.distance = float(ho.value("distance").toDouble(50.0));
         v.yaw      = float(ho.value("yaw").toDouble(45.0));

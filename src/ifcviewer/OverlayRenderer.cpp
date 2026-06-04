@@ -19,6 +19,8 @@
 
 #include "OverlayRenderer.h"
 
+#include "CameraMath.h"
+
 #include <QFont>
 #include <QFontMetrics>
 #include <QImage>
@@ -69,11 +71,11 @@ WGPUVertexBufferLayout thickLineVertexLayout(WGPUVertexAttribute attribs[5]) {
 // Pack the axis uniform's 256-byte slot. Layout matches WGSL AxisUniforms:
 // mat4 + vec3 + f32 + f32 + f32 + vec2 = 96 B used, padded to 256.
 void packAxisUniform(uint8_t* dst,
-                     const QMatrix4x4& mvp, const QVector3D& origin,
+                     const Eigen::Matrix4f& mvp, const Eigen::Vector3f& origin,
                      float arm, float alpha, float line_width_px,
                      float viewport_w, float viewport_h) {
     std::memset(dst, 0, 256);
-    std::memcpy(dst, mvp.constData(), 16 * sizeof(float));
+    std::memcpy(dst, mvp.data(), 16 * sizeof(float));
     float ox = origin.x(), oy = origin.y(), oz = origin.z();
     std::memcpy(dst + 64, &ox, sizeof(float));
     std::memcpy(dst + 68, &oy, sizeof(float));
@@ -89,16 +91,16 @@ void packAxisUniform(uint8_t* dst,
 // SectionUniforms: mat4 + 4×(vec3 + scalar pad) + vec4 + vec2 + 8 B pad
 // = 160 B used, padded to 256.
 void packSectionUniform(uint8_t* dst,
-                        const QMatrix4x4& mvp,
-                        const QVector3D& origin, float half_size,
-                        const QVector3D& tangent, float line_width_px,
-                        const QVector3D& bitangent,
-                        const QVector3D& normal,
+                        const Eigen::Matrix4f& mvp,
+                        const Eigen::Vector3f& origin, float half_size,
+                        const Eigen::Vector3f& tangent, float line_width_px,
+                        const Eigen::Vector3f& bitangent,
+                        const Eigen::Vector3f& normal,
                         float r, float g, float b, float a,
                         float viewport_w, float viewport_h) {
     std::memset(dst, 0, 256);
-    std::memcpy(dst, mvp.constData(), 16 * sizeof(float));
-    auto put_vec3_pad = [&](size_t off, const QVector3D& v, float pad_val) {
+    std::memcpy(dst, mvp.data(), 16 * sizeof(float));
+    auto put_vec3_pad = [&](size_t off, const Eigen::Vector3f& v, float pad_val) {
         float vx = v.x(), vy = v.y(), vz = v.z();
         std::memcpy(dst + off + 0,  &vx, sizeof(float));
         std::memcpy(dst + off + 4,  &vy, sizeof(float));
@@ -778,24 +780,22 @@ void OverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
     // Y-up there — mirrors buildViewProj's identical fix on the viewport.
     const float yaw_rad   = qDegreesToRadians(f.camera_yaw_deg);
     const float pitch_rad = qDegreesToRadians(f.camera_pitch_deg);
-    const QVector3D eye_dir(std::cos(pitch_rad) * std::cos(yaw_rad),
+    const Eigen::Vector3f eye_dir(std::cos(pitch_rad) * std::cos(yaw_rad),
                             std::cos(pitch_rad) * std::sin(yaw_rad),
                             std::sin(pitch_rad));
-    const QVector3D world_up = (std::abs(f.camera_pitch_deg) >= 89.0f)
-                                 ? QVector3D(0.0f, 1.0f, 0.0f)
-                                 : QVector3D(0.0f, 0.0f, 1.0f);
-    QMatrix4x4 gv;
-    gv.lookAt(eye_dir * 3.0f, QVector3D(0, 0, 0), world_up);
-    QMatrix4x4 gp;
-    gp.ortho(-1.4f, 1.4f, -1.4f, 1.4f, 0.1f, 10.0f);
-    QMatrix4x4 z_remap;
+    const Eigen::Vector3f world_up = (std::abs(f.camera_pitch_deg) >= 89.0f)
+                                 ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                                 : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+    const Eigen::Matrix4f gv = lookAtRH(eye_dir * 3.0f, Eigen::Vector3f::Zero(), world_up);
+    const Eigen::Matrix4f gp = orthoGL(-1.4f, 1.4f, -1.4f, 1.4f, 0.1f, 10.0f);
+    Eigen::Matrix4f z_remap = Eigen::Matrix4f::Identity();
     z_remap(2, 2) = 0.5f;
     z_remap(2, 3) = 0.5f;
-    const QMatrix4x4 mvp = z_remap * gp * gv;
+    const Eigen::Matrix4f mvp = z_remap * gp * gv;
 
     uint8_t slot[256];
     const float line_w = 2.5f * float(dpr);
-    packAxisUniform(slot, mvp, QVector3D(0, 0, 0), 1.0f, 1.0f, line_w,
+    packAxisUniform(slot, mvp, Eigen::Vector3f(0, 0, 0), 1.0f, 1.0f, line_w,
                     float(gizmo_size), float(gizmo_size));
     const uint32_t slot_offset = 0u;
     wgpuQueueWriteBuffer(queue_, axis_uniform_buffer_, slot_offset, slot, sizeof(slot));
@@ -982,15 +982,15 @@ void OverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
 
         // Stable in-plane basis: pick the world axis least parallel to n
         // so the cross-product stays well-conditioned at any orientation.
-        QVector3D nn = p.n.normalized();
+        Eigen::Vector3f nn = p.n.normalized();
         const float ax = std::abs(nn.x()), ay = std::abs(nn.y()), az = std::abs(nn.z());
-        QVector3D seed = (ax < ay && ax < az) ? QVector3D(1, 0, 0)
-                       : (ay < az)             ? QVector3D(0, 1, 0)
-                                               : QVector3D(0, 0, 1);
-        QVector3D tangent = QVector3D::crossProduct(nn, seed);
-        if (tangent.lengthSquared() < 1e-12f) tangent = QVector3D(1, 0, 0);
+        Eigen::Vector3f seed = (ax < ay && ax < az) ? Eigen::Vector3f(1, 0, 0)
+                       : (ay < az)             ? Eigen::Vector3f(0, 1, 0)
+                                               : Eigen::Vector3f(0, 0, 1);
+        Eigen::Vector3f tangent = nn.cross(seed);
+        if (tangent.squaredNorm() < 1e-12f) tangent = Eigen::Vector3f(1, 0, 0);
         tangent.normalize();
-        QVector3D bitangent = QVector3D::crossProduct(nn, tangent).normalized();
+        Eigen::Vector3f bitangent = nn.cross(tangent).normalized();
 
         // Fixed 1 m half-size matches GL's renderSectionPlanes constant.
         const float half_size = 1.0f;
@@ -1502,7 +1502,7 @@ void OverlayRenderer::encodeOverlayLines(WGPURenderPassEncoder pass,
     // (8 B) into [96..104). The static [64..96) and [104..120) ranges were
     // filled by setOverlayLines so we don't touch them again.
     float vp[16];
-    std::memcpy(vp, f.view_proj.constData(), sizeof(vp));
+    std::memcpy(vp, f.view_proj.data(), sizeof(vp));
     const float viewport[2] = { float(f.viewport_w_px),
                                 float(f.viewport_h_px) };
 
@@ -1721,7 +1721,7 @@ void OverlayRenderer::encodeOverlayPoints(WGPURenderPassEncoder pass,
     if (f.viewport_w_px <= 0 || f.viewport_h_px <= 0) return;
 
     float vp[16];
-    std::memcpy(vp, f.view_proj.constData(), sizeof(vp));
+    std::memcpy(vp, f.view_proj.data(), sizeof(vp));
     const float viewport[2] = { float(f.viewport_w_px),
                                 float(f.viewport_h_px) };
     wgpuQueueWriteBuffer(queue_, overlay_point_uniform_buffer_, 0,  vp, sizeof(vp));
@@ -1886,7 +1886,7 @@ void OverlayRenderer::encodeHighlightTriangles(WGPURenderPassEncoder pass,
     if (!highlight_pipeline_ || highlight_vertex_count_ == 0) return;
     // Pack mat4 + vec4 into the slot. mat4 is column-major 16 floats.
     uint8_t slot[80] = {};
-    std::memcpy(slot, f.view_proj.constData(), 16 * sizeof(float));
+    std::memcpy(slot, f.view_proj.data(), 16 * sizeof(float));
     std::memcpy(slot + 64, highlight_color_, 4 * sizeof(float));
     wgpuQueueWriteBuffer(queue_, highlight_uniform_buffer_, 0, slot, sizeof(slot));
 
@@ -2181,7 +2181,7 @@ void OverlayRenderer::encodeLabels(WGPUCommandEncoder enc,
     // World-anchored labels at point size 9 (matches GL OverlayRenderer).
     for (const auto& lbl : labels_) {
         const float* p = lbl.world_pos;
-        const float* m = f.view_proj.constData();
+        const float* m = f.view_proj.data();
         // Column-major: M[col*4 + row].
         const float wx = m[0]*p[0] + m[4]*p[1] + m[8]*p[2]  + m[12];
         const float wy = m[1]*p[0] + m[5]*p[1] + m[9]*p[2]  + m[13];

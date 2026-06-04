@@ -23,7 +23,6 @@
 #include <QWindow>
 #include <QColor>
 #include <QElapsedTimer>
-#include <QMatrix4x4>
 #include <QPoint>
 #include <QSet>
 #include <QString>
@@ -178,7 +177,7 @@ public:
     // Snapshot of the orbit camera. Mirrors GL ViewportWindow::CameraState
     // so bonsai's "save view" / "restore view" commands port unchanged.
     struct CameraState {
-        QVector3D target;
+        Eigen::Vector3f target;
         float distance;
         float yaw;    // degrees
         float pitch;  // degrees
@@ -218,7 +217,7 @@ private:
     // the view matrix and a WebGPU-correct projection (z mapped to [0, 1]).
     // Single helper so projection_ortho_ and the up-vector switch at near-
     // vertical pitch land identically everywhere.
-    void buildViewProj(QMatrix4x4& view_out, QMatrix4x4& proj_out) const;
+    void buildViewProj(Eigen::Matrix4f& view_out, Eigen::Matrix4f& proj_out) const;
     // Per-frame WASD integration when fps_mode_ is true. Called near the
     // top of render() so the displayed frame already reflects movement.
     void fpsIntegrate();
@@ -226,11 +225,11 @@ private:
     bool computeObjectAabb(uint32_t object_id,
                            float mn[3], float mx[3]) const;
 public:
-    // QVector3D overload — matches GL ViewportWindow::computeObjectAabb so
+    // Eigen::Vector3f overload — matches GL ViewportWindow::computeObjectAabb so
     // bonsai's volume readout / focus callers compile unchanged. Just a
     // thin wrapper around the float[3] version.
     bool computeObjectAabb(uint32_t object_id,
-                           QVector3D& mn, QVector3D& mx) const;
+                           Eigen::Vector3f& mn, Eigen::Vector3f& mx) const;
 private:
     // Re-aim the orbit camera so the bounding sphere of [mn, mx] fits.
     void frameAabb(const float mn[3], const float mx[3], float padding);
@@ -242,7 +241,7 @@ private:
     // chunk-priority metric — extracted from driveStreamingLoads as a
     // member so the click-and-track diagnostic can compare scores.
     float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
-                            const QMatrix4x4& vp_mat) const;
+                            const Eigen::Matrix4f& vp_mat) const;
 
 public:
 
@@ -346,7 +345,7 @@ private:
     // (decoded from ×0.5+0.5 packing) so the section tool can drop
     // perpendicular cuts.
     uint32_t pickObjectAt(int x_pixels, int y_pixels,
-                          QVector3D* normal_out = nullptr);
+                          Eigen::Vector3f* normal_out = nullptr);
     // Pick + ray-cast — returns the object's id, the world-space point
     // where the pick-pixel pillar enters that instance's AABB, and a
     // camera-facing normal. Returns false on a background miss. We do
@@ -356,8 +355,8 @@ private:
     // enough to the click for the section tool's "drop a plane here" UX.
     bool pickSurfaceAt(int x_pixels, int y_pixels,
                        uint32_t& object_id_out,
-                       QVector3D& world_pos_out,
-                       QVector3D& world_normal_out,
+                       Eigen::Vector3f& world_pos_out,
+                       Eigen::Vector3f& world_normal_out,
                        float* aabb_radius_out = nullptr);
     // Rectangle pick: render the pick pass, copy the rect region of the
     // R32UInt color attachment, and return every unique non-zero
@@ -374,8 +373,8 @@ public:
     //   Esc         deactivate tool
     bool  sectionToolActive() const { return section_tool_active_; }
     void  toggleSectionTool();
-    bool  addSectionPlaneAtSurface(const QVector3D& point,
-                                   const QVector3D& normal,
+    bool  addSectionPlaneAtSurface(const Eigen::Vector3f& point,
+                                   const Eigen::Vector3f& normal,
                                    float visual_radius = 0.0f);
     void  removeSectionPlane(int index);
     void  clearSectionPlanes();
@@ -561,7 +560,7 @@ private:
     int   encodeHizResolve(WGPUCommandEncoder enc);
     // Issues a non-blocking mapAsync on `slot` after submit, so the
     // callback can fire whenever the GPU has actually finished writing.
-    void  startHizMap(int slot, const QMatrix4x4& vp_used);
+    void  startHizMap(int slot, const Eigen::Matrix4f& vp_used);
     // Drains pending mapAsync callbacks (via processEvents — does NOT
     // block on GPU work). For any slot that just signalled Mapped, reads
     // it, unmaps it, max-reduces the mip pyramid, and updates hiz_vp_.
@@ -826,7 +825,7 @@ private:
     bool                      section_drag_active_  = false;
     int                       section_drag_index_   = -1;
     QPoint                    section_drag_start_mouse_;
-    QVector3D                 section_drag_start_origin_;
+    Eigen::Vector3f                 section_drag_start_origin_;
     // Mirrors GL ViewportWindow::hitTestSectionGizmo: returns the index of
     // the plane whose arrow gizmo is within grab_px of (x, y), or -1.
     int   hitTestSectionGizmo(int x, int y) const;
@@ -838,7 +837,7 @@ private:
     enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
     static constexpr int HIZ_SLOTS = 2;
     WGPUBuffer    hiz_staging_buffers_[HIZ_SLOTS] = { nullptr, nullptr };
-    QMatrix4x4    hiz_slot_vp_       [HIZ_SLOTS];
+    Eigen::Matrix4f    hiz_slot_vp_       [HIZ_SLOTS];
     HizSlotState  hiz_slot_state_    [HIZ_SLOTS] = { HizSlotState::Idle,
                                                      HizSlotState::Idle };
     int           hiz_write_idx_                  = 0;
@@ -848,7 +847,7 @@ private:
     std::vector<uint32_t> hiz_mip_offset_;
     std::vector<uint32_t> hiz_mip_w_;
     std::vector<uint32_t> hiz_mip_h_;
-    QMatrix4x4            hiz_vp_;
+    Eigen::Matrix4f            hiz_vp_;
     bool                  hiz_valid_         = false;
     uint32_t              hiz_reject_count_  = 0;  // per-frame stat
 
