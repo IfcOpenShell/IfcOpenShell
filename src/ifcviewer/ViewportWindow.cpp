@@ -19,6 +19,8 @@
 
 #include "ViewportWindow.h"
 #include "AreaMeasurement.h"
+#include "ChunkPlanner.h"
+#include "InstanceCompose.h"
 #include "LengthMeasurement.h"
 #include "StreamingLoader.h"
 #include "VertexQuantization.h"
@@ -113,31 +115,6 @@ static double computeMeshLocalVolumeQuantised(
 // real triangle hit — see pickMeshLocalAt's refinement block.
 
 // Slab method ray-AABB. inv_d is precomputed 1/dir per axis.
-// Transform the 8 corners of [local_min, local_max] through the
-// column-major 4x4 `M` and bound the result in world space. Used after a
-// federation-matrix change so per-instance world AABBs (and the chunk
-// AABBs derived from them) reflect the recomposed transform.
-static void worldAabbFromLocalVp(const float local_min[3],
-                                 const float local_max[3],
-                                 const float M[16],
-                                 float out_min[3], float out_max[3]) {
-    out_min[0] = out_min[1] = out_min[2] =  std::numeric_limits<float>::max();
-    out_max[0] = out_max[1] = out_max[2] = -std::numeric_limits<float>::max();
-    for (int c = 0; c < 8; ++c) {
-        const float x = (c & 1) ? local_max[0] : local_min[0];
-        const float y = (c & 2) ? local_max[1] : local_min[1];
-        const float z = (c & 4) ? local_max[2] : local_min[2];
-        const float wx = M[0]*x + M[4]*y + M[8] *z + M[12];
-        const float wy = M[1]*x + M[5]*y + M[9] *z + M[13];
-        const float wz = M[2]*x + M[6]*y + M[10]*z + M[14];
-        if (wx < out_min[0]) out_min[0] = wx;
-        if (wx > out_max[0]) out_max[0] = wx;
-        if (wy < out_min[1]) out_min[1] = wy;
-        if (wy > out_max[1]) out_max[1] = wy;
-        if (wz < out_min[2]) out_min[2] = wz;
-        if (wz > out_max[2]) out_max[2] = wz;
-    }
-}
 
 static bool rayAabbSlab(const float ro[3], const float inv_d[3],
                         const float bmin[3], const float bmax[3]) {
@@ -235,87 +212,6 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
         wgpuQueueWriteBuffer(queue, buf, 0, data, size_bytes);
     }
     return buf;
-}
-
-// Interleave the low 21 bits of v with two zero bits between each,
-// returning bits at positions 0, 3, 6, ..., 60 — one axis of a
-// standard 21-bit-per-axis 3D Morton code. ORing three of these
-// shifted by 0, 1, 2 gives a 63-bit (x, y, z)-interleaved code; the
-// resulting integer ordering puts spatially-close points close in
-// the sorted sequence (the classic Z-order curve).
-static uint64_t mortonSplit21(uint32_t v) {
-    uint64_t r = v & 0x1FFFFFu;
-    r = (r | r << 32) & 0x001F00000000FFFFULL;
-    r = (r | r << 16) & 0x001F0000FF0000FFULL;
-    r = (r | r << 8)  & 0x100F00F00F00F00FULL;
-    r = (r | r << 4)  & 0x10C30C30C30C30C3ULL;
-    r = (r | r << 2)  & 0x1249249249249249ULL;
-    return r;
-}
-
-static uint64_t mortonCode3D(uint32_t x, uint32_t y, uint32_t z) {
-    return mortonSplit21(x) | (mortonSplit21(y) << 1) | (mortonSplit21(z) << 2);
-}
-
-// Return a mesh-id permutation sorted by 3D Morton (Z-order) code over
-// the meshes' centroids. Replaces a lexicographic (z, y, x) sort,
-// which was effectively a 1D Z-slab traversal — chunks ended up
-// spanning the whole XY extent of the model, ~50m × 50m × 0.5m for a
-// typical building. Morton clusters spatially in all 3 axes, so each
-// chunk's AABB becomes a tight 3D voxel — small enough that
-// per-chunk frustum / contribution / HiZ rejection becomes meaningful
-// (a 1km-wide AABB never gets occluded; a 10m voxel often does).
-//
-// Meshes with no instances get a Morton code of 0 and sink to the
-// front; they contribute no geometry / AABBs so where they land in
-// the chunk plan doesn't matter.
-static std::vector<uint32_t> sortMeshIdsByMorton(
-        std::size_t n_meshes,
-        const std::vector<float>&    mesh_cx,
-        const std::vector<float>&    mesh_cy,
-        const std::vector<float>&    mesh_cz,
-        const std::vector<uint32_t>& mesh_inst_count) {
-    // Per-model bounds over centroids. Quantising relative to these
-    // gives the Morton code its full 21-bit-per-axis resolution
-    // (~2 M bins per axis = sub-millimetre on a kilometre-scale scene,
-    // way more than we need; the cost is the same regardless).
-    float bmin[3] = {  std::numeric_limits<float>::infinity(),
-                       std::numeric_limits<float>::infinity(),
-                       std::numeric_limits<float>::infinity() };
-    float bmax[3] = { -std::numeric_limits<float>::infinity(),
-                      -std::numeric_limits<float>::infinity(),
-                      -std::numeric_limits<float>::infinity() };
-    for (std::size_t i = 0; i < n_meshes; ++i) {
-        if (mesh_inst_count[i] == 0) continue;
-        bmin[0] = std::min(bmin[0], mesh_cx[i]); bmax[0] = std::max(bmax[0], mesh_cx[i]);
-        bmin[1] = std::min(bmin[1], mesh_cy[i]); bmax[1] = std::max(bmax[1], mesh_cy[i]);
-        bmin[2] = std::min(bmin[2], mesh_cz[i]); bmax[2] = std::max(bmax[2], mesh_cz[i]);
-    }
-    const float ext[3] = {
-        std::max(bmax[0] - bmin[0], 1e-3f),
-        std::max(bmax[1] - bmin[1], 1e-3f),
-        std::max(bmax[2] - bmin[2], 1e-3f),
-    };
-    constexpr uint32_t MORTON_BITS = 21;
-    constexpr uint32_t MORTON_MAX  = (1u << MORTON_BITS) - 1u;
-
-    std::vector<uint64_t> codes(n_meshes, 0);
-    for (uint32_t i = 0; i < uint32_t(n_meshes); ++i) {
-        if (mesh_inst_count[i] == 0) continue;
-        const float nx = (mesh_cx[i] - bmin[0]) / ext[0];
-        const float ny = (mesh_cy[i] - bmin[1]) / ext[1];
-        const float nz = (mesh_cz[i] - bmin[2]) / ext[2];
-        const uint32_t qx = std::min(uint32_t(nx * float(MORTON_MAX + 1u)), MORTON_MAX);
-        const uint32_t qy = std::min(uint32_t(ny * float(MORTON_MAX + 1u)), MORTON_MAX);
-        const uint32_t qz = std::min(uint32_t(nz * float(MORTON_MAX + 1u)), MORTON_MAX);
-        codes[i] = mortonCode3D(qx, qy, qz);
-    }
-
-    std::vector<uint32_t> sorted(n_meshes);
-    std::iota(sorted.begin(), sorted.end(), 0u);
-    std::stable_sort(sorted.begin(), sorted.end(),
-        [&](uint32_t a, uint32_t b) { return codes[a] < codes[b]; });
-    return sorted;
 }
 
 void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
@@ -873,22 +769,17 @@ void ViewportWindow::applyCachedModel(uint32_t model_id,
     std::vector<uint32_t>              instance_to_chunk;
     instance_to_chunk.assign(metadata.meta.instances.size(), 0);
     {
-        std::vector<uint32_t> sorted_mesh_ids =
-            sortMeshIdsByMorton(n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
-        chunk_mesh_ids.push_back({});
-        uint64_t current_chunk_bytes = 0;
-        for (uint32_t mi : sorted_mesh_ids) {
-            const MeshInfo& mesh = metadata.meta.meshes[mi];
-            const uint64_t mesh_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-            if (current_chunk_bytes > 0
-                && current_chunk_bytes + mesh_bytes > WGPU_CHUNK_VERTEX_BYTES_LIMIT) {
-                chunk_mesh_ids.push_back({});
-                current_chunk_bytes = 0;
-            }
-            chunk_mesh_ids.back().push_back(mi);
-            current_chunk_bytes += mesh_bytes;
+        std::vector<uint32_t> sorted_mesh_ids = ChunkPlanner::sortMeshIdsByMorton(
+            n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
+        std::vector<uint32_t> mesh_vertex_count;
+        mesh_vertex_count.reserve(n_meshes);
+        for (size_t i = 0; i < n_meshes; ++i) {
+            mesh_vertex_count.push_back(metadata.meta.meshes[i].vertex_count);
         }
-        if (chunk_mesh_ids.back().empty()) chunk_mesh_ids.pop_back();
+        chunk_mesh_ids = ChunkPlanner::greedyPackChunks(
+            sorted_mesh_ids, mesh_vertex_count,
+            INSTANCED_VERTEX_STRIDE_BYTES,
+            WGPU_CHUNK_VERTEX_BYTES_LIMIT);
         // Derive instance_to_chunk via mesh_id → chunk lookup table.
         std::vector<uint32_t> mesh_to_chunk(n_meshes, 0);
         for (size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
@@ -1391,29 +1282,29 @@ void ViewportWindow::setModelTransformation(uint32_t model_id,
 
 void ViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
                                                        const ModelGpuData& m) const {
-    // Maths in double; narrow at the end so a large IFC placement
-    // gets cancelled by federated_false_origin_meters_ before the
-    // float cast loses precision.
-    using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
-    using Mat4fCol = Eigen::Matrix<float,  4, 4, Eigen::ColMajor>;
-    const Eigen::Matrix4d P =
-        Eigen::Map<const Mat4dCol>(inst.placement_transformation);
-
-    const Eigen::Matrix4d composed =
-        federated_false_origin_meters_ *
-        m.model_transformation_meters *
-        m.coordinate_operation_meters *
-        P;
-
-    Eigen::Map<Mat4fCol> T_f(inst.transform);
-    T_f = composed.cast<float>();
-
     if (inst.mesh_id < m.meshes.size()) {
         const MeshInfo& mi = m.meshes[inst.mesh_id];
-        worldAabbFromLocalVp(mi.local_aabb_min, mi.local_aabb_max,
-                             inst.transform,
-                             inst.world_aabb_min, inst.world_aabb_max);
+        InstanceCompose::composeInstance(
+            inst.placement_transformation,
+            federated_false_origin_meters_,
+            m.model_transformation_meters,
+            m.coordinate_operation_meters,
+            mi.local_aabb_min, mi.local_aabb_max,
+            inst.transform,
+            inst.world_aabb_min, inst.world_aabb_max);
     } else {
+        // Unknown mesh id: still compose the transform (downstream may
+        // use it for picking / readback even without geometry), but
+        // emit a degenerate world AABB so cull doesn't pick this up.
+        const float zero[3] = {0.0f, 0.0f, 0.0f};
+        InstanceCompose::composeInstance(
+            inst.placement_transformation,
+            federated_false_origin_meters_,
+            m.model_transformation_meters,
+            m.coordinate_operation_meters,
+            zero, zero,
+            inst.transform,
+            inst.world_aabb_min, inst.world_aabb_max);
         for (int a = 0; a < 3; ++a) {
             inst.world_aabb_min[a] = 0.0f;
             inst.world_aabb_max[a] = 0.0f;
@@ -1468,24 +1359,7 @@ void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
 }
 
 bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
-    if (object_id == 0) return false;
-    for (const auto& [mid, m] : models_gpu_) {
-        auto it = m.object_id_to_instance.find(object_id);
-        if (it == m.object_id_to_instance.end()) continue;
-        const uint32_t inst_idx = it->second;
-        if (inst_idx >= m.instances.size()) continue;
-        const InstanceCpu& inst = m.instances[inst_idx];
-        out.model_id = mid;
-        out.mesh_id  = inst.mesh_id;
-        // InstanceCpu::placement_transformation is already double[16]
-        // column-major (large IFC placements need double precision until
-        // FederatedFalseOrigin cancels them); copy straight through.
-        std::memcpy(out.placement_transformation,
-                    inst.placement_transformation,
-                    sizeof(out.placement_transformation));
-        return true;
-    }
-    return false;
+    return InstanceCompose::findInstanceInModels(object_id, models_gpu_, out);
 }
 
 bool ViewportWindow::firstGeometryPointWorldM(uint32_t model_id,

@@ -223,3 +223,17 @@ uint64_t BufferPool::largest_free_run_bytes() const {
     }
     return m;
 }
+
+void BufferPool::addSubBufferForTesting(WGPUBuffer fake_buffer, uint64_t capacity) {
+    SubPool sp;
+    sp.buffer   = fake_buffer;
+    sp.capacity = capacity;
+    sp.used     = 0;
+    sp.free_ranges.push_back({0, capacity});
+    sub_pools_.push_back(std::move(sp));
+}
+
+void BufferPool::clearSubPoolsForTesting() {
+    // Skip wgpuBufferRelease — handles are fakes that would crash on deref.
+    sub_pools_.clear();
+}

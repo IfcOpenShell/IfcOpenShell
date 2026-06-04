@@ -42,6 +42,7 @@
 
 #include "SidecarCache.h"
 #include "BufferPool.h"
+#include "InstanceCompose.h"
 #include "ModelGpuData.h"
 #include "OverlayRenderer.h"
 #include "SelectionState.h"
@@ -382,12 +383,9 @@ public:
     // Pure CPU lookup: object_id → owning model + mesh + raw placement
     // matrix (column-major, pre-CoordinateOperation / FederatedFalseOrigin
     // / ModelTransformation). Mirrors GL ViewportWindow::InstanceLookup
-    // so Measurement.cpp ports unchanged.
-    struct InstanceLookup {
-        uint32_t model_id = 0;
-        uint32_t mesh_id  = 0;
-        double   placement_transformation[16]{};
-    };
+    // so Measurement.cpp ports unchanged. The canonical struct lives in
+    // InstanceCompose so the lookup can be unit-tested without Qt.
+    using InstanceLookup = InstanceCompose::InstanceLookup;
     bool findInstance(uint32_t object_id, InstanceLookup& out) const;
 
     // A point that actually lies on the model's first instance — the

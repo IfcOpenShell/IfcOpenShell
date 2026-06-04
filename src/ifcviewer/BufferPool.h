@@ -111,6 +111,20 @@ public:
     // could rescue them, or whether eviction is the only path.
     bool     can_grow() const { return !growth_disabled_ && per_sub_buffer_capacity_ > 0; }
 
+    // Test-only seam. Production code populates sub-pools lazily through
+    // alloc() → addSubBuffer() → wgpuDeviceCreateBuffer; that path needs a
+    // real WGPUDevice and is impractical to exercise from a unit test.
+    // tests/test_buffer_pool.cpp uses this method to preseed a sub-pool
+    // with a known capacity and a fake (non-null) WGPUBuffer handle the
+    // allocator only treats as opaque — the free-list bookkeeping never
+    // dereferences it. Not for production use.
+    void addSubBufferForTesting(WGPUBuffer fake_buffer, uint64_t capacity);
+    // Drop fake-handle sub-pools without calling wgpuBufferRelease on
+    // them. Tests must call this before the pool destructs (or rely on
+    // the FakePoolGuard fixture in test_buffer_pool.cpp), otherwise
+    // ~BufferPool → destroy() would dereference the fake handles.
+    void clearSubPoolsForTesting();
+
 private:
     struct FreeRange { uint64_t offset; uint64_t size; };
     struct SubPool {

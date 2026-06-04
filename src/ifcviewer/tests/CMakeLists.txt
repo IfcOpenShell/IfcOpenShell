@@ -52,10 +52,49 @@ add_ifcviewer_unit_test(test_sidecar_cache
 
 add_ifcviewer_unit_test(test_instanced_geometry)
 
+# ChunkPlanner: Morton sort + greedy-pack — pure CPU, no Qt / no wgpu.
+add_ifcviewer_unit_test(test_chunk_planner
+    SOURCES ${IFCVIEWER_SRC}/ChunkPlanner.cpp
+)
+
+# InstanceCompose: matrix composition + cross-model object_id lookup.
+# Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
+# (never touched at runtime). Eigen for Matrix4d.
+find_package(Eigen3 REQUIRED)
+add_ifcviewer_unit_test(test_instance_compose
+    SOURCES ${IFCVIEWER_SRC}/InstanceCompose.cpp
+    LIBS wgpu_native Eigen3::Eigen
+)
+if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
+    set_target_properties(test_instance_compose PROPERTIES
+        BUILD_RPATH "${WGPU_NATIVE_LIB_DIR}"
+    )
+endif()
+
 # Header-only state-machine tests for the renderer subsystems (selection,
 # visibility). Subjects are inline in their .h files, so no SOURCES needed.
 add_ifcviewer_unit_test(test_selection)
 add_ifcviewer_unit_test(test_visibility)
+
+# BufferPool sub-allocator invariants. The pool's wgpu calls live inside
+# addSubBuffer() (the growth path); tests use the addSubBufferForTesting
+# seam to preseed sub-pools with fake handles, so the only wgpu touchpoint
+# the linker needs is the production destructor's wgpuBufferRelease — which
+# is never reached for fake handles because we don't call destroy() / let
+# the pool go out of scope holding any. Linking wgpu_native satisfies the
+# symbol regardless. Qt6::Core comes along for qInfo() inside
+# addSubBuffer's diagnostic log — also never reached at test runtime, but
+# the unresolved symbol would fail link.
+find_package(Qt${QT_VERSION} COMPONENTS Core REQUIRED PATHS ${QT_DIR})
+add_ifcviewer_unit_test(test_buffer_pool
+    SOURCES ${IFCVIEWER_SRC}/BufferPool.cpp
+    LIBS wgpu_native Qt${QT_VERSION}::Core
+)
+if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
+    set_target_properties(test_buffer_pool PROPERTIES
+        BUILD_RPATH "${WGPU_NATIVE_LIB_DIR}"
+    )
+endif()
 
 # Federation is Qt-derived (QObject + signals). It has to pull Qt6 in
 # directly and enable AUTOMOC for the Q_OBJECT moc-generation.
