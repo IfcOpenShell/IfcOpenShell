@@ -137,6 +137,17 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 			bool is_manifold = util::is_manifold(entity_part);
 
 			if (!is_manifold) {
+				// force sewing, edge identity might have been mudied by FixAdvFace.FixOrientation.MSG5 to fix interior loop winding order
+                TopTools_ListOfShape list;
+                IfcGeom::util::shape_to_face_list(entity_part, list);
+                IfcGeom::util::create_solid_from_faces(list, entity_part, settings_.get<settings::Precision>().get(), true);
+                is_manifold = util::is_manifold(entity_part);
+                if (is_manifold) {
+					Logger::Warning("Successfully sewed non-manifold first operand");
+                }
+			}
+
+			if (!is_manifold) {
                 if (settings_.get<settings::MakeVolume>().get()) {
                     BOPAlgo_MakerVolume mv;
                     mv.AddArgument(entity_part);
