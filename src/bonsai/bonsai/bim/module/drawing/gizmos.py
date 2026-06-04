@@ -3399,8 +3399,9 @@ class GizmoFillet(StaticTrisGizmoMixin, bpy.types.Gizmo):
     bl_idname = "VIEW3D_GT_fillet"
     __slots__ = ("custom_shape",)
     tris = FILLET_TRIS_DEFAULT
-    # Stacked at ICON_STACK_OFFSET_Y above join in GizmoWallJoinIntersection;
-    # full-bbox hit overlaps the sibling icons' bboxes and steals their clicks.
+    # Stacked at ICON_STACK_OFFSET_Y above the join icon in the wall-join
+    # gizmo group; full-bbox hit overlaps the sibling icons' bboxes and
+    # steals their clicks.
     hit_uses_bbox = False
 
 
@@ -3884,8 +3885,8 @@ class GizmoArrayLayerIndicator(bpy.types.Gizmo):
 class GizmoCountLabel(bpy.types.Gizmo):
     """``xN`` text label rendered from 7-segment digit triangles.
 
-    Mirrors a caller-supplied integer (set via :meth:`set_count`) into a
-    live count badge. No icon glyph; the gizmo is the number alone."""
+    Mirrors a caller-supplied integer into a live count badge. No icon
+    glyph; the gizmo is the number alone."""
 
     bl_idname = "BIM_GT_count_label"
 

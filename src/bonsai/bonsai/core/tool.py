@@ -459,7 +459,6 @@ class Geometry:
     def has_axis_representation(cls, element): pass
     def has_data_users(cls, data): pass
     def has_material_style_override(cls, obj): pass
-    def has_material_styles(cls, element): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass

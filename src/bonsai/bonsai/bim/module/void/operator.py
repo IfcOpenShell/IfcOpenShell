@@ -42,9 +42,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     # Toggled by ``invoke`` when the user holds SHIFT during a gizmo / hotkey
-    # click. Forwards to ``FilledOpeningGenerator.generate`` which gates the
-    # snap-to-wall-axis block on it. HIDDEN + SKIP_SAVE so it doesn't surface
-    # in the F6 redo panel or persist into saved keymaps.
+    # click. The filling-opening generator gates its snap-to-wall-axis block
+    # on this flag. HIDDEN + SKIP_SAVE so the flag doesn't surface in the F6
+    # redo panel or persist into saved keymaps.
     preserve_placement: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     @classmethod

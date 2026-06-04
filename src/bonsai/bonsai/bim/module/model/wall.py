@@ -195,12 +195,9 @@ class _CommitWallDraftsFirstMixin:
     """Operator mixin that flushes any in-progress wall parametric drafts in
     the current selection before delegating to the subclass's ``_perform``.
 
-    Centralises the inline ``_commit_pending_wall_edits_for_selection(context)``
-    call that every multi-wall operator (unjoin, unjoin-path-connection,
-    extend-to-underside, extend-to-wall, split, merge, join-intersection)
-    used to repeat at the top of ``_execute``. Subclasses implement
-    ``_perform`` instead of ``_execute``; the IFC transaction opened by
-    ``tool.Ifc.Operator.execute`` wraps both the commit and the perform.
+    Subclasses implement ``_perform`` instead of ``_execute``; the IFC
+    transaction opened by ``tool.Ifc.Operator.execute`` wraps both the
+    commit and the perform.
 
     Place this BEFORE ``bpy.types.Operator`` in the bases tuple so the
     mixin's ``_execute`` resolves first in the MRO."""
@@ -1910,8 +1907,8 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     finish_editing_operator = "bim.finish_editing_wall"
     cancel_editing_operator = "bim.cancel_editing_wall"
     # Empty disables the base class's auto-created cycle_gizmo at ICON_CYCLE_X.
-    # We render three state-specific baseline icons at that slot instead — see
-    # ``setup_element_specific_gizmos`` / ``_update_icon_row_extras``.
+    # Three state-specific baseline icons (exterior / center / interior) take
+    # over that slot, with the active one chosen per frame from props.
     cycle_type_operator = ""
 
     # Threshold (SI meters) above which a second height gizmo is drawn at the far end of
@@ -2024,11 +2021,11 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             (0, 0, 1),
         )
 
-    # Per-region weakref map populated in ``setup_element_specific_gizmos``.
-    # The ``WallGizmoPreviewDecorator`` dereferences this each draw to read
-    # live ``is_highlight`` state off the cursor icons (extend-X / extend-Z
-    # / split) in the same region it's currently drawing in, so the GPU
-    # axis-preview lines only render while the matching icon is hovered.
+    # Per-region weakref map populated at setup time. The wall-gizmo preview
+    # decorator dereferences this each draw to read live ``is_highlight`` state
+    # off the cursor icons (extend-X / extend-Z / split) in the same region
+    # it's currently drawing in, so the GPU axis-preview lines only render
+    # while the matching icon is hovered.
     _active_instances: ClassVar["dict[int, weakref.ReferenceType[GizmoWallEdition]]"] = {}
 
     # Row layout: validate / cancel / baseline-triplet / rotate / array.

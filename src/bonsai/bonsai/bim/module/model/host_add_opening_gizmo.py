@@ -198,8 +198,8 @@ class GizmoHostToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboardingM
         if not tool.Geometry.has_openings(element):
             return False
         # Skip when a per-feature parametric-edit gizmo already surfaces
-        # an idle-row toggle for this element (wall: GizmoWallEdition;
-        # parametric roof: GizmoRoofEdition).
+        # an idle-row toggle for this element — walls and parametric roofs
+        # both render their own toggle in the pen row.
         if tool.Parametric.is_path_connectable_wall(element):
             return False
         if tool.Parametric.is_roof(element):
