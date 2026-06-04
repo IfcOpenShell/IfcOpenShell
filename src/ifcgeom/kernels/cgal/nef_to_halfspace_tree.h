@@ -116,6 +116,18 @@ template <typename Kernel>
 using plane_map = std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>;
 // using plane_map = std::unordered_map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneHash<Kernel>>;
 
+// Lexicographic comparator for CGAL Point_d (operator< is deleted in CGAL 6.x)
+struct Point_d_4d_Less {
+	using Point_d = CGAL::Epick_d<CGAL::Dimension_tag<4>>::Point_d;
+	bool operator()(const Point_d& a, const Point_d& b) const {
+		for (int i = 0; i < 4; ++i) {
+			if (a[i] < b[i]) return true;
+			if (b[i] < a[i]) return false;
+		}
+		return false;
+	}
+};
+
 // Snap halfspace planes
 // search_radius: max cartesian distance in plane equation parameters as 4d points in space
 template <typename Kernel>
@@ -131,8 +143,8 @@ plane_map<Kernel> snap_halfspaces(const std::list<CGAL::Plane_3<Kernel>>& planes
 
 	plane_map<Kernel> result;
 
-	std::map<Point_d, std::set<Point_d>> neighbours;
-	std::map<Point_d, std::list<CGAL::Plane_3<Kernel>>> originals;
+	std::map<Point_d, std::set<Point_d, Point_d_4d_Less>, Point_d_4d_Less> neighbours;
+	std::map<Point_d, std::list<CGAL::Plane_3<Kernel>>, Point_d_4d_Less> originals;
 	std::vector<Point_d> planes_as_point;
 
 	for (auto& p : planes) {
@@ -205,7 +217,7 @@ plane_map<Kernel> snap_halfspaces_2(const std::list<CGAL::Plane_3<Kernel>>& plan
 	plane_map<Kernel> result;
 
 	std::vector<Point_d> planes_as_point;
-	std::map<Point_d, CGAL::Plane_3<Kernel>> normalized_to_original;
+	std::map<Point_d, CGAL::Plane_3<Kernel>, Point_d_4d_Less> normalized_to_original;
 
 	for (auto& p : planes_fixed) {
 		// @todo can we skip normalization (simply divide by largest component perhaps)
