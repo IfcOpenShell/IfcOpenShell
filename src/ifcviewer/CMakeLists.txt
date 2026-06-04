@@ -140,6 +140,7 @@ target_include_directories(IfcViewer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(IfcViewer ${kernel_libraries} ${mapping_libraries})
 
 target_link_libraries(IfcViewer PUBLIC
+    IfcUtil
     IfcGeom
     IfcParse
     ${OpenCASCADE_LIBRARIES}

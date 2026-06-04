@@ -23,9 +23,9 @@
 
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
-#include "../../../ifcviewer/Geolocation.h"
+#include "../../../ifcutil/Geolocation.h"
 #include "../../../ifcviewer/SceneLoader.h"
-#include "../../../ifcviewer/Unit.h"
+#include "../../../ifcutil/Unit.h"
 
 #include <cmath>
 

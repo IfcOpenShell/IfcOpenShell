@@ -66,15 +66,6 @@ find_package(Eigen3 REQUIRED)
 add_executable(test_federation
     test_federation.cpp
     ${IFCVIEWER_SRC}/Federation.cpp
-    # Federation pulls in Unit::convert for federationUnitToMeters and
-    # Geolocation helpers (helmertMetersFromParameters, getWcs, getMapUnit)
-    # for computeModelGeoref; compile both directly so the test doesn't
-    # have to link the whole IfcViewer library (which would drag in
-    # Qt6::OpenGL, OpenCASCADE, etc.).  Placement.cpp provides
-    # getAxis2Placement, called from Geolocation::getWcs.
-    ${IFCVIEWER_SRC}/Unit.cpp
-    ${IFCVIEWER_SRC}/Geolocation.cpp
-    ${IFCVIEWER_SRC}/Placement.cpp
 )
 set_target_properties(test_federation PROPERTIES AUTOMOC ON)
 target_include_directories(test_federation PRIVATE ${IFCVIEWER_SRC})
@@ -84,6 +75,11 @@ target_link_libraries(test_federation PRIVATE
     Qt${QT_VERSION}::Gui    # Federation::HomeView uses QVector3D from QtGui
     Qt${QT_VERSION}::Test   # QSignalSpy
     Eigen3::Eigen           # Federation.h: composed matrices use Eigen
-    IfcParse                # Unit.cpp uses express::Base / file APIs
+    # IfcUtil provides Unit::convert + Geolocation helpers
+    # (helmertMetersFromParameters, getWcs, getMapUnit) + Placement
+    # (getAxis2Placement, called from Geolocation::getWcs). Linking the
+    # static lib avoids re-compiling those .cpp files here and pulls
+    # the IfcUtil include dir + IfcParse transitively.
+    IfcUtil
 )
 catch_discover_tests(test_federation)
