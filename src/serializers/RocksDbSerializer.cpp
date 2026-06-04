@@ -4,6 +4,9 @@
 
 #include <rocksdb/options.h>
 
+#include <cstdint>
+#include <cstring>
+
 #include "../ifcparse/logger.h"
 
 RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes)

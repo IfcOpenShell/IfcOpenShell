@@ -35,6 +35,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <cstdint>
 
 #ifdef IFOPSH_WITH_ROCKSDB
 

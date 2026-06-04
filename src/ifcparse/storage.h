@@ -33,6 +33,7 @@ namespace rocksdb {
 #include <iterator>
 #include <map>
 #include <memory>
+#include <cstring>
 #include <type_traits>
 #include <iostream>
 #include <deque>

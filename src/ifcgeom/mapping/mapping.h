@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <unordered_set>
+#include <cstdint>
 
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/schemas/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)

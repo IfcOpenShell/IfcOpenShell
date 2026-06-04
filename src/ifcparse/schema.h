@@ -26,8 +26,10 @@
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <cctype>
+#include <cstdint>
 #include <iterator>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <optional>

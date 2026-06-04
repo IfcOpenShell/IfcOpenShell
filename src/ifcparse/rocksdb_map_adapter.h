@@ -30,6 +30,8 @@
 #include <utility>
 #include <iterator>
 #include <cstddef>
+#include <cstdint>
+#include <cstring>
 
 template <typename T>
 struct is_std_tuple : std::false_type {};
