@@ -82,13 +82,10 @@ add_ifcviewer_unit_test(test_visibility)
 # the linker needs is the production destructor's wgpuBufferRelease — which
 # is never reached for fake handles because we don't call destroy() / let
 # the pool go out of scope holding any. Linking wgpu_native satisfies the
-# symbol regardless. Qt6::Core comes along for qInfo() inside
-# addSubBuffer's diagnostic log — also never reached at test runtime, but
-# the unresolved symbol would fail link.
-find_package(Qt${QT_VERSION} COMPONENTS Core REQUIRED PATHS ${QT_DIR})
+# symbol regardless.
 add_ifcviewer_unit_test(test_buffer_pool
     SOURCES ${IFCVIEWER_SRC}/BufferPool.cpp
-    LIBS wgpu_native Qt${QT_VERSION}::Core
+    LIBS wgpu_native
 )
 if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
     set_target_properties(test_buffer_pool PROPERTIES

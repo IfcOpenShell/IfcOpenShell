@@ -19,9 +19,8 @@
 
 #include "BufferPool.h"
 
-#include <QtDebug>
-
 #include <cassert>
+#include <cstdio>
 #include <cstring>
 
 BufferPool::~BufferPool() {
@@ -113,21 +112,23 @@ bool BufferPool::addSubBuffer() {
             sp.free_ranges.push_back({0, try_size});
             sub_pools_.push_back(std::move(sp));
             last_growth_size_ = try_size;
-            qInfo().noquote().nospace()
-                << "[wgpu pool] added sub-buffer " << (sub_pools_.size() - 1)
-                << " (" << (try_size / (1024 * 1024)) << " MB); pool total now "
-                << (total_capacity_bytes() / (1024 * 1024)) << " MB";
+            std::fprintf(stderr,
+                "[wgpu pool] added sub-buffer %zu (%llu MB); pool total now %llu MB\n",
+                sub_pools_.size() - 1,
+                (unsigned long long)(try_size / (1024 * 1024)),
+                (unsigned long long)(total_capacity_bytes() / (1024 * 1024)));
             return true;
         }
         if (buf) wgpuBufferRelease(buf);
         try_size /= 2;
     }
 
-    qInfo().noquote().nospace()
-        << "[wgpu pool] driver refused growth even at "
-        << (MIN_SUB_BUFFER_BYTES / (1024 * 1024)) << " MB; pool capped at "
-        << (total_capacity_bytes() / (1024 * 1024))
-        << " MB across " << sub_pools_.size() << " sub-buffer(s) — growth disabled";
+    std::fprintf(stderr,
+        "[wgpu pool] driver refused growth even at %llu MB; "
+        "pool capped at %llu MB across %zu sub-buffer(s) — growth disabled\n",
+        (unsigned long long)(MIN_SUB_BUFFER_BYTES / (1024 * 1024)),
+        (unsigned long long)(total_capacity_bytes() / (1024 * 1024)),
+        sub_pools_.size());
     growth_disabled_ = true;
     return false;
 }
