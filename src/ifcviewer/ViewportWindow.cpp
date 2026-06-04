@@ -606,7 +606,19 @@ static WGPUStringView svFromCStr(const char* s) {
 // -----------------------------------------------------------------------------
 
 ViewportWindow::ViewportWindow(QWindow* parent)
-    : QWindow(parent) {
+    : QWindow(parent),
+      core_(this),
+      // Bind reference aliases to ViewportCore's storage so the
+      // existing `device_` / `queue_` / … sites in this TU keep
+      // working unchanged. Each reference goes away as its owning
+      // render method moves into ViewportCore.
+      instance_          (core_.instance_),
+      adapter_           (core_.adapter_),
+      device_            (core_.device_),
+      queue_             (core_.queue_),
+      surface_           (core_.surface_),
+      surface_format_    (core_.surface_format_),
+      surface_configured_(core_.surface_configured_) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //

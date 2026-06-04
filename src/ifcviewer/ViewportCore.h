@@ -20,17 +20,20 @@
 #ifndef VIEWPORTCORE_H
 #define VIEWPORTCORE_H
 
-// Platform-agnostic render core. Owns the wgpu state + scene state +
-// per-frame render path. Talks to its embedder through ViewportHost
-// (window/canvas surface, scheduling, notifications) — has no Qt or
-// browser dependencies of its own.
+// Platform-agnostic render core. Owns the wgpu lifecycle state +
+// (eventually) scene state + per-frame render path. Talks to its
+// embedder through ViewportHost (window/canvas surface, scheduling,
+// notifications) — has no Qt or browser dependencies of its own.
 //
-// Empty for now: this header / TU is the placeholder for the
-// incremental Path-A refactor (#77-#86). Each subsequent commit moves
-// one subsystem out of ViewportWindow.cpp into here and updates the
-// public surface accordingly. Until that work lands, ViewportWindow
-// retains its render body; this class is just the target for the
-// move.
+// First migration target (#84-a): wgpu instance/adapter/device/queue/
+// surface ownership. The next subsystems (pipelines, models, render
+// path) move incrementally across subsequent commits — each leaving
+// the desktop build green. ViewportWindow currently holds reference
+// members pointing back at ViewportCore's storage so its body doesn't
+// have to acquire a `core_.` prefix on every wgpu touch. Those
+// references shrink as render methods themselves move over.
+
+#include <webgpu/webgpu.h>
 
 #include "ViewportHost.h"
 
@@ -44,8 +47,28 @@ public:
 
     ViewportHost* host() const { return host_; }
 
+    // Friend access for ViewportWindow's reference proxies. As each
+    // render method moves into ViewportCore it stops needing these
+    // (it touches the fields directly); once everything has migrated
+    // the friend declaration goes away.
+    friend class ViewportWindow;
+
 private:
     ViewportHost* host_;
+
+    // ---- wgpu lifecycle state ------------------------------------------------
+    //
+    // Plain pointers (wgpu C handles); zero-init means "not yet
+    // initialised". Owned by ViewportCore now; reference members in
+    // ViewportWindow alias these so the existing call sites don't
+    // need to change to use a `core_.` prefix.
+    WGPUInstance      instance_           = nullptr;
+    WGPUAdapter       adapter_            = nullptr;
+    WGPUDevice        device_             = nullptr;
+    WGPUQueue         queue_              = nullptr;
+    WGPUSurface       surface_            = nullptr;
+    WGPUTextureFormat surface_format_     = WGPUTextureFormat_Undefined;
+    bool              surface_configured_ = false;
 };
 
 #endif  // VIEWPORTCORE_H

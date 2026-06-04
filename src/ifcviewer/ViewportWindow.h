@@ -634,16 +634,25 @@ private:
     void recomposeAndUploadModel(uint32_t model_id);
 
     bool wgpu_initialized_ = false;
-    bool surface_configured_ = false;
     int  configured_w_ = 0;
     int  configured_h_ = 0;
 
-    WGPUInstance      instance_       = nullptr;
-    WGPUAdapter       adapter_        = nullptr;
-    WGPUDevice        device_         = nullptr;
-    WGPUQueue         queue_          = nullptr;
-    WGPUSurface       surface_        = nullptr;
-    WGPUTextureFormat surface_format_ = WGPUTextureFormat_Undefined;
+    // ---- wgpu lifecycle state aliases ----------------------------------
+    //
+    // Actual storage lives in core_ (declared below; ViewportWindow is a
+    // friend of ViewportCore so these references can bind). Existing
+    // member-access sites in ViewportWindow.cpp keep working unchanged —
+    // they just resolve to core_.device_ etc. through these references.
+    // Each one is removed when its owning render method moves into
+    // ViewportCore (#84-b onwards).
+    ViewportCore core_;
+    WGPUInstance&      instance_;
+    WGPUAdapter&       adapter_;
+    WGPUDevice&        device_;
+    WGPUQueue&         queue_;
+    WGPUSurface&       surface_;
+    WGPUTextureFormat& surface_format_;
+    bool&              surface_configured_;
 
     // Render pipeline + bind group layouts (built once after init).
     WGPUShaderModule       main_shader_module_ = nullptr;
