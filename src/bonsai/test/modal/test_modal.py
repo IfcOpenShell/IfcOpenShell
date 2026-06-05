@@ -296,6 +296,63 @@ def test_snap_far_from_origin(window):
     yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
 
+def test_snap_targets(window):
+    yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
+    area, region = get_area_and_region(window)
+    x = round(area.width * 0.44 + area.x)
+    y = round(area.height * 0.73 + area.y)
+
+    yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+
+    options = []
+    props = tool.Snap.get_snap_props()
+    try:
+        annotations = props.__annotations__
+    except AttributeError:
+        annotations = type(props).__annotations__
+    for prop in annotations.keys():
+        if getattr(props, prop):
+            options.append((prop, props.rna_type.properties[prop].name))
+
+    for prop, name in options:
+        any(setattr(props, prop2, prop2 == prop) for prop2, _ in options) # set prop to true and others to false
+        measure_settings = tool.Project.get_measure_tool_settings()
+        measure_settings.measurement_type = "POLYLINE"
+        for obj in tool.Blender.get_selected_objects():
+            obj.select_set(False)
+        with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
+            bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type="POLYLINE")
+        snap_types = []
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
+        yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+        snap_type = tool.Model.get_polyline_props().snap_mouse_point[0].snap_type
+        snap_types.append(snap_type)
+
+        new_x = x + 200
+        new_y = y - 55
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+        snap_type = tool.Model.get_polyline_props().snap_mouse_point[0].snap_type
+        snap_types.append(snap_type)
+
+        new_x = x + 130
+        new_y = y - 358
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", new_x, new_y)
+        yield from preset_event_simulate(window, "LEFTMOUSE", "TAP", x, y)
+        snap_type = tool.Model.get_polyline_props().snap_mouse_point[0].snap_type
+        snap_types.append(snap_type)
+
+        yield from preset_event_simulate(window, "ESC", "TAP", x, y)
+        assert_msg = f"{name} should be in snap_types: {snap_types}"
+        assert name in snap_types
+        _assert_pass(assert_msg)
+
 def test_draw_polyline_wall(window, x, y):
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
     area, region = get_area_and_region(window)
@@ -357,6 +414,13 @@ def run_tests():
             lambda w=window: test_snap_partially_behind_camera(w),
             lambda w=window: test_snap_in_xray_mode(w),
             lambda w=window: test_snap_far_from_origin(w),
+        ]
+    elif module_name == "snap-target":
+        filepath = f"./test/files/snap-target.ifc"
+        bpy.ops.bim.load_project(filepath=filepath)
+        window = _get_valid_window()
+        test_queue = [
+            lambda w=window: test_snap_targets(w),
         ]
     else:
         cleanup()
