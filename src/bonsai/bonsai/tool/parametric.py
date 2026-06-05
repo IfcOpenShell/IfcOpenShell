@@ -272,6 +272,18 @@ class Parametric(bonsai.core.tool.Parametric):
             cls._validated_editing_feature(obj)
 
     @classmethod
+    def on_load_post(cls, scene: bpy.types.Scene) -> None:
+        """Drain load-transient parametric state on a freshly opened scene
+        so no draft edit flag, preview flag, or cache entry persists from
+        the saved file."""
+        from bonsai.bim.module.model import wall_offset_gizmos
+        from bonsai.bim.module.model.preview_base import discard_pending_previews
+
+        cls.heal_stale_edit_flags()
+        discard_pending_previews(scene)
+        wall_offset_gizmos.clear_caches()
+
+    @classmethod
     def get_pending_edits(cls) -> list[tuple[bpy.types.Object, str]]:
         """``(object, finish_operator_bl_idname)`` pairs for every object
         with an in-progress parametric draft. Stale flags are cleared in
