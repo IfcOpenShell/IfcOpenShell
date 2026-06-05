@@ -47,8 +47,43 @@
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
+#include "SelectionState.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
+#include "VisibilityState.h"
+
+// Render-loop constants shared between ViewportCore and ViewportWindow.
+// Kept here (not in OverlayRenderer.h) so IfcViewerCore stays Qt-free.
+// ViewportWindow.cpp asserts the section-plane cap matches
+// OverlayRenderer's so the WGSL clip-plane array and the section-tool
+// state vector agree by construction.
+constexpr int kMaxSectionPlanes = 6;
+constexpr uint32_t kViewportSampleCount = 4;
+
+// Per-frame uniform layout. Matches the WGSL struct the main pipeline
+// declares (see ViewportCore.cpp MAIN_WGSL). Both buildPipelines (in
+// ViewportCore) and updateFrameUniforms (currently in ViewportWindow)
+// allocate / write this; keeping the type here makes the layout the
+// single source of truth.
+struct FrameUniforms {
+    float view_proj[16];
+    float light_dir[4];     // xyz = unit dir toward light, w unused
+    float fill_dir[4];      // xyz = secondary fill dir
+    float sky_color[4];     // xyz = sky-tint ambient, w unused
+    float ground_color[4];  // xyz = ground-tint ambient, w unused
+    int   clip_count;       // active section-plane count (≤ kMaxSectionPlanes)
+    int   _pad_clip[3];     // pad to 16-byte alignment for the array below
+    float clip_planes[kMaxSectionPlanes][4]; // xyz = world-space unit normal, w = plane offset
+    float xray_alpha_cap;   // X-ray mode: fragment alpha clamped to min(in.color.a, cap)
+    float _pad_xray[3];     // pad to 16-byte alignment so the struct stays vec4-aligned
+};
+static_assert(sizeof(FrameUniforms)
+                  == 16 * sizeof(float)
+                   + 4 * 4 * sizeof(float)
+                   + 4 * sizeof(int)
+                   + kMaxSectionPlanes * 4 * sizeof(float)
+                   + 4 * sizeof(float),
+              "FrameUniforms must match WGSL layout");
 
 class ViewportCore {
 public:
@@ -171,6 +206,23 @@ public:
     std::vector<std::pair<uint32_t, double>>
         volumesPerObject(const std::vector<uint32_t>& object_ids) const;
 
+    // ---- Pipeline construction --------------------------------------------
+    //
+    // buildPipelines creates the main render pipelines (opaque +
+    // transparent variants), bind group layouts, the per-frame UBO,
+    // and the WGSL shader module. Called once after the device + queue
+    // come up + the surface format is picked.
+    //
+    // ensureSelectionFlagsBuffer (re)allocates the selection flags
+    // storage buffer geometrically as next_object_id_ grows, and
+    // (re)builds the frame bind group when its referenced buffers
+    // change. uploadSelectionFlagsIfDirty flushes
+    // selection_.fillFlagsArray() into the GPU when selection_'s dirty
+    // flag is set — called once per frame at render time.
+    bool buildPipelines();
+    void ensureSelectionFlagsBuffer();
+    void uploadSelectionFlagsIfDirty();
+
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
     // (it touches the fields directly); once everything has migrated
@@ -226,6 +278,28 @@ private:
     // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
     // main pass since the pick fragment also vertex-pulls instance data.
     WGPURenderPipeline  pick_pipeline_ = nullptr;
+
+    // ---- Frame uniforms + selection bind ----------------------------------
+    //
+    // The per-frame UBO (view-proj + lighting + section planes + xray
+    // params) and the frame bind group it lives in alongside the
+    // selection flags storage buffer at group=0 binding=1.
+    // ensureSelectionFlagsBuffer is the only writer for the buffer +
+    // bind group; uploadSelectionFlagsIfDirty repopulates the flags
+    // from selection_ when it changes.
+    WGPUBuffer    frame_uniform_buffer_     = nullptr;
+    WGPUBindGroup frame_bind_group_         = nullptr;
+    WGPUBuffer    selection_flags_buffer_   = nullptr;
+    uint32_t      selection_flags_capacity_ = 0;  // u32 entries
+    std::vector<uint32_t> selection_flags_scratch_;
+
+    // Selection + per-element visibility state machines. Pure CPU
+    // bookkeeping today (no GPU touch beyond the readback uploaded via
+    // selection_flags_buffer_). Mutated on the main thread between
+    // renders; cull workers read concurrently which is safe as long
+    // as no concurrent writes.
+    SelectionState  selection_;
+    VisibilityState visibility_;
 
     // ---- Scene state ---------------------------------------------------------
     //

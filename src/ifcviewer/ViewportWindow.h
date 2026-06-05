@@ -658,25 +658,14 @@ private:
     WGPURenderPipeline&  main_pipeline_;
     WGPURenderPipeline&  main_pipeline_transparent_;
 
-    // Per-frame uniform (view-proj + lighting), bound at group 0.
-    WGPUBuffer    frame_uniform_buffer_ = nullptr;
-    WGPUBindGroup frame_bind_group_     = nullptr;
-
-    // Selection flags storage buffer at group=0 binding=1. u32-per-object_id,
-    // bit 0 = selected, bit 1 = active. Sized to next_object_id_ rounded up;
-    // grows when a load pushes past the current capacity. Bound in the
-    // frame bind group because object_ids are globally unique across models.
-    WGPUBuffer         selection_flags_buffer_   = nullptr;
-    uint32_t           selection_flags_capacity_ = 0;  // number of u32 entries
-    SelectionState selection_;
-    std::vector<uint32_t> selection_flags_scratch_;
-
-    // Per-element visibility. Consulted in cullModelCpuCompute to drop
-    // hidden instances before they're added to visible_draws — keeps
-    // hidden geometry out of cost on every axis (no draw, no depth, no
-    // pick). Mutated on the main thread between renders; cull workers
-    // read concurrently which is safe as long as no concurrent writes.
-    VisibilityState visibility_;
+    // Frame uniforms + selection flags aliases (storage in core_).
+    WGPUBuffer&    frame_uniform_buffer_;
+    WGPUBindGroup& frame_bind_group_;
+    WGPUBuffer&    selection_flags_buffer_;
+    uint32_t&      selection_flags_capacity_;
+    std::vector<uint32_t>& selection_flags_scratch_;
+    SelectionState&  selection_;
+    VisibilityState& visibility_;
 
     // Depth attachment (4× MSAA), recreated on surface resize.
     WGPUTexture     depth_texture_ = nullptr;
@@ -690,7 +679,8 @@ private:
     WGPUTextureView msaa_color_view_    = nullptr;
     int             msaa_w_             = 0;
     int             msaa_h_             = 0;
-    static constexpr uint32_t SAMPLE_COUNT = 4;
+    // SAMPLE_COUNT moved to ViewportCore.h as kViewportSampleCount (#84-k).
+    static constexpr uint32_t SAMPLE_COUNT = kViewportSampleCount;
 
     // HiZ occlusion culling. After each frame's main render pass we
     // downsample MSAA depth into a small single-sample Depth32Float texture
