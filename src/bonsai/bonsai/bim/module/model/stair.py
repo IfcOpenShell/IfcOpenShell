@@ -430,7 +430,7 @@ class CycleStairType(bpy.types.Operator, gizmo.CycleTypeMixin):
     bl_label = "Cycle Stair Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    props_getter = "get_stair_props"
+    props_getter = tool.Model.get_stair_props
     type_literal = tool.Model.StairType
     type_attr = "stair_type"
     skip_element_check = True
@@ -580,7 +580,7 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     ]
 
     # Metadata-driven dispatch for props and preferences
-    props_getter = "get_stair_props"
+    props_getter = tool.Model.get_stair_props
     gizmo_pref_name = "stair"
 
     @classmethod
@@ -593,14 +593,12 @@ class GizmoStairEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "VIEW3D_GT_lock",
             self.COLOR_BLUE,
             "bim.toggle_stair_property",
-            prop_path="BIMStairProperties.total_length_lock",
             property_name="total_length_lock",
         )
         self.tread_lock_gizmo = self.create_icon_gizmo(
             "VIEW3D_GT_lock",
             (1.0, 1.0, 1.0),
             "bim.toggle_stair_property",
-            prop_path="BIMStairProperties.custom_tread_lock",
             property_name="custom_tread_lock",
         )
         self.plus_gizmo = self.create_icon_gizmo(

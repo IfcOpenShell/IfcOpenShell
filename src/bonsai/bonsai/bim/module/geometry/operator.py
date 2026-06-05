@@ -60,6 +60,7 @@ import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -2228,6 +2229,8 @@ class OverrideEscape(bpy.types.Operator):
             bpy.ops.bim.hide_all_openings()
         elif tool.Aggregate.get_aggregate_props().in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
+        elif preview_base.try_cancel_active_preview(context):
+            pass
         elif active_object := context.active_object:
             if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
                 pass
@@ -2269,6 +2272,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 gprops = tool.Geometry.get_geometry_props()
                 if gprops.representation_obj:
                     tool.Geometry.disable_item_mode()
+                    if active_obj := bpy.context.active_object:
+                        active_obj.select_set(False)
                 else:
                     bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
                 return {"FINISHED"}
@@ -2355,6 +2360,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             and usage in ("LAYER1", "LAYER2")
         ):
             self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
+            obj.select_set(False)
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
@@ -2363,6 +2369,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     {"INFO"},
                     f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
                 )
+                obj.select_set(False)
                 return
             tool.Ifc.link(item, obj.data)
             self.enable_edit_mode(context)

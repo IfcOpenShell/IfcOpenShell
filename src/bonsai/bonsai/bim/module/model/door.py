@@ -707,8 +707,8 @@ class CycleDoorType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixin)
     bl_label = "Cycle Door Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    element_checker = "is_door"
-    props_getter = "get_door_props"
+    element_checker = tool.Parametric.is_door
+    props_getter = tool.Model.get_door_props
     type_literal = tool.Model.DoorType
     type_attr = "door_type"
 
@@ -835,7 +835,7 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
     ]
 
-    props_getter = "get_door_props"
+    props_getter = tool.Model.get_door_props
     gizmo_pref_name = "door"
 
     @classmethod
@@ -866,13 +866,11 @@ class GizmoDoorEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         self.gizmo_door_type = self.create_arc_gizmo(
             special_color,
             "bim.toggle_door_swing",
-            prop_path="BIMDoorProperties.door_type",
             flip_geometry=False,
         )
         self.gizmo_flip_arc = self.create_arc_gizmo(
             inactive_color,
             "bim.toggle_door_swing",
-            prop_path="BIMDoorProperties.door_type",
             flip_geometry=True,
             flip_local_axes="XY",
         )

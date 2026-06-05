@@ -60,8 +60,12 @@ def get_preview_props(context: bpy.types.Context, attr: str):
     Returns ``None`` if the umbrella isn't attached yet — true briefly
     during addon register and during plug-out, so polls / draw callbacks
     must defend against ``None`` rather than assuming the prop is always
-    available."""
-    preview = getattr(context.scene, "BIMPreviewProperties", None)
+    available. Also tolerates contexts without a ``scene`` attribute
+    (test mocks built from ``SimpleNamespace``)."""
+    scene = getattr(context, "scene", None)
+    if scene is None:
+        return None
+    preview = getattr(scene, "BIMPreviewProperties", None)
     return getattr(preview, attr, None) if preview is not None else None
 
 
@@ -72,6 +76,17 @@ def is_preview_active(context: bpy.types.Context, attr: str) -> bool:
     the same selection's icon stack)."""
     props = get_preview_props(context, attr)
     return bool(props is not None and props.is_active)
+
+
+def any_preview_active(context: bpy.types.Context) -> bool:
+    """``True`` if any registered preview is currently open. Sister gizmo
+    polls call this to hide themselves uniformly during ANY preview, so a
+    new preview registered in ``PREVIEW_CANCEL_OPS`` automatically gates
+    every parametric gizmo without each one growing a specific check."""
+    for attr, _op_name in PREVIEW_CANCEL_OPS:
+        if is_preview_active(context, attr):
+            return True
+    return False
 
 
 # --- Lazy closure factories --------------------------------------------------

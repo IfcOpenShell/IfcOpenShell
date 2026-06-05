@@ -75,6 +75,7 @@ class PolylineOperator:
         self.is_typing = False
         self.snap_angle = None
         self.snapping_points = []
+        self.unit_scale = 1.0
         self.instructions = {
             "Cycle Input": {"icons": True, "keys": ["EVENT_TAB"]},
             "Distance Input": {"icons": True, "keys": ["EVENT_D"]},

@@ -71,17 +71,15 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar, get_args
 
 import bpy
 import ifcopenshell.util.element
 from bpy.app.handlers import persistent
+from ifcopenshell import entity_instance
 
 import bonsai.core.geometry
 import bonsai.tool as tool
-
-if TYPE_CHECKING:
-    from ifcopenshell import entity_instance
 
 
 class ParametricEditMixinBase:
@@ -376,6 +374,157 @@ class PathPreservingEditMixin(ParametricEditMixinBase):
     def _cancel_targets(self, context: bpy.types.Context) -> set[str]:
         for obj in self._iter_targets(context):
             self._cancel_one(obj, context)
+        return {"FINISHED"}
+
+
+# --- Type-selection mixins (Cycle / Pick) ------------------------------------
+
+
+class TypeAccessorBase:
+    """Shared contract for operators that resolve and write a Literal type
+    attribute on a Bonsai PropertyGroup.
+
+    Subclasses define ``element_checker``, ``props_getter``, ``type_literal``,
+    ``type_attr``; ``skip_element_check`` bypasses element validation. Concrete
+    subclasses (``CycleTypeMixin``, ``PickTypeMixin``) add the interaction
+    shape on top.
+
+    Test doubles must be set on the operator instance — the predicates are
+    bound at class-definition time, so patching the underlying tool module
+    has no effect."""
+
+    element_checker: Callable[[entity_instance], bool]
+    props_getter: Callable[[bpy.types.Object], bpy.types.PropertyGroup]
+    type_literal: type
+    type_attr: str
+    skip_element_check: bool = False
+
+    def _resolve_target(self, context: bpy.types.Context) -> bpy.types.Object | None:
+        """Return the active object iff it passes ``element_checker`` (or the
+        check is skipped). ``None`` signals the operator should bail with
+        ``{'CANCELLED'}``."""
+        obj = context.active_object
+        if not obj:
+            return None
+        if not self.skip_element_check:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not self.element_checker(element):
+                return None
+        return obj
+
+
+class CycleTypeMixin(TypeAccessorBase):
+    """Operator mixin that cycles through ``type_literal``'s values.
+
+    Shift-click reverses direction."""
+
+    reverse: bpy.props.BoolProperty(name="Reverse", default=False, options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        self.reverse = event.shift
+        return self.execute(context)
+
+    def _cycle_type(self, context: bpy.types.Context) -> set[str]:
+        obj = self._resolve_target(context)
+        if obj is None:
+            return {"CANCELLED"}
+
+        props = self.props_getter(obj)
+        types = get_args(self.type_literal)
+        current = getattr(props, self.type_attr)
+        idx = types.index(current) if current in types else 0
+        direction = -1 if self.reverse else 1
+        setattr(props, self.type_attr, types[(idx + direction) % len(types)])
+
+        return {"FINISHED"}
+
+
+class PickTypeMixin(TypeAccessorBase):
+    """Operator mixin that opens a popup menu listing ``type_literal``'s values.
+
+    Empty ``value`` ⇒ ``invoke`` opens the popup; non-empty ⇒ the user picked
+    an item and ``_pick_type`` applies it.
+
+    When invoked mid-click (e.g. from a gizmo's ``target_set_operator``), the
+    menu opens only after the originating ``LEFTMOUSE`` releases. Otherwise
+    the still-pressed click flows straight into Blender's drag-through-pick
+    gesture and the menu commits whichever item the cursor drifts over on
+    release. Other invocation paths (command-palette / F3, EXEC_DEFAULT, F6
+    redo) bypass the wait and open the menu immediately.
+
+    The ``value`` StringProperty is declared on this mixin but registered via
+    the concrete Operator subclass's MRO scan — do not instantiate the mixin
+    standalone."""
+
+    # Carries the picked value through invoke→execute; empty default
+    # distinguishes "open popup" from "apply".
+    value: bpy.props.StringProperty(default="", options={"HIDDEN", "SKIP_SAVE"})
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        """Open the picker menu, or apply a value that was preset by a
+        menu-item click.
+
+        Routing through ``execute()`` keeps subclass IFC-transaction wrapping
+        in the loop and means F6 redo / ``EXEC_DEFAULT`` reach the apply path."""
+        if self.value:
+            return self.execute(context)
+
+        if self._resolve_target(context) is None:
+            return {"CANCELLED"}
+
+        if event.value == "PRESS":
+            context.window_manager.modal_handler_add(self)
+            return {"RUNNING_MODAL"}
+        return self._open_picker(context)
+
+    def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE":
+            self._open_picker(context)
+            # INTERFACE does not remove a modal handler; only FINISHED /
+            # CANCELLED do.
+            return {"CANCELLED"}
+        if event.type in {"RIGHTMOUSE", "ESC"}:
+            return {"CANCELLED"}
+        return {"RUNNING_MODAL"}
+
+    def _open_picker(self, context: bpy.types.Context) -> set[str]:
+        bl_idname = self.bl_idname
+        values = list(get_args(self.type_literal))
+
+        def draw(menu_self, _menu_context):
+            layout = menu_self.layout
+            for v in values:
+                op = layout.operator(bl_idname, text=v)
+                op.value = v
+
+        context.window_manager.popup_menu(draw, title=self.bl_label, icon="MENU_PANEL")
+        # The type change is a two-step interaction: this invocation just OPENS
+        # the menu (no state change yet); a SECOND invocation fires when the
+        # user clicks a menu item — that one writes ``props.<type_attr>`` and
+        # returns FINISHED. By returning INTERFACE here (and not FINISHED), the
+        # menu-open step is excluded from Blender's undo stack so the user
+        # gets exactly ONE undo entry per type change. If we returned FINISHED
+        # here too, the stack would gain a no-op "opened the menu" entry that
+        # Ctrl+Z would dismiss before reverting the actual type change —
+        # confusing UX where the first Ctrl+Z appears to do nothing.
+        return {"INTERFACE"}
+
+    def _pick_type(self, context: bpy.types.Context) -> set[str]:
+        if not self.value:
+            # No-op rather than re-open the menu, so command-palette misuse
+            # doesn't infinite-loop.
+            return {"CANCELLED"}
+
+        obj = self._resolve_target(context)
+        if obj is None:
+            return {"CANCELLED"}
+
+        if self.value not in get_args(self.type_literal):
+            self.report({"WARNING"}, f"Unknown {self.type_attr}: {self.value!r}")
+            return {"CANCELLED"}
+
+        props = self.props_getter(obj)
+        setattr(props, self.type_attr, self.value)
         return {"FINISHED"}
 
 

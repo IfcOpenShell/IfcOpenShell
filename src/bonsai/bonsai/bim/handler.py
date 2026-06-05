@@ -46,6 +46,7 @@ from bonsai.bim.module.model.decorator import (
     BoundingBoxDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
+    WallFilletPreviewDecorator,
 )
 from bonsai.bim.module.model.preview_base import discard_pending_previews
 from bonsai.bim.module.nest.decorator import NestDecorator
@@ -150,7 +151,14 @@ def update_bim_tool_props():
                 return
 
             if is_bim_tool:
-                props.ifc_class = element_type.is_a()
+                try:
+                    props.ifc_class = element_type.is_a()
+                except TypeError:
+                    # ifc_class only lists element/space types present in the model, so an
+                    # unsupported type (e.g. a raw IfcTypeProduct) or a stale item list mid-
+                    # rebuild raises `enum "<class>" not found`. Skip rather than crash the
+                    # handler — it re-fires on the next selection and the panel resyncs.
+                    pass
 
             # Only assign when the target enum is the one that lists this type — otherwise
             # we hit `enum "<id>" not found in (...)` if the user selects an element of a
@@ -462,6 +470,7 @@ def _install_viewport_overlays() -> None:
     NestDecorator.uninstall()
     WallAxisDecorator.uninstall()
     SlabDirectionDecorator.uninstall()
+    WallFilletPreviewDecorator.uninstall()
     uninstall_decorator_cache_handlers()
     try:
         if georeference_props.should_visualise:
@@ -476,6 +485,10 @@ def _install_viewport_overlays() -> None:
             SlabDirectionDecorator.install(bpy.context)
         if model_props.show_bounding_box:
             BoundingBoxDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on Scene.BIMPreviewProperties.
+        # wall_fillet.is_active, so installation has no cost when no preview
+        # is open. No corresponding addon-preference toggle.
+        WallFilletPreviewDecorator.install(bpy.context)
     finally:
         install_decorator_cache_handlers()
 

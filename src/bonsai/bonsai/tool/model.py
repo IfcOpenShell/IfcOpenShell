@@ -351,6 +351,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         """Return first found IfcExtrudedAreaSolid"""
+        if not representation.Items:
+            return None
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
@@ -844,6 +846,57 @@ class Model(bonsai.core.tool.Model):
         return booleans
 
     @classmethod
+    def get_connected_slab_objs(cls, wall: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        """Return Blender objects for slabs connected to wall via IfcRelConnectsElements(TOP)."""
+        result = []
+        for rel in wall.ConnectedFrom:
+            if rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP":
+                slab_obj = tool.Ifc.get_object(rel.RelatingElement)
+                if slab_obj:
+                    result.append(slab_obj)
+        return result
+
+    @classmethod
+    def get_connected_wall_objs(cls, slab: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
+        """Return Blender objects for LAYER2 walls connected to slab via IfcRelConnectsElements(TOP)."""
+        result = []
+        for rel in slab.ConnectedTo:
+            if rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP":
+                wall_obj = tool.Ifc.get_object(rel.RelatedElement)
+                if wall_obj:
+                    result.append(wall_obj)
+        return result
+
+    @classmethod
+    def has_underside_connection(cls, element: ifcopenshell.entity_instance) -> bool:
+        """Return True if element has an IfcRelConnectsElements(TOP) relationship."""
+        return any(rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP" for rel in element.ConnectedFrom)
+
+    @classmethod
+    def remove_wall_to_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> None:
+        """Remove all IfcBooleanResult items previously added by extend_walls_to_underside."""
+        manual_booleans = cls.get_manual_booleans(wall)
+        if not manual_booleans:
+            return
+        ifc_file = tool.Ifc.get()
+        for b in manual_booleans:
+            sec = b.SecondOperand
+            if sec is None:
+                # The IfcPolygonalFaceSet was already deleted externally.  Splice the
+                # orphaned IfcBooleanResult out of the chain so the representation stays valid.
+                parents = list(ifc_file.get_inverse(b))
+                for parent in parents:
+                    if parent.is_a("IfcBooleanResult") and parent.FirstOperand == b:
+                        parent.FirstOperand = b.FirstOperand
+                    elif parent.is_a("IfcShapeRepresentation"):
+                        new_items = tuple((set(parent.Items) - {b}) | {b.FirstOperand})
+                        parent.Items = new_items
+                cls.unmark_manual_booleans(wall, [b.id()])
+                ifc_file.remove(b)
+            elif sec.is_a("IfcTessellatedFaceSet"):
+                tool.Geometry.remove_representation_item(sec, wall)
+
+    @classmethod
     def get_manual_booleans(
         cls, element: ifcopenshell.entity_instance, representation: Optional[ifcopenshell.entity_instance] = None
     ) -> list[ifcopenshell.entity_instance]:
@@ -855,7 +908,8 @@ class Model(bonsai.core.tool.Model):
             representation = tool.Geometry.get_body_representation(element)
             if not representation:
                 return []
-        booleans = [b for b in cls.get_booleans(element, representation) if b.id() in boolean_ids]
+        all_chain_booleans = cls.get_booleans(element, representation)
+        booleans = [b for b in all_chain_booleans if b.id() in boolean_ids]
         return booleans
 
     @classmethod
@@ -2557,12 +2611,15 @@ class Model(bonsai.core.tool.Model):
         clipping_bm = bmesh.new()
         vertex_map = {}
 
+        kept = 0
         for face in bm.faces:
             face.normal_update()
             normal = face.normal.to_4d()
             normal.w = 0
-            if (obj.matrix_world @ normal).z >= -0.5:
+            world_normal_z = (obj.matrix_world @ normal).z
+            if world_normal_z >= -0.5:
                 continue
+            kept += 1
             new_verts = []
             for vert in face.verts:
                 if not (new_vert := vertex_map.get(vert.index, None)):
@@ -2575,6 +2632,7 @@ class Model(bonsai.core.tool.Model):
             return
 
         bmesh.ops.recalc_face_normals(clipping_bm, faces=clipping_bm.faces)
+        clipping_bm.faces.ensure_lookup_table()
         return clipping_bm  # clipping_bm is in project units
 
     @classmethod
@@ -2588,17 +2646,53 @@ class Model(bonsai.core.tool.Model):
         min_z = min(zs)
         max_z = max(zs)
 
-        operand = None
-        if (z := max_z - min_z) and not np.isclose(z, 0.0):
-            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        ifc_file = tool.Ifc.get()
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
 
-            result = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
-            extruded_verts = [elem for elem in result["geom"] if isinstance(elem, bmesh.types.BMVert)]
-            bmesh.ops.translate(bm, verts=extruded_verts, vec=(0, 0, z))
+        # Build one IfcPolygonalFaceSet clip solid per clipping face.
+        # Each solid uses a rectangle on the slope plane rather than the exact face
+        # footprint.  The original approach (exact footprint) caused a kissing-solid /
+        # boundary-coincidence bug when the operator is called twice for a ridge roof: the
+        # two slope solids share an exact ridge edge, and OCCT produces spurious extra
+        # vertices.  Extending each solid slightly past the ridge (by margin) creates a
+        # volumetric overlap instead of a kissing boundary — OCCT handles overlapping
+        # DIFFERENCE operands correctly.
+        margin = 1.0  # project units past the face edge — enough to ensure overlap at ridge
+        operands = []
+        for face in bm.faces:
+            face.normal_update()
+            normal = Vector(face.normal).normalized()
 
-            verts = [v.co for v in bm.verts]
-            faces = [[v.index for v in p.verts] for p in bm.faces]
-            operand = builder.mesh(verts, faces)
+            # Orthonormal basis spanning the slope plane.
+            ref = Vector((0, 0, 1)) if abs(normal.z) < 0.9 else Vector((1, 0, 0))
+            tangent1 = normal.cross(ref).normalized()
+            tangent2 = normal.cross(tangent1).normalized()
+
+            centroid = sum((v.co for v in face.verts), Vector()) / len(face.verts)
+
+            # Tight bounding rectangle in slope-plane coords, plus a small margin.
+            t1_coords = [(v.co - centroid).dot(tangent1) for v in face.verts]
+            t2_coords = [(v.co - centroid).dot(tangent2) for v in face.verts]
+            half1 = max(abs(c) for c in t1_coords) + margin
+            half2 = max(abs(c) for c in t2_coords) + margin
+
+            # Rectangle on the slope plane, extruded upward in wall-local Z.
+            clip_bm = bmesh.new()
+            v0 = clip_bm.verts.new(centroid + half1 * tangent1 + half2 * tangent2)
+            v1 = clip_bm.verts.new(centroid - half1 * tangent1 + half2 * tangent2)
+            v2 = clip_bm.verts.new(centroid - half1 * tangent1 - half2 * tangent2)
+            v3 = clip_bm.verts.new(centroid + half1 * tangent1 - half2 * tangent2)
+            bottom_face = clip_bm.faces.new([v0, v1, v2, v3])
+            result = bmesh.ops.extrude_face_region(clip_bm, geom=[bottom_face])
+            top_verts = [e for e in result["geom"] if isinstance(e, bmesh.types.BMVert)]
+            bmesh.ops.translate(clip_bm, verts=top_verts, vec=Vector((0, 0, max_z - min_z)))
+            clip_bm.verts.ensure_lookup_table()
+
+            clip_verts = [v.co for v in clip_bm.verts]
+            clip_faces = [[v.index for v in f.verts] for f in clip_bm.faces]
+            operand = builder.mesh(clip_verts, clip_faces)
+            clip_bm.free()
+            operands.append(operand)
 
         for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
             if extrusion.Position:
@@ -2615,10 +2709,9 @@ class Model(bonsai.core.tool.Model):
 
             extrusion.Depth = max_z / direction[2]
 
-            if operand:
-                booleans = ifcopenshell.api.geometry.add_boolean(
-                    tool.Ifc.get(), first_item=extrusion, second_items=[operand]
-                )
+            if operands:
+                body_repr = ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW")
+                booleans = ifcopenshell.api.geometry.add_boolean(ifc_file, first_item=extrusion, second_items=operands)
                 tool.Model.mark_manual_booleans(wall, booleans)
 
     @classmethod
@@ -2871,10 +2964,20 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def recreate_wall(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        # FIXME(PR4): the fillet-corner branch lands with PR4's
-        # `regenerate_fillet_corner_wall` (bim/module/model/wall.py). On v0.8.0
-        # the function doesn't exist; falling through to the straight-extrusion
-        # path preserves v0.8.0 behaviour for fillet walls until PR4 ships.
+        # Curved fillet-corner walls own a hand-built banana body that
+        # ``regenerate_wall_representation`` would flatten — it reads the axis
+        # as a 2-point reference line and builds a straight extrusion. Rebuild
+        # the curve in place instead: ``regenerate_fillet_corner_wall`` keeps
+        # radius + placement from the pset / current ``ObjectPlacement`` while
+        # picking up new thickness / height from the wall type, which is what
+        # we want when a type-property edit triggered this call.
+        if tool.Parametric.is_fillet_corner_wall(element):
+            # Lazy import: ``tool.Model`` loads before ``bim/module/model`` at
+            # addon enable; a module-level import would cycle.
+            from bonsai.bim.module.model.wall import regenerate_fillet_corner_wall
+
+            regenerate_fillet_corner_wall(element, obj)
+            return
         rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -2909,7 +3012,7 @@ class Model(bonsai.core.tool.Model):
             if not wall:
                 continue
             is_layer2_usage = tool.Model.get_usage_type(element) == "LAYER2"
-            is_fillet_corner = bool(ifcopenshell.util.element.get_pset(element, "BBIM_Wall", "IsFilletCorner"))
+            is_fillet_corner = tool.Parametric.is_fillet_corner_wall(element)
             if not (is_layer2_usage or is_fillet_corner):
                 continue
             if is_layer2_usage:

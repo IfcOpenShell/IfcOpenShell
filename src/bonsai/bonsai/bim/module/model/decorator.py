@@ -108,7 +108,7 @@ class ProfileDecorator:
 
         obj = context.active_object
 
-        if obj.mode != "EDIT":
+        if obj is None or obj.mode != "EDIT":
             if exit_edit_mode_callback:
                 ProfileDecorator.uninstall()
                 exit_edit_mode_callback()
@@ -2029,3 +2029,151 @@ class BoundingBoxDecorator:
                         else:
                             co1.y += y_overlap / 2 + min_spacing
                             co2.y -= y_overlap / 2 + min_spacing
+
+
+def _stroke_lines_alpha(
+    context: bpy.types.Context,
+    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+    color_rgb: tuple[float, float, float],
+    line_width: float,
+    line_alpha: float,
+) -> None:
+    """Render ``segments`` (a list of ``(start, end)`` tuples) as one
+    anti-aliased LINES batch in world space. Early-returns when
+    ``context.region`` is unavailable (e.g. when called from a
+    ``_RestrictContext``)."""
+    if not segments:
+        return
+    verts: list[tuple[float, float, float]] = []
+    indices: list[tuple[int, int]] = []
+    for start, end in segments:
+        base = len(verts)
+        verts.append(tuple(start))
+        verts.append(tuple(end))
+        indices.append((base, base + 1))
+    if not tool.Blender.validate_shader_batch_data(verts, indices):
+        return
+    region = getattr(context, "region", None)
+    if region is None:
+        return
+    shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+    shader.bind()
+    shader.uniform_float("viewportSize", (region.width, region.height))
+    shader.uniform_float("lineWidth", line_width)
+    shader.uniform_float("color", (*color_rgb, line_alpha))
+    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.blend_set("NONE")
+
+
+class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
+    """GPU preview lines for the wall-fillet flow.
+
+    Polls on ``scene.BIMPreviewProperties.wall_fillet.is_active`` and renders
+    the leg projections + arc + radial construction lines returned by
+    ``tool.Wall.compute_wall_fillet_geometry``. The two leg lines show how
+    each wall will be shortened to its tangent point; the arc approximates
+    the rounded corner; the two construction lines (arc center to each
+    tangent point) visually pin the radius.
+
+    Installed once per Blender session from ``bim/handler.py:load_post``
+    and uninstalled in ``bim/module/model/__init__.py:unregister``."""
+
+    LINE_WIDTH_LEG = 1.5
+    LINE_WIDTH_ARC = 2.5
+    LINE_WIDTH_CONSTRUCTION = 1.0
+    LINE_ALPHA = 0.7
+    CONSTRUCTION_ALPHA = 0.4
+
+    def draw(self, context: bpy.types.Context) -> None:
+        scene = context.scene
+        preview_props = getattr(scene, "BIMPreviewProperties", None)
+        props = preview_props.wall_fillet if preview_props is not None else None
+        if props is None or not props.is_active:
+            return
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return
+        try:
+            wall_a = ifc_file.by_id(props.wall_a_id)
+            wall_b = ifc_file.by_id(props.wall_b_id)
+        except Exception:
+            return
+        wall_a_obj = tool.Ifc.get_object(wall_a) if wall_a else None
+        wall_b_obj = tool.Ifc.get_object(wall_b) if wall_b else None
+        if wall_a_obj is None or wall_b_obj is None:
+            return
+
+        geom = tool.Wall.compute_wall_fillet_geometry(wall_a_obj, wall_b_obj, props.radius)
+        if geom is None:
+            return
+
+        prefs = tool.Blender.get_addon_preferences()
+        warning_color = tuple(prefs.decorator_color_error[:3])
+
+        if not geom["valid"]:
+            # Degenerate geometry paints red: invalid_radius shows legs+arc
+            # past the wall ends; invalid_axes shows the parallel/collinear
+            # axes.
+            if geom.get("invalid_radius"):
+                tangent_a = geom.get("tangent_a")
+                tangent_b = geom.get("tangent_b")
+                ref_a = tool.Wall.get_world_reference_line(wall_a_obj)
+                ref_b = tool.Wall.get_world_reference_line(wall_b_obj)
+                if tangent_a is not None and tangent_b is not None and ref_a is not None and ref_b is not None:
+                    far_a = self._far_endpoint(ref_a, geom["intersection"])
+                    far_b = self._far_endpoint(ref_b, geom["intersection"])
+                    legs = [
+                        (tuple(far_a), tuple(tangent_a)),
+                        (tuple(far_b), tuple(tangent_b)),
+                    ]
+                    _stroke_lines_alpha(context, legs, warning_color, self.LINE_WIDTH_LEG, self.LINE_ALPHA)
+                arc = geom.get("arc") or []
+                if len(arc) >= 2:
+                    arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
+                    _stroke_lines_alpha(context, arc_segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+            elif geom.get("invalid_axes"):
+                axes = geom["invalid_axes"]
+                segments = [(tuple(a), tuple(b)) for a, b in axes]
+                _stroke_lines_alpha(context, segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+            return
+
+        leg_color = tuple(prefs.decorations_colour[:3])
+        arc_color = tuple(prefs.decorator_color_selected[:3])
+
+        # Resolved against the IFC reference line, not mesh bounds, so trimmed
+        # walls and openings don't shift the leg endpoints.
+        ref_a = tool.Wall.get_world_reference_line(wall_a_obj)
+        ref_b = tool.Wall.get_world_reference_line(wall_b_obj)
+        if ref_a is not None and ref_b is not None and geom["intersection"] is not None:
+            far_a = self._far_endpoint(ref_a, geom["intersection"])
+            far_b = self._far_endpoint(ref_b, geom["intersection"])
+            legs = [
+                (tuple(far_a), tuple(geom["tangent_a"])),
+                (tuple(far_b), tuple(geom["tangent_b"])),
+            ]
+            _stroke_lines_alpha(context, legs, leg_color, self.LINE_WIDTH_LEG, self.LINE_ALPHA)
+
+        arc = geom["arc"]
+        if len(arc) >= 2:
+            arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
+            _stroke_lines_alpha(context, arc_segments, arc_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+
+        # Dim construction lines from arc_center to each tangent point so
+        # the radius reads as concrete during drag.
+        arc_center = geom.get("arc_center")
+        if arc_center is not None:
+            construction = [
+                (tuple(arc_center), tuple(geom["tangent_a"])),
+                (tuple(arc_center), tuple(geom["tangent_b"])),
+            ]
+            _stroke_lines_alpha(context, construction, arc_color, self.LINE_WIDTH_CONSTRUCTION, self.CONSTRUCTION_ALPHA)
+
+    @staticmethod
+    def _far_endpoint(reference_line, intersection):
+        """Endpoint of ``reference_line`` furthest from ``intersection``."""
+        p1, p2 = reference_line
+        d1 = (p1.x - intersection[0]) ** 2 + (p1.y - intersection[1]) ** 2 + (p1.z - intersection[2]) ** 2
+        d2 = (p2.x - intersection[0]) ** 2 + (p2.y - intersection[1]) ** 2 + (p2.z - intersection[2]) ** 2
+        return p2 if d2 >= d1 else p1
