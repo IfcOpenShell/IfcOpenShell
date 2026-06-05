@@ -58,24 +58,37 @@ def _wipe_array_children(layers: list) -> None:
         layer["children"] = []
 
 
-def _bbox_dims(bound_box) -> tuple[float, float, float]:
-    """Return ``(width, depth, height)`` of an ``obj.bound_box`` 8-corner tuple."""
-    xs = [c[0] for c in bound_box]
-    ys = [c[1] for c in bound_box]
-    zs = [c[2] for c in bound_box]
-    return (max(xs) - min(xs), max(ys) - min(ys), max(zs) - min(zs))
-
-
 _BBOX_EQUALITY_EPS = 1e-5
 
 
-def _parent_geometry_changed(parent_obj, layers: list) -> bool:
-    """Cheap heuristic: True when the parent's bbox differs from the first resolvable child's,
-    indicating a parametric edit since the last regen. Misses edits that preserve bbox dimensions
-    (e.g. shape changes within the same envelope); those need a manual "Regenerate Array"."""
+def _resolve_array_edit_props(context: bpy.types.Context):
+    """Resolve the active object's array props during an active edit
+    lifecycle. Returns ``None`` when there's no active object or the user
+    isn't mid-edit. Used as the execute / poll prologue for operators
+    bound to the array edit gizmos so they no-op cleanly outside the
+    edit lifecycle without bypassing the commit lifecycle."""
+    obj = context.active_object
+    if obj is None:
+        return None
+    props = tool.Model.get_array_props(obj)
+    if not props.is_editing:
+        return None
+    return props
+
+
+def _array_children_need_rebuild(parent_obj, layers: list) -> bool:
+    """Cheap drift detector: True when the parent's local bbox dimensions
+    differ from the first resolvable child's, indicating a parent geometry
+    edit since the last array regen. Misses edits that preserve bbox
+    dimensions (e.g. shape changes within the same envelope); those need
+    a manual "Regenerate Array" via the UI button.
+
+    Runs at array-edit finish as a safety net: when True, callers wipe and
+    rebuild children so the array picks up the drift; when False, in-place
+    transform updates suffice."""
     if not parent_obj.bound_box:
         return True
-    parent_dims = _bbox_dims(parent_obj.bound_box)
+    parent_dims = tool.Blender.get_object_bounding_box(parent_obj)["dimensions"]
     for layer in layers:
         for child_guid in layer.get("children", []):
             try:
@@ -85,7 +98,7 @@ def _parent_geometry_changed(parent_obj, layers: list) -> bool:
             child_obj = tool.Ifc.get_object(child_element)
             if child_obj is None or not child_obj.bound_box:
                 continue
-            child_dims = _bbox_dims(child_obj.bound_box)
+            child_dims = tool.Blender.get_object_bounding_box(child_obj)["dimensions"]
             return any(abs(a - b) > _BBOX_EQUALITY_EPS for a, b in zip(parent_dims, child_dims))
     return False
 
@@ -289,12 +302,12 @@ class _ArrayEditMixin(ParametricEditMixinBase):
         # each redundant call adds an entry to the IFC owner-history audit
         # trail. Rely on the regenerator's pset write instead.
         tool.Array.remove_constraints(element)
-        # Wipe-and-rebuild only when the parent's geometry differs from the
-        # children's (cheap bbox-dim compare). For pure count / offset edits
-        # the children are already valid and ``regenerate_array``'s in-place
-        # transform updates are enough — saves the delete + re-duplicate cost
-        # per instance on large arrays.
-        if _parent_geometry_changed(obj, layers):
+        # Wipe-and-rebuild only when the parent's bbox dims differ from the
+        # children's. For pure count / offset edits the children are already
+        # valid and ``regenerate_array``'s in-place transform updates are
+        # enough — saves the delete + re-duplicate cost per instance on
+        # large arrays.
+        if _array_children_need_rebuild(obj, layers):
             _wipe_array_children(layers)
         tool.Model.regenerate_array(obj, layers)
         tool.Array.set_children_lock_state(element, item, True)
@@ -889,11 +902,8 @@ class ToggleArrayMethod(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = context.active_object
-        if not obj:
-            return {"CANCELLED"}
-        props = tool.Model.get_array_props(obj)
-        if not props.is_editing:
+        props = _resolve_array_edit_props(context)
+        if props is None:
             return {"CANCELLED"}
         props.method = "DISTRIBUTE" if props.method == "OFFSET" else "OFFSET"
         return {"FINISHED"}
@@ -924,12 +934,9 @@ class RemoveArrayLayerFromEdit(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        obj = context.active_object
-        if not obj:
-            cls.poll_message_set("No active object selected")
-            return False
-        props = tool.Model.get_array_props(obj)
-        if not props.is_editing:
+        props = _resolve_array_edit_props(context)
+        if props is None:
+            cls.poll_message_set("No active object or not editing an array")
             return False
         # Mirror ``_execute``'s precondition so the gizmo correctly
         # disables on stale states (is_editing flag set but the index
@@ -937,10 +944,9 @@ class RemoveArrayLayerFromEdit(bpy.types.Operator, tool.Ifc.Operator):
         return props.editing_item_index >= 0
 
     def _execute(self, context):
-        obj = context.active_object
-        if not obj:
+        props = _resolve_array_edit_props(context)
+        if props is None:
             return {"CANCELLED"}
-        props = tool.Model.get_array_props(obj)
         item = props.editing_item_index
         if item < 0:
             return {"CANCELLED"}
@@ -983,11 +989,8 @@ class AdjustArrayCount(bpy.types.Operator):
     increment: bpy.props.IntProperty()
 
     def execute(self, context):
-        obj = context.active_object
-        if not obj:
-            return {"CANCELLED"}
-        props = tool.Model.get_array_props(obj)
-        if not props.is_editing:
+        props = _resolve_array_edit_props(context)
+        if props is None:
             return {"CANCELLED"}
         props.count = max(1, props.count + self.increment)
         return {"FINISHED"}
@@ -1148,17 +1151,13 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         obj = bpy.context.active_object
         if obj is None or not obj.bound_box:
             return Vector((0.0, 0.0, 0.0))
-        xs = [c[0] for c in obj.bound_box]
-        ys = [c[1] for c in obj.bound_box]
-        zs = [c[2] for c in obj.bound_box]
-        center_x = (min(xs) + max(xs)) / 2
-        center_y = (min(ys) + max(ys)) / 2
-        center_z = (min(zs) + max(zs)) / 2
+        bbox = tool.Blender.get_object_bounding_box(obj)
+        center = bbox["center"]
         if axis_index == 0:
-            return Vector((max(xs), center_y, center_z))
+            return Vector((bbox["max_x"], center.y, center.z))
         if axis_index == 1:
-            return Vector((center_x, max(ys), center_z))
-        return Vector((center_x, center_y, max(zs)))
+            return Vector((center.x, bbox["max_y"], center.z))
+        return Vector((center.x, center.y, bbox["max_z"]))
 
     @classmethod
     def is_element_type(cls, element: "ifcopenshell.entity_instance") -> bool:
@@ -1233,30 +1232,8 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         arrayable IFC type, parametric or otherwise."""
         obj = bpy.context.active_object
         if obj and obj.bound_box:
-            return max(corner[2] for corner in obj.bound_box)
+            return tool.Blender.get_object_bounding_box(obj)["max_z"]
         return 1.0
-
-    def update_editing_gizmos(self, context: bpy.types.Context, mw: Matrix, props) -> None:
-        """Suppress the array gizmo group's pen when a per-feature pen is already showing.
-
-        Parametric arrayed elements (a door array, a wall array, …) get TWO pen icons
-        without this — the per-feature one and the array one. The per-feature pen
-        is the entry point for that feature's parametric edit; the per-layer ARRAY
-        icons (drawn alongside it) are the entry point for array edit. The array
-        group's own pen is redundant here and gets hidden. Non-parametric arrays
-        (IfcAnnotation / Opening / SpatialElement) have no per-feature group, so
-        the array pen stays visible there as the only entry point."""
-        gizmo.BaseParametricGizmoGroup.update_editing_gizmos(self, context, mw, props)
-        if not props.is_editing:
-            obj = context.active_object
-            element = tool.Ifc.get_entity(obj) if obj else None
-            if element and self._has_other_parametric_type(element):
-                self.pen_gizmo.hide = True
-
-    @staticmethod
-    def _has_other_parametric_type(element) -> bool:
-        match = tool.Parametric.find_for_element(element)
-        return match is not None and match.name != "array"
 
     def _refresh_element_specific(self, context: bpy.types.Context, mw: Matrix, props) -> None:
         """Position the count label and per-layer ARRAY icons.
