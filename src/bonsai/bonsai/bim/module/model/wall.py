@@ -2532,11 +2532,6 @@ def _wall_fillet_props(context: bpy.types.Context):
     return preview_base.get_preview_props(context, "wall_fillet")
 
 
-def _wall_fillet_preview_active(context: bpy.types.Context) -> bool:
-    """``True`` while a wall-fillet preview is open."""
-    return preview_base.is_preview_active(context, "wall_fillet")
-
-
 _FILLET_SLOPE_TOLERANCE_RAD = 1e-4
 
 

@@ -887,16 +887,22 @@ class Blender(bonsai.core.tool.Blender):
         #     ( 1.0,  1.0, -1.0),        # 7
         # ]
         bound_box = obj.bound_box
+        min_pt = Vector(bound_box[0])
+        max_pt = Vector(bound_box[6])
         bbox_dict = {
-            "min_x": bound_box[0][0],
-            "max_x": bound_box[6][0],
-            "min_y": bound_box[0][1],
-            "max_y": bound_box[6][1],
-            "min_z": bound_box[0][2],
-            "max_z": bound_box[6][2],
-            "min_point": Vector(bound_box[0]),
-            "max_point": Vector(bound_box[6]),
-            "center": (Vector(bound_box[6]) + Vector(bound_box[0])) / 2,
+            "min_x": min_pt.x,
+            "max_x": max_pt.x,
+            "min_y": min_pt.y,
+            "max_y": max_pt.y,
+            "min_z": min_pt.z,
+            "max_z": max_pt.z,
+            "min_point": min_pt,
+            "max_point": max_pt,
+            "center": (max_pt + min_pt) / 2,
+            # Intrinsic per-axis size in object-local space. Distinct from
+            # ``obj.dimensions``, which folds object-level scale into its
+            # output; this is the raw mesh bbox extent.
+            "dimensions": (max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z),
         }
         return bbox_dict
 
@@ -926,6 +932,10 @@ class Blender(bonsai.core.tool.Blender):
             "min_point": min_point,
             "max_point": max_point,
             "center": (min_point + max_point) / 2,
+            # World-axis-aligned per-axis size. For rotated objects this is
+            # the AABB extent, not the intrinsic mesh size (use the local
+            # variant for that).
+            "dimensions": (max_point.x - min_point.x, max_point.y - min_point.y, max_point.z - min_point.z),
         }
 
     @classmethod
