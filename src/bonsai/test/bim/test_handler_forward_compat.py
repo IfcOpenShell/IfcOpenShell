@@ -35,6 +35,7 @@ pytestmark = pytest.mark.model
 
 HANDLER_PATH = Path(__file__).parent.parent.parent / "bonsai" / "bim" / "handler.py"
 PARAMETRIC_PATH = HANDLER_PATH.parent.parent / "tool" / "parametric.py"
+MODEL_MODULE_DIR = HANDLER_PATH.parent / "module" / "model"
 
 # User-intent enums encode the user's "what to build next" choice on the
 # BIM Tool panel. The header-only writer must never drift into enum writes;
@@ -117,3 +118,59 @@ def test_refresh_post_commit_gates_header_refresh_on_edit_types_registry() -> No
         "fires the refresh for commits in contexts that strip view-layer attributes; "
         "a missing call silently drops the validate-gizmo header refresh."
     )
+
+
+def _modules_with_module_scope_cache_and_clear():
+    """Yield ``module_name`` for every ``bim/module/model/*.py`` source that
+    declares a module-scope ``GenerationKeyedCache()`` assignment AND a
+    top-level ``def clear_caches``. These are the modules whose cache state
+    survives file loads and must be drained from ``_apply_save_file_invariants``."""
+    for path in MODEL_MODULE_DIR.glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        has_cache = False
+        has_clear = False
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name == "clear_caches":
+                has_clear = True
+                continue
+            if isinstance(node, ast.Assign):
+                for sub in ast.walk(node.value):
+                    if (
+                        isinstance(sub, ast.Call)
+                        and isinstance(sub.func, ast.Attribute)
+                        and sub.func.attr == "GenerationKeyedCache"
+                    ):
+                        has_cache = True
+                        break
+        if has_cache and has_clear:
+            yield path.stem
+
+
+def test_apply_save_file_invariants_drains_every_module_scope_geom_cache(handler_tree: ast.Module) -> None:
+    """Module-scope ``GenerationKeyedCache`` instances persist across file
+    loads — the counter they invalidate against is class-level and survives
+    a ``.blend`` reload. Without a ``load_post`` drain the cache may serve
+    entries whose ``bpy_struct`` references point into the previous file's
+    freed ``bpy.data``, raising ``ReferenceError`` on the next attribute read.
+
+    Pin: every model module that exposes both a module-scope cache and a
+    top-level ``clear_caches`` is called from ``_apply_save_file_invariants``,
+    the central post-load drain."""
+    fn = _function_node(handler_tree, "_apply_save_file_invariants")
+    drained: set[str] = set()
+    for node in ast.walk(fn):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "clear_caches"
+            and isinstance(node.func.value, ast.Name)
+        ):
+            drained.add(node.func.value.id)
+    missing = [name for name in _modules_with_module_scope_cache_and_clear() if name not in drained]
+    if missing:
+        pytest.fail(
+            "Module(s) expose a module-scope GenerationKeyedCache + clear_caches() but "
+            f"_apply_save_file_invariants does not drain them on load_post: {sorted(missing)}. "
+            "Add a `<module>.clear_caches()` call so freshly-loaded files cannot serve "
+            "entries holding freed bpy.data references from the previous file."
+        )
