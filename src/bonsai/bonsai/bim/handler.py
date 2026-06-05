@@ -41,7 +41,6 @@ from bonsai.bim.decorator_cache import (
 from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from bonsai.bim.module.model import wall_offset_gizmos
 from bonsai.bim.module.model.array import (
     ArrayPreviewDecorator,
     ArraySelectionHighlightDecorator,
@@ -53,7 +52,6 @@ from bonsai.bim.module.model.decorator import (
     WallAxisDecorator,
     WallFilletPreviewDecorator,
 )
-from bonsai.bim.module.model.preview_base import discard_pending_previews
 from bonsai.bim.module.model.wall import WallGizmoPreviewDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 
@@ -436,8 +434,8 @@ def subscribe_to_viewport_shading_changes():
 
 def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
     """Invariants enforced on every load_post: msgbus subscription, IFC owner
-    settings, scene-bound caches, draft-flag healing, multi-instance lock probe,
-    and previews discarded so saved preview state never resurfaces on reopen."""
+    settings, scene-bound caches, load-transient parametric state, and the
+    multi-instance lock probe."""
     global global_subscription_owner
     active_object_key = bpy.types.LayerObjects, "active"
     bpy.msgbus.subscribe_rna(
@@ -448,9 +446,7 @@ def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
 
-    tool.Parametric.heal_stale_edit_flags()
-    discard_pending_previews(scene)
-    wall_offset_gizmos.clear_caches()
+    tool.Parametric.on_load_post(scene)
 
     if tool.Ifc.get() and bpy.data.is_saved:
         props = tool.Blender.get_bim_props()

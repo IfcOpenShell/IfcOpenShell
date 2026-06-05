@@ -146,7 +146,7 @@ def _modules_with_module_scope_cache_and_clear():
             yield path.stem
 
 
-def test_apply_save_file_invariants_drains_every_module_scope_geom_cache(handler_tree: ast.Module) -> None:
+def test_on_load_post_drains_every_module_scope_geom_cache() -> None:
     """Module-scope ``GenerationKeyedCache`` instances persist across file
     loads — the counter they invalidate against is class-level and survives
     a ``.blend`` reload. Without a ``load_post`` drain the cache may serve
@@ -154,9 +154,10 @@ def test_apply_save_file_invariants_drains_every_module_scope_geom_cache(handler
     freed ``bpy.data``, raising ``ReferenceError`` on the next attribute read.
 
     Pin: every model module that exposes both a module-scope cache and a
-    top-level ``clear_caches`` is called from ``_apply_save_file_invariants``,
+    top-level ``clear_caches`` is called from ``tool.Parametric.on_load_post``,
     the central post-load drain."""
-    fn = _function_node(handler_tree, "_apply_save_file_invariants")
+    parametric_tree = ast.parse(PARAMETRIC_PATH.read_text(encoding="utf-8"))
+    fn = _function_node(parametric_tree, "on_load_post")
     drained: set[str] = set()
     for node in ast.walk(fn):
         if (
@@ -170,7 +171,7 @@ def test_apply_save_file_invariants_drains_every_module_scope_geom_cache(handler
     if missing:
         pytest.fail(
             "Module(s) expose a module-scope GenerationKeyedCache + clear_caches() but "
-            f"_apply_save_file_invariants does not drain them on load_post: {sorted(missing)}. "
+            f"tool.Parametric.on_load_post does not drain them on load_post: {sorted(missing)}. "
             "Add a `<module>.clear_caches()` call so freshly-loaded files cannot serve "
             "entries holding freed bpy.data references from the previous file."
         )
