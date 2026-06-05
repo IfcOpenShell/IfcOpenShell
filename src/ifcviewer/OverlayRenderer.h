@@ -45,17 +45,7 @@ struct OverlayFrame {
     int        device_pixel_ratio  = 1;
 };
 
-// One section plane as the visualizer consumes it. The viewport owns the
-// authoritative state vector (the section tool mutates it); the overlay
-// reads from a non-owning span every frame. Held by value because the
-// struct is small and copies happen at most six times per frame.
-struct SectionPlane {
-    Eigen::Vector3f n      = Eigen::Vector3f::UnitZ(); // unit normal
-    float           d      = 0.0f;                     // -dot(n, origin)
-    Eigen::Vector3f origin = Eigen::Vector3f::Zero();  // surface point at the
-                                                       // moment the plane was added
-    float    visual_radius = 0.0f;
-};
+#include "SectionPlane.h"
 
 // All viewport overlays in one place: axis indicator (corner + pivot),
 // section plane gizmos, and the marquee drag rect. Mirrors GL's

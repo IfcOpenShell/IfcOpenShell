@@ -47,6 +47,7 @@
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
+#include "SectionPlane.h"
 #include "SelectionState.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
@@ -223,6 +224,12 @@ public:
     void ensureSelectionFlagsBuffer();
     void uploadSelectionFlagsIfDirty();
 
+    // Build the FrameUniforms struct (view-proj + lighting + section
+    // planes + xray cap) from current camera + section_planes_ +
+    // xray_alpha_cap_ and upload it via the queue. Called once per
+    // render() at frame start, before any draw encode.
+    void updateFrameUniforms();
+
     // ---- wgpu lifecycle ----------------------------------------------------
     //
     // initWgpu brings up the wgpu instance, gets the platform surface
@@ -319,6 +326,20 @@ private:
     WGPUBuffer    selection_flags_buffer_   = nullptr;
     uint32_t      selection_flags_capacity_ = 0;  // u32 entries
     std::vector<uint32_t> selection_flags_scratch_;
+
+    // Active world-space section planes (up to kMaxSectionPlanes); packed
+    // into the per-frame uniform every render and consumed by the WGSL
+    // is_section_clipped fragment gate. The section tool in
+    // ViewportWindow mutates this through addSectionPlaneAtSurface /
+    // removeSectionPlane (still Qt-bound — they wire into the input
+    // path). Reading happens here.
+    std::vector<SectionPlane> section_planes_;
+
+    // X-ray mode alpha clamp: when < 1.0 every instance routes through
+    // the transparent pass with fragment.a clamped to min(in.color.a, cap).
+    // Toggled by ViewportWindow::toggleXray; consumed by cull
+    // (transparent-pass classifier) and updateFrameUniforms.
+    float xray_alpha_cap_ = 1.0f;
 
     // Selection + per-element visibility state machines. Pure CPU
     // bookkeeping today (no GPU touch beyond the readback uploaded via

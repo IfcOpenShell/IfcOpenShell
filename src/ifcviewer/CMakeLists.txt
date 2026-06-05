@@ -157,6 +157,7 @@ set(IFCVIEWER_CORE_HEADERS
     LodBuilder.h
     Stopwatch.h
     ModelGpuData.h
+    SectionPlane.h
     SelectionState.h
     SidecarCache.h
     StreamingLoader.h

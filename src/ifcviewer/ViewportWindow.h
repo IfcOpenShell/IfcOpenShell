@@ -557,7 +557,6 @@ private:
     // any projection is unreliable. True (cull) when AABB is provably
     // behind every relevant pyramid cell.
     bool  aabbOccludedByHiz(const float mn[3], const float mx[3]) const;
-    void  updateFrameUniforms();
     void  flushPendingSidecarQueue();
     // computeSceneAabb moved to ViewportCore (#84-h).
 
@@ -777,20 +776,22 @@ private:
     int                pick_w_              = 0;
     int                pick_h_              = 0;
 
-    // Section-cutting state. SectionPlane lives in OverlayRenderer.h
-    // because the visualiser reads it; the viewport owns the authoritative
-    // vector that the section tool mutates.
-    std::vector<SectionPlane> section_planes_;
+    // Section-cutting state aliases (storage in core_). The section tool
+    // mutates section_planes_ through addSectionPlaneAtSurface /
+    // removeSectionPlane; the per-frame uniform packs the same vector
+    // for the WGSL fragment-side clip gate.
+    std::vector<SectionPlane>& section_planes_;
     bool                          section_tool_active_  = false;
 
-    // X-ray mode. Default 1.0 = no effect (fragment shader clamps
-    // alpha = min(in.color.a, xray_alpha_cap_), which returns in.color.a
-    // when the cap is 1). Alt+X drops it to 0.3 to translucent the whole
-    // scene; pressing again restores 1.0. When < 1.0, the cull
-    // classifier also routes every instance into the transparent pass
-    // so the blend stage actually fires (an opaque-pass fragment with
-    // capped alpha would still overwrite the back buffer).
-    float                         xray_alpha_cap_       = 1.0f;
+    // X-ray cap alias (storage in core_). Default 1.0 = no effect
+    // (fragment shader clamps alpha = min(in.color.a, xray_alpha_cap_),
+    // which returns in.color.a when the cap is 1). Alt+X drops it to
+    // 0.3 to translucent the whole scene; pressing again restores 1.0.
+    // When < 1.0, the cull classifier (also in core) routes every
+    // instance into the transparent pass so the blend stage actually
+    // fires (an opaque-pass fragment with capped alpha would still
+    // overwrite the back buffer).
+    float& xray_alpha_cap_;
 
     // Marquee box-select. Armed on LMB press (when no other tool consumes
     // the click), becomes active after the cursor moves past

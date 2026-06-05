@@ -1121,6 +1121,44 @@ void ViewportCore::uploadSelectionFlagsIfDirty() {
     selection_.markClean();
 }
 
+void ViewportCore::updateFrameUniforms() {
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+
+    const Eigen::Matrix4f view_proj = proj * view;
+
+    FrameUniforms u = {};
+    std::memcpy(u.view_proj, view_proj.data(), 16 * sizeof(float));
+
+    // Values match the GL viewport's main fragment shader so a side-by-side
+    // diff of the two backends only shows what the wgpu pipeline has yet to
+    // implement (edge silhouette pass, MSAA polish, etc.) — not lighting
+    // model differences. Key + fill are ~unit-length, ~120° apart.
+    Eigen::Vector3f L( 0.3f,  0.5f, 0.8f); L.normalize();
+    Eigen::Vector3f F(-0.3f, -0.5f, 0.8f); F.normalize();
+    u.light_dir[0] = L.x(); u.light_dir[1] = L.y(); u.light_dir[2] = L.z(); u.light_dir[3] = 0;
+    u.fill_dir [0] = F.x(); u.fill_dir [1] = F.y(); u.fill_dir [2] = F.z(); u.fill_dir [3] = 0;
+    u.sky_color   [0] = 0.55f; u.sky_color   [1] = 0.60f; u.sky_color   [2] = 0.70f;
+    u.ground_color[0] = 0.35f; u.ground_color[1] = 0.32f; u.ground_color[2] = 0.28f;
+
+    // Pack active section planes. `is_section_clipped` (WGSL) reads
+    // u.clip_count and u.clip_planes[0..clip_count) and discards
+    // fragments on the positive side.
+    const int n = std::min<int>(int(section_planes_.size()), kMaxSectionPlanes);
+    u.clip_count = n;
+    for (int i = 0; i < n; ++i) {
+        const SectionPlane& p = section_planes_[i];
+        u.clip_planes[i][0] = p.n.x();
+        u.clip_planes[i][1] = p.n.y();
+        u.clip_planes[i][2] = p.n.z();
+        u.clip_planes[i][3] = p.d;
+    }
+    u.xray_alpha_cap = xray_alpha_cap_;
+    u._pad_xray[0] = u._pad_xray[1] = u._pad_xray[2] = 0.0f;
+
+    wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
+}
+
 // ===========================================================================
 // Lifecycle (#84-l): initWgpu + probeAndCreatePool + shutdown
 // ===========================================================================
