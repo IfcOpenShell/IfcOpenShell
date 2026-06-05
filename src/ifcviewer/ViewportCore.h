@@ -109,6 +109,21 @@ public:
     // completed.
     void recomposeAndUploadModel(uint32_t model_id);
 
+    // ---- Camera math --------------------------------------------------------
+    //
+    // buildViewProj feeds every cull, streaming, pick and render path
+    // — keep it as a single helper so the projection_ortho_ toggle
+    // and the near-vertical up-vector switch can't drift between
+    // call sites. computeSceneAabb folds every visible model's
+    // world AABBs into one — used by viewAll and the bench camera.
+    // chunkScreenAreaPx projects one chunk's world AABB through a
+    // VP into 2D pixels — the streaming loader's priority signal.
+    void buildViewProj(Eigen::Matrix4f& view_out,
+                       Eigen::Matrix4f& proj_out) const;
+    bool computeSceneAabb(float mn[3], float mx[3]) const;
+    float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
+                            const Eigen::Matrix4f& vp_mat) const;
+
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
     // (it touches the fields directly); once everything has migrated

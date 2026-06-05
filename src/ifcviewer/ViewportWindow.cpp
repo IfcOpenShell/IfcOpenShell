@@ -2865,7 +2865,7 @@ bool ViewportWindow::pickSurfaceAt(int x_pixels, int y_pixels,
     // object_id and take the closest hit. Equally accurate for the section
     // tool's "drop a plane where I clicked" UX, no readback at all.
     Eigen::Matrix4f view, proj;
-    buildViewProj(view, proj);
+    core_.buildViewProj(view, proj);
     Eigen::Matrix4f inv_vp;
     if (!tryInvert4f(proj * view, inv_vp)) return false;
 
@@ -3078,7 +3078,7 @@ bool ViewportWindow::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
             const auto& tris = m.mesh_triangles_cache[inst.mesh_id];
             if (!tris.indices.empty() && configured_w_ > 0 && configured_h_ > 0) {
                 Eigen::Matrix4f view, proj;
-                buildViewProj(view, proj);
+                core_.buildViewProj(view, proj);
                 Eigen::Matrix4f inv_vp;
                 if (tryInvert4f(proj * view, inv_vp)) {
                     const float ndc_x = (2.0f * float(x) / float(configured_w_)) - 1.0f;
@@ -3673,7 +3673,7 @@ int ViewportWindow::hitTestSectionGizmo(int x, int y) const {
     const int h = height();
     if (w <= 0 || h <= 0) return -1;
     Eigen::Matrix4f view, proj;
-    buildViewProj(view, proj);
+    core_.buildViewProj(view, proj);
     const Eigen::Matrix4f vp = proj * view;
     const float grab_px = 12.0f;
     int   best    = -1;
@@ -3712,7 +3712,7 @@ void ViewportWindow::updateSectionDrag(int x, int y) {
     const int h = height();
     if (w <= 0 || h <= 0) return;
     Eigen::Matrix4f view, proj;
-    buildViewProj(view, proj);
+    core_.buildViewProj(view, proj);
     const Eigen::Matrix4f vp = proj * view;
 
     // Re-project the press-time origin and origin + n to screen space.
@@ -4575,7 +4575,7 @@ void ViewportWindow::render() {
         const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
                                        camera_yaw_deg_, camera_pitch_deg_);
         Eigen::Matrix4f v, p;
-        buildViewProj(v, p);
+        core_.buildViewProj(v, p);
         const Eigen::Matrix4f vp = p * v;
         vp_this_frame = vp;
         float planes[6][4];
@@ -5185,7 +5185,7 @@ void ViewportWindow::render() {
                 // duplicated here so the heartbeat dump can show what
                 // the loader is actually scoring chunks at.
                 Eigen::Matrix4f v_dbg, p_dbg;
-                buildViewProj(v_dbg, p_dbg);
+                core_.buildViewProj(v_dbg, p_dbg);
                 const Eigen::Matrix4f vp_dbg = p_dbg * v_dbg;
                 auto chunk_priority_px2 = [&](const ModelGpuData::Chunk& c) -> float {
                     if (configured_w_ <= 0 || configured_h_ <= 0 ||
@@ -6092,7 +6092,7 @@ void ViewportWindow::driveStreamingLoads() {
     // diagnostic dump in the tracking output below). Cull/render use the
     // same helper.
     Eigen::Matrix4f v_mat, p_mat;
-    buildViewProj(v_mat, p_mat);
+    core_.buildViewProj(v_mat, p_mat);
     const Eigen::Matrix4f vp_mat = p_mat * v_mat;
 
     // chunk.current_priority was accumulated during cullModelCpuCompute
@@ -6467,7 +6467,7 @@ void ViewportWindow::driveStreamingLoads() {
             const auto& c = m.chunks[tracked_chunk_idx_];
             if (tracked_was_resident_ && !c.is_resident) {
                 const double mb = 1.0 / (1024.0 * 1024.0);
-                const float my_area  = chunkScreenAreaPx(c, vp_mat);
+                const float my_area  = core_.chunkScreenAreaPx(c, vp_mat);
                 const uint64_t my_bytes = c.vertex_byte_size
                                         + c.index_count * sizeof(uint32_t);
                 Log::info().noquote().nospace()
@@ -6513,7 +6513,7 @@ void ViewportWindow::driveStreamingLoads() {
                         const auto& cc = m2.chunks[ci2];
                         if (cc.is_resident)                continue;
                         if (cc.frustum_visible_count == 0) continue;
-                        all.push_back({mid2, ci2, chunkScreenAreaPx(cc, vp_mat)});
+                        all.push_back({mid2, ci2, core_.chunkScreenAreaPx(cc, vp_mat)});
                     }
                 }
                 std::sort(all.begin(), all.end(),
@@ -6653,50 +6653,11 @@ static Eigen::Vector3f orbitEye(const float target[3], float dist,
 // streaming projection, pick, or render uniforms calls this so the
 // projection_ortho_ toggle and the near-vertical up-vector switch land
 // identically everywhere.
-void ViewportWindow::buildViewProj(Eigen::Matrix4f& view_out,
-                                        Eigen::Matrix4f& proj_out) const {
-    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
-    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
-                                   camera_yaw_deg_, camera_pitch_deg_);
-    // Within 1° of straight-up/down, switch up from world +Z to world +Y
-    // so lookAt's side vector doesn't degenerate (forward × up → 0). Mirrors
-    // GL ViewportWindow::updateCamera; the standard-view top/bottom hotkeys
-    // land at pitch = ±90° exactly so this is the path that keeps them
-    // well-conditioned.
-    const Eigen::Vector3f up = (std::abs(camera_pitch_deg_) >= 89.0f)
-                       ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
-                       : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
-    view_out = lookAtRH(eye, target, up);
-
-    const float aspect = (configured_h_ > 0)
-                            ? float(configured_w_) / float(configured_h_)
-                            : 1.0f;
-    Eigen::Matrix4f p;
-    if (projection_ortho_) {
-        // Size the ortho box so the same world rectangle fills the view as
-        // the perspective camera at the pivot's distance. Toggling at any
-        // zoom keeps framing identical. Mirrors GL.
-        const float half_h = camera_distance_
-            * std::tan(qDegreesToRadians(camera_fov_y_deg_ * 0.5f));
-        const float half_w = half_h * aspect;
-        const float depth  = camera_distance_ * 10.0f;
-        p = orthoGL(-half_w, half_w, -half_h, half_h, -depth, depth);
-    } else {
-        p = perspectiveYFovGL(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
-    }
-    // The helpers above build a GL-style projection (clip-z in [-1, 1]);
-    // WebGPU expects clip-z in [0, 1]. Pre-multiply by a remap matrix
-    // that maps [-1,1] → [0,1]. Note we start z_remap from Identity()
-    // (Eigen doesn't zero-init); QMatrix4x4 used to do this implicitly.
-    Eigen::Matrix4f z_remap = Eigen::Matrix4f::Identity();
-    z_remap(2, 2) = 0.5f;
-    z_remap(2, 3) = 0.5f;
-    proj_out = z_remap * p;
-}
+// buildViewProj moved to ViewportCore (#84-h).
 
 void ViewportWindow::updateFrameUniforms() {
     Eigen::Matrix4f view, proj;
-    buildViewProj(view, proj);
+    core_.buildViewProj(view, proj);
 
     const Eigen::Matrix4f view_proj = proj * view;
 
@@ -6732,24 +6693,7 @@ void ViewportWindow::updateFrameUniforms() {
     wgpuQueueWriteBuffer(queue_, frame_uniform_buffer_, 0, &u, sizeof(u));
 }
 
-bool ViewportWindow::computeSceneAabb(float mn[3], float mx[3]) const {
-    bool any = false;
-    for (int i = 0; i < 3; ++i) {
-        mn[i] =  std::numeric_limits<float>::infinity();
-        mx[i] = -std::numeric_limits<float>::infinity();
-    }
-    for (const auto& [mid, m] : models_gpu_) {
-        if (m.hidden) continue;
-        for (const auto& inst : m.instances) {
-            for (int i = 0; i < 3; ++i) {
-                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
-                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
-            }
-            any = true;
-        }
-    }
-    return any;
-}
+// computeSceneAabb moved to ViewportCore (#84-h).
 
 void ViewportWindow::setCamera(float tx, float ty, float tz,
                                    float dist, float yaw_deg, float pitch_deg) {
@@ -6767,7 +6711,7 @@ void ViewportWindow::setCamera(float tx, float ty, float tz,
 
 void ViewportWindow::viewAll() {
     float mn[3], mx[3];
-    if (!computeSceneAabb(mn, mx)) return;
+    if (!core_.computeSceneAabb(mn, mx)) return;
 
     // Frame the union AABB with the same math as GL's frameAabb(mn, mx, 1.10):
     // target at centroid, distance pulls the bounding sphere just inside the
@@ -6998,71 +6942,7 @@ void ViewportWindow::fpsIntegrate() {
     }
 }
 
-float ViewportWindow::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
-                                             const Eigen::Matrix4f& vp_mat) const {
-    if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
-    if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
-    const float full_area = float(configured_w_) * float(configured_h_);
-
-    // A chunk's AABB is the UNION of every instance's world AABB it
-    // contains — typically much bigger than any single instance. On a
-    // BIM floor plate it's commonly 200-400m on a side. With the camera
-    // standing inside a building, that AABB straddles the near plane:
-    // most corners sit behind the camera, the loop below silently drops
-    // them, and the projected bbox of the surviving in-front corners is
-    // a tiny fraction of what the chunk's actual on-screen geometry
-    // covers. The chunk then loses every eviction fight against smaller
-    // chunks whose AABBs sit entirely in front of the camera. Result:
-    // big floor/slab chunks pop in/out as the camera tilts a few degrees.
-    //
-    // Two short-circuits stop that. Eye-inside-AABB → assume full
-    // viewport (mirrors GL's contribution-cull short-circuit). Any
-    // corner behind near plane (AABB straddles) → also full viewport;
-    // the chunk's true on-screen extent is unmeasurable from 8 corners
-    // alone once any are behind, so over-prioritise rather than
-    // under-prioritise.
-    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
-                                   camera_yaw_deg_, camera_pitch_deg_);
-    if (eye.x() >= c.aabb_min[0] && eye.x() <= c.aabb_max[0] &&
-        eye.y() >= c.aabb_min[1] && eye.y() <= c.aabb_max[1] &&
-        eye.z() >= c.aabb_min[2] && eye.z() <= c.aabb_max[2]) {
-        return full_area;
-    }
-
-    float xmin = std::numeric_limits<float>::infinity();
-    float ymin = std::numeric_limits<float>::infinity();
-    float xmax = -std::numeric_limits<float>::infinity();
-    float ymax = -std::numeric_limits<float>::infinity();
-    int corners_in_front = 0;
-    int corners_behind   = 0;
-    for (int i = 0; i < 8; ++i) {
-        const Eigen::Vector4f corner_world(
-            (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
-            (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
-            (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
-            1.0f);
-        const Eigen::Vector4f clip = vp_mat * corner_world;
-        if (clip.w() <= 1e-3f) { ++corners_behind; continue; }
-        ++corners_in_front;
-        const float ndc_x = clip.x() / clip.w();
-        const float ndc_y = clip.y() / clip.w();
-        const float px_x  = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
-        const float px_y  = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
-        xmin = std::min(xmin, px_x);
-        ymin = std::min(ymin, px_y);
-        xmax = std::max(xmax, px_x);
-        ymax = std::max(ymax, px_y);
-    }
-    if (corners_in_front == 0) return 0.0f;
-    if (corners_behind > 0)    return full_area;
-
-    xmin = std::max(xmin, 0.0f);
-    ymin = std::max(ymin, 0.0f);
-    xmax = std::min(xmax, float(configured_w_));
-    ymax = std::min(ymax, float(configured_h_));
-    if (xmax <= xmin || ymax <= ymin) return 0.0f;
-    return (xmax - xmin) * (ymax - ymin);
-}
+// chunkScreenAreaPx moved to ViewportCore (#84-h).
 
 void ViewportWindow::applyNavPreset(const char* name) {
     // Matches GL AppSettings::NavPreset semantics exactly.

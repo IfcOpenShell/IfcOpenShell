@@ -217,7 +217,7 @@ private:
     // the view matrix and a WebGPU-correct projection (z mapped to [0, 1]).
     // Single helper so projection_ortho_ and the up-vector switch at near-
     // vertical pitch land identically everywhere.
-    void buildViewProj(Eigen::Matrix4f& view_out, Eigen::Matrix4f& proj_out) const;
+    // buildViewProj moved to ViewportCore (#84-h).
     // Per-frame WASD integration when fps_mode_ is true. Called near the
     // top of render() so the displayed frame already reflects movement.
     void fpsIntegrate();
@@ -236,12 +236,7 @@ private:
     // Resolve nav_preset_ env var to orbit/pan bindings.
     void applyNavPreset(const char* name);
 
-    // Project the chunk's world-space AABB through `vp_mat` and return the
-    // 2D pixel area covered on screen. This is the streaming loader's
-    // chunk-priority metric — extracted from driveStreamingLoads as a
-    // member so the click-and-track diagnostic can compare scores.
-    float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
-                            const Eigen::Matrix4f& vp_mat) const;
+    // chunkScreenAreaPx moved to ViewportCore (#84-h).
 
 public:
 
@@ -572,7 +567,7 @@ private:
     bool  aabbOccludedByHiz(const float mn[3], const float mx[3]) const;
     void  updateFrameUniforms();
     void  flushPendingSidecarQueue();
-    bool  computeSceneAabb(float mn[3], float mx[3]) const;
+    // computeSceneAabb moved to ViewportCore (#84-h).
 
     // Cull `m`'s instances against the supplied frustum planes (world-space,
     // ax+by+cz+d >= 0 means inside), bucket survivors by (mesh_id, lod), and

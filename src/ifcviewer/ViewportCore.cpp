@@ -19,11 +19,32 @@
 
 #include "ViewportCore.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstring>
 #include <limits>
 #include <vector>
 
+#include "CameraMath.h"
 #include "InstanceCompose.h"
+
+namespace {
+// Orbit camera around target_. World +Z up (BIM convention). Yaw is
+// rotation about Z (positive = anticlockwise looking down +Z); pitch
+// is elevation above the XY plane. Matches the GL viewport's
+// updateCamera convention so framing aligns between backends.
+Eigen::Vector3f orbitEye(const float target[3], float dist,
+                         float yaw_deg, float pitch_deg) {
+    constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+    const float yaw = yaw_deg   * kDeg2Rad;
+    const float pit = pitch_deg * kDeg2Rad;
+    const float cp = std::cos(pit), sp = std::sin(pit);
+    const float cy = std::cos(yaw), sy = std::sin(yaw);
+    return Eigen::Vector3f(target[0] + dist * cp * cy,
+                           target[1] + dist * cp * sy,
+                           target[2] + dist * sp);
+}
+} // namespace
 
 ViewportCore::ViewportCore(ViewportHost* host) : host_(host) {}
 ViewportCore::~ViewportCore() = default;
@@ -119,6 +140,112 @@ void ViewportCore::setModelTransformation(uint32_t model_id,
     if (it->second.model_transformation_meters == matrix_meters) return;
     it->second.model_transformation_meters = matrix_meters;
     recomposeAndUploadModel(model_id);
+}
+
+// ---- Camera math ----------------------------------------------------------
+
+void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
+                                 Eigen::Matrix4f& proj_out) const {
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    // Within 1° of straight-up/down, switch up from world +Z to world +Y
+    // so lookAt's side vector doesn't degenerate (forward × up → 0).
+    const Eigen::Vector3f up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                       ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                       : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+    view_out = lookAtRH(eye, target, up);
+
+    const float aspect = (configured_h_ > 0)
+                            ? float(configured_w_) / float(configured_h_)
+                            : 1.0f;
+    Eigen::Matrix4f p;
+    if (projection_ortho_) {
+        constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+        const float half_h = camera_distance_
+            * std::tan(camera_fov_y_deg_ * 0.5f * kDeg2Rad);
+        const float half_w = half_h * aspect;
+        const float depth  = camera_distance_ * 10.0f;
+        p = orthoGL(-half_w, half_w, -half_h, half_h, -depth, depth);
+    } else {
+        p = perspectiveYFovGL(camera_fov_y_deg_, aspect, camera_near_, camera_far_);
+    }
+    Eigen::Matrix4f z_remap = Eigen::Matrix4f::Identity();
+    z_remap(2, 2) = 0.5f;
+    z_remap(2, 3) = 0.5f;
+    proj_out = z_remap * p;
+}
+
+bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
+    bool any = false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& inst : m.instances) {
+            for (int i = 0; i < 3; ++i) {
+                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
+                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
+            }
+            any = true;
+        }
+    }
+    return any;
+}
+
+float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
+                                      const Eigen::Matrix4f& vp_mat) const {
+    if (configured_w_ <= 0 || configured_h_ <= 0)   return 0.0f;
+    if (c.aabb_min[0] > c.aabb_max[0])              return 0.0f;
+    const float full_area = float(configured_w_) * float(configured_h_);
+
+    // Eye-inside-AABB → full viewport (matches GL contribution-cull
+    // short-circuit). Any corner behind near plane → also full
+    // viewport; 8 corners can't measure true on-screen extent once
+    // any are behind, so over-prioritise rather than under-prioritise.
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    if (eye.x() >= c.aabb_min[0] && eye.x() <= c.aabb_max[0] &&
+        eye.y() >= c.aabb_min[1] && eye.y() <= c.aabb_max[1] &&
+        eye.z() >= c.aabb_min[2] && eye.z() <= c.aabb_max[2]) {
+        return full_area;
+    }
+
+    float xmin = std::numeric_limits<float>::infinity();
+    float ymin = std::numeric_limits<float>::infinity();
+    float xmax = -std::numeric_limits<float>::infinity();
+    float ymax = -std::numeric_limits<float>::infinity();
+    int corners_in_front = 0;
+    int corners_behind   = 0;
+    for (int i = 0; i < 8; ++i) {
+        const Eigen::Vector4f corner_world(
+            (i & 1) ? c.aabb_max[0] : c.aabb_min[0],
+            (i & 2) ? c.aabb_max[1] : c.aabb_min[1],
+            (i & 4) ? c.aabb_max[2] : c.aabb_min[2],
+            1.0f);
+        const Eigen::Vector4f clip = vp_mat * corner_world;
+        if (clip.w() <= 1e-3f) { ++corners_behind; continue; }
+        ++corners_in_front;
+        const float ndc_x = clip.x() / clip.w();
+        const float ndc_y = clip.y() / clip.w();
+        const float px_x  = (ndc_x * 0.5f + 0.5f) * float(configured_w_);
+        const float px_y  = (ndc_y * 0.5f + 0.5f) * float(configured_h_);
+        xmin = std::min(xmin, px_x);
+        ymin = std::min(ymin, px_y);
+        xmax = std::max(xmax, px_x);
+        ymax = std::max(ymax, px_y);
+    }
+    if (corners_in_front == 0) return 0.0f;
+    if (corners_behind > 0)    return full_area;
+
+    xmin = std::max(xmin, 0.0f);
+    ymin = std::max(ymin, 0.0f);
+    xmax = std::min(xmax, float(configured_w_));
+    ymax = std::min(ymax, float(configured_h_));
+    if (xmax <= xmin || ymax <= ymin) return 0.0f;
+    return (xmax - xmin) * (ymax - ymin);
 }
 
 void ViewportCore::recomposeAndUploadModel(uint32_t model_id) {
