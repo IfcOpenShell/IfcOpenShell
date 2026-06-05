@@ -1702,6 +1702,33 @@ def get_screen_up(billboard_rot: Matrix) -> Vector:
     return billboard_rot @ Vector((0.0, 1.0, 0.0))
 
 
+# Screen-up distance lifted off floor-plane gizmo anchors in plan view. Matches
+# the inter-icon stack spacing used by wall-corner stacks so single icons and
+# stack bases sit at consistent screen-up positions when multiple groups render
+# around the same wall endpoint.
+DEFAULT_TOP_DOWN_CLEARANCE = 0.4
+
+
+def top_down_clearance(
+    context: bpy.types.Context,
+    billboard_rot: Matrix,
+    distance: float = DEFAULT_TOP_DOWN_CLEARANCE,
+) -> Vector:
+    """Screen-up offset that keeps a floor-plane gizmo anchor visible in plan view.
+
+    In a top-down view the world-Z axis projects to ~zero on screen, so any
+    icon anchored on the floor (wall endpoints, corners, connection points,
+    the projected 3D cursor) sits directly on the click target it represents.
+    Adding this offset before ``billboarded_at`` shifts the icon along the
+    camera's up axis without changing the operator's world-space target.
+
+    Returns a zero vector outside the top-down cone so callers can apply it
+    unconditionally."""
+    if not tool.Blender.is_view_top_down(context):
+        return Vector((0.0, 0.0, 0.0))
+    return get_screen_up(billboard_rot) * distance
+
+
 # Dead-band on the screen-X delta — prevents flicker when the gizmo sits on the
 # element origin.
 EXTEND_FLIP_EPSILON = 1e-4
