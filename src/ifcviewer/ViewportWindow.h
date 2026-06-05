@@ -174,14 +174,11 @@ public:
     bool    projectionOrtho() const { return projection_ortho_; }
     std::string cameraString() const;
 
-    // Snapshot of the orbit camera. Mirrors GL ViewportWindow::CameraState
-    // so bonsai's "save view" / "restore view" commands port unchanged.
-    struct CameraState {
-        Eigen::Vector3f target;
-        float distance;
-        float yaw;    // degrees
-        float pitch;  // degrees
-    };
+    // Snapshot of the orbit camera. Canonical struct now lives in
+    // ViewportCore so the camera-mutator path stays Qt-free (#84-i);
+    // the alias keeps bonsai's "save view" / "restore view" callers
+    // working unchanged.
+    using CameraState = ViewportCore::CameraState;
     CameraState cameraState() const;
 
     // Tool toggles: flip between NoTool and the named tool. Wrappers

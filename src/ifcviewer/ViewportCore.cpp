@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <vector>
@@ -359,4 +360,132 @@ void ViewportCore::composeInstanceFromPlacement(InstanceCpu& inst,
             inst.world_aabb_max[a] = 0.0f;
         }
     }
+}
+
+// ---- Camera mutators ------------------------------------------------------
+
+void ViewportCore::frameAabb(const float mn[3], const float mx[3],
+                             float padding) {
+    constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+    const float cx = 0.5f * (mn[0] + mx[0]);
+    const float cy = 0.5f * (mn[1] + mx[1]);
+    const float cz = 0.5f * (mn[2] + mx[2]);
+    camera_target_[0] = cx;
+    camera_target_[1] = cy;
+    camera_target_[2] = cz;
+
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx*dx + dy*dy + dz*dz);
+
+    if (radius > 1e-4f) {
+        const float fovy_rad = camera_fov_y_deg_ * kDeg2Rad;
+        const float tan_half = std::tan(fovy_rad * 0.5f);
+        if (tan_half > 1e-6f) {
+            const int   h          = std::max(configured_h_, 1);
+            const float aspect     = float(std::max(configured_w_, 1)) / float(h);
+            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
+            camera_distance_ = std::max(0.1f, (radius / (tan_half * min_aspect)) * padding);
+        }
+    }
+    host_->requestFrame();
+}
+
+void ViewportCore::viewAll() {
+    float mn[3], mx[3];
+    if (!computeSceneAabb(mn, mx)) return;
+
+    // Same math as GL's frameAabb(mn, mx, 1.10): target at centroid,
+    // distance pulls the bounding sphere just inside the tighter of
+    // horizontal/vertical FOV. 1.10 padding matches GL viewAll.
+    frameAabb(mn, mx, 1.10f);
+
+    const float cx = 0.5f * (mn[0] + mx[0]);
+    const float cy = 0.5f * (mn[1] + mx[1]);
+    const float cz = 0.5f * (mn[2] + mx[2]);
+    const float dx = mx[0] - mn[0];
+    const float dy = mx[1] - mn[1];
+    const float dz = mx[2] - mn[2];
+    const float radius = 0.5f * std::sqrt(dx*dx + dy*dy + dz*dz);
+    std::fprintf(stderr,
+        "[info] [wgpu] viewAll target=(%g, %g, %g) distance=%g (scene radius=%g)\n",
+        cx, cy, cz, camera_distance_, radius);
+}
+
+void ViewportCore::setCamera(float tx, float ty, float tz,
+                             float dist, float yaw_deg, float pitch_deg) {
+    camera_target_[0]   = tx;
+    camera_target_[1]   = ty;
+    camera_target_[2]   = tz;
+    camera_distance_    = std::max(0.01f, dist);
+    camera_yaw_deg_     = yaw_deg;
+    // Mirrors GL clamp — keep pitch just shy of the pole so orbit math
+    // doesn't degenerate. The standard-view top/bottom hotkeys go through
+    // setStandardView, which bypasses the clamp on purpose.
+    camera_pitch_deg_   = std::clamp(pitch_deg, -89.9f, 89.9f);
+    host_->requestFrame();
+}
+
+void ViewportCore::setStandardView(float yaw_deg, float pitch_deg) {
+    // Bypass the orbit-pitch clamp so top/bottom land exactly at ±90°.
+    // buildViewProj picks the up vector based on |pitch| so lookAt
+    // stays well-conditioned at the poles.
+    camera_yaw_deg_   = yaw_deg;
+    camera_pitch_deg_ = pitch_deg;
+    host_->requestFrame();
+}
+
+void ViewportCore::toggleProjection() {
+    projection_ortho_ = !projection_ortho_;
+    std::fprintf(stderr, "[info] [wgpu] projection: %s\n",
+                 projection_ortho_ ? "ortho" : "perspective");
+    host_->requestFrame();
+}
+
+std::string ViewportCore::cameraString() const {
+    char buf[128];
+    std::snprintf(buf, sizeof(buf), "%.4f,%.4f,%.4f,%.4f,%.2f,%.2f",
+                  camera_target_[0], camera_target_[1], camera_target_[2],
+                  camera_distance_, camera_yaw_deg_, camera_pitch_deg_);
+    return std::string(buf);
+}
+
+ViewportCore::CameraState ViewportCore::cameraState() const {
+    CameraState s;
+    s.target  = Eigen::Vector3f(camera_target_[0], camera_target_[1], camera_target_[2]);
+    s.distance = camera_distance_;
+    s.yaw      = camera_yaw_deg_;
+    s.pitch    = camera_pitch_deg_;
+    return s;
+}
+
+bool ViewportCore::computeObjectAabb(uint32_t object_id,
+                                     float mn[3], float mx[3]) const {
+    bool any = false;
+    for (int i = 0; i < 3; ++i) {
+        mn[i] =  std::numeric_limits<float>::infinity();
+        mx[i] = -std::numeric_limits<float>::infinity();
+    }
+    for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& inst : m.instances) {
+            if (inst.object_id != object_id) continue;
+            for (int i = 0; i < 3; ++i) {
+                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
+                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
+            }
+            any = true;
+        }
+    }
+    return any;
+}
+
+bool ViewportCore::computeObjectAabb(uint32_t object_id,
+                                     Eigen::Vector3f& mn,
+                                     Eigen::Vector3f& mx) const {
+    float fmin[3], fmax[3];
+    if (!computeObjectAabb(object_id, fmin, fmax)) return false;
+    mn = Eigen::Vector3f(fmin[0], fmin[1], fmin[2]);
+    mx = Eigen::Vector3f(fmax[0], fmax[1], fmax[2]);
+    return true;
 }

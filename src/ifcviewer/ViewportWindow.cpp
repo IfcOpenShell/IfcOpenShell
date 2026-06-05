@@ -3504,13 +3504,9 @@ void ViewportWindow::invertElementVisibility() {
     if (isExposed()) requestUpdate();
 }
 
+// cameraState moved to ViewportCore (#84-i).
 ViewportWindow::CameraState ViewportWindow::cameraState() const {
-    return CameraState{
-        Eigen::Vector3f(camera_target_[0], camera_target_[1], camera_target_[2]),
-        camera_distance_,
-        camera_yaw_deg_,
-        camera_pitch_deg_,
-    };
+    return core_.cameraState();
 }
 
 void ViewportWindow::setToolMode(ToolMode m) {
@@ -6695,112 +6691,28 @@ void ViewportWindow::updateFrameUniforms() {
 
 // computeSceneAabb moved to ViewportCore (#84-h).
 
+// setCamera body moved to ViewportCore (#84-i). VW keeps the wrapper
+// because the auto-viewAll suppression flag (initial_view_applied_)
+// still lives on the Qt-bound side — it's the first-model-loaded
+// hook that ViewportCore doesn't own yet.
 void ViewportWindow::setCamera(float tx, float ty, float tz,
-                                   float dist, float yaw_deg, float pitch_deg) {
-    camera_target_[0] = tx;
-    camera_target_[1] = ty;
-    camera_target_[2] = tz;
-    camera_distance_  = std::max(0.01f, dist);
-    camera_yaw_deg_   = yaw_deg;
-    camera_pitch_deg_ = std::clamp(pitch_deg, -89.9f, 89.9f);
-    // Suppress the auto-viewAll on the first model load so the script-set
-    // camera survives. Manual viewAll() calls after this still work.
+                               float dist, float yaw_deg, float pitch_deg) {
+    core_.setCamera(tx, ty, tz, dist, yaw_deg, pitch_deg);
     initial_view_applied_ = true;
-    if (isExposed()) requestUpdate();
 }
 
-void ViewportWindow::viewAll() {
-    float mn[3], mx[3];
-    if (!core_.computeSceneAabb(mn, mx)) return;
+// viewAll / frameAabb / computeObjectAabb moved to ViewportCore (#84-i).
 
-    // Frame the union AABB with the same math as GL's frameAabb(mn, mx, 1.10):
-    // target at centroid, distance pulls the bounding sphere just inside the
-    // tighter of the horizontal/vertical FOV. Padding 1.10 matches GL viewAll.
-    const float cx = 0.5f * (mn[0] + mx[0]);
-    const float cy = 0.5f * (mn[1] + mx[1]);
-    const float cz = 0.5f * (mn[2] + mx[2]);
-    camera_target_[0] = cx;
-    camera_target_[1] = cy;
-    camera_target_[2] = cz;
-
-    const float dx = mx[0] - mn[0];
-    const float dy = mx[1] - mn[1];
-    const float dz = mx[2] - mn[2];
-    const float radius = 0.5f * std::sqrt(dx*dx + dy*dy + dz*dz);
-
-    if (radius > 1e-4f) {
-        const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
-        const float tan_half = std::tan(fovy_rad * 0.5f);
-        if (tan_half > 1e-6f) {
-            const int   h          = std::max(configured_h_, 1);
-            const float aspect     = float(std::max(configured_w_, 1)) / float(h);
-            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
-            camera_distance_ = std::max(0.1f, (radius / (tan_half * min_aspect)) * 1.10f);
-        }
-    }
-
-    Log::info().noquote().nospace()
-        << "[wgpu] viewAll target=(" << cx << ", " << cy << ", " << cz << ")"
-        << " distance=" << camera_distance_
-        << " (scene radius=" << radius << ")";
-
-    if (isExposed()) requestUpdate();
+void ViewportWindow::viewAll() { core_.viewAll(); }
+void ViewportWindow::frameAabb(const float mn[3], const float mx[3], float padding) {
+    core_.frameAabb(mn, mx, padding);
 }
-
-void ViewportWindow::frameAabb(const float mn[3], const float mx[3],
-                                    float padding) {
-    const float cx = 0.5f * (mn[0] + mx[0]);
-    const float cy = 0.5f * (mn[1] + mx[1]);
-    const float cz = 0.5f * (mn[2] + mx[2]);
-    camera_target_[0] = cx;
-    camera_target_[1] = cy;
-    camera_target_[2] = cz;
-
-    const float dx = mx[0] - mn[0];
-    const float dy = mx[1] - mn[1];
-    const float dz = mx[2] - mn[2];
-    const float radius = 0.5f * std::sqrt(dx*dx + dy*dy + dz*dz);
-
-    if (radius > 1e-4f) {
-        const float fovy_rad = qDegreesToRadians(camera_fov_y_deg_);
-        const float tan_half = std::tan(fovy_rad * 0.5f);
-        if (tan_half > 1e-6f) {
-            const int   h          = std::max(configured_h_, 1);
-            const float aspect     = float(std::max(configured_w_, 1)) / float(h);
-            const float min_aspect = aspect < 1.0f ? aspect : 1.0f;
-            camera_distance_ = std::max(0.1f, (radius / (tan_half * min_aspect)) * padding);
-        }
-    }
-    if (isExposed()) requestUpdate();
+bool ViewportWindow::computeObjectAabb(uint32_t id, float mn[3], float mx[3]) const {
+    return core_.computeObjectAabb(id, mn, mx);
 }
-
-bool ViewportWindow::computeObjectAabb(uint32_t object_id,
-                                           Eigen::Vector3f& mn, Eigen::Vector3f& mx) const {
-    float fmin[3], fmax[3];
-    if (!computeObjectAabb(object_id, fmin, fmax)) return false;
-    mn = Eigen::Vector3f(fmin[0], fmin[1], fmin[2]);
-    mx = Eigen::Vector3f(fmax[0], fmax[1], fmax[2]);
-    return true;
-}
-
-bool ViewportWindow::computeObjectAabb(uint32_t object_id,
-                                            float mn[3], float mx[3]) const {
-    bool any = false;
-    for (int i = 0; i < 3; ++i) {
-        mn[i] =  std::numeric_limits<float>::infinity();
-        mx[i] = -std::numeric_limits<float>::infinity();
-    }
-    for (const auto& [mid, m] : models_gpu_) {
-        for (const auto& inst : m.instances) {
-            if (inst.object_id != object_id) continue;
-            for (int i = 0; i < 3; ++i) {
-                mn[i] = std::min(mn[i], inst.world_aabb_min[i]);
-                mx[i] = std::max(mx[i], inst.world_aabb_max[i]);
-            }
-            any = true;
-        }
-    }
-    return any;
+bool ViewportWindow::computeObjectAabb(uint32_t id,
+                                       Eigen::Vector3f& mn, Eigen::Vector3f& mx) const {
+    return core_.computeObjectAabb(id, mn, mx);
 }
 
 void ViewportWindow::focusOnSelectedObject() {
@@ -6832,28 +6744,12 @@ void ViewportWindow::focusOnSelectedObject() {
     frameAabb(lo, hi, 1.30f);
 }
 
+// setStandardView / toggleProjection / cameraString moved to ViewportCore (#84-i).
 void ViewportWindow::setStandardView(float yaw_deg, float pitch_deg) {
-    // Bypasses the orbit-pitch clamp so top/bottom land exactly at ±90°.
-    // buildViewProj() picks the up vector based on |pitch| so lookAt stays
-    // well-conditioned at the poles.
-    camera_yaw_deg_   = yaw_deg;
-    camera_pitch_deg_ = pitch_deg;
-    if (isExposed()) requestUpdate();
+    core_.setStandardView(yaw_deg, pitch_deg);
 }
-
-void ViewportWindow::toggleProjection() {
-    projection_ortho_ = !projection_ortho_;
-    Log::info() << "[wgpu] projection:" << (projection_ortho_ ? "ortho" : "perspective");
-    if (isExposed()) requestUpdate();
-}
-
-std::string ViewportWindow::cameraString() const {
-    char buf[128];
-    std::snprintf(buf, sizeof(buf), "%.4f,%.4f,%.4f,%.4f,%.2f,%.2f",
-                  camera_target_[0], camera_target_[1], camera_target_[2],
-                  camera_distance_, camera_yaw_deg_, camera_pitch_deg_);
-    return std::string(buf);
-}
+void ViewportWindow::toggleProjection()        { core_.toggleProjection(); }
+std::string ViewportWindow::cameraString() const { return core_.cameraString(); }
 
 void ViewportWindow::enterFpsMode() {
     if (fps_mode_) return;

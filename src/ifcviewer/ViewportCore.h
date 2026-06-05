@@ -38,6 +38,7 @@
 #include <Eigen/Dense>
 
 #include <cstdint>
+#include <string>
 #include <unordered_map>
 
 #include "BufferPool.h"
@@ -123,6 +124,39 @@ public:
     bool computeSceneAabb(float mn[3], float mx[3]) const;
     float chunkScreenAreaPx(const ModelGpuData::Chunk& c,
                             const Eigen::Matrix4f& vp_mat) const;
+
+    // Camera state snapshot for save-view / restore-view round-trips.
+    // Same shape as ViewportWindow::CameraState (kept as a `using` alias
+    // there) so bonsai's HomeView code keeps working.
+    struct CameraState {
+        Eigen::Vector3f target = Eigen::Vector3f::Zero();
+        float distance = 50.0f;
+        float yaw      = 45.0f;
+        float pitch    = 30.0f;
+    };
+
+    // ---- Camera mutators / getters ------------------------------------------
+
+    void viewAll();
+    void setCamera(float tx, float ty, float tz,
+                   float dist, float yaw_deg, float pitch_deg);
+    void setStandardView(float yaw_deg, float pitch_deg);
+    void toggleProjection();
+    bool projectionOrtho() const { return projection_ortho_; }
+    std::string cameraString() const;
+    CameraState cameraState() const;
+
+    // Re-aim the orbit camera so [mn, mx] fits the view with `padding`
+    // headroom (1.10 typical). Used by viewAll and focusOnSelectedObject.
+    void frameAabb(const float mn[3], const float mx[3], float padding);
+
+    // Per-object AABB lookup. Aggregates every instance of `object_id`
+    // across every loaded model. Two overloads — float[3] for internal
+    // callers; the Eigen::Vector3f overload exists so bonsai's volume
+    // readout + focus paths compile unchanged.
+    bool computeObjectAabb(uint32_t object_id, float mn[3], float mx[3]) const;
+    bool computeObjectAabb(uint32_t object_id,
+                           Eigen::Vector3f& mn, Eigen::Vector3f& mx) const;
 
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
