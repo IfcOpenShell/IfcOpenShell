@@ -2175,11 +2175,14 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         if top_down:
             # Swap world-Z stacking for screen-up stacking so each icon stays
             # individually clickable when the camera projects world Z to zero.
+            # The shared ``top_down_clearance`` lifts the whole stack off the
+            # cursor so its small crosshair stays visible for precise pointing.
             screen_up = tool.Blender.get_screen_up_world(context)
             base_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
+            clearance = gizmo.top_down_clearance(context, billboard_rot)
             for index, (gz, _local_z) in enumerate(resolved):
                 gz.hide = self.is_gizmo_hidden_by_modal(gz)
-                world_pos = base_world + screen_up * (index * self.CURSOR_STACK_OFFSET)
+                world_pos = base_world + clearance + screen_up * (index * self.CURSOR_STACK_OFFSET)
                 gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
                 _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
             return
@@ -3358,7 +3361,9 @@ class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         # the active object's elevation — the height the wall is about to reach.
         world_pos = mw @ Vector((0.0, icon_y, 0.0))
         world_pos.z = active.matrix_world.translation.z
-        self.extend_vertical_icon.matrix_basis = gizmo.billboarded_at(world_pos, gizmo.get_billboard_rotation(context))
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        world_pos += gizmo.top_down_clearance(context, billboard_rot)
+        self.extend_vertical_icon.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
 
 
 class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
@@ -3463,12 +3468,13 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         seg_b = _wall_axis_world_segment_from_geom(selected[1], geom_b)
         billboard_rot = gizmo.get_billboard_rotation(context)
         screen_up = gizmo.get_screen_up(billboard_rot)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
         anchor_z = self._stack_anchor_z(context, selected, geom_a, geom_b)
 
         # State 1: walls are already joined → Unjoin (bottom) + Fillet (above).
         if _are_walls_joined(elem_a, elem_b):
             corner = _collinear_boundary_world(seg_a, seg_b)
-            anchor = Vector((corner.x, corner.y, anchor_z))
+            anchor = Vector((corner.x, corner.y, anchor_z)) + clearance
             self._stack_at(anchor, screen_up, billboard_rot, (self.unjoin_icon, self.fillet_icon))
             self.merge_icon.hide = True
             self.join_icon.hide = True
@@ -3479,7 +3485,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         # at the boundary midpoint between them. No stack; single icon at the
         # geometric boundary makes the merge target unambiguous.
         if _are_walls_collinear(seg_a, seg_b, self.PARALLEL_DOT_THRESHOLD, self.COLLINEAR_LINE_TOLERANCE):
-            boundary = _collinear_boundary_world(seg_a, seg_b)
+            boundary = _collinear_boundary_world(seg_a, seg_b) + clearance
             self.merge_icon.matrix_basis = gizmo.billboarded_at(boundary, billboard_rot)
             self.merge_icon.hide = False
             self.unjoin_icon.hide = True
@@ -3503,7 +3509,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             self._hide_all()
             return
         intersection = Vector(intersection_tuple)
-        anchor = Vector((intersection.x, intersection.y, anchor_z))
+        anchor = Vector((intersection.x, intersection.y, anchor_z)) + clearance
         self._stack_at(anchor, screen_up, billboard_rot, (self.extend_to_wall_icon, self.join_icon, self.fillet_icon))
         self.unjoin_icon.hide = True
         self.merge_icon.hide = True
@@ -3597,6 +3603,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
     # GizmoGroup to allocate gizmos inside setup() — draw_prepare / refresh-time
     # creation is forbidden — so the pool must be sized upfront for the worst case.
     POOL_SIZE = 16
+    ICON_SCALE = 0.35
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -3610,6 +3617,9 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             return False
         element = tool.Ifc.get_entity(active)
         if not element or not tool.Parametric.is_path_connectable_wall(element):
+            return False
+        props = tool.Model.get_wall_props(active)
+        if not props.is_editing:
             return False
         return True
 
@@ -3647,6 +3657,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             return
         seg_self = _wall_axis_world_segment_from_geom(wall_obj, geom)
         billboard_rot = gizmo.get_billboard_rotation(context)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
 
         connections = _iter_path_connections(elem)
         if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
@@ -3668,7 +3679,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             seg_other = _wall_axis_world_segment_from_geom(other_obj, other_geom)
             location = tool.Wall.path_connection_location_world(seg_self, self_ct, seg_other, other_ct)
             icon = self.unjoin_icons[slot_idx]
-            icon.matrix_basis = gizmo.billboarded_at(location, billboard_rot)
+            icon.matrix_basis = gizmo.billboarded_at(location + clearance, billboard_rot, scale=self.ICON_SCALE)
             icon.hide = False
             # Only the partner-GlobalId property is rewritten per frame; the operator
             # binding itself is the long-lived handle set up at setup() time. GlobalId
@@ -4002,7 +4013,7 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         billboard_rot = gizmo.get_billboard_rotation(context)
         origin = corner_obj.matrix_world.translation
         top_z = origin.z + (geom.get("height") or 3.0) + self.ICON_TOP_LIFT
-        anchor = Vector((origin.x, origin.y, top_z))
+        anchor = Vector((origin.x, origin.y, top_z)) + gizmo.top_down_clearance(context, billboard_rot)
         self.edit_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot)
         self.edit_icon.hide = False
 
@@ -4064,7 +4075,7 @@ class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboa
         billboard_rot = gizmo.get_billboard_rotation(context)
         origin = corner_obj.matrix_world.translation
         top_z = origin.z + (geom.get("height") or 3.0) + self.ICON_TOP_LIFT
-        anchor = Vector((origin.x, origin.y, top_z))
+        anchor = Vector((origin.x, origin.y, top_z)) + gizmo.top_down_clearance(context, billboard_rot)
         offset_x = billboard_rot @ Vector((self.ICON_OFFSET_X, 0.0, 0.0))
         self.toggle_openings_icon.matrix_basis = gizmo.billboarded_at(anchor + offset_x, billboard_rot)
         self.toggle_openings_icon.hide = False
