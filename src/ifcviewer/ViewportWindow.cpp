@@ -608,7 +608,18 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       next_model_id_  (core_.next_model_id_),
       next_object_id_ (core_.next_object_id_),
       federated_false_origin_meters_(core_.federated_false_origin_meters_),
-      wgpu_initialized_(core_.wgpu_initialized_) {
+      wgpu_initialized_(core_.wgpu_initialized_),
+      configured_w_   (core_.configured_w_),
+      configured_h_   (core_.configured_h_),
+      camera_target_  (core_.camera_target_),
+      camera_distance_(core_.camera_distance_),
+      projection_ortho_(core_.projection_ortho_),
+      camera_yaw_deg_ (core_.camera_yaw_deg_),
+      camera_pitch_deg_(core_.camera_pitch_deg_),
+      camera_fov_y_deg_(core_.camera_fov_y_deg_),
+      camera_near_    (core_.camera_near_),
+      camera_far_     (core_.camera_far_),
+      background_color_(core_.background_color_) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //

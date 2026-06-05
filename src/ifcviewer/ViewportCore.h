@@ -197,6 +197,36 @@ private:
     // queued setter that runs before init becomes a no-op rather than
     // crashing on a null device.
     bool wgpu_initialized_ = false;
+
+    // ---- Surface geometry ----------------------------------------------------
+    //
+    // configured_w_/h_ track the device-pixel framebuffer size as last
+    // requested through host_->framebufferSize(). depth + MSAA attachments
+    // are sized against these.
+    int configured_w_ = 0;
+    int configured_h_ = 0;
+
+    // ---- Orbit / fly camera state -------------------------------------------
+    //
+    // Mirrors the GL viewport's defaults; the orbit math lives in
+    // buildViewProj (also in ViewportCore). BIM scenes are +Z up.
+    float camera_target_[3]  = { 0.0f, 0.0f, 0.0f };
+    float camera_distance_   = 50.0f;
+    float camera_yaw_deg_    = 45.0f;
+    float camera_pitch_deg_  = 30.0f;
+    float camera_fov_y_deg_  = 45.0f;
+    float camera_near_       = 0.1f;
+    float camera_far_        = 10000.0f;
+    // Perspective by default; toggleProjection (P key) flips this. When
+    // true, buildViewProj uses an orthographic matrix sized by
+    // camera_distance_ × tan(fov/2) so toggling looks like a smooth
+    // swap rather than a jump in apparent size.
+    bool  projection_ortho_  = false;
+
+    // RGBA in linear-space [0..1]. The render-pass clear value applies
+    // an sRGB-to-linear conversion on top so the on-screen colour
+    // matches the hex value passed via setBackgroundColor.
+    Eigen::Vector4f background_color_ = {0.125f, 0.137f, 0.161f, 1.0f};
 };
 
 #endif  // VIEWPORTCORE_H

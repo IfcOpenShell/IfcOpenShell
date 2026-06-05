@@ -635,8 +635,8 @@ private:
     void recomposeAndUploadModel(uint32_t model_id);
 
     bool& wgpu_initialized_;
-    int  configured_w_ = 0;
-    int  configured_h_ = 0;
+    int& configured_w_;
+    int& configured_h_;
 
     // ---- wgpu lifecycle state aliases ----------------------------------
     //
@@ -869,19 +869,12 @@ private:
     // thread per model.
     mutable std::atomic<int> hiz_trace_budget_{0};
 
-    // 0x20 / 0xff ≈ 0.125, 0x23 / 0xff ≈ 0.137, 0x29 / 0xff ≈ 0.161.
-    Eigen::Vector4f background_color_ = {0.125f, 0.137f, 0.161f, 1.0f};
+    Eigen::Vector4f& background_color_;
 
-    // Camera (orbit, right-handed Y-up world → wait, BIM is +Z up).
-    // Mirrors the GL viewport's defaults; mouse navigation lands later.
-    float camera_target_[3] = { 0.0f, 0.0f, 0.0f };
-    float camera_distance_  = 50.0f;
-
-    // Perspective by default; toggleProjection() (P key) flips this. When
-    // true, the per-frame projection builder uses an orthographic matrix
-    // sized by camera_distance_ × tan(fov/2) so toggling looks like a
-    // smooth swap rather than a jump in apparent size.
-    bool  projection_ortho_ = false;
+    // Camera state aliases (storage in core_).
+    float (&camera_target_)[3];
+    float& camera_distance_;
+    bool&  projection_ortho_;
 
     // Fly / FPS-mode state. Mirrors GL ViewportWindow::CameraMode::Fps.
     // While fps_mode_ is true: cursor is hidden, mouse-look uses raw
@@ -928,11 +921,11 @@ private:
     // mouseMoveEvent so mid-drag modifier changes don't switch axes.
     enum class NavDrag : uint8_t { Inactive, Orbit, Pan };
     NavDrag nav_drag_kind_ = NavDrag::Inactive;
-    float camera_yaw_deg_   = 45.0f;
-    float camera_pitch_deg_ = 30.0f;
-    float camera_fov_y_deg_ = 45.0f;
-    float camera_near_      = 0.1f;
-    float camera_far_       = 10000.0f;
+    float& camera_yaw_deg_;
+    float& camera_pitch_deg_;
+    float& camera_fov_y_deg_;
+    float& camera_near_;
+    float& camera_far_;
 
     // Contribution-cull thresholds. Still-frame uses min_pixel_radius_;
     // when the camera changed since last frame, the bigger motion threshold
