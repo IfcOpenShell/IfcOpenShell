@@ -120,11 +120,9 @@ using plane_map = std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, P
 struct Point_d_4d_Less {
 	using Point_d = CGAL::Epick_d<CGAL::Dimension_tag<4>>::Point_d;
 	bool operator()(const Point_d& a, const Point_d& b) const {
-		for (int i = 0; i < 4; ++i) {
-			if (a[i] < b[i]) return true;
-			if (b[i] < a[i]) return false;
-		}
-		return false;
+		return std::lexicographical_compare(
+			a.cartesian_begin(), a.cartesian_end(),
+			b.cartesian_begin(), b.cartesian_end());
 	}
 };
 
