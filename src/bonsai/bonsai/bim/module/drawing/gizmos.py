@@ -3792,7 +3792,7 @@ class GizmoArrayAll(StaticTrisGizmoMixin, bpy.types.Gizmo):
             parent_element = tool.Ifc.get().by_guid(parent_guid)
         except RuntimeError:
             return
-        from bonsai.bim.module.model.decorator import draw_array_layer_children_bbox
+        from bonsai.bim.module.model.array import draw_array_layer_children_bbox
 
         draw_array_layer_children_bbox(context, parent_element, layer_index)
 
@@ -3877,7 +3877,7 @@ class GizmoArrayLayerIndicator(bpy.types.Gizmo):
         parent_element = tool.Ifc.get_entity(obj)
         if parent_element is None:
             return
-        from bonsai.bim.module.model.decorator import draw_array_layer_children_bbox
+        from bonsai.bim.module.model.array import draw_array_layer_children_bbox
 
         draw_array_layer_children_bbox(context, parent_element, self._layer_index)
 
