@@ -41,6 +41,7 @@ from bonsai.bim.decorator_cache import (
 from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
+from bonsai.bim.module.model import wall_offset_gizmos
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import (
     ArrayPreviewDecorator,
@@ -447,6 +448,7 @@ def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
 
     tool.Parametric.heal_stale_edit_flags()
     discard_pending_previews(scene)
+    wall_offset_gizmos.clear_caches()
 
     if tool.Ifc.get() and bpy.data.is_saved:
         props = tool.Blender.get_bim_props()

@@ -1764,7 +1764,17 @@ def i_load_the_ifc_test_file(filepath):
 @given("I load the demo construction library")
 @when("I load the demo construction library")
 def i_add_a_construction_library():
-    lib_path = "./bonsai/bim/data/libraries/IFC4 Demo Library.ifc"
+    # Pick the library file whose schema matches the current project so the
+    # appended types are valid (IFC2X3-vs-IFC4 entity attributes differ).
+    schema_to_library = {
+        "IFC2X3": "IFC2X3 Demo Library.ifc",
+        "IFC4": "IFC4 Demo Library.ifc",
+        "IFC4X3": "IFC4X3 Demo Library.ifc",
+        "IFC4X3_ADD2": "IFC4X3 Demo Library.ifc",
+    }
+    schema = tool.Ifc.get().schema
+    lib_name = schema_to_library.get(schema, "IFC4 Demo Library.ifc")
+    lib_path = f"./bonsai/bim/data/libraries/{lib_name}"
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
 
 

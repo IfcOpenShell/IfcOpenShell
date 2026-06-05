@@ -1821,6 +1821,12 @@ class FinishEditingWall(bpy.types.Operator, tool.Ifc.Operator):
         if not element:
             return {"CANCELLED"}
         props = tool.Model.get_wall_props(obj)
+        # No edit session in progress — finish is a true no-op. Without this guard,
+        # an enable that failed validation (e.g. wall without IfcMaterialLayerSetUsage)
+        # leaves is_editing=False but a press on finish still walks the sub-ops below,
+        # which dereference layer-set-dependent state and crash.
+        if not props.is_editing:
+            return {"CANCELLED"}
 
         length_changed = not tool.Cad.is_x(props.length, props.snap_length, tolerance=1e-5)
         height_changed = not tool.Cad.is_x(props.height, props.snap_height, tolerance=1e-5)
