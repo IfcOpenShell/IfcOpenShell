@@ -3547,44 +3547,15 @@ void ViewportWindow::setToolMode(ToolMode m) {
     if (isExposed()) requestUpdate();
 }
 
+// volumeOfObjects / volumesPerObject moved to ViewportCore (#84-j).
 double ViewportWindow::volumeOfObjects(
         const std::vector<uint32_t>& object_ids) const {
-    if (object_ids.empty()) return 0.0;
-    double total = 0.0;
-    for (uint32_t oid : object_ids) {
-        for (const auto& [mid, m] : models_gpu_) {
-            auto it = m.object_id_to_instance.find(oid);
-            if (it == m.object_id_to_instance.end()) continue;
-            const InstanceCpu& inst = m.instances[it->second];
-            if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
-            const double v_local = m.mesh_local_volumes[inst.mesh_id];
-            const double det = std::abs(det3OfPlacement(inst.placement_transformation));
-            total += v_local * det;
-            break;  // object_id is globally unique → at most one hit
-        }
-    }
-    return total;
+    return core_.volumeOfObjects(object_ids);
 }
-
 std::vector<std::pair<uint32_t, double>>
 ViewportWindow::volumesPerObject(
         const std::vector<uint32_t>& object_ids) const {
-    std::vector<std::pair<uint32_t, double>> out;
-    if (object_ids.empty()) return out;
-    out.reserve(object_ids.size());
-    for (uint32_t oid : object_ids) {
-        for (const auto& [mid, m] : models_gpu_) {
-            auto it = m.object_id_to_instance.find(oid);
-            if (it == m.object_id_to_instance.end()) continue;
-            const InstanceCpu& inst = m.instances[it->second];
-            if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
-            const double v_local = m.mesh_local_volumes[inst.mesh_id];
-            const double det = std::abs(det3OfPlacement(inst.placement_transformation));
-            out.emplace_back(oid, v_local * det);
-            break;
-        }
-    }
-    return out;
+    return core_.volumesPerObject(object_ids);
 }
 
 void ViewportWindow::updateVolumeReadout() {

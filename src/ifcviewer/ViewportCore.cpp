@@ -489,3 +489,57 @@ bool ViewportCore::computeObjectAabb(uint32_t object_id,
     mx = Eigen::Vector3f(fmax[0], fmax[1], fmax[2]);
     return true;
 }
+
+// |det| of the 3×3 linear part of a column-major double[16] placement
+// matrix. Picks up uniform scale + mirror so a 2× clone of a 1m³ mesh
+// reports 8m³. Used by the volume readout below.
+namespace {
+double det3OfPlacement(const double M[16]) {
+    const double m00 = M[0],  m10 = M[1],  m20 = M[2];
+    const double m01 = M[4],  m11 = M[5],  m21 = M[6];
+    const double m02 = M[8],  m12 = M[9],  m22 = M[10];
+    return m00 * (m11 * m22 - m12 * m21)
+         - m01 * (m10 * m22 - m12 * m20)
+         + m02 * (m10 * m21 - m11 * m20);
+}
+} // namespace
+
+double ViewportCore::volumeOfObjects(
+        const std::vector<uint32_t>& object_ids) const {
+    if (object_ids.empty()) return 0.0;
+    double total = 0.0;
+    for (uint32_t oid : object_ids) {
+        for (const auto& [mid, m] : models_gpu_) {
+            auto it = m.object_id_to_instance.find(oid);
+            if (it == m.object_id_to_instance.end()) continue;
+            const InstanceCpu& inst = m.instances[it->second];
+            if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
+            const double v_local = m.mesh_local_volumes[inst.mesh_id];
+            const double det = std::abs(det3OfPlacement(inst.placement_transformation));
+            total += v_local * det;
+            break;  // object_id is globally unique → at most one hit
+        }
+    }
+    return total;
+}
+
+std::vector<std::pair<uint32_t, double>>
+ViewportCore::volumesPerObject(
+        const std::vector<uint32_t>& object_ids) const {
+    std::vector<std::pair<uint32_t, double>> out;
+    if (object_ids.empty()) return out;
+    out.reserve(object_ids.size());
+    for (uint32_t oid : object_ids) {
+        for (const auto& [mid, m] : models_gpu_) {
+            auto it = m.object_id_to_instance.find(oid);
+            if (it == m.object_id_to_instance.end()) continue;
+            const InstanceCpu& inst = m.instances[it->second];
+            if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
+            const double v_local = m.mesh_local_volumes[inst.mesh_id];
+            const double det = std::abs(det3OfPlacement(inst.placement_transformation));
+            out.emplace_back(oid, v_local * det);
+            break;
+        }
+    }
+    return out;
+}

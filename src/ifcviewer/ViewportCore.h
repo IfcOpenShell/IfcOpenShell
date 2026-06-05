@@ -40,6 +40,8 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "BufferPool.h"
 #include "InstanceCompose.h"
@@ -157,6 +159,17 @@ public:
     bool computeObjectAabb(uint32_t object_id, float mn[3], float mx[3]) const;
     bool computeObjectAabb(uint32_t object_id,
                            Eigen::Vector3f& mn, Eigen::Vector3f& mx) const;
+
+    // Sum of mesh-local volumes (m³) of every instance whose object_id
+    // is in `object_ids`. Each instance is scaled by |det(placement_3x3)|
+    // to pick up mapped-item scale/mirror; signed-tetrahedra absolute
+    // value means winding is ignored. Volumes are precomputed at
+    // applyCachedModel — this call is just lookups + multiplies.
+    double volumeOfObjects(const std::vector<uint32_t>& object_ids) const;
+    // Per-object variant. Used by the Volume tool to drive both the
+    // total HUD and the per-object overlay labels at AABB centres.
+    std::vector<std::pair<uint32_t, double>>
+        volumesPerObject(const std::vector<uint32_t>& object_ids) const;
 
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
