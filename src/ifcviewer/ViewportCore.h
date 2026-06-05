@@ -81,6 +81,34 @@ public:
     bool firstGeometryPointWorldM(uint32_t model_id,
                                   Eigen::Vector3d& out) const;
 
+    // ---- Scene mutators -----------------------------------------------------
+    //
+    // All of these flip scene state (or post a recompose) and ask the
+    // host to schedule another frame via host_->requestFrame(). The host
+    // is responsible for coalescing those requests (Qt's requestUpdate
+    // does it natively; the web host wraps requestAnimationFrame).
+
+    void removeModel(uint32_t model_id);
+    void resetScene();
+    void hideModel(uint32_t model_id);
+    void showModel(uint32_t model_id);
+
+    // Federation matrix setters. Each writes to model state and posts
+    // a recompose so per-instance world matrices stay consistent with
+    // the configured georef + transformation pipeline.
+    void setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters);
+    void setModelCoordinateOperation(uint32_t model_id,
+                                     const Eigen::Matrix4d& matrix_meters);
+    void setModelTransformation(uint32_t model_id,
+                                const Eigen::Matrix4d& matrix_meters);
+
+    // Walk every instance of `model_id`, recompose its transform from
+    // the current federation matrices, refresh per-chunk world AABBs,
+    // and re-upload InstanceGpu[] into m.instance_storage. No-op if
+    // the model is unknown, has no instances, or wgpu init hasn't
+    // completed.
+    void recomposeAndUploadModel(uint32_t model_id);
+
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
     // (it touches the fields directly); once everything has migrated
@@ -162,6 +190,13 @@ private:
     // every instance composition so geometry rebased through a large
     // model offset doesn't lose float32 precision near the GPU origin.
     Eigen::Matrix4d federated_false_origin_meters_ = Eigen::Matrix4d::Identity();
+
+    // Flips true once initWgpu has finished bringing up device + queue
+    // (still done on the ViewportWindow side today — moves with #84-i).
+    // Any method that uploads or encodes work checks this guard so a
+    // queued setter that runs before init becomes a no-op rather than
+    // crashing on a null device.
+    bool wgpu_initialized_ = false;
 };
 
 #endif  // VIEWPORTCORE_H

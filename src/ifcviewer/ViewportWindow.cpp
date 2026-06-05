@@ -222,39 +222,7 @@ static WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
     return buf;
 }
 
-void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
-    for (auto& c : m.chunks) {
-        if (c.bind_group)           { wgpuBindGroupRelease(c.bind_group);          c.bind_group = nullptr; }
-        if (c.vertex_slice.valid()) {
-            pool.free(c.vertex_slice);
-            c.vertex_slice = {};
-        }
-        if (c.index_slice.valid()) {
-            pool.free(c.index_slice);
-            c.index_slice = {};
-        }
-        if (c.visible_draws_buffer) { wgpuBufferRelease(c.visible_draws_buffer);   c.visible_draws_buffer = nullptr; }
-        if (c.prefix_sums_buffer)   { wgpuBufferRelease(c.prefix_sums_buffer);     c.prefix_sums_buffer = nullptr; }
-        if (c.per_chunk_uniform)    { wgpuBufferRelease(c.per_chunk_uniform);      c.per_chunk_uniform = nullptr; }
-    }
-    m.chunks.clear();
-    m.mesh_chunk_idx.clear();
-    m.mesh_chunk_local_base_vertex.clear();
-    m.mesh_chunk_local_ebo_first_u32.clear();
-    m.mesh_chunk_local_lod1_first_u32.clear();
-    m.instance_chunk_idx.clear();
-    m.instance_base_vertex.clear();
-    m.instance_ebo_first_u32.clear();
-    m.instance_lod1_first_u32.clear();
-    if (m.mesh_storage)         { wgpuBufferRelease(m.mesh_storage);          m.mesh_storage = nullptr; }
-    if (m.instance_storage)     { wgpuBufferRelease(m.instance_storage);      m.instance_storage = nullptr; }
-    m.vertex_bytes   = 0;
-    m.index_count    = 0;
-    m.mesh_count     = 0;
-    m.instance_count = 0;
-    m.meshes.clear();
-    m.instances.clear();
-}
+// releaseWgpuModelGpuData moved to ViewportCore.cpp (IfcViewerCore now needs it).
 
 // -----------------------------------------------------------------------------
 // WGSL main pipeline — cross-mesh vertex pulling.
@@ -639,7 +607,8 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       models_gpu_     (core_.models_gpu_),
       next_model_id_  (core_.next_model_id_),
       next_object_id_ (core_.next_object_id_),
-      federated_false_origin_meters_(core_.federated_false_origin_meters_) {
+      federated_false_origin_meters_(core_.federated_false_origin_meters_),
+      wgpu_initialized_(core_.wgpu_initialized_) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //
@@ -1326,104 +1295,30 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
         << " idx=" << raw_indices.size();
 }
 
-void ViewportWindow::removeModel(uint32_t model_id) {
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end()) return;
-    releaseWgpuModelGpuData(it->second, pool_);
-    models_gpu_.erase(it);
-    if (isExposed()) requestUpdate();
+// removeModel / resetScene / hideModel / showModel /
+// setFederatedFalseOrigin / setModelCoordinateOperation /
+// setModelTransformation / recomposeAndUploadModel moved into
+// ViewportCore (#84-f). The public-API entry points below forward
+// so existing bonsai-side callers don't have to change.
+
+void ViewportWindow::removeModel(uint32_t model_id)   { core_.removeModel(model_id); }
+void ViewportWindow::resetScene()                     { core_.resetScene(); }
+void ViewportWindow::hideModel(uint32_t model_id)     { core_.hideModel(model_id); }
+void ViewportWindow::showModel(uint32_t model_id)     { core_.showModel(model_id); }
+
+void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& m) {
+    core_.setFederatedFalseOrigin(m);
 }
-
-void ViewportWindow::resetScene() {
-    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
-    models_gpu_.clear();
-    if (isExposed()) requestUpdate();
+void ViewportWindow::setModelCoordinateOperation(uint32_t mid,
+                                                 const Eigen::Matrix4d& m) {
+    core_.setModelCoordinateOperation(mid, m);
 }
-
-void ViewportWindow::hideModel(uint32_t model_id) {
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end() || it->second.hidden) return;
-    it->second.hidden = true;
-    if (isExposed()) requestUpdate();
+void ViewportWindow::setModelTransformation(uint32_t mid,
+                                            const Eigen::Matrix4d& m) {
+    core_.setModelTransformation(mid, m);
 }
-
-void ViewportWindow::showModel(uint32_t model_id) {
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end() || !it->second.hidden) return;
-    it->second.hidden = false;
-    if (isExposed()) requestUpdate();
-}
-
-void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters) {
-    if (federated_false_origin_meters_ == matrix_meters) return;
-    federated_false_origin_meters_ = matrix_meters;
-    for (auto& kv : models_gpu_) recomposeAndUploadModel(kv.first);
-}
-
-void ViewportWindow::setModelCoordinateOperation(uint32_t model_id,
-                                                     const Eigen::Matrix4d& matrix_meters) {
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end()) return;
-    if (it->second.coordinate_operation_meters == matrix_meters) return;
-    it->second.coordinate_operation_meters = matrix_meters;
-    recomposeAndUploadModel(model_id);
-}
-
-void ViewportWindow::setModelTransformation(uint32_t model_id,
-                                                const Eigen::Matrix4d& matrix_meters) {
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end()) return;
-    if (it->second.model_transformation_meters == matrix_meters) return;
-    it->second.model_transformation_meters = matrix_meters;
-    recomposeAndUploadModel(model_id);
-}
-
-// composeInstanceFromPlacement moved to ViewportCore (#84-d).
-
-void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
-    if (!wgpu_initialized_) return;
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end()) return;
-    ModelGpuData& m = it->second;
-    if (m.instances.empty() || m.instance_storage == nullptr) return;
-
-    std::vector<InstanceGpu> gpu(m.instances.size());
-    for (size_t i = 0; i < m.instances.size(); ++i) {
-        InstanceCpu& inst = m.instances[i];
-        core_.composeInstanceFromPlacement(inst, m);
-
-        InstanceGpu& dst = gpu[i];
-        std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
-        dst.object_id            = inst.object_id;
-        dst.color_override_rgba8 = inst.color_override_rgba8;
-        dst.mesh_id              = inst.mesh_id;
-        dst._pad1                = 0;
-    }
-    wgpuQueueWriteBuffer(queue_, m.instance_storage, 0,
-                         gpu.data(), gpu.size() * sizeof(InstanceGpu));
-
-    // Per-chunk world AABBs are derived from instance world AABBs; they
-    // drive chunk-level frustum cull and the streaming priority, so they
-    // must follow the recompose. Reset to ±inf and re-fold every chunk's
-    // instances. Streaming chunks that haven't yet been assigned
-    // instance_ids (extremely rare path) just stay at ±inf and naturally
-    // fall out of frustum tests until the next load completes.
-    for (auto& c : m.chunks) {
-        c.aabb_min[0] = c.aabb_min[1] = c.aabb_min[2] =
-             std::numeric_limits<float>::infinity();
-        c.aabb_max[0] = c.aabb_max[1] = c.aabb_max[2] =
-            -std::numeric_limits<float>::infinity();
-        for (uint32_t inst_idx : c.instance_ids) {
-            if (inst_idx >= m.instances.size()) continue;
-            const InstanceCpu& inst = m.instances[inst_idx];
-            for (int a = 0; a < 3; ++a) {
-                c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
-                c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
-            }
-        }
-    }
-
-    if (isExposed()) requestUpdate();
+void ViewportWindow::recomposeAndUploadModel(uint32_t mid) {
+    core_.recomposeAndUploadModel(mid);
 }
 
 bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {

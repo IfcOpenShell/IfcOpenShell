@@ -634,7 +634,7 @@ private:
     // is unknown, has no instances, or wgpu init hasn't completed.
     void recomposeAndUploadModel(uint32_t model_id);
 
-    bool wgpu_initialized_ = false;
+    bool& wgpu_initialized_;
     int  configured_w_ = 0;
     int  configured_h_ = 0;
 
