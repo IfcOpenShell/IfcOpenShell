@@ -41,6 +41,7 @@
 #include <unordered_map>
 
 #include "BufferPool.h"
+#include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
 #include "StreamingThread.h"
@@ -67,6 +68,18 @@ public:
     // math — no GPU touch.
     void composeInstanceFromPlacement(InstanceCpu& inst,
                                       const ModelGpuData& m) const;
+
+    // Cross-model object_id lookup. Delegates to
+    // InstanceCompose::findInstanceInModels; the wrapper exists so
+    // callers don't have to know about the underlying map of models.
+    bool findInstance(uint32_t object_id,
+                      InstanceCompose::InstanceLookup& out) const;
+
+    // A point that actually lies on the model's first instance — used
+    // by the federation false-origin guess on first geometry. Pure
+    // read of models_gpu_; no GPU touch.
+    bool firstGeometryPointWorldM(uint32_t model_id,
+                                  Eigen::Vector3d& out) const;
 
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these

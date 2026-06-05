@@ -1427,37 +1427,12 @@ void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
 }
 
 bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
-    return InstanceCompose::findInstanceInModels(object_id, models_gpu_, out);
+    return core_.findInstance(object_id, out);
 }
 
 bool ViewportWindow::firstGeometryPointWorldM(uint32_t model_id,
-                                                  Eigen::Vector3d& out) const {
-    auto it = models_gpu_.find(model_id);
-    if (it == models_gpu_.end()) return false;
-    const ModelGpuData& m = it->second;
-    if (m.instances.empty()) return false;
-
-    const InstanceCpu& inst0 = m.instances[0];
-    if (inst0.mesh_id >= m.meshes.size()) return false;
-    const MeshInfo& mesh0 = m.meshes[inst0.mesh_id];
-
-    // Mesh-local AABB centre — a point that's actually on the geometry.
-    // Using AABB centre (vs. literal vertex 0) gives a centroid-like
-    // anchor rather than a corner, which is more representative of where
-    // the mesh "is" for the false-origin guess.
-    const Eigen::Vector3d local_center_m(
-        0.5 * (double(mesh0.local_aabb_min[0]) + double(mesh0.local_aabb_max[0])),
-        0.5 * (double(mesh0.local_aabb_min[1]) + double(mesh0.local_aabb_max[1])),
-        0.5 * (double(mesh0.local_aabb_min[2]) + double(mesh0.local_aabb_max[2])));
-
-    // placement_transformation is double[16] column-major in metres,
-    // pre-CoordinateOperation / FederatedFalseOrigin / ModelTransformation
-    // (same convention as InstanceLookup above).
-    using Mat4dCol = Eigen::Matrix<double, 4, 4, Eigen::ColMajor>;
-    const Eigen::Matrix4d P =
-        Eigen::Map<const Mat4dCol>(inst0.placement_transformation);
-    out = (P * local_center_m.homogeneous()).head<3>();
-    return true;
+                                              Eigen::Vector3d& out) const {
+    return core_.firstGeometryPointWorldM(model_id, out);
 }
 
 void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
