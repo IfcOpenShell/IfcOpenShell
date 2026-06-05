@@ -514,7 +514,7 @@ namespace ifcopenshell {
 
         class IFC_PARSE_API rocks_db_file_storage {
         public:
-            rocksdb::DB* db;
+            std::unique_ptr<rocksdb::DB> db;
             rocksdb::WriteOptions wopts;
             rocksdb::ReadOptions ropts;
             ifcopenshell::file* file;
