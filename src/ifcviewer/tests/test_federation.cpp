@@ -31,7 +31,7 @@
 #include <QJsonObject>
 #include <QSignalSpy>
 #include <QTemporaryDir>
-#include <QVector3D>
+#include <Eigen/Dense>
 
 #include <atomic>
 
@@ -121,7 +121,7 @@ TEST_CASE("setHomeView / clearHomeView toggle dirty + has_home_view", "[federati
     QSignalSpy spy(&fed, &Federation::dirtyChanged);
 
     Federation::HomeView hv;
-    hv.target = QVector3D(1, 2, 3);
+    hv.target = Eigen::Vector3f(1, 2, 3);
     hv.distance = 12.5f;
     hv.yaw = 33.0f;
     hv.pitch = 22.0f;
@@ -207,7 +207,7 @@ TEST_CASE("save then load round-trips models, transform, visibility, home view",
     src.setModelVisible(id2, false);
 
     Federation::HomeView hv;
-    hv.target = QVector3D(10, 20, 30);
+    hv.target = Eigen::Vector3f(10, 20, 30);
     hv.distance = 77.0f;
     hv.yaw = 11.0f;
     hv.pitch = 7.0f;
@@ -236,7 +236,7 @@ TEST_CASE("save then load round-trips models, transform, visibility, home view",
     REQUIRE_FALSE(dst.models()[1].visible);
 
     REQUIRE(dst.hasHomeView());
-    REQUIRE(dst.homeView().target == QVector3D(10, 20, 30));
+    REQUIRE(dst.homeView().target == Eigen::Vector3f(10, 20, 30));
     REQUIRE(dst.homeView().distance == 77.0f);
     REQUIRE(dst.homeView().yaw == 11.0f);
     REQUIRE(dst.homeView().pitch == 7.0f);

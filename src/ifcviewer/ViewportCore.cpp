@@ -26,6 +26,14 @@
 #include <limits>
 #include <vector>
 
+// wgpu-native extensions (log callback, MULTI_DRAW_INDIRECT). The web
+// build (emdawnwebgpu / Dawn) doesn't ship this header — validation
+// errors there go to the browser console, so the log-callback path
+// simply compiles out under __EMSCRIPTEN__.
+#if !defined(__EMSCRIPTEN__)
+#  include <webgpu/wgpu.h>
+#endif
+
 #include "CameraMath.h"
 #include "InstanceCompose.h"
 #include "Log.h"
@@ -1111,4 +1119,251 @@ void ViewportCore::uploadSelectionFlagsIfDirty() {
                          selection_flags_scratch_.data(),
                          selection_flags_scratch_.size() * sizeof(uint32_t));
     selection_.markClean();
+}
+
+// ===========================================================================
+// Lifecycle (#84-l): initWgpu + probeAndCreatePool + shutdown
+// ===========================================================================
+
+namespace {
+// String-view → std::string for log output. WGPU_STRLEN is the
+// sentinel meaning "nul-terminated", in which case strlen() gives the
+// length.
+std::string svToStr(WGPUStringView s) {
+    if (!s.data) return {};
+    const std::size_t len = (s.length == WGPU_STRLEN)
+                                ? std::strlen(s.data)
+                                : s.length;
+    return std::string(s.data, len);
+}
+
+#if !defined(__EMSCRIPTEN__)
+// wgpu-native callback: route every log line to Log::warn / Log::info
+// so backend init problems surface in the console instead of being
+// swallowed by the native runtime. Not available on emdawnwebgpu —
+// see the include guard above.
+void onWgpuLog(WGPULogLevel level, WGPUStringView message, void* /*userdata*/) {
+    const std::string m = svToStr(message);
+    switch (level) {
+        case WGPULogLevel_Error: Log::warn() << "[wgpu err] "   << m; break;
+        case WGPULogLevel_Warn:  Log::warn() << "[wgpu warn] "  << m; break;
+        case WGPULogLevel_Info:  Log::info() << "[wgpu info] "  << m; break;
+        case WGPULogLevel_Debug: Log::info() << "[wgpu dbg] "   << m; break;
+        case WGPULogLevel_Trace: Log::info() << "[wgpu trace] " << m; break;
+        default: break;
+    }
+}
+#endif
+
+// Per-device uncaptured-error callback. Validation failures land here
+// when no error scope is open. Surfacing them into Log::warn makes
+// otherwise-silent driver complaints attributable.
+void onUncapturedError(WGPUDevice const* /*device*/,
+                       WGPUErrorType type, WGPUStringView message,
+                       void* /*ud1*/, void* /*ud2*/) {
+    Log::warn() << "[wgpu device error " << int(type) << "] " << svToStr(message);
+}
+} // namespace
+
+bool ViewportCore::probeAndCreatePool() {
+    // Discover the largest single buffer the runtime will grant. Each
+    // attempt sits inside OOM + Validation error scopes so a failed
+    // allocation doesn't surface as a noisy uncaptured-error warning.
+    WGPULimits device_limits = {};
+    wgpuDeviceGetLimits(device_, &device_limits);
+
+    constexpr uint64_t MIN_POOL_CAPACITY = 64ull * 1024 * 1024;
+    constexpr uint64_t MAX_PROBE_START   = 4ull * 1024 * 1024 * 1024;
+    uint64_t try_size = std::min<uint64_t>(device_limits.maxBufferSize,
+                                           MAX_PROBE_START);
+    if (try_size < MIN_POOL_CAPACITY) try_size = MIN_POOL_CAPACITY;
+
+    const WGPUBufferUsage pool_usage = WGPUBufferUsage_Storage
+                                     | WGPUBufferUsage_CopyDst;
+
+    while (try_size >= MIN_POOL_CAPACITY) {
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
+
+        WGPUBufferDescriptor desc = {};
+        desc.usage             = pool_usage;
+        desc.size              = try_size;
+        desc.label.data        = "ifcviewer-wgpu.pool_probe";
+        desc.label.length      = std::strlen("ifcviewer-wgpu.pool_probe");
+        WGPUBuffer probe_buf   = wgpuDeviceCreateBuffer(device_, &desc);
+
+        struct PopResult { bool done = false; bool error = false; };
+        auto pop = [&](PopResult& pr) {
+            WGPUPopErrorScopeCallbackInfo pcb = {};
+            pcb.mode = WGPUCallbackMode_AllowProcessEvents;
+            pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
+                              WGPUStringView, void* ud1, void* /*ud2*/) {
+                auto* p = static_cast<PopResult*>(ud1);
+                p->done = true;
+                p->error = (type != WGPUErrorType_NoError);
+            };
+            pcb.userdata1 = &pr;
+            wgpuDevicePopErrorScope(device_, pcb);
+            while (!pr.done) wgpuInstanceProcessEvents(instance_);
+        };
+        PopResult oom_pop, validation_pop;
+        pop(oom_pop);
+        pop(validation_pop);
+
+        if (probe_buf) wgpuBufferRelease(probe_buf);
+        if (probe_buf && !oom_pop.error && !validation_pop.error) {
+            pool_.configure(instance_, device_, pool_usage, try_size,
+                            "ifcviewer-wgpu.pool");
+            Log::info() << "wgpu: pool per-sub-buffer capacity = "
+                        << (try_size / (1024 * 1024)) << " MB"
+                        << " (device maxBufferSize = "
+                        << (device_limits.maxBufferSize / (1024 * 1024))
+                        << " MB); pool will grow on demand";
+            return true;
+        }
+        try_size /= 2;
+    }
+
+    Log::warn() << "wgpu: pool probe found no allocatable size >= "
+                << (MIN_POOL_CAPACITY / (1024 * 1024)) << " MB";
+    return false;
+}
+
+bool ViewportCore::initWgpu(bool web_limits) {
+#if !defined(__EMSCRIPTEN__)
+    wgpuSetLogCallback(onWgpuLog, nullptr);
+    wgpuSetLogLevel(WGPULogLevel_Warn);
+#endif
+
+    instance_ = wgpuCreateInstance(nullptr);
+    if (!instance_) {
+        Log::warn() << "wgpuCreateInstance returned null";
+        return false;
+    }
+
+    // Surface comes from the host (X11/HWND/CAMetalLayer on desktop;
+    // Emscripten canvas selector on web).
+    surface_ = host_->createSurface(instance_);
+    if (!surface_) {
+        Log::warn() << "host createSurface returned null";
+        return false;
+    }
+
+    // ---- Async request adapter -------------------------------------------
+    struct AdapterReq { WGPUAdapter adapter = nullptr; bool done = false; bool ok = false; };
+    AdapterReq areq;
+
+    WGPURequestAdapterOptions adapter_opts = {};
+    adapter_opts.compatibleSurface = surface_;
+    adapter_opts.powerPreference   = WGPUPowerPreference_HighPerformance;
+
+    WGPURequestAdapterCallbackInfo acb = {};
+    acb.mode      = WGPUCallbackMode_AllowProcessEvents;
+    acb.callback  = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                       WGPUStringView message, void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<AdapterReq*>(ud1);
+        r->done = true;
+        if (status == WGPURequestAdapterStatus_Success) {
+            r->adapter = adapter;
+            r->ok = true;
+        } else {
+            Log::warn() << "RequestAdapter failed: " << svToStr(message);
+        }
+    };
+    acb.userdata1 = &areq;
+
+    wgpuInstanceRequestAdapter(instance_, &adapter_opts, acb);
+    while (!areq.done) wgpuInstanceProcessEvents(instance_);
+    if (!areq.ok) return false;
+    adapter_ = areq.adapter;
+
+    // ---- Async request device --------------------------------------------
+    struct DeviceReq { WGPUDevice device = nullptr; bool done = false; bool ok = false; };
+    DeviceReq dreq;
+
+    WGPULimits adapter_limits = {};
+    wgpuAdapterGetLimits(adapter_, &adapter_limits);
+
+    WGPULimits web_floor_limits = adapter_limits;
+    web_floor_limits.maxStorageBufferBindingSize = 128ull * 1024 * 1024;
+    web_floor_limits.maxBufferSize               = 256ull * 1024 * 1024;
+
+    WGPUDeviceDescriptor dev_desc = {};
+    dev_desc.requiredLimits = web_limits ? &web_floor_limits : &adapter_limits;
+    if (web_limits) {
+        Log::info() << "wgpu --web-limits: requesting browser-floor limits "
+                       "(maxStorageBufferBindingSize=128MB, maxBufferSize=256MB)";
+    }
+    dev_desc.uncapturedErrorCallbackInfo.callback = onUncapturedError;
+
+    WGPURequestDeviceCallbackInfo dcb = {};
+    dcb.mode     = WGPUCallbackMode_AllowProcessEvents;
+    dcb.callback = [](WGPURequestDeviceStatus status, WGPUDevice device,
+                      WGPUStringView message, void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<DeviceReq*>(ud1);
+        r->done = true;
+        if (status == WGPURequestDeviceStatus_Success) {
+            r->device = device;
+            r->ok = true;
+        } else {
+            Log::warn() << "RequestDevice failed: " << svToStr(message);
+        }
+    };
+    dcb.userdata1 = &dreq;
+
+    wgpuAdapterRequestDevice(adapter_, &dev_desc, dcb);
+    while (!dreq.done) wgpuInstanceProcessEvents(instance_);
+    if (!dreq.ok) return false;
+    device_ = dreq.device;
+    queue_  = wgpuDeviceGetQueue(device_);
+
+    if (!probeAndCreatePool()) {
+        Log::warn() << "wgpu: streaming pool probe failed; cannot start";
+        return false;
+    }
+    streaming_thread_.start();
+
+    WGPUSurfaceCapabilities caps = {};
+    if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
+        || caps.formatCount == 0) {
+        Log::warn() << "wgpuSurfaceGetCapabilities returned no formats";
+        return false;
+    }
+    surface_format_ = caps.formats[0];
+    wgpuSurfaceCapabilitiesFreeMembers(caps);
+
+    Log::info() << "wgpu init OK; surface format = " << int(surface_format_);
+    return true;
+}
+
+void ViewportCore::shutdown() {
+    // Stop streaming first so no late results land in the pool after
+    // we've torn down model state. Worker drains its queue then joins.
+    streaming_thread_.stop();
+
+    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
+    models_gpu_.clear();
+
+    if (frame_bind_group_)        { wgpuBindGroupRelease(frame_bind_group_);          frame_bind_group_ = nullptr; }
+    if (frame_uniform_buffer_)    { wgpuBufferRelease(frame_uniform_buffer_);         frame_uniform_buffer_ = nullptr; }
+    if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
+    selection_flags_capacity_ = 0;
+    if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
+    if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
+    if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
+    if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
+    if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
+    if (frame_bgl_)            { wgpuBindGroupLayoutRelease(frame_bgl_);          frame_bgl_ = nullptr; }
+
+    // Destroy the streaming pool while device_ is still alive — it owns
+    // the underlying WGPUBuffer.
+    pool_.destroy();
+
+    if (queue_)    { wgpuQueueRelease(queue_);       queue_    = nullptr; }
+    if (device_)   { wgpuDeviceRelease(device_);     device_   = nullptr; }
+    if (adapter_)  { wgpuAdapterRelease(adapter_);   adapter_  = nullptr; }
+    if (surface_)  { wgpuSurfaceRelease(surface_);   surface_  = nullptr; }
+    if (instance_) { wgpuInstanceRelease(instance_); instance_ = nullptr; }
+    wgpu_initialized_   = false;
+    surface_configured_ = false;
 }

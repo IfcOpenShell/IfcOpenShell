@@ -163,24 +163,6 @@ static QString sv(WGPUStringView s) {
     return QString::fromUtf8(s.data, len);
 }
 
-static void onWgpuLog(WGPULogLevel level, WGPUStringView message, void* /*userdata*/) {
-    const QString m = sv(message);
-    switch (level) {
-        case WGPULogLevel_Error: Log::warn().noquote() << "[wgpu err]"   << m; break;
-        case WGPULogLevel_Warn:  Log::warn().noquote() << "[wgpu warn]"  << m; break;
-        case WGPULogLevel_Info:  Log::info() << "[wgpu info] "  << m; break;
-        case WGPULogLevel_Debug: Log::info() << "[wgpu dbg] "   << m; break;
-        case WGPULogLevel_Trace: Log::info() << "[wgpu trace] " << m; break;
-        default: break;
-    }
-}
-
-static void onUncapturedError(WGPUDevice const* /*device*/,
-                              WGPUErrorType type, WGPUStringView message,
-                              void* /*ud1*/, void* /*ud2*/) {
-    Log::warn().noquote() << "[wgpu device error" << int(type) << "]" << sv(message);
-}
-
 // Allocate a wgpu buffer of `size_bytes` with the given usage, and upload
 // `data` into it via the queue. Returns nullptr when size_bytes == 0 (wgpu
 // rejects zero-sized buffer creation). `label` is informational; it shows up
@@ -328,13 +310,65 @@ ViewportWindow::~ViewportWindow() {
 // forwards to the existing Q_SIGNAL so bonsai-side consumers see no
 // change.
 
-WGPUSurface ViewportWindow::createSurface(WGPUInstance /*instance*/) {
-    // initWgpu() still drives surface creation through the private
-    // no-arg createSurface() helper that populates surface_. Once
-    // ViewportCore takes over the wgpu init flow it'll call this
-    // override instead and the private helper goes away; for now the
-    // override is a getter.
-    return surface_;
+// Platform-specific WGPUSurface creation. Called by ViewportCore::initWgpu
+// (#84-l) once the wgpu instance is up. The platform branches reach into
+// Qt's QNativeInterface to fish out the native window handle (X11
+// Display + Window, Win32 HWND, or NSView wrapped in CAMetalLayer) and
+// wrap each in the corresponding WGPUSurfaceSource* descriptor. The
+// returned WGPUSurface is owned by the caller (ViewportCore stores it
+// on `core_.surface_`).
+WGPUSurface ViewportWindow::createSurface(WGPUInstance instance) {
+    WGPUSurfaceDescriptor surface_desc = {};
+
+#if defined(Q_OS_LINUX)
+    const QString platform = QGuiApplication::platformName();
+    if (platform == "xcb") {
+#  if __has_include(<X11/Xlib.h>)
+        auto* x11 = qApp->nativeInterface<QNativeInterface::QX11Application>();
+        if (!x11 || !x11->display()) {
+            Log::warn() << "Could not get X11 Display* from Qt";
+            return nullptr;
+        }
+        WGPUSurfaceSourceXlibWindow xlib = {};
+        xlib.chain.sType = WGPUSType_SurfaceSourceXlibWindow;
+        xlib.display = x11->display();
+        xlib.window  = static_cast<uint64_t>(winId());
+        surface_desc.nextInChain = &xlib.chain;
+        return wgpuInstanceCreateSurface(instance, &surface_desc);
+#  else
+        Log::warn() << "Built without Xlib headers; cannot create X11 surface";
+        return nullptr;
+#  endif
+    } else if (platform == "wayland") {
+        Log::warn() << "Wayland wgpu surface creation not yet wired (stage 1.5)";
+        return nullptr;
+    } else {
+        Log::warn().noquote() << "Unsupported Qt platform for wgpu surface:" << platform;
+        return nullptr;
+    }
+#elif defined(Q_OS_WIN)
+    WGPUSurfaceSourceWindowsHWND hwndsrc = {};
+    hwndsrc.chain.sType = WGPUSType_SurfaceSourceWindowsHWND;
+    hwndsrc.hinstance = ::GetModuleHandleW(nullptr);
+    hwndsrc.hwnd      = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
+    surface_desc.nextInChain = &hwndsrc.chain;
+    return wgpuInstanceCreateSurface(instance, &surface_desc);
+#elif defined(Q_OS_MAC)
+    void* nsview = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
+    void* layer  = wgpu_macos_attach_metal_layer(nsview);
+    if (!layer) {
+        Log::warn() << "Could not attach CAMetalLayer to the Qt NSView";
+        return nullptr;
+    }
+    WGPUSurfaceSourceMetalLayer metalsrc = {};
+    metalsrc.chain.sType = WGPUSType_SurfaceSourceMetalLayer;
+    metalsrc.layer = layer;
+    surface_desc.nextInChain = &metalsrc.chain;
+    return wgpuInstanceCreateSurface(instance, &surface_desc);
+#else
+    Log::warn() << "wgpu surface creation not yet wired for this platform";
+    return nullptr;
+#endif
 }
 
 void ViewportWindow::framebufferSize(int& width_px, int& height_px) const {
@@ -1127,17 +1161,13 @@ bool ViewportWindow::event(QEvent* event) {
 // -----------------------------------------------------------------------------
 
 bool ViewportWindow::initWgpu() {
-    // Optional: log everything wgpu-native says at warn+ so backend init
-    // problems surface in the console rather than being swallowed.
-    wgpuSetLogCallback(onWgpuLog, nullptr);
-    wgpuSetLogLevel(WGPULogLevel_Warn);
-
-    // Env-var overrides for contribution-cull thresholds. wgpu uses
-    // view-Z (perspective-divide-correct) for projected_px, whereas the
-    // GL backend uses euclidean distance — so for off-axis instances
-    // wgpu computes a larger projected_px and is less aggressive at the
-    // same numeric threshold. These knobs exist to let us sweep matching
-    // values during the perf-parity push without rebuilding.
+    // ---- Env-var tuning + nav binding setup -----------------------------
+    //
+    // These mutate VW-side state (cull thresholds, hiz_enabled_, nav
+    // button bindings) so they stay in the Qt-bound shell. ViewportCore
+    // doesn't know about Qt::MouseButton enums or the still-in-VW cull
+    // tuning fields. Once those move (later #84 steps + #85 for input)
+    // this whole prologue migrates with them.
     if (const char* s = std::getenv("WGPU_MIN_PX")) {
         const float v = float(std::atof(s));
         if (v >= 0.0f) min_pixel_radius_ = v;
@@ -1165,9 +1195,6 @@ bool ViewportWindow::initWgpu() {
         }
     }
     if (const char* s = std::getenv("WGPU_CULL_THREADS")) {
-        // "0" disables std::async dispatch — every model is culled on the
-        // main thread, sequentially. Used to measure speedup vs the
-        // parallel-per-model path. Any non-"0" value keeps parallelism on.
         cull_threads_enabled_ = (s[0] != '0');
         Log::info().noquote().nospace()
             << "[wgpu cull] WGPU_CULL_THREADS=" << s
@@ -1179,8 +1206,6 @@ bool ViewportWindow::initWgpu() {
             Log::info() << "[wgpu fly] WGPU_FLY_DEBUG=1 — per-frame [fly] dt log enabled";
         }
     }
-    // Mouse-nav preset (matches GL AppSettings::NavPreset). blender default,
-    // rhino or revit as alternatives. Selection always stays on LMB.
     const char* nav_env = std::getenv("WGPU_NAV_PRESET");
     applyNavPreset(nav_env ? nav_env : "blender");
     Log::info().noquote().nospace()
@@ -1193,119 +1218,11 @@ bool ViewportWindow::initWgpu() {
         << (pan_mods_ & Qt::ShiftModifier ? "+Shift" : "")
         << ")";
 
-    instance_ = wgpuCreateInstance(nullptr);
-    if (!instance_) {
-        Log::warn() << "wgpuCreateInstance returned null";
-        return false;
-    }
+    // ---- ViewportCore handles instance/adapter/device/queue/pool/format -
+    if (!core_.initWgpu(web_limits_)) return false;
 
-    if (!createSurface()) return false;
-
-    // ---- Async request adapter -------------------------------------------
-    struct AdapterReq { WGPUAdapter adapter = nullptr; bool done = false; bool ok = false; };
-    AdapterReq areq;
-
-    WGPURequestAdapterOptions adapter_opts = {};
-    adapter_opts.compatibleSurface = surface_;
-    adapter_opts.powerPreference   = WGPUPowerPreference_HighPerformance;
-
-    WGPURequestAdapterCallbackInfo acb = {};
-    acb.mode      = WGPUCallbackMode_AllowProcessEvents;
-    acb.callback  = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
-                       WGPUStringView message, void* ud1, void* /*ud2*/) {
-        auto* r = static_cast<AdapterReq*>(ud1);
-        r->done = true;
-        if (status == WGPURequestAdapterStatus_Success) {
-            r->adapter = adapter;
-            r->ok = true;
-        } else {
-            Log::warn().noquote() << "RequestAdapter failed:" << sv(message);
-        }
-    };
-    acb.userdata1 = &areq;
-
-    wgpuInstanceRequestAdapter(instance_, &adapter_opts, acb);
-    while (!areq.done) wgpuInstanceProcessEvents(instance_);
-    if (!areq.ok) return false;
-    adapter_ = areq.adapter;
-
-    // ---- Async request device --------------------------------------------
-    struct DeviceReq { WGPUDevice device = nullptr; bool done = false; bool ok = false; };
-    DeviceReq dreq;
-
-    // Pick the limits to request on the device. Default = the adapter's
-    // actual maximum so large native scenes get all the headroom the GPU
-    // can give. --web-limits forces the WebGPU spec mandatory floor
-    // (128 MB max storage binding, 256 MB max buffer) so we can verify on
-    // desktop that the renderer's chunking actually fits through browser
-    // constraints — turns "trust me, web will work" into a hard test.
-    WGPULimits adapter_limits = {};
-    wgpuAdapterGetLimits(adapter_, &adapter_limits);
-
-    WGPULimits web_floor_limits = adapter_limits;
-    // Override just the two that BIM scenes typically blow past. Everything
-    // else stays at adapter max (no point making the device weaker than it
-    // could be on facets we know browsers grant generously, e.g. workgroup
-    // sizes — those are texture / compute limits and we don't hit them).
-    web_floor_limits.maxStorageBufferBindingSize = 128ull * 1024 * 1024;
-    web_floor_limits.maxBufferSize               = 256ull * 1024 * 1024;
-
-    WGPUDeviceDescriptor dev_desc = {};
-    dev_desc.requiredLimits = web_limits_ ? &web_floor_limits : &adapter_limits;
-    if (web_limits_) {
-        Log::info() << "wgpu --web-limits: requesting browser-floor limits"
-                << "(maxStorageBufferBindingSize=128MB, maxBufferSize=256MB)";
-    }
-    // Surface uncaptured errors (validation failures etc.) into Log::warn so
-    // they're attributable rather than silently swallowed.
-    dev_desc.uncapturedErrorCallbackInfo.callback = onUncapturedError;
-
-    WGPURequestDeviceCallbackInfo dcb = {};
-    dcb.mode     = WGPUCallbackMode_AllowProcessEvents;
-    dcb.callback = [](WGPURequestDeviceStatus status, WGPUDevice device,
-                      WGPUStringView message, void* ud1, void* /*ud2*/) {
-        auto* r = static_cast<DeviceReq*>(ud1);
-        r->done = true;
-        if (status == WGPURequestDeviceStatus_Success) {
-            r->device = device;
-            r->ok = true;
-        } else {
-            Log::warn().noquote() << "RequestDevice failed:" << sv(message);
-        }
-    };
-    dcb.userdata1 = &dreq;
-
-    wgpuAdapterRequestDevice(adapter_, &dev_desc, dcb);
-    while (!dreq.done) wgpuInstanceProcessEvents(instance_);
-    if (!dreq.ok) return false;
-    device_ = dreq.device;
-    queue_  = wgpuDeviceGetQueue(device_);
-
-    // ---- Probe streaming pool capacity ----------------------------------
-    // Ask the device for the largest single buffer it'll actually give us.
-    // Replaces the per-machine "guess the OOM ceiling" knob: now the
-    // runtime answers the question. Failure here is fatal — without any
-    // pool we can't load chunks.
-    if (!probeAndCreatePool()) {
-        Log::warn() << "wgpu: streaming pool probe failed; cannot start";
-        return false;
-    }
-
-    // Background loader for streaming reads — must outlive any
-    // applyCachedModel call so we can drain results into the
-    // pool. Stopped in shutdown() before pool_.destroy().
-    streaming_thread_.start();
-
-    // ---- Pick a surface format -------------------------------------------
-    WGPUSurfaceCapabilities caps = {};
-    if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
-        || caps.formatCount == 0) {
-        Log::warn() << "wgpuSurfaceGetCapabilities returned no formats";
-        return false;
-    }
-    surface_format_ = caps.formats[0];  // preferred format per wgpu docs
-    wgpuSurfaceCapabilitiesFreeMembers(caps);
-
+    // ---- Pipelines + overlays (still VW-side; HiZ/edge/pick + overlay
+    //      init haven't migrated yet) -------------------------------------
     if (!buildPipelines()) return false;
     if (!buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
@@ -1314,99 +1231,7 @@ bool ViewportWindow::initWgpu() {
         return false;
     }
     if (!buildPickPipeline()) return false;
-
-    Log::info() << "wgpu init OK; surface format =" << int(surface_format_);
     return true;
-}
-
-bool ViewportWindow::probeAndCreatePool() {
-    // Discover the largest single buffer the runtime will grant. We
-    // descend from the device's advertised maxBufferSize because the
-    // adapter promises that much per binding, but the underlying
-    // allocator (gpu-alloc-rs on Vulkan, Metal heap manager, browser
-    // internals) may refuse anything above an undocumented per-system
-    // ceiling. The probe answers the question honestly.
-    //
-    // Each attempt is wrapped in an OOM error scope so a failed
-    // allocation doesn't surface to onUncapturedError as a noisy
-    // validation warning — the scope captures the OOM cleanly and we
-    // simply halve and retry.
-
-    WGPULimits device_limits = {};
-    wgpuDeviceGetLimits(device_, &device_limits);
-
-    // 64 MB lower bound: below this the viewer is unusable for any real
-    // dataset, so we'd rather fail init than limp along.
-    constexpr uint64_t MIN_POOL_CAPACITY = 64ull * 1024 * 1024;
-    // 4 GB starting cap: this is the largest single buffer the WebGPU
-    // ecosystem realistically supports today (browsers stay well below;
-    // desktop drivers vary). Asking for the device's full advertised
-    // maxBufferSize first is wasteful — on wgpu-native it can be 1 TB
-    // (a sentinel meaning "no spec floor"), which always fails and
-    // forces ~10 halving steps before we land somewhere sensible.
-    constexpr uint64_t MAX_PROBE_START   = 4ull * 1024 * 1024 * 1024;
-    uint64_t try_size = std::min<uint64_t>(device_limits.maxBufferSize,
-                                           MAX_PROBE_START);
-    if (try_size < MIN_POOL_CAPACITY) try_size = MIN_POOL_CAPACITY;
-
-    const WGPUBufferUsage pool_usage = WGPUBufferUsage_Storage
-                                     | WGPUBufferUsage_CopyDst;
-
-    while (try_size >= MIN_POOL_CAPACITY) {
-        // wgpu-native classifies "Not enough memory left" as Validation,
-        // not OutOfMemory — so we need both filters. Nested scopes: OOM
-        // inner (matches first), Validation outer (catches the rest).
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
-
-        // Test allocation. If it survives both scopes, this size works
-        // and becomes the pool's per-sub-buffer capacity.
-        WGPUBufferDescriptor desc = {};
-        desc.usage             = pool_usage;
-        desc.size              = try_size;
-        desc.label.data        = "ifcviewer-wgpu.pool_probe";
-        desc.label.length      = std::strlen("ifcviewer-wgpu.pool_probe");
-        WGPUBuffer probe_buf   = wgpuDeviceCreateBuffer(device_, &desc);
-
-        struct PopResult { bool done = false; bool error = false; };
-        auto pop = [&](PopResult& pr) {
-            WGPUPopErrorScopeCallbackInfo pcb = {};
-            pcb.mode = WGPUCallbackMode_AllowProcessEvents;
-            pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
-                              WGPUStringView, void* ud1, void* /*ud2*/) {
-                auto* p = static_cast<PopResult*>(ud1);
-                p->done = true;
-                p->error = (type != WGPUErrorType_NoError);
-            };
-            pcb.userdata1 = &pr;
-            wgpuDevicePopErrorScope(device_, pcb);
-            while (!pr.done) wgpuInstanceProcessEvents(instance_);
-        };
-        PopResult oom_pop, validation_pop;
-        pop(oom_pop);
-        pop(validation_pop);
-
-        if (probe_buf) wgpuBufferRelease(probe_buf);
-        if (probe_buf && !oom_pop.error && !validation_pop.error) {
-            // Per-sub-buffer capacity locked in; the pool can grow
-            // beyond this by allocating more sub-buffers of the same
-            // size on demand (up to whatever the driver lets us total).
-            pool_.configure(instance_, device_, pool_usage, try_size,
-                            "ifcviewer-wgpu.pool");
-            Log::info().noquote()
-                << "wgpu: pool per-sub-buffer capacity ="
-                << (try_size / (1024 * 1024)) << "MB"
-                << "(device maxBufferSize ="
-                << (device_limits.maxBufferSize / (1024 * 1024))
-                << "MB); pool will grow on demand";
-            return true;
-        }
-        try_size /= 2;
-    }
-
-    Log::warn() << "wgpu: pool probe found no allocatable size >="
-               << (MIN_POOL_CAPACITY / (1024 * 1024)) << "MB";
-    return false;
 }
 
 // -----------------------------------------------------------------------------
@@ -1442,86 +1267,8 @@ bool ViewportWindow::probeAndCreatePool() {
 #  include "MetalSurface_mac.h"
 #endif
 
-bool ViewportWindow::createSurface() {
-    WGPUSurfaceDescriptor surface_desc = {};
-
-#if defined(Q_OS_LINUX)
-    const QString platform = QGuiApplication::platformName();
-    if (platform == "xcb") {
-#  if __has_include(<X11/Xlib.h>)
-        auto* x11 = qApp->nativeInterface<QNativeInterface::QX11Application>();
-        if (!x11 || !x11->display()) {
-            Log::warn() << "Could not get X11 Display* from Qt";
-            return false;
-        }
-        WGPUSurfaceSourceXlibWindow xlib = {};
-        xlib.chain.sType = WGPUSType_SurfaceSourceXlibWindow;
-        xlib.display = x11->display();
-        xlib.window  = static_cast<uint64_t>(winId());
-        surface_desc.nextInChain = &xlib.chain;
-        surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
-#  else
-        Log::warn() << "Built without Xlib headers; cannot create X11 surface";
-        return false;
-#  endif
-    } else if (platform == "wayland") {
-#  if __has_include(<wayland-client-core.h>)
-        auto* wl = qApp->nativeInterface<QNativeInterface::QWaylandApplication>();
-        if (!wl || !wl->display()) {
-            Log::warn() << "Could not get Wayland wl_display* from Qt";
-            return false;
-        }
-        // The wl_surface for a window is exposed via the QPA window-handle
-        // accessor on the native interface (not the application-wide one).
-        // For stage 1 we fail loud; stage-1.5 fills this in.
-        Log::warn() << "Wayland wgpu surface creation not yet wired (stage 1.5)";
-        return false;
-#  else
-        Log::warn() << "Built without Wayland headers; cannot create Wayland surface";
-        return false;
-#  endif
-    } else {
-        Log::warn().noquote() << "Unsupported Qt platform for wgpu surface:" << platform;
-        return false;
-    }
-#elif defined(Q_OS_WIN)
-    // wgpu-native maps WGPUSurfaceSourceWindowsHWND.hwnd to a Win32 HWND
-    // it never dereferences directly (it only hands the handle to D3D12 /
-    // Vulkan WSI). winId() is the HWND for top-level Qt windows on the
-    // Windows platform plugin, returned as WId (== quintptr).
-    WGPUSurfaceSourceWindowsHWND hwndsrc = {};
-    hwndsrc.chain.sType = WGPUSType_SurfaceSourceWindowsHWND;
-    hwndsrc.hinstance = ::GetModuleHandleW(nullptr);
-    hwndsrc.hwnd      = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
-    surface_desc.nextInChain = &hwndsrc.chain;
-    surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
-#elif defined(Q_OS_MAC)
-    // QWindow::winId() returns the backing NSView* on macOS (as WId,
-    // which is quintptr — same width as void* on all macOS arches we
-    // care about). Hand it to the Cocoa bridge to attach a
-    // CAMetalLayer, then wrap that layer in WGPUSurfaceSourceMetalLayer.
-    void* nsview = reinterpret_cast<void*>(static_cast<uintptr_t>(winId()));
-    void* layer  = wgpu_macos_attach_metal_layer(nsview);
-    if (!layer) {
-        Log::warn() << "Could not attach CAMetalLayer to the Qt NSView";
-        return false;
-    }
-    WGPUSurfaceSourceMetalLayer metalsrc = {};
-    metalsrc.chain.sType = WGPUSType_SurfaceSourceMetalLayer;
-    metalsrc.layer = layer;
-    surface_desc.nextInChain = &metalsrc.chain;
-    surface_ = wgpuInstanceCreateSurface(instance_, &surface_desc);
-#else
-    Log::warn() << "wgpu surface creation not yet wired for this platform";
-    return false;
-#endif
-
-    if (!surface_) {
-        Log::warn() << "wgpuInstanceCreateSurface returned null";
-        return false;
-    }
-    return true;
-}
+// Private bool createSurface() removed in #84-l — its body is now
+// inside the public ViewportHost override createSurface(WGPUInstance).
 
 // -----------------------------------------------------------------------------
 // Surface (re)configure + render
@@ -6919,15 +6666,8 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
 }
 
 void ViewportWindow::shutdown() {
-    // Stop the streaming worker first so no late results land in the
-    // pool after we've torn down the model state. Pending in-flight
-    // reads are completed (worker drains its queue) then thread joins.
-    streaming_thread_.stop();
-
-    // Release per-model buffers before the device they were created from.
-    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
-    models_gpu_.clear();
-
+    // VW-only resources first — these depend on core_'s device_ being
+    // alive, so they must be released before core_.shutdown() releases it.
     releaseDepthTexture();
     releaseMsaaColorTexture();
     releaseHizResources();
@@ -6935,28 +6675,8 @@ void ViewportWindow::shutdown() {
     overlays_.destroy();
     releasePickResources();
 
-    if (frame_bind_group_)        { wgpuBindGroupRelease(frame_bind_group_);          frame_bind_group_ = nullptr; }
-    if (frame_uniform_buffer_)    { wgpuBufferRelease(frame_uniform_buffer_);         frame_uniform_buffer_ = nullptr; }
-    if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
-    selection_flags_capacity_ = 0;
-    if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
-    if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
-    if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
-    if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
-    if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
-    if (frame_bgl_)            { wgpuBindGroupLayoutRelease(frame_bgl_);          frame_bgl_ = nullptr; }
-
-    // Destroy the streaming pool while device_ is still alive (it owns
-    // the underlying WGPUBuffer). All chunks have already returned their
-    // ranges via releaseWgpuModelGpuData above; pool's free-list count
-    // should equal capacity at this point.
-    pool_.destroy();
-
-    if (queue_)    { wgpuQueueRelease(queue_);       queue_    = nullptr; }
-    if (device_)   { wgpuDeviceRelease(device_);     device_   = nullptr; }
-    if (adapter_)  { wgpuAdapterRelease(adapter_);   adapter_  = nullptr; }
-    if (surface_)  { wgpuSurfaceRelease(surface_);   surface_  = nullptr; }
-    if (instance_) { wgpuInstanceRelease(instance_); instance_ = nullptr; }
-    wgpu_initialized_   = false;
-    surface_configured_ = false;
+    // Core owns the rest: streaming thread, models, pool, frame/selection
+    // buffers, pipelines/shaders/layouts, queue/device/adapter/surface/
+    // instance.
+    core_.shutdown();
 }

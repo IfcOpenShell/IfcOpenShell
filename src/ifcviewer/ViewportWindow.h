@@ -297,11 +297,6 @@ private:
     // candidate needs the space. Triggers requestUpdate() if more remain.
     void  driveStreamingLoads();
 
-    // Discover the largest single buffer wgpu will give us by descending
-    // from the device's limits.maxBufferSize through OOM error scopes.
-    // Allocates pool_ at the discovered size. Returns false only when
-    // even a tiny pool can't be created (i.e. the device is unusable).
-    bool  probeAndCreatePool();
     void  ensureDepthTexture(int w, int h);
     void  releaseDepthTexture();
     void  ensureMsaaColorTexture(int w, int h);

@@ -223,6 +223,33 @@ public:
     void ensureSelectionFlagsBuffer();
     void uploadSelectionFlagsIfDirty();
 
+    // ---- wgpu lifecycle ----------------------------------------------------
+    //
+    // initWgpu brings up the wgpu instance, gets the platform surface
+    // from host_->createSurface, requests adapter + device + queue,
+    // probes the streaming pool capacity, starts the background loader
+    // thread, and picks the swap-chain surface format. Does NOT build
+    // pipelines — the host runs the pipeline construction after this
+    // (so VW can still keep its HiZ / edge / pick / overlay builders
+    // co-located).
+    //
+    // `web_limits` forces the WebGPU spec mandatory floor (128 MB max
+    // storage binding, 256 MB max buffer) instead of the adapter's
+    // actual maximum — used by --web-limits to verify chunking fits
+    // through browser constraints.
+    //
+    // shutdown tears down everything ViewportCore owns. The host's own
+    // teardown (depth/MSAA/HiZ/edge/pick attachments + overlays) must
+    // run BEFORE this call so its device-owned resources release
+    // against a still-live device.
+    bool initWgpu(bool web_limits);
+    void shutdown();
+
+private:
+    bool probeAndCreatePool();
+
+public:
+
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
     // (it touches the fields directly); once everything has migrated
