@@ -56,7 +56,16 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
 from bonsai.bim.module.model import preview_base
-from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.decorator import (
+    _BBOX_HIGHLIGHT_LINE_ALPHA,
+    _BBOX_HIGHLIGHT_LINE_WIDTH,
+    PolylineDecorator,
+    ProductDecorator,
+    _fill_quads_alpha,
+    _stroke_lines_alpha,
+    bbox_world_edges,
+    draw_polyline_segments,
+)
 from bonsai.bim.module.model.polyline import PolylineOperator
 
 if TYPE_CHECKING:
@@ -3558,8 +3567,6 @@ class GizmoWallLinkToggle(gizmo.GizmoLinkToggle, bpy.types.Gizmo):
         partner = self.partner_obj
         if partner is None:
             return
-        from bonsai.bim.module.model.decorator import draw_wall_partner_bbox
-
         draw_wall_partner_bbox(context, partner)
 
 
@@ -4084,3 +4091,355 @@ class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, too
             return {"CANCELLED"}
         _resync_walls_after_mutation(tool.Blender.get_selected_objects())
         return {"FINISHED"}
+
+
+def draw_wall_partner_bbox(
+    context: bpy.types.Context,
+    partner_obj: bpy.types.Object,
+) -> None:
+    """Paint a wireframe bbox around ``partner_obj`` in the same 3D pass.
+    Called inline from gizmo ``draw()`` methods so the highlight tracks the
+    hover cursor one-for-one — no POST_VIEW handler, no timing lag.
+
+    Silently no-ops if the object has no bounding box (e.g. Empties)."""
+    segments = bbox_world_edges(partner_obj)
+    if not segments:
+        return
+    prefs = tool.Blender.get_addon_preferences()
+    color = prefs.decorator_color_special[:3]
+    draw_polyline_segments(
+        context,
+        segments,
+        color,
+        _BBOX_HIGHLIGHT_LINE_ALPHA,
+        _BBOX_HIGHLIGHT_LINE_WIDTH,
+    )
+
+
+class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
+    """Hover-gated preview lines that visualise where a click-to-act wall
+    gizmo's operator would move the wall geometry. Four state machines:
+
+    - **Join intersection** — when exactly two non-joined, non-collinear,
+      non-parallel LAYER2 walls are selected, draws one line from each wall's
+      nearest axis endpoint to the projected XY intersection. Each line stays
+      at its own wall's axis Z (so for walls on different storeys the lines
+      stay horizontal at their own floor levels). Mirrors the visibility of
+      the Join + Extend-to-Wall icons in ``GizmoWallJoinIntersection``.
+    - **Extend to cursor** — when a single LAYER2 wall is selected and the
+      ``extend`` wall-gizmo pref is enabled, draws one line from the wall's
+      nearer axis endpoint to the 3D cursor's projected X on the wall axis.
+      Mirrors the visibility of the ``extend_x_gizmo`` icon in
+      ``GizmoWallEdition``.
+    - **Extend Z to cursor** — one preview line at the cursor's projected X
+      from wall base to the cursor's Z, visualising the new total height.
+      Hover-gated on ``extend_z_gizmo``.
+    - **Split at cursor** — one world-vertical line at the cursor's projected X
+      from wall base to wall top, visualising the cut plane. Hover-gated on
+      ``split_gizmo``.
+
+    Purely a visual cue — hidden by the same gizmo-preferences toggle as the
+    icons themselves."""
+
+    draw_method = "draw_lines"
+
+    LINE_WIDTH = 1.5
+    LINE_ALPHA = 0.8
+    QUAD_ALPHA = 0.25
+
+    def draw_lines(self, context: bpy.types.Context) -> None:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return
+        prefs = tool.Blender.get_addon_preferences()
+        self._draw_join_preview(context, prefs)
+        self._draw_cursor_extend_preview(context, prefs)
+        self._draw_cursor_extend_z_preview(context, prefs)
+        self._draw_cursor_split_preview(context, prefs)
+
+    def _stroke(
+        self,
+        context: bpy.types.Context,
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+        color_rgb: tuple[float, float, float],
+    ) -> None:
+        _stroke_lines_alpha(context, segments, color_rgb, self.LINE_WIDTH, self.LINE_ALPHA)
+
+    def _fill(
+        self,
+        context: bpy.types.Context,
+        quads: list[
+            tuple[
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+            ]
+        ],
+        color_rgb: tuple[float, float, float],
+    ) -> None:
+        _fill_quads_alpha(context, quads, color_rgb, self.QUAD_ALPHA)
+
+    @staticmethod
+    def _wall_floor_quad(mw: Matrix, x0: float, x1: float, y0: float, y1: float) -> tuple[
+        tuple[float, float, float],
+        tuple[float, float, float],
+        tuple[float, float, float],
+        tuple[float, float, float],
+    ]:
+        """4 world-space corners of a Z=0 wall-local rectangle, CCW when
+        viewed from +Z. Used for top-down floor-projection quads so the
+        extend / split previews stay legible from plan view."""
+        return (
+            tuple(mw @ Vector((x0, y0, 0.0))),
+            tuple(mw @ Vector((x1, y0, 0.0))),
+            tuple(mw @ Vector((x1, y1, 0.0))),
+            tuple(mw @ Vector((x0, y1, 0.0))),
+        )
+
+    def _draw_join_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Render four preview lines per wall pair — two at each wall's base
+        Z, two at each wall's top Z — extending each axis to the projected
+        intersection. Two lines per wall (base + top) communicate the full
+        plane that the join/extend operator would weld at, not just the
+        floor edge.
+
+        Hover colour:
+        - **Join or Fillet hover** → all four lines light up (both walls
+          converge at the corner; fillet is a symmetric round of the same
+          corner).
+        - **Extend-to-Wall hover** → only the base+top of the non-active
+          wall (the wall the default-direction operator would extend).
+        - Otherwise → ``decorations_colour``."""
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 2:
+            return
+        elem_a = tool.Ifc.get_entity(selected[0])
+        elem_b = tool.Ifc.get_entity(selected[1])
+        if elem_a is None or elem_b is None:
+            return
+        if not tool.Parametric.is_path_connectable_wall(elem_a) or not tool.Parametric.is_path_connectable_wall(elem_b):
+            return
+
+        geom_a = tool.Wall.read_geometry(selected[0])
+        geom_b = tool.Wall.read_geometry(selected[1])
+        if geom_a is None or geom_b is None:
+            return
+        seg_a = _wall_axis_world_segment_from_geom(selected[0], geom_a)
+        seg_b = _wall_axis_world_segment_from_geom(selected[1], geom_b)
+        parallel_threshold = core.PARALLEL_DOT_THRESHOLD
+        collinear_tolerance = core.COLLINEAR_LINE_TOLERANCE
+        state, intersection_tuple = _classify_wall_join_state(
+            elem_a, elem_b, seg_a, seg_b, parallel_threshold, collinear_tolerance
+        )
+        if state != "intersect":
+            return
+        assert intersection_tuple is not None
+        floor_lines = core.wall_join_preview_lines(
+            (tuple(seg_a[0]), tuple(seg_a[1])),
+            (tuple(seg_b[0]), tuple(seg_b[1])),
+            intersection_tuple,
+        )
+        height_a = geom_a.get("height", 0.0)
+        height_b = geom_b.get("height", 0.0)
+        wall_a_floor, wall_b_floor = floor_lines
+
+        def _lift(seg: tuple, dz: float) -> tuple:
+            (sx, sy, sz), (ex, ey, ez) = seg
+            return ((sx, sy, sz + dz), (ex, ey, ez + dz))
+
+        wall_a_top = _lift(wall_a_floor, height_a)
+        wall_b_top = _lift(wall_b_floor, height_b)
+        join_hovered, extend_hovered, fillet_hovered = self._join_group_hover_state(GizmoWallJoinIntersection, context)
+        default = tuple(prefs.decorations_colour[:3])
+        selected_rgb = tuple(prefs.decorator_color_selected[:3])
+        all_lines = [wall_a_floor, wall_a_top, wall_b_floor, wall_b_top]
+
+        if join_hovered or fillet_hovered:
+            self._stroke(context, all_lines, selected_rgb)
+            return
+
+        if extend_hovered:
+            extended_idx = self._extended_wall_index(context, selected)
+            if extended_idx is not None:
+                extended_lines = [wall_a_floor, wall_a_top] if extended_idx == 0 else [wall_b_floor, wall_b_top]
+                untouched_lines = [wall_b_floor, wall_b_top] if extended_idx == 0 else [wall_a_floor, wall_a_top]
+                self._stroke(context, untouched_lines, default)
+                self._stroke(context, extended_lines, selected_rgb)
+                return
+
+        self._stroke(context, all_lines, default)
+
+    @staticmethod
+    def _extended_wall_index(context: bpy.types.Context, selected: list[bpy.types.Object]) -> Optional[int]:
+        """Index of the non-active wall in ``selected``, or ``None``."""
+        active = context.active_object
+        if active is selected[0]:
+            return 1
+        if active is selected[1]:
+            return 0
+        return None
+
+    def _join_group_hover_state(self, gizmo_cls: type, context: bpy.types.Context) -> tuple[bool, bool, bool]:
+        """Return ``(join_hovered, extend_to_wall_hovered, fillet_hovered)``
+        from the ``GizmoWallJoinIntersection`` instance in **the same region**
+        the decorator is currently drawing in. Returns ``(False, False,
+        False)`` when that region has no live gizmo group (poll → False,
+        weakref cleared, or no setup yet). Read-only; any access exception
+        is swallowed so a transient bpy-state hiccup never breaks the draw
+        loop."""
+        inst = self._lookup_active_instance(gizmo_cls, context)
+        if inst is None:
+            return False, False, False
+        try:
+            return (
+                bool(inst.join_icon.is_highlight),
+                bool(inst.extend_to_wall_icon.is_highlight),
+                bool(inst.fillet_icon.is_highlight),
+            )
+        except (AttributeError, ReferenceError):
+            return False, False, False
+
+    def _active_layer2_wall_for_gizmo_preview(
+        self, context: bpy.types.Context, prefs: Any
+    ) -> Optional[bpy.types.Object]:
+        """Active object iff it is the sole selected object, is a LAYER2 IfcWall,
+        and the wall feature's gizmo prefs are enabled. Otherwise ``None``.
+        Shared guard for every cursor-anchored extend-preview path so each one
+        short-circuits on the same conditions the gizmo group itself uses."""
+        gizmo_prefs = getattr(prefs.gizmos, "wall", None)
+        if gizmo_prefs is None or not getattr(gizmo_prefs, "enabled", True):
+            return None
+        active = context.active_object
+        if active is None:
+            return None
+        selected = list(tool.Blender.get_selected_objects())
+        if active not in selected or len(selected) != 1:
+            return None
+        element = tool.Ifc.get_entity(active)
+        if element is None or not tool.Parametric.is_wall(element):
+            return None
+        if tool.Model.get_usage_type(element) != "LAYER2":
+            return None
+        return active
+
+    def _draw_cursor_extend_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Hover-gated floor-plane preview for the extend-X icon. Quads sit
+        on the Z=0 plane spanning the wall's ``offset`` to
+        ``offset + thickness`` Y band so the operator's effect reads from
+        plan view without side-view clutter:
+
+        - **Cursor outside ``[anchor_x, anchor_x+length]`` (grow)**: one
+          green ``decorator_color_selected`` quad over the extension
+          (nearer endpoint → cursor X).
+        - **Cursor inside the wall extent (shrink)**: green quad for the
+          portion that REMAINS (cursor X → farther endpoint) + red
+          ``decorator_color_error`` quad for the portion the operator
+          REMOVES (nearer endpoint → cursor X)."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        if not self._cursor_icon_hovered(GizmoWallEdition, "extend_x_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        anchor_x = geom.get("anchor_x", 0.0)
+        length = geom.get("length", 0.0)
+        offset = geom.get("offset", 0.0)
+        thickness = geom.get("thickness", 0.0)
+        if length <= 0 or thickness <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        y_floor_0 = offset
+        y_floor_1 = offset + thickness
+        start_x = anchor_x
+        end_x = anchor_x + length
+        keep_color = tuple(prefs.decorator_color_selected[:3])
+        nearest_x = start_x if abs(cursor_local.x - start_x) < abs(cursor_local.x - end_x) else end_x
+
+        def emit(x0: float, x1: float, color: tuple[float, float, float]) -> None:
+            if abs(x1 - x0) < 1e-6:
+                return
+            lo, hi = (x0, x1) if x0 < x1 else (x1, x0)
+            self._fill(context, [self._wall_floor_quad(mw, lo, hi, y_floor_0, y_floor_1)], color)
+
+        if start_x < cursor_local.x < end_x:
+            remove_color = tuple(prefs.decorator_color_error[:3])
+            farthest_x = end_x if nearest_x == start_x else start_x
+            emit(nearest_x, cursor_local.x, remove_color)
+            emit(cursor_local.x, farthest_x, keep_color)
+            return
+        emit(nearest_x, cursor_local.x, keep_color)
+
+    def _draw_cursor_split_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Render one red line at the cursor's projected X, from wall base to wall top
+        along the wall's local Z — the cut plane the split operator would commit.
+        Hover-gated on the split icon; coloured with the destructive-action warning
+        red to match the icon's own hover signal."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        if not self._cursor_icon_hovered(GizmoWallEdition, "split_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        anchor_x = geom.get("anchor_x", 0.0)
+        length = geom.get("length", 0.0)
+        height = geom.get("height", 0.0)
+        if length <= 0 or height <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        if not (anchor_x < cursor_local.x < anchor_x + length):
+            return
+        bottom_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
+        top_world = mw @ Vector((cursor_local.x, 0.0, height))
+        self._stroke(context, [(tuple(bottom_world), tuple(top_world))], tuple(prefs.decorator_color_error[:3]))
+
+    def _draw_cursor_extend_z_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Hover-gated vertical-line preview for the extend-Z icon at the
+        cursor's projected X on the wall axis (y=0 reference-line plane).
+
+        Two cases by cursor Z relative to the wall's current height:
+
+        - **Cursor Z above the wall top (grow)**: one green
+          ``decorator_color_selected`` segment from z=height to z=cursor.z
+          (the new vertical material).
+        - **Cursor Z inside ``(0, height)`` (shrink)**: two segments —
+          green from z=0 to z=cursor.z (the portion that REMAINS), red
+          ``decorator_color_error`` from z=cursor.z to z=height (the
+          portion the operator REMOVES)."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        if not self._cursor_icon_hovered(GizmoWallEdition, "extend_z_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        length = geom.get("length", 0.0)
+        height = geom.get("height", 0.0)
+        if length <= 0 or height <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        if cursor_local.z <= 0:
+            return
+        if abs(cursor_local.z - height) < 1e-6:
+            return
+        keep_color = tuple(prefs.decorator_color_selected[:3])
+        cursor_x = cursor_local.x
+
+        def stroke(z0: float, z1: float, color: tuple[float, float, float]) -> None:
+            a = mw @ Vector((cursor_x, 0.0, z0))
+            b = mw @ Vector((cursor_x, 0.0, z1))
+            self._stroke(context, [(tuple(a), tuple(b))], color)
+
+        if cursor_local.z > height:
+            stroke(height, cursor_local.z, keep_color)
+            return
+        remove_color = tuple(prefs.decorator_color_error[:3])
+        stroke(0.0, cursor_local.z, keep_color)
+        stroke(cursor_local.z, height, remove_color)

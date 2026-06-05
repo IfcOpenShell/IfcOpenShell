@@ -42,17 +42,19 @@ from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model import wall_offset_gizmos
-from bonsai.bim.module.model.data import AuthoringData
-from bonsai.bim.module.model.decorator import (
+from bonsai.bim.module.model.array import (
     ArrayPreviewDecorator,
     ArraySelectionHighlightDecorator,
+)
+from bonsai.bim.module.model.data import AuthoringData
+from bonsai.bim.module.model.decorator import (
     BoundingBoxDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
     WallFilletPreviewDecorator,
-    WallGizmoPreviewDecorator,
 )
 from bonsai.bim.module.model.preview_base import discard_pending_previews
+from bonsai.bim.module.model.wall import WallGizmoPreviewDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 
 cwd = os.path.dirname(os.path.realpath(__file__))
