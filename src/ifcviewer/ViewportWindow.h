@@ -984,14 +984,9 @@ public:
     // ceiling that one-WGPUBuffer-per-chunk would otherwise hit. All
     // chunk allocations land here; nothing else uses the pool. Replaces
     // the old hand-picked streaming_vram_budget_bytes_ knob entirely.
-    BufferPool pool_;
-
-    // Background worker that does scatter-gather chunk reads off the
-    // render thread. driveStreamingLoads enqueues requests for visible
-    // non-resident chunks and drains completed results into the pool
-    // on subsequent frames. Kills the 100-300 ms per-frame stutters
-    // that synchronous disk reads caused during orbit.
-    StreamingThread streaming_thread_;
+    // Scene-state aliases (storage in core_).
+    BufferPool&      pool_;
+    StreamingThread& streaming_thread_;
 
     // Per-frame streaming activity, written by driveStreamingLoads,
     // consumed by the benchmark harness to delay the orbit sweep until
@@ -1025,13 +1020,10 @@ private:
     // mirror AppSettings::lod1PixelThreshold() in the GL backend.
     float lod1_pixel_threshold_ = 30.0f;
 
-    // Per-model state, keyed by viewport-assigned model_id.
-    std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
-    uint32_t next_model_id_  = 1;
-    // Globally-unique object_id allocator. Each applyCachedModel rebases
-    // the sidecar's local object_ids by base_object_id_so_far so picks
-    // are unambiguous across models. Selection flags index this range.
-    uint32_t next_object_id_ = 1;
+    // Per-model state aliases (storage in core_).
+    std::unordered_map<uint32_t, ModelGpuData>& models_gpu_;
+    uint32_t& next_model_id_;
+    uint32_t& next_object_id_;
 
     // Sidecar paths queued before init completes.
     std::deque<std::string> pending_sidecars_;

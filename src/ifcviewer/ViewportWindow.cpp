@@ -633,7 +633,12 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       edge_bgl_             (core_.edge_bgl_),
       edge_pipeline_layout_ (core_.edge_pipeline_layout_),
       edge_pipeline_        (core_.edge_pipeline_),
-      pick_pipeline_(core_.pick_pipeline_) {
+      pick_pipeline_(core_.pick_pipeline_),
+      pool_           (core_.pool_),
+      streaming_thread_(core_.streaming_thread_),
+      models_gpu_     (core_.models_gpu_),
+      next_model_id_  (core_.next_model_id_),
+      next_object_id_ (core_.next_object_id_) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //

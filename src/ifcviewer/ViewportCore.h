@@ -35,6 +35,12 @@
 
 #include <webgpu/webgpu.h>
 
+#include <cstdint>
+#include <unordered_map>
+
+#include "BufferPool.h"
+#include "ModelGpuData.h"
+#include "StreamingThread.h"
 #include "ViewportHost.h"
 
 class ViewportCore {
@@ -102,6 +108,27 @@ private:
     // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
     // main pass since the pick fragment also vertex-pulls instance data.
     WGPURenderPipeline  pick_pipeline_ = nullptr;
+
+    // ---- Scene state ---------------------------------------------------------
+    //
+    // Sub-allocator for chunk vertex + index buffers. All per-chunk
+    // pool slices come from here; nothing else uses it. Replaces the
+    // old hand-picked streaming_vram_budget_bytes_ knob entirely.
+    BufferPool pool_;
+
+    // Background worker that does scatter-gather chunk reads off the
+    // render thread. driveStreamingLoads enqueues requests for visible
+    // non-resident chunks and drains completed results into the pool
+    // on subsequent frames.
+    StreamingThread streaming_thread_;
+
+    // Per-model GPU + CPU state, keyed by viewport-assigned model_id.
+    std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
+    uint32_t next_model_id_  = 1;
+    // Globally-unique object_id allocator. Each applyCachedModel rebases
+    // the sidecar's local object_ids by base_object_id_so_far so picks
+    // are unambiguous across models.
+    uint32_t next_object_id_ = 1;
 };
 
 #endif  // VIEWPORTCORE_H
