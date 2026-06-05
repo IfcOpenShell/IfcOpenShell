@@ -35,10 +35,13 @@
 
 #include <webgpu/webgpu.h>
 
+#include <Eigen/Dense>
+
 #include <cstdint>
 #include <unordered_map>
 
 #include "BufferPool.h"
+#include "InstancedGeometry.h"
 #include "ModelGpuData.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
@@ -52,6 +55,18 @@ public:
     ViewportCore& operator=(const ViewportCore&) = delete;
 
     ViewportHost* host() const { return host_; }
+
+    // ---- Scene-mutation methods --------------------------------------------
+    //
+    // composeInstanceFromPlacement composes the per-instance
+    //   transform = federated_false_origin × model_transformation
+    //             × coordinate_operation × placement
+    // (all in metres, double precision) and rebakes the world AABB
+    // from the mesh-local one. Used by the per-model recompose path
+    // after any of the four federation matrices change. Pure scene
+    // math — no GPU touch.
+    void composeInstanceFromPlacement(InstanceCpu& inst,
+                                      const ModelGpuData& m) const;
 
     // Friend access for ViewportWindow's reference proxies. As each
     // render method moves into ViewportCore it stops needing these
@@ -129,6 +144,11 @@ private:
     // the sidecar's local object_ids by base_object_id_so_far so picks
     // are unambiguous across models.
     uint32_t next_object_id_ = 1;
+
+    // Federation false origin (metres, double precision). Applied to
+    // every instance composition so geometry rebased through a large
+    // model offset doesn't lose float32 precision near the GPU origin.
+    Eigen::Matrix4d federated_false_origin_meters_ = Eigen::Matrix4d::Identity();
 };
 
 #endif  // VIEWPORTCORE_H

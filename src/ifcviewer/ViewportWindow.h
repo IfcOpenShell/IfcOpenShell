@@ -624,8 +624,9 @@ private:
     // in double; the cast to float happens last so large IFC placements
     // get cancelled by the federation false origin before precision is
     // narrowed. Mirrors GL ViewportWindow::composeInstanceFromPlacement.
-    void composeInstanceFromPlacement(InstanceCpu& inst,
-                                      const ModelGpuData& m) const;
+    // Implementation lives in ViewportCore now (#84-d); this declaration
+    // stayed during the move and forwards to core_ — once every internal
+    // caller routes through ViewportCore directly the forwarder goes away.
 
     // Walk every instance of `model_id`, recompose its transform from the
     // current federation matrices, refresh per-chunk world AABBs, and
@@ -1120,7 +1121,8 @@ private:
     // FederatedFalseOrigin matrix, in metres. Default identity. Stored
     // but not yet applied to per-instance composed transforms — the
     // recompose pass arrives with the federation-load OOM work.
-    Eigen::Matrix4d federated_false_origin_meters_ = Eigen::Matrix4d::Identity();
+    // Federation false-origin alias (storage in core_).
+    Eigen::Matrix4d& federated_false_origin_meters_;
 
     // Per-frame LOD selection counts, mutated from cullModelCpuCompute
     // and reset after the [frame] heartbeat prints them. Keeps an eye

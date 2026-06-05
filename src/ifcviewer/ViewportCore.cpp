@@ -19,5 +19,39 @@
 
 #include "ViewportCore.h"
 
+#include "InstanceCompose.h"
+
 ViewportCore::ViewportCore(ViewportHost* host) : host_(host) {}
 ViewportCore::~ViewportCore() = default;
+
+void ViewportCore::composeInstanceFromPlacement(InstanceCpu& inst,
+                                                const ModelGpuData& m) const {
+    if (inst.mesh_id < m.meshes.size()) {
+        const MeshInfo& mi = m.meshes[inst.mesh_id];
+        InstanceCompose::composeInstance(
+            inst.placement_transformation,
+            federated_false_origin_meters_,
+            m.model_transformation_meters,
+            m.coordinate_operation_meters,
+            mi.local_aabb_min, mi.local_aabb_max,
+            inst.transform,
+            inst.world_aabb_min, inst.world_aabb_max);
+    } else {
+        // Unknown mesh id: still compose the transform (downstream may
+        // use it for picking / readback even without geometry), but
+        // emit a degenerate world AABB so cull doesn't pick this up.
+        const float zero[3] = {0.0f, 0.0f, 0.0f};
+        InstanceCompose::composeInstance(
+            inst.placement_transformation,
+            federated_false_origin_meters_,
+            m.model_transformation_meters,
+            m.coordinate_operation_meters,
+            zero, zero,
+            inst.transform,
+            inst.world_aabb_min, inst.world_aabb_max);
+        for (int a = 0; a < 3; ++a) {
+            inst.world_aabb_min[a] = 0.0f;
+            inst.world_aabb_max[a] = 0.0f;
+        }
+    }
+}

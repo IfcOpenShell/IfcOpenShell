@@ -638,7 +638,8 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       streaming_thread_(core_.streaming_thread_),
       models_gpu_     (core_.models_gpu_),
       next_model_id_  (core_.next_model_id_),
-      next_object_id_ (core_.next_object_id_) {
+      next_object_id_ (core_.next_object_id_),
+      federated_false_origin_meters_(core_.federated_false_origin_meters_) {
     // wgpu doesn't need a GL context; we just need a real native window
     // whose backing layer matches the GPU API wgpu will drive.
     //
@@ -1377,37 +1378,7 @@ void ViewportWindow::setModelTransformation(uint32_t model_id,
     recomposeAndUploadModel(model_id);
 }
 
-void ViewportWindow::composeInstanceFromPlacement(InstanceCpu& inst,
-                                                       const ModelGpuData& m) const {
-    if (inst.mesh_id < m.meshes.size()) {
-        const MeshInfo& mi = m.meshes[inst.mesh_id];
-        InstanceCompose::composeInstance(
-            inst.placement_transformation,
-            federated_false_origin_meters_,
-            m.model_transformation_meters,
-            m.coordinate_operation_meters,
-            mi.local_aabb_min, mi.local_aabb_max,
-            inst.transform,
-            inst.world_aabb_min, inst.world_aabb_max);
-    } else {
-        // Unknown mesh id: still compose the transform (downstream may
-        // use it for picking / readback even without geometry), but
-        // emit a degenerate world AABB so cull doesn't pick this up.
-        const float zero[3] = {0.0f, 0.0f, 0.0f};
-        InstanceCompose::composeInstance(
-            inst.placement_transformation,
-            federated_false_origin_meters_,
-            m.model_transformation_meters,
-            m.coordinate_operation_meters,
-            zero, zero,
-            inst.transform,
-            inst.world_aabb_min, inst.world_aabb_max);
-        for (int a = 0; a < 3; ++a) {
-            inst.world_aabb_min[a] = 0.0f;
-            inst.world_aabb_max[a] = 0.0f;
-        }
-    }
-}
+// composeInstanceFromPlacement moved to ViewportCore (#84-d).
 
 void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
     if (!wgpu_initialized_) return;
@@ -1419,7 +1390,7 @@ void ViewportWindow::recomposeAndUploadModel(uint32_t model_id) {
     std::vector<InstanceGpu> gpu(m.instances.size());
     for (size_t i = 0; i < m.instances.size(); ++i) {
         InstanceCpu& inst = m.instances[i];
-        composeInstanceFromPlacement(inst, m);
+        core_.composeInstanceFromPlacement(inst, m);
 
         InstanceGpu& dst = gpu[i];
         std::memcpy(dst.transform, inst.transform, sizeof(dst.transform));
