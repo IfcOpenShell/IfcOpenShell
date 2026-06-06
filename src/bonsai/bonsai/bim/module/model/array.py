@@ -1086,20 +1086,10 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     # per-item panel UX for the overflow layers.
     MAX_LAYER_GIZMOS = 8
     # Local-X spacing between successive layer icons. The start position
-    # of the first icon is feature-aware (see ``_resolve_feature_idle_max_x``)
-    # so it doesn't collide with feature-specific idle gizmos (e.g. wall's
-    # toggle-openings + offset-baseline icons that share the row).
+    # is computed per-frame from peer parametric gizmo groups' idle rows
+    # (see ``_resolve_feature_idle_max_x``) so layer icons clear any
+    # feature-specific idle slots (e.g. wall's toggle-openings).
     LAYER_GIZMO_SPACING = 0.4
-
-    # Per-feature idle-state rightmost icon X. Layer icons start past this
-    # so they don't collide with feature-specific idle gizmos. Centralised
-    # here (rather than declared per-feature) because the array group is
-    # the consumer and this knowledge is local to its layout decision.
-    # Door / window / stair / roof / railing have no idle icons past the
-    # pen, so they default to 0.0.
-    _FEATURE_IDLE_MAX_X: ClassVar[dict[str, float]] = {
-        "wall": 0.87,  # past offset_baseline (EXT/CEN/INT share the cycle slot)
-    }
 
     dimension_gizmo_props = [
         # matrix_position must be provided even at the origin: without it, the
@@ -1329,29 +1319,33 @@ class GizmoArrayEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def _resolve_feature_idle_max_x(cls, context: bpy.types.Context) -> float:
-        """Return the rightmost local-X used by the active element's matching
-        per-feature gizmo group in idle state. Per-layer ARRAY icons start
-        one ``ICON_ARRAY_GAP`` past this so they don't stack on top of any
-        feature-specific idle icons.
+        """Rightmost local-X reserved by any peer ``BaseParametricGizmoGroup``
+        whose ``poll`` passes on the active element. Per-layer ARRAY icons
+        start one ``ICON_ARRAY_GAP`` past this so they don't stack on top of
+        feature-specific idle slots (e.g. wall's toggle_openings).
 
-        Resolves the active element's type via ``tool.Parametric.find_for_element``
-        (registry lookup, see [tool/parametric.py:321]) and indexes into the
-        local ``_FEATURE_IDLE_MAX_X`` table. Defaults to 0.0 when:
-        - no active object
-        - object isn't an IFC element
-        - element doesn't match any registry type
-        - matched type is ``"array"`` (no per-feature gizmo group to dodge)
-        - matched type has no entry in the table"""
+        Walks ``BaseParametricGizmoGroup.REGISTRY`` rather than indexing a
+        hardcoded per-feature table: each peer's ``_idle_row_right_edge()``
+        derives from its declared ``idle_slots`` tuple, so adding an idle
+        icon to any feature is a one-line ``IconSlot`` append with no
+        coordination needed here. Defaults to 0.0 when no active object or
+        no peer polls visible."""
         obj = context.active_object
         if obj is None:
             return 0.0
-        element = tool.Ifc.get_entity(obj)
-        if element is None:
-            return 0.0
-        match = tool.Parametric.find_for_element(element)
-        if match is None or match.name == "array":
-            return 0.0
-        return cls._FEATURE_IDLE_MAX_X.get(match.name, 0.0)
+        max_x = 0.0
+        for peer_cls in gizmo.BaseParametricGizmoGroup.REGISTRY:
+            if peer_cls is cls:
+                continue
+            try:
+                if not peer_cls.poll(context):
+                    continue
+            except Exception:
+                continue
+            edge = peer_cls._idle_row_right_edge()
+            if edge > max_x:
+                max_x = edge
+        return max_x
 
 
 class GizmoArrayChild(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):

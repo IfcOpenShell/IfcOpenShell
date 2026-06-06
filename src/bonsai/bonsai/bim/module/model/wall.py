@@ -90,6 +90,19 @@ def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
     return True
 
 
+def _wall_has_openings(gz_group: bpy.types.GizmoGroup) -> bool:
+    """``visible_when`` predicate for the toggle_openings idle slot. Returns
+    True iff the active object's IFC element exposes a non-empty HasOpenings
+    inverse — keeps the toggle hidden on walls that carry no opening cuts."""
+    obj = bpy.context.active_object
+    if obj is None:
+        return False
+    element = tool.Ifc.get_entity(obj)
+    if element is None:
+        return False
+    return tool.Geometry.has_openings(element)
+
+
 def regenerate_wall_mesh_from_props(obj: bpy.types.Object) -> None:
     """Rebuild ``obj.data`` as a preview box from ``BIMWallProperties`` without touching IFC.
 
@@ -421,11 +434,11 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
 
     def set_origin(self, context, event, connection="ATSTART"):
         obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        layers = tool.Model.get_material_layer_parameters(element)
-        axis = tool.Model.get_wall_axis(obj, layers)
-        start = Vector((axis["reference"][0][0], axis["reference"][0][1], obj.location.z))
-        end = Vector((axis["reference"][1][0], axis["reference"][1][1], obj.location.z))
+        ref = tool.Wall.get_world_reference_line(obj)
+        if ref is None:
+            return
+        start = Vector((ref[0].x, ref[0].y, obj.location.z))
+        end = Vector((ref[1].x, ref[1].y, obj.location.z))
         direcion = end - start
         value = end if connection == "ATSTART" else start
         self.input_ui.set_value("X", value[0])
@@ -1424,8 +1437,11 @@ class DumbWallJoiner:
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
-        axis1 = tool.Model.get_wall_axis(wall1)
-        intersect, cut_percentage = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
+        ref = tool.Wall.get_world_reference_line(wall1)
+        if ref is None:
+            return
+        axis_world_2d = (ref[0].to_2d(), ref[1].to_2d())
+        intersect, cut_percentage = mathutils.geometry.intersect_point_line(target.to_2d(), *axis_world_2d)
         if cut_percentage < 0 or cut_percentage > 1 or tool.Cad.is_x(cut_percentage, (0, 1)):
             return
 
@@ -1469,7 +1485,7 @@ class DumbWallJoiner:
         for opening in [
             r.RelatedOpeningElement for r in element1.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
-            min_t, _ = _opening_axis_extent(opening, axis1["reference"], unit_scale)
+            min_t, _ = _opening_axis_extent(opening, axis_world_2d, unit_scale)
             if min_t > cut_percentage:
                 # Opening lies entirely past the cut — only element2 should keep it.
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
@@ -1477,7 +1493,7 @@ class DumbWallJoiner:
         for opening in [
             r.RelatedOpeningElement for r in element2.HasOpenings if not r.RelatedOpeningElement.HasFillings
         ]:
-            _, max_t = _opening_axis_extent(opening, axis1["reference"], unit_scale)
+            _, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
             if max_t < cut_percentage:
                 # Opening lies entirely before the cut — only element1 should keep it.
                 ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
@@ -1494,8 +1510,8 @@ class DumbWallJoiner:
             filling = rel.RelatedBuildingElement
             filling_obj = tool.Ifc.get_object(filling)
             filling_location = filling_obj.matrix_world.translation
-            _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis1["reference"])
-            min_t, max_t = _opening_axis_extent(opening, axis1["reference"], unit_scale)
+            _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis_world_2d)
+            min_t, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
             void_straddles = min_t < cut_percentage < max_t
             if filling_position > cut_percentage:
                 # The filling should be moved from element1 to element2.
@@ -2063,6 +2079,18 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
     )
 
+    # Idle-mode pen-row extras. The base class handles setup + per-frame
+    # positioning + visibility gating via ``visible_when``; this declaration
+    # is the only wall-specific code needed for the toggle-openings icon.
+    idle_slots: ClassVar[tuple[IconSlot, ...]] = (
+        IconSlot(
+            name="toggle_openings",
+            gizmo_idname="VIEW3D_GT_add_opening",
+            operator="bim.toggle_host_openings",
+            visible_when=lambda gg: _wall_has_openings(gg),
+        ),
+    )
+
     def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
         """Wall-specific gizmos.
 
@@ -2076,15 +2104,11 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
           wall top (Z=height in wall-local). Clicking extends the wall's height to
           the cursor's Z.
 
-        Idle-row icon outside the toolbar slot system:
-
-        - ``toggle_openings_gizmo`` — toggles opening fill visibility (Alt+O),
-          surfaced in idle state next to the pen.
-
         The baseline-state triplet (exterior/center/interior) and the rotate-90
         icon live in ``feature_slots`` — the base class handles creation and
         edit-row positioning; this group only picks variant visibility per
-        frame in ``_update_icon_row_extras``."""
+        frame in ``_update_icon_row_extras``. The idle-row ``toggle_openings``
+        icon is declared in ``idle_slots`` and fully managed by the base."""
         default_color, highlight_color = self.get_decoration_colors()
         self.split_gizmo = self._setup_icon_gizmo(
             "VIEW3D_GT_split",
@@ -2104,7 +2128,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "bim.extend_wall_height_to_cursor",
             highlight_color,
         )
-        self.setup_pen_row_toggle_openings_icon()
         if context.region is not None:
             type(self)._active_instances[context.region.as_pointer()] = weakref.ref(self)
 
@@ -2202,19 +2225,15 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     }
 
     def _update_icon_row_extras(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
-        """Pick which baseline variant is visible during edit, and position
-        the idle-row toggle-openings icon.
+        """Pick which baseline variant is visible during edit.
 
         Baseline triplet: the base class's slot loop already wrote a billboard
         matrix on each variant member at the same X (the cycle slot, since
         wall has no ``cycle_type_operator``). This hook only flips ``hide``
         on each member based on ``props.desired_offset_baseline`` so exactly
         one variant shows. The rotate-90 icon is a single-icon feature slot
-        and is fully handled by the base.
-
-        Toggle-openings is NOT in the slot system — it surfaces in IDLE
-        state (alongside the pen, not in the edit row), so it's positioned
-        via the base's shared helper here."""
+        and is fully handled by the base. The toggle-openings idle icon is
+        declared in ``idle_slots`` and positioned by the base."""
         active_variant = self._BASELINE_TO_VARIANT.get(props.desired_offset_baseline)
         for variant in ("exterior", "center", "interior"):
             gz = getattr(self, f"baseline_{variant}_gizmo", None)
@@ -2224,7 +2243,6 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
                 gz.hide = self.is_gizmo_hidden_by_modal(gz)
             else:
                 gz.hide = True
-        self.update_pen_row_toggle_openings_icon(context, mw, props)
 
 
 def _apply_wall_extend_flips(
