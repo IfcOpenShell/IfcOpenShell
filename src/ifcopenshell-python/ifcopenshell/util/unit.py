@@ -902,6 +902,35 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
             return convert_unit(value, old_length, new_length)
         return tuple(convert_value(v) for v in value)
 
+    def convert_diagram_scale(scale: float, length_scale: float) -> float:
+        return scale / length_scale
+
+    def parse_diagram_scale(value: str) -> Union[float, None]:
+        try:
+            return float(Fraction(value))
+        except (TypeError, ValueError, ZeroDivisionError):
+            return None
+
+    def format_diagram_scale(scale: float) -> str:
+        if scale == 0:
+            return "0/1"
+        fraction = Fraction(scale).limit_denominator(10**12)
+        # Preserve tiny non-zero scales instead of collapsing them to 0.
+        if fraction == 0:
+            fraction = Fraction(str(scale))
+        return f"{fraction.numerator}/{fraction.denominator}"
+
+    def format_human_diagram_scale(scale: float) -> str:
+        denominator = 1 / scale
+        denominator_rounded = round(denominator)
+        if abs(denominator - denominator_rounded) < 1e-9:
+            denominator_str = str(denominator_rounded)
+        else:
+            denominator_str = f"{denominator:.8g}"
+        return f"1:{denominator_str}"
+
+    length_scale = convert_value(1)
+
     # Traverse all elements and their nested attributes in the file and convert them
     for element, attr, val in iter_element_and_attributes_per_type(file_patched, "IfcLengthMeasure"):
         # NOTE: There is no risk of editing same entities twice as they're all recreated
@@ -911,6 +940,50 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         else:
             new_value = convert_value(val)
             setattr(element, attr.name(), new_value)
+
+    # TargetScale is unit-sensitive and should stay visually equivalent after model units change.
+    for subcontext in file_patched.by_type("IfcGeometricRepresentationSubContext"):
+        if subcontext.TargetScale:
+            subcontext.TargetScale = convert_diagram_scale(subcontext.TargetScale, length_scale)
+
+    # Bonsai drawings store diagram scale in EPset_Drawing as labels (e.g. "1/100" and "1:100").
+    for pset in file_patched.by_type("IfcPropertySet"):
+        if pset.Name != "EPset_Drawing":
+            continue
+        scale_prop = next(
+            (
+                p
+                for p in pset.HasProperties or []
+                if p.is_a("IfcPropertySingleValue")
+                and p.Name == "Scale"
+                and p.NominalValue
+                and p.NominalValue.is_a("IfcLabel")
+            ),
+            None,
+        )
+        if not scale_prop:
+            continue
+        diagram_scale = parse_diagram_scale(scale_prop.NominalValue.wrappedValue)
+        if diagram_scale is None:
+            continue
+        converted_scale = convert_diagram_scale(diagram_scale, length_scale)
+        scale_prop.NominalValue.wrappedValue = format_diagram_scale(converted_scale)
+
+        if converted_scale == 0:
+            continue
+        human_scale_prop = next(
+            (
+                p
+                for p in pset.HasProperties or []
+                if p.is_a("IfcPropertySingleValue")
+                and p.Name == "HumanScale"
+                and p.NominalValue
+                and p.NominalValue.is_a("IfcLabel")
+            ),
+            None,
+        )
+        if human_scale_prop:
+            human_scale_prop.NominalValue.wrappedValue = format_human_diagram_scale(converted_scale)
 
     has_map_unit = False
     if (

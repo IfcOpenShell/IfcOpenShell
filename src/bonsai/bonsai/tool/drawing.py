@@ -2695,8 +2695,10 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_scale_ratio(cls, scale: str) -> float:
-        numerator, denominator = scale.split("/")
-        return float(numerator) / float(denominator)
+        try:
+            return float(Fraction(scale))
+        except (ValueError, ZeroDivisionError) as e:
+            raise ValueError(f"Invalid diagram scale format: {scale!r}") from e
 
     @classmethod
     def get_diagram_scale(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> dict[str, str]:
@@ -2711,7 +2713,8 @@ class Drawing(bonsai.core.tool.Drawing):
         denominator = tool.Drawing.convert_scale_string(denominator_string)
         if not numerator or not denominator:
             return
-        scale = str(Fraction(numerator / denominator).limit_denominator(1000))  # Any ratio >1000 is stupid.
+        scale_fraction = Fraction(numerator / denominator).limit_denominator(1000)  # Any ratio >1000 is stupid.
+        scale = f"{scale_fraction.numerator}/{scale_fraction.denominator}"
         if "'" in scale or '"' in scale:
             human_separator = "="  # Imperial scales use "=", like 1" = 1' - 0"
             # If for some crazy reason we mix metric and imperial, assume metric is SI units, like 1m = 1'
