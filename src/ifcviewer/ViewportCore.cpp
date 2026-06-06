@@ -1163,7 +1163,37 @@ void ViewportCore::updateFrameUniforms() {
 // Lifecycle (#84-l): initWgpu + probeAndCreatePool + shutdown
 // ===========================================================================
 
+#if defined(__EMSCRIPTEN__)
+#  include <emscripten/emscripten.h>
+#endif
+
 namespace {
+
+// Drain pending async callbacks. On wgpu-native this means literally
+// calling wgpuInstanceProcessEvents, which fires queued completions.
+// On emdawnwebgpu/Dawn-web, queued completions are JS promise resolves
+// — wgpuInstanceProcessEvents is a no-op there, so a busy-loop
+// `while (!done) processEvents()` would spin forever blocking the
+// browser main thread. With ASYNCIFY enabled (see CMakeLists), calling
+// emscripten_sleep(0) unwinds the wasm stack, lets JS process resolved
+// promises (firing our WGPU callbacks via AllowProcessEvents mode),
+// then resumes the C++ caller. Net effect: the same "spin until done"
+// shape works on both backends.
+inline void waitTickInstance(WGPUInstance instance) {
+#if defined(__EMSCRIPTEN__)
+    // On Dawn-web AllowProcessEvents queues the callback for the next
+    // wgpuInstanceProcessEvents call, but the underlying JS promise has
+    // to resolve first. emscripten_sleep(0) unwinds the wasm stack so
+    // the JS event loop runs (resolving any pending promises); then
+    // ProcessEvents drains the resolved completions into our callback.
+    emscripten_sleep(0);
+    wgpuInstanceProcessEvents(instance);
+#else
+    wgpuInstanceProcessEvents(instance);
+#endif
+}
+
+
 // String-view → std::string for log output. WGPU_STRLEN is the
 // sentinel meaning "nul-terminated", in which case strlen() gives the
 // length.
@@ -1242,7 +1272,7 @@ bool ViewportCore::probeAndCreatePool() {
             };
             pcb.userdata1 = &pr;
             wgpuDevicePopErrorScope(device_, pcb);
-            while (!pr.done) wgpuInstanceProcessEvents(instance_);
+            while (!pr.done) waitTickInstance(instance_);
         };
         PopResult oom_pop, validation_pop;
         pop(oom_pop);
@@ -1311,7 +1341,7 @@ bool ViewportCore::initWgpu(bool web_limits) {
     acb.userdata1 = &areq;
 
     wgpuInstanceRequestAdapter(instance_, &adapter_opts, acb);
-    while (!areq.done) wgpuInstanceProcessEvents(instance_);
+    while (!areq.done) waitTickInstance(instance_);
     if (!areq.ok) return false;
     adapter_ = areq.adapter;
 
@@ -1350,7 +1380,7 @@ bool ViewportCore::initWgpu(bool web_limits) {
     dcb.userdata1 = &dreq;
 
     wgpuAdapterRequestDevice(adapter_, &dev_desc, dcb);
-    while (!dreq.done) wgpuInstanceProcessEvents(instance_);
+    while (!dreq.done) waitTickInstance(instance_);
     if (!dreq.ok) return false;
     device_ = dreq.device;
     queue_  = wgpuDeviceGetQueue(device_);
@@ -1359,7 +1389,15 @@ bool ViewportCore::initWgpu(bool web_limits) {
         Log::warn() << "wgpu: streaming pool probe failed; cannot start";
         return false;
     }
+#if !defined(__EMSCRIPTEN__)
+    // Background streaming worker. On desktop std::thread spawns a real
+    // OS thread; under Emscripten that requires -pthread + SharedArrayBuffer
+    // (which itself needs COOP/COEP headers from the hosting page).
+    // Until the web build wires those up we run streaming inline from
+    // the render thread — the chunk count for the spike is small enough
+    // that the synchronous fallback inside driveStreamingLoads is fine.
     streaming_thread_.start();
+#endif
 
     WGPUSurfaceCapabilities caps = {};
     if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
@@ -3963,7 +4001,7 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     mcb.userdata1 = &req;
 
     wgpuBufferMapAsync(pick_staging_buffer_, WGPUMapMode_Read, 0, 256, mcb);
-    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    while (!req.done) waitTickInstance(instance_);
     if (!req.ok) return 0;
 
     const std::uint32_t* mapped = static_cast<const std::uint32_t*>(
@@ -3976,7 +4014,7 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
         WGPUBufferMapCallbackInfo ncb = mcb;
         ncb.userdata1 = &nreq;
         wgpuBufferMapAsync(pick_normal_staging_buffer_, WGPUMapMode_Read, 0, 256, ncb);
-        while (!nreq.done) wgpuInstanceProcessEvents(instance_);
+        while (!nreq.done) waitTickInstance(instance_);
         if (nreq.ok) {
             const std::uint16_t* halves = static_cast<const std::uint16_t*>(
                 wgpuBufferGetConstMappedRange(pick_normal_staging_buffer_, 0, 256));
@@ -4135,7 +4173,7 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
     mcb.userdata1 = &req;
     wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read,
                        0, needed_bytes, mcb);
-    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    while (!req.done) waitTickInstance(instance_);
     if (!req.ok) return out;
 
     const std::uint8_t* mapped = static_cast<const std::uint8_t*>(
@@ -4670,7 +4708,7 @@ void ViewportCore::finalizeScreenshotCapture(WGPUBuffer capture_buffer,
         std::uint64_t(padded_bpr) * std::uint64_t(configured_h_);
     wgpuBufferMapAsync(capture_buffer, WGPUMapMode_Read,
                        0, std::size_t(total_bytes), mcb);
-    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    while (!req.done) waitTickInstance(instance_);
 
     if (req.ok) {
         const std::uint8_t* mapped = static_cast<const std::uint8_t*>(
@@ -5094,7 +5132,15 @@ void ViewportCore::render() {
         host_->onFrameStats(stats);
     }
 
+#if !defined(__EMSCRIPTEN__)
+    // On Dawn-web there is no explicit surface present — the browser
+    // composites the canvas at the end of the current requestAnimationFrame
+    // tick, so calling wgpuSurfacePresent aborts the wasm with
+    // "wgpuSurfacePresent is unsupported (use requestAnimationFrame via
+    // html5.h instead)". WebViewportHost::requestFrame keeps the render
+    // loop ticking off RAF.
     wgpuSurfacePresent(surface_);
+#endif
     wgpuTextureRelease(surf_tex.texture);
 
     if (last_cull_was_motion_) host_->requestFrame();

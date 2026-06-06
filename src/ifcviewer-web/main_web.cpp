@@ -62,9 +62,12 @@ void main_loop(void* user) {
         app->last_h = h;
     }
 
-    // Only render when something has requested a frame — saves battery
-    // on the still-camera case. The initial frame request is armed by
-    // WebViewportHost's ctor so the canvas always paints once at startup.
+    // Only render when something has requested a frame — CPU stays
+    // idle while the scene is static. WebViewportHost's ctor arms one
+    // initial frame request so the canvas always paints at startup;
+    // subsequent paints come from core_.render() rearming itself
+    // (motion settle, streaming in flight, bench mode) and, once
+    // input is wired (#85), from mouse / key events flagging the host.
     if (app->host.consumeFrameRequest()) {
         app->core.render();
     }
