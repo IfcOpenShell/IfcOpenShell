@@ -45,6 +45,36 @@ import bonsai.bim.import_ifc
 import bonsai.core.tool
 import bonsai.tool as tool
 
+# For loading and caching remote texture images
+from pathlib import Path
+from urllib.request import urlretrieve
+from urllib.parse import urlsplit, urlunsplit, quote
+import hashlib
+
+CACHE_DIR = Path.home() / ".blender_texture_cache"
+CACHE_DIR.mkdir(exist_ok=True)
+
+
+def encode_url(url: str) -> str:
+    # make sure the URL is clean (e.g., special characters like spaces are encoded)
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme, parts.netloc, quote(parts.path), parts.query, parts.fragment))
+
+
+def get_cached_path(url: str) -> Path:
+    # Hash the URL -> unique filename
+    h = hashlib.md5(url.encode()).hexdigest()
+    ext = Path(urlsplit(url).path).suffix or ".img"
+    return CACHE_DIR / f"{h}{ext}"
+
+
+def load_image_once(path: str):
+    for img in bpy.data.images:
+        if img.filepath == path:
+            return img
+    return bpy.data.images.load(path)
+
+
 # Progressively we'll refactor loading elements into Blender objects into this
 # class. This will break down the monolithic import_ifc module and allow us to
 # partially load and unload objects for huge models, partial model editing, and
@@ -299,23 +329,44 @@ class Loader(bonsai.core.tool.Loader):
                 if texture["type"] == "IfcImageTexture":
                     # IFC2X3 uses UrlReference, IFC4+ uses URLReference.
                     original_image_url = texture.get("URLReference") or texture.get("UrlReference", "")
-                    is_relative = not os.path.isabs(original_image_url)
-                    nonlocal image_url
-                    image_url = Path(original_image_url)
-                    if is_relative:
-                        ifc_path = Path(tool.Ifc.get_path())
-                        image_url = ifc_path.parent / image_url
-                    image_url = image_url.absolute().resolve()
 
-                    if not image_url.exists():
-                        print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
-                        return
+                    is_remote = original_image_url.startswith(("http://", "https://"))
 
-                    # keep url relative if it was before
-                    image_url = str(image_url)
-                    if is_relative and bpy.data.filepath:
-                        image_url = bpy.path.relpath(image_url)
-                    return bpy.data.images.load(image_url)
+                    if is_remote:
+                        try:
+                            encoded_url = encode_url(original_image_url)
+                            cache_path = get_cached_path(original_image_url)
+
+                            # Download only once
+                            if not cache_path.exists():
+                                urlretrieve(encoded_url, cache_path)
+
+                            # load via Blender
+                            return load_image_once(str(cache_path))
+
+                        except Exception as e:
+                            print(
+                                f"WARNING. Failed to load remote texture {original_image_url}, it will be skipped: {e}"
+                            )
+                            return
+                    else:
+                        is_relative = not os.path.isabs(original_image_url)
+                        nonlocal image_url
+                        image_url = Path(original_image_url)
+                        if is_relative:
+                            ifc_path = Path(tool.Ifc.get_path())
+                            image_url = ifc_path.parent / image_url
+                        image_url = image_url.absolute().resolve()
+
+                        if not image_url.exists():
+                            print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")
+                            return
+
+                        # keep url relative if it was before
+                        image_url = str(image_url)
+                        if is_relative and bpy.data.filepath:
+                            image_url = bpy.path.relpath(image_url)
+                        return bpy.data.images.load(image_url)
 
                 elif texture["type"] == "IfcBlobTexture":
                     # https://blender.stackexchange.com/questions/173206/how-to-efficiently-convert-a-pil-image-to-bpy-types-image
