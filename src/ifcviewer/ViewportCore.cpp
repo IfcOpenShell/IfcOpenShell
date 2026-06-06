@@ -1405,3 +1405,328 @@ void ViewportCore::shutdown() {
     wgpu_initialized_   = false;
     surface_configured_ = false;
 }
+
+// ===========================================================================
+// Chunk residency (#84-n): buildChunkBindGroup + applyStreamedChunk +
+// loadChunkBytesAndUploadGpu + unloadChunk + makeChunkRequest +
+// computeMeshLocalVolumeQuantised
+// ===========================================================================
+
+#include "StreamingLoader.h"
+
+namespace {
+
+// Pure function of the mesh's local AABB + index list. Computes the
+// signed-tetrahedra-volume sum (divergence theorem), takes its absolute
+// value, divides by 6 — gives the mesh-local volume in m³. Side effect:
+// if `out_tris` is non-null, populates it with dequantised positions +
+// index copy so the Area / Volume tool can later refine to a single
+// triangle. Stays as a free helper because applyStreamedChunk is the
+// only call site.
+double computeMeshLocalVolumeQuantised(
+        const MeshInfo& mesh,
+        const std::uint8_t* vbase, const std::uint32_t* ibase,
+        std::uint32_t n_indices,
+        ModelGpuData::MeshTriangles* out_tris) {
+    if (n_indices < 3 || vbase == nullptr || ibase == nullptr) return 0.0;
+    const float ax = mesh.local_aabb_min[0];
+    const float ay = mesh.local_aabb_min[1];
+    const float az = mesh.local_aabb_min[2];
+    const float ex = mesh.local_aabb_max[0] - ax;
+    const float ey = mesh.local_aabb_max[1] - ay;
+    const float ez = mesh.local_aabb_max[2] - az;
+    const float inv_q = 1.0f / 65535.0f;
+
+    std::vector<float> positions;
+    positions.resize(std::size_t(mesh.vertex_count) * 3);
+    for (std::uint32_t v = 0; v < mesh.vertex_count; ++v) {
+        const std::uint8_t* p = vbase
+            + std::size_t(v) * INSTANCED_VERTEX_STRIDE_BYTES;
+        std::uint16_t qx, qy, qz;
+        std::memcpy(&qx, p + 0, 2);
+        std::memcpy(&qy, p + 2, 2);
+        std::memcpy(&qz, p + 4, 2);
+        positions[3 * v + 0] = ax + float(qx) * inv_q * ex;
+        positions[3 * v + 1] = ay + float(qy) * inv_q * ey;
+        positions[3 * v + 2] = az + float(qz) * inv_q * ez;
+    }
+
+    double sum = 0.0;
+    for (std::uint32_t i = 0; i + 2 < n_indices; i += 3) {
+        const std::uint32_t i0 = ibase[i + 0];
+        const std::uint32_t i1 = ibase[i + 1];
+        const std::uint32_t i2 = ibase[i + 2];
+        if (i0 >= mesh.vertex_count || i1 >= mesh.vertex_count
+         || i2 >= mesh.vertex_count) continue;
+        const float* p0 = &positions[3 * i0];
+        const float* p1 = &positions[3 * i1];
+        const float* p2 = &positions[3 * i2];
+        const double cx = double(p1[1]) * p2[2] - double(p1[2]) * p2[1];
+        const double cy = double(p1[2]) * p2[0] - double(p1[0]) * p2[2];
+        const double cz = double(p1[0]) * p2[1] - double(p1[1]) * p2[0];
+        sum += double(p0[0]) * cx + double(p0[1]) * cy + double(p0[2]) * cz;
+    }
+
+    if (out_tris) {
+        out_tris->positions = std::move(positions);
+        out_tris->indices.assign(ibase, ibase + n_indices);
+    }
+    return std::abs(sum) / 6.0;
+}
+
+} // namespace
+
+void ViewportCore::buildChunkBindGroup(ModelGpuData& m, std::size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return;
+    auto& c = m.chunks[chunk_idx];
+    if (c.bind_group) {
+        wgpuBindGroupRelease(c.bind_group);
+        c.bind_group = nullptr;
+    }
+    if (!c.vertex_slice.valid() || !c.index_slice.valid()
+        || !c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform
+        || !m.mesh_storage || !m.instance_storage) {
+        return;
+    }
+
+    WGPUBindGroupEntry entries[7] = {};
+    // vertices and indices live in the shared pool. Each slice carries
+    // the specific sub-buffer it landed in (the pool may span several
+    // when scenes exceed wgpu's single-buffer cap). The other entries
+    // are still per-chunk small buffers (visible_draws/prefix_sums/uniform)
+    // or per-model (mesh/instance).
+    entries[0].binding = 0;
+    entries[0].buffer  = c.vertex_slice.buffer;
+    entries[0].offset  = c.vertex_slice.offset;
+    entries[0].size    = c.vertex_slice.size;
+    entries[1].binding = 1;
+    entries[1].buffer  = m.mesh_storage;
+    entries[1].size    = WGPU_WHOLE_SIZE;
+    entries[2].binding = 2;
+    entries[2].buffer  = m.instance_storage;
+    entries[2].size    = WGPU_WHOLE_SIZE;
+    entries[3].binding = 3;
+    entries[3].buffer  = c.index_slice.buffer;
+    entries[3].offset  = c.index_slice.offset;
+    entries[3].size    = c.index_slice.size;
+    entries[4].binding = 4;
+    entries[4].buffer  = c.visible_draws_buffer;
+    entries[4].size    = WGPU_WHOLE_SIZE;
+    entries[5].binding = 5;
+    entries[5].buffer  = c.prefix_sums_buffer;
+    entries[5].size    = WGPU_WHOLE_SIZE;
+    entries[6].binding = 6;
+    entries[6].buffer  = c.per_chunk_uniform;
+    entries[6].size    = 16;
+
+    WGPUBindGroupDescriptor desc = {};
+    desc.layout     = model_bgl_;
+    desc.entryCount = 7;
+    desc.entries    = entries;
+    desc.label      = svFromCStr("ifcviewer-wgpu.chunk_bind_group");
+    c.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
+}
+
+bool ViewportCore::applyStreamedChunk(
+        ModelGpuData& m, std::size_t chunk_idx,
+        const std::vector<std::uint8_t>& vbytes,
+        const std::vector<std::uint32_t>& idx) {
+    auto& c = m.chunks[chunk_idx];
+
+    c.vertex_slice = pool_.alloc(vbytes.size(), 256);
+    if (!c.vertex_slice.valid()) return false;
+    wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
+                         c.vertex_slice.offset,
+                         vbytes.data(), vbytes.size());
+    m.vram_bytes_vbo += vbytes.size();
+
+    if (!idx.empty()) {
+        const std::size_t ibytes = idx.size() * sizeof(std::uint32_t);
+        c.index_slice = pool_.alloc(ibytes, 256);
+        if (!c.index_slice.valid()) {
+            pool_.free(c.vertex_slice);
+            m.vram_bytes_vbo -= c.vertex_slice.size;
+            c.vertex_slice = {};
+            return false;
+        }
+        wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
+                             c.index_slice.offset,
+                             idx.data(), ibytes);
+        m.vram_bytes_ebo += ibytes;
+    }
+
+    buildChunkBindGroup(m, chunk_idx);
+    c.is_resident      = true;
+    c.is_loading       = false;
+    c.loaded_frame_idx = streaming_frame_idx_;
+
+    // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
+    // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
+    // classifier reads to route instances of this mesh to the transparent
+    // pass. Done here (vs. once at sidecar bake time) because for the
+    // streaming path the bytes only arrive now; the same code services
+    // both the worker-result drain and the sync first-frame fallback.
+    if (m.mesh_has_alpha.size() == m.meshes.size()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi >= m.meshes.size()) continue;
+            const MeshInfo& mesh = m.meshes[mi];
+            if (mesh.vertex_count == 0) continue;
+            const std::size_t v_off =
+                std::size_t(m.mesh_chunk_local_base_vertex[mi])
+                * INSTANCED_VERTEX_STRIDE_BYTES;
+            const std::size_t v_end = v_off
+                + std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (v_end > vbytes.size()) continue;
+            bool any_alpha = false;
+            // Alpha byte sits in the high byte of the vertex's 3rd u32
+            // (shader: `w2 >> 24`), i.e. offset 11 within the 12-byte
+            // vertex record. See InstancedGeometry.h's vertex layout.
+            for (std::uint32_t v = 0; v < mesh.vertex_count && !any_alpha; ++v) {
+                const std::size_t a_off = v_off
+                    + std::size_t(v) * INSTANCED_VERTEX_STRIDE_BYTES + 11;
+                if (vbytes[a_off] < 255u) any_alpha = true;
+            }
+            m.mesh_has_alpha[mi] = any_alpha
+                ? std::uint8_t(1) : std::uint8_t(0);
+        }
+    }
+
+    // Mesh-local volumes for the meshes in this chunk. applyCachedModel
+    // left them zero because the bytes weren't in memory yet; the first
+    // chunk to deliver each mesh fills it in.
+    bool filled_volume = false;
+    if (!m.mesh_local_volumes.empty() && !idx.empty()) {
+        for (std::uint32_t mi : c.mesh_ids) {
+            if (mi >= m.meshes.size() || mi >= m.mesh_local_volumes.size()) continue;
+            if (m.mesh_local_volumes[mi] != 0.0) continue;
+            const MeshInfo& mesh = m.meshes[mi];
+            if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
+            const std::size_t v_off =
+                std::size_t(m.mesh_chunk_local_base_vertex[mi])
+                * INSTANCED_VERTEX_STRIDE_BYTES;
+            const std::size_t i_off = m.mesh_chunk_local_ebo_first_u32[mi];
+            const std::size_t v_end = v_off
+                + std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (v_end > vbytes.size()) continue;
+            if (i_off + mesh.index_count > idx.size()) continue;
+            ModelGpuData::MeshTriangles* tris =
+                (mi < m.mesh_triangles_cache.size())
+                    ? &m.mesh_triangles_cache[mi]
+                    : nullptr;
+            m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
+                mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count,
+                tris);
+            filled_volume = true;
+        }
+    }
+    // Fire the tool-refresh callback once per apply if anything new filled
+    // in. ViewportWindow wires this to its Volume-tool HUD; non-Qt hosts
+    // leave the callback null (no-op).
+    if (filled_volume && on_volume_dirty_) on_volume_dirty_();
+    return true;
+}
+
+StreamingThread::Request ViewportCore::makeChunkRequest(
+        const ModelGpuData& m, std::size_t chunk_idx,
+        std::uint32_t model_id) {
+    const auto& c = m.chunks[chunk_idx];
+    StreamingThread::Request req;
+    req.model_id              = model_id;
+    req.chunk_idx             = chunk_idx;
+    req.file_path             = m.streaming_file_path;
+    req.vertex_section_offset = m.streaming_vertex_section_offset;
+    req.index_section_offset  = m.streaming_index_section_offset;
+    req.v_ranges.reserve(c.mesh_ids.size());
+    req.i_ranges.reserve(c.mesh_ids.size());
+    for (std::uint32_t mi : c.mesh_ids) {
+        const MeshInfo& mesh = m.meshes[mi];
+        const std::uint64_t v_bytes =
+            std::uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        if (v_bytes > 0) {
+            req.v_ranges.emplace_back(std::uint64_t(mesh.vbo_byte_offset), v_bytes);
+        }
+        if (mesh.index_count > 0) {
+            req.i_ranges.emplace_back(
+                std::uint64_t(mesh.ebo_byte_offset / sizeof(std::uint32_t)),
+                std::uint64_t(mesh.index_count));
+        }
+    }
+    // LOD1 indices second pass — matches the chunk-local packing order
+    // (all LOD0 first, then LOD1) so the worker's concatenated index
+    // result lands at the offsets recorded in
+    // m.mesh_chunk_local_lod1_first_u32.
+    for (std::uint32_t mi : c.mesh_ids) {
+        const MeshInfo& mesh = m.meshes[mi];
+        if (mesh.lod1_index_count == 0) continue;
+        req.i_ranges.emplace_back(
+            std::uint64_t(mesh.lod1_ebo_byte_offset / sizeof(std::uint32_t)),
+            std::uint64_t(mesh.lod1_index_count));
+    }
+    return req;
+}
+
+bool ViewportCore::loadChunkBytesAndUploadGpu(ModelGpuData& m,
+                                              std::size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return false;
+    auto& c = m.chunks[chunk_idx];
+    if (c.is_resident) return true;
+    if (m.streaming_file_path.empty()) return false;
+
+    // Synchronous fallback: build the request, do the disk read inline,
+    // apply. Used only when the async path can't be — i.e. by the
+    // screenshot test on first frame.
+    StreamingThread::Request req = makeChunkRequest(m, chunk_idx, /*model_id*/ 0);
+
+    std::vector<std::uint8_t>  vbytes;
+    std::vector<std::uint32_t> idx;
+    if (!req.v_ranges.empty()) {
+        if (!readSidecarVertexRanges(req.file_path,
+                                     req.vertex_section_offset,
+                                     req.v_ranges, vbytes)) {
+            Log::warn() << "[wgpu stream] failed to read vertex chunk "
+                        << chunk_idx
+                        << " (" << req.v_ranges.size() << " ranges, total "
+                        << c.vertex_byte_size << " B)";
+            return false;
+        }
+    }
+    if (!req.i_ranges.empty()) {
+        if (!readSidecarIndexRanges(req.file_path,
+                                    req.index_section_offset,
+                                    req.i_ranges, idx)) {
+            Log::warn() << "[wgpu stream] failed to read index chunk "
+                        << chunk_idx
+                        << " (" << req.i_ranges.size() << " ranges, total "
+                        << c.index_count << " indices)";
+            return false;
+        }
+    }
+    return applyStreamedChunk(m, chunk_idx, vbytes, idx);
+}
+
+void ViewportCore::unloadChunk(ModelGpuData& m, std::size_t chunk_idx) {
+    if (chunk_idx >= m.chunks.size()) return;
+    auto& c = m.chunks[chunk_idx];
+    if (!c.is_resident) return;
+
+    if (c.bind_group) {
+        wgpuBindGroupRelease(c.bind_group);
+        c.bind_group = nullptr;
+    }
+    if (c.vertex_slice.valid()) {
+        m.vram_bytes_vbo -= c.vertex_slice.size;
+        pool_.free(c.vertex_slice);
+        c.vertex_slice = {};
+    }
+    if (c.index_slice.valid()) {
+        m.vram_bytes_ebo -= c.index_slice.size;
+        pool_.free(c.index_slice);
+        c.index_slice = {};
+    }
+    // Clear per-frame visibility so the chunk doesn't get re-rendered or
+    // re-evicted on the same frame; cull will set it again next time
+    // the chunk falls in the frustum.
+    c.total_visible_draws    = 0;
+    c.total_visible_vertices = 0;
+    c.is_resident = false;
+}

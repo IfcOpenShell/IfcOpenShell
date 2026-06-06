@@ -82,16 +82,8 @@ static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
 static Eigen::Vector3f orbitEye(const float target[3], float dist,
                           float yaw_deg, float pitch_deg);
 
-// Forward declaration — defined alongside the Volume tool. Called from
-// both applyCachedModel (full load) and applyStreamedChunk (per-chunk
-// fill in streaming mode) so the same quantised-bytes path runs in both.
-// Also writes the dequantised positions + index copy into `out_tris`
-// so the Area tool's CPU shadow is built in the same pass — the loop
-// already touches every vertex, so the marginal cost is one memcpy.
-static double computeMeshLocalVolumeQuantised(
-        const MeshInfo& mesh,
-        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
-        ModelGpuData::MeshTriangles* out_tris);
+// computeMeshLocalVolumeQuantised moved to ViewportCore.cpp anon
+// namespace (#84-n).
 
 // Ray-AABB (slab) + ray-triangle (Möller-Trumbore). Used by raycast()
 // AND by pickMeshLocalAt to refine the AABB-coarse surface hit into a
@@ -250,6 +242,7 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       pick_pipeline_(core_.pick_pipeline_),
       pool_           (core_.pool_),
       streaming_thread_(core_.streaming_thread_),
+      streaming_frame_idx_(core_.streaming_frame_idx_),
       models_gpu_     (core_.models_gpu_),
       next_model_id_  (core_.next_model_id_),
       next_object_id_ (core_.next_object_id_),
@@ -298,6 +291,12 @@ ViewportWindow::ViewportWindow(QWindow* parent)
     //   we fully own, and wgpu-native can do its lifetime gymnastics
     //   without stepping on Qt's bookkeeping.
     setSurfaceType(QSurface::OpenGLSurface);
+
+    // Tool-refresh callback. Fires from core_'s applyStreamedChunk when a
+    // freshly-arrived chunk filled in a mesh-local volume. The Volume
+    // tool's HUD is the only consumer today; updateVolumeReadout is a
+    // cheap no-op outside Volume mode.
+    core_.on_volume_dirty_ = [this]() { updateVolumeReadout(); };
 }
 
 ViewportWindow::~ViewportWindow() {
@@ -994,7 +993,7 @@ void ViewportWindow::finalizeModel(uint32_t model_id) {
         // no-op walk; left here so the layout stays parallel to the
         // sidecar gather.
 
-        if (!applyStreamedChunk(m, ci, vbytes, idx)) {
+        if (!core_.applyStreamedChunk(m, ci, vbytes, idx)) {
             Log::warn().nospace()
                 << "[wgpu direct] finalizeModel(" << model_id
                 << "): applyStreamedChunk failed on chunk " << ci
@@ -2791,69 +2790,7 @@ static double det3OfPlacement(const double M[16]) {
          + m02 * (m10 * m21 - m11 * m20);
 }
 
-// Local-frame volume of a mesh from its raw quantised vertex+index bytes.
-// `vbase` points at the first vertex (12 B/vertex, 3×uint16 pos quantised
-// against mesh.local_aabb), `ibase` at the first u32 index in mesh-local
-// numbering, `n_indices` is the LOD0 index count. Signed-tetrahedra-
-// from-origin → |sum|/6 so winding doesn't matter. Same algorithm as
-// Bonsai's meshLocalVolume; takes the dequant step from
-// INSTANCED_VERTEX_STRIDE_BYTES layout.
-//
-// When `out_tris` is non-null, dequantised positions + the LOD0 index
-// copy are written into it for the Area tool's CPU shadow. Avoids a
-// second pass over every vertex.
-static double computeMeshLocalVolumeQuantised(
-        const MeshInfo& mesh,
-        const uint8_t* vbase, const uint32_t* ibase, uint32_t n_indices,
-        ModelGpuData::MeshTriangles* out_tris) {
-    if (n_indices < 3 || vbase == nullptr || ibase == nullptr) return 0.0;
-    const float ax = mesh.local_aabb_min[0];
-    const float ay = mesh.local_aabb_min[1];
-    const float az = mesh.local_aabb_min[2];
-    const float ex = mesh.local_aabb_max[0] - ax;
-    const float ey = mesh.local_aabb_max[1] - ay;
-    const float ez = mesh.local_aabb_max[2] - az;
-    const float inv_q = 1.0f / 65535.0f;
-
-    // Eager-dequant every vertex once into a stack-allocated scratch
-    // (small per-mesh — bounded by mesh.vertex_count, typically tens
-    // to thousands). The Area shadow needs the same floats, so writing
-    // to scratch + memcpying out is cheaper than dequantising twice.
-    std::vector<float> positions;
-    positions.resize(size_t(mesh.vertex_count) * 3);
-    for (uint32_t v = 0; v < mesh.vertex_count; ++v) {
-        const uint8_t* p = vbase + size_t(v) * INSTANCED_VERTEX_STRIDE_BYTES;
-        uint16_t qx, qy, qz;
-        std::memcpy(&qx, p + 0, 2);
-        std::memcpy(&qy, p + 2, 2);
-        std::memcpy(&qz, p + 4, 2);
-        positions[3 * v + 0] = ax + float(qx) * inv_q * ex;
-        positions[3 * v + 1] = ay + float(qy) * inv_q * ey;
-        positions[3 * v + 2] = az + float(qz) * inv_q * ez;
-    }
-
-    double sum = 0.0;
-    for (uint32_t i = 0; i + 2 < n_indices; i += 3) {
-        const uint32_t i0 = ibase[i + 0];
-        const uint32_t i1 = ibase[i + 1];
-        const uint32_t i2 = ibase[i + 2];
-        if (i0 >= mesh.vertex_count || i1 >= mesh.vertex_count
-         || i2 >= mesh.vertex_count) continue;
-        const float* p0 = &positions[3 * i0];
-        const float* p1 = &positions[3 * i1];
-        const float* p2 = &positions[3 * i2];
-        const double cx = double(p1[1]) * p2[2] - double(p1[2]) * p2[1];
-        const double cy = double(p1[2]) * p2[0] - double(p1[0]) * p2[2];
-        const double cz = double(p1[0]) * p2[1] - double(p1[1]) * p2[0];
-        sum += double(p0[0]) * cx + double(p0[1]) * cy + double(p0[2]) * cz;
-    }
-
-    if (out_tris) {
-        out_tris->positions = std::move(positions);
-        out_tris->indices.assign(ibase, ibase + n_indices);
-    }
-    return std::abs(sum) / 6.0;
-}
+// computeMeshLocalVolumeQuantised moved to ViewportCore.cpp anon namespace (#84-n).
 
 void ViewportWindow::toggleAreaTool() {
     setToolMode(tool_mode_ == ToolMode::Area ? ToolMode::NoTool : ToolMode::Area);
@@ -4951,279 +4888,19 @@ void ViewportWindow::buildModelBindGroup(ModelGpuData& m) {
         return;
     }
     for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        buildChunkBindGroup(m, ci);
+        core_.buildChunkBindGroup(m, ci);
     }
 }
 
-void ViewportWindow::buildChunkBindGroup(ModelGpuData& m, size_t chunk_idx) {
-    if (chunk_idx >= m.chunks.size()) return;
-    auto& c = m.chunks[chunk_idx];
-    if (c.bind_group) {
-        wgpuBindGroupRelease(c.bind_group);
-        c.bind_group = nullptr;
-    }
-    if (!c.vertex_slice.valid() || !c.index_slice.valid()
-        || !c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform
-        || !m.mesh_storage || !m.instance_storage) {
-        return;
-    }
+// buildChunkBindGroup moved to ViewportCore (#84-n).
 
-    WGPUBindGroupEntry entries[7] = {};
-    // vertices and indices live in the shared pool. Each slice carries
-    // the specific sub-buffer it landed in (the pool may span several
-    // when scenes exceed wgpu's single-buffer cap). The other entries
-    // are still per-chunk small buffers (visible_draws/prefix_sums/uniform)
-    // or per-model (mesh/instance).
-    entries[0].binding = 0;
-    entries[0].buffer  = c.vertex_slice.buffer;
-    entries[0].offset  = c.vertex_slice.offset;
-    entries[0].size    = c.vertex_slice.size;
-    entries[1].binding = 1;
-    entries[1].buffer  = m.mesh_storage;
-    entries[1].size    = WGPU_WHOLE_SIZE;
-    entries[2].binding = 2;
-    entries[2].buffer  = m.instance_storage;
-    entries[2].size    = WGPU_WHOLE_SIZE;
-    entries[3].binding = 3;
-    entries[3].buffer  = c.index_slice.buffer;
-    entries[3].offset  = c.index_slice.offset;
-    entries[3].size    = c.index_slice.size;
-    entries[4].binding = 4;
-    entries[4].buffer  = c.visible_draws_buffer;
-    entries[4].size    = WGPU_WHOLE_SIZE;
-    entries[5].binding = 5;
-    entries[5].buffer  = c.prefix_sums_buffer;
-    entries[5].size    = WGPU_WHOLE_SIZE;
-    entries[6].binding = 6;
-    entries[6].buffer  = c.per_chunk_uniform;
-    entries[6].size    = 16;
+// makeChunkRequest moved to ViewportCore (folded into loadChunkBytesAndUploadGpu) (#84-n).
 
-    WGPUBindGroupDescriptor desc = {};
-    desc.layout     = model_bgl_;
-    desc.entryCount = 7;
-    desc.entries    = entries;
-    desc.label      = svFromCStr("ifcviewer-wgpu.chunk_bind_group");
-    c.bind_group = wgpuDeviceCreateBindGroup(device_, &desc);
-}
+// applyStreamedChunk moved to ViewportCore (#84-n).
 
-// Build the worker request for a chunk. Walks the chunk's mesh_ids and
-// derives scatter-gather byte/index ranges from each mesh's sidecar
-// offsets. Pure function of model + chunk metadata; safe to call from
-// the main thread.
-static StreamingThread::Request makeChunkRequest(
-        const ModelGpuData& m, size_t chunk_idx, uint32_t model_id) {
-    const auto& c = m.chunks[chunk_idx];
-    StreamingThread::Request req;
-    req.model_id              = model_id;
-    req.chunk_idx             = chunk_idx;
-    req.file_path             = m.streaming_file_path;
-    req.vertex_section_offset = m.streaming_vertex_section_offset;
-    req.index_section_offset  = m.streaming_index_section_offset;
-    req.v_ranges.reserve(c.mesh_ids.size());
-    req.i_ranges.reserve(c.mesh_ids.size());
-    for (uint32_t mi : c.mesh_ids) {
-        const MeshInfo& mesh = m.meshes[mi];
-        const uint64_t v_bytes = uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (v_bytes > 0) {
-            req.v_ranges.emplace_back(uint64_t(mesh.vbo_byte_offset), v_bytes);
-        }
-        if (mesh.index_count > 0) {
-            req.i_ranges.emplace_back(
-                uint64_t(mesh.ebo_byte_offset / sizeof(uint32_t)),
-                uint64_t(mesh.index_count));
-        }
-    }
-    // LOD1 indices second pass — matches the chunk-local packing order
-    // (all LOD0 first, then LOD1) so the worker's concatenated index
-    // result lands at the offsets recorded in
-    // m.mesh_chunk_local_lod1_first_u32.
-    for (uint32_t mi : c.mesh_ids) {
-        const MeshInfo& mesh = m.meshes[mi];
-        if (mesh.lod1_index_count == 0) continue;
-        req.i_ranges.emplace_back(
-            uint64_t(mesh.lod1_ebo_byte_offset / sizeof(uint32_t)),
-            uint64_t(mesh.lod1_index_count));
-    }
-    return req;
-}
+// loadChunkBytesAndUploadGpu moved to ViewportCore (#84-n).
 
-// Apply a streamed chunk's bytes to the GPU: pool-allocate vertex +
-// index slices, queueWriteBuffer the bytes, build the bind group, flip
-// is_resident=true. Returns false on pool OOM (caller should have made
-// room first); on failure, no slices are claimed and is_resident
-// stays false. Called both from the worker-result drain (async) and
-// from loadChunkBytesAndUploadGpu (sync first-frame fallback).
-bool ViewportWindow::applyStreamedChunk(
-        ModelGpuData& m, size_t chunk_idx,
-        const std::vector<uint8_t>& vbytes,
-        const std::vector<uint32_t>& idx) {
-    auto& c = m.chunks[chunk_idx];
-
-    c.vertex_slice = pool_.alloc(vbytes.size(), 256);
-    if (!c.vertex_slice.valid()) return false;
-    wgpuQueueWriteBuffer(queue_, c.vertex_slice.buffer,
-                         c.vertex_slice.offset,
-                         vbytes.data(), vbytes.size());
-    m.vram_bytes_vbo += vbytes.size();
-
-    if (!idx.empty()) {
-        const size_t ibytes = idx.size() * sizeof(uint32_t);
-        c.index_slice = pool_.alloc(ibytes, 256);
-        if (!c.index_slice.valid()) {
-            pool_.free(c.vertex_slice);
-            m.vram_bytes_vbo -= c.vertex_slice.size;
-            c.vertex_slice = {};
-            return false;
-        }
-        wgpuQueueWriteBuffer(queue_, c.index_slice.buffer,
-                             c.index_slice.offset,
-                             idx.data(), ibytes);
-        m.vram_bytes_ebo += ibytes;
-    }
-
-    buildChunkBindGroup(m, chunk_idx);
-    c.is_resident      = true;
-    c.is_loading       = false;
-    c.loaded_frame_idx = streaming_frame_idx_;
-
-    // Per-mesh alpha probe. Scan every vertex of every mesh in this chunk
-    // for any alpha byte < 255 — fires the mesh_has_alpha flag the cull
-    // classifier reads to route instances of this mesh to the transparent
-    // pass. Done here (vs. once at sidecar bake time) because for the
-    // streaming path the bytes only arrive now; the same code services
-    // both the worker-result drain and the sync first-frame fallback.
-    // O(verts-in-chunk) — typically a few k per chunk, dominated by the
-    // queueWriteBuffer above. Spatial-bucket re-entry for the same mesh
-    // from a different chunk overwrites — alpha is a per-mesh property
-    // so a redundant assign is correct; cheap.
-    if (m.mesh_has_alpha.size() == m.meshes.size()) {
-        for (uint32_t mi : c.mesh_ids) {
-            if (mi >= m.meshes.size()) continue;
-            const MeshInfo& mesh = m.meshes[mi];
-            if (mesh.vertex_count == 0) continue;
-            const size_t v_off = size_t(m.mesh_chunk_local_base_vertex[mi])
-                               * INSTANCED_VERTEX_STRIDE_BYTES;
-            const size_t v_end = v_off
-                + size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-            if (v_end > vbytes.size()) continue;
-            bool any_alpha = false;
-            // Alpha byte sits in the high byte of the vertex's 3rd u32
-            // (shader: `w2 >> 24`), i.e. offset 11 within the 12-byte
-            // vertex record. See InstancedGeometry.h's vertex layout
-            // comment.
-            for (uint32_t v = 0; v < mesh.vertex_count && !any_alpha; ++v) {
-                const size_t a_off = v_off
-                    + size_t(v) * INSTANCED_VERTEX_STRIDE_BYTES + 11;
-                if (vbytes[a_off] < 255u) any_alpha = true;
-            }
-            m.mesh_has_alpha[mi] = any_alpha ? uint8_t(1) : uint8_t(0);
-        }
-    }
-
-    // Mesh-local volumes for the meshes in this chunk. applyCachedModel
-    // left them zero because the bytes weren't in memory yet; the first
-    // chunk to deliver each mesh fills it in. Spatial-bucket mode may
-    // re-enter for the same mesh from a different chunk — the != 0 guard
-    // skips the redundant work. Indices are mesh-local (numbered against
-    // the mesh's own vertex range), so vbase + ibase are per-mesh slices
-    // into the chunk's freshly-arrived bytes.
-    bool filled_volume = false;
-    if (!m.mesh_local_volumes.empty() && !idx.empty()) {
-        for (uint32_t mi : c.mesh_ids) {
-            if (mi >= m.meshes.size() || mi >= m.mesh_local_volumes.size()) continue;
-            if (m.mesh_local_volumes[mi] != 0.0) continue;
-            const MeshInfo& mesh = m.meshes[mi];
-            if (mesh.vertex_count == 0 || mesh.index_count < 3) continue;
-            const size_t v_off = size_t(m.mesh_chunk_local_base_vertex[mi])
-                               * INSTANCED_VERTEX_STRIDE_BYTES;
-            const size_t i_off = m.mesh_chunk_local_ebo_first_u32[mi];
-            const size_t v_end = v_off
-                + size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-            if (v_end > vbytes.size()) continue;
-            if (i_off + mesh.index_count > idx.size()) continue;
-            ModelGpuData::MeshTriangles* tris =
-                (mi < m.mesh_triangles_cache.size())
-                    ? &m.mesh_triangles_cache[mi]
-                    : nullptr;
-            m.mesh_local_volumes[mi] = computeMeshLocalVolumeQuantised(
-                mesh, vbytes.data() + v_off, idx.data() + i_off, mesh.index_count,
-                tris);
-            filled_volume = true;
-        }
-    }
-    // If the user is staring at a Volume readout while chunks page in,
-    // refresh as soon as a chunk delivers a mesh we just filled — they'd
-    // otherwise see 0 m³ for the whole selection until they click again.
-    if (filled_volume && tool_mode_ == ToolMode::Volume) {
-        updateVolumeReadout();
-    }
-    return true;
-}
-
-bool ViewportWindow::loadChunkBytesAndUploadGpu(ModelGpuData& m, size_t chunk_idx) {
-    if (chunk_idx >= m.chunks.size()) return false;
-    auto& c = m.chunks[chunk_idx];
-    if (c.is_resident) return true;
-    if (m.streaming_file_path.empty()) return false;
-
-    // Synchronous fallback: build the request, do the disk read inline,
-    // apply. Used only when the async path can't be — i.e. by the
-    // screenshot test on first frame. Normal streaming goes through
-    // driveStreamingLoads → streaming_thread_.
-    StreamingThread::Request req = makeChunkRequest(m, chunk_idx, /*mid*/ 0);
-    std::vector<uint8_t>  vbytes;
-    std::vector<uint32_t> idx;
-    if (!req.v_ranges.empty()) {
-        if (!readSidecarVertexRanges(req.file_path,
-                                     req.vertex_section_offset,
-                                     req.v_ranges, vbytes)) {
-            Log::warn().noquote().nospace()
-                << "[wgpu stream] failed to read vertex chunk " << chunk_idx
-                << " (" << req.v_ranges.size() << " ranges, total "
-                << c.vertex_byte_size << " B)";
-            return false;
-        }
-    }
-    if (!req.i_ranges.empty()) {
-        if (!readSidecarIndexRanges(req.file_path,
-                                    req.index_section_offset,
-                                    req.i_ranges, idx)) {
-            Log::warn().noquote().nospace()
-                << "[wgpu stream] failed to read index chunk " << chunk_idx
-                << " (" << req.i_ranges.size() << " ranges, total "
-                << c.index_count << " indices)";
-            return false;
-        }
-    }
-    return applyStreamedChunk(m, chunk_idx, vbytes, idx);
-}
-
-void ViewportWindow::unloadChunk(ModelGpuData& m, size_t chunk_idx) {
-    if (chunk_idx >= m.chunks.size()) return;
-    auto& c = m.chunks[chunk_idx];
-    if (!c.is_resident) return;
-
-    if (c.bind_group) {
-        wgpuBindGroupRelease(c.bind_group);
-        c.bind_group = nullptr;
-    }
-    if (c.vertex_slice.valid()) {
-        m.vram_bytes_vbo -= c.vertex_slice.size;
-        pool_.free(c.vertex_slice);
-        c.vertex_slice = {};
-    }
-    if (c.index_slice.valid()) {
-        m.vram_bytes_ebo -= c.index_slice.size;
-        pool_.free(c.index_slice);
-        c.index_slice = {};
-    }
-    // Clear per-frame visibility so the chunk doesn't get re-rendered or
-    // re-evicted on the same frame; cull will set it again next time
-    // the chunk falls in the frustum.
-    c.total_visible_draws    = 0;
-    c.total_visible_vertices = 0;
-    c.is_resident = false;
-}
+// unloadChunk moved to ViewportCore (#84-n).
 
 void ViewportWindow::driveStreamingLoads() {
     // Bump LRU clock once per call. Resident-and-visible chunks get
@@ -5350,7 +5027,7 @@ void ViewportWindow::driveStreamingLoads() {
             }
         }
         if (!victim_m) return false;
-        unloadChunk(*victim_m, victim_ci);
+        core_.unloadChunk(*victim_m, victim_ci);
         ++streaming_evictions_lru_this_frame_;
         return true;
     };
@@ -5423,7 +5100,7 @@ void ViewportWindow::driveStreamingLoads() {
         victim.last_evicted_by_priority  = cand_priority;
         victim.last_evicted_frame_idx    = streaming_frame_idx_;
 
-        unloadChunk(*victim_m, victim_ci);
+        core_.unloadChunk(*victim_m, victim_ci);
         ++streaming_evictions_pri_this_frame_;
         return true;
     };
@@ -5461,7 +5138,7 @@ void ViewportWindow::driveStreamingLoads() {
                     << res.model_id << " chunk " << res.chunk_idx;
                 continue;
             }
-            if (!applyStreamedChunk(m, res.chunk_idx, res.vbytes, res.idx)) {
+            if (!core_.applyStreamedChunk(m, res.chunk_idx, res.vbytes, res.idx)) {
                 // Pool OOM at apply time — pool fragmented further
                 // between enqueue and worker-result. Set the same
                 // cooldown as the enqueue-time block: we just paid for
@@ -5590,14 +5267,14 @@ void ViewportWindow::driveStreamingLoads() {
         // wait, capturing at the wrong size. With sync loads the chunk
         // appears in the same frame we enqueue, no deferred-state to manage.
         if (!pending_screenshot_path_.empty()) {
-            if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
+            if (core_.loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
                 ++enqueued;
                 c.last_visible_frame_idx = streaming_frame_idx_;
             }
             continue;
         }
 
-        if (streaming_thread_.enqueue(makeChunkRequest(*cand.m, cand.ci, cand.mid))) {
+        if (streaming_thread_.enqueue(ViewportCore::makeChunkRequest(*cand.m, cand.ci, cand.mid))) {
             c.is_loading = true;
             ++enqueued;
         }

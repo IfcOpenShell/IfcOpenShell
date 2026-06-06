@@ -270,26 +270,9 @@ private:
 
     bool  buildPipelines();
     void  buildModelBindGroup(ModelGpuData& m);
-    void  buildChunkBindGroup(ModelGpuData& m, size_t chunk_idx);
-    // Streaming: read the chunk's vertex + index bytes from disk,
-    // sub-allocate ranges in pool_, queueWriteBuffer them in, build the
-    // chunk's bind group, flip is_resident=true. Returns true on success;
-    // false if either the disk read or a pool alloc fails (caller is
-    // expected to have already evicted enough). No-op (returns true)
-    // when already resident.
-    bool  loadChunkBytesAndUploadGpu(ModelGpuData& m, size_t chunk_idx);
-    // Pool-allocate + queueWriteBuffer + build bind group for a chunk
-    // whose vbytes/idx have already been read (by either the worker
-    // thread's drained result or the sync fallback). Returns false on
-    // pool OOM. Toggles is_resident=true / is_loading=false on success.
-    bool  applyStreamedChunk(ModelGpuData& m, size_t chunk_idx,
-                             const std::vector<uint8_t>& vbytes,
-                             const std::vector<uint32_t>& idx);
-    // Release a resident chunk's pool ranges + bind group; flip
-    // is_resident=false. The chunk's CPU metadata (offsets, AABB,
-    // visible-draw scratch) is retained so a subsequent
-    // loadChunkBytesAndUploadGpu can bring it back without re-planning.
-    void  unloadChunk(ModelGpuData& m, size_t chunk_idx);
+    // buildChunkBindGroup / applyStreamedChunk / loadChunkBytesAndUploadGpu
+    // / unloadChunk moved to ViewportCore (#84-n). Call them via core_.
+    //
     // Called from render() after cull: find non-resident chunks with
     // current visible draw counts > 0 and bring them resident. When the
     // pool is full, evicts LRU non-visible chunks first, then falls back
@@ -946,9 +929,10 @@ public:
     // scene fits through the constraints a browser will impose.
     bool web_limits_ = false;
 
-    // Monotonic frame counter, bumped at the top of driveStreamingLoads.
-    // Used as the LRU key for chunk eviction.
-    uint64_t streaming_frame_idx_           = 0;
+    // Monotonic frame counter alias (storage in core_). Bumped at the
+    // top of driveStreamingLoads; used as the LRU key for chunk
+    // eviction.
+    uint64_t& streaming_frame_idx_;
 
     // Sub-allocator for all chunk vertex + index bytes. Sized at startup
     // by probeAndCreatePool() — the runtime tells us how big a single

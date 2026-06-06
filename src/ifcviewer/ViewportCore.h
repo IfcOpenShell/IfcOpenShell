@@ -38,6 +38,7 @@
 #include <Eigen/Dense>
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -252,6 +253,46 @@ public:
     bool initWgpu(bool web_limits);
     void shutdown();
 
+    // ---- Chunk residency (#84-n) ------------------------------------------
+    //
+    // Build the per-chunk WGPUBindGroup over its current pool slices +
+    // shared model storage. Idempotent — releases any previous bind group
+    // first. Called after a slice's bytes have been written via
+    // applyStreamedChunk, and from buildModelBindGroup for every chunk
+    // at model-load time.
+    void buildChunkBindGroup(ModelGpuData& m, std::size_t chunk_idx);
+
+    // Pool-allocate vertex + index slices for the chunk, queueWriteBuffer
+    // the bytes, build the bind group, flip is_resident=true. Returns
+    // false on pool OOM (caller should have made room first); on
+    // failure, no slices are claimed and is_resident stays false.
+    // Called from the worker-result drain (async) and from
+    // loadChunkBytesAndUploadGpu (sync first-frame fallback). Fires
+    // on_volume_dirty_ when this chunk filled in any mesh-local volume
+    // so consumers (the Volume tool's HUD) can refresh.
+    bool applyStreamedChunk(ModelGpuData& m, std::size_t chunk_idx,
+                            const std::vector<std::uint8_t>& vbytes,
+                            const std::vector<std::uint32_t>& idx);
+
+    // Synchronous-fallback path: read this chunk's byte ranges from
+    // the sidecar file directly (no worker thread) and apply. Used by
+    // the screenshot test on first frame, and any caller that needs a
+    // chunk resident inside the same call (no deferred-state to
+    // manage). Returns true on success.
+    bool loadChunkBytesAndUploadGpu(ModelGpuData& m, std::size_t chunk_idx);
+
+    // Release the chunk's pool slices + bind group, clear residency.
+    // No-op if !c.is_resident.
+    void unloadChunk(ModelGpuData& m, std::size_t chunk_idx);
+
+    // Build the worker request for a chunk. Walks the chunk's mesh_ids
+    // and derives scatter-gather byte/index ranges from each mesh's
+    // sidecar offsets. Pure function of model + chunk metadata; safe to
+    // call from the main thread. Static — also used by the still-in-VW
+    // driveStreamingLoads to enqueue against streaming_thread_.
+    static StreamingThread::Request makeChunkRequest(
+        const ModelGpuData& m, std::size_t chunk_idx, std::uint32_t model_id);
+
 private:
     bool probeAndCreatePool();
 
@@ -369,6 +410,19 @@ private:
     // the sidecar's local object_ids by base_object_id_so_far so picks
     // are unambiguous across models.
     uint32_t next_object_id_ = 1;
+
+    // Monotonic streaming-residency clock. Bumped at the top of
+    // driveStreamingLoads; applyStreamedChunk stamps loaded_frame_idx
+    // with it for the new-chunk grace period; the LRU evictor reads
+    // last_visible_frame_idx against it. Lifetime matches models_gpu_
+    // (resets only at shutdown).
+    std::uint64_t streaming_frame_idx_ = 0;
+
+    // Tool-refresh callback: fired by applyStreamedChunk when a newly-
+    // arrived chunk filled in a mesh-local volume. ViewportWindow wires
+    // this to its Volume-tool HUD refresh in the ctor. Null by default
+    // (no-op) so headless and non-Qt hosts pay nothing.
+    std::function<void()> on_volume_dirty_;
 
     // Federation false origin (metres, double precision). Applied to
     // every instance composition so geometry rebased through a large
