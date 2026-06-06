@@ -271,7 +271,12 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.data.objects.remove(obj)
 
     @classmethod
-    def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
+    def delete_ifc_object(
+        cls,
+        obj: bpy.types.Object,
+        allow_auto_annotation_deletion: bool = False,
+        suppress_spatial_import: bool = False,
+    ) -> None:
         ifc_file = tool.Ifc.get()
         element = tool.Ifc.get_entity(obj)
         if not element:
@@ -279,7 +284,7 @@ class Geometry(bonsai.core.tool.Geometry):
         elif element.is_a("IfcAnnotation"):
             if element.ObjectType == "DRAWING":
                 return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
-            elif tool.Drawing.is_auto_annotation(element):
+            elif tool.Drawing.is_auto_annotation(element) and not allow_auto_annotation_deletion:
                 return  # For now, these are special referenced objects and cannot be deleted. Exclude instead.
         elif element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.boundary.remove_boundary(ifc_file, boundary=element)
@@ -374,7 +379,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 for data_ in data_to_remove:
                     tool.Blender.remove_data_block(data_)
 
-            if is_spatial:
+            if is_spatial and not suppress_spatial_import:
                 bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
         try:
             obj.name
