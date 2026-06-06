@@ -969,51 +969,13 @@ void ViewportWindow::toggleSectionTool() {
     if (isExposed()) requestUpdate();
 }
 
-bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
-                                                  const Eigen::Vector3f& normal,
-                                                  float visual_radius) {
-    if (int(section_planes_.size()) >= kMaxSectionPlanes) {
-        std::fprintf(stderr, "[warn] [wgpu section] cap reached (%d planes)\n",
-                     kMaxSectionPlanes);
-        return false;
-    }
-    Eigen::Vector3f n = normal;
-    if (n.squaredNorm() < 1e-8f) return false;
-    n.normalize();
-    // Auto-flip the normal so the camera-facing half gets cut away — that
-    // way the first click always reveals the surface the user just clicked.
-    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
-                                   camera_yaw_deg_, camera_pitch_deg_);
-    const Eigen::Vector3f eye_dir = eye - point;
-    if (n.dot(eye_dir) < 0.0f) n = -n;
-
-    SectionPlane p;
-    p.n             = n;
-    p.origin        = point;
-    p.d             = -n.dot(point);
-    p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
-    section_planes_.push_back(p);
-    Log::info().noquote().nospace()
-        << "[wgpu section] added plane #" << section_planes_.size() - 1
-        << " origin=(" << point.x() << "," << point.y() << "," << point.z() << ")"
-        << " normal=(" << n.x() << "," << n.y() << "," << n.z() << ")";
-    if (isExposed()) requestUpdate();
-    return true;
+bool ViewportWindow::addSectionPlaneAtSurface(const Eigen::Vector3f& point, const Eigen::Vector3f& normal, float visual_radius) {
+    return core_.addSectionPlaneAtSurface(point, normal, visual_radius);
 }
 
-void ViewportWindow::removeSectionPlane(int index) {
-    if (index < 0 || index >= int(section_planes_.size())) return;
-    section_planes_.erase(section_planes_.begin() + index);
-    Log::info().noquote() << "[wgpu section] removed plane" << index;
-    if (isExposed()) requestUpdate();
-}
+void ViewportWindow::removeSectionPlane(int index) { core_.removeSectionPlane(index); }
 
-void ViewportWindow::clearSectionPlanes() {
-    if (section_planes_.empty()) return;
-    section_planes_.clear();
-    Log::info() << "[wgpu section] cleared all planes";
-    if (isExposed()) requestUpdate();
-}
+void ViewportWindow::clearSectionPlanes() { core_.clearSectionPlanes(); }
 
 void ViewportWindow::setOverlayLines(
         const std::vector<OverlayRenderer::LineGroup>& groups) {

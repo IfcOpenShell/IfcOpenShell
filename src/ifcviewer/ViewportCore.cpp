@@ -5268,3 +5268,52 @@ void ViewportCore::render() {
         }
     }
 }
+
+// ===========================================================================
+// Section planes (#84-y)
+// ===========================================================================
+
+bool ViewportCore::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
+                                            const Eigen::Vector3f& normal,
+                                            float visual_radius) {
+    if (int(section_planes_.size()) >= kMaxSectionPlanes) {
+        Log::warn() << "[wgpu section] cap reached (" << kMaxSectionPlanes
+                    << " planes)";
+        return false;
+    }
+    Eigen::Vector3f n = normal;
+    if (n.squaredNorm() < 1e-8f) return false;
+    n.normalize();
+    // Auto-flip the normal so the camera-facing half gets cut away.
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    const Eigen::Vector3f eye_dir = eye - point;
+    if (n.dot(eye_dir) < 0.0f) n = -n;
+
+    SectionPlane p;
+    p.n             = n;
+    p.origin        = point;
+    p.d             = -n.dot(point);
+    p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
+    section_planes_.push_back(p);
+    Log::info()
+        << "[wgpu section] added plane #" << section_planes_.size() - 1
+        << " origin=(" << point.x() << "," << point.y() << "," << point.z() << ")"
+        << " normal=(" << n.x() << "," << n.y() << "," << n.z() << ")";
+    host_->requestFrame();
+    return true;
+}
+
+void ViewportCore::removeSectionPlane(int index) {
+    if (index < 0 || index >= int(section_planes_.size())) return;
+    section_planes_.erase(section_planes_.begin() + index);
+    Log::info() << "[wgpu section] removed plane " << index;
+    host_->requestFrame();
+}
+
+void ViewportCore::clearSectionPlanes() {
+    if (section_planes_.empty()) return;
+    section_planes_.clear();
+    Log::info() << "[wgpu section] cleared all planes";
+    host_->requestFrame();
+}

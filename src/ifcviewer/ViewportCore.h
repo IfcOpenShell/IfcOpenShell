@@ -355,6 +355,23 @@ public:
     void finalizeScreenshotCapture(WGPUBuffer capture_buffer,
                                    std::uint32_t padded_bpr);
 
+    // ---- Section planes (#84-y) -------------------------------------------
+    //
+    // Append a section plane at the supplied surface hit, with a normal
+    // auto-flipped toward the camera so the first click reveals the
+    // surface the user just clicked. `visual_radius` controls the
+    // overlay gizmo size; <= 0 falls back to 1 m. Returns false when
+    // the kMaxSectionPlanes cap is already reached.
+    bool addSectionPlaneAtSurface(const Eigen::Vector3f& point,
+                                  const Eigen::Vector3f& normal,
+                                  float visual_radius);
+
+    // Remove a single section plane by index (no-op when out of range).
+    void removeSectionPlane(int index);
+
+    // Drop every section plane. No-op when none are active.
+    void clearSectionPlanes();
+
     // ---- Render loop (#84-x) ----------------------------------------------
     //
     // Encode one frame: acquire the swapchain texture, run cull (parallel
