@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "FrameStats.h"
 #include "SidecarCache.h"
 #include "BufferPool.h"
 #include "InstanceCompose.h"
@@ -88,6 +89,12 @@ public:
     void  onSurfacePickedInTool(int x_px, int y_px, int modifiers) override;
     void  onToolModeChanged(int tool_mode) override;
     void  onToolBackspacePressed() override;
+    void  onFrameStats(const FrameStats& stats) override;
+    void  encodeOverlaysInMainPass(WGPURenderPassEncoder pass,
+                                   const OverlayFrame& frame) override;
+    void  encodeOverlaysPostMain(WGPUCommandEncoder enc,
+                                 WGPUTextureView surface_view,
+                                 const OverlayFrame& frame) override;
     void  saveScreenshotRgba8(const std::string& path, const std::uint8_t* rgba,
                               int w, int h) override;
 
@@ -463,17 +470,11 @@ public:
     // ViewportWindow::FrameStats so bonsai's status bar binding ports
     // unchanged. gl_draw_calls is the wgpu draw-call count (named for
     // continuity with the GL field bonsai's status format string uses).
-    struct FrameStats {
-        float    fps;
-        float    frame_time_ms;
-        uint32_t total_objects;
-        uint32_t visible_objects;
-        uint32_t total_triangles;
-        uint32_t visible_triangles;
-        uint32_t unique_meshes;
-        uint32_t gl_draw_calls;        // wgpu draw-call count; name kept for bonsai parity
-        uint32_t indirect_sub_draws;   // sub-draws packed into the chunk-indirect lists
-    };
+    // ViewportWindow::FrameStats is a using-alias for ::FrameStats (moved
+    // to its own Qt-free header so ViewportHost::onFrameStats can carry
+    // it without dragging Qt into core). Existing bonsai signal binding
+    // (frameStatsUpdated) keeps using the qualified name.
+    using FrameStats = ::FrameStats;
 
 signals:
     // Selection moved by a pick / marquee. Emitted with the active id
@@ -830,14 +831,16 @@ private:
     // rate matches GL's; on the federation scene this lands obj/tri
     // counts within ~10% of GL's across an orbit (vs ~3× without the
     // bump). Override at runtime via WGPU_MIN_PX / WGPU_MIN_PX_MOTION.
-    float min_pixel_radius_        = 3.0f;
-    float motion_min_pixel_radius_ = 15.0f;
+    // Cull-tuning aliases (storage in core_, #84-x). VW's env-var prelude
+    // still mutates these through the alias.
+    float& min_pixel_radius_;
+    float& motion_min_pixel_radius_;
 
     // Whether driveCull dispatches per-model work via std::async. ON by
     // default; setting WGPU_CULL_THREADS=0 forces sequential cull for
     // measurement (does std::async actually parallelize on this libstdc++?
     // and is per-model the right granularity?).
-    bool  cull_threads_enabled_     = true;
+    bool&  cull_threads_enabled_;
 
 public:
     // Master switch for HiZ occlusion. OFF by default — has two issues vs
@@ -893,16 +896,14 @@ public:
     // 0 loads (convergence) before starting the orbit sweep, capped by
     // MAX_WARM_FRAMES so chronically thrashing scenes still produce
     // numbers. Both reset implicitly per bench run via setBenchmarkFrames.
-    int  bench_warm_streak_          = 0;
-    int  bench_warm_frames_total_    = 0;
-    bool bench_warm_done_            = false;  // latch: once true, gate is open for this run
+    int&  bench_warm_streak_;
+    int&  bench_warm_frames_total_;
+    bool& bench_warm_done_;
 
 private:
 
-    // Switch to LOD1 when an instance's projected bounding-sphere radius
-    // drops below this many pixels. 0 disables (always LOD0). Defaults
-    // mirror AppSettings::lod1PixelThreshold() in the GL backend.
-    float lod1_pixel_threshold_ = 30.0f;
+    // LOD1 pixel threshold alias (storage in core_, #84-x).
+    float& lod1_pixel_threshold_;
 
     // Per-model state aliases (storage in core_).
     std::unordered_map<uint32_t, ModelGpuData>& models_gpu_;
@@ -917,22 +918,13 @@ private:
     // alias so VW::setCamera can flip it without poking through core_.
     bool& initial_view_applied_;
 
-    // Camera state at the previous render() for motion detection. Any
-    // change means we apply the motion contribution threshold this frame
-    // (drops more sub-pixel work mid-orbit; matches GL behaviour).
-    float prev_camera_target_[3]   = { 0, 0, 0 };
-    float prev_camera_distance_    = 0.0f;
-    float prev_camera_yaw_deg_     = 0.0f;
-    float prev_camera_pitch_deg_   = 0.0f;
-    bool  has_prev_camera_         = false;
-
-    // True iff the last cull used the motion threshold. Render schedules a
-    // single settle frame after motion stops so the previously dropped
-    // sub-pixel instances reappear at the still threshold. Without this,
-    // event-driven rendering would leave those instances missing forever
-    // because no further frame is requested after the user releases the
-    // mouse. Matches GL's last_cull_was_motion_ behaviour.
-    bool  last_cull_was_motion_    = false;
+    // Camera-state aliases for motion detection (storage in core_, #84-x).
+    float (&prev_camera_target_)[3];
+    float& prev_camera_distance_;
+    float& prev_camera_yaw_deg_;
+    float& prev_camera_pitch_deg_;
+    bool&  has_prev_camera_;
+    bool&  last_cull_was_motion_;
 
     // Pending one-shot screenshot path alias (storage in core_).
     // Captured at the end of the next render(); driveStreamingLoads
@@ -949,51 +941,27 @@ private:
     Eigen::Vector2i          nav_press_pos_;
     bool            nav_dragged_       = false;
 
-    // Benchmark mode. setBenchmarkFrames(N) arms it; render() integrates the
-    // yaw, captures per-frame ms after warmup, and prints + quits when the
-    // target frame count is hit.
-    int   bench_total_    = 0;
-    int   bench_count_    = 0;
-    int   bench_warmup_   = 5;
-    float bench_yaw_start_ = 0.0f;
-    float bench_yaw_speed_ = 0.5f;  // degrees per frame
-    std::vector<float> bench_frame_ms_;
-
-    // Per-frame stat snapshot from the last cull. Sum of m.mesh_draws across
-    // visible models. Exposed via the benchmark summary; will grow into a
-    // proper FrameStats signal when stage 11's host integration arrives.
-    uint32_t last_visible_objects_   = 0;
-    uint32_t last_visible_triangles_ = 0;
-    uint32_t last_sub_draws_         = 0;
-
-    // Phase-time accumulators for benchmark mode. Each window measures a
-    // distinct slice of render() so we can attribute frame cost. Totals
-    // across the timed window are divided by bench_total_ on print.
-    double   bench_cull_ms_total_     = 0.0;
-    double   bench_stream_ms_total_   = 0.0;  // driveStreamingLoads only
-    double   bench_hiz_readback_ms_total_ = 0.0;
-    double   bench_submit_ms_total_   = 0.0;
-
-    // Last-frame per-phase times. Available in interactive mode (no
-    // bench) so the periodic [frame] heartbeat log can show cull /
-    // stream cost without needing the bench averaging machinery.
-    double   last_cull_ms_            = 0.0;
-    double   last_cull_compute_ms_    = 0.0;  // parallel per-model cull
-    double   last_cull_upload_ms_     = 0.0;  // sequential queueWriteBuffer pass
-    double   last_stream_ms_          = 0.0;
-
-    // Tick count for the interactive (non-bench) [frame] heartbeat log.
-    // Increments every render() and prints stats every N frames.
-    int      interactive_frame_count_ = 0;
-
-    // Rolling 60-sample frame-time window for the smoothed fps emitted
-    // via frameStatsUpdated. Index wraps; sum kept incrementally to
-    // avoid a per-frame reduction.
-    static constexpr int FRAME_TIME_WINDOW = 60;
-    double   frame_time_ms_window_[FRAME_TIME_WINDOW] = {};
-    int      frame_time_ms_count_  = 0;
-    int      frame_time_ms_head_   = 0;
-    double   frame_time_ms_sum_    = 0.0;
+    // Benchmark + frame-stats aliases (storage in core_, #84-x).
+    // setBenchmarkFrames(N) writes the bench_* fields through these
+    // aliases; the heartbeat / FrameStats path in core_.render reads
+    // and resets them.
+    int&   bench_total_;
+    int&   bench_count_;
+    int&   bench_warmup_;
+    float& bench_yaw_start_;
+    float& bench_yaw_speed_;
+    std::vector<float>& bench_frame_ms_;
+    uint32_t& last_visible_objects_;
+    uint32_t& last_visible_triangles_;
+    uint32_t& last_sub_draws_;
+    double&   bench_cull_ms_total_;
+    double&   bench_stream_ms_total_;
+    double&   bench_hiz_readback_ms_total_;
+    double&   last_cull_ms_;
+    double&   last_cull_compute_ms_;
+    double&   last_cull_upload_ms_;
+    double&   last_stream_ms_;
+    int&      interactive_frame_count_;
 
     // FederatedFalseOrigin matrix, in metres. Default identity. Stored
     // but not yet applied to per-instance composed transforms — the

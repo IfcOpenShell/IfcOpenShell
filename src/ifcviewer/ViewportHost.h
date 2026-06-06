@@ -47,6 +47,9 @@
 #include <cstdint>
 #include <string>
 
+#include "FrameStats.h"
+#include "OverlayFrame.h"
+
 class ViewportHost {
 public:
     virtual ~ViewportHost() = default;
@@ -91,12 +94,23 @@ public:
                                        int /*modifiers*/) {}
     virtual void onToolModeChanged(int /*tool_mode*/) {}
     virtual void onToolBackspacePressed() {}
-    // FrameStats is a Qt-using struct declared inside ViewportWindow
-    // today; once the move to ViewportCore happens it'll come back here
-    // as a plain POD. For B4 the desktop ViewportWindow keeps the
-    // existing typed signal and this is just the placeholder.
-    virtual void onFrameStats(double /*frame_ms*/, double /*cull_ms*/,
-                              uint32_t /*draws*/, uint32_t /*tris*/) {}
+
+    // Per-frame statistics. Fired once per render() after the main pass
+    // is encoded; QtViewportHost forwards to `emit frameStatsUpdated(...)`.
+    virtual void onFrameStats(const FrameStats& /*stats*/) {}
+
+    // Overlay encode hooks. ViewportCore::render() calls these mid-
+    // frame so the Qt-bound OverlayRenderer (which carries QString
+    // labels for the HUD) can encode its passes without core having
+    // to include OverlayRenderer.h. `inMainPass` runs inside the MSAA
+    // pass (section gizmos, highlight triangles, pivot, overlay
+    // lines/points); `postMain` runs on the resolved surface after
+    // the edge pass (corner axis, marquee, labels).
+    virtual void encodeOverlaysInMainPass(WGPURenderPassEncoder /*pass*/,
+                                          const OverlayFrame& /*frame*/) {}
+    virtual void encodeOverlaysPostMain(WGPUCommandEncoder /*enc*/,
+                                        WGPUTextureView /*surface_view*/,
+                                        const OverlayFrame& /*frame*/) {}
 
     // Encode + save the screenshot. Called from the render path after
     // wgpu has mapped the surface-copy staging buffer back to host

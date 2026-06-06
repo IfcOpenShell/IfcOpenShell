@@ -355,6 +355,19 @@ public:
     void finalizeScreenshotCapture(WGPUBuffer capture_buffer,
                                    std::uint32_t padded_bpr);
 
+    // ---- Render loop (#84-x) ----------------------------------------------
+    //
+    // Encode one frame: acquire the swapchain texture, run cull (parallel
+    // when WGPU_CULL_THREADS!=0), drive streaming residency, encode the
+    // two-pass main draw, edge pass, HiZ resolve, and (optionally) the
+    // screenshot capture. Calls host_->encodeOverlaysInMainPass and
+    // host_->encodeOverlaysPostMain for the overlay layers (still
+    // Qt-bound), and host_->onFrameStats for the bench / status bar
+    // listeners. Idempotent re: framebuffer size — reconfigures the
+    // surface on Outdated/Lost. Returns early when the surface query
+    // fails so the next frame retries cleanly.
+    void render();
+
     // ---- Surface configuration (#84-u) ------------------------------------
     //
     // Configure the swapchain at the given physical size. Picks a present
@@ -789,6 +802,78 @@ private:
     // applyCachedModel, and uploads the chunk slices synchronously.
     std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>
         pending_direct_loads_;
+
+    // ---- Render-loop state (#84-x) ---------------------------------------
+
+    // Contribution-cull thresholds. min_pixel_radius_ is the still-frame
+    // floor; motion_min_pixel_radius_ kicks in during orbit/pan/zoom to
+    // drop more sub-pixel work. lod1_pixel_threshold_ chooses LOD1 over
+    // LOD0 when an instance projects below that radius.
+    float min_pixel_radius_        = 3.0f;
+    float motion_min_pixel_radius_ = 15.0f;
+    float lod1_pixel_threshold_    = 30.0f;
+    // WGPU_CULL_THREADS=0 forces sequential cull (one model after another)
+    // for parallel-vs-serial benchmarking. Default ON.
+    bool  cull_threads_enabled_    = true;
+
+    // Per-frame stats latched by render() for FrameStats emission +
+    // the interactive heartbeat / bench per-frame line.
+    std::uint32_t last_visible_objects_   = 0;
+    std::uint32_t last_visible_triangles_ = 0;
+    std::uint32_t last_sub_draws_         = 0;
+    double last_cull_ms_                  = 0.0;
+    double last_cull_compute_ms_          = 0.0;
+    double last_cull_upload_ms_           = 0.0;
+    double last_stream_ms_                = 0.0;
+    // True when the cull just used motion_min_pixel_radius_ — render()
+    // schedules one more frame so the camera-now-stopped state recomputes
+    // the cull at the still threshold and previously dropped sub-pixel
+    // instances pop back in.
+    bool   last_cull_was_motion_          = false;
+
+    // Previous frame's camera state for the motion-vs-still decision.
+    float prev_camera_target_[3] = { 0, 0, 0 };
+    float prev_camera_distance_  = 0.0f;
+    float prev_camera_yaw_deg_   = 0.0f;
+    float prev_camera_pitch_deg_ = 0.0f;
+    bool  has_prev_camera_       = false;
+
+    // Rolling-average FPS readout (60-frame window). frame_time_ms_sum_
+    // tracks the running sum so FrameStats can divide-by-count without
+    // re-summing.
+    static constexpr int FRAME_TIME_WINDOW = 60;
+    double frame_time_ms_window_[FRAME_TIME_WINDOW] = {};
+    int    frame_time_ms_count_ = 0;
+    int    frame_time_ms_head_  = 0;
+    double frame_time_ms_sum_   = 0.0;
+
+    // Benchmark-mode state. Activated by setBenchmarkFrames(n); render()
+    // orbits the camera at bench_yaw_speed_ deg/frame for bench_total_
+    // frames after a bench_warmup_ settle period, collects per-frame ms,
+    // emits a percentile summary, and calls host_->quit().
+    int   bench_total_         = 0;
+    int   bench_count_         = 0;
+    int   bench_warmup_        = 5;
+    float bench_yaw_start_     = 0.0f;
+    float bench_yaw_speed_     = 0.5f;  // degrees per frame
+    std::vector<float> bench_frame_ms_;
+
+    // Cold-load warmup gate counters. The orbit sweep waits until
+    // streaming has converged for CONVERGE_FRAMES_REQUIRED consecutive
+    // frames before starting the sample collection.
+    int  bench_warm_streak_          = 0;
+    int  bench_warm_frames_total_    = 0;
+    bool bench_warm_done_            = false;
+
+    // Per-frame timing accumulators for the bench summary. Each
+    // accumulator is divided by bench_total_ when the run finishes.
+    double bench_cull_ms_total_         = 0.0;
+    double bench_stream_ms_total_       = 0.0;
+    double bench_hiz_readback_ms_total_ = 0.0;
+
+    // Interactive [frame] heartbeat counter. Used to rate-limit the
+    // stream-health summary + WGPU_STREAM_DEEP_DEBUG dump.
+    int interactive_frame_count_ = 0;
 
     // Auto-viewAll suppression. Flipped true by the first applyCachedModel
     // (so a fresh scene frames itself) or by any explicit setCamera (so a

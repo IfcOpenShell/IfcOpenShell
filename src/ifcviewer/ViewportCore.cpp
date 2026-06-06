@@ -4711,3 +4711,560 @@ void ViewportCore::finalizeScreenshotCapture(WGPUBuffer capture_buffer,
     pending_screenshot_quit_ = false;
     if (quit_after) host_->quit();
 }
+
+// ===========================================================================
+// Render loop (#84-x): render()
+// ===========================================================================
+
+#include <future>
+#include <iomanip>
+#include <sstream>
+
+#include "Stopwatch.h"
+
+namespace {
+
+// degrees → radians. Inline-only, used inside render() for the
+// focal-length derivation.
+constexpr float degreesToRadians(float deg) {
+    return deg * float(M_PI) / 180.0f;
+}
+
+// Format a float with N decimals into the running Log line. Used to
+// match GL's per-frame stats output where fixed-precision matters for
+// side-by-side diffs.
+std::string fmtF(double v, int prec) {
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(prec) << v;
+    return ss.str();
+}
+
+// sRGB → linear, used for the background-clear value so the wgpu
+// surface (which is sRGB on most backends) renders the same colour as
+// the GL viewport's GL_FRAMEBUFFER_SRGB-enabled pass.
+inline float srgbToLinear(float c) {
+    return (c <= 0.04045f) ? (c * (1.0f / 12.92f))
+                           : std::pow((c + 0.055f) * (1.0f / 1.055f), 2.4f);
+}
+
+} // namespace
+
+void ViewportCore::render() {
+    if (!device_ || !queue_ || !surface_) return;
+
+    Stopwatch frame_timer;
+    frame_timer.start();
+
+    // Drain any HiZ async readbacks completed since last frame.
+    if (hiz_enabled_) drainHizReadbacks();
+
+    uploadSelectionFlagsIfDirty();
+
+    WGPUSurfaceTexture surf_tex = {};
+    wgpuSurfaceGetCurrentTexture(surface_, &surf_tex);
+
+    switch (surf_tex.status) {
+        case WGPUSurfaceGetCurrentTextureStatus_SuccessOptimal:
+        case WGPUSurfaceGetCurrentTextureStatus_SuccessSuboptimal:
+            break;
+        case WGPUSurfaceGetCurrentTextureStatus_Timeout:
+        case WGPUSurfaceGetCurrentTextureStatus_Outdated:
+        case WGPUSurfaceGetCurrentTextureStatus_Lost: {
+            int w = 0, h = 0;
+            host_->framebufferSize(w, h);
+            if (w > 0 && h > 0) configureSurface(w, h);
+            host_->requestFrame();
+            return;
+        }
+        default:
+            Log::warn() << "GetCurrentTexture status " << int(surf_tex.status);
+            return;
+    }
+
+    WGPUTextureView view = wgpuTextureCreateView(surf_tex.texture, nullptr);
+
+    updateFrameUniforms();
+
+    // ---- Per-frame cull --------------------------------------------------
+    last_visible_objects_   = 0;
+    last_visible_triangles_ = 0;
+    last_sub_draws_         = 0;
+    hiz_reject_count_       = 0;
+    Stopwatch cull_timer;
+    cull_timer.start();
+    Eigen::Matrix4f vp_this_frame;
+    {
+        const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+        const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                             camera_yaw_deg_, camera_pitch_deg_);
+        Eigen::Matrix4f v, p;
+        buildViewProj(v, p);
+        const Eigen::Matrix4f vp = p * v;
+        vp_this_frame = vp;
+        float planes[6][4];
+        extractFrustumPlanes(vp.data(), planes);
+
+        // LOD focal: projected_px = world_radius * focal_px / view_z.
+        const Eigen::Vector3f fwd_q = (target - eye).normalized();
+        const Eigen::Vector3f world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
+                                     ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
+                                     : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
+        const Eigen::Vector3f right_q  = fwd_q.cross(world_up).normalized();
+        const Eigen::Vector3f up_q     = right_q.cross(fwd_q).normalized();
+        const float eye_a[3]   = { eye.x(),     eye.y(),     eye.z()    };
+        const float fwd_a[3]   = { fwd_q.x(),   fwd_q.y(),   fwd_q.z()  };
+        const float right_a[3] = { right_q.x(), right_q.y(), right_q.z() };
+        const float up_a[3]    = { up_q.x(),    up_q.y(),    up_q.z()    };
+        const float focal_px = (configured_h_ > 0)
+            ? (0.5f * float(configured_h_)
+                / std::tan(degreesToRadians(camera_fov_y_deg_) * 0.5f))
+            : 0.0f;
+
+        // Motion detection.
+        const bool camera_moved = has_prev_camera_
+            && (camera_target_[0] != prev_camera_target_[0]
+             || camera_target_[1] != prev_camera_target_[1]
+             || camera_target_[2] != prev_camera_target_[2]
+             || camera_distance_  != prev_camera_distance_
+             || camera_yaw_deg_   != prev_camera_yaw_deg_
+             || camera_pitch_deg_ != prev_camera_pitch_deg_);
+        const bool use_motion_threshold =
+            camera_moved && motion_min_pixel_radius_ > min_pixel_radius_;
+        const float effective_min_px =
+            use_motion_threshold ? motion_min_pixel_radius_ : min_pixel_radius_;
+        last_cull_was_motion_ = use_motion_threshold;
+
+        // HiZ stale-VP gate. Strict by default; WGPU_HIZ_MOTION=1 trusts
+        // the stale pyramid across motion.
+        static const bool hiz_trust_stale = []{
+            const char* e = std::getenv("WGPU_HIZ_MOTION");
+            return e && e[0] == '1';
+        }();
+        const bool hiz_vp_matches = hiz_valid_
+            && (hiz_trust_stale || hiz_vp_ == vp_this_frame);
+        const bool hiz_for_this_frame = hiz_enabled_ && hiz_vp_matches;
+
+        // WGPU_HIZ_TRACE per-frame trace budget arm.
+        static const bool hiz_trace_on = []{
+            const char* e = std::getenv("WGPU_HIZ_TRACE");
+            return e && e[0] == '1';
+        }();
+        if (hiz_trace_on && hiz_for_this_frame) {
+            constexpr int kHizTracePerFrame = 12;
+            hiz_trace_budget_.store(kHizTracePerFrame, std::memory_order_relaxed);
+            Log::info()
+                << "[hiz trace] frame: vp_match="
+                << (hiz_vp_ == vp_this_frame ? "exact" : "loose")
+                << " pyramid_mip0=" << hiz_mip_w_[0] << "x" << hiz_mip_h_[0]
+                << " budget=" << kHizTracePerFrame;
+        } else if (hiz_trace_on) {
+            hiz_trace_budget_.store(0, std::memory_order_relaxed);
+        }
+
+        HizOccludedFn hiz_occluded;
+        if (hiz_for_this_frame) {
+            hiz_occluded = [this](const float mn[3], const float mx[3]) {
+                return aabbOccludedByHiz(mn, mx);
+            };
+        }
+
+        if (cull_threads_enabled_) {
+            std::vector<std::pair<std::uint32_t, std::future<std::uint32_t>>> futures;
+            futures.reserve(models_gpu_.size());
+            for (auto& [mid, m] : models_gpu_) {
+                if (m.hidden) continue;
+                auto& m_ref = m;
+                futures.emplace_back(mid, std::async(std::launch::async,
+                    [this, &m_ref, &planes, &eye_a, &fwd_a, &right_a, &up_a,
+                     focal_px, effective_min_px, &hiz_occluded]() {
+                        return cullModelCpuCompute(
+                            m_ref, planes, eye_a, fwd_a, right_a, up_a,
+                            focal_px,
+                            effective_min_px, lod1_pixel_threshold_,
+                            hiz_occluded);
+                    }));
+            }
+            for (auto& [mid, fut] : futures) {
+                hiz_reject_count_ += fut.get();
+            }
+        } else {
+            for (auto& [mid, m] : models_gpu_) {
+                if (m.hidden) continue;
+                hiz_reject_count_ += cullModelCpuCompute(
+                    m, planes, eye_a, fwd_a, right_a, up_a, focal_px,
+                    effective_min_px, lod1_pixel_threshold_,
+                    hiz_occluded);
+            }
+        }
+
+        const double cull_compute_ms = double(cull_timer.nsecsElapsed()) / 1e6;
+        Stopwatch upload_timer;
+        upload_timer.start();
+        for (auto& [mid, m] : models_gpu_) {
+            if (m.hidden) continue;
+            cullModelCpuUpload(m);
+            for (const auto& c : m.chunks) {
+                last_visible_objects_   += c.total_visible_draws;
+                last_visible_triangles_ += c.total_visible_vertices / 3u;
+                if (c.total_visible_draws > 0) last_sub_draws_ += 1;
+            }
+        }
+        last_cull_compute_ms_ = cull_compute_ms;
+        last_cull_upload_ms_  = double(upload_timer.nsecsElapsed()) / 1e6;
+    }
+
+    const double cull_only_ms = double(cull_timer.nsecsElapsed()) / 1e6;
+    last_cull_ms_ = cull_only_ms;
+
+    Stopwatch stream_timer;
+    stream_timer.start();
+    driveStreamingLoads();
+    const double stream_ms = double(stream_timer.nsecsElapsed()) / 1e6;
+    last_stream_ms_ = stream_ms;
+
+    // Snapshot camera state for next frame's motion detection.
+    prev_camera_target_[0] = camera_target_[0];
+    prev_camera_target_[1] = camera_target_[1];
+    prev_camera_target_[2] = camera_target_[2];
+    prev_camera_distance_  = camera_distance_;
+    prev_camera_yaw_deg_   = camera_yaw_deg_;
+    prev_camera_pitch_deg_ = camera_pitch_deg_;
+    has_prev_camera_       = true;
+    if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
+        bench_cull_ms_total_   += cull_only_ms;
+        bench_stream_ms_total_ += stream_ms;
+    }
+
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    WGPURenderPassColorAttachment color = {};
+    color.view          = msaa_color_view_;
+    color.resolveTarget = view;
+    color.loadOp        = WGPULoadOp_Clear;
+    color.storeOp       = WGPUStoreOp_Store;
+    color.clearValue    = {
+        srgbToLinear(background_color_[0]),
+        srgbToLinear(background_color_[1]),
+        srgbToLinear(background_color_[2]),
+        1.0,
+    };
+    color.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view              = depth_view_;
+    depth.depthLoadOp       = WGPULoadOp_Clear;
+    depth.depthStoreOp      = WGPUStoreOp_Store;
+    depth.depthClearValue   = 1.0f;
+    depth.stencilLoadOp     = WGPULoadOp_Undefined;
+    depth.stencilStoreOp    = WGPUStoreOp_Undefined;
+    depth.depthReadOnly     = false;
+    depth.stencilReadOnly   = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount = 1;
+    pass_desc.colorAttachments     = &color;
+    pass_desc.depthStencilAttachment = depth_view_ ? &depth : nullptr;
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+
+    // Two-pass main render: opaque first, then transparent.
+    if (main_pipeline_ && main_pipeline_transparent_
+        && frame_bind_group_ && !models_gpu_.empty()) {
+        wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_);
+        wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+
+        for (const auto& [mid, m] : models_gpu_) {
+            if (m.hidden) continue;
+            for (const auto& c : m.chunks) {
+                if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
+                wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+                wgpuRenderPassEncoderDraw(pass,
+                                          c.opaque_visible_vertices, 1, 0, 0);
+            }
+        }
+
+        wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_transparent_);
+        for (const auto& [mid, m] : models_gpu_) {
+            if (m.hidden) continue;
+            for (const auto& c : m.chunks) {
+                if (!c.bind_group) continue;
+                const std::uint32_t transparent_verts =
+                    c.total_visible_vertices - c.opaque_visible_vertices;
+                if (transparent_verts == 0) continue;
+                wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+                wgpuRenderPassEncoderDraw(pass,
+                                          transparent_verts, 1,
+                                          c.opaque_visible_vertices, 0);
+            }
+        }
+    }
+
+    // Build the per-frame OverlayFrame snapshot.
+    int viewport_w_px = 0, viewport_h_px = 0;
+    host_->framebufferSize(viewport_w_px, viewport_h_px);
+    const int dpr_int = std::max(1, int(host_->dpr()));
+
+    OverlayFrame overlay_frame;
+    overlay_frame.view_proj          = vp_this_frame;
+    overlay_frame.camera_target      = Eigen::Vector3f(camera_target_[0],
+                                                       camera_target_[1],
+                                                       camera_target_[2]);
+    overlay_frame.camera_distance    = camera_distance_;
+    overlay_frame.camera_yaw_deg     = camera_yaw_deg_;
+    overlay_frame.camera_pitch_deg   = camera_pitch_deg_;
+    overlay_frame.camera_fov_y_deg   = camera_fov_y_deg_;
+    overlay_frame.viewport_w_px      = viewport_w_px;
+    overlay_frame.viewport_h_px      = viewport_h_px;
+    overlay_frame.device_pixel_ratio = dpr_int;
+
+    // In-pass overlays (section gizmos, highlight triangles, pivot,
+    // overlay lines/points). QtViewportHost forwards to overlays_.X().
+    host_->encodeOverlaysInMainPass(pass, overlay_frame);
+
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    // Edge silhouette + HiZ resolve, before the surface-targeted overlays.
+    if (edges_enabled_) encodeEdgePass(enc, view);
+
+    int hiz_submitted_slot = -1;
+    if (hiz_enabled_) hiz_submitted_slot = encodeHizResolve(enc);
+
+    // Post-main overlays (corner axis, marquee, labels) on the resolved
+    // surface. QtViewportHost forwards to overlays_.X().
+    host_->encodeOverlaysPostMain(enc, view, overlay_frame);
+
+    // Optional capture: encode copy on the same command buffer.
+    WGPUBuffer    capture_buffer     = nullptr;
+    std::uint32_t capture_padded_bpr = 0;
+    const bool    want_capture       = !pending_screenshot_path_.empty();
+    if (want_capture) {
+        capture_buffer = encodeScreenshotCapture(
+            enc, surf_tex.texture, capture_padded_bpr);
+    }
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+    wgpuTextureViewRelease(view);
+
+    if (want_capture) {
+        finalizeScreenshotCapture(capture_buffer, capture_padded_bpr);
+    }
+
+    // ---- FrameStats emission ---------------------------------------------
+    {
+        const double this_frame_ms =
+            double(frame_timer.nsecsElapsed()) / 1e6;
+        frame_time_ms_sum_ -= frame_time_ms_window_[frame_time_ms_head_];
+        frame_time_ms_window_[frame_time_ms_head_] = this_frame_ms;
+        frame_time_ms_sum_ += this_frame_ms;
+        frame_time_ms_head_ = (frame_time_ms_head_ + 1) % FRAME_TIME_WINDOW;
+        if (frame_time_ms_count_ < FRAME_TIME_WINDOW) ++frame_time_ms_count_;
+        const double avg_ms = frame_time_ms_count_ > 0
+            ? frame_time_ms_sum_ / double(frame_time_ms_count_)
+            : 0.0;
+
+        std::uint32_t total_obj = 0, total_tri = 0, total_meshes = 0;
+        for (const auto& [mid, mm] : models_gpu_) {
+            total_obj    += std::uint32_t(mm.instances.size());
+            total_tri    += mm.index_count / 3;
+            total_meshes += std::uint32_t(mm.meshes.size());
+        }
+
+        FrameStats stats;
+        stats.fps               = avg_ms > 0.0 ? float(1000.0 / avg_ms) : 0.0f;
+        stats.frame_time_ms     = float(avg_ms);
+        stats.total_objects     = total_obj;
+        stats.visible_objects   = last_visible_objects_;
+        stats.total_triangles   = total_tri;
+        stats.visible_triangles = last_visible_triangles_;
+        stats.unique_meshes     = total_meshes;
+        std::uint32_t draw_calls = 0;
+        for (const auto& [mid, mm] : models_gpu_) {
+            if (mm.hidden) continue;
+            for (const auto& c : mm.chunks) {
+                if (c.is_resident && c.total_visible_draws > 0) ++draw_calls;
+            }
+        }
+        stats.gl_draw_calls      = draw_calls;
+        stats.indirect_sub_draws = last_sub_draws_;
+        host_->onFrameStats(stats);
+    }
+
+    wgpuSurfacePresent(surface_);
+    wgpuTextureRelease(surf_tex.texture);
+
+    if (last_cull_was_motion_) host_->requestFrame();
+
+    // HiZ async readback handoff.
+    if (hiz_enabled_ && hiz_submitted_slot >= 0) {
+        Stopwatch hiz_timer;
+        if (bench_total_ > 0) hiz_timer.start();
+        startHizMap(hiz_submitted_slot, vp_this_frame);
+        if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
+            bench_hiz_readback_ms_total_ += double(hiz_timer.nsecsElapsed()) / 1e6;
+        }
+    }
+
+    // ---- Interactive heartbeat log --------------------------------------
+    if (bench_total_ == 0) {
+        ++interactive_frame_count_;
+        const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
+        std::uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
+        std::uint32_t total_instances = 0;
+        std::size_t chunks_total = 0, chunks_resident = 0;
+        std::size_t chunks_frustum_vis = 0, chunks_missing = 0;
+        for (const auto& [mid, mo] : models_gpu_) {
+            total_vbo  += mo.vram_bytes_vbo;
+            total_ebo  += mo.vram_bytes_ebo;
+            total_ssbo += mo.vram_bytes_ssbo;
+            total_instances += mo.instance_count;
+            for (const auto& c : mo.chunks) {
+                ++chunks_total;
+                if (c.is_resident) ++chunks_resident;
+                if (c.frustum_visible_count > 0) {
+                    ++chunks_frustum_vis;
+                    if (!c.is_resident) ++chunks_missing;
+                }
+            }
+        }
+        const double mb = 1.0 / (1024.0 * 1024.0);
+        Log::info()
+            << "[frame] " << fmtF(ms > 0 ? 1000.0f / ms : 0.0f, 1) << " fps"
+            << "  " << fmtF(ms, 2) << " ms"
+            << "  obj " << last_visible_objects_ << "/" << total_instances
+            << "  tri " << last_visible_triangles_
+            << "  sub_draws " << last_sub_draws_
+            << "  hiz_rej " << hiz_reject_count_
+            << "  cull " << fmtF(last_cull_ms_, 2) << "ms"
+            << "  stream " << fmtF(last_stream_ms_, 2) << "ms"
+            << "  chunks " << chunks_resident << "/" << chunks_frustum_vis
+            << "/" << chunks_total << " (missing " << chunks_missing << ")"
+            << "  vram " << fmtF(double(total_vbo + total_ebo + total_ssbo) * mb, 1) << "MB"
+            << "  models " << models_gpu_.size()
+            << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
+            << " (saved " << lod1_dbg_tris_saved_ << " tris, "
+            << lod0_dbg_no_lod1_count_ << " no-lod1)";
+        lod1_dbg_count_ = 0;
+        lod0_dbg_eligible_count_ = 0;
+        lod0_dbg_no_lod1_count_ = 0;
+        lod1_dbg_tris_saved_ = 0;
+    }
+
+    // ---- Benchmark integration + auto-quit -------------------------------
+    if (bench_total_ > 0) {
+        if (!bench_warm_done_) {
+            constexpr int CONVERGE_FRAMES_REQUIRED = 5;
+            constexpr int MAX_WARM_FRAMES          = 600;
+            const bool worker_idle =
+                streaming_thread_.inFlightApprox() == 0;
+            if (streaming_loads_this_frame_ > 0 || !worker_idle) {
+                bench_warm_streak_ = 0;
+            } else {
+                ++bench_warm_streak_;
+            }
+            ++bench_warm_frames_total_;
+            const bool converged = bench_warm_streak_ >= CONVERGE_FRAMES_REQUIRED;
+            const bool timed_out = bench_warm_frames_total_ >= MAX_WARM_FRAMES;
+            if (converged) {
+                Log::info() << "[bench warm] converged after "
+                            << bench_warm_frames_total_ << " frames";
+                bench_warm_done_ = true;
+            } else if (timed_out) {
+                Log::warn() << "[bench warm] timed out after "
+                            << bench_warm_frames_total_
+                            << " frames without convergence; starting bench anyway";
+                bench_warm_done_ = true;
+            } else {
+                host_->requestFrame();
+                return;
+            }
+        }
+
+        const float ms = float(frame_timer.nsecsElapsed()) / 1e6f;
+
+        if (bench_count_ >= bench_warmup_) {
+            bench_frame_ms_.push_back(ms);
+        }
+
+        if ((bench_count_ % 50) == 0) {
+            std::uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
+            std::uint32_t total_instances = 0;
+            for (const auto& [mid, mo] : models_gpu_) {
+                total_vbo += mo.vram_bytes_vbo;
+                total_ebo += mo.vram_bytes_ebo;
+                total_ssbo += mo.vram_bytes_ssbo;
+                total_instances += mo.instance_count;
+            }
+            const double mb = 1.0 / (1024.0 * 1024.0);
+            const double avg_n  = double(std::max(1, bench_count_ - bench_warmup_ + 1));
+            const double cull_ms   = bench_cull_ms_total_   / avg_n;
+            const double stream_ms2 = bench_stream_ms_total_ / avg_n;
+            Log::info()
+                << "[frame] " << fmtF(ms > 0 ? 1000.0f / ms : 0.0f, 1) << " fps"
+                << "  " << fmtF(ms, 2) << " ms"
+                << "  obj " << last_visible_objects_ << "/" << total_instances
+                << "  tri " << last_visible_triangles_
+                << "  sub_draws " << last_sub_draws_
+                << "  hiz_rej " << hiz_reject_count_
+                << "  cull[wall " << fmtF(cull_ms, 2)
+                << " | compute " << fmtF(last_cull_compute_ms_, 2)
+                << " upload " << fmtF(last_cull_upload_ms_, 2) << "]ms"
+                << "  stream[" << fmtF(stream_ms2, 2) << "]ms"
+                << "  vram " << fmtF(double(total_vbo + total_ebo + total_ssbo) * mb, 1) << "MB"
+                << "  models " << models_gpu_.size()
+                << "  lod1 " << lod1_dbg_count_ << "/" << (lod1_dbg_count_ + lod0_dbg_eligible_count_)
+                << " (saved " << lod1_dbg_tris_saved_ << " tris, "
+                << lod0_dbg_no_lod1_count_ << " no-lod1)";
+            lod1_dbg_count_ = 0;
+            lod0_dbg_eligible_count_ = 0;
+            lod0_dbg_no_lod1_count_ = 0;
+            lod1_dbg_tris_saved_ = 0;
+        }
+        camera_yaw_deg_ = bench_yaw_start_
+                        + bench_yaw_speed_ * float(bench_count_ + 1);
+        ++bench_count_;
+
+        if (bench_count_ >= bench_warmup_ + bench_total_) {
+            std::vector<float> times = bench_frame_ms_;
+            std::sort(times.begin(), times.end());
+            auto pct = [&times](double p) -> float {
+                if (times.empty()) return 0.0f;
+                const std::size_t idx = std::min(times.size() - 1,
+                    std::size_t(p * double(times.size() - 1)));
+                return times[idx];
+            };
+            float sum = 0.0f;
+            for (float f : times) sum += f;
+            const float avg    = times.empty() ? 0.0f : sum / float(times.size());
+            const float median = pct(0.5);
+            const float p1     = pct(0.01);
+            const float p99    = pct(0.99);
+
+            const float total_sweep = bench_yaw_speed_ * float(bench_total_);
+            Log::info() << "\n=== BENCHMARK (" << bench_total_ << " frames, orbit "
+                        << total_sweep << "deg at " << bench_yaw_speed_ << "deg/frame) ===";
+            Log::info() << "  avg: "    << avg    << " ms (" << (avg    > 0 ? 1000.0f/avg    : 0.0f) << " fps)";
+            Log::info() << "  median: " << median << " ms (" << (median > 0 ? 1000.0f/median : 0.0f) << " fps)";
+            Log::info() << "  p1: "  << p1  << " ms  p99: " << p99 << " ms";
+            Log::info() << "  last frame: obj " << last_visible_objects_
+                        << "  tri " << last_visible_triangles_
+                        << "  sub_draws " << last_sub_draws_
+                        << "  hiz_rej " << hiz_reject_count_;
+            const double n = double(std::max(1, bench_total_));
+            Log::info() << "  per-frame avg ms: cull=" << bench_cull_ms_total_ / n
+                        << "  stream=" << bench_stream_ms_total_ / n
+                        << "  hiz_readback=" << bench_hiz_readback_ms_total_ / n
+                        << "  hiz=" << (hiz_enabled_ ? "on" : "off");
+            Log::info() << "=== END BENCHMARK ===\n";
+
+            bench_total_ = 0;
+            host_->quit();
+        } else {
+            host_->requestFrame();
+        }
+    }
+}
