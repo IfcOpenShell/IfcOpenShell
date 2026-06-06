@@ -391,6 +391,76 @@ public:
     // Called from shutdown() before the device dies.
     void releaseEdgeResources();
 
+    // ---- Pick + raycast (#84-t) -------------------------------------------
+    //
+    // Build the pick pipeline. Reuses the main shader module's
+    // vs_pick / fs_pick entry points + pipeline_layout_ (same bindings
+    // as the main draw). Single-sample target. Returns false on
+    // pipeline creation failure.
+    bool buildPickPipeline();
+
+    // (Re)allocate the pick MRT attachments + readback staging buffers
+    // to the supplied size. Idempotent when dimensions match.
+    void ensurePickAttachments(int w, int h);
+
+    // Tear down every pick-owned wgpu resource (pipeline + MRTs +
+    // staging buffers). Called from shutdown() before device_ dies.
+    void releasePickResources();
+
+    // Encode + readback the single-pixel object_id + normal at (x, y).
+    // Returns 0 on miss (or any guard failure). When `normal_out` is
+    // non-null, decodes the RGBA16F normal MRT's first texel into a
+    // unit world-space normal. Synchronous (interactive click path).
+    std::uint32_t pickObjectAt(int x_pixels, int y_pixels,
+                               Eigen::Vector3f* normal_out = nullptr);
+
+    // Marquee box select: encode the pick pass, copy the (x, y, w, h)
+    // sub-rect of the object_id MRT back, return the set of unique
+    // non-zero ids. Synchronous (rare interaction).
+    std::vector<std::uint32_t> picksInRect(int x, int y, int w, int h);
+
+    // Run pickObjectAt + raycast against every instance carrying the
+    // hit object_id, then return the closest hit's world position,
+    // world normal, and (optionally) the bounding-sphere radius. The
+    // normal preference goes to the pick MRT's per-fragment value; the
+    // AABB-face normal is a fallback.
+    bool pickSurfaceAt(int x_pixels, int y_pixels,
+                       std::uint32_t& object_id_out,
+                       Eigen::Vector3f& world_pos_out,
+                       Eigen::Vector3f& world_normal_out,
+                       float* aabb_radius_out = nullptr);
+
+    // Per-pick result for the Area / Length / Volume tools. The
+    // composed_transform mirrors InstanceCpu::transform so callers can
+    // round-trip from mesh-local back to world without re-deriving it.
+    struct MeshLocalPick {
+        std::uint32_t object_id   = 0;
+        std::uint32_t model_id    = 0;
+        std::uint32_t mesh_id     = 0;
+        float    mesh_local  [3]  = {0, 0, 0};
+        float    world_pos   [3]  = {0, 0, 0};
+        float    world_normal[3]  = {0, 0, 0};
+        float    composed_transform[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
+    };
+
+    // pickSurfaceAt + transform back into the picked instance's mesh-
+    // local space, refined against the cached CPU mesh shadow when
+    // available (Möller-Trumbore per-triangle). Output sits on a real
+    // triangle, not the AABB face. Returns false on miss.
+    bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
+
+    // Bonsai-side raycast helper. Walks every visible instance's
+    // world-AABB, then Möller-Trumbore against the cached mesh
+    // triangles. `dir` must be a unit vector — distance is the ray's
+    // t parameter (= world distance only at |dir|=1).
+    struct RaycastHit {
+        std::uint32_t object_id    = 0;
+        float         distance     = 0.0f;
+        float         world_pos[3] = {0, 0, 0};
+        float         world_normal[3] = {0, 0, 0};
+    };
+    bool raycast(const float origin[3], const float dir[3], RaycastHit& out) const;
+
     // ---- Cull (#84-p) -----------------------------------------------------
     //
     // Per-instance occlusion test, supplied by the caller. Wired by
@@ -557,6 +627,24 @@ private:
     // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
     // main pass since the pick fragment also vertex-pulls instance data.
     WGPURenderPipeline  pick_pipeline_ = nullptr;
+
+    // Pick render targets + readback staging. Single-sample, surface-
+    // sized R32UInt for object_id + RGBA16F for the packed world-space
+    // normal (the section tool drops perpendicular cuts at the picked
+    // pixel). picksInRect grows box_pick_staging_buffer_ on demand for
+    // marquee selection.
+    WGPUTexture        pick_color_texture_         = nullptr;
+    WGPUTextureView    pick_color_view_            = nullptr;
+    WGPUTexture        pick_normal_texture_        = nullptr;
+    WGPUTextureView    pick_normal_view_           = nullptr;
+    WGPUTexture        pick_depth_texture_         = nullptr;
+    WGPUTextureView    pick_depth_view_            = nullptr;
+    WGPUBuffer         pick_staging_buffer_        = nullptr;
+    WGPUBuffer         pick_normal_staging_buffer_ = nullptr;
+    int                pick_w_                     = 0;
+    int                pick_h_                     = 0;
+    WGPUBuffer         box_pick_staging_buffer_    = nullptr;
+    std::uint64_t      box_pick_staging_capacity_  = 0;
 
     // ---- Frame uniforms + selection bind ----------------------------------
     //

@@ -294,9 +294,8 @@ private:
     // actual gizmo rendering lives in OverlayRenderer — this just
     // manages the UI-side visibility timer.
     void  setPivotIndicatorVisible(bool visible, int hide_after_ms = 0);
-    void  releaseEdgeResources();
-
-    bool  buildPickPipeline();
+    // releaseEdgeResources / buildPickPipeline / ensurePickAttachments /
+    // releasePickResources moved to ViewportCore (#84-s, #84-t).
 
     // Make sure selection_flags_buffer_ is large enough to address every
     // object_id in next_object_id_. Recreates (and rebuilds frame_bind_group_)
@@ -305,8 +304,6 @@ private:
     // Repack the CPU selection into bit-flags and wgpuQueueWriteBuffer to
     // the GPU. Called from render() when selection_.dirty().
     void  uploadSelectionFlagsIfDirty();
-    void  ensurePickAttachments(int w, int h);
-    void  releasePickResources();
     // Synchronous pick: encodes a one-shot R32UInt render of the current
     // visible_draws against the click pixel, copies the single texel back,
     // waits, and returns the object_id (0 if nothing was hit). Call from
@@ -420,19 +417,10 @@ public:
     SelectionState&       selection()       { return selection_; }
     const SelectionState& selection() const { return selection_; }
 
-    // Pick + resolve to mesh-local space. Runs pickSurfaceAt to get the
-    // world-space hit, then inverts the instance's composed transform
-    // to express the hit in the mesh's own coordinates — what
-    // readbackMeshTriangles returns. Returns false on miss.
-    struct MeshLocalPick {
-        uint32_t object_id = 0;
-        uint32_t model_id  = 0;
-        uint32_t mesh_id   = 0;
-        float    mesh_local [3] = {0, 0, 0};
-        float    world_pos  [3] = {0, 0, 0};
-        float    world_normal[3] = {0, 0, 0};
-        float    composed_transform[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
-    };
+    // Pick + resolve to mesh-local space. MeshLocalPick lives in
+    // ViewportCore (#84-t); re-exported here so existing bonsai
+    // callers keep referring to ViewportWindow::MeshLocalPick.
+    using MeshLocalPick = ViewportCore::MeshLocalPick;
     bool pickMeshLocalAt(int x, int y, MeshLocalPick& out);
 
     // Resolve a mesh-local point to a (placement-applied) global frame.
@@ -451,12 +439,8 @@ public:
     // ray's t parameter, which equals world distance only at |dir|=1.
     // Used by the Length tool's 1-point laser-measure overlay to find
     // the ceiling/floor counterpart of a horizontal-surface click.
-    struct RaycastHit {
-        uint32_t object_id      = 0;
-        float    distance       = 0.0f;
-        float    world_pos[3]   = {0, 0, 0};
-        float    world_normal[3]= {0, 0, 0};
-    };
+    // RaycastHit moved to ViewportCore (#84-t); re-exported here.
+    using RaycastHit = ViewportCore::RaycastHit;
     bool raycast(const float origin[3], const float dir[3], RaycastHit& out) const;
 
     // Measurement tools. Mirrors GL ViewportWindow::ToolMode. Volume is
@@ -713,21 +697,10 @@ private:
     // pass — pick fragment outputs the instance's object_id. The pick
     // pipeline reuses pipeline_layout_ because it needs the same set of
     // bindings (frame uniform at group=0, per-model storages at group=1).
-    // Pick pipeline alias (storage in core_).
+    // Pick pipeline + targets + staging all moved to ViewportCore (#84-t).
+    // No remaining VW callers need the textures/buffers by name, so no
+    // aliases here.
     WGPURenderPipeline& pick_pipeline_;
-    WGPUTexture        pick_color_texture_  = nullptr;
-    WGPUTextureView    pick_color_view_     = nullptr;
-    // Second pick MRT: RGBA16F packed world-space normal. Sampled by
-    // pickSurfaceAt so section cuts are perpendicular to the actual
-    // picked triangle (rather than the AABB face that contains it).
-    WGPUTexture        pick_normal_texture_         = nullptr;
-    WGPUTextureView    pick_normal_view_            = nullptr;
-    WGPUBuffer         pick_normal_staging_buffer_  = nullptr;  // 256 B (one RGBA16F texel padded)
-    WGPUTexture        pick_depth_texture_  = nullptr;
-    WGPUTextureView    pick_depth_view_     = nullptr;
-    WGPUBuffer         pick_staging_buffer_ = nullptr;  // 256 B (single texel + bytes-per-row pad)
-    int                pick_w_              = 0;
-    int                pick_h_              = 0;
 
     // Section-cutting state aliases (storage in core_). The section tool
     // mutates section_planes_ through addSectionPlaneAtSurface /
@@ -757,10 +730,7 @@ private:
     Eigen::Vector2i                     box_select_current_pos_;   // logical px
     Qt::KeyboardModifiers      box_select_press_mods_ = Qt::NoModifier;
     static constexpr int       kBoxSelectThresholdPx  = 5;
-    // R32UInt staging for the rect-pick. Sized to the largest rect we've
-    // seen so far (padded to 256 bpr), regrown if a bigger rect arrives.
-    WGPUBuffer                 box_pick_staging_buffer_   = nullptr;
-    uint64_t                   box_pick_staging_capacity_ = 0;
+    // box_pick_staging_buffer_/_capacity_ moved to ViewportCore (#84-t).
     // Drag-to-move state for the arrow gizmo. While `section_drag_active_`
     // is true, mouseMoveEvent calls updateSectionDrag instead of letting
     // the press fall through to the orbit/pan handlers.

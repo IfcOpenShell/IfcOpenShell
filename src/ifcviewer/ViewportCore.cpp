@@ -3623,3 +3623,830 @@ void ViewportCore::releaseEdgeResources() {
     if (edge_pipeline_layout_) { wgpuPipelineLayoutRelease(edge_pipeline_layout_); edge_pipeline_layout_ = nullptr; }
     if (edge_bgl_)             { wgpuBindGroupLayoutRelease(edge_bgl_);       edge_bgl_ = nullptr; }
 }
+
+// ===========================================================================
+// Pick + raycast (#84-t)
+// ===========================================================================
+
+#include <unordered_set>
+
+namespace {
+
+// Slab method ray-AABB. inv_d is precomputed 1/dir per axis.
+bool rayAabbSlab(const float ro[3], const float inv_d[3],
+                 const float bmin[3], const float bmax[3]) {
+    float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
+    for (int i = 0; i < 3; ++i) {
+        const float t1 = (bmin[i] - ro[i]) * inv_d[i];
+        const float t2 = (bmax[i] - ro[i]) * inv_d[i];
+        tmin = std::max(tmin, std::min(t1, t2));
+        tmax = std::min(tmax, std::max(t1, t2));
+    }
+    return tmax >= tmin && tmax >= 0.0f;
+}
+
+// Möller-Trumbore ray-triangle. Returns true on hit; t is in dir-units.
+bool rayTriMT(const float ro[3], const float rd[3],
+              const float v0[3], const float v1[3], const float v2[3],
+              float& t_out) {
+    constexpr float EPS = 1e-7f;
+    const float e1[3] = {v1[0]-v0[0], v1[1]-v0[1], v1[2]-v0[2]};
+    const float e2[3] = {v2[0]-v0[0], v2[1]-v0[1], v2[2]-v0[2]};
+    const float h[3]  = {
+        rd[1]*e2[2] - rd[2]*e2[1],
+        rd[2]*e2[0] - rd[0]*e2[2],
+        rd[0]*e2[1] - rd[1]*e2[0]
+    };
+    const float a = e1[0]*h[0] + e1[1]*h[1] + e1[2]*h[2];
+    if (a > -EPS && a < EPS) return false;
+    const float f = 1.0f / a;
+    const float s[3] = {ro[0]-v0[0], ro[1]-v0[1], ro[2]-v0[2]};
+    const float u = f * (s[0]*h[0] + s[1]*h[1] + s[2]*h[2]);
+    if (u < 0.0f || u > 1.0f) return false;
+    const float q[3] = {
+        s[1]*e1[2] - s[2]*e1[1],
+        s[2]*e1[0] - s[0]*e1[2],
+        s[0]*e1[1] - s[1]*e1[0]
+    };
+    const float v = f * (rd[0]*q[0] + rd[1]*q[1] + rd[2]*q[2]);
+    if (v < 0.0f || u + v > 1.0f) return false;
+    const float t = f * (e2[0]*q[0] + e2[1]*q[1] + e2[2]*q[2]);
+    if (t <= EPS) return false;
+    t_out = t;
+    return true;
+}
+
+// Slab-method ray-AABB intersection. Returns t_enter (clamped to >= 0)
+// and the axis-aligned face normal at the entry.
+bool rayAABBHit(const Eigen::Vector3f& origin, const Eigen::Vector3f& dir,
+                const float mn[3], const float mx[3],
+                float& t_enter, Eigen::Vector3f& face_normal) {
+    float t_min = -std::numeric_limits<float>::infinity();
+    float t_max =  std::numeric_limits<float>::infinity();
+    const float o[3] = { origin.x(), origin.y(), origin.z() };
+    const float d[3] = { dir.x(),    dir.y(),    dir.z()    };
+    int   hit_axis = -1;
+    float hit_sign = 0.0f;
+    for (int i = 0; i < 3; ++i) {
+        if (std::abs(d[i]) < 1e-8f) {
+            if (o[i] < mn[i] || o[i] > mx[i]) return false;
+            continue;
+        }
+        float t1 = (mn[i] - o[i]) / d[i];
+        float t2 = (mx[i] - o[i]) / d[i];
+        float sign_for_t1 = -1.0f;
+        if (t1 > t2) { std::swap(t1, t2); sign_for_t1 = +1.0f; }
+        if (t1 > t_min) {
+            t_min    = t1;
+            hit_axis = i;
+            hit_sign = sign_for_t1;
+        }
+        t_max = std::min(t_max, t2);
+        if (t_min > t_max) return false;
+    }
+    if (t_max < 0.0f) return false;
+    t_enter = std::max(t_min, 0.0f);
+
+    if (hit_axis < 0) {
+        face_normal = -dir;
+    } else {
+        Eigen::Vector3f n(0, 0, 0);
+        n[hit_axis] = hit_sign;
+        face_normal = n;
+    }
+    return true;
+}
+
+} // namespace
+
+bool ViewportCore::buildPickPipeline() {
+    // Two color attachments: R32UInt for object_id, RGBA16F for the
+    // packed world-space normal so the section tool can drop
+    // perpendicular cuts at the picked pixel.
+    WGPUColorTargetState color_targets[2] = {};
+    color_targets[0].format    = WGPUTextureFormat_R32Uint;
+    color_targets[0].writeMask = WGPUColorWriteMask_All;
+    color_targets[1].format    = WGPUTextureFormat_RGBA16Float;
+    color_targets[1].writeMask = WGPUColorWriteMask_All;
+
+    WGPUFragmentState frag = {};
+    frag.module      = main_shader_module_;
+    frag.entryPoint  = svFromCStr("fs_pick");
+    frag.targetCount = 2;
+    frag.targets     = color_targets;
+
+    WGPUDepthStencilState depth = {};
+    depth.format               = WGPUTextureFormat_Depth32Float;
+    depth.depthWriteEnabled    = WGPUOptionalBool_True;
+    depth.depthCompare         = WGPUCompareFunction_Less;
+    depth.stencilFront.compare = WGPUCompareFunction_Always;
+    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+
+    WGPURenderPipelineDescriptor rp_desc = {};
+    rp_desc.layout              = pipeline_layout_;
+    rp_desc.label               = svFromCStr("ifcviewer-wgpu.pick_pipeline");
+    rp_desc.vertex.module       = main_shader_module_;
+    rp_desc.vertex.entryPoint   = svFromCStr("vs_pick");
+    rp_desc.vertex.bufferCount  = 0;
+    rp_desc.fragment            = &frag;
+    rp_desc.depthStencil        = &depth;
+    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
+    rp_desc.primitive.cullMode  = WGPUCullMode_Back;
+    rp_desc.primitive.frontFace = WGPUFrontFace_CCW;
+    rp_desc.multisample.count   = 1;
+    rp_desc.multisample.mask    = 0xFFFFFFFFu;
+
+    pick_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
+    if (!pick_pipeline_) {
+        Log::warn() << "wgpu pick pipeline creation failed";
+        return false;
+    }
+    return true;
+}
+
+void ViewportCore::ensurePickAttachments(int w, int h) {
+    if (w <= 0 || h <= 0) return;
+    if (w == pick_w_ && h == pick_h_ && pick_color_view_) return;
+
+    if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
+    if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
+    if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
+    if (pick_normal_texture_) { wgpuTextureRelease(pick_normal_texture_); pick_normal_texture_ = nullptr; }
+    if (pick_depth_view_)     { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
+    if (pick_depth_texture_)  { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
+
+    WGPUTextureDescriptor cdesc = {};
+    cdesc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
+    cdesc.dimension     = WGPUTextureDimension_2D;
+    cdesc.size.width    = std::uint32_t(w);
+    cdesc.size.height   = std::uint32_t(h);
+    cdesc.size.depthOrArrayLayers = 1;
+    cdesc.format        = WGPUTextureFormat_R32Uint;
+    cdesc.mipLevelCount = 1;
+    cdesc.sampleCount   = 1;
+    cdesc.label         = svFromCStr("ifcviewer-wgpu.pick_color");
+    pick_color_texture_ = wgpuDeviceCreateTexture(device_, &cdesc);
+    pick_color_view_    = wgpuTextureCreateView(pick_color_texture_, nullptr);
+
+    WGPUTextureDescriptor ndesc = cdesc;
+    ndesc.format = WGPUTextureFormat_RGBA16Float;
+    ndesc.label  = svFromCStr("ifcviewer-wgpu.pick_normal");
+    pick_normal_texture_ = wgpuDeviceCreateTexture(device_, &ndesc);
+    pick_normal_view_    = wgpuTextureCreateView(pick_normal_texture_, nullptr);
+
+    WGPUTextureDescriptor ddesc = {};
+    ddesc.usage         = WGPUTextureUsage_RenderAttachment;
+    ddesc.dimension     = WGPUTextureDimension_2D;
+    ddesc.size.width    = std::uint32_t(w);
+    ddesc.size.height   = std::uint32_t(h);
+    ddesc.size.depthOrArrayLayers = 1;
+    ddesc.format        = WGPUTextureFormat_Depth32Float;
+    ddesc.mipLevelCount = 1;
+    ddesc.sampleCount   = 1;
+    ddesc.label         = svFromCStr("ifcviewer-wgpu.pick_depth");
+    pick_depth_texture_ = wgpuDeviceCreateTexture(device_, &ddesc);
+    WGPUTextureViewDescriptor dvdesc = {};
+    dvdesc.format          = WGPUTextureFormat_Depth32Float;
+    dvdesc.dimension       = WGPUTextureViewDimension_2D;
+    dvdesc.mipLevelCount   = 1;
+    dvdesc.arrayLayerCount = 1;
+    dvdesc.aspect          = WGPUTextureAspect_DepthOnly;
+    pick_depth_view_ = wgpuTextureCreateView(pick_depth_texture_, &dvdesc);
+
+    if (!pick_staging_buffer_) {
+        // 256 B is the smallest aligned staging buffer for a single-row copy.
+        WGPUBufferDescriptor sb = {};
+        sb.size  = 256;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.pick_staging");
+        pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+    }
+    if (!pick_normal_staging_buffer_) {
+        WGPUBufferDescriptor sb = {};
+        sb.size  = 256;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.pick_normal_staging");
+        pick_normal_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+    }
+    pick_w_ = w;
+    pick_h_ = h;
+}
+
+void ViewportCore::releasePickResources() {
+    if (pick_color_view_)     { wgpuTextureViewRelease(pick_color_view_); pick_color_view_ = nullptr; }
+    if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
+    if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
+    if (pick_normal_texture_) { wgpuTextureRelease(pick_normal_texture_); pick_normal_texture_ = nullptr; }
+    if (pick_depth_view_)     { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
+    if (pick_depth_texture_)  { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
+    if (pick_staging_buffer_) { wgpuBufferRelease(pick_staging_buffer_);  pick_staging_buffer_ = nullptr; }
+    if (pick_normal_staging_buffer_) {
+        wgpuBufferRelease(pick_normal_staging_buffer_);
+        pick_normal_staging_buffer_ = nullptr;
+    }
+    if (pick_pipeline_)            { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
+    if (box_pick_staging_buffer_)  {
+        wgpuBufferRelease(box_pick_staging_buffer_);
+        box_pick_staging_buffer_ = nullptr;
+    }
+    box_pick_staging_capacity_ = 0;
+    pick_w_ = pick_h_ = 0;
+}
+
+std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
+                                         Eigen::Vector3f* normal_out) {
+    if (normal_out) *normal_out = Eigen::Vector3f(0, 0, 1);
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return 0;
+    if (x_pixels < 0 || y_pixels < 0 ||
+        x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+    if (normal_out && !pick_normal_staging_buffer_) return 0;
+
+    // The current frame's visible_draws are already on the GPU (uploaded
+    // by the last render's cullModelCpuUpload). Encode a one-shot pass.
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    WGPURenderPassColorAttachment color[2] = {};
+    color[0].view       = pick_color_view_;
+    color[0].loadOp     = WGPULoadOp_Clear;
+    color[0].storeOp    = WGPUStoreOp_Store;
+    color[0].clearValue = { 0.0, 0.0, 0.0, 0.0 };  // object_id == 0 means miss
+    color[0].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    color[1].view       = pick_normal_view_;
+    color[1].loadOp     = WGPULoadOp_Clear;
+    color[1].storeOp    = WGPUStoreOp_Store;
+    color[1].clearValue = { 0.5, 0.5, 0.5, 0.0 };
+    color[1].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view              = pick_depth_view_;
+    depth.depthLoadOp       = WGPULoadOp_Clear;
+    depth.depthStoreOp      = WGPUStoreOp_Store;
+    depth.depthClearValue   = 1.0f;
+    depth.stencilLoadOp     = WGPULoadOp_Undefined;
+    depth.stencilStoreOp    = WGPUStoreOp_Undefined;
+    depth.stencilReadOnly   = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 2;
+    pass_desc.colorAttachments       = color;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.pick_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    // Copy the single texel at (x, y) into the staging buffer.
+    WGPUTexelCopyTextureInfo src = {};
+    src.texture  = pick_color_texture_;
+    src.aspect   = WGPUTextureAspect_All;
+    src.origin.x = std::uint32_t(x_pixels);
+    src.origin.y = std::uint32_t(y_pixels);
+
+    WGPUTexelCopyBufferInfo dst = {};
+    dst.buffer              = pick_staging_buffer_;
+    dst.layout.bytesPerRow  = 256;
+    dst.layout.rowsPerImage = 1;
+
+    WGPUExtent3D extent = {};
+    extent.width  = 1;
+    extent.height = 1;
+    extent.depthOrArrayLayers = 1;
+
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+
+    if (normal_out) {
+        WGPUTexelCopyTextureInfo nsrc = {};
+        nsrc.texture  = pick_normal_texture_;
+        nsrc.aspect   = WGPUTextureAspect_All;
+        nsrc.origin.x = std::uint32_t(x_pixels);
+        nsrc.origin.y = std::uint32_t(y_pixels);
+
+        WGPUTexelCopyBufferInfo ndst = {};
+        ndst.buffer              = pick_normal_staging_buffer_;
+        ndst.layout.bytesPerRow  = 256;
+        ndst.layout.rowsPerImage = 1;
+
+        wgpuCommandEncoderCopyTextureToBuffer(enc, &nsrc, &ndst, &extent);
+    }
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+
+    // Sync wait — pick is rare (click), so the GPU stall is fine.
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+
+    wgpuBufferMapAsync(pick_staging_buffer_, WGPUMapMode_Read, 0, 256, mcb);
+    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    if (!req.ok) return 0;
+
+    const std::uint32_t* mapped = static_cast<const std::uint32_t*>(
+        wgpuBufferGetConstMappedRange(pick_staging_buffer_, 0, 256));
+    const std::uint32_t object_id = mapped ? mapped[0] : 0u;
+    wgpuBufferUnmap(pick_staging_buffer_);
+
+    if (normal_out && object_id != 0) {
+        MapReq nreq;
+        WGPUBufferMapCallbackInfo ncb = mcb;
+        ncb.userdata1 = &nreq;
+        wgpuBufferMapAsync(pick_normal_staging_buffer_, WGPUMapMode_Read, 0, 256, ncb);
+        while (!nreq.done) wgpuInstanceProcessEvents(instance_);
+        if (nreq.ok) {
+            const std::uint16_t* halves = static_cast<const std::uint16_t*>(
+                wgpuBufferGetConstMappedRange(pick_normal_staging_buffer_, 0, 256));
+            if (halves) {
+                // IEEE 754 half → float. Standard bit-fiddle (no STL
+                // helper in pre-C++23).
+                auto h2f = [](std::uint16_t h) -> float {
+                    const std::uint32_t sign     = std::uint32_t(h & 0x8000u) << 16;
+                    std::uint32_t       exponent = std::uint32_t(h & 0x7C00u) >> 10;
+                    std::uint32_t       mantissa = std::uint32_t(h & 0x03FFu);
+                    if (exponent == 0) {
+                        if (mantissa == 0) {
+                            union { std::uint32_t u; float f; } v{ sign };
+                            return v.f;
+                        }
+                        while ((mantissa & 0x0400u) == 0) {
+                            mantissa <<= 1;
+                            --exponent;
+                        }
+                        ++exponent;
+                        mantissa &= 0x03FFu;
+                    } else if (exponent == 0x1Fu) {
+                        exponent = 0xFFu;
+                    } else {
+                        exponent += (127u - 15u);
+                    }
+                    const std::uint32_t bits = sign | (exponent << 23) | (mantissa << 13);
+                    union { std::uint32_t u; float f; } v{ bits };
+                    return v.f;
+                };
+                const float nx = h2f(halves[0]) * 2.0f - 1.0f;
+                const float ny = h2f(halves[1]) * 2.0f - 1.0f;
+                const float nz = h2f(halves[2]) * 2.0f - 1.0f;
+                Eigen::Vector3f n(nx, ny, nz);
+                if (n.squaredNorm() > 1e-6f) *normal_out = n.normalized();
+            }
+            wgpuBufferUnmap(pick_normal_staging_buffer_);
+        }
+    }
+
+    return object_id;
+}
+
+std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
+    std::vector<std::uint32_t> out;
+    if (w <= 0 || h <= 0) return out;
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return out;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return out;
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > configured_w_) w = configured_w_ - x;
+    if (y + h > configured_h_) h = configured_h_ - y;
+    if (w <= 0 || h <= 0) return out;
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_) return out;
+
+    // Padded bytes-per-row. R32UInt = 4 B/texel; align to 256 B.
+    constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
+    const std::uint64_t unpadded_bpr = std::uint64_t(w) * 4;
+    const std::uint64_t padded_bpr   = (unpadded_bpr + kWgpuBytesPerRowAlign - 1)
+                                       / kWgpuBytesPerRowAlign
+                                       * kWgpuBytesPerRowAlign;
+    const std::uint64_t needed_bytes = padded_bpr * std::uint64_t(h);
+    if (needed_bytes > box_pick_staging_capacity_) {
+        if (box_pick_staging_buffer_) {
+            wgpuBufferRelease(box_pick_staging_buffer_);
+            box_pick_staging_buffer_ = nullptr;
+        }
+        const std::uint64_t cap = std::max<std::uint64_t>(needed_bytes * 2, 64 * 1024);
+        WGPUBufferDescriptor sb = {};
+        sb.size  = cap;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.box_pick_staging");
+        box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+        box_pick_staging_capacity_ = cap;
+    }
+    if (!box_pick_staging_buffer_) return out;
+
+    WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
+
+    WGPURenderPassColorAttachment color[2] = {};
+    color[0].view       = pick_color_view_;
+    color[0].loadOp     = WGPULoadOp_Clear;
+    color[0].storeOp    = WGPUStoreOp_Store;
+    color[0].clearValue = { 0, 0, 0, 0 };
+    color[0].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    color[1].view       = pick_normal_view_;
+    color[1].loadOp     = WGPULoadOp_Clear;
+    color[1].storeOp    = WGPUStoreOp_Store;
+    color[1].clearValue = { 0.5, 0.5, 0.5, 0 };
+    color[1].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+
+    WGPURenderPassDepthStencilAttachment depth = {};
+    depth.view            = pick_depth_view_;
+    depth.depthLoadOp     = WGPULoadOp_Clear;
+    depth.depthStoreOp    = WGPUStoreOp_Store;
+    depth.depthClearValue = 1.0f;
+    depth.stencilLoadOp   = WGPULoadOp_Undefined;
+    depth.stencilStoreOp  = WGPUStoreOp_Undefined;
+    depth.stencilReadOnly = true;
+
+    WGPURenderPassDescriptor pass_desc = {};
+    pass_desc.colorAttachmentCount   = 2;
+    pass_desc.colorAttachments       = color;
+    pass_desc.depthStencilAttachment = &depth;
+    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.box_pick_pass");
+
+    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
+    wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
+    wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.bind_group || c.total_visible_vertices == 0) continue;
+            wgpuRenderPassEncoderSetBindGroup(pass, 1, c.bind_group, 0, nullptr);
+            wgpuRenderPassEncoderDraw(pass, c.total_visible_vertices, 1, 0, 0);
+        }
+    }
+    wgpuRenderPassEncoderEnd(pass);
+    wgpuRenderPassEncoderRelease(pass);
+
+    WGPUTexelCopyTextureInfo src = {};
+    src.texture  = pick_color_texture_;
+    src.aspect   = WGPUTextureAspect_All;
+    src.origin.x = std::uint32_t(x);
+    src.origin.y = std::uint32_t(y);
+
+    WGPUTexelCopyBufferInfo dst = {};
+    dst.buffer              = box_pick_staging_buffer_;
+    dst.layout.bytesPerRow  = std::uint32_t(padded_bpr);
+    dst.layout.rowsPerImage = std::uint32_t(h);
+
+    WGPUExtent3D extent = {};
+    extent.width  = std::uint32_t(w);
+    extent.height = std::uint32_t(h);
+    extent.depthOrArrayLayers = 1;
+
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+
+    WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
+    wgpuQueueSubmit(queue_, 1, &cmd);
+    wgpuCommandBufferRelease(cmd);
+    wgpuCommandEncoderRelease(enc);
+
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read,
+                       0, needed_bytes, mcb);
+    while (!req.done) wgpuInstanceProcessEvents(instance_);
+    if (!req.ok) return out;
+
+    const std::uint8_t* mapped = static_cast<const std::uint8_t*>(
+        wgpuBufferGetConstMappedRange(box_pick_staging_buffer_, 0, needed_bytes));
+    std::unordered_set<std::uint32_t> seen;
+    if (mapped) {
+        for (int row = 0; row < h; ++row) {
+            const std::uint32_t* line = reinterpret_cast<const std::uint32_t*>(
+                mapped + std::size_t(row) * std::size_t(padded_bpr));
+            for (int col = 0; col < w; ++col) {
+                const std::uint32_t id = line[col];
+                if (id != 0) seen.insert(id);
+            }
+        }
+    }
+    wgpuBufferUnmap(box_pick_staging_buffer_);
+
+    out.reserve(seen.size());
+    for (std::uint32_t id : seen) out.push_back(id);
+    return out;
+}
+
+bool ViewportCore::pickSurfaceAt(int x_pixels, int y_pixels,
+                                 std::uint32_t& object_id_out,
+                                 Eigen::Vector3f& world_pos_out,
+                                 Eigen::Vector3f& world_normal_out,
+                                 float* aabb_radius_out) {
+    if (aabb_radius_out) *aabb_radius_out = 0.0f;
+    Eigen::Vector3f picked_normal(0, 0, 1);
+    const std::uint32_t id = pickObjectAt(x_pixels, y_pixels, &picked_normal);
+    if (id == 0) return false;
+
+    // WebGPU forbids partial copies of Depth32Float, so ray-cast against
+    // each instance carrying the picked object_id rather than reading
+    // back per-pixel depth.
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    Eigen::Matrix4f inv_vp;
+    if (!tryInvert4f(proj * view, inv_vp)) return false;
+
+    const float ndc_x = (2.0f * float(x_pixels) / float(configured_w_)) - 1.0f;
+    const float ndc_y = 1.0f - (2.0f * float(y_pixels) / float(configured_h_));
+    const Eigen::Vector4f far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
+    const Eigen::Vector4f far_w   = inv_vp * far_clip;
+    if (std::abs(far_w.w()) < 1e-6f) return false;
+    const Eigen::Vector3f far_world = far_w.head<3>() / far_w.w();
+
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    Eigen::Vector3f ray_dir = far_world - eye;
+    if (ray_dir.squaredNorm() < 1e-8f) return false;
+    ray_dir.normalize();
+
+    float best_t = std::numeric_limits<float>::infinity();
+    Eigen::Vector3f best_point;
+    Eigen::Vector3f best_normal;
+    float           best_radius = 0.0f;
+    bool found = false;
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& inst : m.instances) {
+            if (inst.object_id != id) continue;
+            float t = 0.0f;
+            Eigen::Vector3f n;
+            if (!rayAABBHit(eye, ray_dir,
+                            inst.world_aabb_min, inst.world_aabb_max,
+                            t, n)) continue;
+            if (t < best_t) {
+                best_t      = t;
+                best_point  = eye + ray_dir * t;
+                best_normal = n;
+                const float dx = inst.world_aabb_max[0] - inst.world_aabb_min[0];
+                const float dy = inst.world_aabb_max[1] - inst.world_aabb_min[1];
+                const float dz = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+                best_radius = 0.5f * std::sqrt(dx * dx + dy * dy + dz * dz);
+                found       = true;
+            }
+        }
+    }
+    if (!found) return false;
+
+    if (aabb_radius_out) *aabb_radius_out = best_radius;
+
+    world_pos_out    = best_point;
+    // Prefer per-fragment normal from the pick MRT; fall back to AABB face.
+    world_normal_out = (picked_normal.squaredNorm() > 1e-3f)
+                         ? picked_normal : best_normal;
+    object_id_out    = id;
+    return true;
+}
+
+bool ViewportCore::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
+    std::uint32_t obj_id = 0;
+    Eigen::Vector3f world_pos, world_normal;
+    if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
+
+    // Use the OUTER mid (the live map key) rather than inst.model_id —
+    // InstanceCpu::model_id is stale across sessions.
+    for (const auto& [mid, m] : models_gpu_) {
+        auto it = m.object_id_to_instance.find(obj_id);
+        if (it == m.object_id_to_instance.end()) continue;
+        const InstanceCpu& inst = m.instances[it->second];
+
+        const Eigen::Matrix4f T = Eigen::Map<const Eigen::Matrix4f>(inst.transform);
+        Eigen::Matrix4f Ti;
+        if (!tryInvert4f(T, Ti)) return false;
+
+        if (inst.mesh_id >= m.meshes.size()) return false;
+
+        // Refine the AABB-face hit by re-projecting and Möller-Trumbore-
+        // ing against the picked instance's CPU mesh shadow.
+        Eigen::Vector3f refined_world_pos    = world_pos;
+        Eigen::Vector3f refined_world_normal = world_normal;
+        if (inst.mesh_id < m.mesh_triangles_cache.size()) {
+            const auto& tris = m.mesh_triangles_cache[inst.mesh_id];
+            if (!tris.indices.empty() && configured_w_ > 0 && configured_h_ > 0) {
+                Eigen::Matrix4f view, proj;
+                buildViewProj(view, proj);
+                Eigen::Matrix4f inv_vp;
+                if (tryInvert4f(proj * view, inv_vp)) {
+                    const float ndc_x = (2.0f * float(x) / float(configured_w_)) - 1.0f;
+                    const float ndc_y = 1.0f - (2.0f * float(y) / float(configured_h_));
+                    const Eigen::Vector4f far_clip(ndc_x, ndc_y, 1.0f, 1.0f);
+                    const Eigen::Vector4f far_w = inv_vp * far_clip;
+                    if (std::abs(far_w.w()) >= 1e-6f) {
+                        const Eigen::Vector3f far_world = far_w.head<3>() / far_w.w();
+                        const Eigen::Vector3f eye = orbitEye(
+                            camera_target_, camera_distance_,
+                            camera_yaw_deg_, camera_pitch_deg_);
+                        Eigen::Vector3f ray_dir = far_world - eye;
+                        if (ray_dir.squaredNorm() > 1e-8f) {
+                            ray_dir.normalize();
+                            const Eigen::Vector4f ro_l4 = Ti * Eigen::Vector4f(eye.x(),     eye.y(),     eye.z(),     1.0f);
+                            const Eigen::Vector4f rd_l4 = Ti * Eigen::Vector4f(ray_dir.x(), ray_dir.y(), ray_dir.z(), 0.0f);
+                            const float ro_l[3] = { ro_l4.x(), ro_l4.y(), ro_l4.z() };
+                            const float rd_l[3] = { rd_l4.x(), rd_l4.y(), rd_l4.z() };
+                            const float ldn = std::sqrt(
+                                rd_l[0]*rd_l[0] + rd_l[1]*rd_l[1] + rd_l[2]*rd_l[2]);
+                            if (ldn > 0.0f) {
+                                float best_t_world = std::numeric_limits<float>::infinity();
+                                std::uint32_t best_tri = UINT32_MAX;
+                                const std::size_t n_tris = tris.indices.size() / 3;
+                                for (std::size_t t = 0; t < n_tris; ++t) {
+                                    const std::uint32_t ia = tris.indices[3 * t + 0];
+                                    const std::uint32_t ib = tris.indices[3 * t + 1];
+                                    const std::uint32_t ic = tris.indices[3 * t + 2];
+                                    if (3 * ia + 2 >= tris.positions.size()
+                                     || 3 * ib + 2 >= tris.positions.size()
+                                     || 3 * ic + 2 >= tris.positions.size()) continue;
+                                    const float* va = &tris.positions[3 * ia];
+                                    const float* vb = &tris.positions[3 * ib];
+                                    const float* vc = &tris.positions[3 * ic];
+                                    float t_local = 0.0f;
+                                    if (!rayTriMT(ro_l, rd_l, va, vb, vc, t_local)) continue;
+                                    const float t_world = t_local / ldn;
+                                    if (t_world < best_t_world) {
+                                        best_t_world = t_world;
+                                        best_tri     = std::uint32_t(t);
+                                    }
+                                }
+                                if (best_tri != UINT32_MAX) {
+                                    refined_world_pos = eye + ray_dir * best_t_world;
+                                    const std::uint32_t ia = tris.indices[3 * best_tri + 0];
+                                    const std::uint32_t ib = tris.indices[3 * best_tri + 1];
+                                    const std::uint32_t ic = tris.indices[3 * best_tri + 2];
+                                    const float* va = &tris.positions[3 * ia];
+                                    const float* vb = &tris.positions[3 * ib];
+                                    const float* vc = &tris.positions[3 * ic];
+                                    const float bax = vb[0]-va[0], bay = vb[1]-va[1], baz = vb[2]-va[2];
+                                    const float cax = vc[0]-va[0], cay = vc[1]-va[1], caz = vc[2]-va[2];
+                                    float n_local[3] = {
+                                        bay*caz - baz*cay,
+                                        baz*cax - bax*caz,
+                                        bax*cay - bay*cax,
+                                    };
+                                    const float nl = std::sqrt(
+                                        n_local[0]*n_local[0]
+                                      + n_local[1]*n_local[1]
+                                      + n_local[2]*n_local[2]);
+                                    if (nl > 0.0f) {
+                                        n_local[0] /= nl;
+                                        n_local[1] /= nl;
+                                        n_local[2] /= nl;
+                                    }
+                                    const float* M = inst.transform;
+                                    Eigen::Vector3f n_world(
+                                        M[0]*n_local[0] + M[4]*n_local[1] + M[8] *n_local[2],
+                                        M[1]*n_local[0] + M[5]*n_local[1] + M[9] *n_local[2],
+                                        M[2]*n_local[0] + M[6]*n_local[1] + M[10]*n_local[2]);
+                                    if (n_world.squaredNorm() > 1e-12f) {
+                                        n_world.normalize();
+                                        refined_world_normal = n_world;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const Eigen::Vector4f mp = Ti * Eigen::Vector4f(refined_world_pos.x(),
+                                            refined_world_pos.y(),
+                                            refined_world_pos.z(), 1.0f);
+
+        out.object_id     = obj_id;
+        out.model_id      = mid;
+        out.mesh_id       = inst.mesh_id;
+        out.mesh_local[0] = mp.x();
+        out.mesh_local[1] = mp.y();
+        out.mesh_local[2] = mp.z();
+        out.world_pos [0] = refined_world_pos.x();
+        out.world_pos [1] = refined_world_pos.y();
+        out.world_pos [2] = refined_world_pos.z();
+        out.world_normal[0] = refined_world_normal.x();
+        out.world_normal[1] = refined_world_normal.y();
+        out.world_normal[2] = refined_world_normal.z();
+        std::memcpy(out.composed_transform, inst.transform,
+                    sizeof(out.composed_transform));
+        return true;
+    }
+    return false;
+}
+
+bool ViewportCore::raycast(const float origin[3], const float dir[3],
+                           RaycastHit& out) const {
+    float inv_d[3] = {
+        std::abs(dir[0]) > 1e-20f ? 1.0f / dir[0] : std::numeric_limits<float>::infinity(),
+        std::abs(dir[1]) > 1e-20f ? 1.0f / dir[1] : std::numeric_limits<float>::infinity(),
+        std::abs(dir[2]) > 1e-20f ? 1.0f / dir[2] : std::numeric_limits<float>::infinity(),
+    };
+
+    float best_t = std::numeric_limits<float>::infinity();
+    std::uint32_t best_oid = 0;
+    float         best_normal[3] = {0, 0, 0};
+
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
+            const InstanceCpu& inst = m.instances[inst_idx];
+            if (!rayAabbSlab(origin, inv_d, inst.world_aabb_min, inst.world_aabb_max)) {
+                continue;
+            }
+            if (inst.mesh_id >= m.mesh_triangles_cache.size()) continue;
+            const auto& tris = m.mesh_triangles_cache[inst.mesh_id];
+            if (tris.indices.empty()) continue;
+
+            const Eigen::Matrix4f T = Eigen::Map<const Eigen::Matrix4f>(inst.transform);
+            Eigen::Matrix4f Ti;
+            if (!tryInvert4f(T, Ti)) continue;
+            const Eigen::Vector4f ro_local4 = Ti * Eigen::Vector4f(origin[0], origin[1], origin[2], 1.0f);
+            const Eigen::Vector4f rd_local4 = Ti * Eigen::Vector4f(dir[0],    dir[1],    dir[2],    0.0f);
+            const float ro_local[3] = { ro_local4.x(), ro_local4.y(), ro_local4.z() };
+            const float rd_local[3] = { rd_local4.x(), rd_local4.y(), rd_local4.z() };
+
+            const std::size_t n_tris = tris.indices.size() / 3;
+            for (std::size_t t = 0; t < n_tris; ++t) {
+                const std::uint32_t ia = tris.indices[3 * t + 0];
+                const std::uint32_t ib = tris.indices[3 * t + 1];
+                const std::uint32_t ic = tris.indices[3 * t + 2];
+                if (3 * ia + 2 >= tris.positions.size()
+                 || 3 * ib + 2 >= tris.positions.size()
+                 || 3 * ic + 2 >= tris.positions.size()) continue;
+                const float* va = &tris.positions[3 * ia];
+                const float* vb = &tris.positions[3 * ib];
+                const float* vc = &tris.positions[3 * ic];
+                float t_local = 0.0f;
+                if (!rayTriMT(ro_local, rd_local, va, vb, vc, t_local)) continue;
+                const float ldn = std::sqrt(rd_local[0]*rd_local[0]
+                                          + rd_local[1]*rd_local[1]
+                                          + rd_local[2]*rd_local[2]);
+                if (ldn <= 0.0f) continue;
+                const float t_world = t_local / ldn;
+                if (t_world >= best_t) continue;
+                best_t   = t_world;
+                best_oid = inst.object_id;
+
+                const float bax = vb[0]-va[0], bay = vb[1]-va[1], baz = vb[2]-va[2];
+                const float cax = vc[0]-va[0], cay = vc[1]-va[1], caz = vc[2]-va[2];
+                float n_local[3] = {
+                    bay * caz - baz * cay,
+                    baz * cax - bax * caz,
+                    bax * cay - bay * cax,
+                };
+                const float nl = std::sqrt(n_local[0]*n_local[0]
+                                         + n_local[1]*n_local[1]
+                                         + n_local[2]*n_local[2]);
+                if (nl > 0.0f) { n_local[0] /= nl; n_local[1] /= nl; n_local[2] /= nl; }
+                const float* M = inst.transform;
+                best_normal[0] = M[0]*n_local[0] + M[4]*n_local[1] + M[8]*n_local[2];
+                best_normal[1] = M[1]*n_local[0] + M[5]*n_local[1] + M[9]*n_local[2];
+                best_normal[2] = M[2]*n_local[0] + M[6]*n_local[1] + M[10]*n_local[2];
+                const float wnl = std::sqrt(best_normal[0]*best_normal[0]
+                                          + best_normal[1]*best_normal[1]
+                                          + best_normal[2]*best_normal[2]);
+                if (wnl > 0.0f) {
+                    best_normal[0] /= wnl;
+                    best_normal[1] /= wnl;
+                    best_normal[2] /= wnl;
+                }
+            }
+        }
+    }
+    if (!std::isfinite(best_t)) return false;
+    out.object_id    = best_oid;
+    out.distance     = best_t;
+    out.world_pos[0] = origin[0] + best_t * dir[0];
+    out.world_pos[1] = origin[1] + best_t * dir[1];
+    out.world_pos[2] = origin[2] + best_t * dir[2];
+    out.world_normal[0] = best_normal[0];
+    out.world_normal[1] = best_normal[1];
+    out.world_normal[2] = best_normal[2];
+    return true;
+}
