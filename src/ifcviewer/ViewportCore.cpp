@@ -1730,3 +1730,421 @@ void ViewportCore::unloadChunk(ModelGpuData& m, std::size_t chunk_idx) {
     c.total_visible_vertices = 0;
     c.is_resident = false;
 }
+
+// ===========================================================================
+// Streaming driver (#84-o): driveStreamingLoads
+// ===========================================================================
+
+#include <filesystem>
+#include <set>
+
+namespace {
+// Extract the file's base name (no extension, no parent dirs) for log
+// readability — replaces the previous QFileInfo(...).completeBaseName().
+std::string pathStem(const std::string& path) {
+    if (path.empty()) return {};
+    return std::filesystem::path(path).stem().string();
+}
+} // namespace
+
+void ViewportCore::driveStreamingLoads() {
+    // Bump LRU clock once per call. Resident-and-visible chunks get
+    // stamped with this value below; the evictor uses it to find the
+    // least-recently-visible non-visible resident chunk.
+    ++streaming_frame_idx_;
+
+    // Refresh per-chunk frame state. (a) LRU stamp on frustum-visible
+    // residents (HiZ flicker can't un-stamp them; cull-with-HiZ would
+    // thrash the LRU). (b) EMA-smoothed visibility_history: how often
+    // the chunk has *actually* contributed pixels (post-HiZ) over the
+    // last ~30 frames.
+    constexpr float HISTORY_ALPHA = 1.0f / 30.0f;
+    for (auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (auto& c : m.chunks) {
+            if (c.is_resident && c.frustum_visible_count > 0) {
+                c.last_visible_frame_idx = streaming_frame_idx_;
+            }
+            const float current = (c.total_visible_draws > 0) ? 1.0f : 0.0f;
+            c.visibility_history =
+                c.visibility_history * (1.0f - HISTORY_ALPHA)
+              + current * HISTORY_ALPHA;
+        }
+    }
+
+    // Build the camera's view-projection for the diagnostic dump below.
+    Eigen::Matrix4f v_mat, p_mat;
+    buildViewProj(v_mat, p_mat);
+    const Eigen::Matrix4f vp_mat = p_mat * v_mat;
+
+    // chunk.current_priority was accumulated during cullModelCpuCompute
+    // (one add per frustum-passing instance). No standalone walk needed
+    // here; the candidate/resident priority lambdas just read it.
+    auto chunk_screen_area_px = [&](const ModelGpuData::Chunk& c) -> float {
+        return c.current_priority;
+    };
+
+    // Resident chunks: contribution × visibility_history (floored), so
+    // chunks that don't actually render lose priority over time and
+    // become evictable. Candidates: pure contribution — best-case
+    // estimate. Newly-loaded chunks get a GRACE_FRAMES grace period at
+    // full max-history factor to stop equal-priority swap loops.
+    constexpr float    HISTORY_FLOOR = 0.05f;
+    constexpr std::uint64_t GRACE_FRAMES  = 30;
+    auto resident_priority = [&](const ModelGpuData::Chunk& c) -> float {
+        const std::uint64_t age = streaming_frame_idx_ - c.loaded_frame_idx;
+        const float vis = (age < GRACE_FRAMES)
+            ? 1.0f
+            : std::max(c.visibility_history, HISTORY_FLOOR);
+        return chunk_screen_area_px(c) * vis;
+    };
+    auto candidate_priority = [&](const ModelGpuData::Chunk& c) -> float {
+        return chunk_screen_area_px(c);
+    };
+
+    // Per-frame load budget. 4 chunks/frame × 60fps ingests 240/sec —
+    // a 100-model scene fully resides in ~1s.
+    constexpr int MAX_STREAMING_LOADS_PER_FRAME = 4;
+    int loads = 0;
+    bool more_pending = false;
+
+    // Reset per-frame counters used by WGPU_STREAM_DEBUG output.
+    streaming_candidates_this_frame_    = 0;
+    streaming_evictions_lru_this_frame_ = 0;
+    streaming_evictions_pri_this_frame_ = 0;
+    streaming_drained_this_frame_       = 0;
+    streaming_blocked_oom_this_frame_   = 0;
+
+    auto pool_can_fit = [&](std::uint64_t bytes) -> bool {
+        if (pool_.largest_free_run_bytes() >= bytes) return true;
+        if (pool_.can_grow() && pool_.next_growth_size_bytes() >= bytes) return true;
+        return false;
+    };
+
+    // Phase-1 evictor: drop the LRU non-visible resident chunk. Skips
+    // chunks stamped on streaming_frame_idx_ to avoid yanking what cull
+    // just marked visible.
+    auto evict_one_lru = [&]() -> bool {
+        ModelGpuData* victim_m = nullptr;
+        std::size_t   victim_ci = 0;
+        std::uint64_t victim_lru = std::numeric_limits<std::uint64_t>::max();
+        for (auto& [mid, m] : models_gpu_) {
+            for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+                auto& c = m.chunks[ci];
+                if (!c.is_resident) continue;
+                if (c.last_visible_frame_idx == streaming_frame_idx_) continue;
+                if (c.last_visible_frame_idx < victim_lru) {
+                    victim_lru = c.last_visible_frame_idx;
+                    victim_m   = &m;
+                    victim_ci  = ci;
+                }
+            }
+        }
+        if (!victim_m) return false;
+        unloadChunk(*victim_m, victim_ci);
+        ++streaming_evictions_lru_this_frame_;
+        return true;
+    };
+
+    // Phase-2 evictor: when every resident is visible-this-frame but a
+    // higher-priority candidate needs room, drop the lowest-priority
+    // resident provided the candidate's contribution is meaningfully
+    // bigger (2× area hysteresis stops oscillation).
+    constexpr float EVICT_PRIORITY_RATIO = 2.0f;
+    // WGPU_STREAM_EVICT_LOG=1 — log every priority-eviction with the
+    // (candidate, victim) pair and detect direct A→B→A 2-cycles.
+    static const bool evict_log =
+        std::getenv("WGPU_STREAM_EVICT_LOG") != nullptr;
+    auto evict_lowest_priority_than = [&](std::uint32_t cand_mid,
+                                          std::uint32_t cand_ci,
+                                          float    cand_priority) -> bool {
+        const float threshold = cand_priority / EVICT_PRIORITY_RATIO;
+        ModelGpuData* victim_m  = nullptr;
+        std::size_t   victim_ci = 0;
+        float         victim_priority = threshold;
+        for (auto& [mid, m] : models_gpu_) {
+            for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+                auto& c = m.chunks[ci];
+                if (!c.is_resident) continue;
+                const float p = resident_priority(c);
+                if (p < victim_priority) {
+                    victim_priority = p;
+                    victim_m        = &m;
+                    victim_ci       = ci;
+                }
+            }
+        }
+        if (!victim_m) return false;
+
+        auto& victim = victim_m->chunks[victim_ci];
+
+        if (evict_log) {
+            const std::string cand_stem = pathStem(
+                models_gpu_.at(cand_mid).streaming_file_path);
+            const std::string vic_stem  = pathStem(victim_m->streaming_file_path);
+            // 2-cycle detection: this victim was previously evicted by
+            // THIS exact candidate — the smoking gun for a swap loop.
+            const bool is_2_cycle =
+                   victim.last_evicted_by_model_id == cand_mid
+                && victim.last_evicted_by_chunk_idx == cand_ci
+                && victim.load_count > 1;
+            Log::info()
+                << (is_2_cycle ? "[evict 2-cycle] " : "[evict] ")
+                << "kicked chunk " << victim_ci
+                << " of " << vic_stem
+                << " (eff=" << int(victim_priority)
+                << ", load_count=" << victim.load_count
+                << ") for chunk " << cand_ci
+                << " of " << cand_stem
+                << " (pri=" << int(cand_priority)
+                << ", threshold=" << int(threshold) << ")";
+        }
+
+        victim.last_evicted_by_model_id  = cand_mid;
+        victim.last_evicted_by_chunk_idx = cand_ci;
+        victim.last_evicted_by_priority  = cand_priority;
+        victim.last_evicted_frame_idx    = streaming_frame_idx_;
+
+        unloadChunk(*victim_m, victim_ci);
+        ++streaming_evictions_pri_this_frame_;
+        return true;
+    };
+
+    constexpr std::uint64_t BLOCKED_COOLDOWN_FRAMES = 180;
+
+    // ---- Drain worker results -------------------------------------------
+    {
+        auto results = streaming_thread_.drainResults();
+        for (auto& res : results) {
+            auto it = models_gpu_.find(res.model_id);
+            if (it == models_gpu_.end()) continue;  // model unloaded
+            auto& m = it->second;
+            if (res.chunk_idx >= m.chunks.size()) continue;
+            auto& c = m.chunks[res.chunk_idx];
+            c.is_loading = false;
+            if (!res.success) {
+                Log::warn() << "[wgpu stream] worker read failed for model "
+                            << res.model_id << " chunk " << res.chunk_idx;
+                continue;
+            }
+            if (!applyStreamedChunk(m, res.chunk_idx, res.vbytes, res.idx)) {
+                c.blocked_cooldown_until_frame_idx =
+                    streaming_frame_idx_ + BLOCKED_COOLDOWN_FRAMES;
+                if (evict_log) {
+                    Log::info()
+                        << "[blocked-apply] chunk " << res.chunk_idx
+                        << " of " << pathStem(m.streaming_file_path)
+                        << " — pool OOM at apply, fetched bytes discarded"
+                        << " — cooldown " << BLOCKED_COOLDOWN_FRAMES << "f";
+                }
+                continue;
+            }
+            ++loads;
+            ++streaming_drained_this_frame_;
+            ++c.load_count;
+            c.last_visible_frame_idx = streaming_frame_idx_;
+            // Thrash watch — fire once per power-of-≈3 threshold.
+            const std::uint32_t lc = c.load_count;
+            if (lc == 3 || lc == 10 || lc == 30 || lc == 100
+             || (lc > 100 && (lc % 100) == 0)) {
+                Log::info()
+                    << "[stream thrash] chunk " << res.chunk_idx
+                    << " of " << pathStem(m.streaming_file_path)
+                    << " loaded " << lc << "x -- pool saturated?";
+            }
+        }
+    }
+
+    // ---- Enqueue new requests -------------------------------------------
+    struct Candidate {
+        ModelGpuData* m;
+        std::size_t   ci;
+        std::uint32_t mid;
+        float         priority;
+    };
+    std::vector<Candidate> candidates;
+    candidates.reserve(64);
+    for (auto& [mid, m] : models_gpu_) {
+        if (m.streaming_file_path.empty() || m.hidden) continue;
+        for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+            auto& c = m.chunks[ci];
+            if (c.is_resident)                       continue;
+            if (c.is_loading)                        continue;
+            if (c.frustum_visible_count == 0)        continue;
+            if (c.blocked_cooldown_until_frame_idx > streaming_frame_idx_) continue;
+            candidates.push_back({&m, ci, mid, candidate_priority(c)});
+        }
+    }
+    streaming_candidates_this_frame_ = int(candidates.size());
+    std::sort(candidates.begin(), candidates.end(),
+              [](const Candidate& a, const Candidate& b) {
+                  return a.priority > b.priority;
+              });
+
+    int enqueued = 0;
+    for (const Candidate& cand : candidates) {
+        if (enqueued >= MAX_STREAMING_LOADS_PER_FRAME) {
+            more_pending = true;
+            break;
+        }
+        auto& c = cand.m->chunks[cand.ci];
+
+        const std::uint64_t need = c.vertex_byte_size
+                                 + c.index_count * sizeof(std::uint32_t);
+        while (!pool_can_fit(c.vertex_byte_size)
+               || (c.index_count > 0
+                   && !pool_can_fit(c.index_count * sizeof(std::uint32_t)))
+               || pool_.total_free_bytes() < need) {
+            if (evict_one_lru())                                                continue;
+            if (evict_lowest_priority_than(cand.mid, std::uint32_t(cand.ci),
+                                           cand.priority))                      continue;
+            break;
+        }
+        if (!pool_can_fit(c.vertex_byte_size)
+            || (c.index_count > 0
+                && !pool_can_fit(c.index_count * sizeof(std::uint32_t)))) {
+            ++streaming_blocked_oom_this_frame_;
+            c.blocked_cooldown_until_frame_idx =
+                streaming_frame_idx_ + BLOCKED_COOLDOWN_FRAMES;
+            if (evict_log) {
+                const std::uint64_t v_bytes = c.vertex_byte_size;
+                const std::uint64_t i_bytes = c.index_count * sizeof(std::uint32_t);
+                const double mb = 1.0 / (1024.0 * 1024.0);
+                Log::info()
+                    << "[blocked] chunk " << cand.ci
+                    << " of " << pathStem(cand.m->streaming_file_path)
+                    << " (pri=" << int(cand.priority)
+                    << ") -- needs v=" << double(v_bytes) * mb
+                    << " MB + i=" << double(i_bytes) * mb
+                    << " MB; pool largest_free="
+                    << double(pool_.largest_free_run_bytes()) * mb
+                    << " MB total_free="
+                    << double(pool_.total_free_bytes()) * mb
+                    << " MB can_grow=" << (pool_.can_grow() ? "Y" : "N")
+                    << " -- cooldown " << BLOCKED_COOLDOWN_FRAMES << "f";
+            }
+            more_pending = true;
+            continue;
+        }
+
+        // Sync fallback when a screenshot is pending: the deferred-
+        // capture wait would let the window manager re-layout the
+        // window while we wait, capturing at the wrong size. With sync
+        // loads the chunk appears in the same frame we enqueue.
+        if (!pending_screenshot_path_.empty()) {
+            if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
+                ++enqueued;
+                c.last_visible_frame_idx = streaming_frame_idx_;
+            }
+            continue;
+        }
+
+        if (streaming_thread_.enqueue(makeChunkRequest(*cand.m, cand.ci, cand.mid))) {
+            c.is_loading = true;
+            ++enqueued;
+        }
+    }
+    loads += enqueued;
+    if (loads > 0 || streaming_thread_.inFlightApprox() > 0) host_->requestFrame();
+
+    streaming_loads_this_frame_ = loads;
+    streaming_more_pending_     = more_pending;
+
+    // Click-and-track diagnostic. When the user picked an object, we
+    // noted which chunk holds it. If that chunk has just transitioned
+    // resident→evicted, dump the priority + pool state at the moment
+    // of loss.
+    if (tracked_chunk_idx_ != SIZE_MAX) {
+        auto it = models_gpu_.find(tracked_chunk_mid_);
+        if (it != models_gpu_.end()
+            && tracked_chunk_idx_ < it->second.chunks.size()) {
+            const auto& m = it->second;
+            const auto& c = m.chunks[tracked_chunk_idx_];
+            if (tracked_was_resident_ && !c.is_resident) {
+                const double mb = 1.0 / (1024.0 * 1024.0);
+                const float my_area  = chunkScreenAreaPx(c, vp_mat);
+                const std::uint64_t my_bytes = c.vertex_byte_size
+                                             + c.index_count * sizeof(std::uint32_t);
+                Log::info()
+                    << "[track] chunk " << tracked_chunk_idx_
+                    << " (object " << tracked_object_id_
+                    << ", model " << tracked_chunk_mid_
+                    << ") EVICTED this frame";
+                Log::info()
+                    << "  area=" << int(my_area) << "px2"
+                    << " frustum_vis=" << c.frustum_visible_count
+                    << " hist=" << c.visibility_history
+                    << " load_count=" << c.load_count
+                    << " size=" << double(my_bytes) * mb << "MB";
+                Log::info()
+                    << "  chunk aabb "
+                    << (c.aabb_max[0] - c.aabb_min[0]) << "x"
+                    << (c.aabb_max[1] - c.aabb_min[1]) << "x"
+                    << (c.aabb_max[2] - c.aabb_min[2]) << "m"
+                    << " centre=("
+                    << 0.5f * (c.aabb_min[0] + c.aabb_max[0]) << ","
+                    << 0.5f * (c.aabb_min[1] + c.aabb_max[1]) << ","
+                    << 0.5f * (c.aabb_min[2] + c.aabb_max[2]) << ")";
+                Log::info()
+                    << "  pool used="
+                    << int(double(pool_.total_used_bytes()) * mb)
+                    << "/"
+                    << int(double(pool_.total_capacity_bytes()) * mb)
+                    << "MB largest_free="
+                    << double(pool_.largest_free_run_bytes()) * mb << "MB";
+                Log::info()
+                    << "  this-frame: cands=" << streaming_candidates_this_frame_
+                    << " enq=" << enqueued
+                    << " ev_lru=" << streaming_evictions_lru_this_frame_
+                    << " ev_pri=" << streaming_evictions_pri_this_frame_
+                    << " blocked=" << streaming_blocked_oom_this_frame_;
+
+                struct Stat { std::uint32_t mid; std::size_t ci; float area; };
+                std::vector<Stat> all;
+                all.reserve(64);
+                for (const auto& [mid2, m2] : models_gpu_) {
+                    for (std::size_t ci2 = 0; ci2 < m2.chunks.size(); ++ci2) {
+                        const auto& cc = m2.chunks[ci2];
+                        if (cc.is_resident)                continue;
+                        if (cc.frustum_visible_count == 0) continue;
+                        all.push_back({mid2, ci2, chunkScreenAreaPx(cc, vp_mat)});
+                    }
+                }
+                std::sort(all.begin(), all.end(),
+                          [](const Stat& a, const Stat& b){ return a.area > b.area; });
+                const std::size_t n = std::min<std::size_t>(5, all.size());
+                for (std::size_t i = 0; i < n; ++i) {
+                    Log::info()
+                        << "  top cand #" << i << ": model " << all[i].mid
+                        << " chunk " << all[i].ci
+                        << " area=" << int(all[i].area) << "px2";
+                }
+            }
+            tracked_was_resident_ = c.is_resident;
+        }
+    }
+
+    if (streaming_debug_) {
+        std::size_t resident = 0;
+        std::uint32_t max_load_count = 0;
+        std::size_t   cycled = 0;
+        for (const auto& [mid, m] : models_gpu_) {
+            for (const auto& c : m.chunks) {
+                if (c.is_resident) ++resident;
+                if (c.load_count > max_load_count) max_load_count = c.load_count;
+                if (c.load_count > 1) ++cycled;
+            }
+        }
+        Log::info()
+            << "[stream-debug] f" << streaming_frame_idx_
+            << " cands=" << streaming_candidates_this_frame_
+            << " enq=" << enqueued
+            << " drained=" << streaming_drained_this_frame_
+            << " ev_lru=" << streaming_evictions_lru_this_frame_
+            << " ev_pri=" << streaming_evictions_pri_this_frame_
+            << " blocked=" << streaming_blocked_oom_this_frame_
+            << " resident=" << resident
+            << " cycled=" << cycled
+            << " max_load=" << max_load_count;
+    }
+}

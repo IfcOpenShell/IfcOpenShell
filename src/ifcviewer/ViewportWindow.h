@@ -860,14 +860,13 @@ private:
     bool         fly_debug_                   = false;
     Stopwatch    fly_render_clock_;
 
-    // Click-and-track diagnostic: when a pick lands, stash the chunk
-    // that holds the picked object. driveStreamingLoads watches for that
-    // chunk's `is_resident` flipping true→false and dumps the priority
-    // / pool stats at the moment of eviction so we can see why it lost.
-    uint32_t     tracked_object_id_           = 0;
-    uint32_t     tracked_chunk_mid_           = 0;
-    size_t       tracked_chunk_idx_           = SIZE_MAX;
-    bool         tracked_was_resident_        = false;
+    // Click-and-track aliases (storage in core_). The pick handler still
+    // lives in VW so it touches these by name; driveStreamingLoads in
+    // core dumps the priority / pool stats at eviction.
+    uint32_t&    tracked_object_id_;
+    uint32_t&    tracked_chunk_mid_;
+    size_t&      tracked_chunk_idx_;
+    bool&        tracked_was_resident_;
 
     // Mouse-navigation bindings — mirrors GL's NavBindings + currentNavBindings().
     // Selection stays on LMB for every preset (none of the presets steal it),
@@ -944,22 +943,20 @@ public:
     BufferPool&      pool_;
     StreamingThread& streaming_thread_;
 
-    // Per-frame streaming activity, written by driveStreamingLoads,
-    // consumed by the benchmark harness to delay the orbit sweep until
-    // the initial cold-load settles. `loads` = chunks brought resident
-    // this frame; `more_pending` = the loader wants to keep going.
-    int  streaming_loads_this_frame_ = 0;
-    bool streaming_more_pending_     = false;
+    // Per-frame streaming activity aliases (storage in core_). Written
+    // by driveStreamingLoads; consumed by the still-in-VW benchmark
+    // harness.
+    int&  streaming_loads_this_frame_;
+    bool& streaming_more_pending_;
 
-    // Per-frame streaming counters for WGPU_STREAM_DEBUG. Mutated inside
-    // driveStreamingLoads, consumed by the per-frame debug print and the
-    // bench-warm timeout dump.
-    int  streaming_candidates_this_frame_      = 0;
-    int  streaming_evictions_lru_this_frame_   = 0;
-    int  streaming_evictions_pri_this_frame_   = 0;
-    int  streaming_drained_this_frame_         = 0;
-    int  streaming_blocked_oom_this_frame_     = 0;
-    bool streaming_debug_                      = false;  // WGPU_STREAM_DEBUG=1
+    // Per-frame streaming counters (storage in core_). Consumed by the
+    // bench-warm timeout dump in render() (still VW-side).
+    int&  streaming_candidates_this_frame_;
+    int&  streaming_evictions_lru_this_frame_;
+    int&  streaming_evictions_pri_this_frame_;
+    int&  streaming_drained_this_frame_;
+    int&  streaming_blocked_oom_this_frame_;
+    bool& streaming_debug_;
 
     // Bench warm-phase counters. We wait until N consecutive frames with
     // 0 loads (convergence) before starting the orbit sweep, capped by
@@ -1015,8 +1012,11 @@ private:
     // mouse. Matches GL's last_cull_was_motion_ behaviour.
     bool  last_cull_was_motion_    = false;
 
-    // Pending one-shot screenshot, captured at the end of the next render().
-    std::string pending_screenshot_path_;
+    // Pending one-shot screenshot path alias (storage in core_).
+    // Captured at the end of the next render(); driveStreamingLoads
+    // observes the non-empty value to switch into the sync chunk-load
+    // fallback so the first-frame capture isn't an empty buffer.
+    std::string& pending_screenshot_path_;
     bool    pending_screenshot_quit_ = false;
 
     // Mouse navigation state. LMB drag orbits, MMB drag pans, wheel zooms.

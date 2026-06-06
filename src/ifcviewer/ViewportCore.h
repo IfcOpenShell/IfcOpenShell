@@ -288,10 +288,17 @@ public:
     // Build the worker request for a chunk. Walks the chunk's mesh_ids
     // and derives scatter-gather byte/index ranges from each mesh's
     // sidecar offsets. Pure function of model + chunk metadata; safe to
-    // call from the main thread. Static — also used by the still-in-VW
-    // driveStreamingLoads to enqueue against streaming_thread_.
+    // call from the main thread.
     static StreamingThread::Request makeChunkRequest(
         const ModelGpuData& m, std::size_t chunk_idx, std::uint32_t model_id);
+
+    // Per-frame streaming driver. Called from render() after cull. Walks
+    // every model's chunks once for residency bookkeeping, drains the
+    // worker's completed results into the pool, then enqueues new
+    // requests for visible non-resident chunks (LRU + priority eviction
+    // when the pool can't fit). Triggers host_->requestFrame() while
+    // residency is still settling so the render loop keeps ticking.
+    void driveStreamingLoads();
 
 private:
     bool probeAndCreatePool();
@@ -417,6 +424,37 @@ private:
     // last_visible_frame_idx against it. Lifetime matches models_gpu_
     // (resets only at shutdown).
     std::uint64_t streaming_frame_idx_ = 0;
+
+    // Per-frame streaming activity. Written by driveStreamingLoads,
+    // consumed by the benchmark warm-gate (`loads_this_frame == 0 AND
+    // worker idle == settled`). `more_pending` is a soft hint — true
+    // means residency hasn't converged and the loop should keep ticking.
+    int  streaming_loads_this_frame_ = 0;
+    bool streaming_more_pending_     = false;
+
+    // Per-frame breakdown counters consumed by the WGPU_STREAM_DEBUG
+    // log. All reset at the top of driveStreamingLoads.
+    int  streaming_candidates_this_frame_      = 0;
+    int  streaming_evictions_lru_this_frame_   = 0;
+    int  streaming_evictions_pri_this_frame_   = 0;
+    int  streaming_drained_this_frame_         = 0;
+    int  streaming_blocked_oom_this_frame_     = 0;
+    bool streaming_debug_                      = false;  // WGPU_STREAM_DEBUG=1
+
+    // Click-and-track diagnostic. Set by the pick handler when an
+    // object is selected; driveStreamingLoads dumps priority + pool
+    // state every time that chunk transitions resident→evicted so
+    // we can pinpoint WHY a piece of geometry disappeared.
+    std::uint32_t tracked_object_id_  = 0;
+    std::uint32_t tracked_chunk_mid_  = 0;
+    std::size_t   tracked_chunk_idx_  = SIZE_MAX;
+    bool          tracked_was_resident_ = false;
+
+    // When non-empty, a screenshot capture is pending and the streaming
+    // loader switches to the synchronous-fetch fallback so the
+    // first-frame capture isn't an empty buffer. Cleared after capture
+    // completes.
+    std::string pending_screenshot_path_;
 
     // Tool-refresh callback: fired by applyStreamedChunk when a newly-
     // arrived chunk filled in a mesh-local volume. ViewportWindow wires
