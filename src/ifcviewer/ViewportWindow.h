@@ -670,8 +670,8 @@ private:
     WGPUBindGroupLayout& edge_bgl_;
     WGPUPipelineLayout&  edge_pipeline_layout_;
     WGPURenderPipeline&  edge_pipeline_;
-    WGPUBindGroup       edge_bind_group_      = nullptr;
-    bool                edges_enabled_        = true;
+    WGPUBindGroup&      edge_bind_group_;
+    bool&               edges_enabled_;
 
     // Pivot visibility state — the gizmo itself lives in overlays_.
     // The timer auto-hides the pivot after a wheel-zoom afterglow.

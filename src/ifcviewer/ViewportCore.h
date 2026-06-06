@@ -375,6 +375,22 @@ public:
     void ensureMsaaColorTexture(int w, int h);
     void releaseMsaaColorTexture();
 
+    // ---- Edge silhouette post-process (#84-s) -----------------------------
+    //
+    // Build the edge pipeline + shader + BGL. Run after initWgpu's
+    // device is up. Returns false on pipeline creation failure.
+    bool buildEdgePipeline();
+
+    // Encode the edge silhouette fullscreen pass into the supplied
+    // command encoder. No-op when edges_enabled_ is false or the
+    // pipeline / depth view / surface view is null. Lazily builds the
+    // bind group on first call after a surface resize.
+    void encodeEdgePass(WGPUCommandEncoder enc, WGPUTextureView surface_view);
+
+    // Tear down the edge pipeline + bind group + supporting state.
+    // Called from shutdown() before the device dies.
+    void releaseEdgeResources();
+
     // ---- Cull (#84-p) -----------------------------------------------------
     //
     // Per-instance occlusion test, supplied by the caller. Wired by
@@ -535,6 +551,8 @@ private:
     WGPUBindGroupLayout edge_bgl_             = nullptr;
     WGPUPipelineLayout  edge_pipeline_layout_ = nullptr;
     WGPURenderPipeline  edge_pipeline_        = nullptr;
+    WGPUBindGroup       edge_bind_group_      = nullptr;
+    bool                edges_enabled_        = true;
 
     // Pick pass. Reuses pipeline_layout_ — same set of bindings as the
     // main pass since the pick fragment also vertex-pulls instance data.
