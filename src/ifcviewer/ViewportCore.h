@@ -338,6 +338,23 @@ public:
     void captureNextFrameToPng(const std::string& path, bool quit_after);
     bool pending_screenshot_quit_ = false;
 
+    // Encode a surface-to-buffer copy of the swapchain texture into the
+    // supplied encoder. Returns the allocated readback buffer (caller
+    // releases) and writes the row-aligned bytes-per-row through
+    // `padded_bpr_out`. The caller is expected to wait for queue submit
+    // before calling finalizeScreenshotCapture below.
+    WGPUBuffer encodeScreenshotCapture(WGPUCommandEncoder enc,
+                                       WGPUTexture surface_texture,
+                                       std::uint32_t& padded_bpr_out);
+
+    // After queue submit, map the staging buffer back to host memory,
+    // BGRA→RGBA-swap into a tightly-packed RGBA8 image, hand it to
+    // host_->saveScreenshotRgba8, then release the staging buffer.
+    // Clears pending_screenshot_path_ and (when pending_screenshot_quit_
+    // was set) invokes host_->quit().
+    void finalizeScreenshotCapture(WGPUBuffer capture_buffer,
+                                   std::uint32_t padded_bpr);
+
     // ---- Surface configuration (#84-u) ------------------------------------
     //
     // Configure the swapchain at the given physical size. Picks a present

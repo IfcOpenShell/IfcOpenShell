@@ -391,6 +391,22 @@ void ViewportWindow::onToolBackspacePressed() {
     emit toolBackspacePressed();
 }
 
+void ViewportWindow::saveScreenshotRgba8(const std::string& path,
+                                         const std::uint8_t* rgba,
+                                         int w, int h) {
+    // QImage takes a stride argument so it doesn't try to read past the
+    // last row — wgpu's staging buffer was BGRA8 padded; core already
+    // packed the rows tightly into rgba.
+    QImage img(rgba, w, h, w * 4, QImage::Format_RGBA8888);
+    const QString qpath = QString::fromStdString(path);
+    if (img.save(qpath, "PNG")) {
+        Log::info() << "[wgpu] saved screenshot: "
+                    << path << " (" << w << "x" << h << ")";
+    } else {
+        Log::warn() << "[wgpu] QImage::save failed for " << path;
+    }
+}
+
 void ViewportWindow::setBackgroundColor(float r, float g, float b, float a) {
     background_color_ = {r, g, b, a};
     if (isExposed()) requestUpdate();
@@ -1783,37 +1799,12 @@ void ViewportWindow::render() {
     }
 
     // ---- Optional capture: encode copy on the same command buffer -------
-    WGPUBuffer    capture_buffer    = nullptr;
+    WGPUBuffer    capture_buffer     = nullptr;
     uint32_t      capture_padded_bpr = 0;
     const bool    want_capture       = !pending_screenshot_path_.empty();
     if (want_capture) {
-        const uint32_t row_bytes_unpadded = uint32_t(configured_w_) * 4u;
-        capture_padded_bpr = uint32_t(
-            (row_bytes_unpadded + WGPU_BYTES_PER_ROW_ALIGN - 1)
-            / WGPU_BYTES_PER_ROW_ALIGN * WGPU_BYTES_PER_ROW_ALIGN);
-        const uint64_t total_bytes = uint64_t(capture_padded_bpr) * uint64_t(configured_h_);
-
-        WGPUBufferDescriptor bdesc = {};
-        bdesc.size  = total_bytes;
-        bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
-        bdesc.label = svFromCStr("ifcviewer-wgpu.capture");
-        capture_buffer = wgpuDeviceCreateBuffer(device_, &bdesc);
-
-        WGPUTexelCopyTextureInfo src = {};
-        src.texture = surf_tex.texture;
-        src.aspect  = WGPUTextureAspect_All;
-
-        WGPUTexelCopyBufferInfo dst = {};
-        dst.buffer              = capture_buffer;
-        dst.layout.bytesPerRow  = capture_padded_bpr;
-        dst.layout.rowsPerImage = uint32_t(configured_h_);
-
-        WGPUExtent3D extent = {};
-        extent.width  = uint32_t(configured_w_);
-        extent.height = uint32_t(configured_h_);
-        extent.depthOrArrayLayers = 1;
-
-        wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+        capture_buffer = core_.encodeScreenshotCapture(
+            enc, surf_tex.texture, capture_padded_bpr);
     }
 
     WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
@@ -1823,72 +1814,10 @@ void ViewportWindow::render() {
     wgpuCommandEncoderRelease(enc);
     wgpuTextureViewRelease(view);
 
-    // ---- Optional capture: map + save PNG -------------------------------
-    if (want_capture && capture_buffer) {
-        struct MapReq { bool done = false; bool ok = false; };
-        MapReq req;
-
-        WGPUBufferMapCallbackInfo mcb = {};
-        mcb.mode = WGPUCallbackMode_AllowProcessEvents;
-        mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView message,
-                          void* ud1, void* /*ud2*/) {
-            auto* r = static_cast<MapReq*>(ud1);
-            r->done = true;
-            r->ok   = (status == WGPUMapAsyncStatus_Success);
-            if (!r->ok) {
-                Log::warn().noquote() << "wgpu MapAsync failed:" << sv(message);
-            }
-        };
-        mcb.userdata1 = &req;
-
-        const uint64_t total_bytes = uint64_t(capture_padded_bpr) * uint64_t(configured_h_);
-        wgpuBufferMapAsync(capture_buffer, WGPUMapMode_Read, 0, size_t(total_bytes), mcb);
-        while (!req.done) wgpuInstanceProcessEvents(instance_);
-
-        if (req.ok) {
-            const uint8_t* mapped = static_cast<const uint8_t*>(
-                wgpuBufferGetConstMappedRange(capture_buffer, 0, size_t(total_bytes)));
-
-            // Assemble tightly-packed RGBA8 image. Surface is BGRA8 on most
-            // backends (we saw format=28 = BGRA8Unorm), so swap R/B on the
-            // fly. If a future surface_format_ is RGBA8, just memcpy.
-            const bool is_bgra =
-                surface_format_ == WGPUTextureFormat_BGRA8Unorm ||
-                surface_format_ == WGPUTextureFormat_BGRA8UnormSrgb;
-            const uint32_t w = uint32_t(configured_w_);
-            const uint32_t h = uint32_t(configured_h_);
-            QImage img(int(w), int(h), QImage::Format_RGBA8888);
-            for (uint32_t y = 0; y < h; ++y) {
-                const uint8_t* src_row = mapped + size_t(y) * capture_padded_bpr;
-                uint8_t*       dst_row = img.scanLine(int(y));
-                if (is_bgra) {
-                    for (uint32_t x = 0; x < w; ++x) {
-                        dst_row[x * 4 + 0] = src_row[x * 4 + 2];  // R <- B
-                        dst_row[x * 4 + 1] = src_row[x * 4 + 1];  // G
-                        dst_row[x * 4 + 2] = src_row[x * 4 + 0];  // B <- R
-                        dst_row[x * 4 + 3] = src_row[x * 4 + 3];  // A
-                    }
-                } else {
-                    std::memcpy(dst_row, src_row, size_t(w) * 4);
-                }
-            }
-            wgpuBufferUnmap(capture_buffer);
-
-            const QString qpath = QString::fromStdString(pending_screenshot_path_);
-            if (img.save(qpath, "PNG")) {
-                Log::info().noquote() << "[wgpu] saved screenshot: "
-                                  << pending_screenshot_path_ << " (" << w << "x" << h << ")";
-            } else {
-                Log::warn().noquote() << "[wgpu] QImage::save failed for "
-                                     << pending_screenshot_path_;
-            }
-        }
-        wgpuBufferRelease(capture_buffer);
-
-        const bool quit_after = pending_screenshot_quit_;
-        pending_screenshot_path_.clear();
-        pending_screenshot_quit_ = false;
-        if (quit_after) QCoreApplication::quit();
+    // Map the staging buffer back, BGRA→RGBA swap, hand to the host's
+    // saveScreenshotRgba8 (QImage::save on desktop, stb_image_write on web).
+    if (want_capture) {
+        core_.finalizeScreenshotCapture(capture_buffer, capture_padded_bpr);
     }
 
     // Emit per-frame stats before present so external listeners (bonsai's

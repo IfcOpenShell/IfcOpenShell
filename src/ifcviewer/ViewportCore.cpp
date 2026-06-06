@@ -4603,3 +4603,111 @@ void ViewportCore::captureNextFrameToPng(const std::string& path,
     pending_screenshot_quit_ = quit_after;
     host_->requestFrame();
 }
+
+// ===========================================================================
+// Screenshot capture encode + finalize (#84-w)
+// ===========================================================================
+
+WGPUBuffer ViewportCore::encodeScreenshotCapture(
+        WGPUCommandEncoder enc, WGPUTexture surface_texture,
+        std::uint32_t& padded_bpr_out) {
+    constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
+    const std::uint32_t row_bytes_unpadded = std::uint32_t(configured_w_) * 4u;
+    const std::uint32_t padded_bpr = std::uint32_t(
+        (row_bytes_unpadded + kWgpuBytesPerRowAlign - 1)
+        / kWgpuBytesPerRowAlign * kWgpuBytesPerRowAlign);
+    const std::uint64_t total_bytes =
+        std::uint64_t(padded_bpr) * std::uint64_t(configured_h_);
+
+    WGPUBufferDescriptor bdesc = {};
+    bdesc.size  = total_bytes;
+    bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+    bdesc.label = svFromCStr("ifcviewer-wgpu.capture");
+    WGPUBuffer capture_buffer = wgpuDeviceCreateBuffer(device_, &bdesc);
+
+    WGPUTexelCopyTextureInfo src = {};
+    src.texture = surface_texture;
+    src.aspect  = WGPUTextureAspect_All;
+
+    WGPUTexelCopyBufferInfo dst = {};
+    dst.buffer              = capture_buffer;
+    dst.layout.bytesPerRow  = padded_bpr;
+    dst.layout.rowsPerImage = std::uint32_t(configured_h_);
+
+    WGPUExtent3D extent = {};
+    extent.width  = std::uint32_t(configured_w_);
+    extent.height = std::uint32_t(configured_h_);
+    extent.depthOrArrayLayers = 1;
+
+    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
+
+    padded_bpr_out = padded_bpr;
+    return capture_buffer;
+}
+
+void ViewportCore::finalizeScreenshotCapture(WGPUBuffer capture_buffer,
+                                             std::uint32_t padded_bpr) {
+    if (!capture_buffer) {
+        pending_screenshot_path_.clear();
+        pending_screenshot_quit_ = false;
+        return;
+    }
+
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+        if (!r->ok) Log::warn() << "wgpu MapAsync failed for screenshot";
+    };
+    mcb.userdata1 = &req;
+
+    const std::uint64_t total_bytes =
+        std::uint64_t(padded_bpr) * std::uint64_t(configured_h_);
+    wgpuBufferMapAsync(capture_buffer, WGPUMapMode_Read,
+                       0, std::size_t(total_bytes), mcb);
+    while (!req.done) wgpuInstanceProcessEvents(instance_);
+
+    if (req.ok) {
+        const std::uint8_t* mapped = static_cast<const std::uint8_t*>(
+            wgpuBufferGetConstMappedRange(capture_buffer, 0, std::size_t(total_bytes)));
+
+        // Assemble tightly-packed RGBA8. Surface is BGRA8 on most
+        // backends (BGRA8Unorm = format 28). If a future surface is
+        // already RGBA, skip the per-pixel swap.
+        const bool is_bgra =
+            surface_format_ == WGPUTextureFormat_BGRA8Unorm ||
+            surface_format_ == WGPUTextureFormat_BGRA8UnormSrgb;
+        const std::uint32_t w = std::uint32_t(configured_w_);
+        const std::uint32_t h = std::uint32_t(configured_h_);
+        std::vector<std::uint8_t> rgba(std::size_t(w) * std::size_t(h) * 4);
+        for (std::uint32_t y = 0; y < h; ++y) {
+            const std::uint8_t* src_row = mapped + std::size_t(y) * padded_bpr;
+            std::uint8_t*       dst_row = rgba.data() + std::size_t(y) * std::size_t(w) * 4;
+            if (is_bgra) {
+                for (std::uint32_t x = 0; x < w; ++x) {
+                    dst_row[x * 4 + 0] = src_row[x * 4 + 2];  // R <- B
+                    dst_row[x * 4 + 1] = src_row[x * 4 + 1];  // G
+                    dst_row[x * 4 + 2] = src_row[x * 4 + 0];  // B <- R
+                    dst_row[x * 4 + 3] = src_row[x * 4 + 3];  // A
+                }
+            } else {
+                std::memcpy(dst_row, src_row, std::size_t(w) * 4);
+            }
+        }
+        wgpuBufferUnmap(capture_buffer);
+
+        host_->saveScreenshotRgba8(pending_screenshot_path_,
+                                   rgba.data(), int(w), int(h));
+    }
+    wgpuBufferRelease(capture_buffer);
+
+    const bool quit_after = pending_screenshot_quit_;
+    pending_screenshot_path_.clear();
+    pending_screenshot_quit_ = false;
+    if (quit_after) host_->quit();
+}

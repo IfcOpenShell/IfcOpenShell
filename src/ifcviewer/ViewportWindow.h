@@ -88,6 +88,8 @@ public:
     void  onSurfacePickedInTool(int x_px, int y_px, int modifiers) override;
     void  onToolModeChanged(int tool_mode) override;
     void  onToolBackspacePressed() override;
+    void  saveScreenshotRgba8(const std::string& path, const std::uint8_t* rgba,
+                              int w, int h) override;
 
     void setBackgroundColor(float r, float g, float b, float a = 1.0f);
 

@@ -45,6 +45,7 @@
 #include <webgpu/webgpu.h>
 
 #include <cstdint>
+#include <string>
 
 class ViewportHost {
 public:
@@ -96,6 +97,16 @@ public:
     // existing typed signal and this is just the placeholder.
     virtual void onFrameStats(double /*frame_ms*/, double /*cull_ms*/,
                               uint32_t /*draws*/, uint32_t /*tris*/) {}
+
+    // Encode + save the screenshot. Called from the render path after
+    // wgpu has mapped the surface-copy staging buffer back to host
+    // memory; the host gets tightly-packed RGBA8 (BGRA→RGBA already
+    // swapped in core) at `w × h` and writes a PNG to `path`. Default
+    // body is a no-op so headless / web hosts can selectively ignore
+    // it — the QtViewportHost override calls QImage::save.
+    virtual void saveScreenshotRgba8(const std::string& /*path*/,
+                                     const std::uint8_t* /*rgba*/,
+                                     int /*w*/, int /*h*/) {}
 };
 
 #endif  // VIEWPORTHOST_H
