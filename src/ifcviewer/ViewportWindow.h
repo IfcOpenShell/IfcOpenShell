@@ -937,7 +937,7 @@ private:
     // observes the non-empty value to switch into the sync chunk-load
     // fallback so the first-frame capture isn't an empty buffer.
     std::string& pending_screenshot_path_;
-    bool    pending_screenshot_quit_ = false;
+    bool&        pending_screenshot_quit_;
 
     // Mouse navigation state. LMB drag orbits, MMB drag pans, wheel zooms.
     // LMB-click-without-drag picks the object under the cursor. No

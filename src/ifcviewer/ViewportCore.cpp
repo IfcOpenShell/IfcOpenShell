@@ -4582,3 +4582,24 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
         edge_bind_group_ = nullptr;
     }
 }
+
+// ===========================================================================
+// Small cross-chunk + capture helpers (#84-v)
+// ===========================================================================
+
+void ViewportCore::buildModelBindGroup(ModelGpuData& m) {
+    if (!m.mesh_storage || !m.instance_storage) {
+        // Empty model — no chunks, no bind groups; the draw loop will skip.
+        return;
+    }
+    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+        buildChunkBindGroup(m, ci);
+    }
+}
+
+void ViewportCore::captureNextFrameToPng(const std::string& path,
+                                         bool quit_after) {
+    pending_screenshot_path_ = path;
+    pending_screenshot_quit_ = quit_after;
+    host_->requestFrame();
+}

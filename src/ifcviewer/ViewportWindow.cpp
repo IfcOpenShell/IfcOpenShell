@@ -247,6 +247,7 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       streaming_blocked_oom_this_frame_(core_.streaming_blocked_oom_this_frame_),
       streaming_debug_                 (core_.streaming_debug_),
       pending_screenshot_path_(core_.pending_screenshot_path_),
+      pending_screenshot_quit_(core_.pending_screenshot_quit_),
       lod1_dbg_count_         (core_.lod1_dbg_count_),
       lod0_dbg_eligible_count_(core_.lod0_dbg_eligible_count_),
       lod0_dbg_no_lod1_count_ (core_.lod0_dbg_no_lod1_count_),
@@ -2431,15 +2432,7 @@ void ViewportWindow::ensureSelectionFlagsBuffer() { core_.ensureSelectionFlagsBu
 // uploadSelectionFlagsIfDirty moved to ViewportCore (#84-k).
 void ViewportWindow::uploadSelectionFlagsIfDirty() { core_.uploadSelectionFlagsIfDirty(); }
 
-void ViewportWindow::buildModelBindGroup(ModelGpuData& m) {
-    if (!m.mesh_storage || !m.instance_storage) {
-        // Empty model — no chunks, no bind groups; the draw loop will skip.
-        return;
-    }
-    for (size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        core_.buildChunkBindGroup(m, ci);
-    }
-}
+void ViewportWindow::buildModelBindGroup(ModelGpuData& m) { core_.buildModelBindGroup(m); }
 
 // buildChunkBindGroup moved to ViewportCore (#84-n).
 
@@ -2685,11 +2678,7 @@ void ViewportWindow::applyNavPreset(const char* name) {
 #include <QImage>
 #include <QCoreApplication>
 
-void ViewportWindow::captureNextFrameToPng(const std::string& path, bool quit_after) {
-    pending_screenshot_path_ = path;
-    pending_screenshot_quit_ = quit_after;
-    if (isExposed()) requestUpdate();
-}
+void ViewportWindow::captureNextFrameToPng(const std::string& path, bool quit_after) { core_.captureNextFrameToPng(path, quit_after); }
 
 // -----------------------------------------------------------------------------
 // Mouse navigation — orbit, pan, zoom

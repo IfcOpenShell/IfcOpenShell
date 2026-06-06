@@ -323,6 +323,21 @@ public:
     void uploadInstanceChunk(const InstanceChunk& chunk);
     void finalizeModel(std::uint32_t model_id);
 
+    // ---- Cross-chunk + screenshot capture (#84-v) -------------------------
+    //
+    // Rebuild every chunk's bind group for the supplied model. No-op
+    // when the model has no GPU storage yet (empty load — the chunk
+    // draw loop skips it anyway).
+    void buildModelBindGroup(ModelGpuData& m);
+
+    // Arm a one-shot screenshot capture. The next render() encodes a
+    // surface-to-buffer copy alongside the main pass, maps it back to
+    // RGBA8, and saves a PNG at `path`. `quit_after` requests host
+    // shutdown once the capture writes — the host's quit() decides
+    // when (synchronously or queued).
+    void captureNextFrameToPng(const std::string& path, bool quit_after);
+    bool pending_screenshot_quit_ = false;
+
     // ---- Surface configuration (#84-u) ------------------------------------
     //
     // Configure the swapchain at the given physical size. Picks a present
