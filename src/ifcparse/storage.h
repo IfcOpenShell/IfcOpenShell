@@ -25,10 +25,13 @@ namespace rocksdb {
 
 #include <variant>
 #include <iterator>
+#include <cstdint>
+#include <cstring>
 #include <type_traits>
 #include <iostream>
 #include <vector>
 #include <list>
+#include <memory>
 
 #ifndef SWIG
 
@@ -306,7 +309,7 @@ namespace IfcParse {
 
         class IFC_PARSE_API rocks_db_file_storage {
         public:
-            rocksdb::DB* db;
+            std::unique_ptr<rocksdb::DB> db;
             rocksdb::WriteOptions wopts;
             rocksdb::ReadOptions ropts;
             IfcParse::IfcFile* file;
