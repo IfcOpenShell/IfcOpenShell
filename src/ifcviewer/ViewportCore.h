@@ -37,6 +37,7 @@
 
 #include <Eigen/Dense>
 
+#include <atomic>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -322,6 +323,58 @@ public:
     void uploadInstanceChunk(const InstanceChunk& chunk);
     void finalizeModel(std::uint32_t model_id);
 
+    // ---- HiZ + framebuffer attachments (#84-r) ----------------------------
+    //
+    // Build the HiZ resolve pipeline (and shader module + BGL + uniform
+    // buffer). Run once during init, after buildPipelines but before the
+    // first render. Returns false on pipeline creation failure.
+    bool buildHizPipeline();
+
+    // (Re)allocate the resolve depth texture + ping-pong staging buffers
+    // to match a viewport_w x viewport_h surface. Idempotent when
+    // dimensions match. Resets ping-pong state so any in-flight map is
+    // dropped (caller already ensured the surface resize blocked).
+    void ensureHizTextures(int viewport_w, int viewport_h);
+
+    // Tear down every HiZ-owned wgpu resource (pipeline + textures +
+    // staging buffers + pyramid). Called from shutdown() before
+    // device_ is released.
+    void releaseHizResources();
+
+    // Encode the per-frame resolve pass + texture-to-buffer copy into
+    // the supplied command encoder. Picks an idle ping-pong slot (or
+    // returns -1 when both slots are still in flight). Returns the
+    // chosen slot so the caller can later call startHizMap on it.
+    int encodeHizResolve(WGPUCommandEncoder enc);
+
+    // Queue the async map for the given slot. Records the VP the
+    // resolve was rendered with so the eventual readback knows which
+    // matrix produced the depth.
+    void startHizMap(int slot, const Eigen::Matrix4f& vp_used);
+
+    // Drain any mapAsync completions that fired since last frame,
+    // rebuild the CPU mip pyramid from the freshly-mapped data, swap
+    // it into hiz_pyramid_. Non-blocking — frames where no slot has
+    // completed just leave the pyramid untouched.
+    void drainHizReadbacks();
+
+    // Per-instance HiZ occlusion test. Projects the AABB through
+    // hiz_vp_ (the matrix the pyramid was rendered with), maps to mip
+    // pixel coords, max-reduces across the covered area, rejects when
+    // the AABB's nearest projected z is behind the pyramid coverage.
+    bool aabbOccludedByHiz(const float mn[3], const float mx[3]) const;
+
+    // Ensure the main render-pass depth attachment matches the current
+    // surface size. Created with MSAA + TextureBinding usage so the HiZ
+    // resolve can sample it. Idempotent when dimensions match.
+    void ensureDepthTexture(int w, int h);
+    void releaseDepthTexture();
+
+    // MSAA color attachment for the main pass. Same lifecycle pattern
+    // as the depth texture above.
+    void ensureMsaaColorTexture(int w, int h);
+    void releaseMsaaColorTexture();
+
     // ---- Cull (#84-p) -----------------------------------------------------
     //
     // Per-instance occlusion test, supplied by the caller. Wired by
@@ -416,6 +469,65 @@ private:
     WGPUBindGroupLayout hiz_bgl_             = nullptr;
     WGPUPipelineLayout  hiz_pipeline_layout_ = nullptr;
     WGPURenderPipeline  hiz_pipeline_        = nullptr;
+    WGPUBuffer          hiz_uniform_buffer_  = nullptr;
+    WGPUBindGroup       hiz_bind_group_      = nullptr;
+
+    // Downsampled HiZ depth target (single-sampled, 256-wide-by-aspect).
+    // The resolve pass writes max-reduced depth into this; one frame later
+    // we copy it into a CPU-mappable staging buffer and rebuild the mip
+    // pyramid.
+    WGPUTexture     hiz_resolve_texture_ = nullptr;
+    WGPUTextureView hiz_resolve_view_    = nullptr;
+    std::uint32_t   hiz_resolve_w_       = 0;
+    std::uint32_t   hiz_resolve_h_       = 0;
+    std::uint32_t   hiz_padded_bpr_      = 0;  // bytes per row in the staging buffer
+
+    // Ping-pong async readback. Frame N submits a copy into slot
+    // hiz_write_idx_ and calls mapAsync. Frame N+K (K >= 1) calls
+    // processEvents to drain; whichever slot signalled completion is
+    // mapped, read into hiz_pyramid_, and unmapped — making the pyramid
+    // 1+ frames stale (the "slightly-stale depth" pattern). Two slots
+    // overlap GPU write with CPU read; we never block on the readback.
+    enum class HizSlotState : std::uint8_t { Idle, Mapping, Mapped };
+    static constexpr int HIZ_SLOTS = 2;
+    WGPUBuffer       hiz_staging_buffers_[HIZ_SLOTS] = { nullptr, nullptr };
+    Eigen::Matrix4f  hiz_slot_vp_       [HIZ_SLOTS];
+    HizSlotState     hiz_slot_state_    [HIZ_SLOTS] = { HizSlotState::Idle,
+                                                        HizSlotState::Idle };
+    int              hiz_write_idx_      = 0;
+
+    // CPU mip pyramid (max-reduce). hiz_pyramid_[hiz_mip_offset_[L] + y*W + x].
+    std::vector<float>          hiz_pyramid_;
+    std::vector<std::uint32_t>  hiz_mip_offset_;
+    std::vector<std::uint32_t>  hiz_mip_w_;
+    std::vector<std::uint32_t>  hiz_mip_h_;
+    Eigen::Matrix4f             hiz_vp_           = Eigen::Matrix4f::Identity();
+    bool                        hiz_valid_        = false;
+    bool                        hiz_enabled_      = false;
+    std::uint32_t               hiz_reject_count_ = 0;  // per-frame stat
+
+    // Per-frame trace budget for WGPU_HIZ_TRACE. The render() loop
+    // resets it to kHizTracePerFrame at the start of each frame; the
+    // parallel cull workers atomically decrement when logging a
+    // rejection.
+    mutable std::atomic<int> hiz_trace_budget_{0};
+
+    // GL's HiZ default is 256 wide; we match. Height tracks viewport aspect.
+    static constexpr std::uint32_t HIZ_BASE_W = 256;
+
+    // ---- Depth + MSAA color attachments -----------------------------------
+    //
+    // Owned by core because both the main render pass (still VW-side) and
+    // the HiZ resolve pass (now core-side) bind these. Reallocated on
+    // surface resize via ensureDepthTexture / ensureMsaaColorTexture.
+    WGPUTexture     depth_texture_      = nullptr;
+    WGPUTextureView depth_view_         = nullptr;
+    int             depth_w_            = 0;
+    int             depth_h_            = 0;
+    WGPUTexture     msaa_color_texture_ = nullptr;
+    WGPUTextureView msaa_color_view_    = nullptr;
+    int             msaa_w_             = 0;
+    int             msaa_h_             = 0;
 
     // Edge-silhouette pipeline group. Drawn after the main pass; reads
     // the depth/normal attachments to emit dark outlines.

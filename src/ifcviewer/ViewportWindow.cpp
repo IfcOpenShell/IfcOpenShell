@@ -209,10 +209,34 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       pipeline_layout_          (core_.pipeline_layout_),
       main_pipeline_            (core_.main_pipeline_),
       main_pipeline_transparent_(core_.main_pipeline_transparent_),
+      depth_texture_      (core_.depth_texture_),
+      depth_view_         (core_.depth_view_),
+      depth_w_            (core_.depth_w_),
+      depth_h_            (core_.depth_h_),
+      msaa_color_texture_ (core_.msaa_color_texture_),
+      msaa_color_view_    (core_.msaa_color_view_),
+      msaa_w_             (core_.msaa_w_),
+      msaa_h_             (core_.msaa_h_),
       hiz_shader_module_   (core_.hiz_shader_module_),
       hiz_bgl_             (core_.hiz_bgl_),
       hiz_pipeline_layout_ (core_.hiz_pipeline_layout_),
       hiz_pipeline_        (core_.hiz_pipeline_),
+      hiz_uniform_buffer_  (core_.hiz_uniform_buffer_),
+      hiz_bind_group_      (core_.hiz_bind_group_),
+      hiz_resolve_texture_ (core_.hiz_resolve_texture_),
+      hiz_resolve_view_    (core_.hiz_resolve_view_),
+      hiz_resolve_w_       (core_.hiz_resolve_w_),
+      hiz_resolve_h_       (core_.hiz_resolve_h_),
+      hiz_padded_bpr_      (core_.hiz_padded_bpr_),
+      hiz_pyramid_         (core_.hiz_pyramid_),
+      hiz_mip_offset_      (core_.hiz_mip_offset_),
+      hiz_mip_w_           (core_.hiz_mip_w_),
+      hiz_mip_h_           (core_.hiz_mip_h_),
+      hiz_vp_              (core_.hiz_vp_),
+      hiz_valid_           (core_.hiz_valid_),
+      hiz_reject_count_    (core_.hiz_reject_count_),
+      hiz_trace_budget_    (core_.hiz_trace_budget_),
+      hiz_enabled_         (core_.hiz_enabled_),
       edge_shader_module_   (core_.edge_shader_module_),
       edge_bgl_             (core_.edge_bgl_),
       edge_pipeline_layout_ (core_.edge_pipeline_layout_),
@@ -717,7 +741,7 @@ bool ViewportWindow::initWgpu() {
     // ---- Pipelines + overlays (still VW-side; HiZ/edge/pick + overlay
     //      init haven't migrated yet) -------------------------------------
     if (!buildPipelines()) return false;
-    if (!buildHizPipeline()) return false;
+    if (!core_.buildHizPipeline()) return false;
     if (!buildEdgePipeline()) return false;
     if (!overlays_.init(instance_, device_, queue_, surface_format_, SAMPLE_COUNT)) {
         Log::warn() << "OverlayRenderer init failed";
@@ -910,9 +934,9 @@ void ViewportWindow::configureSurface(int width_px, int height_px) {
     configured_w_       = width_px;
     configured_h_       = height_px;
     surface_configured_ = true;
-    ensureDepthTexture(width_px, height_px);
-    ensureMsaaColorTexture(width_px, height_px);
-    ensureHizTextures(width_px, height_px);
+    core_.ensureDepthTexture(width_px, height_px);
+    core_.ensureMsaaColorTexture(width_px, height_px);
+    core_.ensureHizTextures(width_px, height_px);
     // depth_view_ was just replaced; force the HiZ + edge bind groups to
     // rebuild against the new view on next encode.
     if (hiz_bind_group_) {
@@ -955,50 +979,7 @@ void ViewportWindow::configureSurface(int width_px, int height_px) {
 // (256 × ~160 × 4 = ~160 KB) so the synchronous wgpuInstanceProcessEvents
 // stall is well under a millisecond on every backend we care about.
 
-static const char* HIZ_WGSL = R"(
-struct HizUniforms {
-    src_w: u32,
-    src_h: u32,
-    dst_w: u32,
-    dst_h: u32,
-};
-
-@group(0) @binding(0) var src_depth: texture_depth_multisampled_2d;
-@group(0) @binding(1) var<uniform> u_hiz: HizUniforms;
-
-struct VsOut {
-    @builtin(position) clip_pos: vec4<f32>,
-};
-
-@vertex
-fn vs_main(@builtin(vertex_index) vid: u32) -> VsOut {
-    // Fullscreen triangle from a 3-vertex draw, no IA bindings.
-    let x = f32((vid << 1u) & 2u) * 2.0 - 1.0;
-    let y = f32(vid & 2u) * 2.0 - 1.0;
-    var out: VsOut;
-    out.clip_pos = vec4<f32>(x, -y, 0.0, 1.0);
-    return out;
-}
-
-@fragment
-fn fs_main(in: VsOut) -> @builtin(frag_depth) f32 {
-    let dst_x = u32(in.clip_pos.x);
-    let dst_y = u32(in.clip_pos.y);
-    let sx0 = (dst_x * u_hiz.src_w) / u_hiz.dst_w;
-    let sx1 = ((dst_x + 1u) * u_hiz.src_w) / u_hiz.dst_w;
-    let sy0 = (dst_y * u_hiz.src_h) / u_hiz.dst_h;
-    let sy1 = ((dst_y + 1u) * u_hiz.src_h) / u_hiz.dst_h;
-
-    var max_d: f32 = 0.0;
-    for (var y: u32 = sy0; y < sy1; y = y + 1u) {
-        for (var x: u32 = sx0; x < sx1; x = x + 1u) {
-            let d = textureLoad(src_depth, vec2<i32>(i32(x), i32(y)), 0);
-            max_d = max(max_d, d);
-        }
-    }
-    return max_d;
-}
-)";
+// HIZ_WGSL moved to ViewportCore.cpp anon namespace (#84-r).
 
 // -----------------------------------------------------------------------------
 // Edge silhouette post-process (stage 9)
@@ -2504,482 +2485,19 @@ void ViewportWindow::updateSectionDrag(int x, int y) {
     requestUpdate();
 }
 
-bool ViewportWindow::buildHizPipeline() {
-    // Bind group layout: MSAA depth texture + small uniform.
-    WGPUBindGroupLayoutEntry entries[2] = {};
-    entries[0].binding = 0;
-    entries[0].visibility = WGPUShaderStage_Fragment;
-    entries[0].texture.sampleType = WGPUTextureSampleType_Depth;
-    entries[0].texture.viewDimension = WGPUTextureViewDimension_2D;
-    entries[0].texture.multisampled = 1;
-    entries[1].binding = 1;
-    entries[1].visibility = WGPUShaderStage_Fragment;
-    entries[1].buffer.type = WGPUBufferBindingType_Uniform;
-    entries[1].buffer.minBindingSize = 16;  // 4 u32s
+// buildHizPipeline moved to ViewportCore (#84-r).
 
-    WGPUBindGroupLayoutDescriptor bgl_desc = {};
-    bgl_desc.entryCount = 2;
-    bgl_desc.entries    = entries;
-    bgl_desc.label      = svFromCStr("ifcviewer-wgpu.hiz_bgl");
-    hiz_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
+// ensureHizTextures moved to ViewportCore (#84-r).
 
-    WGPUPipelineLayoutDescriptor pl_desc = {};
-    pl_desc.bindGroupLayoutCount = 1;
-    pl_desc.bindGroupLayouts     = &hiz_bgl_;
-    pl_desc.label                = svFromCStr("ifcviewer-wgpu.hiz_pipeline_layout");
-    hiz_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
+// releaseHizResources moved to ViewportCore (#84-r).
 
-    WGPUShaderSourceWGSL wgsl_src = {};
-    wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
-    wgsl_src.code        = svFromCStr(HIZ_WGSL);
-    WGPUShaderModuleDescriptor sm_desc = {};
-    sm_desc.nextInChain = &wgsl_src.chain;
-    sm_desc.label       = svFromCStr("ifcviewer-wgpu.hiz_wgsl");
-    hiz_shader_module_  = wgpuDeviceCreateShaderModule(device_, &sm_desc);
+// encodeHizResolve moved to ViewportCore (#84-r).
 
-    // Depth-only output, no colour target, no fragment writeout besides
-    // frag_depth. Single-sample.
-    WGPUDepthStencilState depth = {};
-    depth.format               = WGPUTextureFormat_Depth32Float;
-    depth.depthWriteEnabled    = WGPUOptionalBool_True;
-    depth.depthCompare         = WGPUCompareFunction_Always;
-    depth.stencilFront.compare = WGPUCompareFunction_Always;
-    depth.stencilBack.compare  = WGPUCompareFunction_Always;
+// startHizMap moved to ViewportCore (#84-r).
 
-    WGPURenderPipelineDescriptor rp_desc = {};
-    rp_desc.layout              = hiz_pipeline_layout_;
-    rp_desc.label               = svFromCStr("ifcviewer-wgpu.hiz_pipeline");
-    rp_desc.vertex.module       = hiz_shader_module_;
-    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
-    rp_desc.vertex.bufferCount  = 0;
+// drainHizReadbacks moved to ViewportCore (#84-r).
 
-    WGPUFragmentState frag = {};
-    frag.module      = hiz_shader_module_;
-    frag.entryPoint  = svFromCStr("fs_main");
-    frag.targetCount = 0;  // depth-only
-    rp_desc.fragment = &frag;
-
-    rp_desc.depthStencil       = &depth;
-    rp_desc.primitive.topology = WGPUPrimitiveTopology_TriangleList;
-    rp_desc.primitive.cullMode = WGPUCullMode_None;
-    rp_desc.multisample.count  = 1;
-    rp_desc.multisample.mask   = 0xFFFFFFFFu;
-
-    hiz_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
-    if (!hiz_pipeline_) {
-        Log::warn() << "wgpu hiz pipeline creation failed";
-        return false;
-    }
-
-    WGPUBufferDescriptor ub_desc = {};
-    ub_desc.size  = 16;
-    ub_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-    ub_desc.label = svFromCStr("ifcviewer-wgpu.hiz_uniform");
-    hiz_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &ub_desc);
-
-    return true;
-}
-
-void ViewportWindow::ensureHizTextures(int viewport_w, int viewport_h) {
-    if (viewport_w <= 0 || viewport_h <= 0) return;
-
-    const uint32_t dst_w = HIZ_BASE_W;
-    const uint32_t dst_h = std::max<uint32_t>(
-        1, (uint32_t(viewport_h) * dst_w + uint32_t(viewport_w) / 2) / uint32_t(viewport_w));
-
-    if (dst_w == hiz_resolve_w_ && dst_h == hiz_resolve_h_ && hiz_resolve_view_) return;
-
-    if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
-    if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        if (hiz_staging_buffers_[s]) {
-            // Force any pending map to finish before release (defensive: shouldn't happen on resize).
-            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
-                wgpuBufferUnmap(hiz_staging_buffers_[s]);
-            }
-            wgpuBufferRelease(hiz_staging_buffers_[s]);
-            hiz_staging_buffers_[s] = nullptr;
-        }
-        hiz_slot_state_[s] = HizSlotState::Idle;
-    }
-    hiz_write_idx_ = 0;
-    hiz_valid_     = false;
-    if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
-
-    WGPUTextureDescriptor desc = {};
-    desc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
-    desc.dimension     = WGPUTextureDimension_2D;
-    desc.size.width    = dst_w;
-    desc.size.height   = dst_h;
-    desc.size.depthOrArrayLayers = 1;
-    desc.format        = WGPUTextureFormat_Depth32Float;
-    desc.mipLevelCount = 1;
-    desc.sampleCount   = 1;
-    desc.label         = svFromCStr("ifcviewer-wgpu.hiz_resolve");
-    hiz_resolve_texture_ = wgpuDeviceCreateTexture(device_, &desc);
-
-    WGPUTextureViewDescriptor vdesc = {};
-    vdesc.format          = WGPUTextureFormat_Depth32Float;
-    vdesc.dimension       = WGPUTextureViewDimension_2D;
-    vdesc.mipLevelCount   = 1;
-    vdesc.arrayLayerCount = 1;
-    vdesc.aspect          = WGPUTextureAspect_DepthOnly;
-    hiz_resolve_view_ = wgpuTextureCreateView(hiz_resolve_texture_, &vdesc);
-
-    // Staging buffers: pad each row to 256-byte alignment. Two slots
-    // ping-pong so GPU fill of slot N overlaps CPU read of slot N-1.
-    hiz_padded_bpr_ = uint32_t(
-        (dst_w * sizeof(float) + WGPU_BYTES_PER_ROW_ALIGN - 1)
-        / WGPU_BYTES_PER_ROW_ALIGN * WGPU_BYTES_PER_ROW_ALIGN);
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        WGPUBufferDescriptor bdesc = {};
-        bdesc.size  = uint64_t(hiz_padded_bpr_) * uint64_t(dst_h);
-        bdesc.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
-        bdesc.label = svFromCStr(s == 0 ? "ifcviewer-wgpu.hiz_staging[0]"
-                                        : "ifcviewer-wgpu.hiz_staging[1]");
-        hiz_staging_buffers_[s] = wgpuDeviceCreateBuffer(device_, &bdesc);
-    }
-
-    hiz_resolve_w_ = dst_w;
-    hiz_resolve_h_ = dst_h;
-    hiz_valid_     = false;  // pyramid stale until next readback
-}
-
-void ViewportWindow::releaseHizResources() {
-    if (hiz_bind_group_)      { wgpuBindGroupRelease(hiz_bind_group_);     hiz_bind_group_ = nullptr; }
-    if (hiz_uniform_buffer_)  { wgpuBufferRelease(hiz_uniform_buffer_);    hiz_uniform_buffer_ = nullptr; }
-    if (hiz_resolve_view_)    { wgpuTextureViewRelease(hiz_resolve_view_); hiz_resolve_view_ = nullptr; }
-    if (hiz_resolve_texture_) { wgpuTextureRelease(hiz_resolve_texture_);  hiz_resolve_texture_ = nullptr; }
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        if (hiz_staging_buffers_[s]) {
-            if (hiz_slot_state_[s] == HizSlotState::Mapped) {
-                wgpuBufferUnmap(hiz_staging_buffers_[s]);
-            }
-            wgpuBufferRelease(hiz_staging_buffers_[s]);
-            hiz_staging_buffers_[s] = nullptr;
-        }
-        hiz_slot_state_[s] = HizSlotState::Idle;
-    }
-    hiz_write_idx_ = 0;
-    if (hiz_pipeline_)        { wgpuRenderPipelineRelease(hiz_pipeline_);  hiz_pipeline_ = nullptr; }
-    if (hiz_shader_module_)   { wgpuShaderModuleRelease(hiz_shader_module_); hiz_shader_module_ = nullptr; }
-    if (hiz_pipeline_layout_) { wgpuPipelineLayoutRelease(hiz_pipeline_layout_); hiz_pipeline_layout_ = nullptr; }
-    if (hiz_bgl_)             { wgpuBindGroupLayoutRelease(hiz_bgl_);      hiz_bgl_ = nullptr; }
-    hiz_resolve_w_ = hiz_resolve_h_ = hiz_padded_bpr_ = 0;
-    hiz_valid_ = false;
-    hiz_pyramid_.clear();
-    hiz_mip_offset_.clear();
-    hiz_mip_w_.clear();
-    hiz_mip_h_.clear();
-}
-
-int ViewportWindow::encodeHizResolve(WGPUCommandEncoder enc) {
-    if (!hiz_enabled_ || !hiz_pipeline_ || !hiz_resolve_view_ || !depth_view_) return -1;
-
-    // Pick an idle ping-pong slot. If both slots are in flight, skip the
-    // resolve for this frame — the cull keeps using whatever pyramid we
-    // already built (slightly more stale than usual, but never blocks).
-    int slot = -1;
-    for (int s = 0; s < HIZ_SLOTS; ++s) {
-        const int idx = (hiz_write_idx_ + s) % HIZ_SLOTS;
-        if (hiz_slot_state_[idx] == HizSlotState::Idle) { slot = idx; break; }
-    }
-    if (slot < 0) return -1;
-    hiz_write_idx_ = (slot + 1) % HIZ_SLOTS;
-
-    // (Re)build the bind group every frame is wasteful; only rebuild when the
-    // depth view itself was replaced (driven by surface resize). For now we
-    // recreate lazily — fine for the per-frame cost (couple of µs).
-    if (!hiz_bind_group_) {
-        WGPUBindGroupEntry entries[2] = {};
-        entries[0].binding     = 0;
-        entries[0].textureView = depth_view_;
-        entries[1].binding     = 1;
-        entries[1].buffer      = hiz_uniform_buffer_;
-        entries[1].size        = 16;
-        WGPUBindGroupDescriptor bg = {};
-        bg.layout     = hiz_bgl_;
-        bg.entryCount = 2;
-        bg.entries    = entries;
-        bg.label      = svFromCStr("ifcviewer-wgpu.hiz_bind_group");
-        hiz_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg);
-    }
-
-    const uint32_t uniforms[4] = {
-        uint32_t(depth_w_), uint32_t(depth_h_),
-        hiz_resolve_w_, hiz_resolve_h_,
-    };
-    wgpuQueueWriteBuffer(queue_, hiz_uniform_buffer_, 0, uniforms, sizeof(uniforms));
-
-    WGPURenderPassDepthStencilAttachment depth_att = {};
-    depth_att.view              = hiz_resolve_view_;
-    depth_att.depthLoadOp       = WGPULoadOp_Clear;
-    depth_att.depthStoreOp      = WGPUStoreOp_Store;
-    depth_att.depthClearValue   = 0.0f;  // start at "nearest"; shader writes max
-    depth_att.stencilLoadOp     = WGPULoadOp_Undefined;
-    depth_att.stencilStoreOp    = WGPUStoreOp_Undefined;
-    depth_att.depthReadOnly     = false;
-    depth_att.stencilReadOnly   = true;
-
-    WGPURenderPassDescriptor pass_desc = {};
-    pass_desc.colorAttachmentCount   = 0;
-    pass_desc.depthStencilAttachment = &depth_att;
-    pass_desc.label                  = svFromCStr("ifcviewer-wgpu.hiz_resolve_pass");
-
-    WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
-    wgpuRenderPassEncoderSetPipeline(pass, hiz_pipeline_);
-    wgpuRenderPassEncoderSetBindGroup(pass, 0, hiz_bind_group_, 0, nullptr);
-    wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0);
-    wgpuRenderPassEncoderEnd(pass);
-    wgpuRenderPassEncoderRelease(pass);
-
-    // Copy the small resolved depth texture into the chosen staging slot.
-    WGPUTexelCopyTextureInfo src = {};
-    src.texture = hiz_resolve_texture_;
-    src.aspect  = WGPUTextureAspect_DepthOnly;
-
-    WGPUTexelCopyBufferInfo dst = {};
-    dst.buffer              = hiz_staging_buffers_[slot];
-    dst.layout.bytesPerRow  = hiz_padded_bpr_;
-    dst.layout.rowsPerImage = hiz_resolve_h_;
-
-    WGPUExtent3D extent = {};
-    extent.width  = hiz_resolve_w_;
-    extent.height = hiz_resolve_h_;
-    extent.depthOrArrayLayers = 1;
-
-    wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
-    return slot;
-}
-
-void ViewportWindow::startHizMap(int slot, const Eigen::Matrix4f& vp_used) {
-    if (slot < 0 || slot >= HIZ_SLOTS) return;
-    if (!hiz_staging_buffers_[slot] || hiz_resolve_w_ == 0) return;
-
-    hiz_slot_vp_[slot]   = vp_used;
-    hiz_slot_state_[slot] = HizSlotState::Mapping;
-
-    struct MapCtx { ViewportWindow* self; int slot; };
-    auto* ctx = new MapCtx{ this, slot };
-
-    WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
-    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                      void* ud1, void* /*ud2*/) {
-        auto* c = static_cast<MapCtx*>(ud1);
-        if (status == WGPUMapAsyncStatus_Success) {
-            c->self->hiz_slot_state_[c->slot] = HizSlotState::Mapped;
-        } else {
-            c->self->hiz_slot_state_[c->slot] = HizSlotState::Idle;
-        }
-        delete c;
-    };
-    mcb.userdata1 = ctx;
-
-    const size_t map_size = size_t(hiz_padded_bpr_) * size_t(hiz_resolve_h_);
-    wgpuBufferMapAsync(hiz_staging_buffers_[slot], WGPUMapMode_Read,
-                       0, map_size, mcb);
-}
-
-void ViewportWindow::drainHizReadbacks() {
-    if (!hiz_enabled_ || hiz_resolve_w_ == 0) return;
-    // Process any callbacks that have fired since last frame. Does NOT block:
-    // wgpuInstanceProcessEvents returns immediately after running ready
-    // callbacks. The mapAsync mode is AllowProcessEvents, so this is the
-    // correct drainage point.
-    wgpuInstanceProcessEvents(instance_);
-
-    for (int slot = 0; slot < HIZ_SLOTS; ++slot) {
-        if (hiz_slot_state_[slot] != HizSlotState::Mapped) continue;
-
-        const size_t map_size = size_t(hiz_padded_bpr_) * size_t(hiz_resolve_h_);
-        const uint8_t* mapped = static_cast<const uint8_t*>(
-            wgpuBufferGetConstMappedRange(hiz_staging_buffers_[slot], 0, map_size));
-
-        const uint32_t W0 = hiz_resolve_w_;
-        const uint32_t H0 = hiz_resolve_h_;
-
-        // (Re)build mip pyramid metadata if dimensions changed.
-        if (hiz_mip_offset_.empty()
-            || hiz_mip_w_.empty() || hiz_mip_w_[0] != W0
-            || hiz_mip_h_.empty() || hiz_mip_h_[0] != H0) {
-            hiz_mip_offset_.clear();
-            hiz_mip_w_.clear();
-            hiz_mip_h_.clear();
-            uint32_t total = 0;
-            uint32_t w = W0, h = H0;
-            while (true) {
-                hiz_mip_offset_.push_back(total);
-                hiz_mip_w_.push_back(w);
-                hiz_mip_h_.push_back(h);
-                total += w * h;
-                if (w == 1 && h == 1) break;
-                // Ceil rather than floor when halving. With floor a mip-0
-                // row of H0-1 maps to ly = (H0-1)>>level which can land
-                // outside floor(H0/2^level) entirely — the bottom (and
-                // right) rows of mip 0 then never propagate into coarse
-                // mips, so lookups for AABBs near those edges land in an
-                // empty sample range with the initial max_d=0 and reject
-                // everything. Ceil gives every parent row a child texel.
-                w = std::max(1u, (w + 1u) / 2u);
-                h = std::max(1u, (h + 1u) / 2u);
-            }
-            hiz_pyramid_.assign(total, 0.0f);
-        }
-
-        // Mip 0: strip per-row padding.
-        for (uint32_t y = 0; y < H0; ++y) {
-            std::memcpy(&hiz_pyramid_[y * W0],
-                        mapped + size_t(y) * hiz_padded_bpr_,
-                        W0 * sizeof(float));
-        }
-        wgpuBufferUnmap(hiz_staging_buffers_[slot]);
-        hiz_slot_state_[slot] = HizSlotState::Idle;
-
-        // Higher mips: max-reduce 2×2 children.
-        for (size_t L = 1; L < hiz_mip_offset_.size(); ++L) {
-            const uint32_t prev_w = hiz_mip_w_[L - 1];
-            const uint32_t prev_h = hiz_mip_h_[L - 1];
-            const uint32_t this_w = hiz_mip_w_[L];
-            const uint32_t this_h = hiz_mip_h_[L];
-            const float* src = &hiz_pyramid_[hiz_mip_offset_[L - 1]];
-            float*       dst = &hiz_pyramid_[hiz_mip_offset_[L]];
-            for (uint32_t y = 0; y < this_h; ++y) {
-                for (uint32_t x = 0; x < this_w; ++x) {
-                    const uint32_t x0 = std::min(prev_w - 1, x * 2u);
-                    const uint32_t y0 = std::min(prev_h - 1, y * 2u);
-                    const uint32_t x1 = std::min(prev_w - 1, x0 + 1u);
-                    const uint32_t y1 = std::min(prev_h - 1, y0 + 1u);
-                    const float a = src[y0 * prev_w + x0];
-                    const float b = src[y0 * prev_w + x1];
-                    const float c = src[y1 * prev_w + x0];
-                    const float d = src[y1 * prev_w + x1];
-                    dst[y * this_w + x] = std::max(std::max(a, b), std::max(c, d));
-                }
-            }
-        }
-
-        hiz_vp_    = hiz_slot_vp_[slot];
-        hiz_valid_ = true;
-    }
-}
-
-bool ViewportWindow::aabbOccludedByHiz(const float mn[3], const float mx[3]) const {
-    if (!hiz_valid_ || hiz_mip_offset_.empty()) return false;
-
-    // Project the 8 corners of the AABB. Track:
-    //   - min/max NDC x,y (screen-space bounds)
-    //   - min projected z (nearest point of the AABB to the camera)
-    //   - whether any corner has clip.w <= 0 (AABB straddles near plane)
-    const float* m = hiz_vp_.data();  // column-major
-    auto applyVp = [m](float x, float y, float z, float out[4]) {
-        out[0] = m[0]*x + m[4]*y + m[8] *z + m[12];
-        out[1] = m[1]*x + m[5]*y + m[9] *z + m[13];
-        out[2] = m[2]*x + m[6]*y + m[10]*z + m[14];
-        out[3] = m[3]*x + m[7]*y + m[11]*z + m[15];
-    };
-
-    float nx_lo =  std::numeric_limits<float>::infinity();
-    float ny_lo =  std::numeric_limits<float>::infinity();
-    float nx_hi = -std::numeric_limits<float>::infinity();
-    float ny_hi = -std::numeric_limits<float>::infinity();
-    float min_z =  std::numeric_limits<float>::infinity();
-    for (int i = 0; i < 8; ++i) {
-        const float x = (i & 1) ? mx[0] : mn[0];
-        const float y = (i & 2) ? mx[1] : mn[1];
-        const float z = (i & 4) ? mx[2] : mn[2];
-        float c[4]; applyVp(x, y, z, c);
-        if (c[3] <= 1e-4f) return false;       // straddles or behind near
-        const float inv_w = 1.0f / c[3];
-        const float ndc_x = c[0] * inv_w;
-        const float ndc_y = c[1] * inv_w;
-        const float ndc_z = c[2] * inv_w;
-        nx_lo = std::min(nx_lo, ndc_x);
-        ny_lo = std::min(ny_lo, ndc_y);
-        nx_hi = std::max(nx_hi, ndc_x);
-        ny_hi = std::max(ny_hi, ndc_y);
-        min_z = std::min(min_z, ndc_z);
-    }
-
-    // Outside NDC entirely → frustum cull already handled this, but be safe.
-    if (nx_hi < -1.0f || nx_lo > 1.0f || ny_hi < -1.0f || ny_lo > 1.0f) return false;
-    if (min_z < 0.0f) return false;  // crosses near plane
-
-    // Convert NDC AABB to pyramid-pixel AABB at mip 0.
-    // NDC y is +up; HiZ-texture y is +down (the resolve shader's
-    // builtin-position fragment coords are framebuffer-space which
-    // is +Y-down). v = 0.5 * (1 - ny) gives the mapping.
-    const uint32_t W0 = hiz_mip_w_[0];
-    const uint32_t H0 = hiz_mip_h_[0];
-    const float u_lo =  0.5f * (nx_lo + 1.0f);
-    const float u_hi =  0.5f * (nx_hi + 1.0f);
-    const float v_lo =  0.5f * (1.0f - ny_hi);
-    const float v_hi =  0.5f * (1.0f - ny_lo);
-    int x0 = std::max(0, int(std::floor(u_lo * float(W0))));
-    int x1 = std::min(int(W0) - 1, int(std::ceil (u_hi * float(W0))));
-    int y0 = std::max(0, int(std::floor(v_lo * float(H0))));
-    int y1 = std::min(int(H0) - 1, int(std::ceil (v_hi * float(H0))));
-    if (x1 < x0 || y1 < y0) return false;
-
-    // Pick the smallest mip level where the AABB covers ≤ 2 texels per axis.
-    // Stops at the coarsest level so 1×1 always works.
-    const int side = std::max(x1 - x0 + 1, y1 - y0 + 1);
-    int level = 0;
-    while (level + 1 < int(hiz_mip_offset_.size()) && (1 << level) < side) ++level;
-
-    const uint32_t lw = hiz_mip_w_[level];
-    const uint32_t lh = hiz_mip_h_[level];
-    // Clamp BOTH endpoints to the mip's valid range. ly0 / lx0 also need
-    // to be clamped on the upper end — without that, an AABB whose
-    // bottom touches NDC y = -1 (or right touches +1) shifts to a child
-    // texel index that exceeds the mip's dimensions, the loop never
-    // iterates, and max_d stays at its 0.0 initial value → false reject.
-    // The ceil-mip construction above prevents this in the common case,
-    // but this guard makes the lookup robust to any future mip-sizing
-    // change too.
-    const int lx0 = std::clamp(int(x0) >> level, 0, int(lw) - 1);
-    const int ly0 = std::clamp(int(y0) >> level, 0, int(lh) - 1);
-    const int lx1 = std::clamp(int(x1) >> level, 0, int(lw) - 1);
-    const int ly1 = std::clamp(int(y1) >> level, 0, int(lh) - 1);
-    if (lx0 > lx1 || ly0 > ly1) return false;  // empty sample range
-
-    const float* level_data = &hiz_pyramid_[hiz_mip_offset_[level]];
-    float max_d = 0.0f;
-    for (int y = ly0; y <= ly1; ++y) {
-        for (int x = lx0; x <= lx1; ++x) {
-            max_d = std::max(max_d, level_data[y * int(lw) + x]);
-        }
-    }
-
-    // AABB occluded iff its nearest projected z is BEHIND the depth pyramid's
-    // coverage (greater in WebGPU's [0,1] z, where 0 is near, 1 is far).
-    // No epsilon: min_z is a strict lower bound on the AABB's actual mesh
-    // depth (it's the closest corner of the conservative bounding box), so
-    // min_z > max_d implies actual_mesh_depth > max_d.
-    const bool rejected = (min_z > max_d);
-
-    // WGPU_HIZ_TRACE diagnostic. Decrement the shared budget atomically
-    // and log when this rejection got a slot. Logs target the post-stop
-    // false-rejection class of bug — fields are everything needed to
-    // reconstruct the decision: AABB world bounds, screen NDC bounds,
-    // mip level and sample rect, max_d sampled, min_z computed, gap.
-    if (rejected && hiz_trace_budget_.load(std::memory_order_relaxed) > 0) {
-        int prev = hiz_trace_budget_.fetch_sub(1, std::memory_order_relaxed);
-        if (prev > 0) {
-            Log::info().noquote().nospace()
-                << "[hiz reject] aabb_min=(" << mn[0] << "," << mn[1] << "," << mn[2] << ")"
-                << " aabb_max=(" << mx[0] << "," << mx[1] << "," << mx[2] << ")"
-                << " ndc_x=[" << nx_lo << "," << nx_hi << "]"
-                << " ndc_y=[" << ny_lo << "," << ny_hi << "]"
-                << " min_z=" << min_z << " max_d=" << max_d
-                << " gap=" << (min_z - max_d)
-                << " level=" << level
-                << " sample=(" << lx0 << "," << ly0 << ")-(" << lx1 << "," << ly1 << ")"
-                << " mip=" << lw << "x" << lh;
-        }
-    }
-    return rejected;
-}
+// aabbOccludedByHiz moved to ViewportCore (#84-r).
 
 void ViewportWindow::setBenchmarkFrames(int frames) {
     bench_total_    = std::max(0, frames);
@@ -3010,7 +2528,7 @@ void ViewportWindow::render() {
 
     // Drain any HiZ async readbacks that completed since last frame so the
     // pyramid is as fresh as it can be before cull runs.
-    if (hiz_enabled_) drainHizReadbacks();
+    if (hiz_enabled_) core_.drainHizReadbacks();
 
     // Flush any pending selection changes to GPU.
     uploadSelectionFlagsIfDirty();
@@ -3167,7 +2685,7 @@ void ViewportWindow::render() {
         ViewportCore::HizOccludedFn hiz_occluded;
         if (hiz_for_this_frame) {
             hiz_occluded = [this](const float mn[3], const float mx[3]) {
-                return aabbOccludedByHiz(mn, mx);
+                return core_.aabbOccludedByHiz(mn, mx);
             };
         }
 
@@ -3400,7 +2918,7 @@ void ViewportWindow::render() {
     // ---- HiZ: resolve MSAA depth → small single-sample → ping-pong slot
     int hiz_submitted_slot = -1;
     if (hiz_enabled_) {
-        hiz_submitted_slot = encodeHizResolve(enc);
+        hiz_submitted_slot = core_.encodeHizResolve(enc);
     }
 
     // ---- Optional capture: encode copy on the same command buffer -------
@@ -3570,11 +3088,11 @@ void ViewportWindow::render() {
     // ---- HiZ async readback handoff -------------------------------------
     // Don't block — just kick off the mapAsync for the slot we filled this
     // frame. Drainage happens at the top of the *next* frame via
-    // drainHizReadbacks(), giving the GPU at least one frame of headroom.
+    // core_.drainHizReadbacks(), giving the GPU at least one frame of headroom.
     if (hiz_enabled_ && hiz_submitted_slot >= 0) {
         Stopwatch hiz_timer;
         if (bench_total_ > 0) hiz_timer.start();
-        startHizMap(hiz_submitted_slot, vp_this_frame);
+        core_.startHizMap(hiz_submitted_slot, vp_this_frame);
         if (bench_total_ > 0 && bench_count_ >= bench_warmup_) {
             bench_hiz_readback_ms_total_ += double(hiz_timer.nsecsElapsed()) / 1e6;
         }
@@ -4079,68 +3597,13 @@ void ViewportWindow::driveStreamingLoads() { core_.driveStreamingLoads(); }
 // Depth attachment
 // -----------------------------------------------------------------------------
 
-void ViewportWindow::ensureDepthTexture(int w, int h) {
-    if (w == depth_w_ && h == depth_h_ && depth_view_) return;
-    releaseDepthTexture();
+// ensureDepthTexture moved to ViewportCore (#84-r).
 
-    WGPUTextureDescriptor desc = {};
-    // TextureBinding is needed so the HiZ resolve pass can sample this as
-    // a texture_depth_multisampled_2d in its fragment shader.
-    desc.usage         = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding;
-    desc.dimension     = WGPUTextureDimension_2D;
-    desc.size.width    = uint32_t(w);
-    desc.size.height   = uint32_t(h);
-    desc.size.depthOrArrayLayers = 1;
-    desc.format        = WGPUTextureFormat_Depth32Float;
-    desc.mipLevelCount = 1;
-    desc.sampleCount   = SAMPLE_COUNT;  // matches MSAA color target
-    desc.label         = svFromCStr("ifcviewer-wgpu.depth");
-    depth_texture_ = wgpuDeviceCreateTexture(device_, &desc);
+// releaseDepthTexture moved to ViewportCore (#84-r).
 
-    WGPUTextureViewDescriptor vdesc = {};
-    vdesc.format          = WGPUTextureFormat_Depth32Float;
-    vdesc.dimension       = WGPUTextureViewDimension_2D;
-    vdesc.mipLevelCount   = 1;
-    vdesc.arrayLayerCount = 1;
-    vdesc.aspect          = WGPUTextureAspect_DepthOnly;
-    depth_view_ = wgpuTextureCreateView(depth_texture_, &vdesc);
+// ensureMsaaColorTexture moved to ViewportCore (#84-r).
 
-    depth_w_ = w;
-    depth_h_ = h;
-}
-
-void ViewportWindow::releaseDepthTexture() {
-    if (depth_view_)    { wgpuTextureViewRelease(depth_view_); depth_view_ = nullptr; }
-    if (depth_texture_) { wgpuTextureRelease(depth_texture_);  depth_texture_ = nullptr; }
-    depth_w_ = depth_h_ = 0;
-}
-
-void ViewportWindow::ensureMsaaColorTexture(int w, int h) {
-    if (w == msaa_w_ && h == msaa_h_ && msaa_color_view_) return;
-    releaseMsaaColorTexture();
-
-    WGPUTextureDescriptor desc = {};
-    desc.usage         = WGPUTextureUsage_RenderAttachment;
-    desc.dimension     = WGPUTextureDimension_2D;
-    desc.size.width    = uint32_t(w);
-    desc.size.height   = uint32_t(h);
-    desc.size.depthOrArrayLayers = 1;
-    desc.format        = surface_format_;
-    desc.mipLevelCount = 1;
-    desc.sampleCount   = SAMPLE_COUNT;
-    desc.label         = svFromCStr("ifcviewer-wgpu.msaa_color");
-    msaa_color_texture_ = wgpuDeviceCreateTexture(device_, &desc);
-
-    msaa_color_view_ = wgpuTextureCreateView(msaa_color_texture_, nullptr);
-    msaa_w_ = w;
-    msaa_h_ = h;
-}
-
-void ViewportWindow::releaseMsaaColorTexture() {
-    if (msaa_color_view_)    { wgpuTextureViewRelease(msaa_color_view_); msaa_color_view_ = nullptr; }
-    if (msaa_color_texture_) { wgpuTextureRelease(msaa_color_texture_);  msaa_color_texture_ = nullptr; }
-    msaa_w_ = msaa_h_ = 0;
-}
+// releaseMsaaColorTexture moved to ViewportCore (#84-r).
 
 // -----------------------------------------------------------------------------
 // Camera + frame uniforms
@@ -4987,9 +4450,9 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
 void ViewportWindow::shutdown() {
     // VW-only resources first — these depend on core_'s device_ being
     // alive, so they must be released before core_.shutdown() releases it.
-    releaseDepthTexture();
-    releaseMsaaColorTexture();
-    releaseHizResources();
+    core_.releaseDepthTexture();
+    core_.releaseMsaaColorTexture();
+    core_.releaseHizResources();
     releaseEdgeResources();
     overlays_.destroy();
     releasePickResources();

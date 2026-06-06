@@ -635,53 +635,32 @@ private:
     SelectionState&  selection_;
     VisibilityState& visibility_;
 
-    // Depth attachment (4× MSAA), recreated on surface resize.
-    WGPUTexture     depth_texture_ = nullptr;
-    WGPUTextureView depth_view_    = nullptr;
-    int             depth_w_       = 0;
-    int             depth_h_       = 0;
-
-    // 4× MSAA color target. Surface format-matched, recreated on resize.
-    // The render pass writes here, then resolves into the surface texture.
-    WGPUTexture     msaa_color_texture_ = nullptr;
-    WGPUTextureView msaa_color_view_    = nullptr;
-    int             msaa_w_             = 0;
-    int             msaa_h_             = 0;
+    // Depth + MSAA attachment aliases (storage in core_, #84-r).
+    WGPUTexture&     depth_texture_;
+    WGPUTextureView& depth_view_;
+    int&             depth_w_;
+    int&             depth_h_;
+    WGPUTexture&     msaa_color_texture_;
+    WGPUTextureView& msaa_color_view_;
+    int&             msaa_w_;
+    int&             msaa_h_;
     // SAMPLE_COUNT moved to ViewportCore.h as kViewportSampleCount (#84-k).
     static constexpr uint32_t SAMPLE_COUNT = kViewportSampleCount;
 
-    // HiZ occlusion culling. After each frame's main render pass we
-    // downsample MSAA depth into a small single-sample Depth32Float texture
-    // (hiz_resolve_texture_), copy it into a CPU-mappable staging buffer,
-    // wait for the map via processEvents, and max-reduce a mip pyramid on
-    // CPU. The cull pass in the *next* frame projects each instance's AABB
-    // through hiz_vp_ (the VP used to fill the pyramid) and rejects when
-    // the AABB's nearest projected z is behind the pyramid's coverage.
-    //
-    // GL's HiZ default is 256 wide; we match. Height tracks viewport aspect.
-    static constexpr uint32_t HIZ_BASE_W = 256;
-
-    // HiZ pipeline aliases (storage in core_).
+    // HiZ aliases (storage in core_, #84-r). The render path still
+    // drives the per-frame HiZ submit/drain orchestration, but the
+    // pipeline + pyramid + slot state all live in ViewportCore now.
     WGPUShaderModule&    hiz_shader_module_;
     WGPUBindGroupLayout& hiz_bgl_;
     WGPUPipelineLayout&  hiz_pipeline_layout_;
     WGPURenderPipeline&  hiz_pipeline_;
-    WGPUBuffer          hiz_uniform_buffer_  = nullptr;
-    WGPUBindGroup       hiz_bind_group_      = nullptr;
-
-    WGPUTexture     hiz_resolve_texture_ = nullptr;
-    WGPUTextureView hiz_resolve_view_    = nullptr;
-    uint32_t        hiz_resolve_w_       = 0;
-    uint32_t        hiz_resolve_h_       = 0;
-    uint32_t        hiz_padded_bpr_      = 0;  // bytes per row in the staging buffer
-
-    // Ping-pong async readback. Frame N submits a copy into slot
-    // hiz_write_idx_ and calls mapAsync (non-blocking) on that slot. Frame
-    // N+K (K ≥ 1) calls processEvents to drain callbacks; whichever slot
-    // signalled completion is mapped, read into hiz_pyramid_, and unmapped
-    // — making the pyramid 1+ frames stale, which is fine ("slightly-stale
-    // depth" pattern the GL backend already documents). Two slots overlap
-    // GPU write with CPU read; we never block on the readback.
+    WGPUBuffer&          hiz_uniform_buffer_;
+    WGPUBindGroup&       hiz_bind_group_;
+    WGPUTexture&         hiz_resolve_texture_;
+    WGPUTextureView&     hiz_resolve_view_;
+    uint32_t&            hiz_resolve_w_;
+    uint32_t&            hiz_resolve_h_;
+    uint32_t&            hiz_padded_bpr_;
     // Edge silhouette post-process (stage 9). Samples the MSAA depth
     // texture in a fullscreen pass, computes a depth Laplacian, blends
     // dark lines into the resolved surface colour. Matches GL's
@@ -797,29 +776,17 @@ private:
     // along that direction.
     void  updateSectionDrag(int x, int y);
 
-    enum class HizSlotState : uint8_t { Idle, Mapping, Mapped };
-    static constexpr int HIZ_SLOTS = 2;
-    WGPUBuffer    hiz_staging_buffers_[HIZ_SLOTS] = { nullptr, nullptr };
-    Eigen::Matrix4f    hiz_slot_vp_       [HIZ_SLOTS];
-    HizSlotState  hiz_slot_state_    [HIZ_SLOTS] = { HizSlotState::Idle,
-                                                     HizSlotState::Idle };
-    int           hiz_write_idx_                  = 0;
-
-    // CPU mip pyramid (max-reduce). hiz_pyramid_[hiz_mip_offset_[L] + y*W + x].
-    std::vector<float>    hiz_pyramid_;
-    std::vector<uint32_t> hiz_mip_offset_;
-    std::vector<uint32_t> hiz_mip_w_;
-    std::vector<uint32_t> hiz_mip_h_;
-    Eigen::Matrix4f            hiz_vp_;
-    bool                  hiz_valid_         = false;
-    uint32_t              hiz_reject_count_  = 0;  // per-frame stat
-
-    // WGPU_HIZ_TRACE=1 — diagnostic logging budget shared across the
-    // parallel cull threads. Set to a non-zero count at start of cull
-    // when tracing is on; each rejection in aabbOccludedByHiz atomically
-    // decrements and logs while >0. Atomic because cull dispatches one
-    // thread per model.
-    mutable std::atomic<int> hiz_trace_budget_{0};
+    // HiZ slot + pyramid aliases (storage in core_, #84-r). VW's render
+    // loop reads hiz_valid_ / hiz_vp_ to gate the HizOccludedFn, and
+    // resets hiz_trace_budget_ once per frame; everything else moved.
+    std::vector<float>&         hiz_pyramid_;
+    std::vector<uint32_t>&      hiz_mip_offset_;
+    std::vector<uint32_t>&      hiz_mip_w_;
+    std::vector<uint32_t>&      hiz_mip_h_;
+    Eigen::Matrix4f&            hiz_vp_;
+    bool&                       hiz_valid_;
+    uint32_t&                   hiz_reject_count_;
+    std::atomic<int>&           hiz_trace_budget_;
 
     Eigen::Vector4f& background_color_;
 
@@ -910,8 +877,9 @@ public:
     //       the federation bench but only saves ~1 ms of raster work
     //       because our indirect-draw iterates the visible_draws buffer
     //       regardless. Net 9% slower (49.7 vs 54.2 fps).
-    // Opt-in via WGPU_HIZ=1.
-    bool hiz_enabled_ = false;
+    // Opt-in via WGPU_HIZ=1. Storage in core_; aliased here so the
+    // env-var setup + render() gating keep compiling.
+    bool& hiz_enabled_;
 
     // When true, initWgpu requests the WebGPU mandatory floor limits
     // (maxStorageBufferBindingSize=128MB, maxBufferSize=256MB) instead of
