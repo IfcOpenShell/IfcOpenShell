@@ -972,19 +972,10 @@ private:
     // Sidecar paths queued before init completes.
     std::deque<std::string> pending_sidecars_;
 
-    // Direct-IFC staging buffers, keyed by streamer model_id. Populated
-    // by uploadMeshChunk / uploadInstanceChunk; consumed and cleared by
-    // finalizeModel. Shape matches SidecarData so the same chunk-planner
-    // + apply flow services both sidecar and direct-IFC loads. Held by
-    // unique_ptr so emplace / erase don't copy the (potentially huge)
-    // vertex byte vector when the map rehashes.
-    std::unordered_map<uint32_t, std::unique_ptr<SidecarData>>
-        pending_direct_loads_;
-
-    // Set after the first model load triggers a viewAll(); prevents
-    // subsequent loads from snapping the camera away from where the
-    // user pointed it.
-    bool initial_view_applied_ = false;
+    // pending_direct_loads_ + initial_view_applied_ moved to ViewportCore
+    // (#84-q). initial_view_applied_ stays accessible here as a reference
+    // alias so VW::setCamera can flip it without poking through core_.
+    bool& initial_view_applied_;
 
     // Camera state at the previous render() for motion detection. Any
     // change means we apply the motion contribution threshold this frame

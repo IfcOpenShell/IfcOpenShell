@@ -39,6 +39,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -50,6 +51,8 @@
 #include "ModelGpuData.h"
 #include "SectionPlane.h"
 #include "SelectionState.h"
+#include "SidecarCache.h"
+#include "StreamingLoader.h"
 #include "StreamingThread.h"
 #include "ViewportHost.h"
 #include "VisibilityState.h"
@@ -300,6 +303,25 @@ public:
     // residency is still settling so the render loop keeps ticking.
     void driveStreamingLoads();
 
+    // ---- Sidecar / direct load (#84-q) -----------------------------------
+    //
+    // Apply a parsed sidecar's metadata + planned chunk layout to
+    // models_gpu_[model_id]. Builds the per-chunk small buffers
+    // (visible_draws / prefix_sums / per_chunk_uniform), the per-model
+    // mesh + instance storage SSBOs, and the spatial chunk plan; chunk
+    // vertex/index slices stay non-resident until the streaming loader
+    // brings them in. Triggers an auto-viewAll on the first model (so a
+    // freshly-loaded scene frames itself).
+    void applyCachedModel(std::uint32_t model_id, StreamingSidecar metadata);
+
+    // Direct-load (bonsai-side) entry points. Bonsai's SceneLoader feeds
+    // the viewer one mesh + one instance at a time, then calls
+    // finalizeModel once everything's staged. The staging map lives on
+    // ViewportCore so both halves can share it.
+    void uploadMeshChunk(const MeshChunk& chunk);
+    void uploadInstanceChunk(const InstanceChunk& chunk);
+    void finalizeModel(std::uint32_t model_id);
+
     // ---- Cull (#84-p) -----------------------------------------------------
     //
     // Per-instance occlusion test, supplied by the caller. Wired by
@@ -500,6 +522,19 @@ private:
     // first-frame capture isn't an empty buffer. Cleared after capture
     // completes.
     std::string pending_screenshot_path_;
+
+    // Bonsai direct-load staging map. uploadMeshChunk +
+    // uploadInstanceChunk append into entries keyed by model_id; the
+    // finalizeModel call moves the entry out, hands it to
+    // applyCachedModel, and uploads the chunk slices synchronously.
+    std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>
+        pending_direct_loads_;
+
+    // Auto-viewAll suppression. Flipped true by the first applyCachedModel
+    // (so a fresh scene frames itself) or by any explicit setCamera (so a
+    // user/bonsai-side camera write isn't overridden by the next model
+    // load). Lives here so applyCachedModel can read + write it.
+    bool initial_view_applied_ = false;
 
     // Tool-refresh callback: fired by applyStreamedChunk when a newly-
     // arrived chunk filled in a mesh-local volume. ViewportWindow wires
