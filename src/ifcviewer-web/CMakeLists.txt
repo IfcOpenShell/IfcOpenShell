@@ -74,7 +74,11 @@ add_subdirectory(${IFCVIEWER_DIR} ifcviewer EXCLUDE_FROM_ALL)
 
 # --- The web executable ------------------------------------------------------
 
-add_executable(IfcViewerWeb main_web.cpp)
+add_executable(IfcViewerWeb
+    main_web.cpp
+    WebViewportHost.cpp
+    WebViewportHost.h
+)
 target_link_libraries(IfcViewerWeb PRIVATE IfcViewerCore)
 target_link_options(IfcViewerWeb PRIVATE
     # Asyncify lets us await wgpu's RequestAdapter/RequestDevice/MapAsync
