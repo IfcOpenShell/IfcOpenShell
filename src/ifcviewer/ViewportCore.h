@@ -323,6 +323,16 @@ public:
     void uploadInstanceChunk(const InstanceChunk& chunk);
     void finalizeModel(std::uint32_t model_id);
 
+    // ---- Surface configuration (#84-u) ------------------------------------
+    //
+    // Configure the swapchain at the given physical size. Picks a present
+    // mode from caps + preference order (Mailbox → Immediate → FifoRelaxed
+    // → Fifo, overridable via WGPU_PRESENT_MODE), reconfigures the
+    // surface, then (re)allocates the depth + MSAA color + HiZ resolve
+    // textures and invalidates the HiZ + edge bind groups so they
+    // rebuild against the new depth view on next encode.
+    void configureSurface(int width_px, int height_px);
+
     // ---- HiZ + framebuffer attachments (#84-r) ----------------------------
     //
     // Build the HiZ resolve pipeline (and shader module + BGL + uniform

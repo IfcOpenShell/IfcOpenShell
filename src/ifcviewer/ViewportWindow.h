@@ -264,7 +264,7 @@ protected:
 private:
     bool initWgpu();
     bool createSurface();
-    void configureSurface(int width_px, int height_px);
+    // configureSurface moved to ViewportCore (#84-u).
     void render();
     void shutdown();
 

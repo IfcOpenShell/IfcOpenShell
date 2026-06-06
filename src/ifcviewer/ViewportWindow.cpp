@@ -612,7 +612,7 @@ void ViewportWindow::exposeEvent(QExposeEvent* /*event*/) {
     const int w = int(width()  * devicePixelRatio());
     const int h = int(height() * devicePixelRatio());
     if (w > 0 && h > 0 && (w != configured_w_ || h != configured_h_)) {
-        configureSurface(w, h);
+        core_.configureSurface(w, h);
     }
     requestUpdate();
 }
@@ -622,7 +622,7 @@ void ViewportWindow::resizeEvent(QResizeEvent* /*event*/) {
     const int w = int(width()  * devicePixelRatio());
     const int h = int(height() * devicePixelRatio());
     if (w > 0 && h > 0) {
-        configureSurface(w, h);
+        core_.configureSurface(w, h);
         requestUpdate();
     }
 }
@@ -755,163 +755,7 @@ bool ViewportWindow::initWgpu() {
 // Surface (re)configure + render
 // -----------------------------------------------------------------------------
 
-void ViewportWindow::configureSurface(int width_px, int height_px) {
-    WGPUSurfaceConfiguration cfg = {};
-    cfg.device      = device_;
-    cfg.format      = surface_format_;
-    // CopySrc lets captureNextFrameToPng copy the surface texture back to
-    // host memory. Trivial cost on all known backends.
-    cfg.usage       = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
-    cfg.width       = uint32_t(width_px);
-    cfg.height      = uint32_t(height_px);
-    // Present mode. WGPU_PRESENT_MODE=fifo|fifo_relaxed|mailbox|immediate
-    // overrides; default is mailbox.
-    //   mailbox       — DEFAULT. Vsync-aligned (no tearing), one-frame
-    //                   queue (last-frame-wins). ~16ms input→display
-    //                   latency. wgpu-native falls back to fifo
-    //                   automatically on backends that don't implement
-    //                   it (Vulkan + NVIDIA on Linux is the historical
-    //                   one).
-    //   fifo          — strict vsync, 2–3 frame DXGI/swapchain queue
-    //                   (~50ms latency). Most power-efficient, but
-    //                   visibly laggy for cursor-bound interactions
-    //                   (marquee, pivot, orbit). Was the stage-1 default
-    //                   because Fifo is the only mode the WebGPU spec
-    //                   *requires* backends to support.
-    //   fifo_relaxed  — adaptive vsync. Tears when a frame misses the
-    //                   refresh deadline, smooth otherwise. Useful in
-    //                   the fly-mode-jitter case where Fifo would
-    //                   double-frame on a missed vsync.
-    //   immediate     — no vsync at all. Frames presented as soon as
-    //                   ready, may tear on motion. Useful for raw
-    //                   throughput benchmarking.
-    // Preference order. Override with WGPU_PRESENT_MODE=...; otherwise we
-    // try Mailbox → Immediate → FifoRelaxed → Fifo and pick the first
-    // mode actually advertised by the surface. Asking for a mode that
-    // the backend doesn't list aborts the process (wgpu-native panics
-    // from Rust at wgpuSurfaceConfigure). On Metal in particular only
-    // Fifo + Immediate are exposed today, so a static Mailbox default
-    // crashes there.
-    //
-    // Why Immediate sits above FifoRelaxed: Mailbox is the right answer
-    // for an interactive viewer (vsync-aligned, no tearing, 1-frame
-    // queue) but a meaningful subset of Linux Vulkan stacks (some
-    // compositors, some driver/WSI combinations) silently don't expose
-    // it — see the "[wgpu] surface advertises present modes:" startup
-    // log. On those stacks, Fifo's 2-3 frame queue doubles input-to-
-    // photon latency the moment WASD activates, which on a 60 Hz
-    // display reads as judder during fly-mode mouse-look. Immediate
-    // can tear but keeps latency at one render-body, which preserves
-    // the responsive-feel that's the main reason to use a wgpu viewer.
-    // FifoRelaxed is the middle option — better latency than Fifo at
-    // the edge, can tear when over budget — kept as the next fallback.
-    WGPUPresentMode preferred[4] = {
-        WGPUPresentMode_Mailbox,
-        WGPUPresentMode_Immediate,
-        WGPUPresentMode_FifoRelaxed,
-        WGPUPresentMode_Fifo,
-    };
-    const char* pm_name = "mailbox";
-    if (const char* s = std::getenv("WGPU_PRESENT_MODE")) {
-        WGPUPresentMode override_pm = WGPUPresentMode_Fifo;
-        bool known = true;
-        if      (std::strcmp(s, "fifo") == 0)         { override_pm = WGPUPresentMode_Fifo;        pm_name = "fifo"; }
-        else if (std::strcmp(s, "fifo_relaxed") == 0) { override_pm = WGPUPresentMode_FifoRelaxed; pm_name = "fifo_relaxed"; }
-        else if (std::strcmp(s, "mailbox") == 0)      { override_pm = WGPUPresentMode_Mailbox;     pm_name = "mailbox"; }
-        else if (std::strcmp(s, "immediate") == 0)    { override_pm = WGPUPresentMode_Immediate;   pm_name = "immediate"; }
-        else {
-            known = false;
-            Log::warn().noquote().nospace()
-                << "[wgpu] unknown WGPU_PRESENT_MODE=" << s
-                << " (expected fifo|fifo_relaxed|mailbox|immediate); falling back to preference order";
-        }
-        if (known) {
-            preferred[0] = override_pm;
-            preferred[1] = WGPUPresentMode_Fifo; // Fifo is the only guaranteed-supported mode
-            preferred[2] = preferred[3] = WGPUPresentMode_Fifo;
-        }
-    }
-
-    WGPUSurfaceCapabilities caps = {};
-    wgpuSurfaceGetCapabilities(surface_, adapter_, &caps);
-    auto supports = [&](WGPUPresentMode mode) {
-        for (size_t i = 0; i < caps.presentModeCount; ++i) {
-            if (caps.presentModes[i] == mode) return true;
-        }
-        return false;
-    };
-
-    // Log the full advertised set on first configure. Diagnostic for
-    // "WGPU_PRESENT_MODE=mailbox falls back to fifo" — if Mailbox is
-    // missing here, the driver/compositor doesn't expose it (drives the
-    // input-latency question; see WGPU_PRESENT_MODE notes above). If
-    // Mailbox is listed but we still pick Fifo, the preference order
-    // has a bug.
-    if (!surface_configured_) {
-        QString advertised;
-        for (size_t i = 0; i < caps.presentModeCount; ++i) {
-            const char* name = "?";
-            switch (caps.presentModes[i]) {
-                case WGPUPresentMode_Fifo:        name = "fifo";         break;
-                case WGPUPresentMode_FifoRelaxed: name = "fifo_relaxed"; break;
-                case WGPUPresentMode_Mailbox:     name = "mailbox";      break;
-                case WGPUPresentMode_Immediate:   name = "immediate";    break;
-                default: break;
-            }
-            if (i > 0) advertised += ", ";
-            advertised += QString::fromLatin1(name);
-        }
-        Log::info().noquote().nospace()
-            << "[wgpu] surface advertises present modes: " << advertised;
-    }
-    WGPUPresentMode pm = WGPUPresentMode_Fifo; // spec-guaranteed fallback
-    for (WGPUPresentMode candidate : preferred) {
-        if (supports(candidate)) { pm = candidate; break; }
-    }
-    switch (pm) {
-        case WGPUPresentMode_Mailbox:      pm_name = "mailbox";      break;
-        case WGPUPresentMode_FifoRelaxed:  pm_name = "fifo_relaxed"; break;
-        case WGPUPresentMode_Immediate:    pm_name = "immediate";    break;
-        case WGPUPresentMode_Fifo:         pm_name = "fifo";         break;
-        default: break;
-    }
-    wgpuSurfaceCapabilitiesFreeMembers(caps);
-    cfg.presentMode = pm;
-    if (!surface_configured_) {
-        const char* note = "";
-        switch (pm) {
-            case WGPUPresentMode_Mailbox:
-                note = " (vsync-aligned, no queue lag — default)"; break;
-            case WGPUPresentMode_Fifo:
-                note = " (strict vsync, may queue 2–3 frames)";    break;
-            case WGPUPresentMode_FifoRelaxed:
-                note = " (adaptive vsync — sync if in budget, tear if not)"; break;
-            case WGPUPresentMode_Immediate:
-                note = " (vsync OFF — framerate uncapped, may tear)";        break;
-            default: break;
-        }
-        Log::info().noquote().nospace() << "[wgpu] present mode = " << pm_name << note;
-    }
-    cfg.alphaMode   = WGPUCompositeAlphaMode_Auto;
-
-    wgpuSurfaceConfigure(surface_, &cfg);
-    configured_w_       = width_px;
-    configured_h_       = height_px;
-    surface_configured_ = true;
-    core_.ensureDepthTexture(width_px, height_px);
-    core_.ensureMsaaColorTexture(width_px, height_px);
-    core_.ensureHizTextures(width_px, height_px);
-    // depth_view_ was just replaced; force the HiZ + edge bind groups to
-    // rebuild against the new view on next encode.
-    if (hiz_bind_group_) {
-        wgpuBindGroupRelease(hiz_bind_group_);
-        hiz_bind_group_ = nullptr;
-    }
-    if (edge_bind_group_) {
-        wgpuBindGroupRelease(edge_bind_group_);
-        edge_bind_group_ = nullptr;
-    }
-}
+// configureSurface moved to ViewportCore (#84-u).
 
 // -----------------------------------------------------------------------------
 // CPU frustum cull + per-mesh compaction
@@ -1562,7 +1406,7 @@ void ViewportWindow::render() {
             // Reconfigure and try again next frame.
             const int w = int(width()  * devicePixelRatio());
             const int h = int(height() * devicePixelRatio());
-            if (w > 0 && h > 0) configureSurface(w, h);
+            if (w > 0 && h > 0) core_.configureSurface(w, h);
             requestUpdate();
             return;
         }
