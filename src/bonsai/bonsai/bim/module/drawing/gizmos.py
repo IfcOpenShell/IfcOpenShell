@@ -82,7 +82,7 @@ import math
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
+from typing import Any, ClassVar, Literal, Optional, Protocol, runtime_checkable
 
 import blf
 import bpy
@@ -5083,6 +5083,12 @@ class IconSlot:
     extra_gap_before: float = 0.0
     operator_props: tuple[tuple[str, Any], ...] = ()
     placeholder: bool = False
+    # Optional per-frame visibility predicate. Called with the gizmo group
+    # instance as the sole argument; returning False hides this slot's gizmo
+    # while still reserving its X position so the row layout doesn't shift.
+    # Used for idle-row icons whose relevance depends on element state (e.g.
+    # toggle_openings only when the host has openings).
+    visible_when: Optional[Callable[[Any], bool]] = None
 
     def __post_init__(self) -> None:
         # Validate shape at class-definition time so a typo doesn't surface
@@ -5235,6 +5241,13 @@ class BaseParametricGizmoGroup:
     # constant, no "remember to bump the right edge" rule. The trailing
     # ARRAY button is positioned past the last slot automatically.
     feature_slots: ClassVar[tuple[IconSlot, ...]] = ()
+    # Idle-mode pen-row extras (e.g. wall's toggle_openings). Each slot is
+    # placed past the pen at uniform ``ICON_ARRAY_GAP`` spacing. Hidden during
+    # edit — the validate/cancel row owns the X positions there. Peer gizmo
+    # groups (e.g. ``GizmoArrayEdition``'s per-layer ARRAY icons) query
+    # ``_idle_row_right_edge()`` to position past these without a hardcoded
+    # per-feature table.
+    idle_slots: ClassVar[tuple[IconSlot, ...]] = ()
     # Gap between adjacent slots past the leading validate/cancel/cycle
     # triplet, AND between the last slot and the ARRAY button.
     ICON_ARRAY_GAP: float = 0.37
@@ -5287,6 +5300,31 @@ class BaseParametricGizmoGroup:
         positions = cls._slot_x_positions()
         if not positions:
             return cls.ICON_CYCLE_X
+        return max(positions.values())
+
+    @classmethod
+    def _idle_slot_x_positions(cls) -> dict[str, float]:
+        """Map each ``idle_slot`` name to its X coordinate past the pen.
+
+        First idle slot lands at ``ICON_CANCEL_X`` (the cancel-slot position,
+        unused in idle since validate/cancel are edit-only). Successive slots
+        are spaced by ``ICON_ARRAY_GAP``, plus any per-slot ``extra_gap_before``."""
+        positions: dict[str, float] = {}
+        next_x = cls.ICON_CANCEL_X
+        for slot in cls.idle_slots:
+            next_x += slot.extra_gap_before
+            positions[slot.name] = next_x
+            next_x += cls.ICON_ARRAY_GAP
+        return positions
+
+    @classmethod
+    def _idle_row_right_edge(cls) -> float:
+        """Rightmost local-X reserved by this group's idle row. Returns the
+        pen position (``ICON_VALIDATE_X``) when no idle slots are declared
+        so peer queries always get a meaningful number."""
+        positions = cls._idle_slot_x_positions()
+        if not positions:
+            return cls.ICON_VALIDATE_X
         return max(positions.values())
 
     @classmethod
@@ -5761,45 +5799,6 @@ class BaseParametricGizmoGroup:
     def get_element_height(self, props) -> float:
         return getattr(props, "overall_height", getattr(props, "height", 1.0))
 
-    def setup_pen_row_toggle_openings_icon(self) -> None:
-        """Create ``self.toggle_openings_gizmo`` bound to
-        ``bim.toggle_host_openings``. Subclasses call this from
-        ``setup_element_specific_gizmos`` to opt their host into the shared
-        idle-row toggle; pair with
-        ``update_pen_row_toggle_openings_icon`` in
-        ``_refresh_element_specific``."""
-        default_color, highlight_color = self.get_decoration_colors()
-        self.toggle_openings_gizmo = self._setup_icon_gizmo(
-            "VIEW3D_GT_add_opening",
-            default_color,
-            "bim.toggle_host_openings",
-            highlight_color,
-        )
-
-    def update_pen_row_toggle_openings_icon(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
-        """Position ``self.toggle_openings_gizmo`` at the cancel-slot X next
-        to the pen in idle state; hide during edit (the validate/cancel row
-        owns that X) and when the active host carries no openings.
-
-        Subclasses opt in by calling
-        ``setup_pen_row_toggle_openings_icon`` in
-        ``setup_element_specific_gizmos`` and this method from
-        ``_refresh_element_specific``. No-op for groups that never
-        created the icon."""
-        if not hasattr(self, "toggle_openings_gizmo"):
-            return
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj) if obj is not None else None
-        has_openings = element is not None and tool.Geometry.has_openings(element)
-        if props.is_editing or not has_openings:
-            self.toggle_openings_gizmo.hide = True
-            return
-        self.toggle_openings_gizmo.hide = self.is_gizmo_hidden_by_modal(self.toggle_openings_gizmo)
-        icon_z = self.get_element_height(props) + self.ICON_Z_OFFSET
-        icon_y = self.get_icon_y_offset(context, mw)
-        world_pos = mw @ Vector((self.ICON_VALIDATE_X + self.ICON_CANCEL_X, icon_y, icon_z))
-        self.toggle_openings_gizmo.matrix_basis = billboarded_at(world_pos, self._frame_billboard_rot)
-
     def is_gizmo_hidden_by_modal(self, gizmo: bpy.types.Gizmo) -> bool:
         """Check if a gizmo should be hidden because a modal operator is active.
 
@@ -6011,6 +6010,19 @@ class BaseParametricGizmoGroup:
         # only reserve an X position — the subclass creates its own gizmo
         # there in ``setup_element_specific_gizmos``.
         for slot in self.feature_slots:
+            if slot.placeholder:
+                continue
+            slot_color = slot.color if slot.color is not None else default_color
+            kwargs = dict(slot.operator_props)
+            for attr, idname in zip(slot.gizmo_attrs(), slot.variant_idnames()):
+                gz = self.create_icon_gizmo(idname, slot_color, slot.operator, **kwargs)
+                setattr(self, attr, gz)
+
+        # Idle-mode pen-row extras. Same creation path as feature_slots; the
+        # IDLE branch of ``update_editing_gizmos`` positions and visibility-
+        # gates them, the EDIT branch hides them so the validate/cancel row
+        # owns the X positions.
+        for slot in self.idle_slots:
             if slot.placeholder:
                 continue
             slot_color = slot.color if slot.color is not None else default_color
@@ -6333,6 +6345,13 @@ class BaseParametricGizmoGroup:
                     billboard_rot=billboard_rot,
                     scale=0.35,
                 )
+            # Idle-row icons are hidden in edit — validate / cancel sit at
+            # the same X positions, so showing both would stack icons.
+            for slot in self.idle_slots:
+                for attr in slot.gizmo_attrs():
+                    gz = getattr(self, attr, None)
+                    if gz is not None:
+                        gz.hide = True
         else:
             # ``hide_pen_button = True`` keeps the pen permanently hidden — for
             # groups whose edit-mode entry is already provided by another widget
@@ -6358,6 +6377,34 @@ class BaseParametricGizmoGroup:
                         gz.hide = True
             if hasattr(self, "array_gizmo"):
                 self.array_gizmo.hide = True
+            # Idle slots: position past the pen, apply per-slot visible_when
+            # so state-dependent icons (e.g. toggle_openings) only render
+            # when relevant. Hidden slots STILL consume their X position so
+            # the row layout doesn't shift when state flips.
+            idle_positions = self._idle_slot_x_positions()
+            for slot in self.idle_slots:
+                if slot.placeholder:
+                    continue
+                slot_x = self.ICON_VALIDATE_X + idle_positions[slot.name]
+                gate = slot.visible_when
+                visible = True if gate is None else bool(gate(self))
+                for attr in slot.gizmo_attrs():
+                    gz = getattr(self, attr, None)
+                    if gz is None:
+                        continue
+                    if not visible:
+                        gz.hide = True
+                        continue
+                    gz.hide = self.is_gizmo_hidden_by_modal(gz)
+                    self.set_icon_gizmo_position(
+                        attr,
+                        mw=mw,
+                        x=slot_x,
+                        y=icon_y,
+                        z=icon_z,
+                        billboard_rot=billboard_rot,
+                        scale=slot.scale,
+                    )
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
         """Called before drawing - updates gizmos to face camera.

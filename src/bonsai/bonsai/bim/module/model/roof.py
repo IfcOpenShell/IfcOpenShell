@@ -18,7 +18,7 @@
 
 import json
 from math import atan2, cos, degrees, pi, radians, tan
-from typing import Any, Literal, Union
+from typing import Any, ClassVar, Literal, Union
 
 import bmesh
 import bpy
@@ -33,7 +33,7 @@ from mathutils import Quaternion, Vector
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
 from bonsai.bim.module.model.data import RoofData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
 from bonsai.bim.parametric_lifecycle import CycleTypeMixin, PathPreservingEditMixin
@@ -678,6 +678,18 @@ _ROOF_SLOPE_REFERENCE_RUN = 1.0
 _ROOF_MAX_SLOPE_ANGLE = pi / 2 - 0.001
 
 
+def _roof_has_openings() -> bool:
+    """``visible_when`` predicate for the toggle_openings idle slot. True iff
+    the active object's IFC element exposes a non-empty HasOpenings inverse."""
+    obj = bpy.context.active_object
+    if obj is None:
+        return False
+    element = tool.Ifc.get_entity(obj)
+    if element is None:
+        return False
+    return tool.Geometry.has_openings(element)
+
+
 class CycleRoofGenerationMethod(bpy.types.Operator, tool.Ifc.Operator, CycleTypeMixin):
     """Cycle the roof generation method (HEIGHT ↔ ANGLE). Shift+click cycles in reverse."""
 
@@ -740,6 +752,15 @@ class GizmoRoofEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     props_getter = tool.Model.get_roof_props
     gizmo_pref_name = "roof"
 
+    idle_slots: ClassVar[tuple[IconSlot, ...]] = (
+        IconSlot(
+            name="toggle_openings",
+            gizmo_idname="VIEW3D_GT_add_opening",
+            operator="bim.toggle_host_openings",
+            visible_when=lambda gg: _roof_has_openings(),
+        ),
+    )
+
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
         return tool.Parametric.is_roof(element)
@@ -764,15 +785,6 @@ class GizmoRoofEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         if obj is None or not getattr(obj, "bound_box", None):
             return 1.0
         return max(c[2] for c in obj.bound_box)
-
-    def setup_element_specific_gizmos(self, context: bpy.types.Context) -> None:
-        """One idle-row icon outside the slot system: the ``toggle_openings``
-        button. Mirrors the wall idle row — pen + opening sit side by side
-        when the roof is selected and already carries at least one opening."""
-        self.setup_pen_row_toggle_openings_icon()
-
-    def _refresh_element_specific(self, context: bpy.types.Context, mw, props) -> None:
-        self.update_pen_row_toggle_openings_icon(context, mw, props)
 
 
 class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
