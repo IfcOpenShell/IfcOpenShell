@@ -2148,3 +2148,229 @@ void ViewportCore::driveStreamingLoads() {
             << " max_load=" << max_load_count;
     }
 }
+
+// ===========================================================================
+// Cull (#84-p): cullModelCpuCompute + cullModelCpuUpload
+// ===========================================================================
+
+std::uint32_t ViewportCore::cullModelCpuCompute(
+        ModelGpuData& m,
+        const float planes[6][4],
+        const float eye[3],
+        const float forward[3],
+        const float right[3],
+        const float up[3],
+        float focal_px,
+        float min_radius_px,
+        float lod1_threshold_px,
+        const HizOccludedFn& hiz_occluded) const {
+    std::uint32_t hiz_rejects = 0;
+
+    if (m.instances.empty() || m.meshes.empty() || m.chunks.empty()) {
+        return 0;
+    }
+
+    const bool contrib_enabled = (min_radius_px      > 0.0f);
+    const bool lod_enabled     = (lod1_threshold_px  > 0.0f);
+    const bool hiz_active      = static_cast<bool>(hiz_occluded);
+
+    // Reset per-chunk scratch + counters at the start of each cull.
+    for (auto& c : m.chunks) {
+        c.visible_draws_scratch.clear();
+        c.visible_draws_scratch_transparent.clear();
+        c.transparent_per_draw_vertex_counts.clear();
+        c.prefix_sums_scratch.clear();
+        c.prefix_sums_scratch.push_back(0);
+        c.total_visible_vertices  = 0;
+        c.total_visible_draws     = 0;
+        c.opaque_visible_vertices = 0;
+        c.opaque_visible_draws    = 0;
+        c.frustum_visible_count   = 0;
+        c.current_priority        = 0.0f;
+    }
+
+    // Per-chunk running vertex count for incremental prefix sums.
+    std::vector<std::uint32_t> running_vertex_count(m.chunks.size(), 0);
+
+    auto process_instance = [&](std::uint32_t i) {
+        const auto& inst = m.instances[i];
+        if (inst.mesh_id >= m.meshes.size()) return;
+        if (visibility_.isHidden(inst.object_id)) return;
+        // Per-instance frustum still needed: a partially-covered subtree
+        // descended this far means *some* leaves are visible, but not
+        // necessarily this one.
+        if (!aabbInFrustum(inst.world_aabb_min, inst.world_aabb_max, planes)) return;
+
+        const std::uint32_t chunk_idx = m.instance_chunk_idx[i];
+        ModelGpuData::Chunk& c = m.chunks[chunk_idx];
+
+        // Bump the chunk's frustum-only counter before contribution / HiZ
+        // so the streaming loader sees a stable signal across frames.
+        ++c.frustum_visible_count;
+
+        const MeshInfo& mesh = m.meshes[inst.mesh_id];
+
+        // Two screen-space metrics: sphere-radius projection (cheap,
+        // conservative — used for contribution + LOD pick) and AABB-
+        // rectangle projection (tight — used for streaming priority).
+        float projected_px = std::numeric_limits<float>::infinity();
+        {
+            const float cx = 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
+            const float cy = 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
+            const float cz = 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
+            const float ex = inst.world_aabb_max[0] - inst.world_aabb_min[0];
+            const float ey = inst.world_aabb_max[1] - inst.world_aabb_min[1];
+            const float ez = inst.world_aabb_max[2] - inst.world_aabb_min[2];
+            const float radius_world = 0.5f * std::sqrt(ex*ex + ey*ey + ez*ez);
+            const float view_z = forward[0] * (cx - eye[0])
+                               + forward[1] * (cy - eye[1])
+                               + forward[2] * (cz - eye[2]);
+            if (view_z > 1e-3f) {
+                projected_px = radius_world * focal_px / view_z;
+
+                const float hex = 0.5f * ex;
+                const float hey = 0.5f * ey;
+                const float hez = 0.5f * ez;
+                const float view_he_x = std::fabs(right[0]) * hex
+                                      + std::fabs(right[1]) * hey
+                                      + std::fabs(right[2]) * hez;
+                const float view_he_y = std::fabs(up[0])    * hex
+                                      + std::fabs(up[1])    * hey
+                                      + std::fabs(up[2])    * hez;
+                const float inv_z = focal_px / view_z;
+                const float box_area_px2 = 4.0f
+                                         * view_he_x * inv_z
+                                         * view_he_y * inv_z;
+                c.current_priority += box_area_px2;
+            }
+        }
+
+        // Contribution cull before HiZ: HiZ is by far the most expensive
+        // per-instance test, so letting cheap contribution drops happen
+        // first cuts the HiZ-tested population by ~5× on real scenes.
+        if (contrib_enabled && projected_px < min_radius_px) return;
+
+        if (hiz_active
+            && hiz_occluded(inst.world_aabb_min, inst.world_aabb_max)) {
+            ++hiz_rejects;
+            return;
+        }
+
+        const bool use_lod1 = lod_enabled
+                            && mesh.lod1_index_count > 0
+                            && projected_px < lod1_threshold_px;
+
+        // Emit one VisibleDraw entry into the chunk that owns this
+        // instance's vertex range.
+        ModelGpuData::VisibleDrawGpu d;
+        d.mesh_id       = inst.mesh_id;
+        d.instance_idx  = i;
+        d.ebo_first_u32 = use_lod1 ? m.instance_lod1_first_u32[i]
+                                   : m.instance_ebo_first_u32[i];
+        d.base_vertex   = m.instance_base_vertex[i];
+
+        const std::uint32_t entry_vert_count = use_lod1 ? mesh.lod1_index_count
+                                                        : mesh.index_count;
+
+        // Opaque-vs-transparent classifier. Routes the draw into the
+        // chunk's opaque half or its transparent half. X-ray cap forces
+        // every instance into the transparent pass so the blend stage
+        // fires; otherwise a non-zero color_override_rgba8's alpha byte
+        // (or the mesh's baked has-alpha flag) decides.
+        const bool xray_active     = (xray_alpha_cap_ < 1.0f);
+        const bool override_active = (inst.color_override_rgba8 != 0u);
+        const bool is_transparent  = xray_active
+            ? true
+            : (override_active
+               ? (((inst.color_override_rgba8 >> 24) & 0xFFu) < 255u)
+               : (inst.mesh_id < m.mesh_has_alpha.size()
+                  && m.mesh_has_alpha[inst.mesh_id] != 0));
+
+        if (is_transparent) {
+            c.visible_draws_scratch_transparent.push_back(d);
+            c.transparent_per_draw_vertex_counts.push_back(entry_vert_count);
+        } else {
+            c.visible_draws_scratch.push_back(d);
+            running_vertex_count[chunk_idx] += entry_vert_count;
+            c.prefix_sums_scratch.push_back(running_vertex_count[chunk_idx]);
+        }
+        if (use_lod1) {
+            ++lod1_dbg_count_;
+            lod1_dbg_tris_saved_ += (mesh.index_count > mesh.lod1_index_count
+                                     ? (mesh.index_count - mesh.lod1_index_count) / 3
+                                     : 0);
+        } else if (mesh.lod1_index_count > 0) {
+            ++lod0_dbg_eligible_count_;
+        } else {
+            ++lod0_dbg_no_lod1_count_;
+        }
+    };
+
+    // Chunk-driven walk: frustum-test each chunk's AABB once, skip
+    // every instance inside when the chunk is off-screen. With spatial
+    // chunk planning this rejects most instances without ever touching
+    // them individually — a strict superset of the previous BVH walk's
+    // win, with zero traversal overhead.
+    for (auto& c : m.chunks) {
+        if (c.instance_ids.empty()) continue;
+        if (!aabbInFrustum(c.aabb_min, c.aabb_max, planes)) continue;
+        for (std::uint32_t i : c.instance_ids) process_instance(i);
+    }
+
+    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
+        auto& c = m.chunks[ci];
+
+        // Snapshot opaque-half before appending transparents.
+        c.opaque_visible_draws    = std::uint32_t(c.visible_draws_scratch.size());
+        c.opaque_visible_vertices = running_vertex_count[ci];
+
+        // Concatenate transparent entries onto the opaque half and
+        // continue the prefix-sum sequence. The fragment-pipeline split
+        // lives in render(): opaque-pass draws [0, opaque_visible_vertices),
+        // transparent-pass draws [opaque_visible_vertices, total_visible_vertices).
+        for (std::size_t k = 0; k < c.visible_draws_scratch_transparent.size(); ++k) {
+            c.visible_draws_scratch.push_back(
+                c.visible_draws_scratch_transparent[k]);
+            running_vertex_count[ci] += c.transparent_per_draw_vertex_counts[k];
+            c.prefix_sums_scratch.push_back(running_vertex_count[ci]);
+        }
+        c.total_visible_draws    = std::uint32_t(c.visible_draws_scratch.size());
+        c.total_visible_vertices = running_vertex_count[ci];
+    }
+    return hiz_rejects;
+}
+
+void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
+    for (auto& c : m.chunks) {
+        if (!c.visible_draws_buffer || !c.prefix_sums_buffer || !c.per_chunk_uniform) continue;
+
+        if (c.total_visible_draws == 0) {
+            // Render() will skip this chunk; still zero the uniform so
+            // any accidental dispatch sees 0 work.
+            const std::uint32_t um[4] = { 0, 0, 0, 0 };
+            wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+            continue;
+        }
+
+        wgpuQueueWriteBuffer(queue_, c.visible_draws_buffer, 0,
+                             c.visible_draws_scratch.data(),
+                             c.visible_draws_scratch.size()
+                                 * sizeof(ModelGpuData::VisibleDrawGpu));
+        wgpuQueueWriteBuffer(queue_, c.prefix_sums_buffer, 0,
+                             c.prefix_sums_scratch.data(),
+                             c.prefix_sums_scratch.size() * sizeof(std::uint32_t));
+
+        // per_chunk_uniform layout (vec4<u32> u_model in the shader):
+        //   [0] total_visible_draws       (opaque + transparent)
+        //   [1] total_visible_vertices    (sum across the partition)
+        //   [2] opaque_visible_vertices   (firstVertex for transparent pass)
+        //   [3] opaque_visible_draws      (reserved for a future GPU-side filter)
+        const std::uint32_t um[4] = {
+            c.total_visible_draws,
+            c.total_visible_vertices,
+            c.opaque_visible_vertices,
+            c.opaque_visible_draws,
+        };
+        wgpuQueueWriteBuffer(queue_, c.per_chunk_uniform, 0, um, sizeof(um));
+    }
+}

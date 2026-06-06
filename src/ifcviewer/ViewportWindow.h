@@ -571,20 +571,11 @@ private:
     // is overwhelmingly thin-in-one-axis (pipes, columns, slabs,
     // windows). Sphere projection is kept for contribution / LOD picks
     // because conservative-over is the right failure mode there.
-    uint32_t cullModelCpuCompute(ModelGpuData& m,
-                                 const float planes[6][4],
-                                 const float eye[3],
-                                 const float forward[3],
-                                 const float right[3],
-                                 const float up[3],
-                                 float focal_px,
-                                 float min_radius_px,
-                                 float lod1_threshold_px,
-                                 bool  hiz_enabled) const;
-    // Upload phase: wgpuQueueWriteBuffer for visible_draws / prefix_sums /
-    // per-model uniform. Main-thread only (wgpu queue ops are not all
-    // thread-safe).
-    void     cullModelCpuUpload(ModelGpuData& m);
+    // cullModelCpuCompute / cullModelCpuUpload moved to ViewportCore
+    // (#84-p). The render path calls core_.cullModelCpuCompute with a
+    // ViewportCore::HizOccludedFn that wraps aabbOccludedByHiz when
+    // HiZ is enabled (the pyramid + readback orchestration is still
+    // here), or null otherwise.
 
     // Compose one instance's `transform` (float[16] column-major) from
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
@@ -1079,14 +1070,13 @@ private:
     // Federation false-origin alias (storage in core_).
     Eigen::Matrix4d& federated_false_origin_meters_;
 
-    // Per-frame LOD selection counts, mutated from cullModelCpuCompute
-    // and reset after the [frame] heartbeat prints them. Keeps an eye
-    // on whether LOD1 is actually firing on real scenes — early-days
-    // diagnostic while we trust the new code path.
-    mutable uint32_t lod1_dbg_count_              = 0;
-    mutable uint32_t lod0_dbg_eligible_count_     = 0;
-    mutable uint32_t lod0_dbg_no_lod1_count_      = 0;
-    mutable uint64_t lod1_dbg_tris_saved_         = 0;
+    // Per-frame LOD selection counts (storage in core_, mutated from
+    // core_.cullModelCpuCompute). The [frame] heartbeat in VW's render()
+    // still reads + resets them.
+    uint32_t& lod1_dbg_count_;
+    uint32_t& lod0_dbg_eligible_count_;
+    uint32_t& lod0_dbg_no_lod1_count_;
+    uint64_t& lod1_dbg_tris_saved_;
 };
 
 #endif // WGPUVIEWPORTWINDOW_H

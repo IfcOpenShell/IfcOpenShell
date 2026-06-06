@@ -300,6 +300,51 @@ public:
     // residency is still settling so the render loop keeps ticking.
     void driveStreamingLoads();
 
+    // ---- Cull (#84-p) -----------------------------------------------------
+    //
+    // Per-instance occlusion test, supplied by the caller. Wired by
+    // ViewportWindow to its HiZ pyramid (still VW-side) — when the
+    // function is null, occlusion is implicitly "miss" and only
+    // frustum + contribution culling apply.
+    using HizOccludedFn = std::function<bool(const float mn[3], const float mx[3])>;
+
+    // Walk every instance in `m`, frustum-test, contribution-test, and
+    // (when `hiz_occluded` is non-null) HiZ-test. Populates each
+    // chunk's visible_draws_scratch + prefix_sums_scratch with the
+    // partition the render pass will issue. Returns the number of
+    // instances HiZ rejected so render() can aggregate the counter.
+    // `const` because cull doesn't touch wgpu state — pure CPU work
+    // over ModelGpuData scratch fields.
+    std::uint32_t cullModelCpuCompute(
+        ModelGpuData& m,
+        const float planes[6][4],
+        const float eye[3],
+        const float forward[3],
+        const float right[3],
+        const float up[3],
+        float focal_px,
+        float min_radius_px,
+        float lod1_threshold_px,
+        const HizOccludedFn& hiz_occluded) const;
+
+    // Upload the per-chunk visible-draw + prefix-sum partitions + the
+    // per-chunk uniform (counts + the opaque/transparent split point)
+    // for every chunk in `m`. Called once per visible model after
+    // cullModelCpuCompute fills the scratch.
+    void cullModelCpuUpload(ModelGpuData& m);
+
+    // ---- Per-frame cull-cycle debug counters -----------------------------
+    //
+    // Tally how often the LOD1 pick triggered, how many triangles it
+    // saved, and how many instances either had no LOD1 to pick or sat
+    // above the threshold. Reset at the end of every render() cycle by
+    // the bench / frame-stats path in VW. Mutable so cullModelCpuCompute
+    // can stay const for the rest of its data flow.
+    mutable std::uint32_t lod1_dbg_count_           = 0;
+    mutable std::uint32_t lod0_dbg_eligible_count_  = 0;
+    mutable std::uint32_t lod0_dbg_no_lod1_count_   = 0;
+    mutable std::uint64_t lod1_dbg_tris_saved_      = 0;
+
 private:
     bool probeAndCreatePool();
 
