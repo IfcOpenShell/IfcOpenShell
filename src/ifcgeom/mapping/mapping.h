@@ -7,6 +7,7 @@
 #include "../../ifcparse/IfcLogger.h"
 
 #include <mutex>
+#include <cstdint>
 
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)

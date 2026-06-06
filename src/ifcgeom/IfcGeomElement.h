@@ -35,13 +35,25 @@ namespace IfcGeom {
 	class Transformation {
 	private:
 		ifcopenshell::geometry::Settings settings_;
-		ifcopenshell::geometry::taxonomy::matrix4::ptr matrix_;
+		ifcopenshell::geometry::taxonomy::matrix4::ptr matrix_, matrix_orig_units_;
 	public:
-		Transformation(const ifcopenshell::geometry::Settings& settings, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix)
-			: settings_(settings)
-			, matrix_(matrix)
-		{}
+        Transformation(const ifcopenshell::geometry::Settings& settings, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix)
+            : settings_(settings), matrix_(matrix)
+		{
+            const bool convert = settings.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get();
+            auto unit_magnitude = settings.get<ifcopenshell::geometry::settings::LengthUnit>().get();
+            if (matrix_ && convert && unit_magnitude != 1.0) {
+				matrix_orig_units_ = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>(*matrix);
+                // only multiple the translation components of the matrix with the unit magnitude, not the rotation/scaling components
+                matrix_orig_units_->components().col(3).head<3>() /= unit_magnitude;
+            } else {
+                matrix_orig_units_ = nullptr;
+			}
+        }
 		const ifcopenshell::geometry::taxonomy::matrix4::ptr& data() const {
+            if (matrix_orig_units_) {            
+				return matrix_orig_units_;
+            }
 			if (matrix_) {
 				return matrix_;
 			}

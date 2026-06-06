@@ -149,8 +149,12 @@ namespace {
 
 	template <>
 	struct dispatch_conversion<ifcopenshell::geometry::taxonomy::type_by_kind::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			Logger::Error("No conversion for " + std::to_string(item->kind()));
+        static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, ifcopenshell::geometry::taxonomy::kinds, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
+            std::string created_from;
+            if (item->instance) {
+                created_from = " (created from " + item->instance->declaration().name() + ")";
+			}
+            Logger::Error("No support for " + ifcopenshell::geometry::taxonomy::kind_to_string(item->kind()) + created_from + " in kernel " + kernel->geometry_library());
 			return false;
 		}
 	};
@@ -169,8 +173,12 @@ namespace {
 
 	template <>
 	struct dispatch_with_upgrade<ifcopenshell::geometry::taxonomy::upgrades::max> {
-		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel*, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
-			Logger::Error("No conversion with upgrade for " + std::to_string(item->kind()));
+		static bool dispatch(ifcopenshell::geometry::kernels::AbstractKernel* kernel, const ifcopenshell::geometry::taxonomy::ptr& item, IfcGeom::ConversionResults&) {
+            std::string created_from;
+            if (item->instance) {
+                created_from = " (created from " + item->instance->declaration().name() + ")";
+            }
+            Logger::Error("No support (after considering item upgrade) for " + ifcopenshell::geometry::taxonomy::kind_to_string(item->kind()) + created_from + " in kernel " + kernel->geometry_library());
 			return false;
 		}
 	};

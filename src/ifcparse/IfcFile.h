@@ -34,6 +34,7 @@
 #include <boost/circular_buffer.hpp>
 #include <iterator>
 #include <map>
+#include <cstdint>
 
 #ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/merge_operator.h>

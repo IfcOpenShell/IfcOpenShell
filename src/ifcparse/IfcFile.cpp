@@ -4,9 +4,12 @@
 #ifdef IFOPSH_WITH_ROCKSDB
 #include <rocksdb/table.h>
 #include <rocksdb/convenience.h>
+#include <rocksdb/version.h>
 #endif
 
 #include <fstream>
+#include <memory>
+#include <utility>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -410,10 +413,8 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
 }
 
 namespace {
-    rocksdb::DB* init_db(const std::string& filepath, bool readonly) {
-        rocksdb::DB* db = nullptr;
+    std::unique_ptr<rocksdb::DB> init_db(const std::string& filepath, bool readonly) {
 #ifdef IFOPSH_WITH_ROCKSDB
-        
         rocksdb::Options options;
         // options.disable_auto_compactions = true;
         options.create_if_missing = true;
@@ -445,16 +446,31 @@ namespace {
         options.table_factory.reset(rocksdb::NewBlockBasedTableFactory(tbo));
 
         rocksdb::Status status;
+        std::unique_ptr<rocksdb::DB> db;
         if (readonly) {
+#if ROCKSDB_MAJOR > 9 || (ROCKSDB_MAJOR == 9 && ROCKSDB_MINOR >= 11)
             status = rocksdb::DB::OpenForReadOnly(options, filepath, &db);
+#else
+            rocksdb::DB* raw = nullptr;
+            status = rocksdb::DB::OpenForReadOnly(options, filepath, &raw);
+            db.reset(raw);
+#endif
         } else {
+#if ROCKSDB_MAJOR > 9 || (ROCKSDB_MAJOR == 9 && ROCKSDB_MINOR >= 11)
             status = rocksdb::DB::Open(options, filepath, &db);
+#else
+            rocksdb::DB* raw = nullptr;
+            status = rocksdb::DB::Open(options, filepath, &raw);
+            db.reset(raw);
+#endif
         }
         if (!status.ok()) {
             return nullptr;
         }
-#endif // IFOPSH_WITH_ROCKSDB#
         return db;
+#else
+        return nullptr;
+#endif
     }
 }
 
@@ -463,12 +479,12 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     : file(ffile)
     , db(init_db(filepath, readonly))
     // @todo streaming serializer does not populate the byguid map
-    , byguid_internal_(db, "g|")
+    , byguid_internal_(db.get(), "g|")
     , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
-    , instance_ids_(db, "i|")
+    , instance_ids_(db.get(), "i|")
     , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
-    , bytype_(db, "t|")
-    , byref_excl_(db, "v|")
+    , bytype_(db.get(), "t|")
+    , byref_excl_(db.get(), "v|")
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
 {
@@ -491,7 +507,6 @@ IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
     assert(s.ok());
 
     db->Close();
-    delete db;
 #endif
 }
 

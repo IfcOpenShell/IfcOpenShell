@@ -137,16 +137,38 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 			bool is_manifold = util::is_manifold(entity_part);
 
 			if (!is_manifold) {
+				// force sewing, edge identity might have been mudied by FixAdvFace.FixOrientation.MSG5 to fix interior loop winding order
+                TopTools_ListOfShape list;
+                IfcGeom::util::shape_to_face_list(entity_part, list);
+                IfcGeom::util::create_solid_from_faces(list, entity_part, settings_.get<settings::Precision>().get(), true);
+                is_manifold = util::is_manifold(entity_part);
+                if (is_manifold) {
+					Logger::Warning("Successfully sewed non-manifold first operand");
+                }
+			}
+
+			if (!is_manifold) {
                 if (settings_.get<settings::MakeVolume>().get()) {
                     BOPAlgo_MakerVolume mv;
                     mv.AddArgument(entity_part);
                     mv.SetAvoidInternalShapes(true);
+                    // mv.SetFuzzyValue(settings_.get<settings::Precision>().get());
+                    std::optional<std::string> failure;
                     try {
                         mv.Perform();
-                        entity_part = mv.Shape();
-                        Logger::Warning("Sucessfully detected exterior volume to non-manifold first operand");
+                        auto entity_part_2 = mv.Shape();
+                        if (IfcGeom::util::count(entity_part_2, TopAbs_FACE) == 0) {
+                            failure = "Empty result (no faces) for BOPAlgo_MakerVolume; original was " + std::to_string(IfcGeom::util::count(entity_part, TopAbs_FACE));
+						} else {
+                            is_manifold = util::is_manifold(entity_part_2);
+                            Logger::Warning(std::string("Sucessfully detected exterior volume to non-manifold first operand; shape is now ") + (is_manifold ? std::string("manifold") : std::string("non-manifold")));
+                            entity_part = entity_part_2;
+						}
                     } catch (const Standard_Failure& e) {
-						Logger::Warning("MakeVolume failed: " + std::string(e.GetMessageString()), entity);
+                        failure.emplace(e.GetMessageString());
+                    }
+                    if (failure) {
+                        Logger::Warning("MakeVolume failed: " + *failure, entity);
                     }
                 } else {
                     Logger::Warning("Non-manifold first operand, use --make-volume to try and make manifold");
