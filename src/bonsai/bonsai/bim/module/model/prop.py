@@ -356,6 +356,11 @@ class BIMModelProperties(PropertyGroup):
         default=True,
         description="Show Cut Decorator Fill",
     )
+    show_annotation_decorator: bpy.props.BoolProperty(
+        name="Show Annotation Decorator",
+        default=True,
+        description="Shows the annotation decorator (dimensions, text, leaders, etc.)",
+    )
 
     if TYPE_CHECKING:
         ifc_class: str
@@ -394,6 +399,7 @@ class BIMModelProperties(PropertyGroup):
         show_bounding_box: bool
         show_cut_decorator: bool
         show_cut_decorator_fill: bool
+        show_annotation_decorator: bool
 
 
 class BIMArrayProperties(PropertyGroup):
