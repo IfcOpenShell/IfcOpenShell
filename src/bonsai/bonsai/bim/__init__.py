@@ -176,6 +176,7 @@ classes = [
     # fields. Driven by ``tool.Parametric.EDIT_TYPES``.
     *_parametric_gizmo_preference_classes(),
     ui.GizmoPreferences,
+    ui.CrossSelectPreferences,
     # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel
     ui.BIM_PT_tabs,
@@ -333,6 +334,10 @@ def register():
     tool.Blender.ensure_bin_in_path()
     # RestrictedContext doesn't allow accessing scene attribute, postpone it for a bit.
     bpy.app.timers.register(tool.Blender.setup_user_data_dir, first_interval=0.1)
+    # Tools are imported (and their bl_keymap baked) before preferences exist, so they
+    # default to the Cross Select keymap. Once prefs are available, apply the saved
+    # preference (no-op unless the user disabled Cross Select).
+    bpy.app.timers.register(tool.Blender.apply_cross_select_preference, first_interval=0.1)
 
 
 def unregister():

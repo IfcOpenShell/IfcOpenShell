@@ -17,12 +17,18 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import bmesh
+import gpu
+import numpy as np
 from functools import partial
 from typing import Optional, Union
 
 import bpy
 import bpy.utils.previews
 from bpy.types import Menu, WorkSpaceTool
+from bpy_extras import view3d_utils
+from gpu_extras.batch import batch_for_shader
+from mathutils import Vector
 
 import bonsai.core.model as core
 import bonsai.tool as tool
@@ -1486,6 +1492,394 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 {"ERROR"},
                 f"Negative height not allowed. Cursor ({cursor_z:.2f}m) must be above object base ({common_base:.2f}m)",
             )
+
+
+# ==============================================================================
+# CAD/Rhino-style box selection ("Cross Select").
+#
+# The selection logic below is ported from the GPL-3.0 "Blender Cross Select"
+# add-on by RARA, CYX, Witty.Ming and Shuimeng
+# (https://github.com/theoryshaw/Blender-Cross-Select), reduced to box-only mode
+# and adapted to read its settings from Bonsai's add-on preferences. It is wired
+# into every Bonsai tool via ``tool.Blender.get_default_selection_keypmap()``.
+#
+# Dragging the box left-to-right performs a "window" selection (only elements
+# fully enclosed by the box are selected); dragging right-to-left performs a
+# "crossing" selection (anything the box touches is selected).
+# ==============================================================================
+
+
+def _cs_is_point_in_rect(point: tuple[float, float], rect: tuple[tuple[float, float], tuple[float, float]]) -> bool:
+    x, y = point
+    return rect[0][0] <= x <= rect[1][0] and rect[0][1] <= y <= rect[1][1]
+
+
+def _cs_ccw(a, b, c) -> bool:
+    return (c[1] - a[1]) * (b[0] - a[0]) > (b[1] - a[1]) * (c[0] - a[0])
+
+
+def _cs_segments_intersect(a, b, c, d) -> bool:
+    return _cs_ccw(a, c, d) != _cs_ccw(b, c, d) and _cs_ccw(a, b, c) != _cs_ccw(a, b, d)
+
+
+def _cs_is_segment_intersecting_rect(p1, p2, rect) -> bool:
+    min_x, min_y = rect[0]
+    max_x, max_y = rect[1]
+    if max(p1.x, p2.x) < min_x or min(p1.x, p2.x) > max_x or max(p1.y, p2.y) < min_y or min(p1.y, p2.y) > max_y:
+        return False
+    r1, r2, r3, r4 = (min_x, min_y), (max_x, min_y), (max_x, max_y), (min_x, max_y)
+    line_start, line_end = (p1.x, p1.y), (p2.x, p2.y)
+    return (
+        _cs_segments_intersect(line_start, line_end, r1, r2)
+        or _cs_segments_intersect(line_start, line_end, r2, r3)
+        or _cs_segments_intersect(line_start, line_end, r3, r4)
+        or _cs_segments_intersect(line_start, line_end, r4, r1)
+    )
+
+
+def _cs_make_3d_to_region_2d(verts, matrix_world, region, region_data, use_smart_sampling=True) -> list[Vector]:
+    """Batch-project a sequence of 3D vertices to 2D region coordinates using numpy."""
+    vlen = len(verts)
+    if vlen == 0:
+        return []
+    perspective_matrix = region_data.perspective_matrix
+    if use_smart_sampling:
+        step = max(1, 1 + ((vlen - 1) // 1000) * 10)
+        coords_3d = np.array([verts[i].co.to_tuple() for i in range(0, vlen, step)])
+    else:
+        coords_3d = np.array([v.co.to_tuple() for v in verts])
+    coords_3d = np.hstack((coords_3d, np.ones((coords_3d.shape[0], 1))))
+    coords_3d = np.dot(coords_3d, np.array(matrix_world.transposed()))
+    coords_2d = np.dot(coords_3d, np.array(perspective_matrix.transposed()))
+    coords_2d /= coords_2d[:, 3].reshape(-1, 1)
+    coords_2d[:, 0] = (coords_2d[:, 0] + 1) * 0.5 * region.width
+    coords_2d[:, 1] = (coords_2d[:, 1] + 1) * 0.5 * region.height
+    return [Vector((co[0], co[1])) for co in coords_2d]
+
+
+def _cs_get_sampled_coords(obj, context) -> list[Vector]:
+    if obj.type == "MESH" and obj.data.vertices:
+        return _cs_make_3d_to_region_2d(
+            obj.data.vertices, obj.matrix_world, context.region, context.region_data, use_smart_sampling=True
+        )
+    co = view3d_utils.location_3d_to_region_2d(context.region, context.region_data, obj.matrix_world @ Vector((0, 0, 0)))
+    return [co] if co else []
+
+
+def _cs_is_object_in_rect(obj, context, rect) -> bool:
+    """True when every sampled vertex of ``obj`` projects inside ``rect`` (window match)."""
+    coords = _cs_get_sampled_coords(obj, context)
+    if not coords:
+        return False
+    return all(_cs_is_point_in_rect((co.x, co.y), rect) for co in coords)
+
+
+def _cs_draw_callback_px(operator, context) -> None:
+    if not operator.is_dragging:
+        return
+    cs_prefs = operator.cs_prefs
+    try:
+        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+    except Exception:
+        shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+
+    gpu.state.blend_set("ALPHA")
+    gpu.state.line_width_set(cs_prefs.line_width)
+
+    if not operator.enabled:
+        # Disabled: selection is native, so draw a neutral (non-directional) box.
+        color = (1.0, 1.0, 1.0, 1.0)
+        line_style = "DASHED"
+    elif operator.select_mode == "FULLY":
+        color = (*cs_prefs.fully_color, 1.0)
+        line_style = "SOLID"
+    else:
+        color = (*cs_prefs.partial_color, 1.0)
+        line_style = "DASHED"
+
+    min_x, max_x, min_y, max_y = operator.box_path
+    vertices = (
+        (min_x, min_y),
+        (max_x, min_y),
+        (max_x, max_y),
+        (min_x, max_y),
+        (min_x, min_y),
+    )
+    shader.bind()
+    shader.uniform_float("color", color)
+    if line_style == "SOLID":
+        batch_for_shader(shader, "LINE_STRIP", {"pos": vertices}).draw(shader)
+    else:
+        dash_length, gap_length = 10, 5
+        dash_vertices = []
+        for i in range(len(vertices) - 1):
+            start = Vector(vertices[i])
+            end = Vector(vertices[i + 1])
+            line_dir = (end - start).normalized()
+            line_length = (end - start).length
+            num_dashes = int(line_length // (dash_length + gap_length))
+            for j in range(num_dashes):
+                dash_start = start + line_dir * (j * (dash_length + gap_length))
+                dash_end = dash_start + line_dir * dash_length
+                if (dash_end - start).length > line_length:
+                    dash_end = end
+                dash_vertices.extend([dash_start, dash_end])
+            remaining = line_length - num_dashes * (dash_length + gap_length)
+            if remaining > 0:
+                dash_start = start + line_dir * (num_dashes * (dash_length + gap_length))
+                dash_end = dash_start + line_dir * min(dash_length, remaining)
+                dash_vertices.extend([dash_start, dash_end])
+        if dash_vertices:
+            batch_for_shader(shader, "LINES", {"pos": dash_vertices}).draw(shader)
+
+    gpu.state.line_width_set(1.0)
+    gpu.state.blend_set("NONE")
+
+
+class CrossSelect(bpy.types.Operator):
+    bl_idname = "bim.cross_select"
+    bl_label = "Cross Select"
+    bl_options = {"REGISTER", "BLOCKING", "UNDO"}
+    bl_description = (
+        "CAD/Rhino-style box selection.\n\n"
+        "Drag left to right: window (only fully-enclosed elements)\n"
+        "Drag right to left: crossing (anything the box touches)\n\n"
+        "Shift: add to selection\nCtrl: subtract from selection"
+    )
+
+    DRAG_THRESHOLD = 5
+
+    def invoke(self, context, event):
+        self.cs_prefs = tool.Blender.get_addon_preferences().cross_select
+        self.enabled = self.cs_prefs.enabled
+        self.start_mouse = (event.mouse_region_x, event.mouse_region_y)
+        self.end_mouse = self.start_mouse
+        self.is_dragging = False
+        self.select_mode = "FULLY"  # "FULLY" (window) or "HALF" (crossing)
+        self.operation = "SET"
+        self.draw_handle = None
+        self.box_path = (0, 0, 0, 0)  # (min_x, max_x, min_y, max_y)
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        if event.shift:
+            self.operation = "ADD"
+        elif event.ctrl:
+            self.operation = "SUB"
+        else:
+            self.operation = "SET"
+
+        if event.type == "MOUSEMOVE":
+            if not self.is_dragging:
+                delta = Vector((event.mouse_region_x, event.mouse_region_y)) - Vector(self.start_mouse)
+                if delta.length > self.DRAG_THRESHOLD:
+                    self._start_dragging(context)
+            if self.is_dragging:
+                self._update_drag_position(event)
+                context.area.tag_redraw()
+
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE":
+            if self.is_dragging:
+                self._finish_box_select(context)
+            else:
+                self._handle_single_click(context, event)
+            return {"FINISHED"}
+
+        if event.type in {"RIGHTMOUSE", "ESC"}:
+            self._cleanup_drawing()
+            context.area.tag_redraw()
+            return {"CANCELLED"}
+
+        return {"RUNNING_MODAL"}
+
+    def _start_dragging(self, context):
+        self.is_dragging = True
+        self.draw_handle = bpy.types.SpaceView3D.draw_handler_add(
+            _cs_draw_callback_px, (self, context), "WINDOW", "POST_PIXEL"
+        )
+        context.area.tag_redraw()
+
+    def _update_drag_position(self, event):
+        self.end_mouse = (event.mouse_region_x, event.mouse_region_y)
+        # Dragging rightward selects only fully-enclosed elements (window),
+        # dragging leftward selects anything touched (crossing).
+        self.select_mode = "FULLY" if self.end_mouse[0] > self.start_mouse[0] else "HALF"
+        x1, y1 = self.start_mouse
+        x2, y2 = self.end_mouse
+        self.box_path = (min(x1, x2), max(x1, x2), min(y1, y2), max(y1, y2))
+
+    def _cleanup_drawing(self):
+        if self.draw_handle:
+            bpy.types.SpaceView3D.draw_handler_remove(self.draw_handle, "WINDOW")
+            self.draw_handle = None
+
+    def _finish_box_select(self, context):
+        self._cleanup_drawing()
+        min_x, max_x, min_y, max_y = self.box_path
+
+        # Cross-select disabled: reproduce Blender's native box selection.
+        if not self.enabled:
+            bpy.ops.view3d.select_box(
+                wait_for_input=False, xmin=min_x, xmax=max_x, ymin=min_y, ymax=max_y, mode=self.operation
+            )
+            context.area.tag_redraw()
+            return
+
+        if context.mode == "OBJECT":
+            self._process_selection_object(context)
+        elif context.mode == "EDIT_MESH":
+            self._process_selection_edit(context)
+        context.area.tag_redraw()
+
+    # --- Object mode ---------------------------------------------------------
+    def _process_selection_object(self, context):
+        original_selection = set(context.selected_objects)
+
+        # Use the native box select to collect everything the box touches.
+        bpy.ops.object.select_all(action="DESELECT")
+        min_x, max_x, min_y, max_y = self.box_path
+        bpy.ops.view3d.select_box(wait_for_input=False, xmin=min_x, xmax=max_x, ymin=min_y, ymax=max_y, mode="ADD")
+        touched_objects = set(context.selected_objects)
+
+        # Filter touched objects by the window/crossing rule.
+        rect = ((min_x, min_y), (max_x, max_y))
+        if self.select_mode == "HALF":
+            valid_selection = touched_objects
+        else:
+            valid_selection = {obj for obj in touched_objects if _cs_is_object_in_rect(obj, context, rect)}
+
+        if self.operation == "SET":
+            final_selected = valid_selection
+        elif self.operation == "ADD":
+            final_selected = original_selection | valid_selection
+        else:  # SUB
+            final_selected = original_selection - valid_selection
+
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in final_selected:
+            obj.select_set(True)
+
+    # --- Edit mesh mode ------------------------------------------------------
+    def _process_selection_edit(self, context):
+        if hasattr(context, "objects_in_mode_unique_data"):
+            edit_objs = [obj for obj in context.objects_in_mode_unique_data if obj.type == "MESH"]
+        elif hasattr(context, "objects_in_mode"):
+            edit_objs = [obj for obj in context.objects_in_mode if obj.type == "MESH"]
+        else:
+            obj = context.edit_object
+            edit_objs = [obj] if obj and obj.type == "MESH" else []
+        if not edit_objs:
+            return
+
+        is_vert, is_edge, is_face = context.tool_settings.mesh_select_mode
+        min_x, max_x, min_y, max_y = self.box_path
+
+        # Vertex mode (and crossing face mode) match Blender's native box select.
+        if is_vert or (is_face and self.select_mode == "HALF"):
+            bpy.ops.view3d.select_box(
+                wait_for_input=False, xmin=min_x, xmax=max_x, ymin=min_y, ymax=max_y, mode=self.operation
+            )
+            return
+
+        element_key = "edges" if is_edge else "faces"
+        bm_cache = {}
+        original = {}
+        for obj in edit_objs:
+            bm = bmesh.from_edit_mesh(obj.data)
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
+            bm_cache[obj] = bm
+            elems = bm.edges if is_edge else bm.faces
+            original[obj] = {ele for ele in elems if ele.select}
+
+        # Collect every element the box touches via native box select on faces+edges.
+        bpy.ops.mesh.select_all(action="DESELECT")
+        for temp_select_mode in ((False, False, True), (False, True, False)):
+            context.tool_settings.mesh_select_mode = temp_select_mode
+            bpy.ops.view3d.select_box(wait_for_input=False, xmin=min_x, xmax=max_x, ymin=min_y, ymax=max_y, mode="ADD")
+        context.tool_settings.mesh_select_mode = (is_vert, is_edge, is_face)
+
+        rect = ((min_x, min_y), (max_x, max_y))
+        valid = {}
+        for obj, bm in bm_cache.items():
+            elems = bm.edges if is_edge else bm.faces
+            touched = {ele for ele in elems if ele.select}
+            valid[obj] = {ele for ele in touched if self._is_element_valid(context, obj, rect, ele, element_key)}
+
+        final = {}
+        for obj in edit_objs:
+            if self.operation == "SET":
+                final[obj] = valid[obj]
+            elif self.operation == "ADD":
+                final[obj] = original[obj] | valid[obj]
+            else:  # SUB
+                final[obj] = original[obj] - valid[obj]
+
+        bpy.ops.mesh.select_all(action="DESELECT")
+        if is_edge:
+            for obj, bm in bm_cache.items():
+                for e in final[obj]:
+                    e.select = True
+                    for f in e.link_faces:
+                        if f.select:
+                            continue
+                        if all(edge in final[obj] for edge in f.edges):
+                            f.select = True
+                bmesh.update_edit_mesh(obj.data)
+        else:
+            for obj, bm in bm_cache.items():
+                for f in final[obj]:
+                    f.select = True
+                bmesh.update_edit_mesh(obj.data)
+
+    def _is_element_valid(self, context, obj, rect, ele, ele_type):
+        region = context.region
+        rv3d = context.region_data
+        matrix = obj.matrix_world
+        vert_2d = []
+        all_inside = True
+        any_inside = False
+        for v in ele.verts:
+            co_2d = view3d_utils.location_3d_to_region_2d(region, rv3d, matrix @ v.co)
+            if not co_2d:
+                all_inside = False
+                continue
+            vert_2d.append(co_2d)
+            if _cs_is_point_in_rect((co_2d.x, co_2d.y), rect):
+                any_inside = True
+            else:
+                all_inside = False
+
+        if self.select_mode == "FULLY":
+            return all_inside
+        if any_inside:
+            return True
+        # Crossing: element edges intersecting the box border also count.
+        n = len(vert_2d)
+        if ele_type == "edges":
+            return n == 2 and _cs_is_segment_intersecting_rect(vert_2d[0], vert_2d[1], rect)
+        for i in range(n):
+            if _cs_is_segment_intersecting_rect(vert_2d[i], vert_2d[(i + 1) % n], rect):
+                return True
+        return False
+
+    def _handle_single_click(self, context, event):
+        # A plain click uses Blender's native pick selection. ``deselect_all`` clears
+        # the selection when clicking empty space (in both Object and Edit Mesh modes),
+        # matching Blender's default selection tool; Shift toggles and Ctrl deselects.
+        try:
+            bpy.ops.view3d.select(
+                "INVOKE_DEFAULT",
+                extend=event.shift,
+                deselect=event.ctrl,
+                toggle=False,
+                deselect_all=not (event.shift or event.ctrl),
+                location=(event.mouse_region_x, event.mouse_region_y),
+            )
+        except Exception:
+            pass
 
 
 custom_icon_previews = None
