@@ -114,10 +114,12 @@ def new_project():
     props.template_file = "0"
     tool.Blender.get_addon_preferences().should_play_chaching_sound = False
 
+
 def get_area_and_region(window):
     area = next(area for area in window.screen.areas if area.type == "VIEW_3D")
     region = next(region for region in area.regions if region.type == "WINDOW")
     return area, region
+
 
 def test_snap_object_detection(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
@@ -160,6 +162,7 @@ def test_snap_object_detection(window):
 
     yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
+
 
 def test_snap_partially_behind_camera(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
@@ -215,10 +218,11 @@ def test_snap_partially_behind_camera(window):
     yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
 
+
 def test_snap_in_xray_mode(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
-    x = round(area.width * 0.68+ area.x)
+    x = round(area.width * 0.68 + area.x)
     y = round(area.height * 0.54 + area.y)
 
     area.spaces[0].shading.show_xray = True
@@ -244,9 +248,10 @@ def test_snap_in_xray_mode(window):
     assert_msg = "Object should be an IfcFurniture"
     assert snap_point.snap_object.split("/")[0] == "IfcFurniture", assert_msg
     _assert_pass(assert_msg)
-    
+
     yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
+
 
 def test_snap_far_from_origin(window):
     bpy.context.view_layer.objects.active = None
@@ -258,11 +263,10 @@ def test_snap_far_from_origin(window):
 
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
 
-    bpy.data.objects['IfcBuildingElementProxy/Cube'].select_set(True)
+    bpy.data.objects["IfcBuildingElementProxy/Cube"].select_set(True)
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", x, y)
     with bpy.context.temp_override(area=area, region=region, space_data=area.spaces[0]):
         bpy.ops.view3d.view_selected()
-
 
     measure_settings = tool.Project.get_measure_tool_settings()
     measure_settings.measurement_type = "POLYLINE"
@@ -296,6 +300,7 @@ def test_snap_far_from_origin(window):
     yield from preset_event_simulate(window, "RET", "TAP", x, y)
     yield "FINISHED"
 
+
 def test_snap_targets(window):
     yield from preset_event_simulate(window, "MOUSEMOVE", "NOTHING", 0, 0)
     area, region = get_area_and_region(window)
@@ -315,7 +320,7 @@ def test_snap_targets(window):
             options.append((prop, props.rna_type.properties[prop].name))
 
     for prop, name in options:
-        any(setattr(props, prop2, prop2 == prop) for prop2, _ in options) # set prop to true and others to false
+        any(setattr(props, prop2, prop2 == prop) for prop2, _ in options)  # set prop to true and others to false
         measure_settings = tool.Project.get_measure_tool_settings()
         measure_settings.measurement_type = "POLYLINE"
         for obj in tool.Blender.get_selected_objects():
@@ -352,6 +357,7 @@ def test_snap_targets(window):
         assert_msg = f"{name} should be in snap_types: {snap_types}"
         assert name in snap_types
         _assert_pass(assert_msg)
+
 
 def test_draw_polyline_wall(window, x, y):
     yield from preset_event_simulate(window, "ESC", "TAP", x, y)
@@ -438,6 +444,7 @@ def run_tests():
         )
 
     _next()
+
 
 if __name__ == "__main__":
     new_project()

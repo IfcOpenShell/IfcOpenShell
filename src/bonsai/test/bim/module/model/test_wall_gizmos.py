@@ -272,9 +272,7 @@ def test_iter_path_connections_includes_fillet_corner_partner():
     # LAYER2 wall's perspective.
     self_elem = object()
     fillet_partner = object()
-    rel = _make_path_rel(
-        relating=self_elem, related=fillet_partner, relating_ct="ATEND", related_ct="ATSTART"
-    )
+    rel = _make_path_rel(relating=self_elem, related=fillet_partner, relating_ct="ATEND", related_ct="ATSTART")
     elem = SimpleNamespace(ConnectedTo=[rel], ConnectedFrom=[])
     result = _run_iter_path_connections(elem, partner_predicate=lambda e: e is fillet_partner)
     assert result == [(fillet_partner, "ATEND", "ATSTART")]
