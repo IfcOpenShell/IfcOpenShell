@@ -147,17 +147,17 @@ class Parametric(bonsai.core.tool.Parametric):
             self._data.clear()
             self._gen = None
 
-    # FIXME(PR4): array / pipe_segment / duct_segment land with their
-    # finish/cancel operators in PR4. Adding them to EDIT_TYPES without those
-    # operators makes auto-commit-on-save dispatch bim.finish_editing_<name>
-    # for objects flagged as in-edit, which then raises because the operator
-    # doesn't exist. PR4 re-adds the three entries together with the operators.
+    # FIXME(PR5): pipe_segment / duct_segment land with their finish/cancel
+    # operators in the MEP slice of PR5 (PR5d). Until then they stay out of
+    # EDIT_TYPES so auto-commit-on-save doesn't try to dispatch a
+    # non-existent operator.
     EDIT_TYPES: list[ParametricObject] = [
         ParametricObject("door", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("window", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("stair", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("railing", supports_build_edit_lifecycle=True),
         ParametricObject("roof", supports_build_edit_lifecycle=True),
+        ParametricObject("array", supports_build_edit_lifecycle=True),
         ParametricObject("wall"),
     ]
 
@@ -169,6 +169,7 @@ class Parametric(bonsai.core.tool.Parametric):
     STAIR: ClassVar[ParametricObject]
     RAILING: ClassVar[ParametricObject]
     ROOF: ClassVar[ParametricObject]
+    ARRAY: ClassVar[ParametricObject]
     WALL: ClassVar[ParametricObject]
 
     _geom_generation: int = 0
@@ -178,16 +179,24 @@ class Parametric(bonsai.core.tool.Parametric):
         return cls._geom_generation
 
     @classmethod
-    def refresh_post_commit(cls) -> None:
-        """Post-commit hook for ``tool.Ifc.Operator``: re-syncs scene-level
-        workspace-tool header fields from current IFC state and bumps the
-        geometry generation counter so caches keyed off it drop stale
-        entries on the next draw."""
-        import bonsai.bim.handler  # late import: bim.handler imports tool.*
+    def refresh_post_commit(cls, operator: bpy.types.Operator) -> None:
+        """Post-commit hook for ``tool.Ifc.Operator``: bumps the geometry
+        generation counter so caches keyed off it drop stale entries on
+        the next draw, and tags viewports for redraw.
 
+        Additionally refreshes the BIM Tool header floats for the
+        validate-gizmo path — operators whose ``bl_idname`` is the
+        ``finish_op`` of an entry in ``EDIT_TYPES``. That is the only
+        commit class where selection didn't change but the header
+        values displayed did. Other operators skip the refresh: they
+        don't target an active-object header edit, and their commit
+        context may lack the view-layer attributes the refresh reads."""
         cls._geom_generation += 1
-        bonsai.bim.handler.update_bim_tool_props()
         tool.Blender.update_all_viewports()
+        if operator.bl_idname in {feature.finish_op for feature in cls.EDIT_TYPES}:
+            import bonsai.bim.handler  # late import: bim.handler imports tool.*
+
+            bonsai.bim.handler.refresh_bim_tool_headers()
 
     @classmethod
     def find_by_name(cls, name: str) -> Optional[ParametricObject]:
@@ -261,6 +270,18 @@ class Parametric(bonsai.core.tool.Parametric):
         moment it opens."""
         for obj in bpy.data.objects:
             cls._validated_editing_feature(obj)
+
+    @classmethod
+    def on_load_post(cls, scene: bpy.types.Scene) -> None:
+        """Drain load-transient parametric state on a freshly opened scene
+        so no draft edit flag, preview flag, or cache entry persists from
+        the saved file."""
+        from bonsai.bim.module.model import wall_offset_gizmos
+        from bonsai.bim.module.model.preview_base import discard_pending_previews
+
+        cls.heal_stale_edit_flags()
+        discard_pending_previews(scene)
+        wall_offset_gizmos.clear_caches()
 
     @classmethod
     def get_pending_edits(cls) -> list[tuple[bpy.types.Object, str]]:
@@ -381,29 +402,6 @@ class Parametric(bonsai.core.tool.Parametric):
         for feature in cls.EDIT_TYPES:
             if hasattr(bpy.types.Object, feature.props_attr):
                 delattr(bpy.types.Object, feature.props_attr)
-
-    @classmethod
-    def iter_gizmo_preference_classes(cls, ui_module) -> list[type]:
-        """``GizmoPreferences<Name>`` classes that exist on ``ui_module`` for
-        every registry entry, plus the shared ``GizmoPreferencesFeature`` if
-        present. Order matches ``EDIT_TYPES``. Used by ``bim/__init__.py`` to
-        inject the per-type ``GizmoPreferences<X>`` classes at the correct
-        point — before ``ui.GizmoPreferences``, which references them via
-        ``PointerProperty``."""
-        # FIXME(PR5): drop the per-feature loop once PR4 consolidates
-        # bim/ui.py to use a single shared GizmoPreferencesFeature class
-        # and rewrites GizmoPreferences accordingly. The shared-class
-        # branch is the forward-compat path; the per-feature loop keeps
-        # v0.8.0's bim/ui.py working until then.
-        out: list[type] = []
-        for feature in cls.EDIT_TYPES:
-            gpref = getattr(ui_module, f"GizmoPreferences{feature.name.capitalize()}", None)
-            if gpref is not None:
-                out.append(gpref)
-        shared = getattr(ui_module, "GizmoPreferencesFeature", None)
-        if shared is not None:
-            out.append(shared)
-        return out
 
     # --- Feature-kind predicates ------------------------------------------------
     # One predicate per registered parametric type. Each is total: accepts any

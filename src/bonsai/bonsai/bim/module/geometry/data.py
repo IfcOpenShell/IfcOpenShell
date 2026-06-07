@@ -80,9 +80,9 @@ class ViewportData:
                 modes.append(edit_mode)
             elif element.is_a("IfcGridAxis"):
                 modes.append(edit_mode)
-            elif tool.Blender.Modifier.is_roof(element):
+            elif tool.Parametric.is_roof(element):
                 modes.append(edit_mode)
-            elif tool.Blender.Modifier.is_railing(element):
+            elif tool.Parametric.is_railing(element):
                 modes.append(edit_mode)
             elif item_mode not in modes:
                 modes.append(item_mode)

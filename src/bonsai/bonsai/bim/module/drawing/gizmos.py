@@ -35,6 +35,7 @@ __all__ = [  # noqa: RUF022 (unsorted `__all__`)
     "CoordinateSpace",
     "ModalState",
     "DimensionGizmoConfig",
+    "SwingArcConfig",
     "ViewDirection",
     "GizmoModalContext",
     "get_modal_context",
@@ -81,7 +82,7 @@ import math
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, ClassVar, Literal, Protocol, runtime_checkable
+from typing import Any, ClassVar, Literal, Optional, Protocol, runtime_checkable
 
 import blf
 import bpy
@@ -103,16 +104,6 @@ from mathutils.kdtree import KDTree
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.shaders import ExtrusionGuidesShader
-
-# Backward-compat re-exports — these mixins moved to bim.parametric_lifecycle
-# in the gizmos.py framework refactor. PR4 callers (CycleDoorType / CycleWindowType
-# / CycleStairType) still spell gizmo.CycleTypeMixin; the re-export keeps the
-# old access path alive until PR4 rewrites the import. PR5 cleanup drops these.
-from bonsai.bim.parametric_lifecycle import (  # noqa: F401, E402
-    CycleTypeMixin,
-    PickTypeMixin,
-    TypeAccessorBase,
-)
 
 SNAP_POINT_SIZE = 10.0
 SNAP_POINT_COLOR = (1.0, 0.5, 0.0, 1.0)
@@ -142,6 +133,16 @@ DOOR_SWING_ANGLE_MAX = 90.0
 
 # Default scale factor for billboarded icons (Blender-unit visual size).
 DEFAULT_BILLBOARD_SCALE = 0.5
+
+# Shared gizmo color constants. Re-exported as class attributes on
+# BaseParametricGizmoGroup so callers can use either ``self.COLOR_GREEN``
+# from inside a gizmo group or the module-level constant from a class body
+# (e.g. IconSlot declarations) without a forward-reference issue. Match
+# Blender's axis convention: X=red, Y=green, Z=blue.
+COLOR_RED = (1.0, 0.2, 0.2)
+COLOR_GREEN = (0.1, 0.8, 0.1)
+COLOR_BLUE = (0.3, 0.3, 1.0)
+COLOR_NEUTRAL = (1.0, 1.0, 1.0)
 
 PRECISION_MODE_MULTIPLIER = 0.1
 
@@ -1291,6 +1292,38 @@ class IconActionConfig:
     visibility_condition: Callable[[Any], bool] | None = None
 
 
+@dataclass(slots=True)
+class SwingArcConfig:
+    """Declarative config for one swing-arc panel — a pair of ``GizmoArc``
+    instances representing a single hinged panel's two possible open sides.
+
+    Each entry produces two gizmos at setup time:
+      - ``self.gizmo_swing_arc_<name>``: main arc on the active swing side
+      - ``self.gizmo_swing_arc_<name>_flip``: Y-mirror of the main, on the
+        opposite side of the hinge line
+
+    Both gizmos hide together when ``visibility_condition(props)`` is False.
+    When visible, each arc's ``matrix_basis`` is:
+
+        Translation(hinge_x(props), hinge_y(props), 0)
+            @ Scale(panel_width(props), 4)
+            @ (Scale(-1, X) if x_mirror(props) else Identity)
+            @ (Scale(-1, Y) if this is the flip arc else Identity)
+
+    The arc geometry (``GizmoArc.tris``) is a unit quarter-arc sweeping
+    counterclockwise from +X to +Y with its hinge at the origin, so the
+    transforms above translate the hinge into world position, scale to
+    panel size, and mirror across the hinge line as needed.
+    """
+
+    name: str
+    visibility_condition: Callable[[Any], bool]
+    hinge_x: Callable[[Any], float]
+    hinge_y: Callable[[Any], float]
+    panel_width: Callable[[Any], float]
+    x_mirror: Callable[[Any], bool]
+
+
 class SnapManager:
     """Manages snap point visualization and mesh snapping with caching."""
 
@@ -1458,24 +1491,11 @@ class SnapManager:
         nearby_objects = []
 
         for obj in mesh_objects:
-            bbox_corners = [obj.matrix_world @ Vector(corner) for corner in obj.bound_box]
-            if not bbox_corners:
+            if not obj.bound_box:
                 continue
-
-            bbox_min = Vector(
-                (
-                    min(c.x for c in bbox_corners),
-                    min(c.y for c in bbox_corners),
-                    min(c.z for c in bbox_corners),
-                )
-            )
-            bbox_max = Vector(
-                (
-                    max(c.x for c in bbox_corners),
-                    max(c.y for c in bbox_corners),
-                    max(c.z for c in bbox_corners),
-                )
-            )
+            bbox = tool.Blender.get_object_world_bounding_box(obj)
+            bbox_min = bbox["min_point"]
+            bbox_max = bbox["max_point"]
 
             closest = Vector(
                 (
@@ -1680,6 +1700,33 @@ def get_screen_up(billboard_rot: Matrix) -> Vector:
     perpendicular to the view plane (world +Z collapses to zero on-screen in
     top-down view and lands lifted gizmos on top of their anchors)."""
     return billboard_rot @ Vector((0.0, 1.0, 0.0))
+
+
+# Screen-up distance lifted off floor-plane gizmo anchors in plan view. Matches
+# the inter-icon stack spacing used by wall-corner stacks so single icons and
+# stack bases sit at consistent screen-up positions when multiple groups render
+# around the same wall endpoint.
+DEFAULT_TOP_DOWN_CLEARANCE = 0.4
+
+
+def top_down_clearance(
+    context: bpy.types.Context,
+    billboard_rot: Matrix,
+    distance: float = DEFAULT_TOP_DOWN_CLEARANCE,
+) -> Vector:
+    """Screen-up offset that keeps a floor-plane gizmo anchor visible in plan view.
+
+    In a top-down view the world-Z axis projects to ~zero on screen, so any
+    icon anchored on the floor (wall endpoints, corners, connection points,
+    the projected 3D cursor) sits directly on the click target it represents.
+    Adding this offset before ``billboarded_at`` shifts the icon along the
+    camera's up axis without changing the operator's world-space target.
+
+    Returns a zero vector outside the top-down cone so callers can apply it
+    unconditionally."""
+    if not tool.Blender.is_view_top_down(context):
+        return Vector((0.0, 0.0, 0.0))
+    return get_screen_up(billboard_rot) * distance
 
 
 # Dead-band on the screen-X delta — prevents flicker when the gizmo sits on the
@@ -3215,6 +3262,114 @@ class GizmoArc(StaticTrisGizmoMixin, bpy.types.Gizmo):
     tris = ARC_TRIS_DEFAULT
 
 
+def _link_toggle_icon_tris(broken: bool) -> tuple[tuple[float, float, float], ...]:
+    """Two filled dots joined by a horizontal connector. ``broken=False``
+    draws a single continuous bar between the dots' inner edges;
+    ``broken=True`` shears the two halves vertically — the left dot AND
+    its stub slip down as a unit, the right dot AND its stub slip up,
+    with a horizontal gap at the centre.
+
+    Each half moves as a cohesive piece so the stub stays attached to its
+    dot at the same y, reading as a snapped link whose two halves slid
+    apart rather than as bent stubs jutting out of stationary dots."""
+    dot_cx = 0.30
+    dot_r = 0.10
+    bar_half_thickness = 0.04
+    # Inner edge of each dot — the intact bar joins the dot edges, not the
+    # centres, so the dot + bar reads as one continuous shape.
+    bar_inner_x = dot_cx - dot_r
+    segments = 12
+    # Vertical shear applied to each half when broken. Zero in the intact
+    # form keeps both halves on the centerline.
+    half_offset_y = 0.08 if broken else 0.0
+
+    tris: list[tuple[float, float, float]] = []
+    for sign in (-1, 1):
+        cx = sign * dot_cx
+        cy = sign * half_offset_y
+        for i in range(segments):
+            a1 = (2.0 * math.pi) * (i / segments)
+            a2 = (2.0 * math.pi) * ((i + 1) / segments)
+            p1 = (cx + dot_r * math.cos(a1), cy + dot_r * math.sin(a1))
+            p2 = (cx + dot_r * math.cos(a2), cy + dot_r * math.sin(a2))
+            tris.append((cx, cy, 0.0))
+            tris.append((p1[0], p1[1], 0.0))
+            tris.append((p2[0], p2[1], 0.0))
+
+    if broken:
+        # Stubs reach inward into the dot's interior so they read as rooted
+        # in the dot rather than floating off its edge after the slip.
+        stub_outer_x = 0.27
+        stub_inner_x = 0.06
+        tris.extend(
+            rect_tris(
+                -stub_outer_x,
+                -half_offset_y - bar_half_thickness,
+                -stub_inner_x,
+                -half_offset_y + bar_half_thickness,
+            )
+        )
+        tris.extend(
+            rect_tris(
+                stub_inner_x,
+                half_offset_y - bar_half_thickness,
+                stub_outer_x,
+                half_offset_y + bar_half_thickness,
+            )
+        )
+    else:
+        tris.extend(rect_tris(-bar_inner_x, -bar_half_thickness, bar_inner_x, bar_half_thickness))
+
+    return tuple(tris)
+
+
+LINK_TRIS_INTACT = _link_toggle_icon_tris(broken=False)
+LINK_TRIS_BROKEN = _link_toggle_icon_tris(broken=True)
+
+
+class GizmoLinkToggle(StaticTrisGizmoMixin, bpy.types.Gizmo):
+    """Two-state link glyph: default reads as a connected link (two dots +
+    intact connector); hover swaps to a broken link (same dots + severed
+    connector) to signal that a click will sever the underlying connection.
+
+    Single-click gizmo — the target operator is bound via
+    ``target_set_operator`` by the owning group. The hover swap is purely
+    visual; the click target is the same in both states. The glyph is
+    feature-agnostic — any path / link / pair-of-connected-items context can
+    reuse it for a sever-this-connection affordance."""
+
+    bl_idname = "VIEW3D_GT_link_toggle"
+    __slots__ = ("custom_shape",)
+    # Bbox source for the hit shape. The broken form's vertically-sheared
+    # halves give it the larger bbox of the two states, so using it as the
+    # hit-shape source guarantees the clickable area covers either form —
+    # the cursor doesn't lose hover at the offset dots' outer edges.
+    tris = LINK_TRIS_BROKEN
+
+    # Per-class batch cache: one entry per highlight state. The mixin parent
+    # caches one batch per class via ``_get_static_tris_batch``; the per-state
+    # swap needs a second batch, so this class keeps its own cache.
+    _batch_cache: ClassVar[dict[bool, "gpu.types.GPUBatch"]] = {}
+
+    def draw(self, context: bpy.types.Context) -> None:
+        broken = bool(self.is_highlight)
+        batch = type(self)._batch_cache.get(broken)
+        if batch is None:
+            tris = LINK_TRIS_BROKEN if broken else LINK_TRIS_INTACT
+            batch = batch_for_shader(_get_static_tris_shader(), "TRIS", {"pos": tris})
+            type(self)._batch_cache[broken] = batch
+        # Icon body forced fully opaque so the dark outline behind doesn't
+        # bleed through and grey out the glyph.
+        color = (*self.color_highlight, 1.0) if broken else (*self.color, 1.0)
+        draw_tris_with_outline(
+            batch,
+            self.matrix_basis @ self.matrix_offset,
+            color,
+            self.outline_width,
+            self.outline_alpha,
+        )
+
+
 def _fillet_icon_tris() -> tuple[tuple[float, float, float], ...]:
     """Filled L-glyph with a smoothly rounded corner — two perpendicular
     wall bars joined by a constant-thickness arc band."""
@@ -3271,8 +3426,9 @@ class GizmoFillet(StaticTrisGizmoMixin, bpy.types.Gizmo):
     bl_idname = "VIEW3D_GT_fillet"
     __slots__ = ("custom_shape",)
     tris = FILLET_TRIS_DEFAULT
-    # Stacked at ICON_STACK_OFFSET_Y above join in GizmoWallJoinIntersection;
-    # full-bbox hit overlaps the sibling icons' bboxes and steals their clicks.
+    # Stacked at ICON_STACK_OFFSET_Y above the join icon in the wall-join
+    # gizmo group; full-bbox hit overlaps the sibling icons' bboxes and
+    # steals their clicks.
     hit_uses_bbox = False
 
 
@@ -3663,7 +3819,7 @@ class GizmoArrayAll(StaticTrisGizmoMixin, bpy.types.Gizmo):
             parent_element = tool.Ifc.get().by_guid(parent_guid)
         except RuntimeError:
             return
-        from bonsai.bim.module.model.decorator import draw_array_layer_children_bbox
+        from bonsai.bim.module.model.array import draw_array_layer_children_bbox
 
         draw_array_layer_children_bbox(context, parent_element, layer_index)
 
@@ -3748,9 +3904,47 @@ class GizmoArrayLayerIndicator(bpy.types.Gizmo):
         parent_element = tool.Ifc.get_entity(obj)
         if parent_element is None:
             return
-        from bonsai.bim.module.model.decorator import draw_array_layer_children_bbox
+        from bonsai.bim.module.model.array import draw_array_layer_children_bbox
 
         draw_array_layer_children_bbox(context, parent_element, self._layer_index)
+
+
+class GizmoCountLabel(bpy.types.Gizmo):
+    """``xN`` text label rendered from 7-segment digit triangles.
+
+    Mirrors a caller-supplied integer into a live count badge. No icon
+    glyph; the gizmo is the number alone."""
+
+    bl_idname = "BIM_GT_count_label"
+
+    __slots__ = ("custom_shape", "_count", "_built_count", "_outlined_batch")
+
+    def setup(self) -> None:
+        self._count = 0
+        self._built_count = -1
+        tris = _count_label_tris(self._count, 0.0, 0.0)
+        self.custom_shape = self.new_custom_shape("TRIS", tris)
+        self._outlined_batch = batch_for_shader(_get_static_tris_shader(), "TRIS", {"pos": tris})
+        self._built_count = 0
+
+    def set_count(self, count: int) -> None:
+        self._count = int(count)
+
+    def _ensure_shape(self) -> None:
+        if self._built_count != self._count:
+            tris = _count_label_tris(self._count, 0.0, 0.0)
+            self.custom_shape = self.new_custom_shape("TRIS", tris)
+            self._outlined_batch = batch_for_shader(_get_static_tris_shader(), "TRIS", {"pos": tris})
+            self._built_count = self._count
+
+    def draw(self, context: bpy.types.Context) -> None:
+        self._ensure_shape()
+        color = (*self.color_highlight, 1.0) if self.is_highlight else (*self.color, 1.0)
+        draw_tris_with_outline(self._outlined_batch, self.matrix_basis @ self.matrix_offset, color)
+
+    def draw_select(self, context: bpy.types.Context, select_id: int) -> None:
+        self._ensure_shape()
+        self.draw_custom_shape(self.custom_shape, select_id=select_id)
 
 
 class GizmoMerge(StaticTrisGizmoMixin, bpy.types.Gizmo):
@@ -4049,7 +4243,8 @@ def _generate_menu_tris() -> tuple[tuple[float, float, float], ...]:
 class GizmoMenu(StaticTrisGizmoMixin, bpy.types.Gizmo):
     """Hamburger-stack menu icon — 'open a picker to choose from many options'.
 
-    For enums with 5+ values; use ``GizmoCycle`` for 2-4."""
+    For enums with 3+ values; use ``GizmoCycle`` for exactly 2 (where the
+    advance-one-per-click semantic stays predictable)."""
 
     bl_idname = "VIEW3D_GT_menu"
 
@@ -4816,10 +5011,128 @@ class BillboardingGizmoGroupMixin:
         """Convenience wrapper over `setup_icon_gizmo` for subclasses."""
         return setup_icon_gizmo(self, gizmo_type, color, highlight_color, operator, alpha)
 
+    def get_decoration_colors(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Standard (default, highlight) color pair for active-state gizmos.
+        Pulls from the addon preferences — same source consumed by every
+        Bonsai decorator. Hover-class gizmos that should not pull focus
+        should use ``get_unselected_decoration_colors`` instead."""
+        prefs = tool.Blender.get_addon_preferences()
+        return prefs.decorations_colour[:3], prefs.decorator_color_selected[:3]
+
+    def get_unselected_decoration_colors(self) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+        """Lower-priority (unselected default, highlight) pair for gizmos
+        that surface on already-selected geometry and shouldn't compete
+        visually with the selection outline (e.g. array-child navigation)."""
+        prefs = tool.Blender.get_addon_preferences()
+        return prefs.decorator_color_unselected[:3], prefs.decorator_color_selected[:3]
+
     def position_gizmos(self, context: bpy.types.Context) -> None:
         raise NotImplementedError(
             f"{type(self).__name__} must implement position_gizmos(context) when using BillboardingGizmoGroupMixin."
         )
+
+
+@dataclass(frozen=True)
+class IconSlot:
+    """One slot in a parametric edit gizmo's icon toolbar row.
+
+    The slot's X coordinate is COMPUTED from its index in ``feature_slots`` —
+    never set explicitly. Adding an icon is a one-line append; the layout
+    manager resolves the X. Hidden slots STILL CONSUME their X position so
+    toggling a visibility preference doesn't shift the row.
+
+    Fields:
+
+    - ``gizmo_idname`` — for single-icon slots, the full Blender gizmo
+      idname. For multi-variant slots, EITHER a string PREFIX that auto-
+      suffixes ``_<variant>`` per member (the common case — e.g.
+      ``"VIEW3D_GT_lock"`` + variants ``("open", "closed")`` becomes
+      ``VIEW3D_GT_lock_open`` / ``VIEW3D_GT_lock_closed``) OR a tuple of
+      explicit idnames matching the variant count when the variants
+      don't share a prefix. Attributes created on the gizmo group are
+      ``self.<name>_gizmo`` for single slots, ``self.<name>_<variant>_gizmo``
+      for each variant in multi-variant slots.
+    - ``variants`` — variant suffixes, e.g. ``("open", "closed")`` for a
+      lock pair, ``("exterior", "center", "interior")`` for a baseline
+      cycle. Empty tuple = single icon.
+    - ``color`` — RGB tuple. ``None`` falls back to the gizmo group's default
+      decoration color. Use the group's ``COLOR_RED`` / ``COLOR_GREEN`` /
+      ``COLOR_BLUE`` literals for state-coded icons.
+    - ``extra_gap_before`` — extra spacing past the default uniform gap, in
+      meters. Use sparingly — e.g. to visually separate a destructive
+      action (trash) from the routine edit controls.
+    - ``operator_props`` — tuple of (key, value) pairs forwarded to
+      ``target_set_operator``'s return value (e.g. ``increment=1`` for a
+      +/- adjuster, ``property_name="..."`` for a generic toggle).
+    - ``placeholder`` — when ``True``, the slot reserves an X position in
+      the row but no auto-managed gizmo is created. Subclasses look the X
+      up via ``_slot_x_positions()[name]`` to place their own dynamically-
+      built gizmos (e.g. a live count label). ``gizmo_idname`` / ``operator``
+      are unused for placeholders."""
+
+    name: str
+    gizmo_idname: str | tuple[str, ...] = ""
+    operator: str = ""
+    # Matches DEFAULT_BILLBOARD_SCALE — the scale validate/cancel render at,
+    # so slots that don't override land at the same visual size by default.
+    # Helper icons (+/- count adjusters, lock pairs, delete) override with
+    # smaller values (0.20 - 0.35) to signal secondary affordance.
+    scale: float = DEFAULT_BILLBOARD_SCALE
+    color: tuple[float, float, float] | None = None
+    variants: tuple[str, ...] = ()
+    extra_gap_before: float = 0.0
+    operator_props: tuple[tuple[str, Any], ...] = ()
+    placeholder: bool = False
+    # Optional per-frame visibility predicate. Called with the gizmo group
+    # instance as the sole argument; returning False hides this slot's gizmo
+    # while still reserving its X position so the row layout doesn't shift.
+    # Used for idle-row icons whose relevance depends on element state (e.g.
+    # toggle_openings only when the host has openings).
+    visible_when: Optional[Callable[[Any], bool]] = None
+
+    def __post_init__(self) -> None:
+        # Validate shape at class-definition time so a typo doesn't surface
+        # as a runtime error in the gizmo group's setup() three layers deep.
+        if self.placeholder:
+            return
+        if self.variants:
+            if isinstance(self.gizmo_idname, str):
+                pass  # prefix form — idname auto-suffixed per variant
+            elif isinstance(self.gizmo_idname, tuple) and len(self.gizmo_idname) == len(self.variants):
+                pass  # explicit-tuple form
+            else:
+                raise TypeError(
+                    f"IconSlot({self.name!r}): variants={self.variants} requires gizmo_idname "
+                    f"to be either a string prefix (auto-suffixed as <prefix>_<variant>) or a "
+                    f"tuple of {len(self.variants)} explicit idnames, got {self.gizmo_idname!r}"
+                )
+        elif not isinstance(self.gizmo_idname, str) or not self.gizmo_idname:
+            raise TypeError(
+                f"IconSlot({self.name!r}): single-icon slot requires gizmo_idname str, "
+                f"got {self.gizmo_idname!r} (set variants=(...) if you want a multi-variant "
+                f"slot, or placeholder=True for a reserved-position slot)"
+            )
+
+    def variant_idnames(self) -> tuple[str, ...]:
+        """Resolve per-variant gizmo idnames. For prefix form, suffix each
+        variant onto the prefix; for tuple form, return as is. Single-icon
+        slots return a one-element tuple containing the idname."""
+        if not self.variants:
+            assert isinstance(self.gizmo_idname, str)
+            return (self.gizmo_idname,)
+        if isinstance(self.gizmo_idname, str):
+            return tuple(f"{self.gizmo_idname}_{variant}" for variant in self.variants)
+        return self.gizmo_idname
+
+    def gizmo_attrs(self) -> tuple[str, ...]:
+        """Names of every ``self.*`` attribute this slot writes during setup.
+        Returns one for a single slot, N for an N-variant slot, and an empty
+        tuple for placeholder slots (which reserve X without an auto-gizmo)."""
+        if self.placeholder:
+            return ()
+        if self.variants:
+            return tuple(f"{self.name}_{variant}_gizmo" for variant in self.variants)
+        return (f"{self.name}_gizmo",)
 
 
 class BaseParametricGizmoGroup:
@@ -4897,11 +5210,13 @@ class BaseParametricGizmoGroup:
     """
 
     # === Gizmo Colors ===
-    # Match Blender axis convention: X=red, Y=green, Z=blue
-    COLOR_RED = (1.0, 0.2, 0.2)
-    COLOR_GREEN = (0.1, 0.8, 0.1)
-    COLOR_BLUE = (0.3, 0.3, 1.0)
-    COLOR_NEUTRAL = (1.0, 1.0, 1.0)
+    # Aliased to the module-level constants so subclass class bodies can
+    # reference either spelling. Match Blender's axis convention:
+    # X=red, Y=green, Z=blue.
+    COLOR_RED = COLOR_RED
+    COLOR_GREEN = COLOR_GREEN
+    COLOR_BLUE = COLOR_BLUE
+    COLOR_NEUTRAL = COLOR_NEUTRAL
 
     # === Dimension Gizmo Layout (meters) ===
     ARROW_SCALE = 0.25  # Scale factor for arrow gizmos
@@ -4920,17 +5235,21 @@ class BaseParametricGizmoGroup:
     ICON_VALIDATE_X = 0.0  # X position of validate (checkmark) icon
     ICON_CANCEL_X = 0.5  # X offset from validate for cancel (X) icon
     ICON_CYCLE_X = 0.87  # X offset from validate for cycle (arrow) icon
-    # Rightmost local-X used by feature-specific icons (across both idle and
-    # edit states). Subclasses override when they add icons past the cycle
-    # slot at 0.87 — currently wall (rotate at 1.24) and stair (minus at
-    # 1.98). Drives both the ARRAY button position (this class) AND the
-    # array-layer-icons start position (``GizmoArrayEdition`` runtime lookup),
-    # so non-colliding features get a tight layout while wall / stair shift
-    # the array-related slots outward to avoid stomping on the rotate /
-    # tread-lock / +/- icons.
-    FEATURE_ICON_MAX_X: float = 0.87
-    # Gap between the last feature icon and the ARRAY button (or the first
-    # array layer icon in idle state).
+    # Subclasses append to declare feature icons in the edit-mode toolbar row.
+    # The layout manager assigns each slot an X position from its tuple
+    # index — adding a new icon is a one-line append, no hardcoded X
+    # constant, no "remember to bump the right edge" rule. The trailing
+    # ARRAY button is positioned past the last slot automatically.
+    feature_slots: ClassVar[tuple[IconSlot, ...]] = ()
+    # Idle-mode pen-row extras (e.g. wall's toggle_openings). Each slot is
+    # placed past the pen at uniform ``ICON_ARRAY_GAP`` spacing. Hidden during
+    # edit — the validate/cancel row owns the X positions there. Peer gizmo
+    # groups (e.g. ``GizmoArrayEdition``'s per-layer ARRAY icons) query
+    # ``_idle_row_right_edge()`` to position past these without a hardcoded
+    # per-feature table.
+    idle_slots: ClassVar[tuple[IconSlot, ...]] = ()
+    # Gap between adjacent slots past the leading validate/cancel/cycle
+    # triplet, AND between the last slot and the ARRAY button.
     ICON_ARRAY_GAP: float = 0.37
     ICON_Z_OFFSET = 0.5  # Height above element for icons
     ICON_Y_OFFSET = GIZMO_OFFSET * 2  # Y offset to keep icons clear of geometry
@@ -4951,6 +5270,62 @@ class BaseParametricGizmoGroup:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         BaseParametricGizmoGroup.REGISTRY.append(cls)
+
+    @classmethod
+    def _slot_x_positions(cls) -> dict[str, float]:
+        """Map each ``feature_slot`` name to its X coordinate in the row.
+
+        Slots are laid out from the cycle position onward at uniform
+        ``ICON_ARRAY_GAP`` spacing, plus any per-slot ``extra_gap_before``.
+        When the cycle slot is unused (no ``cycle_type_operator`` /
+        ``pick_type_operator``), the first feature slot collapses into the
+        cycle position so the row stays tight — that's how wall's baseline
+        triplet ends up at X=0.87 without a gap before it. Tuple order is
+        the only thing that controls X; rearranging the tuple rearranges
+        the row."""
+        positions: dict[str, float] = {}
+        has_cycle = bool(cls.cycle_type_operator) or bool(cls.pick_type_operator)
+        next_x = (cls.ICON_CYCLE_X + cls.ICON_ARRAY_GAP) if has_cycle else cls.ICON_CYCLE_X
+        for slot in cls.feature_slots:
+            next_x += slot.extra_gap_before
+            positions[slot.name] = next_x
+            next_x += cls.ICON_ARRAY_GAP
+        return positions
+
+    @classmethod
+    def _feature_row_right_edge(cls) -> float:
+        """Right edge of the feature icon row, fed to the trailing ARRAY
+        button's X. Computed strictly from slot order + gaps; empty
+        ``feature_slots`` collapses to the cycle position."""
+        positions = cls._slot_x_positions()
+        if not positions:
+            return cls.ICON_CYCLE_X
+        return max(positions.values())
+
+    @classmethod
+    def _idle_slot_x_positions(cls) -> dict[str, float]:
+        """Map each ``idle_slot`` name to its X coordinate past the pen.
+
+        First idle slot lands at ``ICON_CANCEL_X`` (the cancel-slot position,
+        unused in idle since validate/cancel are edit-only). Successive slots
+        are spaced by ``ICON_ARRAY_GAP``, plus any per-slot ``extra_gap_before``."""
+        positions: dict[str, float] = {}
+        next_x = cls.ICON_CANCEL_X
+        for slot in cls.idle_slots:
+            next_x += slot.extra_gap_before
+            positions[slot.name] = next_x
+            next_x += cls.ICON_ARRAY_GAP
+        return positions
+
+    @classmethod
+    def _idle_row_right_edge(cls) -> float:
+        """Rightmost local-X reserved by this group's idle row. Returns the
+        pen position (``ICON_VALIDATE_X``) when no idle slots are declared
+        so peer queries always get a meaningful number."""
+        positions = cls._idle_slot_x_positions()
+        if not positions:
+            return cls.ICON_VALIDATE_X
+        return max(positions.values())
 
     @classmethod
     def pick_visible_anchor(cls, context: bpy.types.Context, world_base: Vector, world_top: Vector) -> Vector:
@@ -5031,27 +5406,13 @@ class BaseParametricGizmoGroup:
         from_neg_y, from_neg_x = self.get_local_view_direction(context, world_matrix)
         return ViewDirection(from_negative_y=from_neg_y, from_negative_x=from_neg_x)
 
-    def update_gizmo_visibility(self, gizmo: bpy.types.Gizmo, is_editing: bool, pref_enabled: bool) -> bool:
-        """Update gizmo visibility based on modal state, editing state, and preference.
-
-        Consolidates the common pattern:
-            if hidden_by_modal:
-                gizmo.hide = True
-            else:
-                gizmo.hide = not is_editing or not pref_enabled
-
-        Args:
-            gizmo: The gizmo to update visibility for
-            is_editing: Whether the element is currently being edited
-            pref_enabled: Whether this gizmo type is enabled in preferences
-
-        Returns:
-            True if the gizmo is now visible (not hidden), False otherwise
-        """
+    def update_gizmo_visibility(self, gizmo: bpy.types.Gizmo, is_editing: bool) -> bool:
+        """Hide ``gizmo`` when not editing or when a modal owns the viewport.
+        Returns True if the gizmo is now visible."""
         if self.is_gizmo_hidden_by_modal(gizmo):
             gizmo.hide = True
             return False
-        gizmo.hide = not is_editing or not pref_enabled
+        gizmo.hide = not is_editing
         return not gizmo.hide
 
     def get_y_position_for_view(
@@ -5293,8 +5654,7 @@ class BaseParametricGizmoGroup:
             return False
         if cls.gizmo_pref_name:
             prefs = tool.Blender.get_addon_preferences()
-            feature_prefs = getattr(prefs.gizmos, cls.gizmo_pref_name, None)
-            if feature_prefs is not None and not getattr(feature_prefs, "enabled", True):
+            if not getattr(prefs.gizmos, cls.gizmo_pref_name, True):
                 return False
         if len(tool.Blender.get_selected_objects()) != 1:
             return False
@@ -5383,8 +5743,9 @@ class BaseParametricGizmoGroup:
         """
         pass
 
-    # Subclass should define these class attributes for metadata-driven dispatch
-    # If not defined, subclass must override get_props() and get_gizmo_prefs()
+    # Subclass should define these class attributes for metadata-driven dispatch.
+    # ``gizmo_pref_name`` matches a flat BoolProperty field on
+    # ``GizmoPreferences`` and gates the whole gizmo group's poll.
     props_getter: Callable[[bpy.types.Object], bpy.types.PropertyGroup] | None = None
     gizmo_pref_name: str | None = None  # e.g., "door"
 
@@ -5418,18 +5779,6 @@ class BaseParametricGizmoGroup:
         """
         prefs = self.get_addon_prefs()
         return prefs.decorations_colour[:3], prefs.decorator_color_selected[:3]
-
-    def get_gizmo_prefs(self) -> Any:
-        """Get gizmo preferences for this element type.
-
-        Subclass can either:
-        1. Define class attribute `gizmo_pref_name` (e.g., "door")
-        2. Override this method directly
-        """
-        if self.gizmo_pref_name:
-            prefs = self.get_addon_prefs()
-            return getattr(prefs.gizmos, self.gizmo_pref_name)
-        raise NotImplementedError("Subclass must define gizmo_pref_name or override get_gizmo_prefs()")
 
     def is_setup_complete(self) -> bool:
         """Check if gizmo setup has been completed.
@@ -5653,6 +6002,34 @@ class BaseParametricGizmoGroup:
             self.cycle_gizmo = self._setup_icon_gizmo(
                 "VIEW3D_GT_menu", default_color, self.pick_type_operator, highlight_color
             )
+
+        # Feature-specific edit-row icons. Subclasses declare them via
+        # ``feature_slots``; multi-variant slots create one gizmo per
+        # variant at the same X (e.g. a lock pair, a baseline triplet) and
+        # the subclass picks which is visible per frame. Placeholder slots
+        # only reserve an X position — the subclass creates its own gizmo
+        # there in ``setup_element_specific_gizmos``.
+        for slot in self.feature_slots:
+            if slot.placeholder:
+                continue
+            slot_color = slot.color if slot.color is not None else default_color
+            kwargs = dict(slot.operator_props)
+            for attr, idname in zip(slot.gizmo_attrs(), slot.variant_idnames()):
+                gz = self.create_icon_gizmo(idname, slot_color, slot.operator, **kwargs)
+                setattr(self, attr, gz)
+
+        # Idle-mode pen-row extras. Same creation path as feature_slots; the
+        # IDLE branch of ``update_editing_gizmos`` positions and visibility-
+        # gates them, the EDIT branch hides them so the validate/cancel row
+        # owns the X positions.
+        for slot in self.idle_slots:
+            if slot.placeholder:
+                continue
+            slot_color = slot.color if slot.color is not None else default_color
+            kwargs = dict(slot.operator_props)
+            for attr, idname in zip(slot.gizmo_attrs(), slot.variant_idnames()):
+                gz = self.create_icon_gizmo(idname, slot_color, slot.operator, **kwargs)
+                setattr(self, attr, gz)
 
         # ARRAY button — visible during the feature edit lifecycle only (positioned by
         # ``update_editing_gizmos``). Click commits the current edit and adds a
@@ -5916,14 +6293,65 @@ class BaseParametricGizmoGroup:
                     billboard_rot=billboard_rot,
                     scale=0.30,
                 )
-            # Array gizmo integration is in-progress: the icon binds to
-            # bim.add_array_from_feature_edit but the array-from-parametric-draft
-            # operator + per-feature gizmo positioning haven't fully landed.
-            # Force-hide the icon while parametric-item editing is active to
-            # keep the user from triggering a half-wired add-array flow. Drop
-            # this gate when array integration completes.
+            # Feature slots: per-class IconSlot tuples driven by tuple order.
+            # Whole-feature visibility is gated upstream by ``poll()`` against
+            # ``prefs.gizmos.<feature>``; positioning happens unconditionally
+            # whenever the gizmo group polls visible.
+            slot_positions = self._slot_x_positions()
+            for slot in self.feature_slots:
+                if slot.placeholder:
+                    continue
+                slot_x = self.ICON_VALIDATE_X + slot_positions[slot.name]
+                attrs = slot.gizmo_attrs()
+                if slot.variants:
+                    # Multi-variant slot: write matrix on every variant member
+                    # at the same anchor so a state flip never reveals a stale
+                    # pose. The subclass's per-frame hook picks which member
+                    # is visible — this loop doesn't toggle hide flags.
+                    world_pos = mw @ Vector((slot_x, icon_y, icon_z))
+                    matrix = billboarded_at(world_pos, billboard_rot, scale=slot.scale)
+                    for attr in attrs:
+                        gz = getattr(self, attr, None)
+                        if gz is not None:
+                            gz.matrix_basis = matrix
+                    continue
+                gz = getattr(self, attrs[0], None)
+                if gz is None:
+                    continue
+                gz.hide = self.is_gizmo_hidden_by_modal(gz)
+                self.set_icon_gizmo_position(
+                    attrs[0],
+                    mw=mw,
+                    x=slot_x,
+                    y=icon_y,
+                    z=icon_z,
+                    billboard_rot=billboard_rot,
+                    scale=slot.scale,
+                )
+            # ARRAY button sits past the last feature-specific icon. Slot-based
+            # subclasses derive the right edge from the slot count.
             if hasattr(self, "array_gizmo"):
-                self.array_gizmo.hide = True
+                self.array_gizmo.hide = self.is_gizmo_hidden_by_modal(self.array_gizmo)
+                # 30% smaller than the editing-icon-row default (0.50 → 0.35):
+                # the array button is a tertiary affordance compared to the
+                # primary pen / validate / cancel triad, and the smaller
+                # footprint keeps the edit-mode row from sprawling.
+                self.set_icon_gizmo_position(
+                    "array_gizmo",
+                    mw=mw,
+                    x=self.ICON_VALIDATE_X + self._feature_row_right_edge() + self.ICON_ARRAY_GAP,
+                    y=icon_y,
+                    z=icon_z,
+                    billboard_rot=billboard_rot,
+                    scale=0.35,
+                )
+            # Idle-row icons are hidden in edit — validate / cancel sit at
+            # the same X positions, so showing both would stack icons.
+            for slot in self.idle_slots:
+                for attr in slot.gizmo_attrs():
+                    gz = getattr(self, attr, None)
+                    if gz is not None:
+                        gz.hide = True
         else:
             # ``hide_pen_button = True`` keeps the pen permanently hidden — for
             # groups whose edit-mode entry is already provided by another widget
@@ -5942,8 +6370,41 @@ class BaseParametricGizmoGroup:
             self.cancel_gizmo.hide = True
             if self.cycle_type_operator or self.pick_type_operator:
                 self.cycle_gizmo.hide = True
+            for slot in self.feature_slots:
+                for attr in slot.gizmo_attrs():
+                    gz = getattr(self, attr, None)
+                    if gz is not None:
+                        gz.hide = True
             if hasattr(self, "array_gizmo"):
                 self.array_gizmo.hide = True
+            # Idle slots: position past the pen, apply per-slot visible_when
+            # so state-dependent icons (e.g. toggle_openings) only render
+            # when relevant. Hidden slots STILL consume their X position so
+            # the row layout doesn't shift when state flips.
+            idle_positions = self._idle_slot_x_positions()
+            for slot in self.idle_slots:
+                if slot.placeholder:
+                    continue
+                slot_x = self.ICON_VALIDATE_X + idle_positions[slot.name]
+                gate = slot.visible_when
+                visible = True if gate is None else bool(gate(self))
+                for attr in slot.gizmo_attrs():
+                    gz = getattr(self, attr, None)
+                    if gz is None:
+                        continue
+                    if not visible:
+                        gz.hide = True
+                        continue
+                    gz.hide = self.is_gizmo_hidden_by_modal(gz)
+                    self.set_icon_gizmo_position(
+                        attr,
+                        mw=mw,
+                        x=slot_x,
+                        y=icon_y,
+                        z=icon_z,
+                        billboard_rot=billboard_rot,
+                        scale=slot.scale,
+                    )
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
         """Called before drawing - updates gizmos to face camera.

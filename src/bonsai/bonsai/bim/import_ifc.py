@@ -1219,8 +1219,8 @@ class IfcImporter:
                         if element not in elements_to_import:
                             continue
                     for i in range(len(data)):
-                        tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
-                        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+                        tool.Array.set_children_lock_state(element, i, True)
+                        tool.Array.constrain_children_to_parent(element)
 
     def update_linked_aggregates(self):
         # TODO Remove this after a while. See commit 17d6b8a

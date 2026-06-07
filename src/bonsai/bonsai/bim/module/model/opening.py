@@ -229,9 +229,15 @@ class FilledOpeningGenerator:
         filling_obj: bpy.types.Object,
         voided_obj: bpy.types.Object,
         target: Optional[Vector] = None,
+        preserve_placement: bool = False,
     ) -> Union[None, str]:
         """
         :param target: Target opening position. If ommited, cursor position is used.
+        :param preserve_placement: If True, keep ``filling_obj.matrix_world`` as-is
+            and skip the snap-to-wall-axis / rl1-rl2 Z-default logic. The opening
+            is still created at the filling's current world position. Useful
+            when the caller (e.g. the SHIFT-add-opening gizmo flow) has
+            already positioned the filling intentionally.
         :return: None if there was no errors, otherwise returns a string with error message.
         """
         props = tool.Model.get_model_props()
@@ -253,7 +259,7 @@ class FilledOpeningGenerator:
             should_set_z_level = False
 
         # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
-        if voided_obj.data:
+        if not preserve_placement and voided_obj.data:
             raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
                 target = filling_obj.matrix_world.translation.copy()
@@ -735,6 +741,29 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         if props.is_editing:
             bpy.ops.bim.enable_editing_booleans()
         tool.Root.reload_item_decorator()
+
+
+class ToggleHostOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_host_openings"
+    bl_label = "Toggle Openings"
+    bl_description = "Show or hide opening fills (doors and windows) in the viewport\n\nHotkey: Alt+O"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        # Opening visibility is independent of host geometry — don't commit any
+        # active parametric edit; the user can keep editing the host.
+        if tool.Model.get_model_props().openings:
+            bpy.ops.bim.edit_openings(apply_all=True)
+        else:
+            bpy.ops.bim.show_openings()
+        return {"FINISHED"}
 
 
 class ShowOpenings(Operator, tool.Ifc.Operator):

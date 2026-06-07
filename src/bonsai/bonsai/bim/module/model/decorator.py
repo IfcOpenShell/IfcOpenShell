@@ -2067,6 +2067,47 @@ def _stroke_lines_alpha(
     gpu.state.blend_set("NONE")
 
 
+def _fill_quads_alpha(
+    context: bpy.types.Context,
+    quads: list[
+        tuple[
+            tuple[float, float, float],
+            tuple[float, float, float],
+            tuple[float, float, float],
+            tuple[float, float, float],
+        ]
+    ],
+    color_rgb: tuple[float, float, float],
+    alpha: float,
+) -> None:
+    """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
+    order) as one TRIS batch with two triangles per quad. Companion to
+    ``_stroke_lines_alpha`` for filled previews."""
+    if not quads:
+        return
+    verts: list[tuple[float, float, float]] = []
+    indices: list[tuple[int, int, int]] = []
+    for quad in quads:
+        if len(quad) != 4:
+            continue
+        base = len(verts)
+        verts.extend(tuple(v) for v in quad)
+        indices.append((base, base + 1, base + 2))
+        indices.append((base, base + 2, base + 3))
+    if not tool.Blender.validate_shader_batch_data(verts, indices):
+        return
+    region = getattr(context, "region", None)
+    if region is None:
+        return
+    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+    shader.bind()
+    shader.uniform_float("color", (*color_rgb, alpha))
+    batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=indices)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.blend_set("NONE")
+
+
 class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
     """GPU preview lines for the wall-fillet flow.
 
@@ -2177,3 +2218,59 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
         d1 = (p1.x - intersection[0]) ** 2 + (p1.y - intersection[1]) ** 2 + (p1.z - intersection[2]) ** 2
         d2 = (p2.x - intersection[0]) ** 2 + (p2.y - intersection[1]) ** 2 + (p2.z - intersection[2]) ** 2
         return p2 if d2 >= d1 else p1
+
+
+_BBOX_EDGES = (
+    (0, 1), (1, 2), (2, 3), (3, 0),
+    (4, 5), (5, 6), (6, 7), (7, 4),
+    (0, 4), (1, 5), (2, 6), (3, 7),
+)  # fmt: skip
+
+
+def bbox_world_edges(
+    obj: bpy.types.Object,
+) -> list[tuple[tuple[float, float, float], tuple[float, float, float]]]:
+    """Return world-space (start, end) tuples for the 12 edges of ``obj``'s
+    bounding box. Empty list if the object has no bound_box (e.g. Empties)."""
+    if not obj.bound_box:
+        return []
+    mw = obj.matrix_world
+    corners = [mw @ Vector(c) for c in obj.bound_box]
+    return [(tuple(corners[a]), tuple(corners[b])) for a, b in _BBOX_EDGES]
+
+
+def draw_polyline_segments(
+    context: bpy.types.Context,
+    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+    color_rgb: tuple[float, float, float],
+    alpha: float,
+    line_width: float,
+) -> None:
+    """Render ``segments`` as one anti-aliased LINES batch in world space."""
+    if not segments:
+        return
+    verts: list[tuple[float, float, float]] = []
+    indices: list[tuple[int, int]] = []
+    for start, end in segments:
+        base = len(verts)
+        verts.append(start)
+        verts.append(end)
+        indices.append((base, base + 1))
+    if not tool.Blender.validate_shader_batch_data(verts, indices):
+        return
+    region = getattr(context, "region", None)
+    if region is None:
+        return
+    shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+    shader.bind()
+    shader.uniform_float("viewportSize", (region.width, region.height))
+    shader.uniform_float("lineWidth", line_width)
+    shader.uniform_float("color", (*color_rgb, alpha))
+    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.blend_set("NONE")
+
+
+_BBOX_HIGHLIGHT_LINE_WIDTH = 1.8
+_BBOX_HIGHLIGHT_LINE_ALPHA = 0.8

@@ -61,7 +61,7 @@ Pattern selection (which approach a new feature should adopt):
     The authoritative list of registered parametric types — and which use
     `build_edit_lifecycle` vs. standalone operators — lives in
     `tool/parametric.py`'s `EDIT_TYPES` and is enforced by the registry
-    contract tests in `test/bim/test_parametric_registry.py`.
+    contract tests.
 
 This module hosts operator-side mixins that import ``bonsai.tool`` freely.
 The lightweight parametric registry consumed at addon-enable time must stay
@@ -525,6 +525,51 @@ class PickTypeMixin(TypeAccessorBase):
 
         props = self.props_getter(obj)
         setattr(props, self.type_attr, self.value)
+        return {"FINISHED"}
+
+
+class IntegerInputDialogMixin:
+    """Operator mixin that mirrors a per-feature ``IntProperty`` on the
+    operator into a draft attribute on the active object's parametric props,
+    via Blender's ``invoke_props_dialog`` popup.
+
+    Subclasses declare:
+
+    - ``attr_name`` — name of the IntProperty on the subclass AND of the
+      attribute on the resolved props (same name on both sides).
+    - ``props_getter`` — ``staticmethod(tool.Model.get_<feature>_props)``.
+    - ``requires_editing`` — True iff the operator must no-op outside an
+      active edit lifecycle. Default False.
+    - ``value_min`` — minimum value to clamp to. Default 1."""
+
+    attr_name: ClassVar[str] = ""
+    props_getter: ClassVar[Callable[[bpy.types.Object], bpy.types.PropertyGroup]]
+    requires_editing: ClassVar[bool] = False
+    value_min: ClassVar[int] = 1
+
+    def _resolve_props(self, context: bpy.types.Context) -> bpy.types.PropertyGroup | None:
+        """Return the active object's parametric props if the operator is
+        allowed to fire, ``None`` otherwise (caller bails with ``CANCELLED``)."""
+        obj = context.active_object
+        if not obj:
+            return None
+        props = self.props_getter(obj)
+        if self.requires_editing and not props.is_editing:
+            return None
+        return props
+
+    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:  # noqa: ARG002
+        props = self._resolve_props(context)
+        if props is None:
+            return {"CANCELLED"}
+        setattr(self, self.attr_name, max(self.value_min, getattr(props, self.attr_name)))
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        props = self._resolve_props(context)
+        if props is None:
+            return {"CANCELLED"}
+        setattr(props, self.attr_name, max(self.value_min, getattr(self, self.attr_name)))
         return {"FINISHED"}
 
 

@@ -459,7 +459,6 @@ class Geometry:
     def has_axis_representation(cls, element): pass
     def has_data_users(cls, data): pass
     def has_material_style_override(cls, obj): pass
-    def has_material_styles(cls, element): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
@@ -796,7 +795,7 @@ class Profile:
 @interface
 class Parametric:
     def get_geom_generation(cls) -> int: pass
-    def refresh_post_commit(cls) -> None: pass
+    def refresh_post_commit(cls, operator) -> None: pass
 
 
 @interface
@@ -888,6 +887,7 @@ class Root:
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
+    def has_material_styles(cls, element): pass
     def is_containable(cls, element): pass
     def is_drawing_annotation(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass

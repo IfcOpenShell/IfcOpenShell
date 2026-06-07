@@ -39,7 +39,8 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
-from bonsai.bim.parametric_lifecycle import FeatureModifierEditMixin
+from bonsai.bim.module.model.wall_offset_gizmos import WALL_OFFSET_GIZMO_CONFIGS
+from bonsai.bim.parametric_lifecycle import FeatureModifierEditMixin, PickTypeMixin
 
 if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import BIMWindowProperties
@@ -491,7 +492,7 @@ class _WindowEditMixin(FeatureModifierEditMixin):
 
     @classmethod
     def _is_element_type(cls, element):
-        return tool.Blender.Modifier.is_window(element)
+        return tool.Parametric.is_window(element)
 
     @classmethod
     def _get_props(cls, obj: bpy.types.Object):
@@ -551,11 +552,11 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class CycleWindowType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixin):
-    """Cycle through available window types. Shift+click to cycle in reverse."""
+class PickWindowType(bpy.types.Operator, tool.Ifc.Operator, PickTypeMixin):
+    """Pick a window type from a popup menu."""
 
-    bl_idname = "bim.cycle_window_type"
-    bl_label = "Cycle Window Type"
+    bl_idname = "bim.pick_window_type"
+    bl_label = "Pick Window Type"
     bl_options = {"REGISTER", "UNDO"}
 
     element_checker = tool.Parametric.is_window
@@ -564,7 +565,7 @@ class CycleWindowType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixi
     type_attr = "window_type"
 
     def _execute(self, context: bpy.types.Context) -> set[str]:
-        return self._cycle_type(context)
+        return self._pick_type(context)
 
 
 # Frame accessor factory - creates callbacks that delegate to BIMWindowProperties methods
@@ -602,7 +603,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     enable_editing_operator = "bim.enable_editing_window"
     finish_editing_operator = "bim.finish_editing_window"
     cancel_editing_operator = "bim.cancel_editing_window"
-    cycle_type_operator = "bim.cycle_window_type"
+    pick_type_operator = "bim.pick_window_type"
 
     # matrix_position lambdas replace the get_dimension_matrix_* methods
     dimension_gizmo_props = [
@@ -743,6 +744,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
         # lining_offset is handled specially in _update_dimension_gizmo_positions due to negative value support
         DimensionGizmoConfig(attr_name="lining_offset", axis=(0, 1, 0), min_value=-10.0),
+        *WALL_OFFSET_GIZMO_CONFIGS,
     ]
 
     props_getter = tool.Model.get_window_props
@@ -750,7 +752,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_window(element)
+        return tool.Parametric.is_window(element)
 
     def get_icon_y_extent(self, props: "BIMWindowProperties") -> tuple[float, float]:
         """Get Y extents for window icon positioning.

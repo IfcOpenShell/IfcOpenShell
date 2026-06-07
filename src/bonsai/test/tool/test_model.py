@@ -588,6 +588,10 @@ class TestGenerateStair2DProfile(NewFile):
 
 
 class TestUsingArrays(NewFile):
+    @staticmethod
+    def _array_objects() -> list[bpy.types.Object]:
+        return [o for o in bpy.data.objects if (e := tool.Ifc.get_entity(o)) and e.is_a("IfcActuator")]
+
     def setup_array(self, add_second_layer=False, sync_children=False):
         tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
@@ -605,7 +609,7 @@ class TestUsingArrays(NewFile):
         props.count = 4
         props.x = 4
         props.sync_children = sync_children
-        bpy.ops.bim.edit_array(item=0)
+        bpy.ops.bim.finish_editing_array()
 
         if add_second_layer:
             bpy.ops.bim.add_array()
@@ -614,14 +618,14 @@ class TestUsingArrays(NewFile):
             props.count = 3
             props.y = 4
             props.sync_children = sync_children
-            bpy.ops.bim.edit_array(item=1)
+            bpy.ops.bim.finish_editing_array()
 
     def test_remove_array_last_to_first(self):
         self.setup_array(add_second_layer=True)
         bpy.ops.bim.remove_array(item=1)
-        assert len(bpy.context.selected_objects) == 4
+        assert len(self._array_objects()) == 4
         bpy.ops.bim.remove_array(item=0)
-        assert len(bpy.context.selected_objects) == 1
+        assert len(self._array_objects()) == 1
 
     def test_remove_array_first_to_last(self):
         self.setup_array(add_second_layer=True)
@@ -647,7 +651,7 @@ class TestUsingArrays(NewFile):
         bpy.ops.bim.apply_array()  # apply second layer
         bpy.ops.bim.apply_array()  # apply first layer
 
-        objs = bpy.context.selected_objects
+        objs = self._array_objects()
         assert len(objs) == 12
 
         # check BBIM_Array psets are removed

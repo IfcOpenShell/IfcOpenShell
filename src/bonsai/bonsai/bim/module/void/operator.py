@@ -36,8 +36,16 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         "Apply opening objects to an Element.\n\n"
         "The Element and the openings to be applied should be selected. The order of selection is not important.\n"
-        "Opening can be just a Blender mesh object."
+        "Opening can be just a Blender mesh object.\n\n"
+        "Shift+click: keep the filling at its current matrix_world — skip the wall-axis snap "
+        "and the rl1/rl2 Z-elevation default that the regular click applies."
     )
+
+    # Toggled by ``invoke`` when the user holds SHIFT during a gizmo / hotkey
+    # click. The filling-opening generator gates its snap-to-wall-axis block
+    # on this flag. HIDDEN + SKIP_SAVE so the flag doesn't surface in the F6
+    # redo panel or persist into saved keymaps.
+    preserve_placement: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
@@ -45,6 +53,10 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             cls.poll_message_set("Select openings and a target element")
             return False
         return True
+
+    def invoke(self, context, event):
+        self.preserve_placement = bool(event.shift)
+        return self.execute(context)
 
     def _execute(self, context):
         selected_objects = context.selected_objects
@@ -68,7 +80,12 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 elif not element1.is_a("IfcOpeningElement") and not element2.is_a("IfcOpeningElement"):
                     if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):  # Add a fill to an element.
                         obj1, obj2 = obj2, obj1
-                    FilledOpeningGenerator().generate(obj2, obj1, target=obj2.matrix_world.translation)
+                    FilledOpeningGenerator().generate(
+                        obj2,
+                        obj1,
+                        target=obj2.matrix_world.translation,
+                        preserve_placement=self.preserve_placement,
+                    )
                     continue
                 elif element1.is_a("IfcOpeningElement") or element2.is_a("IfcOpeningElement"):
                     if element1.is_a("IfcOpeningElement"):  # Reassign an opening to another element.

@@ -202,11 +202,11 @@ def _make_path_rel(relating, related, relating_ct, related_ct, kind="IfcRelConne
     )
 
 
-def _run_iter_path_connections(elem, *, is_wall_predicate=lambda _e: True):
+def _run_iter_path_connections(elem, *, partner_predicate=lambda _e: True):
     from bonsai import tool
     from bonsai.bim.module.model.wall import _iter_path_connections
 
-    with patch.object(tool.Blender.Modifier, "is_wall", side_effect=is_wall_predicate):
+    with patch.object(tool.Parametric, "is_path_connectable_wall", side_effect=partner_predicate):
         return _iter_path_connections(elem)
 
 
@@ -260,14 +260,28 @@ def test_iter_path_connections_skips_non_wall_partners():
         relating=self_elem, related=non_wall_partner, relating_ct="ATEND", related_ct="ATSTART"
     )
     elem = SimpleNamespace(ConnectedTo=[rel_wall, rel_non_wall], ConnectedFrom=[])
-    result = _run_iter_path_connections(elem, is_wall_predicate=lambda e: e is wall_partner)
+    result = _run_iter_path_connections(elem, partner_predicate=lambda e: e is wall_partner)
     assert result == [(wall_partner, "ATEND", "ATSTART")]
+
+
+def test_iter_path_connections_includes_fillet_corner_partner():
+    # Fillet-corner walls carry no LAYER2 usage but are still valid path
+    # partners. The enumeration must use the same predicate the gizmo group's
+    # poll uses for the host wall — otherwise the corner is silently dropped
+    # from the neighbour's connection list and looks unconnected from the
+    # LAYER2 wall's perspective.
+    self_elem = object()
+    fillet_partner = object()
+    rel = _make_path_rel(relating=self_elem, related=fillet_partner, relating_ct="ATEND", related_ct="ATSTART")
+    elem = SimpleNamespace(ConnectedTo=[rel], ConnectedFrom=[])
+    result = _run_iter_path_connections(elem, partner_predicate=lambda e: e is fillet_partner)
+    assert result == [(fillet_partner, "ATEND", "ATSTART")]
 
 
 def test_iter_path_connections_tolerates_none_partner_refs():
     # Malformed / partial IFC files can leave a rel's element ref unset.
-    # Without a None guard, `Modifier.is_wall(None)` would raise on
-    # `None.is_a(...)` mid-frame and silently break the gizmo group.
+    # Without a None guard, the partner predicate would receive None and
+    # raise on `.is_a(...)` mid-frame, silently breaking the gizmo group.
     self_elem = object()
     other = object()
     rel_none = _make_path_rel(relating=self_elem, related=None, relating_ct="ATEND", related_ct="ATSTART")

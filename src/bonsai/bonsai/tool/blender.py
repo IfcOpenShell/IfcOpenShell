@@ -229,15 +229,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
-        """Gets the active object
+        """Return the active object, or ``None`` when the current context
+        exposes neither ``active_object`` nor a ``view_layer`` (stripped
+        operator contexts).
 
         :param is_selected: If true, the active object also needs to be selected.
         """
-        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
-            if not is_selected:
-                return obj
-            if obj.select_get():
-                return obj
+        obj = getattr(bpy.context, "active_object", None)
+        if obj is None:
+            view_layer = getattr(bpy.context, "view_layer", None)
+            if view_layer is not None:
+                obj = view_layer.objects.active
+        if obj is None:
+            return None
+        if is_selected and not obj.select_get():
+            return None
+        return obj
 
     @classmethod
     def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
@@ -880,18 +887,56 @@ class Blender(bonsai.core.tool.Blender):
         #     ( 1.0,  1.0, -1.0),        # 7
         # ]
         bound_box = obj.bound_box
+        min_pt = Vector(bound_box[0])
+        max_pt = Vector(bound_box[6])
         bbox_dict = {
-            "min_x": bound_box[0][0],
-            "max_x": bound_box[6][0],
-            "min_y": bound_box[0][1],
-            "max_y": bound_box[6][1],
-            "min_z": bound_box[0][2],
-            "max_z": bound_box[6][2],
-            "min_point": Vector(bound_box[0]),
-            "max_point": Vector(bound_box[6]),
-            "center": (Vector(bound_box[6]) + Vector(bound_box[0])) / 2,
+            "min_x": min_pt.x,
+            "max_x": max_pt.x,
+            "min_y": min_pt.y,
+            "max_y": max_pt.y,
+            "min_z": min_pt.z,
+            "max_z": max_pt.z,
+            "min_point": min_pt,
+            "max_point": max_pt,
+            "center": (max_pt + min_pt) / 2,
+            # Intrinsic per-axis size in object-local space. Distinct from
+            # ``obj.dimensions``, which folds object-level scale into its
+            # output; this is the raw mesh bbox extent.
+            "dimensions": (max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z),
         }
         return bbox_dict
+
+    @classmethod
+    def get_object_world_bounding_box(cls, obj: bpy.types.Object) -> dict[str, Union[float, Vector]]:
+        """Same shape as ``get_object_bounding_box`` but with ``matrix_world``
+        applied — extents are computed across the 8 transformed corners, so
+        a rotated or scaled object reports its actual world-axis AABB rather
+        than the misleading transform of the local-space corners.
+
+        ``bound_box[0]`` / ``bound_box[6]`` are the local min/max corners but
+        do NOT correspond to the world AABB extremes once the object is
+        rotated, so min/max must be taken per-axis across all 8 corners."""
+        corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+        xs = [c.x for c in corners]
+        ys = [c.y for c in corners]
+        zs = [c.z for c in corners]
+        min_point = Vector((min(xs), min(ys), min(zs)))
+        max_point = Vector((max(xs), max(ys), max(zs)))
+        return {
+            "min_x": min_point.x,
+            "max_x": max_point.x,
+            "min_y": min_point.y,
+            "max_y": max_point.y,
+            "min_z": min_point.z,
+            "max_z": max_point.z,
+            "min_point": min_point,
+            "max_point": max_point,
+            "center": (min_point + max_point) / 2,
+            # World-axis-aligned per-axis size. For rotated objects this is
+            # the AABB extent, not the intrinsic mesh size (use the local
+            # variant for that).
+            "dimensions": (max_point.x - min_point.x, max_point.y - min_point.y, max_point.z - min_point.z),
+        }
 
     @classmethod
     def select_and_activate_single_object(cls, context: bpy.types.Context, active_object: bpy.types.Object) -> None:
@@ -1332,74 +1377,6 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     class Modifier:
-        # ----------------------------------------------------------------------
-        # FIXME(PR5): backward-compat shims for callers still using the
-        # pre-refactor API. The is_<type> predicates now live on tool.Parametric;
-        # the Array helper bag now lives on tool.Array. PR4 migrates each caller;
-        # this whole shim block is removed in PR5's cleanup.
-        # ----------------------------------------------------------------------
-
-        @classmethod
-        def is_door(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_door(element)
-
-        @classmethod
-        def is_railing(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_railing(element)
-
-        @classmethod
-        def is_roof(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_roof(element)
-
-        @classmethod
-        def is_stair(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_stair(element)
-
-        @classmethod
-        def is_wall(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_wall(element)
-
-        @classmethod
-        def is_window(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_window(element)
-
-        class Array:
-            @classmethod
-            def bake_children_transform(cls, parent_element: ifcopenshell.entity_instance, item: int) -> None:
-                tool.Array.bake_children_transform(parent_element, item)
-
-            @classmethod
-            def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                tool.Array.constrain_children_to_parent(parent_element)
-
-            @classmethod
-            def get_all_children_objects(cls, parent_element: ifcopenshell.entity_instance) -> list:
-                return tool.Array.get_all_children_objects(parent_element)
-
-            @classmethod
-            def get_all_objects(cls, parent_element: ifcopenshell.entity_instance) -> list:
-                return tool.Array.get_all_objects(parent_element)
-
-            @classmethod
-            def get_children_objects(cls, modifier_data: dict) -> list:
-                return tool.Array.get_children_objects(modifier_data)
-
-            @classmethod
-            def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance):
-                return tool.Array.get_modifiers_data(parent_element)
-
-            @classmethod
-            def remove_constraints(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                tool.Array.remove_constraints(parent_element)
-
-            @classmethod
-            def set_children_lock_state(
-                cls, parent_element: ifcopenshell.entity_instance, item: int, lock: bool
-            ) -> None:
-                tool.Array.set_children_lock_state(parent_element, item, lock)
-
-        # ----------------------------------------------------------------------
-
         @classmethod
         def try_applying_edit_mode(cls, obj: bpy.types.Object, element: entity_instance) -> bool:
             """Tries to validate the current BIM modifier parameters for the active object
@@ -2017,6 +1994,18 @@ class Blender(bonsai.core.tool.Blender):
 
         dct = {cls.bl_idname: cls.ifc_element_type for cls in (BimTool.__subclasses__())}
         return types.MappingProxyType(dct)
+
+    @classmethod
+    @lru_cache
+    def get_property_header_tools(cls) -> frozenset[str]:
+        """``BimTool`` plus its parametric subclasses — the workspace
+        tools whose 3D-view / N-panel header surfaces BIM Tool property
+        floats (extrusion_depth, length, x_angle). ``AnnotationTool``
+        and the non-``BimTool`` workspace tools (spatial / structural /
+        cad / covering) are excluded by construction."""
+        from bonsai.bim.module.model.workspace import BimTool
+
+        return frozenset(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool]))
 
     @classmethod
     def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:

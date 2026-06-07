@@ -2943,7 +2943,7 @@ class Model(bonsai.core.tool.Model):
     def offset_wall(cls, wall: bpy.types.Object, baseline: Literal["EXTERIOR", "INTERIOR", "CENTER"]) -> None:
         element = tool.Ifc.get_entity(wall)
         usage = ifcopenshell.util.element.get_material(element)
-        if not usage.is_a("IfcMaterialLayerSetUsage"):
+        if usage is None or not usage.is_a("IfcMaterialLayerSetUsage"):
             return
         layer_set = usage.ForLayerSet
         if baseline == "CENTER":
