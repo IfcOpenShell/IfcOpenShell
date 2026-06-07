@@ -1289,9 +1289,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                                 all_objects_to_select.add(part_obj)
 
         # Non-IFC duplicates aren't tracked in old_to_new but are left selected by duplicate_ifc_objects
-        all_objects_to_select.update(
-            obj for obj in context.selected_objects if not tool.Ifc.get_entity(obj)
-        )
+        all_objects_to_select.update(obj for obj in context.selected_objects if not tool.Ifc.get_entity(obj))
 
         # Deselect everything first
         bpy.ops.object.select_all(action="DESELECT")
