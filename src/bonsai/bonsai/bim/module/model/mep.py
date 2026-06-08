@@ -21,7 +21,7 @@ import json
 import re
 import weakref
 from copy import copy
-from math import cos, degrees, pi, radians, sin, tan
+from math import acos, cos, degrees, pi, radians, sin, tan
 from typing import ClassVar
 
 import bpy
@@ -1289,6 +1289,42 @@ def segments_are_parallel(start_object, end_object) -> bool:
     return tool.Cad.are_edges_parallel(start_axis, end_axis)
 
 
+class MEPJoinSegments(bpy.types.Operator):
+    """Dispatcher: join two MEP segments via transition (parallel) or bend
+    (non-parallel).
+
+    ``MEPAddTransition`` rejects non-parallel inputs; ``MEPAddBend`` rejects
+    parallel inputs (its axis-intersection step is undefined for parallel
+    lines). Collapsing them under one click target removes a per-frame
+    question the user shouldn't have to answer."""
+
+    bl_idname = "bim.mep_join_segments"
+    bl_label = "Join MEP Segments"
+    bl_description = "Join the two selected MEP segments — transition if parallel, bend if not"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not _n_mep_selected(2):
+            cls.poll_message_set("Select exactly 2 MEP segments to join.")
+            return False
+        return True
+
+    def execute(self, context):
+        selected = tool.Blender.get_selected_objects()
+        active = context.active_object
+        if active is None or active not in selected:
+            self.report({"ERROR"}, "Active object must be one of the selected MEP segments.")
+            return {"CANCELLED"}
+        other = next((o for o in selected if o is not active), None)
+        if other is None:
+            self.report({"ERROR"}, "Two MEP segments must be selected.")
+            return {"CANCELLED"}
+        if segments_are_parallel(active, other):
+            return bpy.ops.bim.mep_add_transition()
+        return bpy.ops.bim.enable_bend_preview()
+
+
 class EnableBendPreview(bpy.types.Operator):
     """Enter bend-preview mode for two selected MEP segments. Populates
     scene.BIMPreviewProperties.bend with segment IFC ids and default
@@ -1398,6 +1434,330 @@ class CancelBendPreview(bpy.types.Operator):
             return {"CANCELLED"}
         preview_base.clear_preview_state(props)
         return {"FINISHED"}
+
+
+def _intersection_past_near(intersection: Vector, near: Vector, far: Vector) -> bool:
+    """True iff ``intersection`` lies past ``near`` away from ``far`` — i.e.
+    on the bend-corner side of the segment. Used to reject configurations
+    where the axes meet INSIDE one of the segments (the bend fitting
+    wouldn't physically fit)."""
+    base = near - far
+    if base.length < 1e-6:
+        return False
+    return (intersection - near).dot(base.normalized()) > 1e-6
+
+
+def compute_bend_preview_polylines(
+    start_object,
+    end_object,
+    start_length: float,
+    end_length: float,
+    radius: float,
+    arc_resolution: int = 24,
+):
+    """Compute the centerline polylines visualising a bend between two MEP
+    segments WITHOUT mutating IFC or Blender state.
+
+    Returns a dict with keys:
+
+    - ``"valid"`` (bool) — False for parallel / collinear / degenerate axes
+      and for in-segment intersections.
+    - ``"leg_a"`` / ``"leg_b"`` — ``(far_endpoint, tangent_point)`` per
+      segment, ``None`` when invalid.
+    - ``"arc"`` — ``arc_resolution + 1`` points sampling the bend arc.
+    - ``"invalid_axes"`` (when invalid + in-segment) — pair of
+      ``(far_endpoint, intersection)`` so the decorator can highlight the
+      rejected axes in warning colour."""
+    from mathutils import Quaternion
+
+    start_axis = tool.Model.get_flow_segment_axis(start_object)
+    end_axis = tool.Model.get_flow_segment_axis(end_object)
+
+    intersection = tool.Cad.intersect_edges(start_axis, end_axis)
+    if intersection is None:
+        return {"valid": False, "leg_a": None, "leg_b": None, "arc": []}
+    intersection_point = intersection[0]
+
+    start_near, start_far = tool.Cad.closest_and_furthest_vectors(intersection_point, start_axis)
+    end_near, end_far = tool.Cad.closest_and_furthest_vectors(intersection_point, end_axis)
+
+    # The intersection MUST lie outside both segments — past the near-endpoint
+    # on the bend-corner side. When it lands inside a segment the tangent
+    # points overlap the segment itself and the arc sweeps through a
+    # degenerate half-circle.
+    invalid_axes = [
+        (start_far, intersection_point),
+        (end_far, intersection_point),
+    ]
+
+    if not _intersection_past_near(intersection_point, start_near, start_far):
+        return {
+            "valid": False,
+            "reason": "intersection_inside_start",
+            "leg_a": None,
+            "leg_b": None,
+            "arc": [],
+            "invalid_axes": invalid_axes,
+        }
+    if not _intersection_past_near(intersection_point, end_near, end_far):
+        return {
+            "valid": False,
+            "reason": "intersection_inside_end",
+            "leg_a": None,
+            "leg_b": None,
+            "arc": [],
+            "invalid_axes": invalid_axes,
+        }
+
+    dir_into_start = start_near - intersection_point
+    dir_into_end = end_near - intersection_point
+    if dir_into_start.length < 1e-6 or dir_into_end.length < 1e-6:
+        return {"valid": False, "leg_a": None, "leg_b": None, "arc": []}
+    dir_into_start.normalize()
+    dir_into_end.normalize()
+
+    cos_angle = max(-1.0, min(1.0, dir_into_start.dot(dir_into_end)))
+    angle = acos(cos_angle)
+    bend_angle = pi - angle
+    if bend_angle < 1e-3 or bend_angle > pi - 1e-3:
+        return {"valid": False, "leg_a": None, "leg_b": None, "arc": []}
+
+    tangent_offset = radius * tan(bend_angle / 2)
+    leg_a_tangent = intersection_point + dir_into_start * tangent_offset
+    leg_b_tangent = intersection_point + dir_into_end * tangent_offset
+
+    leg_a_endpoint = leg_a_tangent + dir_into_start * start_length
+    leg_b_endpoint = leg_b_tangent + dir_into_end * end_length
+
+    plane_normal = dir_into_start.cross(dir_into_end)
+    if plane_normal.length < 1e-6:
+        return {"valid": False, "leg_a": None, "leg_b": None, "arc": []}
+    plane_normal.normalize()
+    perp_to_start = plane_normal.cross(dir_into_start).normalized()
+    if perp_to_start.dot(dir_into_end) < 0:
+        perp_to_start = -perp_to_start
+    arc_center = leg_a_tangent + perp_to_start * radius
+
+    v_a = leg_a_tangent - arc_center
+    v_b = leg_b_tangent - arc_center
+    sweep_axis = plane_normal if v_a.cross(v_b).dot(plane_normal) > 0 else -plane_normal
+
+    arc_points = []
+    for i in range(arc_resolution + 1):
+        t = i / arc_resolution
+        q = Quaternion(sweep_axis, bend_angle * t)
+        arc_points.append(arc_center + (q @ v_a))
+
+    return {
+        "valid": True,
+        "leg_a": (start_far, leg_a_endpoint),
+        "leg_b": (end_far, leg_b_endpoint),
+        "arc": arc_points,
+    }
+
+
+def _bend_preview_segments(context):
+    """Resolve the two segment objects from the scene-level preview props.
+
+    Re-resolves by IFC id each frame so undo / file reload during preview
+    never dangles a stale bpy reference."""
+    props = context.scene.BIMPreviewProperties.bend
+    ifc_file = tool.Ifc.get()
+    if ifc_file is None or not props.is_active:
+        return None, None
+    try:
+        start_element = ifc_file.by_id(props.start_segment_id)
+        end_element = ifc_file.by_id(props.end_segment_id)
+    except Exception:
+        return None, None
+    start_obj = tool.Ifc.get_object(start_element) if start_element else None
+    end_obj = tool.Ifc.get_object(end_element) if end_element else None
+    return start_obj, end_obj
+
+
+def _gizmo_x_matrix(location: Vector, x_direction: Vector) -> Matrix:
+    """Build a 4x4 matrix placing a gizmo at ``location`` with its local +X
+    axis aligned to ``x_direction`` in world space. ``BIM_GT_gizmo_dimension``
+    draws + drags along local +X by convention."""
+    x = x_direction.normalized()
+    seed = Vector((0, 0, 1)) if abs(x.z) < 0.9 else Vector((1, 0, 0))
+    y = (seed - x * seed.dot(x)).normalized()
+    z = x.cross(y)
+    mat = Matrix.Identity(4)
+    mat[0][:3] = (x.x, y.x, z.x)
+    mat[1][:3] = (x.y, y.y, z.y)
+    mat[2][:3] = (x.z, y.z, z.z)
+    mat.translation = location
+    return mat
+
+
+class GizmoBendPreview(bpy.types.GizmoGroup):
+    """Interactive gizmo group for the bend preview flow.
+
+    Three dimension widgets drag start_length / end_length / radius; two
+    icon gizmos commit or cancel. When the geometry is degenerate the
+    dimensions and validate hide but cancel stays visible so the user
+    always has an exit."""
+
+    bl_idname = "OBJECT_GGT_bim_bend_preview"
+    bl_label = "Bend Preview Gizmos"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    ICON_SCALE: ClassVar[float] = 0.375
+    ICON_SPACING_X: ClassVar[float] = 0.4
+    ICON_Z_OFFSET: ClassVar[float] = 1.5
+
+    @classmethod
+    def poll(cls, context):
+        preview = getattr(context.scene, "BIMPreviewProperties", None)
+        props = preview.bend if preview is not None else None
+        if props is None or not props.is_active:
+            return False
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return False
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return False
+        try:
+            ifc_file.by_id(props.start_segment_id)
+            ifc_file.by_id(props.end_segment_id)
+        except (RuntimeError, KeyError):
+            return False
+        return True
+
+    def setup(self, context):
+        prefs = tool.Blender.get_addon_preferences()
+        default_color = tuple(prefs.decorations_colour[:3])
+        highlight_color = tuple(prefs.decorator_color_selected[:3])
+
+        _props = preview_base.make_props_callback("bend")
+
+        def setup_dimension(attr: str, prop_name: str, invert_delta: bool = False) -> bpy.types.Gizmo:
+            gz = self.gizmos.new("BIM_GT_gizmo_dimension")
+            gz.move_get_cb = preview_base.make_dim_getter(_props, attr)
+            gz.move_set_cb = preview_base.make_dim_setter(_props, attr)
+            gz.axis = Vector((1, 0, 0))
+            gz.invert_delta = invert_delta
+            gz.delta_scale = 1.0
+            gz.prop_name = prop_name
+            gz.gizmo_group = self
+            gz.color = default_color
+            gz.color_highlight = highlight_color
+            gz.alpha = 1.0
+            gz.use_draw_modal = True
+            gz.use_draw_scale = False
+            gz.text_offset_sign = 1
+            gz.text_alignment = gizmo.TextAlignment.CENTER
+            gz.show_start_arrow = False
+            gz.show_end_arrow = True
+            gz.show_extension_lines = False
+            gz.text_formatter = None
+            return gz
+
+        self.start_dim = setup_dimension("start_length", "Start Length")
+        self.end_dim = setup_dimension("end_length", "End Length")
+        self.radius_dim = setup_dimension("radius", "Radius")
+
+        from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
+
+        self.validate_icon = self.gizmos.new("VIEW3D_GT_validate")
+        self.validate_icon.use_draw_scale = False
+        self.validate_icon.color = BaseParametricGizmoGroup.COLOR_GREEN
+        self.validate_icon.color_highlight = highlight_color
+        self.validate_icon.target_set_operator("bim.finish_bend_preview")
+
+        self.cancel_icon = self.gizmos.new("VIEW3D_GT_cancel")
+        self.cancel_icon.use_draw_scale = False
+        self.cancel_icon.color = BaseParametricGizmoGroup.COLOR_RED
+        self.cancel_icon.color_highlight = highlight_color
+        self.cancel_icon.target_set_operator("bim.cancel_bend_preview")
+
+    def refresh(self, context):
+        self._position_gizmos(context)
+
+    def draw_prepare(self, context):
+        self._position_gizmos(context)
+
+    def _position_gizmos(self, context):
+        """Place gizmos at the bend intersection using the current scene
+        props. Cancel stays visible on degenerate geometry so the user
+        always has an exit; the other widgets hide when there's no defined
+        tangent / arc to anchor them on."""
+        start_obj, end_obj = _bend_preview_segments(context)
+        if start_obj is None or end_obj is None:
+            for gz in (self.start_dim, self.end_dim, self.radius_dim, self.validate_icon, self.cancel_icon):
+                gz.hide = True
+            return
+
+        props = context.scene.BIMPreviewProperties.bend
+        preview = compute_bend_preview_polylines(start_obj, end_obj, props.start_length, props.end_length, props.radius)
+        if not preview["valid"]:
+            for gz in (self.start_dim, self.end_dim, self.radius_dim, self.validate_icon):
+                gz.hide = True
+            self.cancel_icon.hide = False
+            axes = preview.get("invalid_axes") or []
+            if axes:
+                intersection_point = axes[0][1]
+                billboard_rot = gizmo.get_billboard_rotation(context)
+                anchor = intersection_point + Vector((0, 0, self.ICON_Z_OFFSET))
+                self.cancel_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot, scale=self.ICON_SCALE)
+            return
+
+        for gz in (self.start_dim, self.end_dim, self.radius_dim, self.validate_icon, self.cancel_icon):
+            gz.hide = False
+
+        leg_a_far, leg_a_end = preview["leg_a"]
+        leg_b_far, leg_b_end = preview["leg_b"]
+        toward_bend_a = (
+            (leg_a_end - leg_a_far).normalized() if (leg_a_end - leg_a_far).length > 1e-6 else Vector((0, 0, 1))
+        )
+        toward_bend_b = (
+            (leg_b_end - leg_b_far).normalized() if (leg_b_end - leg_b_far).length > 1e-6 else Vector((0, 0, 1))
+        )
+        leg_a_tangent = leg_a_end + toward_bend_a * props.start_length
+        leg_b_tangent = leg_b_end + toward_bend_b * props.end_length
+
+        # axis is set in world space every frame so the drag projection
+        # matches the visual regardless of either segment's matrix_world.
+        self.start_dim.matrix_basis = _gizmo_x_matrix(leg_a_tangent, -toward_bend_a)
+        self.start_dim.axis = -toward_bend_a
+        self.start_dim.set_dimension_length(props.start_length)
+        self.end_dim.matrix_basis = _gizmo_x_matrix(leg_b_tangent, -toward_bend_b)
+        self.end_dim.axis = -toward_bend_b
+        self.end_dim.set_dimension_length(props.end_length)
+
+        arc = preview["arc"]
+        if len(arc) >= 3:
+            mid = len(arc) // 2
+            chord_mid = (arc[0] + arc[-1]) * 0.5
+            toward_mid = arc[mid] - chord_mid
+            if toward_mid.length > 1e-6:
+                toward_mid = toward_mid.normalized()
+                half_chord = (arc[-1] - arc[0]).length * 0.5
+                center_dist = max(0.0, props.radius * props.radius - half_chord * half_chord) ** 0.5
+                arc_center = chord_mid - toward_mid * center_dist
+                radial_out = arc[mid] - arc_center
+                if radial_out.length > 1e-6:
+                    radial_out.normalize()
+                    inward = -radial_out
+                    self.radius_dim.matrix_basis = _gizmo_x_matrix(arc[mid], inward)
+                    self.radius_dim.axis = inward
+                    self.radius_dim.set_dimension_length(props.radius)
+                else:
+                    self.radius_dim.hide = True
+            else:
+                self.radius_dim.hide = True
+        else:
+            self.radius_dim.hide = True
+
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        anchor_base = arc[len(arc) // 2] if arc else (leg_a_end + leg_b_end) * 0.5
+        anchor = anchor_base + Vector((0, 0, self.ICON_Z_OFFSET))
+        offset_x = billboard_rot @ Vector((self.ICON_SPACING_X, 0.0, 0.0))
+        self.validate_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot, scale=self.ICON_SCALE)
+        self.cancel_icon.matrix_basis = gizmo.billboarded_at(anchor + offset_x, billboard_rot, scale=self.ICON_SCALE)
 
 
 # --- MEP segment parametric edit + cursor-anchored operators ---------------
