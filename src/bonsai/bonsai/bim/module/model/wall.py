@@ -306,20 +306,9 @@ class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, 
         for rel in rels:
             bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
         # Recreate body+axis on both walls so the mesh state matches the IFC mutation
-        # and stale miter cuts are dropped. If recreate_wall raises, the rel removal
-        # has already been committed to the operator's IFC transaction — surface the
-        # partial-state diagnostic, then re-raise so the exception lands in Blender's
-        # normal operator error flow.
-        try:
-            tool.Model.recreate_wall(elem_active, active)
-            tool.Model.recreate_wall(elem_other, other)
-        except Exception:
-            self.report(
-                {"ERROR"},
-                "Mesh rebuild failed after unjoin. IFC connection was removed but wall "
-                "meshes may be stale — press Ctrl+Z to undo and restore the previous state.",
-            )
-            raise
+        # and stale miter cuts are dropped.
+        tool.Model.recreate_wall(elem_active, active)
+        tool.Model.recreate_wall(elem_other, other)
         _resync_walls_after_mutation([active, other])
 
 
