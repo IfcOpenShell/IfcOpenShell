@@ -139,6 +139,55 @@ class TestActivationCycle:
             assert props.is_active is False, f"discard_pending_previews left '{attr}' active"
 
 
+class TestClearPreviewState:
+    """``clear_preview_state`` is the shared cleanup routine every preview
+    operator calls on commit / cancel. The contract is: ``is_active`` flips
+    to False, every ``*_id`` IntProperty zeroes, everything else stays."""
+
+    def test_clears_is_active_and_id_fields_on_real_property_groups(self):
+        from bonsai.bim.module.model.preview_base import clear_preview_state
+
+        registered = _registered_previews()
+        if not registered:
+            pytest.skip("No previews wired in this build — registry-only entries")
+
+        for attr, _, props in registered:
+            # Seed every *_id IntProperty with a non-zero sentinel and flip
+            # the activity flag so the helper has something to clear.
+            id_fields = [
+                name for name, rna in props.bl_rna.properties.items() if name.endswith("_id") and rna.type == "INT"
+            ]
+            assert id_fields, f"Preview '{attr}' has no *_id IntProperty — registry shape changed"
+            for name in id_fields:
+                setattr(props, name, 42)
+            props.is_active = True
+
+            clear_preview_state(props)
+
+            assert props.is_active is False, f"Preview '{attr}' is_active not cleared"
+            for name in id_fields:
+                assert getattr(props, name) == 0, f"Preview '{attr}' field '{name}' not zeroed"
+
+    def test_leaves_non_id_fields_untouched(self):
+        """Non-``*_id`` fields (FloatProperty params like ``radius``,
+        ``start_length``) must survive the reset — they re-seed on the next
+        enable, so untouching them here avoids a redundant write."""
+        from bonsai.bim.module.model.preview_base import clear_preview_state
+
+        bend = getattr(_preview_umbrella(), "bend", None)
+        if bend is None:
+            pytest.skip("Bend preview not wired in this build")
+
+        bend.is_active = True
+        bend.start_length = 0.42
+        bend.radius = 0.99
+        clear_preview_state(bend)
+
+        assert bend.is_active is False
+        assert bend.start_length == pytest.approx(0.42)
+        assert bend.radius == pytest.approx(0.99)
+
+
 class TestSaveOnDiscardWired:
     """Pins that the SaveProject operator clears preview state before writing
     the IFC file — a stuck is_active flag persisted through the save would

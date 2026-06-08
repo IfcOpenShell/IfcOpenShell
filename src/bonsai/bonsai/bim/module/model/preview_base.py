@@ -163,6 +163,19 @@ def sync_uncommitted_moves(objects: list) -> None:
         tool.Geometry.commit_placement_if_moved(obj, apply_scale=False)
 
 
+def clear_preview_state(props: bpy.types.PropertyGroup) -> None:
+    """Reset a preview PropertyGroup to its idle state on commit / cancel.
+
+    Sets ``is_active`` to False and zeros every ``IntProperty`` whose name
+    ends in ``_id`` (the entity-reference convention every preview follows).
+    Other fields are left at their last value — defaults are re-applied on
+    the next enable, so leaving them alone avoids a redundant write."""
+    props.is_active = False
+    for name, rna in props.bl_rna.properties.items():
+        if name.endswith("_id") and rna.type == "INT":
+            setattr(props, name, 0)
+
+
 # --- Esc dispatch ------------------------------------------------------------
 
 PREVIEW_CANCEL_OPS: tuple[tuple[str, str], ...] = (
