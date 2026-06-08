@@ -38,6 +38,7 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.root
 import bonsai.tool as tool
+from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.profile import DumbProfileJoiner
 from bonsai.tool.cad import VTX_PRECISION
 
@@ -1262,4 +1263,137 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.system.connect_port(ifc_file, port1=ports[1], port2=end_port, direction="NOTDEFINED")
 
         self.report({"INFO"}, f"Success!.. kind of. The angle was {round(bend_data['angle'])}")
+        return {"FINISHED"}
+
+
+def _n_mep_selected(n: int) -> bool:
+    selected = tool.Blender.get_selected_objects()
+    if len(selected) != n:
+        return False
+    for selected_obj in selected:
+        element = tool.Ifc.get_entity(selected_obj)
+        if element is None or not tool.System.is_mep_element(element):
+            return False
+    return True
+
+
+def segments_are_parallel(start_object, end_object) -> bool:
+    """True iff the two MEP segments' axes are parallel (or collinear)."""
+    start_axis = tool.Model.get_flow_segment_axis(start_object)
+    end_axis = tool.Model.get_flow_segment_axis(end_object)
+    return tool.Cad.are_edges_parallel(start_axis, end_axis)
+
+
+class EnableBendPreview(bpy.types.Operator):
+    """Enter bend-preview mode for two selected MEP segments. Populates
+    scene.BIMPreviewProperties.bend with segment IFC ids and default
+    start_length / end_length / radius; no IFC mutation until finish."""
+
+    bl_idname = "bim.enable_bend_preview"
+    bl_label = "Enter Bend Preview"
+    bl_description = "Begin tuning bend parameters before committing the bend"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not _n_mep_selected(2):
+            cls.poll_message_set("Select exactly 2 MEP segments to bend.")
+            return False
+        return True
+
+    def execute(self, context):
+        selected = tool.Blender.get_selected_objects()
+        active = context.active_object
+        if active is None or active not in selected:
+            self.report({"ERROR"}, "Active object must be one of the selected MEP segments.")
+            return {"CANCELLED"}
+        other = next((o for o in selected if o is not active), None)
+        if other is None:
+            self.report({"ERROR"}, "Two MEP segments must be selected.")
+            return {"CANCELLED"}
+        active_element = tool.Ifc.get_entity(active)
+        other_element = tool.Ifc.get_entity(other)
+        if active_element is None or other_element is None:
+            self.report({"ERROR"}, "Both selected objects must be IFC elements.")
+            return {"CANCELLED"}
+        if segments_are_parallel(active, other):
+            self.report({"ERROR"}, "Bend preview is for non-parallel segments only.")
+            return {"CANCELLED"}
+
+        preview_base.sync_uncommitted_moves([active, other])
+
+        props = preview_base.get_preview_props(context, "bend")
+        # Auto-cancel any prior preview so re-clicking join on a different
+        # pair doesn't silently commit the previous tuning.
+        if props is not None and props.is_active:
+            bpy.ops.bim.cancel_bend_preview()
+
+        props.start_segment_id = active_element.id()
+        props.end_segment_id = other_element.id()
+        props.start_length = 0.1
+        props.end_length = 0.1
+        props.radius = 0.2
+        props.is_active = True
+        return {"FINISHED"}
+
+
+class FinishBendPreview(bpy.types.Operator):
+    """Commit the previewed bend with the tuned parameters and exit preview.
+
+    Preview state survives a failed commit so the user can re-tune without
+    re-selecting."""
+
+    bl_idname = "bim.finish_bend_preview"
+    bl_label = "Apply Bend"
+    bl_description = "Commit the bend with the previewed parameters"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        if context.screen is None:
+            return {"CANCELLED"}
+        props = preview_base.get_preview_props(context, "bend")
+        if props is None or not props.is_active:
+            return {"CANCELLED"}
+        if tool.Ifc.get() is None:
+            self.report({"ERROR"}, "No IFC file loaded.")
+            return {"CANCELLED"}
+        # bpy.ops promotes ``self.report({"ERROR"}) + return CANCELLED`` from
+        # the dispatched operator to RuntimeError. Catch it so this operator
+        # returns cleanly instead of leaving Blender's operator state
+        # half-broken (which would silently disable downstream gizmo polls).
+        try:
+            result = bpy.ops.bim.mep_add_bend(
+                start_segment_id=props.start_segment_id,
+                end_segment_id=props.end_segment_id,
+                start_length=props.start_length,
+                end_length=props.end_length,
+                radius=props.radius,
+            )
+        except RuntimeError as exc:
+            self.report({"ERROR"}, str(exc))
+            return {"CANCELLED"}
+        if "FINISHED" in result:
+            props.is_active = False
+            props.start_segment_id = 0
+            props.end_segment_id = 0
+        return result
+
+
+class CancelBendPreview(bpy.types.Operator):
+    """Exit bend preview without committing."""
+
+    bl_idname = "bim.cancel_bend_preview"
+    bl_label = "Cancel Bend"
+    bl_description = "Discard the previewed bend"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        if context.screen is None:
+            return {"CANCELLED"}
+        props = preview_base.get_preview_props(context, "bend")
+        if props is None or not props.is_active:
+            return {"CANCELLED"}
+        props.is_active = False
+        props.start_segment_id = 0
+        props.end_segment_id = 0
         return {"FINISHED"}

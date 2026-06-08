@@ -1924,6 +1924,58 @@ class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
         sverchok_nodes: Union[sverchok.node_tree.SverchCustomTree, None]
 
 
+class BIMBendPreviewProperties(PropertyGroup):
+    """Scene-level pending state for the bend-creation preview flow.
+
+    Scene-level (not per-object) because the bend involves two segments by
+    IFC id — neither alone owns the draft."""
+
+    is_active: bpy.props.BoolProperty(
+        default=False,
+        options={"SKIP_SAVE"},
+        description="True while the bend-creation preview flow is active.",
+    )
+    start_segment_id: bpy.props.IntProperty(
+        default=0,
+        options={"SKIP_SAVE"},
+        description="IFC element id of the start (active) segment.",
+    )
+    end_segment_id: bpy.props.IntProperty(
+        default=0,
+        options={"SKIP_SAVE"},
+        description="IFC element id of the end (other selected) segment.",
+    )
+    start_length: bpy.props.FloatProperty(
+        name="Start Length",
+        default=0.1,
+        min=0.001,
+        subtype="DISTANCE",
+        description="Length of the bend fitting's tangent leg on the start (active) segment side",
+    )
+    end_length: bpy.props.FloatProperty(
+        name="End Length",
+        default=0.1,
+        min=0.001,
+        subtype="DISTANCE",
+        description="Length of the bend fitting's tangent leg on the end (other) segment side",
+    )
+    radius: bpy.props.FloatProperty(
+        name="Radius",
+        default=0.2,
+        min=0.001,
+        subtype="DISTANCE",
+        description="Inner radius of the bend curve",
+    )
+
+    if TYPE_CHECKING:
+        is_active: bool
+        start_segment_id: int
+        end_segment_id: int
+        start_length: float
+        end_length: float
+        radius: float
+
+
 class BIMWallFilletPreviewProperties(PropertyGroup):
     """Scene-level pending state for the wall-fillet preview flow.
 
@@ -1980,7 +2032,9 @@ class BIMWallFilletPreviewProperties(PropertyGroup):
 class BIMPreviewProperties(PropertyGroup):
     """Umbrella for parametric-edit preview drafts attached to ``Scene``."""
 
+    bend: bpy.props.PointerProperty(type=BIMBendPreviewProperties)
     wall_fillet: bpy.props.PointerProperty(type=BIMWallFilletPreviewProperties)
 
     if TYPE_CHECKING:
+        bend: BIMBendPreviewProperties
         wall_fillet: BIMWallFilletPreviewProperties
