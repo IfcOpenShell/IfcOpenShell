@@ -80,10 +80,7 @@ class Spatial(bonsai.core.tool.Spatial):
     def get_root_element(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         while True:
             if parent := (
-                ifcopenshell.util.element.get_aggregate(element)
-                or ifcopenshell.util.element.get_nest(element)
-                or ifcopenshell.util.element.get_filled_void(element)
-                or ifcopenshell.util.element.get_voided_element(element)
+                ifcopenshell.util.element.get_aggregate(element) or ifcopenshell.util.element.get_nest(element)
             ):
                 element = parent
             else:
