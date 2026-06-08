@@ -19,8 +19,10 @@
 import collections.abc
 import json
 import re
+import weakref
 from copy import copy
 from math import cos, degrees, pi, radians, sin, tan
+from typing import ClassVar
 
 import bpy
 import ifcopenshell.api.geometry
@@ -38,8 +40,11 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.root
 import bonsai.tool as tool
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
 from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.profile import DumbProfileJoiner
+from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
 from bonsai.tool.cad import VTX_PRECISION
 
 V = lambda *x: Vector([float(i) for i in x])
@@ -1393,3 +1398,525 @@ class CancelBendPreview(bpy.types.Operator):
             return {"CANCELLED"}
         preview_base.clear_preview_state(props)
         return {"FINISHED"}
+
+
+# --- MEP segment parametric edit + cursor-anchored operators ---------------
+
+
+def _segment_world_length(obj: bpy.types.Object) -> float:
+    """World-space length of an MEP segment's extrusion axis."""
+    start, end = tool.Model.get_flow_segment_axis(obj)
+    return (end - start).length
+
+
+def _preview_segment_via_scale(
+    obj: bpy.types.Object,
+    props_length: float,
+    snap_length: float,
+    snap_object_scale_z: float,
+) -> None:
+    """Scale obj along local Z so the visible segment matches ``props_length``
+    without touching IFC.
+
+    Composes correctly with a non-identity pre-edit ``obj.scale.z``: the
+    mesh's local-Z extent is ``snap_length / snap_object_scale_z``, so the
+    new scale.z is ``props_length / mesh_local_length``."""
+    if snap_length < 1e-6 or snap_object_scale_z < 1e-6:
+        return
+    mesh_local_length = snap_length / snap_object_scale_z
+    obj.scale.z = max(props_length, 0.01) / mesh_local_length
+
+
+def _restore_segment_scale_to(obj: bpy.types.Object, scale_z: float) -> None:
+    """Restore obj's local-Z scale. Cancel passes the pre-edit
+    ``snap_object_scale_z``; finish passes ``1.0`` because ``set_depth`` has
+    already rebuilt the mesh 1:1 with the new IFC length."""
+    obj.scale.z = scale_z
+
+
+def regenerate_pipe_segment_mesh_from_props(obj: bpy.types.Object) -> None:
+    """Live-preview hook for ``BIMPipeSegmentProperties.length`` drags."""
+    props = tool.Model.get_pipe_segment_props(obj)
+    _preview_segment_via_scale(obj, props.length, props.snap_length, props.snap_object_scale_z)
+    props.mesh_dirty = True
+
+
+def regenerate_duct_segment_mesh_from_props(obj: bpy.types.Object) -> None:
+    """Live-preview hook for ``BIMDuctSegmentProperties.length`` drags."""
+    props = tool.Model.get_duct_segment_props(obj)
+    _preview_segment_via_scale(obj, props.length, props.snap_length, props.snap_object_scale_z)
+    props.mesh_dirty = True
+
+
+def _restore_segment_mesh_if_dirty(props, obj: bpy.types.Object) -> None:
+    """Restore obj's preview scale to the pre-edit value if dirty.
+
+    Restoring to ``snap_object_scale_z`` (not 1.0) avoids zeroing a user's
+    non-identity pre-edit scale."""
+    if not props.mesh_dirty:
+        return
+    _restore_segment_scale_to(obj, props.snap_object_scale_z)
+    props.mesh_dirty = False
+
+
+class _MEPSegmentEditMixin(ParametricEditMixinBase):
+    """MEP segment edit lifecycle (length-only).
+
+    Segment editing has no BBIM pset — the length lives in the IFC
+    extrusion depth and is rewritten by ``DumbProfileJoiner.set_depth``. The
+    ``snap_object_scale_z`` field on the PropertyGroup records pre-edit
+    scale so Cancel and no-op Finish restore the segment exactly to its
+    pre-edit visual state. Finish dispatches ``bim.regenerate_distribution_element``
+    on length-change to re-align adjacent fittings."""
+
+    pset_name = ""  # MEP segments carry no BBIM_<Type> pset.
+
+    @classmethod
+    def _enable_one(cls, obj: bpy.types.Object) -> None:
+        resolved = cls._resolve(obj)
+        if resolved is None:
+            return
+        _element, props = resolved
+        # Commit any pre-edit matrix_world drift before snap_length is captured
+        # from _segment_world_length. Otherwise set_depth at Finish would write
+        # representation coords relative to a stale ObjectPlacement.
+        cls._handle_drift_on_enable(obj)
+        current_length = _segment_world_length(obj)
+        props.snap_object_scale_z = obj.scale.z
+        props.snap_length = current_length
+        props.length = current_length
+        props.mesh_dirty = False
+        props.is_editing = True
+
+    @classmethod
+    def _finish_one(cls, obj: bpy.types.Object, context: bpy.types.Context) -> tuple[bool, bool]:
+        """Returns ``(resolved, committed)``: ``resolved`` is False when the
+        target is no longer this MEP segment type; ``committed`` is True when
+        a length change was written through ``set_depth``."""
+        resolved = cls._resolve(obj)
+        if resolved is None:
+            return False, False
+        _element, props = resolved
+        committed = False
+        if props.length != props.snap_length:
+            # set_depth rebuilds the representation 1:1 with the new length, so
+            # reset scale to 1.0 or any preview stretch would double-apply.
+            DumbProfileJoiner().set_depth(obj, props.length)
+            _restore_segment_scale_to(obj, 1.0)
+            props.mesh_dirty = False
+            committed = True
+        else:
+            _restore_segment_mesh_if_dirty(props, obj)
+        cls._handle_drift_on_finish(obj)
+        props.is_editing = False
+        return True, committed
+
+    @classmethod
+    def _cancel_one(cls, obj: bpy.types.Object) -> None:
+        resolved = cls._resolve(obj)
+        if resolved is None:
+            return
+        element, props = resolved
+        # Disable editing first so the length-restore below doesn't fire one
+        # more preview pass.
+        props.is_editing = False
+        props.length = props.snap_length
+        _restore_segment_mesh_if_dirty(props, obj)
+        cls._handle_drift_on_cancel(obj, element)
+
+    def _enable_targets(self, context: bpy.types.Context) -> set[str]:
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        # Resolve pre-flight to map a non-matching active object to CANCELLED
+        # rather than the silent no-op the per-target classmethod would produce.
+        resolved = self._resolve(obj)
+        if resolved is None:
+            return {"CANCELLED"}
+        self._enable_one(obj)
+        return {"FINISHED"}
+
+    def _finish_targets(self, context: bpy.types.Context) -> set[str]:
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        resolved_ok, committed = self._finish_one(obj, context)
+        if not resolved_ok:
+            return {"CANCELLED"}
+        if committed:
+            # Re-align adjacent fittings + segments to follow the port move;
+            # failure here doesn't roll back the length commit (primary intent).
+            try:
+                bpy.ops.bim.regenerate_distribution_element()
+            except Exception as e:
+                self.report({"WARNING"}, f"Length committed but auto-regenerate failed: {e}")
+        return {"FINISHED"}
+
+    def _cancel_targets(self, context: bpy.types.Context) -> set[str]:
+        obj = context.active_object
+        if obj is None:
+            return {"CANCELLED"}
+        self._cancel_one(obj)
+        return {"FINISHED"}
+
+
+class _PipeSegmentEditMixin(_MEPSegmentEditMixin):
+    @classmethod
+    def _is_element_type(cls, element):
+        return tool.Parametric.is_pipe_segment(element)
+
+    @classmethod
+    def _get_props(cls, obj: bpy.types.Object):
+        return tool.Model.get_pipe_segment_props(obj)
+
+
+class _DuctSegmentEditMixin(_MEPSegmentEditMixin):
+    @classmethod
+    def _is_element_type(cls, element):
+        return tool.Parametric.is_duct_segment(element)
+
+    @classmethod
+    def _get_props(cls, obj: bpy.types.Object):
+        return tool.Model.get_duct_segment_props(obj)
+
+
+EnableEditingPipeSegment, FinishEditingPipeSegment, CancelEditingPipeSegment = tool.Parametric.build_edit_lifecycle(
+    "pipe_segment",
+    _PipeSegmentEditMixin,
+    labels=(
+        ("Edit Pipe Segment", ""),
+        ("Apply Pipe Segment Edits", ""),
+        ("Discard Pipe Segment Edits", ""),
+    ),
+    module_name=__name__,
+)
+
+EnableEditingDuctSegment, FinishEditingDuctSegment, CancelEditingDuctSegment = tool.Parametric.build_edit_lifecycle(
+    "duct_segment",
+    _DuctSegmentEditMixin,
+    labels=(
+        ("Edit Duct Segment", ""),
+        ("Apply Duct Segment Edits", ""),
+        ("Discard Duct Segment Edits", ""),
+    ),
+    module_name=__name__,
+)
+
+
+def _project_cursor_to_segment_local_z(context, *, is_pipe: bool) -> tuple[bpy.types.Object | None, float | None]:
+    """Validate the active object is an MEP segment of the requested kind,
+    commit any in-progress parametric edit, and return ``(obj, cursor_local_z)``.
+
+    Returns ``(None, None)`` on precondition failure — callers should treat
+    that as ``{"CANCELLED"}``."""
+    obj = context.active_object
+    if obj is None:
+        return None, None
+    element = tool.Ifc.get_entity(obj)
+    if element is None:
+        return None, None
+    predicate = tool.Parametric.is_pipe_segment if is_pipe else tool.Parametric.is_duct_segment
+    if not predicate(element):
+        return None, None
+
+    # Commit any in-progress edit first so the user's drag-state isn't
+    # silently discarded — cursor-anchored ops must layer on top of an
+    # in-progress edit, not overwrite it.
+    props = tool.Model.get_pipe_segment_props(obj) if is_pipe else tool.Model.get_duct_segment_props(obj)
+    if props.is_editing:
+        with bpy.context.temp_override(active_object=obj, selected_objects=[obj]):
+            if is_pipe:
+                bpy.ops.bim.finish_editing_pipe_segment()
+            else:
+                bpy.ops.bim.finish_editing_duct_segment()
+
+    cursor_world = context.scene.cursor.location
+    cursor_local = obj.matrix_world.inverted() @ cursor_world
+    return obj, cursor_local.z
+
+
+def _extend_segment_to_cursor(context, *, is_pipe: bool) -> set[str]:
+    """Extend or trim the nearest endpoint of the segment to the cursor
+    projection."""
+    obj, _ = _project_cursor_to_segment_local_z(context, is_pipe=is_pipe)
+    if obj is None:
+        return {"CANCELLED"}
+    DumbProfileJoiner().join_E(obj, context.scene.cursor.location)
+    return {"FINISHED"}
+
+
+class ExtendPipeSegmentToCursor(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.extend_pipe_segment_to_cursor"
+    bl_label = "Extend Pipe Segment to Cursor"
+    bl_description = (
+        "Extend or trim the active pipe segment so its nearest endpoint reaches the 3D cursor's projection "
+        "on the segment axis"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        return _extend_segment_to_cursor(context, is_pipe=True)
+
+
+class ExtendDuctSegmentToCursor(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.extend_duct_segment_to_cursor"
+    bl_label = "Extend Duct Segment to Cursor"
+    bl_description = (
+        "Extend or trim the active duct segment so its nearest endpoint reaches the 3D cursor's projection "
+        "on the segment axis"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        return _extend_segment_to_cursor(context, is_pipe=False)
+
+
+def split_mep_segment(obj: bpy.types.Object, cut_local_z: float) -> bpy.types.Object | None:
+    """Split an MEP segment at ``cut_local_z`` along its local +Z axis,
+    producing two connected segments where there was one.
+
+    Snapshots the downstream end-port connection, duplicates the segment via
+    ``bonsai.core.root.copy_class``, positions the new segment so its start
+    coincides with the original's new end, calls ``DumbProfileJoiner.set_depth``
+    on both halves, then reconnects ports: original-end ↔ new-start, and
+    if a downstream connection existed: new-end ↔ snapshotted downstream
+    with the preserved direction. Rejects splits within 0.01m of either
+    endpoint."""
+    from bonsai.tool.system import direction_from_port_pair
+
+    element = tool.Ifc.get_entity(obj)
+    if element is None or not tool.System.is_mep_element(element):
+        return None
+
+    start_world, end_world = tool.Model.get_flow_segment_axis(obj)
+    original_length = (end_world - start_world).length
+    if cut_local_z < 0.01 or cut_local_z > original_length - 0.01:
+        return None
+
+    segment_data = MEPGenerator().get_segment_data(element)
+    end_port = segment_data.get("end_port")
+    downstream_port = None
+    downstream_direction = "NOTDEFINED"
+    if end_port is not None:
+        downstream_port = tool.System.get_connected_port(end_port)
+        if downstream_port is not None:
+            downstream_direction = direction_from_port_pair(end_port, downstream_port)
+
+    new_obj = obj.copy()
+    if obj.data is not None:
+        new_obj.data = obj.data.copy()
+    for collection in obj.users_collection:
+        collection.objects.link(new_obj)
+    new_element = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+    if new_element is None:
+        bpy.data.objects.remove(new_obj, do_unlink=True)
+        return None
+
+    local_z = obj.matrix_world.to_3x3() @ Vector((0.0, 0.0, 1.0))
+    local_z.normalize()
+    new_obj.matrix_world.translation = obj.matrix_world.translation + local_z * cut_local_z
+
+    joiner = DumbProfileJoiner()
+    joiner.set_depth(obj, cut_local_z)
+    joiner.set_depth(new_obj, original_length - cut_local_z)
+
+    gen = MEPGenerator()
+    seg1_data = gen.get_segment_data(element)
+    seg2_data = gen.get_segment_data(new_element)
+    seg1_end = seg1_data.get("end_port")
+    seg2_start = seg2_data.get("start_port")
+    seg2_end = seg2_data.get("end_port")
+
+    if seg1_end is not None and seg2_start is not None:
+        try:
+            tool.Ifc.run(
+                "system.connect_port",
+                port1=seg1_end,
+                port2=seg2_start,
+                direction="NOTDEFINED",
+            )
+        except Exception as e:
+            print(f"Bonsai: split_mep_segment failed to connect halves at cut: {e}")
+
+    if downstream_port is not None and seg2_end is not None:
+        try:
+            tool.Ifc.run(
+                "system.connect_port",
+                port1=seg2_end,
+                port2=downstream_port,
+                direction=downstream_direction,
+            )
+        except Exception as e:
+            print(f"Bonsai: split_mep_segment failed to restore downstream connection: {e}")
+
+    return new_obj
+
+
+def _split_segment_at_cursor(operator, context, *, is_pipe: bool) -> set[str]:
+    """Split the active MEP segment at the cursor's projection on its axis."""
+    obj, cursor_local_z = _project_cursor_to_segment_local_z(context, is_pipe=is_pipe)
+    if obj is None or cursor_local_z is None:
+        return {"CANCELLED"}
+    new_obj = split_mep_segment(obj, cursor_local_z)
+    if new_obj is None:
+        operator.report(
+            {"WARNING"},
+            "Split cancelled — cursor projection must lie between segment endpoints (>=0.01 m from each).",
+        )
+        return {"CANCELLED"}
+    return {"FINISHED"}
+
+
+class SplitPipeSegmentAtCursor(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.split_pipe_segment_at_cursor"
+    bl_label = "Split Pipe Segment at Cursor"
+    bl_description = (
+        "Split the active pipe segment at the 3D cursor's projection on the segment axis, "
+        "producing two connected segments"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        return _split_segment_at_cursor(self, context, is_pipe=True)
+
+
+class SplitDuctSegmentAtCursor(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.split_duct_segment_at_cursor"
+    bl_label = "Split Duct Segment at Cursor"
+    bl_description = (
+        "Split the active duct segment at the 3D cursor's projection on the segment axis, "
+        "producing two connected segments"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        return _split_segment_at_cursor(self, context, is_pipe=False)
+
+
+class _MEPSegmentEditionMixin:
+    """Shared element-specific scaffolding for the two MEP-segment gizmo
+    groups: an extend-to-cursor icon at the cursor's projection on the
+    segment axis plus a split icon stacked above it. Cursor-anchored, always
+    visible when the parametric gizmo group polls."""
+
+    _extend_operator: str = ""
+    _split_operator: str = ""
+
+    CURSOR_STACK_OFFSET: ClassVar[float] = 0.4
+
+    def setup_element_specific_gizmos(self, context):
+        default_color, highlight_color = self.get_decoration_colors()
+        self.extend_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_extend",
+            default_color,
+            self._extend_operator,
+            highlight_color,
+        )
+        warning_color = gizmo.get_warning_color_from_prefs(tool.Blender.get_addon_preferences())
+        self.split_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_split",
+            default_color,
+            self._split_operator,
+            warning_color,
+        )
+        if context.region is not None:
+            type(self)._active_instances[context.region.as_pointer()] = weakref.ref(self)
+
+    def _refresh_element_specific(self, context, mw, props):
+        if not hasattr(self, "extend_gizmo"):
+            return
+        cursor_world = context.scene.cursor.location
+        cursor_local = mw.inverted() @ cursor_world
+        projected_local = Vector((0.0, 0.0, cursor_local.z))
+        projected_world = mw @ projected_local
+        billboard_rot = self._frame_billboard_rot or gizmo.get_billboard_rotation(context)
+
+        gz = self.extend_gizmo
+        gz.hide = self.is_gizmo_hidden_by_modal(gz)
+        gz.matrix_basis = gizmo.billboarded_at(projected_world, billboard_rot)
+        if gizmo.should_flip_extend_arrow(projected_world, mw.translation, billboard_rot):
+            gz.matrix_basis = gz.matrix_basis @ gizmo.EXTEND_FLIP_MIRROR_X
+
+        if hasattr(self, "split_gizmo"):
+            split_gz = self.split_gizmo
+            obj = context.active_object
+            if obj is None or not obj.bound_box:
+                split_gz.hide = True
+            else:
+                # Endpoint-cut threshold matches split_mep_segment's rejection
+                # window so the icon never offers an invalid affordance.
+                current_length = max(c[2] for c in obj.bound_box)
+                in_range = 0.01 < cursor_local.z < (current_length - 0.01)
+                if not in_range or self.is_gizmo_hidden_by_modal(split_gz):
+                    split_gz.hide = True
+                else:
+                    split_gz.hide = False
+                    offset_world = billboard_rot @ Vector((0.0, self.CURSOR_STACK_OFFSET, 0.0))
+                    split_gz.matrix_basis = gizmo.billboarded_at(projected_world + offset_world, billboard_rot)
+
+
+# Dimension config shared between pipe and duct segments. ``matrix_position``
+# routing through ``compose_gizmo_matrix`` rotates the +X line to ``axis`` so
+# the dimension renders along the segment's extrusion direction.
+_MEP_SEGMENT_LENGTH_DIMENSION = DimensionGizmoConfig(
+    attr_name="length",
+    axis=(0, 0, 1),
+    matrix_position=lambda _props: Vector((0.0, 0.0, 0.0)),
+    min_value=0.01,
+    show_start_arrow=True,
+    show_end_arrow=True,
+)
+
+
+class GizmoPipeSegmentEdition(bpy.types.GizmoGroup, _MEPSegmentEditionMixin, gizmo.BaseParametricGizmoGroup):
+    """Parametric-edit gizmo for IfcPipeSegment."""
+
+    bl_idname = "OBJECT_GGT_bim_pipe_segment_edition"
+    bl_label = "Pipe Segment Editing Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    enable_editing_operator = "bim.enable_editing_pipe_segment"
+    finish_editing_operator = "bim.finish_editing_pipe_segment"
+    cancel_editing_operator = "bim.cancel_editing_pipe_segment"
+    cycle_type_operator = ""
+    props_getter = tool.Model.get_pipe_segment_props
+    gizmo_pref_name = "pipe_segment"
+    _extend_operator = "bim.extend_pipe_segment_to_cursor"
+    _split_operator = "bim.split_pipe_segment_at_cursor"
+
+    dimension_gizmo_props = [_MEP_SEGMENT_LENGTH_DIMENSION]
+
+    _active_instances: ClassVar["dict[int, weakref.ReferenceType[GizmoPipeSegmentEdition]]"] = {}
+
+    @classmethod
+    def is_element_type(cls, element):
+        return tool.Parametric.is_pipe_segment(element)
+
+
+class GizmoDuctSegmentEdition(bpy.types.GizmoGroup, _MEPSegmentEditionMixin, gizmo.BaseParametricGizmoGroup):
+    """Parametric-edit gizmo for IfcDuctSegment."""
+
+    bl_idname = "OBJECT_GGT_bim_duct_segment_edition"
+    bl_label = "Duct Segment Editing Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    enable_editing_operator = "bim.enable_editing_duct_segment"
+    finish_editing_operator = "bim.finish_editing_duct_segment"
+    cancel_editing_operator = "bim.cancel_editing_duct_segment"
+    cycle_type_operator = ""
+    props_getter = tool.Model.get_duct_segment_props
+    gizmo_pref_name = "duct_segment"
+    _extend_operator = "bim.extend_duct_segment_to_cursor"
+    _split_operator = "bim.split_duct_segment_at_cursor"
+
+    dimension_gizmo_props = [_MEP_SEGMENT_LENGTH_DIMENSION]
+
+    _active_instances: ClassVar["dict[int, weakref.ReferenceType[GizmoDuctSegmentEdition]]"] = {}
+
+    @classmethod
+    def is_element_type(cls, element):
+        return tool.Parametric.is_duct_segment(element)
