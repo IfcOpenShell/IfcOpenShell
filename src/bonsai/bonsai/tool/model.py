@@ -75,8 +75,10 @@ if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import (
         BIMArrayProperties,
         BIMDoorProperties,
+        BIMDuctSegmentProperties,
         BIMExternalParametricGeometryProperties,
         BIMModelProperties,
+        BIMPipeSegmentProperties,
         BIMPolylineProperties,
         BIMRailingProperties,
         BIMRoofProperties,
@@ -115,6 +117,14 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_pipe_segment_props(cls, obj: bpy.types.Object) -> BIMPipeSegmentProperties:
+        return obj.BIMPipeSegmentProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_duct_segment_props(cls, obj: bpy.types.Object) -> BIMDuctSegmentProperties:
+        return obj.BIMDuctSegmentProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_sverchok_props(cls, obj: bpy.types.Object) -> BIMSverchokProperties:
