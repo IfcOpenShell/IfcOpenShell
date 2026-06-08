@@ -318,6 +318,117 @@ def test_segment_operators_are_registered(op):
 
 
 # ---------------------------------------------------------------------------
+# MEPSegmentExtendPreviewDecorator._compute_extend_preview_line — pure helper
+# ---------------------------------------------------------------------------
+
+
+def test_extend_preview_line_returns_none_for_degenerate_segment():
+    """A zero-length segment has no endpoint to draw from. Pin so a future
+    refactor doesn't divide-by-zero or render a phantom line at the
+    object origin."""
+    from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
+
+    result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
+        matrix_world=Matrix.Identity(4),
+        cursor_world=Vector((0.0, 0.0, 1.0)),
+        current_length=0.0,
+        min_projected_length=0.01,
+    )
+    assert result is None
+
+
+def test_extend_preview_line_returns_none_when_cursor_at_current_end():
+    """If the cursor projection matches the current segment length exactly,
+    the extend operator would be a no-op — don't render the line either."""
+    from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
+
+    result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
+        matrix_world=Matrix.Identity(4),
+        cursor_world=Vector((0.0, 0.0, 1.5)),
+        current_length=1.5,
+        min_projected_length=0.01,
+    )
+    assert result is None
+
+
+def test_extend_preview_line_renders_extension_when_cursor_past_end():
+    """Happy path: cursor past current end → line runs from current end to
+    the cursor's projected length. Identity matrix: local-Z maps 1:1 to
+    world-Z. Pin the endpoints exactly."""
+    from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
+
+    result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
+        matrix_world=Matrix.Identity(4),
+        cursor_world=Vector((0.0, 0.0, 3.0)),
+        current_length=1.0,
+        min_projected_length=0.01,
+    )
+    assert result is not None
+    start, end = result
+    assert tuple(start) == pytest.approx((0.0, 0.0, 1.0))
+    assert tuple(end) == pytest.approx((0.0, 0.0, 3.0))
+
+
+def test_extend_preview_line_renders_trim_when_cursor_inside_segment():
+    """Cursor inside the segment → line runs from current end BACK to the
+    projected (shorter) length."""
+    from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
+
+    result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
+        matrix_world=Matrix.Identity(4),
+        cursor_world=Vector((0.0, 0.0, 0.4)),
+        current_length=1.0,
+        min_projected_length=0.01,
+    )
+    assert result is not None
+    start, end = result
+    assert tuple(start) == pytest.approx((0.0, 0.0, 1.0))
+    assert tuple(end) == pytest.approx((0.0, 0.0, 0.4))
+
+
+def test_extend_preview_line_clamps_cursor_projection_to_minimum():
+    """When the cursor's projected Z is negative (behind segment origin) or
+    near zero, the extend operator clamps to ``min_projected_length``. The
+    preview must match the same clamp so the line lands where the operator
+    would actually commit, not at the raw cursor position."""
+    from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
+
+    result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
+        matrix_world=Matrix.Identity(4),
+        cursor_world=Vector((0.0, 0.0, -2.0)),
+        current_length=1.0,
+        min_projected_length=0.01,
+    )
+    assert result is not None
+    start, end = result
+    assert tuple(start) == pytest.approx((0.0, 0.0, 1.0))
+    assert tuple(end) == pytest.approx((0.0, 0.0, 0.01))
+
+
+def test_extend_preview_line_respects_object_rotation():
+    """A rotated segment (90° around Y) should produce world-space endpoints
+    rotated accordingly. Pin so a future refactor doesn't drop the
+    matrix_world multiplication."""
+    import math
+
+    from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
+
+    rotation = Matrix.Rotation(math.pi / 2, 4, "Y")
+    result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
+        matrix_world=rotation,
+        cursor_world=Vector((3.0, 0.0, 0.0)),
+        current_length=1.0,
+        min_projected_length=0.01,
+    )
+    assert result is not None
+    start, end = result
+    # local (0, 0, 1) rotated by 90° around Y → world (1, 0, 0).
+    assert tuple(start) == pytest.approx((1.0, 0.0, 0.0), abs=1e-6)
+    # local (0, 0, 3) rotated by 90° around Y → world (3, 0, 0).
+    assert tuple(end) == pytest.approx((3.0, 0.0, 0.0), abs=1e-6)
+
+
+# ---------------------------------------------------------------------------
 # Lifecycle drift handling — Enable / Finish / Cancel must commit / restore
 # matrix_world ↔ IFC ObjectPlacement at the appropriate lifecycle points.
 # The AST forward-compat guard pins "a drift hook IS called somewhere"; these

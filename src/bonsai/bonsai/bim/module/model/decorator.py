@@ -2108,6 +2108,163 @@ def _fill_quads_alpha(
     gpu.state.blend_set("NONE")
 
 
+class MEPSegmentExtendPreviewDecorator(tool.Blender.ViewportDecorator):
+    """Preview line for the MEP segment extend-to-cursor gizmo. Renders one
+    line from the segment's current end to the cursor's projection on the
+    segment's local Z axis when the extend icon is hovered. Self-gates every
+    draw on the viewport gizmo toggle and the per-feature ``extend`` pref."""
+
+    draw_method = "draw_line"
+
+    LINE_WIDTH = 1.5
+    LINE_ALPHA = 0.8
+
+    def draw_line(self, context: bpy.types.Context) -> None:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return
+        prefs = tool.Blender.get_addon_preferences()
+
+        active = context.active_object
+        if active is None:
+            return
+        selected = list(tool.Blender.get_selected_objects())
+        if active not in selected or len(selected) != 1:
+            return
+
+        element = tool.Ifc.get_entity(active)
+        if element is None:
+            return
+
+        from bonsai.bim.module.model.mep import (
+            GizmoDuctSegmentEdition,
+            GizmoPipeSegmentEdition,
+        )
+
+        if tool.Parametric.is_pipe_segment(element):
+            gizmo_prefs = getattr(prefs.gizmos, "pipe_segment", None)
+            gizmo_cls = GizmoPipeSegmentEdition
+        elif tool.Parametric.is_duct_segment(element):
+            gizmo_prefs = getattr(prefs.gizmos, "duct_segment", None)
+            gizmo_cls = GizmoDuctSegmentEdition
+        else:
+            return
+        if gizmo_prefs is None or not getattr(gizmo_prefs, "enabled", True):
+            return
+        if not self._cursor_icon_hovered(gizmo_cls, "extend_gizmo", context):
+            return
+
+        current_length = max(c[2] for c in active.bound_box) if active.bound_box else 0.0
+        line = self._compute_extend_preview_line(
+            active.matrix_world, context.scene.cursor.location, current_length, min_projected_length=0.01
+        )
+        if line is None:
+            return
+        start_world, end_world = line
+        color = tuple(prefs.decorator_color_selected[:3])
+        _stroke_lines_alpha(
+            context,
+            [(tuple(start_world), tuple(end_world))],
+            color,
+            self.LINE_WIDTH,
+            self.LINE_ALPHA,
+        )
+
+    @staticmethod
+    def _compute_extend_preview_line(
+        matrix_world: Matrix,
+        cursor_world: Vector,
+        current_length: float,
+        min_projected_length: float = 0.01,
+    ) -> tuple[Vector, Vector] | None:
+        """Returns ``(current_end_world, target_end_world)`` or ``None`` when
+        no extend would happen (degenerate segment, or cursor on the existing
+        end). Target follows the cursor's local Z clamped to
+        ``min_projected_length`` so the preview matches where the operator
+        actually commits (which floors at the minimum)."""
+        if current_length <= 0:
+            return None
+        cursor_local = matrix_world.inverted() @ cursor_world
+        if abs(cursor_local.z - current_length) < 1e-6:
+            return None
+        target_local_z = max(min_projected_length, cursor_local.z)
+        current_end_world = matrix_world @ Vector((0.0, 0.0, current_length))
+        target_end_world = matrix_world @ Vector((0.0, 0.0, target_local_z))
+        return current_end_world, target_end_world
+
+
+class BendPreviewDecorator(tool.Blender.ViewportDecorator):
+    """GPU preview lines for the bend-creation flow.
+
+    Polls on ``scene.BIMPreviewProperties.bend.is_active`` and renders the
+    centerline + leg projections returned by ``mep.compute_bend_preview_polylines``.
+    The two leg lines (segment → tangent point) show how each segment will
+    be shortened; the arc polyline approximates the bend curve. On invalid
+    geometry, draws the two rejected axes in warning colour instead so the
+    user sees why the bend cannot be placed.
+
+    Installed once per Blender session from ``bim/handler.py:load_post``.
+    Cheap to leave running because the first thing ``draw`` does is check
+    ``is_active`` and return when False.
+    """
+
+    LINE_WIDTH_LEG = 1.5
+    LINE_WIDTH_ARC = 2.5
+    LINE_ALPHA = 0.7
+
+    def draw(self, context: bpy.types.Context) -> None:
+        scene = context.scene
+        preview = getattr(scene, "BIMPreviewProperties", None)
+        props = preview.bend if preview is not None else None
+        if props is None or not props.is_active:
+            return
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return
+        try:
+            start_element = ifc_file.by_id(props.start_segment_id)
+            end_element = ifc_file.by_id(props.end_segment_id)
+        except Exception:
+            return
+        start_obj = tool.Ifc.get_object(start_element) if start_element else None
+        end_obj = tool.Ifc.get_object(end_element) if end_element else None
+        if start_obj is None or end_obj is None:
+            return
+
+        # Late import: decorator.py loads at addon enable but mep.py imports
+        # this module for the extend preview, so a module-level import would
+        # cycle.
+        from bonsai.bim.module.model.mep import compute_bend_preview_polylines
+
+        preview = compute_bend_preview_polylines(start_obj, end_obj, props.start_length, props.end_length, props.radius)
+        prefs = tool.Blender.get_addon_preferences()
+
+        if not preview["valid"]:
+            warning_color = tuple(prefs.decorator_color_error[:3])
+            axes = preview.get("invalid_axes") or []
+            if axes:
+                segments = [(tuple(a), tuple(b)) for a, b in axes]
+                _stroke_lines_alpha(context, segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+            return
+
+        leg_color = tuple(prefs.decorations_colour[:3])
+        arc_color = tuple(prefs.decorator_color_selected[:3])
+
+        leg_a_far, leg_a_end = preview["leg_a"]
+        leg_b_far, leg_b_end = preview["leg_b"]
+        _stroke_lines_alpha(
+            context,
+            [(tuple(leg_a_far), tuple(leg_a_end)), (tuple(leg_b_far), tuple(leg_b_end))],
+            leg_color,
+            self.LINE_WIDTH_LEG,
+            self.LINE_ALPHA,
+        )
+
+        arc = preview["arc"]
+        if len(arc) >= 2:
+            arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
+            _stroke_lines_alpha(context, arc_segments, arc_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+
+
 class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
     """GPU preview lines for the wall-fillet flow.
 

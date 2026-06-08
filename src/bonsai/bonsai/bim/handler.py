@@ -47,7 +47,9 @@ from bonsai.bim.module.model.array import (
 )
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import (
+    BendPreviewDecorator,
     BoundingBoxDecorator,
+    MEPSegmentExtendPreviewDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
     WallFilletPreviewDecorator,
@@ -511,6 +513,8 @@ def _install_viewport_overlays() -> None:
     WallAxisDecorator.uninstall()
     SlabDirectionDecorator.uninstall()
     WallFilletPreviewDecorator.uninstall()
+    BendPreviewDecorator.uninstall()
+    MEPSegmentExtendPreviewDecorator.uninstall()
     WallGizmoPreviewDecorator.uninstall()
     ArrayPreviewDecorator.uninstall()
     ArraySelectionHighlightDecorator.uninstall()
@@ -532,6 +536,11 @@ def _install_viewport_overlays() -> None:
         # wall_fillet.is_active, so installation has no cost when no preview
         # is open. No corresponding addon-preference toggle.
         WallFilletPreviewDecorator.install(bpy.context)
+        # Always-installed siblings of WallFilletPreviewDecorator: each
+        # self-polls on its own scene.BIMPreviewProperties subgroup or on
+        # selection + hover gizmo state — zero cost when nothing is active.
+        BendPreviewDecorator.install(bpy.context)
+        MEPSegmentExtendPreviewDecorator.install(bpy.context)
         # Always-installed: draw_lines() self-polls on selection + hover state
         # for join / extend-to-wall / cursor-extend / cursor-split previews.
         # Free when no preview-eligible state is active.
