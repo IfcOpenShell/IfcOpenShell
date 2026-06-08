@@ -2962,10 +2962,7 @@ class FinishWallFilletPreview(bpy.types.Operator):
             self.report({"ERROR"}, str(exc))
             return {"CANCELLED"}
         if "FINISHED" in result:
-            props.is_active = False
-            props.wall_a_id = 0
-            props.wall_b_id = 0
-            props.editing_corner_id = 0
+            preview_base.clear_preview_state(props)
         return result
 
 
@@ -2983,10 +2980,7 @@ class CancelWallFilletPreview(bpy.types.Operator):
         props = preview_base.get_preview_props(context, "wall_fillet")
         if props is None or not props.is_active:
             return {"CANCELLED"}
-        props.is_active = False
-        props.wall_a_id = 0
-        props.wall_b_id = 0
-        props.editing_corner_id = 0
+        preview_base.clear_preview_state(props)
         return {"FINISHED"}
 
 
