@@ -186,6 +186,7 @@ classes = (
     prop.BIMWallProperties,
     prop.BIMPolylineProperties,
     prop.BIMExternalParametricGeometryProperties,
+    prop.BIMBendPreviewProperties,
     prop.BIMWallFilletPreviewProperties,
     prop.BIMPreviewProperties,
     ui.BIM_PT_array,
@@ -263,6 +264,9 @@ classes = (
     mep.MEPAddObstruction,
     mep.MEPAddTransition,
     mep.MEPAddBend,
+    mep.EnableBendPreview,
+    mep.FinishBendPreview,
+    mep.CancelBendPreview,
     external.ApplyExternalParametricGeometry,
 )
 
