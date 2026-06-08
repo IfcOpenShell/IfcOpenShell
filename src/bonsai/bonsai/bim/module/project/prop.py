@@ -295,6 +295,17 @@ class LibraryBreadcrumb(PropertyGroup):
         library_id: int
 
 
+class PendingOpeningRecut(PropertyGroup):
+    """One element whose ``HasOpenings`` exceeded ``void_limit`` at load time
+    and was imported without opening subtractions. The user can later apply
+    them on demand from the Project panel banner."""
+
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+
+
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
@@ -352,6 +363,7 @@ class BIMProjectProperties(PropertyGroup):
         default=30,
         description="Maxium number of openings that object can have. If object has more openings, it will be loaded without openings",
     )
+    pending_opening_recut: CollectionProperty(name="Pending Opening Recut", type=PendingOpeningRecut)
     style_limit: IntProperty(
         name="Style Limit",
         default=300,
@@ -516,6 +528,7 @@ class BIMProjectProperties(PropertyGroup):
         deflection_tolerance: float
         angular_tolerance: float
         void_limit: int
+        pending_opening_recut: bpy.types.bpy_prop_collection_idprop[PendingOpeningRecut]
         style_limit: int
         distance_limit: float
         false_origin_mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
