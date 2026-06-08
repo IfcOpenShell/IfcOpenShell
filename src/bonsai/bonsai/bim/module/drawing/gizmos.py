@@ -159,6 +159,51 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
 
+_BONSAI_TRANSFORM_MACROS = frozenset(
+    {
+        # Bonsai overrides Blender's default move/duplicate keymaps with
+        # macros that wrap TRANSFORM_OT_translate. While a macro is the outer
+        # modal entry, the inner TRANSFORM_OT_translate does not surface in
+        # window.modal_operators — the macro's own idname does. The
+        # ``BIM_OT_`` prefix is what Blender returns from ``bl_idname`` at
+        # runtime (the class declaration uses the dotted ``bim.`` form).
+        "BIM_OT_override_move_macro",                         # G key
+        "BIM_OT_override_object_duplicate_move_macro",        # Shift+D
+        "BIM_OT_override_object_duplicate_move_linked_macro", # Alt+D
+        "BIM_OT_object_duplicate_move_linked_aggregate_macro",# Ctrl+Shift+D
+    }
+)
+
+
+def _is_transform_modal_active(context) -> bool:
+    """True iff a Blender transform modal (G/R/S and siblings, including
+    Bonsai's macro overrides) is currently driving per-frame ``matrix_world``
+    updates. Reads ``window.modal_operators`` — the Blender 4.2+ collection of
+    running modal operators. Parametric gizmo groups gate poll + draw_prepare
+    on this so they hide for the duration of the drag instead of sliding
+    off-cursor as the matrix updates each frame."""
+    window = getattr(context, "window", None)
+    if window is None:
+        return False
+    modal_ops = getattr(window, "modal_operators", None)
+    if not modal_ops:
+        return False
+    for op in modal_ops:
+        idname = op.bl_idname
+        if idname.startswith("TRANSFORM_OT_") or idname in _BONSAI_TRANSFORM_MACROS:
+            return True
+    return False
+
+
+def _hide_all_non_modal_gizmos(group) -> None:
+    """Set ``hide = True`` on every gizmo in ``group`` whose own ``is_modal``
+    is False. Used by parametric ``draw_prepare`` to suppress visible
+    re-positioning while a transform modal is dragging ``matrix_world``."""
+    for gz in group.gizmos:
+        if not getattr(gz, "is_modal", False):
+            gz.hide = True
+
+
 class GizmoColor(Enum):
     """Color identifiers for dimension gizmos.
 
@@ -4998,6 +5043,9 @@ class BillboardingGizmoGroupMixin:
         self.position_gizmos(context)
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
+        if _is_transform_modal_active(context):
+            _hide_all_non_modal_gizmos(self)
+            return
         self.position_gizmos(context)
 
     def setup_icon_gizmo(
@@ -5651,6 +5699,8 @@ class BaseParametricGizmoGroup:
         from bonsai.bim.module.model import preview_base
 
         if preview_base.any_preview_active(context):
+            return False
+        if _is_transform_modal_active(context):
             return False
         if cls.gizmo_pref_name:
             prefs = tool.Blender.get_addon_preferences()
@@ -6416,6 +6466,9 @@ class BaseParametricGizmoGroup:
         """
         if not self.is_setup_complete():
             return
+        if _is_transform_modal_active(context):
+            _hide_all_non_modal_gizmos(self)
+            return
         obj = context.active_object
         if not obj:
             return
@@ -6621,6 +6674,9 @@ class BaseSchematicGizmoGroup(BaseParametricGizmoGroup):
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
         if not self.is_setup_complete():
+            return
+        if _is_transform_modal_active(context):
+            _hide_all_non_modal_gizmos(self)
             return
         obj = context.active_object
         if not obj:
@@ -7027,6 +7083,8 @@ class BaseIconActionGroup(BillboardingGizmoGroupMixin):
         if obj is None:
             return False
         if not tool.Blender.are_viewport_gizmos_enabled():
+            return False
+        if _is_transform_modal_active(context):
             return False
         return cls.is_eligible_object(obj)
 
