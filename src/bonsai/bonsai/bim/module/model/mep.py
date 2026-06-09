@@ -2190,29 +2190,47 @@ class _MEPSegmentEditionMixin:
         projected_local = Vector((0.0, 0.0, cursor_local.z))
         projected_world = mw @ projected_local
         billboard_rot = self._frame_billboard_rot or gizmo.get_billboard_rotation(context)
+        # Segment extrusion axis in world space — local +Z of the active
+        # object. The extend icon orients its +X arrow along this so the
+        # arrow visually runs along the pipe / duct rather than horizontally.
+        segment_axis_world = (mw.to_3x3() @ Vector((0.0, 0.0, 1.0))).normalized()
 
         gz = self.extend_gizmo
         gz.hide = self.is_gizmo_hidden_by_modal(gz)
-        gz.matrix_basis = gizmo.billboarded_at(projected_world, billboard_rot)
-        if gizmo.should_flip_extend_arrow(projected_world, mw.translation, billboard_rot):
+        gz.matrix_basis = gizmo.billboarded_along_axis(projected_world, billboard_rot, segment_axis_world)
+        # Flip so the arrow points away from the current segment end (the
+        # direction the extend would grow). Comparing cursor projection
+        # against current_length picks the right end regardless of viewport
+        # orientation.
+        obj = context.active_object
+        current_length = max((c[2] for c in obj.bound_box), default=0.0) if obj is not None else 0.0
+        if cursor_local.z < current_length:
             gz.matrix_basis = gz.matrix_basis @ gizmo.EXTEND_FLIP_MIRROR_X
 
         if hasattr(self, "split_gizmo"):
             split_gz = self.split_gizmo
-            obj = context.active_object
             if obj is None or not obj.bound_box:
                 split_gz.hide = True
             else:
                 # Endpoint-cut threshold matches split_mep_segment's rejection
                 # window so the icon never offers an invalid affordance.
-                current_length = max(c[2] for c in obj.bound_box)
                 in_range = 0.01 < cursor_local.z < (current_length - 0.01)
                 if not in_range or self.is_gizmo_hidden_by_modal(split_gz):
                     split_gz.hide = True
                 else:
                     split_gz.hide = False
-                    offset_world = billboard_rot @ Vector((0.0, self.CURSOR_STACK_OFFSET, 0.0))
-                    split_gz.matrix_basis = gizmo.billboarded_at(projected_world + offset_world, billboard_rot)
+                    # Stack the split icon perpendicular to the segment axis
+                    # in screen space so it doesn't overlap the rotated
+                    # extend arrow.
+                    camera_forward = billboard_rot @ Vector((0.0, 0.0, 1.0))
+                    perp_axis = camera_forward.cross(segment_axis_world)
+                    if perp_axis.length < 1e-4:
+                        perp_axis = billboard_rot @ Vector((0.0, 1.0, 0.0))
+                    else:
+                        perp_axis.normalize()
+                    split_gz.matrix_basis = gizmo.billboarded_at(
+                        projected_world + perp_axis * self.CURSOR_STACK_OFFSET, billboard_rot
+                    )
 
 
 # Dimension config shared between pipe and duct segments. ``matrix_position``

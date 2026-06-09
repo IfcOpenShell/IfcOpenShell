@@ -2154,9 +2154,7 @@ class MEPSegmentExtendPreviewDecorator(tool.Blender.ViewportDecorator):
             return
 
         current_length = max(c[2] for c in active.bound_box) if active.bound_box else 0.0
-        line = self._compute_extend_preview_line(
-            active.matrix_world, context.scene.cursor.location, current_length, min_projected_length=0.01
-        )
+        line = self._compute_extend_preview_line(active.matrix_world, context.scene.cursor.location, current_length)
         if line is None:
             return
         start_world, end_world = line
@@ -2174,21 +2172,20 @@ class MEPSegmentExtendPreviewDecorator(tool.Blender.ViewportDecorator):
         matrix_world: Matrix,
         cursor_world: Vector,
         current_length: float,
-        min_projected_length: float = 0.01,
     ) -> tuple[Vector, Vector] | None:
         """Returns ``(current_end_world, target_end_world)`` or ``None`` when
         no extend would happen (degenerate segment, or cursor on the existing
-        end). Target follows the cursor's local Z clamped to
-        ``min_projected_length`` so the preview matches where the operator
-        actually commits (which floors at the minimum)."""
+        end). Target follows the cursor's raw local-Z projection unbounded —
+        the line stays visible past the segment origin (negative local Z)
+        because the user expects to see where they're pointing even when the
+        operator would floor it."""
         if current_length <= 0:
             return None
         cursor_local = matrix_world.inverted() @ cursor_world
         if abs(cursor_local.z - current_length) < 1e-6:
             return None
-        target_local_z = max(min_projected_length, cursor_local.z)
         current_end_world = matrix_world @ Vector((0.0, 0.0, current_length))
-        target_end_world = matrix_world @ Vector((0.0, 0.0, target_local_z))
+        target_end_world = matrix_world @ Vector((0.0, 0.0, cursor_local.z))
         return current_end_world, target_end_world
 
 
