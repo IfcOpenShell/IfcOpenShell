@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 from math import cos, pi, radians, sin, tan
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 import blf
 import bmesh
@@ -41,6 +41,11 @@ from mathutils import Matrix, Quaternion, Vector
 
 import bonsai.core.geometry
 import bonsai.tool as tool
+from bonsai.bim.module.drawing.gizmos import (
+    ARC_SEGMENTS,
+    DOOR_SWING_ANGLE_MAX,
+    DOOR_SWING_ANGLE_MIN,
+)
 from bonsai.bim.module.drawing.helper import format_distance
 
 
@@ -2391,6 +2396,120 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
         d1 = (p1.x - intersection[0]) ** 2 + (p1.y - intersection[1]) ** 2 + (p1.z - intersection[2]) ** 2
         d2 = (p2.x - intersection[0]) ** 2 + (p2.y - intersection[1]) ** 2 + (p2.z - intersection[2]) ** 2
         return p2 if d2 >= d1 else p1
+
+
+class _DoorSwingArc(NamedTuple):
+    """Parameters for one swing-arc draw call in door-local space."""
+
+    hinge_x: float
+    hinge_y: float
+    panel_width: float
+    x_mirror: bool
+
+
+def _visible_arcs(door_type: str, overall_width: float, lining_offset: float) -> list[_DoorSwingArc]:
+    """Arc specs for the parametric door swing visualisation, agnostic of
+    edit-mode state so the readonly preview and the editor view stay aligned.
+
+    Empty only for sliding-door types; unknown ``door_type`` values fall
+    through to a single left-hinged arc."""
+    if "SLIDING" in door_type:
+        return []
+    is_double = "DOUBLE_DOOR" in door_type
+    is_right_single = door_type.endswith("RIGHT") and not is_double
+    arcs = [
+        _DoorSwingArc(
+            hinge_x=overall_width if is_right_single else 0.0,
+            hinge_y=lining_offset,
+            panel_width=overall_width / 2 if is_double else overall_width,
+            x_mirror=is_right_single,
+        )
+    ]
+    if is_double:
+        arcs.append(
+            _DoorSwingArc(
+                hinge_x=overall_width,
+                hinge_y=lining_offset,
+                panel_width=overall_width / 2,
+                x_mirror=True,
+            )
+        )
+    return arcs
+
+
+# Unit quarter-arc samples shared with the edit-mode swing gizmo so the
+# readonly arc traces the same curve. Re-scaled per draw via the per-arc
+# transform.
+_DOOR_SWING_ARC_ANGLE_MIN_RAD = math.radians(DOOR_SWING_ANGLE_MIN)
+_DOOR_SWING_ARC_ANGLE_RANGE_RAD = math.radians(DOOR_SWING_ANGLE_MAX) - _DOOR_SWING_ARC_ANGLE_MIN_RAD
+_DOOR_SWING_ARC_UNIT_POINTS: tuple[Vector, ...] = tuple(
+    Vector(
+        (
+            math.cos(_DOOR_SWING_ARC_ANGLE_MIN_RAD + _DOOR_SWING_ARC_ANGLE_RANGE_RAD * (_i / ARC_SEGMENTS)),
+            math.sin(_DOOR_SWING_ARC_ANGLE_MIN_RAD + _DOOR_SWING_ARC_ANGLE_RANGE_RAD * (_i / ARC_SEGMENTS)),
+            0.0,
+        )
+    )
+    for _i in range(ARC_SEGMENTS + 1)
+)
+
+
+class DoorSwingReadonlyDecorator(tool.Blender.ViewportDecorator):
+    """Always-on swing-arc preview for the active Bonsai-parametric IfcDoor
+    when it is not currently in parametric edit mode. Matches the visual
+    contract of the parametric door's swing-arc gizmos so the hinge side
+    and opening direction can be read without entering edit mode.
+
+    Silent-skip cases (no draw, no error):
+
+    - active object missing / not selected / not an IfcDoor;
+    - door is mid-edit (the swing gizmo is already painting the arc);
+    - door has no ``BBIM_Door`` pset (legacy import, never edited in Bonsai)."""
+
+    LINE_WIDTH = 1.5
+    LINE_ALPHA = 0.8
+
+    def draw(self, context: bpy.types.Context) -> None:
+        obj = context.active_object
+        if obj is None or not obj.select_get():
+            return
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not element.is_a("IfcDoor"):
+            return
+        props = getattr(obj, "BIMDoorProperties", None)
+        if props is not None and props.is_editing:
+            return
+        pset = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Door")
+        if not pset:
+            return
+        data = pset.get("data_dict")
+        if not data:
+            return
+        door_type = data.get("door_type", "")
+        overall_width_project = data.get("overall_width", 0.0)
+        lining_offset_project = (data.get("lining_properties") or {}).get("lining_offset", 0.0)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        overall_width = overall_width_project * si_conversion
+        lining_offset = lining_offset_project * si_conversion
+        specs = _visible_arcs(door_type, overall_width, lining_offset)
+        if not specs:
+            return
+        prefs = tool.Blender.get_addon_preferences()
+        main_color = tuple(prefs.decorator_color_special[:3])
+        mw = obj.matrix_world
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+        for spec in specs:
+            x_flip = Matrix.Scale(-1, 4, (1, 0, 0)) if spec.x_mirror else Matrix.Identity(4)
+            transform = (
+                Matrix.Translation(Vector((spec.hinge_x, spec.hinge_y, 0.0)))
+                @ Matrix.Scale(spec.panel_width, 4)
+                @ x_flip
+            )
+            world_main = mw @ transform
+            pts = [world_main @ p for p in _DOOR_SWING_ARC_UNIT_POINTS]
+            for i in range(len(pts) - 1):
+                segments.append((tuple(pts[i]), tuple(pts[i + 1])))
+        _stroke_lines_alpha(context, segments, main_color, self.LINE_WIDTH, self.LINE_ALPHA)
 
 
 _BBOX_EDGES = (
