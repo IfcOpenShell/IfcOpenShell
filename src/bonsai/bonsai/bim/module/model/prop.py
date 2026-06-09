@@ -2066,6 +2066,16 @@ class BIMBendPreviewProperties(PropertyGroup):
         subtype="DISTANCE",
         description="Inner radius of the bend curve",
     )
+    editing_bend_id: bpy.props.IntProperty(
+        default=0,
+        options={"SKIP_SAVE"},
+        description=(
+            "IFC element id of an existing bend fitting being re-edited "
+            "(non-zero only on the pen-icon re-edit flow). The create "
+            "operator deletes this bend + its port connections before "
+            "recreating with the new parameters."
+        ),
+    )
 
     if TYPE_CHECKING:
         is_active: bool
@@ -2074,6 +2084,7 @@ class BIMBendPreviewProperties(PropertyGroup):
         start_length: float
         end_length: float
         radius: float
+        editing_bend_id: int
 
 
 class BIMWallFilletPreviewProperties(PropertyGroup):

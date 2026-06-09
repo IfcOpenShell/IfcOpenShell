@@ -1243,11 +1243,34 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
     radius: bpy.props.FloatProperty(
         name="Bend Inner Radius", description="Bend inner radius in SI units", default=0.2, subtype="DISTANCE", min=0
     )
+    editing_bend_id: bpy.props.IntProperty(
+        name="Existing Bend Element ID",
+        default=0,
+        description="When non-zero, delete this bend fitting + its port connections before creating the new bend.",
+    )
 
     def _execute(self, context):
         start_element, end_element = None, None
         ifc_file = tool.Ifc.get()
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+        # Re-edit path: delete the old bend fitting + its port connections so
+        # the segments are free to be re-joined by a fresh bend below. Runs
+        # inside the same operator transaction as the recreate so a single
+        # Ctrl+Z rewinds both.
+        if self.editing_bend_id:
+            try:
+                old_bend = ifc_file.by_id(self.editing_bend_id)
+            except RuntimeError:
+                old_bend = None
+            if old_bend is not None:
+                for port in tool.System.get_ports(old_bend):
+                    rel = next(iter(port.ConnectedFrom + port.ConnectedTo), None)
+                    if rel is not None and rel.is_a("IfcRelConnectsPorts"):
+                        bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
+                old_bend_obj = tool.Ifc.get_object(old_bend)
+                if old_bend_obj is not None:
+                    tool.Geometry.delete_ifc_object(old_bend_obj)
 
         if self.start_segment_id and self.end_segment_id:
             start_element = ifc_file.by_id(self.start_segment_id)
@@ -1911,6 +1934,7 @@ class FinishBendPreview(bpy.types.Operator):
                 start_length=props.start_length,
                 end_length=props.end_length,
                 radius=props.radius,
+                editing_bend_id=props.editing_bend_id,
             )
         except RuntimeError as exc:
             self.report({"ERROR"}, str(exc))
@@ -1936,6 +1960,103 @@ class CancelBendPreview(bpy.types.Operator):
             return {"CANCELLED"}
         preview_base.clear_preview_state(props)
         return {"FINISHED"}
+
+
+class EnableBendPreviewFromBend(bpy.types.Operator):
+    """Re-open the bend preview on an existing bend fitting.
+
+    Resolves the two connected segments via the bend's ports +
+    ``IfcRelConnectsPorts``, reads parametric values back from the bend's
+    ``BBIM_Fitting`` pset, and flags the preview so committing replaces
+    the existing bend in place."""
+
+    bl_idname = "bim.enable_bend_preview_from_bend"
+    bl_label = "Edit Bend"
+    bl_description = "Re-open the bend preview to retune an existing bend"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        active = context.active_object
+        if active is None:
+            cls.poll_message_set("No active object.")
+            return False
+        element = tool.Ifc.get_entity(active)
+        if element is None or not _is_bend_fitting(element):
+            cls.poll_message_set("Active object must be a bend fitting.")
+            return False
+        return True
+
+    def execute(self, context):
+        active = context.active_object
+        bend_element = tool.Ifc.get_entity(active)
+        if bend_element is None or not _is_bend_fitting(bend_element):
+            self.report({"ERROR"}, "Active object is not a bend fitting.")
+            return {"CANCELLED"}
+
+        connected_segments: list = []
+        for port in tool.System.get_ports(bend_element):
+            connected_port = tool.System.get_connected_port(port)
+            if connected_port is None:
+                continue
+            related = tool.System.get_port_relating_element(connected_port)
+            if related is not None and related.is_a("IfcFlowSegment") and related not in connected_segments:
+                connected_segments.append(related)
+
+        if len(connected_segments) != 2:
+            self.report(
+                {"ERROR"},
+                f"Bend has {len(connected_segments)} connected segments; need exactly 2 to re-edit.",
+            )
+            return {"CANCELLED"}
+
+        # Read parametric values from the bend type's BBIM_Fitting pset. The
+        # type carries the canonical parameters; querying the occurrence
+        # would force a get_type round-trip and miss user-edited types.
+        bend_type = ifcopenshell.util.element.get_type(bend_element)
+        if bend_type is None:
+            self.report({"ERROR"}, "Bend fitting has no type to read parameters from.")
+            return {"CANCELLED"}
+        bend_type_obj = tool.Ifc.get_object(bend_type)
+        if bend_type_obj is None:
+            self.report({"ERROR"}, "Bend type has no Blender object — cannot read pset.")
+            return {"CANCELLED"}
+        bbim = tool.Model.get_modeling_bbim_pset_data(bend_type_obj, "BBIM_Fitting")
+        if bbim is None:
+            self.report({"ERROR"}, "Bend fitting has no BBIM_Fitting pset — not a parametric bend.")
+            return {"CANCELLED"}
+        data = bbim.get("data_dict", {})
+
+        props = preview_base.get_preview_props(context, "bend")
+        if props is not None and props.is_active:
+            bpy.ops.bim.cancel_bend_preview()
+
+        # Segment order is load-bearing: the bend's lateral sign and z-axis
+        # flip are derived from which segment is "start" vs "end". Re-edit
+        # must reuse the same pairing as the original create so the recreate
+        # lands at the same orientation.
+        start_segment, end_segment = connected_segments
+        props.start_segment_id = start_segment.id()
+        props.end_segment_id = end_segment.id()
+        # Pset values are in IFC native units; scene units come from si_conversion.
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props.start_length = float(data.get("start_length", 0.1)) * si_conversion
+        props.end_length = float(data.get("end_length", 0.1)) * si_conversion
+        props.radius = float(data.get("radius", 0.2)) * si_conversion
+        props.editing_bend_id = bend_element.id()
+        props.is_active = True
+        return {"FINISHED"}
+
+
+def _is_bend_fitting(element) -> bool:
+    """True iff ``element`` is an ``IfcFlowFitting`` whose type carries
+    ``PredefinedType="BEND"``."""
+    if element is None or not element.is_a("IfcFlowFitting"):
+        return False
+    element_type = ifcopenshell.util.element.get_type(element)
+    if element_type is None:
+        return False
+    return getattr(element_type, "PredefinedType", None) == "BEND"
 
 
 def _intersection_past_near(intersection: Vector, near: Vector, far: Vector) -> bool:
@@ -2918,6 +3039,10 @@ def _active_mep_has_connected_neighbor(obj: bpy.types.Object) -> bool:
     return False
 
 
+def _active_is_bend_fitting(obj: bpy.types.Object) -> bool:
+    return _is_bend_fitting(tool.Ifc.get_entity(obj))
+
+
 class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
     """Icon-action gizmos for the MEP one-shot operators.
 
@@ -2965,6 +3090,12 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
             icon="VIEW3D_GT_array_all",
             operator="bim.select_mep_path_members",
             visibility_condition=lambda obj: _selection_size() == 1 and _active_mep_has_connected_neighbor(obj),
+        ),
+        IconActionConfig(
+            name="re_edit_bend",
+            icon="VIEW3D_GT_pen",
+            operator="bim.enable_bend_preview_from_bend",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_bend_fitting(obj),
         ),
         IconActionConfig(
             name="lock_start_open",
