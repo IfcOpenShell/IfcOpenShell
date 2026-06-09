@@ -197,8 +197,14 @@ std::vector<express::Base> mapping::find_openings(const express::Base& inst) {
                 // Only aggregation, not nesting is considered.
                 break;
             }
-            auto rel_obdef = decomposes.front().as<IfcSchema::IfcRelAggregates>().RelatingObject();
-            if (rel_obdef.as<IfcSchema::IfcElement>() && !rel_obdef.as<IfcSchema::IfcFeatureElementSubtraction>()) {
+            express::Base rel_obdef;
+            try {
+                rel_obdef = decomposes.front().as<IfcSchema::IfcRelAggregates>().RelatingObject();
+            } catch (const std::exception&) {
+                // exception already logged as part of handling of placement
+                break;
+            }
+            if (rel_obdef && rel_obdef.as<IfcSchema::IfcElement>() && !rel_obdef.as<IfcSchema::IfcFeatureElementSubtraction>()) {
                 auto element = rel_obdef.as<IfcSchema::IfcElement>();
                 auto rels = element.HasOpenings();
                 for (auto& rel : rels) {
