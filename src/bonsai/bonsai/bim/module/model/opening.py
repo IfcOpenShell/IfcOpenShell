@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from collections.abc import Sequence
 from math import radians
@@ -1278,9 +1280,7 @@ class DecorationsHandler:
                 self.draw_batch("LINES", verts, selected_elements_color, selected_edges)
                 self.draw_batch("POINTS", unselected_vertices, unselected_elements_color)
                 self.draw_batch("POINTS", selected_vertices, selected_elements_color)
-                obj.data.calc_loop_triangles()
-                tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
-                self.draw_batch("TRIS", verts, transparent_color(special_elements_color), tris)
+                tool.Blender.draw_bmesh_face_tris(bm, verts, transparent_color(special_elements_color), self.draw_batch)
             else:
                 line_verts, verts, edges_indices, tris = _get_cached_world_draw_data(obj)
                 color = selected_elements_color if obj in context.selected_objects else special_elements_color
