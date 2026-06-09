@@ -275,6 +275,7 @@ classes = (
     mep.EnableBendPreview,
     mep.FinishBendPreview,
     mep.CancelBendPreview,
+    mep.EnableBendPreviewFromBend,
     mep.GizmoBendPreview,
     mep.EnableEditingPipeSegment,
     mep.FinishEditingPipeSegment,

@@ -266,6 +266,62 @@ def test_bend_preview_decorator_class_present():
     assert hasattr(BendPreviewDecorator, "uninstall")
 
 
+def test_enable_bend_preview_from_bend_is_registered():
+    """The re-edit entry point is discoverable via ``bpy.ops.bim`` so the
+    pen-icon dispatch in ``GizmoMEPActions`` resolves at click time."""
+    assert hasattr(bpy.ops.bim, "enable_bend_preview_from_bend")
+
+
+def test_bim_bend_preview_properties_has_editing_bend_id():
+    """The re-edit dispatch flag rides on the same preview PropertyGroup as
+    the rest of the bend draft state. Without this field on the umbrella,
+    re-edit cancel / commit cleanup would not zero it via
+    ``clear_preview_state`` (which iterates ``*_id`` IntProperty fields)."""
+    bend_props = bpy.context.scene.BIMPreviewProperties.bend
+    assert hasattr(bend_props, "editing_bend_id")
+    assert bend_props.editing_bend_id == 0
+
+
+@pytest.mark.parametrize(
+    "ifc_class,predefined_type,expected",
+    [
+        ("IfcFlowFitting", "BEND", True),
+        ("IfcFlowFitting", "TRANSITION", False),
+        ("IfcFlowFitting", "OBSTRUCTION", False),
+        ("IfcFlowFitting", None, False),
+        ("IfcFlowSegment", "BEND", False),
+        ("IfcWall", "BEND", False),
+    ],
+)
+def test_is_bend_fitting_predicate_truth_table(ifc_class, predefined_type, expected):
+    """The predicate classifies each occurrence by walking up to its type's
+    ``PredefinedType``. Pin the four-way branch: matching class + matching
+    type, matching class + other type, wrong class, no type at all."""
+    from unittest.mock import Mock
+
+    from bonsai.bim.module.model.mep import _is_bend_fitting
+
+    element = Mock()
+    element.is_a = Mock(side_effect=lambda c: c == ifc_class)
+    if predefined_type is None:
+        element_type = None
+    else:
+        element_type = Mock()
+        element_type.PredefinedType = predefined_type
+
+    with patch("ifcopenshell.util.element.get_type", return_value=element_type):
+        assert _is_bend_fitting(element) is expected
+
+
+def test_is_bend_fitting_predicate_returns_false_on_none():
+    """The predicate is total — callers pass it raw ``tool.Ifc.get_entity``
+    results which can be ``None`` for unbound Blender objects, and the
+    visibility-condition lambda must not raise from a gizmo poll."""
+    from bonsai.bim.module.model.mep import _is_bend_fitting
+
+    assert _is_bend_fitting(None) is False
+
+
 # ---------------------------------------------------------------------------
 # Finish-catches-RuntimeError contract
 # ---------------------------------------------------------------------------
@@ -294,6 +350,7 @@ def test_finish_bend_preview_catches_runtime_error_from_dispatch():
         start_length=0.1,
         end_length=0.1,
         radius=0.2,
+        editing_bend_id=0,
     )
     context = SimpleNamespace(
         screen=MagicMock(),
