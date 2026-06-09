@@ -546,6 +546,13 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         objs = [bpy.data.objects[obj_name]] if obj_name else context.selected_objects
         self.file = tool.Ifc.get()
 
+        # Tessellated face sets (IfcTriangulatedFaceSet/IfcPolygonalFaceSet) were
+        # introduced in IFC4 and do not exist in IFC2X3. Catch this early so we
+        # don't silently fall back to a faceted brep after stripping materials.
+        if self.ifc_representation_class == "IfcTessellatedFaceSet" and self.file.schema == "IFC2X3":
+            self.report({"ERROR"}, "Tessellated face sets are not supported in IFC2X3.")
+            return {"CANCELLED"}
+
         for obj in objs:
             # TODO: write unit tests to see how this bulk operation handles
             # contradictory ifc_representation_class values and when
