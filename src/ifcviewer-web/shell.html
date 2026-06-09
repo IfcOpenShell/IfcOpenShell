@@ -8,9 +8,11 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #viewer-canvas { display: block; width: 100vw; height: 100vh; outline: none;
     background: #1a1d24; }
-  #status { position: fixed; top: 8px; left: 12px; font-size: 12px;
-    background: rgba(20,22,28,.72); padding: 4px 8px; border-radius: 4px;
-    pointer-events: none; }
+  #status { position: fixed; top: 8px; left: 12px; right: 12px;
+    max-height: 80vh; overflow-y: auto; font-size: 11px;
+    font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    background: rgba(20,22,28,.78); padding: 6px 10px; border-radius: 4px;
+    white-space: pre-wrap; pointer-events: auto; }
   #status.error { background: rgba(120,30,30,.85); color: #fff; }
 </style>
 </head>
@@ -24,17 +26,43 @@
   var statusEl = document.getElementById('status');
   var Module = {
     canvas: document.getElementById('viewer-canvas'),
+    // Keep the wasm runtime alive after main() returns so the
+    // Dawn-web RequestAdapter/RequestDevice promise callbacks
+    // (queued from main) actually land. Without this flag the
+    // runtime tears down at end-of-main and the callbacks never
+    // fire — symptom: adapter cb fires (synchronous-ish on the
+    // first JS tick) but device cb does not. EXIT_RUNTIME=0 in
+    // CMakeLists is the build-time half; this is the runtime half.
+    noExitRuntime: true,
     print:        function(t) { console.log(t); },
     printErr:     function(t) {
       console.warn(t);
-      // First non-empty stderr line replaces the "Starting…" tag; subsequent
-      // lines append. Anything containing "fail" / "error" flips us into
-      // the red error chip.
-      statusEl.textContent = t;
+      // Accumulate every stderr line so the init sequence is visible
+      // even when the wasm hangs partway. The first time something is
+      // printed we drop the "Starting…" placeholder.
+      if (statusEl.textContent === 'Starting…' ||
+          statusEl.textContent === 'wasm loaded — waiting for WebGPU') {
+        statusEl.textContent = '';
+      }
+      statusEl.textContent += t + '\n';
+      statusEl.scrollTop = statusEl.scrollHeight;
       if (/fail|error|null/i.test(t)) statusEl.classList.add('error');
     },
     onRuntimeInitialized: function() {
       statusEl.textContent = 'wasm loaded — waiting for WebGPU';
+      // RAF loop. Polls for Module._app_ptr (set by C once the wgpu
+      // device callback completes init) and only then drives the C
+      // tick. Living in shell.html means the loop is set up from a
+      // clean JS top-level, NOT nested inside Dawn-web's Promise.then
+      // chain — which is the configuration that stalls device-callback
+      // delivery (verified during web bring-up).
+      function shellTick() {
+        if (Module._app_ptr && Module._raf_tick_c) {
+          Module._raf_tick_c(Module._app_ptr);
+        }
+        requestAnimationFrame(shellTick);
+      }
+      requestAnimationFrame(shellTick);
     }
   };
   if (!navigator.gpu) {

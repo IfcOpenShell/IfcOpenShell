@@ -1179,14 +1179,29 @@ namespace {
 // promises (firing our WGPU callbacks via AllowProcessEvents mode),
 // then resumes the C++ caller. Net effect: the same "spin until done"
 // shape works on both backends.
+// Async-callback mode for WGPU futures. wgpu-native fires
+// AllowProcessEvents callbacks deterministically from
+// wgpuInstanceProcessEvents — that's what we want on desktop. Dawn-web
+// queues those same callbacks indefinitely (waits for a specific
+// instance state we don't drive); AllowSpontaneous on web lets the JS
+// event loop fire the callback as soon as the underlying promise
+// resolves.
+constexpr WGPUCallbackMode kAsyncCbMode =
+#if defined(__EMSCRIPTEN__)
+    WGPUCallbackMode_AllowSpontaneous;
+#else
+    WGPUCallbackMode_AllowProcessEvents;
+#endif
+
 inline void waitTickInstance(WGPUInstance instance) {
 #if defined(__EMSCRIPTEN__)
-    // On Dawn-web AllowProcessEvents queues the callback for the next
-    // wgpuInstanceProcessEvents call, but the underlying JS promise has
-    // to resolve first. emscripten_sleep(0) unwinds the wasm stack so
-    // the JS event loop runs (resolving any pending promises); then
-    // ProcessEvents drains the resolved completions into our callback.
-    emscripten_sleep(0);
+    // Asyncify is OFF on web (see ifcviewer-web/CMakeLists.txt). The
+    // init path no longer uses this helper — it's callback-driven via
+    // initWgpuAsyncWeb. The remaining callers are MapAsync sync-wait
+    // loops (pick readback): those will spin forever here until they
+    // are ported to a callback-driven shape. Until then, hitting a
+    // pick on web hangs the page. ProcessEvents is a no-op on
+    // Dawn-web but harmless to call.
     wgpuInstanceProcessEvents(instance);
 #else
     wgpuInstanceProcessEvents(instance);
@@ -1242,12 +1257,44 @@ bool ViewportCore::probeAndCreatePool() {
 
     constexpr uint64_t MIN_POOL_CAPACITY = 64ull * 1024 * 1024;
     constexpr uint64_t MAX_PROBE_START   = 4ull * 1024 * 1024 * 1024;
+    const WGPUBufferUsage pool_usage = WGPUBufferUsage_Storage
+                                     | WGPUBufferUsage_CopyDst;
+
+#if defined(__EMSCRIPTEN__)
+    // Web: don't try to grab `device_limits.maxBufferSize` (256 MB on
+    // Dawn-web's spec floor) on the first sub-buffer. Browsers
+    // throttle / queue / hang on giant allocations — observed in
+    // Chrome: allocating 256 MB for the first chunk (~1 KB of geometry)
+    // freezes the tab indefinitely, and contention from any other
+    // WebGPU page on the same origin makes it worse. Start with a
+    // small sub-buffer (16 MB) so first-frame is cheap; the pool
+    // grows lazily via additional sub-buffers as the working set
+    // needs more, each capped at maxBufferSize but only created when
+    // actually demanded. (Dawn-web's PopErrorScope callbacks are also
+    // unreliable from a sync-spin pattern, so the desktop probe is
+    // skipped entirely on web.)
+    // 64 MB matches BufferPool::addSubBuffer's MIN_SUB_BUFFER_BYTES
+    // floor — smaller values would just be clamped up by the pool's
+    // halve-retry loop anyway. The earlier 256 MB ceiling hung Chrome
+    // not because of size per se, but because the pool's pop-error-scope
+    // spin-wait blocked the JS event loop indefinitely (now fixed in
+    // BufferPool::addSubBuffer for Emscripten).
+    constexpr std::uint64_t WEB_INITIAL_SUB_BUFFER = 64ull * 1024 * 1024;
+    const std::uint64_t per_sub = std::min<std::uint64_t>(
+        device_limits.maxBufferSize,
+        std::max<std::uint64_t>(MIN_POOL_CAPACITY, WEB_INITIAL_SUB_BUFFER));
+    pool_.configure(instance_, device_, pool_usage, per_sub,
+                    "ifcviewer-wgpu.pool");
+    Log::info() << "wgpu: pool per-sub-buffer capacity = "
+                << (per_sub / (1024 * 1024)) << " MB"
+                << " (web: small initial sub-buffer, grows lazily;"
+                << " device maxBufferSize = "
+                << (device_limits.maxBufferSize / (1024 * 1024)) << " MB)";
+    return true;
+#else
     uint64_t try_size = std::min<uint64_t>(device_limits.maxBufferSize,
                                            MAX_PROBE_START);
     if (try_size < MIN_POOL_CAPACITY) try_size = MIN_POOL_CAPACITY;
-
-    const WGPUBufferUsage pool_usage = WGPUBufferUsage_Storage
-                                     | WGPUBufferUsage_CopyDst;
 
     while (try_size >= MIN_POOL_CAPACITY) {
         wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
@@ -1263,7 +1310,7 @@ bool ViewportCore::probeAndCreatePool() {
         struct PopResult { bool done = false; bool error = false; };
         auto pop = [&](PopResult& pr) {
             WGPUPopErrorScopeCallbackInfo pcb = {};
-            pcb.mode = WGPUCallbackMode_AllowProcessEvents;
+            pcb.mode = kAsyncCbMode;
             pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
                               WGPUStringView, void* ud1, void* /*ud2*/) {
                 auto* p = static_cast<PopResult*>(ud1);
@@ -1295,6 +1342,7 @@ bool ViewportCore::probeAndCreatePool() {
     Log::warn() << "wgpu: pool probe found no allocatable size >= "
                 << (MIN_POOL_CAPACITY / (1024 * 1024)) << " MB";
     return false;
+#endif  // !__EMSCRIPTEN__
 }
 
 bool ViewportCore::initWgpu(bool web_limits) {
@@ -1303,12 +1351,14 @@ bool ViewportCore::initWgpu(bool web_limits) {
     wgpuSetLogLevel(WGPULogLevel_Warn);
 #endif
 
+    Log::info() << "[initWgpu] 1/7 wgpuCreateInstance";
     instance_ = wgpuCreateInstance(nullptr);
     if (!instance_) {
         Log::warn() << "wgpuCreateInstance returned null";
         return false;
     }
 
+    Log::info() << "[initWgpu] 2/7 host_->createSurface";
     // Surface comes from the host (X11/HWND/CAMetalLayer on desktop;
     // Emscripten canvas selector on web).
     surface_ = host_->createSurface(instance_);
@@ -1326,7 +1376,7 @@ bool ViewportCore::initWgpu(bool web_limits) {
     adapter_opts.powerPreference   = WGPUPowerPreference_HighPerformance;
 
     WGPURequestAdapterCallbackInfo acb = {};
-    acb.mode      = WGPUCallbackMode_AllowProcessEvents;
+    acb.mode = kAsyncCbMode;
     acb.callback  = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
                        WGPUStringView message, void* ud1, void* /*ud2*/) {
         auto* r = static_cast<AdapterReq*>(ud1);
@@ -1340,10 +1390,12 @@ bool ViewportCore::initWgpu(bool web_limits) {
     };
     acb.userdata1 = &areq;
 
+    Log::info() << "[initWgpu] 3/7 wgpuInstanceRequestAdapter";
     wgpuInstanceRequestAdapter(instance_, &adapter_opts, acb);
     while (!areq.done) waitTickInstance(instance_);
     if (!areq.ok) return false;
     adapter_ = areq.adapter;
+    Log::info() << "[initWgpu] 3/7 adapter ready";
 
     // ---- Async request device --------------------------------------------
     struct DeviceReq { WGPUDevice device = nullptr; bool done = false; bool ok = false; };
@@ -1357,15 +1409,36 @@ bool ViewportCore::initWgpu(bool web_limits) {
     web_floor_limits.maxBufferSize               = 256ull * 1024 * 1024;
 
     WGPUDeviceDescriptor dev_desc = {};
+#if defined(__EMSCRIPTEN__)
+    // Dawn-web's RequestDevice hangs (no promise resolution) when we
+    // pass a fully-populated WGPULimits as requiredLimits — every
+    // non-zero field is treated as a hard requirement, and the
+    // browser's adapter-reported limits include values it won't grant
+    // back to a device. nullptr means "no specific requirements; give
+    // me default limits", which the spec guarantees succeeds and is
+    // exactly what we need: the pool probe still discovers the actual
+    // buffer-size ceiling via probeAndCreatePool, so we don't lose
+    // anything by deferring to defaults here.
+    (void)web_floor_limits;
+    (void)web_limits;
+    dev_desc.requiredLimits = nullptr;
+#else
     dev_desc.requiredLimits = web_limits ? &web_floor_limits : &adapter_limits;
     if (web_limits) {
         Log::info() << "wgpu --web-limits: requesting browser-floor limits "
                        "(maxStorageBufferBindingSize=128MB, maxBufferSize=256MB)";
     }
+#endif
+#if !defined(__EMSCRIPTEN__)
+    // Setting only the callback (leaving uncapturedErrorCallbackInfo.mode
+    // = 0 default) makes Dawn-web's RequestDevice silently never resolve
+    // the device promise. Leave the whole struct zeroed on web; the
+    // browser already surfaces uncaptured errors to the JS console.
     dev_desc.uncapturedErrorCallbackInfo.callback = onUncapturedError;
+#endif
 
     WGPURequestDeviceCallbackInfo dcb = {};
-    dcb.mode     = WGPUCallbackMode_AllowProcessEvents;
+    dcb.mode = kAsyncCbMode;
     dcb.callback = [](WGPURequestDeviceStatus status, WGPUDevice device,
                       WGPUStringView message, void* ud1, void* /*ud2*/) {
         auto* r = static_cast<DeviceReq*>(ud1);
@@ -1379,26 +1452,52 @@ bool ViewportCore::initWgpu(bool web_limits) {
     };
     dcb.userdata1 = &dreq;
 
+    Log::info() << "[initWgpu] 4/7a wgpuAdapterRequestDevice CALL";
+#if defined(__EMSCRIPTEN__)
+    // Pass nullptr descriptor so Dawn-web takes the all-defaults path.
+    // Setting any descriptor field that Dawn-web can't grant silently
+    // makes the device promise never resolve, so we avoid the whole
+    // struct. Note: web init normally goes through initWgpuAsyncWeb,
+    // not this sync path; this branch is dead code on the current
+    // web build but kept for any future caller.
+    wgpuAdapterRequestDevice(adapter_, nullptr, dcb);
+#else
     wgpuAdapterRequestDevice(adapter_, &dev_desc, dcb);
-    while (!dreq.done) waitTickInstance(instance_);
+#endif
+    Log::info() << "[initWgpu] 4/7b RequestDevice returned, entering spin";
+    int tick = 0;
+    while (!dreq.done) {
+        waitTickInstance(instance_);
+        if (++tick % 100 == 0) {
+            Log::info() << "[initWgpu] 4/7c spin tick=" << tick;
+        }
+        if (tick > 2000) {
+            Log::warn() << "[initWgpu] 4/7 giving up after 2000 ticks";
+            return false;
+        }
+    }
     if (!dreq.ok) return false;
     device_ = dreq.device;
     queue_  = wgpuDeviceGetQueue(device_);
+    Log::info() << "[initWgpu] 4/7d device + queue ready";
 
+    Log::info() << "[initWgpu] 5/7 probeAndCreatePool";
     if (!probeAndCreatePool()) {
         Log::warn() << "wgpu: streaming pool probe failed; cannot start";
         return false;
     }
+    Log::info() << "[initWgpu] 5/7 pool created";
 #if !defined(__EMSCRIPTEN__)
     // Background streaming worker. On desktop std::thread spawns a real
     // OS thread; under Emscripten that requires -pthread + SharedArrayBuffer
     // (which itself needs COOP/COEP headers from the hosting page).
     // Until the web build wires those up we run streaming inline from
-    // the render thread — the chunk count for the spike is small enough
-    // that the synchronous fallback inside driveStreamingLoads is fine.
+    // the render thread (see the `use_sync = true` branch in
+    // driveStreamingLoads on Emscripten).
     streaming_thread_.start();
 #endif
 
+    Log::info() << "[initWgpu] 6/7 wgpuSurfaceGetCapabilities";
     WGPUSurfaceCapabilities caps = {};
     if (wgpuSurfaceGetCapabilities(surface_, adapter_, &caps) != WGPUStatus_Success
         || caps.formatCount == 0) {
@@ -1411,6 +1510,111 @@ bool ViewportCore::initWgpu(bool web_limits) {
     Log::info() << "wgpu init OK; surface format = " << int(surface_format_);
     return true;
 }
+
+#if defined(__EMSCRIPTEN__)
+namespace {
+// State carrier for the nested callback chain. Heap-allocated so it
+// survives across the JS event loop ticks that resolve each promise;
+// freed at the leaf callback (success or any error path).
+struct WebInitCtx {
+    ViewportCore* core;
+    std::function<void(bool)> on_complete;
+};
+} // namespace
+
+void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
+    // Pass a defaulted descriptor (not nullptr). On Dawn-web,
+    // wgpuCreateInstance(nullptr) returns a usable instance but the
+    // subsequent RequestDevice promise silently never resolves.
+    WGPUInstanceDescriptor inst_desc = {};
+    instance_ = wgpuCreateInstance(&inst_desc);
+    if (!instance_) {
+        Log::warn() << "[web init] wgpuCreateInstance returned null";
+        on_complete(false);
+        return;
+    }
+
+    auto* ctx = new WebInitCtx{this, std::move(on_complete)};
+
+    // Bare adapter options (no compatibleSurface, no powerPreference).
+    // Setting any field here makes the subsequent device promise
+    // silently never resolve on Dawn-web.
+    WGPURequestAdapterOptions adapter_opts = {};
+
+    WGPURequestAdapterCallbackInfo acb = {};
+    acb.mode = WGPUCallbackMode_AllowSpontaneous;
+    acb.callback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
+                      WGPUStringView msg, void* ud1, void* /*ud2*/) {
+        auto* c = static_cast<WebInitCtx*>(ud1);
+        if (status != WGPURequestAdapterStatus_Success || !adapter) {
+            Log::warn() << "[web init] RequestAdapter failed: " << svToStr(msg);
+            c->on_complete(false);
+            delete c;
+            return;
+        }
+        c->core->adapter_ = adapter;
+
+        WGPURequestDeviceCallbackInfo dcb = {};
+        dcb.mode = WGPUCallbackMode_AllowSpontaneous;
+        dcb.callback = [](WGPURequestDeviceStatus dstatus, WGPUDevice device,
+                          WGPUStringView dmsg, void* ud1b, void* /*ud2*/) {
+            auto* c = static_cast<WebInitCtx*>(ud1b);
+            if (dstatus != WGPURequestDeviceStatus_Success || !device) {
+                Log::warn() << "[web init] RequestDevice failed: " << svToStr(dmsg);
+                c->on_complete(false);
+                delete c;
+                return;
+            }
+            c->core->device_ = device;
+            c->core->queue_  = wgpuDeviceGetQueue(device);
+
+            // Surface creation is deferred to here (post-device-ready).
+            // Creating it inside the adapter callback (before
+            // wgpuAdapterRequestDevice) makes the device promise
+            // silently never resolve on Dawn-web.
+            c->core->surface_ = c->core->host_->createSurface(c->core->instance_);
+            if (!c->core->surface_) {
+                Log::warn() << "[web init] host createSurface returned null";
+                c->on_complete(false);
+                delete c;
+                return;
+            }
+
+            if (!c->core->probeAndCreatePool()) {
+                Log::warn() << "[web init] pool create failed";
+                c->on_complete(false);
+                delete c;
+                return;
+            }
+
+            WGPUSurfaceCapabilities caps = {};
+            if (wgpuSurfaceGetCapabilities(c->core->surface_, c->core->adapter_, &caps)
+                    != WGPUStatus_Success
+                || caps.formatCount == 0) {
+                Log::warn() << "[web init] surface has no formats";
+                c->on_complete(false);
+                delete c;
+                return;
+            }
+            c->core->surface_format_ = caps.formats[0];
+            wgpuSurfaceCapabilitiesFreeMembers(caps);
+
+            Log::info() << "[web init] wgpu device + surface ready (format="
+                        << int(c->core->surface_format_) << ")";
+            c->on_complete(true);
+            delete c;
+        };
+        dcb.userdata1 = c;
+        // Pass a zero-init local descriptor (not nullptr). Dawn-web's
+        // RequestDevice silently never resolves the promise when passed
+        // nullptr.
+        WGPUDeviceDescriptor dd = {};
+        wgpuAdapterRequestDevice(adapter, &dd, dcb);
+    };
+    acb.userdata1 = ctx;
+    wgpuInstanceRequestAdapter(instance_, &adapter_opts, acb);
+}
+#endif  // __EMSCRIPTEN__
 
 void ViewportCore::shutdown() {
     // Stop streaming first so no late results land in the pool after
@@ -2065,11 +2269,21 @@ void ViewportCore::driveStreamingLoads() {
             continue;
         }
 
-        // Sync fallback when a screenshot is pending: the deferred-
-        // capture wait would let the window manager re-layout the
-        // window while we wait, capturing at the wrong size. With sync
-        // loads the chunk appears in the same frame we enqueue.
-        if (!pending_screenshot_path_.empty()) {
+        // Sync fallback. Two ways to land here:
+        // - A screenshot capture is pending — the deferred-capture
+        //   wait would let the window manager re-layout while we wait,
+        //   capturing at the wrong size. Sync loads make the chunk
+        //   appear in the same frame we enqueue.
+        // - Emscripten — the worker thread isn't started (no pthreads
+        //   wired yet, #88), so streaming_thread_.enqueue would just
+        //   queue requests with nothing to drain them. Chunks would
+        //   never go resident.
+#if defined(__EMSCRIPTEN__)
+        const bool use_sync = true;
+#else
+        const bool use_sync = !pending_screenshot_path_.empty();
+#endif
+        if (use_sync) {
             if (loadChunkBytesAndUploadGpu(*cand.m, cand.ci)) {
                 ++enqueued;
                 c.last_visible_frame_idx = streaming_frame_idx_;
@@ -2822,6 +3036,21 @@ void ViewportCore::uploadInstanceChunk(const InstanceChunk& chunk) {
     s.instances.push_back(inst);
 }
 
+std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
+    if (!device_ || !queue_) {
+        Log::warn() << "loadSidecarFromPath: wgpu not initialised";
+        return 0;
+    }
+    auto meta_opt = readSidecarMetadataOnly(path);
+    if (!meta_opt) {
+        Log::warn() << "loadSidecarFromPath: could not read sidecar metadata from " << path;
+        return 0;
+    }
+    const std::uint32_t mid = next_model_id_++;
+    applyCachedModel(mid, std::move(*meta_opt));
+    return mid;
+}
+
 void ViewportCore::finalizeModel(std::uint32_t model_id) {
     auto it = pending_direct_loads_.find(model_id);
     if (it == pending_direct_loads_.end()) {
@@ -3230,7 +3459,7 @@ void ViewportCore::startHizMap(int slot, const Eigen::Matrix4f& vp_used) {
     auto* ctx = new MapCtx{ this, slot };
 
     WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.mode = kAsyncCbMode;
     mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
                       void* ud1, void* /*ud2*/) {
         auto* c = static_cast<MapCtx*>(ud1);
@@ -3991,7 +4220,7 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     struct MapReq { bool done = false; bool ok = false; };
     MapReq req;
     WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.mode = kAsyncCbMode;
     mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
                       void* ud1, void* /*ud2*/) {
         auto* r = static_cast<MapReq*>(ud1);
@@ -4163,7 +4392,7 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
     struct MapReq { bool done = false; bool ok = false; };
     MapReq req;
     WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.mode = kAsyncCbMode;
     mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
                       void* ud1, void* /*ud2*/) {
         auto* r = static_cast<MapReq*>(ud1);
@@ -4694,7 +4923,7 @@ void ViewportCore::finalizeScreenshotCapture(WGPUBuffer capture_buffer,
     struct MapReq { bool done = false; bool ok = false; };
     MapReq req;
     WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = WGPUCallbackMode_AllowProcessEvents;
+    mcb.mode = kAsyncCbMode;
     mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*message*/,
                       void* ud1, void* /*ud2*/) {
         auto* r = static_cast<MapReq*>(ud1);
@@ -4906,7 +5135,16 @@ void ViewportCore::render() {
             };
         }
 
+        // Force sequential on Emscripten: std::async(std::launch::async)
+        // without -pthread throws std::system_error from inside libstdc++,
+        // and we link without exceptions so that becomes abort(). Until
+        // COOP/COEP + -pthread wires the worker pool in #88, web stays
+        // on the serial path.
+#if defined(__EMSCRIPTEN__)
+        if (false) {
+#else
         if (cull_threads_enabled_) {
+#endif
             std::vector<std::pair<std::uint32_t, std::future<std::uint32_t>>> futures;
             futures.reserve(models_gpu_.size());
             for (auto& [mid, m] : models_gpu_) {

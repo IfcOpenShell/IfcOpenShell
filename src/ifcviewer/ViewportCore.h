@@ -257,6 +257,19 @@ public:
     bool initWgpu(bool web_limits);
     void shutdown();
 
+#if defined(__EMSCRIPTEN__)
+    // Async-init driver for the web. The spin-wait pattern in initWgpu()
+    // doesn't work on Dawn-web — RequestDevice's callback never fires
+    // when the caller is parked inside an Asyncify spin loop, even with
+    // AllowSpontaneous + emscripten_sleep yields. The fix is to mirror
+    // the original main_web.cpp spike: nested callbacks, no spin.
+    // Fires `on_complete(true)` once instance + adapter + device + queue
+    // + pool + surface_format_ are all in place; on any failure, fires
+    // on_complete(false). Caller is responsible for calling
+    // buildPipelines + buildHiz/Edge/Pick + scene-load after on_complete.
+    void initWgpuAsyncWeb(std::function<void(bool ok)> on_complete);
+#endif
+
     // ---- Chunk residency (#84-n) ------------------------------------------
     //
     // Build the per-chunk WGPUBindGroup over its current pool slices +
@@ -314,6 +327,14 @@ public:
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
     void applyCachedModel(std::uint32_t model_id, StreamingSidecar metadata);
+
+    // Qt-free sidecar load: readSidecarMetadataOnly + applyCachedModel.
+    // Used by the web build (and any other non-Qt embedder) so the
+    // public ViewportWindow::loadSidecar's QString + QFile triage
+    // tilde-expansion doesn't have to be replicated. Returns 0 on
+    // any failure (device not ready, file missing, magic / version
+    // mismatch) and the freshly-assigned model_id on success.
+    std::uint32_t loadSidecarFromPath(const std::string& path);
 
     // Direct-load (bonsai-side) entry points. Bonsai's SceneLoader feeds
     // the viewer one mesh + one instance at a time, then calls

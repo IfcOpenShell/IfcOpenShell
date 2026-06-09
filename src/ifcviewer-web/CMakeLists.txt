@@ -80,12 +80,26 @@ add_executable(IfcViewerWeb
     WebViewportHost.h
 )
 target_link_libraries(IfcViewerWeb PRIVATE IfcViewerCore)
+
 target_link_options(IfcViewerWeb PRIVATE
-    # Asyncify lets us await wgpu's RequestAdapter/RequestDevice/MapAsync
-    # as if they were synchronous. Adds ~30-50% wasm size and a small
-    # per-await runtime cost; acceptable for the spike, revisit when
-    # we ship.
-    "-sASYNCIFY"
+    # No -sASYNCIFY. The web init path is callback-driven
+    # (initWgpuAsyncWeb chains RequestAdapter → RequestDevice via
+    # WGPU's AllowSpontaneous mode + the JS event loop), so we don't
+    # need to await wgpu calls as if they were sync. Asyncify would
+    # also instrument every function reachable from emscripten_sleep,
+    # adding ~30% to wasm size for no win here.
+    #
+    # EXIT_RUNTIME=0 + Module.noExitRuntime=true (set in shell.html)
+    # keeps wasm alive after main() returns so Dawn-web's
+    # RequestAdapter/RequestDevice promise callbacks land. The
+    # alternative — calling emscripten_set_main_loop_arg early in
+    # main() to set noExitRuntime as a side effect — registers a RAF
+    # that starves the device promise (observed: ~10s delay in Firefox).
+    "-sEXIT_RUNTIME=0"
+    # Expose the C tick entry point to JS so shell.html's RAF loop
+    # can call Module._raf_tick_c. EMSCRIPTEN_KEEPALIVE alone keeps
+    # the symbol in the binary but doesn't add it to Module.
+    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c']"
     # Streaming + chunked geometry want a heap that can grow as buffers
     # arrive. 256 MB initial, 2 GB ceiling (matches the wasm32 pointer
     # cap; --shared64 / MEMORY64 would lift this later if we need it).
@@ -96,6 +110,12 @@ target_link_options(IfcViewerWeb PRIVATE
     # sidecar byte-range loader. Not used yet by the scaffold but
     # needed by the upcoming #27 web streaming I/O backend.
     "-sFETCH=1"
+    # Bundle a small sample sidecar into Emscripten's MEMFS so the
+    # scaffold can prove the load path end-to-end without needing
+    # emscripten_fetch + COOP/COEP wiring. The @ separator mounts the
+    # file at the virtual path the wasm uses to fopen() it. Replaced
+    # by an emscripten_fetch + Range backend in #88.
+    "--embed-file=${CMAKE_CURRENT_SOURCE_DIR}/sample.ifcview@/sample.ifcview"
     # Shell template wraps the JS output in our canvas page.
     "--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
 )

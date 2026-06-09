@@ -18,42 +18,48 @@
  ********************************************************************************/
 
 // Web entry point. Wires a WebViewportHost to a ViewportCore, brings up
-// wgpu through emdawnwebgpu (the spec-compatible WebGPU header set that
-// shipped with Dawn), then drives a render() per requestAnimationFrame
-// tick. No sidecar load yet — that lands with the emscripten_fetch
-// streaming backend (#88). For this scaffold we render an empty scene
-// with the configured background so init + present is verified
-// end-to-end through the same ViewportCore code path the desktop build
-// uses.
+// wgpu via emdawnwebgpu (the spec-compatible WebGPU header set that
+// shipped with Dawn), loads the embedded sample sidecar, and drives
+// render() per requestAnimationFrame from JS (shell.html).
+//
+// The RAF loop lives in shell.html — NOT here — because any call into
+// Emscripten's main-loop / RAF helpers (or even raw
+// requestAnimationFrame via EM_ASM) made from inside Dawn-web's wgpu
+// promise-resolution chain stalls the device callback. Having JS drive
+// the tick keeps the wasm init path callback-only.
 
 #include "ViewportCore.h"
 #include "WebViewportHost.h"
 #include "Log.h"
 
 #include <emscripten/emscripten.h>
-#include <emscripten/html5.h>
-
-#include <cstdio>
 
 namespace {
 
-// Shared by the main_loop trampoline + the cleanup path. Allocated on
-// the heap so Emscripten's set_main_loop callback (which is C-style)
-// can recover state through a void*.
 struct AppState {
     WebViewportHost host{ "#viewer-canvas" };
     ViewportCore    core{ &host };
     int             last_w = 0;
     int             last_h = 0;
+    // Set true by the init callback once the device + pipelines are up.
+    // raf_tick_c skips render() until then; before that point the wgpu
+    // state pointers inside core are still null and any draw would crash.
+    bool            ready  = false;
 };
 
-// The main_loop is a free function (Emscripten signature em_callback_func)
-// so we can hand it directly to emscripten_set_main_loop_arg.
-void main_loop(void* user) {
-    auto* app = static_cast<AppState*>(user);
+// One global so the JS-side RAF loop can recover state through a
+// pointer round-trip (set into Module._app_ptr from on_complete).
+AppState* g_app = nullptr;
 
-    // Reconfigure when the canvas resizes. The first tick also lands
-    // here because last_w / last_h start at 0.
+} // namespace
+
+// Called from shell.html's RAF tick (via Module._raf_tick_c). Exported
+// to JS by EXPORTED_FUNCTIONS in CMakeLists.txt; EMSCRIPTEN_KEEPALIVE
+// also keeps the symbol alive under -O*.
+extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
+    auto* app = static_cast<AppState*>(user);
+    if (!app->ready) return;
+
     int w = 0, h = 0;
     app->host.framebufferSize(w, h);
     if (w != app->last_w || h != app->last_h) {
@@ -62,54 +68,44 @@ void main_loop(void* user) {
         app->last_h = h;
     }
 
-    // Only render when something has requested a frame — CPU stays
-    // idle while the scene is static. WebViewportHost's ctor arms one
-    // initial frame request so the canvas always paints at startup;
-    // subsequent paints come from core_.render() rearming itself
-    // (motion settle, streaming in flight, bench mode) and, once
-    // input is wired (#85), from mouse / key events flagging the host.
     if (app->host.consumeFrameRequest()) {
         app->core.render();
     }
 }
 
-} // namespace
-
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
+    g_app = new AppState();
+    g_app->core.initWgpuAsyncWeb([](bool ok) {
+        if (!ok) {
+            Log::warn() << "ifcviewer-web: wgpu init failed";
+            return;
+        }
+        if (!g_app->core.buildPipelines()) {
+            Log::warn() << "ifcviewer-web: buildPipelines failed";
+            return;
+        }
+        // HiZ + edge + pick pipelines: built up-front to match the
+        // desktop path. ViewportCore::shutdown expects each resource
+        // to be either constructed or null, so building them all here
+        // keeps teardown symmetric.
+        g_app->core.buildHizPipeline();
+        g_app->core.buildEdgePipeline();
+        g_app->core.buildPickPipeline();
 
-    auto* app = new AppState();
+        // Load the embedded sample sidecar (mounted into MEMFS via
+        // --embed-file in CMakeLists.txt). Replaced by an
+        // emscripten_fetch + Range backend in #88.
+        if (!g_app->core.loadSidecarFromPath("/sample.ifcview")) {
+            Log::warn() << "ifcviewer-web: sample sidecar load failed";
+        }
 
-    // Web limits floor: requestDevice the WebGPU spec's mandatory floor
-    // (maxStorageBufferBindingSize=128MB, maxBufferSize=256MB) so the
-    // chunking + pool probe see the same constraints they would hit in
-    // any browser. Desktop --web-limits did this opt-in; on web it's
-    // the only sensible default.
-    if (!app->core.initWgpu(/*web_limits=*/true)) {
-        std::fprintf(stderr, "[viewer-web] initWgpu failed\n");
-        delete app;
-        return 1;
-    }
-    if (!app->core.buildPipelines()) {
-        std::fprintf(stderr, "[viewer-web] buildPipelines failed\n");
-        delete app;
-        return 1;
-    }
-    // HiZ + edge + pick pipelines: built up-front to match the desktop
-    // path's lifetime. shutdown() in ViewportCore expects each
-    // resource to be either constructed or null, so building them all
-    // here keeps teardown symmetric.
-    app->core.buildHizPipeline();
-    app->core.buildEdgePipeline();
-    app->core.buildPickPipeline();
+        g_app->ready = true;
 
-    // fps = 0 means "use the browser's natural rate (RAF)" — Emscripten
-    // schedules the callback once per requestAnimationFrame tick.
-    // simulate_infinite_loop = false because we want main() to return
-    // so the runtime + JS event loop keep ticking. The AppState leaks
-    // on tab close, which is fine — emscripten_force_exit (called
-    // from host_->quit()) is the only formal shutdown path on web.
-    emscripten_set_main_loop_arg(main_loop, app, /*fps=*/0,
-                                 /*simulate_infinite_loop=*/0);
+        // Hand the app pointer to the JS-side RAF loop (set up in
+        // shell.html's onRuntimeInitialized). The loop polls for
+        // Module._app_ptr before invoking _raf_tick_c.
+        EM_ASM({ Module._app_ptr = $0; }, (void*)g_app);
+    });
     return 0;
 }

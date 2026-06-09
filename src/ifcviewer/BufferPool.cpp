@@ -70,11 +70,6 @@ bool BufferPool::addSubBuffer() {
     if (try_size < MIN_SUB_BUFFER_BYTES) try_size = MIN_SUB_BUFFER_BYTES;
 
     while (try_size >= MIN_SUB_BUFFER_BYTES) {
-        // wgpu-native classifies "Not enough memory left" as Validation,
-        // not OutOfMemory. Nested scopes: OOM inner, Validation outer.
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
-
         char label[128];
         std::snprintf(label, sizeof(label), "%s.sub%zu",
                       label_prefix_.c_str(), sub_pools_.size());
@@ -84,6 +79,23 @@ bool BufferPool::addSubBuffer() {
         desc.size         = try_size;
         desc.label.data   = label;
         desc.label.length = std::strlen(label);
+
+#if defined(__EMSCRIPTEN__)
+        // Web: skip the error-scope dance. PopErrorScope on Dawn-web
+        // resolves via JS microtask, and the spin-wait below (the
+        // desktop path) would block the JS event loop indefinitely —
+        // microtask never gets to fire, page hangs. We just trust the
+        // browser: if createBuffer succeeded the buffer is usable,
+        // and if it failed `buf` is null and we halve-retry as
+        // before. A real OOM still surfaces as `buf == nullptr` here.
+        WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
+        const bool ok = (buf != nullptr);
+#else
+        // wgpu-native classifies "Not enough memory left" as Validation,
+        // not OutOfMemory. Nested scopes: OOM inner, Validation outer.
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
+        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
+
         WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
 
         struct PopResult { bool done = false; bool error = false; };
@@ -103,8 +115,10 @@ bool BufferPool::addSubBuffer() {
         PopResult oom_pop, validation_pop;
         pop(oom_pop);
         pop(validation_pop);
+        const bool ok = buf && !oom_pop.error && !validation_pop.error;
+#endif
 
-        if (buf && !oom_pop.error && !validation_pop.error) {
+        if (ok) {
             SubPool sp;
             sp.buffer   = buf;
             sp.capacity = try_size;
