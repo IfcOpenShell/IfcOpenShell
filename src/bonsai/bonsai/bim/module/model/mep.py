@@ -615,6 +615,104 @@ class MEPGenerator:
         return obstruction, None
 
 
+def find_obstruction_at_port(segment, at_segment_start):
+    """Return the OBSTRUCTION fitting connected at the segment's named port, or ``None``."""
+    if not segment.is_a("IfcFlowSegment"):
+        return None
+    port_key = "start_port" if at_segment_start else "end_port"
+    segment_data = MEPGenerator().get_segment_data(segment)
+    related_port = segment_data.get(port_key)
+    if related_port is None:
+        return None
+    connected_port = tool.System.get_connected_port(related_port)
+    if connected_port is None:
+        return None
+    connected_element = tool.System.get_port_relating_element(connected_port)
+    if connected_element is None or not connected_element.is_a("IfcFlowFitting"):
+        return None
+    if getattr(connected_element, "PredefinedType", None) != "OBSTRUCTION":
+        return None
+    return connected_element
+
+
+# Port-state literals returned by port_connection_state. Plain strings so they
+# round-trip across module reloads and compare with ``==``.
+PORT_FREE = "FREE"  # No element connected — open lock state.
+PORT_TERMINAL = "TERMINAL"  # Terminal fitting sits here but doesn't bridge — closed lock state.
+PORT_JOINED = "JOINED"  # Fitting bridges this segment to a second element — unjoin state.
+
+
+def port_connection_state(segment, at_segment_start):
+    """Classify a segment's named port by the shape of its connection graph.
+
+    - ``PORT_FREE``: nothing connected.
+    - ``PORT_TERMINAL``: an element is connected but none of its other
+      ports reach a different element (dead end).
+    - ``PORT_JOINED``: an element is connected and at least one of its
+      other ports reaches a second element (bridge).
+
+    Returns ``PORT_FREE`` defensively for non-segment or unconnected inputs."""
+    if not segment.is_a("IfcFlowSegment"):
+        return PORT_FREE
+    port_key = "start_port" if at_segment_start else "end_port"
+    related_port = MEPGenerator().get_segment_data(segment).get(port_key)
+    if related_port is None:
+        return PORT_FREE
+    connected_port = tool.System.get_connected_port(related_port)
+    if connected_port is None:
+        return PORT_FREE
+    connected_element = tool.System.get_port_relating_element(connected_port)
+    if connected_element is None:
+        return PORT_FREE
+    for other_port in tool.System.get_ports(connected_element):
+        if other_port == connected_port:
+            continue
+        far_port = tool.System.get_connected_port(other_port)
+        if far_port is None:
+            continue
+        far_element = tool.System.get_port_relating_element(far_port)
+        if far_element is not None and far_element != segment:
+            return PORT_JOINED
+    return PORT_TERMINAL
+
+
+def get_connected_element_at_segment_port(segment, at_segment_start):
+    """Element on the far side of the named port's IfcRelConnectsPorts
+    (typically an IfcFlowFitting; possibly another IfcFlowSegment for direct
+    daisy-chains), or ``None`` if unconnected or malformed."""
+    if not segment.is_a("IfcFlowSegment"):
+        return None
+    port_key = "start_port" if at_segment_start else "end_port"
+    related_port = MEPGenerator().get_segment_data(segment).get(port_key)
+    if related_port is None:
+        return None
+    connected_port = tool.System.get_connected_port(related_port)
+    if connected_port is None:
+        return None
+    return tool.System.get_port_relating_element(connected_port)
+
+
+def find_fitting_between_segments(segment_a, segment_b):
+    """Single IfcFlowFitting bridging segment_a and segment_b via ports, or
+    ``None`` if no fitting (or multiple fittings — only direct one-fitting
+    joins handled)."""
+    if not (segment_a.is_a("IfcFlowSegment") and segment_b.is_a("IfcFlowSegment")):
+        return None
+    b_ports_set = set(tool.System.get_ports(segment_b))
+    for a_port in tool.System.get_ports(segment_a):
+        connected_port = tool.System.get_connected_port(a_port)
+        if connected_port is None:
+            continue
+        fitting = tool.System.get_port_relating_element(connected_port)
+        if fitting is None or not fitting.is_a("IfcFlowFitting"):
+            continue
+        for fitting_port in tool.System.get_ports(fitting):
+            other_port = tool.System.get_connected_port(fitting_port)
+            if other_port is not None and other_port in b_ports_set:
+                return fitting
+    return None
+
+
 class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mep_add_obstruction"
     bl_label = "Add Obstruction"
@@ -649,6 +747,211 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
 
+        return {"FINISHED"}
+
+
+class MEPUnjoinAtPort(bpy.types.Operator, tool.Ifc.Operator):
+    """Delete the IfcFlowFitting that bridges a segment's port to a second element.
+
+    Used when the connection at the port is in the JOINED state (the fitting
+    has at least one other port connecting to a different element). The
+    segment isn't resized — only the bridging fitting is removed. Refuses
+    to act on an OBSTRUCTION fitting (those are routed through
+    ``bim.mep_add_obstruction`` with mode=REMOVE which extends the segment
+    to absorb the freed length)."""
+
+    bl_idname = "bim.mep_unjoin_at_port"
+    bl_label = "Unjoin MEP Segment at Port"
+    bl_description = "Disconnect the segment from the fitting at the named port (deletes the fitting)"
+    bl_options = {"REGISTER", "UNDO"}
+    segment_id: bpy.props.IntProperty(name="Segment Element ID", default=0)
+    position: bpy.props.EnumProperty(
+        name="Port",
+        items=[
+            ("START", "At Start", "Operate on the segment's start port"),
+            ("END", "At End", "Operate on the segment's end port"),
+        ],
+        default="END",
+    )
+
+    def _execute(self, context):
+        if self.segment_id:
+            element = tool.Ifc.get().by_id(self.segment_id)
+        else:
+            element = tool.Ifc.get_entity(context.active_object)
+        if element is None or not element.is_a("IfcFlowSegment"):
+            self.report({"ERROR"}, "Active object is not a MEP segment.")
+            return {"CANCELLED"}
+
+        at_segment_start = self.position == "START"
+        state = port_connection_state(element, at_segment_start)
+        if state != PORT_JOINED:
+            end_label = "start" if at_segment_start else "end"
+            self.report({"ERROR"}, f"No joining fitting at the {end_label} port (state: {state}).")
+            return {"CANCELLED"}
+
+        fitting = get_connected_element_at_segment_port(element, at_segment_start)
+        if fitting is None or not fitting.is_a("IfcFlowFitting"):
+            return {"CANCELLED"}
+        if getattr(fitting, "PredefinedType", None) == "OBSTRUCTION":
+            self.report({"ERROR"}, "Obstruction fittings are removed via bim.mep_add_obstruction (mode=REMOVE).")
+            return {"CANCELLED"}
+
+        fitting_obj = tool.Ifc.get_object(fitting)
+        if fitting_obj is None:
+            return {"CANCELLED"}
+        tool.Geometry.delete_ifc_object(fitting_obj)
+        return {"FINISHED"}
+
+
+class MEPRemoveTerminalFitting(bpy.types.Operator, tool.Ifc.Operator):
+    """Remove the terminal fitting at a segment's named port.
+
+    Dispatches by fitting type: OBSTRUCTION fittings go through
+    ``MEPGenerator.remove_obstruction`` (extends the segment back to absorb
+    the freed length); other terminal fittings go through the standard
+    delete path."""
+
+    bl_idname = "bim.mep_remove_terminal_fitting"
+    bl_label = "Remove Terminal Fitting"
+    bl_description = "Remove the fitting at the segment's named port"
+    bl_options = {"REGISTER", "UNDO"}
+    segment_id: bpy.props.IntProperty(name="Segment Element ID", default=0)
+    position: bpy.props.EnumProperty(
+        name="Port",
+        items=[
+            ("START", "At Start", "Operate on the segment's start port"),
+            ("END", "At End", "Operate on the segment's end port"),
+        ],
+        default="END",
+    )
+
+    def _execute(self, context):
+        if self.segment_id:
+            element = tool.Ifc.get().by_id(self.segment_id)
+        else:
+            element = tool.Ifc.get_entity(context.active_object)
+        if element is None or not element.is_a("IfcFlowSegment"):
+            self.report({"ERROR"}, "Active object is not a MEP segment.")
+            return {"CANCELLED"}
+
+        at_segment_start = self.position == "START"
+        state = port_connection_state(element, at_segment_start)
+        if state != PORT_TERMINAL:
+            end_label = "start" if at_segment_start else "end"
+            self.report({"ERROR"}, f"No terminal fitting at the {end_label} port (state: {state}).")
+            return {"CANCELLED"}
+
+        fitting = get_connected_element_at_segment_port(element, at_segment_start)
+        if fitting is None:
+            return {"CANCELLED"}
+
+        # OBSTRUCTION predefined-type value is IFC4+; IFC2X3 files fall through
+        # to plain deletion which is the correct behaviour for non-obstruction
+        # terminals.
+        is_obstruction = fitting.is_a("IfcFlowFitting") and getattr(fitting, "PredefinedType", None) == "OBSTRUCTION"
+        if is_obstruction:
+            _removed, error_msg = MEPGenerator().remove_obstruction(element, at_segment_start)
+            if error_msg:
+                self.report({"ERROR"}, error_msg)
+                return {"CANCELLED"}
+            return {"FINISHED"}
+
+        fitting_obj = tool.Ifc.get_object(fitting)
+        if fitting_obj is None:
+            return {"CANCELLED"}
+        tool.Geometry.delete_ifc_object(fitting_obj)
+        return {"FINISHED"}
+
+
+class MEPUnjoinPair(bpy.types.Operator, tool.Ifc.Operator):
+    """Delete the IfcFlowFitting joining two selected MEP segments.
+
+    Removes the fitting; segments are left in place for the user to reposition."""
+
+    bl_idname = "bim.mep_unjoin_pair"
+    bl_label = "Unjoin MEP Segments"
+    bl_description = "Delete the fitting joining the two selected MEP segments"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not _n_mep_selected(2):
+            cls.poll_message_set("Select exactly 2 MEP segments joined by a fitting.")
+            return False
+        return True
+
+    def _execute(self, context):
+        selected_objs = tool.Blender.get_selected_objects()
+        elements = [tool.Ifc.get_entity(o) for o in selected_objs]
+        if any(e is None or not e.is_a("IfcFlowSegment") for e in elements):
+            self.report({"ERROR"}, "Both selected objects must be MEP segments.")
+            return {"CANCELLED"}
+        fitting = find_fitting_between_segments(elements[0], elements[1])
+        if fitting is None:
+            self.report({"ERROR"}, "No single fitting joins the selected segments.")
+            return {"CANCELLED"}
+        if getattr(fitting, "PredefinedType", None) == "OBSTRUCTION":
+            self.report({"ERROR"}, "Obstruction fittings are removed via bim.mep_add_obstruction (mode=REMOVE).")
+            return {"CANCELLED"}
+        fitting_obj = tool.Ifc.get_object(fitting)
+        if fitting_obj is None:
+            return {"CANCELLED"}
+        tool.Geometry.delete_ifc_object(fitting_obj)
+        return {"FINISHED"}
+
+
+class SelectMEPPathMembers(bpy.types.Operator):
+    """Replace the selection with every MEP element reachable from the active
+    one via IfcRelConnectsPorts — the entire connected distribution network."""
+
+    bl_idname = "bim.select_mep_path_members"
+    bl_label = "Select MEP Path Members"
+    bl_description = (
+        "Select every MEP element connected to the active element via its ports — the whole connected network"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        active = context.active_object
+        if active is None:
+            cls.poll_message_set("No active object.")
+            return False
+        element = tool.Ifc.get_entity(active)
+        if element is None or not tool.System.is_mep_element(element):
+            cls.poll_message_set("Active object must be an MEP element (IfcFlowSegment / IfcFlowFitting).")
+            return False
+        return True
+
+    def execute(self, context):
+        active = context.active_object
+        element = tool.Ifc.get_entity(active)
+        try:
+            members = tool.System.walk_connected_mep_elements(element)
+        except Exception as e:
+            self.report({"ERROR"}, f"Path traversal failed: {e}")
+            return {"CANCELLED"}
+        if not members:
+            self.report({"INFO"}, "No connected MEP elements found.")
+            return {"FINISHED"}
+
+        objs_to_select: list[bpy.types.Object] = []
+        for member_element in members:
+            obj = tool.Ifc.get_object(member_element)
+            if obj is not None:
+                objs_to_select.append(obj)
+        if not objs_to_select:
+            self.report({"WARNING"}, "Connected elements have no Blender objects to select.")
+            return {"CANCELLED"}
+
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in objs_to_select:
+            obj.select_set(True)
+        context.view_layer.objects.active = active
+
+        if len(objs_to_select) > 1:
+            self.report({"INFO"}, f"Selected {len(objs_to_select)} MEP elements on this path.")
         return {"FINISHED"}
 
 
