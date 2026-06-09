@@ -372,6 +372,28 @@ class Model(bonsai.core.tool.Model):
             else:
                 break
 
+    @classmethod
+    def get_sibling_occurrence_count(cls, element: ifcopenshell.entity_instance) -> int:
+        """Number of *other* products sharing this element's body representation.
+
+        Returns the count of products bound to the same resolved body rep, minus
+        ``element`` itself and minus its type (if any). Zero when the element has
+        no body rep, no resolved rep, or no siblings. A non-zero result means a
+        parametric edit on ``element`` will silently mutate other instances'
+        geometry."""
+        body_rep = tool.Geometry.get_body_representation(element)
+        if not body_rep:
+            return 0
+        resolved = ifcopenshell.util.representation.resolve_representation(body_rep)
+        if not resolved:
+            return 0
+        elements = tool.Geometry.get_elements_by_representation(resolved)
+        elements.discard(element)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type is not None:
+            elements.discard(element_type)
+        return len(elements)
+
     unit_scale: float
     vertices: list[Vector]
     edges: list[Sequence[int]]

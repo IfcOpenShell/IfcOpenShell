@@ -2149,3 +2149,23 @@ class BIMPreviewProperties(PropertyGroup):
     if TYPE_CHECKING:
         bend: BIMBendPreviewProperties
         wall_fillet: BIMWallFilletPreviewProperties
+
+
+class BIMParametricEditDialogPrefs(PropertyGroup):
+    """Session-scoped flag for the parametric-edit pen-icon dispatcher.
+
+    Attached to ``WindowManager`` so the state lives for one Blender session
+    and resets on restart — the right scope for "don't show this again for
+    this session" toggles."""
+
+    suppress_shared_rep_warning: bpy.props.BoolProperty(
+        name="Suppress shared-representation warning",
+        description=(
+            "When true, the pen-icon dispatcher skips the shared-geometry "
+            "confirmation dialog. Resets on Blender restart."
+        ),
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        suppress_shared_rep_warning: bool

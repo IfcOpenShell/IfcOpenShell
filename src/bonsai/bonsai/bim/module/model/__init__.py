@@ -192,6 +192,7 @@ classes = (
     prop.BIMBendPreviewProperties,
     prop.BIMWallFilletPreviewProperties,
     prop.BIMPreviewProperties,
+    prop.BIMParametricEditDialogPrefs,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_wall,
@@ -349,6 +350,9 @@ def register():
         type=prop.BIMExternalParametricGeometryProperties
     )
     bpy.types.Scene.BIMPreviewProperties = bpy.props.PointerProperty(type=prop.BIMPreviewProperties)
+    bpy.types.WindowManager.BIMParametricEditDialogPrefs = bpy.props.PointerProperty(
+        type=prop.BIMParametricEditDialogPrefs
+    )
 
     bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
@@ -374,6 +378,7 @@ def unregister():
     tool.Parametric.unregister_object_properties()
     del bpy.types.Object.BIMExternalParametricGeometryProperties
     del bpy.types.Scene.BIMPreviewProperties
+    del bpy.types.WindowManager.BIMParametricEditDialogPrefs
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
