@@ -51,6 +51,7 @@ from mathutils import Matrix, Vector
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.core.root
+import bonsai.core.spatial
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing import gizmos as gizmo
@@ -2092,6 +2093,10 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         - ``extend_z_gizmo`` — at the wall-local X of the cursor, projected to the
           wall top (Z=height in wall-local). Clicking extends the wall's height to
           the cursor's Z.
+        - ``add_perpendicular_wall_gizmo`` — visible only when the cursor is
+          off-axis by more than ``CURSOR_STACK_OFFSET``. Sits at the cursor's
+          XY (X clamped to the wall's X-range) on the wall-local floor plane.
+          Clicking spawns a perpendicular branch wall; shift+click forms a corner.
 
         The baseline-state triplet (exterior/center/interior) and the rotate-90
         icon live in ``feature_slots`` — the base class handles creation and
@@ -2117,6 +2122,12 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
             "bim.extend_wall_height_to_cursor",
             highlight_color,
         )
+        self.add_perpendicular_wall_gizmo = self._setup_icon_gizmo(
+            "VIEW3D_GT_extend",
+            default_color,
+            "bim.add_perpendicular_wall",
+            highlight_color,
+        )
         if context.region is not None:
             type(self)._active_instances[context.region.as_pointer()] = weakref.ref(self)
 
@@ -2128,6 +2139,12 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     # World-Z spacing between stacked cursor icons. ~0.3m is ~1.5× icon diameter
     # at default scale, leaving a small visual gap between consecutive icons.
     CURSOR_STACK_OFFSET = 0.3
+
+    def _stack_offset(self, stack_index: int, screen_up: Vector, clearance: Vector) -> Vector:
+        """World-space offset for the ``stack_index``-th icon in a cursor
+        row: ``clearance`` (top-down only) plus a screen-up step per slot.
+        Single source of truth for the cursor-row stacking discipline."""
+        return clearance + screen_up * (stack_index * self.CURSOR_STACK_OFFSET)
 
     def _update_cursor_gizmos(self, context: bpy.types.Context, mw: Matrix, props: "BIMWallProperties") -> None:
         """Position the cursor-anchored icons (extend-X / extend-Z / split) on the wall
@@ -2154,12 +2171,18 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
           the floor anchor."""
         if not hasattr(self, "split_gizmo"):
             return
-        all_gizmos = (self.extend_x_gizmo, self.extend_z_gizmo, self.split_gizmo)
+        all_gizmos = (
+            self.extend_x_gizmo,
+            self.extend_z_gizmo,
+            self.split_gizmo,
+            self.add_perpendicular_wall_gizmo,
+        )
         cursor_world = context.scene.cursor.location
         cursor_local = mw.inverted() @ cursor_world
         in_range = props.anchor_x < cursor_local.x < props.anchor_x + props.length
         billboard_rot = self._frame_billboard_rot
         top_down = tool.Blender.is_view_top_down(context)
+        perp_params = _perpendicular_wall_params(cursor_local.x, cursor_local.y, props.anchor_x, props.length)
 
         # Candidates ordered by priority (lowest first). Each is (gizmo, local_z).
         candidates: list[tuple[bpy.types.Gizmo, float]] = [(self.extend_x_gizmo, 0.0)]
@@ -2184,25 +2207,50 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
         for gz in all_gizmos:
             gz.hide = True
+        screen_up = tool.Blender.get_screen_up_world(context)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
         if top_down:
             # Swap world-Z stacking for screen-up stacking so each icon stays
             # individually clickable when the camera projects world Z to zero.
             # The shared ``top_down_clearance`` lifts the whole stack off the
             # cursor so its small crosshair stays visible for precise pointing.
-            screen_up = tool.Blender.get_screen_up_world(context)
             base_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
-            clearance = gizmo.top_down_clearance(context, billboard_rot)
             for index, (gz, _local_z) in enumerate(resolved):
                 gz.hide = self.is_gizmo_hidden_by_modal(gz)
-                world_pos = base_world + clearance + screen_up * (index * self.CURSOR_STACK_OFFSET)
+                world_pos = base_world + self._stack_offset(index, screen_up, clearance)
                 gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
                 _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
-            return
-        for gz, local_z in resolved:
+        else:
+            # World-Z stacking carries each icon's semantic Z (extend-X at
+            # floor, extend-Z at cursor Z, split at wall top). At shallow
+            # viewing angles a 0.3 m gap can still project to near-zero
+            # screen separation, so add a screen-up offset per stack slot
+            # — the world-Z position still drives the icon's meaning, the
+            # screen-up term is just visual insurance.
+            no_clearance = Vector((0.0, 0.0, 0.0))
+            for index, (gz, local_z) in enumerate(resolved):
+                gz.hide = self.is_gizmo_hidden_by_modal(gz)
+                world_pos = mw @ Vector((cursor_local.x, 0.0, local_z)) + self._stack_offset(
+                    index, screen_up, no_clearance
+                )
+                gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
+                _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
+
+        if perp_params is not None:
+            # Stack the perpendicular gizmo one slot above the on-axis row
+            # along screen-up so it stays independently clickable when the
+            # cursor sits just past the dead zone. The arrow's in-plane
+            # rotation points its +X from the wall projection toward the
+            # cursor as a "new wall sprouts this way" cue.
+            clamped_x, _length, side_sign = perp_params
+            gz = self.add_perpendicular_wall_gizmo
             gz.hide = self.is_gizmo_hidden_by_modal(gz)
-            world_pos = mw @ Vector((cursor_local.x, 0.0, local_z))
-            gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot)
-            _apply_wall_extend_flips(gz, self, world_pos, mw, cursor_local, props, billboard_rot)
+            perp_base = mw @ Vector((clamped_x, cursor_local.y, 0.0))
+            perp_world = perp_base + self._stack_offset(len(resolved), screen_up, clearance)
+            perp_world_dir = (mw.to_3x3().col[1] * side_sign).normalized()
+            screen_dir = billboard_rot.transposed() @ perp_world_dir
+            angle = math.atan2(screen_dir.y, screen_dir.x)
+            gz.matrix_basis = gizmo.billboarded_at(perp_world, billboard_rot) @ Matrix.Rotation(angle, 4, "Z")
 
     # Map ``props.desired_offset_baseline`` (storage form) to the slot variant
     # name. Centralised here so the variant strings stay aligned with the slot
@@ -2273,6 +2321,27 @@ def _commit_active_wall_edit_if_any(context: bpy.types.Context) -> bpy.types.Obj
     if props.is_editing:
         bpy.ops.bim.finish_editing_wall()
     return obj
+
+
+def _perpendicular_wall_params(
+    cursor_local_x: float,
+    cursor_local_y: float,
+    anchor_x: float,
+    length: float,
+) -> tuple[float, float, float] | None:
+    """Geometry of a perpendicular branch wall sprouting from the cursor's
+    projection on the source wall axis.
+
+    Returns ``(clamped_x, perpendicular_length, side_sign)`` — the projection
+    on the wall axis (clamped to ``[anchor_x, anchor_x + length]``), the
+    branch wall length, and the side (+1 / -1) the branch sits on. Returns
+    ``None`` when the cursor sits within ``CURSOR_STACK_OFFSET`` of the
+    source wall axis (the on-wall dead zone)."""
+    if abs(cursor_local_y) <= GizmoWallEdition.CURSOR_STACK_OFFSET:
+        return None
+    clamped_x = max(anchor_x, min(anchor_x + length, cursor_local_x))
+    side_sign = 1.0 if cursor_local_y > 0 else -1.0
+    return clamped_x, abs(cursor_local_y), side_sign
 
 
 def _commit_pending_wall_edits_for_selection(context: bpy.types.Context) -> None:  # noqa: ARG001
@@ -2364,6 +2433,113 @@ class ExtendWallHeightToCursor(bpy.types.Operator, tool.Ifc.Operator):
         with bpy.context.temp_override(active_object=obj, selected_objects=[obj]):
             bpy.ops.bim.change_extrusion_depth(depth=new_height)
         _maybe_resync_wall_props_from_ifc(obj)
+        return {"FINISHED"}
+
+
+class AddPerpendicularWall(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_perpendicular_wall"
+    bl_label = "Add Perpendicular Wall at Cursor"
+    bl_description = (
+        "Create a new wall perpendicular to the active wall, from the cursor's "
+        "orthogonal projection on the wall axis toward the cursor. "
+        "Shift+Click for corner junction: the source wall is trimmed at the "
+        "projection, keeping its longer portion."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    use_corner_junction: bpy.props.BoolProperty(default=False)
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.use_corner_junction = bool(event.shift)
+        return self.execute(context)
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        source_obj = _commit_active_wall_edit_if_any(context)
+        if source_obj is None:
+            return {"CANCELLED"}
+        source_element = tool.Ifc.get_entity(source_obj)
+        if source_element is None:
+            self.report({"WARNING"}, "Active object is not an IFC element.")
+            return {"CANCELLED"}
+        source_type = ifcopenshell.util.element.get_type(source_element)
+        if source_type is None:
+            self.report({"WARNING"}, "Active wall has no IfcWallType; cannot derive branch wall.")
+            return {"CANCELLED"}
+        props = tool.Model.get_wall_props(source_obj)
+        cursor_local = source_obj.matrix_world.inverted() @ context.scene.cursor.location
+        params = _perpendicular_wall_params(cursor_local.x, cursor_local.y, props.anchor_x, props.length)
+        if params is None:
+            self.report({"INFO"}, "Cursor is on the wall axis; nothing to do.")
+            return {"CANCELLED"}
+        clamped_x, perpendicular_length, side_sign = params
+        start_world = source_obj.matrix_world @ Vector((clamped_x, 0.0, 0.0))
+        source_z_rotation = source_obj.matrix_world.to_euler().z
+        new_z_rotation = source_z_rotation + side_sign * (pi / 2)
+
+        # Shift+click L-corners the new wall against an endpoint of the
+        # source wall: the source is trimmed at the projection, keeping
+        # its longer of the two portions.
+        if self.use_corner_junction:
+            DumbWallJoiner().extend(source_obj, start_world)
+
+        source_layers = tool.Model.get_material_layer_parameters(source_element)
+
+        generator = DumbWallGenerator(source_type)
+        generator.file = tool.Ifc.get()
+        generator.layers = tool.Model.get_material_layer_parameters(source_type)
+        if not generator.layers["thickness"]:
+            self.report({"WARNING"}, "Wall type has no layer thickness; cannot create branch wall.")
+            return {"CANCELLED"}
+        generator.body_context = ifcopenshell.util.representation.get_context(
+            tool.Ifc.get(), "Model", "Body", "MODEL_VIEW"
+        )
+        generator.axis_context = ifcopenshell.util.representation.get_context(
+            tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW"
+        )
+        generator.container = None
+        generator.container_obj = None
+        generator.width = generator.layers["thickness"]
+        generator.height = props.height
+        generator.length = perpendicular_length
+        generator.rotation = new_z_rotation
+        generator.location = start_world
+        generator.x_angle = 0.0
+        new_obj = generator.create_wall()
+        new_element = tool.Ifc.get_entity(new_obj)
+
+        # Branch wall inherits the source wall's centerline / offset baseline
+        # so the new axis lines up with the source's authored alignment rather
+        # than the type's default.
+        source_baseline = core.baseline_from_offset(source_layers["offset"], source_layers["thickness"])
+        tool.Model.offset_wall(new_obj, source_baseline)
+
+        ifcopenshell.api.geometry.connect_wall(
+            tool.Ifc.get(),
+            wall1=new_element,
+            wall2=source_element,
+            is_atpath=not self.use_corner_junction,
+        )
+
+        source_container = ifcopenshell.util.element.get_container(source_element)
+        if source_container is not None:
+            bonsai.core.spatial.assign_container(
+                tool.Ifc, tool.Collector, tool.Spatial, container=source_container, objs=[new_obj]
+            )
+
+        tool.Model.recreate_wall(source_element, source_obj)
+        tool.Model.recreate_wall(new_element, new_obj)
+
+        tool.Blender.deselect_object(source_obj, ensure_active_object=False)
+        tool.Blender.set_active_object(new_obj)
+
+        _resync_walls_after_mutation([source_obj, new_obj])
         return {"FINISHED"}
 
 
@@ -4157,7 +4333,7 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
 
     LINE_WIDTH = 1.5
     LINE_ALPHA = 0.8
-    QUAD_ALPHA = 0.25
+    QUAD_ALPHA = 0.45
 
     def draw_lines(self, context: bpy.types.Context) -> None:
         if not tool.Blender.are_viewport_gizmos_enabled():
@@ -4167,6 +4343,7 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         self._draw_cursor_extend_preview(context, prefs)
         self._draw_cursor_extend_z_preview(context, prefs)
         self._draw_cursor_split_preview(context, prefs)
+        self._draw_cursor_perpendicular_wall_preview(context, prefs)
 
     def _stroke(
         self,
@@ -4385,10 +4562,12 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         emit(nearest_x, cursor_local.x, keep_color)
 
     def _draw_cursor_split_preview(self, context: bpy.types.Context, prefs: Any) -> None:
-        """Render one red line at the cursor's projected X, from wall base to wall top
-        along the wall's local Z — the cut plane the split operator would commit.
-        Hover-gated on the split icon; coloured with the destructive-action warning
-        red to match the icon's own hover signal."""
+        """Render two red lines at the cursor's projected X: one vertical along
+        the wall's local Z (visible in elevation views), one horizontal across
+        the wall's thickness band at floor Z (visible in plan / top-down view).
+        Together they trace the cut plane the split operator would commit.
+        Hover-gated on the split icon; coloured with the destructive-action
+        warning red to match the icon's own hover signal."""
         active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
         if active is None:
             return
@@ -4400,15 +4579,25 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         anchor_x = geom.get("anchor_x", 0.0)
         length = geom.get("length", 0.0)
         height = geom.get("height", 0.0)
+        offset = geom.get("offset", 0.0)
+        thickness = geom.get("thickness", 0.0)
         if length <= 0 or height <= 0:
             return
         mw = active.matrix_world
         cursor_local = mw.inverted() @ context.scene.cursor.location
         if not (anchor_x < cursor_local.x < anchor_x + length):
             return
+        color = tuple(prefs.decorator_color_error[:3])
         bottom_world = mw @ Vector((cursor_local.x, 0.0, 0.0))
         top_world = mw @ Vector((cursor_local.x, 0.0, height))
-        self._stroke(context, [(tuple(bottom_world), tuple(top_world))], tuple(prefs.decorator_color_error[:3]))
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = [
+            (tuple(bottom_world), tuple(top_world))
+        ]
+        if thickness > 0:
+            base_a = mw @ Vector((cursor_local.x, offset, 0.0))
+            base_b = mw @ Vector((cursor_local.x, offset + thickness, 0.0))
+            segments.append((tuple(base_a), tuple(base_b)))
+        self._stroke(context, segments, color)
 
     def _draw_cursor_extend_z_preview(self, context: bpy.types.Context, prefs: Any) -> None:
         """Hover-gated vertical-line preview for the extend-Z icon at the
@@ -4455,3 +4644,40 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         remove_color = tuple(prefs.decorator_color_error[:3])
         stroke(0.0, cursor_local.z, keep_color)
         stroke(cursor_local.z, height, remove_color)
+
+    def _draw_cursor_perpendicular_wall_preview(self, context: bpy.types.Context, prefs: Any) -> None:
+        """Hover-gated floor-plane preview of the branch wall's footprint.
+        Green quad on Z=0 spanning the new wall's perpendicular body band
+        (``offset`` to ``offset + thickness`` mapped through the perpendicular
+        rotation) and its length from the projection on the source wall axis
+        to the cursor."""
+        active = self._active_layer2_wall_for_gizmo_preview(context, prefs)
+        if active is None:
+            return
+        if not self._cursor_icon_hovered(GizmoWallEdition, "add_perpendicular_wall_gizmo", context):
+            return
+        geom = tool.Wall.read_geometry(active)
+        if geom is None:
+            return
+        anchor_x = geom.get("anchor_x", 0.0)
+        length = geom.get("length", 0.0)
+        offset = geom.get("offset", 0.0)
+        thickness = geom.get("thickness", 0.0)
+        if length <= 0 or thickness <= 0:
+            return
+        mw = active.matrix_world
+        cursor_local = mw.inverted() @ context.scene.cursor.location
+        params = _perpendicular_wall_params(cursor_local.x, cursor_local.y, anchor_x, length)
+        if params is None:
+            return
+        clamped_x, _length, side_sign = params
+        # New wall axis sits at source-local X = clamped_x; its body extends
+        # perpendicular to that axis. After rotating the new wall's ±Y body
+        # band into the source's local frame, the band lands at source-local
+        # X = clamped_x − side_sign · {offset, offset+thickness}.
+        x_a = clamped_x - side_sign * offset
+        x_b = clamped_x - side_sign * (offset + thickness)
+        x_lo, x_hi = (x_a, x_b) if x_a < x_b else (x_b, x_a)
+        y_lo, y_hi = (0.0, cursor_local.y) if cursor_local.y > 0 else (cursor_local.y, 0.0)
+        keep_color = tuple(prefs.decorator_color_selected[:3])
+        self._fill(context, [self._wall_floor_quad(mw, x_lo, x_hi, y_lo, y_hi)], keep_color)
