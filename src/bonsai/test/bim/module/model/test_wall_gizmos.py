@@ -302,3 +302,92 @@ def test_iter_path_connections_walks_both_inverses_in_order():
     rel_from = _make_path_rel(relating=p2, related=self_elem, relating_ct="ATEND", related_ct="ATEND")
     elem = SimpleNamespace(ConnectedTo=[rel_to], ConnectedFrom=[rel_from])
     assert _run_iter_path_connections(elem) == [(p1, "ATSTART", "ATSTART"), (p2, "ATEND", "ATEND")]
+
+
+# ----------------------------------------------------------------------------
+# _perpendicular_wall_params — clamping + side detection for the
+# "add perpendicular wall at cursor" gizmo and its operator.
+# ----------------------------------------------------------------------------
+#
+# Pure scalar math. The dead-zone is ``CURSOR_STACK_OFFSET`` — inside it the
+# on-axis split / extend-X icons own the click and this helper returns None.
+
+
+def _wall_consts():
+    from bonsai.bim.module.model.wall import GizmoWallEdition
+
+    return GizmoWallEdition.CURSOR_STACK_OFFSET
+
+
+def _run_perp_params(cursor_x, cursor_y, anchor_x=0.0, length=5.0):
+    from bonsai.bim.module.model.wall import _perpendicular_wall_params
+
+    return _perpendicular_wall_params(cursor_x, cursor_y, anchor_x, length)
+
+
+def test_perpendicular_params_on_axis_returns_none():
+    assert _run_perp_params(cursor_x=2.0, cursor_y=0.0) is None
+
+
+def test_perpendicular_params_at_dead_zone_boundary_returns_none():
+    # Inclusive boundary: at exactly the threshold the on-axis icons still own
+    # the click; the gizmo only takes over strictly past the dead zone.
+    threshold = _wall_consts()
+    assert _run_perp_params(cursor_x=2.0, cursor_y=threshold) is None
+    assert _run_perp_params(cursor_x=2.0, cursor_y=-threshold) is None
+
+
+def test_perpendicular_params_just_past_dead_zone_returns_params():
+    threshold = _wall_consts()
+    result = _run_perp_params(cursor_x=2.0, cursor_y=threshold + 0.01)
+    assert result is not None
+    clamped_x, length, side = result
+    assert clamped_x == pytest.approx(2.0)
+    assert length == pytest.approx(threshold + 0.01)
+    assert side == 1.0
+
+
+def test_perpendicular_params_negative_y_flips_side_sign():
+    result = _run_perp_params(cursor_x=2.0, cursor_y=-1.5)
+    assert result is not None
+    _, length, side = result
+    # Length is always positive — the side sign carries the direction so the
+    # operator can pick the +90° vs -90° rotation without sign-flipping length.
+    assert length == pytest.approx(1.5)
+    assert side == -1.0
+
+
+def test_perpendicular_params_clamps_low_when_cursor_left_of_wall():
+    result = _run_perp_params(cursor_x=-2.0, cursor_y=1.5, anchor_x=0.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(0.0)
+
+
+def test_perpendicular_params_clamps_high_when_cursor_right_of_wall():
+    result = _run_perp_params(cursor_x=10.0, cursor_y=1.5, anchor_x=0.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(5.0)
+
+
+def test_perpendicular_params_respects_nonzero_anchor_x():
+    # Non-zero anchor_x shifts the wall span; clamping must follow.
+    result = _run_perp_params(cursor_x=0.5, cursor_y=1.5, anchor_x=2.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(2.0)
+
+    result = _run_perp_params(cursor_x=10.0, cursor_y=1.5, anchor_x=2.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(7.0)
+
+
+def test_perpendicular_params_in_range_passes_cursor_x_through():
+    result = _run_perp_params(cursor_x=3.0, cursor_y=1.5, anchor_x=0.0, length=5.0)
+    assert result is not None
+    clamped_x, length, side = result
+    assert clamped_x == pytest.approx(3.0)
+    assert length == pytest.approx(1.5)
+    assert side == 1.0
