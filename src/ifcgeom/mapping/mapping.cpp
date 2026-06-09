@@ -198,8 +198,14 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
                 // Only aggregation, not nesting is considered.
                 break;
             }
-            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-            if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+            IfcSchema::IfcObjectDefinition* rel_obdef = nullptr;
+            try {
+                rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+            } catch (const std::exception&) {
+                // exception already logged as part of handling of placement
+                break;
+            }
+            if (rel_obdef && rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
                 IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
                 auto rels = element->HasOpenings();
                 for (auto& rel : *rels) {
