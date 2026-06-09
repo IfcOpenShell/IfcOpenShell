@@ -77,6 +77,8 @@ _FILLET_DEFAULT_RADIUS_M = 0.5  # Fallback when the leg-fraction heuristic canno
 _FILLET_DEFAULT_LEG_FRACTION = 0.25  # Quarter of the shorter available leg — visible without overrunning either wall.
 _FILLET_MIN_RADIUS_M = 0.001  # Lower bound — anything smaller renders as a single pixel at common viewport scales.
 
+_ARRAY_CHILD_POLL_MESSAGE = "Selection includes an array child; operate on the array parent instead."
+
 
 def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
     """Common pre-flight gate every wall gizmo group's ``poll`` runs first:
@@ -87,6 +89,21 @@ def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
     if not tool.Blender.are_viewport_gizmos_enabled():
         return False
     if preview_base.any_preview_active(context):
+        return False
+    return True
+
+
+def _wall_topology_gizmo_poll_gate(context: bpy.types.Context) -> bool:
+    """Tighter gate for wall topology gizmos (merge / join / extend / unjoin
+    / fillet): base ``_wall_gizmo_poll_gate`` plus an array-child filter.
+    Array children are managed replicas — any topology mutation is wiped by
+    the next ``regenerate_array``, and ``merge`` would orphan a GUID listed
+    in the parent's ``BBIM_Array.Data``. Host-opening gizmos (add / toggle)
+    deliberately stay on the base gate so openings remain authorable on
+    children, which the array regen pipeline preserves."""
+    if not _wall_gizmo_poll_gate(context):
+        return False
+    if tool.Blender.Modifier.any_selected_is_array_child():
         return False
     return True
 
@@ -244,6 +261,9 @@ class UnjoinWalls(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Oper
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
             return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+            return False
         return True
 
     def _perform(self, context):
@@ -269,6 +289,9 @@ class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, 
     def poll(cls, context):
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
             return False
         return True
 
@@ -367,6 +390,13 @@ class ExtendWallsToWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.If
     bl_label = "Extend Walls To Wall"
     bl_description = "Extend and trim selected walls to another wall"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+            return False
+        return True
 
     def _perform(self, context):
         target_obj = None
@@ -594,6 +624,9 @@ class SplitWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
             return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+            return False
         return True
 
     def _perform(self, context):
@@ -621,6 +654,9 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         mesh_objects = [o for o in tool.Model.get_selected_ifc_objects() if o.type == "MESH"]
         if len(mesh_objects) != 2:
             cls.poll_message_set("Please select exactly two mesh IFC objects.")
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
             return False
         return True
 
@@ -3496,7 +3532,7 @@ class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_gizmo_poll_gate(context):
+        if not _wall_topology_gizmo_poll_gate(context):
             return False
         selected = tool.Blender.get_selected_objects()
         if len(selected) != 2:
@@ -3577,7 +3613,7 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_gizmo_poll_gate(context):
+        if not _wall_topology_gizmo_poll_gate(context):
             return False
         selected = tool.Blender.get_selected_objects()
         if len(selected) != 2:
@@ -3784,7 +3820,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_gizmo_poll_gate(context):
+        if not _wall_topology_gizmo_poll_gate(context):
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:
@@ -4150,7 +4186,7 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_gizmo_poll_gate(context):
+        if not _wall_topology_gizmo_poll_gate(context):
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:
@@ -4218,7 +4254,7 @@ class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboa
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_gizmo_poll_gate(context):
+        if not _wall_topology_gizmo_poll_gate(context):
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:
@@ -4268,6 +4304,9 @@ class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, too
     def poll(cls, context):
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
             return False
         return True
 

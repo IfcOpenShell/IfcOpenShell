@@ -1459,6 +1459,21 @@ class Blender(bonsai.core.tool.Blender):
             return parent_guid is not None and parent_guid != element.GlobalId
 
         @classmethod
+        def any_selected_is_array_child(cls) -> bool:
+            """True if any selected IFC-linked object is a Bonsai array child.
+
+            Multi-object wall topology gizmos (merge / join / extend / unjoin
+            / fillet) and their bound operators gate on this: any mutation
+            applied to a child is overwritten on the next
+            ``regenerate_array``, and merge specifically would leave the
+            parent's ``BBIM_Array.Data`` list pointing at a deleted GUID."""
+            for obj in tool.Blender.get_selected_objects():
+                element = tool.Ifc.get_entity(obj)
+                if element is not None and cls.is_array_child(element):
+                    return True
+            return False
+
+        @classmethod
         def is_slab(cls, element: entity_instance) -> bool:
             """A slab is host-eligible for the parametric add-opening gizmo if
             it is an IfcSlab with LAYER3 usage.
