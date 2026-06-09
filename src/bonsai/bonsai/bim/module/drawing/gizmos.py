@@ -3327,11 +3327,16 @@ class GizmoArc(StaticTrisGizmoMixin, bpy.types.Gizmo):
     """Static quarter-arc glyph for swing visualisation.
 
     Consumers needing the mirrored (RIGHT) visual apply a flip-X matrix to
-    ``matrix_basis``."""
+    ``matrix_basis``. ``outline_alpha = 0.0`` suppresses the inherited 8-pass
+    dark halo: an open curve has no enclosed silhouette for the dilation to
+    ring, so the offset passes read as ghost arcs rather than a uniform
+    outline. The arc's own cross-section thickness keeps it legible without
+    the halo."""
 
     bl_idname = "VIEW3D_GT_arc"
     __slots__ = ("custom_shape",)
     tris = ARC_TRIS_DEFAULT
+    outline_alpha = 0.0
 
 
 def _link_toggle_icon_tris(broken: bool) -> tuple[tuple[float, float, float], ...]:
