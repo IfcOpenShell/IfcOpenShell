@@ -1477,6 +1477,44 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             )
             return {"ERROR"}
 
+        # FIXME(#8106): capture the bend centerline in world space BEFORE
+        # the segments are extended — once DumbProfileJoiner.join_E reshapes
+        # them, the axes no longer reach the original intersection and
+        # compute_bend_preview_polylines would reconstruct the wrong arc.
+        # The arc points are consumed at the end of _execute to tessellate
+        # the fitting and bypass the IfcSweptDiskSolid round-trip bug. Drop
+        # this capture once https://github.com/IfcOpenShell/IfcOpenShell/issues/8106
+        # is fixed and mep_bend_shape's output is round-trip-safe.
+        # ``self.start_length`` / ``self.end_length`` / ``self.radius`` are in
+        # scene (SI) units and ``compute_bend_preview_polylines`` works in
+        # world / scene coordinates, so no si_conversion division here.
+        # The bend's swept-disk centerline isn't at the user's "inner radius"
+        # — it's offset by half the profile width (matches MEPAddBend's
+        # ``ref_point_radius = self.radius + profile_dim[lateral_axis]``).
+        # Without that offset the bend's leg endpoints fall short of the
+        # extended segment by ``profile_dim * tan(angle/2)`` and a visible
+        # gap appears at each joint.
+        _bend_centerline_world = compute_bend_preview_polylines(
+            start_object,
+            end_object,
+            self.start_length,
+            self.end_length,
+            self.radius + profile_dim[lateral_axis],
+            arc_resolution=24,
+        )
+        if _bend_centerline_world["valid"]:
+            # The bend fitting covers the straight start_length leg, the arc,
+            # and the straight end_length leg — its centerline runs from the
+            # segment's new endpoint through the arc to the other segment's
+            # new endpoint. ``leg_a[1]`` and ``leg_b[1]`` are those endpoints.
+            _bend_centerline_arc = (
+                [_bend_centerline_world["leg_a"][1]]
+                + list(_bend_centerline_world["arc"])
+                + [_bend_centerline_world["leg_b"][1]]
+            )
+        else:
+            _bend_centerline_arc = None
+
         DumbProfileJoiner().join_E(start_object, start_segment_extend_point, start_connection)
         DumbProfileJoiner().join_E(end_object, end_segment_extend_point, end_connection)
 
@@ -1599,8 +1637,112 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.system.connect_port(ifc_file, port1=ports[0], port2=start_port, direction="NOTDEFINED")
         ifcopenshell.api.system.connect_port(ifc_file, port1=ports[1], port2=end_port, direction="NOTDEFINED")
 
+        # FIXME(#8106): IfcSweptDiskSolid representations from mep_bend_shape
+        # are geometrically correct but fail to round-trip through the
+        # OpenCascade geometry kernel — they don't load back after save.
+        # Until the upstream parser / kernel fix lands at
+        # https://github.com/IfcOpenShell/IfcOpenShell/issues/8106, replace
+        # the swept-disk with a hand-tessellated IfcTriangulatedFaceSet
+        # built by sweeping the segment's profile along the bend centerline
+        # captured before segment extension. Drop this branch + the
+        # _tessellate_bend_fitting helper once the upstream fix lands.
+        if _bend_centerline_arc is not None:
+            # Seed the sweep basis from start_object's local X / Y axes so
+            # asymmetric IfcRectangleProfileDef ducts land with XDim / YDim
+            # on the same axes the segment's profile actually uses
+            # (parallel transport then preserves that alignment around the arc).
+            start_rotation = start_object.matrix_world.to_3x3()
+            initial_basis = (
+                (start_rotation @ Vector((1.0, 0.0, 0.0))),
+                (start_rotation @ Vector((0.0, 1.0, 0.0))),
+            )
+            self._tessellate_bend_fitting(
+                fitting_obj, bend_type, _bend_centerline_arc, profile, si_conversion, initial_basis
+            )
+
         self.report({"INFO"}, f"Success!.. kind of. The angle was {round(bend_data['angle'])}")
         return {"FINISHED"}
+
+    @staticmethod
+    def _tessellate_bend_fitting(
+        fitting_obj: bpy.types.Object,
+        bend_type: ifcopenshell.entity_instance,
+        arc_points_world: "list[Vector]",
+        profile: ifcopenshell.entity_instance,
+        si_conversion: float,
+        initial_basis: "tuple[Vector, Vector] | None" = None,
+    ) -> None:
+        """Hand-mesh the bend body and replace the bend type's representation
+        with an ``IfcTessellatedFaceSet`` so the occurrence inherits the
+        tessellation and the swept-disk path never reaches a saved file.
+
+        The mesh is computed in the occurrence's local frame
+        (``inv(fitting_obj.matrix_world)``) — occurrence world geometry =
+        ``fitting_obj.matrix_world @ type_local_mesh``, so building in
+        ``inv(M) @ P`` and storing on the type lands the occurrence at the
+        intended world arc points ``P``. We target the type rather than the
+        occurrence because the swept-disk representation lives on the type;
+        the occurrence inherits and has no own representation to update."""
+        profile_2d_ifc = _bend_profile_cross_section(profile)
+        if profile_2d_ifc is None:
+            return
+        # ``_bend_profile_cross_section`` reads ``profile.Radius`` / ``XDim`` /
+        # ``YDim`` straight from the IFC entity, which are in IFC native units
+        # (millimetres for an mm file). Blender mesh data lives in scene
+        # (SI / metres) units, so apply the same ``* si_conversion``
+        # conversion ``MEPAddBend`` uses for ``profile_dim``.
+        profile_2d_scene = [(x * si_conversion, y * si_conversion) for x, y in profile_2d_ifc]
+
+        type_obj = tool.Ifc.get_object(bend_type)
+        if type_obj is None:
+            return
+
+        inv_matrix = fitting_obj.matrix_world.inverted()
+        centerline_local = [inv_matrix @ p for p in arc_points_world]
+
+        # ``initial_basis`` comes from the source segment's matrix_world (world
+        # directions). Express it in the fitting's local frame too so the
+        # rectangle's XDim / YDim land on the segment's local +X / +Y after
+        # the occurrence's matrix_world transform.
+        local_basis: tuple[Vector, Vector] | None = None
+        if initial_basis is not None:
+            inv_3x3 = inv_matrix.to_3x3()
+            local_basis = ((inv_3x3 @ initial_basis[0]), (inv_3x3 @ initial_basis[1]))
+
+        verts_local, faces = _sweep_profile_along_polyline(centerline_local, profile_2d_scene, local_basis)
+
+        # Build the mesh on a throwaway object that ``export_mesh_to_tessellation``
+        # can read. The helper iterates Blender's ``split_by_loose_parts`` and
+        # would delete the meshes it consumes, so we don't reuse type_obj.data
+        # here (replace_object_ifc_representation below refreshes type_obj from
+        # the new IFC representation).
+        import bmesh
+
+        source_mesh = bpy.data.meshes.new("BendTessSource")
+        source_mesh.from_pydata([tuple(v) for v in verts_local], [], faces)
+        source_mesh.update()
+
+        # _sweep_profile_along_polyline leaves face winding to the caller —
+        # recalc_face_normals orients them outward consistently for the closed
+        # bend tube (sides + start cap + end cap).
+        bm = bmesh.new()
+        bm.from_mesh(source_mesh)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.to_mesh(source_mesh)
+        bm.free()
+        source_mesh.update()
+
+        source_obj = bpy.data.objects.new("BendTessSource", source_mesh)
+
+        ifc_file = tool.Ifc.get()
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        try:
+            new_rep = tool.Geometry.export_mesh_to_tessellation(source_obj, body)
+            tool.Model.replace_object_ifc_representation(body, type_obj, new_rep)
+        finally:
+            bpy.data.objects.remove(source_obj)
+            if source_mesh.users == 0:
+                bpy.data.meshes.remove(source_mesh)
 
 
 def _n_mep_selected(n: int) -> bool:
@@ -1914,6 +2056,95 @@ def compute_bend_preview_polylines(
         "leg_b": (end_far, leg_b_endpoint),
         "arc": arc_points,
     }
+
+
+def _bend_profile_cross_section(profile, n_circle: int = 16) -> "list[tuple[float, float]] | None":
+    """Return the segment's cross-section profile as a list of 2D points in
+    the (right, up) sweep plane. Circle → ``n_circle`` evenly-spaced ring
+    points; rectangle → 4 corners. Returns ``None`` for unsupported types."""
+    if profile.is_a("IfcCircleProfileDef"):
+        r = profile.Radius
+        return [(r * cos(2 * pi * i / n_circle), r * sin(2 * pi * i / n_circle)) for i in range(n_circle)]
+    if profile.is_a("IfcRectangleProfileDef"):
+        hx, hy = profile.XDim / 2, profile.YDim / 2
+        return [(-hx, -hy), (hx, -hy), (hx, hy), (-hx, hy)]
+    return None
+
+
+def _sweep_profile_along_polyline(
+    centerline: "list[Vector]",
+    profile_2d: "list[tuple[float, float]]",
+    initial_basis: "tuple[Vector, Vector] | None" = None,
+) -> "tuple[list[Vector], list[tuple[int, ...]]]":
+    """Sweep a 2D profile along a 3D centerline polyline. Returns
+    ``(verts, faces)``.
+
+    Uses parallel-transport framing: the (right, up) basis at each ring is
+    obtained by rotating the previous ring's basis by the minimum rotation
+    that maps the previous tangent to the current one. This avoids the
+    abrupt twist a fixed world-reference basis introduces when the tangent
+    crosses the reference axis. Face winding is left to the caller to
+    correct via ``bmesh.ops.recalc_face_normals`` on the resulting mesh —
+    cheaper than puzzling through the chirality here.
+
+    ``initial_basis`` is the (right, up) world-direction pair at the first
+    ring. Asymmetric rectangular profiles need it set from the source
+    segment's matrix_world so XDim / YDim land on the right segment-local
+    axes; circles + symmetric rectangles get the same shape either way."""
+    verts: list[Vector] = []
+    n_profile = len(profile_2d)
+    n_rings = len(centerline)
+
+    def _tangent_at(i: int) -> Vector:
+        if i == 0:
+            return (centerline[1] - centerline[0]).normalized()
+        if i == n_rings - 1:
+            return (centerline[-1] - centerline[-2]).normalized()
+        return (centerline[i + 1] - centerline[i - 1]).normalized()
+
+    first_tangent = _tangent_at(0)
+    if initial_basis is not None:
+        right, up = initial_basis
+        right = right.normalized()
+        up = up.normalized()
+    else:
+        # Fallback when the caller has no opinion: stable world-Z reference.
+        up_ref = Vector((0.0, 0.0, 1.0)) if abs(first_tangent.z) < 0.95 else Vector((1.0, 0.0, 0.0))
+        right = first_tangent.cross(up_ref).normalized()
+        up = right.cross(first_tangent).normalized()
+    prev_tangent = first_tangent
+
+    for i, p in enumerate(centerline):
+        current_tangent = _tangent_at(i)
+        if i > 0:
+            axis = prev_tangent.cross(current_tangent)
+            if axis.length > 1e-6:
+                axis.normalize()
+                angle = prev_tangent.angle(current_tangent)
+                rot = Matrix.Rotation(angle, 3, axis)
+                right = (rot @ right).normalized()
+                up = (rot @ up).normalized()
+        for s_x, s_y in profile_2d:
+            verts.append(p + right * s_x + up * s_y)
+        prev_tangent = current_tangent
+
+    faces: list[tuple[int, ...]] = []
+    for ring_i in range(n_rings - 1):
+        for j in range(n_profile):
+            v0 = ring_i * n_profile + j
+            v1 = ring_i * n_profile + ((j + 1) % n_profile)
+            v2 = (ring_i + 1) * n_profile + ((j + 1) % n_profile)
+            v3 = (ring_i + 1) * n_profile + j
+            faces.append((v0, v1, v2, v3))
+
+    # End caps: fan triangulation from vertex 0 of each terminal ring.
+    for j in range(1, n_profile - 1):
+        faces.append((0, j + 1, j))
+    last_start = (n_rings - 1) * n_profile
+    for j in range(1, n_profile - 1):
+        faces.append((last_start, last_start + j, last_start + j + 1))
+
+    return verts, faces
 
 
 def _bend_preview_segments(context):
