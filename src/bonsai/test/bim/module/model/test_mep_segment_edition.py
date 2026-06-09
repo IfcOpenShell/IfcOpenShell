@@ -332,7 +332,6 @@ def test_extend_preview_line_returns_none_for_degenerate_segment():
         matrix_world=Matrix.Identity(4),
         cursor_world=Vector((0.0, 0.0, 1.0)),
         current_length=0.0,
-        min_projected_length=0.01,
     )
     assert result is None
 
@@ -346,7 +345,6 @@ def test_extend_preview_line_returns_none_when_cursor_at_current_end():
         matrix_world=Matrix.Identity(4),
         cursor_world=Vector((0.0, 0.0, 1.5)),
         current_length=1.5,
-        min_projected_length=0.01,
     )
     assert result is None
 
@@ -361,7 +359,6 @@ def test_extend_preview_line_renders_extension_when_cursor_past_end():
         matrix_world=Matrix.Identity(4),
         cursor_world=Vector((0.0, 0.0, 3.0)),
         current_length=1.0,
-        min_projected_length=0.01,
     )
     assert result is not None
     start, end = result
@@ -378,7 +375,6 @@ def test_extend_preview_line_renders_trim_when_cursor_inside_segment():
         matrix_world=Matrix.Identity(4),
         cursor_world=Vector((0.0, 0.0, 0.4)),
         current_length=1.0,
-        min_projected_length=0.01,
     )
     assert result is not None
     start, end = result
@@ -386,23 +382,23 @@ def test_extend_preview_line_renders_trim_when_cursor_inside_segment():
     assert tuple(end) == pytest.approx((0.0, 0.0, 0.4))
 
 
-def test_extend_preview_line_clamps_cursor_projection_to_minimum():
-    """When the cursor's projected Z is negative (behind segment origin) or
-    near zero, the extend operator clamps to ``min_projected_length``. The
-    preview must match the same clamp so the line lands where the operator
-    would actually commit, not at the raw cursor position."""
+def test_extend_preview_line_follows_raw_projection_behind_segment_origin():
+    """When the cursor's projected Z is negative (behind segment origin),
+    the preview line must follow the raw cursor projection — the user is
+    pointing somewhere and expects to see where, even though the operator
+    would floor the actual commit. Matching the operator's clamp would
+    hide the line whenever the cursor crossed the segment origin."""
     from bonsai.bim.module.model.decorator import MEPSegmentExtendPreviewDecorator
 
     result = MEPSegmentExtendPreviewDecorator._compute_extend_preview_line(
         matrix_world=Matrix.Identity(4),
         cursor_world=Vector((0.0, 0.0, -2.0)),
         current_length=1.0,
-        min_projected_length=0.01,
     )
     assert result is not None
     start, end = result
     assert tuple(start) == pytest.approx((0.0, 0.0, 1.0))
-    assert tuple(end) == pytest.approx((0.0, 0.0, 0.01))
+    assert tuple(end) == pytest.approx((0.0, 0.0, -2.0))
 
 
 def test_extend_preview_line_respects_object_rotation():
@@ -418,7 +414,6 @@ def test_extend_preview_line_respects_object_rotation():
         matrix_world=rotation,
         cursor_world=Vector((3.0, 0.0, 0.0)),
         current_length=1.0,
-        min_projected_length=0.01,
     )
     assert result is not None
     start, end = result

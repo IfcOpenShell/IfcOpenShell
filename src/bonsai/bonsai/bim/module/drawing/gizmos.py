@@ -167,10 +167,10 @@ _BONSAI_TRANSFORM_MACROS = frozenset(
         # window.modal_operators — the macro's own idname does. The
         # ``BIM_OT_`` prefix is what Blender returns from ``bl_idname`` at
         # runtime (the class declaration uses the dotted ``bim.`` form).
-        "BIM_OT_override_move_macro",                         # G key
-        "BIM_OT_override_object_duplicate_move_macro",        # Shift+D
-        "BIM_OT_override_object_duplicate_move_linked_macro", # Alt+D
-        "BIM_OT_object_duplicate_move_linked_aggregate_macro",# Ctrl+Shift+D
+        "BIM_OT_override_move_macro",  # G key
+        "BIM_OT_override_object_duplicate_move_macro",  # Shift+D
+        "BIM_OT_override_object_duplicate_move_linked_macro",  # Alt+D
+        "BIM_OT_object_duplicate_move_linked_aggregate_macro",  # Ctrl+Shift+D
     }
 )
 
@@ -1737,6 +1737,33 @@ def billboarded_at(world_pos: Vector, billboard_rot: Matrix, scale: float = DEFA
     """Compose the standard icon matrix_basis: translate to ``world_pos``, billboard to the camera,
     then uniformly scale."""
     return Matrix.Translation(world_pos) @ billboard_rot @ Matrix.Scale(scale, 4)
+
+
+def billboarded_along_axis(
+    world_pos: Vector,
+    billboard_rot: Matrix,
+    axis_world: Vector,
+    scale: float = DEFAULT_BILLBOARD_SCALE,
+) -> Matrix:
+    """Composed matrix_basis like ``billboarded_at`` but with local +X
+    rotated about the camera-forward axis to align with ``axis_world``
+    projected onto the screen plane.
+
+    The gizmo still faces the camera (local +Z stays along camera-forward),
+    only its in-plane orientation changes. Falls back to plain
+    ``billboarded_at`` when the axis is near-parallel to the view direction
+    (no usable screen projection)."""
+    camera_forward = billboard_rot @ Vector((0.0, 0.0, 1.0))
+    projected = axis_world - camera_forward * axis_world.dot(camera_forward)
+    if projected.length < 1e-4:
+        return billboarded_at(world_pos, billboard_rot, scale)
+    projected.normalize()
+    y_axis = camera_forward.cross(projected).normalized()
+    rot = Matrix.Identity(4)
+    rot[0][:3] = (projected.x, y_axis.x, camera_forward.x)
+    rot[1][:3] = (projected.y, y_axis.y, camera_forward.y)
+    rot[2][:3] = (projected.z, y_axis.z, camera_forward.z)
+    return Matrix.Translation(world_pos) @ rot @ Matrix.Scale(scale, 4)
 
 
 def get_screen_up(billboard_rot: Matrix) -> Vector:
