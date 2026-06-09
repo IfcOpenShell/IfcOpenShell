@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+import math
 import os
 import platform
 import subprocess
@@ -2259,6 +2260,47 @@ class Blender(bonsai.core.tool.Blender):
         """
         tris = [[loop.vert.index for loop in tri] for tri in bm.calc_loop_triangles()]
         draw_batch("TRIS", world_vert_coords, color, tris)
+
+    @classmethod
+    def build_dashed_line_segments(
+        cls,
+        world_verts: Sequence[Sequence[float]],
+        edges_indices: Sequence[Sequence[int]],
+        dash_period: float,
+        dash_width: float,
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[int, int]]]:
+        """Pre-segment edges into world-space dash chunks for a vanilla LINES batch.
+
+        Each input edge is sliced into segments of length ``dash_width`` spaced
+        ``dash_period`` apart (dash phase resets per-edge). The result is a fresh
+        ``(verts, edges)`` pair that draws as dashes through any standard line
+        shader — letting both passes of a visible/occluded outline reuse the
+        same shader so depth values match exactly across passes.
+        """
+        new_verts: list[tuple[float, float, float]] = []
+        new_edges: list[tuple[int, int]] = []
+        if dash_period <= 0 or dash_width <= 0:
+            return new_verts, new_edges
+        n = len(world_verts)
+        for i, j in edges_indices:
+            if not (0 <= i < n and 0 <= j < n) or i == j:
+                continue
+            v0 = world_verts[i]
+            v1 = world_verts[j]
+            dx, dy, dz = v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]
+            edge_length = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if edge_length == 0.0:
+                continue
+            ux, uy, uz = dx / edge_length, dy / edge_length, dz / edge_length
+            t = 0.0
+            while t < edge_length:
+                t_end = min(t + dash_width, edge_length)
+                idx = len(new_verts)
+                new_verts.append((v0[0] + ux * t, v0[1] + uy * t, v0[2] + uz * t))
+                new_verts.append((v0[0] + ux * t_end, v0[1] + uy * t_end, v0[2] + uz * t_end))
+                new_edges.append((idx, idx + 1))
+                t += dash_period
+        return new_verts, new_edges
 
     @classmethod
     def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
