@@ -2243,6 +2243,24 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     @classmethod
+    def draw_bmesh_face_tris(
+        cls,
+        bm: bmesh.types.BMesh,
+        world_vert_coords: list,
+        color: Any,
+        draw_batch: Callable[[str, list, Any, list], None],
+    ) -> None:
+        """Submit a non-mutating beauty-triangulated TRIS batch for ``bm``'s faces.
+
+        ``world_vert_coords`` must be indexed by ``bm.verts`` index. Never call
+        ``bmesh.ops.triangulate`` on a live bmesh to compute draw indices — it
+        mutates the input and produces ear-clip fans that render as visible
+        streaks at low alpha.
+        """
+        tris = [[loop.vert.index for loop in tri] for tri in bm.calc_loop_triangles()]
+        draw_batch("TRIS", world_vert_coords, color, tris)
+
+    @classmethod
     def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
         """Extracts error report lines from a runtime exception during operator execution.
 
