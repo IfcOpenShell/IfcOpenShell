@@ -288,6 +288,7 @@ classes = (
     mep.SplitDuctSegmentAtCursor,
     mep.GizmoPipeSegmentEdition,
     mep.GizmoDuctSegmentEdition,
+    mep.GizmoMEPActions,
     external.ApplyExternalParametricGeometry,
 )
 

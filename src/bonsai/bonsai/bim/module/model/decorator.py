@@ -2108,6 +2108,25 @@ def _fill_quads_alpha(
     gpu.state.blend_set("NONE")
 
 
+def compute_mep_join_location():
+    """Midpoint between the closest endpoint pair of two selected MEP
+    segments — the world location where a connecting fitting (bend /
+    transition) would land. Returns ``None`` when prerequisites aren't met
+    (wrong cardinality, mixed non-MEP)."""
+    selected = list(tool.Blender.get_selected_objects())
+    if len(selected) != 2:
+        return None
+    for obj in selected:
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not tool.System.is_mep_element(element):
+            return None
+    a_start, a_end = tool.Model.get_flow_segment_axis(selected[0])
+    b_start, b_end = tool.Model.get_flow_segment_axis(selected[1])
+    pairs = [(a_start, b_start), (a_start, b_end), (a_end, b_start), (a_end, b_end)]
+    closest = min(pairs, key=lambda p: (p[0] - p[1]).length)
+    return (closest[0] + closest[1]) * 0.5
+
+
 class MEPSegmentExtendPreviewDecorator(tool.Blender.ViewportDecorator):
     """Preview line for the MEP segment extend-to-cursor gizmo. Renders one
     line from the segment's current end to the cursor's projection on the

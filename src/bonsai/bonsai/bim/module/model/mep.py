@@ -41,7 +41,7 @@ from mathutils import Matrix, Vector
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconActionConfig
 from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.profile import DumbProfileJoiner
 from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
@@ -716,12 +716,30 @@ def find_fitting_between_segments(segment_a, segment_b):
 class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.mep_add_obstruction"
     bl_label = "Add Obstruction"
-    bl_description = "Adds obstruction to the MEP segment"
+    bl_description = "Add, remove, or toggle an obstruction on the MEP segment"
     bl_options = {"REGISTER", "UNDO"}
     length: bpy.props.FloatProperty(
         name="Obstruction Length", description="Obstruction length in SI units", default=0.1, subtype="DISTANCE"
     )
     segment_id: bpy.props.IntProperty(name="Segment Element ID", default=0)
+    position: bpy.props.EnumProperty(
+        name="Obstruction Position",
+        items=[
+            ("CURSOR", "At Cursor", "Choose start/end automatically from the 3D cursor position"),
+            ("START", "At Start", "Pin the obstruction to the segment's start port"),
+            ("END", "At End", "Pin the obstruction to the segment's end port"),
+        ],
+        default="CURSOR",
+    )
+    mode: bpy.props.EnumProperty(
+        name="Mode",
+        items=[
+            ("ADD", "Add", "Create a new obstruction at the named port"),
+            ("REMOVE", "Remove", "Remove the obstruction at the named port"),
+            ("TOGGLE", "Toggle", "Add if no obstruction is present; remove if one is"),
+        ],
+        default="ADD",
+    )
 
     def _execute(self, context):
         if self.segment_id:
@@ -735,14 +753,25 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, f"Failed to add obstruction - object is not a MEP segment: {element.is_a()}.")
             return {"CANCELLED"}
 
-        # derive obstruction position from the cursor
-        cursor_location = bpy.context.scene.cursor.location
-        obj = tool.Ifc.get_object(element)
-        axis = tool.Model.get_flow_segment_axis(obj)
-        # check if cursor is closer to the segment start
-        at_segment_start = tool.Cad.edge_percent(cursor_location, axis) < 0.5
+        if self.position == "CURSOR":
+            cursor_location = bpy.context.scene.cursor.location
+            obj = tool.Ifc.get_object(element)
+            axis = tool.Model.get_flow_segment_axis(obj)
+            at_segment_start = tool.Cad.edge_percent(cursor_location, axis) < 0.5
+        else:
+            at_segment_start = self.position == "START"
 
-        obstruction, error_msg = MEPGenerator().add_obstruction(element, self.length, at_segment_start)
+        # TOGGLE resolves to ADD / REMOVE based on the current port state so the
+        # generator dispatch below only handles the two terminal modes.
+        effective_mode = self.mode
+        if effective_mode == "TOGGLE":
+            effective_mode = "REMOVE" if find_obstruction_at_port(element, at_segment_start) is not None else "ADD"
+
+        generator = MEPGenerator()
+        if effective_mode == "REMOVE":
+            _removed, error_msg = generator.remove_obstruction(element, at_segment_start)
+        else:
+            _obstruction, error_msg = generator.add_obstruction(element, self.length, at_segment_start)
         if error_msg:
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
@@ -1592,6 +1621,27 @@ def segments_are_parallel(start_object, end_object) -> bool:
     return tool.Cad.are_edges_parallel(start_axis, end_axis)
 
 
+def validate_bend_preconditions(start_element, end_element) -> str | None:
+    """Return a user-facing error string when ``MEPAddBend`` would reject the
+    two segments, or ``None`` when the bend is supported. Mirrors the early
+    checks in ``MEPAddBend._execute`` so callers (preview enable, gizmo
+    poll, dispatcher) can surface the same diagnostic immediately instead
+    of after the user tunes a preview that cannot commit."""
+    start_type = ifcopenshell.util.element.get_type(start_element)
+    end_type = ifcopenshell.util.element.get_type(end_element)
+    if not start_type or not end_type or start_type != end_type:
+        return "Segments types do not match or one of the segments doesn't have type which is required for a bend."
+    profile = tool.Model.get_flow_segment_profile(start_element)
+    if profile is None:
+        return "Segment profile could not be resolved."
+    if not profile.is_a("IfcRectangleProfileDef") and not profile.is_a("IfcCircleProfileDef"):
+        return (
+            "For now Only IfcRectangleProfileDef/IfcCircleProfileDef profiles supported for a bend, "
+            f"the segments are {profile.is_a()}"
+        )
+    return None
+
+
 class MEPJoinSegments(bpy.types.Operator):
     """Dispatcher: join two MEP segments via transition (parallel) or bend
     (non-parallel).
@@ -1662,6 +1712,13 @@ class EnableBendPreview(bpy.types.Operator):
             return {"CANCELLED"}
         if segments_are_parallel(active, other):
             self.report({"ERROR"}, "Bend preview is for non-parallel segments only.")
+            return {"CANCELLED"}
+
+        # Pre-check the same preconditions MEPAddBend enforces so the user
+        # sees the rejection here rather than after tuning a doomed preview.
+        precondition_error = validate_bend_preconditions(active_element, other_element)
+        if precondition_error is not None:
+            self.report({"ERROR"}, precondition_error)
             return {"CANCELLED"}
 
         preview_base.sync_uncommitted_moves([active, other])
@@ -2601,3 +2658,260 @@ class GizmoDuctSegmentEdition(bpy.types.GizmoGroup, _MEPSegmentEditionMixin, giz
     @classmethod
     def is_element_type(cls, element):
         return tool.Parametric.is_duct_segment(element)
+
+
+# --- GizmoMEPActions group + visibility helpers ----------------------------
+
+
+def _selection_size() -> int:
+    return len(tool.Blender.get_selected_objects())
+
+
+def _active_is_flow_segment(obj: bpy.types.Object) -> bool:
+    element = tool.Ifc.get_entity(obj)
+    if element is None:
+        return False
+    return element.is_a("IfcFlowSegment")
+
+
+def _active_mep_has_connected_neighbor(obj: bpy.types.Object) -> bool:
+    """True iff the active MEP element has at least one port connected to
+    another element. Hides the path-select icon when clicking would yield
+    the same single-member selection."""
+    element = tool.Ifc.get_entity(obj)
+    if element is None or not tool.System.is_mep_element(element):
+        return False
+    for port in tool.System.get_ports(element):
+        if tool.System.get_connected_port(port) is not None:
+            return True
+    return False
+
+
+class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
+    """Icon-action gizmos for the MEP one-shot operators.
+
+    Most icons sit in a horizontal row above the active object's bbox top.
+    Lock icons are anchored at the segment's start / end ports and rendered
+    at half scale as secondary affordances. Visibility predicates gate each
+    icon on selection cardinality and IFC class; ``position_gizmos`` resolves
+    the open-vs-closed-vs-unjoin three-state at each port from
+    ``port_connection_state``."""
+
+    bl_idname = "OBJECT_GGT_bim_mep_actions"
+    bl_label = "MEP Actions Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    ENDPOINT_CONFIGS: ClassVar[dict[str, str]] = {
+        "lock_start_open":   "START",
+        "lock_start_closed": "START",
+        "lock_end_open":     "END",
+        "lock_end_closed":   "END",
+        "unjoin_start":      "START",
+        "unjoin_end":        "END",
+    }  # fmt: skip
+    BEND_ANCHOR_CONFIGS: ClassVar[set[str]] = {"join", "unjoin_pair"}
+    UNJOIN_CONFIGS: ClassVar[set[str]] = {"unjoin_start", "unjoin_end", "unjoin_pair"}
+    ENDPOINT_SCALE_RATIO: ClassVar[float] = 0.5
+
+    LOCK_ICON_CONFIGS: ClassVar[dict[str, tuple[str, str]]] = {
+        "lock_start_open":   ("VIEW3D_GT_lock_open",   "START"),
+        "lock_start_closed": ("VIEW3D_GT_lock_closed", "START"),
+        "lock_end_open":     ("VIEW3D_GT_lock_open",   "END"),
+        "lock_end_closed":   ("VIEW3D_GT_lock_closed", "END"),
+    }  # fmt: skip
+
+    action_configs = [
+        IconActionConfig(
+            name="join",
+            icon="VIEW3D_GT_merge",
+            operator="bim.mep_join_segments",
+            visibility_condition=lambda _active: _n_mep_selected(2),
+        ),
+        IconActionConfig(
+            name="select_path",
+            icon="VIEW3D_GT_array_all",
+            operator="bim.select_mep_path_members",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_mep_has_connected_neighbor(obj),
+        ),
+        IconActionConfig(
+            name="lock_start_open",
+            icon="VIEW3D_GT_lock_open",
+            operator="bim.mep_add_obstruction",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
+        ),
+        IconActionConfig(
+            name="lock_start_closed",
+            icon="VIEW3D_GT_lock_closed",
+            operator="bim.mep_remove_terminal_fitting",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
+        ),
+        IconActionConfig(
+            name="lock_end_open",
+            icon="VIEW3D_GT_lock_open",
+            operator="bim.mep_add_obstruction",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
+        ),
+        IconActionConfig(
+            name="lock_end_closed",
+            icon="VIEW3D_GT_lock_closed",
+            operator="bim.mep_remove_terminal_fitting",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
+        ),
+        IconActionConfig(
+            name="unjoin_start",
+            icon="VIEW3D_GT_unjoin",
+            operator="bim.mep_unjoin_at_port",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
+        ),
+        IconActionConfig(
+            name="unjoin_end",
+            icon="VIEW3D_GT_unjoin",
+            operator="bim.mep_unjoin_at_port",
+            visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
+        ),
+        IconActionConfig(
+            name="unjoin_pair",
+            icon="VIEW3D_GT_unjoin",
+            operator="bim.mep_unjoin_pair",
+            visibility_condition=lambda _active: _n_mep_selected(2),
+        ),
+    ]
+
+    @classmethod
+    def is_eligible_object(cls, obj: bpy.types.Object) -> bool:
+        # Bend preview takes over the viewport for a focused edit flow —
+        # hide the whole action group while it's active so the validate /
+        # cancel buttons don't compete with these icons.
+        scene = bpy.context.scene
+        preview = getattr(scene, "BIMPreviewProperties", None) if scene else None
+        bend_props = preview.bend if preview is not None else None
+        if bend_props is not None and bend_props.is_active:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if element is None:
+            return False
+        return tool.System.is_mep_element(element)
+
+    def setup(self, context: bpy.types.Context) -> None:
+        super().setup(context)
+        # Pre-fill ``position`` (and ``mode`` for the open-lock obstruction
+        # add) on each anchored icon so the click goes to the right end
+        # without a per-frame property write.
+        for config_name, (_icon, position_arg) in self.LOCK_ICON_CONFIGS.items():
+            gz = getattr(self, f"action_{config_name}_gizmo", None)
+            if gz is None:
+                continue
+            is_open = config_name.endswith("_open")
+            if is_open:
+                op_props = gz.target_set_operator("bim.mep_add_obstruction")
+                op_props.position = position_arg
+                op_props.mode = "ADD"
+            else:
+                op_props = gz.target_set_operator("bim.mep_remove_terminal_fitting")
+                op_props.position = position_arg
+
+        for config_name, position_arg in (("unjoin_start", "START"), ("unjoin_end", "END")):
+            gz = getattr(self, f"action_{config_name}_gizmo", None)
+            if gz is None:
+                continue
+            op_props = gz.target_set_operator("bim.mep_unjoin_at_port")
+            op_props.position = position_arg
+
+        warning_color = gizmo.get_warning_color_from_prefs(tool.Blender.get_addon_preferences())
+        for config_name in self.UNJOIN_CONFIGS:
+            gz = getattr(self, f"action_{config_name}_gizmo", None)
+            if gz is None:
+                continue
+            gz.color_highlight = warning_color
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        """Lay out icons across three regions: row above bbox top, segment
+        port endpoints (``ENDPOINT_CONFIGS``), and predicted bend / transition
+        location (``BEND_ANCHOR_CONFIGS``)."""
+        from bonsai.bim.module.model.decorator import compute_mep_join_location
+
+        obj = context.active_object
+        if obj is None:
+            return
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        z_top = max((c[2] for c in obj.bound_box), default=0.0)
+        z_anchor = z_top + self.ICON_ROW_Z_OFFSET
+
+        segment_endpoints: tuple[Vector, Vector] | None = None
+        bend_anchor: Vector | None = None
+        port_state_at: dict[str, str] = {}
+        # pair_fitting tri-state: None = not computed; False = computed, no
+        # fitting joins the pair; <entity> = the joining fitting.
+        pair_fitting: object = None
+
+        row_index = 0
+        for config in self.action_configs:
+            gz = getattr(self, f"action_{config.name}_gizmo", None)
+            if gz is None:
+                continue
+            if config.visibility_condition is not None and not config.visibility_condition(obj):
+                gz.hide = True
+                continue
+            gz.hide = False
+
+            scale = self._scale_for_config(config.name)
+
+            endpoint_kind = self.ENDPOINT_CONFIGS.get(config.name)
+            if endpoint_kind is not None:
+                if endpoint_kind not in port_state_at:
+                    element = tool.Ifc.get_entity(obj)
+                    port_state_at[endpoint_kind] = (
+                        port_connection_state(element, endpoint_kind == "START") if element else PORT_FREE
+                    )
+                state = port_state_at[endpoint_kind]
+                if config.name.startswith("unjoin_"):
+                    visible = state == PORT_JOINED
+                else:
+                    is_closed_icon = config.name.endswith("_closed")
+                    visible = (state == PORT_TERMINAL) if is_closed_icon else (state == PORT_FREE)
+                if not visible:
+                    gz.hide = True
+                    continue
+                if segment_endpoints is None:
+                    segment_endpoints = tool.Model.get_flow_segment_axis(obj)
+                start_world, end_world = segment_endpoints
+                anchor = start_world if endpoint_kind == "START" else end_world
+                gz.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot, scale=scale)
+            elif config.name in self.BEND_ANCHOR_CONFIGS:
+                if pair_fitting is None:
+                    selected = tool.Blender.get_selected_objects()
+                    if len(selected) == 2:
+                        elements = [tool.Ifc.get_entity(o) for o in selected]
+                        if all(e is not None and e.is_a("IfcFlowSegment") for e in elements):
+                            pair_fitting = find_fitting_between_segments(elements[0], elements[1]) or False
+                        else:
+                            pair_fitting = False
+                    else:
+                        pair_fitting = False
+
+                wants_fitting = config.name == "unjoin_pair"
+                fitting_present = bool(pair_fitting)
+                if wants_fitting != fitting_present:
+                    gz.hide = True
+                    continue
+
+                if bend_anchor is None:
+                    bend_anchor = compute_mep_join_location()
+                if bend_anchor is None:
+                    gz.hide = True
+                    continue
+                gz.matrix_basis = gizmo.billboarded_at(bend_anchor, billboard_rot, scale=scale)
+            else:
+                local_pos = Vector((row_index * self.ICON_SPACING_X, 0.0, z_anchor))
+                world_pos = obj.matrix_world @ local_pos
+                gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot, scale=scale)
+                row_index += 1
+
+    def _scale_for_config(self, name: str) -> float:
+        if name in self.UNJOIN_CONFIGS:
+            return gizmo.DEFAULT_BILLBOARD_SCALE
+        if name in self.ENDPOINT_CONFIGS:
+            return self.ICON_SCALE * self.ENDPOINT_SCALE_RATIO
+        return self.ICON_SCALE
