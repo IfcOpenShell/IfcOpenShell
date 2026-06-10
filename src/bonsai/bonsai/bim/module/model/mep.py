@@ -49,11 +49,6 @@ from bonsai.tool.cad import VTX_PRECISION
 V = lambda *x: Vector([float(i) for i in x])
 
 
-def _is_multiple_of_pi(value: float) -> bool:
-    n = round(value / pi)
-    return tool.Cad.is_x(abs(value - n * pi), 0)
-
-
 def _segment_port(segment, at_segment_start: bool):
     port_key = "start_port" if at_segment_start else "end_port"
     return MEPGenerator.get_segment_data(segment).get(port_key)
@@ -1072,7 +1067,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler().z
         )
 
-        if not _is_multiple_of_pi(rotation_difference_z):
+        if not tool.Cad.is_multiple_of_pi(rotation_difference_z):
             self.report(
                 {"ERROR"},
                 "There is some rotation difference between profiles by local Z axis: "
@@ -1313,7 +1308,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler()
             )
 
-            if not _is_multiple_of_pi(rotation_difference.z):
+            if not tool.Cad.is_multiple_of_pi(rotation_difference.z):
                 error_msg = (
                     "There is some rotation difference between profiles by local Z axis: "
                     f"{round(degrees(rotation_difference.z))} deg, adding a bend is not possible."
