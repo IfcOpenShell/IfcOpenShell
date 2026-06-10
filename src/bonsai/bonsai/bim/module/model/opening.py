@@ -219,6 +219,10 @@ _DASH_WIDTH_METERS: float = 0.10
 # overlay biases the depth buffer at outline pixels.
 _DASH_LINE_WIDTH: float = 1.5
 _SOLID_LINE_WIDTH: float = 2.5
+# Per-iteration default line width used by every non-occlusion draw call in
+# this decorator's ``__call__``. Restored after each occlusion pair so the
+# next draw isn't silently inheriting the wider solid-pass override.
+_DEFAULT_LINE_WIDTH: float = 2.0
 
 
 def _get_cached_batch_or_none(cache_key: tuple[int, str]) -> "gpu.types.GPUBatch | None":
@@ -1250,7 +1254,7 @@ class DecorationsHandler:
         # Restore the per-iteration default set at the top of __call__ so
         # subsequent draws (the HalfSpaceSolid arrow, future call-sites) are
         # not silently affected by the front-pass width override.
-        self.line_shader.uniform_float("lineWidth", 2.0)
+        self.line_shader.uniform_float("lineWidth", _DEFAULT_LINE_WIDTH)
         gpu.state.depth_test_set(original_depth_test)
 
     def __call__(self, context):
@@ -1286,7 +1290,7 @@ class DecorationsHandler:
             self.line_shader.bind()  # required to be able to change uniforms of the shader
             # POLYLINE_UNIFORM_COLOR specific uniforms
             self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-            self.line_shader.uniform_float("lineWidth", 2.0)
+            self.line_shader.uniform_float("lineWidth", _DEFAULT_LINE_WIDTH)
 
             # general shader
             self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
