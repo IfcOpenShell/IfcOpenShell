@@ -42,12 +42,21 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconActionConfig
-from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.profile import DumbProfileJoiner
 from bonsai.bim.parametric_lifecycle import ParametricEditMixinBase
 from bonsai.tool.cad import VTX_PRECISION
 
 V = lambda *x: Vector([float(i) for i in x])
+
+
+def _is_multiple_of_pi(value: float) -> bool:
+    n = round(value / pi)
+    return tool.Cad.is_x(abs(value - n * pi), 0)
+
+
+def _segment_port(segment, at_segment_start: bool):
+    port_key = "start_port" if at_segment_start else "end_port"
+    return MEPGenerator.get_segment_data(segment).get(port_key)
 
 
 class RegenerateDistributionElement(bpy.types.Operator, tool.Ifc.Operator):
@@ -312,7 +321,8 @@ class MEPGenerator:
                     profile_joiner = DumbProfileJoiner()
                     profile_joiner.set_depth(connected_obj, connected_element_length)
 
-    def get_segment_data(self, segment):
+    @staticmethod
+    def get_segment_data(segment):
         """returns points data is in world space"""
         ports = tool.System.get_ports(segment)
         segment_object = tool.Ifc.get_object(segment)
@@ -619,9 +629,7 @@ def find_obstruction_at_port(segment, at_segment_start):
     """Return the OBSTRUCTION fitting connected at the segment's named port, or ``None``."""
     if not segment.is_a("IfcFlowSegment"):
         return None
-    port_key = "start_port" if at_segment_start else "end_port"
-    segment_data = MEPGenerator().get_segment_data(segment)
-    related_port = segment_data.get(port_key)
+    related_port = _segment_port(segment, at_segment_start)
     if related_port is None:
         return None
     connected_port = tool.System.get_connected_port(related_port)
@@ -654,8 +662,7 @@ def port_connection_state(segment, at_segment_start):
     Returns ``PORT_FREE`` defensively for non-segment or unconnected inputs."""
     if not segment.is_a("IfcFlowSegment"):
         return PORT_FREE
-    port_key = "start_port" if at_segment_start else "end_port"
-    related_port = MEPGenerator().get_segment_data(segment).get(port_key)
+    related_port = _segment_port(segment, at_segment_start)
     if related_port is None:
         return PORT_FREE
     connected_port = tool.System.get_connected_port(related_port)
@@ -682,8 +689,7 @@ def get_connected_element_at_segment_port(segment, at_segment_start):
     daisy-chains), or ``None`` if unconnected or malformed."""
     if not segment.is_a("IfcFlowSegment"):
         return None
-    port_key = "start_port" if at_segment_start else "end_port"
-    related_port = MEPGenerator().get_segment_data(segment).get(port_key)
+    related_port = _segment_port(segment, at_segment_start)
     if related_port is None:
         return None
     connected_port = tool.System.get_connected_port(related_port)
@@ -711,6 +717,41 @@ def find_fitting_between_segments(segment_a, segment_b):
             if other_port is not None and other_port in b_ports_set:
                 return fitting
     return None
+
+
+def _resolve_active_mep_segment(operator, context):
+    """Return the operator's target ``IfcFlowSegment`` or ``None`` after reporting.
+
+    Reads ``operator.segment_id`` when set, otherwise the active object. Shared
+    dispatch shape for the port operators."""
+    if operator.segment_id:
+        element = tool.Ifc.get().by_id(operator.segment_id)
+    else:
+        element = tool.Ifc.get_entity(context.active_object)
+    if element is None or not element.is_a("IfcFlowSegment"):
+        operator.report({"ERROR"}, "Active object is not a MEP segment.")
+        return None
+    return element
+
+
+def _require_port_state(operator, context, required_state: str, fitting_label: str):
+    """Shared port-action prologue: resolve the target segment, derive
+    ``at_segment_start`` from ``operator.position``, and verify the named
+    port is in ``required_state``. Returns ``(element, at_segment_start)``
+    or ``None`` after reporting; callers turn ``None`` into ``{'CANCELLED'}``.
+
+    ``fitting_label`` (e.g. ``"joining"`` / ``"terminal"``) is interpolated
+    into the rejection message so each caller's phrasing reads naturally."""
+    element = _resolve_active_mep_segment(operator, context)
+    if element is None:
+        return None
+    at_segment_start = operator.position == "START"
+    state = port_connection_state(element, at_segment_start)
+    if state != required_state:
+        end_label = "start" if at_segment_start else "end"
+        operator.report({"ERROR"}, f"No {fitting_label} fitting at the {end_label} port (state: {state}).")
+        return None
+    return element, at_segment_start
 
 
 class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
@@ -742,15 +783,8 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     def _execute(self, context):
-        if self.segment_id:
-            element = tool.Ifc.get().by_id(self.segment_id)
-        else:
-            element = tool.Ifc.get_entity(context.active_object)
-        if not element:
-            return {"CANCELLED"}
-
-        if not element.is_a("IfcFlowSegment"):
-            self.report({"ERROR"}, f"Failed to add obstruction - object is not a MEP segment: {element.is_a()}.")
+        element = _resolve_active_mep_segment(self, context)
+        if element is None:
             return {"CANCELLED"}
 
         if self.position == "CURSOR":
@@ -804,23 +838,14 @@ class MEPUnjoinAtPort(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     def _execute(self, context):
-        if self.segment_id:
-            element = tool.Ifc.get().by_id(self.segment_id)
-        else:
-            element = tool.Ifc.get_entity(context.active_object)
-        if element is None or not element.is_a("IfcFlowSegment"):
-            self.report({"ERROR"}, "Active object is not a MEP segment.")
+        resolved = _require_port_state(self, context, PORT_JOINED, "joining")
+        if resolved is None:
             return {"CANCELLED"}
-
-        at_segment_start = self.position == "START"
-        state = port_connection_state(element, at_segment_start)
-        if state != PORT_JOINED:
-            end_label = "start" if at_segment_start else "end"
-            self.report({"ERROR"}, f"No joining fitting at the {end_label} port (state: {state}).")
-            return {"CANCELLED"}
+        element, at_segment_start = resolved
 
         fitting = get_connected_element_at_segment_port(element, at_segment_start)
         if fitting is None or not fitting.is_a("IfcFlowFitting"):
+            self.report({"ERROR"}, "Connected port does not lead to a fitting.")
             return {"CANCELLED"}
         if getattr(fitting, "PredefinedType", None) == "OBSTRUCTION":
             self.report({"ERROR"}, "Obstruction fittings are removed via bim.mep_add_obstruction (mode=REMOVE).")
@@ -828,6 +853,7 @@ class MEPUnjoinAtPort(bpy.types.Operator, tool.Ifc.Operator):
 
         fitting_obj = tool.Ifc.get_object(fitting)
         if fitting_obj is None:
+            self.report({"ERROR"}, "Fitting has no Blender object.")
             return {"CANCELLED"}
         tool.Geometry.delete_ifc_object(fitting_obj)
         return {"FINISHED"}
@@ -856,23 +882,14 @@ class MEPRemoveTerminalFitting(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     def _execute(self, context):
-        if self.segment_id:
-            element = tool.Ifc.get().by_id(self.segment_id)
-        else:
-            element = tool.Ifc.get_entity(context.active_object)
-        if element is None or not element.is_a("IfcFlowSegment"):
-            self.report({"ERROR"}, "Active object is not a MEP segment.")
+        resolved = _require_port_state(self, context, PORT_TERMINAL, "terminal")
+        if resolved is None:
             return {"CANCELLED"}
-
-        at_segment_start = self.position == "START"
-        state = port_connection_state(element, at_segment_start)
-        if state != PORT_TERMINAL:
-            end_label = "start" if at_segment_start else "end"
-            self.report({"ERROR"}, f"No terminal fitting at the {end_label} port (state: {state}).")
-            return {"CANCELLED"}
+        element, at_segment_start = resolved
 
         fitting = get_connected_element_at_segment_port(element, at_segment_start)
         if fitting is None:
+            self.report({"ERROR"}, "Terminal port does not lead to a fitting.")
             return {"CANCELLED"}
 
         # OBSTRUCTION predefined-type value is IFC4+; IFC2X3 files fall through
@@ -888,6 +905,7 @@ class MEPRemoveTerminalFitting(bpy.types.Operator, tool.Ifc.Operator):
 
         fitting_obj = tool.Ifc.get_object(fitting)
         if fitting_obj is None:
+            self.report({"ERROR"}, "Fitting has no Blender object.")
             return {"CANCELLED"}
         tool.Geometry.delete_ifc_object(fitting_obj)
         return {"FINISHED"}
@@ -925,6 +943,7 @@ class MEPUnjoinPair(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         fitting_obj = tool.Ifc.get_object(fitting)
         if fitting_obj is None:
+            self.report({"ERROR"}, "Fitting has no Blender object.")
             return {"CANCELLED"}
         tool.Geometry.delete_ifc_object(fitting_obj)
         return {"FINISHED"}
@@ -1053,11 +1072,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler().z
         )
 
-        def is_multiple_of_pi(value):
-            n = round(value / pi)
-            return tool.Cad.is_x(abs(value - n * pi), 0)
-
-        if not is_multiple_of_pi(rotation_difference_z):
+        if not _is_multiple_of_pi(rotation_difference_z):
             self.report(
                 {"ERROR"},
                 "There is some rotation difference between profiles by local Z axis: "
@@ -1066,8 +1081,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         # setup start / end points
-        start_segment_data = MEPGenerator().get_segment_data(start_element)
-        end_segment_data = MEPGenerator().get_segment_data(end_element)
+        start_segment_data = MEPGenerator.get_segment_data(start_element)
+        end_segment_data = MEPGenerator.get_segment_data(end_element)
         points_ports_map = {
             start_segment_data["start_point"]: start_segment_data["start_port"],
             start_segment_data["end_point"]: start_segment_data["end_port"],
@@ -1298,11 +1313,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 start_object.matrix_world.to_quaternion().rotation_difference(end_object_rotation).to_euler()
             )
 
-            def is_multiple_of_pi(value):
-                n = round(value / pi)
-                return tool.Cad.is_x(abs(value - n * pi), 0)
-
-            if not is_multiple_of_pi(rotation_difference.z):
+            if not _is_multiple_of_pi(rotation_difference.z):
                 error_msg = (
                     "There is some rotation difference between profiles by local Z axis: "
                     f"{round(degrees(rotation_difference.z))} deg, adding a bend is not possible."
@@ -1346,8 +1357,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # setup start / end points
         start_object_rotation = start_object.matrix_world.to_quaternion().to_matrix()
-        start_segment_data = MEPGenerator().get_segment_data(start_element)
-        end_segment_data = MEPGenerator().get_segment_data(end_element)
+        start_segment_data = MEPGenerator.get_segment_data(start_element)
+        end_segment_data = MEPGenerator.get_segment_data(end_element)
         # use id() to match by the exact vector objects and not by their values
         # since vectors position could match
         points_ports_map = {
@@ -1843,211 +1854,6 @@ class MEPJoinSegments(bpy.types.Operator):
         return bpy.ops.bim.enable_bend_preview()
 
 
-class EnableBendPreview(bpy.types.Operator):
-    """Enter bend-preview mode for two selected MEP segments. Populates
-    scene.BIMPreviewProperties.bend with segment IFC ids and default
-    start_length / end_length / radius; no IFC mutation until finish."""
-
-    bl_idname = "bim.enable_bend_preview"
-    bl_label = "Enter Bend Preview"
-    bl_description = "Begin tuning bend parameters before committing the bend"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not _n_mep_selected(2):
-            cls.poll_message_set("Select exactly 2 MEP segments to bend.")
-            return False
-        return True
-
-    def execute(self, context):
-        selected = tool.Blender.get_selected_objects()
-        active = context.active_object
-        if active is None or active not in selected:
-            self.report({"ERROR"}, "Active object must be one of the selected MEP segments.")
-            return {"CANCELLED"}
-        other = next((o for o in selected if o is not active), None)
-        if other is None:
-            self.report({"ERROR"}, "Two MEP segments must be selected.")
-            return {"CANCELLED"}
-        active_element = tool.Ifc.get_entity(active)
-        other_element = tool.Ifc.get_entity(other)
-        if active_element is None or other_element is None:
-            self.report({"ERROR"}, "Both selected objects must be IFC elements.")
-            return {"CANCELLED"}
-        if segments_are_parallel(active, other):
-            self.report({"ERROR"}, "Bend preview is for non-parallel segments only.")
-            return {"CANCELLED"}
-
-        # Pre-check the same preconditions MEPAddBend enforces so the user
-        # sees the rejection here rather than after tuning a doomed preview.
-        precondition_error = validate_bend_preconditions(active_element, other_element)
-        if precondition_error is not None:
-            self.report({"ERROR"}, precondition_error)
-            return {"CANCELLED"}
-
-        preview_base.sync_uncommitted_moves([active, other])
-
-        props = preview_base.get_preview_props(context, "bend")
-        # Auto-cancel any prior preview so re-clicking join on a different
-        # pair doesn't silently commit the previous tuning.
-        if props is not None and props.is_active:
-            bpy.ops.bim.cancel_bend_preview()
-
-        props.start_segment_id = active_element.id()
-        props.end_segment_id = other_element.id()
-        props.start_length = 0.1
-        props.end_length = 0.1
-        props.radius = 0.2
-        props.is_active = True
-        return {"FINISHED"}
-
-
-class FinishBendPreview(bpy.types.Operator):
-    """Commit the previewed bend with the tuned parameters and exit preview.
-
-    Preview state survives a failed commit so the user can re-tune without
-    re-selecting."""
-
-    bl_idname = "bim.finish_bend_preview"
-    bl_label = "Apply Bend"
-    bl_description = "Commit the bend with the previewed parameters"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        if context.screen is None:
-            return {"CANCELLED"}
-        props = preview_base.get_preview_props(context, "bend")
-        if props is None or not props.is_active:
-            return {"CANCELLED"}
-        if tool.Ifc.get() is None:
-            self.report({"ERROR"}, "No IFC file loaded.")
-            return {"CANCELLED"}
-        # bpy.ops promotes ``self.report({"ERROR"}) + return CANCELLED`` from
-        # the dispatched operator to RuntimeError. Catch it so this operator
-        # returns cleanly instead of leaving Blender's operator state
-        # half-broken (which would silently disable downstream gizmo polls).
-        try:
-            result = bpy.ops.bim.mep_add_bend(
-                start_segment_id=props.start_segment_id,
-                end_segment_id=props.end_segment_id,
-                start_length=props.start_length,
-                end_length=props.end_length,
-                radius=props.radius,
-                editing_bend_id=props.editing_bend_id,
-            )
-        except RuntimeError as exc:
-            self.report({"ERROR"}, str(exc))
-            return {"CANCELLED"}
-        if "FINISHED" in result:
-            preview_base.clear_preview_state(props)
-        return result
-
-
-class CancelBendPreview(bpy.types.Operator):
-    """Exit bend preview without committing."""
-
-    bl_idname = "bim.cancel_bend_preview"
-    bl_label = "Cancel Bend"
-    bl_description = "Discard the previewed bend"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        if context.screen is None:
-            return {"CANCELLED"}
-        props = preview_base.get_preview_props(context, "bend")
-        if props is None or not props.is_active:
-            return {"CANCELLED"}
-        preview_base.clear_preview_state(props)
-        return {"FINISHED"}
-
-
-class EnableBendPreviewFromBend(bpy.types.Operator):
-    """Re-open the bend preview on an existing bend fitting.
-
-    Resolves the two connected segments via the bend's ports +
-    ``IfcRelConnectsPorts``, reads parametric values back from the bend's
-    ``BBIM_Fitting`` pset, and flags the preview so committing replaces
-    the existing bend in place."""
-
-    bl_idname = "bim.enable_bend_preview_from_bend"
-    bl_label = "Edit Bend"
-    bl_description = "Re-open the bend preview to retune an existing bend"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        active = context.active_object
-        if active is None:
-            cls.poll_message_set("No active object.")
-            return False
-        element = tool.Ifc.get_entity(active)
-        if element is None or not _is_bend_fitting(element):
-            cls.poll_message_set("Active object must be a bend fitting.")
-            return False
-        return True
-
-    def execute(self, context):
-        active = context.active_object
-        bend_element = tool.Ifc.get_entity(active)
-        if bend_element is None or not _is_bend_fitting(bend_element):
-            self.report({"ERROR"}, "Active object is not a bend fitting.")
-            return {"CANCELLED"}
-
-        connected_segments: list = []
-        for port in tool.System.get_ports(bend_element):
-            connected_port = tool.System.get_connected_port(port)
-            if connected_port is None:
-                continue
-            related = tool.System.get_port_relating_element(connected_port)
-            if related is not None and related.is_a("IfcFlowSegment") and related not in connected_segments:
-                connected_segments.append(related)
-
-        if len(connected_segments) != 2:
-            self.report(
-                {"ERROR"},
-                f"Bend has {len(connected_segments)} connected segments; need exactly 2 to re-edit.",
-            )
-            return {"CANCELLED"}
-
-        # Read parametric values from the bend type's BBIM_Fitting pset. The
-        # type carries the canonical parameters; querying the occurrence
-        # would force a get_type round-trip and miss user-edited types.
-        bend_type = ifcopenshell.util.element.get_type(bend_element)
-        if bend_type is None:
-            self.report({"ERROR"}, "Bend fitting has no type to read parameters from.")
-            return {"CANCELLED"}
-        bend_type_obj = tool.Ifc.get_object(bend_type)
-        if bend_type_obj is None:
-            self.report({"ERROR"}, "Bend type has no Blender object — cannot read pset.")
-            return {"CANCELLED"}
-        bbim = tool.Model.get_modeling_bbim_pset_data(bend_type_obj, "BBIM_Fitting")
-        if bbim is None:
-            self.report({"ERROR"}, "Bend fitting has no BBIM_Fitting pset — not a parametric bend.")
-            return {"CANCELLED"}
-        data = bbim.get("data_dict", {})
-
-        props = preview_base.get_preview_props(context, "bend")
-        if props is not None and props.is_active:
-            bpy.ops.bim.cancel_bend_preview()
-
-        # Segment order is load-bearing: the bend's lateral sign and z-axis
-        # flip are derived from which segment is "start" vs "end". Re-edit
-        # must reuse the same pairing as the original create so the recreate
-        # lands at the same orientation.
-        start_segment, end_segment = connected_segments
-        props.start_segment_id = start_segment.id()
-        props.end_segment_id = end_segment.id()
-        # Pset values are in IFC native units; scene units come from si_conversion.
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        props.start_length = float(data.get("start_length", 0.1)) * si_conversion
-        props.end_length = float(data.get("end_length", 0.1)) * si_conversion
-        props.radius = float(data.get("radius", 0.2)) * si_conversion
-        props.editing_bend_id = bend_element.id()
-        props.is_active = True
-        return {"FINISHED"}
-
-
 def _is_bend_fitting(element) -> bool:
     """True iff ``element`` is an ``IfcFlowFitting`` whose type carries
     ``PredefinedType="BEND"``."""
@@ -2179,6 +1985,47 @@ def compute_bend_preview_polylines(
     }
 
 
+# Single-entry memo: the bend-preview decorator and GizmoBendPreview both call
+# the polyline math every redraw, so without this the quaternion sweep + axis
+# intersection run twice per frame. Only one bend preview is active at a time
+# (enforced by BIMBendPreviewProperties.is_active), so single-entry is enough.
+_bend_preview_memo: "tuple[tuple, dict] | None" = None
+
+
+def cached_compute_bend_preview_polylines(
+    start_object,
+    end_object,
+    start_length: float,
+    end_length: float,
+    radius: float,
+    arc_resolution: int = 24,
+):
+    """Per-frame-safe wrapper over ``compute_bend_preview_polylines``.
+
+    Reuses the most recent result when inputs (object identities, world
+    matrices, the three tuned dimensions, arc resolution, and the global IFC
+    geometry generation) are unchanged. The commit operator path still uses
+    ``compute_bend_preview_polylines`` directly — there's no point caching a
+    one-shot call."""
+    global _bend_preview_memo
+    key = (
+        start_object.name,
+        tuple(map(tuple, start_object.matrix_world)),
+        end_object.name,
+        tuple(map(tuple, end_object.matrix_world)),
+        start_length,
+        end_length,
+        radius,
+        arc_resolution,
+        tool.Parametric.get_geom_generation(),
+    )
+    if _bend_preview_memo is not None and _bend_preview_memo[0] == key:
+        return _bend_preview_memo[1]
+    result = compute_bend_preview_polylines(start_object, end_object, start_length, end_length, radius, arc_resolution)
+    _bend_preview_memo = (key, result)
+    return result
+
+
 def _bend_profile_cross_section(profile, n_circle: int = 16) -> "list[tuple[float, float]] | None":
     """Return the segment's cross-section profile as a list of 2D points in
     the (right, up) sweep plane. Circle → ``n_circle`` evenly-spaced ring
@@ -2266,210 +2113,6 @@ def _sweep_profile_along_polyline(
         faces.append((last_start, last_start + j, last_start + j + 1))
 
     return verts, faces
-
-
-def _bend_preview_segments(context):
-    """Resolve the two segment objects from the scene-level preview props.
-
-    Re-resolves by IFC id each frame so undo / file reload during preview
-    never dangles a stale bpy reference."""
-    props = context.scene.BIMPreviewProperties.bend
-    ifc_file = tool.Ifc.get()
-    if ifc_file is None or not props.is_active:
-        return None, None
-    try:
-        start_element = ifc_file.by_id(props.start_segment_id)
-        end_element = ifc_file.by_id(props.end_segment_id)
-    except Exception:
-        return None, None
-    start_obj = tool.Ifc.get_object(start_element) if start_element else None
-    end_obj = tool.Ifc.get_object(end_element) if end_element else None
-    return start_obj, end_obj
-
-
-def _gizmo_x_matrix(location: Vector, x_direction: Vector) -> Matrix:
-    """Build a 4x4 matrix placing a gizmo at ``location`` with its local +X
-    axis aligned to ``x_direction`` in world space. ``BIM_GT_gizmo_dimension``
-    draws + drags along local +X by convention."""
-    x = x_direction.normalized()
-    seed = Vector((0, 0, 1)) if abs(x.z) < 0.9 else Vector((1, 0, 0))
-    y = (seed - x * seed.dot(x)).normalized()
-    z = x.cross(y)
-    mat = Matrix.Identity(4)
-    mat[0][:3] = (x.x, y.x, z.x)
-    mat[1][:3] = (x.y, y.y, z.y)
-    mat[2][:3] = (x.z, y.z, z.z)
-    mat.translation = location
-    return mat
-
-
-class GizmoBendPreview(bpy.types.GizmoGroup):
-    """Interactive gizmo group for the bend preview flow.
-
-    Three dimension widgets drag start_length / end_length / radius; two
-    icon gizmos commit or cancel. When the geometry is degenerate the
-    dimensions and validate hide but cancel stays visible so the user
-    always has an exit."""
-
-    bl_idname = "OBJECT_GGT_bim_bend_preview"
-    bl_label = "Bend Preview Gizmos"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "WINDOW"
-    bl_options = {"3D", "PERSISTENT"}
-
-    ICON_SCALE: ClassVar[float] = 0.375
-    ICON_SPACING_X: ClassVar[float] = 0.4
-    ICON_Z_OFFSET: ClassVar[float] = 1.5
-
-    @classmethod
-    def poll(cls, context):
-        preview = getattr(context.scene, "BIMPreviewProperties", None)
-        props = preview.bend if preview is not None else None
-        if props is None or not props.is_active:
-            return False
-        if not tool.Blender.are_viewport_gizmos_enabled():
-            return False
-        ifc_file = tool.Ifc.get()
-        if ifc_file is None:
-            return False
-        try:
-            ifc_file.by_id(props.start_segment_id)
-            ifc_file.by_id(props.end_segment_id)
-        except (RuntimeError, KeyError):
-            return False
-        return True
-
-    def setup(self, context):
-        prefs = tool.Blender.get_addon_preferences()
-        default_color = tuple(prefs.decorations_colour[:3])
-        highlight_color = tuple(prefs.decorator_color_selected[:3])
-
-        _props = preview_base.make_props_callback("bend")
-
-        def setup_dimension(attr: str, prop_name: str, invert_delta: bool = False) -> bpy.types.Gizmo:
-            gz = self.gizmos.new("BIM_GT_gizmo_dimension")
-            gz.move_get_cb = preview_base.make_dim_getter(_props, attr)
-            gz.move_set_cb = preview_base.make_dim_setter(_props, attr)
-            gz.axis = Vector((1, 0, 0))
-            gz.invert_delta = invert_delta
-            gz.delta_scale = 1.0
-            gz.prop_name = prop_name
-            gz.gizmo_group = self
-            gz.color = default_color
-            gz.color_highlight = highlight_color
-            gz.alpha = 1.0
-            gz.use_draw_modal = True
-            gz.use_draw_scale = False
-            gz.text_offset_sign = 1
-            gz.text_alignment = gizmo.TextAlignment.CENTER
-            gz.show_start_arrow = False
-            gz.show_end_arrow = True
-            gz.show_extension_lines = False
-            gz.text_formatter = None
-            return gz
-
-        self.start_dim = setup_dimension("start_length", "Start Length")
-        self.end_dim = setup_dimension("end_length", "End Length")
-        self.radius_dim = setup_dimension("radius", "Radius")
-
-        from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
-
-        self.validate_icon = self.gizmos.new("VIEW3D_GT_validate")
-        self.validate_icon.use_draw_scale = False
-        self.validate_icon.color = BaseParametricGizmoGroup.COLOR_GREEN
-        self.validate_icon.color_highlight = highlight_color
-        self.validate_icon.target_set_operator("bim.finish_bend_preview")
-
-        self.cancel_icon = self.gizmos.new("VIEW3D_GT_cancel")
-        self.cancel_icon.use_draw_scale = False
-        self.cancel_icon.color = BaseParametricGizmoGroup.COLOR_RED
-        self.cancel_icon.color_highlight = highlight_color
-        self.cancel_icon.target_set_operator("bim.cancel_bend_preview")
-
-    def refresh(self, context):
-        self._position_gizmos(context)
-
-    def draw_prepare(self, context):
-        self._position_gizmos(context)
-
-    def _position_gizmos(self, context):
-        """Place gizmos at the bend intersection using the current scene
-        props. Cancel stays visible on degenerate geometry so the user
-        always has an exit; the other widgets hide when there's no defined
-        tangent / arc to anchor them on."""
-        start_obj, end_obj = _bend_preview_segments(context)
-        if start_obj is None or end_obj is None:
-            for gz in (self.start_dim, self.end_dim, self.radius_dim, self.validate_icon, self.cancel_icon):
-                gz.hide = True
-            return
-
-        props = context.scene.BIMPreviewProperties.bend
-        preview = compute_bend_preview_polylines(start_obj, end_obj, props.start_length, props.end_length, props.radius)
-        if not preview["valid"]:
-            for gz in (self.start_dim, self.end_dim, self.radius_dim, self.validate_icon):
-                gz.hide = True
-            self.cancel_icon.hide = False
-            axes = preview.get("invalid_axes") or []
-            if axes:
-                intersection_point = axes[0][1]
-                billboard_rot = gizmo.get_billboard_rotation(context)
-                anchor = intersection_point + Vector((0, 0, self.ICON_Z_OFFSET))
-                self.cancel_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot, scale=self.ICON_SCALE)
-            return
-
-        for gz in (self.start_dim, self.end_dim, self.radius_dim, self.validate_icon, self.cancel_icon):
-            gz.hide = False
-
-        leg_a_far, leg_a_end = preview["leg_a"]
-        leg_b_far, leg_b_end = preview["leg_b"]
-        toward_bend_a = (
-            (leg_a_end - leg_a_far).normalized() if (leg_a_end - leg_a_far).length > 1e-6 else Vector((0, 0, 1))
-        )
-        toward_bend_b = (
-            (leg_b_end - leg_b_far).normalized() if (leg_b_end - leg_b_far).length > 1e-6 else Vector((0, 0, 1))
-        )
-        leg_a_tangent = leg_a_end + toward_bend_a * props.start_length
-        leg_b_tangent = leg_b_end + toward_bend_b * props.end_length
-
-        # axis is set in world space every frame so the drag projection
-        # matches the visual regardless of either segment's matrix_world.
-        self.start_dim.matrix_basis = _gizmo_x_matrix(leg_a_tangent, -toward_bend_a)
-        self.start_dim.axis = -toward_bend_a
-        self.start_dim.set_dimension_length(props.start_length)
-        self.end_dim.matrix_basis = _gizmo_x_matrix(leg_b_tangent, -toward_bend_b)
-        self.end_dim.axis = -toward_bend_b
-        self.end_dim.set_dimension_length(props.end_length)
-
-        arc = preview["arc"]
-        if len(arc) >= 3:
-            mid = len(arc) // 2
-            chord_mid = (arc[0] + arc[-1]) * 0.5
-            toward_mid = arc[mid] - chord_mid
-            if toward_mid.length > 1e-6:
-                toward_mid = toward_mid.normalized()
-                half_chord = (arc[-1] - arc[0]).length * 0.5
-                center_dist = max(0.0, props.radius * props.radius - half_chord * half_chord) ** 0.5
-                arc_center = chord_mid - toward_mid * center_dist
-                radial_out = arc[mid] - arc_center
-                if radial_out.length > 1e-6:
-                    radial_out.normalize()
-                    inward = -radial_out
-                    self.radius_dim.matrix_basis = _gizmo_x_matrix(arc[mid], inward)
-                    self.radius_dim.axis = inward
-                    self.radius_dim.set_dimension_length(props.radius)
-                else:
-                    self.radius_dim.hide = True
-            else:
-                self.radius_dim.hide = True
-        else:
-            self.radius_dim.hide = True
-
-        billboard_rot = gizmo.get_billboard_rotation(context)
-        anchor_base = arc[len(arc) // 2] if arc else (leg_a_end + leg_b_end) * 0.5
-        anchor = anchor_base + Vector((0, 0, self.ICON_Z_OFFSET))
-        offset_x = billboard_rot @ Vector((self.ICON_SPACING_X, 0.0, 0.0))
-        self.validate_icon.matrix_basis = gizmo.billboarded_at(anchor, billboard_rot, scale=self.ICON_SCALE)
-        self.cancel_icon.matrix_basis = gizmo.billboarded_at(anchor + offset_x, billboard_rot, scale=self.ICON_SCALE)
 
 
 # --- MEP segment parametric edit + cursor-anchored operators ---------------
@@ -2765,7 +2408,7 @@ def split_mep_segment(obj: bpy.types.Object, cut_local_z: float) -> bpy.types.Ob
     if cut_local_z < 0.01 or cut_local_z > original_length - 0.01:
         return None
 
-    segment_data = MEPGenerator().get_segment_data(element)
+    segment_data = MEPGenerator.get_segment_data(element)
     end_port = segment_data.get("end_port")
     downstream_port = None
     downstream_direction = "NOTDEFINED"
@@ -2792,9 +2435,8 @@ def split_mep_segment(obj: bpy.types.Object, cut_local_z: float) -> bpy.types.Ob
     joiner.set_depth(obj, cut_local_z)
     joiner.set_depth(new_obj, original_length - cut_local_z)
 
-    gen = MEPGenerator()
-    seg1_data = gen.get_segment_data(element)
-    seg2_data = gen.get_segment_data(new_element)
+    seg1_data = MEPGenerator.get_segment_data(element)
+    seg2_data = MEPGenerator.get_segment_data(new_element)
     seg1_end = seg1_data.get("end_port")
     seg2_start = seg2_data.get("start_port")
     seg2_end = seg2_data.get("end_port")
@@ -3158,11 +2800,17 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
 
     def setup(self, context: bpy.types.Context) -> None:
         super().setup(context)
-        # Pre-fill ``position`` (and ``mode`` for the open-lock obstruction
-        # add) on each anchored icon so the click goes to the right end
-        # without a per-frame property write.
-        for config_name, (_icon, position_arg) in self.LOCK_ICON_CONFIGS.items():
-            gz = getattr(self, f"action_{config_name}_gizmo", None)
+        self._wire_anchored_icon_targets(self)
+
+    @classmethod
+    def _wire_anchored_icon_targets(cls, group) -> None:
+        """Pre-fill ``position`` (and ``mode`` for open-lock) on each anchored
+        icon so a click dispatches to the right port without a per-frame
+        property write; apply the warning-red hover colour to destructive
+        icons. Takes any object with ``action_<name>_gizmo`` attributes so
+        tests can exercise the wiring without instantiating the GizmoGroup."""
+        for config_name, (_icon, position_arg) in cls.LOCK_ICON_CONFIGS.items():
+            gz = getattr(group, f"action_{config_name}_gizmo", None)
             if gz is None:
                 continue
             is_open = config_name.endswith("_open")
@@ -3175,15 +2823,15 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                 op_props.position = position_arg
 
         for config_name, position_arg in (("unjoin_start", "START"), ("unjoin_end", "END")):
-            gz = getattr(self, f"action_{config_name}_gizmo", None)
+            gz = getattr(group, f"action_{config_name}_gizmo", None)
             if gz is None:
                 continue
             op_props = gz.target_set_operator("bim.mep_unjoin_at_port")
             op_props.position = position_arg
 
         warning_color = gizmo.get_warning_color_from_prefs(tool.Blender.get_addon_preferences())
-        for config_name in self.UNJOIN_CONFIGS:
-            gz = getattr(self, f"action_{config_name}_gizmo", None)
+        for config_name in cls.UNJOIN_CONFIGS:
+            gz = getattr(group, f"action_{config_name}_gizmo", None)
             if gz is None:
                 continue
             gz.color_highlight = warning_color
@@ -3201,12 +2849,29 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
         z_top = max((c[2] for c in obj.bound_box), default=0.0)
         z_anchor = z_top + self.ICON_ROW_Z_OFFSET
 
-        segment_endpoints: tuple[Vector, Vector] | None = None
-        bend_anchor: Vector | None = None
-        port_state_at: dict[str, str] = {}
-        # pair_fitting tri-state: None = not computed; False = computed, no
-        # fitting joins the pair; <entity> = the joining fitting.
-        pair_fitting: object = None
+        # Restore last frame's IFC-derived state when the cache key is still
+        # valid (same active + same selection signature + same IFC generation).
+        # Camera-dependent state (billboard_rot, matrix_basis) is still rebuilt
+        # every frame below — only the expensive port/fitting/axis lookups are
+        # cached.
+        current_gen = tool.Parametric.get_geom_generation()
+        selection_sig = tuple(sorted(o.name for o in tool.Blender.get_selected_objects()))
+        cache_key = (obj.name, selection_sig, current_gen)
+        if getattr(self, "_mep_state_cache_key", None) == cache_key:
+            cache = self._mep_state_cache
+            port_state_at = cache["port_state_at"]
+            pair_fitting = cache["pair_fitting"]
+            segment_endpoints = cache["segment_endpoints"]
+            bend_anchor = cache["bend_anchor"]
+            bend_anchor_attempted = cache["bend_anchor_attempted"]
+        else:
+            segment_endpoints = None
+            bend_anchor = None
+            bend_anchor_attempted = False
+            port_state_at = {}
+            # pair_fitting tri-state: None = not computed; False = computed, no
+            # fitting joins the pair; <entity> = the joining fitting.
+            pair_fitting = None
 
         row_index = 0
         for config in self.action_configs:
@@ -3259,8 +2924,9 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                     gz.hide = True
                     continue
 
-                if bend_anchor is None:
+                if not bend_anchor_attempted:
                     bend_anchor = compute_mep_join_location()
+                    bend_anchor_attempted = True
                 if bend_anchor is None:
                     gz.hide = True
                     continue
@@ -3270,6 +2936,15 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                 world_pos = obj.matrix_world @ local_pos
                 gz.matrix_basis = gizmo.billboarded_at(world_pos, billboard_rot, scale=scale)
                 row_index += 1
+
+        self._mep_state_cache_key = cache_key
+        self._mep_state_cache = {
+            "port_state_at": port_state_at,
+            "pair_fitting": pair_fitting,
+            "segment_endpoints": segment_endpoints,
+            "bend_anchor": bend_anchor,
+            "bend_anchor_attempted": bend_anchor_attempted,
+        }
 
     def _scale_for_config(self, name: str) -> float:
         if name in self.UNJOIN_CONFIGS:
