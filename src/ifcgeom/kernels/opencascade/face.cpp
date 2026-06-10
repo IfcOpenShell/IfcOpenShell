@@ -169,7 +169,7 @@ namespace {
 			} else if (crv_or_wire.which() == 2) {
 				// @todo
 				const double precision_ = 1.e-5;
-				Logger::Warning("Approximating BasisCurve due to possible discontinuities", i->instance);
+				Logger::Warning("GEO", 156, "Approximating BasisCurve due to possible discontinuities", i->instance);
 				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 				BRepAdaptor_CompCurve cc(w, true);
@@ -289,12 +289,12 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	// the face will still be processed as long as there are no holes. A compound of faces
 	// is returned in that case.
 	if (num_bounds > 1 && num_outer_bounds > 1 && num_bounds != num_outer_bounds) {
-		Logger::Message(Logger::LOG_ERROR, "Invalid configuration of boundaries for:", face->instance);
+		Logger::Message(Logger::LOG_ERROR, "GEO", 157, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
 
 	if (num_outer_bounds > 1) {
-		Logger::Message(Logger::LOG_WARNING, "Multiple outer boundaries for:", face->instance);
+		Logger::Message(Logger::LOG_WARNING, "GEO", 158, "Multiple outer boundaries for:", face->instance);
 		fd.all_outer() = true;
 	}
 
@@ -315,11 +315,11 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			TopoDS_Wire wire;
 			if (faceset_helper_ && bound->is_polyhedron()) {
 				if (!faceset_helper_->wire(bound, wire)) {
-					Logger::Message(Logger::LOG_WARNING, "Face boundary loop not included", bound->instance);
+					Logger::Message(Logger::LOG_WARNING, "GEO", 159, "Face boundary loop not included", bound->instance);
 					continue;
 				}
 			} else if (!convert(bound, wire)) {
-				Logger::Message(Logger::LOG_ERROR, "Failed to process face boundary loop", bound->instance);
+				Logger::Message(Logger::LOG_ERROR, "GEO", 160, "Failed to process face boundary loop", bound->instance);
 				return false;
 			}
 
@@ -336,7 +336,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			};
 			TopTools_ListOfShape results;
 			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
-				Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+				Logger::Warning("GEO", 161, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 				util::select_largest(results, wire);
 			}
 
@@ -347,7 +347,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 	}
 
 	if (fd.wires().empty()) {
-		Logger::Warning("Face with no boundaries", face->instance);
+		Logger::Warning("GEO", 162, "Face with no boundaries", face->instance);
 		return false;
 	}
 
@@ -404,7 +404,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 	if (fd.surface().IsNull()) {
 		// The set of wires is triangulated in case no surface can be found
-		Logger::Message(Logger::LOG_WARNING, "Triangulating face boundaries for face", face->instance);
+		Logger::Message(Logger::LOG_WARNING, "GEO", 163, "Triangulating face boundaries for face", face->instance);
 
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
@@ -457,7 +457,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						kt.Value().Original().ToUTF8CString(c);
 						std::string message = c;
 						delete[] c;
-						Logger::Warning(message, face->instance);
+						Logger::Warning("GEO", 164, message, face->instance);
 					}
 				}
 
@@ -469,17 +469,17 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						if (it.Value().ShapeType() == TopAbs_FACE) {
 							face_list.Append(it.Value());
 						} else {
-							Logger::Error("Unsupported output from face healing");
+							Logger::Error("UNS", 7, "Unsupported output from face healing");
 						}
 					}
 				} else {
-					Logger::Error("Unsupported output from face healing");
+					Logger::Error("UNS", 8, "Unsupported output from face healing");
 				}
 			} else {
 				face_list.Append(f);
 			}
 		} else {
-			Logger::Error("Internal error in face creation");
+			Logger::Error("GEO", 165, "Internal error in face creation");
 			return false;
 		}
 	} else {
@@ -520,14 +520,14 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						delete[] c;
 #if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR >= 7
 						if (!reversed_surface && !fd.surface().IsNull() && fd.surface()->IsUPeriodic() && message == "Unknown message invoked with the keyword FixAdvFace.FixOrientation.MSG0") {
-							Logger::Notice("Detected reversed wire, reattempting with reversed basis surface");
+							Logger::Notice("GEO", 166, "Detected reversed wire, reattempting with reversed basis surface");
 							TopoDS_Face reversed_result;
 							convert(face, reversed_result, true);
 							result = reversed_result;
 							return true;
 						} else
 #endif
-							Logger::Warning(message, face->instance);
+							Logger::Warning("GEO", 167, message, face->instance);
 					}
 				}
 			}

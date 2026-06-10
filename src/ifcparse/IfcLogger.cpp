@@ -62,9 +62,16 @@ const std::array<std::basic_string<char>, 5> severity_strings<char>::value = {"P
 template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
+std::string format_code(const char (&code_prefix)[4], uint16_t code_number) {
+    std::ostringstream oss;
+    oss << code_prefix[0] << code_prefix[1] << code_prefix[2] << std::setfill('0') << std::setw(3) << code_number;
+    return oss.str();
+}
+
 template <typename T>
-void plain_text_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void plain_text_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& code, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
+    out << "[" << code.c_str() << "] ";
     out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
         std::string global_id = current_product->as<IfcUtil::IfcBaseEntity>()->get("GlobalId");
@@ -90,17 +97,19 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::Severity type, const std::string& code, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     // @todo this is crazy
     static const typename T::char_type time_string[] = {'t', 'i', 'm', 'e', 0};
     static const typename T::char_type level_string[] = {'l', 'e', 'v', 'e', 'l', 0};
+    static const typename T::char_type code_string[] = {'c', 'o', 'd', 'e', 0};
     static const typename T::char_type product_string[] = {'p', 'r', 'o', 'd', 'u', 'c', 't', 0};
     static const typename T::char_type message_string[] = {'m', 'e', 's', 's', 'a', 'g', 'e', 0};
     static const typename T::char_type instance_string[] = {'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0};
 
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
+    property_tree.put(code_string, string_as<typename T::char_type>(code));
     if (current_product) {
         std::ostringstream oss;
         current_product->toString(oss);
@@ -127,7 +136,7 @@ void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::
 
 void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
     if (verbosity_ <= LOG_DEBUG && product) {
-        Message(LOG_DEBUG, "Begin processing", *product);
+        Message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
     }
     if (!product && print_perf_stats_on_element_) {
         PrintPerformanceStats();
@@ -154,13 +163,14 @@ void Logger::SetOutput(std::wostream* stream1, std::wostream* stream2) {
     }
 }
 
-void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     if (type < verbosity_) {
         return;
     }
 
     static std::mutex mtx;
     std::lock_guard<std::mutex> lock(mtx);
+    const std::string code = format_code(code_prefix, code_number);
 
     if (type == LOG_PERF) {
         if (!first_timepoint_) {
@@ -181,22 +191,22 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
     if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
-                plain_text_message(*log2_, current_product_, type, message, instance);
+                plain_text_message(*log2_, current_product_, type, code, message, instance);
             } else if (wlog2_ != nullptr) {
-                plain_text_message(*wlog2_, current_product_, type, message, instance);
+                plain_text_message(*wlog2_, current_product_, type, code, message, instance);
             }
         } else if (format_ == FMT_JSON) {
             if (log2_ != nullptr) {
-                json_message(*log2_, current_product_, type, message, instance);
+                json_message(*log2_, current_product_, type, code, message, instance);
             } else if (wlog2_ != nullptr) {
-                json_message(*wlog2_, current_product_, type, message, instance);
+                json_message(*wlog2_, current_product_, type, code, message, instance);
             }
         }
     }
 }
 
-void Logger::Message(Logger::Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance) {
-    Message(type, std::string(exception.what()), instance);
+void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance) {
+    Message(type, code_prefix, code_number, std::string(exception.what()), instance);
 }
 
 template <typename T>
@@ -243,7 +253,7 @@ void Logger::PrintPerformanceStats() {
 
     for (auto& item : items) {
         auto message = item.second + std::string(max_size - item.second.size(), ' ') + ": " + std::to_string(item.first);
-        Message(LOG_PERF, message);
+        Message(LOG_PERF, "SYS", 4, message);
     }
 }
 

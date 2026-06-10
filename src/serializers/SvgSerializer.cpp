@@ -139,13 +139,13 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
 
 				if (curve2d.IsNull()) {
-					Logger::Error("Failed to obtain 2d and 3d curve from edge");
+					Logger::Error("SER", 20, "Failed to obtain 2d and 3d curve from edge");
 					continue;
 				}
 
 				Handle(Standard_Type) sty = surf->DynamicType();
 				if (sty != STANDARD_TYPE(Geom_Plane)) {
-					Logger::Error("Non-planar p-curves are not supported by this serializer");
+					Logger::Error("SER", 21, "Non-planar p-curves are not supported by this serializer");
 					continue;
 				}
 
@@ -222,7 +222,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 					std::stringstream ss;
 					ss << "Skipping full circle/ellipse inside aggregated <path> (id "
 						<< p.first << ")";
-					Logger::Warning(ss.str());
+					Logger::Warning("SER", 22, ss.str());
 				}
 			}
 
@@ -650,7 +650,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
 #endif
 		} else {
-			Logger::Error("Failed to box or edge from drawing annotation");
+			Logger::Error("SER", 23, "Failed to box or edge from drawing annotation");
 		}
 
 		std::vector<string_property> props;
@@ -797,7 +797,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		if (data.storey) {
 			section_heights_storage.push_back(horizontal_plan{ data.storey, data.storey_elevation,  +1. });
 		} else {
-			Logger::Warning("No global section height and unable to determine building storey for:", data.product);
+			Logger::Warning("SER", 24, "No global section height and unable to determine building storey for:", data.product);
 			return;
 		}
 	}
@@ -812,7 +812,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		Bnd_OBB obb;
 		BRepBndLib::AddOBB(compound_unmirrored, obb, false, false, false);
 		if (view_box_3d_->IsOut(obb)) {
-			Logger::Notice("Not including element due to viewBox", data.product);
+			Logger::Notice("SER", 25, "Not including element due to viewBox", data.product);
 			return;
 		}
 	}
@@ -859,7 +859,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 			}
 		} catch (std::exception& e) {
-			Logger::Error(e);
+			Logger::Error("SER", 26, e);
 		}
 
 		if (operation_type && ((*operation_type == "SINGLE_SWING_LEFT") || (*operation_type == "SINGLE_SWING_RIGHT"))) {
@@ -1112,7 +1112,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 							compound_to_hlr = &subtracted_shape;
 						} catch (...) {
-							Logger::Error("Failed to cut element for HLR", data.product);
+							Logger::Error("SER", 27, "Failed to cut element for HLR", data.product);
 						}
 					}
 				}
@@ -1208,7 +1208,7 @@ void SvgSerializer::write(const geometry_data& data) {
 						}
 						it->second.add(*compound_to_hlr, data.product);
 					} else {
-						Logger::Warning("Unable to invoke HLR due to absence of storey containment", data.product);
+						Logger::Warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
 					hlr->add(*compound_to_hlr, data.product);
@@ -1681,7 +1681,7 @@ void SvgSerializer::write(const geometry_data& data) {
 	}
 
 	if (!emitted) {
-		Logger::Warning("Element not written to SVG due to section heights", data.product);
+		Logger::Warning("SER", 29, "Element not written to SVG due to section heights", data.product);
 	}
 }
 
@@ -2337,7 +2337,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 #ifdef TAXONOMY_USE_NAKED_PTR
 							delete matrix;
 #endif
-							Logger::Warning("No building storeys encountered, used for reference:", product);
+							Logger::Warning("SER", 30, "No building storeys encountered, used for reference:", product);
 							return;
 						}
 					}
@@ -2347,7 +2347,7 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 
 		delete mapping;
 
-		Logger::Warning("No building storeys encountered, output might be invalid or missing");
+		Logger::Warning("SER", 31, "No building storeys encountered, output might be invalid or missing");
 	}
 }
 
@@ -2358,7 +2358,7 @@ void SvgSerializer::setSectionHeight(double h, const IfcUtil::IfcBaseEntity* sto
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	if (!file) {
-		Logger::Error("No file specified");
+		Logger::Error("SER", 32, "No file specified");
 		return;
 	}
 	with_section_heights_from_storey_ = true;
@@ -2373,7 +2373,7 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 				try {
 					elev = attr_value;
 				} catch (std::exception& e) {
-					Logger::Error(e);
+					Logger::Error("SER", 33, e);
 					continue;
 				}
 				if (!section_data_->empty()) {

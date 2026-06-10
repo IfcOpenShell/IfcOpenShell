@@ -112,7 +112,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		auto b2 = plane.base2();
 
 		if (V.squared_length() == 0) {
-			Logger::Warning("Removed face due to self-intersections");
+			Logger::Warning("GEO", 62, "Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 			continue;
 		}
@@ -133,7 +133,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		}
 
 		if (!CGAL::Polygon_2<Kernel_>(ps.begin(), ps.end()).is_simple()) {
-			Logger::Warning("Removed face due to self-intersections");
+			Logger::Warning("GEO", 63, "Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 		}
 	}
@@ -233,7 +233,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	if (!all_triangles) {
 		if (!shape_to_use->is_valid()) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
+			Logger::Message(Logger::LOG_ERROR, "GEO", 64, "Invalid Polyhedron_3 in object (before triangulation)");
 			return;
 		}
 
@@ -241,19 +241,19 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		try {
 			success = CGAL::Polygon_mesh_processing::triangulate_faces(*shape_to_use);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
+			Logger::Message(Logger::LOG_ERROR, "GEO", 65, "Triangulation crashed");
 			return;
 		}
 
 		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_to_use);
 
 		if (!success) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
+			Logger::Message(Logger::LOG_ERROR, "GEO", 66, "Triangulation failed");
 			return;
 		}
 
 		if (!shape_to_use->is_valid()) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
+			Logger::Message(Logger::LOG_ERROR, "GEO", 67, "Invalid Polyhedron_3 in object (after triangulation)");
 			return;
 		}
 	}
@@ -282,7 +282,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	try {
 		CGAL::Polygon_mesh_processing::compute_face_normals(*shape_to_use, face_normals_map);
 	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "Face normal calculation failed");
+		Logger::Message(Logger::LOG_ERROR, "GEO", 68, "Face normal calculation failed");
 		return;
 	}
 

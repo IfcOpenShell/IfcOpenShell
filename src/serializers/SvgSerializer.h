@@ -468,7 +468,7 @@ namespace {
 					}
 				}
 
-				Logger::Notice("Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
+				Logger::Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
 				auto it = items_.insert(items_.end(), { product, C });
 
@@ -517,7 +517,7 @@ namespace {
 				}
 			}
 			if (use_prefiltering_) {
-				Logger::Notice("Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
+				Logger::Notice("SER", 35, "Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
 			
 			hlr_calc vis(projector_);

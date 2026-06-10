@@ -175,7 +175,7 @@ bool IfcSpfHeader::tryRead() {
         read();
         return true;
     } catch (const std::exception& e) {
-        Logger::Error(e);
+        Logger::Error("SYN", 28, e);
         return false;
     }
 }

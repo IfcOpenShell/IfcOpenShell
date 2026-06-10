@@ -54,7 +54,7 @@ public:
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
 #ifdef HAVE_CONFIG_H
-			Logger::Warning("Setting IGES units not supported on OCE");
+			Logger::Warning("SER", 5, "Setting IGES units not supported on OCE");
 #else
 			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.iges.unit", symbol);

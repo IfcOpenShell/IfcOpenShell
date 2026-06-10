@@ -519,7 +519,7 @@ namespace {
 	}
 
 	void proj_log(void *, int, const char* c) {
-		Logger::Error("PROJ: " + std::string(c));
+		Logger::Error("SER", 1, "PROJ: " + std::string(c));
 	}
 }
 
@@ -650,7 +650,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 				NULL);
 
 			if (!P) {
-				Logger::Error("Failed to create PROJ transformation object");
+				Logger::Error("SER", 2, "Failed to create PROJ transformation object");
 				return;
 			}
 
@@ -662,7 +662,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 
 			wgs84_point = proj_trans(P, PJ_FWD, a);
 
-			Logger::Notice("Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+			Logger::Notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
 		}
 
 		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
@@ -687,7 +687,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
 
 		if (!ellipsoid_crs) {
-			Logger::Error("Failed to create ellipsoid CRS");
+			Logger::Error("SER", 4, "Failed to create ellipsoid CRS");
 			return;
 		}
 

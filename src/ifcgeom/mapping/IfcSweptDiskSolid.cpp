@@ -62,7 +62,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 		sp = inst->StartParam();
 		ep = inst->EndParam();
 	} catch (const IfcParse::IfcException& e) {
-		Logger::Warning(e);
+		Logger::Warning("GEO", 293, e);
 	}
 #endif
 

@@ -37,7 +37,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef* i
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x < tol || y < tol) {
-		Logger::Message(Logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		Logger::Message(Logger::LOG_NOTICE, "GEO", 282, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 

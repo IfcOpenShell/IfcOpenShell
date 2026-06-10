@@ -89,7 +89,7 @@ auto get_related(T* t, F f, G g) {
         try {
             acc->push((*u.*g)()->template as<V>());
         } catch (IfcParse::IfcException& e) {
-            Logger::Error(e);
+            Logger::Error("SER", 6, e);
         }
     }
     return acc;
@@ -264,7 +264,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
 
     IfcSchema::IfcProject::list::ptr projects = file->instances_by_type<IfcSchema::IfcProject>();
     if (projects->size() != 1) {
-        Logger::Message(Logger::LOG_ERROR, "Expected a single IfcProject");
+        Logger::Message(Logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
         return;
     }
     IfcSchema::IfcProject* project = *projects->begin();
@@ -273,7 +273,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         try {
             return fn();
         } catch (const std::exception& e) {
-            Logger::Error(e);
+            Logger::Error("SER", 8, e);
             static std::invoke_result_t<decltype(fn)> v;
             return v;
         }

@@ -128,7 +128,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		auto itelem = elem_to_space_boundary_coords.find({ Aguid, Bguid });
 
 		if (itelem == elem_to_space_boundary_coords.end()) {
-			Logger::Error("Missing space boundary relationship " + Aguid + " " + Bguid);
+			Logger::Error("VAL", 1, "Missing space boundary relationship " + Aguid + " " + Bguid);
 			return;
 		}
 
@@ -141,7 +141,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		bool valid = *std::max_element(distances.begin(), distances.end()) < 0.4;
 
 		if (!valid) {
-			Logger::Error("Wrong connection geometry " + Aguid + " " + Bguid);
+			Logger::Error("VAL", 2, "Wrong connection geometry " + Aguid + " " + Bguid);
 		}
 
 		/*{
@@ -178,7 +178,7 @@ void fix_spaceboundaries(IfcParse::IfcFile& f, bool no_progress, bool quiet, boo
 		auto g1 = n.substr(0, 22);
 		auto g2 = n.substr(23);
 		if (is_wall_space_or_slab(g1) && is_wall_space_or_slab(g2) && guid_pairs_visited.find({ g1, g2 }) == guid_pairs_visited.end()) {
-			Logger::Error("Space boundary for non-bounding geometry " + g1 + " " + g2);
+			Logger::Error("VAL", 3, "Space boundary for non-bounding geometry " + g1 + " " + g2);
 		}
 	}
 }

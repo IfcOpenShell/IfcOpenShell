@@ -29,13 +29,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2Placement3D* inst) {
 		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst->Location()));
 		o = *v->components_;
 	} catch (const std::exception&) {
-		Logger::Warning("Placement with invalid Location:", inst);
+		Logger::Warning("GEO", 234, "Placement with invalid Location:", inst);
 	}
 	const bool hasAxis = !!inst->Axis();
 	const bool hasRef = !!inst->RefDirection();
 
 	if (hasAxis != hasRef) {
-		Logger::Warning("Axis and RefDirection should be specified together", inst);
+		Logger::Warning("GEO", 235, "Axis and RefDirection should be specified together", inst);
 	}
 
 	if (hasAxis) {

@@ -25,6 +25,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/scope_exit.hpp>
+#include <cstdint>
 #include <exception>
 #include <map>
 #include <sstream>
@@ -84,16 +85,16 @@ class IFC_PARSE_API Logger {
     static Format OutputFormat();
 
     /// Log a message to the output stream
-    static void Message(Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
-    static void Message(Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
+    static void Message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
+    static void Message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
 
-    static void Notice(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, message, instance); }
-    static void Warning(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, message, instance); }
-    static void Error(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, message, instance); }
+    static void Notice(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, code_prefix, code_number, message, instance); }
+    static void Warning(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, code_prefix, code_number, message, instance); }
+    static void Error(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, code_prefix, code_number, message, instance); }
 
-    static void Notice(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, exception, instance); }
-    static void Warning(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, exception, instance); }
-    static void Error(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, exception, instance); }
+    static void Notice(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, code_prefix, code_number, exception, instance); }
+    static void Warning(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, code_prefix, code_number, exception, instance); }
+    static void Error(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, code_prefix, code_number, exception, instance); }
 
     static void Status(const std::string& message, bool new_line = true);
 
@@ -105,10 +106,10 @@ class IFC_PARSE_API Logger {
 
 #define PERF(x)                                                      \
                                                                      \
-    Logger::Message(Logger::LOG_PERF, x);                            \
+    Logger::Message(Logger::LOG_PERF, "SYS", 1, x);                   \
                                                                      \
     BOOST_SCOPE_EXIT(void) {                                         \
-        Logger::Message(Logger::LOG_PERF, "done " + std::string(x)); \
+        Logger::Message(Logger::LOG_PERF, "SYS", 2, "done " + std::string(x)); \
     }                                                                \
     BOOST_SCOPE_EXIT_END
 

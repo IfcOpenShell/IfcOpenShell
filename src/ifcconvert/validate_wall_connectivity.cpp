@@ -169,11 +169,11 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		if (a_type != atype_computed || b_type != btype_computed) {
 			if (rel) {
-				Logger::Error(std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
+				Logger::Error("VAL", 5, std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
 			} else {
 				auto A_str = A->get_value<std::string>("GlobalId");
 				auto B_str = B->get_value<std::string>("GlobalId");
-				Logger::Error("No connection for adjacent " + A_str + " " + B_str);
+				Logger::Error("VAL", 6, "No connection for adjacent " + A_str + " " + B_str);
 			}
 		}
 	});
@@ -183,7 +183,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 			auto x = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
 			auto y = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedElement");
 			if (v.successfully_processed.find(x) != v.successfully_processed.end() && v.successfully_processed.find(y) != v.successfully_processed.end()) {
-				Logger::Error("Connection for non-adjacent walls", rel);
+				Logger::Error("VAL", 7, "Connection for non-adjacent walls", rel);
 			}
 		}
 	});

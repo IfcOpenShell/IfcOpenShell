@@ -198,7 +198,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			auto s = geom_object->product()->get_value<std::string>("GlobalId");
 			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
 			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
-			Logger::Error("Element " + s + " contained in " + s2 + " located on " + s1);
+			Logger::Error("VAL", 4, "Element " + s + " contained in " + s2 + " located on " + s1);
 		}
 
 		if (!no_progress) {

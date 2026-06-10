@@ -67,13 +67,13 @@ namespace geometry {
 								}
 							}
 						} catch (const std::exception& e) {
-							Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+							Logger::Message(Logger::LOG_ERROR, "GEO", 325, std::string(e.what()) + "\nFailed to convert:", inst);
 						}
 					} else if (failed_on_purpose_.find(inst) == failed_on_purpose_.end()) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to convert:", inst);
+						Logger::Message(Logger::LOG_ERROR, "GEO", 326, "Failed to convert:", inst);
 					}
 				} catch (const std::exception& e) {
-					Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+					Logger::Message(Logger::LOG_ERROR, "GEO", 327, std::string(e.what()) + "\nFailed to convert:", inst);
 				}
 			}
 		}

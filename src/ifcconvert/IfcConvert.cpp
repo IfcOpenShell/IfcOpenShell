@@ -492,7 +492,7 @@ int main(int argc, char** argv) {
 
 	if (num_threads <= 0) {
 		num_threads = std::thread::hardware_concurrency();
-		Logger::Notice("Using " + std::to_string(num_threads) + " threads");
+		Logger::Notice("SYS", 7, "Using " + std::to_string(num_threads) + " threads");
 	}
     
 	if (vmap.count("log-format") == 1) {
@@ -511,7 +511,7 @@ int main(int argc, char** argv) {
     if (!filter_filename.empty()) {
         size_t num_filters = read_filters_from_file(IfcUtil::path::to_utf8(filter_filename), include_filter, include_traverse_filter, exclude_filter, exclude_traverse_filter);
         if (num_filters) {
-            Logger::Notice(boost::lexical_cast<std::string>(num_filters) + " filters read from specifified file.");
+            Logger::Notice("SYS", 8, boost::lexical_cast<std::string>(num_filters) + " filters read from specifified file.");
         } else {
             cerr_ << "[Error] No filters read from specifified file.\n";
             return EXIT_FAILURE;
@@ -686,7 +686,7 @@ int main(int argc, char** argv) {
 				exit_code = EXIT_SUCCESS;
 			}
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			Logger::Error("SYS", 9, e);
 		}
 		write_log(!quiet);
 		return exit_code;
@@ -704,13 +704,13 @@ int main(int argc, char** argv) {
 					fs << *ifc_file;
 					exit_code = EXIT_SUCCESS;
 				} else {
-					Logger::Error("Unable to open output file for writing");
+					Logger::Error("SYS", 10, "Unable to open output file for writing");
 				}
                 time(&end);
                 Logger::Status("Done! Writing IFC took " +  format_duration(start, end));
 			}
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			Logger::Error("SYS", 11, e);
 		}
 		write_log(!quiet);
 		return exit_code;
@@ -741,7 +741,7 @@ int main(int argc, char** argv) {
 				}
 			}			
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			Logger::Error("SYS", 12, e);
 		}
 		write_log(!quiet);
 		return exit_code;
@@ -761,9 +761,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    if (!entity_filter.entity_names.empty()) { entity_filter.update_description(); Logger::Notice(entity_filter.description); }
-    if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Notice(layer_filter.description); }
-	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); Logger::Notice(attribute_filter.description); }
+    if (!entity_filter.entity_names.empty()) { entity_filter.update_description(); Logger::Notice("SYS", 13, entity_filter.description); }
+    if (!layer_filter.values.empty()) { layer_filter.update_description(); Logger::Notice("SYS", 14, layer_filter.description); }
+	if (!attribute_filter.attribute_name.empty()) { attribute_filter.update_description(); Logger::Notice("SYS", 15, attribute_filter.description); }
 
 #ifdef _MSC_VER
 	if (output_extension == DAE || output_extension == STP || output_extension == IGS) {
@@ -871,13 +871,13 @@ int main(int argc, char** argv) {
     const bool is_tesselated = serializer->isTesselated(); // isTesselated() doesn't change at run-time
 	if (!is_tesselated) {
 		if (geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().get()) {
-            Logger::Notice("Weld vertices setting ignored when writing non-tesselated output");
+            Logger::Notice("SYS", 16, "Weld vertices setting ignored when writing non-tesselated output");
 		}
         if (geometry_settings.get<ifcopenshell::geometry::settings::GenerateUvs>().get()) {
-            Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
+            Logger::Notice("SYS", 17, "Generate UVs setting ignored when writing non-tesselated output");
         }
         if (center_model || center_model_geometry) {
-            Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
+            Logger::Notice("SYS", 18, "Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
 		geometry_settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
@@ -920,13 +920,13 @@ int main(int argc, char** argv) {
 
 		std::stringstream msg;
 		msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
-		Logger::Notice(msg.str());
+		Logger::Notice("SYS", 19, msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelRotation>().value = rotation;
 	}
 
 	if (model_offset && (center_model || center_model_geometry)) {
-		Logger::Notice("--model-offset ignored with --center-model or --center-model-geometry");
+		Logger::Notice("GEO", 22, "--model-offset ignored with --center-model or --center-model-geometry");
 	}
 
 	if (model_offset && !(center_model || center_model_geometry)) {
@@ -941,7 +941,7 @@ int main(int argc, char** argv) {
 
 		std::stringstream msg;
 		msg << std::setprecision(std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-		Logger::Notice(msg.str());
+		Logger::Notice("SYS", 20, msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
 	}
@@ -959,7 +959,7 @@ int main(int argc, char** argv) {
 			if (!tmp_context_iterator.initialize()) {
 				/// @todo It would be nice to know and print separate error prints for a case where we found no entities
 				/// and for a case we found no entities that satisfy our filtering criteria.
-				Logger::Notice("No geometrical elements found or none successfully converted");
+				Logger::Notice("GEO", 23, "No geometrical elements found or none successfully converted");
 				serializer.reset();
 				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 				write_log(!quiet);
@@ -979,7 +979,7 @@ int main(int argc, char** argv) {
 
         std::stringstream msg;
         msg << std::setprecision (std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
-        Logger::Notice(msg.str());
+        Logger::Notice("SYS", 21, msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
     }
@@ -1009,12 +1009,12 @@ int main(int argc, char** argv) {
 	}
 #endif
 
-	Logger::Message(Logger::LOG_PERF, "file geometry conversion");
+	Logger::Message(Logger::LOG_PERF, "GEO", 24, "file geometry conversion");
 
     if (context_iterator && !context_iterator->initialize()) {
         /// @todo It would be nice to know and print separate error prints for a case where we found no entities
         /// and for a case we found no entities that satisfy our filtering criteria.
-        Logger::Notice("No geometrical elements found or none successfully converted");
+        Logger::Notice("GEO", 25, "No geometrical elements found or none successfully converted");
 		serializer.reset();
 		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
         write_log(!quiet);
@@ -1033,7 +1033,7 @@ int main(int argc, char** argv) {
 				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys();
 			}
 		} else if (vmap.count("section-height") != 0) {
-			Logger::Notice("Overriding section height");
+			Logger::Notice("SYS", 22, "Overriding section height");
 			static_cast<SvgSerializer*>(serializer.get())->setSectionHeight(section_height);
 		}
 		if (vmap.count("print-space-names") != 0) {
@@ -1156,7 +1156,7 @@ int main(int argc, char** argv) {
 				if (stderr_progress)
 					cerr_ << std::flush;
 			} else if (vcounter.count == 2) {
-				Logger::Message(Logger::LOG_DEBUG, "Progress " + boost::lexical_cast<std::string>(progress));
+				Logger::Message(Logger::LOG_DEBUG, "SYS", 23, "Progress " + boost::lexical_cast<std::string>(progress));
 			} else {
 				progress = progress / 2;
 				if (old_progress != progress) Logger::ProgressBar(progress);
@@ -1196,7 +1196,7 @@ int main(int argc, char** argv) {
     // Make sure the dtor is explicitly run here (e.g. output files are closed before renaming them).
     serializer.reset();
 
-	Logger::Message(Logger::LOG_PERF, "done file geometry conversion");
+	Logger::Message(Logger::LOG_PERF, "GEO", 26, "done file geometry conversion");
 
 	bool successful;
 	if(output_extension == USD || output_extension == USDC || output_extension == USDA) {
@@ -1215,7 +1215,7 @@ int main(int argc, char** argv) {
     }
 
 	if (geometry_settings.get<ifcopenshell::geometry::settings::ValidateQuantities>().get() && Logger::MaxSeverity() >= Logger::LOG_ERROR) {
-		Logger::Error("Errors encountered during processing.");
+		Logger::Error("SYS", 24, "Errors encountered during processing.");
 		successful = false;
 	}
 
@@ -1308,7 +1308,7 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
     }
 
 	if (!ifc_file || !ifc_file->good()) {
-        Logger::Error("Unable to parse input file '" + filename + "'");
+        Logger::Error("SYN", 1, "Unable to parse input file '" + filename + "'");
         return false;
     }
     time(&end);

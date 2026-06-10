@@ -157,7 +157,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		try {
 		    instance->get_attribute_value(i);
 		} catch (const std::exception&) {
-		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
+		    Logger::Error("SER", 9, "Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
 		}		
 		auto argument = instance->get_attribute_value(i);
@@ -176,7 +176,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 		try {
 			value = format_attribute(mapping, argument, argument_type, qualified_name);
 		} catch (const std::exception& e) {
-			Logger::Error(e);
+			Logger::Error("SER", 10, e);
 		}
 
 		if (value) {
@@ -227,7 +227,7 @@ auto get_related(T* t, F f, G g) {
 		try {
 			acc->push((*u.*g)()->template as<V>());
 		} catch (IfcParse::IfcException& e) {
-			Logger::Error(e);
+			Logger::Error("SER", 11, e);
 		}
 	}
 	return acc;
@@ -552,7 +552,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 
 	IfcSchema::IfcProject::list::ptr projects = file->instances_by_type<IfcSchema::IfcProject>();
 	if (projects->size() != 1) {
-		Logger::Message(Logger::LOG_ERROR, "Expected a single IfcProject");
+		Logger::Message(Logger::LOG_ERROR, "SER", 12, "Expected a single IfcProject");
 		return;
 	}
 	IfcSchema::IfcProject* project = *projects->begin();
@@ -563,7 +563,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 		try {
 			return fn();
 		} catch(const std::exception& e) {
-			Logger::Error(e);
+			Logger::Error("SER", 13, e);
 			static std::invoke_result_t<decltype(fn)> v;
 			return v;
 		}
@@ -588,7 +588,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	catch (const IfcParse::IfcException& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_description implementation_level, error: '" << ex.what() << "'";
-		Logger::Message(Logger::LOG_ERROR, ss.str());
+		Logger::Message(Logger::LOG_ERROR, "SER", 14, ss.str());
 	}
 	try {
 		header.put("file_name.name", file->header().file_name()->name());
@@ -596,7 +596,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	catch (const IfcParse::IfcException& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_name name, error: '" << ex.what() << "'";
-		Logger::Message(Logger::LOG_ERROR, ss.str());
+		Logger::Message(Logger::LOG_ERROR, "SER", 15, ss.str());
 	}
     try {
         header.put("file_name.time_stamp", file->header().file_name()->time_stamp());
@@ -604,7 +604,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name time_stamp, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        Logger::Message(Logger::LOG_ERROR, "SER", 16, ss.str());
     }
     try {
         header.put("file_name.preprocessor_version", file->header().file_name()->preprocessor_version());
@@ -612,7 +612,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name preprocessor_version, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        Logger::Message(Logger::LOG_ERROR, "SER", 17, ss.str());
     }
     try {
         header.put("file_name.originating_system", file->header().file_name()->originating_system());
@@ -620,7 +620,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name originating_system, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        Logger::Message(Logger::LOG_ERROR, "SER", 18, ss.str());
     }
     try {
 		// @nb inconsistent spelling
@@ -629,7 +629,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const IfcParse::IfcException& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name authorization, error: '" << ex.what() << "'";
-        Logger::Message(Logger::LOG_ERROR, ss.str());
+        Logger::Message(Logger::LOG_ERROR, "SER", 19, ss.str());
     }
 
 	// Descend into the decomposition structure of the IFC file.

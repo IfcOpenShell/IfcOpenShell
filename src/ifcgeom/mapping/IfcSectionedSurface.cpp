@@ -34,7 +34,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
     auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
     if (!fn) {
         // Only implement on alignment curves
-        Logger::Warning("IfcSectionedSurface is only implemented for Directrix curves based on taxonomy::function_item", inst);
+        Logger::Warning("GEO", 288, "IfcSectionedSurface is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
     }
 
@@ -79,11 +79,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	return nullptr;
 #endif
 	if (faces.size() != profile_offsets.size()) {
-		Logger::Warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
+		Logger::Warning("GEO", 289, "Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
 		return nullptr;
 	}
 	if (faces.size() < 2) {
-		Logger::Warning("Expected at least two cross sections, but got " + std::to_string(faces.size()), inst);
+		Logger::Warning("GEO", 290, "Expected at least two cross sections, but got " + std::to_string(faces.size()), inst);
 		return nullptr;
 	}
 
