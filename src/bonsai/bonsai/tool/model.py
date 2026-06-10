@@ -1588,8 +1588,7 @@ class Model(bonsai.core.tool.Model):
         element = tool.Ifc.get_entity(object)
         if not element:
             return
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset_data = psets.get(pset_name, None)
+        pset_data = ifcopenshell.util.element.get_pset(element, pset_name)
         if not pset_data:
             return
         pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")

@@ -204,6 +204,20 @@ def _hide_all_non_modal_gizmos(group) -> None:
             gz.hide = True
 
 
+def apply_transform_modal_draw_gate(group, context) -> bool:
+    """Combined gate for ``draw_prepare`` overrides: hide non-modal gizmos and
+    return ``True`` when a Blender transform modal is dragging matrix_world.
+
+    Returns ``False`` when no transform modal is active so callers can fall
+    through to their normal positioning logic. ``True`` means the caller must
+    early-return without touching matrix_basis — the hidden gizmos will be
+    re-shown on the next idle frame once the modal exits."""
+    if not _is_transform_modal_active(context):
+        return False
+    _hide_all_non_modal_gizmos(group)
+    return True
+
+
 class GizmoColor(Enum):
     """Color identifiers for dimension gizmos.
 
@@ -5075,8 +5089,7 @@ class BillboardingGizmoGroupMixin:
         self.position_gizmos(context)
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
-        if _is_transform_modal_active(context):
-            _hide_all_non_modal_gizmos(self)
+        if apply_transform_modal_draw_gate(self, context):
             return
         self.position_gizmos(context)
 
@@ -6498,8 +6511,7 @@ class BaseParametricGizmoGroup:
         """
         if not self.is_setup_complete():
             return
-        if _is_transform_modal_active(context):
-            _hide_all_non_modal_gizmos(self)
+        if apply_transform_modal_draw_gate(self, context):
             return
         obj = context.active_object
         if not obj:
@@ -6707,8 +6719,7 @@ class BaseSchematicGizmoGroup(BaseParametricGizmoGroup):
     def draw_prepare(self, context: bpy.types.Context) -> None:
         if not self.is_setup_complete():
             return
-        if _is_transform_modal_active(context):
-            _hide_all_non_modal_gizmos(self)
+        if apply_transform_modal_draw_gate(self, context):
             return
         obj = context.active_object
         if not obj:

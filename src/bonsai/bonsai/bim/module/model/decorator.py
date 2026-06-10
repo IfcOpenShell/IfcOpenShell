@@ -2032,42 +2032,6 @@ class BoundingBoxDecorator:
                             co2.y -= y_overlap / 2 + min_spacing
 
 
-def _stroke_lines_alpha(
-    context: bpy.types.Context,
-    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
-    color_rgb: tuple[float, float, float],
-    line_width: float,
-    line_alpha: float,
-) -> None:
-    """Render ``segments`` (a list of ``(start, end)`` tuples) as one
-    anti-aliased LINES batch in world space. Early-returns when
-    ``context.region`` is unavailable (e.g. when called from a
-    ``_RestrictContext``)."""
-    if not segments:
-        return
-    verts: list[tuple[float, float, float]] = []
-    indices: list[tuple[int, int]] = []
-    for start, end in segments:
-        base = len(verts)
-        verts.append(tuple(start))
-        verts.append(tuple(end))
-        indices.append((base, base + 1))
-    if not tool.Blender.validate_shader_batch_data(verts, indices):
-        return
-    region = getattr(context, "region", None)
-    if region is None:
-        return
-    shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
-    shader.bind()
-    shader.uniform_float("viewportSize", (region.width, region.height))
-    shader.uniform_float("lineWidth", line_width)
-    shader.uniform_float("color", (*color_rgb, line_alpha))
-    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
-    gpu.state.blend_set("ALPHA")
-    batch.draw(shader)
-    gpu.state.blend_set("NONE")
-
-
 def _fill_quads_alpha(
     context: bpy.types.Context,
     quads: list[
@@ -2082,8 +2046,7 @@ def _fill_quads_alpha(
     alpha: float,
 ) -> None:
     """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
-    order) as one TRIS batch with two triangles per quad. Companion to
-    ``_stroke_lines_alpha`` for filled previews."""
+    order) as one TRIS batch with two triangles per quad."""
     if not quads:
         return
     verts: list[tuple[float, float, float]] = []
@@ -2179,12 +2142,12 @@ class MEPSegmentExtendPreviewDecorator(tool.Blender.ViewportDecorator):
             return
         start_world, end_world = line
         color = tuple(prefs.decorator_color_selected[:3])
-        _stroke_lines_alpha(
+        draw_polyline_segments(
             context,
             [(tuple(start_world), tuple(end_world))],
             color,
-            self.LINE_WIDTH,
             self.LINE_ALPHA,
+            self.LINE_WIDTH,
         )
 
     @staticmethod
@@ -2250,9 +2213,11 @@ class BendPreviewDecorator(tool.Blender.ViewportDecorator):
         # Late import: decorator.py loads at addon enable but mep.py imports
         # this module for the extend preview, so a module-level import would
         # cycle.
-        from bonsai.bim.module.model.mep import compute_bend_preview_polylines
+        from bonsai.bim.module.model.mep import cached_compute_bend_preview_polylines
 
-        preview = compute_bend_preview_polylines(start_obj, end_obj, props.start_length, props.end_length, props.radius)
+        preview = cached_compute_bend_preview_polylines(
+            start_obj, end_obj, props.start_length, props.end_length, props.radius
+        )
         prefs = tool.Blender.get_addon_preferences()
 
         if not preview["valid"]:
@@ -2260,7 +2225,7 @@ class BendPreviewDecorator(tool.Blender.ViewportDecorator):
             axes = preview.get("invalid_axes") or []
             if axes:
                 segments = [(tuple(a), tuple(b)) for a, b in axes]
-                _stroke_lines_alpha(context, segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+                draw_polyline_segments(context, segments, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
             return
 
         leg_color = tuple(prefs.decorations_colour[:3])
@@ -2268,18 +2233,18 @@ class BendPreviewDecorator(tool.Blender.ViewportDecorator):
 
         leg_a_far, leg_a_end = preview["leg_a"]
         leg_b_far, leg_b_end = preview["leg_b"]
-        _stroke_lines_alpha(
+        draw_polyline_segments(
             context,
             [(tuple(leg_a_far), tuple(leg_a_end)), (tuple(leg_b_far), tuple(leg_b_end))],
             leg_color,
-            self.LINE_WIDTH_LEG,
             self.LINE_ALPHA,
+            self.LINE_WIDTH_LEG,
         )
 
         arc = preview["arc"]
         if len(arc) >= 2:
             arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
-            _stroke_lines_alpha(context, arc_segments, arc_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+            draw_polyline_segments(context, arc_segments, arc_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
 
 
 class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
@@ -2343,15 +2308,15 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
                         (tuple(far_a), tuple(tangent_a)),
                         (tuple(far_b), tuple(tangent_b)),
                     ]
-                    _stroke_lines_alpha(context, legs, warning_color, self.LINE_WIDTH_LEG, self.LINE_ALPHA)
+                    draw_polyline_segments(context, legs, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_LEG)
                 arc = geom.get("arc") or []
                 if len(arc) >= 2:
                     arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
-                    _stroke_lines_alpha(context, arc_segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+                    draw_polyline_segments(context, arc_segments, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
             elif geom.get("invalid_axes"):
                 axes = geom["invalid_axes"]
                 segments = [(tuple(a), tuple(b)) for a, b in axes]
-                _stroke_lines_alpha(context, segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+                draw_polyline_segments(context, segments, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
             return
 
         leg_color = tuple(prefs.decorations_colour[:3])
@@ -2368,12 +2333,12 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
                 (tuple(far_a), tuple(geom["tangent_a"])),
                 (tuple(far_b), tuple(geom["tangent_b"])),
             ]
-            _stroke_lines_alpha(context, legs, leg_color, self.LINE_WIDTH_LEG, self.LINE_ALPHA)
+            draw_polyline_segments(context, legs, leg_color, self.LINE_ALPHA, self.LINE_WIDTH_LEG)
 
         arc = geom["arc"]
         if len(arc) >= 2:
             arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
-            _stroke_lines_alpha(context, arc_segments, arc_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+            draw_polyline_segments(context, arc_segments, arc_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
 
         # Dim construction lines from arc_center to each tangent point so
         # the radius reads as concrete during drag.
@@ -2383,7 +2348,9 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
                 (tuple(arc_center), tuple(geom["tangent_a"])),
                 (tuple(arc_center), tuple(geom["tangent_b"])),
             ]
-            _stroke_lines_alpha(context, construction, arc_color, self.LINE_WIDTH_CONSTRUCTION, self.CONSTRUCTION_ALPHA)
+            draw_polyline_segments(
+                context, construction, arc_color, self.CONSTRUCTION_ALPHA, self.LINE_WIDTH_CONSTRUCTION
+            )
 
     @staticmethod
     def _far_endpoint(reference_line, intersection):
@@ -2505,7 +2472,7 @@ class DoorSwingReadonlyDecorator(tool.Blender.ViewportDecorator):
             pts = [world_main @ p for p in _DOOR_SWING_ARC_UNIT_POINTS]
             for i in range(len(pts) - 1):
                 segments.append((tuple(pts[i]), tuple(pts[i + 1])))
-        _stroke_lines_alpha(context, segments, main_color, self.LINE_WIDTH, self.LINE_ALPHA)
+        draw_polyline_segments(context, segments, main_color, self.LINE_ALPHA, self.LINE_WIDTH)
 
 
 _BBOX_EDGES = (
