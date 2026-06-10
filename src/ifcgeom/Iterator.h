@@ -126,6 +126,7 @@ namespace IfcGeom {
 		std::vector<filter_t> filters_;
 		int num_threads_;
 		std::string geometry_library_;
+		Logger& logger_;
 
 		// When single-threaded
 		ifcopenshell::geometry::Converter* converter_;
@@ -209,32 +210,35 @@ namespace IfcGeom {
 		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, const std::vector<IfcGeom::filter_t>& filters, int num_threads, Logger& logger = Logger::Root())
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library->geometry_library())
+			, logger_(logger)
 			// @todo verify whether settings are correctly passed on
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, Logger& logger = Logger::Root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
 			, geometry_library_(geometry_library->geometry_library())
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
+			, logger_(logger)
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads, Logger& logger = Logger::Root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library->geometry_library())
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
+			, logger_(logger)
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
@@ -301,7 +305,7 @@ namespace IfcGeom {
 			return progress_;
 		}
 
-		std::string getLog() const { return Logger::GetLog(); }
+		std::string getLog() const { return logger_.GetLog(); }
 
 		IfcParse::IfcFile* file() const { return ifc_file; }
 

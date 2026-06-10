@@ -169,6 +169,7 @@
 	PyObject* pythonize(const IfcParse::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__inverse_attribute, 0); }
 	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }
 	PyObject* pythonize(const IfcParse::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
+	PyObject* pythonize(const log_message& t)           { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_log_message, 0);                  }
 	// @nb ownership
 	PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, SWIG_POINTER_OWN); }
 	// PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, 0); }

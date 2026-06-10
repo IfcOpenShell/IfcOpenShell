@@ -21,7 +21,7 @@ namespace ifcopenshell {
 			}
 		};
 
-		IFC_GEOM_API taxonomy::loft::ptr make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections);
+		IFC_GEOM_API taxonomy::loft::ptr make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& directrix, std::vector<cross_section>& cross_sections, Logger& logger = Logger::Root());
 	}
 
 }

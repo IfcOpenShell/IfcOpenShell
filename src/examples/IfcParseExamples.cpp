@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
     }
     
     // Redirect the output (both progress and log) to stdout
-    Logger::SetOutput(&std::cout, &std::cout);
+    Logger::Root().SetOutput(&std::cout, &std::cout);
 
     // Parse the IFC file provided in argv[1]
     IfcParse::IfcFile file(argv[1]);

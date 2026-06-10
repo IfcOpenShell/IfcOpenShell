@@ -55,8 +55,8 @@ herr_t print_stack(hid_t /*estack*/, void*) {
 	return 0;
 }
 
-HdfSerializer::HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only)
-	: GeometrySerializer(geometry_settings, settings)
+HdfSerializer::HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only, Logger& logger)
+	: GeometrySerializer(geometry_settings, settings, logger)
 	, hdf_filename(hdf_filename)
 	, settings_(settings)
 {

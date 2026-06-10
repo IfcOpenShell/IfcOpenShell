@@ -454,9 +454,9 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                         break;
                     }
                 } catch (std::exception& e) {
-                    Logger::Error("SYN", 9, e);
+                    Logger::Root().Error("SYN", 9, e);
                 } catch (...) {
-                    Logger::Error("SYN", 10, "Unknown error in addRelatedObject()");
+                    Logger::Root().Error("SYN", 10, "Unknown error in addRelatedObject()");
                 }
             }
             if (!found) {

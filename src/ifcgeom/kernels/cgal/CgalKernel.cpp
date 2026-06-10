@@ -46,18 +46,19 @@ namespace {
 	struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 	private:
 		std::list<cgal_face_t> *face_list;
+      Logger& logger_;
 	public:
 		boost::optional<cgal_shape_t> from_soup;
-		PolyhedronBuilder(std::list<cgal_face_t> *face_list);
+		PolyhedronBuilder(std::list<cgal_face_t> *face_list, Logger& logger = Logger::Root());
 		void operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds);
 	};
 }
 
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders) {
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders, Logger& logger) {
 
 	// Naive creation
 	CGAL::Polyhedron_3<Kernel_> polyhedron;
-	PolyhedronBuilder builder(&face_list);
+	PolyhedronBuilder builder(&face_list, logger);
 	polyhedron.delegate(builder);
 	if (builder.from_soup) {
 		polyhedron = *builder.from_soup;
@@ -76,7 +77,7 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 
 	polyhedron.normalize_border();
 	if (!polyhedron.is_valid(false, 1)) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 69, "create_polyhedron: Polyhedron not valid!");
+		logger.Message(Logger::LOG_ERROR, "GEO", 69, "create_polyhedron: Polyhedron not valid!");
 		//    std::ofstream fresult;
 		//    fresult.open("/Users/ken/Desktop/invalid.off");
 		//    fresult << polyhedron << std::endl;
@@ -90,31 +91,31 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 }
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_>& nef_polyhedron) {
+CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_>& nef_polyhedron, Logger& logger) {
 	if (nef_polyhedron.is_simple()) {
 		try {
 			CGAL::Polyhedron_3<Kernel_> polyhedron;
 			nef_polyhedron.convert_to_polyhedron(polyhedron);
 			return polyhedron;
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "GEO", 70, "Conversion from Nef to polyhedron failed!");
+			logger.Message(Logger::LOG_ERROR, "GEO", 70, "Conversion from Nef to polyhedron failed!");
 			return CGAL::Polyhedron_3<Kernel_>();
 		}
 	} else {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 71, "Nef polyhedron not simple: cannot create polyhedron!");
+        logger.Message(Logger::LOG_ERROR, "GEO", 71, "Nef polyhedron not simple: cannot create polyhedron!");
 		return CGAL::Polyhedron_3<Kernel_>();
 	}
 }
 
-CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
-	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list);
+CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list, Logger& logger) {
+	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list, true, logger);
 	if (polyhedron.is_closed()) {
 		try {
 			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
 				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
 			}
 		} catch (CGAL::Failure_exception& e) {
-			Logger::Message(Logger::LOG_ERROR, "GEO", 72, e);
+            logger.Message(Logger::LOG_ERROR, "GEO", 72, e);
 		}
 	}
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
@@ -122,12 +123,12 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 	try {
 		nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel_>(polyhedron);
 	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 73, "Conversion to Nef polyhedron failed!");
+        logger.Message(Logger::LOG_ERROR, "GEO", 73, "Conversion to Nef polyhedron failed!");
 	}
 	return nef_polyhedron;
 }
 
-CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron) {
+CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron, Logger& logger) {
 	// @todo needed?
 	polyhedron.normalize_border();
 
@@ -137,7 +138,7 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
 			}
 		} catch (CGAL::Failure_exception& e) {
-			Logger::Message(Logger::LOG_ERROR, "GEO", 74, e);
+			logger.Message(Logger::LOG_ERROR, "GEO", 74, e);
 		}
 	}
 
@@ -148,11 +149,11 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 		try {
 			nef_polyhedron = CGAL::Nef_polyhedron_3<Kernel_>(polyhedron);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "GEO", 75, "Conversion to Nef polyhedron failed!");
+            logger.Message(Logger::LOG_ERROR, "GEO", 75, "Conversion to Nef polyhedron failed!");
 		}
 		return nef_polyhedron;
 	} else {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 76, "Polyhedron not valid: cannot create Nef polyhedron!");
+		logger.Message(Logger::LOG_ERROR, "GEO", 76, "Polyhedron not valid: cannot create Nef polyhedron!");
 		return CGAL::Nef_polyhedron_3<Kernel_>();
 	}
 }
@@ -161,13 +162,13 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 	for (auto& f : l->children) {
 		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
-			Logger::Error("UNS", 3, "CGAL Kernel: Non-planar faces not supported at the moment");
+			logger_.Error("UNS", 3, "CGAL Kernel: Non-planar faces not supported at the moment");
 			throw not_supported_error();
 		}
 		for (auto& w : f->children) {
 			for (auto& e : w->children) {
 				if (e->basis && e->basis->kind() == taxonomy::BSPLINE_CURVE) {
-					Logger::Error("UNS", 4, "CGAL Kernel: B-spline edge curves not supported at the moment");
+					logger_.Error("UNS", 4, "CGAL Kernel: B-spline edge curves not supported at the moment");
 					throw not_supported_error();
 				}
 			}
@@ -196,9 +197,9 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		double volume = diag(0) * diag(1) * diag(2);
 		// @todo volume van be zero also..
 		double density = num_points / volume;
-		Logger::Notice("GEO", 77, "Density " + boost::lexical_cast<std::string>(density), l->instance);
+		logger_.Notice("GEO", 77, "Density " + boost::lexical_cast<std::string>(density), l->instance);
 		if (density > 5000) {
-			Logger::Notice("GEO", 78, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+			logger_.Notice("GEO", 78, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
 			CGAL::Point_3<Kernel_> lower(minmax.first(0), minmax.first(1), minmax.first(2));
 			CGAL::Point_3<Kernel_> upper(minmax.second(0), minmax.second(1), minmax.second(2));
 			shape = utils::create_cube(lower, upper);
@@ -214,7 +215,7 @@ bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
 		} catch (...) {}
 
 		if (!success) {
-			Logger::Message(Logger::LOG_WARNING, "GEO", 79, "Failed to convert face:", f->instance);
+			logger_.Message(Logger::LOG_WARNING, "GEO", 79, "Failed to convert face:", f->instance);
 			continue;
 		}
 
@@ -236,7 +237,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 	}
 
 	if (face->children.size() > 1 && num_outer_bounds > 1 && face->children.size() != num_outer_bounds) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 80, "Invalid configuration of boundaries for:", face->instance);
+		logger_.Message(Logger::LOG_ERROR, "GEO", 80, "Invalid configuration of boundaries for:", face->instance);
 		return false;
 	}
 
@@ -249,7 +250,7 @@ bool CgalKernel::convert(const taxonomy::face::ptr face, std::list<cgal_face_t>&
 
 		cgal_wire_t wire;
 		if (!convert(bound, wire)) {
-			Logger::Message(Logger::LOG_ERROR, "GEO", 81, "Failed to process face boundary loop", bound->instance);
+            logger_.Message(Logger::LOG_ERROR, "GEO", 81, "Failed to process face boundary loop", bound->instance);
 			return false;
 		}
 
@@ -703,7 +704,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 		if (d < 1.e-5) {
 			points.erase(points.end() - 1);
 		} else {
-			Logger::Warning("GEO", 82, "Loop not closed", loop->instance);
+            logger_.Warning("GEO", 82, "Loop not closed", loop->instance);
 		}
 	}
 
@@ -717,7 +718,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	// A loop should consist of at least three vertices
 	std::size_t original_count = polygon.size();
 	if (original_count < 3) {
-		Logger::Warning("GEO", 83, "Not enough edges for:", loop->instance);
+        logger_.Warning("GEO", 83, "Not enough edges for:", loop->instance);
 		return false;
 	}
 
@@ -728,14 +729,14 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	std::size_t count = polygon.size();
 	if (original_count - count != 0) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
-		Logger::Warning("GEO", 84, ss.str(), loop->instance);
+        logger_.Warning("GEO", 84, ss.str(), loop->instance);
 	}
 
 	{
 		std::set<cgal_point_t> visited_points;
 		for (auto& p : polygon) {
 			if (visited_points.find(p) != visited_points.end()) {
-				Logger::Error("GEO", 85, "Skipping self-intersecting loop", loop->instance);
+                logger_.Error("GEO", 85, "Skipping self-intersecting loop", loop->instance);
 				// @todo signal somehow that occt kernel might be able to solve this
 				// @todo implement cycle detection using Arrangement_2, but that only works in exact kernel
 				return false;
@@ -757,7 +758,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	}
 
 	if (do_segments_intersect(segments)) {
-		Logger::Message(Logger::LOG_WARNING, "GEO", 86, "Skipping self-intersecting loop", loop->instance);
+        logger_.Message(Logger::LOG_WARNING, "GEO", 86, "Skipping self-intersecting loop", loop->instance);
 		return false;
 	}
 
@@ -785,7 +786,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	*/
 
 	if (count < 3) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 87, "Not enough edges for:", loop->instance);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 87, "Not enough edges for:", loop->instance);
 		return false;
 	}
 
@@ -819,7 +820,7 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 
 bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResults& results) {
 	if (solid->children.size() > 1) {
-		Logger::Error("UNS", 5, "Multiple shells in solid not supported at the moment");
+        logger_.Error("UNS", 5, "Multiple shells in solid not supported at the moment");
 		return false;
 	}
 	cgal_shape_t shape;
@@ -964,7 +965,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 		try {
 			a.convert_to_polyhedron(a_poly);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "GEO", 88, "Could not convert from Nef:", entity);
+            logger_.Message(Logger::LOG_ERROR, "GEO", 88, "Could not convert from Nef:", entity);
 			return false;
 		}
 
@@ -1189,7 +1190,7 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 bool CgalKernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t &shape) {
 	const double& height = extrusion->depth;
 	if (height < settings_.get<settings::Precision>().get()) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}
 
@@ -1325,13 +1326,13 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	cgal_shape_t shape = shape_const;
 
 	if (!shape.is_valid()) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 90, "Conversion to Nef will fail. Invalid geometry:", log_reference);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 90, "Conversion to Nef will fail. Invalid geometry:", log_reference);
 		return false;
 	}
 
 	if (!shape.is_closed()) {
 		// TODO: There can be substractions to remove parts of non-volumetric objects. Maybe iterate over all faces of an entity and put them in a Nef_polyhedron_3 through Boolean union? Highly inefficient but maybe desirable...
-		Logger::Message(Logger::LOG_ERROR, "UNS", 6, "Subtraction of openings not supported for non-closed geometry:", log_reference);
+        logger_.Message(Logger::LOG_ERROR, "UNS", 6, "Subtraction of openings not supported for non-closed geometry:", log_reference);
 		return false;
 	}
 
@@ -1340,18 +1341,18 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	try {
 		success = CGAL::Polygon_mesh_processing::triangulate_faces(shape);
 	} catch (CGAL::Failure_exception& e) {
-		Logger::Notice("GEO", 91, e);
-		Logger::Message(Logger::LOG_ERROR, "GEO", 92, "Triangulation of geometry crashed:", log_reference);
+        logger_.Notice("GEO", 91, e);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 92, "Triangulation of geometry crashed:", log_reference);
 		return false;
 	}
 
 	if (!success) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 93, "Triangulation of geometry failed:", log_reference);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 93, "Triangulation of geometry failed:", log_reference);
 		return false;
 	}
 
 	if (CGAL::Polygon_mesh_processing::does_self_intersect(shape)) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 94, "Conversion to Nef will fail. Self-intersecting geometry:", log_reference);
+		logger_.Message(Logger::LOG_ERROR, "GEO", 94, "Conversion to Nef will fail. Self-intersecting geometry:", log_reference);
 		return false;
 	}
 
@@ -1423,8 +1424,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	try {
 		result = CGAL::Nef_polyhedron_3<Kernel_>(shape);
 	} catch (CGAL::Failure_exception& e) {
-		Logger::Notice("GEO", 95, e);
-		Logger::Message(Logger::LOG_ERROR, "GEO", 96, "Could not convert geometry to Nef:", log_reference);
+        logger_.Notice("GEO", 95, e);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 96, "Could not convert geometry to Nef:", log_reference);
 		return false;
 	}
 
@@ -1496,8 +1497,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 			// @todo don't dilate in 3 dimensions but only in the XY plane, orthogonal to wall axis.
 			result = CGAL::minkowski_sum_3(result, precision_cube_);
 		} catch (CGAL::Failure_exception& e) {
-			Logger::Notice("GEO", 97, e);
-			Logger::Message(Logger::LOG_ERROR, "GEO", 98, "Could not dilate boolean operand", log_reference);
+            logger_.Notice("GEO", 97, e);
+            logger_.Message(Logger::LOG_ERROR, "GEO", 98, "Could not dilate boolean operand", log_reference);
 			return false;
 		}
 	}
@@ -1522,8 +1523,8 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 		cgal_shape_t convert_back;
 		result.convert_to_polyhedron(convert_back);
 	} catch (CGAL::Failure_exception& e) {
-		Logger::Notice("GEO", 99, e);
-		Logger::Message(Logger::LOG_WARNING, "GEO", 100, "Final conversion will likely fail. Could not convert geometry from Nef:", log_reference);
+        logger_.Notice("GEO", 99, e);
+        logger_.Message(Logger::LOG_WARNING, "GEO", 100, "Final conversion will likely fail. Could not convert geometry from Nef:", log_reference);
 	}
 
 	return true;
@@ -1845,7 +1846,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			// even-odd fill rule will result in incorrect results.
 			// See for example the Duplex model roof.
 
-			Logger::Notice("GEO", 101, "Holes are not disjoint");
+			logger_.Notice("GEO", 101, "Holes are not disjoint");
 
 			CGAL::Polygon_set_2<Kernel_> result;
 			auto it = loops.begin();
@@ -1898,7 +1899,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			);
 		});
 
-		Logger::Notice("GEO", 102, "Processed boolean operation as 2d arrangement");
+		logger_.Notice("GEO", 102, "Processed boolean operation as 2d arrangement");
 
 		return true;
 
@@ -1984,7 +1985,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 					ps.push_back({ p.x(), p.y() });
 				}
 				if (!ps.is_simple()) {
-					Logger::Warning("GEO", 103, "Polygonal boundary not simple", face->children[0]->instance);
+                    logger_.Warning("GEO", 103, "Polygonal boundary not simple", face->children[0]->instance);
 					continue;
 				}
 
@@ -2130,7 +2131,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 	try {
 		a.convert_to_polyhedron(a_poly);
 	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "GEO", 104, "Could not convert geometry with openings from Nef:", br->instance);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 104, "Could not convert geometry with openings from Nef:", br->instance);
 		return false;
 	}
 
@@ -2145,8 +2146,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 #endif
 }
 
-PolyhedronBuilder::PolyhedronBuilder(std::list<cgal_face_t>* face_list) {
-	this->face_list = face_list;
+PolyhedronBuilder::PolyhedronBuilder(std::list<cgal_face_t>* face_list, Logger& logger) : face_list(face_list), logger_(logger) {
 }
 
 #include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
@@ -2222,7 +2222,7 @@ void PolyhedronBuilder::operator()(CGAL::Polyhedron_3<Kernel_>::HalfedgeDS &hds)
 						// For now let's just skip over the triangle. We can also use
 						// the Aff_transformation_3 stored in place to convert the 2d
 						// coords back to 3d.
-						Logger::Warning("GEO", 105, "Ignoring triangulated facet with novel point likely due to self-intersections");
+                        logger_.Warning("GEO", 105, "Ignoring triangulated facet with novel point likely due to self-intersections");
 						facet_vertices.erase(facet_vertices.end() - 1);
 						break;
 					}

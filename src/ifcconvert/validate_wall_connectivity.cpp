@@ -9,8 +9,8 @@
 
 using namespace ifcopenshell::geometry;
 
-void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
-	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress);
+void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
+	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress, logger);
 
 	ifcopenshell::geometry::Settings settings;
 
@@ -24,7 +24,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 	settings.get<ifcopenshell::geometry::settings::IncludeCurves>().value = true;
 	settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().value = false;
 	
-	ifcopenshell::geometry::Converter c("cgal", &f, settings);
+	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), &f, settings, logger);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
 	std::map<std::set<const IfcUtil::IfcBaseClass*>, const IfcUtil::IfcBaseClass*> rel_by_elem;
@@ -39,7 +39,7 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 	double total_nef_intersection_time = 0.;
 	double conversion_to_poly = 0.;
 
-	v([&c, &rel_by_elem, &rels_encounted, &total_nef_intersection_time, &conversion_to_poly](const intersection_validator::Box& a, const intersection_validator::Box& b) {
+	v([&logger, &c, &rel_by_elem, &rels_encounted, &total_nef_intersection_time, &conversion_to_poly](const intersection_validator::Box& a, const intersection_validator::Box& b) {
 		auto A = a.handle()->first;
 		auto B = b.handle()->first;
 
@@ -169,21 +169,21 @@ void fix_wallconnectivity(IfcParse::IfcFile& f, bool no_progress, bool quiet, bo
 
 		if (a_type != atype_computed || b_type != btype_computed) {
 			if (rel) {
-				Logger::Error("VAL", 5, std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
+				logger.Error("VAL", 5, std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
 			} else {
 				auto A_str = A->get_value<std::string>("GlobalId");
 				auto B_str = B->get_value<std::string>("GlobalId");
-				Logger::Error("VAL", 6, "No connection for adjacent " + A_str + " " + B_str);
+				logger.Error("VAL", 6, "No connection for adjacent " + A_str + " " + B_str);
 			}
 		}
 	});
 
-	std::for_each(rels->begin(), rels->end(), [&rels_encounted, &v](const IfcUtil::IfcBaseClass* rel) {
+	std::for_each(rels->begin(), rels->end(), [&logger, &rels_encounted, &v](const IfcUtil::IfcBaseClass* rel) {
 		if (rels_encounted.find(rel) == rels_encounted.end()) {
 			auto x = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatingElement");
 			auto y = (IfcUtil::IfcBaseEntity*)((IfcUtil::IfcBaseEntity*)rel)->get_value<IfcUtil::IfcBaseClass*>("RelatedElement");
 			if (v.successfully_processed.find(x) != v.successfully_processed.end() && v.successfully_processed.find(y) != v.successfully_processed.end()) {
-				Logger::Error("VAL", 7, "Connection for non-adjacent walls", rel);
+				logger.Error("VAL", 7, "Connection for non-adjacent walls", rel);
 			}
 		}
 	});

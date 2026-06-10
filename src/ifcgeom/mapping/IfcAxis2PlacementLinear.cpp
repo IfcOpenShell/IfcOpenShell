@@ -26,7 +26,7 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) {
 
     if (!inst->Location()->as<IfcSchema::IfcPointByDistanceExpression>()) {
-        Logger::Error("GEO", 236, std::runtime_error("Location must be IfcPointByDistanceExpression for IfcAxis2PlacementLinear"));
+        logger_.Error("GEO", 236, std::runtime_error("Location must be IfcPointByDistanceExpression for IfcAxis2PlacementLinear"));
     }
 
     Eigen::Vector3d o, axis(0, 0, 1), refDirection;

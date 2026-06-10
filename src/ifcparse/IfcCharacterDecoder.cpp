@@ -137,7 +137,7 @@ namespace {
                 parse_state += PAGE;
             } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
                 if (IS_LOWERCASE_HEX(current_char)) {
-                    Logger::Warning("SYN", 2, "Lowercase hexadecimal character '" + std::string(1, current_char) +
+                    Logger::Root().Warning("SYN", 2, "Lowercase hexadecimal character '" + std::string(1, current_char) +
                                     "' found at offset " + std::to_string(stream_.tell()) +
                                     ". It is recommended to use uppercase for hexadecimal.");
                 }

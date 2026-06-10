@@ -35,7 +35,7 @@ bool has_intersection(const std::set<T, Cmp>& A,
 
 }
 
-taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections)
+taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_, const IfcUtil::IfcBaseClass* inst, const taxonomy::function_item::ptr& fn, std::vector<cross_section>& cross_sections, Logger& logger)
 {
 	std::sort(cross_sections.begin(), cross_sections.end());
 
@@ -51,7 +51,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 		double end = std::min(fn->length(), cross_sections.back().dist_along);
 
 		if (end - start < 1.e-9) {
-			Logger::Warning("GEO", 40, "Empty sweep domain with start at " + std::to_string(cross_sections.front().dist_along) + " end at " + std::to_string(cross_sections.back().dist_along) + " and curve domain length " + std::to_string(fn->length()), inst);
+			Logger::Root().Warning("GEO", 40, "Empty sweep domain with start at " + std::to_string(cross_sections.front().dist_along) + " end at " + std::to_string(cross_sections.back().dist_along) + " and curve domain length " + std::to_string(fn->length()), inst);
 			return nullptr;
 		}
 
@@ -130,7 +130,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 						auto profile_b_f = std::static_pointer_cast<taxonomy::face>(profile_b);
 
 						if (profile_a_f->children.size() != profile_b_f->children.size()) {
-							Logger::Warning("GEO", 41, "Mismatching number of face boundaries: " +
+							Logger::Root().Warning("GEO", 41, "Mismatching number of face boundaries: " +
 								std::to_string(profile_a_f->children.size()) + " vs " +
 								std::to_string(profile_b_f->children.size()),
 								inst
@@ -165,7 +165,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
                         // in which case we would need to lerp with the rotation component below in m4b.
                         interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
                     } else if (rotation_a != rotation_b) {
-                        Logger::Error("GEO", 42, "Direction vectors on cross section placements only supported when used consistently");
+                        logger.Error("GEO", 42, "Direction vectors on cross section placements only supported when used consistently");
 					}
 
 					taxonomy::loop::ptr w1, w2;
@@ -176,12 +176,12 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 						boost::tie(w1, w2) = tmp_;
 
 						if (w1->closed != w2->closed) {
-							Logger::Warning("GEO", 43, "Mismatching closed property on loops", inst);
+							logger.Warning("GEO", 43, "Mismatching closed property on loops", inst);
 							return nullptr;
                         }
 
 						if (w1->tags.is_initialized() != w2->tags.is_initialized()) {
-							Logger::Warning("GEO", 44, "Mismatching availability tags on loops", inst);
+							logger.Warning("GEO", 44, "Mismatching availability tags on loops", inst);
 							return nullptr;
                         }
 
@@ -190,7 +190,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
                             std::set<std::string> tags_seen;
                             for (const auto& t : *w1->tags) {
 								if (tags_seen.find(t) != tags_seen.end()) {
-									Logger::Warning("GEO", 45, "Duplicate tag '" + t + "' on loft profile", inst);
+									logger.Warning("GEO", 45, "Duplicate tag '" + t + "' on loft profile", inst);
 									return nullptr;
 								}
 								tags_seen.insert(t);
@@ -202,7 +202,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
                             std::set<std::string> tags_seen;
                             for (const auto& t : *w2->tags) {
                                 if (tags_seen.find(t) != tags_seen.end()) {
-                                    Logger::Warning("GEO", 46, "Duplicate tag '" + t + "' on loft profile", inst);
+                                    logger.Warning("GEO", 46, "Duplicate tag '" + t + "' on loft profile", inst);
                                     return nullptr;
                                 }
                                 tags_seen.insert(t);
@@ -303,20 +303,20 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 
 							for (auto& p1_tags : w1_tags) {
                                 if (!has_intersection(p1_tags, w2_tags_combined)) {
-                                    Logger::Warning("GEO", 47, "No matching tags found on loft profiles: " + join_tags(p1_tags) + " not in " + join_tags(w2_tags_combined), inst);
+                                    logger.Warning("GEO", 47, "No matching tags found on loft profiles: " + join_tags(p1_tags) + " not in " + join_tags(w2_tags_combined), inst);
 									return nullptr;
 								}
 							}
 
 							for (auto& p2_tags : w2_tags) {
                                 if (!has_intersection(p2_tags, w1_tags_combined)) {
-                                    Logger::Warning("GEO", 48, "No matching tags found on loft profiles: " + join_tags(p2_tags) + " not in " + join_tags(w1_tags_combined), inst);
+                                    logger.Warning("GEO", 48, "No matching tags found on loft profiles: " + join_tags(p2_tags) + " not in " + join_tags(w1_tags_combined), inst);
                                     return nullptr;
 								}
                             }
 						} else {
                             if (w1->children.size() != w2->children.size()) {
-                                Logger::Warning("GEO", 49, "Mismatching number of edges: " +
+                                logger.Warning("GEO", 49, "Mismatching number of edges: " +
                                                     std::to_string(w1->children.size()) + " vs " +
                                                     std::to_string(w2->children.size()),
                                                 inst);

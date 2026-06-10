@@ -34,8 +34,8 @@ using json = nlohmann::json;
 
 namespace {
 	struct POSTFIX_SCHEMA(factory_t) {
-		JsonSerializer* operator()(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect) const {
-            POSTFIX_SCHEMA(JsonSerializer)* s = new POSTFIX_SCHEMA(JsonSerializer)(file, json_filename, dialect);
+		JsonSerializer* operator()(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect, Logger& logger) const {
+            POSTFIX_SCHEMA(JsonSerializer)* s = new POSTFIX_SCHEMA(JsonSerializer)(file, json_filename, dialect, logger);
 			s->setFile(file);
 			return s;
 		}
@@ -81,7 +81,7 @@ class get_type_visitor : public boost::static_visitor<std::string> {
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-auto get_related(T* t, F f, G g) {
+auto get_related(Logger& logger, T* t, F f, G g) {
     typename U::list::ptr li = (*t.*f)()->template as<U>();
     typename aggregate_of<V>::ptr acc(new aggregate_of<V>);
     for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
@@ -89,13 +89,13 @@ auto get_related(T* t, F f, G g) {
         try {
             acc->push((*u.*g)()->template as<V>());
         } catch (IfcParse::IfcException& e) {
-            Logger::Error("SER", 6, e);
+            logger.Error("SER", 6, e);
         }
     }
     return acc;
 }
 
-void format_entity_instance(IfcUtil::IfcBaseEntity* instance, json& tree, IfcUtil::IfcBaseEntity* parent = nullptr) {
+void format_entity_instance(IfcUtil::IfcBaseEntity* instance, json& tree, Logger& logger, IfcUtil::IfcBaseEntity* parent = nullptr) {
     /*
     {
         "id" : string,            // Element GUID (IFC GloballyUniqueId)
@@ -149,7 +149,7 @@ void format_entity_instance(IfcUtil::IfcBaseEntity* instance, json& tree, IfcUti
     }
 
     if (auto* obj = instance->as<IfcSchema::IfcObject>()) {
-        IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = get_related<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>(obj, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+        IfcSchema::IfcPropertySetDefinition::list::ptr property_sets = get_related<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>(logger, obj, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
         if (!property_sets && property_sets->size()) {
             child["propertySetIds"] = json::array();
             for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
@@ -166,11 +166,11 @@ void format_entity_instance(IfcUtil::IfcBaseEntity* instance, json& tree, IfcUti
 // A function to be called recursively. Template specialization is used
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-void descend(A* instance, json& tree, IfcUtil::IfcBaseEntity* parent = nullptr) {
+void descend(A* instance, json& tree, Logger& logger, IfcUtil::IfcBaseEntity* parent = nullptr) {
     if (instance->declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
-        descend(instance->template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
+        descend(instance->template as<IfcSchema::IfcObjectDefinition>(), tree, logger, parent);
     } else {
-        format_entity_instance(instance, tree);
+        format_entity_instance(instance, tree, logger);
     }
 }
 
@@ -179,7 +179,7 @@ void descend(A* instance, json& tree, IfcUtil::IfcBaseEntity* parent = nullptr) 
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-void descend(IfcSchema::IfcObjectDefinition* product, json& tree, IfcUtil::IfcBaseEntity* parent) {
+void descend(IfcSchema::IfcObjectDefinition* product, json& tree, Logger& logger, IfcUtil::IfcBaseEntity* parent) {
     if (product->declaration().is(IfcSchema::IfcElement::Class())) {
         auto voids = product->as<IfcSchema::IfcElement>()->FillsVoids();
         if (voids && voids->size() == 1 && (*voids->begin())->RelatingOpeningElement() != parent) {
@@ -188,49 +188,49 @@ void descend(IfcSchema::IfcObjectDefinition* product, json& tree, IfcUtil::IfcBa
         }
     }
 
-    format_entity_instance(product, tree, parent);
+    format_entity_instance(product, tree, logger, parent);
 
     if (product->declaration().is(IfcSchema::IfcOpeningElement::Class())) {
         IfcSchema::IfcOpeningElement* opening = product->as<IfcSchema::IfcOpeningElement>();
         IfcSchema::IfcElement::list::ptr fills = get_related<IfcSchema::IfcOpeningElement, IfcSchema::IfcRelFillsElement, IfcSchema::IfcElement>(
-            opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
+            logger, opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
 
         for (IfcSchema::IfcElement::list::it it = fills->begin(); it != fills->end(); ++it) {
-            descend(*it, tree, product);
+            descend(*it, tree, logger, product);
         }
     }
 
     if (product->declaration().is(IfcSchema::IfcSpatialStructureElement::Class())) {
         IfcSchema::IfcSpatialStructureElement* structure = product->as<IfcSchema::IfcSpatialStructureElement>();
 
-        IfcSchema::IfcObjectDefinition::list::ptr elements = get_related<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>(structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
+        IfcSchema::IfcObjectDefinition::list::ptr elements = get_related<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>(logger, structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
 
         for (IfcSchema::IfcObjectDefinition::list::it it = elements->begin(); it != elements->end(); ++it) {
-            descend(*it, tree, product);
+            descend(*it, tree, logger, product);
         }
     }
 
     if (product->declaration().is(IfcSchema::IfcElement::Class())) {
         IfcSchema::IfcElement* element = static_cast<IfcSchema::IfcElement*>(product);
         IfcSchema::IfcOpeningElement::list::ptr openings = get_related<IfcSchema::IfcElement, IfcSchema::IfcRelVoidsElement, IfcSchema::IfcOpeningElement>(
-            element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
+            logger, element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
 
         for (IfcSchema::IfcOpeningElement::list::it it = openings->begin(); it != openings->end(); ++it) {
-            descend(*it, tree, product);
+            descend(*it, tree, logger, product);
         }
     }
 
 #ifdef SCHEMA_IfcRelDecomposes_HAS_RelatedObjects
-    IfcSchema::IfcObjectDefinition::list::ptr structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);
+    IfcSchema::IfcObjectDefinition::list::ptr structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>(logger, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);
 #else
-    IfcSchema::IfcObjectDefinition::list::ptr structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelAggregates, IfcSchema::IfcObjectDefinition>(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
+    IfcSchema::IfcObjectDefinition::list::ptr structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelAggregates, IfcSchema::IfcObjectDefinition>(logger, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
 
-    structures->push(get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelNests, IfcSchema::IfcObjectDefinition>(product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects));
+    structures->push(get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelNests, IfcSchema::IfcObjectDefinition>(logger, product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects));
 #endif
 
     for (IfcSchema::IfcObjectDefinition::list::it it = structures->begin(); it != structures->end(); ++it) {
         IfcSchema::IfcObjectDefinition* ob = *it;
-        descend(ob, tree, product);
+        descend(ob, tree, logger, product);
     }
 
     // psets are handled as part of format_entity_instance()
@@ -264,7 +264,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
 
     IfcSchema::IfcProject::list::ptr projects = file->instances_by_type<IfcSchema::IfcProject>();
     if (projects->size() != 1) {
-        Logger::Message(Logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
+        logger_.Message(Logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
         return;
     }
     IfcSchema::IfcProject* project = *projects->begin();
@@ -273,7 +273,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         try {
             return fn();
         } catch (const std::exception& e) {
-            Logger::Error("SER", 8, e);
+            logger_.Error("SER", 8, e);
             static std::invoke_result_t<decltype(fn)> v;
             return v;
         }
@@ -563,7 +563,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
     }
     */
 
-    descend(project, output["metaObjects"]);
+    descend(project, output["metaObjects"], logger_);
 
     std::ofstream f(IfcUtil::path::from_utf8(json_filename).c_str());
     f << output.dump(4);

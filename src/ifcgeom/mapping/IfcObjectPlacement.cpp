@@ -54,7 +54,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
                 }
             }
 #else
-            Logger::Warning("GEO", 267, "Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
+            logger_.Warning("GEO", 267, "Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
 #endif
         }
 	}
@@ -127,7 +127,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
         if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
-            Logger::Warning("GEO", 268, "Computed placement differs from fallback", inst);
+            logger_.Warning("GEO", 268, "Computed placement differs from fallback", inst);
         }
     }
 
@@ -135,7 +135,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 
 	auto abs_det = std::abs(result->ccomponents().determinant());
 	if (abs_det < 1.e-7) {
-		Logger::Warning("GEO", 269, "Ignoring singular matrix:", inst);
+		logger_.Warning("GEO", 269, "Ignoring singular matrix:", inst);
 		return nullptr;
 	}
 

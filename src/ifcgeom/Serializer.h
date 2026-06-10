@@ -21,10 +21,17 @@
 #define SERIALIZER_H
 
 #include "../ifcparse/IfcFile.h"
+#include "../ifcparse/IfcLogger.h"
 
 class Serializer {
+protected:
+	Logger& logger_;
+
 public:
+	explicit Serializer(Logger& logger = Logger::Root()) : logger_(logger) {}
 	virtual ~Serializer() {}
+
+	Logger& logger() const { return logger_; }
 
 	virtual bool ready() = 0;
 	virtual void writeHeader() = 0;

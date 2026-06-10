@@ -42,18 +42,19 @@ void JsonSerializerFactory::Factory::bind(const std::string& schema_name, fn f) 
     this->insert(std::make_pair(schema_name_lower, f));
 }
 
-JsonSerializer* JsonSerializerFactory::Factory::construct(const std::string& schema_name, IfcParse::IfcFile* file, std::string json_filename, JsonSerializer::Dialect dialect) {
+JsonSerializer* JsonSerializerFactory::Factory::construct(const std::string& schema_name, IfcParse::IfcFile* file, std::string json_filename, JsonSerializer::Dialect dialect, Logger& logger) {
     const std::string schema_name_lower = boost::to_lower_copy(schema_name);
     auto it = this->find(schema_name_lower);
     if (it == this->end()) {
         throw IfcParse::IfcException("No Json serializer registered for " + schema_name);
     }
-    return it->second(file, json_filename, dialect);
+    return it->second(file, json_filename, dialect, logger);
 }
 
-JsonSerializer::JsonSerializer(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect) {
+JsonSerializer::JsonSerializer(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect, Logger& logger)
+    : Serializer(logger) {
     if (file) {
-        implementation_ = JsonSerializerFactory::implementations().construct(file->schema()->name(), file, json_filename, dialect);
+        implementation_ = JsonSerializerFactory::implementations().construct(file->schema()->name(), file, json_filename, dialect, logger_);
     }
 }
 

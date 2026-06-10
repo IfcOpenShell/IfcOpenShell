@@ -31,9 +31,8 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
 
-static my_thread_local const IfcUtil::IfcBaseClass* current_product_;
+static my_thread_local std::map<const Logger*, const IfcUtil::IfcBaseClass*> current_products_;
 
 namespace {
 
@@ -134,6 +133,24 @@ void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::
 }
 } // namespace
 
+Logger& Logger::Root() {
+    static Logger logger;
+    return logger;
+}
+
+const IfcUtil::IfcBaseClass* Logger::current_product() const {
+    auto it = current_products_.find(this);
+    return it == current_products_.end() ? nullptr : it->second;
+}
+
+void Logger::current_product(const IfcUtil::IfcBaseClass* product) {
+    if (product) {
+        current_products_[this] = product;
+    } else {
+        current_products_.erase(this);
+    }
+}
+
 void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
     if (verbosity_ <= LOG_DEBUG && product) {
         Message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
@@ -142,7 +159,7 @@ void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
         PrintPerformanceStats();
         performance_statistics_.clear();
     }
-    current_product_ = product.get_value_or(nullptr);
+    current_product(product.get_value_or(nullptr));
 }
 
 void Logger::SetOutput(std::ostream* stream1, std::ostream* stream2) {
@@ -168,8 +185,7 @@ void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16
         return;
     }
 
-    static std::mutex mtx;
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(mutex_);
     const std::string code = format_code(code_prefix, code_number);
 
     if (type == LOG_PERF) {
@@ -188,18 +204,21 @@ void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16
     if (type > max_severity_) {
         max_severity_ = type;
     }
-    if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
+
+    if (format_ == FMT_INMEMORY) {
+        log_messages_.emplace_back(type, code_prefix, code_number, message, instance);
+    } else if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
-                plain_text_message(*log2_, current_product_, type, code, message, instance);
+                plain_text_message(*log2_, current_product(), type, code, message, instance);
             } else if (wlog2_ != nullptr) {
-                plain_text_message(*wlog2_, current_product_, type, code, message, instance);
+                plain_text_message(*wlog2_, current_product(), type, code, message, instance);
             }
         } else if (format_ == FMT_JSON) {
             if (log2_ != nullptr) {
-                json_message(*log2_, current_product_, type, code, message, instance);
+                json_message(*log2_, current_product(), type, code, message, instance);
             } else if (wlog2_ != nullptr) {
-                json_message(*wlog2_, current_product_, type, code, message, instance);
+                json_message(*wlog2_, current_product(), type, code, message, instance);
             }
         }
     }
@@ -258,22 +277,9 @@ void Logger::PrintPerformanceStats() {
 }
 
 void Logger::Verbosity(Logger::Severity severity) { verbosity_ = severity; }
-Logger::Severity Logger::Verbosity() { return verbosity_; }
+Logger::Severity Logger::Verbosity() const { return verbosity_; }
 
-Logger::Severity Logger::MaxSeverity() { return max_severity_; }
+Logger::Severity Logger::MaxSeverity() const { return max_severity_; }
 
 void Logger::OutputFormat(Format format) { format_ = format; }
-Logger::Format Logger::OutputFormat() { return format_; }
-
-std::ostream* Logger::log1_ = 0;
-std::ostream* Logger::log2_ = 0;
-std::wostream* Logger::wlog1_ = 0;
-std::wostream* Logger::wlog2_ = 0;
-std::stringstream Logger::log_stream_;
-Logger::Severity Logger::verbosity_ = Logger::LOG_NOTICE;
-Logger::Severity Logger::max_severity_ = Logger::LOG_NOTICE;
-Logger::Format Logger::format_ = Logger::FMT_PLAIN;
-boost::optional<long long> Logger::first_timepoint_;
-std::map<std::string, double> Logger::performance_statistics_;
-std::map<std::string, double> Logger::performance_signal_start_;
-bool Logger::print_perf_stats_on_element_ = false;
+Logger::Format Logger::OutputFormat() const { return format_; }

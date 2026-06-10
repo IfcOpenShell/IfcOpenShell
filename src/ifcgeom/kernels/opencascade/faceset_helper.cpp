@@ -149,7 +149,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 		auto num_retained = std::count(retained.begin(), retained.end(), true);
 
 		if (unique.size() != num_retained) {
-			Logger::Notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
+			Logger::Root().Notice("GEO", 168, "Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
 		typedef std::array<int, 2> edge_t;
@@ -205,7 +205,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	}
 
 	if (duplicates_.size() || loops_removed || (non_manifold && shell->closed.get_value_or(false))) {
-		Logger::Warning("GEO", 169, boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
+		Logger::Root().Warning("GEO", 169, boost::lexical_cast<std::string>(duplicate_faces) + " duplicate faces removed, " + boost::lexical_cast<std::string>(loops_removed) + " degenerate loops eliminated and " + boost::lexical_cast<std::string>(non_manifold) + " non-manifold edges");
 	}
 }
 
@@ -276,7 +276,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geome
 			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionTolerance>().get(), 0.,
 			kernel_->settings().get<ifcopenshell::geometry::settings::Precision>().get()}))
 		{
-			Logger::Warning("GEO", 170, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+			Logger::Root().Warning("GEO", 170, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 			non_manifold_ = true;
 			wires = results;
 		} else {

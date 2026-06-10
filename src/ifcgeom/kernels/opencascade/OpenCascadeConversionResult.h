@@ -53,7 +53,7 @@ namespace ifcopenshell {
 			const TopoDS_Shape& shape() const { return shape_; }
 			operator const TopoDS_Shape& () { return shape_; }
 
-			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const;
+			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
 			virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 			virtual IfcGeom::ConversionResultShape* clone() const {
