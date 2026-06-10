@@ -35,18 +35,10 @@ early-returns when ``context.screen`` is unattached and prior tests can leave
 the screen in that state. The behaviour is covered by the user-visible live
 test loop instead."""
 
-import types
-
 import bpy
 import pytest
 
 pytestmark = pytest.mark.model
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def _fillet_op_names():

@@ -39,12 +39,6 @@ import pytest
 pytestmark = pytest.mark.model
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
 def _rotation_close(a, b, tol: float = 1e-6) -> bool:
     for row_a, row_b in zip(a, b):
         for va, vb in zip(row_a, row_b):

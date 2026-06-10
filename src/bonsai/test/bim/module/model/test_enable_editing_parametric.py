@@ -32,20 +32,12 @@ These tests exercise:
 - one end-to-end invocation through ``bpy.ops`` to pin the wiring between
   the decision and ``invoke_props_dialog``."""
 
-import types
-
 import bpy
 import pytest
 
 from bonsai.bim.module.model.array import EnableEditingParametric
 
 pytestmark = pytest.mark.model
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 class TestShouldShowSharedRepDialog:

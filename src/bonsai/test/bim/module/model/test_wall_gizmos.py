@@ -25,7 +25,6 @@ logic can be exercised without a real IFC fixture. Each test pins one of the
 gates ``poll()`` walks, so any silent regression in the gate order or in the
 LAYER3-active / LAYER2-other contract is caught by a dedicated assertion."""
 
-import types
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -35,10 +34,15 @@ import pytest
 pytestmark = pytest.mark.wall
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
+class _Obj:
+    """Hashable, name-bearing stand-in for a ``bpy.types.Object`` selection
+    slot. ``SimpleNamespace`` defines ``__eq__`` (and so ``__hash__ = None``)
+    which makes it unusable inside the ``set()`` that
+    ``get_selected_objects()`` returns; a plain class falls back to
+    identity-based hashing and works inside both ``set`` and ``list``."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
 
 
 def _make_context(active, selected):
@@ -76,19 +80,23 @@ def _patch_tools(prefs_on, selected, active_element, other_element, active_usage
         patch.object(tool.Blender, "get_selected_objects", return_value=set(selected)),
         patch.object(tool.Ifc, "get_entity", side_effect=get_entity),
         patch.object(tool.Model, "get_usage_type", side_effect=get_usage_type),
+        # The array-child filter is pinned by its own test file; stub it here
+        # so these poll tests stay focused on the count / layer-usage gates
+        # and don't have to scaffold the memoization cache key.
+        patch.object(tool.Blender.Modifier, "any_selected_is_array_child", return_value=False),
     ]
 
 
 def _run_poll(prefs_on, active_is_in_selected, len_override, active_usage, other_usage, active_has_entity=True):
     from bonsai.bim.module.model.wall import GizmoWallExtendVertically
 
-    slab_obj = object()
-    wall_obj = object()
-    active = slab_obj if active_is_in_selected else object()
+    slab_obj = _Obj("slab")
+    wall_obj = _Obj("wall")
+    active = slab_obj if active_is_in_selected else _Obj("active_extra")
     if len_override is None:
         selected = [slab_obj, wall_obj]
     else:
-        selected = [object() for _ in range(len_override)]
+        selected = [_Obj(f"obj_{i}") for i in range(len_override)]
         if active_is_in_selected and selected:
             active = selected[0]
 

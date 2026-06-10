@@ -23,19 +23,13 @@ selection that contains a Bonsai array child. Discovers gated gizmo
 groups and guarded operators by source inspection so additions inherit
 the rule automatically."""
 
-import types
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import bpy
 import pytest
 
 pytestmark = pytest.mark.model
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def _wall_gizmo_groups_using_gate():
@@ -69,9 +63,11 @@ def _wall_gizmo_groups_using_gate():
 
 
 def _wall_operators_with_array_child_guard():
-    """Wall-module ``bpy.types.Operator`` subclasses whose ``poll`` references
-    ``any_selected_is_array_child``. The operator-level guard is defence in
-    depth against keymap / F3 paths that bypass the gizmo entirely."""
+    """Wall-module ``bpy.types.Operator`` subclasses whose ``poll`` rejects
+    array-child selections, either by referencing the central predicate
+    directly or by routing through the shared ``_poll_reject_array_children``
+    helper that wraps it. The operator-level guard is defence in depth
+    against keymap / F3 paths that bypass the gizmo entirely."""
     import inspect
 
     from bonsai.bim.module.model import wall as wall_mod
@@ -92,7 +88,7 @@ def _wall_operators_with_array_child_guard():
             src = inspect.getsource(poll)
         except (OSError, TypeError):
             continue
-        if "any_selected_is_array_child" not in src:
+        if "any_selected_is_array_child" not in src and "_poll_reject_array_children" not in src:
             continue
         out.append((name, obj))
     return out
@@ -141,8 +137,9 @@ class TestWallOperatorsRejectArrayChildSelection:
     def test_discovery_finds_wall_topology_operators(self):
         ops = _wall_operators_with_array_child_guard()
         assert ops, (
-            "Expected at least one wall Operator whose poll references "
-            "any_selected_is_array_child — discovery walk drifted out of sync?"
+            "Expected at least one wall Operator whose poll rejects array-child "
+            "selections (via any_selected_is_array_child or _poll_reject_array_children) "
+            "— discovery walk drifted out of sync?"
         )
 
     def test_every_guarded_wall_operator_polls_false_on_array_child_selection(self):
@@ -171,8 +168,9 @@ class TestWallOperatorsRejectArrayChildSelection:
         assert not offenders, (
             "Wall topology operators that accept array-child selections: "
             + ", ".join(f"{n} — {why}" for n, why in offenders)
-            + ". Add `if tool.Blender.Modifier.any_selected_is_array_child(): "
-            "return False` early in the poll."
+            + ". Route the poll through `_poll_reject_array_children(cls)` (the "
+            "shared helper that sets the standard poll message and reuses the "
+            "central `any_selected_is_array_child` predicate)."
         )
 
 
@@ -190,8 +188,8 @@ class TestAnySelectedIsArrayChildHelper:
     def test_returns_true_when_any_selected_passes_predicate(self):
         from bonsai import tool
 
-        child_obj, child_element = object(), object()
-        parent_obj, parent_element = object(), object()
+        child_obj, child_element = SimpleNamespace(name="child"), object()
+        parent_obj, parent_element = SimpleNamespace(name="parent"), object()
 
         def get_entity(obj):
             return {id(child_obj): child_element, id(parent_obj): parent_element}.get(id(obj))
@@ -207,7 +205,7 @@ class TestAnySelectedIsArrayChildHelper:
     def test_returns_false_when_no_selected_passes_predicate(self):
         from bonsai import tool
 
-        parent_obj, parent_element = object(), object()
+        parent_obj, parent_element = SimpleNamespace(name="parent"), object()
         with patch.object(tool.Blender, "get_selected_objects", return_value=[parent_obj]):
             with patch.object(tool.Ifc, "get_entity", return_value=parent_element):
                 with patch.object(tool.Blender.Modifier, "is_array_child", return_value=False):

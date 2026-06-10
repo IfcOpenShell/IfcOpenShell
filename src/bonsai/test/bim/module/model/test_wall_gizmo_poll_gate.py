@@ -28,19 +28,12 @@ joins the test. The test then asserts the BEHAVIOUR (poll returns False when
 helper function the gizmo uses internally to enforce it."""
 
 import inspect
-import types
 from unittest.mock import patch
 
 import bpy
 import pytest
 
 pytestmark = pytest.mark.model
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def _wall_gizmo_groups():

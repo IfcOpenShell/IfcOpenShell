@@ -27,7 +27,6 @@ BEHAVIOUR (poll returns False / draw_prepare early-returns when a transform
 modal is active) without pinning the name of the helper used internally."""
 
 import importlib
-import types
 from unittest.mock import MagicMock, patch
 
 import bpy
@@ -44,12 +43,6 @@ PARAMETRIC_MODULES = (
     "bonsai.bim.module.model.wall",
     "bonsai.bim.module.model.window",
 )
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def _discover_parametric_gizmo_groups():

@@ -29,7 +29,6 @@ Two layers:
   the edit-mode gizmo would, so the two surfaces stay visually identical
   even when a new ``door_type`` is added."""
 
-import types
 from types import SimpleNamespace
 from typing import get_args
 
@@ -37,12 +36,6 @@ import bpy
 import pytest
 
 pytestmark = pytest.mark.model
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 # ----------------------------------------------------------------------------
