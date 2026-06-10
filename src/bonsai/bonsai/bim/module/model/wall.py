@@ -63,7 +63,6 @@ from bonsai.bim.module.model.decorator import (
     PolylineDecorator,
     ProductDecorator,
     _fill_quads_alpha,
-    _stroke_lines_alpha,
     bbox_world_edges,
     draw_polyline_segments,
 )
@@ -78,6 +77,22 @@ _FILLET_DEFAULT_LEG_FRACTION = 0.25  # Quarter of the shorter available leg — 
 _FILLET_MIN_RADIUS_M = 0.001  # Lower bound — anything smaller renders as a single pixel at common viewport scales.
 
 _ARRAY_CHILD_POLL_MESSAGE = "Selection includes an array child; operate on the array parent instead."
+
+
+def _poll_reject_array_children(operator_cls) -> bool:
+    """Shared operator-poll guard: set the array-child poll message on
+    ``operator_cls`` and return ``True`` when the selection includes a Bonsai
+    array child, so the caller can early-return ``False`` from its ``poll``.
+
+    Topology mutations against an array child are wiped by the next
+    ``regenerate_array`` and would orphan the child's GUID in the parent's
+    ``BBIM_Array.Data``. Gizmo groups have their own filter via
+    ``_wall_topology_gizmo_poll_gate``; this helper exists so operator
+    classes share the same rejection in one line."""
+    if tool.Blender.Modifier.any_selected_is_array_child():
+        operator_cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        return True
+    return False
 
 
 def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
@@ -261,8 +276,7 @@ class UnjoinWalls(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Oper
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
             return False
-        if tool.Blender.Modifier.any_selected_is_array_child():
-            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        if _poll_reject_array_children(cls):
             return False
         return True
 
@@ -290,8 +304,7 @@ class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, 
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
             return False
-        if tool.Blender.Modifier.any_selected_is_array_child():
-            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        if _poll_reject_array_children(cls):
             return False
         return True
 
@@ -393,8 +406,7 @@ class ExtendWallsToWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.If
 
     @classmethod
     def poll(cls, context):
-        if tool.Blender.Modifier.any_selected_is_array_child():
-            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        if _poll_reject_array_children(cls):
             return False
         return True
 
@@ -624,8 +636,7 @@ class SplitWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
             return False
-        if tool.Blender.Modifier.any_selected_is_array_child():
-            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        if _poll_reject_array_children(cls):
             return False
         return True
 
@@ -655,8 +666,7 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         if len(mesh_objects) != 2:
             cls.poll_message_set("Please select exactly two mesh IFC objects.")
             return False
-        if tool.Blender.Modifier.any_selected_is_array_child():
-            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        if _poll_reject_array_children(cls):
             return False
         return True
 
@@ -2622,6 +2632,8 @@ class _WallGeomCachedBillboardingMixin(gizmo.BillboardingGizmoGroupMixin):
 
     def refresh(self, context: bpy.types.Context) -> None:
         self._wall_geom_cache = None
+        self._wall_connections_cache = None
+        self._wall_pair_predicate_cache = None
         self.position_gizmos(context)
 
 
@@ -2649,6 +2661,44 @@ def _get_wall_geom_cached(group: "bpy.types.GizmoGroup", obj: bpy.types.Object) 
     key = obj.name
     if key not in cache:
         cache[key] = tool.Wall.read_geometry(obj)
+    return cache[key]
+
+
+def _get_wall_connections_cached(
+    group: "bpy.types.GizmoGroup",
+    elem: ifcopenshell.entity_instance,
+) -> "list[tuple[ifcopenshell.entity_instance, str, str]]":
+    """Per-gizmo-group memoised ``_iter_path_connections``. Same generation-key
+    invalidation as ``_get_wall_geom_cached`` so an IFC mutation drops the cached
+    list on the next frame; ``refresh()`` drops it on selection change."""
+    current_gen = tool.Parametric.get_geom_generation()
+    cache_gen = getattr(group, "_wall_connections_cache_gen", None)
+    cache = getattr(group, "_wall_connections_cache", None)
+    if cache is None or cache_gen != current_gen:
+        cache = {}
+        group._wall_connections_cache = cache
+        group._wall_connections_cache_gen = current_gen
+    key = elem.GlobalId
+    if key not in cache:
+        cache[key] = _iter_path_connections(elem)
+    return cache[key]
+
+
+def _get_wall_pair_predicate_cached(group: "bpy.types.GizmoGroup", key: tuple, compute):
+    """Per-gizmo-group memo for wall-pair predicates (joined / collinear /
+    intersection). Caller supplies the cache key (typically pair GlobalIds +
+    relevant inputs like matrix_world tuples + thresholds) and a zero-arg
+    callable that computes the value on miss. Same generation invalidation as
+    the geom cache; ``refresh()`` drops it on selection change."""
+    current_gen = tool.Parametric.get_geom_generation()
+    cache_gen = getattr(group, "_wall_pair_predicate_cache_gen", None)
+    cache = getattr(group, "_wall_pair_predicate_cache", None)
+    if cache is None or cache_gen != current_gen:
+        cache = {}
+        group._wall_pair_predicate_cache = cache
+        group._wall_pair_predicate_cache_gen = current_gen
+    if key not in cache:
+        cache[key] = compute()
     return cache[key]
 
 
@@ -3151,31 +3201,13 @@ class FinishWallFilletPreview(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        if context.screen is None:
-            return {"CANCELLED"}
-        props = preview_base.get_preview_props(context, "wall_fillet")
-        if props is None or not props.is_active:
-            return {"CANCELLED"}
-        if tool.Ifc.get() is None:
-            self.report({"ERROR"}, "No IFC file loaded.")
-            return {"CANCELLED"}
-        # bpy.ops promotes ``self.report({"ERROR"}) + return CANCELLED`` from
-        # the dispatched operator to RuntimeError. Catch it so this operator
-        # returns cleanly instead of leaving Blender's operator state
-        # half-broken (which would silently disable downstream gizmo polls).
-        try:
-            result = bpy.ops.bim.create_wall_fillet(
-                wall_a_id=props.wall_a_id,
-                wall_b_id=props.wall_b_id,
-                radius=props.radius,
-                editing_corner_id=props.editing_corner_id,
-            )
-        except RuntimeError as exc:
-            self.report({"ERROR"}, str(exc))
-            return {"CANCELLED"}
-        if "FINISHED" in result:
-            preview_base.clear_preview_state(props)
-        return result
+        return preview_base.commit_preview(
+            self,
+            context,
+            "wall_fillet",
+            "create_wall_fillet",
+            ("wall_a_id", "wall_b_id", "radius", "editing_corner_id"),
+        )
 
 
 class CancelWallFilletPreview(bpy.types.Operator):
@@ -3684,8 +3716,19 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         clearance = gizmo.top_down_clearance(context, billboard_rot)
         anchor_z = self._stack_anchor_z(context, selected, geom_a, geom_b)
 
+        # Pair predicate cache key: pair GlobalIds + world-matrix tuples for
+        # both walls. World matrices feed _are_walls_collinear /
+        # project_axis_intersection, so they belong in the key.
+        pair_guids = tuple(sorted((elem_a.GlobalId, elem_b.GlobalId)))
+        mw_a_key = tuple(map(tuple, selected[0].matrix_world))
+        mw_b_key = tuple(map(tuple, selected[1].matrix_world))
+        mw_key = (mw_a_key, mw_b_key) if elem_a.GlobalId <= elem_b.GlobalId else (mw_b_key, mw_a_key)
+
         # State 1: walls are already joined → Unjoin (bottom) + Fillet (above).
-        if _are_walls_joined(elem_a, elem_b):
+        joined = _get_wall_pair_predicate_cached(
+            self, ("joined", pair_guids), lambda: _are_walls_joined(elem_a, elem_b)
+        )
+        if joined:
             corner = _collinear_boundary_world(seg_a, seg_b)
             anchor = Vector((corner.x, corner.y, anchor_z)) + clearance
             self._stack_at(anchor, screen_up, billboard_rot, (self.unjoin_icon, self.fillet_icon))
@@ -3697,7 +3740,12 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         # State 2: walls are collinear (parallel axes on the same line) → show Merge
         # at the boundary midpoint between them. No stack; single icon at the
         # geometric boundary makes the merge target unambiguous.
-        if _are_walls_collinear(seg_a, seg_b, self.PARALLEL_DOT_THRESHOLD, self.COLLINEAR_LINE_TOLERANCE):
+        collinear = _get_wall_pair_predicate_cached(
+            self,
+            ("collinear", pair_guids, mw_key, self.PARALLEL_DOT_THRESHOLD, self.COLLINEAR_LINE_TOLERANCE),
+            lambda: _are_walls_collinear(seg_a, seg_b, self.PARALLEL_DOT_THRESHOLD, self.COLLINEAR_LINE_TOLERANCE),
+        )
+        if collinear:
             boundary = _collinear_boundary_world(seg_a, seg_b) + clearance
             self.merge_icon.matrix_basis = gizmo.billboarded_at(boundary, billboard_rot)
             self.merge_icon.hide = False
@@ -3713,10 +3761,14 @@ class GizmoWallJoinIntersection(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
         # walls within 2° of parallel produce extrusion joints that race
         # toward infinity, so project_axis_intersection returns None and the
         # early-return below hides the whole group.
-        intersection_tuple = core.project_axis_intersection(
-            (tuple(seg_a[0]), tuple(seg_a[1])),
-            (tuple(seg_b[0]), tuple(seg_b[1])),
-            self.PARALLEL_DOT_THRESHOLD,
+        intersection_tuple = _get_wall_pair_predicate_cached(
+            self,
+            ("intersection", pair_guids, mw_key, self.PARALLEL_DOT_THRESHOLD),
+            lambda: core.project_axis_intersection(
+                (tuple(seg_a[0]), tuple(seg_a[1])),
+                (tuple(seg_b[0]), tuple(seg_b[1])),
+                self.PARALLEL_DOT_THRESHOLD,
+            ),
         )
         if intersection_tuple is None:
             self._hide_all()
@@ -3872,7 +3924,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         billboard_rot = gizmo.get_billboard_rotation(context)
         clearance = gizmo.top_down_clearance(context, billboard_rot)
 
-        connections = _iter_path_connections(elem)
+        connections = _get_wall_connections_cached(self, elem)
         if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
             print(
                 f"[bonsai] GizmoWallUnjoinSingle: wall has {len(connections)} path connections; "
@@ -4305,8 +4357,7 @@ class JoinWallsIntersection(_CommitWallDraftsFirstMixin, bpy.types.Operator, too
         if not tool.Model.has_selected_ifc_objects():
             cls.poll_message_set("No IFC objects selected.")
             return False
-        if tool.Blender.Modifier.any_selected_is_array_child():
-            cls.poll_message_set(_ARRAY_CHILD_POLL_MESSAGE)
+        if _poll_reject_array_children(cls):
             return False
         return True
 
@@ -4390,7 +4441,7 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
         color_rgb: tuple[float, float, float],
     ) -> None:
-        _stroke_lines_alpha(context, segments, color_rgb, self.LINE_WIDTH, self.LINE_ALPHA)
+        draw_polyline_segments(context, segments, color_rgb, self.LINE_ALPHA, self.LINE_WIDTH)
 
     def _fill(
         self,

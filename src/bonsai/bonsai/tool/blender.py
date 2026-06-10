@@ -1467,12 +1467,29 @@ class Blender(bonsai.core.tool.Blender):
             / fillet) and their bound operators gate on this: any mutation
             applied to a child is overwritten on the next
             ``regenerate_array``, and merge specifically would leave the
-            parent's ``BBIM_Array.Data`` list pointing at a deleted GUID."""
-            for obj in tool.Blender.get_selected_objects():
+            parent's ``BBIM_Array.Data`` list pointing at a deleted GUID.
+
+            Memoised against (selection signature, IFC geometry generation)
+            so gizmo polls that fire per input event don't re-walk the pset
+            for every selected object every frame. Identity-keyed so plain
+            Python objects (used by tests) work alongside real Blender
+            ``bpy_struct`` wrappers."""
+            selected = tool.Blender.get_selected_objects()
+            selection_sig = frozenset(id(obj) for obj in selected)
+            current_gen = tool.Parametric.get_geom_generation()
+            cached = cls._any_selected_array_child_memo
+            if cached is not None and cached[0] == selection_sig and cached[1] == current_gen:
+                return cached[2]
+            result = False
+            for obj in selected:
                 element = tool.Ifc.get_entity(obj)
                 if element is not None and cls.is_array_child(element):
-                    return True
-            return False
+                    result = True
+                    break
+            cls._any_selected_array_child_memo = (selection_sig, current_gen, result)
+            return result
+
+        _any_selected_array_child_memo: tuple[frozenset[int], int, bool] | None = None
 
         @classmethod
         def is_slab(cls, element: entity_instance) -> bool:
