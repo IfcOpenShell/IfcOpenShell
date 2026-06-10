@@ -2225,10 +2225,22 @@ class GizmoWallEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         )
         cursor_world = context.scene.cursor.location
         cursor_local = mw.inverted() @ cursor_world
-        in_range = props.anchor_x < cursor_local.x < props.anchor_x + props.length
+        # ``props.anchor_x`` / ``props.length`` mirror IFC and are only refreshed
+        # when an operator calls ``_maybe_resync_wall_props_from_ifc``. Reading
+        # the live extent from the mesh bbox makes the gizmo position robust
+        # against any operator path that skips that re-sync — the mesh is
+        # always rebuilt by ``recreate_wall`` to match the current IFC body.
+        bbox_x = [v[0] for v in context.active_object.bound_box] if context.active_object else None
+        if bbox_x:
+            wall_anchor_x = min(bbox_x)
+            wall_length = max(bbox_x) - wall_anchor_x
+        else:
+            wall_anchor_x = props.anchor_x
+            wall_length = props.length
+        in_range = wall_anchor_x < cursor_local.x < wall_anchor_x + wall_length
         billboard_rot = self._frame_billboard_rot
         top_down = tool.Blender.is_view_top_down(context)
-        perp_params = _perpendicular_wall_params(cursor_local.x, cursor_local.y, props.anchor_x, props.length)
+        perp_params = _perpendicular_wall_params(cursor_local.x, cursor_local.y, wall_anchor_x, wall_length)
 
         # Candidates ordered by priority (lowest first). Each is (gizmo, local_z).
         candidates: list[tuple[bpy.types.Gizmo, float]] = [(self.extend_x_gizmo, 0.0)]
