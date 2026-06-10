@@ -176,6 +176,46 @@ def clear_preview_state(props: bpy.types.PropertyGroup) -> None:
             setattr(props, name, 0)
 
 
+# --- Standard Finish flow ----------------------------------------------------
+
+
+def commit_preview(
+    operator: bpy.types.Operator,
+    context: bpy.types.Context,
+    attr: str,
+    target_op_name: str,
+    kwarg_names: tuple[str, ...],
+) -> set[str]:
+    """Standard Finish-Preview dispatch: validate context + active preview,
+    read kwargs off the draft, call ``bpy.ops.bim.<target_op_name>(**kwargs)``,
+    and clear the preview on success.
+
+    The dispatched operator's own ``self.report({"ERROR"})`` paths are promoted
+    by ``bpy.ops`` to ``RuntimeError`` — catching it here surfaces the message
+    to the user via ``operator.report`` rather than leaving Blender's operator
+    state half-broken (which silently disables downstream gizmo polls).
+
+    Returns the dispatched operator's result set verbatim so callers can
+    pass it straight back from their own ``execute``."""
+    if context.screen is None:
+        return {"CANCELLED"}
+    props = get_preview_props(context, attr)
+    if props is None or not props.is_active:
+        return {"CANCELLED"}
+    if tool.Ifc.get() is None:
+        operator.report({"ERROR"}, "No IFC file loaded.")
+        return {"CANCELLED"}
+    kwargs = {name: getattr(props, name) for name in kwarg_names}
+    try:
+        result = getattr(bpy.ops.bim, target_op_name)(**kwargs)
+    except RuntimeError as exc:
+        operator.report({"ERROR"}, str(exc))
+        return {"CANCELLED"}
+    if "FINISHED" in result:
+        clear_preview_state(props)
+    return result
+
+
 # --- Esc dispatch ------------------------------------------------------------
 
 PREVIEW_CANCEL_OPS: tuple[tuple[str, str], ...] = (
