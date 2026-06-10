@@ -39,12 +39,6 @@ import pytest
 pytestmark = pytest.mark.wall
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
 def test_refresh_post_commit_bumps_generation_for_every_operator():
     """The generation counter advances on every commit, regardless of
     operator class — it's the cache-invalidation signal for any code

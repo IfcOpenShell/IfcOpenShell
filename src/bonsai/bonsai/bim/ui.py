@@ -291,6 +291,8 @@ class GizmoPreferences(bpy.types.PropertyGroup):
     railing: BoolProperty(name="Railing", default=True)
     roof: BoolProperty(name="Roof", default=True)
     array: BoolProperty(name="Array", default=True)
+    pipe_segment: BoolProperty(name="Pipe Segment", default=True)
+    duct_segment: BoolProperty(name="Duct Segment", default=True)
     wall: BoolProperty(name="Wall", default=True)
 
     if TYPE_CHECKING:
@@ -301,6 +303,8 @@ class GizmoPreferences(bpy.types.PropertyGroup):
         railing: bool
         roof: bool
         array: bool
+        pipe_segment: bool
+        duct_segment: bool
         wall: bool
 
 

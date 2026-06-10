@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 
-import bmesh
 import bpy
 import gpu
 from bpy.app.handlers import persistent
@@ -78,15 +79,9 @@ class SystemDecorator:
         batch.draw(shader)
 
     def draw_faces(self, bm, vertices_coords):
-        """mutates original bm (triangulates it)
-        so the triangulation edges will be shown too
-        """
-        traingulated_bm = bm
-        bmesh.ops.triangulate(traingulated_bm, faces=traingulated_bm.faces)
-
-        face_indices = [[v.index for v in f.verts] for f in traingulated_bm.faces]
+        """Submit a non-mutating beauty-triangulated TRIS batch over ``bm``'s faces."""
         faces_color = transparent_color(self.addon_prefs.decorator_color_special)
-        self.draw_batch("TRIS", vertices_coords, faces_color, face_indices)
+        tool.Blender.draw_bmesh_face_tris(bm, vertices_coords, faces_color, self.draw_batch)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
         self.addon_prefs = tool.Blender.get_addon_preferences()

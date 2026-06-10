@@ -15,12 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
 import math
 from math import cos, pi, radians, sin, tan
-from typing import Any, Literal
+from typing import Any, Literal, NamedTuple
 
 import blf
 import bmesh
@@ -41,6 +43,11 @@ from mathutils import Matrix, Quaternion, Vector
 
 import bonsai.core.geometry
 import bonsai.tool as tool
+from bonsai.bim.module.drawing.gizmos import (
+    ARC_SEGMENTS,
+    DOOR_SWING_ANGLE_MAX,
+    DOOR_SWING_ANGLE_MIN,
+)
 from bonsai.bim.module.drawing.helper import format_distance
 
 
@@ -88,15 +95,9 @@ class ProfileDecorator:
         batch.draw(shader)
 
     def draw_faces(self, bm, vertices_coords):
-        """mutates original bm (triangulates it)
-        so the triangulation edges will be shown too
-        """
-        traingulated_bm = bm
-        bmesh.ops.triangulate(traingulated_bm, faces=traingulated_bm.faces)
-
-        face_indices = [[v.index for v in f.verts] for f in traingulated_bm.faces]
+        """Submit a non-mutating beauty-triangulated TRIS batch over ``bm``'s faces."""
         faces_color = transparent_color(self.addon_prefs.decorator_color_special)
-        self.draw_batch("TRIS", vertices_coords, faces_color, face_indices)
+        tool.Blender.draw_bmesh_face_tris(bm, vertices_coords, faces_color, self.draw_batch)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -2031,42 +2032,6 @@ class BoundingBoxDecorator:
                             co2.y -= y_overlap / 2 + min_spacing
 
 
-def _stroke_lines_alpha(
-    context: bpy.types.Context,
-    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
-    color_rgb: tuple[float, float, float],
-    line_width: float,
-    line_alpha: float,
-) -> None:
-    """Render ``segments`` (a list of ``(start, end)`` tuples) as one
-    anti-aliased LINES batch in world space. Early-returns when
-    ``context.region`` is unavailable (e.g. when called from a
-    ``_RestrictContext``)."""
-    if not segments:
-        return
-    verts: list[tuple[float, float, float]] = []
-    indices: list[tuple[int, int]] = []
-    for start, end in segments:
-        base = len(verts)
-        verts.append(tuple(start))
-        verts.append(tuple(end))
-        indices.append((base, base + 1))
-    if not tool.Blender.validate_shader_batch_data(verts, indices):
-        return
-    region = getattr(context, "region", None)
-    if region is None:
-        return
-    shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
-    shader.bind()
-    shader.uniform_float("viewportSize", (region.width, region.height))
-    shader.uniform_float("lineWidth", line_width)
-    shader.uniform_float("color", (*color_rgb, line_alpha))
-    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
-    gpu.state.blend_set("ALPHA")
-    batch.draw(shader)
-    gpu.state.blend_set("NONE")
-
-
 def _fill_quads_alpha(
     context: bpy.types.Context,
     quads: list[
@@ -2081,8 +2046,7 @@ def _fill_quads_alpha(
     alpha: float,
 ) -> None:
     """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
-    order) as one TRIS batch with two triangles per quad. Companion to
-    ``_stroke_lines_alpha`` for filled previews."""
+    order) as one TRIS batch with two triangles per quad."""
     if not quads:
         return
     verts: list[tuple[float, float, float]] = []
@@ -2106,6 +2070,181 @@ def _fill_quads_alpha(
     gpu.state.blend_set("ALPHA")
     batch.draw(shader)
     gpu.state.blend_set("NONE")
+
+
+def compute_mep_join_location():
+    """Midpoint between the closest endpoint pair of two selected MEP
+    segments — the world location where a connecting fitting (bend /
+    transition) would land. Returns ``None`` when prerequisites aren't met
+    (wrong cardinality, mixed non-MEP)."""
+    selected = list(tool.Blender.get_selected_objects())
+    if len(selected) != 2:
+        return None
+    for obj in selected:
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not tool.System.is_mep_element(element):
+            return None
+    a_start, a_end = tool.Model.get_flow_segment_axis(selected[0])
+    b_start, b_end = tool.Model.get_flow_segment_axis(selected[1])
+    pairs = [(a_start, b_start), (a_start, b_end), (a_end, b_start), (a_end, b_end)]
+    closest = min(pairs, key=lambda p: (p[0] - p[1]).length)
+    return (closest[0] + closest[1]) * 0.5
+
+
+class MEPSegmentExtendPreviewDecorator(tool.Blender.ViewportDecorator):
+    """Preview line for the MEP segment extend-to-cursor gizmo. Renders one
+    line from the segment's current end to the cursor's projection on the
+    segment's local Z axis when the extend icon is hovered. Self-gates every
+    draw on the viewport gizmo toggle and the per-feature ``extend`` pref."""
+
+    draw_method = "draw_line"
+
+    LINE_WIDTH = 1.5
+    LINE_ALPHA = 0.8
+
+    def draw_line(self, context: bpy.types.Context) -> None:
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return
+        prefs = tool.Blender.get_addon_preferences()
+
+        active = context.active_object
+        if active is None:
+            return
+        selected = list(tool.Blender.get_selected_objects())
+        if active not in selected or len(selected) != 1:
+            return
+
+        element = tool.Ifc.get_entity(active)
+        if element is None:
+            return
+
+        from bonsai.bim.module.model.mep import (
+            GizmoDuctSegmentEdition,
+            GizmoPipeSegmentEdition,
+        )
+
+        if tool.Parametric.is_pipe_segment(element):
+            gizmo_prefs = getattr(prefs.gizmos, "pipe_segment", None)
+            gizmo_cls = GizmoPipeSegmentEdition
+        elif tool.Parametric.is_duct_segment(element):
+            gizmo_prefs = getattr(prefs.gizmos, "duct_segment", None)
+            gizmo_cls = GizmoDuctSegmentEdition
+        else:
+            return
+        if gizmo_prefs is None or not getattr(gizmo_prefs, "enabled", True):
+            return
+        if not self._cursor_icon_hovered(gizmo_cls, "extend_gizmo", context):
+            return
+
+        current_length = max(c[2] for c in active.bound_box) if active.bound_box else 0.0
+        line = self._compute_extend_preview_line(active.matrix_world, context.scene.cursor.location, current_length)
+        if line is None:
+            return
+        start_world, end_world = line
+        color = tuple(prefs.decorator_color_selected[:3])
+        draw_polyline_segments(
+            context,
+            [(tuple(start_world), tuple(end_world))],
+            color,
+            self.LINE_ALPHA,
+            self.LINE_WIDTH,
+        )
+
+    @staticmethod
+    def _compute_extend_preview_line(
+        matrix_world: Matrix,
+        cursor_world: Vector,
+        current_length: float,
+    ) -> tuple[Vector, Vector] | None:
+        """Returns ``(current_end_world, target_end_world)`` or ``None`` when
+        no extend would happen (degenerate segment, or cursor on the existing
+        end). Target follows the cursor's raw local-Z projection unbounded —
+        the line stays visible past the segment origin (negative local Z)
+        because the user expects to see where they're pointing even when the
+        operator would floor it."""
+        if current_length <= 0:
+            return None
+        cursor_local = matrix_world.inverted() @ cursor_world
+        if abs(cursor_local.z - current_length) < 1e-6:
+            return None
+        current_end_world = matrix_world @ Vector((0.0, 0.0, current_length))
+        target_end_world = matrix_world @ Vector((0.0, 0.0, cursor_local.z))
+        return current_end_world, target_end_world
+
+
+class BendPreviewDecorator(tool.Blender.ViewportDecorator):
+    """GPU preview lines for the bend-creation flow.
+
+    Polls on ``scene.BIMPreviewProperties.bend.is_active`` and renders the
+    centerline + leg projections returned by ``mep.compute_bend_preview_polylines``.
+    The two leg lines (segment → tangent point) show how each segment will
+    be shortened; the arc polyline approximates the bend curve. On invalid
+    geometry, draws the two rejected axes in warning colour instead so the
+    user sees why the bend cannot be placed.
+
+    Installed once per Blender session from ``bim/handler.py:load_post``.
+    Cheap to leave running because the first thing ``draw`` does is check
+    ``is_active`` and return when False.
+    """
+
+    LINE_WIDTH_LEG = 1.5
+    LINE_WIDTH_ARC = 2.5
+    LINE_ALPHA = 0.7
+
+    def draw(self, context: bpy.types.Context) -> None:
+        scene = context.scene
+        preview = getattr(scene, "BIMPreviewProperties", None)
+        props = preview.bend if preview is not None else None
+        if props is None or not props.is_active:
+            return
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return
+        try:
+            start_element = ifc_file.by_id(props.start_segment_id)
+            end_element = ifc_file.by_id(props.end_segment_id)
+        except Exception:
+            return
+        start_obj = tool.Ifc.get_object(start_element) if start_element else None
+        end_obj = tool.Ifc.get_object(end_element) if end_element else None
+        if start_obj is None or end_obj is None:
+            return
+
+        # Late import: decorator.py loads at addon enable but mep.py imports
+        # this module for the extend preview, so a module-level import would
+        # cycle.
+        from bonsai.bim.module.model.mep import cached_compute_bend_preview_polylines
+
+        preview = cached_compute_bend_preview_polylines(
+            start_obj, end_obj, props.start_length, props.end_length, props.radius
+        )
+        prefs = tool.Blender.get_addon_preferences()
+
+        if not preview["valid"]:
+            warning_color = tuple(prefs.decorator_color_error[:3])
+            axes = preview.get("invalid_axes") or []
+            if axes:
+                segments = [(tuple(a), tuple(b)) for a, b in axes]
+                draw_polyline_segments(context, segments, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
+            return
+
+        leg_color = tuple(prefs.decorations_colour[:3])
+        arc_color = tuple(prefs.decorator_color_selected[:3])
+
+        leg_a_far, leg_a_end = preview["leg_a"]
+        leg_b_far, leg_b_end = preview["leg_b"]
+        draw_polyline_segments(
+            context,
+            [(tuple(leg_a_far), tuple(leg_a_end)), (tuple(leg_b_far), tuple(leg_b_end))],
+            leg_color,
+            self.LINE_ALPHA,
+            self.LINE_WIDTH_LEG,
+        )
+
+        arc = preview["arc"]
+        if len(arc) >= 2:
+            arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
+            draw_polyline_segments(context, arc_segments, arc_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
 
 
 class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
@@ -2169,15 +2308,15 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
                         (tuple(far_a), tuple(tangent_a)),
                         (tuple(far_b), tuple(tangent_b)),
                     ]
-                    _stroke_lines_alpha(context, legs, warning_color, self.LINE_WIDTH_LEG, self.LINE_ALPHA)
+                    draw_polyline_segments(context, legs, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_LEG)
                 arc = geom.get("arc") or []
                 if len(arc) >= 2:
                     arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
-                    _stroke_lines_alpha(context, arc_segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+                    draw_polyline_segments(context, arc_segments, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
             elif geom.get("invalid_axes"):
                 axes = geom["invalid_axes"]
                 segments = [(tuple(a), tuple(b)) for a, b in axes]
-                _stroke_lines_alpha(context, segments, warning_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+                draw_polyline_segments(context, segments, warning_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
             return
 
         leg_color = tuple(prefs.decorations_colour[:3])
@@ -2194,12 +2333,12 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
                 (tuple(far_a), tuple(geom["tangent_a"])),
                 (tuple(far_b), tuple(geom["tangent_b"])),
             ]
-            _stroke_lines_alpha(context, legs, leg_color, self.LINE_WIDTH_LEG, self.LINE_ALPHA)
+            draw_polyline_segments(context, legs, leg_color, self.LINE_ALPHA, self.LINE_WIDTH_LEG)
 
         arc = geom["arc"]
         if len(arc) >= 2:
             arc_segments = [(tuple(arc[i]), tuple(arc[i + 1])) for i in range(len(arc) - 1)]
-            _stroke_lines_alpha(context, arc_segments, arc_color, self.LINE_WIDTH_ARC, self.LINE_ALPHA)
+            draw_polyline_segments(context, arc_segments, arc_color, self.LINE_ALPHA, self.LINE_WIDTH_ARC)
 
         # Dim construction lines from arc_center to each tangent point so
         # the radius reads as concrete during drag.
@@ -2209,7 +2348,9 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
                 (tuple(arc_center), tuple(geom["tangent_a"])),
                 (tuple(arc_center), tuple(geom["tangent_b"])),
             ]
-            _stroke_lines_alpha(context, construction, arc_color, self.LINE_WIDTH_CONSTRUCTION, self.CONSTRUCTION_ALPHA)
+            draw_polyline_segments(
+                context, construction, arc_color, self.CONSTRUCTION_ALPHA, self.LINE_WIDTH_CONSTRUCTION
+            )
 
     @staticmethod
     def _far_endpoint(reference_line, intersection):
@@ -2218,6 +2359,120 @@ class WallFilletPreviewDecorator(tool.Blender.ViewportDecorator):
         d1 = (p1.x - intersection[0]) ** 2 + (p1.y - intersection[1]) ** 2 + (p1.z - intersection[2]) ** 2
         d2 = (p2.x - intersection[0]) ** 2 + (p2.y - intersection[1]) ** 2 + (p2.z - intersection[2]) ** 2
         return p2 if d2 >= d1 else p1
+
+
+class _DoorSwingArc(NamedTuple):
+    """Parameters for one swing-arc draw call in door-local space."""
+
+    hinge_x: float
+    hinge_y: float
+    panel_width: float
+    x_mirror: bool
+
+
+def _visible_arcs(door_type: str, overall_width: float, lining_offset: float) -> list[_DoorSwingArc]:
+    """Arc specs for the parametric door swing visualisation, agnostic of
+    edit-mode state so the readonly preview and the editor view stay aligned.
+
+    Empty only for sliding-door types; unknown ``door_type`` values fall
+    through to a single left-hinged arc."""
+    if "SLIDING" in door_type:
+        return []
+    is_double = "DOUBLE_DOOR" in door_type
+    is_right_single = door_type.endswith("RIGHT") and not is_double
+    arcs = [
+        _DoorSwingArc(
+            hinge_x=overall_width if is_right_single else 0.0,
+            hinge_y=lining_offset,
+            panel_width=overall_width / 2 if is_double else overall_width,
+            x_mirror=is_right_single,
+        )
+    ]
+    if is_double:
+        arcs.append(
+            _DoorSwingArc(
+                hinge_x=overall_width,
+                hinge_y=lining_offset,
+                panel_width=overall_width / 2,
+                x_mirror=True,
+            )
+        )
+    return arcs
+
+
+# Unit quarter-arc samples shared with the edit-mode swing gizmo so the
+# readonly arc traces the same curve. Re-scaled per draw via the per-arc
+# transform.
+_DOOR_SWING_ARC_ANGLE_MIN_RAD = math.radians(DOOR_SWING_ANGLE_MIN)
+_DOOR_SWING_ARC_ANGLE_RANGE_RAD = math.radians(DOOR_SWING_ANGLE_MAX) - _DOOR_SWING_ARC_ANGLE_MIN_RAD
+_DOOR_SWING_ARC_UNIT_POINTS: tuple[Vector, ...] = tuple(
+    Vector(
+        (
+            math.cos(_DOOR_SWING_ARC_ANGLE_MIN_RAD + _DOOR_SWING_ARC_ANGLE_RANGE_RAD * (_i / ARC_SEGMENTS)),
+            math.sin(_DOOR_SWING_ARC_ANGLE_MIN_RAD + _DOOR_SWING_ARC_ANGLE_RANGE_RAD * (_i / ARC_SEGMENTS)),
+            0.0,
+        )
+    )
+    for _i in range(ARC_SEGMENTS + 1)
+)
+
+
+class DoorSwingReadonlyDecorator(tool.Blender.ViewportDecorator):
+    """Always-on swing-arc preview for the active Bonsai-parametric IfcDoor
+    when it is not currently in parametric edit mode. Matches the visual
+    contract of the parametric door's swing-arc gizmos so the hinge side
+    and opening direction can be read without entering edit mode.
+
+    Silent-skip cases (no draw, no error):
+
+    - active object missing / not selected / not an IfcDoor;
+    - door is mid-edit (the swing gizmo is already painting the arc);
+    - door has no ``BBIM_Door`` pset (legacy import, never edited in Bonsai)."""
+
+    LINE_WIDTH = 1.5
+    LINE_ALPHA = 0.8
+
+    def draw(self, context: bpy.types.Context) -> None:
+        obj = context.active_object
+        if obj is None or not obj.select_get():
+            return
+        element = tool.Ifc.get_entity(obj)
+        if element is None or not element.is_a("IfcDoor"):
+            return
+        props = getattr(obj, "BIMDoorProperties", None)
+        if props is not None and props.is_editing:
+            return
+        pset = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Door")
+        if not pset:
+            return
+        data = pset.get("data_dict")
+        if not data:
+            return
+        door_type = data.get("door_type", "")
+        overall_width_project = data.get("overall_width", 0.0)
+        lining_offset_project = (data.get("lining_properties") or {}).get("lining_offset", 0.0)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        overall_width = overall_width_project * si_conversion
+        lining_offset = lining_offset_project * si_conversion
+        specs = _visible_arcs(door_type, overall_width, lining_offset)
+        if not specs:
+            return
+        prefs = tool.Blender.get_addon_preferences()
+        main_color = tuple(prefs.decorator_color_special[:3])
+        mw = obj.matrix_world
+        segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+        for spec in specs:
+            x_flip = Matrix.Scale(-1, 4, (1, 0, 0)) if spec.x_mirror else Matrix.Identity(4)
+            transform = (
+                Matrix.Translation(Vector((spec.hinge_x, spec.hinge_y, 0.0)))
+                @ Matrix.Scale(spec.panel_width, 4)
+                @ x_flip
+            )
+            world_main = mw @ transform
+            pts = [world_main @ p for p in _DOOR_SWING_ARC_UNIT_POINTS]
+            for i in range(len(pts) - 1):
+                segments.append((tuple(pts[i]), tuple(pts[i + 1])))
+        draw_polyline_segments(context, segments, main_color, self.LINE_ALPHA, self.LINE_WIDTH)
 
 
 _BBOX_EDGES = (

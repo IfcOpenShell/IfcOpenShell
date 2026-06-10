@@ -54,13 +54,29 @@ module if the helper count grows past ~6 or any helper picks up its own
 non-trivial dependencies."""
 
 import contextlib
+import types
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
 
+import bpy
 import ifcopenshell
 import pytest
 
 from bonsai import tool
+
+
+@pytest.fixture(autouse=True)
+def _require_real_bpy():
+    """Skip every test in this directory when ``bpy`` is mocked or absent.
+
+    The model gizmo / decorator suite reaches into Blender's RNA layer
+    (``bpy.types.Operator``, registered ``bl_idname`` lookups, ``Modifier``
+    predicates) that ``Mock`` cannot impersonate, so a tool-lane run with a
+    stubbed ``bpy`` would error rather than meaningfully exercise the
+    contract. The autouse scope means new test files added under this
+    directory inherit the gate without re-declaring it."""
+    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
+        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def make_obj(*, session_uid=None, selected=True, **attrs):

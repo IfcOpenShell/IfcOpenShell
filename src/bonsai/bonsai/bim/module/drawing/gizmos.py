@@ -159,6 +159,65 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
 
+_BONSAI_TRANSFORM_MACROS = frozenset(
+    {
+        # Bonsai overrides Blender's default move/duplicate keymaps with
+        # macros that wrap TRANSFORM_OT_translate. While a macro is the outer
+        # modal entry, the inner TRANSFORM_OT_translate does not surface in
+        # window.modal_operators — the macro's own idname does. The
+        # ``BIM_OT_`` prefix is what Blender returns from ``bl_idname`` at
+        # runtime (the class declaration uses the dotted ``bim.`` form).
+        "BIM_OT_override_move_macro",  # G key
+        "BIM_OT_override_object_duplicate_move_macro",  # Shift+D
+        "BIM_OT_override_object_duplicate_move_linked_macro",  # Alt+D
+        "BIM_OT_object_duplicate_move_linked_aggregate_macro",  # Ctrl+Shift+D
+    }
+)
+
+
+def _is_transform_modal_active(context) -> bool:
+    """True iff a Blender transform modal (G/R/S and siblings, including
+    Bonsai's macro overrides) is currently driving per-frame ``matrix_world``
+    updates. Reads ``window.modal_operators`` — the Blender 4.2+ collection of
+    running modal operators. Parametric gizmo groups gate poll + draw_prepare
+    on this so they hide for the duration of the drag instead of sliding
+    off-cursor as the matrix updates each frame."""
+    window = getattr(context, "window", None)
+    if window is None:
+        return False
+    modal_ops = getattr(window, "modal_operators", None)
+    if not modal_ops:
+        return False
+    for op in modal_ops:
+        idname = op.bl_idname
+        if idname.startswith("TRANSFORM_OT_") or idname in _BONSAI_TRANSFORM_MACROS:
+            return True
+    return False
+
+
+def _hide_all_non_modal_gizmos(group) -> None:
+    """Set ``hide = True`` on every gizmo in ``group`` whose own ``is_modal``
+    is False. Used by parametric ``draw_prepare`` to suppress visible
+    re-positioning while a transform modal is dragging ``matrix_world``."""
+    for gz in group.gizmos:
+        if not getattr(gz, "is_modal", False):
+            gz.hide = True
+
+
+def apply_transform_modal_draw_gate(group, context) -> bool:
+    """Combined gate for ``draw_prepare`` overrides: hide non-modal gizmos and
+    return ``True`` when a Blender transform modal is dragging matrix_world.
+
+    Returns ``False`` when no transform modal is active so callers can fall
+    through to their normal positioning logic. ``True`` means the caller must
+    early-return without touching matrix_basis — the hidden gizmos will be
+    re-shown on the next idle frame once the modal exits."""
+    if not _is_transform_modal_active(context):
+        return False
+    _hide_all_non_modal_gizmos(group)
+    return True
+
+
 class GizmoColor(Enum):
     """Color identifiers for dimension gizmos.
 
@@ -1692,6 +1751,33 @@ def billboarded_at(world_pos: Vector, billboard_rot: Matrix, scale: float = DEFA
     """Compose the standard icon matrix_basis: translate to ``world_pos``, billboard to the camera,
     then uniformly scale."""
     return Matrix.Translation(world_pos) @ billboard_rot @ Matrix.Scale(scale, 4)
+
+
+def billboarded_along_axis(
+    world_pos: Vector,
+    billboard_rot: Matrix,
+    axis_world: Vector,
+    scale: float = DEFAULT_BILLBOARD_SCALE,
+) -> Matrix:
+    """Composed matrix_basis like ``billboarded_at`` but with local +X
+    rotated about the camera-forward axis to align with ``axis_world``
+    projected onto the screen plane.
+
+    The gizmo still faces the camera (local +Z stays along camera-forward),
+    only its in-plane orientation changes. Falls back to plain
+    ``billboarded_at`` when the axis is near-parallel to the view direction
+    (no usable screen projection)."""
+    camera_forward = billboard_rot @ Vector((0.0, 0.0, 1.0))
+    projected = axis_world - camera_forward * axis_world.dot(camera_forward)
+    if projected.length < 1e-4:
+        return billboarded_at(world_pos, billboard_rot, scale)
+    projected.normalize()
+    y_axis = camera_forward.cross(projected).normalized()
+    rot = Matrix.Identity(4)
+    rot[0][:3] = (projected.x, y_axis.x, camera_forward.x)
+    rot[1][:3] = (projected.y, y_axis.y, camera_forward.y)
+    rot[2][:3] = (projected.z, y_axis.z, camera_forward.z)
+    return Matrix.Translation(world_pos) @ rot @ Matrix.Scale(scale, 4)
 
 
 def get_screen_up(billboard_rot: Matrix) -> Vector:
@@ -3255,11 +3341,16 @@ class GizmoArc(StaticTrisGizmoMixin, bpy.types.Gizmo):
     """Static quarter-arc glyph for swing visualisation.
 
     Consumers needing the mirrored (RIGHT) visual apply a flip-X matrix to
-    ``matrix_basis``."""
+    ``matrix_basis``. ``outline_alpha = 0.0`` suppresses the inherited 8-pass
+    dark halo: an open curve has no enclosed silhouette for the dilation to
+    ring, so the offset passes read as ghost arcs rather than a uniform
+    outline. The arc's own cross-section thickness keeps it legible without
+    the halo."""
 
     bl_idname = "VIEW3D_GT_arc"
     __slots__ = ("custom_shape",)
     tris = ARC_TRIS_DEFAULT
+    outline_alpha = 0.0
 
 
 def _link_toggle_icon_tris(broken: bool) -> tuple[tuple[float, float, float], ...]:
@@ -4998,6 +5089,8 @@ class BillboardingGizmoGroupMixin:
         self.position_gizmos(context)
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
+        if apply_transform_modal_draw_gate(self, context):
+            return
         self.position_gizmos(context)
 
     def setup_icon_gizmo(
@@ -5651,6 +5744,8 @@ class BaseParametricGizmoGroup:
         from bonsai.bim.module.model import preview_base
 
         if preview_base.any_preview_active(context):
+            return False
+        if _is_transform_modal_active(context):
             return False
         if cls.gizmo_pref_name:
             prefs = tool.Blender.get_addon_preferences()
@@ -6416,6 +6511,8 @@ class BaseParametricGizmoGroup:
         """
         if not self.is_setup_complete():
             return
+        if apply_transform_modal_draw_gate(self, context):
+            return
         obj = context.active_object
         if not obj:
             return
@@ -6621,6 +6718,8 @@ class BaseSchematicGizmoGroup(BaseParametricGizmoGroup):
 
     def draw_prepare(self, context: bpy.types.Context) -> None:
         if not self.is_setup_complete():
+            return
+        if apply_transform_modal_draw_gate(self, context):
             return
         obj = context.active_object
         if not obj:
@@ -7027,6 +7126,8 @@ class BaseIconActionGroup(BillboardingGizmoGroupMixin):
         if obj is None:
             return False
         if not tool.Blender.are_viewport_gizmos_enabled():
+            return False
+        if _is_transform_modal_active(context):
             return False
         return cls.is_eligible_object(obj)
 

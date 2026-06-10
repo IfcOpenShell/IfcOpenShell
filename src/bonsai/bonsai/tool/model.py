@@ -75,8 +75,10 @@ if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import (
         BIMArrayProperties,
         BIMDoorProperties,
+        BIMDuctSegmentProperties,
         BIMExternalParametricGeometryProperties,
         BIMModelProperties,
+        BIMPipeSegmentProperties,
         BIMPolylineProperties,
         BIMRailingProperties,
         BIMRoofProperties,
@@ -115,6 +117,14 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_pipe_segment_props(cls, obj: bpy.types.Object) -> BIMPipeSegmentProperties:
+        return obj.BIMPipeSegmentProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_duct_segment_props(cls, obj: bpy.types.Object) -> BIMDuctSegmentProperties:
+        return obj.BIMDuctSegmentProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_sverchok_props(cls, obj: bpy.types.Object) -> BIMSverchokProperties:
@@ -361,6 +371,28 @@ class Model(bonsai.core.tool.Model):
                 item = item.FirstOperand
             else:
                 break
+
+    @classmethod
+    def get_sibling_occurrence_count(cls, element: ifcopenshell.entity_instance) -> int:
+        """Number of *other* products sharing this element's body representation.
+
+        Returns the count of products bound to the same resolved body rep, minus
+        ``element`` itself and minus its type (if any). Zero when the element has
+        no body rep, no resolved rep, or no siblings. A non-zero result means a
+        parametric edit on ``element`` will silently mutate other instances'
+        geometry."""
+        body_rep = tool.Geometry.get_body_representation(element)
+        if not body_rep:
+            return 0
+        resolved = ifcopenshell.util.representation.resolve_representation(body_rep)
+        if not resolved:
+            return 0
+        elements = tool.Geometry.get_elements_by_representation(resolved)
+        elements.discard(element)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type is not None:
+            elements.discard(element_type)
+        return len(elements)
 
     unit_scale: float
     vertices: list[Vector]
@@ -1556,8 +1588,7 @@ class Model(bonsai.core.tool.Model):
         element = tool.Ifc.get_entity(object)
         if not element:
             return
-        psets = ifcopenshell.util.element.get_psets(element)
-        pset_data = psets.get(pset_name, None)
+        pset_data = ifcopenshell.util.element.get_pset(element, pset_name)
         if not pset_data:
             return
         pset_data["data_dict"] = json.loads(pset_data.get("Data", "[]") or "[]")

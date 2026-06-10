@@ -19,6 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.feature
+import ifcopenshell.api.nest
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import numpy as np
@@ -146,6 +149,40 @@ class TestGetContainer(NewFile):
         wall = ifc.createIfcWall()
         ifcopenshell.api.spatial.assign_container(ifc, products=[wall], relating_structure=site)
         assert subject.get_container(wall) == site
+
+
+class TestGetRootElement(NewFile):
+    def test_a_door_filling_a_wall_is_its_own_root_element(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        opening = ifc.createIfcOpeningElement()
+        door = ifc.createIfcDoor()
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=door)
+        assert subject.get_root_element(door) == door
+
+    def test_an_aggregated_element_walks_to_its_aggregate_root(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        assembly = ifc.createIfcElementAssembly()
+        beam = ifc.createIfcBeam()
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[beam], relating_object=assembly)
+        assert subject.get_root_element(beam) == assembly
+
+    def test_a_nested_element_walks_to_its_nest_root(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        parent_task = ifc.createIfcTask()
+        child_task = ifc.createIfcTask()
+        ifcopenshell.api.nest.assign_object(ifc, related_objects=[child_task], relating_object=parent_task)
+        assert subject.get_root_element(child_task) == parent_task
+
+    def test_a_loose_element_is_its_own_root(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifc.createIfcWall()
+        assert subject.get_root_element(wall) == wall
 
 
 class TestGetDecomposedElements(NewFile):
