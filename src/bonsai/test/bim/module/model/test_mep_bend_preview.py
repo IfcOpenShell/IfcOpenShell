@@ -242,7 +242,7 @@ def test_bend_preview_gizmo_group_is_registered():
     """``GizmoBendPreview`` polls when ``scene.BIMPreviewProperties.bend.is_active``
     is True. Pin the bl_idname so a typo wouldn't silently hide the preview
     gizmos at runtime."""
-    from bonsai.bim.module.model.mep import GizmoBendPreview
+    from bonsai.bim.module.model.mep_bend_preview import GizmoBendPreview
 
     assert GizmoBendPreview.bl_idname == "OBJECT_GGT_bim_bend_preview"
     assert issubclass(GizmoBendPreview, bpy.types.GizmoGroup)
@@ -336,7 +336,7 @@ def test_finish_bend_preview_catches_runtime_error_from_dispatch():
     from types import SimpleNamespace
 
     from bonsai import tool
-    from bonsai.bim.module.model.mep import FinishBendPreview
+    from bonsai.bim.module.model.mep_bend_preview import FinishBendPreview
 
     class _Stand:
         def __init__(self):

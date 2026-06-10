@@ -26,7 +26,6 @@ against a SimpleNamespace stand-in that records ``matrix_basis`` assignments and
 the tests describe the geometric contract directly rather than echoing the
 implementation."""
 
-import types
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -35,12 +34,6 @@ import pytest
 from mathutils import Matrix, Vector
 
 pytestmark = pytest.mark.model
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def _make_props(door_type, overall_width=0.9, lining_offset=0.0, is_editing=True):

@@ -39,7 +39,6 @@ allow-list with an explanation) fails this test."""
 
 import ast
 import inspect
-import types
 
 import bpy
 import pytest
@@ -51,12 +50,6 @@ pytestmark = pytest.mark.model
 _ALLOWLIST = frozenset({"GizmoWallEdition", "GizmoWallFilletPreview"})
 
 _REQUIRED_CALLEES = frozenset({"_wall_topology_gizmo_poll_gate", "any_selected_is_array_child"})
-
-
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
 
 
 def _wall_module_source():

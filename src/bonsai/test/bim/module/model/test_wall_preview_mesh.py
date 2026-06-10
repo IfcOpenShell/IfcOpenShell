@@ -37,12 +37,6 @@ from mathutils import Vector
 pytestmark = pytest.mark.wall
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
 def test_regenerate_wall_mesh_from_props_outward_normals():
     """Every face of the preview box must have its normal pointing away
     from the box centroid — the contract every other preview-mesh builder

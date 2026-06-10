@@ -32,12 +32,6 @@ import pytest
 pytestmark = pytest.mark.model
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
 def _registry():
     from bonsai.bim.module.model.preview_base import PREVIEW_CANCEL_OPS
 

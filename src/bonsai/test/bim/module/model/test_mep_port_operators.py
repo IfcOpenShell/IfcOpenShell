@@ -33,14 +33,6 @@ import pytest
 pytestmark = pytest.mark.model
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    import types as _types
-
-    if not isinstance(bpy, _types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
 def _segment(predefined_type=None):
     """Stand-in IFC entity that reports ``is_a("IfcFlowSegment")`` True."""
     e = Mock()
@@ -74,13 +66,30 @@ def _make_op(_cls, **fields):
 # ---------------------------------------------------------------------------
 
 
-def test_unjoin_at_port_deletes_joining_fitting():
-    """Happy path: port state is JOINED, fitting is non-OBSTRUCTION →
-    delete the bridging fitting via the standard delete path."""
+@pytest.mark.parametrize(
+    "port_state, fitting_predefined_type, expected_result, expects_delete",
+    [
+        pytest.param("JOINED", "JUNCTION", {"FINISHED"}, True, id="joined_junction_deletes"),
+        pytest.param("JOINED", "OBSTRUCTION", {"CANCELLED"}, False, id="joined_obstruction_refused"),
+        pytest.param("FREE", None, {"CANCELLED"}, False, id="free_port_cancels"),
+    ],
+)
+def test_unjoin_at_port_dispatch_table(port_state, fitting_predefined_type, expected_result, expects_delete):
+    """``MEPUnjoinAtPort`` dispatch contract: result and delete-side-effect
+    by ``(port_state, fitting type)``.
+
+    - ``JOINED + JUNCTION`` (or any non-OBSTRUCTION fitting): happy path,
+      the bridging fitting is deleted via the standard delete entry point.
+    - ``JOINED + OBSTRUCTION``: deliberately refused — obstructions go
+      through ``bim.mep_add_obstruction`` (mode=REMOVE) so the segment
+      extends to absorb the freed length; using delete here would leave
+      a visible gap.
+    - ``FREE``: nothing to do — no bridging fitting exists. The operator
+      reports a user-facing error and CANCELS rather than no-op silently."""
     from bonsai.bim.module.model import mep
 
     segment = _segment()
-    fitting = _fitting(predefined_type="JUNCTION")
+    fitting = _fitting(predefined_type=fitting_predefined_type) if fitting_predefined_type else None
     fitting_obj = Mock()
 
     op = _make_op(mep.MEPUnjoinAtPort, segment_id=42, position="END")
@@ -89,61 +98,19 @@ def test_unjoin_at_port_deletes_joining_fitting():
 
     with patch.object(mep.tool.Ifc, "get", return_value=ifc_file), patch.object(
         mep.tool.Ifc, "get_object", return_value=fitting_obj
-    ), patch.object(mep, "port_connection_state", return_value="JOINED"), patch.object(
+    ), patch.object(mep, "port_connection_state", return_value=port_state), patch.object(
         mep, "get_connected_element_at_segment_port", return_value=fitting
     ), patch.object(
         mep.tool.Geometry, "delete_ifc_object"
     ) as delete:
         result = mep.MEPUnjoinAtPort._execute(op, context=MagicMock())
 
-    assert result == {"FINISHED"}
-    delete.assert_called_once_with(fitting_obj)
-
-
-def test_unjoin_at_port_refuses_obstruction_fitting():
-    """OBSTRUCTION fittings route through ``bim.mep_add_obstruction``
-    (mode=REMOVE) which extends the segment to absorb the freed length —
-    using unjoin here would leave a gap."""
-    from bonsai.bim.module.model import mep
-
-    segment = _segment()
-    obstruction = _fitting(predefined_type="OBSTRUCTION")
-
-    op = _make_op(mep.MEPUnjoinAtPort, segment_id=42, position="END")
-    ifc_file = MagicMock()
-    ifc_file.by_id.return_value = segment
-
-    with patch.object(mep.tool.Ifc, "get", return_value=ifc_file), patch.object(
-        mep, "port_connection_state", return_value="JOINED"
-    ), patch.object(mep, "get_connected_element_at_segment_port", return_value=obstruction), patch.object(
-        mep.tool.Geometry, "delete_ifc_object"
-    ) as delete:
-        result = mep.MEPUnjoinAtPort._execute(op, context=MagicMock())
-
-    assert result == {"CANCELLED"}
-    delete.assert_not_called()
-    op.report.assert_called()
-
-
-def test_unjoin_at_port_cancels_when_port_is_free():
-    """Port has no connection at all → no fitting to delete → CANCELLED
-    with a user-facing error rather than a silent no-op."""
-    from bonsai.bim.module.model import mep
-
-    segment = _segment()
-
-    op = _make_op(mep.MEPUnjoinAtPort, segment_id=42, position="START")
-    ifc_file = MagicMock()
-    ifc_file.by_id.return_value = segment
-
-    with patch.object(mep.tool.Ifc, "get", return_value=ifc_file), patch.object(
-        mep, "port_connection_state", return_value="FREE"
-    ), patch.object(mep.tool.Geometry, "delete_ifc_object") as delete:
-        result = mep.MEPUnjoinAtPort._execute(op, context=MagicMock())
-
-    assert result == {"CANCELLED"}
-    delete.assert_not_called()
-    op.report.assert_called()
+    assert result == expected_result
+    if expects_delete:
+        delete.assert_called_once_with(fitting_obj)
+    else:
+        delete.assert_not_called()
+        op.report.assert_called()
 
 
 def test_unjoin_at_port_cancels_when_active_is_not_segment():

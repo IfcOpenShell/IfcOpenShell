@@ -44,14 +44,6 @@ import pytest
 pytestmark = pytest.mark.model
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    import types as _types
-
-    if not isinstance(bpy, _types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
 # ---------------------------------------------------------------------------
 # action_configs — operator registration + name uniqueness
 # ---------------------------------------------------------------------------
