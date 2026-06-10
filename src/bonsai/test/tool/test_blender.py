@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import tempfile
 from pathlib import Path
@@ -22,6 +24,7 @@ from typing import TYPE_CHECKING
 
 import bpy
 import ifcopenshell
+import numpy as np
 import pytest
 
 import bonsai
@@ -167,3 +170,16 @@ class TestGetDebugInfo(NewFile):
     def test_failed_to_load_returns_only_base_keys(self):
         info = bonsai.get_debug_info(bonsai_failed_to_load=True)
         assert set(info.keys()) == self.EXPECTED_KEYS
+
+
+class TestNpFrombufferLegacy(NewFile):
+    """Decoding ``n`` floats from a buffer must yield a length-``n`` array
+    regardless of whether the buffer was written as ``float32`` or ``float64``."""
+
+    @pytest.mark.parametrize("n", [3, 9])
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    def test_decodes_to_n_elements(self, n, dtype):
+        data = np.arange(n, dtype=dtype).tobytes()
+        result = subject.np_frombuffer_legacy(data, n)
+        assert result.shape == (n,)
+        np.testing.assert_allclose(result, np.arange(n))
