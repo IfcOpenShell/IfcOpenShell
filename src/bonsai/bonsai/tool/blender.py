@@ -2377,7 +2377,7 @@ class Blender(bonsai.core.tool.Blender):
 
         See https://projects.blender.org/blender/blender/issues/149283
         """
-        if len(bytedata) == (n * 2):
+        if len(bytedata) == (n * 8):  # float64 has 8 bytes per element
             return np.frombuffer(bytedata, dtype=np.float64).astype(np.float32)
         return np.frombuffer(bytedata, dtype=np.float32)
 
