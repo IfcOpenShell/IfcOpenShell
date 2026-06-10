@@ -277,20 +277,40 @@ typedef item const* ptr;
 			struct IFC_GEOM_API matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
 				void init(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) {
-					auto Z = z.normalized();
-					auto Y = Z.cross(x).normalized();
-					auto X = Y.cross(Z);
-					components_ = new Eigen::Matrix4d;
-					(*components_) <<
-						X(0), Y(0), Z(0), o(0),
-						X(1), Y(1), Z(1), o(1),
-						X(2), Y(2), Z(2), o(2),
-						0, 0, 0, 1.;
-					if (is_identity()) {
-						// @todo detect this earlier to save us the heapalloc.
-						delete components_;
-						components_ = nullptr;
-						tag = IDENTITY;
+                  auto valid_and_non_zero_extent = [](const Eigen::Vector3d&v,double eps = 1.e-9) {
+							 return v.allFinite() && v.squaredNorm() > eps*eps;
+                    };
+
+					// check z and x are valid vectors
+					if (!valid_and_non_zero_extent(z) || !valid_and_non_zero_extent(x)) {
+                  throw std::runtime_error("Invalid during for matrix4 construction");   
+					}
+
+					auto Z = z.normalized(); // ensure Z is a unit vector
+					auto Y = Z.cross(x); // Y is orthogonal to x and Z
+
+					// make sure Y is a valid vector
+					if (!valid_and_non_zero_extent(Y)) {
+						throw std::runtime_error("Parallel or degenerate matrix4 construction");
+               }
+
+					Y.normalize(); // ensure Y is a unit vector
+					auto X = Y.cross(Z); // X is orthogonal to Y and Z, and a unit vector
+
+					// check if this is going to be an identity matrix
+					double eps = 1.e-9;
+					if (X.isApprox(Eigen::Vector3d(1., 0., 0.), eps) &&
+ 						 Y.isApprox(Eigen::Vector3d(0., 1., 0.), eps) &&
+						 Z.isApprox(Eigen::Vector3d(0., 0., 1.), eps) &&
+						 o.isApprox(Eigen::Vector3d(0., 0., 0.), eps)) // in the full 4x4 matrix, this will be (0,0,0,1)
+					{
+                  tag = IDENTITY;
+					} else {
+                  components_ = new Eigen::Matrix4d;
+                  (*components_) << X(0), Y(0), Z(0), o(0),
+												X(1), Y(1), Z(1), o(1),
+												X(2), Y(2), Z(2), o(2),
+												0, 0, 0, 1.;
 					}
 				}
 			public:
