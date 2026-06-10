@@ -2619,7 +2619,7 @@ class GizmoPipeSegmentEdition(bpy.types.GizmoGroup, _MEPSegmentEditionMixin, giz
 
     @classmethod
     def is_element_type(cls, element):
-        return tool.Parametric.is_pipe_segment(element)
+        return tool.Parametric.is_pipe_segment(element) and tool.System.has_parametric_body(element)
 
 
 class GizmoDuctSegmentEdition(bpy.types.GizmoGroup, _MEPSegmentEditionMixin, gizmo.BaseParametricGizmoGroup):
@@ -2646,7 +2646,7 @@ class GizmoDuctSegmentEdition(bpy.types.GizmoGroup, _MEPSegmentEditionMixin, giz
 
     @classmethod
     def is_element_type(cls, element):
-        return tool.Parametric.is_duct_segment(element)
+        return tool.Parametric.is_duct_segment(element) and tool.System.has_parametric_body(element)
 
 
 # --- GizmoMEPActions group + visibility helpers ----------------------------
@@ -2658,9 +2658,9 @@ def _selection_size() -> int:
 
 def _active_is_flow_segment(obj: bpy.types.Object) -> bool:
     element = tool.Ifc.get_entity(obj)
-    if element is None:
+    if element is None or not element.is_a("IfcFlowSegment"):
         return False
-    return element.is_a("IfcFlowSegment")
+    return tool.System.has_parametric_body(element)
 
 
 def _active_mep_has_connected_neighbor(obj: bpy.types.Object) -> bool:
@@ -2677,7 +2677,10 @@ def _active_mep_has_connected_neighbor(obj: bpy.types.Object) -> bool:
 
 
 def _active_is_bend_fitting(obj: bpy.types.Object) -> bool:
-    return _is_bend_fitting(tool.Ifc.get_entity(obj))
+    element = tool.Ifc.get_entity(obj)
+    if not _is_bend_fitting(element):
+        return False
+    return tool.System.has_parametric_body(element)
 
 
 class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
@@ -2789,9 +2792,9 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
         if bend_props is not None and bend_props.is_active:
             return False
         element = tool.Ifc.get_entity(obj)
-        if element is None:
+        if element is None or not tool.System.is_mep_element(element):
             return False
-        return tool.System.is_mep_element(element)
+        return tool.System.has_parametric_body(element)
 
     def setup(self, context: bpy.types.Context) -> None:
         super().setup(context)

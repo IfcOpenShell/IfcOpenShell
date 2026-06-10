@@ -170,11 +170,12 @@ def test_gizmo_group_class_wiring(gizmo_cls_name, bl_idname, is_element_predicat
 
     cls = getattr(mep, gizmo_cls_name)
     assert cls.bl_idname == bl_idname
-    # The element_type predicate must delegate to the matching tool.Parametric.is_*.
     predicate = getattr(tool.Parametric, is_element_predicate)
     fake_element = Mock()
     fake_element.is_a.return_value = True
-    with patch.object(tool.Parametric, is_element_predicate, side_effect=predicate) as p:
+    with patch.object(tool.Parametric, is_element_predicate, side_effect=predicate) as p, patch.object(
+        tool.System, "has_parametric_body", return_value=True
+    ):
         cls.is_element_type(fake_element)
     assert p.called, f"{gizmo_cls_name}.is_element_type did not delegate to Parametric.{is_element_predicate}"
 

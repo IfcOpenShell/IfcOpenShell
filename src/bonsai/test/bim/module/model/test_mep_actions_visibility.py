@@ -214,7 +214,9 @@ def test_active_is_flow_segment_handles_unbound_object():
 
 def test_active_is_flow_segment_classifies_segment_vs_fitting():
     """Only IfcFlowSegment lights the lock-icon row; IfcFlowFitting (the
-    bend's own class) does not."""
+    bend's own class) does not. The parametric-body gate is mocked True
+    here — its dedicated truth-table is in test_mep_actions_visibility
+    sibling tests."""
     from bonsai.bim.module.model.mep import _active_is_flow_segment
 
     segment_elem = Mock()
@@ -223,10 +225,11 @@ def test_active_is_flow_segment_classifies_segment_vs_fitting():
     fitting_elem.is_a = lambda c: c == "IfcFlowFitting"
 
     plain = Mock()
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment_elem):
-        assert _active_is_flow_segment(plain) is True
-    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=fitting_elem):
-        assert _active_is_flow_segment(plain) is False
+    with patch("bonsai.bim.module.model.mep.tool.System.has_parametric_body", return_value=True):
+        with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment_elem):
+            assert _active_is_flow_segment(plain) is True
+        with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=fitting_elem):
+            assert _active_is_flow_segment(plain) is False
 
 
 def test_active_mep_has_connected_neighbor_returns_false_on_no_entity():
