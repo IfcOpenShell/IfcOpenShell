@@ -171,12 +171,12 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 				segments.push_back(std::make_pair(C, D));
 			});
 
-			if (edge_sets.find({loop->external.get_value_or(false), segment_set}) != edge_sets.end()) {
+			if (edge_sets.find({loop->external.value_or(false), segment_set}) != edge_sets.end()) {
 				duplicate_faces++;
 				duplicates_.insert(loop->identity());
 				continue;
 			}
-            edge_sets.insert({loop->external.get_value_or(false), segment_set});
+            edge_sets.insert({loop->external.value_or(false), segment_set});
 
 			if (segments.size() >= 3) {
 				for (auto& p : segments) {

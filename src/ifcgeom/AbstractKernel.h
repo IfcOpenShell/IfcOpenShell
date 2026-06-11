@@ -161,7 +161,7 @@ namespace {
 			if (kernel->partial_success_is_success) {
 				std::string created_from;
 				if (item->instance) {
-					created_from = " (created from " + item->instance->declaration().name() + ")";
+					created_from = " (created from " + item->instance.declaration().name() + ")";
 				}
 				logger::error("No support for " + ifcopenshell::geometry::taxonomy::kind_to_string(item->kind()) + created_from + " in kernel " + kernel->geometry_library());
 			}
@@ -187,7 +187,7 @@ namespace {
 			if (kernel->partial_success_is_success) {
 				std::string created_from;
 				if (item->instance) {
-					created_from = " (created from " + item->instance->declaration().name() + ")";
+					created_from = " (created from " + item->instance.declaration().name() + ")";
 				}
 				logger::error("No support (after considering item upgrade) for " + ifcopenshell::geometry::taxonomy::kind_to_string(item->kind()) + created_from + " in kernel " + kernel->geometry_library());
 			}

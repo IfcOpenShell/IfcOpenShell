@@ -197,7 +197,7 @@ std::vector<express::Base> mapping::find_openings(const express::Base& inst) {
                 // Only aggregation, not nesting is considered.
                 break;
             }
-            express::Base rel_obdef;
+            IfcSchema::IfcObjectDefinition rel_obdef;
             try {
                 rel_obdef = decomposes.front().as<IfcSchema::IfcRelAggregates>().RelatingObject();
             } catch (const std::exception&) {
