@@ -362,7 +362,7 @@ void set_children_of_relation(IfcUtil::IfcBaseClass* t, aggregate_of_instance::p
 template <typename Schema>
 class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
   public:
-    IfcHierarchyHelper() : IfcParse::IfcFile(&Schema::get_schema()) {}
+    IfcHierarchyHelper(Logger& logger = Logger::Root()) : IfcParse::IfcFile(&Schema::get_schema(), IfcParse::FT_AUTODETECT, "", logger) {}
 
     template <class T>
     T* addTriplet(double x, double y, double z) {
@@ -436,7 +436,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                 }
                 typename Schema::IfcObject::list::ptr related_objects(new aggregate_of<typename Schema::IfcObject>());
                 related_objects->push(related_object->template as<typename Schema::IfcObject>());
-                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, relating_object->template as<typename Schema::IfcTypeObject>());
+                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(this->logger()), owner_hist, boost::none, boost::none, related_objects, relating_object->template as<typename Schema::IfcTypeObject>());
 
                 addEntity(t);
             }
@@ -454,9 +454,9 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                         break;
                     }
                 } catch (std::exception& e) {
-                    Logger::Root().Error("SYN", 9, e);
+                    this->logger().Error("SYN", 9, e);
                 } catch (...) {
-                    Logger::Root().Error("SYN", 10, "Unknown error in addRelatedObject()");
+                    this->logger().Error("SYN", 10, "Unknown error in addRelatedObject()");
                 }
             }
             if (!found) {
@@ -471,7 +471,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                 related_objects->push(related_object);
 
                 T* t = create(&T::Class())->template as<T>();
-                t->set_attribute_value(0, (std::string)IfcParse::IfcGlobalId());
+                t->set_attribute_value(0, (std::string)IfcParse::IfcGlobalId(this->logger()));
                 t->set_attribute_value(1, owner_hist);
                 int relating_index = 4;
                 int related_index = 5;

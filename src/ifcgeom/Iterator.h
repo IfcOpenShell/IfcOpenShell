@@ -79,6 +79,7 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
+#include <memory>
 
 namespace IfcGeom {
 
@@ -133,6 +134,7 @@ namespace IfcGeom {
 		
 		// When multi-threaded
 		std::vector<ifcopenshell::geometry::Converter*> kernel_pool;
+		std::vector<std::unique_ptr<Logger>> worker_loggers_;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement* current_triangulation;
@@ -200,7 +202,10 @@ namespace IfcGeom {
 		IfcGeom::Element* process_based_on_settings(
 			ifcopenshell::geometry::Settings settings,
 			IfcGeom::BRepElement* elem,
+			Logger& logger,
 			IfcGeom::TriangulationElement* previous = nullptr);
+
+		void flush_worker_log(ifcopenshell::geometry::Converter* kernel);
 
 		bool wait_for_element();
 
@@ -293,7 +298,7 @@ namespace IfcGeom {
 
 		size_t processed_ = 0;
 
-		void process_finished_rep(geometry_conversion_result* rep);
+		void process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geometry::Converter* kernel = nullptr);
 
 		void process_concurrently();
 

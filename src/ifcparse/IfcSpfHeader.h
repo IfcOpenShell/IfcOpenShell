@@ -25,6 +25,8 @@
 #include "Header_section_schema.h"
 #include "storage.h"
 
+#include <functional>
+
 namespace IfcParse {
 
 class IfcFile;
@@ -32,6 +34,7 @@ class IfcFile;
 class IFC_PARSE_API IfcSpfHeader {
   private:
     IfcFile* file_;
+    std::reference_wrapper<Logger> logger_;
 	IfcParse::impl::in_memory_file_storage* storage_ = nullptr;
 
     mutable Header_section_schema::file_description* file_description_;
@@ -45,13 +48,14 @@ class IFC_PARSE_API IfcSpfHeader {
     void readTerminal(const std::string& term, Trail trail);
 
   public:
-    explicit IfcSpfHeader(IfcParse::IfcFile* file = nullptr);
-    explicit IfcSpfHeader(IfcParse::IfcSpfLexer* lexer);
+    explicit IfcSpfHeader(IfcParse::IfcFile* file = nullptr, Logger& logger = Logger::Root());
+    explicit IfcSpfHeader(IfcParse::IfcSpfLexer* lexer, Logger& logger = Logger::Root());
 
     ~IfcSpfHeader();
 
     IfcParse::IfcFile* file() { return file_; }
     void file(IfcParse::IfcFile* file);
+    Logger& logger() const { return logger_.get(); }
 
     void read();
     bool tryRead();

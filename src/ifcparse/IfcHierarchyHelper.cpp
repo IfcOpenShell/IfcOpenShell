@@ -129,7 +129,7 @@ typename Schema::IfcProject* IfcHierarchyHelper<Schema>::addProject(typename Sch
 
     typename Schema::IfcUnitAssignment* unit_assignment = new typename Schema::IfcUnitAssignment(units);
 
-    typename Schema::IfcProject* project = new typename Schema::IfcProject(IfcParse::IfcGlobalId(),
+    typename Schema::IfcProject* project = new typename Schema::IfcProject(IfcParse::IfcGlobalId(this->logger()),
                                                                            owner_hist,
                                                                            boost::none,
                                                                            boost::none,
@@ -159,7 +159,7 @@ void IfcHierarchyHelper<Schema>::relatePlacements(typename Schema::IfcProduct* p
             if (local_place != parent->ObjectPlacement()) {
                 local_place->setPlacementRelTo(parent->ObjectPlacement());
             } else {
-                Logger::Root().Notice("SYN", 8, "Placement cannot be relative to self");
+                this->logger().Notice("SYN", 8, "Placement cannot be relative to self");
             }
         }
     }
@@ -180,7 +180,7 @@ typename Schema::IfcSite* IfcHierarchyHelper<Schema>::addSite(typename Schema::I
         proj = addProject(owner_hist);
     }
 
-    typename Schema::IfcSite* site = new typename Schema::IfcSite(IfcParse::IfcGlobalId(),
+    typename Schema::IfcSite* site = new typename Schema::IfcSite(IfcParse::IfcGlobalId(this->logger()),
                                                                   owner_hist,
                                                                   boost::none,
                                                                   boost::none,
@@ -214,7 +214,7 @@ typename Schema::IfcBuilding* IfcHierarchyHelper<Schema>::addBuilding(typename S
     if (!site) {
         site = addSite(0, owner_hist);
     }
-    typename Schema::IfcBuilding* building = new typename Schema::IfcBuilding(IfcParse::IfcGlobalId(),
+    typename Schema::IfcBuilding* building = new typename Schema::IfcBuilding(IfcParse::IfcGlobalId(this->logger()),
                                                                               owner_hist,
                                                                               boost::none,
                                                                               boost::none,
@@ -249,7 +249,7 @@ typename Schema::IfcBuildingStorey* IfcHierarchyHelper<Schema>::addBuildingStore
     if (!building) {
         building = addBuilding(0, owner_hist);
     }
-    typename Schema::IfcBuildingStorey* storey = new typename Schema::IfcBuildingStorey(IfcParse::IfcGlobalId(),
+    typename Schema::IfcBuildingStorey* storey = new typename Schema::IfcBuildingStorey(IfcParse::IfcGlobalId(this->logger()),
                                                                                         owner_hist,
                                                                                         boost::none,
                                                                                         boost::none,

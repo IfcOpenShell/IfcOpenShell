@@ -110,6 +110,7 @@ Token GeneralTokenPtr(IfcSpfLexer* tokens, size_t start, const std::string& data
 class IFC_PARSE_API IfcSpfLexer {
   private:
     IfcCharacterDecoder* decoder_;
+    Logger& logger_;
     size_t skipWhitespace() const;
     size_t skipComment() const;
 
@@ -120,7 +121,8 @@ class IFC_PARSE_API IfcSpfLexer {
     }
     FileReader* stream;
     // IfcFile* file;
-    IfcSpfLexer(FileReader* stream);
+    IfcSpfLexer(FileReader* stream, Logger& logger = Logger::Root());
+    Logger& logger() const { return logger_; }
     Token Next();
     ~IfcSpfLexer();
     void TokenString(size_t offset, std::string& result);

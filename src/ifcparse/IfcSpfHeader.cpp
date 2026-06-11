@@ -30,12 +30,12 @@ static const char* const DATA = "DATA";
 using namespace IfcParse;
 
 namespace {
-    IfcEntityInstanceData read_from_spf_file(IfcParse::impl::in_memory_file_storage* storage, const IfcParse::entity* decl) {
+    IfcEntityInstanceData read_from_spf_file(IfcParse::impl::in_memory_file_storage* storage, const IfcParse::entity* decl, Logger& logger) {
         if (storage != nullptr) {
             parse_context pc;
             storage->tokens->Next();
             storage->load(-1, nullptr, pc, -1);
-            return pc.construct(boost::none, *storage->references_to_resolve, decl, decl->as_entity()->attribute_count(), -1);
+            return pc.construct(boost::none, *storage->references_to_resolve, decl, decl->as_entity()->attribute_count(), -1, logger);
         } else {
             // std::unreachable();
             return IfcEntityInstanceData(in_memory_attribute_storage(10));
@@ -66,13 +66,18 @@ void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
     }
 }
 
-IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
+IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file, Logger& logger)
     : file_(file),
+    logger_(logger),
     file_description_(nullptr),
     file_name_(nullptr),
     file_schema_(nullptr)
 {
     Header_section_schema::get_schema();
+
+    if (file != nullptr) {
+        logger_ = file->logger();
+    }
 
     if (file == nullptr) {
         // overwritten later in IfcFile::setDefaultHeaderValues() when we know the schema identifier
@@ -101,11 +106,12 @@ IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
     }
 }
 
-IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcSpfLexer* lexer)
+IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcSpfLexer* lexer, Logger& logger)
+    : logger_(logger)
 {
     Header_section_schema::get_schema();
 
-	storage_ = new impl::in_memory_file_storage;
+	storage_ = new impl::in_memory_file_storage(nullptr, logger_.get());
 	storage_->tokens = lexer;
     file_ = nullptr;
 
@@ -128,6 +134,7 @@ void IfcParse::IfcSpfHeader::file(IfcParse::IfcFile* file)
 {
     this->file_ = file;
     if (file != nullptr) {
+        logger_ = file->logger();
         storage_ = std::visit([this](auto& m) -> decltype(storage_) {
             if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
                 return &m;
@@ -153,19 +160,19 @@ void IfcSpfHeader::read() {
 
     readTerminal(Header_section_schema::file_description::Class().name_uc(), NONE);
     delete file_description_;
-    file_description_ = new Header_section_schema::file_description(read_from_spf_file(storage_, &Header_section_schema::file_description::Class()));
+    file_description_ = new Header_section_schema::file_description(read_from_spf_file(storage_, &Header_section_schema::file_description::Class(), logger_.get()));
     file_description_->file_ = file_;
     readSemicolon();
 
     readTerminal(Header_section_schema::file_name::Class().name_uc(), NONE);
     delete file_name_;
-    file_name_ = new Header_section_schema::file_name(read_from_spf_file(storage_, &Header_section_schema::file_name::Class()));
+    file_name_ = new Header_section_schema::file_name(read_from_spf_file(storage_, &Header_section_schema::file_name::Class(), logger_.get()));
     file_name_->file_ = file_;
     readSemicolon();
 
     readTerminal(Header_section_schema::file_schema::Class().name_uc(), NONE);
     delete file_schema_;
-    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(storage_, &Header_section_schema::file_schema::Class()));
+    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(storage_, &Header_section_schema::file_schema::Class(), logger_.get()));
     file_schema_->file_ = file_;
     readSemicolon();
 }
@@ -175,7 +182,7 @@ bool IfcSpfHeader::tryRead() {
         read();
         return true;
     } catch (const std::exception& e) {
-        Logger::Root().Error("SYN", 28, e);
+        logger_.get().Error("SYN", 28, e);
         return false;
     }
 }

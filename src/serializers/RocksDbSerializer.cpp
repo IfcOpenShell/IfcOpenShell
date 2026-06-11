@@ -19,7 +19,7 @@ RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string&
 	options.merge_operator.reset(new ConcatenateIdMergeOperator());
 	rocksdb::Status status = rocksdb::DB::Open(options, rocksdb_filename, &db_);*/
 
-	output_file_ = new IfcParse::IfcFile(file->schema(), IfcParse::FT_ROCKSDB, rocksdb_filename_);
+	output_file_ = new IfcParse::IfcFile(file->schema(), IfcParse::FT_ROCKSDB, rocksdb_filename_, logger);
 
 	// We promise never to add the same instance twice
 	output_file_->check_existance_before_adding = false;

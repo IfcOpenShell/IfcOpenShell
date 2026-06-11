@@ -77,7 +77,9 @@
 
 using namespace IfcParse;
 
-IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::FileReader* stream) {
+IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::FileReader* stream, Logger& logger)
+    : logger_(logger)
+{
     stream_ = stream;
     codepage_ = 0;
 }
@@ -86,7 +88,7 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
 }
 
 namespace {
-    std::string read_string(IfcParse::FileReader& stream_, IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
+    std::string read_string(IfcParse::FileReader& stream_, Logger& logger, IfcParse::IfcCharacterDecoder::ConversionMode mode, char substitution_character) {
         std::u32string builder_;
 
         unsigned int parse_state = 0;
@@ -137,7 +139,7 @@ namespace {
                 parse_state += PAGE;
             } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
                 if (IS_LOWERCASE_HEX(current_char)) {
-                    Logger::Root().Warning("SYN", 2, "Lowercase hexadecimal character '" + std::string(1, current_char) +
+                    logger.Warning("SYN", 2, "Lowercase hexadecimal character '" + std::string(1, current_char) +
                                     "' found at offset " + std::to_string(stream_.tell()) +
                                     ". It is recommended to use uppercase for hexadecimal.");
                 }
@@ -211,13 +213,13 @@ namespace {
 } // namespace
 
 IfcCharacterDecoder::operator std::string() {
-    return read_string(*stream_, mode, substitution_character);
+    return read_string(*stream_, logger_, mode, substitution_character);
 }
 
 std::string IfcCharacterDecoder::get(size_t& ptr) {
     auto local_stream = *stream_;
     local_stream.seek(ptr);
-    auto s = read_string(local_stream, mode, substitution_character);
+    auto s = read_string(local_stream, logger_, mode, substitution_character);
 	ptr = local_stream.tell();
     return s;
 }

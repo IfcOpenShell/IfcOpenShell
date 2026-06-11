@@ -21,6 +21,7 @@
 #define IFCGLOBALID_H
 
 #include "ifc_parse_api.h"
+#include "IfcLogger.h"
 
 #include <boost/uuid/uuid.hpp>
 #include <string>
@@ -36,8 +37,8 @@ class IFC_PARSE_API IfcGlobalId {
 
   public:
     static const unsigned int length = 22;
-    IfcGlobalId();
-    IfcGlobalId(const std::string&);
+    IfcGlobalId(Logger& logger = Logger::Root());
+    IfcGlobalId(const std::string&, Logger& logger = Logger::Root());
     operator const std::string&() const;
     operator const boost::uuids::uuid&() const;
     const std::string& formatted() const;

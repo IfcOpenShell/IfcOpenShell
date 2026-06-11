@@ -49,10 +49,10 @@ IFC_PARSE_API Ifc4x3_add2::IfcAlignment* addAlignment(IfcHierarchyHelper<Ifc4x3_
 // Maps horizontal alignment business logic to geometry.
 // Bloss curves have two geometry elements for one horizontal alignment segment. That is the reason for returning a pair.
 // Typically the first element of the pair will have the geometry and the second element will be nullptr
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentSegment(const Ifc4x3_add2::IfcAlignmentSegment* segment);
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentHorizontalSegment(const Ifc4x3_add2::IfcAlignmentHorizontalSegment* segment);
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentVerticalSegment(const Ifc4x3_add2::IfcAlignmentVerticalSegment* segment);
-IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentCantSegment(const Ifc4x3_add2::IfcAlignmentCantSegment* segment);
+IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentSegment(const Ifc4x3_add2::IfcAlignmentSegment* segment, Logger& logger = Logger::Root());
+IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentHorizontalSegment(const Ifc4x3_add2::IfcAlignmentHorizontalSegment* segment, Logger& logger = Logger::Root());
+IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentVerticalSegment(const Ifc4x3_add2::IfcAlignmentVerticalSegment* segment, Logger& logger = Logger::Root());
+IFC_PARSE_API std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlignmentCantSegment(const Ifc4x3_add2::IfcAlignmentCantSegment* segment, Logger& logger = Logger::Root());
 #endif
 
 

@@ -31,14 +31,15 @@
 #include <mutex>
 #include <sstream>
 #include <string>
+#include <vector>
 
 class IFC_PARSE_API log_message {
   public:
     char code[7];
     int severity;
-    std::string message, instance;
+    std::string message, instance, product;
 
-    log_message(int severity, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* inst = 0)
+    log_message(int severity, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* inst = 0, const IfcUtil::IfcBaseClass* current_product = 0)
         : severity(severity)
         , message(message)
     {
@@ -47,6 +48,11 @@ class IFC_PARSE_API log_message {
             std::ostringstream oss;
             inst->data().toString(nullptr, nullptr, 0, oss, true);
             instance = oss.str();
+        }
+        if (current_product) {
+            std::ostringstream oss;
+            current_product->toString(oss);
+            product = oss.str();
         }
     }
 };
@@ -79,6 +85,7 @@ class IFC_PARSE_API Logger {
     std::wostream* wlog2_ = nullptr;
 
     std::stringstream log_stream_;
+    const IfcUtil::IfcBaseClass* current_product_ = nullptr;
 
     Severity verbosity_ = LOG_NOTICE;
     Format format_ = FMT_PLAIN;
@@ -134,8 +141,11 @@ class IFC_PARSE_API Logger {
 
     void ProgressBar(int progress);
     std::string GetLog();
+    void ClearLog();
+    void Append(Logger& logger);
     void PrintPerformanceStats();
     void PrintPerformanceStatsOnElement(bool b) { print_perf_stats_on_element_ = b; }
+    bool PrintPerformanceStatsOnElement() const { return print_perf_stats_on_element_; }
 
     const std::vector<log_message>& log_messages() const { return log_messages_; }
 };

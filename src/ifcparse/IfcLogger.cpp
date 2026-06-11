@@ -32,8 +32,6 @@
 #include <iomanip>
 #include <iostream>
 
-static my_thread_local std::map<const Logger*, const IfcUtil::IfcBaseClass*> current_products_;
-
 namespace {
 
 std::string get_time(bool with_milliseconds = false) {
@@ -139,16 +137,11 @@ Logger& Logger::Root() {
 }
 
 const IfcUtil::IfcBaseClass* Logger::current_product() const {
-    auto it = current_products_.find(this);
-    return it == current_products_.end() ? nullptr : it->second;
+    return current_product_;
 }
 
 void Logger::current_product(const IfcUtil::IfcBaseClass* product) {
-    if (product) {
-        current_products_[this] = product;
-    } else {
-        current_products_.erase(this);
-    }
+    current_product_ = product;
 }
 
 void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
@@ -206,7 +199,7 @@ void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16
     }
 
     if (format_ == FMT_INMEMORY) {
-        log_messages_.emplace_back(type, code_prefix, code_number, message, instance);
+        log_messages_.emplace_back(type, code_prefix, code_number, message, instance, current_product());
     } else if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
@@ -251,7 +244,46 @@ void Logger::ProgressBar(int progress) {
 }
 
 std::string Logger::GetLog() {
+    std::lock_guard<std::mutex> lock(mutex_);
     return log_stream_.str();
+}
+
+void Logger::ClearLog() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    log_stream_.str(std::string());
+    log_stream_.clear();
+    log_messages_.clear();
+}
+
+void Logger::Append(Logger& logger) {
+    if (&logger == this) {
+        return;
+    }
+
+    std::scoped_lock lock(mutex_, logger.mutex_);
+
+    if (logger.max_severity_ > max_severity_) {
+        max_severity_ = logger.max_severity_;
+    }
+
+    if (format_ == FMT_INMEMORY) {
+        log_messages_.insert(log_messages_.end(), logger.log_messages_.begin(), logger.log_messages_.end());
+    } else {
+        const std::string log = logger.log_stream_.str();
+        if (!log.empty()) {
+            if (log2_ != nullptr) {
+                *log2_ << log;
+            } else if (wlog2_ != nullptr) {
+                *wlog2_ << string_as<wchar_t>(log);
+            } else {
+                log_stream_ << log;
+            }
+        }
+    }
+
+    logger.log_stream_.str(std::string());
+    logger.log_stream_.clear();
+    logger.log_messages_.clear();
 }
 
 void Logger::PrintPerformanceStats() {

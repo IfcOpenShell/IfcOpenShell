@@ -97,8 +97,8 @@ namespace ifcopenshell {
 					: AbstractKernel("cgal", settings, logger)
 				{}
 
-				virtual AbstractKernel* clone() const {
-					return new CgalKernel(settings(), logger());
+				virtual AbstractKernel* clone(Logger& logger) const {
+					return new CgalKernel(settings(), logger);
 				}
 
 				virtual bool supports_boolean_operations() const {

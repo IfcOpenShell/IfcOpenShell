@@ -216,6 +216,7 @@ struct cant_curve_segment_function {
 class curve_segment_evaluator {
   private:
     mapping* mapping_ = nullptr;
+    Logger& logger_;
     const IfcSchema::IfcCurveSegment* inst_ = nullptr;      // this curve segment instance
     double length_unit_;
     double start_;
@@ -234,6 +235,7 @@ class curve_segment_evaluator {
   public:
     curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, double length_unit)
         : mapping_(mapping),
+          logger_(mapping->logger()),
           inst_(inst),
           length_unit_(length_unit),
           parent_curve_(inst->ParentCurve()) {
@@ -1136,18 +1138,18 @@ class curve_segment_evaluator {
             // A numerical solution is required.
             // This functor finds the value of x such that s(x) - u = 0, where u is the input value and s is the
             // computed curve length.
-            x_at_dist_along = [curve_length_fn,mapping=mapping_](double u) -> double {
+            x_at_dist_along = [curve_length_fn, this](double u) -> double {
                 std::uintmax_t max_iter = 9000;
                 auto tol = [](double a, double b) { return fabs(b - a) < 1.0E-11; };
                 auto x = u; // start by assuming u = x (it's not, but it will be close)
                 try {
                     // set up the root finding function that evaluates s(x) - u
-                    auto f = [curve_length_fn, u,mapping=mapping](double x) -> double { return curve_length_fn(x) - u; };
+                    auto f = [curve_length_fn, u](double x) -> double { return curve_length_fn(x) - u; };
                     // use a root finder to get x
                     auto result = boost::math::tools::bracket_and_solve_root(f, x, 2.0, true, tol, max_iter);
                     x = result.first;
                 } catch (...) {
-                    mapping->logger().Warning("GEO", 253, "root solver failed");
+                    logger_.Warning("GEO", 253, "root solver failed");
                 }
                 return x;
             };
