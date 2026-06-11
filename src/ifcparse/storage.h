@@ -28,7 +28,11 @@ namespace rocksdb {
 #include <boost/unordered_map.hpp>
 
 #include <variant>
+#include <algorithm>
+#include <cstdint>
 #include <iterator>
+#include <map>
+#include <memory>
 #include <type_traits>
 #include <iostream>
 #include <deque>
@@ -37,6 +41,7 @@ namespace rocksdb {
 #include <list>
 #include <mutex>
 #include <set>
+#include <unordered_map>
 
 #ifndef SWIG
 
@@ -131,7 +136,7 @@ namespace ifcopenshell {
     };
 
     typedef std::variant<instance_reference, express::Base> reference_or_simple_type;
-    typedef std::list<std::pair<mutable_attribute_value, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
+    typedef std::vector<std::pair<mutable_attribute_value, std::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
 
     class file;
     template <typename Reader>
@@ -205,38 +210,206 @@ namespace ifcopenshell {
         }
     };
 
-    struct IFC_PARSE_API parse_context {
-        std::vector<
-            std::variant<
-            express::Base,
-            token,
-            parse_context*
-            >> tokens_;
-
-        parse_context() {}
-        ~parse_context();
-
-        parse_context(const parse_context& other) = delete;
-        parse_context& operator=(const parse_context& other) = delete;
-
-        parse_context(parse_context&& other) = default;
-        parse_context& operator=(parse_context&& other) = default;
-
-        parse_context& push();
-
-        void push(token next_token);
-
-        void push(const express::Base& instance);
-
-        std::shared_ptr<instance_data> construct(ifcopenshell::file* owner_file, std::optional<size_t> instance_name, unresolved_references& references_to_resolve, const ifcopenshell::declaration* declaration, std::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count = true);
-    };
-
     namespace impl {
+        struct inverse_record {
+            uint32_t referenced_id;
+            uint32_t source_id;
+            uint16_t source_entity;
+            int16_t attribute_index;
+        };
+
+        class inverse_index {
+        public:
+            typedef std::map<std::tuple<short, short>, std::vector<uint32_t>> legacy_bucket_t;
+            typedef std::unordered_map<int, legacy_bucket_t> legacy_map_t;
+            typedef legacy_map_t::key_type key_type;
+            typedef legacy_map_t::mapped_type mapped_type;
+            typedef legacy_map_t::value_type value_type;
+            typedef legacy_map_t::iterator iterator;
+            typedef legacy_map_t::const_iterator const_iterator;
+            typedef std::vector<inverse_record>::const_iterator record_iterator;
+
+        private:
+            mutable std::vector<inverse_record> records_;
+            mutable bool sorted_ = true;
+            mutable std::unique_ptr<legacy_map_t> materialized_;
+
+            static bool record_less(const inverse_record& a, const inverse_record& b) {
+                if (a.referenced_id != b.referenced_id) {
+                    return a.referenced_id < b.referenced_id;
+                }
+                if (a.source_entity != b.source_entity) {
+                    return a.source_entity < b.source_entity;
+                }
+                if (a.attribute_index != b.attribute_index) {
+                    return a.attribute_index < b.attribute_index;
+                }
+                return a.source_id < b.source_id;
+            }
+
+            static bool referenced_less(const inverse_record& a, uint32_t referenced_id) {
+                return a.referenced_id < referenced_id;
+            }
+
+            static bool referenced_less(uint32_t referenced_id, const inverse_record& a) {
+                return referenced_id < a.referenced_id;
+            }
+
+            void invalidate_materialized() const {
+                materialized_.reset();
+            }
+
+            legacy_map_t& materialize() const {
+                if (!materialized_) {
+                    materialized_ = std::make_unique<legacy_map_t>();
+                    materialized_->reserve(records_.size());
+                    for (const auto& record : records_) {
+                        (*materialized_)[(int)record.referenced_id][{(short)record.source_entity, (short)record.attribute_index}].push_back(record.source_id);
+                    }
+                }
+                return *materialized_;
+            }
+
+        public:
+            inverse_index() = default;
+
+            inverse_index(const inverse_index& other)
+                : records_(other.records_)
+                , sorted_(other.sorted_)
+            {}
+
+            inverse_index& operator=(const inverse_index& other) {
+                if (this != &other) {
+                    records_ = other.records_;
+                    sorted_ = other.sorted_;
+                    materialized_.reset();
+                }
+                return *this;
+            }
+
+            inverse_index(inverse_index&&) noexcept = default;
+            inverse_index& operator=(inverse_index&&) noexcept = default;
+
+            void reserve(size_t size) {
+                records_.reserve(size);
+            }
+
+            void add(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
+                records_.push_back({referenced_id, source_id, source_entity, (int16_t)attribute_index});
+                sorted_ = false;
+                invalidate_materialized();
+            }
+
+            bool remove(uint32_t referenced_id, uint32_t source_id, uint16_t source_entity, int attribute_index) {
+                const inverse_record needle{referenced_id, source_id, source_entity, (int16_t)attribute_index};
+                auto it = std::find_if(records_.begin(), records_.end(), [&needle](const inverse_record& record) {
+                    return record.referenced_id == needle.referenced_id &&
+                        record.source_id == needle.source_id &&
+                        record.source_entity == needle.source_entity &&
+                        record.attribute_index == needle.attribute_index;
+                });
+                if (it == records_.end()) {
+                    return false;
+                }
+                records_.erase(it);
+                invalidate_materialized();
+                return true;
+            }
+
+            void remove_source(uint32_t source_id) {
+                records_.erase(std::remove_if(records_.begin(), records_.end(), [source_id](const inverse_record& record) {
+                    return record.source_id == source_id;
+                }), records_.end());
+                invalidate_materialized();
+            }
+
+            void sort() const {
+                if (!sorted_) {
+                    std::sort(records_.begin(), records_.end(), record_less);
+                    sorted_ = true;
+                    invalidate_materialized();
+                }
+            }
+
+            std::pair<record_iterator, record_iterator> equal_range(uint32_t referenced_id) const {
+                sort();
+                return std::equal_range(records_.begin(), records_.end(), referenced_id, [](const auto& a, const auto& b) {
+                    if constexpr (std::is_same_v<std::decay_t<decltype(a)>, inverse_record>) {
+                        return referenced_less(a, b);
+                    } else {
+                        return referenced_less(a, b);
+                    }
+                });
+            }
+
+            const std::vector<inverse_record>& records() const {
+                sort();
+                return records_;
+            }
+
+            bool empty() const {
+                return records_.empty();
+            }
+
+            size_t size() const {
+                return records_.size();
+            }
+
+            void clear() {
+                records_.clear();
+                sorted_ = true;
+                materialized_.reset();
+            }
+
+            iterator begin() {
+                return materialize().begin();
+            }
+
+            iterator end() {
+                return materialize().end();
+            }
+
+            const_iterator begin() const {
+                return materialize().begin();
+            }
+
+            const_iterator end() const {
+                return materialize().end();
+            }
+
+            iterator find(const key_type& key) {
+                return materialize().find(key);
+            }
+
+            const_iterator find(const key_type& key) const {
+                return materialize().find(key);
+            }
+
+            size_t erase(const key_type& key) {
+                const auto old_size = records_.size();
+                records_.erase(std::remove_if(records_.begin(), records_.end(), [key](const inverse_record& record) {
+                    return record.referenced_id == (uint32_t)key;
+                }), records_.end());
+                invalidate_materialized();
+                return old_size - records_.size();
+            }
+
+            std::pair<iterator, bool> insert(const value_type& value) {
+                for (const auto& bucket : value.second) {
+                    for (auto source_id : bucket.second) {
+                        add((uint32_t)value.first, source_id, (uint16_t)std::get<0>(bucket.first), std::get<1>(bucket.first));
+                    }
+                }
+                auto it = find(value.first);
+                return {it, true};
+            }
+        };
+
         struct IFC_PARSE_API in_memory_file_storage {
 
-            std::vector<std::shared_ptr<instance_data>> read_simple_type_instances;
-            std::vector<std::shared_ptr<instance_data>> steal_instances() {
-                return read_simple_type_instances;
+            std::vector<shared_pointer_type> read_simple_type_instances;
+            std::vector<shared_pointer_type> steal_instances() {
+                return std::move(read_simple_type_instances);
             }
 
             // Either one of these needs to be set
@@ -246,14 +419,14 @@ namespace ifcopenshell {
             unresolved_references* references_to_resolve = nullptr;
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::Base>> entities_by_type_t;
-            typedef boost::unordered_map<uint32_t, std::shared_ptr<instance_data>> entity_instance_by_name_storage_t;
-            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(std::shared_ptr<instance_data>)>> entity_instance_by_name_t;
-            typedef boost::unordered_map<uint32_t, std::shared_ptr<instance_data>> type_instance_by_name_t;
+            typedef boost::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage_t;
+            typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(shared_pointer_type)>> entity_instance_by_name_t;
+            typedef boost::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name_t;
             typedef std::map<std::string, express::Base> entity_instance_by_guid_t;
-            typedef std::unordered_map<int, std::map<std::tuple<short, short>, std::vector<uint32_t>>> entities_by_ref_t;
+            typedef inverse_index entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr) : file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const std::shared_ptr<instance_data>& data) { return express::Base(data); }) {};
+            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr) : file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::Base(data); }) {};
             in_memory_file_storage(const in_memory_file_storage& other) = delete;
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 
@@ -299,7 +472,7 @@ namespace ifcopenshell {
             entity_instance_by_name_t byid_read_;
 
             template <typename Reader>
-            void load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::entity* entity, parse_context& context, int attribute_index = -1);
+            shared_pointer_type load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::declaration* declaration, const ifcopenshell::entity* entity, int attribute_index = -1, bool coerce_attribute_count = true);
             template <typename Reader>
             void try_read_semicolon(ifcopenshell::spf_lexer<Reader>* tokens) const;
 
@@ -353,7 +526,7 @@ namespace ifcopenshell {
             // to make sure that instance pointer are constant during file lifetime
             // cache instances because we want stable pointers
             // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the file side?
-            typedef std::map<uint32_t, std::shared_ptr<instance_data>> entity_by_iden_cache_t;
+            typedef std::map<uint32_t, shared_pointer_type> entity_by_iden_cache_t;
             entity_by_iden_cache_t instance_cache_, type_instance_cache_;
             std::mutex instance_cache_mutex_;
 

@@ -107,6 +107,7 @@ private:
     bool yield_header_instances_ = true;
     std::vector<const declaration*> types_to_bypass_;
     std::vector<unsigned> bypassed_instances_;
+    std::vector<bool> types_to_bypass_materialized_;
 
     void initialize_header();
     spf_header& ensure_header();
@@ -143,7 +144,7 @@ private:
         return storage_.byref_excl_;
     }
 
-    std::vector<std::shared_ptr<instance_data>> steal_instances() {
+    std::vector<shared_pointer_type> steal_instances() {
         return storage_.steal_instances();
     }
 
@@ -171,7 +172,7 @@ private:
 
     ~instance_streamer() = default;
 
-    std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_ptr<instance_data>>> read_instance();
+    std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointer_type>> read_instance();
 };
 
 class uninitialized_tag {};

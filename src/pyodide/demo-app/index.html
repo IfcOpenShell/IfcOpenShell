@@ -78,14 +78,11 @@
             await micropip.install("typing-extensions");
             document.querySelector("#status2").innerHTML = "Loading IfcOpenShell";
 
-            // await micropip.install("wheels/ifcopenshell-0.8.6-cp313-cp313-emscripten_4_0_9_wasm32.whl");
-
-            await micropip.install("wheels/modular/0.8.6-b1899b1/ifcopenshell-0.8.6+b1899b1-cp313-cp313-pyodide_2025_0_wasm32.whl");
-            await micropip.install("wheels/modular/0.8.6-b1899b1/ifcopenshell_parse_schema_ifc4-0.8.6+b1899b1-cp313-cp313-pyodide_2025_0_wasm32.whl");
-            await micropip.install("wheels/modular/0.8.6-b1899b1/ifcopenshell_geometry_mapping_ifc4-0.8.6+b1899b1-cp313-cp313-pyodide_2025_0_wasm32.whl");
-            await micropip.install("wheels/modular/0.8.6-b1899b1/ifcopenshell_pure_python-0.8.6+b1899b1-py3-none-any.whl");
-            await micropip.install("wheels/modular/0.8.6-b1899b1/ifcopenshell_geometry_kernel_cgalsimple-0.8.6+b1899b1-cp313-cp313-pyodide_2025_0_wasm32.whl");
-            await micropip.install("wheels/modular/0.8.6-b1899b1/ifcopenshell_geometry_kernel_opencascade-0.8.6+b1899b1-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/modular/0.8.6+424e70a/ifcopenshell-0.8.6+424e70a-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/modular/0.8.6+424e70a/ifcopenshell_parse_schema_ifc4-0.8.6+424e70a-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/modular/0.8.6+424e70a/ifcopenshell_geometry_mapping_ifc4-0.8.6+424e70a-cp313-cp313-pyodide_2025_0_wasm32.whl");
+            await micropip.install("wheels/modular/0.8.6+424e70a/ifcopenshell_pure_python-0.8.6+424e70a-py3-none-any.whl");
+            await micropip.install("wheels/modular/0.8.6+424e70a/ifcopenshell_geometry_kernel_manifold-0.8.6+424e70a-cp313-cp313-pyodide_2025_0_wasm32.whl");
 
             document.body.className = '';
 
@@ -295,7 +292,7 @@
                     'settings': s,
                     'file_or_filename': ifc,
                     'exclude': ['IfcSpace', 'IfcOpeningElement'],
-                    'geometry_library': 'hybrid-cgal-simple-opencascade'
+                    'geometry_library': 'manifold'
                 });
 
                 let last_mesh_id = null;
@@ -372,7 +369,7 @@
                 addObjToScene(ifcopenshell_geom.create_shape.callKwargs({
                     'settings': s,
                     'inst': el,
-                    'geometry_library': 'hybrid-cgal-simple-opencascade'
+                    'geometry_library': 'manifold'
                 }));
             }
 

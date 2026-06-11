@@ -54,10 +54,14 @@ namespace {
 	}
 
 	void plugin_debug(const std::string& message) {
+#ifdef IFOPSH_PLUGIN_DEBUG
 #if defined(_MSC_VER) && defined(_UNICODE)
         std::wcerr << "[ifcopenshell.plugin] " << message.c_str() << std::endl;
 #else
 		std::cerr << "[ifcopenshell.plugin] " << message << std::endl;
+#endif
+#else
+		static_cast<void>(message);
 #endif
 	}
 
