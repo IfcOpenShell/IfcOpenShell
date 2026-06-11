@@ -518,8 +518,11 @@ namespace {
 		result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 	}
 
-	void proj_log(void *, int, const char* c) {
-		logger_.Error("SER", 1, "PROJ: " + std::string(c));
+	void proj_log(void* data, int, const char* c) {
+		auto logger = static_cast<Logger*>(data);
+		if (logger) {
+			logger->Error("SER", 1, "PROJ: " + std::string(c));
+		}
 	}
 }
 
@@ -628,7 +631,7 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 		PJ_COORD wgs84_point;
 
 		auto C = proj_context_create();
-		proj_log_func(C, nullptr, proj_log);
+		proj_log_func(C, &logger_, proj_log);
 
 		// @todo a bit ugly we assume a proj.db in current working directory.
 		// a very simplistic but at least portable solution.
