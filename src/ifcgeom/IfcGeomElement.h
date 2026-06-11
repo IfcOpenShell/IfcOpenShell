@@ -125,7 +125,7 @@ namespace IfcGeom {
 					oss << "product-" << IfcParse::IfcGlobalId(guid).formatted();
 				} catch (const std::exception& e) {
 					oss << "product";
-					Logger::Error(e);
+					Logger::Root().Error("GEO", 39, e);
 				}
 			}
 

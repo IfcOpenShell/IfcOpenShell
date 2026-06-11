@@ -18,8 +18,8 @@ private:
 	void write_streaming_();
 	void write_non_streaming_();
 public:
-	RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename);
-	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream);
+	RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename, Logger& logger = Logger::Root());
+	RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream, Logger& logger = Logger::Root());
 
 	virtual ~RocksDbSerializer() {}
 

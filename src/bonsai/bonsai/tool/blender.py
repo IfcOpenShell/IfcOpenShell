@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+import math
 import os
 import platform
 import subprocess
@@ -1459,6 +1460,38 @@ class Blender(bonsai.core.tool.Blender):
             return parent_guid is not None and parent_guid != element.GlobalId
 
         @classmethod
+        def any_selected_is_array_child(cls) -> bool:
+            """True if any selected IFC-linked object is a Bonsai array child.
+
+            Multi-object wall topology gizmos (merge / join / extend / unjoin
+            / fillet) and their bound operators gate on this: any mutation
+            applied to a child is overwritten on the next
+            ``regenerate_array``, and merge specifically would leave the
+            parent's ``BBIM_Array.Data`` list pointing at a deleted GUID.
+
+            Memoised against (selection signature, IFC geometry generation)
+            so gizmo polls that fire per input event don't re-walk the pset
+            for every selected object every frame. Identity-keyed so plain
+            Python objects (used by tests) work alongside real Blender
+            ``bpy_struct`` wrappers."""
+            selected = tool.Blender.get_selected_objects()
+            selection_sig = frozenset(id(obj) for obj in selected)
+            current_gen = tool.Parametric.get_geom_generation()
+            cached = cls._any_selected_array_child_memo
+            if cached is not None and cached[0] == selection_sig and cached[1] == current_gen:
+                return cached[2]
+            result = False
+            for obj in selected:
+                element = tool.Ifc.get_entity(obj)
+                if element is not None and cls.is_array_child(element):
+                    result = True
+                    break
+            cls._any_selected_array_child_memo = (selection_sig, current_gen, result)
+            return result
+
+        _any_selected_array_child_memo: tuple[frozenset[int], int, bool] | None = None
+
+        @classmethod
         def is_slab(cls, element: entity_instance) -> bool:
             """A slab is host-eligible for the parametric add-opening gizmo if
             it is an IfcSlab with LAYER3 usage.
@@ -2228,6 +2261,65 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     @classmethod
+    def draw_bmesh_face_tris(
+        cls,
+        bm: bmesh.types.BMesh,
+        world_vert_coords: list,
+        color: Any,
+        draw_batch: Callable[[str, list, Any, list], None],
+    ) -> None:
+        """Submit a non-mutating beauty-triangulated TRIS batch for ``bm``'s faces.
+
+        ``world_vert_coords`` must be indexed by ``bm.verts`` index. Never call
+        ``bmesh.ops.triangulate`` on a live bmesh to compute draw indices — it
+        mutates the input and produces ear-clip fans that render as visible
+        streaks at low alpha.
+        """
+        tris = [[loop.vert.index for loop in tri] for tri in bm.calc_loop_triangles()]
+        draw_batch("TRIS", world_vert_coords, color, tris)
+
+    @classmethod
+    def build_dashed_line_segments(
+        cls,
+        world_verts: Sequence[Sequence[float]],
+        edges_indices: Sequence[Sequence[int]],
+        dash_period: float,
+        dash_width: float,
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[int, int]]]:
+        """Pre-segment edges into world-space dash chunks for a vanilla LINES batch.
+
+        Each input edge is sliced into segments of length ``dash_width`` spaced
+        ``dash_period`` apart (dash phase resets per-edge). The result is a fresh
+        ``(verts, edges)`` pair that draws as dashes through any standard line
+        shader — letting both passes of a visible/occluded outline reuse the
+        same shader so depth values match exactly across passes.
+        """
+        new_verts: list[tuple[float, float, float]] = []
+        new_edges: list[tuple[int, int]] = []
+        if dash_period <= 0 or dash_width <= 0:
+            return new_verts, new_edges
+        n = len(world_verts)
+        for i, j in edges_indices:
+            if not (0 <= i < n and 0 <= j < n) or i == j:
+                continue
+            v0 = world_verts[i]
+            v1 = world_verts[j]
+            dx, dy, dz = v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]
+            edge_length = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if edge_length == 0.0:
+                continue
+            ux, uy, uz = dx / edge_length, dy / edge_length, dz / edge_length
+            t = 0.0
+            while t < edge_length:
+                t_end = min(t + dash_width, edge_length)
+                idx = len(new_verts)
+                new_verts.append((v0[0] + ux * t, v0[1] + uy * t, v0[2] + uz * t))
+                new_verts.append((v0[0] + ux * t_end, v0[1] + uy * t_end, v0[2] + uz * t_end))
+                new_edges.append((idx, idx + 1))
+                t += dash_period
+        return new_verts, new_edges
+
+    @classmethod
     def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
         """Extracts error report lines from a runtime exception during operator execution.
 
@@ -2377,7 +2469,7 @@ class Blender(bonsai.core.tool.Blender):
 
         See https://projects.blender.org/blender/blender/issues/149283
         """
-        if len(bytedata) == (n * 2):
+        if len(bytedata) == (n * 8):  # float64 has 8 bytes per element
             return np.frombuffer(bytedata, dtype=np.float64).astype(np.float32)
         return np.frombuffer(bytedata, dtype=np.float32)
 

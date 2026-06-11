@@ -27,7 +27,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* inst) {
    if (!inst->BaseCurve()->as<IfcSchema::IfcGradientCurve>())
-       Logger::Warning("Expected IfcSegmentedReferenceCurve.BaseCurve to be IfcGradient", inst); // CT 4.1.7.1.1.3
+       logger_.Warning("GEO", 291, "Expected IfcSegmentedReferenceCurve.BaseCurve to be IfcGradient", inst); // CT 4.1.7.1.1.3
 		  
 	auto segments = inst->Segments();
 
@@ -41,11 +41,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
             // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
             spans.push_back(fi);
         } else {
-				Logger::Error("Unsupported");
+				logger_.Error("UNS", 17, "Unsupported");
 				return nullptr;
 			}
 		} else {
-			Logger::Error("Unsupported");
+			logger_.Error("UNS", 18, "Unsupported");
 			return nullptr;
 		}
 	 }
@@ -67,7 +67,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 
    auto cant_function = taxonomy::make<taxonomy::cant_function>(gradient, cant, inst);
    if (!(0 < cant_function->length())) {
-       Logger::Error("IfcSegmentedReferenceCurve does not have a common domain with BaseCurve");
+       logger_.Error("GEO", 292, "IfcSegmentedReferenceCurve does not have a common domain with BaseCurve");
        cant_function = nullptr;
    }
    return cant_function;

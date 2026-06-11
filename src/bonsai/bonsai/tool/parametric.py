@@ -147,10 +147,6 @@ class Parametric(bonsai.core.tool.Parametric):
             self._data.clear()
             self._gen = None
 
-    # FIXME(PR5): pipe_segment / duct_segment land with their finish/cancel
-    # operators in the MEP slice of PR5 (PR5d). Until then they stay out of
-    # EDIT_TYPES so auto-commit-on-save doesn't try to dispatch a
-    # non-existent operator.
     EDIT_TYPES: list[ParametricObject] = [
         ParametricObject("door", has_non_editable_path=True, supports_build_edit_lifecycle=True),
         ParametricObject("window", has_non_editable_path=True, supports_build_edit_lifecycle=True),
@@ -158,6 +154,8 @@ class Parametric(bonsai.core.tool.Parametric):
         ParametricObject("railing", supports_build_edit_lifecycle=True),
         ParametricObject("roof", supports_build_edit_lifecycle=True),
         ParametricObject("array", supports_build_edit_lifecycle=True),
+        ParametricObject("pipe_segment", supports_build_edit_lifecycle=True),
+        ParametricObject("duct_segment", supports_build_edit_lifecycle=True),
         ParametricObject("wall"),
     ]
 
@@ -170,6 +168,8 @@ class Parametric(bonsai.core.tool.Parametric):
     RAILING: ClassVar[ParametricObject]
     ROOF: ClassVar[ParametricObject]
     ARRAY: ClassVar[ParametricObject]
+    PIPE_SEGMENT: ClassVar[ParametricObject]
+    DUCT_SEGMENT: ClassVar[ParametricObject]
     WALL: ClassVar[ParametricObject]
 
     _geom_generation: int = 0

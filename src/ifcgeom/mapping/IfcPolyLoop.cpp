@@ -36,7 +36,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	// A loop should consist of at least three vertices
 	int original_count = polygon.size();
 	if (original_count < 3) {
-		Logger::Message(Logger::LOG_WARNING, "Not enough edges for:", inst);
+		logger_.Message(Logger::LOG_WARNING, "GEO", 278, "Not enough edges for:", inst);
 		return nullptr;
 	}
 
@@ -45,17 +45,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPolyLoop* inst) {
 	auto previous_size = polygon.size();
 	remove_duplicate_points_from_loop(polygon, true, eps);
 	if (polygon.size() != previous_size) {
-		Logger::Warning("Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
+		logger_.Warning("GEO", 279, "Removed " + std::to_string(previous_size - polygon.size()) + " (near) duplicate points from:", inst);
 	}
 
 	int count = polygon.size();
 	if (original_count - count != 0) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:"; 
-		Logger::Message(Logger::LOG_WARNING, ss.str(), inst);
+		logger_.Message(Logger::LOG_WARNING, "GEO", 280, ss.str(), inst);
 	}
 
 	if (count < 3) {
-		Logger::Message(Logger::LOG_WARNING, "Not enough edges for:", inst);
+		logger_.Message(Logger::LOG_WARNING, "GEO", 281, "Not enough edges for:", inst);
 		return nullptr;
 	}
 

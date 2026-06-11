@@ -9,8 +9,9 @@
 
 #include "../ifcparse/IfcLogger.h"
 
-RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename)
-	: file_(file)
+RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string& rocksdb_filename, Logger& logger)
+	: Serializer(logger)
+	, file_(file)
 	, rocksdb_filename_(rocksdb_filename)
 {
 	/*rocksdb::Options options;
@@ -26,8 +27,9 @@ RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string&
 	output_file_->calculate_unit_factors = false;
 }
 
-RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream)
-	: file_(input_filename)
+RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, bool stream, Logger& logger)
+	: Serializer(logger)
+	, file_(input_filename)
 	, rocksdb_filename_(rocksdb_filename)
 {
 }

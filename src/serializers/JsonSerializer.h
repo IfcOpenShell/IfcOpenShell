@@ -23,7 +23,7 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
     Dialect dialect_;
 
   public:
-    JsonSerializer(IfcParse::IfcFile* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX);
+    JsonSerializer(IfcParse::IfcFile* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX, Logger& logger = Logger::Root());
 
     virtual ~JsonSerializer() {}
 
@@ -35,13 +35,13 @@ class SERIALIZERS_API JsonSerializer : public Serializer {
 };
 
 struct SERIALIZERS_API JsonSerializerFactory {
-    typedef boost::function3<JsonSerializer*, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect> fn;
+    typedef boost::function4<JsonSerializer*, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect, Logger&> fn;
 
     class Factory : public std::map<std::string, fn> {
       public:
         Factory();
         void bind(const std::string& schema_name, fn);
-        JsonSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect);
+        JsonSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string, JsonSerializer::Dialect, Logger& logger = Logger::Root());
     };
 
     static Factory& implementations();

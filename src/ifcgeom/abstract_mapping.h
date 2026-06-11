@@ -21,6 +21,7 @@
 #define ABSTRACT_MAPPING_H
 
 #include "../ifcparse/IfcBaseClass.h"
+#include "../ifcparse/IfcLogger.h"
 #include "../ifcparse/aggregate_of_instance.h"
 #include "../ifcgeom/taxonomy.h"
 #include "../ifcgeom/ConversionSettings.h"
@@ -43,14 +44,15 @@ namespace geometry {
 
 	typedef boost::function<bool(IfcUtil::IfcBaseEntity*)> filter_t;
     
-    class IFC_GEOM_API abstract_mapping {
+	class IFC_GEOM_API abstract_mapping {
 	protected:
 		Settings settings_;
+		Logger& logger_;
 
 		bool use_caching_ = true;
 
 	public:
-		abstract_mapping(Settings& s) : settings_(s) {}
+		abstract_mapping(Settings& s, Logger& logger = Logger::Root()) : settings_(s), logger_(logger) {}
 		virtual ~abstract_mapping() {}
 
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*) = 0;
@@ -69,19 +71,20 @@ namespace geometry {
 
 		const Settings& settings() const { return settings_; }
 		Settings& settings() { return settings_; }
+		Logger& logger() const { return logger_; }
 
 		bool use_caching() const { return use_caching_; }
 		bool& use_caching() { return use_caching_; }
     };
 
 	namespace impl {
-		typedef boost::function2<abstract_mapping*, IfcParse::IfcFile*, Settings&> mapping_fn;
+		typedef boost::function3<abstract_mapping*, IfcParse::IfcFile*, Settings&, Logger&> mapping_fn;
 
 		class IFC_GEOM_API MappingFactoryImplementation : public std::map<std::string, mapping_fn> {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(IfcParse::IfcFile*, Settings&);
+			abstract_mapping* construct(IfcParse::IfcFile*, Settings&, Logger& logger = Logger::Root());
 		};
 
 		IFC_GEOM_API MappingFactoryImplementation& mapping_implementations();

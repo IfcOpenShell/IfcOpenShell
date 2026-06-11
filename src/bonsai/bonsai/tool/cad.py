@@ -178,6 +178,14 @@ class Cad:
         return (x + tolerance) > value > (x - tolerance)
 
     @classmethod
+    def is_multiple_of_pi(cls, value: float) -> bool:
+        """True when ``value`` is an integer multiple of π within tolerance —
+        the parallelism / anti-parallelism check rotation-difference logic
+        reaches for (segments aligned modulo a 180° flip)."""
+        n = round(value / math.pi)
+        return cls.is_x(abs(value - n * math.pi), 0)
+
+    @classmethod
     def normalise_angle(cls, angle: float) -> float:
         """Normalise an angle between -179 and 180"""
         angle = angle % 360

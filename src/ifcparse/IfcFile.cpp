@@ -72,10 +72,10 @@ namespace {
                 try {
                     fn(EnumerationReference(decl->as_enumeration_type(), decl->as_enumeration_type()->lookup_enum_offset(s)));
                 } catch (IfcParse::IfcException& e) {
-                    Logger::Error("An enumeration literal '" + s + "' is not valid for type '" + decl->name() + "' at offset " + std::to_string(t.startPos));
+                    Logger::Root().Error("VAL", 12, "An enumeration literal '" + s + "' is not valid for type '" + decl->name() + "' at offset " + std::to_string(t.startPos));
                 }
             } else {
-                Logger::Error("An enumeration literal '" + s + "' is not expected at attribute index '" + std::to_string(attribute_id) + "' at offset " + std::to_string(t.startPos));
+                Logger::Root().Error("VAL", 13, "An enumeration literal '" + s + "' is not expected at attribute index '" + std::to_string(attribute_id) + "' at offset " + std::to_string(t.startPos));
             }
         } else if (t.type == IfcParse::Token_FLOAT) {
             fn(IfcParse::TokenFunc::asFloat(t));
@@ -194,7 +194,7 @@ namespace {
                             }
                         }, aggregate_storage);
 
-                        Logger::Error("Inconsistent aggregate valuation while attempting to append " + std::string(typeid(decltype(v)).name()) + " to an aggregate of " + current);
+                        Logger::Root().Error("VAL", 14, "Inconsistent aggregate valuation while attempting to append " + std::string(typeid(decltype(v)).name()) + " to an aggregate of " + current);
 
                         // @todo boolean -> logical upgrade
                         // wait a second... there are no aggregate of bool / logical in the schema..
@@ -213,7 +213,7 @@ namespace {
                 }
             } else {
                 // @todo would be cool if we can trace this back to file offset
-                Logger::Error(std::string("Aggregates of ") + typeid(decltype(v)).name() + " are not supported in the IfcOpenShell parser");
+                Logger::Root().Error("UNS", 31, std::string("Aggregates of ") + typeid(decltype(v)).name() + " are not supported in the IfcOpenShell parser");
             }
         };
 
@@ -263,9 +263,9 @@ IfcEntityInstanceData IfcParse::parse_context::construct(boost::optional<size_t>
     {
         size_t expected = expected_size ? *expected_size : parameter_types.size();
         if (decl != nullptr && decl->schema() == &Header_section_schema::get_schema()) {
-            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for header entity " + decl->name());
+            Logger::Root().Warning("VAL", 15, "Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + " for header entity " + decl->name());
         } else {
-            Logger::Warning("Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
+            Logger::Root().Warning("VAL", 16, "Expected " + std::to_string(expected) + " attribute values, found " + std::to_string(tokens_.size()) + (name ? std::string(" for instance #" + std::to_string(*name)) : std::string("")));
         }
     }
 
@@ -719,13 +719,13 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             try {
                 entity_type = schema_->declaration_by_name(TokenFunc::asStringRef(token_stream_[2]));
             } catch (const IfcException& ex) {
-                Logger::Message(Logger::LOG_ERROR, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].startPos));
+                Logger::Root().Message(Logger::LOG_ERROR, "SYN", 3, std::string(ex.what()) + " at offset " + std::to_string(token_stream_[2].startPos));
                 current_id = 0;
                 goto advance;
             }
 
             if (entity_type->as_entity() == nullptr) {
-                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
+                Logger::Root().Message(Logger::LOG_ERROR, "SYN", 4, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
                 goto advance;
             }
 
@@ -744,7 +744,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
                 storage_.load(current_id, entity_type->as_entity(), ps, -1);
             } catch (const IfcInvalidTokenException& e) {
                 good_ = file_open_status::INVALID_SYNTAX;
-                Logger::Error(e);
+                Logger::Root().Error("SYN", 5, e);
                 break;
             }
 
@@ -753,7 +753,7 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             if (((++progress_) % 1000) == 0) {
                 std::stringstream ss;
                 ss << "\r#" << current_id;
-                Logger::Status(ss.str(), false);
+                Logger::Root().Status(ss.str(), false);
             }
 
             auto data = ps.construct(current_id, references_to_resolve_, entity_type, boost::none, -1, coerce_attribute_count);
@@ -769,9 +769,9 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
         try {
             next_token = lexer_->Next();
         } catch (const IfcException& e) {
-            Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + ". Parsing terminated");
+            Logger::Root().Message(Logger::LOG_ERROR, "SYN", 6, std::string(e.what()) + ". Parsing terminated");
         } catch (...) {
-            Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
+            Logger::Root().Message(Logger::LOG_ERROR, "SYN", 7, "Parsing terminated");
         }
 
         if (!lexer_->stream->eof() && next_token.type == Token_NONE) {

@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import json
 from typing import ClassVar
@@ -881,6 +883,36 @@ class EnableEditingParametric(bpy.types.Operator):
         default="",
         description="Operator bl_idname to invoke (e.g., 'bim.enable_editing_door').",
     )
+    sibling_count: bpy.props.IntProperty(default=0, options={"HIDDEN"})
+
+    @staticmethod
+    def should_show_shared_rep_dialog(*, suppress: bool, has_entity: bool, sibling_count: int) -> bool:
+        """Pure decision for the pre-edit warning. Returns ``True`` only when the
+        edit will silently mutate other elements' geometry AND the user has not
+        opted out of the warning for this session."""
+        if suppress or not has_entity:
+            return False
+        return sibling_count > 0
+
+    def invoke(self, context, event):
+        prefs = getattr(context.window_manager, "BIMParametricEditDialogPrefs", None)
+        suppress = bool(prefs and prefs.suppress_shared_rep_warning)
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj) if obj else None
+        self.sibling_count = tool.Model.get_sibling_occurrence_count(element) if element is not None else 0
+        if self.should_show_shared_rep_dialog(
+            suppress=suppress, has_entity=element is not None, sibling_count=self.sibling_count
+        ):
+            return context.window_manager.invoke_props_dialog(self, width=400)
+        return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Shared geometry", icon="ERROR")
+        layout.label(text=f"Geometry is shared with {self.sibling_count} other element(s).")
+        layout.label(text="Edits will affect them too.")
+        prefs = context.window_manager.BIMParametricEditDialogPrefs
+        layout.prop(prefs, "suppress_shared_rep_warning", text="Don't show this again for this session")
 
     def execute(self, context):
         # Malformed ``feature_enable_op`` (missing dot) would otherwise crash

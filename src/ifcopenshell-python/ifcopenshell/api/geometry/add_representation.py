@@ -121,6 +121,12 @@ class Usecase:
     blender_object: bpy.types.Object
 
     def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        # IfcTriangulatedFaceSet/IfcPolygonalFaceSet were introduced in IFC4 and
+        # do not exist in IFC2X3. Without this guard create_mesh_representation()
+        # silently falls back to a faceted brep, ignoring the requested class.
+        if self.settings["ifc_representation_class"] == "IfcTessellatedFaceSet" and self.file.schema == "IFC2X3":
+            raise ValueError("Tessellated face sets (IfcTessellatedFaceSet) are not supported in IFC2X3.")
+
         self.is_manifold = None
         self.coordinate_offset = self.settings["coordinate_offset"]
         self.geometry = self.settings["geometry"]

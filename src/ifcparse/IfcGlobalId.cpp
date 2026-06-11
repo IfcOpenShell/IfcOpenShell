@@ -111,7 +111,7 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
     boost::uuids::uuid test_uuid;
     std::copy(test_vector.begin(), test_vector.end(), test_uuid.begin());
     if (uuid_data_ != test_uuid) {
-        Logger::Message(Logger::LOG_ERROR, "Internal error generating GlobalId");
+        Logger::Root().Message(Logger::LOG_ERROR, "SYS", 34, "Internal error generating GlobalId");
     }
 #endif
 }
@@ -130,7 +130,7 @@ IfcParse::IfcGlobalId::IfcGlobalId(const std::string& string)
 #ifndef NDEBUG
     const std::string test_string = compress(&uuid_data_.data[0]);
     if (string_data_ != test_string) {
-        Logger::Message(Logger::LOG_ERROR, "Internal error generating GlobalId");
+        Logger::Root().Message(Logger::LOG_ERROR, "SYS", 35, "Internal error generating GlobalId");
     }
 #endif
 }

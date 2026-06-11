@@ -861,7 +861,7 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else if (edge_->start.which() == 1 && edge_->end.which() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
-						Logger::Message(Logger::Severity::LOG_WARNING, "Basis curve not supported - edge is treated as a straight line edge");
+						Logger::Root().Message(Logger::Severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
 					}
 					const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
 					const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
@@ -876,7 +876,7 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else {
-					Logger::Message(Logger::Severity::LOG_ERROR, "Basis curve not supported");
+					Logger::Root().Message(Logger::Severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
 					return boost::none;
 				}
 			}

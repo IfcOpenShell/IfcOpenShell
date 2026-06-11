@@ -20,6 +20,8 @@
 #ifndef CGAL_KERNEL_H
 #define CGAL_KERNEL_H
 
+#include "../../../ifcparse/IfcLogger.h"
+
 /*
 #ifdef NO_CACHE
 
@@ -58,12 +60,12 @@ namespace ifcopenshell {
 		namespace utils {
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false);
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false, Logger& logger = Logger::Root());
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron);
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list);
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron);
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron, Logger& logger = Logger::Root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list, Logger& logger = Logger::Root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron, Logger& logger = Logger::Root());
 #endif
 		}
 
@@ -91,12 +93,12 @@ namespace ifcopenshell {
 #endif
 			public:
 
-				CgalKernel(const Settings& settings)
-					: AbstractKernel("cgal", settings)
+				CgalKernel(const Settings& settings, Logger& logger = Logger::Root())
+					: AbstractKernel("cgal", settings, logger)
 				{}
 
 				virtual AbstractKernel* clone() const {
-					return new CgalKernel(settings());
+					return new CgalKernel(settings(), logger());
 				}
 
 				virtual bool supports_boolean_operations() const {

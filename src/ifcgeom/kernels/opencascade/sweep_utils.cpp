@@ -97,7 +97,7 @@ bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 		Handle(Geom_Curve) crv = BRep_Tool::Curve(edge, u0, u1);
 		crv->D1(u0, directrix_origin, directrix_tangent);
 	} else {
-		Logger::Error("Unable to locate first edge");
+		Logger::Root().Error("GEO", 203, "Unable to locate first edge");
 		return false;
 	}
 
@@ -187,7 +187,7 @@ void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge
 
 	for (int i = 1; i <= map.Extent(); ++i) {
 		if (map.FindFromIndex(i).Extent() > 2) {
-			Logger::Warning("Self-intersecting Directrix");
+			Logger::Root().Warning("GEO", 204, "Self-intersecting Directrix");
 		}
 	}
 

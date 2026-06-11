@@ -95,6 +95,7 @@ from .entity_instance import entity_instance, register_schema_attributes
 from .file import file, rocksdb_lazy_instance
 from .file import file as _file
 from .sql import sqlite, sqlite_entity
+from .ifcopenshell_wrapper import get_log, logger
 
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
@@ -389,4 +390,3 @@ def convert_path_to_rocksdb(ifcspf_path: Union[Path, str], rocksdb_path: Union[P
 
 version_core = ifcopenshell_wrapper.version()
 __version__ = version = "0.0.0"
-get_log = ifcopenshell_wrapper.get_log

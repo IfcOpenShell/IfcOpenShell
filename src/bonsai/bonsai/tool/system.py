@@ -489,6 +489,24 @@ class System(bonsai.core.tool.System):
         return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
 
     @classmethod
+    def has_parametric_body(cls, element: ifcopenshell.entity_instance) -> bool:
+        """True when the MEP element's body representation is a profile sweep
+        (``IfcExtrudedAreaSolid`` for segments, ``IfcSweptDiskSolid`` for
+        fittings) — the shape the parametric edit + MEP action gizmos can
+        actually mutate. Tessellation- or brep-imported MEP elements return
+        False so their gizmos hide rather than offer edits the geometry
+        kernel can't honour."""
+        import bonsai.tool as tool
+
+        body = tool.Geometry.get_body_representation(element)
+        if body is None:
+            return False
+        for item in tool.Ifc.get().traverse(body):
+            if item.is_a("IfcExtrudedAreaSolid") or item.is_a("IfcSweptDiskSolid"):
+                return True
+        return False
+
+    @classmethod
     def walk_connected_mep_elements(
         cls, start_element: ifcopenshell.entity_instance
     ) -> list[ifcopenshell.entity_instance]:

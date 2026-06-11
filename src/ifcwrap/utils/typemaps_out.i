@@ -108,6 +108,7 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
+CREATE_VECTOR_TYPEMAP_OUT(log_message)
 
 %typemap(out) ifcopenshell::geometry::Settings::value_variant_t {
 	pythonizing_visitor vis;

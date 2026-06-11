@@ -99,7 +99,7 @@ namespace {
 	}
 }
 
-ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool convex) {
+ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool convex, Logger& logger) {
 	shape_ = shape;
 	convex_tag_ = convex;
 
@@ -112,7 +112,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		auto b2 = plane.base2();
 
 		if (V.squared_length() == 0) {
-			Logger::Warning("Removed face due to self-intersections");
+			logger.Warning("GEO", 62, "Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 			continue;
 		}
@@ -133,7 +133,7 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 		}
 
 		if (!CGAL::Polygon_2<Kernel_>(ps.begin(), ps.end()).is_simple()) {
-			Logger::Warning("Removed face due to self-intersections");
+			logger.Warning("GEO", 63, "Removed face due to self-intersections");
 			faces_to_remove.insert(face);
 		}
 	}
@@ -184,7 +184,7 @@ void ifcopenshell::geometry::CgalShape::to_nef() const {
 }
 #endif
 
-void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
+void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger) const {
 	const bool all_triangles = std::all_of(shape_->facets_begin(), shape_->facets_end(), [](auto f) { return f.is_triangle(); });
 	const bool has_iden_transform = place.is_identity();
 
@@ -233,7 +233,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 	if (!all_triangles) {
 		if (!shape_to_use->is_valid()) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
+			logger.Message(Logger::LOG_ERROR, "GEO", 64, "Invalid Polyhedron_3 in object (before triangulation)");
 			return;
 		}
 
@@ -241,19 +241,19 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 		try {
 			success = CGAL::Polygon_mesh_processing::triangulate_faces(*shape_to_use);
 		} catch (...) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation crashed");
+			logger.Message(Logger::LOG_ERROR, "GEO", 65, "Triangulation crashed");
 			return;
 		}
 
 		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_to_use);
 
 		if (!success) {
-			Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
+			logger.Message(Logger::LOG_ERROR, "GEO", 66, "Triangulation failed");
 			return;
 		}
 
 		if (!shape_to_use->is_valid()) {
-			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
+			logger.Message(Logger::LOG_ERROR, "GEO", 67, "Invalid Polyhedron_3 in object (after triangulation)");
 			return;
 		}
 	}
@@ -282,7 +282,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	try {
 		CGAL::Polygon_mesh_processing::compute_face_normals(*shape_to_use, face_normals_map);
 	} catch (...) {
-		Logger::Message(Logger::LOG_ERROR, "Face normal calculation failed");
+		logger.Message(Logger::LOG_ERROR, "GEO", 68, "Face normal calculation failed");
 		return;
 	}
 
@@ -791,7 +791,7 @@ bool ifcopenshell::geometry::CgalShape::surface_area_along_direction(double tol,
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
+void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger) const {
 	throw std::runtime_error("Not implemented");
 }
 
