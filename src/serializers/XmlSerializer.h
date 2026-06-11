@@ -16,7 +16,7 @@ protected:
 	std::string xml_filename;
 
 public:
-	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename);
+	XmlSerializer(IfcParse::IfcFile* file, const std::string& xml_filename, Logger& logger = Logger::Root());
 
 	virtual ~XmlSerializer() {}
 
@@ -28,13 +28,13 @@ public:
 };
 
 struct SERIALIZERS_API XmlSerializerFactory {
-	typedef boost::function2<XmlSerializer*, IfcParse::IfcFile*, std::string> fn;
+	typedef boost::function3<XmlSerializer*, IfcParse::IfcFile*, std::string, Logger&> fn;
 
 	class Factory : public std::map<std::string, fn> {
 	public:
 		Factory();
 		void bind(const std::string& schema_name, fn);
-		XmlSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string);
+		XmlSerializer* construct(const std::string& schema_name, IfcParse::IfcFile*, std::string, Logger& logger = Logger::Root());
 	};
 
 	static Factory& implementations();

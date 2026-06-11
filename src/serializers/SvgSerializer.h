@@ -368,10 +368,13 @@ namespace {
 		std::multimap<double, face_info> large_ortho_faces_;
 		std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>> items_;
 
+		Logger& logger_;
+
 	public:
 
-		prefiltered_hlr(bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
-			: use_prefiltering_(use_prefiltering)
+		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
+			: logger_(logger)
+			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
 			, segment_projection_(segment_projection)
 			// @nb negative z in accordance with occt projector convention (and opengl)
@@ -468,7 +471,7 @@ namespace {
 					}
 				}
 
-				Logger::Notice("Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
+				logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
 				auto it = items_.insert(items_.end(), { product, C });
 
@@ -517,7 +520,7 @@ namespace {
 				}
 			}
 			if (use_prefiltering_) {
-				Logger::Notice("Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
+				logger_.Notice("SER", 35, "Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
 			
 			hlr_calc vis(projector_);
@@ -593,8 +596,8 @@ protected:
 	subtract_before_project subtraction_settings_;
 
 public:
-	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
-		: WriteOnlyGeometrySerializer(geometry_settings, settings)
+	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root())
+		: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())
 		, ymin(+std::numeric_limits<double>::infinity())

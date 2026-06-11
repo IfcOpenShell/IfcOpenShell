@@ -80,6 +80,7 @@ private:
 %rename("file") IfcFile;
 %rename("add") addEntity;
 %rename("remove") removeEntity;
+%rename("logger") Logger;
 
 class attribute_value_derived {};
 %{
@@ -702,6 +703,7 @@ private:
 %include "../ifcparse/IfcBaseClass.h"
 %include "../ifcparse/IfcSchema.h"
 %include "../serializers/RocksDbSerializer.h"
+%include "../ifcparse/IfcLogger.h"
 
 // The IfcFile* returned by open() is to be freed by SWIG/Python
 %newobject open;
@@ -878,7 +880,7 @@ private:
 	static std::stringstream ifcopenshell_log_stream;
 %}
 %init %{
-	Logger::SetOutput(0, &ifcopenshell_log_stream);
+	Logger::Root().SetOutput(0, &ifcopenshell_log_stream);
 %}
 %inline %{
 	std::string get_log() {
@@ -887,20 +889,20 @@ private:
 		return log;
 	}
 	void turn_on_detailed_logging() {
-		Logger::SetOutput(&std::cout, &std::cout);
-		Logger::Verbosity(Logger::LOG_DEBUG);
+		Logger::Root().SetOutput(&std::cout, &std::cout);
+		Logger::Root().Verbosity(Logger::LOG_DEBUG);
 	}
 	void turn_off_detailed_logging() {
-		Logger::SetOutput(0, &ifcopenshell_log_stream);
-		Logger::Verbosity(Logger::LOG_WARNING);
+		Logger::Root().SetOutput(0, &ifcopenshell_log_stream);
+		Logger::Root().Verbosity(Logger::LOG_WARNING);
 	}
 	void set_log_format_json() {
 		ifcopenshell_log_stream.str("");
-		Logger::OutputFormat(Logger::FMT_JSON);
+		Logger::Root().OutputFormat(Logger::FMT_JSON);
 	}
 	void set_log_format_text() {
 		ifcopenshell_log_stream.str("");
-		Logger::OutputFormat(Logger::FMT_PLAIN);
+		Logger::Root().OutputFormat(Logger::FMT_PLAIN);
 	}
 %}
 
@@ -1221,4 +1223,28 @@ private:
 		return d;
 	}
 }
-	
+
+%extend Logger {
+	%pythoncode %{
+		def __iter__(self):
+			return iter(self.log_messages())
+	%}
+}
+
+%extend log_message {
+	std::string severity_string() const {
+		static const char* const severity_strings[] = {"PERF", "DEBUG", "NOTICE", "WARNING", "ERROR"};
+		return severity_strings[(int)$self->severity];
+	}
+	%pythoncode %{
+		severity_string = property(severity_string)
+		def to_tuple(self):
+			return self.severity_string, self.code, self.message, self.instance
+		def __eq__(self, other):
+			return type(self) == type(other) and self.to_tuple() == other.to_tuple()
+		def __hash__(self):
+			return hash(self.to_tuple())
+		def __repr__(self):
+			return "<log_message '[%s] [%s] %s'>" % (self.severity_string, self.code, self.message)
+	%}
+}

@@ -373,7 +373,6 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-
         snap_obj._ensure_bvh()
         intersected = snap_obj.raycast_boxes(
             context, event, snap_obj.root, intersected=[], rays=(ray_origin, ray_direction)
@@ -395,12 +394,9 @@ class Raycast(bonsai.core.tool.Raycast):
         # Lazily project only the needed vertices to 2D screen space
         verts_2d: dict[int, Vector] = {}
         for idx in verts_idx:
-            v2d = view3d_utils.location_3d_to_region_2d(
-                region, rv3d, snap_obj.verts_3d[idx]
-            )
+            v2d = view3d_utils.location_3d_to_region_2d(region, rv3d, snap_obj.verts_3d[idx])
             if v2d is not None:
                 verts_2d[idx] = v2d
-
 
         edge_verts = {}
         for e in edges:
@@ -885,9 +881,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
             # Process wireframe objects first (all of them, always collected)
             for snap_obj in wireframe_objs:
-                hit_obj, hit = cls.process_wireframe_snap_obj(
-                    context, event, snap_obj, ray_origin, closest_snaps
-                )
+                hit_obj, hit = cls.process_wireframe_snap_obj(context, event, snap_obj, ray_origin, closest_snaps)
                 if hit is not None:
                     length_squared = (hit - ray_origin).length_squared
                     if closest_obj is None or length_squared < closest_length_squared:
@@ -926,9 +920,7 @@ class Raycast(bonsai.core.tool.Raycast):
                 if snap_obj.obj.type in {"EMPTY", "CURVE"} or (
                     hasattr(snap_obj.obj.data, "polygons") and len(snap_obj.obj.data.polygons) == 0
                 ):
-                    hit_obj, hit = cls.process_wireframe_snap_obj(
-                        context, event, snap_obj, ray_origin, closest_snaps
-                    )
+                    hit_obj, hit = cls.process_wireframe_snap_obj(context, event, snap_obj, ray_origin, closest_snaps)
                     face_index = None
                 else:
                     # Solid objects

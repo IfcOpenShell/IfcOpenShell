@@ -255,7 +255,7 @@ boost::any parse_attribute_value(const IfcParse::parameter_type* ty, const std::
     }
 
     if (any.empty()) {
-        Logger::Error("Attribute '" + value + "' not successfully parsed");
+        Logger::Root().Error("SYN", 29, "Attribute '" + value + "' not successfully parsed");
     }
 
     return any;
@@ -293,7 +293,7 @@ static void end_element(void* user, const xmlChar* tag) {
     // ignore uos ex:iso_10303_28 (ifc2x3) and ifc:ifcXML (ifc4)
     if (tagname != "uos" && tagname != "ex:iso_10303_28" && tagname != "ifc:ifcXML" && tagname != "ifcXML") {
         if (state->stack.empty()) {
-            Logger::Error("Mismatch in parse stack due to previous errors");
+            Logger::Root().Error("SYN", 30, "Mismatch in parse stack due to previous errors");
         } else {
             state->stack.pop_back();
         }
@@ -320,7 +320,7 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         try {
             val = parse_attribute_value(pt, txt);
         } catch (const std::exception& e) {
-            Logger::Error(e, state->stack.back().inst());
+            Logger::Root().Error("SYN", 31, e, state->stack.back().inst());
         }
         if (!val.empty()) {
             // type declaration always at idx 0
@@ -348,7 +348,7 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         } else if (tagname == "documentation") {
             header.file_description()->setdescription({txt});
         } else {
-            Logger::Error("Unrecognized header entry " + tagname);
+            Logger::Root().Error("SYN", 32, "Unrecognized header entry " + tagname);
         }
     } else if (state_type == stack_node::node_instance_attribute) {
         const auto* pt = state->stack.back().inst()->declaration().as_entity()->attribute_by_index(state->stack.back().idx())->type_of_attribute();
@@ -498,7 +498,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                             }, val);
                         }
                     } else {
-                        Logger::Error("Unknown attribute '" + pair.first + "' on entity '" + entity->name() + "' with value '" + pair.second + "'");
+                        Logger::Root().Error("SYN", 33, "Unknown attribute '" + pair.first + "' on entity '" + entity->name() + "' with value '" + pair.second + "'");
                     }
                 }
             }
@@ -556,7 +556,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 try {
                     decl = state->file->schema()->declaration_by_name(tagname_copy);
                 } catch (const std::exception& e) {
-                    Logger::Error(e);
+                    Logger::Root().Error("SYN", 34, e);
                 }
                 if (decl != nullptr) {
                     auto inst_or_ref = create_instance(decl);
@@ -571,7 +571,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
         } else if (state_type == stack_node::node_instance) {
             const IfcParse::entity* current = state->stack.back().inst()->declaration().as_entity();
             if (current == nullptr) {
-                Logger::Error("'" + state->stack.back().inst()->declaration().name() + "' is not an entity, unable to set attribute '" + tagname + "'");
+                Logger::Root().Error("SYN", 35, "'" + state->stack.back().inst()->declaration().name() + "' is not an entity, unable to set attribute '" + tagname + "'");
                 // We need to push something on the stack. Likely there has been some extra indirection that is not understood.
                 state->stack.push_back(state->stack.back());
             } else {
@@ -582,7 +582,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         return attr->name() == tagname;
                     });
                     if (found == inverses.end()) {
-                        Logger::Error("Unknown attribute " + tagname);
+                        Logger::Root().Error("SYN", 36, "Unknown attribute " + tagname);
                         state->stack.push_back(state->stack.back());
                     } else {
                         if ((*found)->bound1() == 0 && (*found)->bound2() == 1) {
@@ -595,7 +595,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 inst->set_attribute_value(idx, state->stack.back().inst());
                                 state->stack.push_back(stack_node::instance(id, inst));
                             } else {
-                                Logger::Error("Unknown attribute " + tagname);
+                                Logger::Root().Error("SYN", 37, "Unknown attribute " + tagname);
                                 state->stack.push_back(state->stack.back());
                             }
                         } else {
@@ -642,7 +642,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 try {
                     decl = state->file->schema()->declaration_by_name(tagname);
                 } catch (const std::exception& e) {
-                    Logger::Error(e);
+                    Logger::Root().Error("SYN", 38, e);
                 }
 
                 if (decl == nullptr) {
@@ -651,7 +651,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
                 const IfcParse::entity* entity = decl->as_entity();
                 if ((entity == nullptr) && state_type != stack_node::node_instance_attribute) {
-                    Logger::Error("Not an entity definition " + tagname);
+                    Logger::Root().Error("SYN", 39, "Not an entity definition " + tagname);
                     goto end;
                 }
 
@@ -665,7 +665,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     if (inst != nullptr) {
                         inst->set_attribute_value(idx, state->stack.back().inst());
                     } else {
-                        Logger::Error("Internal error, inverse attribute not processed");
+                        Logger::Root().Error("SYN", 40, "Internal error, inverse attribute not processed");
                     }
                 } else if (state_type == stack_node::node_instance_attribute) {
                     state->stack.back().inst()->set_attribute_value(state->stack.back().idx(), inst);

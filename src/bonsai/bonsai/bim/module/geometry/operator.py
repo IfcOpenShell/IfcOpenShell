@@ -546,6 +546,13 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         objs = [bpy.data.objects[obj_name]] if obj_name else context.selected_objects
         self.file = tool.Ifc.get()
 
+        # Tessellated face sets (IfcTriangulatedFaceSet/IfcPolygonalFaceSet) were
+        # introduced in IFC4 and do not exist in IFC2X3. Catch this early so we
+        # don't silently fall back to a faceted brep after stripping materials.
+        if self.ifc_representation_class == "IfcTessellatedFaceSet" and self.file.schema == "IFC2X3":
+            self.report({"ERROR"}, "Tessellated face sets are not supported in IFC2X3.")
+            return {"CANCELLED"}
+
         for obj in objs:
             # TODO: write unit tests to see how this bulk operation handles
             # contradictory ifc_representation_class values and when
@@ -1027,10 +1034,10 @@ class OverrideDelete(bpy.types.Operator):
 
         for array_parent in array_parents:
             array_parent_obj = tool.Ifc.get_object(array_parent)
-            data = [(i, data) for i, data in enumerate(tool.Blender.Modifier.Array.get_modifiers_data(array_parent))]
+            data = [(i, data) for i, data in enumerate(tool.Array.get_modifiers_data(array_parent))]
             # NOTE: there is a way to remove arrays more precisely but it's more complex
             for i, modifier_data in reversed(data):
-                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                children = set(tool.Array.get_children_objects(modifier_data))
                 if children.issubset(selected_objects):
                     with context.temp_override(active_object=array_parent_obj):
                         bpy.ops.bim.remove_array(item=i)
@@ -1289,9 +1296,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                                 all_objects_to_select.add(part_obj)
 
         # Non-IFC duplicates aren't tracked in old_to_new but are left selected by duplicate_ifc_objects
-        all_objects_to_select.update(
-            obj for obj in context.selected_objects if not tool.Ifc.get_entity(obj)
-        )
+        all_objects_to_select.update(obj for obj in context.selected_objects if not tool.Ifc.get_entity(obj))
 
         # Deselect everything first
         bpy.ops.object.select_all(action="DESELECT")
@@ -2497,9 +2502,9 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                     profile = tool.Ifc.get().by_id(profile_id)
                     if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
                         bpy.ops.bim.edit_arbitrary_profile()
-                elif tool.Blender.Modifier.is_railing(element):
+                elif tool.Parametric.is_railing(element):
                     bpy.ops.bim.finish_editing_railing_path()
-                elif tool.Blender.Modifier.is_roof(element):
+                elif tool.Parametric.is_roof(element):
                     bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()

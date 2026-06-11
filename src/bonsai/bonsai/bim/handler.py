@@ -41,14 +41,21 @@ from bonsai.bim.decorator_cache import (
 from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
+from bonsai.bim.module.model.array import (
+    ArrayPreviewDecorator,
+    ArraySelectionHighlightDecorator,
+)
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import (
+    BendPreviewDecorator,
     BoundingBoxDecorator,
+    DoorSwingReadonlyDecorator,
+    MEPSegmentExtendPreviewDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
     WallFilletPreviewDecorator,
 )
-from bonsai.bim.module.model.preview_base import discard_pending_previews
+from bonsai.bim.module.model.wall import WallGizmoPreviewDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -116,19 +123,13 @@ def active_object_callback():
 
 
 def update_bim_tool_props():
-    """update BIM Tools props (such as extrusion_depth, length and x_angle) when active object changes"""
-    obj = bpy.context.active_object
-
-    # bunch of checks to see if we're in a valid state
-    if not obj:
+    """Selection-driven BIM Tool sync: re-target user-intent enums
+    (ifc_class, relating_type_id) AND refresh header values
+    (extrusion_depth, length, x_angle) for the new active object."""
+    ctx = _resolve_bim_tool_context()
+    if ctx is None:
         return
-    mode = bpy.context.mode
-    current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-    if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
-        return
-    element = tool.Ifc.get_entity(obj)
-    if not element:
-        return
+    obj, current_tool, element = ctx
 
     props = tool.Model.get_model_props()
     aprops = tool.Drawing.get_annotation_props()
@@ -178,6 +179,48 @@ def update_bim_tool_props():
     if is_annotation_tool:
         return
 
+    _read_headers_into_props(obj, element)
+
+
+def refresh_bim_tool_headers():
+    """Push the active IFC entity's current header float values
+    (extrusion_depth, length, x_angle) into ``BIMModelProperties``.
+    Enum-safe: never writes user-intent enum slots, which are owned by
+    the selection callback."""
+    ctx = _resolve_bim_tool_context()
+    if ctx is None:
+        return
+    obj, current_tool, element = ctx
+    if current_tool.idname not in tool.Blender.get_property_header_tools():
+        return
+    _read_headers_into_props(obj, element)
+
+
+def _resolve_bim_tool_context():
+    """Return ``(obj, current_tool, element)`` when an active BIM workspace
+    tool sees a resolvable IFC element; ``None`` otherwise. Defensive
+    against stripped operator contexts — a missing ``active_object`` /
+    ``mode`` / ``workspace`` short-circuits to ``None`` instead of raising."""
+    obj = tool.Blender.get_active_object()
+    if not obj:
+        return None
+    mode = getattr(bpy.context, "mode", None)
+    workspace = getattr(bpy.context, "workspace", None)
+    if mode is None or workspace is None:
+        return None
+    current_tool = workspace.tools.from_space_view3d_mode(mode)
+    if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
+        return None
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return None
+    return obj, current_tool, element
+
+
+def _read_headers_into_props(obj, element):
+    """Populate ``BIMModelProperties`` header values from the active
+    object's IFC extrusion. Enum-safe: writes only header floats, never
+    user-intent enum slots, so it is safe to call on the post-commit hook."""
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
         return
@@ -195,6 +238,7 @@ def update_bim_tool_props():
     if not AuthoringData.is_loaded:
         AuthoringData.load()
 
+    props = tool.Model.get_model_props()
     if AuthoringData.data["active_material_usage"] == "LAYER2":
         x_angle = get_x_angle(extrusion)
         axis = tool.Model.get_wall_axis(obj)["reference"]
@@ -393,8 +437,8 @@ def subscribe_to_viewport_shading_changes():
 
 def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
     """Invariants enforced on every load_post: msgbus subscription, IFC owner
-    settings, scene-bound caches, draft-flag healing, multi-instance lock probe,
-    and previews discarded so saved preview state never resurfaces on reopen."""
+    settings, scene-bound caches, load-transient parametric state, and the
+    multi-instance lock probe."""
     global global_subscription_owner
     active_object_key = bpy.types.LayerObjects, "active"
     bpy.msgbus.subscribe_rna(
@@ -405,8 +449,7 @@ def _apply_save_file_invariants(scene: bpy.types.Scene) -> None:
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
 
-    tool.Parametric.heal_stale_edit_flags()
-    discard_pending_previews(scene)
+    tool.Parametric.on_load_post(scene)
 
     if tool.Ifc.get() and bpy.data.is_saved:
         props = tool.Blender.get_bim_props()
@@ -471,6 +514,12 @@ def _install_viewport_overlays() -> None:
     WallAxisDecorator.uninstall()
     SlabDirectionDecorator.uninstall()
     WallFilletPreviewDecorator.uninstall()
+    BendPreviewDecorator.uninstall()
+    MEPSegmentExtendPreviewDecorator.uninstall()
+    WallGizmoPreviewDecorator.uninstall()
+    DoorSwingReadonlyDecorator.uninstall()
+    ArrayPreviewDecorator.uninstall()
+    ArraySelectionHighlightDecorator.uninstall()
     uninstall_decorator_cache_handlers()
     try:
         if georeference_props.should_visualise:
@@ -489,6 +538,26 @@ def _install_viewport_overlays() -> None:
         # wall_fillet.is_active, so installation has no cost when no preview
         # is open. No corresponding addon-preference toggle.
         WallFilletPreviewDecorator.install(bpy.context)
+        # Always-installed siblings of WallFilletPreviewDecorator: each
+        # self-polls on its own scene.BIMPreviewProperties subgroup or on
+        # selection + hover gizmo state — zero cost when nothing is active.
+        BendPreviewDecorator.install(bpy.context)
+        MEPSegmentExtendPreviewDecorator.install(bpy.context)
+        # Always-installed: draw_lines() self-polls on selection + hover state
+        # for join / extend-to-wall / cursor-extend / cursor-split previews.
+        # Free when no preview-eligible state is active.
+        WallGizmoPreviewDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on active object + IfcDoor +
+        # parametric pset, so the cost is one bpy/IFC lookup per redraw when
+        # nothing eligible is selected.
+        DoorSwingReadonlyDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on the active object's array
+        # family membership, so installation has no cost when no array
+        # element is selected.
+        ArraySelectionHighlightDecorator.install(bpy.context)
+        # Always-installed: draw() self-polls on props.is_editing — only
+        # paints during an active array edit lifecycle.
+        ArrayPreviewDecorator.install(bpy.context)
     finally:
         install_decorator_cache_handlers()
 

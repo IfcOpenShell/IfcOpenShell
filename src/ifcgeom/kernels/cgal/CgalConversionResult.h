@@ -185,7 +185,7 @@ namespace ifcopenshell { namespace geometry {
 		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
     public:
-		CgalShape(const cgal_shape_t& shape, bool convex = false);
+		CgalShape(const cgal_shape_t& shape, bool convex = false, Logger& logger = Logger::Root());
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool convex = false) {
@@ -209,7 +209,7 @@ namespace ifcopenshell { namespace geometry {
 		operator const cgal_shape_t& () const { to_poly();  return *shape_; }
 		const cgal_shape_t& poly() const { to_poly(); return *shape_; }
 
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual IfcGeom::ConversionResultShape* clone() const {
@@ -285,7 +285,7 @@ namespace ifcopenshell { namespace geometry {
 			planes_.push_back(shape);
 		}
 
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual int surface_genus() const;

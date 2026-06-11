@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import contextlib
 import importlib
+import math
 import os
 import platform
 import subprocess
@@ -229,15 +230,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
-        """Gets the active object
+        """Return the active object, or ``None`` when the current context
+        exposes neither ``active_object`` nor a ``view_layer`` (stripped
+        operator contexts).
 
         :param is_selected: If true, the active object also needs to be selected.
         """
-        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
-            if not is_selected:
-                return obj
-            if obj.select_get():
-                return obj
+        obj = getattr(bpy.context, "active_object", None)
+        if obj is None:
+            view_layer = getattr(bpy.context, "view_layer", None)
+            if view_layer is not None:
+                obj = view_layer.objects.active
+        if obj is None:
+            return None
+        if is_selected and not obj.select_get():
+            return None
+        return obj
 
     @classmethod
     def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
@@ -880,18 +888,56 @@ class Blender(bonsai.core.tool.Blender):
         #     ( 1.0,  1.0, -1.0),        # 7
         # ]
         bound_box = obj.bound_box
+        min_pt = Vector(bound_box[0])
+        max_pt = Vector(bound_box[6])
         bbox_dict = {
-            "min_x": bound_box[0][0],
-            "max_x": bound_box[6][0],
-            "min_y": bound_box[0][1],
-            "max_y": bound_box[6][1],
-            "min_z": bound_box[0][2],
-            "max_z": bound_box[6][2],
-            "min_point": Vector(bound_box[0]),
-            "max_point": Vector(bound_box[6]),
-            "center": (Vector(bound_box[6]) + Vector(bound_box[0])) / 2,
+            "min_x": min_pt.x,
+            "max_x": max_pt.x,
+            "min_y": min_pt.y,
+            "max_y": max_pt.y,
+            "min_z": min_pt.z,
+            "max_z": max_pt.z,
+            "min_point": min_pt,
+            "max_point": max_pt,
+            "center": (max_pt + min_pt) / 2,
+            # Intrinsic per-axis size in object-local space. Distinct from
+            # ``obj.dimensions``, which folds object-level scale into its
+            # output; this is the raw mesh bbox extent.
+            "dimensions": (max_pt.x - min_pt.x, max_pt.y - min_pt.y, max_pt.z - min_pt.z),
         }
         return bbox_dict
+
+    @classmethod
+    def get_object_world_bounding_box(cls, obj: bpy.types.Object) -> dict[str, Union[float, Vector]]:
+        """Same shape as ``get_object_bounding_box`` but with ``matrix_world``
+        applied — extents are computed across the 8 transformed corners, so
+        a rotated or scaled object reports its actual world-axis AABB rather
+        than the misleading transform of the local-space corners.
+
+        ``bound_box[0]`` / ``bound_box[6]`` are the local min/max corners but
+        do NOT correspond to the world AABB extremes once the object is
+        rotated, so min/max must be taken per-axis across all 8 corners."""
+        corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+        xs = [c.x for c in corners]
+        ys = [c.y for c in corners]
+        zs = [c.z for c in corners]
+        min_point = Vector((min(xs), min(ys), min(zs)))
+        max_point = Vector((max(xs), max(ys), max(zs)))
+        return {
+            "min_x": min_point.x,
+            "max_x": max_point.x,
+            "min_y": min_point.y,
+            "max_y": max_point.y,
+            "min_z": min_point.z,
+            "max_z": max_point.z,
+            "min_point": min_point,
+            "max_point": max_point,
+            "center": (min_point + max_point) / 2,
+            # World-axis-aligned per-axis size. For rotated objects this is
+            # the AABB extent, not the intrinsic mesh size (use the local
+            # variant for that).
+            "dimensions": (max_point.x - min_point.x, max_point.y - min_point.y, max_point.z - min_point.z),
+        }
 
     @classmethod
     def select_and_activate_single_object(cls, context: bpy.types.Context, active_object: bpy.types.Object) -> None:
@@ -1332,74 +1378,6 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     class Modifier:
-        # ----------------------------------------------------------------------
-        # FIXME(PR5): backward-compat shims for callers still using the
-        # pre-refactor API. The is_<type> predicates now live on tool.Parametric;
-        # the Array helper bag now lives on tool.Array. PR4 migrates each caller;
-        # this whole shim block is removed in PR5's cleanup.
-        # ----------------------------------------------------------------------
-
-        @classmethod
-        def is_door(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_door(element)
-
-        @classmethod
-        def is_railing(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_railing(element)
-
-        @classmethod
-        def is_roof(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_roof(element)
-
-        @classmethod
-        def is_stair(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_stair(element)
-
-        @classmethod
-        def is_wall(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_wall(element)
-
-        @classmethod
-        def is_window(cls, element: entity_instance) -> bool:
-            return tool.Parametric.is_window(element)
-
-        class Array:
-            @classmethod
-            def bake_children_transform(cls, parent_element: ifcopenshell.entity_instance, item: int) -> None:
-                tool.Array.bake_children_transform(parent_element, item)
-
-            @classmethod
-            def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                tool.Array.constrain_children_to_parent(parent_element)
-
-            @classmethod
-            def get_all_children_objects(cls, parent_element: ifcopenshell.entity_instance) -> list:
-                return tool.Array.get_all_children_objects(parent_element)
-
-            @classmethod
-            def get_all_objects(cls, parent_element: ifcopenshell.entity_instance) -> list:
-                return tool.Array.get_all_objects(parent_element)
-
-            @classmethod
-            def get_children_objects(cls, modifier_data: dict) -> list:
-                return tool.Array.get_children_objects(modifier_data)
-
-            @classmethod
-            def get_modifiers_data(cls, parent_element: ifcopenshell.entity_instance):
-                return tool.Array.get_modifiers_data(parent_element)
-
-            @classmethod
-            def remove_constraints(cls, parent_element: ifcopenshell.entity_instance) -> None:
-                tool.Array.remove_constraints(parent_element)
-
-            @classmethod
-            def set_children_lock_state(
-                cls, parent_element: ifcopenshell.entity_instance, item: int, lock: bool
-            ) -> None:
-                tool.Array.set_children_lock_state(parent_element, item, lock)
-
-        # ----------------------------------------------------------------------
-
         @classmethod
         def try_applying_edit_mode(cls, obj: bpy.types.Object, element: entity_instance) -> bool:
             """Tries to validate the current BIM modifier parameters for the active object
@@ -1480,6 +1458,38 @@ class Blender(bonsai.core.tool.Blender):
                 return False
             parent_guid = pset.get("Parent")
             return parent_guid is not None and parent_guid != element.GlobalId
+
+        @classmethod
+        def any_selected_is_array_child(cls) -> bool:
+            """True if any selected IFC-linked object is a Bonsai array child.
+
+            Multi-object wall topology gizmos (merge / join / extend / unjoin
+            / fillet) and their bound operators gate on this: any mutation
+            applied to a child is overwritten on the next
+            ``regenerate_array``, and merge specifically would leave the
+            parent's ``BBIM_Array.Data`` list pointing at a deleted GUID.
+
+            Memoised against (selection signature, IFC geometry generation)
+            so gizmo polls that fire per input event don't re-walk the pset
+            for every selected object every frame. Identity-keyed so plain
+            Python objects (used by tests) work alongside real Blender
+            ``bpy_struct`` wrappers."""
+            selected = tool.Blender.get_selected_objects()
+            selection_sig = frozenset(id(obj) for obj in selected)
+            current_gen = tool.Parametric.get_geom_generation()
+            cached = cls._any_selected_array_child_memo
+            if cached is not None and cached[0] == selection_sig and cached[1] == current_gen:
+                return cached[2]
+            result = False
+            for obj in selected:
+                element = tool.Ifc.get_entity(obj)
+                if element is not None and cls.is_array_child(element):
+                    result = True
+                    break
+            cls._any_selected_array_child_memo = (selection_sig, current_gen, result)
+            return result
+
+        _any_selected_array_child_memo: tuple[frozenset[int], int, bool] | None = None
 
         @classmethod
         def is_slab(cls, element: entity_instance) -> bool:
@@ -2019,6 +2029,18 @@ class Blender(bonsai.core.tool.Blender):
         return types.MappingProxyType(dct)
 
     @classmethod
+    @lru_cache
+    def get_property_header_tools(cls) -> frozenset[str]:
+        """``BimTool`` plus its parametric subclasses — the workspace
+        tools whose 3D-view / N-panel header surfaces BIM Tool property
+        floats (extrusion_depth, length, x_angle). ``AnnotationTool``
+        and the non-``BimTool`` workspace tools (spatial / structural /
+        cad / covering) are excluded by construction."""
+        from bonsai.bim.module.model.workspace import BimTool
+
+        return frozenset(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool]))
+
+    @classmethod
     def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:
         return obj.BIMObjectConstraintProperties  # pyright: ignore[reportAttributeAccessIssue]
 
@@ -2239,6 +2261,65 @@ class Blender(bonsai.core.tool.Blender):
         return True
 
     @classmethod
+    def draw_bmesh_face_tris(
+        cls,
+        bm: bmesh.types.BMesh,
+        world_vert_coords: list,
+        color: Any,
+        draw_batch: Callable[[str, list, Any, list], None],
+    ) -> None:
+        """Submit a non-mutating beauty-triangulated TRIS batch for ``bm``'s faces.
+
+        ``world_vert_coords`` must be indexed by ``bm.verts`` index. Never call
+        ``bmesh.ops.triangulate`` on a live bmesh to compute draw indices — it
+        mutates the input and produces ear-clip fans that render as visible
+        streaks at low alpha.
+        """
+        tris = [[loop.vert.index for loop in tri] for tri in bm.calc_loop_triangles()]
+        draw_batch("TRIS", world_vert_coords, color, tris)
+
+    @classmethod
+    def build_dashed_line_segments(
+        cls,
+        world_verts: Sequence[Sequence[float]],
+        edges_indices: Sequence[Sequence[int]],
+        dash_period: float,
+        dash_width: float,
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[int, int]]]:
+        """Pre-segment edges into world-space dash chunks for a vanilla LINES batch.
+
+        Each input edge is sliced into segments of length ``dash_width`` spaced
+        ``dash_period`` apart (dash phase resets per-edge). The result is a fresh
+        ``(verts, edges)`` pair that draws as dashes through any standard line
+        shader — letting both passes of a visible/occluded outline reuse the
+        same shader so depth values match exactly across passes.
+        """
+        new_verts: list[tuple[float, float, float]] = []
+        new_edges: list[tuple[int, int]] = []
+        if dash_period <= 0 or dash_width <= 0:
+            return new_verts, new_edges
+        n = len(world_verts)
+        for i, j in edges_indices:
+            if not (0 <= i < n and 0 <= j < n) or i == j:
+                continue
+            v0 = world_verts[i]
+            v1 = world_verts[j]
+            dx, dy, dz = v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]
+            edge_length = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if edge_length == 0.0:
+                continue
+            ux, uy, uz = dx / edge_length, dy / edge_length, dz / edge_length
+            t = 0.0
+            while t < edge_length:
+                t_end = min(t + dash_width, edge_length)
+                idx = len(new_verts)
+                new_verts.append((v0[0] + ux * t, v0[1] + uy * t, v0[2] + uz * t))
+                new_verts.append((v0[0] + ux * t_end, v0[1] + uy * t_end, v0[2] + uz * t_end))
+                new_edges.append((idx, idx + 1))
+                t += dash_period
+        return new_verts, new_edges
+
+    @classmethod
     def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
         """Extracts error report lines from a runtime exception during operator execution.
 
@@ -2388,7 +2469,7 @@ class Blender(bonsai.core.tool.Blender):
 
         See https://projects.blender.org/blender/blender/issues/149283
         """
-        if len(bytedata) == (n * 2):
+        if len(bytedata) == (n * 8):  # float64 has 8 bytes per element
             return np.frombuffer(bytedata, dtype=np.float64).astype(np.float32)
         return np.frombuffer(bytedata, dtype=np.float32)
 

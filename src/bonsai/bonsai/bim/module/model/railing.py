@@ -415,7 +415,7 @@ class _RailingEditMixin(PathPreservingEditMixin):
 
     @classmethod
     def _is_element_type(cls, element):
-        return tool.Blender.Modifier.is_railing(element)
+        return tool.Parametric.is_railing(element)
 
     @classmethod
     def _get_props(cls, obj: bpy.types.Object):

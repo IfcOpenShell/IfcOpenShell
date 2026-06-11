@@ -34,11 +34,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	
 	for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCompositeCurveSegment>() && segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()) {
-			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
+			logger_.Notice("GEO", 238, "Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
 			double u0 = 0.0;
 			double u1 = segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < settings_.get<settings::Precision>().get()) {
-				Logger::Warning("Segment length below tolerance", segment);
+				logger_.Warning("GEO", 239, "Segment length below tolerance", segment);
 			}
 
 			auto e = taxonomy::make<taxonomy::edge>();
@@ -70,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 					e->end = 2.0 * boost::math::constants::pi<double>();
 					loop->children.push_back(e);
 				} else {
-					Logger::Warning("Unexpected segment type", segment);
+					logger_.Warning("GEO", 240, "Unexpected segment type", segment);
 					return nullptr;
 				}
 			}

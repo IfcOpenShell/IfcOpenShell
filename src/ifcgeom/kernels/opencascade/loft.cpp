@@ -83,7 +83,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 	if (non_polygonal) {
 		if (loft->children.size() < 2) {
-            Logger::Error("Not enough sections to loft");
+            Logger::Root().Error("GEO", 177, "Not enough sections to loft");
             return false;
         }
 
@@ -124,7 +124,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 		auto first_wire_count = sections.front().size();
         for (auto& section : sections) {
 			if (section.size() != first_wire_count) {
-				Logger::Error("Inconsistent number of wires in sections");
+				Logger::Root().Error("GEO", 178, "Inconsistent number of wires in sections");
 				return false;
 			}
         }
@@ -261,7 +261,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	*/
 
     if (shps.size() < 2) {
-        Logger::Error("Not enough sections to loft");
+        Logger::Root().Error("GEO", 179, "Not enough sections to loft");
         return false;
     }
 

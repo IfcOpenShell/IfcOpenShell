@@ -461,6 +461,7 @@ def create_shape(
     inst: entity_instance,
     repr: Optional[entity_instance] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
+    logger: Optional[ifcopenshell.logger] = None,
 ) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
     Returns a geometric interpretation of the IFC entity instance
@@ -507,7 +508,7 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         ifcopenshell_wrapper.create_shape(
-            settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library
+            settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library, *(filter(None, (logger,)))
         ),
     )
 

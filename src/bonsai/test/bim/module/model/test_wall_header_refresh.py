@@ -18,21 +18,20 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Regression tests for the post-IFC-commit refresh path that re-syncs the
-workspace tool header (``BIMModelProperties``) and invalidates the per-wall
-gizmo geometry cache.
+"""Regression tests for the post-IFC-commit refresh path.
 
-Bug repro before the fix: hotkey operators that edited the active wall in
-place (``bpy.ops.bim.hotkey(hotkey="S_E")`` / ``"C_E"``) mutated IFC but never
-fired ``active_object_callback`` (no selection change), so the header H/L/A
-fields and the gizmo cache both kept showing stale values. ``refresh_ui_data``
-ran, but it never resynced ``BIMModelProperties`` and never invalidated the
-per-gizmo-group geometry cache. The fix wires both refreshes through
-``tool.Parametric.refresh_post_commit`` and calls it from every
-``tool.Ifc.Operator`` epilogue."""
+Two invariants:
+
+* Every commit bumps ``_geom_generation`` so caches keyed off it drop
+  stale entries on the next read.
+* The BIM Tool header float refresh (``refresh_bim_tool_headers``) fires
+  only for commits whose operator is a parametric ``finish_op`` from
+  ``tool.Parametric.EDIT_TYPES`` — the validate-gizmo path. Other
+  operators skip it; their commit context may lack the view-layer
+  attributes the refresh reads."""
 
 import types
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import bpy
 import pytest
@@ -40,23 +39,42 @@ import pytest
 pytestmark = pytest.mark.wall
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
-
-
-def test_refresh_post_commit_bumps_generation_and_resyncs_header():
-    """``refresh_post_commit`` must bump the generation counter and call
-    ``update_bim_tool_props`` so the workspace tool header re-syncs from IFC."""
-    import bonsai.bim.handler as handler
+def test_refresh_post_commit_bumps_generation_for_every_operator():
+    """The generation counter advances on every commit, regardless of
+    operator class — it's the cache-invalidation signal for any code
+    keyed off ``tool.Parametric.get_geom_generation()``."""
     from bonsai import tool
 
     before = tool.Parametric.get_geom_generation()
-    with patch.object(handler, "update_bim_tool_props") as mock_resync:
-        tool.Parametric.refresh_post_commit()
+    tool.Parametric.refresh_post_commit(MagicMock(bl_idname="bim.append_library_element"))
     assert tool.Parametric.get_geom_generation() == before + 1
-    mock_resync.assert_called_once()
+
+
+def test_refresh_post_commit_refreshes_headers_for_validate_gizmo_operators():
+    """Operators whose ``bl_idname`` matches a ``ParametricObject.finish_op``
+    in ``EDIT_TYPES`` are the validate-gizmo path: selection didn't
+    change, but the IFC values backing the BIM Tool header did. The
+    commit hook must push the new IFC state into the header floats."""
+    import bonsai.bim.handler as handler
+    from bonsai import tool
+
+    finish_op_idname = tool.Parametric.EDIT_TYPES[0].finish_op
+    with patch.object(handler, "refresh_bim_tool_headers") as mock_refresh:
+        tool.Parametric.refresh_post_commit(MagicMock(bl_idname=finish_op_idname))
+    mock_refresh.assert_called_once()
+
+
+def test_refresh_post_commit_skips_header_refresh_for_non_finish_operators():
+    """Other operators must not trigger the header refresh. The refresh
+    reads ``bpy.context``; for commits invoked from a stripped operator
+    context (e.g. nested ``bpy.ops`` calls during project setup) this
+    would raise ``AttributeError`` and break the outer operator chain."""
+    import bonsai.bim.handler as handler
+    from bonsai import tool
+
+    with patch.object(handler, "refresh_bim_tool_headers") as mock_refresh:
+        tool.Parametric.refresh_post_commit(MagicMock(bl_idname="bim.append_library_element"))
+    mock_refresh.assert_not_called()
 
 
 def test_geom_generation_invalidates_wall_geom_cache():

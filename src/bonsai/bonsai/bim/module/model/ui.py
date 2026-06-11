@@ -238,11 +238,11 @@ class BIM_PT_array(bpy.types.Panel):
 
             for i, array in enumerate(ArrayData.data["parameters"]["data_dict"]):
                 box = self.layout.box()
-                if props.is_editing == i:
+                if props.editing_item_index == i:
                     row = box.row(align=True)
                     row.prop(props, "count", icon="MOD_ARRAY")
-                    row.operator("bim.edit_array", icon="CHECKMARK", text="").item = i
-                    row.operator("bim.disable_editing_array", icon="CANCEL", text="")
+                    row.operator("bim.finish_editing_array", icon="CHECKMARK", text="")
+                    row.operator("bim.cancel_editing_array", icon="CANCEL", text="")
                     row = box.row(align=True)
                     row.prop(props, "method")
                     row = box.row(align=True)
@@ -365,7 +365,7 @@ class BIM_PT_wall(bpy.types.Panel):
         if not obj:
             return False
         element = tool.Ifc.get_entity(obj)
-        return bool(element) and tool.Blender.Modifier.is_wall(element)
+        return bool(element) and tool.Parametric.is_wall(element)
 
     def draw(self, context):
         obj = context.active_object

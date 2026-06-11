@@ -64,10 +64,10 @@ namespace ifcopenshell {
 				ifcopenshell::geometry::abstract_mapping* mapping_;
 				IfcParse::IfcFile* file_;
 			public:
-				HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels)
-					: AbstractKernel(name, settings)
+				HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels, Logger& logger = Logger::Root())
+					: AbstractKernel(name, settings, logger)
 					, kernels_(std::move(kernels))
-					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings))
+					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings, logger))
 					, file_(file)
 				{
 				}
@@ -163,26 +163,26 @@ namespace ifcopenshell {
 						ks.emplace_back(k->clone());
 					}
 					// @todo ugly
-					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks));
+					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks), logger());
 				}
 			};
 
-			inline std::unique_ptr<AbstractKernel> construct(IfcParse::IfcFile* file, const std::string& geometry_library, Settings& conv_settings) {
+			inline std::unique_ptr<AbstractKernel> construct(IfcParse::IfcFile* file, const std::string& geometry_library, Settings& conv_settings, Logger& logger = Logger::Root()) {
 				std::string geometry_library_lower = boost::to_lower_copy(geometry_library);
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 				if (geometry_library_lower == "opencascade") {
-					return std::make_unique<IfcGeom::OpenCascadeKernel>(conv_settings);
+					return std::make_unique<IfcGeom::OpenCascadeKernel>(conv_settings, logger);
 				}
 #endif
 
 #ifdef IFOPSH_WITH_CGAL
 				if (geometry_library_lower == "cgal") {
-					return std::make_unique<CgalKernel>(conv_settings);
+					return std::make_unique<CgalKernel>(conv_settings, logger);
 				}
 
 				if (geometry_library_lower == "cgal-simple") {
-					return std::make_unique<SimpleCgalKernel>(conv_settings);
+					return std::make_unique<SimpleCgalKernel>(conv_settings, logger);
 				}
 #endif
 
@@ -198,19 +198,19 @@ namespace ifcopenshell {
 						auto n = kernels.size();
 #ifdef IFOPSH_WITH_OPENCASCADE
 						if (geometry_library_lower.find("opencascade", 0) == 0) {
-							kernels.emplace_back(new IfcGeom::OpenCascadeKernel(conv_settings));
+							kernels.emplace_back(new IfcGeom::OpenCascadeKernel(conv_settings, logger));
 							geometry_library_lower = geometry_library_lower.substr(strlen("opencascade"));
 						}
 #endif
 
 #ifdef IFOPSH_WITH_CGAL
 						if (geometry_library_lower.find("cgal-simple", 0) == 0) {
-							kernels.emplace_back(new SimpleCgalKernel(conv_settings));
+							kernels.emplace_back(new SimpleCgalKernel(conv_settings, logger));
 							geometry_library_lower = geometry_library_lower.substr(strlen("cgal-simple"));
 						}
 
 						if (geometry_library_lower.find("cgal", 0) == 0) {
-							kernels.emplace_back(new CgalKernel(conv_settings));
+							kernels.emplace_back(new CgalKernel(conv_settings, logger));
 							geometry_library_lower = geometry_library_lower.substr(strlen("cgal"));
 						}
 #endif
@@ -225,7 +225,7 @@ namespace ifcopenshell {
 					}
 
 					if (!kernels.empty()) {
-						return std::make_unique<HybridKernel>(geometry_library, file, conv_settings, std::move(kernels));
+						return std::make_unique<HybridKernel>(geometry_library, file, conv_settings, std::move(kernels), logger);
 					}
 				}
 

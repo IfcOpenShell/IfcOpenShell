@@ -21,15 +21,17 @@ namespace ifcopenshell { namespace geometry {
 		std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel> kernel_;
 		ifcopenshell::geometry::Settings settings_;
 		std::map<ifcopenshell::geometry::taxonomy::ptr, brep_ptr, ifcopenshell::geometry::taxonomy::less_functor> cache_;
+		Logger& logger_;
 
 	public:
 		ifcopenshell::geometry::kernels::AbstractKernel* kernel() { return &*kernel_; }
 
-		Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
+		Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root());
 		
 		~Converter();
 
 		ifcopenshell::geometry::abstract_mapping* mapping() const { return mapping_; }
+		Logger& logger() const { return logger_; }
 
 		/*
 		virtual NativeElement<double, double>* convert(

@@ -41,8 +41,8 @@ class POSTFIX_SCHEMA(JsonSerializer) : public JsonSerializer {
     ifcopenshell::geometry::abstract_mapping* mapping_;
 
   public:
-    POSTFIX_SCHEMA(JsonSerializer)(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect)
-        : JsonSerializer(0, "", dialect), mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_))
+    POSTFIX_SCHEMA(JsonSerializer)(IfcParse::IfcFile* file, const std::string& json_filename, JsonSerializer::Dialect dialect, Logger& logger = Logger::Root())
+        : JsonSerializer(0, "", dialect, logger), mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_, logger))
     {
         this->file = file;
         this->json_filename = json_filename;

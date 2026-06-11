@@ -216,6 +216,26 @@ def test_iterator():
         assert iterator.initialize()
 
 
+def test_logging():
+    logger = ifcopenshell.logger()
+    logger.OutputFormat(logger.FMT_INMEMORY)
+    settings = ifcopenshell.geom.settings()
+    f = ifcopenshell.open(fn)
+    col = f.by_type("IfcColumn")[0]
+    _ = ifcopenshell.geom.create_shape(settings, col, logger=logger)
+
+    num_log_items = len(list(logger))
+    col.Representation.Representations[0].Items[0].MappingSource.MappedRepresentation.Items[0].Depth *= -1.0
+
+    with pytest.raises(RuntimeError):
+        _ = ifcopenshell.geom.create_shape(settings, col, logger=logger)
+    new_items = list(logger)[num_log_items:]
+
+    assert ("GEO089", "Non-positive extrusion height encountered for:") in [
+        (msg.code, msg.message) for msg in new_items
+    ]
+
+
 if __name__ == "__main__":
     import pytest
 

@@ -25,10 +25,31 @@
 
 #include <boost/optional.hpp>
 #include <boost/scope_exit.hpp>
+#include <cstdint>
 #include <exception>
 #include <map>
+#include <mutex>
 #include <sstream>
 #include <string>
+
+class IFC_PARSE_API log_message {
+  public:
+    char code[7];
+    int severity;
+    std::string message, instance;
+
+    log_message(int severity, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* inst = 0)
+        : severity(severity)
+        , message(message)
+    {
+        snprintf(code, 7, "%s%03u", code_prefix, code_number);
+        if (inst) {
+            std::ostringstream oss;
+            inst->data().toString(nullptr, nullptr, 0, oss, true);
+            instance = oss.str();
+        }
+    }
+};
 
 class IFC_PARSE_API Logger {
   public:
@@ -39,76 +60,92 @@ class IFC_PARSE_API Logger {
         LOG_WARNING,
         LOG_ERROR
     } Severity;
+
     typedef enum {
         FMT_PLAIN,
-        FMT_JSON
+        FMT_JSON,
+        FMT_INMEMORY
     } Format;
 
   private:
+    std::vector<log_message> log_messages_;
+
     // To both stream variants need to exist at runtime or should this be a
     // template argument of Logger or controlled using preprocessor directives?
-    static std::ostream* log1_;
-    static std::ostream* log2_;
+    std::ostream* log1_ = nullptr;
+    std::ostream* log2_ = nullptr;
 
-    static std::wostream* wlog1_;
-    static std::wostream* wlog2_;
+    std::wostream* wlog1_ = nullptr;
+    std::wostream* wlog2_ = nullptr;
 
-    static std::stringstream log_stream_;
+    std::stringstream log_stream_;
 
-    static Severity verbosity_;
-    static Format format_;
-    static Severity max_severity_;
+    Severity verbosity_ = LOG_NOTICE;
+    Format format_ = FMT_PLAIN;
+    Severity max_severity_ = LOG_NOTICE;
 
-    static boost::optional<long long> first_timepoint_;
-    static std::map<std::string, double> performance_statistics_;
-    static std::map<std::string, double> performance_signal_start_;
+    boost::optional<long long> first_timepoint_;
+    std::map<std::string, double> performance_statistics_;
+    std::map<std::string, double> performance_signal_start_;
 
-    static bool print_perf_stats_on_element_;
+    bool print_perf_stats_on_element_ = false;
+    std::mutex mutex_;
+
+    const IfcUtil::IfcBaseClass* current_product() const;
+    void current_product(const IfcUtil::IfcBaseClass* product);
 
   public:
-    static void SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product);
+    Logger() = default;
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    static Logger& Root();
+
+    void SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void SetOutput(std::wostream* stream1, std::wostream* stream2);
+    void SetOutput(std::wostream* stream1, std::wostream* stream2);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void SetOutput(std::ostream* stream1, std::ostream* stream2);
+    void SetOutput(std::ostream* stream1, std::ostream* stream2);
 
     /// Determines the types of log messages to get logged
-    static void Verbosity(Severity severity);
-    static Severity Verbosity();
-    static Severity MaxSeverity();
+    void Verbosity(Severity severity);
+    Severity Verbosity() const;
+    Severity MaxSeverity() const;
 
     /// Determines output format: plain text or sequence of JSON objects
-    static void OutputFormat(Format format);
-    static Format OutputFormat();
+    void OutputFormat(Format format);
+    Format OutputFormat() const;
 
     /// Log a message to the output stream
-    static void Message(Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
-    static void Message(Severity type, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
+    void Message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
+    void Message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
 
-    static void Notice(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, message, instance); }
-    static void Warning(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, message, instance); }
-    static void Error(const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, message, instance); }
+    void Notice(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, code_prefix, code_number, message, instance); }
+    void Warning(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, code_prefix, code_number, message, instance); }
+    void Error(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, code_prefix, code_number, message, instance); }
 
-    static void Notice(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, exception, instance); }
-    static void Warning(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, exception, instance); }
-    static void Error(const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, exception, instance); }
+    void Notice(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, code_prefix, code_number, exception, instance); }
+    void Warning(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, code_prefix, code_number, exception, instance); }
+    void Error(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, code_prefix, code_number, exception, instance); }
 
-    static void Status(const std::string& message, bool new_line = true);
+    void Status(const std::string& message, bool new_line = true);
 
-    static void ProgressBar(int progress);
-    static std::string GetLog();
-    static void PrintPerformanceStats();
-    static void PrintPerformanceStatsOnElement(bool b) { print_perf_stats_on_element_ = b; }
+    void ProgressBar(int progress);
+    std::string GetLog();
+    void PrintPerformanceStats();
+    void PrintPerformanceStatsOnElement(bool b) { print_perf_stats_on_element_ = b; }
+
+    const std::vector<log_message>& log_messages() const { return log_messages_; }
 };
 
 #define PERF(x)                                                      \
                                                                      \
-    Logger::Message(Logger::LOG_PERF, x);                            \
+    Logger::Root().Message(Logger::LOG_PERF, "SYS", 1, x);            \
                                                                      \
     BOOST_SCOPE_EXIT(void) {                                         \
-        Logger::Message(Logger::LOG_PERF, "done " + std::string(x)); \
+        Logger::Root().Message(Logger::LOG_PERF, "SYS", 2, "done " + std::string(x)); \
     }                                                                \
     BOOST_SCOPE_EXIT_END
 

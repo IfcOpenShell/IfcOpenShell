@@ -969,7 +969,9 @@ class EditObjectUI:
 
         if PortData.data["total_ports"] > 0:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context)
+            add_layout_hotkey_operator(
+                row, "Regen", "S_G", bpy.ops.bim.regenerate_distribution_element.__doc__, ui_context
+            )
 
     @classmethod
     def draw_void(cls, context, row):
@@ -1442,10 +1444,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.enable_editing_extrusion_axis()
 
     def hotkey_A_O(self):
-        if tool.Model.get_model_props().openings:
-            bpy.ops.bim.edit_openings(apply_all=True)
-        else:
-            bpy.ops.bim.show_openings()
+        bpy.ops.bim.toggle_host_openings()
 
     def hotkey_C_E(self):
         if not bpy.context.selected_objects:

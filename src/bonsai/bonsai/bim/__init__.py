@@ -29,18 +29,6 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 from . import handler, operator, parametric_lifecycle, prop, ui
 
-
-def _parametric_gizmo_preference_classes() -> list[type]:
-    """Resolves the registry-driven ``GizmoPreferences<X>`` classes for the
-    ``classes`` list below. ``import bonsai.tool`` is kept local to surface
-    the load-order constraint: it relies on ``from . import handler, …``
-    above having primed the
-    ``tool/ifc.py → bim/ifc.py → bim/handler.py → bonsai.tool`` cycle."""
-    import bonsai.tool as tool
-
-    return tool.Parametric.iter_gizmo_preference_classes(ui)
-
-
 try:
     from bonsai.translations import translations_dict
 except ImportError:
@@ -171,10 +159,6 @@ classes = [
     ui.BIM_UL_tab_visibilities,
     ui.BIM_UL_panel_visibilities,
     ui.DocPreferences,
-    # Per-parametric-type ``GizmoPreferences<Name>`` classes — must register
-    # before ``ui.GizmoPreferences`` which holds the matching PointerProperty
-    # fields. Driven by ``tool.Parametric.EDIT_TYPES``.
-    *_parametric_gizmo_preference_classes(),
     ui.GizmoPreferences,
     # ui.DefaultParameters and ui.BIM_ADDON_preferences are registered separately after modules (see late_classes below)
     # Tabs panel

@@ -25,7 +25,6 @@ logic can be exercised without a real IFC fixture. Each test pins one of the
 gates ``poll()`` walks, so any silent regression in the gate order or in the
 LAYER3-active / LAYER2-other contract is caught by a dedicated assertion."""
 
-import types
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -35,10 +34,15 @@ import pytest
 pytestmark = pytest.mark.wall
 
 
-@pytest.fixture(autouse=True)
-def _require_real_bpy():
-    if not isinstance(bpy, types.ModuleType) or hasattr(bpy, "_mock_name"):
-        pytest.skip("requires real Blender (bpy is mocked or absent)")
+class _Obj:
+    """Hashable, name-bearing stand-in for a ``bpy.types.Object`` selection
+    slot. ``SimpleNamespace`` defines ``__eq__`` (and so ``__hash__ = None``)
+    which makes it unusable inside the ``set()`` that
+    ``get_selected_objects()`` returns; a plain class falls back to
+    identity-based hashing and works inside both ``set`` and ``list``."""
+
+    def __init__(self, name: str) -> None:
+        self.name = name
 
 
 def _make_context(active, selected):
@@ -76,19 +80,23 @@ def _patch_tools(prefs_on, selected, active_element, other_element, active_usage
         patch.object(tool.Blender, "get_selected_objects", return_value=set(selected)),
         patch.object(tool.Ifc, "get_entity", side_effect=get_entity),
         patch.object(tool.Model, "get_usage_type", side_effect=get_usage_type),
+        # The array-child filter is pinned by its own test file; stub it here
+        # so these poll tests stay focused on the count / layer-usage gates
+        # and don't have to scaffold the memoization cache key.
+        patch.object(tool.Blender.Modifier, "any_selected_is_array_child", return_value=False),
     ]
 
 
 def _run_poll(prefs_on, active_is_in_selected, len_override, active_usage, other_usage, active_has_entity=True):
     from bonsai.bim.module.model.wall import GizmoWallExtendVertically
 
-    slab_obj = object()
-    wall_obj = object()
-    active = slab_obj if active_is_in_selected else object()
+    slab_obj = _Obj("slab")
+    wall_obj = _Obj("wall")
+    active = slab_obj if active_is_in_selected else _Obj("active_extra")
     if len_override is None:
         selected = [slab_obj, wall_obj]
     else:
-        selected = [object() for _ in range(len_override)]
+        selected = [_Obj(f"obj_{i}") for i in range(len_override)]
         if active_is_in_selected and selected:
             active = selected[0]
 
@@ -202,11 +210,11 @@ def _make_path_rel(relating, related, relating_ct, related_ct, kind="IfcRelConne
     )
 
 
-def _run_iter_path_connections(elem, *, is_wall_predicate=lambda _e: True):
+def _run_iter_path_connections(elem, *, partner_predicate=lambda _e: True):
     from bonsai import tool
     from bonsai.bim.module.model.wall import _iter_path_connections
 
-    with patch.object(tool.Blender.Modifier, "is_wall", side_effect=is_wall_predicate):
+    with patch.object(tool.Parametric, "is_path_connectable_wall", side_effect=partner_predicate):
         return _iter_path_connections(elem)
 
 
@@ -260,14 +268,28 @@ def test_iter_path_connections_skips_non_wall_partners():
         relating=self_elem, related=non_wall_partner, relating_ct="ATEND", related_ct="ATSTART"
     )
     elem = SimpleNamespace(ConnectedTo=[rel_wall, rel_non_wall], ConnectedFrom=[])
-    result = _run_iter_path_connections(elem, is_wall_predicate=lambda e: e is wall_partner)
+    result = _run_iter_path_connections(elem, partner_predicate=lambda e: e is wall_partner)
     assert result == [(wall_partner, "ATEND", "ATSTART")]
+
+
+def test_iter_path_connections_includes_fillet_corner_partner():
+    # Fillet-corner walls carry no LAYER2 usage but are still valid path
+    # partners. The enumeration must use the same predicate the gizmo group's
+    # poll uses for the host wall — otherwise the corner is silently dropped
+    # from the neighbour's connection list and looks unconnected from the
+    # LAYER2 wall's perspective.
+    self_elem = object()
+    fillet_partner = object()
+    rel = _make_path_rel(relating=self_elem, related=fillet_partner, relating_ct="ATEND", related_ct="ATSTART")
+    elem = SimpleNamespace(ConnectedTo=[rel], ConnectedFrom=[])
+    result = _run_iter_path_connections(elem, partner_predicate=lambda e: e is fillet_partner)
+    assert result == [(fillet_partner, "ATEND", "ATSTART")]
 
 
 def test_iter_path_connections_tolerates_none_partner_refs():
     # Malformed / partial IFC files can leave a rel's element ref unset.
-    # Without a None guard, `Modifier.is_wall(None)` would raise on
-    # `None.is_a(...)` mid-frame and silently break the gizmo group.
+    # Without a None guard, the partner predicate would receive None and
+    # raise on `.is_a(...)` mid-frame, silently breaking the gizmo group.
     self_elem = object()
     other = object()
     rel_none = _make_path_rel(relating=self_elem, related=None, relating_ct="ATEND", related_ct="ATSTART")
@@ -288,3 +310,92 @@ def test_iter_path_connections_walks_both_inverses_in_order():
     rel_from = _make_path_rel(relating=p2, related=self_elem, relating_ct="ATEND", related_ct="ATEND")
     elem = SimpleNamespace(ConnectedTo=[rel_to], ConnectedFrom=[rel_from])
     assert _run_iter_path_connections(elem) == [(p1, "ATSTART", "ATSTART"), (p2, "ATEND", "ATEND")]
+
+
+# ----------------------------------------------------------------------------
+# _perpendicular_wall_params — clamping + side detection for the
+# "add perpendicular wall at cursor" gizmo and its operator.
+# ----------------------------------------------------------------------------
+#
+# Pure scalar math. The dead-zone is ``CURSOR_STACK_OFFSET`` — inside it the
+# on-axis split / extend-X icons own the click and this helper returns None.
+
+
+def _wall_consts():
+    from bonsai.bim.module.model.wall import GizmoWallEdition
+
+    return GizmoWallEdition.CURSOR_STACK_OFFSET
+
+
+def _run_perp_params(cursor_x, cursor_y, anchor_x=0.0, length=5.0):
+    from bonsai.bim.module.model.wall import _perpendicular_wall_params
+
+    return _perpendicular_wall_params(cursor_x, cursor_y, anchor_x, length)
+
+
+def test_perpendicular_params_on_axis_returns_none():
+    assert _run_perp_params(cursor_x=2.0, cursor_y=0.0) is None
+
+
+def test_perpendicular_params_at_dead_zone_boundary_returns_none():
+    # Inclusive boundary: at exactly the threshold the on-axis icons still own
+    # the click; the gizmo only takes over strictly past the dead zone.
+    threshold = _wall_consts()
+    assert _run_perp_params(cursor_x=2.0, cursor_y=threshold) is None
+    assert _run_perp_params(cursor_x=2.0, cursor_y=-threshold) is None
+
+
+def test_perpendicular_params_just_past_dead_zone_returns_params():
+    threshold = _wall_consts()
+    result = _run_perp_params(cursor_x=2.0, cursor_y=threshold + 0.01)
+    assert result is not None
+    clamped_x, length, side = result
+    assert clamped_x == pytest.approx(2.0)
+    assert length == pytest.approx(threshold + 0.01)
+    assert side == 1.0
+
+
+def test_perpendicular_params_negative_y_flips_side_sign():
+    result = _run_perp_params(cursor_x=2.0, cursor_y=-1.5)
+    assert result is not None
+    _, length, side = result
+    # Length is always positive — the side sign carries the direction so the
+    # operator can pick the +90° vs -90° rotation without sign-flipping length.
+    assert length == pytest.approx(1.5)
+    assert side == -1.0
+
+
+def test_perpendicular_params_clamps_low_when_cursor_left_of_wall():
+    result = _run_perp_params(cursor_x=-2.0, cursor_y=1.5, anchor_x=0.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(0.0)
+
+
+def test_perpendicular_params_clamps_high_when_cursor_right_of_wall():
+    result = _run_perp_params(cursor_x=10.0, cursor_y=1.5, anchor_x=0.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(5.0)
+
+
+def test_perpendicular_params_respects_nonzero_anchor_x():
+    # Non-zero anchor_x shifts the wall span; clamping must follow.
+    result = _run_perp_params(cursor_x=0.5, cursor_y=1.5, anchor_x=2.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(2.0)
+
+    result = _run_perp_params(cursor_x=10.0, cursor_y=1.5, anchor_x=2.0, length=5.0)
+    assert result is not None
+    clamped_x, _length, _side = result
+    assert clamped_x == pytest.approx(7.0)
+
+
+def test_perpendicular_params_in_range_passes_cursor_x_through():
+    result = _run_perp_params(cursor_x=3.0, cursor_y=1.5, anchor_x=0.0, length=5.0)
+    assert result is not None
+    clamped_x, length, side = result
+    assert clamped_x == pytest.approx(3.0)
+    assert length == pytest.approx(1.5)
+    assert side == 1.0

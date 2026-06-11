@@ -227,10 +227,8 @@ class Misc(bonsai.core.tool.Misc):
 
     @classmethod
     def set_object_origin_to_bottom(cls, obj: bpy.types.Object) -> None:
-        absolute_bound_box = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
-        min_z = min([c[2] for c in absolute_bound_box])
         new_origin = obj.matrix_world.translation.copy()
-        new_origin[2] = min_z
+        new_origin[2] = tool.Blender.get_object_world_bounding_box(obj)["min_z"]
         assert isinstance(obj.data, bpy.types.Mesh)
         obj.data.transform(
             Matrix.Translation(
@@ -249,11 +247,8 @@ class Misc(bonsai.core.tool.Misc):
 
     @classmethod
     def scale_object_to_height(cls, obj: bpy.types.Object, height: float) -> None:
-        absolute_bound_box = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
-        max_z = max([c[2] for c in absolute_bound_box])
-        min_z = min([c[2] for c in absolute_bound_box])
-        current_absolute_height = max_z - min_z
-        scale_factor = height / current_absolute_height
+        bbox = tool.Blender.get_object_world_bounding_box(obj)
+        scale_factor = height / (bbox["max_z"] - bbox["min_z"])
         obj.matrix_world @= Matrix.Scale(
             scale_factor, 4, obj.matrix_world.inverted().to_quaternion() @ Vector((0, 0, 1))
         )

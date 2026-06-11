@@ -86,7 +86,7 @@ private:
 	std::set<std::string> emitted_names_;
 	std::map<int, std::string> element_names_;
 public:
-	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&);
+	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&, Logger& logger = Logger::Root());
 	virtual ~USDSerializer();
 	bool ready() { return ready_; }
 	void writeHeader();

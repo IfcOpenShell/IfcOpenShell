@@ -850,15 +850,6 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
-    def has_material_styles(cls, element: ifcopenshell.entity_instance) -> bool:
-        """True when any of ``element``'s materials exposes an
-        ``IfcSurfaceStyle``. Gate body-style assignment to avoid double-styling."""
-        return any(
-            tool.Material.get_style(material) is not None
-            for material in ifcopenshell.util.element.get_materials(element)
-        )
-
-    @classmethod
     def reimport_element_representations(
         cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
     ) -> None:

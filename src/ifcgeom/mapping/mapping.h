@@ -67,19 +67,19 @@ namespace geometry {
 								}
 							}
 						} catch (const std::exception& e) {
-							Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+							logger_.Message(Logger::LOG_ERROR, "GEO", 325, std::string(e.what()) + "\nFailed to convert:", inst);
 						}
 					} else if (failed_on_purpose_.find(inst) == failed_on_purpose_.end()) {
-						Logger::Message(Logger::LOG_ERROR, "Failed to convert:", inst);
+						logger_.Message(Logger::LOG_ERROR, "GEO", 326, "Failed to convert:", inst);
 					}
 				} catch (const std::exception& e) {
-					Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+					logger_.Message(Logger::LOG_ERROR, "GEO", 327, std::string(e.what()) + "\nFailed to convert:", inst);
 				}
 			}
 		}
 		const IfcSchema::IfcStyledItem* find_style(const IfcSchema::IfcRepresentationItem*);
 	public:
-		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, Settings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_type_(0), placement_rel_to_instance_(0) {
+		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, Settings& settings, Logger& logger = Logger::Root()) : abstract_mapping(settings, logger), file_(file), placement_rel_to_type_(0), placement_rel_to_instance_(0) {
 			initialize_units_();
 		}
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const IfcUtil::IfcBaseInterface*);

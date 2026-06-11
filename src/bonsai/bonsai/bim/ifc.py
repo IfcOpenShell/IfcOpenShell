@@ -552,7 +552,7 @@ class IfcStore:
                     BrickStore.end_transaction()
                 IfcStore.end_transaction(operator)
                 bonsai.bim.handler.refresh_ui_data()
-                tool.Parametric.refresh_post_commit()
+                tool.Parametric.refresh_post_commit(operator)
 
                 if method == "MODAL":
                     cls.modal_in_progress = False
@@ -566,6 +566,19 @@ class IfcStore:
                 result = getattr(operator, "_modal")(context, event)
         except:
             bonsai.last_error = traceback.format_exc()
+            # An operator that mutated IFC then raised leaves the IFC graph captured
+            # by the transaction but the Blender side stale. Blender does not push an
+            # undo step for a raised operator (mirror of the CANCELLED-modal gap
+            # handled below), so we push one here so Ctrl+Z actually rewinds the
+            # partial mutation, then surface the recovery path to the user.
+            ifc_file = tool.Ifc.get()
+            if ifc_file and ifc_file.transaction and ifc_file.transaction.operations:
+                bpy.ops.ed.undo_push(message=f"Recover {operator.bl_idname}")
+                operator.report(
+                    {"WARNING"},
+                    "Operation partially completed (IFC changed, Blender state may be stale). "
+                    "Press Ctrl+Z to restore the previous state.",
+                )
             # Try to ensure undo will work since Blender undo does work in case of errors.
             # As error come unexpectedly, it's important that user might have a chance to save the file
             # before they got the error and not to lose the work they've done.

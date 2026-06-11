@@ -406,3 +406,21 @@ CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
 
 CREATE_SET_TYPEMAP_IN(int)
 CREATE_SET_TYPEMAP_IN(std::string)
+
+// for the logger codes
+%typemap(typecheck, precedence=SWIG_TYPECHECK_STRING) SWIGTYPE &code_prefix {
+    $1 = PyUnicode_Check($input);
+}
+%typemap(in) SWIGTYPE &code_prefix (char tmp[4]) {
+    Py_ssize_t len = 0;
+    const char *s = PyUnicode_AsUTF8AndSize($input, &len);
+
+    if (!s || len != 3) {
+        SWIG_exception_fail(SWIG_ValueError, "Expected Python str of length 3");
+    }
+
+    memcpy(tmp, s, 3);
+    tmp[3] = '\0';
+
+    $1 = &tmp;
+}

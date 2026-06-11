@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
+void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
 	ifcopenshell::geometry::Settings settings;
 
 	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
@@ -23,7 +23,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		IfcGeom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
-	IfcGeom::Iterator context_iterator("cgal", settings, &f, no_openings_and_spaces, 1);
+	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), settings, &f, no_openings_and_spaces, 1, logger);
 
 	auto get_elevation = [](const IfcUtil::IfcBaseClass* a) {
 		return ((const IfcUtil::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
@@ -198,7 +198,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 			auto s = geom_object->product()->get_value<std::string>("GlobalId");
 			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
 			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
-			Logger::Error("Element " + s + " contained in " + s2 + " located on " + s1);
+			logger.Error("VAL", 4, "Element " + s + " contained in " + s2 + " located on " + s1);
 		}
 
 		if (!no_progress) {
@@ -214,7 +214,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 					std::cerr << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
-				if (old_progress != progress) Logger::ProgressBar(progress);
+				if (old_progress != progress) logger.ProgressBar(progress);
 				old_progress = progress;
 			}
 		}
@@ -230,7 +230,7 @@ void fix_storeycontainment(IfcParse::IfcFile& f, bool no_progress, bool quiet, b
 		if (stderr_progress)
 			std::cerr << std::flush;
 	} else {
-		Logger::Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+		logger.Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
 	}
 }
