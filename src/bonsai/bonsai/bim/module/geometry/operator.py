@@ -3170,7 +3170,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 product_reps = element.RepresentationMaps
             item_aspect = {}
             for product_rep in product_reps:
-                for aspect in product_rep.HasShapeAspects:
+                for aspect in getattr(product_rep, "HasShapeAspects", ()):
                     for aspect_rep in aspect.ShapeRepresentations:
                         if aspect_rep.ContextOfItems != representation.ContextOfItems:
                             continue
