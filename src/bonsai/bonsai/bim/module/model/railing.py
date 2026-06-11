@@ -19,7 +19,7 @@
 
 import json
 import math
-from typing import Any, get_args
+from typing import Any
 
 import bmesh
 import bpy
@@ -38,7 +38,11 @@ from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
 from bonsai.bim.module.model import prop
 from bonsai.bim.module.model.data import RailingData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
-from bonsai.bim.parametric_lifecycle import PathPreservingEditMixin
+from bonsai.bim.parametric_lifecycle import (
+    CycleTypeMixin,
+    PathPreservingEditMixin,
+    PickTypeMixin,
+)
 from bonsai.tool.cad import WELD_TOLERANCE
 
 V_ = tool.Blender.V_
@@ -497,53 +501,9 @@ class _RailingEditMixin(PathPreservingEditMixin):
         update_railing_modifier_ifc_data(context)
 
     @classmethod
-    def _update_modifier_bmesh(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
-        update_railing_modifier_bmesh(context)
-
-    @classmethod
-    def _finish_one(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
-        """Skip the IFC commit when the draft matches the stored pset (no-op edit)."""
-        resolved = cls._resolve(obj)
-        if resolved is None:
-            return
-        element, props = resolved
-        pset_data = tool.Model.get_modeling_bbim_pset_data(obj, cls.pset_name)
-        stored = pset_data["data_dict"]
-        path_data = stored["path_data"]
-        draft = props.get_general_kwargs(convert_to_project_units=True)
-        draft["path_data"] = path_data
-
-        if draft == stored:
-            props.is_editing = False
-            return
-
-        cls._update_pset(element, draft)
-        cls._update_modifier_ifc_data(obj, context)
-        props.is_editing = False
-
-    @classmethod
-    def _cancel_one(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
-        """WALL_MOUNTED_HANDRAIL switches the representation back to Body on cancel
-        (the cylinder preview is lower-poly than the committed swept-disk solid).
-        Skip the switch when the draft matches the stored pset."""
-        resolved = cls._resolve(obj)
-        if resolved is None:
-            return
-        _element, props = resolved
-        pset_data = tool.Model.get_modeling_bbim_pset_data(obj, cls.pset_name)
-        stored = pset_data["data_dict"]
-
-        draft = props.get_general_kwargs(convert_to_project_units=True)
-        draft["path_data"] = stored["path_data"]
-        nothing_changed = draft == stored
-
-        data = cls._post_load_data(stored)
-        props.set_props_kwargs_from_ifc_data(data)
-
-        if nothing_changed:
-            props.is_editing = False
-            return
-
+    def _restore_viewport_after_cancel(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        """WALL_MOUNTED_HANDRAIL reloads the committed Body; others rebuild the preview bmesh."""
+        props = tool.Model.get_railing_props(obj)
         if props.railing_type == "WALL_MOUNTED_HANDRAIL":
             element = tool.Ifc.get_entity(obj)
             assert element
@@ -555,10 +515,8 @@ class _RailingEditMixin(PathPreservingEditMixin):
                     obj=obj,
                     representation=body,
                 )
-        else:
-            cls._update_modifier_bmesh(obj, context)
-
-        props.is_editing = False
+            return
+        update_railing_modifier_bmesh(context)
 
 
 class EnableEditingRailing(_RailingEditMixin, bpy.types.Operator, tool.Ifc.Operator):
@@ -588,14 +546,14 @@ class FinishEditingRailing(_RailingEditMixin, bpy.types.Operator, tool.Ifc.Opera
         return self._finish_targets(context)
 
 
-class CycleRailingType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixin):
+class CycleRailingType(bpy.types.Operator, tool.Ifc.Operator, CycleTypeMixin):
     """Cycle railing_type (FRAMELESS_PANEL ↔ WALL_MOUNTED_HANDRAIL). Shift+click reverses."""
 
     bl_idname = "bim.cycle_railing_type"
     bl_label = "Cycle Railing Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    element_checker = tool.Blender.Modifier.is_railing
+    element_checker = tool.Parametric.is_railing
     props_getter = tool.Model.get_railing_props
     type_literal = tool.Model.RailingType
     type_attr = "railing_type"
@@ -616,58 +574,42 @@ class ToggleRailingUseManualSupports(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = context.active_object
-        if not obj:
+        resolved = tool.Model.resolve_active_props_for_edit(
+            context,
+            tool.Model.get_railing_props,
+            subtype=("railing_type", "WALL_MOUNTED_HANDRAIL"),
+        )
+        if resolved is None:
             return {"CANCELLED"}
-        props = tool.Model.get_railing_props(obj)
-        if not props.is_editing or props.railing_type != "WALL_MOUNTED_HANDRAIL":
-            return {"CANCELLED"}
+        _obj, props = resolved
         props.use_manual_supports = not props.use_manual_supports
         return {"FINISHED"}
 
 
-class EditRailingTerminalType(bpy.types.Operator):
-    """Popup menu for terminal_type; writes the picked value via a HIDDEN string property."""
+class PickRailingTerminalType(bpy.types.Operator, tool.Ifc.Operator, PickTypeMixin):
+    """Pick ``terminal_type`` for the active WALL_MOUNTED_HANDRAIL railing."""
 
-    bl_idname = "bim.edit_railing_terminal_type"
-    bl_label = "Choose Railing Terminal Type"
+    bl_idname = "bim.pick_railing_terminal_type"
+    bl_label = "Pick Railing Terminal Type"
     bl_description = "Pick the cap geometry applied at the rail ends"
     bl_options = {"REGISTER", "UNDO"}
 
-    terminal_type: bpy.props.StringProperty(name="Terminal Type", default="", options={"HIDDEN", "SKIP_SAVE"})
+    skip_element_check = True
+    props_getter = tool.Model.get_railing_props
+    type_literal = prop.CapType
+    type_attr = "terminal_type"
 
-    def invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
-        obj = context.active_object
-        if not obj:
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        if (
+            tool.Model.resolve_active_props_for_edit(
+                context,
+                tool.Model.get_railing_props,
+                subtype=("railing_type", "WALL_MOUNTED_HANDRAIL"),
+            )
+            is None
+        ):
             return {"CANCELLED"}
-        props = tool.Model.get_railing_props(obj)
-        if not props.is_editing or props.railing_type != "WALL_MOUNTED_HANDRAIL":
-            return {"CANCELLED"}
-
-        choices = [v for v in get_args(prop.CapType)]
-
-        def draw(menu_self, _menu_context):
-            layout = menu_self.layout
-            for v in choices:
-                op = layout.operator(self.bl_idname, text=v)
-                op.terminal_type = v
-
-        context.window_manager.popup_menu(draw, title="Terminal Type", icon="MOD_LATTICE")
-        return {"FINISHED"}
-
-    def execute(self, context: bpy.types.Context) -> set[str]:
-        # Re-open the popup if called without a value (e.g. from the command palette).
-        if not self.terminal_type:
-            return self.invoke(context, None)  # type: ignore[arg-type]
-        obj = context.active_object
-        if not obj:
-            return {"CANCELLED"}
-        props = tool.Model.get_railing_props(obj)
-        if self.terminal_type not in get_args(prop.CapType):
-            self.report({"ERROR"}, f"Unknown terminal_type: {self.terminal_type!r}")
-            return {"CANCELLED"}
-        props.terminal_type = self.terminal_type  # type: ignore[assignment]
-        return {"FINISHED"}
+        return self._pick_type(context)
 
 
 def _format_attr_distance(attr_name: str):
@@ -822,7 +764,7 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_railing(element)
+        return tool.Parametric.is_railing(element)
 
     @classmethod
     def schematic_cache_key(cls, props) -> tuple:
@@ -846,22 +788,17 @@ class GizmoRailingSchematic(bpy.types.GizmoGroup, gizmo.BaseSchematicGizmoGroup)
         """
         default_color, highlight_color = self.get_decoration_colors()
 
-        for slot in ("lock_open_gizmo", "lock_closed_gizmo"):
-            bl_idname = "VIEW3D_GT_lock_open" if slot == "lock_open_gizmo" else "VIEW3D_GT_lock_closed"
-            gz = self.gizmos.new(bl_idname)
-            gz.color = default_color
-            gz.color_highlight = highlight_color
-            gz.use_draw_scale = False
-            gz.alpha = 0.8
-            gz.target_set_operator("bim.toggle_railing_use_manual_supports")
-            setattr(self, slot, gz)
+        self.lock_open_gizmo, self.lock_closed_gizmo = self.create_icon_gizmo_lock_pair(
+            "bim.toggle_railing_use_manual_supports",
+            open_color=default_color,
+        )
 
-        self.terminal_gizmo = self.gizmos.new("VIEW3D_GT_cycle")
+        self.terminal_gizmo = self.gizmos.new("VIEW3D_GT_menu")
         self.terminal_gizmo.color = default_color
         self.terminal_gizmo.color_highlight = highlight_color
         self.terminal_gizmo.use_draw_scale = False
         self.terminal_gizmo.alpha = 0.8
-        self.terminal_gizmo.target_set_operator("bim.edit_railing_terminal_type")
+        self.terminal_gizmo.target_set_operator("bim.pick_railing_terminal_type")
 
     def _refresh_element_specific(self, context: bpy.types.Context, mw: "Matrix", props) -> None:
         """Position and gate the WALL_MOUNTED_HANDRAIL-only gizmos.

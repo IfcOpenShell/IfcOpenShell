@@ -18,23 +18,24 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Unit coverage for the ``_RailingEditMixin`` lifecycle overrides.
+"""Unit coverage for the ``_RailingEditMixin`` overrides and the lifecycle
+behaviour railing inherits from ``PathPreservingEditMixin``.
 
-The generic ``PathPreservingEditMixin`` lifecycle is tested in
-``test_parametric_lifecycle.py``. This file pins the **railing-specific
-overrides** that subclass it:
+The parent short-circuit (skip the IFC commit / viewport rebuild when the
+draft is identical to the stored pset) lives in
+``PathPreservingEditMixin``; the tests below verify railing's subclass
+honours that contract by inheritance, then pin the railing-specific
+viewport-restore dispatch:
 
-- ``_RailingEditMixin._finish_one`` short-circuit: when the draft equals
-  the stored pset, ``_update_pset`` and ``_update_modifier_ifc_data`` are
-  skipped so an Enable → Finish-without-changes cycle creates no new
-  ``IfcShapeRepresentation``.
-- ``_RailingEditMixin._cancel_one`` short-circuit: same logic guards the
-  expensive ``bonsai.core.geometry.switch_representation`` call (which
-  re-tessellates the swept-disk solid) when nothing actually changed.
-- ``_RailingEditMixin._cancel_one`` WALL_MOUNTED_HANDRAIL branch: when
-  changes WERE made, the cancel reloads the IFC body via
-  ``switch_representation`` instead of running ``update_modifier_bmesh``
-  (which would leave the low-poly cylinder-segment preview on screen).
+- Finish / Cancel no-op short-circuit: inherited from the parent — verified
+  here because railing was the original consumer that motivated the
+  optimisation.
+- ``_RailingEditMixin._restore_viewport_after_cancel`` dispatch: WALL_MOUNTED_HANDRAIL
+  reloads the high-poly Body representation via ``switch_representation``;
+  FRAMELESS_PANEL rebuilds the bmesh preview via
+  ``update_railing_modifier_bmesh``. This is the per-type branch that used
+  to live in ``_cancel_one`` and now lives in the viewport-restore hook the
+  parent's ``_cancel_one`` calls.
 """
 
 from unittest import mock
@@ -68,10 +69,16 @@ class _FakeRailingProps(_FakePropsBase):
 def patched_railing():
     """Patch the railing module's external references for unit testing.
 
-    ``_RailingEditMixin`` calls ``tool.Model.get_modeling_bbim_pset_data``,
-    ``tool.Ifc.get_entity``, ``ifcopenshell.util.representation.get_representation``,
-    and ``bonsai.core.geometry.switch_representation`` — each looked up
-    through the railing module's own bindings, so we patch them there.
+    ``_RailingEditMixin`` and the parent lifecycle reach for
+    ``tool.Model.get_modeling_bbim_pset_data``, ``tool.Ifc.get_entity``,
+    ``ifcopenshell.util.representation.get_representation``,
+    ``bonsai.core.geometry.switch_representation``, and the module-level
+    ``update_railing_modifier_bmesh`` — each looked up through the railing
+    module's own bindings, so we patch them there.
+
+    ``parametric_lifecycle.tool`` is patched separately so the parent's
+    ``_resolve`` and ``_cancel_one`` can read ``tool.Model.get_modeling_bbim_pset_data``
+    without falling through to the real Blender bindings.
 
     Uses ``mock.patch.object`` with a direct module reference rather than
     the dotted-string form: ``mock.patch("bonsai.bim.module.model.railing.bonsai")``
@@ -81,17 +88,28 @@ def patched_railing():
 
     Returns a dict for tests to seed return values and assert call sites.
     """
+    from bonsai.bim import parametric_lifecycle
     from bonsai.bim.module.model import railing
 
     with (
         mock.patch.object(railing, "tool") as mock_tool,
         mock.patch.object(railing, "ifcopenshell") as mock_ifc,
         mock.patch.object(railing, "bonsai") as mock_bonsai,
+        mock.patch.object(railing, "update_railing_modifier_bmesh") as mock_update_bmesh,
+        mock.patch.object(parametric_lifecycle, "tool") as mock_pl_tool,
     ):
         # _resolve will be overridden on the test subclass below so the
-        # parametric_lifecycle.tool patch isn't needed.
+        # parametric_lifecycle.tool patch isn't needed for that path, but the
+        # parent's _cancel_one / _finish_one still call
+        # tool.Model.get_modeling_bbim_pset_data and would otherwise miss.
         mock_tool.Ifc.get_entity.return_value = mock.Mock(name="entity")
-        yield {"tool": mock_tool, "ifcopenshell": mock_ifc, "bonsai": mock_bonsai}
+        yield {
+            "tool": mock_tool,
+            "ifcopenshell": mock_ifc,
+            "bonsai": mock_bonsai,
+            "update_bmesh": mock_update_bmesh,
+            "pl_tool": mock_pl_tool,
+        }
 
 
 def _railing_test_subclass(props):
@@ -108,7 +126,7 @@ def _railing_test_subclass(props):
     class _TestRailingMixin(_RailingEditMixin):
         pset_updates: mock.MagicMock = mock.MagicMock(name="_update_pset")
         ifc_data_updates: mock.MagicMock = mock.MagicMock(name="_update_modifier_ifc_data")
-        bmesh_updates: mock.MagicMock = mock.MagicMock(name="_update_modifier_bmesh")
+        bmesh_updates: mock.MagicMock = mock.MagicMock(name="_restore_viewport_after_cancel")
 
         @classmethod
         def _resolve(cls, obj):
@@ -123,7 +141,7 @@ def _railing_test_subclass(props):
             cls.ifc_data_updates(obj, context)
 
         @classmethod
-        def _update_modifier_bmesh(cls, obj, context):
+        def _restore_viewport_after_cancel(cls, obj, context):
             cls.bmesh_updates(obj, context)
 
         # The base _post_load_data JSON-serialises path_data; bypass that
@@ -148,11 +166,14 @@ def test_finish_one_short_circuits_when_draft_matches_stored(patched_railing):
     would create a fresh ``IfcShapeRepresentation``, pollute the file's
     representation list, and burn an undo entry — the user-visible
     regression that motivated the short-circuit.
+
+    Behaviour now inherited from ``PathPreservingEditMixin``; railing keeps
+    the coverage as the original consumer of the contract.
     """
     stored = {"railing_type": "WALL_MOUNTED_HANDRAIL", "height": 1.0}
     props = _FakeRailingProps(general=dict(stored))
     obj = _make_obj(props)
-    patched_railing["tool"].Model.get_modeling_bbim_pset_data.return_value = {
+    patched_railing["pl_tool"].Model.get_modeling_bbim_pset_data.return_value = {
         "data_dict": {**stored, "path_data": {"verts": [], "edges": []}},
     }
 
@@ -171,7 +192,7 @@ def test_finish_one_writes_when_draft_differs(patched_railing):
     # Draft height differs: simulating a user edit.
     props = _FakeRailingProps(general={"railing_type": "WALL_MOUNTED_HANDRAIL", "height": 1.5})
     obj = _make_obj(props)
-    patched_railing["tool"].Model.get_modeling_bbim_pset_data.return_value = {
+    patched_railing["pl_tool"].Model.get_modeling_bbim_pset_data.return_value = {
         "data_dict": {**stored, "path_data": {"verts": [], "edges": []}},
     }
 
@@ -198,11 +219,14 @@ def test_cancel_one_short_circuits_when_draft_matches_stored(patched_railing):
     visibly slow on a long handrail. When nothing changed, the mesh on
     screen is still the committed IFC representation (the preview only
     builds on a property change) — skip the reload entirely.
+
+    Behaviour now inherited from ``PathPreservingEditMixin``; railing keeps
+    the coverage as the original consumer of the contract.
     """
     stored = {"railing_type": "WALL_MOUNTED_HANDRAIL", "height": 1.0}
     props = _FakeRailingProps(general=dict(stored))
     obj = _make_obj(props)
-    patched_railing["tool"].Model.get_modeling_bbim_pset_data.return_value = {
+    patched_railing["pl_tool"].Model.get_modeling_bbim_pset_data.return_value = {
         "data_dict": {**stored, "path_data": {"verts": [], "edges": []}},
     }
 
@@ -211,60 +235,56 @@ def test_cancel_one_short_circuits_when_draft_matches_stored(patched_railing):
 
     assert props.is_editing is False
     patched_railing["bonsai"].core.geometry.switch_representation.assert_not_called()
+    patched_railing["update_bmesh"].assert_not_called()
     cls.bmesh_updates.assert_not_called()
 
 
-def test_cancel_one_wall_mounted_handrail_switches_representation(patched_railing):
-    """Cancel after a real edit on a WALL_MOUNTED_HANDRAIL must reload the
-    committed Body representation (high-poly, IFC-derived) rather than
-    re-running the low-poly bmesh preview — that preview is a viewport-only
-    approximation and would persist visibly after Cancel without this.
-    """
-    stored = {"railing_type": "WALL_MOUNTED_HANDRAIL", "height": 1.0}
-    # Differs → not a no-op → cancel must take the real branch.
-    props = _FakeRailingProps(
-        railing_type="WALL_MOUNTED_HANDRAIL",
-        general={"railing_type": "WALL_MOUNTED_HANDRAIL", "height": 1.5},
-    )
+# ---------------------------------------------------------------------------
+# _RailingEditMixin._restore_viewport_after_cancel — per-type viewport-restore dispatch
+#
+# The parent's _cancel_one calls cls._restore_viewport_after_cancel whenever
+# the draft differs from the stored pset. Railing's override branches on
+# railing_type so WALL_MOUNTED_HANDRAIL reloads the high-poly Body
+# representation rather than rebuilding the low-poly cylinder-segment preview.
+# ---------------------------------------------------------------------------
+
+
+def test_restore_viewport_wall_mounted_handrail_switches_representation(patched_railing):
+    """WALL_MOUNTED_HANDRAIL restore must call ``switch_representation`` with
+    the Body representation — the preview is viewport-only (low-poly cylinder)
+    and would persist visibly without the reload."""
+    from bonsai.bim.module.model.railing import _RailingEditMixin
+
+    props = _FakeRailingProps(railing_type="WALL_MOUNTED_HANDRAIL")
     obj = _make_obj(props)
-    patched_railing["tool"].Model.get_modeling_bbim_pset_data.return_value = {
-        "data_dict": {**stored, "path_data": {"verts": [], "edges": []}},
-    }
+    patched_railing["tool"].Model.get_railing_props.return_value = props
     body_repr = mock.Mock(name="body_representation")
     patched_railing["ifcopenshell"].util.representation.get_representation.return_value = body_repr
 
-    cls, _element = _railing_test_subclass(props)
-    cls._cancel_one(obj, mock.Mock(name="context"))
+    _RailingEditMixin._restore_viewport_after_cancel(obj, mock.Mock(name="context"))
 
-    assert props.is_editing is False
-    # Must call switch_representation with the Body representation; must NOT
-    # call _update_modifier_bmesh (that's the FRAMELESS branch).
     patched_railing["bonsai"].core.geometry.switch_representation.assert_called_once()
     kwargs = patched_railing["bonsai"].core.geometry.switch_representation.call_args.kwargs
     assert kwargs["obj"] is obj
     assert kwargs["representation"] is body_repr
-    cls.bmesh_updates.assert_not_called()
+    # Must NOT fall through to the FRAMELESS bmesh-rebuild path.
+    patched_railing["update_bmesh"].assert_not_called()
 
 
-def test_cancel_one_frameless_panel_runs_bmesh_preview(patched_railing):
+def test_restore_viewport_frameless_panel_calls_module_bmesh_rebuild(patched_railing):
     """FRAMELESS_PANEL's bmesh IS the canonical mesh — there's no IFC
-    swept-disk solid to reload. Cancel must run the bmesh rebuild instead
-    of switch_representation, which would no-op or worse."""
-    stored = {"railing_type": "FRAMELESS_PANEL", "height": 1.0, "thickness": 0.05}
-    props = _FakeRailingProps(
-        railing_type="FRAMELESS_PANEL",
-        general={"railing_type": "FRAMELESS_PANEL", "height": 1.0, "thickness": 0.08},
-    )
+    swept-disk solid to reload. The restore must delegate to the module-level
+    ``update_railing_modifier_bmesh`` rebuilder rather than swap representations."""
+    from bonsai.bim.module.model.railing import _RailingEditMixin
+
+    props = _FakeRailingProps(railing_type="FRAMELESS_PANEL")
     obj = _make_obj(props)
-    patched_railing["tool"].Model.get_modeling_bbim_pset_data.return_value = {
-        "data_dict": {**stored, "path_data": {"verts": [], "edges": []}},
-    }
+    patched_railing["tool"].Model.get_railing_props.return_value = props
+    ctx = mock.Mock(name="context")
 
-    cls, _element = _railing_test_subclass(props)
-    cls._cancel_one(obj, mock.Mock(name="context"))
+    _RailingEditMixin._restore_viewport_after_cancel(obj, ctx)
 
-    assert props.is_editing is False
-    cls.bmesh_updates.assert_called_once_with(obj, mock.ANY)
+    patched_railing["update_bmesh"].assert_called_once_with(ctx)
     patched_railing["bonsai"].core.geometry.switch_representation.assert_not_called()
 
 

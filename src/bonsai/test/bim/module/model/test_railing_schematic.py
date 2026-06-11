@@ -32,7 +32,7 @@ from bonsai.bim.module.drawing.gizmos import (
 )
 from bonsai.bim.module.model.railing import GizmoRailingSchematic
 
-pytestmark = pytest.mark.railing
+pytestmark = pytest.mark.model
 
 
 @pytest.fixture(autouse=True)
@@ -167,10 +167,8 @@ def test_schematic_dim_visible_length_is_constant():
 
 
 def test_schematic_no_compute_schematic_scale_override():
-    """The constant-length design has no need for a scale factor. If a
-    subclass redefines ``_compute_schematic_scale``, it indicates the
-    scale-based proportional sizing was reintroduced — which is the design
-    we deliberately stepped away from."""
+    """The constant-length schematic must not reintroduce scale-based
+    proportional sizing via a ``_compute_schematic_scale`` override."""
     assert "_compute_schematic_scale" not in GizmoRailingSchematic.__dict__
 
 
