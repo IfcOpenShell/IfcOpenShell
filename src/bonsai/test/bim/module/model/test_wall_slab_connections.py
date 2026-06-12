@@ -178,28 +178,30 @@ def test_find_wall_slab_rel_returns_none_when_unconnected():
 # ---------------------------------------------------------------------------
 
 
-def test_wall_slab_connection_location_lifts_axis_mid_to_slab_underside():
-    """The icon sits at the wall's axis midpoint X/Y lifted to the slab's
-    underside Z so it reads as a marker on the slab cut line."""
+def test_wall_slab_connection_location_perches_above_wall_top():
+    """Icon X/Y comes from the wall axis midpoint; Z from the wall's mesh
+    bbox top in world space plus WALL_SLAB_CONNECTION_Z_CLEARANCE so the
+    icon sits above the extend-vertical / slope gizmo at the wall top."""
     wall_obj = Mock()
-    slab_obj = Mock()
-    slab_obj.matrix_world = Matrix.Translation(Vector((0.0, 0.0, 3.0)))
-    slab_obj.bound_box = [
-        (-1.0, -1.0, 0.0),
-        (1.0, -1.0, 0.0),
-        (-1.0, 1.0, 0.0),
-        (1.0, 1.0, 0.0),
-        (-1.0, -1.0, 0.2),
-        (1.0, -1.0, 0.2),
-        (-1.0, 1.0, 0.2),
-        (1.0, 1.0, 0.2),
+    wall_obj.matrix_world = Matrix.Identity(4)
+    wall_obj.bound_box = [
+        (-0.1, -0.1, 0.0),
+        (0.1, -0.1, 0.0),
+        (-0.1, 0.1, 0.0),
+        (0.1, 0.1, 0.0),
+        (-0.1, -0.1, 3.0),
+        (0.1, -0.1, 3.0),
+        (-0.1, 0.1, 3.0),
+        (0.1, 0.1, 3.0),
     ]
+    slab_obj = Mock()
 
     ref_line = (Vector((1.0, 0.0, 0.0)), Vector((3.0, 0.0, 0.0)))
     with patch.object(tool.Wall, "get_world_reference_line", return_value=ref_line):
         loc = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
 
-    assert loc == Vector((2.0, 0.0, 3.0))
+    expected_z = 3.0 + tool.Wall.WALL_SLAB_CONNECTION_Z_CLEARANCE
+    assert loc == Vector((2.0, 0.0, expected_z))
 
 
 def test_wall_slab_connection_location_returns_none_for_axisless_wall():

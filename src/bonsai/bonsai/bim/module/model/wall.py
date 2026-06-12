@@ -48,6 +48,7 @@ import mathutils.geometry
 import numpy as np
 from mathutils import Matrix, Vector
 
+import bonsai.core.connection
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.core.root
@@ -106,6 +107,50 @@ def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
     if preview_base.any_preview_active(context):
         return False
     return True
+
+
+def _resolve_active_partner_pair(
+    context: bpy.types.Context,
+) -> "tuple[bpy.types.Object, bpy.types.Object, ifcopenshell.entity_instance, ifcopenshell.entity_instance] | None":
+    """Return ``(active_obj, partner_obj, active_elem, partner_elem)`` for a
+    selection of exactly two IFC-bound objects with the active one named,
+    else ``None``. Used by every 2-selection gizmo to skip the standard
+    "resolve active + partner + IFC entities" preamble."""
+    active = tool.Blender.get_active_object(is_selected=True)
+    if active is None:
+        return None
+    selected = list(tool.Blender.get_selected_objects())
+    if len(selected) != 2:
+        return None
+    partner = next((o for o in selected if o != active), None)
+    if partner is None:
+        return None
+    active_elem = tool.Ifc.get_entity(active)
+    partner_elem = tool.Ifc.get_entity(partner)
+    if active_elem is None or partner_elem is None:
+        return None
+    return active, partner, active_elem, partner_elem
+
+
+def _slab_connection_gizmo_poll_gate(context: bpy.types.Context, *, require_editing: bool = False) -> bool:
+    """Shared gate for slab-side connection gizmos: exactly 1 IfcSlab
+    selected, not an array child, has at least one wall clipped to its
+    underside. With ``require_editing=True`` additionally requires the
+    slab's parametric edit lifecycle to be active (pen icon clicked) so
+    the gizmo only surfaces after explicit opt-in."""
+    active = tool.Blender.get_active_object(is_selected=True)
+    if active is None:
+        return False
+    if len(tool.Blender.get_selected_objects()) != 1:
+        return False
+    element = tool.Ifc.get_entity(active)
+    if element is None or not element.is_a("IfcSlab"):
+        return False
+    if tool.Blender.Modifier.any_selected_is_array_child():
+        return False
+    if require_editing and not tool.Model.get_slab_props(active).is_editing:
+        return False
+    return any(True for _ in tool.Wall.iter_slab_wall_connections(element))
 
 
 def _wall_topology_gizmo_poll_gate(context: bpy.types.Context) -> bool:
@@ -332,31 +377,27 @@ class DisconnectElements(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.I
         if not rels:
             self.report({"ERROR"}, "No connection found between elements.")
             return
-        # All rels between a single pair should share a kind in practice; pick
-        # the first kind for the cleanup dispatch and remove every rel below.
-        kind = rels[0][1]
-        if kind == "path":
-            for rel, _ in rels:
-                bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
-            obj_a = tool.Ifc.get_object(elem_a)
-            obj_b = tool.Ifc.get_object(elem_b)
-            if obj_a is not None and obj_b is not None:
-                tool.Model.recreate_wall(elem_a, obj_a)
-                tool.Model.recreate_wall(elem_b, obj_b)
-                _resync_walls_after_mutation([obj_a, obj_b])
-        elif kind in ("element-top", "element"):
-            for rel, _ in rels:
-                wall, slab = tool.Connection.orient_element_top(rel, elem_a, elem_b)
-                ifcopenshell.api.geometry.disconnect_element(
-                    ifc_file, relating_element=slab, related_element=wall
-                )
-            if kind == "element-top":
-                # The TOP rel is what extend_walls_to_underside creates; the
-                # related side is always the wall.
-                wall = rels[0][0].RelatedElement
-                wall_obj = tool.Ifc.get_object(wall)
-                if wall_obj is not None:
-                    core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, [wall_obj])
+        path_objs: list[bpy.types.Object] = []
+        for rel, kind in rels:
+            bonsai.core.connection.disconnect_rel(
+                tool.Ifc,
+                tool.Geometry,
+                tool.Model,
+                tool.Connection,
+                rel=rel,
+                kind=kind,
+                elem=elem_a,
+                partner=elem_b,
+            )
+            if kind == "path":
+                obj_a = tool.Ifc.get_object(elem_a)
+                obj_b = tool.Ifc.get_object(elem_b)
+                if obj_a is not None and obj_a not in path_objs:
+                    path_objs.append(obj_a)
+                if obj_b is not None and obj_b not in path_objs:
+                    path_objs.append(obj_b)
+        if path_objs:
+            _resync_walls_after_mutation(path_objs)
 
 
 class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
@@ -3865,16 +3906,17 @@ class GizmoWallLinkToggle(gizmo.GizmoLinkToggle, bpy.types.Gizmo):
 
 class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
     """Activates when exactly one LAYER2 wall is selected. Surfaces an unjoin icon at
-    every join location inferred from the wall's IfcRelConnectsPathElements inverse
-    graph — the single-selection mirror of `GizmoWallJoinIntersection`'s two-wall
-    unjoin state. A wall may participate in many such rels (up to 1 ATSTART + 1 ATEND
-    by end, plus unlimited ATPATH T-junctions), so a pool of icons is preallocated
-    and hidden on a per-frame basis based on the live connection set.
+    every connection location on the wall — wall-wall path connections via
+    IfcRelConnectsPathElements + wall-slab underside clips via IfcRelConnectsElements
+    with Description=="TOP". A wall may participate in many such rels (up to 1 ATSTART
+    + 1 ATEND by end, plus unlimited ATPATH T-junctions, plus one rel per clipped
+    slab), so a pool of icons is preallocated and hidden on a per-frame basis based
+    on the live connection set.
 
     Each visible icon dispatches `bim.disconnect_elements` with the active wall +
-    partner wall GlobalIds set on the bound operator properties, so a click removes
-    only the single rel under that icon — the other connections on the same wall
-    survive.
+    partner element GlobalIds set on the bound operator properties, so a click
+    removes only the single rel under that icon — the other connections on the
+    same wall survive.
 
     Mutually exclusive with `GizmoWallJoinIntersection` via `poll()` (that group
     requires len(selected) == 2; this one requires 1)."""
@@ -3892,6 +3934,8 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
     # creation is forbidden — so the pool must be sized upfront for the worst case.
     POOL_SIZE = 16
     ICON_SCALE = 0.35
+    SLAB_STACK_MAX = 5
+    SLAB_STACK_OFFSET_Z = 0.5
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
@@ -3947,15 +3991,27 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         billboard_rot = gizmo.get_billboard_rotation(context)
         clearance = gizmo.top_down_clearance(context, billboard_rot)
 
-        connections = _get_wall_connections_cached(self, elem)
-        if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+        path_connections = _get_wall_connections_cached(self, elem)
+        slab_connections = list(tool.Wall.iter_wall_slab_connections(elem))
+        slab_overflow = max(0, len(slab_connections) - self.SLAB_STACK_MAX)
+        if slab_overflow and not getattr(self, "_slab_cap_warned", False):
             print(
-                f"[bonsai] GizmoWallUnjoinSingle: wall has {len(connections)} path connections; "
+                f"[bonsai] GizmoWallUnjoinSingle: wall has {len(slab_connections)} slab "
+                f"connections; only the first {self.SLAB_STACK_MAX} are shown stacked."
+            )
+            self._slab_cap_warned = True
+        slab_connections = slab_connections[: self.SLAB_STACK_MAX]
+        total = len(path_connections) + len(slab_connections)
+        if total > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+            print(
+                f"[bonsai] GizmoWallUnjoinSingle: wall has {total} connections "
+                f"({len(path_connections)} path + {len(slab_connections)} slab); "
                 f"only the first {self.POOL_SIZE} unjoin gizmos are shown."
             )
             self._pool_cap_warned = True
 
-        for slot_idx, (other_elem, self_ct, other_ct) in enumerate(connections):
+        slot_idx = 0
+        for other_elem, self_ct, other_ct in path_connections:
             if slot_idx >= self.POOL_SIZE:
                 break
             other_obj = tool.Ifc.get_object(other_elem)
@@ -3966,21 +4022,216 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
                 continue
             seg_other = _wall_axis_world_segment_from_geom(other_obj, other_geom)
             location = tool.Wall.path_connection_location_world(seg_self, self_ct, seg_other, other_ct)
+            self._bind_unjoin_icon(slot_idx, location + clearance, billboard_rot, elem, other_elem, other_obj)
+            slot_idx += 1
+
+        for stack_idx, (slab_elem, _rel) in enumerate(slab_connections):
+            if slot_idx >= self.POOL_SIZE:
+                break
+            slab_obj = tool.Ifc.get_object(slab_elem)
+            if slab_obj is None:
+                continue
+            location = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
+            if location is None:
+                continue
+            # Stack vertically so each slab gets a distinct clickable icon;
+            # hover-highlight then shows the user which slab they're about to
+            # disconnect from.
+            stacked = location + Vector((0.0, 0.0, stack_idx * self.SLAB_STACK_OFFSET_Z))
+            self._bind_unjoin_icon(slot_idx, stacked + clearance, billboard_rot, elem, slab_elem, slab_obj)
+            slot_idx += 1
+
+    def _bind_unjoin_icon(self, slot_idx, location, billboard_rot, active_elem, partner_elem, partner_obj):
+        """Place + bind one pool icon to a (active, partner) GlobalId pair.
+
+        Only the GlobalId properties are rewritten per frame; the operator
+        binding itself is the long-lived handle set up at setup() time. GlobalId
+        (not Blender object name) keeps the binding stable across renames, file
+        save/reload, and any sit-in-the-undo-stack interlude between dispatch
+        and execute. The partner Blender object is mirrored onto the icon for
+        its hover-outline draw, since the Gizmo API exposes
+        ``target_set_operator`` but no symmetric reader."""
+        icon = self.unjoin_icons[slot_idx]
+        icon.matrix_basis = gizmo.billboarded_at(location, billboard_rot, scale=self.ICON_SCALE)
+        icon.hide = False
+        self.unjoin_op_props[slot_idx].element_a_guid = active_elem.GlobalId
+        self.unjoin_op_props[slot_idx].element_b_guid = partner_elem.GlobalId
+        icon.partner_obj = partner_obj
+
+
+class GizmoSlabUnjoinWalls(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
+    """Slab-side mirror of GizmoWallUnjoinSingle: when exactly one IfcSlab is
+    selected and at least one wall is clipped to its underside, surface an
+    unjoin icon at each connection point. The icons resolve at the same
+    world location as the wall-side gizmo (via the symmetric
+    tool.Wall.wall_slab_connection_location_world) so the same connection
+    has a single visual marker reachable from either selection.
+
+    Each visible icon dispatches bim.disconnect_elements with the slab +
+    wall GlobalIds, so a click removes the single rel under that icon and
+    re-clips the wall to whatever remaining slabs it's connected to."""
+
+    bl_idname = "OBJECT_GGT_bim_slab_unjoin_walls"
+    bl_label = "Slab Unjoin Walls Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    POOL_SIZE = 16
+    ICON_SCALE = 0.35
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return _slab_connection_gizmo_poll_gate(context, require_editing=True)
+
+    def setup(self, context: bpy.types.Context) -> None:
+        default_color, highlight_color = self.get_decoration_colors()
+        self.unjoin_icons = []
+        self.unjoin_op_props = []
+        for _ in range(self.POOL_SIZE):
+            icon = self.setup_icon_gizmo(
+                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.disconnect_elements"
+            )
+            icon.hide = True
+            self.unjoin_icons.append(icon)
+            self.unjoin_op_props.append(icon.target_set_operator("bim.disconnect_elements"))
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        for icon in self.unjoin_icons:
+            icon.hide = True
+
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 1:
+            return
+        slab_obj = selected[0]
+        slab_elem = tool.Ifc.get_entity(slab_obj)
+        if slab_elem is None:
+            return
+
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
+        connections = list(tool.Wall.iter_slab_wall_connections(slab_elem))
+        if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+            print(
+                f"[bonsai] GizmoSlabUnjoinWalls: slab has {len(connections)} wall connections; "
+                f"only the first {self.POOL_SIZE} unjoin gizmos are shown."
+            )
+            self._pool_cap_warned = True
+
+        slot_idx = 0
+        for wall_elem, _rel in connections:
+            if slot_idx >= self.POOL_SIZE:
+                break
+            wall_obj = tool.Ifc.get_object(wall_elem)
+            if wall_obj is None:
+                continue
+            location = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
+            if location is None:
+                continue
             icon = self.unjoin_icons[slot_idx]
             icon.matrix_basis = gizmo.billboarded_at(location + clearance, billboard_rot, scale=self.ICON_SCALE)
             icon.hide = False
-            # Only the GlobalId properties are rewritten per frame; the operator
-            # binding itself is the long-lived handle set up at setup() time. GlobalId
-            # (not Blender object name) keeps the binding stable across renames, file
-            # save/reload, and any sit-in-the-undo-stack interlude between dispatch
-            # and execute.
-            self.unjoin_op_props[slot_idx].element_a_guid = elem.GlobalId
-            self.unjoin_op_props[slot_idx].element_b_guid = other_elem.GlobalId
-            # Mirror the partner reference onto the icon itself so its draw()
-            # can outline the partner on hover without a Gizmo-side getter on
-            # the bound operator (the API exposes target_set_operator with
-            # no symmetric reader).
-            icon.partner_obj = other_obj
+            self.unjoin_op_props[slot_idx].element_a_guid = slab_elem.GlobalId
+            self.unjoin_op_props[slot_idx].element_b_guid = wall_elem.GlobalId
+            icon.partner_obj = wall_obj
+            slot_idx += 1
+
+
+class GizmoSlabEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
+    """Pen / validate / cancel triad for slab disconnect-access mode.
+
+    Polls on a single IfcSlab with at least one wall clipped to its underside.
+    Pen routes through the universal ``bim.enable_editing_parametric``
+    dispatcher; finish + cancel both clear ``is_editing`` (no IFC mutation —
+    the framework requires the triad to exist by name convention even for a
+    pure UI gate). ESC, the red-coloured cancel icon, mutual exclusion with
+    other active parametric edits, gizmo prefs gating — all handled by the
+    base class."""
+
+    bl_idname = "OBJECT_GGT_bim_slab_edition"
+    bl_label = "Slab Editing Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    enable_editing_operator = "bim.enable_editing_slab"
+    finish_editing_operator = "bim.finish_editing_slab"
+    cancel_editing_operator = "bim.cancel_editing_slab"
+    cycle_type_operator = ""
+
+    props_getter = tool.Model.get_slab_props
+    gizmo_pref_name = "slab"
+
+    @classmethod
+    def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
+        return tool.Parametric.is_slab(element) and any(
+            True for _ in tool.Wall.iter_slab_wall_connections(element)
+        )
+
+
+class GizmoPairDisconnect(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
+    """Surfaces a disconnect icon when exactly 2 IFC elements are selected
+    and they share a supported rel — currently the wall + slab pair joined
+    by an ``IfcRelConnectsElements(TOP)``. Click dispatches
+    ``bim.disconnect_elements`` with both GlobalIds. For wall-wall pairs,
+    ``GizmoWallJoinIntersection``'s unjoin icon already exposes the same
+    affordance via ``bim.unjoin_walls``."""
+
+    bl_idname = "OBJECT_GGT_bim_pair_disconnect"
+    bl_label = "Disconnect Pair Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    ICON_SCALE = 0.35
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 2:
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            return False
+        elem_a = tool.Ifc.get_entity(selected[0])
+        elem_b = tool.Ifc.get_entity(selected[1])
+        if elem_a is None or elem_b is None:
+            return False
+        rels = tool.Connection.find_rels(elem_a, elem_b)
+        return any(kind == "element-top" for _, kind in rels)
+
+    def setup(self, context: bpy.types.Context) -> None:
+        default_color, highlight_color = self.get_decoration_colors()
+        self.disconnect_icon = self.setup_icon_gizmo(
+            "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.disconnect_elements"
+        )
+        self.disconnect_icon.hide = True
+        self.disconnect_op = self.disconnect_icon.target_set_operator("bim.disconnect_elements")
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        self.disconnect_icon.hide = True
+        pair = _resolve_active_partner_pair(context)
+        if pair is None:
+            return
+        active, partner_obj, active_elem, partner_elem = pair
+        # Helper expects wall + slab regardless of which the user marked active.
+        if active_elem.is_a("IfcWall"):
+            wall_obj, slab_obj = active, partner_obj
+        elif partner_elem.is_a("IfcWall"):
+            wall_obj, slab_obj = partner_obj, active
+        else:
+            return
+        location = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
+        if location is None:
+            return
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
+        self.disconnect_icon.matrix_basis = gizmo.billboarded_at(
+            location + clearance, billboard_rot, scale=self.ICON_SCALE
+        )
+        self.disconnect_icon.hide = False
+        self.disconnect_op.element_a_guid = active_elem.GlobalId
+        self.disconnect_op.element_b_guid = partner_elem.GlobalId
+        self.disconnect_icon.partner_obj = partner_obj
 
 
 class GizmoWallFilletPreview(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):

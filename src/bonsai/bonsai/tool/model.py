@@ -82,6 +82,7 @@ if TYPE_CHECKING:
         BIMPolylineProperties,
         BIMRailingProperties,
         BIMRoofProperties,
+        BIMSlabProperties,
         BIMStairProperties,
         BIMSverchokProperties,
         BIMWallProperties,
@@ -117,6 +118,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_slab_props(cls, obj: bpy.types.Object) -> BIMSlabProperties:
+        return obj.BIMSlabProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_pipe_segment_props(cls, obj: bpy.types.Object) -> BIMPipeSegmentProperties:

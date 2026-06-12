@@ -281,22 +281,35 @@ class Wall(bonsai.core.tool.Wall):
                 return rel
         return None
 
+    WALL_SLAB_CONNECTION_Z_CLEARANCE = 0.5
+    """Lift above the wall top so the disconnect icon sits above the
+    extend-vertical / slope gizmo and reads as "the thing above the wall =
+    the slab connection"."""
+
     @classmethod
     def wall_slab_connection_location_world(
         cls, wall_obj: bpy.types.Object, slab_obj: bpy.types.Object
     ) -> Vector | None:
-        """World-space point where a wall is clipped by a slab — the wall's
-        axis midpoint lifted to the slab's underside Z. Approximate: uses the
-        slab's mesh bbox bottom in world space rather than reconstructing the
-        slab's clip plane. Adequate for icon placement on a wall whose top
-        meets the slab; returns ``None`` when the wall has no reference line."""
+        """World-space anchor for the wall-slab disconnect icon.
+
+        X / Y come from the wall axis midpoint (so the icon sits in the
+        middle of the wall horizontally); Z is the wall's top in world space
+        plus ``WALL_SLAB_CONNECTION_Z_CLEARANCE`` so the icon perches above
+        the slope gizmo. The slab-side gizmo calls this with the same
+        arguments so both sides of the same connection render a single
+        visual marker. ``slab_obj`` is kept on the signature for the
+        symmetric call shape; the helper's body no longer reads from it.
+        Returns ``None`` when the wall has no reference line."""
         ref = cls.get_world_reference_line(wall_obj)
         if ref is None:
             return None
         axis_mid_world = (ref[0] + ref[1]) * 0.5
-        slab_bottom_local_z = min(c[2] for c in slab_obj.bound_box)
-        slab_bottom_world_z = (slab_obj.matrix_world @ Vector((0.0, 0.0, slab_bottom_local_z))).z
-        return Vector((axis_mid_world.x, axis_mid_world.y, slab_bottom_world_z))
+        if wall_obj.bound_box:
+            wall_top_local_z = max(c[2] for c in wall_obj.bound_box)
+            wall_top_world_z = (wall_obj.matrix_world @ Vector((0.0, 0.0, wall_top_local_z))).z
+        else:
+            wall_top_world_z = axis_mid_world.z
+        return Vector((axis_mid_world.x, axis_mid_world.y, wall_top_world_z + cls.WALL_SLAB_CONNECTION_Z_CLEARANCE))
 
     @classmethod
     def walk_connected_walls(

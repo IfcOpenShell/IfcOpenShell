@@ -991,3 +991,74 @@ class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Model.recalculate_walls(walls)
         return {"FINISHED"}
+
+
+class EnableEditingSlab(bpy.types.Operator, tool.Ifc.Operator):
+    """Open the slab disconnect-access mode. Pure UI toggle: flips
+    ``obj.BIMSlabProperties.is_editing`` so the per-wall disconnect
+    gizmos surface on the slab. ``tool.Ifc.Operator`` base because the
+    parametric framework's universal dispatcher routes through
+    ``tool.Parametric.run_bim_op``, which only accepts that subclass for
+    undo-safe lifecycle. No IFC mutation."""
+
+    bl_idname = "bim.enable_editing_slab"
+    bl_label = "Edit Slab Connections"
+    bl_description = "Show disconnect icons for every wall clipped to this slab"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element is not None and element.is_a("IfcSlab")
+
+    def _execute(self, context):
+        context.active_object.BIMSlabProperties.is_editing = True
+        return {"FINISHED"}
+
+
+class CancelEditingSlab(bpy.types.Operator, tool.Ifc.Operator):
+    """Close the slab disconnect-access mode."""
+
+    bl_idname = "bim.cancel_editing_slab"
+    bl_label = "Close Slab Edit"
+    bl_description = "Hide the slab disconnect icons"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element is not None and element.is_a("IfcSlab")
+
+    def _execute(self, context):
+        context.active_object.BIMSlabProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class FinishEditingSlab(bpy.types.Operator, tool.Ifc.Operator):
+    """Close the slab disconnect-access mode. Same body as Cancel — slab
+    edit is a pure UI gate with no IFC draft to commit; the framework
+    requires both ``bim.finish_editing_<name>`` and
+    ``bim.cancel_editing_<name>`` to exist by name convention."""
+
+    bl_idname = "bim.finish_editing_slab"
+    bl_label = "Finish Slab Edit"
+    bl_description = "Hide the slab disconnect icons"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element is not None and element.is_a("IfcSlab")
+
+    def _execute(self, context):
+        context.active_object.BIMSlabProperties.is_editing = False
+        return {"FINISHED"}
