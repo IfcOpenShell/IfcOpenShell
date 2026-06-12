@@ -58,9 +58,9 @@ struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : s
 typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
 
 #ifdef SCHEMA_HAS_IfcBuildingElement
-typedef IfcSchema::IfcBuildingElement element_t
+typedef IfcSchema::IfcBuildingElement element_t;
 #else
-typedef IfcSchema::IfcBuiltElement element_t
+typedef IfcSchema::IfcBuiltElement element_t;
 #endif
 
 std::string format_string(const AttributeValue& argument) {
@@ -242,7 +242,7 @@ int main(int argc, char** argv) {
     // we need to cast them to IfcWindows. Since these properties
     // are optional we need to make sure the properties are
     // defined for the window in question before accessing them.
-	example_element_type::list::ptr elements = file.instances_by_type<example_element_type>();
+    auto elements = file.instances_by_type<element_t>();
 
     std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
 
