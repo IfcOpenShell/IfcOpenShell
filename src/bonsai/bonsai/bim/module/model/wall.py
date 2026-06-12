@@ -349,6 +349,57 @@ class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, 
         _resync_walls_after_mutation([active, other])
 
 
+class DisconnectWallSlab(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
+    """Disconnect the wall from one specific underside slab — counterpart to
+    UnjoinWallPathConnection on the wall-slab side. Both endpoints are
+    identified by IFC GlobalId so the dispatch survives rename / undo / save.
+
+    Drops the IfcRelConnectsElements(TOP) rel + all underside booleans on the
+    wall, then re-runs regenerate_wall_to_underside which re-clips the wall
+    to whatever slabs remain connected. The all-booleans-then-regenerate
+    approach is safe with HEAD's flat BBIM_Boolean pset (no per-slab id
+    storage); switches to a per-slab boolean removal when PR #8147's
+    dict-with-slab-guid pset migration lands."""
+
+    bl_idname = "bim.disconnect_wall_slab"
+    bl_label = "Disconnect Wall From Slab"
+    bl_description = "Remove the TOP connection between a wall and one slab and re-clip the wall to remaining slabs"
+    bl_options = {"REGISTER", "UNDO"}
+
+    wall_guid: bpy.props.StringProperty(name="Wall GlobalId")
+    slab_guid: bpy.props.StringProperty(name="Slab GlobalId")
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        if _poll_reject_array_children(cls):
+            return False
+        return True
+
+    def _perform(self, context):
+        ifc_file = tool.Ifc.get()
+        try:
+            wall = ifc_file.by_guid(self.wall_guid) if self.wall_guid else None
+            slab = ifc_file.by_guid(self.slab_guid) if self.slab_guid else None
+        except RuntimeError:
+            wall = slab = None
+        if wall is None or slab is None:
+            self.report({"ERROR"}, "Could not resolve wall and slab from supplied GlobalIds.")
+            return
+        wall_obj = tool.Ifc.get_object(wall)
+        if wall_obj is None:
+            self.report({"ERROR"}, "Wall has no Blender object.")
+            return
+        rel = tool.Wall.find_wall_slab_rel(wall, slab)
+        if rel is None:
+            self.report({"ERROR"}, "No TOP connection between this wall and slab.")
+            return
+        ifcopenshell.api.geometry.disconnect_element(ifc_file, relating_element=slab, related_element=wall)
+        core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, [wall_obj])
+
+
 class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.extend_walls_to_underside"
     bl_label = "Extend Walls To Underside"
