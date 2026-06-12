@@ -256,6 +256,8 @@ class CadHotkey(bpy.types.Operator):
         elif self.hotkey == "S_O":
             row = self.layout.row()
             row.prop(props, "distance")
+            row = self.layout.row()
+            row.prop(props, "copy")
 
         elif self.hotkey == "S_R":
             if tool.Geometry.is_profile_object_active():
@@ -291,7 +293,7 @@ class CadHotkey(bpy.types.Operator):
             bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius)
 
     def hotkey_S_O(self):
-        bpy.ops.bim.cad_offset(distance=self.props.distance)
+        bpy.ops.bim.cad_offset(distance=self.props.distance, copy=self.props.copy)
 
     def hotkey_S_Q(self):
         obj = bpy.context.active_object

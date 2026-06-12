@@ -345,9 +345,17 @@ class CadArcFrom3Points(bpy.types.Operator):
 class CadOffset(bpy.types.Operator):
     bl_idname = "bim.cad_offset"
     bl_label = "CAD Offset"
-    bl_description = "Copy selected mesh geometry at provided offset. Mesh copied based on the current viewport angle."
+    bl_description = (
+        "Offset selected mesh geometry at provided distance, based on the current viewport angle. "
+        "Creates a copy by default, or moves the existing edges if Copy is disabled."
+    )
     bl_options = {"REGISTER", "UNDO"}
     distance: bpy.props.FloatProperty(name="Distance", default=0.1, subtype="DISTANCE")
+    copy: bpy.props.BoolProperty(
+        name="Copy",
+        description="Create a new offset copy of the geometry. If disabled, move the existing edges to the offset location",
+        default=True,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -404,6 +412,11 @@ class CadOffset(bpy.types.Operator):
 
         rotation = Matrix.Rotation(pi / 2, 2, "Z")
         rotation_i = Matrix.Rotation(-pi / 2, 2, "Z")
+
+        # When not copying, the offset positions are gathered here and applied to
+        # the existing verts only after all loops are processed, so that the
+        # original coordinates are still available while computing offsets.
+        moved_verts = []
 
         # Create loops from edges
         loop_edges = set(edges)
@@ -517,12 +530,15 @@ class CadOffset(bpy.types.Operator):
                     offset_length = self.distance / sqrt((1 + normals[0].dot(normals[1])) / 2)
                     offset = mw.inverted().to_quaternion() @ (wp.to_quaternion() @ (new_normal * offset_length).to_3d())
                     new_vert = v1.co + offset
-                    new_verts.append(bm.verts.new(new_vert))
                 else:
                     normal = (normals[0] * self.distance).to_3d()
                     offset = mw.inverted().to_quaternion() @ (wp.to_quaternion() @ normal)
                     new_vert = v1.co + offset
+
+                if self.copy:
                     new_verts.append(bm.verts.new(new_vert))
+                else:
+                    moved_verts.append((v1, new_vert))
 
                 processed_verts.add(v1.index)
 
@@ -531,9 +547,14 @@ class CadOffset(bpy.types.Operator):
 
                 v1 = v2
 
-            [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            if is_closed:
-                bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
+            if self.copy:
+                [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+                if is_closed:
+                    bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
+
+        # Move the existing edges to the offset location.
+        for vert, new_co in moved_verts:
+            vert.co = new_co
 
         bm.verts.index_update()
         bm.edges.index_update()
