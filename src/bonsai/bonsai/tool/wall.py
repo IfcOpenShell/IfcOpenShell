@@ -243,6 +243,62 @@ class Wall(bonsai.core.tool.Wall):
         return obj.matrix_world @ local_p1, obj.matrix_world @ local_p2
 
     @classmethod
+    def iter_wall_slab_connections(cls, wall: ifcopenshell.entity_instance):
+        """Yield ``(slab, rel)`` tuples for every ``IfcRelConnectsElements(TOP)``
+        connecting a slab to this wall — the rel kind ``extend_walls_to_underside``
+        creates. Walks ``wall.ConnectedFrom`` because the slab is the relating
+        side of the TOP rel."""
+        for rel in getattr(wall, "ConnectedFrom", []) or ():
+            if not rel.is_a("IfcRelConnectsElements") or rel.Description != "TOP":
+                continue
+            slab = rel.RelatingElement
+            if slab is None:
+                continue
+            yield slab, rel
+
+    @classmethod
+    def iter_slab_wall_connections(cls, slab: ifcopenshell.entity_instance):
+        """Yield ``(wall, rel)`` tuples for every wall clipped to this slab's
+        underside. Mirror of ``iter_wall_slab_connections`` from the slab side
+        — walks ``slab.ConnectedTo``."""
+        for rel in getattr(slab, "ConnectedTo", []) or ():
+            if not rel.is_a("IfcRelConnectsElements") or rel.Description != "TOP":
+                continue
+            wall = rel.RelatedElement
+            if wall is None:
+                continue
+            yield wall, rel
+
+    @classmethod
+    def find_wall_slab_rel(
+        cls, wall: ifcopenshell.entity_instance, slab: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance | None:
+        """Return the single ``IfcRelConnectsElements(TOP)`` between ``wall``
+        and ``slab``, or ``None`` if none exists. Used by the disconnect
+        operator to find the specific rel to remove."""
+        for s, rel in cls.iter_wall_slab_connections(wall):
+            if s == slab:
+                return rel
+        return None
+
+    @classmethod
+    def wall_slab_connection_location_world(
+        cls, wall_obj: bpy.types.Object, slab_obj: bpy.types.Object
+    ) -> Vector | None:
+        """World-space point where a wall is clipped by a slab — the wall's
+        axis midpoint lifted to the slab's underside Z. Approximate: uses the
+        slab's mesh bbox bottom in world space rather than reconstructing the
+        slab's clip plane. Adequate for icon placement on a wall whose top
+        meets the slab; returns ``None`` when the wall has no reference line."""
+        ref = cls.get_world_reference_line(wall_obj)
+        if ref is None:
+            return None
+        axis_mid_world = (ref[0] + ref[1]) * 0.5
+        slab_bottom_local_z = min(c[2] for c in slab_obj.bound_box)
+        slab_bottom_world_z = (slab_obj.matrix_world @ Vector((0.0, 0.0, slab_bottom_local_z))).z
+        return Vector((axis_mid_world.x, axis_mid_world.y, slab_bottom_world_z))
+
+    @classmethod
     def walk_connected_walls(
         cls,
         start_element: ifcopenshell.entity_instance,
