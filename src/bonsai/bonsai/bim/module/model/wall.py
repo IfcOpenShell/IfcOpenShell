@@ -285,89 +285,29 @@ class UnjoinWalls(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Oper
         _resync_walls_after_mutation(tool.Blender.get_selected_objects())
 
 
-class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
-    """Surgical counterpart to `UnjoinWalls`: disconnect the active wall from one
-    specific partner wall, leaving the active wall's other connections intact. The
-    partner is identified by IFC GlobalId — invariant under Blender-object renames,
-    file save/reload, and the undo stack — set on the operator properties by the
-    single-wall unjoin gizmo at click time."""
+class DisconnectElements(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
+    """Disconnect two IFC elements given their GlobalIds — generic dispatcher
+    that infers the connection rel kind via tool.Connection.find_rels and runs
+    the right post-disconnect cleanup:
 
-    bl_idname = "bim.unjoin_wall_path_connection"
-    bl_label = "Unjoin Wall Connection"
-    bl_description = "Disconnect the active wall from a single specific partner wall"
+    - ``"path"`` (IfcRelConnectsPathElements) → removes every rel between
+      the pair (catches both orientations) via remove_connection + recreates
+      both walls + resyncs drafts.
+    - ``"element-top"`` (IfcRelConnectsElements with Description=="TOP") →
+      disconnect_element + regenerate_wall_to_underside on the wall side.
+    - ``"element"`` (other IfcRelConnectsElements) → disconnect_element only.
+
+    Both endpoints by GlobalId so the dispatch survives rename / undo / save.
+    Replaces the previous typed UnjoinWallPathConnection + DisconnectWallSlab
+    operators with one entry-point gizmos and shortcuts can bind to."""
+
+    bl_idname = "bim.disconnect_elements"
+    bl_label = "Disconnect Elements"
+    bl_description = "Remove the connection between two IFC elements identified by GlobalId"
     bl_options = {"REGISTER", "UNDO"}
 
-    other_wall_guid: bpy.props.StringProperty(name="Other Wall GlobalId")
-
-    @classmethod
-    def poll(cls, context):
-        if not tool.Model.has_selected_ifc_objects():
-            cls.poll_message_set("No IFC objects selected.")
-            return False
-        if _poll_reject_array_children(cls):
-            return False
-        return True
-
-    def _perform(self, context):
-        active = tool.Blender.get_active_object(is_selected=True)
-        if not active:
-            self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
-            return
-        elem_active = tool.Ifc.get_entity(active)
-        if not elem_active:
-            self.report({"ERROR"}, "Active object is not bound to an IFC entity.")
-            return
-        elem_other = None
-        if self.other_wall_guid:
-            try:
-                elem_other = tool.Ifc.get().by_guid(self.other_wall_guid)
-            except RuntimeError:
-                elem_other = None
-        other = tool.Ifc.get_object(elem_other) if elem_other else None
-        if not elem_other or not other:
-            self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
-            return
-        # Walk the inverse graph for the specific IfcRelConnectsPathElements joining
-        # these two walls and remove only that one. `disconnect_path`'s
-        # (relating, related) mode only inspects `relating.ConnectedTo`, so a single
-        # call misses the rel when it was authored with the opposite orientation.
-        rels = [
-            rel
-            for rel in getattr(elem_active, "ConnectedTo", [])
-            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedElement == elem_other
-        ] + [
-            rel
-            for rel in getattr(elem_active, "ConnectedFrom", [])
-            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingElement == elem_other
-        ]
-        for rel in rels:
-            bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
-        # Recreate body+axis on both walls so the mesh state matches the IFC mutation
-        # and stale miter cuts are dropped.
-        tool.Model.recreate_wall(elem_active, active)
-        tool.Model.recreate_wall(elem_other, other)
-        _resync_walls_after_mutation([active, other])
-
-
-class DisconnectWallSlab(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
-    """Disconnect the wall from one specific underside slab — counterpart to
-    UnjoinWallPathConnection on the wall-slab side. Both endpoints are
-    identified by IFC GlobalId so the dispatch survives rename / undo / save.
-
-    Drops the IfcRelConnectsElements(TOP) rel + all underside booleans on the
-    wall, then re-runs regenerate_wall_to_underside which re-clips the wall
-    to whatever slabs remain connected. The all-booleans-then-regenerate
-    approach is safe with HEAD's flat BBIM_Boolean pset (no per-slab id
-    storage); switches to a per-slab boolean removal when PR #8147's
-    dict-with-slab-guid pset migration lands."""
-
-    bl_idname = "bim.disconnect_wall_slab"
-    bl_label = "Disconnect Wall From Slab"
-    bl_description = "Remove the TOP connection between a wall and one slab and re-clip the wall to remaining slabs"
-    bl_options = {"REGISTER", "UNDO"}
-
-    wall_guid: bpy.props.StringProperty(name="Wall GlobalId")
-    slab_guid: bpy.props.StringProperty(name="Slab GlobalId")
+    element_a_guid: bpy.props.StringProperty(name="Element A GlobalId")
+    element_b_guid: bpy.props.StringProperty(name="Element B GlobalId")
 
     @classmethod
     def poll(cls, context):
@@ -381,23 +321,42 @@ class DisconnectWallSlab(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.I
     def _perform(self, context):
         ifc_file = tool.Ifc.get()
         try:
-            wall = ifc_file.by_guid(self.wall_guid) if self.wall_guid else None
-            slab = ifc_file.by_guid(self.slab_guid) if self.slab_guid else None
+            elem_a = ifc_file.by_guid(self.element_a_guid) if self.element_a_guid else None
+            elem_b = ifc_file.by_guid(self.element_b_guid) if self.element_b_guid else None
         except RuntimeError:
-            wall = slab = None
-        if wall is None or slab is None:
-            self.report({"ERROR"}, "Could not resolve wall and slab from supplied GlobalIds.")
+            elem_a = elem_b = None
+        if elem_a is None or elem_b is None:
+            self.report({"ERROR"}, "Could not resolve elements from supplied GlobalIds.")
             return
-        wall_obj = tool.Ifc.get_object(wall)
-        if wall_obj is None:
-            self.report({"ERROR"}, "Wall has no Blender object.")
+        rels = tool.Connection.find_rels(elem_a, elem_b)
+        if not rels:
+            self.report({"ERROR"}, "No connection found between elements.")
             return
-        rel = tool.Wall.find_wall_slab_rel(wall, slab)
-        if rel is None:
-            self.report({"ERROR"}, "No TOP connection between this wall and slab.")
-            return
-        ifcopenshell.api.geometry.disconnect_element(ifc_file, relating_element=slab, related_element=wall)
-        core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, [wall_obj])
+        # All rels between a single pair should share a kind in practice; pick
+        # the first kind for the cleanup dispatch and remove every rel below.
+        kind = rels[0][1]
+        if kind == "path":
+            for rel, _ in rels:
+                bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
+            obj_a = tool.Ifc.get_object(elem_a)
+            obj_b = tool.Ifc.get_object(elem_b)
+            if obj_a is not None and obj_b is not None:
+                tool.Model.recreate_wall(elem_a, obj_a)
+                tool.Model.recreate_wall(elem_b, obj_b)
+                _resync_walls_after_mutation([obj_a, obj_b])
+        elif kind in ("element-top", "element"):
+            for rel, _ in rels:
+                wall, slab = tool.Connection.orient_element_top(rel, elem_a, elem_b)
+                ifcopenshell.api.geometry.disconnect_element(
+                    ifc_file, relating_element=slab, related_element=wall
+                )
+            if kind == "element-top":
+                # The TOP rel is what extend_walls_to_underside creates; the
+                # related side is always the wall.
+                wall = rels[0][0].RelatedElement
+                wall_obj = tool.Ifc.get_object(wall)
+                if wall_obj is not None:
+                    core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, [wall_obj])
 
 
 class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
@@ -3912,9 +3871,10 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
     by end, plus unlimited ATPATH T-junctions), so a pool of icons is preallocated
     and hidden on a per-frame basis based on the live connection set.
 
-    Each visible icon dispatches `bim.unjoin_wall_path_connection` with the partner
-    wall's GlobalId set on the bound operator properties, so a click removes only
-    the single rel under that icon — the other connections on the same wall survive.
+    Each visible icon dispatches `bim.disconnect_elements` with the active wall +
+    partner wall GlobalIds set on the bound operator properties, so a click removes
+    only the single rel under that icon — the other connections on the same wall
+    survive.
 
     Mutually exclusive with `GizmoWallJoinIntersection` via `poll()` (that group
     requires len(selected) == 2; this one requires 1)."""
@@ -3962,11 +3922,11 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         self.unjoin_op_props = []
         for _ in range(self.POOL_SIZE):
             icon = self.setup_icon_gizmo(
-                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.unjoin_wall_path_connection"
+                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.disconnect_elements"
             )
             icon.hide = True
             self.unjoin_icons.append(icon)
-            self.unjoin_op_props.append(icon.target_set_operator("bim.unjoin_wall_path_connection"))
+            self.unjoin_op_props.append(icon.target_set_operator("bim.disconnect_elements"))
 
     def position_gizmos(self, context: bpy.types.Context) -> None:
         # Default: hide every pool slot. The visible-set is rebuilt from the live
@@ -4009,12 +3969,13 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             icon = self.unjoin_icons[slot_idx]
             icon.matrix_basis = gizmo.billboarded_at(location + clearance, billboard_rot, scale=self.ICON_SCALE)
             icon.hide = False
-            # Only the partner-GlobalId property is rewritten per frame; the operator
+            # Only the GlobalId properties are rewritten per frame; the operator
             # binding itself is the long-lived handle set up at setup() time. GlobalId
             # (not Blender object name) keeps the binding stable across renames, file
             # save/reload, and any sit-in-the-undo-stack interlude between dispatch
             # and execute.
-            self.unjoin_op_props[slot_idx].other_wall_guid = other_elem.GlobalId
+            self.unjoin_op_props[slot_idx].element_a_guid = elem.GlobalId
+            self.unjoin_op_props[slot_idx].element_b_guid = other_elem.GlobalId
             # Mirror the partner reference onto the icon itself so its draw()
             # can outline the partner on hover without a Gizmo-side getter on
             # the bound operator (the API exposes target_set_operator with
