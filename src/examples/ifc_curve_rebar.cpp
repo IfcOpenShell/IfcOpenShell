@@ -27,8 +27,15 @@
 #include <string>
 #include <fstream>
 
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
 #define IfcSchema Ifc2x3
-#include "ifcparse/Ifc2x3.h"
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
 #include "ifcparse/IfcHierarchyHelper.h"
 
 #include <boost/math/constants/constants.hpp>
@@ -37,6 +44,18 @@ const static double PI = boost::math::constants::pi<double>();
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
 boost::none_t const null = boost::none;
+
+#ifdef SCHEMA_HAS_IfcSegment
+typedef IfcSchema::IfcSegment curve_segment_t;
+#else
+typedef IfcSchema::IfcCompositeCurveSegment curve_segment_t;
+#endif
+
+#ifdef SCHEMA_IfcReinforcingBar_HAS_PredefinedType
+#define IFC_REINFORCING_BAR_TYPE IfcSchema::IfcReinforcingBarTypeEnum::IfcReinforcingBarType_LIGATURE
+#else
+#define IFC_REINFORCING_BAR_TYPE IfcSchema::IfcReinforcingBarRoleEnum::IfcReinforcingBarRole_LIGATURE
+#endif
 
 void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
 {
@@ -52,14 +71,14 @@ void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
 		dia,						//diameter
 		crossSectionarea,		//crossSectionarea = math.pi*(12.0/2)**2
 		0,
-		IfcSchema::IfcReinforcingBarRoleEnum::IfcReinforcingBarRoleEnum::IfcReinforcingBarRole_LIGATURE,
+		IFC_REINFORCING_BAR_TYPE,
 		IfcSchema::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurfaceEnum::IfcReinforcingBarSurface_PLAIN	//PLAIN or TEXTURED
 		);
 
 	file.addBuildingProduct(rebar);
 	rebar->setOwnerHistory(file.getSingle<IfcSchema::IfcOwnerHistory>());
 
-	IfcSchema::IfcCompositeCurveSegment::list::ptr segments(new IfcSchema::IfcCompositeCurveSegment::list());
+	curve_segment_t::list::ptr segments(new curve_segment_t::list());
 
 	IfcSchema::IfcCartesianPoint* p1 = file.addTriplet<IfcSchema::IfcCartesianPoint>(0, 0, 1000.);
 	IfcSchema::IfcCartesianPoint* p2 = file.addTriplet<IfcSchema::IfcCartesianPoint>(0, 0, 0);

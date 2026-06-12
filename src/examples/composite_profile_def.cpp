@@ -27,13 +27,44 @@
 #include <iostream>
 #include <fstream>
 
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
 #define IfcSchema Ifc2x3
-#include "ifcparse/Ifc2x3.h"
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
 #include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef IfcParse::IfcGlobalId guid;
 boost::none_t const null = boost::none;
+
+#ifdef SCHEMA_IfcIShapeProfileDef_HAS_FlangeEdgeRadius
+#define IFC_I_SHAPE_PROFILE_DEF_EXTRA_ARGS , null, null
+#else
+#define IFC_I_SHAPE_PROFILE_DEF_EXTRA_ARGS
+#endif
+
+#ifdef SCHEMA_IfcLShapeProfileDef_HAS_CentreOfGravityInX
+#define IFC_L_SHAPE_PROFILE_DEF_EXTRA_ARGS , null, null
+#else
+#define IFC_L_SHAPE_PROFILE_DEF_EXTRA_ARGS
+#endif
+
+#ifdef SCHEMA_IfcTShapeProfileDef_HAS_CentreOfGravityInY
+#define IFC_T_SHAPE_PROFILE_DEF_EXTRA_ARGS , null
+#else
+#define IFC_T_SHAPE_PROFILE_DEF_EXTRA_ARGS
+#endif
+
+#ifdef SCHEMA_IfcCShapeProfileDef_HAS_CentreOfGravityInX
+#define IFC_C_SHAPE_PROFILE_DEF_EXTRA_ARGS , null
+#else
+#define IFC_C_SHAPE_PROFILE_DEF_EXTRA_ARGS
+#endif
 
 int main(int argc, char** argv) {
 	const char filename[] = "composite_profile_def.ifc";
@@ -49,21 +80,21 @@ int main(int argc, char** argv) {
 	IfcSchema::IfcCartesianTransformationOperator2D* transform1 = new IfcSchema::IfcCartesianTransformationOperator2D(file.addDoublet<IfcSchema::IfcDirection>(1, 0), file.addDoublet<IfcSchema::IfcDirection>(0, -1), file.addDoublet<IfcSchema::IfcCartesianPoint>(40, 0), null);
 	IfcSchema::IfcCartesianTransformationOperator2D* transform2 = new IfcSchema::IfcCartesianTransformationOperator2D(file.addDoublet<IfcSchema::IfcDirection>(0, -1), file.addDoublet<IfcSchema::IfcDirection>(1, 0), file.addDoublet<IfcSchema::IfcCartesianPoint>(40, 0), 0.3);
 	
-	IfcSchema::IfcProfileDef* p1 = new Ifc2x3::IfcIShapeProfileDef(
+	IfcSchema::IfcProfileDef* p1 = new IfcSchema::IfcIShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, file.addPlacement2d(),    25.0,    50.0,     5.0,     5.0,     2.0);
+		null, file.addPlacement2d(),    25.0,    50.0,     5.0,     5.0,     2.0 IFC_I_SHAPE_PROFILE_DEF_EXTRA_ARGS);
 
-	IfcSchema::IfcProfileDef* p2 = new Ifc2x3::IfcLShapeProfileDef(
+	IfcSchema::IfcProfileDef* p2 = new IfcSchema::IfcLShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, file.addPlacement2d(),    50.0,    25.0,     5.0,      1.0,     2.0,     2.0,    null,    null);
+		null, file.addPlacement2d(),    50.0,    25.0,     5.0,      1.0,     2.0,     2.0 IFC_L_SHAPE_PROFILE_DEF_EXTRA_ARGS);
 
-	IfcSchema::IfcProfileDef* p3 = new Ifc2x3::IfcTShapeProfileDef(
+	IfcSchema::IfcProfileDef* p3 = new IfcSchema::IfcTShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, file.addPlacement2d(),    50.0,    40.0,    10.0,     10.0,     3.0,     2.0,     1.0,     2.0,     2.0,    null);
+		null, file.addPlacement2d(),    50.0,    40.0,    10.0,     10.0,     3.0,     2.0,     1.0,     2.0,     2.0 IFC_T_SHAPE_PROFILE_DEF_EXTRA_ARGS);
 
-	IfcSchema::IfcProfileDef* p4 = new Ifc2x3::IfcCShapeProfileDef(
+	IfcSchema::IfcProfileDef* p4 = new IfcSchema::IfcCShapeProfileDef(
 		IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA,
-		null, file.addPlacement2d(80.),    50.0,    25.0,     5.0,    10.0,     2.0,    null);
+		null, file.addPlacement2d(80.),    50.0,    25.0,     5.0,    10.0,     2.0 IFC_C_SHAPE_PROFILE_DEF_EXTRA_ARGS);
 
 	file.addEntity(p2);
 	file.addEntity(p3);

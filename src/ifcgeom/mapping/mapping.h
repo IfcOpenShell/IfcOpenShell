@@ -9,12 +9,8 @@
 #include <mutex>
 #include <cstdint>
 
-#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
-#include INCLUDE_SCHEMA(IfcSchema)
-#undef INCLUDE_SCHEMA
-#define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x-definitions.h)
-#include INCLUDE_SCHEMA(IfcSchema)
-#undef INCLUDE_SCHEMA
+#include INCLUDE_SCHEMA(../../ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(../../ifcparse, IfcSchema)
 
 namespace ifcopenshell {
 
