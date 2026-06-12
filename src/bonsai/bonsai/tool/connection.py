@@ -94,6 +94,43 @@ class Connection:
         return rels[0] if rels else (None, None)
 
     @classmethod
+    def find_rels_for_element(
+        cls,
+        elem: "ifcopenshell.entity_instance",
+    ) -> "list[tuple[ifcopenshell.entity_instance, str, ifcopenshell.entity_instance]]":
+        """Return every supported rel touching ``elem`` as ``(rel, kind, partner)``
+        triples. ``partner`` is the *other* element on the rel — the side cascade
+        cleanup must operate on when ``elem`` is being deleted.
+
+        Mirrors :py:meth:`find_rels`'s kind taxonomy. The single-element entry
+        point lets the cascade-on-delete in ``tool.Geometry.delete_ifc_object``
+        enumerate everything the disconnect operator would handle pairwise.
+        """
+        result: list[tuple["ifcopenshell.entity_instance", str, "ifcopenshell.entity_instance"]] = []
+        seen: set[int] = set()
+
+        def _record(rel, kind, partner):
+            if partner is None or rel.id() in seen:
+                return
+            seen.add(rel.id())
+            result.append((rel, kind, partner))
+
+        for rel in getattr(elem, "ConnectedTo", []) or ():
+            if rel.is_a("IfcRelConnectsPathElements"):
+                _record(rel, "path", getattr(rel, "RelatedElement", None))
+            elif rel.is_a("IfcRelConnectsElements"):
+                kind = "element-top" if getattr(rel, "Description", None) == "TOP" else "element"
+                _record(rel, kind, getattr(rel, "RelatedElement", None))
+        for rel in getattr(elem, "ConnectedFrom", []) or ():
+            if rel.is_a("IfcRelConnectsPathElements"):
+                _record(rel, "path", getattr(rel, "RelatingElement", None))
+            elif rel.is_a("IfcRelConnectsElements"):
+                kind = "element-top" if getattr(rel, "Description", None) == "TOP" else "element"
+                _record(rel, kind, getattr(rel, "RelatingElement", None))
+
+        return result
+
+    @classmethod
     def orient_element_top(
         cls,
         rel: "ifcopenshell.entity_instance",

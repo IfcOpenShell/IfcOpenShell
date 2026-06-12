@@ -196,6 +196,14 @@ class Collector:
 
 
 @interface
+class Connection:
+    def find_rel(cls, elem_a, elem_b): pass
+    def find_rels(cls, elem_a, elem_b): pass
+    def find_rels_for_element(cls, elem): pass
+    def orient_element_top(cls, rel, elem_a, elem_b): pass
+
+
+@interface
 class Context:
     def clear_context(cls): pass
     def export_attributes(cls): pass
@@ -694,11 +702,13 @@ class Model:
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
     def recalculate_walls(cls, objs): pass
+    def recreate_wall(cls, element, obj): pass
     def regenerate_array(cls, parent, data): pass
     def regenerate_profile(cls, obj): pass
     def regenerate_slab(cls, obj): pass
     def reload_body_representation(cls, obj_or_objects): pass
     def remove_wall_to_underside_booleans(cls, wall): pass
+    def strip_underside_booleans(cls, wall): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 

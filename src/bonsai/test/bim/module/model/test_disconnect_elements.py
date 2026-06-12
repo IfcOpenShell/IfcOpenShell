@@ -122,6 +122,52 @@ def test_find_rels_dedups_by_id():
 
 
 # ---------------------------------------------------------------------------
+# tool.Connection.find_rels_for_element — single-element entry point
+# ---------------------------------------------------------------------------
+
+
+def test_find_rels_for_element_returns_kind_and_partner_per_rel():
+    """Cascade-on-delete needs every rel touching one element plus the partner
+    element on the other side of each rel — that's the cleanup target."""
+    elem = _elem()
+    partner_a = _elem()
+    partner_b = _elem()
+    rel_path = _rel("IfcRelConnectsPathElements", related=partner_a, rel_id=1)
+    rel_top = _rel("IfcRelConnectsElements", relating=partner_b, description="TOP", rel_id=2)
+    elem.ConnectedTo = [rel_path]
+    elem.ConnectedFrom = [rel_top]
+
+    result = tool.Connection.find_rels_for_element(elem)
+
+    assert (rel_path, "path", partner_a) in result
+    assert (rel_top, "element-top", partner_b) in result
+    assert len(result) == 2
+
+
+def test_find_rels_for_element_dedups_by_rel_id():
+    elem = _elem()
+    partner = _elem()
+    rel = _rel("IfcRelConnectsPathElements", related=partner, relating=partner, rel_id=1)
+    elem.ConnectedTo = [rel]
+    elem.ConnectedFrom = [rel]
+
+    result = tool.Connection.find_rels_for_element(elem)
+
+    assert len(result) == 1
+
+
+def test_find_rels_for_element_skips_rels_without_partner():
+    """Defensive: a malformed rel missing the opposite-side attribute should not
+    crash — record nothing for it rather than emit a (rel, kind, None) triple
+    that would later trip a None-deref in the dispatch."""
+    elem = _elem()
+    bad = _rel("IfcRelConnectsPathElements", related=None, rel_id=1)
+    elem.ConnectedTo = [bad]
+
+    assert tool.Connection.find_rels_for_element(elem) == []
+
+
+# ---------------------------------------------------------------------------
 # tool.Connection.find_rel — first-match convenience
 # ---------------------------------------------------------------------------
 
@@ -165,15 +211,16 @@ def _make_op(*, a_guid="A", b_guid="B"):
     return op
 
 
-def test_disconnect_path_removes_all_rels_then_recreates_walls():
+def test_disconnect_dispatches_one_call_per_rel():
+    """Operator forwards every rel returned by find_rels to disconnect_rel,
+    in order — the operator is a thin wrapper; per-kind cleanup logic lives
+    in core.connection.disconnect_rel and is tested separately."""
     from bonsai.bim.module.model.wall import DisconnectElements
 
     elem_a = Mock()
     elem_b = Mock()
     rel1 = Mock()
     rel2 = Mock()
-    obj_a = Mock()
-    obj_b = Mock()
 
     ifc_file = MagicMock()
     ifc_file.by_guid.side_effect = lambda g: {"A": elem_a, "B": elem_b}[g]
@@ -181,45 +228,114 @@ def test_disconnect_path_removes_all_rels_then_recreates_walls():
 
     with patch("bonsai.bim.module.model.wall.tool.Ifc.get", return_value=ifc_file), patch(
         "bonsai.bim.module.model.wall.tool.Connection.find_rels",
-        return_value=[(rel1, "path"), (rel2, "path")],
-    ), patch(
-        "bonsai.bim.module.model.wall.tool.Ifc.get_object", side_effect=lambda e: {elem_a: obj_a, elem_b: obj_b}[e]
-    ), patch("bonsai.bim.module.model.wall.bonsai.core.geometry.remove_connection") as remove, patch(
-        "bonsai.bim.module.model.wall.tool.Model.recreate_wall"
-    ) as recreate, patch("bonsai.bim.module.model.wall._resync_walls_after_mutation") as resync:
+        return_value=[(rel1, "path"), (rel2, "element-top")],
+    ), patch("bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel") as dispatch, patch(
+        "bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()
+    ), patch("bonsai.bim.module.model.wall._resync_walls_after_mutation"):
         DisconnectElements._perform(op, context=MagicMock())
 
-    assert remove.call_count == 2
-    assert recreate.call_count == 2
-    resync.assert_called_once_with([obj_a, obj_b])
+    assert dispatch.call_count == 2
+    # Both rels dispatch with elem=elem_a, partner=elem_b regardless of orientation
+    # — orient_element_top inside disconnect_rel recovers the wall/slab roles.
+    for call, expected_rel, expected_kind in zip(
+        dispatch.call_args_list, [rel1, rel2], ["path", "element-top"]
+    ):
+        kw = call.kwargs
+        assert kw["rel"] is expected_rel
+        assert kw["kind"] == expected_kind
+        assert kw["elem"] is elem_a
+        assert kw["partner"] is elem_b
     op.report.assert_not_called()
 
 
-def test_disconnect_element_top_calls_regenerate():
+def test_disconnect_resyncs_path_objs_once_for_path_kind():
+    """For path rels the operator collects both endpoint objects and resyncs
+    drafts once at the end — a Blender-side concern that doesn't belong in
+    the core dispatch."""
     from bonsai.bim.module.model.wall import DisconnectElements
 
-    wall = Mock()
-    slab = Mock()
-    wall_obj = Mock()
+    elem_a = Mock()
+    elem_b = Mock()
+    obj_a = Mock()
+    obj_b = Mock()
     rel = Mock()
-    rel.RelatedElement = wall
 
     ifc_file = MagicMock()
-    ifc_file.by_guid.side_effect = lambda g: {"A": wall, "B": slab}[g]
+    ifc_file.by_guid.side_effect = lambda g: {"A": elem_a, "B": elem_b}[g]
+    op = _make_op()
+
+    with patch("bonsai.bim.module.model.wall.tool.Ifc.get", return_value=ifc_file), patch(
+        "bonsai.bim.module.model.wall.tool.Connection.find_rels", return_value=[(rel, "path")]
+    ), patch(
+        "bonsai.bim.module.model.wall.tool.Ifc.get_object",
+        side_effect=lambda e: {elem_a: obj_a, elem_b: obj_b}[e],
+    ), patch("bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"), patch(
+        "bonsai.bim.module.model.wall._resync_walls_after_mutation"
+    ) as resync:
+        DisconnectElements._perform(op, context=MagicMock())
+
+    resync.assert_called_once_with([obj_a, obj_b])
+
+
+def test_disconnect_skips_resync_for_non_path_kind():
+    """element-top / element kinds don't need wall-draft resync — that's a
+    path-specific concern (DumbWallJoiner geometry refresh)."""
+    from bonsai.bim.module.model.wall import DisconnectElements
+
+    elem_a = Mock()
+    elem_b = Mock()
+    rel = Mock()
+
+    ifc_file = MagicMock()
+    ifc_file.by_guid.side_effect = lambda g: {"A": elem_a, "B": elem_b}[g]
     op = _make_op()
 
     with patch("bonsai.bim.module.model.wall.tool.Ifc.get", return_value=ifc_file), patch(
         "bonsai.bim.module.model.wall.tool.Connection.find_rels", return_value=[(rel, "element-top")]
-    ), patch(
-        "bonsai.bim.module.model.wall.tool.Connection.orient_element_top", return_value=(wall, slab)
-    ), patch("bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=wall_obj), patch(
-        "bonsai.bim.module.model.wall.ifcopenshell.api.geometry.disconnect_element"
-    ) as disc, patch("bonsai.bim.module.model.wall.core.regenerate_wall_to_underside") as regen:
+    ), patch("bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()), patch(
+        "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
+    ), patch("bonsai.bim.module.model.wall._resync_walls_after_mutation") as resync:
         DisconnectElements._perform(op, context=MagicMock())
 
-    disc.assert_called_once_with(ifc_file, relating_element=slab, related_element=wall)
-    regen.assert_called_once()
-    op.report.assert_not_called()
+    resync.assert_not_called()
+
+
+def test_disconnect_gizmo_direction_symmetry():
+    """The wall-selected gizmo dispatches with element_a=wall, element_b=slab.
+    The slab-selected gizmo dispatches with element_a=slab, element_b=wall.
+    Both routes hit disconnect_rel with the same (rel, kind) pair — orientation
+    recovery happens inside the dispatch, not at the operator layer."""
+    from bonsai.bim.module.model.wall import DisconnectElements
+
+    wall = Mock(name="wall")
+    slab = Mock(name="slab")
+    rel = Mock()
+
+    ifc_file = MagicMock()
+    op = _make_op()
+
+    def _run_with_guids(a, b):
+        ifc_file.by_guid.side_effect = lambda g: {a: wall if a == "WALL" else slab, b: slab if b == "SLAB" else wall}[g]
+        op.element_a_guid = a
+        op.element_b_guid = b
+        with patch("bonsai.bim.module.model.wall.tool.Ifc.get", return_value=ifc_file), patch(
+            "bonsai.bim.module.model.wall.tool.Connection.find_rels", return_value=[(rel, "element-top")]
+        ), patch("bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()), patch(
+            "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
+        ) as dispatch, patch("bonsai.bim.module.model.wall._resync_walls_after_mutation"):
+            DisconnectElements._perform(op, context=MagicMock())
+        return dispatch.call_args.kwargs
+
+    wall_first = _run_with_guids("WALL", "SLAB")
+    slab_first = _run_with_guids("SLAB", "WALL")
+
+    # disconnect_rel sees (rel, "element-top") in both runs; elem/partner swap
+    # by argument order but orient_element_top inside disconnect_rel resolves
+    # the wall/slab roles symmetrically.
+    assert wall_first["rel"] is rel and slab_first["rel"] is rel
+    assert wall_first["kind"] == slab_first["kind"] == "element-top"
+    assert {wall_first["elem"], wall_first["partner"]} == {wall, slab}
+    assert {slab_first["elem"], slab_first["partner"]} == {wall, slab}
 
 
 def test_disconnect_reports_on_unknown_guids():

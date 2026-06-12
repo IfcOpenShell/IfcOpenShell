@@ -890,6 +890,16 @@ class OverrideDelete(bpy.types.Operator):
         # Track aggregates before deleting their parts
         aggregates_to_check = self.track_aggregates(objects_to_remove)
 
+        # Snapshot the set of IFC entity ids being deleted in this batch so the
+        # connection-rel cascade inside `delete_ifc_object` can suppress
+        # partner-side regenerate when the partner is also about to vanish.
+        batch_being_deleted_ids: set[int] = set()
+        for obj in objects_to_remove:
+            if not tool.Blender.is_valid_data_block(obj):
+                continue
+            if (entity := tool.Ifc.get_entity(obj)) is not None:
+                batch_being_deleted_ids.add(entity.id())
+
         clear_active_object = True
 
         for i, obj in enumerate(objects_to_remove, 1):
@@ -931,7 +941,7 @@ class OverrideDelete(bpy.types.Operator):
                 if tool.Drawing.is_auto_annotation(element):
                     self.report({"INFO"}, "References cannot be deleted. Exclude the referenced element instead.")
                     continue
-                tool.Geometry.delete_ifc_object(obj)
+                tool.Geometry.delete_ifc_object(obj, batch_being_deleted_ids=batch_being_deleted_ids)
             elif tool.Geometry.is_representation_item(obj):
                 tool.Geometry.delete_ifc_item(obj)
             else:
