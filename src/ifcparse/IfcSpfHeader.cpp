@@ -95,14 +95,8 @@ IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file, Logger& logger)
             return nullptr;
         }, file_->storage_);
 
-        if (storage_ == nullptr) {
-            file_description_ = Header_section_schema::get_schema().instantiate(&Header_section_schema::file_description::Class(), IfcEntityInstanceData(rocks_db_attribute_storage{}))->as<Header_section_schema::file_description>();
-            file_description_->file_ = file_;
-            file_name_ = Header_section_schema::get_schema().instantiate(&Header_section_schema::file_name::Class(), IfcEntityInstanceData(rocks_db_attribute_storage{}))->as<Header_section_schema::file_name>();
-            file_name_->file_ = file_;
-            file_schema_ = Header_section_schema::get_schema().instantiate(&Header_section_schema::file_schema::Class(), IfcEntityInstanceData(rocks_db_attribute_storage{}))->as<Header_section_schema::file_schema>();
-            file_schema_->file_ = file_;
-        }
+        // IfcFile constructs _header before it emplaces the selected storage backend.
+        // Keep header entities lazy so the accessors below allocate against the final storage.
     }
 }
 
