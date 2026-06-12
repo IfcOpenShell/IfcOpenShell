@@ -38,9 +38,15 @@
 
 #include <Standard_Version.hxx>
 
-#define IfcSchema Ifc2x3
 #include "ifcparse/macros.h"
-#include "ifcparse/Ifc2x3.h"
+
+#ifndef IfcSchema
+#define IfcSchema Ifc2x3
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
 #include "ifcparse/IfcBaseClass.h"
 #include "ifcparse/IfcHierarchyHelper.h"
 

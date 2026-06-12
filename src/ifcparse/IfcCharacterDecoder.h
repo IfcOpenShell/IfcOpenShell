@@ -28,6 +28,7 @@
 #define IFCCHARACTERDECODER_H
 
 #include "FileReader.h"
+#include "IfcLogger.h"
 
 #include <string>
 
@@ -42,6 +43,7 @@ namespace IfcParse {
 class IFC_PARSE_API IfcCharacterDecoder {
   private:
     IfcParse::FileReader* stream_;
+    Logger& logger_;
     int codepage_;
 
   public:
@@ -52,7 +54,7 @@ class IFC_PARSE_API IfcCharacterDecoder {
     };
     static ConversionMode mode;
     static char substitution_character;
-    IfcCharacterDecoder(IfcParse::FileReader* stream);
+    IfcCharacterDecoder(IfcParse::FileReader* stream, Logger& logger = Logger::Root());
     ~IfcCharacterDecoder();
     // Only advances the underlying token stream read pointer
     // to the next token.

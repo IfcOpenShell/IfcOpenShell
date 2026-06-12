@@ -156,14 +156,14 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual AbstractKernel* clone() const
+				virtual AbstractKernel* clone(Logger& logger) const
 				{
 					std::vector<std::unique_ptr<AbstractKernel>> ks;
 					for (auto& k : kernels_) {
-						ks.emplace_back(k->clone());
+						ks.emplace_back(k->clone(logger));
 					}
 					// @todo ugly
-					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks), logger());
+					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks), logger);
 				}
 			};
 

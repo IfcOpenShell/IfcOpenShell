@@ -129,7 +129,7 @@ namespace ifcopenshell {
 			const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes) = 0;
 		virtual bool unify_shapes(const IfcGeom::ConversionResults&, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 
-		virtual AbstractKernel* clone() const = 0;
+		virtual AbstractKernel* clone(Logger& logger) const = 0;
 	};
 }
 }

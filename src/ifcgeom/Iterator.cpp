@@ -167,7 +167,15 @@ bool IfcGeom::Iterator::initialize() {
 	return *initialization_outcome_;
 }
 
-void IfcGeom::Iterator::process_finished_rep(geometry_conversion_result* rep) {
+void IfcGeom::Iterator::flush_worker_log(ifcopenshell::geometry::Converter* kernel) {
+	if (kernel && &kernel->logger() != &logger_) {
+		logger_.Append(kernel->logger());
+	}
+}
+
+void IfcGeom::Iterator::process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geometry::Converter* kernel) {
+	flush_worker_log(kernel);
+
 	if (rep->elements.empty()) {
 		return;
 	}
@@ -193,8 +201,17 @@ void IfcGeom::Iterator::process_concurrently() {
 	}
 
 	kernel_pool.reserve(conc_threads);
+	worker_loggers_.reserve(conc_threads);
 	for (unsigned i = 0; i < conc_threads; ++i) {
-		kernel_pool.push_back(new ifcopenshell::geometry::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(converter_->kernel()->clone()), ifc_file, settings_, logger_));
+		worker_loggers_.emplace_back(std::make_unique<Logger>());
+		Logger& worker_logger = *worker_loggers_.back();
+		worker_logger.Verbosity(logger_.Verbosity());
+		worker_logger.OutputFormat(logger_.OutputFormat());
+		worker_logger.PrintPerformanceStatsOnElement(logger_.PrintPerformanceStatsOnElement());
+		if (worker_logger.OutputFormat() != Logger::FMT_INMEMORY) {
+			worker_logger.SetOutput(static_cast<std::ostream*>(nullptr), static_cast<std::ostream*>(nullptr));
+		}
+		kernel_pool.push_back(new ifcopenshell::geometry::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>(converter_->kernel()->clone(worker_logger)), ifc_file, settings_, worker_logger));
 	}
 
 	std::vector<std::future<geometry_conversion_result*>> threadpool;
@@ -211,11 +228,12 @@ void IfcGeom::Iterator::process_concurrently() {
 				std::future_status status;
 				status = fu.wait_for(std::chrono::seconds(0));
 				if (status == std::future_status::ready) {
-					process_finished_rep(fu.get());
+					process_finished_rep(fu.get(), kernel_pool[i]);
 
 					std::swap(threadpool[i], threadpool.back());
 					threadpool.pop_back();
 					std::swap(kernel_pool[i], kernel_pool.back());
+					std::swap(worker_loggers_[i], worker_loggers_.back());
 					K = kernel_pool.back();
 					break;
 				} // if
@@ -231,14 +249,14 @@ void IfcGeom::Iterator::process_concurrently() {
 			try {
 				this->create_element_(kernel, settings, rep);
 			} catch (const std::exception& e) {
-				logger_.Error("GEO", 52, 
+				kernel->logger().Error("GEO", 52,
 					std::string("Exception '") + e.what() +
 					std::string("' occurred while iterator was creating a shape: "),
 					rep->item->instance
 				);
 				had_error_processing_elements_ = true;
 			} catch (...) {
-				logger_.Error("GEO", 53, 
+				kernel->logger().Error("GEO", 53,
 					"Unknown exception occurred while iteartor was creating a shape: ",
 					rep->item->instance
 				);
@@ -257,8 +275,8 @@ void IfcGeom::Iterator::process_concurrently() {
 		threadpool.emplace_back(std::move(fu));
 	}
 
-	for (auto& fu : threadpool) {
-		process_finished_rep(fu.get());
+	for (size_t i = 0; i < threadpool.size(); ++i) {
+		process_finished_rep(threadpool[i].get(), kernel_pool[i]);
 	}
 
 	finished_ = true;
@@ -344,6 +362,8 @@ const IfcUtil::IfcBaseClass* IfcGeom::Iterator::create_shape_model_for_next_enti
 
 void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kernel, ifcopenshell::geometry::Settings settings, geometry_conversion_result* rep)
 {
+	Logger& kernel_logger = kernel->logger();
+
 	if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
 		rep->item = kernel->mapping()->map(rep->representation);
 		if (!rep->item) {
@@ -360,20 +380,20 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 	const IfcUtil::IfcBaseEntity* product = product_node.first;
 	const auto& place = product_node.second;
 
-	logger_.SetProduct(product);
+	kernel_logger.SetProduct(product);
 
 	IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product, place, rep]() {
 		return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 	}));
 
 	if (!brep) {
-        logger_.SetProduct(boost::none);
+        kernel_logger.SetProduct(boost::none);
 		return;
 	}
 
-	auto elem = process_based_on_settings(settings, brep);
+	auto elem = process_based_on_settings(settings, brep, kernel_logger);
 	if (!elem) {
-        logger_.SetProduct(boost::none);
+        kernel_logger.SetProduct(boost::none);
 		return;
 	}
 
@@ -385,11 +405,13 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 		const IfcUtil::IfcBaseEntity* product2 = p.first;
 		const auto& place2 = p.second;
 
+		kernel_logger.SetProduct(product2);
+
 		IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product2, place2, brep]() {
 			return kernel->create_brep_for_processed_representation(product2, place2, brep);
 		}));
 		if (brep2) {
-			auto elem2 = process_based_on_settings(settings, brep2, dynamic_cast<IfcGeom::TriangulationElement*>(elem));
+			auto elem2 = process_based_on_settings(settings, brep2, kernel_logger, dynamic_cast<IfcGeom::TriangulationElement*>(elem));
 			if (elem2) {
 				rep->breps.push_back(brep2);
 				rep->elements.push_back(elem2);
@@ -397,16 +419,16 @@ void IfcGeom::Iterator::create_element_(ifcopenshell::geometry::Converter* kerne
 		}
 	}
 
-	logger_.SetProduct(boost::none);
+	kernel_logger.SetProduct(boost::none);
 }
 
-IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geometry::Settings settings, IfcGeom::BRepElement* elem, IfcGeom::TriangulationElement* previous)
+IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geometry::Settings settings, IfcGeom::BRepElement* elem, Logger& logger, IfcGeom::TriangulationElement* previous)
 {
 	if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 		try {
 			return new IfcGeom::SerializedElement(*elem);
 		} catch (...) {
-			logger_.Message(Logger::LOG_ERROR, "GEO", 54, "Getting a serialized element from model failed.");
+			logger.Message(Logger::LOG_ERROR, "GEO", 54, "Getting a serialized element from model failed.");
 			return nullptr;
 		}
 	} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
@@ -417,7 +439,7 @@ IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geo
 			gid2 = gid2.substr(0, hyphen);
 		}
 
-		return decorate_with_cache_(GeometrySerializer::READ_TRIANGULATION, elem->guid(), gid2, [this, elem, previous]() {
+		return decorate_with_cache_(GeometrySerializer::READ_TRIANGULATION, elem->guid(), gid2, [&logger, elem, previous]() {
 			try {
 				if (!previous) {
 					return new TriangulationElement(*elem);
@@ -425,7 +447,7 @@ IfcGeom::Element* IfcGeom::Iterator::process_based_on_settings(ifcopenshell::geo
 					return new TriangulationElement(*elem, previous->geometry_pointer());
 				}
 			} catch (...) {
-				logger_.Message(Logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
+				logger.Message(Logger::LOG_ERROR, "GEO", 55, "Getting a triangulation element from model failed.");
 			}
 			return (TriangulationElement*)nullptr;
 		});
@@ -824,6 +846,7 @@ IfcGeom::Iterator::~Iterator() {
 	}
 
 	for (auto& k : kernel_pool) {
+		flush_worker_log(k);
 		delete k;
 	}
 

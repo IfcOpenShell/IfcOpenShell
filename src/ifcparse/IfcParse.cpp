@@ -102,9 +102,11 @@ void init_locale() {
 
 #endif
 
-IfcSpfLexer::IfcSpfLexer(IfcParse::FileReader* stream_) {
+IfcSpfLexer::IfcSpfLexer(IfcParse::FileReader* stream_, Logger& logger)
+    : logger_(logger)
+{
     stream = stream_;
-    decoder_ = new IfcCharacterDecoder(stream_);
+    decoder_ = new IfcCharacterDecoder(stream_, logger_);
 }
 
 IfcSpfLexer::~IfcSpfLexer() {
@@ -320,7 +322,7 @@ Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, size_t start, const std::str
     if (first == '#') {
         token.type = Token_IDENTIFIER;
         if (!ParseInt(tokenStr.c_str() + 1, token.value_int)) {
-            Logger::Root().Message(Logger::LOG_ERROR, "SYN", 11, "Token '" + tokenStr + "' at offset " + std::to_string(token.startPos) + " is not valid");
+            lexer->logger().Message(Logger::LOG_ERROR, "SYN", 11, "Token '" + tokenStr + "' at offset " + std::to_string(token.startPos) + " is not valid");
             token.type = Token_OPERATOR;
             token.value_char = '$';
         }
@@ -562,13 +564,13 @@ void IfcParse::impl::in_memory_file_storage::load(boost::optional<size_t> entity
                     // type) and to be able to actually register the references in
                     // the 2nd pass.
                     load(entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
-                    auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(entity_instance_name, *references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index));
+                    auto* simple_type_instance = (schema ? schema : file->schema())->instantiate(decl, ps.construct(entity_instance_name, *references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index, logger()));
                     read_simple_type_instances.emplace_back(simple_type_instance);
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = file;
                 } catch (IfcException& e) {
-                    Logger::Root().Message(Logger::LOG_ERROR, "SYN", 12, std::string(e.what()) + " at offset " + std::to_string(next.startPos));
+                    logger().Message(Logger::LOG_ERROR, "SYN", 12, std::string(e.what()) + " at offset " + std::to_string(next.startPos));
                     // #4070 We didn't actually capture an aggregate entry, undo length increment.
                     return_value--;
                 }
@@ -592,7 +594,7 @@ IfcEntityInstanceData IfcParse::impl::in_memory_file_storage::read(unsigned int 
     parse_context pc;
     tokens->Next();
     load(i, ty->as_entity(), pc, -1);
-    return IfcEntityInstanceData(pc.construct(i, *references_to_resolve, ty, boost::none, -1));
+    return IfcEntityInstanceData(pc.construct(i, *references_to_resolve, ty, boost::none, -1, logger()));
 }
 
 void IfcParse::impl::in_memory_file_storage::try_read_semicolon() const {
@@ -663,7 +665,7 @@ void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from,
         if (it != vals.end()) {
             vals.erase(it);
         } else {
-            Logger::Root().Error("VAL", 17, "Unregistering non-existant inverse #" + std::to_string(id_from) + " on instance #" + std::to_string(inst_id) + " at attribute " + std::to_string(attribute_index));
+            file->logger().Error("VAL", 17, "Unregistering non-existant inverse #" + std::to_string(id_from) + " on instance #" + std::to_string(inst_id) + " at attribute " + std::to_string(attribute_index));
         }
         s.resize(vals.size() * sizeof(uint32_t));
         memcpy(s.data(), vals.data(), s.size());
@@ -1122,7 +1124,7 @@ IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
                     }
                 }
             } catch (IfcParse::IfcException& e) {
-                Logger::Root().Error("SYN", 13, e);
+                file_->logger().Error("SYN", 13, e);
             }
         }
 
@@ -1159,11 +1161,11 @@ IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
                 auto guid = (std::string) new_attribute;
                 auto it = file_->internal_guid_map().find(guid);
                 if (it != file_->internal_guid_map().end()) {
-                    Logger::Root().Warning("VAL", 18, "Duplicate guid " + guid);
+                    file_->logger().Warning("VAL", 18, "Duplicate guid " + guid);
                 }
                 file_->internal_guid_map().insert({ guid, this });
             } catch (IfcParse::IfcException& e) {
-                Logger::Root().Error("SYN", 14, e);
+                file_->logger().Error("SYN", 14, e);
             }
         }
     }
@@ -1182,7 +1184,13 @@ IfcUtil::IfcBaseClass::set_attribute_value(const std::string& s, const T& t) {
 // Creates the maps
 //
 #ifdef USE_MMAP
-IfcFile::IfcFile(const std::string& fn, bool mmap) {
+IfcFile::IfcFile(const std::string& fn, bool mmap, Logger& logger)
+    : logger_(logger)
+    , schema_(nullptr)
+    , ifcroot_type_(nullptr)
+    , max_id_(0)
+    , _header(this, logger)
+{
     initialize(fn, mmap);
 }
 
@@ -1194,7 +1202,7 @@ bool IfcParse::IfcFile::initialize(const std::string& fn, bool mmap) {
         s = std::make_unique<FileReader>(fn);
     }
 
-    storage_.emplace<1>(this);
+    storage_.emplace<1>(this, logger_.get());
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&*s, schema_, max_id_, types_to_bypass_loading_);
 
     if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
@@ -1209,8 +1217,8 @@ bool IfcParse::IfcFile::initialize(const std::string& fn, bool mmap) {
 }
 #endif
 
-IfcFile::IfcFile(const uninitialized_tag&)
-    : schema_(nullptr), max_id_(0), _header(this), good_(file_open_status::UNKNOWN), ifcroot_type_(nullptr) {}
+IfcFile::IfcFile(const uninitialized_tag&, Logger& logger)
+    : logger_(logger), schema_(nullptr), ifcroot_type_(nullptr), max_id_(0), _header(this, logger), good_(file_open_status::UNKNOWN) {}
 
 bool IfcParse::IfcFile::initialize(const std::string& path, filetype ty, bool readonly) {
     if (ty == FT_AUTODETECT) {
@@ -1218,7 +1226,7 @@ bool IfcParse::IfcFile::initialize(const std::string& path, filetype ty, bool re
     }
     if (ty == FT_IFCSPF) {
         FileReader s(path);
-        storage_.emplace<1>(this);
+        storage_.emplace<1>(this, logger_.get());
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
 
         if ((good_ = std::get<impl::in_memory_file_storage>(storage_).good_)) {
@@ -1261,17 +1269,22 @@ void IfcParse::IfcFile::bypass_type(const std::string& type_name) {
     types_to_bypass_loading_.insert(type_name);
 }
 
-IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly)
-    : schema_(nullptr)
+IfcFile::IfcFile(const std::string& path, filetype ty, bool readonly, Logger& logger)
+    : logger_(logger)
+    , schema_(nullptr)
+    , ifcroot_type_(nullptr)
     , max_id_(0)
-    , _header(this)
+    , _header(this, logger)
 {
     initialize(path, ty, readonly);
 }
 
-IfcFile::IfcFile(std::istream& stream, int length)
-    : schema_(nullptr)
+IfcFile::IfcFile(std::istream& stream, int length, Logger& logger)
+    : logger_(logger)
+    , schema_(nullptr)
+    , ifcroot_type_(nullptr)
     , max_id_(0)
+    , _header(this, logger)
 {
     FileReader s(FileReader::caller_fed_tag{});
 
@@ -1280,7 +1293,7 @@ IfcFile::IfcFile(std::istream& stream, int length)
 	stream.read(string_data.data(), length);
     s.pushNextPage(string_data);
 
-    storage_.emplace<1>(this);
+    storage_.emplace<1>(this, logger_.get());
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
@@ -1290,13 +1303,16 @@ IfcFile::IfcFile(std::istream& stream, int length)
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 }
 
-IfcFile::IfcFile(void* data, int length)
-    : schema_(nullptr)
+IfcFile::IfcFile(void* data, int length, Logger& logger)
+    : logger_(logger)
+    , schema_(nullptr)
+    , ifcroot_type_(nullptr)
     , max_id_(0)
+    , _header(this, logger)
 {
 	FileReader s(std::string((char*)data, length), FileReader::caller_fed_tag{});
     
-    storage_.emplace<1>(this);
+    storage_.emplace<1>(this, logger_.get());
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
@@ -1306,11 +1322,14 @@ IfcFile::IfcFile(void* data, int length)
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 }
 
-IfcFile::IfcFile(IfcParse::FileReader* s)
-    : schema_(nullptr)
+IfcFile::IfcFile(IfcParse::FileReader* s, Logger& logger)
+    : logger_(logger)
+    , schema_(nullptr)
+    , ifcroot_type_(nullptr)
     , max_id_(0)
+    , _header(this, logger)
 {
-    storage_.emplace<1>(this);
+    storage_.emplace<1>(this, logger_.get());
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_, types_to_bypass_loading_);
     good_ = std::get<impl::in_memory_file_storage>(storage_).good_;
     ifcroot_type_ = schema_ ? schema_->declaration_by_name("IfcRoot") : nullptr;
@@ -1320,16 +1339,18 @@ IfcFile::IfcFile(IfcParse::FileReader* s)
     byguid_ = decltype(byguid_)(&std::get<impl::in_memory_file_storage>(storage_).byguid_);
 }
 
-IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const std::string& path)
-    : schema_(schema)
+IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const std::string& path, Logger& logger)
+    : logger_(logger)
+    , schema_(schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
     , max_id_(0)
+    , _header(this, logger)
 {
     if (ty == FT_AUTODETECT) {
         ty = guess_file_type(path);
     }
     if (ty == FT_IFCSPF) {
-        storage_.emplace<1>(this);
+        storage_.emplace<1>(this, logger_.get());
 
         byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
@@ -1347,13 +1368,12 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     } else {
         throw std::runtime_error("Unsupported file format");
     }
-    _header = IfcSpfHeader(this);
     setDefaultHeaderValues();
 }
 
 bool IfcParse::InstanceStreamer::hasSemicolon() const {
     auto local_stream = stream_->clone();
-	auto local_lexer = IfcSpfLexer(&local_stream);
+	auto local_lexer = IfcSpfLexer(&local_stream, logger_.get());
     Token t;
     try {
         t = local_lexer.Next();
@@ -1376,7 +1396,7 @@ bool IfcParse::InstanceStreamer::hasSemicolon() const {
 
 size_t IfcParse::InstanceStreamer::semicolonCount() const {
     auto local_stream = stream_->clone();
-    auto local_lexer = IfcSpfLexer(&local_stream);
+    auto local_lexer = IfcSpfLexer(&local_stream, logger_.get());
     Token t;
     size_t count = 0;
     try {
@@ -1402,7 +1422,7 @@ void IfcParse::InstanceStreamer::pushPage(const std::string& page)
 {
     stream_->pushNextPage(page);
     if (good_ == file_open_status::NO_HEADER) {
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
+        header_ = new IfcParse::IfcSpfHeader(lexer_, logger_.get());
         if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
             try {
                 schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
@@ -1417,29 +1437,35 @@ void IfcParse::InstanceStreamer::pushPage(const std::string& page)
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer()
+IfcParse::InstanceStreamer::InstanceStreamer(Logger& logger)
     : stream_(new FileReader(FileReader::caller_fed_tag{}))
-    , lexer_(new IfcSpfLexer(stream_))
+    , lexer_(new IfcSpfLexer(stream_, logger))
+    , header_(nullptr)
     , token_stream_(3, Token{})
     , schema_(nullptr)
+    , storage_(nullptr, logger)
+    , logger_(logger)
     , progress_(0)
 {
     init_locale();
     good_ = file_open_status::NO_HEADER;
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap)
+IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap, Logger& logger)
     : stream_(mmap ? new FileReader(fn, FileReader::mmap_tag{}) : new FileReader(fn))
-    , lexer_(new IfcSpfLexer(stream_))
+    , lexer_(new IfcSpfLexer(stream_, logger))
+    , header_(nullptr)
     , token_stream_(3, Token{})
     , schema_(nullptr)
+    , storage_(nullptr, logger)
+    , logger_(logger)
     , progress_(0)
 {
     init_locale();
 
     good_ = file_open_status::NO_HEADER;
     if (stream_->size() && !stream_->eof()) {
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
+        header_ = new IfcParse::IfcSpfHeader(lexer_, logger_.get());
         if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
             try {
                 schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
@@ -1454,18 +1480,21 @@ IfcParse::InstanceStreamer::InstanceStreamer(const std::string& fn, bool mmap)
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length)
+IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length, Logger& logger)
     : stream_(new FileReader(std::string((char*) data, length), FileReader::caller_fed_tag{}))
-    , lexer_(new IfcSpfLexer(stream_))
+    , lexer_(new IfcSpfLexer(stream_, logger))
+    , header_(nullptr)
     , token_stream_(3, Token{})
     , schema_(nullptr)
+    , storage_(nullptr, logger)
+    , logger_(logger)
     , progress_(0)
 {
     init_locale();
 
     good_ = file_open_status::NO_HEADER;
     if (stream_->size() && !stream_->eof()) {
-        header_ = new IfcParse::IfcSpfHeader(lexer_);
+        header_ = new IfcParse::IfcSpfHeader(lexer_, logger_.get());
         if (header_->tryRead() && header_->file_schema()->schema_identifiers().size() == 1) {
             try {
                 schema_ = IfcParse::schema_by_name(header_->file_schema()->schema_identifiers().front());
@@ -1480,12 +1509,14 @@ IfcParse::InstanceStreamer::InstanceStreamer(void* data, int length)
     }
 }
 
-IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer)
+IfcParse::InstanceStreamer::InstanceStreamer(const IfcParse::schema_definition* schema, IfcParse::IfcSpfLexer* lexer, Logger& logger)
     : stream_(nullptr)
     , lexer_(lexer)
     , header_(nullptr)
     , token_stream_(3, Token{})
     , schema_(schema)
+    , storage_(nullptr, logger)
+    , logger_(logger)
     , progress_(0)
 {
     init_locale();
@@ -1509,7 +1540,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         return;
     }
 
-    tokens = new IfcSpfLexer(s);
+    tokens = new IfcSpfLexer(s, logger());
 
     std::vector<std::string> schemas;
 
@@ -1531,21 +1562,21 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
             schema = IfcParse::schema_by_name(schemas.front());
         } catch (const IfcParse::IfcException& e) {
             good_ = file_open_status::UNSUPPORTED_SCHEMA;
-            Logger::Root().Error("SYN", 15, e);
+            logger().Error("SYN", 15, e);
         }
     }
 
     if (schema == nullptr) {
-        Logger::Root().Message(Logger::LOG_ERROR, "UNS", 32, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
+        logger().Message(Logger::LOG_ERROR, "UNS", 32, "No support for file schema encountered (" + boost::algorithm::join(schemas, ", ") + ")");
         return;
     }
 
     auto ifcroot_type_ = schema->declaration_by_name("IfcRoot");
 
-	InstanceStreamer streamer(schema, tokens);
+	InstanceStreamer streamer(schema, tokens, logger());
     streamer.bypassTypes(typed_to_bypass);
 
-    Logger::Root().Status("Scanning file...");
+    logger().Status("Scanning file...");
 
     while (streamer) {
 
@@ -1569,11 +1600,11 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 if (byguid_.find(guid) != byguid_.end()) {
                     std::stringstream ss;
                     ss << "Instance encountered with non-unique GlobalId " << guid;
-                    Logger::Root().Message(Logger::LOG_WARNING, "SYN", 16, ss.str());
+                    logger().Message(Logger::LOG_WARNING, "SYN", 16, ss.str());
                 }
                 byguid_[guid] = instance;
             } catch (const IfcException& ex) {
-                Logger::Root().Message(Logger::LOG_ERROR, "SYN", 17, ex.what());
+                logger().Message(Logger::LOG_ERROR, "SYN", 17, ex.what());
             }
         }
 
@@ -1589,7 +1620,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         if (byid_.find(current_id) != byid_.end()) {
             std::stringstream ss;
             ss << "Overwriting instance with name #" << current_id;
-            Logger::Root().Message(Logger::LOG_WARNING, "SYN", 18, ss.str());
+            logger().Message(Logger::LOG_WARNING, "SYN", 18, ss.str());
         }
 
         // byidentity_[instance->identity()] = instance;
@@ -1612,7 +1643,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
         inst->file_ = file;
     }
 
-    Logger::Root().Status("\rDone scanning file   ");
+    logger().Status("\rDone scanning file   ");
 
     delete tokens;
 
@@ -1632,7 +1663,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                 }
                 auto it = byid_.find(*name);
                 if (it == byid_.end()) {
-                    Logger::Root().Error("SYN", 19, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
+                    logger().Error("SYN", 19, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
                     auto* storage = &byid_[p.first.name_]->data();
                     auto attr_index = p.first.index_;
@@ -1649,7 +1680,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                     if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
                         storage->set_attribute_value(nullptr, nullptr, 0, attr_index, it->second);
                     } else {
-                        Logger::Root().Error("SYN", 20, "Duplicate definition for instance reference");
+                        logger().Error("SYN", 20, "Duplicate definition for instance reference");
                     }
                 }
             } else if (auto* inst = std::get_if<IfcUtil::IfcBaseClass*>(v)) {
@@ -1665,7 +1696,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                     }
                     auto it = byid_.find(*name);
                     if (it == byid_.end()) {
-                        Logger::Root().Error("SYN", 21, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
+                        logger().Error("SYN", 21, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                     } else {
                         instances->push(it->second);
                     }
@@ -1689,7 +1720,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
             if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
                 storage->set_attribute_value(nullptr, nullptr, 0, attr_index, instances);
             } else {
-                Logger::Root().Error("SYN", 22, "Duplicate definition for instance reference");
+                logger().Error("SYN", 22, "Duplicate definition for instance reference");
             }
         } else if (auto* vvv = std::get_if<std::vector<std::vector<reference_or_simple_type>>>(&p.second)) {
             aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
@@ -1702,7 +1733,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
                         }
                         auto it = byid_.find(*name);
                         if (it == byid_.end()) {
-                            Logger::Root().Error("SYN", 23, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
+                            logger().Error("SYN", 23, "Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                         } else {
                             inner.push_back(it->second);
                         }
@@ -1728,12 +1759,12 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::FileRead
             if (storage->has_attribute_value<Blank>(nullptr, nullptr, 0, attr_index)) {
                 storage->set_attribute_value(nullptr, nullptr, 0, attr_index, instances);
             } else {
-                Logger::Root().Error("SYN", 24, "Duplicate definition for instance reference");
+                logger().Error("SYN", 24, "Duplicate definition for instance reference");
             }
         }
     }
 
-    Logger::Root().Status("Done resolving references");
+    logger().Status("Done resolving references");
 }
 
 void IfcFile::recalculate_id_counter() {
@@ -1893,7 +1924,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
             }
         }
     } catch (...) {
-        Logger::Root().Message(Logger::LOG_ERROR, "SYN", 25, "Failed to visit forward references of", entity);
+        logger().Message(Logger::LOG_ERROR, "SYN", 25, "Failed to visit forward references of", entity);
     }
 
     // See whether the instance is already part of a file
@@ -2066,11 +2097,11 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
             if (byguid_.find(guid) != byguid_.end()) {
                 std::stringstream ss;
                 ss << "Overwriting entity with guid " << guid;
-                Logger::Root().Message(Logger::LOG_WARNING, "SYN", 26, ss.str());
+                logger().Message(Logger::LOG_WARNING, "SYN", 26, ss.str());
             }
             byguid_.insert({ guid, new_entity });
         } catch (const std::exception& ex) {
-            Logger::Root().Message(Logger::LOG_ERROR, "SYN", 27, ex.what());
+            logger().Message(Logger::LOG_ERROR, "SYN", 27, ex.what());
         }
     }
 
@@ -2243,7 +2274,7 @@ void IfcFile::process_deletion_(IfcUtil::IfcBaseClass* entity) {
         if (it != byguid_.end()) {
             byguid_.erase(it);
         } else {
-            Logger::Root().Warning("VAL", 19, "GlobalId on rooted instance not encountered in map");
+            logger().Warning("VAL", 19, "GlobalId on rooted instance not encountered in map");
         }
     }
 

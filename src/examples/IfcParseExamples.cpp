@@ -17,12 +17,16 @@
  *                                                                              *
  ********************************************************************************/
 
-// TODO: Multiple schemas
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
 #define IfcSchema Ifc2x3
+#endif
 
 #include "ifcparse/IfcFile.h"
 #include "ifcparse/IfcLogger.h"
-#include "ifcparse/Ifc2x3.h"
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
 
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -39,33 +43,6 @@
 static_assert(false, "A boost preprocessor sequence of schema identifiers is needed for this file to compile.");
 #endif
 
-// @todo duplicated with Kernel.h
-
-// @tfk A macro cannot define an include (I think), so here we can't
-// loop over the sequence of schema identifiers, but rather we have
-// unroll the loop with at least the amount of schemas we'd like support
-// for and then overflow into an existing empty include file.
-
-#define INCLUDE_SCHEMA(n) \
-	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), BOOST_PP_STRINGIZE(../ifcparse/BOOST_PP_CAT(Ifc,BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))),SCHEMA_SEQ)).h), "../ifcgeom/empty.h")
-
-#include INCLUDE_SCHEMA(0)
-#include INCLUDE_SCHEMA(1)
-#include INCLUDE_SCHEMA(2)
-#include INCLUDE_SCHEMA(3)
-#include INCLUDE_SCHEMA(4)
-#include INCLUDE_SCHEMA(5)
-#include INCLUDE_SCHEMA(6)
-#include INCLUDE_SCHEMA(7)
-#include INCLUDE_SCHEMA(8)
-#include INCLUDE_SCHEMA(9)
-#include INCLUDE_SCHEMA(10)
-#include INCLUDE_SCHEMA(11)
-#include INCLUDE_SCHEMA(12)
-#include INCLUDE_SCHEMA(13)
-#include INCLUDE_SCHEMA(14)
-#include INCLUDE_SCHEMA(15)
-
 #include <iomanip>
 
 #if USE_VLD
@@ -79,6 +56,12 @@ template<class T>
 struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : std::true_type { };
 
 typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
+
+#ifdef SCHEMA_HAS_IfcBuildingElement
+typedef IfcSchema::IfcBuildingElement element_t
+#else
+typedef IfcSchema::IfcBuiltElement element_t
+#endif
 
 std::string format_string(const AttributeValue& argument) {
 	// Argument is a runtime tagged variant for the various data types in a IFC model,
@@ -259,7 +242,7 @@ int main(int argc, char** argv) {
     // we need to cast them to IfcWindows. Since these properties
     // are optional we need to make sure the properties are
     // defined for the window in question before accessing them.
-	IfcSchema::IfcBuildingElement::list::ptr elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
+	example_element_type::list::ptr elements = file.instances_by_type<example_element_type>();
 
     std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
 

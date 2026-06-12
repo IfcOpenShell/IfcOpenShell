@@ -27,6 +27,9 @@
 #define STRINGIFY_(x) #x
 #define STRINGIFY(x) STRINGIFY_(x)
 
+#define INCLUDE_SCHEMA(prefix, x) STRINGIFY(prefix/x.h)
+#define INCLUDE_SCHEMA_DEFINITIONS(prefix, x) STRINGIFY(prefix/x-definitions.h)
+
 #define MAKE_INIT_FN__(a, b) init_##a##_##b
 #define MAKE_INIT_FN_(a, b) MAKE_INIT_FN__(a, b)
 #define MAKE_INIT_FN(t) MAKE_INIT_FN_(t, IfcSchema)

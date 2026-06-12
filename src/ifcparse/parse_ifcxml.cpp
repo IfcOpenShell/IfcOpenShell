@@ -206,11 +206,18 @@ class stack_node {
 };
 
 struct ifcxml_parse_state {
+    explicit ifcxml_parse_state(Logger& logger)
+        : file(nullptr)
+        , dialect(ifcxml_dialect_unknown)
+        , logger(logger)
+    {}
+
     IfcParse::IfcFile* file;
     std::vector<stack_node> stack;
     std::map<std::string, int> idmap;
     std::vector<std::tuple<IfcUtil::IfcBaseEntity*, size_t, std::string>> forward_references;
     ifcxml_dialect dialect;
+    Logger& logger;
 };
 
 // ifc4 allows for aggregates to be concatenated using whitespace.
@@ -227,7 +234,7 @@ std::vector<T> split(const std::string& value) {
     return r;
 }
 
-boost::any parse_attribute_value(const IfcParse::parameter_type* ty, const std::string& value) {
+boost::any parse_attribute_value(const IfcParse::parameter_type* ty, const std::string& value, Logger& logger) {
     boost::any any;
     auto cpp_type = IfcUtil::from_parameter_type(ty);
 
@@ -255,7 +262,7 @@ boost::any parse_attribute_value(const IfcParse::parameter_type* ty, const std::
     }
 
     if (any.empty()) {
-        Logger::Root().Error("SYN", 29, "Attribute '" + value + "' not successfully parsed");
+        logger.Error("SYN", 29, "Attribute '" + value + "' not successfully parsed");
     }
 
     return any;
@@ -293,7 +300,7 @@ static void end_element(void* user, const xmlChar* tag) {
     // ignore uos ex:iso_10303_28 (ifc2x3) and ifc:ifcXML (ifc4)
     if (tagname != "uos" && tagname != "ex:iso_10303_28" && tagname != "ifc:ifcXML" && tagname != "ifcXML") {
         if (state->stack.empty()) {
-            Logger::Root().Error("SYN", 30, "Mismatch in parse stack due to previous errors");
+            state->logger.Error("SYN", 30, "Mismatch in parse stack due to previous errors");
         } else {
             state->stack.pop_back();
         }
@@ -318,9 +325,9 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         const auto* pt = state->stack.back().inst()->declaration().as_type_declaration()->declared_type();
         boost::any val;
         try {
-            val = parse_attribute_value(pt, txt);
+            val = parse_attribute_value(pt, txt, state->logger);
         } catch (const std::exception& e) {
-            Logger::Root().Error("SYN", 31, e, state->stack.back().inst());
+            state->logger.Error("SYN", 31, e, state->stack.back().inst());
         }
         if (!val.empty()) {
             // type declaration always at idx 0
@@ -348,13 +355,13 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         } else if (tagname == "documentation") {
             header.file_description()->setdescription({txt});
         } else {
-            Logger::Root().Error("SYN", 32, "Unrecognized header entry " + tagname);
+            state->logger.Error("SYN", 32, "Unrecognized header entry " + tagname);
         }
     } else if (state_type == stack_node::node_instance_attribute) {
         const auto* pt = state->stack.back().inst()->declaration().as_entity()->attribute_by_index(state->stack.back().idx())->type_of_attribute();
         auto cpp_type = IfcUtil::from_parameter_type(pt);
         if (cpp_type != IfcUtil::Argument_ENTITY_INSTANCE) {
-            auto val = parse_attribute_value(pt, txt);
+            auto val = parse_attribute_value(pt, txt, state->logger);
             if (!val.empty()) {
                 visit_any([&state](auto& v) {
                     state->stack.back().inst()->set_attribute_value(state->stack.back().idx(), v);
@@ -363,7 +370,7 @@ static void process_characters(void* user, const xmlChar* character, int len) {
         }
     } else if (state_type == stack_node::node_aggregate_element) {
         const auto* pt = state->stack.back().aggregate_elem_type();
-        auto val = parse_attribute_value(pt, txt);
+        auto val = parse_attribute_value(pt, txt, state->logger);
         if (!val.empty()) {
             (*(state->stack.rbegin() + 1)).aggregate_elements.push_back(val);
         }
@@ -417,12 +424,12 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     if (it != end) {
                         std::string schema_name(&it->front(), it->size());
                         boost::to_upper(schema_name);
-                        state->file = new IfcParse::IfcFile(IfcParse::schema_by_name(schema_name));
+                        state->file = new IfcParse::IfcFile(IfcParse::schema_by_name(schema_name), IfcParse::FT_AUTODETECT, "", state->logger);
                         state->dialect = ifcxml_dialect_ifc4;
                     }
                     goto end;
                 } else if (tagname == "ex:iso_10303_28" && attrname == "xsi:schemaLocation" && boost::starts_with(value, "http://www.iai-tech.org/ifcXML/IFC2x3")) {
-                    state->file = new IfcParse::IfcFile(IfcParse::schema_by_name("IFC2X3"));
+                    state->file = new IfcParse::IfcFile(IfcParse::schema_by_name("IFC2X3"), IfcParse::FT_AUTODETECT, "", state->logger);
                     state->dialect = ifcxml_dialect_ifc2x3;
                     goto end;
                 }
@@ -491,14 +498,14 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     auto idx = entity->attribute_index(pair.first);
                     if (idx != -1) {
                         const auto* attr = entity->attribute_by_index(idx);
-                        auto val = parse_attribute_value(attr->type_of_attribute(), pair.second);
+                        auto val = parse_attribute_value(attr->type_of_attribute(), pair.second, state->logger);
                         if (!val.empty()) {
                             visit_any([&untyped, idx](auto& v) {
                                 untyped.set_attribute_value(idx, v);
                             }, val);
                         }
                     } else {
-                        Logger::Root().Error("SYN", 33, "Unknown attribute '" + pair.first + "' on entity '" + entity->name() + "' with value '" + pair.second + "'");
+                        state->logger.Error("SYN", 33, "Unknown attribute '" + pair.first + "' on entity '" + entity->name() + "' with value '" + pair.second + "'");
                     }
                 }
             }
@@ -556,7 +563,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 try {
                     decl = state->file->schema()->declaration_by_name(tagname_copy);
                 } catch (const std::exception& e) {
-                    Logger::Root().Error("SYN", 34, e);
+                    state->logger.Error("SYN", 34, e);
                 }
                 if (decl != nullptr) {
                     auto inst_or_ref = create_instance(decl);
@@ -571,7 +578,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
         } else if (state_type == stack_node::node_instance) {
             const IfcParse::entity* current = state->stack.back().inst()->declaration().as_entity();
             if (current == nullptr) {
-                Logger::Root().Error("SYN", 35, "'" + state->stack.back().inst()->declaration().name() + "' is not an entity, unable to set attribute '" + tagname + "'");
+                state->logger.Error("SYN", 35, "'" + state->stack.back().inst()->declaration().name() + "' is not an entity, unable to set attribute '" + tagname + "'");
                 // We need to push something on the stack. Likely there has been some extra indirection that is not understood.
                 state->stack.push_back(state->stack.back());
             } else {
@@ -582,7 +589,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                         return attr->name() == tagname;
                     });
                     if (found == inverses.end()) {
-                        Logger::Root().Error("SYN", 36, "Unknown attribute " + tagname);
+                        state->logger.Error("SYN", 36, "Unknown attribute " + tagname);
                         state->stack.push_back(state->stack.back());
                     } else {
                         if ((*found)->bound1() == 0 && (*found)->bound2() == 1) {
@@ -595,7 +602,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 inst->set_attribute_value(idx, state->stack.back().inst());
                                 state->stack.push_back(stack_node::instance(id, inst));
                             } else {
-                                Logger::Root().Error("SYN", 37, "Unknown attribute " + tagname);
+                                state->logger.Error("SYN", 37, "Unknown attribute " + tagname);
                                 state->stack.push_back(state->stack.back());
                             }
                         } else {
@@ -642,7 +649,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 try {
                     decl = state->file->schema()->declaration_by_name(tagname);
                 } catch (const std::exception& e) {
-                    Logger::Root().Error("SYN", 38, e);
+                    state->logger.Error("SYN", 38, e);
                 }
 
                 if (decl == nullptr) {
@@ -651,7 +658,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
                 const IfcParse::entity* entity = decl->as_entity();
                 if ((entity == nullptr) && state_type != stack_node::node_instance_attribute) {
-                    Logger::Root().Error("SYN", 39, "Not an entity definition " + tagname);
+                    state->logger.Error("SYN", 39, "Not an entity definition " + tagname);
                     goto end;
                 }
 
@@ -665,7 +672,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     if (inst != nullptr) {
                         inst->set_attribute_value(idx, state->stack.back().inst());
                     } else {
-                        Logger::Root().Error("SYN", 40, "Internal error, inverse attribute not processed");
+                        state->logger.Error("SYN", 40, "Internal error, inverse attribute not processed");
                     }
                 } else if (state_type == stack_node::node_instance_attribute) {
                     state->stack.back().inst()->set_attribute_value(state->stack.back().idx(), inst);
@@ -688,12 +695,10 @@ end:
     return;
 }
 
-IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filename) {
+IFC_PARSE_API IfcParse::IfcFile* IfcParse::parse_ifcxml(const std::string& filename, Logger& logger) {
     throw std::runtime_error("IFC-XML import temporarily disabled");
 
-    ifcxml_parse_state state;
-    state.file = nullptr;
-    state.dialect = ifcxml_dialect_unknown;
+    ifcxml_parse_state state(logger);
 
     xmlSAXHandler handler;
     memset(&handler, 0, sizeof(xmlSAXHandler));

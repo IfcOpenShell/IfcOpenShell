@@ -1279,11 +1279,11 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 
 #ifdef WITH_IFCXML
 	if (boost::ends_with(boost::to_lower_copy(filename), ".ifcxml")) {
-		ifc_file = IfcParse::parse_ifcxml(filename);
+		ifc_file = IfcParse::parse_ifcxml(filename, logger);
     } else
 #endif
     {
-        ifc_file = new IfcParse::IfcFile(IfcParse::uninitialized_tag{});
+        ifc_file = new IfcParse::IfcFile(IfcParse::uninitialized_tag{}, logger);
         requires_init = true;
     }
 

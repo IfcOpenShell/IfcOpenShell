@@ -20,9 +20,11 @@ namespace rocksdb {
 #include "map_transformer.h"
 #include "set_to_map_transformer.h"
 #include "file_open_status.h"
+#include "IfcLogger.h"
 
 #include <boost/unordered_map.hpp>
 
+#include <functional>
 #include <variant>
 #include <iterator>
 #include <cstdint>
@@ -187,7 +189,7 @@ namespace IfcParse {
 
         void push(IfcUtil::IfcBaseClass* inst);
 
-        IfcEntityInstanceData construct(boost::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, bool coerce_attribute_count=true);
+        IfcEntityInstanceData construct(boost::optional<size_t> name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index, Logger& logger, bool coerce_attribute_count=true);
     };
 
     namespace impl {
@@ -198,6 +200,7 @@ namespace IfcParse {
             }
 
             IfcParse::IfcSpfLexer* tokens;
+            std::reference_wrapper<Logger> logger_;
             // IfcParse::FileReader* stream;
 
             // Either one of these needs to be set
@@ -219,9 +222,10 @@ namespace IfcParse {
             typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(IfcParse::IfcFile* f = nullptr) : tokens(nullptr), file(f), schema(nullptr) {}
+            in_memory_file_storage(IfcParse::IfcFile* f = nullptr, Logger& logger = Logger::Root()) : tokens(nullptr), logger_(logger), file(f), schema(nullptr) {}
             in_memory_file_storage(const in_memory_file_storage&) = delete;
             in_memory_file_storage(const in_memory_file_storage&&) = delete;
+            Logger& logger() const { return logger_.get(); }
 
 
             class type_iterator : public entities_by_type_t::const_iterator {

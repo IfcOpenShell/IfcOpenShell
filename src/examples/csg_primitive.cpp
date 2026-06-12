@@ -27,8 +27,15 @@
 #include <iostream>
 #include <fstream>
 
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
 #define IfcSchema Ifc2x3
-#include "ifcparse/Ifc2x3.h"
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
 #include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;

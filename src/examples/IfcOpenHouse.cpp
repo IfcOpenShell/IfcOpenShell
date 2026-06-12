@@ -35,9 +35,15 @@
 
 #include <Precision.hxx>
 
-#define IfcSchema Ifc2x3
 #include "ifcparse/macros.h"
-#include "ifcparse/Ifc2x3.h"
+
+#ifndef IfcSchema
+#define IfcSchema Ifc2x3
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
 #include "ifcparse/IfcBaseClass.h"
 #include "ifcparse/IfcHierarchyHelper.h"
 
@@ -52,6 +58,11 @@ using namespace std::string_literals;
 // Some convenience typedefs and definitions. 
 typedef IfcParse::IfcGlobalId guid;
 typedef std::pair<double, double> XY;
+#ifdef SCHEMA_HAS_IfcPresentationStyleAssignment
+typedef IfcSchema::IfcPresentationStyleAssignment surface_style_t;
+#else
+typedef IfcSchema::IfcPresentationStyle surface_style_t;
+#endif
 boost::none_t const null = boost::none;
 
 // The creation of Nurbs-surface for the IfcSite mesh, to be implemented lateron
@@ -74,7 +85,7 @@ int main() {
 		0, 					// ObjectPlacement
 		0, 					// Representation
 		null				// Tag
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcWall_HAS_PredefinedType
 		, IfcSchema::IfcWallTypeEnum::IfcWallType_STANDARD
 #endif
 	);
@@ -105,7 +116,7 @@ int main() {
 	south_wall->setObjectPlacement(file.addLocalPlacement(storey_placement));
 
 	// A pale white colour is assigned to the wall.
-	IfcSchema::IfcPresentationStyleAssignment* wall_colour = setSurfaceColour(file, south_wall_shape, 0.75, 0.73, 0.68);
+	surface_style_t* wall_colour = setSurfaceColour(file, south_wall_shape, 0.75, 0.73, 0.68);
 
 	// Now create a footing for the wall to rest on.
 	IfcSchema::IfcFooting* footing = new IfcSchema::IfcFooting(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
@@ -119,7 +130,7 @@ int main() {
 	footing->setRepresentation(file.addBox(10100, 5460, 2000));
 	footing->setObjectPlacement(file.addLocalPlacement(storey_placement, 0, 2500, -2000));
 	// The footing will have a dark gray colour
-	IfcSchema::IfcPresentationStyleAssignment* footing_colour = setSurfaceColour(file,footing->Representation(), 0.26, 0.22, 0.18);
+	surface_style_t* footing_colour = setSurfaceColour(file,footing->Representation(), 0.26, 0.22, 0.18);
 
 	// IFC has two ways to apply boolean operations to geometry. IfcBooleanResults are commonly used 
 	// to clip geometry to a surface, for example to a slanted roof. For openings that are filled 
@@ -129,7 +140,7 @@ int main() {
 	IfcSchema::IfcOpeningElement* west_opening = new IfcSchema::IfcOpeningElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, null, file.addLocalPlacement(south_wall->ObjectPlacement(), -2500, 0, 400),
 		file.addBox(6000, 3630, 1600), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcOpeningElement_HAS_PredefinedType
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif
 	);
@@ -144,7 +155,7 @@ int main() {
 	IfcSchema::IfcOpeningElement* south_opening = new IfcSchema::IfcOpeningElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, null, file.addLocalPlacement(storey_placement, 3000, 0, 400),
 		file.addBox(1860, 3000, 1600), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcOpeningElement_HAS_PredefinedType
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif
 	);
@@ -194,7 +205,7 @@ int main() {
 	// Copy the south wall to the north
 	IfcSchema::IfcWallStandardCase* north_wall = new IfcSchema::IfcWallStandardCase(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), "North wall"s,
 		null, null, file.addLocalPlacement(storey_placement, 0, 5000, 0), file.addAxisBox(10000, 360, 3000), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcWall_HAS_PredefinedType
 		, IfcSchema::IfcWallTypeEnum::IfcWallType_STANDARD
 #endif	
 	);
@@ -226,7 +237,7 @@ int main() {
 	// Now create a wall on the east of the building, again starting with just a box shape
 	IfcSchema::IfcWallStandardCase* east_wall = new IfcSchema::IfcWallStandardCase(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		"East wall"s, null, null, file.addLocalPlacement(storey_placement, 4820, 2500, 0, 0, 0, 1, 0, 1, 0), clipped_wall_body_reps[0], null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcWall_HAS_PredefinedType
 		, IfcSchema::IfcWallTypeEnum::IfcWallType_STANDARD
 #endif	
 	);
@@ -235,7 +246,7 @@ int main() {
 	// The east wall is copied to the west location of the house
 	IfcSchema::IfcWallStandardCase* west_wall = new IfcSchema::IfcWallStandardCase(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		"West wall"s, null, null, file.addLocalPlacement(storey_placement, -4820, 2500, 0, 0, 0, 1, 0, -1, 0), clipped_wall_body_reps[1], null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcWall_HAS_PredefinedType
 		, IfcSchema::IfcWallTypeEnum::IfcWallType_STANDARD
 #endif	
 	);
@@ -252,7 +263,7 @@ int main() {
 	IfcSchema::IfcOpeningElement* west_opening_copy = new IfcSchema::IfcOpeningElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, null, file.addLocalPlacement(west_wall->ObjectPlacement(), 2500, -2500+4820, 400, 0, 0, 1, 0, 1, 0),
 		file.addBox(6000, 3630, 1600), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcOpeningElement_HAS_PredefinedType
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif	
 	);
@@ -274,7 +285,7 @@ int main() {
 	IfcSchema::IfcProperty::list::ptr properties(new IfcSchema::IfcProperty::list);
 	properties->push(new IfcSchema::IfcPropertySingleValue("TotalArea", null, new IfcSchema::IfcAreaMeasure(site_area), 0));
 	IfcSchema::IfcPropertySet* pset = new IfcSchema::IfcPropertySet(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), "Pset_SiteCommon"s, null, properties);
-#ifdef USE_IFC4	
+#ifdef SCHEMA_HAS_IfcDefinitionSelect
 	IfcSchema::IfcObjectDefinition::list::ptr related_objs(new IfcSchema::IfcObjectDefinition::list);
 #else
 	IfcSchema::IfcObject::list::ptr related_objs(new IfcSchema::IfcObject::list);
@@ -297,7 +308,7 @@ int main() {
 	// Some BIM authoring applications, such as Autodesk Revit, ignore the geometrical representation
 	// by and large and construct native walls using the layer thickness and reference line offset 
 	// provided here.
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcMaterial_HAS_Description
 	IfcSchema::IfcMaterial* material = new IfcSchema::IfcMaterial("Brick", null, null);
 #else
 	IfcSchema::IfcMaterial* material = new IfcSchema::IfcMaterial("Brick");
@@ -306,7 +317,7 @@ int main() {
 		material, 
 		360, 
 		null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcMaterialLayer_HAS_Name
 		, null
 		, null 
 		, null
@@ -318,7 +329,7 @@ int main() {
 	IfcSchema::IfcMaterialLayerSet* layer_set = new IfcSchema::IfcMaterialLayerSet(
 		layers, 
 		"Wall"s
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcMaterialLayerSet_HAS_Description
 		, null
 #endif
 	);
@@ -327,7 +338,7 @@ int main() {
 		IfcSchema::IfcLayerSetDirectionEnum::IfcLayerSetDirection_AXIS2,
 		IfcSchema::IfcDirectionSenseEnum::IfcDirectionSense_POSITIVE,
 		-180
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcMaterialLayerSetUsage_HAS_ReferenceExtent
 		, null
 #endif
 	);
@@ -337,7 +348,7 @@ int main() {
 		file.getSingle<IfcSchema::IfcOwnerHistory>(), 
 		null, 
 		null,
-#ifdef USE_IFC4
+#ifdef SCHEMA_HAS_IfcDefinitionSelect
 		file.instances_by_type<IfcSchema::IfcWallStandardCase>()->as<IfcSchema::IfcDefinitionSelect>(),
 #else
 		file.instances_by_type<IfcSchema::IfcWallStandardCase>()->as<IfcSchema::IfcRoot>(),
@@ -362,7 +373,7 @@ int main() {
 	IfcSchema::IfcStairFlight* stair = new IfcSchema::IfcStairFlight(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, null, file.addLocalPlacement(storey_placement, 5050, 1000, 0, 0, 1, 0, 1, 0, 0),
 		file.addExtrudedPolyline(stair_points, 1200), null, 2, 2, 0.2, 0.25
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcStairFlight_HAS_PredefinedType
 		, IfcSchema::IfcStairFlightTypeEnum::IfcStairFlightType_STRAIGHT
 #endif
 	);
@@ -372,7 +383,7 @@ int main() {
 
 	IfcSchema::IfcOpeningElement* door_opening = new IfcSchema::IfcOpeningElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 		null, null, null, file.addLocalPlacement(storey_placement, 5000-180, 2500-900, 0), file.addBox(1000, 1000, 2200), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcOpeningElement_HAS_PredefinedType
 		, IfcSchema::IfcOpeningElementTypeEnum::IfcOpeningElementType_OPENING
 #endif	
 	);
@@ -384,7 +395,7 @@ int main() {
 	// which constitute the door and its frame.
 	IfcSchema::IfcDoor* door = new IfcSchema::IfcDoor(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, null,
 		file.addLocalPlacement(storey_placement, 4800, 1600, 0, 0, 0, 1, 0, 1, 0), 0, null, 2200, 1000
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcDoor_HAS_PredefinedType
 		, IfcSchema::IfcDoorTypeEnum::IfcDoorType_DOOR
 		, IfcSchema::IfcDoorTypeOperationEnum::IfcDoorTypeOperation_SINGLE_SWING_LEFT
 		, null
@@ -406,11 +417,15 @@ int main() {
 	setSurfaceColour(file, door->Representation(), 0.9, 0.9, 0.9);
 	file.addEntity(new IfcSchema::IfcRelFillsElement(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null, null, door_opening, door));
 
+#ifdef SCHEMA_HAS_IfcDoorType
+	IfcSchema::IfcDoorType* door_type = new IfcSchema::IfcDoorType(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), "Door type"s, null, null, null, null, null, null,
+		IfcSchema::IfcDoorTypeEnum::IfcDoorType_DOOR, IfcSchema::IfcDoorTypeOperationEnum::IfcDoorTypeOperation_SINGLE_SWING_LEFT, false, null);
+	file.addRelatedObject<IfcSchema::IfcRelDefinesByType>(door_type, door);
+#elif defined(SCHEMA_HAS_IfcDoorStyle)
 	IfcSchema::IfcDoorStyle* door_style = new IfcSchema::IfcDoorStyle(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), "Door type"s, null, null, null, null, null,
 		IfcSchema::IfcDoorStyleOperationEnum::IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcSchema::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_WOOD, false, false);
-	// NOTE: typing by IfcDoorStyle will cause validation errors in IFC4+ but it's allowed for backwards compatibility
-	// better to use IfcDoorType in the actual use case
 	file.addRelatedObject<IfcSchema::IfcRelDefinesByType>(door_style, door);
+#endif
 
 	// Surface styles are assigned to representation items, hence there is no real limitation to
 	// assign different colours within the same representation. However, some viewers have 
@@ -436,7 +451,7 @@ int main() {
 	frame_representations->push(vertical_bar); // Add another reference to the vertical bar created above
 
 	// The beams all have the same surface style assigned
-	IfcSchema::IfcPresentationStyleAssignment* frame_style = 0;
+	surface_style_t* frame_style = 0;
 	for (IfcSchema::IfcShapeRepresentation::list::it i = frame_representations->begin(); i != frame_representations->end(); i += 2) {
 		if (frame_style) {
 			setSurfaceColour(file,*i, frame_style);
@@ -461,7 +476,7 @@ int main() {
 		IfcSchema::IfcLocalPlacement* place = *it;
 		IfcSchema::IfcWindow* window = new IfcSchema::IfcWindow(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 			null, null, null, place, 0, null, 1600, 1860
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcWindow_HAS_PredefinedType
 			, IfcSchema::IfcWindowTypeEnum::IfcWindowType_WINDOW
 			, IfcSchema::IfcWindowTypePartitioningEnum::IfcWindowTypePartitioning_SINGLE_PANEL
 			, null
@@ -489,7 +504,7 @@ int main() {
 		{
 			IfcSchema::IfcMember* frame_part = new IfcSchema::IfcMember(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(),
 				null, null, null, *frame_placement, file.addMappedItem(*frame_representation), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcMember_HAS_PredefinedType
 				, IfcSchema::IfcMemberTypeEnum::IfcMemberType_MULLION
 #endif
 			);
@@ -501,7 +516,7 @@ int main() {
 		// Add the glass plate to the list of parts
 		IfcSchema::IfcPlate* glass_part = new IfcSchema::IfcPlate(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), null,
 			null, null, file.addLocalPlacement(storey_placement, 930, 45, 90), file.addBox(1680, 10, 1420), null
-#ifdef USE_IFC4
+#ifdef SCHEMA_IfcPlate_HAS_PredefinedType
 			, IfcSchema::IfcPlateTypeEnum::IfcPlateType_SHEET
 #endif
 		);

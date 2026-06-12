@@ -118,8 +118,8 @@ public:
 		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
 	{}
 
-	virtual AbstractKernel* clone() const {
-		return new OpenCascadeKernel(settings(), logger());
+	virtual AbstractKernel* clone(Logger& logger) const {
+		return new OpenCascadeKernel(settings(), logger);
 	}
 
 	virtual bool supports_boolean_operations() const { return true; }
