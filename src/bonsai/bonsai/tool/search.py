@@ -85,6 +85,10 @@ class Search(bonsai.core.tool.Search):
     def get_filter_groups(cls, module: FilterModule) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
             return cls.get_search_props().filter_groups
+        elif module.startswith("status_render_"):
+            index = int(module.rsplit("_", 1)[1])
+            assert (scene := bpy.context.scene) and (camera := scene.camera)
+            return camera.data.BIMRenderOverrideProperties.rules[index].filter_groups
         elif module == "csv":
             return tool.Blender.get_csv_props().filter_groups
         elif module == "diff":
@@ -102,10 +106,22 @@ class Search(bonsai.core.tool.Search):
         assert False, f"Unsupported module: {module}"
 
     @classmethod
+    def on_filter_query_edited(cls, module: str, context: bpy.types.Context) -> None:
+        """Notify the owning module that its filter query was just edited (via
+        bim.edit_filter_query or bim.apply_filter_from_text), so it can react -- e.g.
+        refresh a live viewport preview."""
+        if module.startswith("status_render"):
+            from bonsai.bim.module.status_render import operator
+
+            operator.sync_live_effects(context.scene)
+
+    @classmethod
     def import_filter_query(
         cls, query: str, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
     ) -> None:
         filter_groups.clear()
+        if not query.strip():
+            return  # An empty query means "no filter"; clearing the groups is enough.
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
 
