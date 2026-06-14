@@ -291,6 +291,15 @@ def _resync_walls_after_mutation(objs: Iterable["bpy.types.Object | None"]) -> N
         _maybe_resync_wall_props_from_ifc(obj)
 
 
+def _regenerate_walls(objs: "Iterable[bpy.types.Object | None]") -> None:
+    """Rebuild every wall in ``objs`` from current IFC state — extrusion,
+    openings, and any underside slab clip — so the caller doesn't carry
+    feature-specific dispatch."""
+    for obj in objs:
+        if obj is not None:
+            tool.Model.regenerate_wall(obj)
+
+
 class _CommitWallDraftsFirstMixin:
     """Operator mixin that flushes any in-progress wall parametric drafts in
     the current selection before delegating to the subclass's ``_perform``.
@@ -420,7 +429,7 @@ class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, to
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if tool.Model.get_usage_type(element) == "LAYER2":
+            if tool.Parametric.is_path_connectable_wall(element):
                 walls.append(obj)
             else:
                 slabs.append(obj)
@@ -441,7 +450,7 @@ class RegenerateWallToUnderside(bpy.types.Operator, tool.Ifc.Operator):
         wall_objs = [
             obj
             for obj in tool.Blender.get_selected_objects()
-            if (element := tool.Ifc.get_entity(obj)) and tool.Model.get_usage_type(element) == "LAYER2"
+            if (element := tool.Ifc.get_entity(obj)) and tool.Parametric.is_path_connectable_wall(element)
         ]
         if wall_objs:
             core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, wall_objs)
@@ -693,9 +702,14 @@ class SplitWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
 
     def _perform(self, context):
         selected_objs = tool.Model.get_selected_mesh_objects()
+        post_split_walls: list[bpy.types.Object] = []
         for obj in selected_objs:
-            DumbWallJoiner().split(obj, context.scene.cursor.location)
-        _resync_walls_after_mutation(selected_objs)
+            new_obj = DumbWallJoiner().split(obj, context.scene.cursor.location)
+            post_split_walls.append(obj)
+            if new_obj is not None and new_obj not in post_split_walls:
+                post_split_walls.append(new_obj)
+        _resync_walls_after_mutation(post_split_walls)
+        _regenerate_walls(post_split_walls)
         return {"FINISHED"}
 
 
@@ -730,6 +744,7 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         surviving_obj = next(o for o in selected_objs if o != active_obj)
         DumbWallJoiner().merge(surviving_obj, active_obj)
         _maybe_resync_wall_props_from_ifc(surviving_obj)
+        _regenerate_walls([surviving_obj])
         return {"FINISHED"}
 
 
@@ -1514,7 +1529,7 @@ class DumbWallJoiner:
         body = copy.deepcopy(axis1["reference"])
         tool.Model.recreate_wall(element1, wall1)
 
-    def split(self, wall1: bpy.types.Object, target: Vector) -> None:
+    def split(self, wall1: bpy.types.Object, target: Vector) -> "bpy.types.Object | None":
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         element1 = tool.Ifc.get_entity(wall1)
@@ -1534,6 +1549,13 @@ class DumbWallJoiner:
 
         wall2 = self.duplicate_wall(wall1)
         element2 = tool.Ifc.get_entity(wall2)
+
+        # The duplicate inherits wall1's slab-trim boolean chain (copied by
+        # copy_class) but ``BBIM_Boolean.Data`` carries wall1's stale ids, so
+        # ``get_manual_booleans(element2)`` returns empty and the regenerator
+        # rebuilds wall2's body without those clips. Strip them up front so
+        # wall2 starts clean before the axis + placement reshape.
+        tool.Model.strip_underside_booleans(element2)
 
         # Get the ATEND connection from wall1 to use it in wall2
         relating_element = None
@@ -1634,6 +1656,7 @@ class DumbWallJoiner:
 
         tool.Model.recreate_wall(element1, wall1)
         tool.Model.recreate_wall(element2, wall2)
+        return wall2
 
     def flip(self, wall1: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
@@ -2509,7 +2532,9 @@ class ExtendWallToCursor(bpy.types.Operator, tool.Ifc.Operator):
             tool.Model,
             context.scene.cursor.location,
         )
-        _resync_walls_after_mutation(tool.Blender.get_selected_objects())
+        affected = list(tool.Blender.get_selected_objects())
+        _resync_walls_after_mutation(affected)
+        _regenerate_walls(affected)
         return {"FINISHED"}
 
 
@@ -2542,6 +2567,7 @@ class ExtendWallHeightToCursor(bpy.types.Operator, tool.Ifc.Operator):
         with bpy.context.temp_override(active_object=obj, selected_objects=[obj]):
             bpy.ops.bim.change_extrusion_depth(depth=new_height)
         _maybe_resync_wall_props_from_ifc(obj)
+        _regenerate_walls([obj])
         return {"FINISHED"}
 
 
@@ -3168,6 +3194,12 @@ def regenerate_fillet_corner_wall(element: ifcopenshell.entity_instance, obj: bp
     # the banana body. If a neighbour moved, the new placement follows; if
     # neither moved, the new matrix equals the old within floating-point noise.
     _apply_fillet_corner_geometry(ifc_file, obj, geom, wall_a_obj)
+    # The body rebuild swaps the wall's representation, so any prior underside
+    # clip is gone. Re-clip from the surviving TOP rels so an extend-to-slab
+    # applied to a fillet wall isn't silently wiped on the next neighbour
+    # recalc, ChangeExtrusionDepth, or split / merge call site.
+    if tool.Model.has_underside_connection(element):
+        core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, [obj])
 
 
 class EnableWallFilletPreview(bpy.types.Operator):
@@ -3640,7 +3672,7 @@ class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             return False
         other = next(o for o in selected if o is not active)
         other_element = tool.Ifc.get_entity(other)
-        if not other_element or tool.Model.get_usage_type(other_element) != "LAYER2":
+        if not other_element or not tool.Parametric.is_path_connectable_wall(other_element):
             return False
         return True
 
@@ -3950,6 +3982,11 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         element = tool.Ifc.get_entity(active)
         if not element or not tool.Parametric.is_path_connectable_wall(element):
             return False
+        # Fillet-corner walls have no LAYER2 usage and cannot enter the
+        # parametric edit lifecycle, so the ``is_editing`` gate is bypassed
+        # for them — otherwise their connection icons would never surface.
+        if tool.Parametric.is_fillet_corner_wall(element):
+            return True
         props = tool.Model.get_wall_props(active)
         if not props.is_editing:
             return False

@@ -668,7 +668,13 @@ class Geometry(bonsai.core.tool.Geometry):
             and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
             and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
         ):
-            return tool.Ifc.get().by_id(ifc_id)
+            try:
+                return tool.Ifc.get().by_id(ifc_id)
+            except RuntimeError:
+                # Stale id: a representation rebuild freed the old entity
+                # while obj.data still tracks its id. Treated as "no active
+                # representation" — same contract as a mesh with id 0.
+                return None
 
     @classmethod
     def get_data_representation(cls, data: bpy.types.ID) -> ifcopenshell.entity_instance | None:
@@ -2385,6 +2391,11 @@ class Geometry(bonsai.core.tool.Geometry):
                 if new.is_a("IfcWall"):
                     if tool.Model.strip_underside_booleans(new):
                         tool.Model.reload_body_representation(new_obj)
+                    # HasOpenings rels don't follow object duplication, so
+                    # the duplicate's body must rebuild to match its current
+                    # opening set.
+                    else:
+                        tool.Model.regenerate_wall(new_obj)
 
         # Remap Blender parent relationships for duplicated objects
         for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():

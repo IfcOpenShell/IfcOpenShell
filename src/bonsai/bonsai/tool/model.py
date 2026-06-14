@@ -3072,6 +3072,19 @@ class Model(bonsai.core.tool.Model):
         tool.Geometry.record_object_position(obj)
 
     @classmethod
+    def regenerate_wall(cls, obj: bpy.types.Object) -> None:
+        """Rebuild a wall's body from current IFC state: extrusion + openings
+        first, then re-clip to any surviving ``IfcRelConnectsElements(TOP)``
+        slab. Safe on walls with no openings and no slab connection — both
+        steps no-op against their preconditions."""
+        element = tool.Ifc.get_entity(obj)
+        if element is None:
+            return
+        cls.recreate_wall(element, obj)
+        if cls.has_underside_connection(element):
+            bonsai.core.model.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, cls, [obj])
+
+    @classmethod
     def recalculate_walls(cls, walls: list[bpy.types.Object]) -> None:
         queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
         for wall in walls:
