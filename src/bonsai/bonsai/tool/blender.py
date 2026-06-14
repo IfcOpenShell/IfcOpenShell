@@ -823,9 +823,9 @@ class Blender(bonsai.core.tool.Blender):
         """
         return cls.get_cross_select_keymap() if cls.is_cross_select_enabled() else cls.get_native_selection_keymap()
 
-    # Number of leading ``bl_keymap`` entries that make up the selection keymap, keyed by the
-    # operator idname of the first entry. Lets us swap the selection prefix in place while
-    # preserving each tool's own (hotkey) entries.
+    # Length of the selection block in bl_keymap, keyed by the operator idname of its
+    # first entry.  Used to locate and replace the selection block during a rebuild
+    # while preserving any pre-selection or post-selection entries the tool declares.
     _SELECTION_PREFIX_LENGTHS = {"bim.cross_select": 4, "view3d.select_box": 6}
 
     @classmethod
@@ -849,11 +849,23 @@ class Blender(bonsai.core.tool.Blender):
         yield (covering.workspace.CoveringTool, {"bim.wall_tool"}, False, False)
 
     @classmethod
-    def _tool_extra_keymap(cls, tool_cls) -> tuple:
-        """Return ``tool_cls``'s own (non-selection) ``bl_keymap`` entries."""
+    def _split_tool_keymap(cls, tool_cls) -> tuple[tuple, tuple]:
+        """Split bl_keymap into (pre_selection, post_selection), discarding the selection block.
+
+        Locates the selection block by finding the first entry whose op is in
+        ``_SELECTION_PREFIX_LENGTHS``, then skips the declared number of entries.
+        Entries before the block become *pre_selection*; entries after become
+        *post_selection*.  The caller inserts the desired selection keymap between them.
+
+        When no selection block is found (shouldn't happen in practice) all entries
+        are returned as post_selection so the rebuild still produces a valid keymap.
+        """
         km = tuple(tool_cls.bl_keymap)
-        n = cls._SELECTION_PREFIX_LENGTHS.get(km[0][0], 0) if km else 0
-        return km[n:]
+        sel_start = next((i for i, entry in enumerate(km) if entry[0] in cls._SELECTION_PREFIX_LENGTHS), None)
+        if sel_start is None:
+            return (), km
+        sel_len = cls._SELECTION_PREFIX_LENGTHS[km[sel_start][0]]
+        return km[:sel_start], km[sel_start + sel_len:]
 
     @classmethod
     def apply_cross_select_preference(cls) -> None:
@@ -871,19 +883,24 @@ class Blender(bonsai.core.tool.Blender):
 
         desired_op = selection_keymap[0][0] if selection_keymap else None
         current = tuple(tools[0][0].bl_keymap)
-        if current and current[0][0] == desired_op:
+        # The selection block may be preceded by pre-selection entries (e.g. the
+        # AnnotationTool's ClickNearestDimensionAnchor), so search for it by op name
+        # rather than assuming it starts at position 0.
+        sel_start = next((i for i, entry in enumerate(current) if entry[0] in cls._SELECTION_PREFIX_LENGTHS), None)
+        if sel_start is not None and current[sel_start][0] == desired_op:
             return  # already applied
 
         # Capture each tool's own entries before mutating any ``bl_keymap`` (model subclasses
         # share BimTool's inherited keymap, so this must be done up front).
-        extras = {tool_cls: cls._tool_extra_keymap(tool_cls) for tool_cls, *_ in tools}
+        pre_post = {tool_cls: cls._split_tool_keymap(tool_cls) for tool_cls, *_ in tools}
         for tool_cls, *_ in reversed(tools):
             try:
                 bpy.utils.unregister_tool(tool_cls)
             except Exception:
                 pass
         for tool_cls, after, separator, group in tools:
-            tool_cls.bl_keymap = selection_keymap + extras[tool_cls]
+            pre, post = pre_post[tool_cls]
+            tool_cls.bl_keymap = pre + selection_keymap + post
             bpy.utils.register_tool(tool_cls, after=after, separator=separator, group=group)
 
     KEY_MODIFIERS = {

@@ -1650,6 +1650,14 @@ class CrossSelect(bpy.types.Operator):
     DRAG_THRESHOLD = 5
 
     def invoke(self, context, event):
+        # Yield to ClickNearestDimensionAnchor when a parametric dimension dot
+        # is near the cursor.  Blender fires all matching tool-keymap entries'
+        # invoke() even after an earlier entry returned RUNNING_MODAL, so without
+        # this check our BLOCKING modal would win over click_nearest's modal and
+        # prevent the dot from turning blue.
+        if self._near_dimension_dot(context, event):
+            return {"PASS_THROUGH"}
+
         self.cs_prefs = tool.Blender.get_addon_preferences().cross_select
         self.enabled = self.cs_prefs.enabled
         self.start_mouse = (event.mouse_region_x, event.mouse_region_y)
@@ -1661,6 +1669,47 @@ class CrossSelect(bpy.types.Operator):
         self.box_path = (0, 0, 0, 0)  # (min_x, max_x, min_y, max_y)
         context.window_manager.modal_handler_add(self)
         return {"RUNNING_MODAL"}
+
+    @staticmethod
+    def _near_dimension_dot(context, event) -> bool:
+        """Return True if the click is within 15 px of a parametric dimension anchor dot."""
+        try:
+            import ifcopenshell.util.element as _ue
+            from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+            region = next(
+                (r for a in context.screen.areas if a.type == "VIEW_3D" for r in a.regions if r.type == "WINDOW"),
+                None,
+            )
+            rv3d = next(
+                (s.region_3d for a in context.screen.areas if a.type == "VIEW_3D" for s in a.spaces if s.type == "VIEW_3D"),
+                None,
+            )
+            if not region or not rv3d:
+                return False
+
+            cx = event.mouse_x - region.x
+            cy = event.mouse_y - region.y
+            r2 = 15 ** 2
+
+            for obj in context.scene.objects:
+                if obj.type != "CURVE" or not obj.visible_get():
+                    continue
+                elem = tool.Ifc.get_entity(obj) if tool.Ifc.get() else None
+                if not elem or not elem.is_a("IfcAnnotation"):
+                    continue
+                pset = _ue.get_pset(elem, "BBIM_Dimension")
+                if not pset or not pset.get("Anchors"):
+                    continue
+                if not obj.data.splines:
+                    continue
+                for pt in obj.data.splines[0].points:
+                    sp = location_3d_to_region_2d(region, rv3d, obj.matrix_world @ pt.co.to_3d())
+                    if sp and (cx - sp.x) ** 2 + (cy - sp.y) ** 2 < r2:
+                        return True
+        except Exception:
+            pass
+        return False
 
     def modal(self, context, event):
         if event.shift:
