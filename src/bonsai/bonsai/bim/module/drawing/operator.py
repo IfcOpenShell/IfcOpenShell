@@ -7891,6 +7891,127 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         return {"PASS_THROUGH"}
 
 
+class MakeDimensionParametric(bpy.types.Operator, tool.Ifc.Operator):
+    """Convert a dumb (static) dimension to a parametric dimension with free ends.
+
+    Creates a BBIM_Dimension pset on the active annotation with one world-point
+    anchor per spline vertex, matching the current curve positions exactly.
+    The endpoints can then be re-anchored to IFC faces via SetDimensionAnchor.
+    """
+
+    bl_idname = "bim.make_dimension_parametric"
+    bl_label = "Make Dimension Parametric"
+    bl_options = {"REGISTER", "UNDO"}
+
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        obj = context.active_object
+        if not obj or obj.type != "CURVE":
+            cls.poll_message_set("Active object must be a dimension curve.")
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            cls.poll_message_set("Active object must be an IfcAnnotation.")
+            return False
+        if ifcopenshell.util.element.get_predefined_type(element) not in cls._DIM_TYPES:
+            cls.poll_message_set("Annotation must be a dimension type.")
+            return False
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if pset and pset.get("Anchors"):
+            cls.poll_message_set("Dimension is already parametric.")
+            return False
+        if not obj.data.splines or len(obj.data.splines[0].points) < 2:
+            cls.poll_message_set("Curve has fewer than 2 points.")
+            return False
+        return True
+
+    def _execute(self, context):
+        import ifcopenshell.api.drawing as drawing_api
+
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        file = tool.Ifc.get()
+
+        spline = obj.data.splines[0]
+        anchors = [
+            drawing_api.make_world_anchor(list(obj.matrix_world @ pt.co.to_3d()))
+            for pt in spline.points
+        ]
+
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset_data:
+            ifcopenshell.api.run("pset.add_pset", file, product=element, name="BBIM_Dimension")
+            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties={"Anchors": json.dumps(anchors)})
+
+        from bonsai.bim.module.drawing import handler as _drawing_handler
+        _drawing_handler.invalidate_dim_index()
+
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+                break
+
+        self.report({"INFO"}, f"'{obj.name}' is now parametric with {len(anchors)} free-end anchors.")
+
+
+class BakeParametricDimension(bpy.types.Operator, tool.Ifc.Operator):
+    """Convert a parametric dimension to a dumb (static) dimension.
+
+    Removes the BBIM_Dimension pset from the active annotation so the dimension
+    curve is no longer regenerated when referenced elements move.  The current
+    curve geometry is preserved exactly as-is.
+    """
+
+    bl_idname = "bim.bake_parametric_dimension"
+    bl_label = "Bake Parametric Dimension"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        obj = context.active_object
+        if not obj:
+            cls.poll_message_set("No active object.")
+            return False
+        element = tool.Ifc.get_entity(obj)
+        if not element or not element.is_a("IfcAnnotation"):
+            cls.poll_message_set("Active object must be an IfcAnnotation.")
+            return False
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        if not pset or not pset.get("Anchors"):
+            cls.poll_message_set("Annotation has no parametric dimension data.")
+            return False
+        return True
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        file = tool.Ifc.get()
+
+        pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+        pset_entity = file.by_id(pset_data["id"])
+        ifcopenshell.api.pset.remove_pset(file, product=element, pset=pset_entity)
+
+        from bonsai.bim.module.drawing import handler as _drawing_handler
+        _drawing_handler.invalidate_dim_index()
+
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+                break
+
+        self.report({"INFO"}, f"'{obj.name}' converted to a static dimension.")
+
+
 class DebugDimensionClicks(bpy.types.Operator):
     """Debug modal: logs every LMB click in the 3D viewport vs anchor gizmo positions.
 

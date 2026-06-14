@@ -265,6 +265,14 @@ class AnnotationToolUI:
                 op = row.operator("bim.regenerate_dimensions", icon="FILE_REFRESH", text="Regenerate")
                 op.active_only = True
 
+                pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
+                if pset and pset.get("Anchors"):
+                    row = cls.layout.row(align=True)
+                    row.operator("bim.bake_parametric_dimension", text="Bake to Static", icon="UNLINKED")
+                else:
+                    row = cls.layout.row(align=True)
+                    row.operator("bim.make_dimension_parametric", text="Make Parametric", icon="LINKED")
+
     @classmethod
     def draw_type_selection_interface(cls):
         # shared by both sidebar and header
