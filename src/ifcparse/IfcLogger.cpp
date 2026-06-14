@@ -28,6 +28,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
 #include <chrono>
+#include <cstdio>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -131,6 +132,31 @@ void json_message(T& out, const IfcUtil::IfcBaseClass* current_product, Logger::
 }
 } // namespace
 
+log_message::log_message(
+    int severity,
+    const char (&code_prefix)[4],
+    uint16_t code_number,
+    const std::string& timestamp,
+    const std::string& message,
+    const IfcUtil::IfcBaseInterface* inst,
+    const IfcUtil::IfcBaseClass* current_product)
+    : severity(severity)
+    , timestamp(timestamp)
+    , message(message)
+{
+    snprintf(code, 7, "%s%03u", code_prefix, code_number);
+    if (inst) {
+        std::ostringstream oss;
+        inst->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        instance = oss.str();
+    }
+    if (current_product) {
+        std::ostringstream oss;
+        current_product->toString(oss);
+        product = oss.str();
+    }
+}
+
 Logger& Logger::Root() {
     static Logger logger;
     return logger;
@@ -199,7 +225,7 @@ void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16
     }
 
     if (format_ == FMT_INMEMORY) {
-        log_messages_.emplace_back(type, code_prefix, code_number, message, instance, current_product());
+        log_messages_.emplace_back(type, code_prefix, code_number, get_time(), message, instance, current_product());
     } else if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {

@@ -132,10 +132,20 @@ class SchemaError(Error):
 
 @overload
 def open(
-    path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[False] = False
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: Literal[False] = False,
+    logger: Optional[logger] = None,
 ) -> Union[_file, sqlite]: ...
 @overload
-def open(path: Union[os.PathLike, str], format: SupportedFormat = None, *, should_stream: Literal[True]) -> _stream: ...
+def open(
+    path: Union[os.PathLike, str],
+    format: SupportedFormat = None,
+    *,
+    should_stream: Literal[True],
+    logger: Optional[logger] = None,
+) -> _stream: ...
 @overload
 def open(
     path: Union[os.PathLike, str],
@@ -143,6 +153,7 @@ def open(
     *,
     should_stream: bool = False,
     readonly: bool = False,
+    logger: Optional[logger] = None,
 ) -> Union[_file, sqlite, _stream]: ...
 def open(
     path: Union[os.PathLike, str],
@@ -151,11 +162,13 @@ def open(
     readonly: bool = False,
     mmap: bool = False,
     bypass_types: Optional[Sequence[str]] = None,
+    logger: Optional[logger] = None,
 ) -> Union[_file, sqlite, _stream]:
     """Loads an IFC dataset from a filepath
 
     :param should_stream: Whether to open the file in streaming mode. Could be useful
         for reading large files.
+    :param logger: Logger that receives native parser messages.
 
     You can specify a file format. If no format is given, it is guessed from
     its extension.
@@ -179,8 +192,10 @@ def open(
         raise FileNotFoundError(f"Path does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
+    if logger is None:
+        logger = ifcopenshell_wrapper.logger.Root()
     if format == ".ifcXML":
-        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
+        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), logger)
         if f:
             return file(f)
         raise OSError(f"Failed to parse .ifcXML file from {path}")
@@ -189,7 +204,7 @@ def open(
             with zipfile.ZipFile(path) as zf:
                 for name in zf.namelist():
                     if Path(name).suffix.lower() in (".ifc", ".ifcxml"):
-                        return open(zf.extract(name, unzipped_path))
+                        return open(zf.extract(name, unzipped_path), logger=logger)
                 else:
                     raise LookupError(f"No .ifc or .ifcXML file found in {path}")
     if format == ".ifcSQLite":
@@ -197,9 +212,9 @@ def open(
     if should_stream:
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
-        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly=readonly)
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, logger)
     elif bypass_types:
-        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag())
+        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag(), logger)
         for ty in bypass_types:
             f.bypass_type(ty)
         if mmap:
@@ -209,9 +224,9 @@ def open(
             f.initialize(str(path.absolute()))
     elif mmap:
         # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
-        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap)  # ty: ignore[unknown-argument]
+        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap, logger=logger)  # ty: ignore[unknown-argument]
     else:
-        f = ifcopenshell_wrapper.open(str(path.absolute()))
+        f = ifcopenshell_wrapper.open(str(path.absolute()), False, logger)
     return file(f)
 
 
