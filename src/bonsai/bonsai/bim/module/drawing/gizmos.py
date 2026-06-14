@@ -2803,7 +2803,7 @@ class DimensionLinePositionWidget(types.GizmoGroup):
         if _ue.get_predefined_type(element) not in cls._DIM_TYPES:
             return False
         pset = _ue.get_pset(element, "BBIM_Dimension")
-        return bool(pset and pset.get("Anchors") and pset.get("ForcePerpendicularToFace"))
+        return bool(pset and pset.get("Anchors"))
 
     # ------------------------------------------------------------------
     # Helpers
