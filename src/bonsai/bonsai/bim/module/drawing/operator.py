@@ -6710,6 +6710,13 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             self._cycle_hover(context)
             return {"RUNNING_MODAL"}
 
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE":
+            # Swallow LMB RELEASE throughout the modal's lifetime.
+            # When ClickNearestDimensionAnchor hands off to this modal, Blender
+            # re-delivers that same RELEASE here; passing it through would let
+            # view3d.select steal the active object away from the annotation.
+            return {"RUNNING_MODAL"}
+
         if event.type == "LEFTMOUSE" and event.value == "PRESS":
             if self._phase == "PICK_VERTEX":
                 self._handle_vertex_pick(context, event)
@@ -7753,16 +7760,20 @@ def _find_curve_in_item(item: ifcopenshell.entity_instance) -> Optional[ifcopens
 
 
 class ClickNearestDimensionAnchor(bpy.types.Operator):
-    """LMB fallback: fire SetDimensionAnchor when cursor is within RADIUS pixels of an anchor dot.
+    """Click handler for dimension anchor dots.
 
-    The gizmo handles exact hits; this catches near-misses where the cursor
-    is close to a dot but didn't land inside the gizmo hit shape.
+    When the active dimension's anchor dots are visible, clicking within
+    RADIUS_PX of a dot activates SetDimensionAnchor for that dot.
+
+    Implemented as a two-event modal (PRESS consumed in invoke, RELEASE
+    consumed in modal) so SetDimensionAnchor starts on a clean slate —
+    no stray LMB events reach it that could trigger view3d.select.
     """
 
     bl_idname = "bim.click_nearest_dimension_anchor"
     bl_label = "Click Nearest Dimension Anchor"
 
-    RADIUS_PX = 60
+    RADIUS_PX = 15
 
     def invoke(self, context, event):
         from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -7770,8 +7781,6 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         if not tool.Ifc.get():
             return {"PASS_THROUGH"}
 
-        # Always use the 3D viewport WINDOW region — context.region may be a header,
-        # sidebar, or toolbar depending on where the click landed in the area.
         region = None
         rv3d = None
         for area in context.screen.areas:
@@ -7791,7 +7800,6 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         if not region or not rv3d:
             return {"PASS_THROUGH"}
 
-        # Convert absolute mouse position to WINDOW region-local coordinates.
         cx = event.mouse_x - region.x
         cy = event.mouse_y - region.y
 
@@ -7802,8 +7810,6 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
         best_idx = -1
         best_dist_sq = float("inf")
 
-        # Scan all visible dimension annotations — not just selected ones.
-        # view3d.select may deselect the annotation before this operator runs.
         for obj in context.scene.objects:
             if obj.type != "CURVE":
                 continue
@@ -7837,15 +7843,35 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
             o.select_set(False)
         best_obj.select_set(True)
         context.view_layer.objects.active = best_obj
-        from bonsai.bim.module.drawing.gizmos import set_active_anchor
-        set_active_anchor(best_idx, best_obj)
-        # Force viewport redraw so gizmo colors update before the modal starts.
-        for area in context.screen.areas:
-            if area.type == "VIEW_3D":
-                area.tag_redraw()
-                break
-        bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=best_idx)
-        return {"FINISHED"}
+
+        # Store dot for the modal phase and go modal to consume the PRESS.
+        # The modal will also consume the RELEASE before handing off to
+        # SetDimensionAnchor, so view3d.select never sees either event.
+        self._best_obj = best_obj
+        self._best_idx = best_idx
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE":
+            # Both PRESS and RELEASE are now consumed.  Start the anchor editor.
+            from bonsai.bim.module.drawing.gizmos import set_active_anchor
+            set_active_anchor(self._best_idx, self._best_obj)
+            for area in context.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
+                    break
+            bpy.ops.bim.set_dimension_anchor("INVOKE_DEFAULT", anchor_index=self._best_idx)
+            return {"FINISHED"}
+
+        if event.type in ("ESC", "RIGHTMOUSE"):
+            return {"CANCELLED"}
+
+        # Consume intermediate LMB events; pass everything else through so
+        # viewport navigation (MMB, scroll) still works during the brief wait.
+        if event.type == "LEFTMOUSE":
+            return {"RUNNING_MODAL"}
+        return {"PASS_THROUGH"}
 
 
 class DebugDimensionClicks(bpy.types.Operator):

@@ -2638,10 +2638,10 @@ class ExtrusionWidget(types.GizmoGroup):
 class GizmoAnchorHandle(bpy.types.Gizmo):
     """Visual-only dot at a parametric dimension vertex.
 
-    No draw_select/invoke — any draw_select entry puts the gizmo in Blender's
-    select buffer, which causes the gizmo system to consume the click even
-    without an explicit invoke.  All click handling is done by the
-    bim.click_nearest_dimension_anchor keymap operator.
+    No draw_select/invoke — draw_select puts the gizmo in Blender's select buffer
+    and causes the gizmo system to consume clicks even without an explicit invoke,
+    blocking ClickNearestDimensionAnchor from receiving them.  All click handling
+    is done by the bim.click_nearest_dimension_anchor keymap operator.
     """
 
     bl_idname = "BIM_GT_anchor_handle"
