@@ -7054,26 +7054,19 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 
         prox: list = []
         for ifc_obj in context.scene.objects:
-            _dbg_guid2 = getattr(tool.Ifc.get_entity(ifc_obj), "GlobalId", None)
-            _is_dbg = _dbg_guid2 in _DBG_GUIDS
             if ifc_obj == self._annotation_obj:
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: is annotation obj")
                 continue
             if _is_hidden(ifc_obj):
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: hidden")
                 continue
             elem = tool.Ifc.get_entity(ifc_obj)
             if not elem:
-                if _is_dbg: print(f"[dbg-prox] {ifc_obj.name} SKIP: no IFC entity")
                 continue
             if ifc_obj.type != "MESH":
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: type={ifc_obj.type}")
                 continue
             mx = ifc_obj.matrix_world
             try:
                 mx_inv = mx.inverted()
             except Exception:
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: matrix not invertible")
                 continue
             bb_world = [mx @ Vector(c) for c in ifc_obj.bound_box]
             bb_proj = [_perp(v) for v in bb_world]
@@ -7082,9 +7075,7 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             sy = max(min(v.y for v in bb_proj) - op.y, 0.0, op.y - max(v.y for v in bb_proj))
             sz = max(min(v.z for v in bb_proj) - op.z, 0.0, op.z - max(v.z for v in bb_proj))
             perp_dist = _math.sqrt(sx * sx + sy * sy + sz * sz)
-            if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} perp_dist={perp_dist:.4f} TOL={TOL}")
             if perp_dist > TOL:
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: perp_dist too large")
                 continue
             bb_ctr = sum((v for v in bb_world), Vector()) / 8
             t = (bb_ctr - origin).dot(direction)
@@ -7092,19 +7083,15 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             try:
                 found, loc_l, nrm_l, fi = ifc_obj.closest_point_on_mesh(mx_inv @ query_w, distance=100.0)
             except RuntimeError:
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: closest_point_on_mesh RuntimeError")
                 continue
             if not found:
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: closest_point_on_mesh not found")
                 continue
             loc_w = mx @ loc_l
             if self._snap_mode != "FACE":
                 fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
             normal = (mx.to_3x3() @ ifc_obj.data.polygons[fi].normal).normalized() if fi is not None else (mx.to_3x3() @ nrm_l).normalized()
             if not _face_perp_ok(normal):
-                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: face not perp normal={normal} dot={abs(normal.dot(_face_cam_view)) if _face_cam_view else 'N/A'}")
                 continue
-            if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} ACCEPTED perp_dist={perp_dist:.4f} ray_hit={ifc_obj in ray_hit_objs}")
             prox.append((perp_dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
 
         # Objects the ray directly passed through get priority over objects that
