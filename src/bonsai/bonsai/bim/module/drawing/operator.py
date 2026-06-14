@@ -5798,17 +5798,56 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
     # IFC-native snap for LAYER / VERTEX / EDGE modes
 
     @staticmethod
-    def _snap_on_coplanar_faces(obj, hit_pt_world, tol_z=1e-3):
-        """Return FACE snap candidates for vertical mesh faces with an edge at hit_pt_world's Z.
+    def _get_mesh_snap_candidates(obj, snap_mode):
+        """Derive VERTEX or EDGE snap candidates directly from the Blender mesh.
 
-        Finds faces that are edge-on to the camera (perpendicular to the floor plane) and
-        whose bottom edge is coplanar with the hovered floor surface, then projects the
-        hit point onto each such face's plane to get the snap position.
+        Fallback for tessellated IFC elements (IfcFacetedBrep, IfcTessellatedFaceSet,
+        etc.) that have no IfcExtrudedAreaSolid, causing get_profile_snap_candidates
+        to return [].  Each candidate carries ``local_m`` (element-local coordinates
+        in metres) so _build_ifc_anchor can create a LOCAL_POINT anchor that follows
+        the element through moves and rotations.
+        """
+        mx = obj.matrix_world
+        mesh = obj.data
+        candidates = []
+        if snap_mode == "VERTEX":
+            for vert in mesh.vertices:
+                wp = mx @ vert.co
+                candidates.append({
+                    "type": "VERTEX", "snap": "VERTEX",
+                    "snap_world": (wp.x, wp.y, wp.z),
+                    "local_m": (vert.co.x, vert.co.y, vert.co.z),
+                })
+        elif snap_mode == "EDGE":
+            for edge in mesh.edges:
+                v0c = mesh.vertices[edge.vertices[0]].co
+                v1c = mesh.vertices[edge.vertices[1]].co
+                v0 = mx @ v0c
+                v1 = mx @ v1c
+                mid_w = ((v0.x + v1.x) * 0.5, (v0.y + v1.y) * 0.5, (v0.z + v1.z) * 0.5)
+                mid_l = ((v0c.x + v1c.x) * 0.5, (v0c.y + v1c.y) * 0.5, (v0c.z + v1c.z) * 0.5)
+                candidates.append({
+                    "type": "EDGE", "snap": "EDGE",
+                    "snap_world": mid_w,
+                    "local_m": mid_l,
+                    "v0": (v0.x, v0.y, v0.z),
+                    "v1": (v1.x, v1.y, v1.z),
+                })
+        return candidates
+
+    @staticmethod
+    def _snap_on_coplanar_faces(obj, hit_pt_world, tol_z=1e-3):
+        """Return FACE snap candidates by projecting hit_pt onto each vertical face plane.
+
+        Accepts any face with a near-horizontal normal (wall-like faces) regardless of
+        the face's Z elevation.  The screen-space bbox filter on the caller side and the
+        final per-candidate screen-distance gate already prevent false positives, so no
+        Z-based filtering is needed here.  (Z is also irrelevant for 2D annotation
+        projections.)
         """
         from mathutils import Vector
         mx = obj.matrix_world
         mesh = obj.data
-        target_z = float(hit_pt_world.z)
         hit_pt = Vector(hit_pt_world)
         candidates = []
         for poly in mesh.polygons:
@@ -5817,12 +5856,6 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 continue
             verts_w = [mx @ mesh.vertices[vi].co for vi in poly.vertices]
             n = len(verts_w)
-            has_coplanar_edge = any(
-                abs(verts_w[i].z - target_z) <= tol_z and abs(verts_w[(i + 1) % n].z - target_z) <= tol_z
-                for i in range(n)
-            )
-            if not has_coplanar_edge:
-                continue
             face_center_w = sum(verts_w, Vector((0.0, 0.0, 0.0))) / n
             dist = (hit_pt - face_center_w).dot(normal_w)
             snapped_pt = hit_pt - normal_w * dist
@@ -5884,14 +5917,14 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         if self._snap_mode == "FACE":
             if hit_pt is None or not self.objs_2d_bbox:
                 return None
-            nearby_cands = []
+            nearby_cands = []  # (cand, elem, obj, max_screen_tol)
             # Check hit_obj itself first: handles the case where the cursor
             # lands exactly on the wall/edge boundary (hit_obj IS the wall).
             if hit_obj and hit_obj.data and isinstance(hit_obj.data, bpy.types.Mesh):
                 hit_elem = tool.Ifc.get_entity(hit_obj)
                 if hit_elem and hasattr(hit_elem, "GlobalId"):
                     for c in self._snap_on_coplanar_faces(hit_obj, hit_pt):
-                        nearby_cands.append((c, hit_elem, hit_obj))
+                        nearby_cands.append((c, hit_elem, hit_obj, 30))
             extra_count = 0
             for obj, _bbox2d in self.objs_2d_bbox:
                 if extra_count >= 4:
@@ -5904,22 +5937,22 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
                 if not extra_elem or not hasattr(extra_elem, "GlobalId"):
                     continue
                 sx0, sx1, sy0, sy1 = _bbox2d
-                _SCREEN_TOL = 30
-                if not (sx0 - _SCREEN_TOL <= mx <= sx1 + _SCREEN_TOL and
-                        sy0 - _SCREEN_TOL <= my <= sy1 + _SCREEN_TOL):
+                _SCREEN_TOL = max(30, 100 - min(sx1 - sx0, sy1 - sy0))
+                if not (sx0 - _SCREEN_TOL <= mx <= sx1 + _SCREEN_TOL and sy0 - _SCREEN_TOL <= my <= sy1 + _SCREEN_TOL):
                     continue
-                face_cands = self._snap_on_coplanar_faces(obj, hit_pt)
-                nearby_cands.extend((c, extra_elem, obj) for c in face_cands)
+                nearby_cands.extend(
+                    (c, extra_elem, obj, _SCREEN_TOL)
+                    for c in self._snap_on_coplanar_faces(obj, hit_pt)
+                )
                 extra_count += 1
 
-            _FACE_THRESH_D2 = 30 * 30
             best_cand, best_elem, best_obj, best_d2 = None, None, None, float("inf")
-            for cand, elem, obj in nearby_cands:
+            for cand, elem, obj, max_tol in nearby_cands:
                 sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
                 if sp is None:
                     continue
                 d2 = (sp.x - mx) ** 2 + (sp.y - my) ** 2
-                if d2 < best_d2 and d2 < _FACE_THRESH_D2:
+                if d2 < best_d2 and d2 < max_tol * max_tol:
                     best_d2 = d2
                     best_cand = cand
                     best_elem = elem
@@ -5934,56 +5967,84 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
         # ----------------------------------------------------------------
         # LAYER / VERTEX / EDGE modes
         # ----------------------------------------------------------------
-        if not hit_obj:
-            return None
-        element = tool.Ifc.get_entity(hit_obj)
-        if not element or not hasattr(element, "GlobalId"):
-            return None
+        # Candidates are stored as (cand, elem, obj, max_screen_tol):
+        #   - Direct-hit object → max_screen_tol = inf  (no distance gate)
+        #   - Nearby objects found via screen bbox → max_screen_tol = _SCREEN_TOL
+        # This lets thin edge-on walls (2-7 px wide bbox, ~98 px tolerance) be
+        # included without relaxing the gate for normal objects.
+        file = tool.Ifc.get()
+        all_cands = []  # (cand, elem, obj, max_screen_tol)
 
-        # Recompute expensive candidate geometry only when the hovered object changes.
-        obj_ptr = hit_obj.as_pointer()
-        if obj_ptr != self._snap_cand_obj_ptr:
-            file = tool.Ifc.get()
-            placement_override = {element.id(): np.array(hit_obj.matrix_world)}
-            if self._snap_mode == "LAYER":
-                self._snap_cand_cache = drawing_api.get_layer_snap_candidates(file, element, placement_override)
-            else:
-                self._snap_cand_cache = drawing_api.get_profile_snap_candidates(file, element, placement_override)
-            self._snap_cand_obj_ptr = obj_ptr
+        # Build initial candidates from the directly-hit object (if any).
+        # When hit_obj is None (thin walls are never the raycast target) we skip
+        # this block and rely entirely on the screen-bbox search below.
+        if hit_obj:
+            element = tool.Ifc.get_entity(hit_obj)
+            if element and hasattr(element, "GlobalId"):
+                obj_ptr = hit_obj.as_pointer()
+                if obj_ptr != self._snap_cand_obj_ptr:
+                    placement_override = {element.id(): np.array(hit_obj.matrix_world)}
+                    if self._snap_mode == "LAYER":
+                        self._snap_cand_cache = drawing_api.get_layer_snap_candidates(file, element, placement_override)
+                    else:
+                        self._snap_cand_cache = drawing_api.get_profile_snap_candidates(file, element, placement_override)
+                    self._snap_cand_obj_ptr = obj_ptr
+                all_cands = [(c, element, hit_obj, float("inf")) for c in self._snap_cand_cache]
 
-        if self._snap_mode == "LAYER":
-            all_layer_cands = [(c, element, hit_obj) for c in self._snap_cand_cache]
-            if hit_pt is not None and self.objs_2d_bbox:
-                file = tool.Ifc.get()
-                extra_count = 0
-                for obj, _bbox2d in self.objs_2d_bbox:
-                    if extra_count >= 4:
-                        break
-                    if obj is hit_obj:
-                        continue
-                    if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
-                        continue
-                    extra_elem = tool.Ifc.get_entity(obj)
-                    if not extra_elem or not hasattr(extra_elem, "GlobalId"):
-                        continue
-                    _sx0, _sx1, _sy0, _sy1 = _bbox2d
-                    if not (_sx0 - 30 <= mx <= _sx1 + 30 and _sy0 - 30 <= my <= _sy1 + 30):
-                        continue
-                    extra_ptr = obj.as_pointer()
-                    if extra_ptr not in self._snap_cand_multi_cache:
-                        placement_override = {extra_elem.id(): np.array(obj.matrix_world)}
+        # Extend with candidates from nearby objects using adaptive screen-bbox.
+        # Replaces the old 30-px hardcoded check (LAYER) and _pt_in_obj_bbox
+        # (VERTEX/EDGE), so thin edge-on walls are reachable in all modes.
+        if self.objs_2d_bbox:
+            extra_count = 0
+            for obj, _bbox2d in self.objs_2d_bbox:
+                if extra_count >= 4:
+                    break
+                if obj is hit_obj:
+                    continue
+                if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
+                    continue
+                extra_elem = tool.Ifc.get_entity(obj)
+                if not extra_elem or not hasattr(extra_elem, "GlobalId"):
+                    continue
+                sx0, sx1, sy0, sy1 = _bbox2d
+                _bbox_w = sx1 - sx0
+                _bbox_h = sy1 - sy0
+                _SCREEN_TOL = max(30, 100 - min(_bbox_w, _bbox_h))
+                if not (sx0 - _SCREEN_TOL <= mx <= sx1 + _SCREEN_TOL and sy0 - _SCREEN_TOL <= my <= sy1 + _SCREEN_TOL):
+                    continue
+                extra_ptr = obj.as_pointer()
+                if extra_ptr not in self._snap_cand_multi_cache:
+                    placement_override = {extra_elem.id(): np.array(obj.matrix_world)}
+                    if self._snap_mode == "LAYER":
                         self._snap_cand_multi_cache[extra_ptr] = drawing_api.get_layer_snap_candidates(
                             file, extra_elem, placement_override
                         )
-                    all_layer_cands.extend((c, extra_elem, obj) for c in self._snap_cand_multi_cache[extra_ptr])
-                    extra_count += 1
+                    else:
+                        self._snap_cand_multi_cache[extra_ptr] = drawing_api.get_profile_snap_candidates(
+                            file, extra_elem, placement_override
+                        )
+                ifc_cands = self._snap_cand_multi_cache[extra_ptr]
+                if ifc_cands:
+                    all_cands.extend((c, extra_elem, obj, _SCREEN_TOL) for c in ifc_cands)
+                elif self._snap_mode in ("VERTEX", "EDGE"):
+                    # Tessellated element with no IfcExtrudedAreaSolid: fall back to mesh
+                    all_cands.extend(
+                        (c, extra_elem, obj, _SCREEN_TOL)
+                        for c in self._get_mesh_snap_candidates(obj, self._snap_mode)
+                    )
+                extra_count += 1
+
+        if not all_cands:
+            return None
+
+        if self._snap_mode == "LAYER":
             best_cand, best_elem, best_obj, best_d2 = None, None, None, float("inf")
-            for cand, elem, obj in all_layer_cands:
+            for cand, elem, obj, max_tol in all_cands:
                 sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
                 if sp is None:
                     continue
                 d2 = (sp.x - mx) ** 2 + (sp.y - my) ** 2
-                if d2 < best_d2:
+                if d2 < best_d2 and d2 < max_tol * max_tol:
                     best_d2 = d2
                     best_cand = cand
                     best_elem = elem
@@ -5996,46 +6057,16 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             result["obj"] = best_obj
             return result
 
-        # VERTEX or EDGE — profile-based candidates.
-        # Build a tagged list of (candidate, element, obj) so the best match from
-        # any object carries the right element reference into _build_ifc_anchor.
-        all_cands = [(c, element, hit_obj) for c in self._snap_cand_cache]
-
-        # Also query nearby objects whose 3D bbox contains the hit point.
-        if hit_pt is not None and self.objs_2d_bbox:
-            file = tool.Ifc.get()
-            extra_count = 0
-            for obj, _bbox2d in self.objs_2d_bbox:
-                if extra_count >= 4:
-                    break
-                if obj is hit_obj:
-                    continue
-                if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
-                    continue
-                extra_elem = tool.Ifc.get_entity(obj)
-                if not extra_elem or not hasattr(extra_elem, "GlobalId"):
-                    continue
-                in_bbox = self._pt_in_obj_bbox(obj, hit_pt)
-                if not in_bbox:
-                    continue
-                extra_ptr = obj.as_pointer()
-                if extra_ptr not in self._snap_cand_multi_cache:
-                    placement_override = {extra_elem.id(): np.array(obj.matrix_world)}
-                    self._snap_cand_multi_cache[extra_ptr] = drawing_api.get_profile_snap_candidates(
-                        file, extra_elem, placement_override
-                    )
-                all_cands.extend((c, extra_elem, obj) for c in self._snap_cand_multi_cache[extra_ptr])
-                extra_count += 1
-
+        # VERTEX or EDGE
         best_cand, best_elem, best_obj, best_d2 = None, None, None, float("inf")
-        for cand, elem, obj in all_cands:
+        for cand, elem, obj, max_tol in all_cands:
             if cand["type"] != self._snap_mode:
                 continue
             sp = location_3d_to_region_2d(region, rv3d, Vector(cand["snap_world"]))
             if sp is None:
                 continue
             d2 = (sp.x - mx) ** 2 + (sp.y - my) ** 2
-            if d2 < best_d2:
+            if d2 < best_d2 and d2 < max_tol * max_tol:
                 best_d2 = d2
                 best_cand = cand
                 best_elem = elem
@@ -6062,6 +6093,10 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             return drawing_api.build_anchor_from_profile_vert(file, element, candidate)
         if snap_kind == "EDGE" and candidate.get("profile_x_m") is not None:
             return drawing_api.build_anchor_from_profile_edge(file, element, candidate)
+        if snap_kind in ("VERTEX", "EDGE") and candidate.get("local_m") is not None:
+            return drawing_api.build_anchor_from_local_point(
+                element, snap_kind, candidate["snap_world"], candidate["local_m"]
+            )
         if snap_kind == "FACE":
             hit_location = candidate.get("snap_world", (0.0, 0.0, 0.0))
             hit_normal = candidate.get("face_normal_world")
@@ -6939,6 +6974,8 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 
         # Scene-BVH pierce-through: O(log N) vs the previous O(N) per-object loop.
         # Each iteration steps past the last hit surface to reach the next object.
+        _DBG_GUIDS = {"1kGw8dvBT2zgE3OsifqnY8", "3YfgKSYh971wjlK2f3vaxy"}
+
         direct: list = []
         ray_hit_objs: set = set()   # all IFC objects the ray passed through (any face)
         ray_origin = Vector(origin)
@@ -6952,13 +6989,20 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                 break
             ray_origin = loc_w + direction * _EPS
             ifc_obj = getattr(hit_obj_eval, "original", hit_obj_eval)
+            _dbg_guid = getattr(tool.Ifc.get_entity(ifc_obj), "GlobalId", None)
+            if _dbg_guid in _DBG_GUIDS:
+                print(f"[dbg-ray] hit {_dbg_guid} obj={ifc_obj.name}")
             if ifc_obj == self._annotation_obj:
+                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: is annotation obj")
                 continue
             if _is_hidden(ifc_obj):
+                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: hidden h={ifc_obj.hide_get(view_layer=view_layer)} hv={ifc_obj.hide_viewport} vis={ifc_obj.visible_get()}")
                 continue
             if ifc_obj.type != "MESH":
+                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: type={ifc_obj.type}")
                 continue
             if not tool.Ifc.get_entity(ifc_obj):
+                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: no IFC entity")
                 continue
             ray_hit_objs.add(ifc_obj)   # track even if face is non-perp
             mx = ifc_obj.matrix_world
@@ -6972,8 +7016,10 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                 else nrm_w.normalized()
             )
             if not _face_perp_ok(normal):
+                if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} SKIP: face not perp normal={normal} dot={abs(normal.dot(_face_cam_view)) if _face_cam_view else 'N/A'}")
                 continue
             dist = (loc_w - origin).length
+            if _dbg_guid in _DBG_GUIDS: print(f"[dbg-ray] {_dbg_guid} ACCEPTED dist={dist:.4f}")
             direct.append((dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
         if direct:
             direct.sort(key=lambda c: c[0])
@@ -6997,19 +7043,26 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 
         prox: list = []
         for ifc_obj in context.scene.objects:
+            _dbg_guid2 = getattr(tool.Ifc.get_entity(ifc_obj), "GlobalId", None)
+            _is_dbg = _dbg_guid2 in _DBG_GUIDS
             if ifc_obj == self._annotation_obj:
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: is annotation obj")
                 continue
             if _is_hidden(ifc_obj):
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: hidden")
                 continue
             elem = tool.Ifc.get_entity(ifc_obj)
             if not elem:
+                if _is_dbg: print(f"[dbg-prox] {ifc_obj.name} SKIP: no IFC entity")
                 continue
             if ifc_obj.type != "MESH":
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: type={ifc_obj.type}")
                 continue
             mx = ifc_obj.matrix_world
             try:
                 mx_inv = mx.inverted()
             except Exception:
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: matrix not invertible")
                 continue
             bb_world = [mx @ Vector(c) for c in ifc_obj.bound_box]
             bb_proj = [_perp(v) for v in bb_world]
@@ -7018,7 +7071,9 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             sy = max(min(v.y for v in bb_proj) - op.y, 0.0, op.y - max(v.y for v in bb_proj))
             sz = max(min(v.z for v in bb_proj) - op.z, 0.0, op.z - max(v.z for v in bb_proj))
             perp_dist = _math.sqrt(sx * sx + sy * sy + sz * sz)
+            if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} perp_dist={perp_dist:.4f} TOL={TOL}")
             if perp_dist > TOL:
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: perp_dist too large")
                 continue
             bb_ctr = sum((v for v in bb_world), Vector()) / 8
             t = (bb_ctr - origin).dot(direction)
@@ -7026,15 +7081,19 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             try:
                 found, loc_l, nrm_l, fi = ifc_obj.closest_point_on_mesh(mx_inv @ query_w, distance=100.0)
             except RuntimeError:
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: closest_point_on_mesh RuntimeError")
                 continue
             if not found:
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: closest_point_on_mesh not found")
                 continue
             loc_w = mx @ loc_l
             if self._snap_mode != "FACE":
                 fi = _prefer_perp_face_index(ifc_obj, loc_w, fi, world_matrix=mx)
             normal = (mx.to_3x3() @ ifc_obj.data.polygons[fi].normal).normalized() if fi is not None else (mx.to_3x3() @ nrm_l).normalized()
             if not _face_perp_ok(normal):
+                if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} SKIP: face not perp normal={normal} dot={abs(normal.dot(_face_cam_view)) if _face_cam_view else 'N/A'}")
                 continue
+            if _is_dbg: print(f"[dbg-prox] {_dbg_guid2} ACCEPTED perp_dist={perp_dist:.4f} ray_hit={ifc_obj in ray_hit_objs}")
             prox.append((perp_dist, ifc_obj, ifc_obj, mx, loc_w, normal, fi))
 
         # Objects the ray directly passed through get priority over objects that
