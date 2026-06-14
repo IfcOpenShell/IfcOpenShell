@@ -6884,12 +6884,15 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             elif snap_type == "EDGE" and snap.get("profile_x_m") is not None:
                 anchor = drawing_api.build_anchor_from_profile_edge(file, element, snap)
             elif snap_type in ("VERTEX", "EDGE") and snap.get("snap_world") is not None:
-                # Tessellation fallback — no IFC profile data available.
-                # Use the snap position as a static WORLD anchor rather than a
-                # FACE fingerprint, so the endpoint stays at the correct vertex/
-                # edge position instead of drifting to the face centre.
+                # Tessellation fallback — element has no IfcExtrudedAreaSolid profile.
+                # Use element-local coordinates so the anchor follows the element
+                # through moves and rotations (LOCAL_POINT method).
                 sw = snap["snap_world"]
-                anchor = drawing_api.make_world_anchor([float(sw[0]), float(sw[1]), float(sw[2])])
+                local_m = snap.get("local_m")
+                if local_m is not None:
+                    anchor = drawing_api.build_anchor_from_local_point(element, snap_type, sw, local_m)
+                else:
+                    anchor = drawing_api.make_world_anchor([float(sw[0]), float(sw[1]), float(sw[2])])
             else:
                 hit_m = (float(location.x), float(location.y), float(location.z))
                 normal_m = (float(normal.x), float(normal.y), float(normal.z))
@@ -7362,7 +7365,12 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                         d2 = dx * dx + dy * dy
                         if d2 < best_d2:
                             best_d2, best_i = d2, i
-                return {"type": "VERTEX", "snap_world": face_verts_world[best_i]}
+                local_co = hit_obj.data.vertices[face.vertices[best_i]].co
+                return {
+                    "type": "VERTEX",
+                    "snap_world": face_verts_world[best_i],
+                    "local_m": (local_co.x, local_co.y, local_co.z),
+                }
 
             if self._snap_mode == "EDGE":
                 best_e, best_d2 = 0, float("inf")
@@ -7379,7 +7387,15 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
                 i0, i1 = best_e, (best_e + 1) % n
                 v0_w, v1_w = face_verts_world[i0], face_verts_world[i1]
                 mid_w = ((v0_w[0] + v1_w[0]) * 0.5, (v0_w[1] + v1_w[1]) * 0.5, (v0_w[2] + v1_w[2]) * 0.5)
-                return {"type": "EDGE", "v0": v0_w, "v1": v1_w, "snap_world": mid_w}
+                v0_l = hit_obj.data.vertices[face.vertices[i0]].co
+                v1_l = hit_obj.data.vertices[face.vertices[i1]].co
+                mid_l = ((v0_l.x + v1_l.x) * 0.5, (v0_l.y + v1_l.y) * 0.5, (v0_l.z + v1_l.z) * 0.5)
+                return {
+                    "type": "EDGE",
+                    "v0": v0_w, "v1": v1_w,
+                    "snap_world": mid_w,
+                    "local_m": mid_l,
+                }
 
         if self._snap_mode == "LAYER":
             element = tool.Ifc.get_entity(hit_obj)
