@@ -6242,26 +6242,27 @@ class DrawParametricDimension(bpy.types.Operator, PolylineOperator, tool.Ifc.Ope
             pset_props["ForcePerpendicularToFace"] = True
         ifcopenshell.api.run("pset.edit_pset", file, pset=pset_entity, properties=pset_props)
 
-        if self._force_perpendicular:
-            placement_override: dict = {}
-            for a in anchors:
-                guid = a.get("guid")
-                if not guid:
-                    continue
-                try:
-                    elem = file.by_guid(guid)
-                    elem_obj = tool.Ifc.get_object(elem)
-                    if elem_obj:
-                        placement_override[elem.id()] = np.array(elem_obj.matrix_world)
-                except Exception:
-                    pass
-            resolved_pts = drawing_api.regenerate_dimension(
-                file, annotation,
-                shape_cache=getattr(self, "_shape_cache", None),
-                placement_override=placement_override,
-            )
-            if resolved_pts:
-                _update_blender_curve(annotation, resolved_pts)
+        # Always regenerate from anchor data so the curve reflects the true IFC
+        # face positions rather than the raw cursor positions from the polyline.
+        placement_override: dict = {}
+        for a in anchors:
+            guid = a.get("guid")
+            if not guid:
+                continue
+            try:
+                elem = file.by_guid(guid)
+                elem_obj = tool.Ifc.get_object(elem)
+                if elem_obj:
+                    placement_override[elem.id()] = np.array(elem_obj.matrix_world)
+            except Exception:
+                pass
+        resolved_pts = drawing_api.regenerate_dimension(
+            file, annotation,
+            shape_cache=getattr(self, "_shape_cache", None),
+            placement_override=placement_override,
+        )
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
 
         from bonsai.bim.module.drawing import handler as _drawing_handler
         _drawing_handler.invalidate_dim_index()
