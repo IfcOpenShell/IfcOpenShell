@@ -63,7 +63,13 @@ class BIM_PT_camera(Panel):
         self.layout.use_property_split = True
         dprops = tool.Drawing.get_document_props()
 
-        col = self.layout.column(align=True)
+        header, body = self.layout.panel("drawing_settings", default_closed=True)
+        header.label(text="Drawing Settings", icon="PREFERENCES")
+        if not body:
+            return
+        body.use_property_split = True
+
+        col = body.column(align=True)
         row = col.row(align=True)
         row.prop(props, "has_underlay", icon="OUTLINER_OB_IMAGE")
         row.prop(dprops, "should_use_underlay_cache", text="", icon="FILE_REFRESH")
@@ -78,44 +84,44 @@ class BIM_PT_camera(Panel):
         row = col.row(align=True)
         row.prop(dprops, "should_draw_linked_projects")
         if dprops.should_draw_linked_projects:
-            header, panel = self.layout.panel("links_to_draw")
-            header.label(text="Linked Projects to Draw", icon="OUTPUT")
+            links_header, links_panel = body.panel("links_to_draw")
+            links_header.label(text="Linked Projects to Draw", icon="OUTPUT")
 
             pprops = tool.Project.get_project_props()
             links = list(pprops.get_loaded_links())
-            if panel:
+            if links_panel:
                 if links:
                     for link in links:
-                        row = panel.row(align=True)
+                        row = links_panel.row(align=True)
                         split = row.split(factor=0.9)
                         split.label(text=link.filepath, icon="FILE")
                         split.prop(link, "include_in_drawings", text="")
                 else:
-                    panel.label(text="No IFC projects linked and loaded.")
+                    links_panel.label(text="No IFC projects linked and loaded.")
 
-        row = self.layout.row(align=True)
+        row = body.row(align=True)
         row.prop(props, "target_view")
 
         if props.target_view == "MODEL_VIEW":
-            row = self.layout.row()
+            row = body.row()
             row.prop(props, "camera_type")
             if props.camera_type == "PERSP":
-                row = self.layout.row(align=True)
+                row = body.row(align=True)
                 row.prop(camera_data, "shift_x", text="Camera Shift X/Y:")
                 row.prop(camera_data, "shift_y", text="")
 
-        row = self.layout.row()
+        row = body.row()
         row.prop(props, "linework_mode")
-        row = self.layout.row()
+        row = body.row()
         row.prop(props, "generate_material_layers")
         if props.linework_mode == "OPENCASCADE":
-            row = self.layout.row()
+            row = body.row()
             row.prop(props, "fill_mode")
-            row = self.layout.row()
+            row = body.row()
             row.prop(props, "cut_mode")
-        row = self.layout.row()
+        row = body.row()
         row.prop(props, "width")
-        row = self.layout.row()
+        row = body.row()
         row.prop(props, "height")
 
         render = context.scene.render
@@ -126,7 +132,7 @@ class BIM_PT_camera(Panel):
             and str(render.engine) == tool.Blender.get_eevee_name()
             and ((megapixels := (render.resolution_x * render.resolution_y / 10**6)) > MEGAPIXELS_WARNING_THRESHOLD)
         ):
-            box = self.layout.box()
+            box = body.box()
             box.label(
                 text=f"Resulting image size is {render.resolution_x} x {render.resolution_y} ({round(megapixels, 2)} MP).",
                 icon="ERROR",
@@ -136,20 +142,20 @@ class BIM_PT_camera(Panel):
             )
             box.label(text="Underlay render might crash if VRAM requirement is not met.")
 
-        row = self.layout.row()
+        row = body.row()
         row.prop(camera_data, "clip_end", text="Depth")
 
-        row = self.layout.row(align=True)
+        row = body.row(align=True)
         row.prop(props, "diagram_scale", text="Scale")
         row.prop(props, "is_nts", text="", icon="MOD_EDGESPLIT")
 
         if props.diagram_scale == "CUSTOM":
-            row = self.layout.row(align=True)
+            row = body.row(align=True)
             row.prop(props, "custom_scale_numerator", text="Custom Scale")
             row.prop(props, "custom_scale_denominator", text="")
 
         if props.has_underlay:
-            row = self.layout.row()
+            row = body.row()
             row.prop(props, "dpi")
 
 
