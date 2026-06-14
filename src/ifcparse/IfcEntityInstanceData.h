@@ -72,6 +72,83 @@ class IFC_PARSE_API Derived {};
 class IFC_PARSE_API empty_aggregate_t {};
 class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
 
+namespace impl {
+    template <>
+    struct VariantTypeName<Blank> {
+        static std::string get() { return "null"; }
+    };
+
+    template <>
+    struct VariantTypeName<Derived> {
+        static std::string get() { return "derived"; }
+    };
+
+    template <>
+    struct VariantTypeName<int> {
+        static std::string get() { return "int"; }
+    };
+
+    template <>
+    struct VariantTypeName<bool> {
+        static std::string get() { return "bool"; }
+    };
+
+    template <>
+    struct VariantTypeName<boost::logic::tribool> {
+        static std::string get() { return "logical"; }
+    };
+
+    template <>
+    struct VariantTypeName<double> {
+        static std::string get() { return "real"; }
+    };
+
+    template <>
+    struct VariantTypeName<std::string> {
+        static std::string get() { return "string"; }
+    };
+
+    template <>
+    struct VariantTypeName<boost::dynamic_bitset<>> {
+        static std::string get() { return "binary"; }
+    };
+
+    template <>
+    struct VariantTypeName<EnumerationReference> {
+        static std::string get() { return "enumeration"; }
+    };
+
+    template <>
+    struct VariantTypeName<IfcUtil::IfcBaseClass*> {
+        static std::string get() { return "instance"; }
+    };
+
+    template <>
+    struct VariantTypeName<empty_aggregate_t> {
+        static std::string get() { return "aggregate"; }
+    };
+
+    template <typename T, typename Allocator>
+    struct VariantTypeName<std::vector<T, Allocator>> {
+        static std::string get() { return "aggregate of " + VariantTypeName<T>::get(); }
+    };
+
+    template <>
+    struct VariantTypeName<aggregate_of_instance::ptr> {
+        static std::string get() { return "aggregate of instance"; }
+    };
+
+    template <>
+    struct VariantTypeName<empty_aggregate_of_aggregate_t> {
+        static std::string get() { return "aggregate of aggregate"; }
+    };
+
+    template <>
+    struct VariantTypeName<aggregate_of_aggregate_of_instance::ptr> {
+        static std::string get() { return "aggregate of aggregate of instance"; }
+    };
+}
+
 template<typename... Args>
 struct parameter_pack {
     static constexpr size_t size = sizeof...(Args);
