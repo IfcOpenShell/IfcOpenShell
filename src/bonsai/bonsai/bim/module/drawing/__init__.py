@@ -115,6 +115,8 @@ classes = (
     operator.SetDimensionAnchor,
     operator.RegenerateDimensions,
     operator.ClickNearestDimensionAnchor,
+    operator.MakeDimensionParametric,
+    operator.BakeParametricDimension,
     operator.DebugDimensionClicks,
     prop.Variable,
     prop.Drawing,
