@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import csv
+import json
 import tempfile
 from pathlib import Path
 
@@ -118,3 +119,25 @@ class TestCsv2Ifc:
             writer.write()
             assert len(list(Path(temp_csv_dir).glob("*.ods"))) == 1
             assert len(list(Path(temp_csv_dir).glob("*.xlsx"))) == 1
+
+
+class TestSerialiseCostQuantities:
+    def test_quantity_name_with_special_characters_round_trips_as_json(self):
+        ifc_file = ifcopenshell.file()
+        name = 'Prospetto est "Np=256,667-23"'
+        quantity = ifc_file.create_entity("IfcQuantityArea", Name=name, AreaValue=12.5)
+        cost_item = ifc_file.create_entity("IfcCostItem", CostQuantities=[quantity])
+
+        result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
+
+        assert json.loads(result) == [[name, 12.5]]
+
+    def test_unset_name_does_not_crash(self):
+        ifc_file = ifcopenshell.file()
+        # Name left unset so quantity.Name resolves to None at access time.
+        quantity = ifc_file.create_entity("IfcQuantityArea", AreaValue=3.0)
+        cost_item = ifc_file.create_entity("IfcCostItem", CostQuantities=[quantity])
+
+        result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
+
+        assert json.loads(result) == [["", 3.0]]
