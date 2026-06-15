@@ -1736,6 +1736,25 @@ class DumbWallJoiner:
                 related_connection=rel.RelatedConnectionType,
             )
 
+        # Re-host openings from the discarded wall to the survivor before
+        # ``delete_ifc_object`` cascade-removes element2's voids and any
+        # filling that depends on them. ``edit_object_placement`` preserves
+        # the opening's world position when element1 and element2 have
+        # different placements — a ``PlacementRelTo`` swap alone would
+        # shift the opening as the relative offset changes.
+        ifc_file = tool.Ifc.get()
+        for rel in list(element2.HasOpenings):
+            opening = rel.RelatedOpeningElement
+            world_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+            rel.RelatingBuildingElement = element1
+            ifcopenshell.api.geometry.edit_object_placement(
+                ifc_file,
+                product=opening,
+                matrix=world_matrix,
+                is_si=False,
+                should_transform_children=False,
+            )
+
         tool.Model.recreate_wall(element1, wall1)
 
         tool.Geometry.delete_ifc_object(wall2)
