@@ -4877,7 +4877,14 @@ class GizmoDimension(GizmoMovable):
 
         self.init_value = click_distance
 
-        if self.initial_snap_state and self.active_obj:
+        # Schematic gizmos opt out of dimension snap. Force the header
+        # indicator to ``off`` for the drag's duration so the user sees the
+        # state matches behaviour; ``exit`` restores ``initial_snap_state``.
+        # Skipping the snap cache here also avoids the per-drag mesh probe.
+        snap_supported = getattr(self.gizmo_group, "snap_enabled_on_dimensions", True)
+        if not snap_supported:
+            context.scene.tool_settings.use_snap = False
+        elif self.initial_snap_state and self.active_obj:
             build_snap_cache(context, self.active_obj)
             self._snap_cache_built = True
 
@@ -4919,11 +4926,18 @@ class GizmoDimension(GizmoMovable):
         if not region or not rv3d:
             return {"RUNNING_MODAL"}
 
-        tool_settings.use_snap = not self.initial_snap_state if event.ctrl else self.initial_snap_state
+        # Group-level opt-out: schematic gizmos float in viewport space, so
+        # global-snap-to-scene-vertices would produce spurious value jumps.
+        # The fallback (``True``) covers any gizmo whose group is not a
+        # ``BaseParametricGizmoGroup``.
+        snap_supported = getattr(self.gizmo_group, "snap_enabled_on_dimensions", True)
 
-        if tool_settings.use_snap and not self._snap_cache_built and self.active_obj:
-            build_snap_cache(context, self.active_obj)
-            self._snap_cache_built = True
+        if snap_supported:
+            tool_settings.use_snap = not self.initial_snap_state if event.ctrl else self.initial_snap_state
+
+            if tool_settings.use_snap and not self._snap_cache_built and self.active_obj:
+                build_snap_cache(context, self.active_obj)
+                self._snap_cache_built = True
 
         current_coord = (event.mouse_region_x, event.mouse_region_y)
 
@@ -4947,7 +4961,7 @@ class GizmoDimension(GizmoMovable):
 
         delta = (current_3d - self.start_location).dot(axis_direction)
 
-        if tool_settings.use_snap and self.active_obj:
+        if snap_supported and tool_settings.use_snap and self.active_obj:
             # Snap the dimension tip (not mouse position) to target
             # Calculate where the dimension tip would be with current delta
             # The tip is at: gizmo_origin + axis * (init_value + delta)
@@ -5319,6 +5333,13 @@ class BaseParametricGizmoGroup:
 
     # Pre-computed flip matrix for negative value handling (180° rotation around Z)
     FLIP_MATRIX = Matrix.Rotation(math.pi, 4, "Z")
+
+    # Default: dimension drags respect Blender's global snap (Ctrl-toggleable
+    # during drag). Subclasses whose dimensions float in viewport space rather
+    # than aligning to real-world geometry should override to ``False`` —
+    # snapping to scene vertices in that case produces spurious value jumps
+    # as the mouse crosses unrelated meshes.
+    snap_enabled_on_dimensions: bool = True
 
     # === Icon Gizmo Layout (meters) ===
     # Icons are positioned in a horizontal row above the element:
@@ -6579,6 +6600,11 @@ class BaseSchematicGizmoGroup(BaseParametricGizmoGroup):
     # setup_dimension_gizmos / update_dimension_gizmos iterate this empty
     # list and become no-ops. The schematic equivalents below take their place.
     dimension_gizmo_props: list[DimensionGizmoConfig] = []
+
+    # Schematic dimensions float in billboarded viewport space, not aligned to
+    # real-world geometry. Snapping the dragged tip to scene vertices would
+    # produce nonsensical value jumps as the mouse crosses unrelated meshes.
+    snap_enabled_on_dimensions: bool = False
 
     # Declarative dimension configuration consumed by ``setup_schematic_dimensions``
     # and ``update_schematic_dimensions``. Each config produces one
