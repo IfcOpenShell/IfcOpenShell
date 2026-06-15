@@ -391,9 +391,9 @@ class DisconnectElements(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.I
         # without rebuilding the source walls' miter cuts. Deleting the corner
         # wall is the supported teardown, which cascades back to the source
         # walls via the connection-cleanup handler.
-        either_is_fillet = tool.Parametric.is_fillet_corner_wall(
-            elem_a
-        ) or tool.Parametric.is_fillet_corner_wall(elem_b)
+        either_is_fillet = tool.Parametric.is_fillet_corner_wall(elem_a) or tool.Parametric.is_fillet_corner_wall(
+            elem_b
+        )
         if either_is_fillet and any(k == "path" for _, k in rels):
             self.report(
                 {"INFO"},

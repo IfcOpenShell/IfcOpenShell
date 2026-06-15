@@ -40,18 +40,25 @@ def _execute_source(operator_cls):
 
 
 def test_change_extrusion_depth_resyncs_wall_props():
+    """Height mutation must re-prime ``BIMWallProperties.height`` so
+    gizmo icons positioned from ``props.height`` track the post-mutation
+    wall top in the same redraw."""
     from bonsai.bim.module.model.wall import ChangeExtrusionDepth
 
     assert "_resync_walls_after_mutation" in _execute_source(ChangeExtrusionDepth)
 
 
 def test_change_extrusion_x_angle_resyncs_wall_props():
+    """Slope mutation must re-prime ``BIMWallProperties.x_angle`` so
+    slope-driven gizmo positions track the new angle."""
     from bonsai.bim.module.model.wall import ChangeExtrusionXAngle
 
     assert "_resync_walls_after_mutation" in _execute_source(ChangeExtrusionXAngle)
 
 
 def test_change_layer_length_resyncs_wall_props():
+    """Length mutation must re-prime ``BIMWallProperties.length`` so
+    horizontal gizmo X positions track the new axis extent."""
     from bonsai.bim.module.model.wall import ChangeLayerLength
 
     assert "_resync_walls_after_mutation" in _execute_source(ChangeLayerLength)

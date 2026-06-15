@@ -231,7 +231,9 @@ def test_disconnect_dispatches_one_call_per_rel():
         return_value=[(rel1, "path"), (rel2, "element-top")],
     ), patch("bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel") as dispatch, patch(
         "bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()
-    ), patch("bonsai.bim.module.model.wall._resync_walls_after_mutation"), patch(
+    ), patch(
+        "bonsai.bim.module.model.wall._resync_walls_after_mutation"
+    ), patch(
         "bonsai.bim.module.model.wall.tool.Parametric.is_fillet_corner_wall", return_value=False
     ):
         DisconnectElements._perform(op, context=MagicMock())
@@ -239,9 +241,7 @@ def test_disconnect_dispatches_one_call_per_rel():
     assert dispatch.call_count == 2
     # Both rels dispatch with elem=elem_a, partner=elem_b regardless of orientation
     # — orient_element_top inside disconnect_rel recovers the wall/slab roles.
-    for call, expected_rel, expected_kind in zip(
-        dispatch.call_args_list, [rel1, rel2], ["path", "element-top"]
-    ):
+    for call, expected_rel, expected_kind in zip(dispatch.call_args_list, [rel1, rel2], ["path", "element-top"]):
         kw = call.kwargs
         assert kw["rel"] is expected_rel
         assert kw["kind"] == expected_kind
@@ -271,7 +271,9 @@ def test_disconnect_resyncs_path_objs_once_for_path_kind():
     ), patch(
         "bonsai.bim.module.model.wall.tool.Ifc.get_object",
         side_effect=lambda e: {elem_a: obj_a, elem_b: obj_b}[e],
-    ), patch("bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"), patch(
+    ), patch(
+        "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
+    ), patch(
         "bonsai.bim.module.model.wall._resync_walls_after_mutation"
     ) as resync, patch(
         "bonsai.bim.module.model.wall.tool.Parametric.is_fillet_corner_wall", return_value=False
@@ -298,7 +300,9 @@ def test_disconnect_skips_resync_for_non_path_kind():
         "bonsai.bim.module.model.wall.tool.Connection.find_rels", return_value=[(rel, "element-top")]
     ), patch("bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()), patch(
         "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
-    ), patch("bonsai.bim.module.model.wall._resync_walls_after_mutation") as resync, patch(
+    ), patch(
+        "bonsai.bim.module.model.wall._resync_walls_after_mutation"
+    ) as resync, patch(
         "bonsai.bim.module.model.wall.tool.Parametric.is_fillet_corner_wall", return_value=False
     ):
         DisconnectElements._perform(op, context=MagicMock())
@@ -328,7 +332,9 @@ def test_disconnect_gizmo_direction_symmetry():
             "bonsai.bim.module.model.wall.tool.Connection.find_rels", return_value=[(rel, "element-top")]
         ), patch("bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()), patch(
             "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
-        ) as dispatch, patch("bonsai.bim.module.model.wall._resync_walls_after_mutation"), patch(
+        ) as dispatch, patch(
+            "bonsai.bim.module.model.wall._resync_walls_after_mutation"
+        ), patch(
             "bonsai.bim.module.model.wall.tool.Parametric.is_fillet_corner_wall", return_value=False
         ):
             DisconnectElements._perform(op, context=MagicMock())
@@ -409,7 +415,9 @@ def test_disconnect_refuses_path_kind_when_either_side_is_fillet():
     ), patch(
         "bonsai.bim.module.model.wall.tool.Parametric.is_fillet_corner_wall",
         side_effect=lambda e: e is fillet,
-    ), patch("bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel") as dispatch:
+    ), patch(
+        "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
+    ) as dispatch:
         DisconnectElements._perform(op, context=MagicMock())
 
     dispatch.assert_not_called()
@@ -437,9 +445,13 @@ def test_disconnect_allows_slab_kind_even_when_wall_is_fillet():
     ), patch(
         "bonsai.bim.module.model.wall.tool.Parametric.is_fillet_corner_wall",
         side_effect=lambda e: e is fillet,
-    ), patch("bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()), patch(
+    ), patch(
+        "bonsai.bim.module.model.wall.tool.Ifc.get_object", return_value=Mock()
+    ), patch(
         "bonsai.bim.module.model.wall.bonsai.core.connection.disconnect_rel"
-    ) as dispatch, patch("bonsai.bim.module.model.wall._resync_walls_after_mutation"):
+    ) as dispatch, patch(
+        "bonsai.bim.module.model.wall._resync_walls_after_mutation"
+    ):
         DisconnectElements._perform(op, context=MagicMock())
 
     dispatch.assert_called_once()
