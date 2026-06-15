@@ -150,7 +150,7 @@ def _slab_connection_gizmo_poll_gate(context: bpy.types.Context, *, require_edit
         return False
     if require_editing and not tool.Model.get_slab_props(active).is_editing:
         return False
-    return any(True for _ in tool.Wall.iter_slab_wall_connections(element))
+    return any(tool.Wall.iter_slab_wall_connections(element))
 
 
 def _wall_topology_gizmo_poll_gate(context: bpy.types.Context) -> bool:
@@ -739,12 +739,13 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         active_obj = context.active_object
         assert active_obj
         selected_objs = tool.Model.get_selected_mesh_objects()
-        # The merge deletes the second argument when the walls are collinear;
-        # only the first survives, so the resync targets the non-active wall.
-        surviving_obj = next(o for o in selected_objs if o != active_obj)
-        DumbWallJoiner().merge(surviving_obj, active_obj)
-        _maybe_resync_wall_props_from_ifc(surviving_obj)
-        _regenerate_walls([surviving_obj])
+        # Active-is-survivor — matches Blender's Ctrl+J / "merge at last"
+        # convention so the wall a user clicks last absorbs the other.
+        # DumbWallJoiner.merge deletes its second argument.
+        other_obj = next(o for o in selected_objs if o != active_obj)
+        DumbWallJoiner().merge(active_obj, other_obj)
+        _maybe_resync_wall_props_from_ifc(active_obj)
+        _regenerate_walls([active_obj])
         return {"FINISHED"}
 
 
@@ -4229,9 +4230,7 @@ class GizmoSlabEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Parametric.is_slab(element) and any(
-            True for _ in tool.Wall.iter_slab_wall_connections(element)
-        )
+        return tool.Parametric.is_slab(element) and any(tool.Wall.iter_slab_wall_connections(element))
 
 
 class GizmoPairDisconnect(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):

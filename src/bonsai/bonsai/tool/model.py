@@ -933,9 +933,7 @@ class Model(bonsai.core.tool.Model):
         if not representation:
             return False
         chain = cls.get_booleans(wall, representation)
-        to_remove = [
-            b for b in chain if (sec := b.SecondOperand) is not None and sec.is_a("IfcTessellatedFaceSet")
-        ]
+        to_remove = [b for b in chain if (sec := b.SecondOperand) is not None and sec.is_a("IfcTessellatedFaceSet")]
         for b in to_remove:
             tool.Geometry.remove_representation_item(b.SecondOperand, wall)
         # Sweep the now-stale BBIM_Boolean entries on the copy (their ids point
