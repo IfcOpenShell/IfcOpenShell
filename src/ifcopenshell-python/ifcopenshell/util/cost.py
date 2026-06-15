@@ -355,7 +355,8 @@ def get_cost_rate(
 
 class CostValueUnserialiser:
     def parse(self, formula: str):
-        l = lark.Lark("""start: formula
+        l = lark.Lark(
+            """start: formula
                     formula: operand (operator operand)*
                     operand: value | category "(" formula ")"
                     value: NUMBER?
@@ -392,7 +393,8 @@ class CostValueUnserialiser:
                     NEWLINE: (CR? LF)+
 
                     %ignore WS // Disregard spaces in text
-                 """)
+                 """
+        )
         start = l.parse(formula)
         return self.get_formula(start.children[0])
 

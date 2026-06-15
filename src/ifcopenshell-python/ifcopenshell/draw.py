@@ -107,7 +107,7 @@ def main(
     progress_function: Callable = DO_NOTHING,
     logger=None,
 ):
-    if logger is None:
+    if logger is None and ifcopenshell.logger is not None:
         logger = ifcopenshell.logger.Root()
 
     def by_guid(g):
@@ -543,7 +543,7 @@ def main(
             arranged = W.arrange_polygons(
                 *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
                 polies,  # ty: ignore[too-many-positional-arguments]
-                logger,
+                *((logger,) if logger is not None else ()),
             )
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)

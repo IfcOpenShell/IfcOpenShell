@@ -302,8 +302,8 @@ class iterator(ifcopenshell_wrapper.Iterator):
         logger=None,
     ):
         self.settings = settings
-        if logger is None:
-            logger = ifcopenshell_wrapper.logger.Root()
+        if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
+            logger = logger_type.Root()
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename.wrapped_data
@@ -336,19 +336,18 @@ class iterator(ifcopenshell_wrapper.Iterator):
             else:
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude
 
-            self.this = initializer(
+            args = (
                 geometry_library,
                 self.settings,
                 file_or_filename,
                 include_or_exclude,
                 include is not None,
                 num_threads,
-                logger,
             )
+            self.this = initializer(*args, *((logger,) if logger is not None else ()))
         else:
-            self.this = ifcopenshell_wrapper.construct_iterator(
-                geometry_library, self.settings, file_or_filename, num_threads, logger
-            )
+            args = (geometry_library, self.settings, file_or_filename, num_threads)
+            self.this = ifcopenshell_wrapper.construct_iterator(*args, *((logger,) if logger is not None else ()))
 
     if has_occ:
 
@@ -517,7 +516,11 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         ifcopenshell_wrapper.create_shape(
-            settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library, *(filter(None, (logger,)))
+            settings,
+            inst.wrapped_data,
+            repr.wrapped_data if repr is not None else None,
+            geometry_library,
+            *((logger,) if logger is not None else ()),
         ),
     )
 

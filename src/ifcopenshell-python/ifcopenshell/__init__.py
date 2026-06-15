@@ -95,7 +95,9 @@ from .entity_instance import entity_instance, register_schema_attributes
 from .file import file, rocksdb_lazy_instance
 from .file import file as _file
 from .sql import sqlite, sqlite_entity
-from .ifcopenshell_wrapper import get_log, logger
+
+get_log = ifcopenshell_wrapper.get_log
+logger = getattr(ifcopenshell_wrapper, "logger", None)
 
 # explicitly specify available imported symbols
 # (it's a requirement for a typed library)
@@ -192,10 +194,10 @@ def open(
         raise FileNotFoundError(f"Path does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
-    if logger is None:
-        logger = ifcopenshell_wrapper.logger.Root()
+    if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
+        logger = logger_type.Root()
     if format == ".ifcXML":
-        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), logger)
+        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), *((logger,) if logger is not None else ()))
         if f:
             return file(f)
         raise OSError(f"Failed to parse .ifcXML file from {path}")
@@ -212,9 +214,11 @@ def open(
     if should_stream:
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
-        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, logger)
+        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *((logger,) if logger is not None else ()))
     elif bypass_types:
-        f = ifcopenshell_wrapper.file(ifcopenshell_wrapper.uninitialized_tag(), logger)
+        f = ifcopenshell_wrapper.file(
+            ifcopenshell_wrapper.uninitialized_tag(), *((logger,) if logger is not None else ())
+        )
         for ty in bypass_types:
             f.bypass_type(ty)
         if mmap:
@@ -224,9 +228,12 @@ def open(
             f.initialize(str(path.absolute()))
     elif mmap:
         # mmap parameter is only available for builds with USE_MMAP, not used in our main builds
-        f = ifcopenshell_wrapper.open(str(path.absolute()), mmap=mmap, logger=logger)  # ty: ignore[unknown-argument]
+        kwargs = {"mmap": mmap}
+        if logger is not None:
+            kwargs["logger"] = logger
+        f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)  # ty: ignore[unknown-argument]
     else:
-        f = ifcopenshell_wrapper.open(str(path.absolute()), False, logger)
+        f = ifcopenshell_wrapper.open(str(path.absolute()), False, *((logger,) if logger is not None else ()))
     return file(f)
 
 

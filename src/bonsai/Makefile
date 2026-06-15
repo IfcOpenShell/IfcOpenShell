@@ -106,7 +106,7 @@ endif
 endif # def PLATFORM
 
 # Current build commit hash.
-OLD:=1c5b825
+OLD:=3e7b739
 .PHONY: bump
 bump:
 ifndef NEW
