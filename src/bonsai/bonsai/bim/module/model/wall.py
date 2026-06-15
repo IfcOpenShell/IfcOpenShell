@@ -811,6 +811,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
 
         if layer2_objs:
             tool.Model.recalculate_walls(layer2_objs)
+            _resync_walls_after_mutation(layer2_objs)
         return {"FINISHED"}
 
 
@@ -926,6 +927,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
         if layer2_objs:
             tool.Model.recalculate_walls(layer2_objs)
+            _resync_walls_after_mutation(layer2_objs)
         return {"FINISHED"}
 
 
@@ -948,6 +950,7 @@ class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
         selected_objs = tool.Model.get_selected_mesh_ifc_objects()
         for obj in selected_objs:
             joiner.set_length(obj, self.length)
+        _resync_walls_after_mutation(selected_objs)
 
 
 class OffsetWalls(bpy.types.Operator, tool.Ifc.Operator):
