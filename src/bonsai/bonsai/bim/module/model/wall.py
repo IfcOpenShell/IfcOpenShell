@@ -386,6 +386,20 @@ class DisconnectElements(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.I
         if not rels:
             self.report({"ERROR"}, "No connection found between elements.")
             return
+        # The fillet corner's join with its source walls defines the fillet's
+        # identity — unjoining there would tear down the chord axis reference
+        # without rebuilding the source walls' miter cuts. Deleting the corner
+        # wall is the supported teardown, which cascades back to the source
+        # walls via the connection-cleanup handler.
+        either_is_fillet = tool.Parametric.is_fillet_corner_wall(
+            elem_a
+        ) or tool.Parametric.is_fillet_corner_wall(elem_b)
+        if either_is_fillet and any(k == "path" for _, k in rels):
+            self.report(
+                {"INFO"},
+                "Fillet wall path connections can't be unjoined — delete the fillet wall element to remove the corner.",
+            )
+            return
         path_objs: list[bpy.types.Object] = []
         for rel, kind in rels:
             bonsai.core.connection.disconnect_rel(
@@ -740,8 +754,8 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         assert active_obj
         selected_objs = tool.Model.get_selected_mesh_objects()
         # Active-is-survivor — matches Blender's Ctrl+J / "merge at last"
-        # convention so the wall a user clicks last absorbs the other.
-        # DumbWallJoiner.merge deletes its second argument.
+        # convention. The first argument survives, the second is consumed,
+        # so the active wall ends up absorbing the other.
         other_obj = next(o for o in selected_objs if o != active_obj)
         DumbWallJoiner().merge(active_obj, other_obj)
         _maybe_resync_wall_props_from_ifc(active_obj)
@@ -1623,10 +1637,10 @@ class DumbWallJoiner:
             min_t, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
             # Use the opening's axis-projected midpoint to classify the side.
             # The filling's ``matrix_world.translation`` is flip-fragile —
-            # ``flip_object`` rotates 180° + translates so the bbox stays
-            # visually in place, moving the door origin to the opposite
-            # corner, which would mis-classify a flipped door centred over
-            # the cut.
+            # flipping rotates the filler 180° + translates so the bbox
+            # stays visually in place, moving the door origin to the
+            # opposite corner, which would mis-classify a flipped door
+            # centred over the cut.
             opening_midpoint = (min_t + max_t) / 2
             void_straddles = min_t < cut_percentage < max_t
             if opening_midpoint > cut_percentage:
@@ -1722,7 +1736,14 @@ class DumbWallJoiner:
         p2[0] = max(x_ordinates)
         self.set_axis(element1, p1, p2)
 
+        # ConnectedTo / ConnectedFrom carry both ``IfcRelConnectsPathElements``
+        # (the wall-wall joins this loop migrates) and
+        # ``IfcRelConnectsElements`` (the slab underside clip). Only the
+        # path rels expose ``RelatingConnectionType`` / ``RelatedConnectionType``;
+        # the element rels die with element2 via the trailing cascade delete.
         for rel in element2.ConnectedTo:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             ifcopenshell.api.geometry.disconnect_path(
                 tool.Ifc.get(), element=element1, connection_type=rel.RelatingConnectionType
             )
@@ -1735,6 +1756,8 @@ class DumbWallJoiner:
             )
 
         for rel in element2.ConnectedFrom:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             ifcopenshell.api.geometry.disconnect_path(
                 tool.Ifc.get(), element=element1, connection_type=rel.RelatedConnectionType
             )
@@ -1747,23 +1770,24 @@ class DumbWallJoiner:
             )
 
         # Re-host openings from the discarded wall to the survivor before
-        # ``delete_ifc_object`` cascade-removes element2's voids and any
-        # filling that depends on them. ``edit_object_placement`` preserves
-        # the opening's world position when element1 and element2 have
+        # the cascade delete tears down element2's voids and any filling
+        # that depends on them. ``edit_object_placement`` preserves the
+        # opening's world position when element1 and element2 have
         # different placements — a ``PlacementRelTo`` swap alone would
         # shift the opening as the relative offset changes.
         ifc_file = tool.Ifc.get()
         for rel in list(element2.HasOpenings):
             opening = rel.RelatedOpeningElement
-            world_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
             rel.RelatingBuildingElement = element1
-            ifcopenshell.api.geometry.edit_object_placement(
-                ifc_file,
-                product=opening,
-                matrix=world_matrix,
-                is_si=False,
-                should_transform_children=False,
-            )
+            if opening.ObjectPlacement:
+                world_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                ifcopenshell.api.geometry.edit_object_placement(
+                    ifc_file,
+                    product=opening,
+                    matrix=world_matrix,
+                    is_si=False,
+                    should_transform_children=False,
+                )
 
         tool.Model.recreate_wall(element1, wall1)
 
@@ -3348,6 +3372,19 @@ class CancelWallFilletPreview(bpy.types.Operator):
         props = preview_base.get_preview_props(context, "wall_fillet")
         if props is None or not props.is_active:
             return {"CANCELLED"}
+        # Clear the corner's edit flag so the connection disconnect gizmos
+        # disappear in lockstep with the radius preview when the user
+        # cancels. The id read happens BEFORE clear_preview_state wipes it.
+        corner_id = props.editing_corner_id
+        if corner_id:
+            ifc_file = tool.Ifc.get()
+            if ifc_file is not None:
+                try:
+                    corner_obj = tool.Ifc.get_object(ifc_file.by_id(corner_id))
+                except RuntimeError:
+                    corner_obj = None
+                if corner_obj is not None:
+                    tool.Model.get_wall_props(corner_obj).is_editing = False
         preview_base.clear_preview_state(props)
         return {"FINISHED"}
 
@@ -3421,6 +3458,11 @@ class EnableWallFilletPreviewFromCorner(bpy.types.Operator):
         props.radius = float(radius)
         props.editing_corner_id = corner_elem.id()
         props.is_active = True
+        # Flag the corner as "in edit mode" so the wall-side connection
+        # disconnect gizmos surface in parallel with the fillet preview —
+        # one pen-icon click enters BOTH radius retune AND connection
+        # inspection.
+        tool.Model.get_wall_props(corner_obj).is_editing = True
         return {"FINISHED"}
 
 
@@ -3997,10 +4039,23 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
     ICON_SCALE = 0.35
     SLAB_STACK_MAX = 5
     SLAB_STACK_OFFSET_Z = 0.5
+    # Muted gray used for connection icons that are visible (the connection
+    # exists) but inert (clicking dispatches a no-op + INFO report). Fillet
+    # corner ↔ source-wall joins use this — disconnecting them would tear
+    # down the fillet's chord axis reference, so the supported teardown is
+    # deleting the corner wall instead.
+    LOCKED_COLOR: ClassVar[tuple[float, float, float]] = (0.5, 0.5, 0.5)
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_topology_gizmo_poll_gate(context):
+        # Bypass the shared topology gate's ``any_preview_active`` block —
+        # ``BIMWallProperties.is_editing`` is the real gate for this gizmo
+        # group, and that flag is set both by the regular wall edit lifecycle
+        # AND by the fillet preview entry (so a fillet corner under preview
+        # surfaces its connections in parallel with the radius drag).
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:
@@ -4011,11 +4066,6 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         element = tool.Ifc.get_entity(active)
         if not element or not tool.Parametric.is_path_connectable_wall(element):
             return False
-        # Fillet-corner walls have no LAYER2 usage and cannot enter the
-        # parametric edit lifecycle, so the ``is_editing`` gate is bypassed
-        # for them — otherwise their connection icons would never surface.
-        if tool.Parametric.is_fillet_corner_wall(element):
-            return True
         props = tool.Model.get_wall_props(active)
         if not props.is_editing:
             return False
@@ -4023,6 +4073,9 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
 
     def setup(self, context: bpy.types.Context) -> None:
         default_color, highlight_color = self.get_decoration_colors()
+        # Stashed so per-frame ``_bind_unjoin_icon`` can restore the active
+        # tone when an icon was muted in a previous frame for fillet lock.
+        self._default_unjoin_color = default_color
         # Bind the operator on each pool icon ONCE at setup time and keep the returned
         # OperatorProperties handles. target_set_operator allocates a fresh handle on
         # every call, so calling it from position_gizmos (which fires every redraw
@@ -4077,6 +4130,7 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             self._pool_cap_warned = True
 
         slot_idx = 0
+        self_is_fillet = tool.Parametric.is_fillet_corner_wall(elem)
         for other_elem, self_ct, other_ct in path_connections:
             if slot_idx >= self.POOL_SIZE:
                 break
@@ -4088,7 +4142,10 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
                 continue
             seg_other = _wall_axis_world_segment_from_geom(other_obj, other_geom)
             location = tool.Wall.path_connection_location_world(seg_self, self_ct, seg_other, other_ct)
-            self._bind_unjoin_icon(slot_idx, location + clearance, billboard_rot, elem, other_elem, other_obj)
+            is_locked = self_is_fillet or tool.Parametric.is_fillet_corner_wall(other_elem)
+            self._bind_unjoin_icon(
+                slot_idx, location + clearance, billboard_rot, elem, other_elem, other_obj, is_locked=is_locked
+            )
             slot_idx += 1
 
         for stack_idx, (slab_elem, _rel) in enumerate(slab_connections):
@@ -4107,7 +4164,9 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
             self._bind_unjoin_icon(slot_idx, stacked + clearance, billboard_rot, elem, slab_elem, slab_obj)
             slot_idx += 1
 
-    def _bind_unjoin_icon(self, slot_idx, location, billboard_rot, active_elem, partner_elem, partner_obj):
+    def _bind_unjoin_icon(
+        self, slot_idx, location, billboard_rot, active_elem, partner_elem, partner_obj, *, is_locked=False
+    ):
         """Place + bind one pool icon to a (active, partner) GlobalId pair.
 
         Only the GlobalId properties are rewritten per frame; the operator
@@ -4116,10 +4175,15 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         save/reload, and any sit-in-the-undo-stack interlude between dispatch
         and execute. The partner Blender object is mirrored onto the icon for
         its hover-outline draw, since the Gizmo API exposes
-        ``target_set_operator`` but no symmetric reader."""
+        ``target_set_operator`` but no symmetric reader.
+
+        ``is_locked=True`` (fillet corner involvement) writes a muted color
+        instead of the active tone; the GUIDs still propagate so the bound
+        operator can surface a friendly INFO report on click."""
         icon = self.unjoin_icons[slot_idx]
         icon.matrix_basis = gizmo.billboarded_at(location, billboard_rot, scale=self.ICON_SCALE)
         icon.hide = False
+        icon.color = self.LOCKED_COLOR if is_locked else self._default_unjoin_color
         self.unjoin_op_props[slot_idx].element_a_guid = active_elem.GlobalId
         self.unjoin_op_props[slot_idx].element_b_guid = partner_elem.GlobalId
         icon.partner_obj = partner_obj

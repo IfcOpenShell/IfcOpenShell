@@ -190,3 +190,87 @@ def test_merge_rehosts_before_delete():
 
     assert rel.RelatingBuildingElement is element1
     delete_ifc_object.assert_called_once_with(wall2)
+
+
+def test_merge_skips_non_path_connection_rels():
+    """``ConnectedTo`` / ``ConnectedFrom`` carry both
+    ``IfcRelConnectsPathElements`` (wall-wall joins) AND
+    ``IfcRelConnectsElements`` (slab underside clips). Only the path rels
+    expose ``RelatingConnectionType`` / ``RelatedConnectionType``;
+    accessing those attributes on an element rel raises ``AttributeError``.
+    The migration loop must filter on the rel class so a wall with a slab
+    clip can still be merged."""
+    from bonsai.bim.module.model.wall import DumbWallJoiner
+
+    wall1, wall2, element1, element2 = _merge_inputs(has_openings=[])
+
+    path_rel = Mock(name="path_rel")
+    path_rel.is_a = lambda c: c == "IfcRelConnectsPathElements"
+    path_rel.RelatingElement = Mock(name="rel_relating")
+    path_rel.RelatedElement = Mock(name="rel_related")
+    path_rel.RelatingConnectionType = "ATSTART"
+    path_rel.RelatedConnectionType = "ATEND"
+
+    slab_rel = Mock(name="slab_rel")
+    slab_rel.is_a = lambda c: c == "IfcRelConnectsElements"
+    slab_rel.Description = "TOP"
+    # ``RelatedConnectionType`` is what the merge loop reads from
+    # ``ConnectedFrom``; the real ``IfcRelConnectsElements`` schema has
+    # no such attribute, so wire the stub to raise like ifcopenshell does.
+    type(slab_rel).RelatedConnectionType = property(
+        lambda self: (_ for _ in ()).throw(AttributeError("RelatedConnectionType"))
+    )
+    type(slab_rel).RelatingConnectionType = property(
+        lambda self: (_ for _ in ()).throw(AttributeError("RelatingConnectionType"))
+    )
+    element2.ConnectedFrom = [slab_rel, path_rel]
+
+    captured_disconnects = []
+    captured_connects = []
+
+    def fake_disconnect_path(*args, **kwargs):
+        captured_disconnects.append(kwargs)
+
+    def fake_connect_path(*args, **kwargs):
+        captured_connects.append(kwargs)
+
+    p1 = np.array([0.0, 0.0])
+    p2 = np.array([5.0, 0.0])
+    p3 = np.array([5.0, 0.0])
+    p4 = np.array([10.0, 0.0])
+
+    def fake_get_entity(obj):
+        return {wall1: element1, wall2: element2}[obj]
+
+    with (
+        patch("bonsai.bim.module.model.wall.tool.Ifc.is_moved", return_value=False),
+        patch("bonsai.bim.module.model.wall.tool.Ifc.get_entity", side_effect=fake_get_entity),
+        patch("bonsai.bim.module.model.wall.tool.Ifc.get", return_value=MagicMock(name="ifc_file")),
+        patch(
+            "bonsai.bim.module.model.wall.ifcopenshell.util.representation.get_reference_line",
+            side_effect=lambda elem: (p1, p2) if elem is element1 else (p3, p4),
+        ),
+        patch(
+            "bonsai.bim.module.model.wall.ifcopenshell.util.placement.get_local_placement",
+            return_value=np.eye(4),
+        ),
+        patch(
+            "bonsai.bim.module.model.wall.ifcopenshell.api.geometry.disconnect_path",
+            side_effect=fake_disconnect_path,
+        ),
+        patch(
+            "bonsai.bim.module.model.wall.ifcopenshell.api.geometry.connect_path",
+            side_effect=fake_connect_path,
+        ),
+        patch("bonsai.bim.module.model.wall.tool.Model.recreate_wall"),
+        patch("bonsai.bim.module.model.wall.tool.Geometry.delete_ifc_object"),
+        patch("bonsai.bim.module.model.wall.DumbWallJoiner.set_axis"),
+    ):
+        # The bug pre-fix: the slab rel's ``RelatedConnectionType`` access
+        # raised AttributeError and crashed merge. With the filter, this
+        # call must complete cleanly.
+        DumbWallJoiner().merge(wall1, wall2)
+
+    assert len(captured_disconnects) == 1
+    assert len(captured_connects) == 1
+    assert captured_disconnects[0]["connection_type"] == "ATEND"
