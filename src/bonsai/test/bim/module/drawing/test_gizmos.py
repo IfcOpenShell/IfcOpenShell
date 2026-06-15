@@ -24,7 +24,11 @@ from types import SimpleNamespace
 import bpy
 import pytest
 
-from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.drawing.gizmos import (
+    BaseParametricGizmoGroup,
+    BaseSchematicGizmoGroup,
+    DimensionGizmoConfig,
+)
 
 pytestmark = pytest.mark.drawing
 
@@ -52,3 +56,19 @@ def test_text_formatter_receives_props_and_value():
     config = DimensionGizmoConfig(attr_name="length", axis=(1, 0, 0), text_formatter=formatter)
     props = SimpleNamespace(label="L")
     assert config.text_formatter(props, 3.14) == "L=3.14"
+
+
+def test_parametric_base_enables_dimension_snap_by_default():
+    """In-place parametric gizmos align to real-world geometry, so dragging
+    must respect the global snap toggle (Ctrl-flip during drag) — same
+    contract every door / window / wall / stair / roof / mep dimension
+    has shipped with."""
+    assert BaseParametricGizmoGroup.snap_enabled_on_dimensions is True
+
+
+def test_schematic_base_disables_dimension_snap():
+    """Schematic dimensions float in viewport space; snapping the dragged
+    tip to scene vertices would produce spurious value jumps as the
+    mouse crosses unrelated geometry. The opt-out lives on the base so
+    every schematic subclass inherits it without per-class wiring."""
+    assert BaseSchematicGizmoGroup.snap_enabled_on_dimensions is False
