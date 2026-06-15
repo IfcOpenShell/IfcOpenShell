@@ -1619,13 +1619,16 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in list(element1.HasOpenings) if r.RelatedOpeningElement.HasFillings
         ]:
             rel = opening.HasFillings[0]
-            filling = rel.RelatedBuildingElement
-            filling_obj = tool.Ifc.get_object(filling)
-            filling_location = filling_obj.matrix_world.translation
-            _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis_world_2d)
             min_t, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
+            # Use the opening's axis-projected midpoint to classify the side.
+            # The filling's ``matrix_world.translation`` is flip-fragile —
+            # ``flip_object`` rotates 180° + translates so the bbox stays
+            # visually in place, moving the door origin to the opposite
+            # corner, which would mis-classify a flipped door centred over
+            # the cut.
+            opening_midpoint = (min_t + max_t) / 2
             void_straddles = min_t < cut_percentage < max_t
-            if filling_position > cut_percentage:
+            if opening_midpoint > cut_percentage:
                 # The filling should be moved from element1 to element2.
                 new_opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=opening)
                 new_opening.VoidsElements[0].RelatingBuildingElement = element2
@@ -1640,13 +1643,16 @@ class DumbWallJoiner:
 
                 rel.RelatingOpeningElement = new_opening
 
-                # Remove the old opening
-                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
-
                 if void_straddles:
                     # Filling moved to element2, but void straddles — add a
-                    # pure-void copy back to element1 so its body still gets cut.
-                    _add_void_copy(element1, new_opening)
+                    # pure-void copy back to element1. Read from the original
+                    # ``opening`` whose ObjectPlacement still references
+                    # element1; ``new_opening`` was rebound to element2 and
+                    # would copy element2's frame instead.
+                    _add_void_copy(element1, opening)
+
+                # Remove the old opening
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
             elif void_straddles:
                 # Filling stays on element1, but void straddles — add a pure-void
                 # copy to element2 so its body gets cut.
