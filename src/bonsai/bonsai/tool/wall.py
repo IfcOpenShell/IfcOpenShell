@@ -243,6 +243,75 @@ class Wall(bonsai.core.tool.Wall):
         return obj.matrix_world @ local_p1, obj.matrix_world @ local_p2
 
     @classmethod
+    def iter_wall_slab_connections(cls, wall: ifcopenshell.entity_instance):
+        """Yield ``(slab, rel)`` tuples for every ``IfcRelConnectsElements(TOP)``
+        connecting a slab to this wall — the rel kind ``extend_walls_to_underside``
+        creates. Walks ``wall.ConnectedFrom`` because the slab is the relating
+        side of the TOP rel."""
+        for rel in getattr(wall, "ConnectedFrom", []) or ():
+            if not rel.is_a("IfcRelConnectsElements") or rel.Description != "TOP":
+                continue
+            slab = rel.RelatingElement
+            if slab is None:
+                continue
+            yield slab, rel
+
+    @classmethod
+    def iter_slab_wall_connections(cls, slab: ifcopenshell.entity_instance):
+        """Yield ``(wall, rel)`` tuples for every wall clipped to this slab's
+        underside. Mirror of ``iter_wall_slab_connections`` from the slab side
+        — walks ``slab.ConnectedTo``."""
+        for rel in getattr(slab, "ConnectedTo", []) or ():
+            if not rel.is_a("IfcRelConnectsElements") or rel.Description != "TOP":
+                continue
+            wall = rel.RelatedElement
+            if wall is None:
+                continue
+            yield wall, rel
+
+    @classmethod
+    def find_wall_slab_rel(
+        cls, wall: ifcopenshell.entity_instance, slab: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance | None:
+        """Return the single ``IfcRelConnectsElements(TOP)`` between ``wall``
+        and ``slab``, or ``None`` if none exists. Used by the disconnect
+        operator to find the specific rel to remove."""
+        for s, rel in cls.iter_wall_slab_connections(wall):
+            if s == slab:
+                return rel
+        return None
+
+    WALL_SLAB_CONNECTION_Z_CLEARANCE = 0.5
+    """Lift above the wall top so the disconnect icon sits above the
+    extend-vertical / slope gizmo and reads as "the thing above the wall =
+    the slab connection"."""
+
+    @classmethod
+    def wall_slab_connection_location_world(
+        cls, wall_obj: bpy.types.Object, slab_obj: bpy.types.Object
+    ) -> Vector | None:
+        """World-space anchor for the wall-slab disconnect icon.
+
+        X / Y come from the wall axis midpoint (so the icon sits in the
+        middle of the wall horizontally); Z is the wall's top in world space
+        plus ``WALL_SLAB_CONNECTION_Z_CLEARANCE`` so the icon perches above
+        the slope gizmo. The slab-side gizmo calls this with the same
+        arguments so both sides of the same connection render a single
+        visual marker. ``slab_obj`` is kept on the signature for the
+        symmetric call shape; the helper's body no longer reads from it.
+        Returns ``None`` when the wall has no reference line."""
+        ref = cls.get_world_reference_line(wall_obj)
+        if ref is None:
+            return None
+        axis_mid_world = (ref[0] + ref[1]) * 0.5
+        if wall_obj.bound_box:
+            wall_top_local_z = max(c[2] for c in wall_obj.bound_box)
+            wall_top_world_z = (wall_obj.matrix_world @ Vector((0.0, 0.0, wall_top_local_z))).z
+        else:
+            wall_top_world_z = axis_mid_world.z
+        return Vector((axis_mid_world.x, axis_mid_world.y, wall_top_world_z + cls.WALL_SLAB_CONNECTION_Z_CLEARANCE))
+
+    @classmethod
     def walk_connected_walls(
         cls,
         start_element: ifcopenshell.entity_instance,

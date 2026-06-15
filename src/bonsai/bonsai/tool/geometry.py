@@ -65,6 +65,7 @@ from typing_extensions import TypeIs
 
 import bonsai.bim.helper
 import bonsai.bim.import_ifc
+import bonsai.core.connection
 import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.root
@@ -271,12 +272,38 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.data.objects.remove(obj)
 
     @classmethod
-    def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
+    def delete_ifc_object(
+        cls,
+        obj: bpy.types.Object,
+        batch_being_deleted_ids: Optional[set[int]] = None,
+    ) -> None:
         ifc_file = tool.Ifc.get()
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        elif element.is_a("IfcAnnotation"):
+        # Cascade connection-rel teardown — symmetric to bim.disconnect_elements.
+        # When a slab connected to a wall via IfcRelConnectsElements(TOP) is deleted,
+        # the wall's trim booleans + BBIM_Boolean pset would otherwise be orphaned.
+        # skip_elem_recreate is always True here because we're inside delete: the
+        # element is about to vanish, so re-extruding it would be wasted work.
+        # skip_partner_recreate fires only when the partner is also queued in the
+        # same OverrideDelete batch.
+        if element.is_a("IfcRoot"):
+            skip_ids = batch_being_deleted_ids or set()
+            for rel, kind, partner in tool.Connection.find_rels_for_element(element):
+                bonsai.core.connection.disconnect_rel(
+                    tool.Ifc,
+                    tool.Geometry,
+                    tool.Model,
+                    tool.Connection,
+                    rel=rel,
+                    kind=kind,
+                    elem=element,
+                    partner=partner,
+                    skip_elem_recreate=True,
+                    skip_partner_recreate=(partner.id() in skip_ids),
+                )
+        if element.is_a("IfcAnnotation"):
             if element.ObjectType == "DRAWING":
                 return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
             elif tool.Drawing.is_auto_annotation(element):
@@ -641,7 +668,13 @@ class Geometry(bonsai.core.tool.Geometry):
             and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
             and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
         ):
-            return tool.Ifc.get().by_id(ifc_id)
+            try:
+                return tool.Ifc.get().by_id(ifc_id)
+            except RuntimeError:
+                # Stale id: a representation rebuild freed the old entity
+                # while obj.data still tracks its id. Treated as "no active
+                # representation" — same contract as a mesh with id 0.
+                return None
 
     @classmethod
     def get_data_representation(cls, data: bpy.types.ID) -> ifcopenshell.entity_instance | None:
@@ -2348,6 +2381,21 @@ class Geometry(bonsai.core.tool.Geometry):
                 old_to_new[element] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
+                # Slab-trim booleans (from extend_walls_to_underside) belong to
+                # the source wall's connection, not the copy. Strip them so the
+                # duplicate reverts to its pre-clip extrusion — mirrors the way
+                # filling rels are dropped while manual booleans persist on copy.
+                # Reload the body when something was stripped so the viewport
+                # immediately shows the unclipped geometry; otherwise the user
+                # sees a stale mesh until they Shift+G, which is easy to miss.
+                if new.is_a("IfcWall"):
+                    if tool.Model.strip_underside_booleans(new):
+                        tool.Model.reload_body_representation(new_obj)
+                    # HasOpenings rels don't follow object duplication, so
+                    # the duplicate's body must rebuild to match its current
+                    # opening set.
+                    else:
+                        tool.Model.regenerate_wall(new_obj)
 
         # Remap Blender parent relationships for duplicated objects
         for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():

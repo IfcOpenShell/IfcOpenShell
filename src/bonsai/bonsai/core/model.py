@@ -167,12 +167,22 @@ def regenerate_wall_to_underside(
     model: type[tool.Model],
     wall_objs: list[bpy.types.Object],
 ) -> None:
-    """Re-clip walls to their connected underside objects after the slab has moved."""
+    """Re-clip walls to their connected underside objects after the slab has moved.
+
+    When a wall has no remaining slab connections — the case reached after the
+    last TOP rel is severed (via disconnect or via cascade-on-slab-delete) — the
+    stale trim booleans are cleaned up so the wall reverts to its pre-clip
+    extrusion instead of holding orphan ``IfcBooleanResult`` items and a dead
+    ``BBIM_Boolean`` pset.
+    """
     clipped_objs = []
+    reverted_objs = []
     for obj in wall_objs:
         wall = ifc.get_entity(obj)
         slab_objs = model.get_connected_slab_objs(wall)
         if not slab_objs:
+            model.remove_wall_to_underside_booleans(wall)
+            reverted_objs.append(obj)
             continue
         if ifc.is_moved(obj):
             geometry.run_edit_object_placement(obj=obj)
@@ -185,8 +195,9 @@ def regenerate_wall_to_underside(
             if clip:
                 model.clip_wall_to_slab(wall, clip)
         clipped_objs.append(obj)
-    if clipped_objs:
-        model.reload_body_representation(clipped_objs)
+    refresh_objs = clipped_objs + reverted_objs
+    if refresh_objs:
+        model.reload_body_representation(refresh_objs)
 
 
 def extend_wall_to_slab(

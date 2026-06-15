@@ -1689,6 +1689,21 @@ class BIMRoofProperties(PropertyGroup):
             setattr(target_props, prop_name, prop_value)
 
 
+class BIMSlabProperties(PropertyGroup):
+    """Transient state for the slab disconnect-access gizmo.
+
+    ``is_editing`` flips True when the user clicks the pen icon on a slab
+    that has wall connections — gating the per-wall disconnect icons in
+    ``GizmoSlabUnjoinWalls`` so they're hidden until the user opts in. No
+    IFC draft state lives here: the disconnect operator commits directly,
+    so this PropertyGroup carries only the UI gate."""
+
+    is_editing: bpy.props.BoolProperty(name="Slab Edit Active", default=False, options={"SKIP_SAVE"})
+
+    if TYPE_CHECKING:
+        is_editing: bool
+
+
 class BIMWallProperties(PropertyGroup):
     """Transient draft state for parametric wall gizmo editing.
 

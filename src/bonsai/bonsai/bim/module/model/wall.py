@@ -48,6 +48,7 @@ import mathutils.geometry
 import numpy as np
 from mathutils import Matrix, Vector
 
+import bonsai.core.connection
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.core.root
@@ -106,6 +107,50 @@ def _wall_gizmo_poll_gate(context: bpy.types.Context) -> bool:
     if preview_base.any_preview_active(context):
         return False
     return True
+
+
+def _resolve_active_partner_pair(
+    context: bpy.types.Context,
+) -> "tuple[bpy.types.Object, bpy.types.Object, ifcopenshell.entity_instance, ifcopenshell.entity_instance] | None":
+    """Return ``(active_obj, partner_obj, active_elem, partner_elem)`` for a
+    selection of exactly two IFC-bound objects with the active one named,
+    else ``None``. Used by every 2-selection gizmo to skip the standard
+    "resolve active + partner + IFC entities" preamble."""
+    active = tool.Blender.get_active_object(is_selected=True)
+    if active is None:
+        return None
+    selected = list(tool.Blender.get_selected_objects())
+    if len(selected) != 2:
+        return None
+    partner = next((o for o in selected if o != active), None)
+    if partner is None:
+        return None
+    active_elem = tool.Ifc.get_entity(active)
+    partner_elem = tool.Ifc.get_entity(partner)
+    if active_elem is None or partner_elem is None:
+        return None
+    return active, partner, active_elem, partner_elem
+
+
+def _slab_connection_gizmo_poll_gate(context: bpy.types.Context, *, require_editing: bool = False) -> bool:
+    """Shared gate for slab-side connection gizmos: exactly 1 IfcSlab
+    selected, not an array child, has at least one wall clipped to its
+    underside. With ``require_editing=True`` additionally requires the
+    slab's parametric edit lifecycle to be active (pen icon clicked) so
+    the gizmo only surfaces after explicit opt-in."""
+    active = tool.Blender.get_active_object(is_selected=True)
+    if active is None:
+        return False
+    if len(tool.Blender.get_selected_objects()) != 1:
+        return False
+    element = tool.Ifc.get_entity(active)
+    if element is None or not element.is_a("IfcSlab"):
+        return False
+    if tool.Blender.Modifier.any_selected_is_array_child():
+        return False
+    if require_editing and not tool.Model.get_slab_props(active).is_editing:
+        return False
+    return any(tool.Wall.iter_slab_wall_connections(element))
 
 
 def _wall_topology_gizmo_poll_gate(context: bpy.types.Context) -> bool:
@@ -246,6 +291,15 @@ def _resync_walls_after_mutation(objs: Iterable["bpy.types.Object | None"]) -> N
         _maybe_resync_wall_props_from_ifc(obj)
 
 
+def _regenerate_walls(objs: "Iterable[bpy.types.Object | None]") -> None:
+    """Rebuild every wall in ``objs`` from current IFC state — extrusion,
+    openings, and any underside slab clip — so the caller doesn't carry
+    feature-specific dispatch."""
+    for obj in objs:
+        if obj is not None:
+            tool.Model.regenerate_wall(obj)
+
+
 class _CommitWallDraftsFirstMixin:
     """Operator mixin that flushes any in-progress wall parametric drafts in
     the current selection before delegating to the subclass's ``_perform``.
@@ -285,19 +339,29 @@ class UnjoinWalls(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Oper
         _resync_walls_after_mutation(tool.Blender.get_selected_objects())
 
 
-class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
-    """Surgical counterpart to `UnjoinWalls`: disconnect the active wall from one
-    specific partner wall, leaving the active wall's other connections intact. The
-    partner is identified by IFC GlobalId — invariant under Blender-object renames,
-    file save/reload, and the undo stack — set on the operator properties by the
-    single-wall unjoin gizmo at click time."""
+class DisconnectElements(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
+    """Disconnect two IFC elements given their GlobalIds — generic dispatcher
+    that infers the connection rel kind via tool.Connection.find_rels and runs
+    the right post-disconnect cleanup:
 
-    bl_idname = "bim.unjoin_wall_path_connection"
-    bl_label = "Unjoin Wall Connection"
-    bl_description = "Disconnect the active wall from a single specific partner wall"
+    - ``"path"`` (IfcRelConnectsPathElements) → removes every rel between
+      the pair (catches both orientations) via remove_connection + recreates
+      both walls + resyncs drafts.
+    - ``"element-top"`` (IfcRelConnectsElements with Description=="TOP") →
+      disconnect_element + regenerate_wall_to_underside on the wall side.
+    - ``"element"`` (other IfcRelConnectsElements) → disconnect_element only.
+
+    Both endpoints by GlobalId so the dispatch survives rename / undo / save.
+    Replaces the previous typed UnjoinWallPathConnection + DisconnectWallSlab
+    operators with one entry-point gizmos and shortcuts can bind to."""
+
+    bl_idname = "bim.disconnect_elements"
+    bl_label = "Disconnect Elements"
+    bl_description = "Remove the connection between two IFC elements identified by GlobalId"
     bl_options = {"REGISTER", "UNDO"}
 
-    other_wall_guid: bpy.props.StringProperty(name="Other Wall GlobalId")
+    element_a_guid: bpy.props.StringProperty(name="Element A GlobalId")
+    element_b_guid: bpy.props.StringProperty(name="Element B GlobalId")
 
     @classmethod
     def poll(cls, context):
@@ -309,44 +373,54 @@ class UnjoinWallPathConnection(_CommitWallDraftsFirstMixin, bpy.types.Operator, 
         return True
 
     def _perform(self, context):
-        active = tool.Blender.get_active_object(is_selected=True)
-        if not active:
-            self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
+        ifc_file = tool.Ifc.get()
+        try:
+            elem_a = ifc_file.by_guid(self.element_a_guid) if self.element_a_guid else None
+            elem_b = ifc_file.by_guid(self.element_b_guid) if self.element_b_guid else None
+        except RuntimeError:
+            elem_a = elem_b = None
+        if elem_a is None or elem_b is None:
+            self.report({"ERROR"}, "Could not resolve elements from supplied GlobalIds.")
             return
-        elem_active = tool.Ifc.get_entity(active)
-        if not elem_active:
-            self.report({"ERROR"}, "Active object is not bound to an IFC entity.")
+        rels = tool.Connection.find_rels(elem_a, elem_b)
+        if not rels:
+            self.report({"ERROR"}, "No connection found between elements.")
             return
-        elem_other = None
-        if self.other_wall_guid:
-            try:
-                elem_other = tool.Ifc.get().by_guid(self.other_wall_guid)
-            except RuntimeError:
-                elem_other = None
-        other = tool.Ifc.get_object(elem_other) if elem_other else None
-        if not elem_other or not other:
-            self.report({"ERROR"}, "Could not resolve walls for surgical unjoin.")
+        # The fillet corner's join with its source walls defines the fillet's
+        # identity — unjoining there would tear down the chord axis reference
+        # without rebuilding the source walls' miter cuts. Deleting the corner
+        # wall is the supported teardown, which cascades back to the source
+        # walls via the connection-cleanup handler.
+        either_is_fillet = tool.Parametric.is_fillet_corner_wall(elem_a) or tool.Parametric.is_fillet_corner_wall(
+            elem_b
+        )
+        if either_is_fillet and any(k == "path" for _, k in rels):
+            self.report(
+                {"INFO"},
+                "Fillet wall path connections can't be unjoined — delete the fillet wall element to remove the corner.",
+            )
             return
-        # Walk the inverse graph for the specific IfcRelConnectsPathElements joining
-        # these two walls and remove only that one. `disconnect_path`'s
-        # (relating, related) mode only inspects `relating.ConnectedTo`, so a single
-        # call misses the rel when it was authored with the opposite orientation.
-        rels = [
-            rel
-            for rel in getattr(elem_active, "ConnectedTo", [])
-            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatedElement == elem_other
-        ] + [
-            rel
-            for rel in getattr(elem_active, "ConnectedFrom", [])
-            if rel.is_a("IfcRelConnectsPathElements") and rel.RelatingElement == elem_other
-        ]
-        for rel in rels:
-            bonsai.core.geometry.remove_connection(tool.Geometry, connection=rel)
-        # Recreate body+axis on both walls so the mesh state matches the IFC mutation
-        # and stale miter cuts are dropped.
-        tool.Model.recreate_wall(elem_active, active)
-        tool.Model.recreate_wall(elem_other, other)
-        _resync_walls_after_mutation([active, other])
+        path_objs: list[bpy.types.Object] = []
+        for rel, kind in rels:
+            bonsai.core.connection.disconnect_rel(
+                tool.Ifc,
+                tool.Geometry,
+                tool.Model,
+                tool.Connection,
+                rel=rel,
+                kind=kind,
+                elem=elem_a,
+                partner=elem_b,
+            )
+            if kind == "path":
+                obj_a = tool.Ifc.get_object(elem_a)
+                obj_b = tool.Ifc.get_object(elem_b)
+                if obj_a is not None and obj_a not in path_objs:
+                    path_objs.append(obj_a)
+                if obj_b is not None and obj_b not in path_objs:
+                    path_objs.append(obj_b)
+        if path_objs:
+            _resync_walls_after_mutation(path_objs)
 
 
 class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operator):
@@ -369,7 +443,7 @@ class ExtendWallsToUnderside(_CommitWallDraftsFirstMixin, bpy.types.Operator, to
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            if tool.Model.get_usage_type(element) == "LAYER2":
+            if tool.Parametric.is_path_connectable_wall(element):
                 walls.append(obj)
             else:
                 slabs.append(obj)
@@ -390,7 +464,7 @@ class RegenerateWallToUnderside(bpy.types.Operator, tool.Ifc.Operator):
         wall_objs = [
             obj
             for obj in tool.Blender.get_selected_objects()
-            if (element := tool.Ifc.get_entity(obj)) and tool.Model.get_usage_type(element) == "LAYER2"
+            if (element := tool.Ifc.get_entity(obj)) and tool.Parametric.is_path_connectable_wall(element)
         ]
         if wall_objs:
             core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, wall_objs)
@@ -642,9 +716,14 @@ class SplitWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
 
     def _perform(self, context):
         selected_objs = tool.Model.get_selected_mesh_objects()
+        post_split_walls: list[bpy.types.Object] = []
         for obj in selected_objs:
-            DumbWallJoiner().split(obj, context.scene.cursor.location)
-        _resync_walls_after_mutation(selected_objs)
+            new_obj = DumbWallJoiner().split(obj, context.scene.cursor.location)
+            post_split_walls.append(obj)
+            if new_obj is not None and new_obj not in post_split_walls:
+                post_split_walls.append(new_obj)
+        _resync_walls_after_mutation(post_split_walls)
+        _regenerate_walls(post_split_walls)
         return {"FINISHED"}
 
 
@@ -674,11 +753,13 @@ class MergeWall(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.Ifc.Operat
         active_obj = context.active_object
         assert active_obj
         selected_objs = tool.Model.get_selected_mesh_objects()
-        # The merge deletes the second argument when the walls are collinear;
-        # only the first survives, so the resync targets the non-active wall.
-        surviving_obj = next(o for o in selected_objs if o != active_obj)
-        DumbWallJoiner().merge(surviving_obj, active_obj)
-        _maybe_resync_wall_props_from_ifc(surviving_obj)
+        # Active-is-survivor — matches Blender's Ctrl+J / "merge at last"
+        # convention. The first argument survives, the second is consumed,
+        # so the active wall ends up absorbing the other.
+        other_obj = next(o for o in selected_objs if o != active_obj)
+        DumbWallJoiner().merge(active_obj, other_obj)
+        _maybe_resync_wall_props_from_ifc(active_obj)
+        _regenerate_walls([active_obj])
         return {"FINISHED"}
 
 
@@ -745,6 +826,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
 
         if layer2_objs:
             tool.Model.recalculate_walls(layer2_objs)
+            _resync_walls_after_mutation(layer2_objs)
         return {"FINISHED"}
 
 
@@ -860,6 +942,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
         if layer2_objs:
             tool.Model.recalculate_walls(layer2_objs)
+            _resync_walls_after_mutation(layer2_objs)
         return {"FINISHED"}
 
 
@@ -882,6 +965,7 @@ class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
         selected_objs = tool.Model.get_selected_mesh_ifc_objects()
         for obj in selected_objs:
             joiner.set_length(obj, self.length)
+        _resync_walls_after_mutation(selected_objs)
 
 
 class OffsetWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -1463,7 +1547,7 @@ class DumbWallJoiner:
         body = copy.deepcopy(axis1["reference"])
         tool.Model.recreate_wall(element1, wall1)
 
-    def split(self, wall1: bpy.types.Object, target: Vector) -> None:
+    def split(self, wall1: bpy.types.Object, target: Vector) -> "bpy.types.Object | None":
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         element1 = tool.Ifc.get_entity(wall1)
@@ -1483,6 +1567,13 @@ class DumbWallJoiner:
 
         wall2 = self.duplicate_wall(wall1)
         element2 = tool.Ifc.get_entity(wall2)
+
+        # The duplicate inherits wall1's slab-trim boolean chain (copied by
+        # copy_class) but ``BBIM_Boolean.Data`` carries wall1's stale ids, so
+        # ``get_manual_booleans(element2)`` returns empty and the regenerator
+        # rebuilds wall2's body without those clips. Strip them up front so
+        # wall2 starts clean before the axis + placement reshape.
+        tool.Model.strip_underside_booleans(element2)
 
         # Get the ATEND connection from wall1 to use it in wall2
         relating_element = None
@@ -1543,13 +1634,16 @@ class DumbWallJoiner:
             r.RelatedOpeningElement for r in list(element1.HasOpenings) if r.RelatedOpeningElement.HasFillings
         ]:
             rel = opening.HasFillings[0]
-            filling = rel.RelatedBuildingElement
-            filling_obj = tool.Ifc.get_object(filling)
-            filling_location = filling_obj.matrix_world.translation
-            _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis_world_2d)
             min_t, max_t = _opening_axis_extent(opening, axis_world_2d, unit_scale)
+            # Use the opening's axis-projected midpoint to classify the side.
+            # The filling's ``matrix_world.translation`` is flip-fragile —
+            # flipping rotates the filler 180° + translates so the bbox
+            # stays visually in place, moving the door origin to the
+            # opposite corner, which would mis-classify a flipped door
+            # centred over the cut.
+            opening_midpoint = (min_t + max_t) / 2
             void_straddles = min_t < cut_percentage < max_t
-            if filling_position > cut_percentage:
+            if opening_midpoint > cut_percentage:
                 # The filling should be moved from element1 to element2.
                 new_opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=opening)
                 new_opening.VoidsElements[0].RelatingBuildingElement = element2
@@ -1564,13 +1658,16 @@ class DumbWallJoiner:
 
                 rel.RelatingOpeningElement = new_opening
 
-                # Remove the old opening
-                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
-
                 if void_straddles:
                     # Filling moved to element2, but void straddles — add a
-                    # pure-void copy back to element1 so its body still gets cut.
-                    _add_void_copy(element1, new_opening)
+                    # pure-void copy back to element1. Read from the original
+                    # ``opening`` whose ObjectPlacement still references
+                    # element1; ``new_opening`` was rebound to element2 and
+                    # would copy element2's frame instead.
+                    _add_void_copy(element1, opening)
+
+                # Remove the old opening
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
             elif void_straddles:
                 # Filling stays on element1, but void straddles — add a pure-void
                 # copy to element2 so its body gets cut.
@@ -1583,6 +1680,7 @@ class DumbWallJoiner:
 
         tool.Model.recreate_wall(element1, wall1)
         tool.Model.recreate_wall(element2, wall2)
+        return wall2
 
     def flip(self, wall1: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
@@ -1638,7 +1736,14 @@ class DumbWallJoiner:
         p2[0] = max(x_ordinates)
         self.set_axis(element1, p1, p2)
 
+        # ConnectedTo / ConnectedFrom carry both ``IfcRelConnectsPathElements``
+        # (the wall-wall joins this loop migrates) and
+        # ``IfcRelConnectsElements`` (the slab underside clip). Only the
+        # path rels expose ``RelatingConnectionType`` / ``RelatedConnectionType``;
+        # the element rels die with element2 via the trailing cascade delete.
         for rel in element2.ConnectedTo:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             ifcopenshell.api.geometry.disconnect_path(
                 tool.Ifc.get(), element=element1, connection_type=rel.RelatingConnectionType
             )
@@ -1651,6 +1756,8 @@ class DumbWallJoiner:
             )
 
         for rel in element2.ConnectedFrom:
+            if not rel.is_a("IfcRelConnectsPathElements"):
+                continue
             ifcopenshell.api.geometry.disconnect_path(
                 tool.Ifc.get(), element=element1, connection_type=rel.RelatedConnectionType
             )
@@ -1661,6 +1768,26 @@ class DumbWallJoiner:
                 relating_connection=rel.RelatingConnectionType,
                 related_connection=rel.RelatedConnectionType,
             )
+
+        # Re-host openings from the discarded wall to the survivor before
+        # the cascade delete tears down element2's voids and any filling
+        # that depends on them. ``edit_object_placement`` preserves the
+        # opening's world position when element1 and element2 have
+        # different placements — a ``PlacementRelTo`` swap alone would
+        # shift the opening as the relative offset changes.
+        ifc_file = tool.Ifc.get()
+        for rel in list(element2.HasOpenings):
+            opening = rel.RelatedOpeningElement
+            rel.RelatingBuildingElement = element1
+            if opening.ObjectPlacement:
+                world_matrix = ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement)
+                ifcopenshell.api.geometry.edit_object_placement(
+                    ifc_file,
+                    product=opening,
+                    matrix=world_matrix,
+                    is_si=False,
+                    should_transform_children=False,
+                )
 
         tool.Model.recreate_wall(element1, wall1)
 
@@ -2458,7 +2585,9 @@ class ExtendWallToCursor(bpy.types.Operator, tool.Ifc.Operator):
             tool.Model,
             context.scene.cursor.location,
         )
-        _resync_walls_after_mutation(tool.Blender.get_selected_objects())
+        affected = list(tool.Blender.get_selected_objects())
+        _resync_walls_after_mutation(affected)
+        _regenerate_walls(affected)
         return {"FINISHED"}
 
 
@@ -2491,6 +2620,7 @@ class ExtendWallHeightToCursor(bpy.types.Operator, tool.Ifc.Operator):
         with bpy.context.temp_override(active_object=obj, selected_objects=[obj]):
             bpy.ops.bim.change_extrusion_depth(depth=new_height)
         _maybe_resync_wall_props_from_ifc(obj)
+        _regenerate_walls([obj])
         return {"FINISHED"}
 
 
@@ -3117,6 +3247,12 @@ def regenerate_fillet_corner_wall(element: ifcopenshell.entity_instance, obj: bp
     # the banana body. If a neighbour moved, the new placement follows; if
     # neither moved, the new matrix equals the old within floating-point noise.
     _apply_fillet_corner_geometry(ifc_file, obj, geom, wall_a_obj)
+    # The body rebuild swaps the wall's representation, so any prior underside
+    # clip is gone. Re-clip from the surviving TOP rels so an extend-to-slab
+    # applied to a fillet wall isn't silently wiped on the next neighbour
+    # recalc, ChangeExtrusionDepth, or split / merge call site.
+    if tool.Model.has_underside_connection(element):
+        core.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, tool.Model, [obj])
 
 
 class EnableWallFilletPreview(bpy.types.Operator):
@@ -3236,6 +3372,19 @@ class CancelWallFilletPreview(bpy.types.Operator):
         props = preview_base.get_preview_props(context, "wall_fillet")
         if props is None or not props.is_active:
             return {"CANCELLED"}
+        # Clear the corner's edit flag so the connection disconnect gizmos
+        # disappear in lockstep with the radius preview when the user
+        # cancels. The id read happens BEFORE clear_preview_state wipes it.
+        corner_id = props.editing_corner_id
+        if corner_id:
+            ifc_file = tool.Ifc.get()
+            if ifc_file is not None:
+                try:
+                    corner_obj = tool.Ifc.get_object(ifc_file.by_id(corner_id))
+                except RuntimeError:
+                    corner_obj = None
+                if corner_obj is not None:
+                    tool.Model.get_wall_props(corner_obj).is_editing = False
         preview_base.clear_preview_state(props)
         return {"FINISHED"}
 
@@ -3309,6 +3458,11 @@ class EnableWallFilletPreviewFromCorner(bpy.types.Operator):
         props.radius = float(radius)
         props.editing_corner_id = corner_elem.id()
         props.is_active = True
+        # Flag the corner as "in edit mode" so the wall-side connection
+        # disconnect gizmos surface in parallel with the fillet preview —
+        # one pen-icon click enters BOTH radius retune AND connection
+        # inspection.
+        tool.Model.get_wall_props(corner_obj).is_editing = True
         return {"FINISHED"}
 
 
@@ -3589,7 +3743,7 @@ class GizmoWallExtendVertically(bpy.types.GizmoGroup, _WallGeomCachedBillboardin
             return False
         other = next(o for o in selected if o is not active)
         other_element = tool.Ifc.get_entity(other)
-        if not other_element or tool.Model.get_usage_type(other_element) != "LAYER2":
+        if not other_element or not tool.Parametric.is_path_connectable_wall(other_element):
             return False
         return True
 
@@ -3855,15 +4009,17 @@ class GizmoWallLinkToggle(gizmo.GizmoLinkToggle, bpy.types.Gizmo):
 
 class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
     """Activates when exactly one LAYER2 wall is selected. Surfaces an unjoin icon at
-    every join location inferred from the wall's IfcRelConnectsPathElements inverse
-    graph — the single-selection mirror of `GizmoWallJoinIntersection`'s two-wall
-    unjoin state. A wall may participate in many such rels (up to 1 ATSTART + 1 ATEND
-    by end, plus unlimited ATPATH T-junctions), so a pool of icons is preallocated
-    and hidden on a per-frame basis based on the live connection set.
+    every connection location on the wall — wall-wall path connections via
+    IfcRelConnectsPathElements + wall-slab underside clips via IfcRelConnectsElements
+    with Description=="TOP". A wall may participate in many such rels (up to 1 ATSTART
+    + 1 ATEND by end, plus unlimited ATPATH T-junctions, plus one rel per clipped
+    slab), so a pool of icons is preallocated and hidden on a per-frame basis based
+    on the live connection set.
 
-    Each visible icon dispatches `bim.unjoin_wall_path_connection` with the partner
-    wall's GlobalId set on the bound operator properties, so a click removes only
-    the single rel under that icon — the other connections on the same wall survive.
+    Each visible icon dispatches `bim.disconnect_elements` with the active wall +
+    partner element GlobalIds set on the bound operator properties, so a click
+    removes only the single rel under that icon — the other connections on the
+    same wall survive.
 
     Mutually exclusive with `GizmoWallJoinIntersection` via `poll()` (that group
     requires len(selected) == 2; this one requires 1)."""
@@ -3881,10 +4037,25 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
     # creation is forbidden — so the pool must be sized upfront for the worst case.
     POOL_SIZE = 16
     ICON_SCALE = 0.35
+    SLAB_STACK_MAX = 5
+    SLAB_STACK_OFFSET_Z = 0.5
+    # Muted gray used for connection icons that are visible (the connection
+    # exists) but inert (clicking dispatches a no-op + INFO report). Fillet
+    # corner ↔ source-wall joins use this — disconnecting them would tear
+    # down the fillet's chord axis reference, so the supported teardown is
+    # deleting the corner wall instead.
+    LOCKED_COLOR: ClassVar[tuple[float, float, float]] = (0.5, 0.5, 0.5)
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        if not _wall_topology_gizmo_poll_gate(context):
+        # Bypass the shared topology gate's ``any_preview_active`` block —
+        # ``BIMWallProperties.is_editing`` is the real gate for this gizmo
+        # group, and that flag is set both by the regular wall edit lifecycle
+        # AND by the fillet preview entry (so a fillet corner under preview
+        # surfaces its connections in parallel with the radius drag).
+        if not tool.Blender.are_viewport_gizmos_enabled():
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
             return False
         active = tool.Blender.get_active_object(is_selected=True)
         if active is None:
@@ -3902,6 +4073,9 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
 
     def setup(self, context: bpy.types.Context) -> None:
         default_color, highlight_color = self.get_decoration_colors()
+        # Stashed so per-frame ``_bind_unjoin_icon`` can restore the active
+        # tone when an icon was muted in a previous frame for fillet lock.
+        self._default_unjoin_color = default_color
         # Bind the operator on each pool icon ONCE at setup time and keep the returned
         # OperatorProperties handles. target_set_operator allocates a fresh handle on
         # every call, so calling it from position_gizmos (which fires every redraw
@@ -3911,11 +4085,11 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         self.unjoin_op_props = []
         for _ in range(self.POOL_SIZE):
             icon = self.setup_icon_gizmo(
-                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.unjoin_wall_path_connection"
+                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.disconnect_elements"
             )
             icon.hide = True
             self.unjoin_icons.append(icon)
-            self.unjoin_op_props.append(icon.target_set_operator("bim.unjoin_wall_path_connection"))
+            self.unjoin_op_props.append(icon.target_set_operator("bim.disconnect_elements"))
 
     def position_gizmos(self, context: bpy.types.Context) -> None:
         # Default: hide every pool slot. The visible-set is rebuilt from the live
@@ -3936,15 +4110,28 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         billboard_rot = gizmo.get_billboard_rotation(context)
         clearance = gizmo.top_down_clearance(context, billboard_rot)
 
-        connections = _get_wall_connections_cached(self, elem)
-        if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+        path_connections = _get_wall_connections_cached(self, elem)
+        slab_connections = list(tool.Wall.iter_wall_slab_connections(elem))
+        slab_overflow = max(0, len(slab_connections) - self.SLAB_STACK_MAX)
+        if slab_overflow and not getattr(self, "_slab_cap_warned", False):
             print(
-                f"[bonsai] GizmoWallUnjoinSingle: wall has {len(connections)} path connections; "
+                f"[bonsai] GizmoWallUnjoinSingle: wall has {len(slab_connections)} slab "
+                f"connections; only the first {self.SLAB_STACK_MAX} are shown stacked."
+            )
+            self._slab_cap_warned = True
+        slab_connections = slab_connections[: self.SLAB_STACK_MAX]
+        total = len(path_connections) + len(slab_connections)
+        if total > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+            print(
+                f"[bonsai] GizmoWallUnjoinSingle: wall has {total} connections "
+                f"({len(path_connections)} path + {len(slab_connections)} slab); "
                 f"only the first {self.POOL_SIZE} unjoin gizmos are shown."
             )
             self._pool_cap_warned = True
 
-        for slot_idx, (other_elem, self_ct, other_ct) in enumerate(connections):
+        slot_idx = 0
+        self_is_fillet = tool.Parametric.is_fillet_corner_wall(elem)
+        for other_elem, self_ct, other_ct in path_connections:
             if slot_idx >= self.POOL_SIZE:
                 break
             other_obj = tool.Ifc.get_object(other_elem)
@@ -3955,20 +4142,224 @@ class GizmoWallUnjoinSingle(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
                 continue
             seg_other = _wall_axis_world_segment_from_geom(other_obj, other_geom)
             location = tool.Wall.path_connection_location_world(seg_self, self_ct, seg_other, other_ct)
+            is_locked = self_is_fillet or tool.Parametric.is_fillet_corner_wall(other_elem)
+            self._bind_unjoin_icon(
+                slot_idx, location + clearance, billboard_rot, elem, other_elem, other_obj, is_locked=is_locked
+            )
+            slot_idx += 1
+
+        for stack_idx, (slab_elem, _rel) in enumerate(slab_connections):
+            if slot_idx >= self.POOL_SIZE:
+                break
+            slab_obj = tool.Ifc.get_object(slab_elem)
+            if slab_obj is None:
+                continue
+            location = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
+            if location is None:
+                continue
+            # Stack vertically so each slab gets a distinct clickable icon;
+            # hover-highlight then shows the user which slab they're about to
+            # disconnect from.
+            stacked = location + Vector((0.0, 0.0, stack_idx * self.SLAB_STACK_OFFSET_Z))
+            self._bind_unjoin_icon(slot_idx, stacked + clearance, billboard_rot, elem, slab_elem, slab_obj)
+            slot_idx += 1
+
+    def _bind_unjoin_icon(
+        self, slot_idx, location, billboard_rot, active_elem, partner_elem, partner_obj, *, is_locked=False
+    ):
+        """Place + bind one pool icon to a (active, partner) GlobalId pair.
+
+        Only the GlobalId properties are rewritten per frame; the operator
+        binding itself is the long-lived handle set up at setup() time. GlobalId
+        (not Blender object name) keeps the binding stable across renames, file
+        save/reload, and any sit-in-the-undo-stack interlude between dispatch
+        and execute. The partner Blender object is mirrored onto the icon for
+        its hover-outline draw, since the Gizmo API exposes
+        ``target_set_operator`` but no symmetric reader.
+
+        ``is_locked=True`` (fillet corner involvement) writes a muted color
+        instead of the active tone; the GUIDs still propagate so the bound
+        operator can surface a friendly INFO report on click."""
+        icon = self.unjoin_icons[slot_idx]
+        icon.matrix_basis = gizmo.billboarded_at(location, billboard_rot, scale=self.ICON_SCALE)
+        icon.hide = False
+        icon.color = self.LOCKED_COLOR if is_locked else self._default_unjoin_color
+        self.unjoin_op_props[slot_idx].element_a_guid = active_elem.GlobalId
+        self.unjoin_op_props[slot_idx].element_b_guid = partner_elem.GlobalId
+        icon.partner_obj = partner_obj
+
+
+class GizmoSlabUnjoinWalls(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
+    """Slab-side mirror of GizmoWallUnjoinSingle: when exactly one IfcSlab is
+    selected and at least one wall is clipped to its underside, surface an
+    unjoin icon at each connection point. The icons resolve at the same
+    world location as the wall-side gizmo (via the symmetric
+    tool.Wall.wall_slab_connection_location_world) so the same connection
+    has a single visual marker reachable from either selection.
+
+    Each visible icon dispatches bim.disconnect_elements with the slab +
+    wall GlobalIds, so a click removes the single rel under that icon and
+    re-clips the wall to whatever remaining slabs it's connected to."""
+
+    bl_idname = "OBJECT_GGT_bim_slab_unjoin_walls"
+    bl_label = "Slab Unjoin Walls Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    POOL_SIZE = 16
+    ICON_SCALE = 0.35
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        return _slab_connection_gizmo_poll_gate(context, require_editing=True)
+
+    def setup(self, context: bpy.types.Context) -> None:
+        default_color, highlight_color = self.get_decoration_colors()
+        self.unjoin_icons = []
+        self.unjoin_op_props = []
+        for _ in range(self.POOL_SIZE):
+            icon = self.setup_icon_gizmo(
+                "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.disconnect_elements"
+            )
+            icon.hide = True
+            self.unjoin_icons.append(icon)
+            self.unjoin_op_props.append(icon.target_set_operator("bim.disconnect_elements"))
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        for icon in self.unjoin_icons:
+            icon.hide = True
+
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 1:
+            return
+        slab_obj = selected[0]
+        slab_elem = tool.Ifc.get_entity(slab_obj)
+        if slab_elem is None:
+            return
+
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
+        connections = list(tool.Wall.iter_slab_wall_connections(slab_elem))
+        if len(connections) > self.POOL_SIZE and not getattr(self, "_pool_cap_warned", False):
+            print(
+                f"[bonsai] GizmoSlabUnjoinWalls: slab has {len(connections)} wall connections; "
+                f"only the first {self.POOL_SIZE} unjoin gizmos are shown."
+            )
+            self._pool_cap_warned = True
+
+        slot_idx = 0
+        for wall_elem, _rel in connections:
+            if slot_idx >= self.POOL_SIZE:
+                break
+            wall_obj = tool.Ifc.get_object(wall_elem)
+            if wall_obj is None:
+                continue
+            location = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
+            if location is None:
+                continue
             icon = self.unjoin_icons[slot_idx]
             icon.matrix_basis = gizmo.billboarded_at(location + clearance, billboard_rot, scale=self.ICON_SCALE)
             icon.hide = False
-            # Only the partner-GlobalId property is rewritten per frame; the operator
-            # binding itself is the long-lived handle set up at setup() time. GlobalId
-            # (not Blender object name) keeps the binding stable across renames, file
-            # save/reload, and any sit-in-the-undo-stack interlude between dispatch
-            # and execute.
-            self.unjoin_op_props[slot_idx].other_wall_guid = other_elem.GlobalId
-            # Mirror the partner reference onto the icon itself so its draw()
-            # can outline the partner on hover without a Gizmo-side getter on
-            # the bound operator (the API exposes target_set_operator with
-            # no symmetric reader).
-            icon.partner_obj = other_obj
+            self.unjoin_op_props[slot_idx].element_a_guid = slab_elem.GlobalId
+            self.unjoin_op_props[slot_idx].element_b_guid = wall_elem.GlobalId
+            icon.partner_obj = wall_obj
+            slot_idx += 1
+
+
+class GizmoSlabEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
+    """Pen / validate / cancel triad for slab disconnect-access mode.
+
+    Polls on a single IfcSlab with at least one wall clipped to its underside.
+    Pen routes through the universal ``bim.enable_editing_parametric``
+    dispatcher; finish + cancel both clear ``is_editing`` (no IFC mutation —
+    the framework requires the triad to exist by name convention even for a
+    pure UI gate). ESC, the red-coloured cancel icon, mutual exclusion with
+    other active parametric edits, gizmo prefs gating — all handled by the
+    base class."""
+
+    bl_idname = "OBJECT_GGT_bim_slab_edition"
+    bl_label = "Slab Editing Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    enable_editing_operator = "bim.enable_editing_slab"
+    finish_editing_operator = "bim.finish_editing_slab"
+    cancel_editing_operator = "bim.cancel_editing_slab"
+    cycle_type_operator = ""
+
+    props_getter = tool.Model.get_slab_props
+    gizmo_pref_name = "slab"
+
+    @classmethod
+    def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
+        return tool.Parametric.is_slab(element) and any(tool.Wall.iter_slab_wall_connections(element))
+
+
+class GizmoPairDisconnect(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):
+    """Surfaces a disconnect icon when exactly 2 IFC elements are selected
+    and they share a supported rel — currently the wall + slab pair joined
+    by an ``IfcRelConnectsElements(TOP)``. Click dispatches
+    ``bim.disconnect_elements`` with both GlobalIds. For wall-wall pairs,
+    ``GizmoWallJoinIntersection``'s unjoin icon already exposes the same
+    affordance via ``bim.unjoin_walls``."""
+
+    bl_idname = "OBJECT_GGT_bim_pair_disconnect"
+    bl_label = "Disconnect Pair Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    ICON_SCALE = 0.35
+
+    @classmethod
+    def poll(cls, context: bpy.types.Context) -> bool:
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 2:
+            return False
+        if tool.Blender.Modifier.any_selected_is_array_child():
+            return False
+        elem_a = tool.Ifc.get_entity(selected[0])
+        elem_b = tool.Ifc.get_entity(selected[1])
+        if elem_a is None or elem_b is None:
+            return False
+        rels = tool.Connection.find_rels(elem_a, elem_b)
+        return any(kind == "element-top" for _, kind in rels)
+
+    def setup(self, context: bpy.types.Context) -> None:
+        default_color, highlight_color = self.get_decoration_colors()
+        self.disconnect_icon = self.setup_icon_gizmo(
+            "VIEW3D_GT_wall_link_toggle", default_color, highlight_color, "bim.disconnect_elements"
+        )
+        self.disconnect_icon.hide = True
+        self.disconnect_op = self.disconnect_icon.target_set_operator("bim.disconnect_elements")
+
+    def position_gizmos(self, context: bpy.types.Context) -> None:
+        self.disconnect_icon.hide = True
+        pair = _resolve_active_partner_pair(context)
+        if pair is None:
+            return
+        active, partner_obj, active_elem, partner_elem = pair
+        # Helper expects wall + slab regardless of which the user marked active.
+        if active_elem.is_a("IfcWall"):
+            wall_obj, slab_obj = active, partner_obj
+        elif partner_elem.is_a("IfcWall"):
+            wall_obj, slab_obj = partner_obj, active
+        else:
+            return
+        location = tool.Wall.wall_slab_connection_location_world(wall_obj, slab_obj)
+        if location is None:
+            return
+        billboard_rot = gizmo.get_billboard_rotation(context)
+        clearance = gizmo.top_down_clearance(context, billboard_rot)
+        self.disconnect_icon.matrix_basis = gizmo.billboarded_at(
+            location + clearance, billboard_rot, scale=self.ICON_SCALE
+        )
+        self.disconnect_icon.hide = False
+        self.disconnect_op.element_a_guid = active_elem.GlobalId
+        self.disconnect_op.element_b_guid = partner_elem.GlobalId
+        self.disconnect_icon.partner_obj = partner_obj
 
 
 class GizmoWallFilletPreview(bpy.types.GizmoGroup, gizmo.BillboardingGizmoGroupMixin):

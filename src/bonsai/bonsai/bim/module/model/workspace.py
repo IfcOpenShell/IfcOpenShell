@@ -963,7 +963,11 @@ class EditObjectUI:
 
     @classmethod
     def draw_regen_operations(cls, row, ui_context):
-        if AuthoringData.data["is_regenable_element"]:
+        # ``AuthoringData.load`` flips ``is_loaded`` at entry as a recursion
+        # guard, so a partial load (any computation along the way raising)
+        # leaves the tail keys unset. ``.get()`` keeps the header draw alive
+        # until the underlying failure is investigated.
+        if AuthoringData.data.get("is_regenable_element"):
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Regen", "S_G", "Recalculate Element Geometry", ui_context)
 
@@ -1317,7 +1321,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.bim.recalculate_profile()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.recalculate_fill()
-        elif self.active_class in ("IfcSpace"):
+        elif self.active_class in ("IfcSpace",):
             bpy.ops.bim.generate_space()
 
     def hotkey_S_M(self):

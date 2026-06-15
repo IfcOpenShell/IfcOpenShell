@@ -61,6 +61,13 @@ def collector():
 
 
 @pytest.fixture
+def connection():
+    prophet = Prophecy(bonsai.core.tool.Connection)
+    yield prophet
+    prophet.verify()
+
+
+@pytest.fixture
 def context():
     prophet = Prophecy(bonsai.core.tool.Context)
     yield prophet

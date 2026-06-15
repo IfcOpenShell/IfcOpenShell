@@ -50,12 +50,15 @@ def _make_context(active, selected):
     return SimpleNamespace(active_object=active, selected_objects=list(selected))
 
 
-def _patch_tools(prefs_on, selected, active_element, other_element, active_usage, other_usage):
+def _patch_tools(
+    prefs_on, selected, active_element, other_element, active_usage, other_usage, other_is_path_connectable=None
+):
     """Return a stack of patches that simulate one selection / IFC state for poll().
 
     ``prefs.gizmos.draw_gizmos_in_3d_viewport`` is the top-level toggle. The
-    selection set, the IFC entity lookup, and the usage-type lookup are stubbed
-    so the test only depends on the predicate ordering in poll()."""
+    selection set, the IFC entity lookup, the usage-type lookup, and the
+    path-connectable-wall predicate are stubbed so the test only depends on
+    the predicate ordering in poll()."""
     prefs = SimpleNamespace(gizmos=SimpleNamespace(draw_gizmos_in_3d_viewport=prefs_on))
 
     entity_map = {}
@@ -67,11 +70,17 @@ def _patch_tools(prefs_on, selected, active_element, other_element, active_usage
         usage_map[id(active_element)] = active_usage
         usage_map[id(other_element)] = other_usage
 
+    if other_is_path_connectable is None:
+        other_is_path_connectable = other_usage == "LAYER2"
+
     def get_entity(obj):
         return entity_map.get(id(obj))
 
     def get_usage_type(element):
         return usage_map.get(id(element))
+
+    def is_path_connectable_wall(element):
+        return element is other_element and other_is_path_connectable
 
     from bonsai import tool
 
@@ -80,6 +89,7 @@ def _patch_tools(prefs_on, selected, active_element, other_element, active_usage
         patch.object(tool.Blender, "get_selected_objects", return_value=set(selected)),
         patch.object(tool.Ifc, "get_entity", side_effect=get_entity),
         patch.object(tool.Model, "get_usage_type", side_effect=get_usage_type),
+        patch.object(tool.Parametric, "is_path_connectable_wall", side_effect=is_path_connectable_wall),
         # The array-child filter is pinned by its own test file; stub it here
         # so these poll tests stay focused on the count / layer-usage gates
         # and don't have to scaffold the memoization cache key.
@@ -87,7 +97,15 @@ def _patch_tools(prefs_on, selected, active_element, other_element, active_usage
     ]
 
 
-def _run_poll(prefs_on, active_is_in_selected, len_override, active_usage, other_usage, active_has_entity=True):
+def _run_poll(
+    prefs_on,
+    active_is_in_selected,
+    len_override,
+    active_usage,
+    other_usage,
+    active_has_entity=True,
+    other_is_path_connectable=None,
+):
     from bonsai.bim.module.model.wall import GizmoWallExtendVertically
 
     slab_obj = _Obj("slab")
@@ -103,7 +121,15 @@ def _run_poll(prefs_on, active_is_in_selected, len_override, active_usage, other
     slab_element = object() if active_has_entity else None
     wall_element = object()
 
-    patches = _patch_tools(prefs_on, selected, slab_element, wall_element, active_usage, other_usage)
+    patches = _patch_tools(
+        prefs_on,
+        selected,
+        slab_element,
+        wall_element,
+        active_usage,
+        other_usage,
+        other_is_path_connectable=other_is_path_connectable,
+    )
     for p in patches:
         p.start()
     try:
@@ -186,6 +212,23 @@ def test_poll_rejects_when_other_is_not_layer2_wall():
     assert (
         _run_poll(prefs_on=True, active_is_in_selected=True, len_override=None, active_usage="LAYER3", other_usage=None)
         is False
+    )
+
+
+def test_poll_accepts_fillet_corner_wall_partner():
+    # Fillet-corner walls carry no LAYER2 usage by spec but the extend-to-
+    # underside operator handles them just like a parametric LAYER2 wall —
+    # the gizmo must surface for the slab + fillet-corner selection too.
+    assert (
+        _run_poll(
+            prefs_on=True,
+            active_is_in_selected=True,
+            len_override=None,
+            active_usage="LAYER3",
+            other_usage=None,
+            other_is_path_connectable=True,
+        )
+        is True
     )
 
 
