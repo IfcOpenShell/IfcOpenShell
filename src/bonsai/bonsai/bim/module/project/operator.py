@@ -3583,7 +3583,9 @@ class BIM_OT_select_pending_array_repair(bpy.types.Operator):
 class BIM_OT_dismiss_pending_array_repair(bpy.types.Operator):
     bl_idname = "bim.dismiss_pending_array_repair"
     bl_label = "Dismiss Pending Array Repair"
-    bl_description = "Clear the pending array-repair list without acting on it. The underlying BBIM_Array.Data stays unchanged."
+    bl_description = (
+        "Clear the pending array-repair list without acting on it. The underlying BBIM_Array.Data stays unchanged."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context: bpy.types.Context) -> set[str]:
