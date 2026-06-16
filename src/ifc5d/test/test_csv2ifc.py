@@ -130,7 +130,7 @@ class TestSerialiseCostQuantities:
 
         result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
 
-        assert json.loads(result) == [[name, 12.5]]
+        assert json.loads(result) == [[name, 12.5, ""]]
 
     def test_unset_name_does_not_crash(self):
         ifc_file = ifcopenshell.file()
@@ -140,4 +140,23 @@ class TestSerialiseCostQuantities:
 
         result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
 
-        assert json.loads(result) == [["", 3.0]]
+        assert json.loads(result) == [["", 3.0, ""]]
+
+    def test_formula_is_included_when_present(self):
+        ifc_file = ifcopenshell.file()
+        quantity = ifc_file.create_entity("IfcQuantityArea", Name="Area", AreaValue=12.5, Formula="Length * Width")
+        cost_item = ifc_file.create_entity("IfcCostItem", CostQuantities=[quantity])
+
+        result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
+
+        assert json.loads(result) == [["Area", 12.5, "Length * Width"]]
+
+    def test_quantity_without_formula_attribute_does_not_crash(self):
+        # IfcPhysicalComplexQuantity has no Formula attribute and is unsupported.
+        ifc_file = ifcopenshell.file()
+        quantity = ifc_file.create_entity("IfcPhysicalComplexQuantity", Name="Complex", Discrimination="layer")
+        cost_item = ifc_file.create_entity("IfcCostItem", CostQuantities=[quantity])
+
+        result = ifc5d.ifc5Dspreadsheet.IfcDataGetter.serialise_cost_quantities(ifc_file, cost_item)
+
+        assert json.loads(result) == [["Complex ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0, ""]]
