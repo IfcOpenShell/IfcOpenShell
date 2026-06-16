@@ -1274,7 +1274,10 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_object_from_guid(cls, guid: str) -> Union[bpy.types.Object, None]:
-        element = tool.Ifc.get().by_guid(guid)
+        try:
+            element = tool.Ifc.get().by_guid(guid)
+        except RuntimeError:
+            return None
         obj = tool.Ifc.get_object(element)
         if obj:
             return obj

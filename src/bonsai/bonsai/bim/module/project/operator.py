@@ -1236,6 +1236,17 @@ class LoadProjectElements(bpy.types.Operator):
                 f"Apply manually from the Project panel.",
             )
 
+        props.pending_array_repair.clear()
+        if ifc_importer.broken_arrays:
+            for element in ifc_importer.broken_arrays:
+                item = props.pending_array_repair.add()
+                item.ifc_definition_id = element.id()
+            self.report(
+                {"WARNING"},
+                f"{len(ifc_importer.broken_arrays)} array parent(s) reference missing child GUIDs. "
+                f"Inspect from the Project panel.",
+            )
+
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
@@ -3538,4 +3549,45 @@ class BIM_OT_select_pending_opening_cuts(bpy.types.Operator):
             return {"CANCELLED"}
         tool.Blender.set_objects_selection(context, active_object=objects[0], selected_objects=objects)
         self.report({"INFO"}, f"Selected {len(objects)} element(s).")
+        return {"FINISHED"}
+
+
+class BIM_OT_select_pending_array_repair(bpy.types.Operator):
+    bl_idname = "bim.select_pending_array_repair"
+    bl_label = "Select Array Parents With Missing Children"
+    bl_description = "Select the Blender objects of array parents whose BBIM_Array.Data references children that don't resolve in the file."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            self.report({"INFO"}, "No IFC file loaded.")
+            return {"CANCELLED"}
+        objects: list[bpy.types.Object] = []
+        for item in tool.Project.get_project_props().pending_array_repair:
+            try:
+                element = ifc_file.by_id(item.ifc_definition_id)
+            except RuntimeError:
+                continue
+            obj = tool.Ifc.get_object(element)
+            if obj is not None:
+                objects.append(obj)
+        if not objects:
+            self.report({"INFO"}, "No matching Blender objects found for the pending list.")
+            return {"CANCELLED"}
+        tool.Blender.set_objects_selection(context, active_object=objects[0], selected_objects=objects)
+        self.report({"INFO"}, f"Selected {len(objects)} array parent(s).")
+        return {"FINISHED"}
+
+
+class BIM_OT_dismiss_pending_array_repair(bpy.types.Operator):
+    bl_idname = "bim.dismiss_pending_array_repair"
+    bl_label = "Dismiss Pending Array Repair"
+    bl_description = (
+        "Clear the pending array-repair list without acting on it. The underlying BBIM_Array.Data stays unchanged."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        tool.Project.get_project_props().pending_array_repair.clear()
         return {"FINISHED"}

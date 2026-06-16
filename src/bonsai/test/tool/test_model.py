@@ -672,6 +672,30 @@ class TestUsingArrays(NewFile):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
             assert pset is None, (obj, pset)
 
+    def test_remove_array_tolerates_stale_child_guid(self):
+        """``bim.remove_array`` and the underlying ``regenerate_array`` must
+        survive a child GUID in ``BBIM_Array.Data`` that no longer resolves
+        in the file. Real-world IFC files can carry dangling array refs
+        from external edits — the remove path is meant to delete those
+        children, so an already-missing entity is the desired terminal
+        state, not a fatal error."""
+        self.setup_array()
+        parent_obj = bpy.context.active_object
+        parent_element = tool.Ifc.get_entity(parent_obj)
+        ifc_file = tool.Ifc.get()
+
+        pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
+        data = json.loads(pset["Data"])
+        data[0]["children"].append("3iyt7r$Hf4_hQYNhBIDJI4")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
+            pset=ifc_file.by_id(pset["id"]),
+            properties={"Data": json.dumps(data)},
+        )
+
+        bpy.ops.bim.remove_array(item=0)
+        assert ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array") is None
+
 
 class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:

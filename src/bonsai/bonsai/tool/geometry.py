@@ -2478,7 +2478,10 @@ class Geometry(bonsai.core.tool.Geometry):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
             if not pset:
                 continue
-            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+            try:
+                array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+            except RuntimeError:
+                continue
 
         for array_parent in array_parents:
             array_parent_obj = tool.Ifc.get_object(array_parent)
