@@ -822,7 +822,7 @@ class Model(bonsai.core.tool.Model):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
             if pset and pset.get("UseCustomOffset", False):
                 # Load from pset
-                custom_offset = pset.get("CustomOffset", 0.0)
+                custom_offset = pset.get("CustomOffset", 0.0) * unit_scale
                 usage_type = tool.Model.get_usage_type(element)
 
                 if usage_type == "LAYER2":
