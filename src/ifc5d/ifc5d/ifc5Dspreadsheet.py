@@ -269,15 +269,18 @@ class IfcDataGetter:
                                 if obj.is_a("IfcElement"):
                                     prefix += (obj.Name or "") + " - "
             name = prefix + (quantity.Name or "")
+            # Formula is an optional IfcLabel on IfcQuantity* in IFC4+; absent in
+            # IFC2X3, hence the schema-safe getattr.
+            formula = getattr(quantity, "Formula", None) or ""
             if quantity.is_a("IfcPhysicalSimpleQuantity"):
                 value = quantity[3]
                 try:
                     value = float(value) if value is not None else 0.0
                 except (TypeError, ValueError):
                     value = 0.0
-                result.append([name, value])
+                result.append([name, value, formula])
             else:
-                result.append([name + " ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0])
+                result.append([name + " ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0, formula])
         return json.dumps(result, ensure_ascii=False)
 
 
