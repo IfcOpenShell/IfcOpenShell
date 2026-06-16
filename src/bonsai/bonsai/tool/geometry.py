@@ -158,6 +158,112 @@ class Geometry(bonsai.core.tool.Geometry):
             obj.modifiers.remove(modifier)
 
     @classmethod
+    def _group_edges_into_loops(cls, edges) -> list[list]:
+        """Group an edge set into connected components by shared vertices.
+
+        Each returned group is a list of edges that share at least one
+        vertex chain. A hollow profile's bisect produces two disjoint
+        loops (outer ring + inner ring) — grouping splits them so each
+        can be filled independently as a separate cap face, rather than
+        ``contextual_create`` welding them into one solid outer face
+        with the inner loop demoted to interior decoration.
+        """
+        edge_set = set(edges)
+        visited: set = set()
+        groups: list[list] = []
+        for start in edges:
+            if start in visited:
+                continue
+            group: list = []
+            stack: list = [start]
+            while stack:
+                e = stack.pop()
+                if e in visited:
+                    continue
+                visited.add(e)
+                group.append(e)
+                for v in e.verts:
+                    for adj in v.link_edges:
+                        if adj in edge_set and adj not in visited:
+                            stack.append(adj)
+            groups.append(group)
+        return groups
+
+    @classmethod
+    def bisect_and_cap(
+        cls,
+        bm,
+        planes_local,
+        *,
+        tag_layer_name: str = "bbim_cap",
+        dist: float = 1e-4,
+        weld_dist: float = 1e-5,
+    ):
+        """Clip ``bm`` against each ``(plane_co, plane_no)`` and fill the cuts.
+
+        Per plane, ``bmesh.ops.bisect_plane(clear_outer=True)`` discards
+        the outside half-space and ``bmesh.ops.contextual_create`` fills
+        the resulting cut edges with cap faces tagged via a BMesh int
+        layer so the tag propagates to any split-children from subsequent
+        planes. After all planes, near-coincident vertices are welded
+        (``weld_dist``) so adjacent caps from the same cross-section
+        merge cleanly.
+
+        Callers are responsible for input mesh quality. Non-watertight
+        inputs (terrain, single-shell surfaces) may produce degenerate
+        cap faces; that's an accepted user-supplied data limitation.
+
+        Returns the cap-tag BMLayerItem, or ``None`` if ``bm`` is empty.
+        """
+        import bmesh
+
+        if not bm.faces:
+            return None
+
+        # Pre-weld nearby verts: T-junctions in messy IFC meshes (a third
+        # vertex sitting in the middle of an edge from a Boolean
+        # operation) make the bisect cut terminate early, leaving open
+        # loops that no fill op can close. Welding the T-junction's
+        # near-coincident vertex into the host edge before bisecting
+        # turns the cut into a closed loop.
+        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=max(weld_dist, 1e-4))
+
+        cap_layer = bm.faces.layers.int.new(tag_layer_name)
+        for plane_co, plane_no in planes_local:
+            geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+            if not geom:
+                break
+            results = bmesh.ops.bisect_plane(
+                bm,
+                geom=geom,
+                dist=dist,
+                plane_co=plane_co,
+                plane_no=plane_no,
+                clear_outer=True,
+            )
+            cut_edges = [e for e in results["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+            if not cut_edges:
+                continue
+            # Group cut edges into connected components BEFORE filling.
+            # Feeding ``contextual_create`` all edges at once (outer +
+            # inner of a hollow profile) makes it create a SINGLE outer
+            # face and treat inner edges as decoration — collapsing the
+            # hole. Filling each connected loop separately produces one
+            # cap face per ring.
+            for loop_edges in cls._group_edges_into_loops(cut_edges):
+                try:
+                    fill = bmesh.ops.contextual_create(bm, geom=loop_edges)
+                except (RuntimeError, TypeError):
+                    continue
+                for f in fill.get("faces", []):
+                    if isinstance(f, bmesh.types.BMFace) and f.is_valid:
+                        f[cap_layer] = 1
+
+        if weld_dist > 0.0:
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_dist)
+        return cap_layer
+
+    @classmethod
     def clear_scale(cls, obj: bpy.types.Object) -> None:
         """Apply and clear object scale.
 
