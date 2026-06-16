@@ -814,7 +814,7 @@ class Model(bonsai.core.tool.Model):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_params = tool.Model.get_material_layer_parameters(element)
         layer_offset = layer_params["offset"]
-        thickness = layer_params["thickness"] / unit_scale
+        thickness = layer_params["thickness"]
         props = tool.Material.get_object_material_props(obj)
 
         # Try to load from pset if not already in props
@@ -835,7 +835,7 @@ class Model(bonsai.core.tool.Model):
                 return None
         else:
             # Use current props
-            custom_offset = props.custom_offset / unit_scale
+            custom_offset = props.custom_offset
             if tool.Model.get_usage_type(element) == "LAYER2":
                 custom_offset_reference = props.custom_wall_reference
             elif tool.Model.get_usage_type(element) == "LAYER3":
@@ -846,17 +846,17 @@ class Model(bonsai.core.tool.Model):
         direction_sense = layer_params["direction_sense"]
 
         if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
-            layer_offset = custom_offset - thickness * unit_scale
+            layer_offset = custom_offset - thickness
         if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-            layer_offset = custom_offset - (thickness / 2) * unit_scale
+            layer_offset = custom_offset - (thickness / 2)
         if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
             direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
         ):
             layer_offset = custom_offset
         if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-            layer_offset = custom_offset + (thickness / 2) * unit_scale
+            layer_offset = custom_offset + (thickness / 2)
         if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
-            layer_offset = custom_offset + thickness * unit_scale
+            layer_offset = custom_offset + thickness
 
         return layer_offset / unit_scale
 
