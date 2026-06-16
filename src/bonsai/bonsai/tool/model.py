@@ -1320,7 +1320,10 @@ class Model(bonsai.core.tool.Model):
             # handle elements unused in the array after regeneration
             removed_children = set(existing_children) - set(array["children"])
             for removed_child in removed_children:
-                element = tool.Ifc.get().by_guid(removed_child)
+                try:
+                    element = tool.Ifc.get().by_guid(removed_child)
+                except RuntimeError:
+                    continue
                 # Strip any wall/slab opening cut by this child before deletion,
                 # so the host's HasOpenings shrinks symmetrically with count.
                 if getattr(element, "FillsVoids", None):

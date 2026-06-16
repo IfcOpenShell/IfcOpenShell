@@ -183,3 +183,16 @@ class TestNpFrombufferLegacy(NewFile):
         result = subject.np_frombuffer_legacy(data, n)
         assert result.shape == (n,)
         np.testing.assert_allclose(result, np.arange(n))
+
+
+class TestGetObjectFromGuidMissing(NewFile):
+    """``get_object_from_guid`` must honour its ``Optional[Object]`` return
+    contract: a GUID that does not resolve in the current IFC file yields
+    ``None``, not a ``RuntimeError``. Callers iterate stored GUID lists
+    (array children, library refs, …) and rely on the falsy return to
+    skip stale entries."""
+
+    def test_returns_none_when_guid_not_in_file(self):
+        bpy.ops.bim.create_project()
+        assert tool.Ifc.get() is not None
+        assert subject.get_object_from_guid("3iyt7r$Hf4_hQYNhBIDJI4") is None

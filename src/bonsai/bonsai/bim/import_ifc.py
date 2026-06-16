@@ -223,6 +223,7 @@ class IfcImporter:
         self.elements: set[ifcopenshell.entity_instance] = set()
         self.annotations: set[ifcopenshell.entity_instance] = set()
         self.gross_elements: set[ifcopenshell.entity_instance] = set()
+        self.broken_arrays: set[ifcopenshell.entity_instance] = set()
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
@@ -1220,7 +1221,17 @@ class IfcImporter:
                             continue
                     for i in range(len(data)):
                         tool.Array.set_children_lock_state(element, i, True)
-                        tool.Array.constrain_children_to_parent(element)
+                    tool.Array.constrain_children_to_parent(element)
+                    for layer in data:
+                        for child_guid in layer.get("children", ()):
+                            try:
+                                self.file.by_guid(child_guid)
+                            except RuntimeError:
+                                print(
+                                    f"setup_arrays: array parent {element.GlobalId} references missing "
+                                    f"child GUID {child_guid!r}."
+                                )
+                                self.broken_arrays.add(element)
 
     def update_linked_aggregates(self):
         # TODO Remove this after a while. See commit 17d6b8a
