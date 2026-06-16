@@ -159,40 +159,13 @@ _SPECIAL = {"=", " "}  # Formula prefix, spaces
 NUMERIC_INPUT_CHARS = _DIGITS | _OPERATORS | _METRIC_UNITS | _IMPERIAL_UNITS | _SPECIAL
 
 
-_BONSAI_TRANSFORM_MACROS = frozenset(
-    {
-        # Bonsai overrides Blender's default move/duplicate keymaps with
-        # macros that wrap TRANSFORM_OT_translate. While a macro is the outer
-        # modal entry, the inner TRANSFORM_OT_translate does not surface in
-        # window.modal_operators — the macro's own idname does. The
-        # ``BIM_OT_`` prefix is what Blender returns from ``bl_idname`` at
-        # runtime (the class declaration uses the dotted ``bim.`` form).
-        "BIM_OT_override_move_macro",  # G key
-        "BIM_OT_override_object_duplicate_move_macro",  # Shift+D
-        "BIM_OT_override_object_duplicate_move_linked_macro",  # Alt+D
-        "BIM_OT_object_duplicate_move_linked_aggregate_macro",  # Ctrl+Shift+D
-    }
-)
-
-
 def _is_transform_modal_active(context) -> bool:
-    """True iff a Blender transform modal (G/R/S and siblings, including
-    Bonsai's macro overrides) is currently driving per-frame ``matrix_world``
-    updates. Reads ``window.modal_operators`` — the Blender 4.2+ collection of
-    running modal operators. Parametric gizmo groups gate poll + draw_prepare
-    on this so they hide for the duration of the drag instead of sliding
-    off-cursor as the matrix updates each frame."""
-    window = getattr(context, "window", None)
-    if window is None:
-        return False
-    modal_ops = getattr(window, "modal_operators", None)
-    if not modal_ops:
-        return False
-    for op in modal_ops:
-        idname = op.bl_idname
-        if idname.startswith("TRANSFORM_OT_") or idname in _BONSAI_TRANSFORM_MACROS:
-            return True
-    return False
+    """Module-local alias for ``tool.Blender.is_transform_modal_active``.
+
+    Preserved as a name so AST scans and call sites in this file stay
+    decoupled from the helper's home module.
+    """
+    return tool.Blender.is_transform_modal_active(context)
 
 
 def _hide_all_non_modal_gizmos(group) -> None:
