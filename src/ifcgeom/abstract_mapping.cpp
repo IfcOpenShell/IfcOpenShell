@@ -45,6 +45,11 @@ ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingF
 		throw IfcParse::IfcException("No geometry mapping registered for " + schema_name_lower);
 	}
 	auto new_mapping = it->second(file, s, logger);
-	new_mapping->initialize_settings();
+    try {
+        new_mapping->initialize_settings();
+    } catch (const std::exception& e) {
+        logger.Error("GEO", 400, e);
+        logger.Error("GEO", 401, "Unable to initialize conversion settings");
+	}
 	return new_mapping;
 }
