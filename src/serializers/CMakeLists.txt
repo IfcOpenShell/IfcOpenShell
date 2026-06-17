@@ -36,7 +36,7 @@ target_link_libraries(
         IfcParse
 )
 
-install(TARGETS Serializers)
+install(TARGETS Serializers EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 
 # Can't use `PUBLIC_HEADER` since we need two folders.
 install(FILES ${SERIALIZERS_H_FILES} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/serializers/")

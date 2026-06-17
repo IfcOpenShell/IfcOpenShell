@@ -13,6 +13,7 @@ foreach(schema ${SCHEMA_VERSIONS})
     if(NOT WASM_BUILD)
         target_link_libraries(Serializers_ifc${schema} ${OpenCASCADE_LIBRARIES})
     endif()
+    install(TARGETS Serializers_ifc${schema} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endforeach()
 
 set(SERIALIZER_SCHEMA_LIBRARIES ${SERIALIZER_SCHEMA_LIBRARIES} PARENT_SCOPE)

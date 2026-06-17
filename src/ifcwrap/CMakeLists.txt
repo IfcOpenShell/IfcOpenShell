@@ -17,11 +17,57 @@
 #                                                                              #
 ################################################################################
 
+cmake_minimum_required(VERSION 3.21)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    project(IfcOpenShellPython LANGUAGES CXX)
+    set(IFCOPENSHELL_IFCWRAP_STANDALONE ON)
+else()
+    set(IFCOPENSHELL_IFCWRAP_STANDALONE OFF)
+endif()
+
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+if(CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "C++17 or newer is required.")
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(POLICY CMP0148) # 3.27
     cmake_policy(SET CMP0148 OLD)
 endif()
 if(POLICY CMP0177) # 3.31
     cmake_policy(SET CMP0177 OLD)
+endif()
+
+set(_ifcwrap_feature_definitions "")
+if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+    get_filename_component(_ifcwrap_repo_root "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+    list(PREPEND CMAKE_MODULE_PATH "${_ifcwrap_repo_root}/cmake")
+
+    find_package(IfcOpenShell REQUIRED)
+
+    set(WITH_OPENCASCADE "${IFCOPENSHELL_WITH_OPENCASCADE}")
+    set(WITH_CGAL "${IFCOPENSHELL_WITH_CGAL}")
+    set(SWIG_DEFINES "")
+
+    if(IFCOPENSHELL_WITH_OPENCASCADE)
+        list(APPEND SWIG_DEFINES -DIFOPSH_WITH_OPENCASCADE)
+        list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_OPENCASCADE)
+    endif()
+    if(IFCOPENSHELL_WITH_CGAL)
+        list(APPEND SWIG_DEFINES -DIFOPSH_WITH_CGAL)
+        list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_CGAL)
+    endif()
+    if(IFCOPENSHELL_IFCXML)
+        list(APPEND SWIG_DEFINES -DWITH_IFCXML)
+        list(APPEND _ifcwrap_feature_definitions WITH_IFCXML)
+    endif()
+    if(IFCOPENSHELL_WITH_ROCKSDB)
+        list(APPEND SWIG_DEFINES -DIFOPSH_WITH_ROCKSDB)
+        list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_ROCKSDB)
+    endif()
 endif()
 
 find_package(SWIG)
@@ -68,7 +114,15 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
 if(WITH_CGAL)
-    set(LIBSVGFILL svgfill)
+    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+        if(TARGET IfcOpenShell::svgfill)
+            set(LIBSVGFILL IfcOpenShell::svgfill)
+        else()
+            message(FATAL_ERROR "IfcOpenShell was built with CGAL, but the exported svgfill target was not found.")
+        endif()
+    else()
+        set(LIBSVGFILL svgfill)
+    endif()
 endif()
 
 set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
@@ -113,7 +167,21 @@ else()
 endif()
 
 target_link_libraries(ifcopenshell_wrapper PRIVATE Python::Module)
-set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
+if(_ifcwrap_feature_definitions)
+    target_compile_definitions(ifcopenshell_wrapper PRIVATE ${_ifcwrap_feature_definitions})
+endif()
+if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+    set(_ifcwrap_ifcopenshell_libraries ${IFCOPENSHELL_LIBRARIES})
+    set(_ifcwrap_geometry_libraries ${IFCOPENSHELL_GEOMETRY_LIBRARIES})
+    set(_ifcwrap_cgal_libraries "")
+    set(_ifcwrap_swig_depends "")
+else()
+    set(_ifcwrap_ifcopenshell_libraries ${IFCOPENSHELL_LIBRARIES})
+    set(_ifcwrap_geometry_libraries IfcGeom ${kernel_libraries})
+    set(_ifcwrap_cgal_libraries ${CGAL_LIBRARIES})
+    set(_ifcwrap_swig_depends ${IFCOPENSHELL_LIBRARIES})
+endif()
+set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${_ifcwrap_swig_depends})
 if(WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
     # Since currently libIfcGeom.a seems to be linked twice it results in duplicated symbols and compilation errors.
@@ -134,14 +202,14 @@ if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
     # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
     target_link_libraries(
         ifcopenshell_wrapper
-        PRIVATE ${IFCOPENSHELL_LIBRARIES} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL}
+        PRIVATE ${_ifcwrap_ifcopenshell_libraries} ${OpenCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL}
     )
 else()
-    target_link_libraries(ifcopenshell_wrapper PRIVATE ${IFCOPENSHELL_LIBRARIES} ${LIBSVGFILL})
+    target_link_libraries(ifcopenshell_wrapper PRIVATE ${_ifcwrap_ifcopenshell_libraries} ${LIBSVGFILL})
 endif()
-target_link_libraries(ifcopenshell_wrapper PRIVATE ${CGAL_LIBRARIES})
-target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom ${kernel_libraries})
-if((NOT WIN32) AND BUILD_SHARED_LIBS)
+target_link_libraries(ifcopenshell_wrapper PRIVATE ${_ifcwrap_cgal_libraries})
+target_link_libraries(ifcopenshell_wrapper PRIVATE ${_ifcwrap_geometry_libraries})
+if((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
@@ -194,7 +262,7 @@ if(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
             endif()
         endforeach()
         install(
-            FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
+            FILES "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_wrapper.py"
             DESTINATION "${python_package_dir}/ifcopenshell"
         )
         install(TARGETS ifcopenshell_wrapper DESTINATION "${python_package_dir}/ifcopenshell")

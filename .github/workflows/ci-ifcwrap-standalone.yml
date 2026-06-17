@@ -1,0 +1,155 @@
+# This file was generated with the assistance of an AI coding tool.
+name: ci-ifcwrap-standalone
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/ci-ifcwrap-standalone.yml"
+      - "cmake/**"
+      - "src/ifcwrap/**"
+      - "src/ifcparse/**"
+      - "src/ifcgeom/**"
+      - "src/serializers/**"
+      - "src/ifcconvert/**"
+      - "src/ifcopenshell-python/**"
+      - "src/svgfill/**"
+  push:
+    paths:
+      - ".github/workflows/ci-ifcwrap-standalone.yml"
+      - "cmake/**"
+      - "src/ifcwrap/**"
+      - "src/ifcparse/**"
+      - "src/ifcgeom/**"
+      - "src/serializers/**"
+      - "src/ifcconvert/**"
+      - "src/ifcopenshell-python/**"
+      - "src/svgfill/**"
+
+env:
+  IFCOPENSHELL_PREFIX: ${{ github.workspace }}/ifcopenshell-install
+
+jobs:
+  build-ifcopenshell:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install C++ dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install --no-install-recommends -y \
+            cmake \
+            gcc \
+            g++ \
+            libboost-date-time-dev \
+            libboost-filesystem-dev \
+            libboost-iostreams-dev \
+            libboost-program-options-dev \
+            libboost-regex-dev \
+            libboost-system-dev \
+            libboost-thread-dev \
+            libeigen3-dev \
+            libocct-data-exchange-dev \
+            libocct-draw-dev \
+            libocct-foundation-dev \
+            libocct-modeling-algorithms-dev \
+            libocct-modeling-data-dev \
+            libocct-ocaf-dev \
+            libocct-visualization-dev \
+            libpcre3-dev \
+            libtbb-dev \
+            libxml2-dev \
+            libxi-dev \
+            occt-misc \
+            tcl-dev \
+            tk-dev \
+            swig
+
+      - name: Configure minimal IfcOpenShell
+        run: |
+          cmake -S cmake -B build-ifcopenshell \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${IFCOPENSHELL_PREFIX}" \
+            -DCMAKE_PREFIX_PATH=/usr \
+            -DCMAKE_SYSTEM_PREFIX_PATH=/usr \
+            -DMINIMAL_BUILD=ON \
+            -DBUILD_IFCPYTHON=OFF \
+            "-DSCHEMA_VERSIONS=4x3_add2"
+
+      - name: Build and install minimal IfcOpenShell
+        run: |
+          cmake --build build-ifcopenshell --target install -j "$(nproc)"
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+
+      - name: Install Python import dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy typing_extensions
+
+      - name: Configure standalone IfcPython
+        run: |
+          PYTHON_EXECUTABLE="$(python -c 'import sys; print(sys.executable)')"
+          PYTHON_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')"
+
+          cmake -S src/ifcwrap -B "build-ifcwrap-311" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${IFCOPENSHELL_PREFIX};/usr" \
+            -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
+            -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
+            -DPYTHON_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
+            -DPYTHON_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}"
+
+      - name: Build and install standalone IfcPython
+        run: |
+          cmake --build "build-ifcwrap-311" --target install -j "$(nproc)"
+
+      - name: Import installed IfcPython
+        run: |
+          PYTHONPATH="${RUNNER_TEMP}/ifcopenshell-python" python - <<'PY'
+          import ifcopenshell
+
+          print("IfcOpenShell import ok:", ifcopenshell.version)
+          PY
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+
+      - name: Install Python import dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install numpy typing_extensions
+
+      - name: Configure standalone IfcPython
+        run: |
+          PYTHON_EXECUTABLE="$(python -c 'import sys; print(sys.executable)')"
+          PYTHON_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')"
+
+          cmake -S src/ifcwrap -B "build-ifcwrap-312" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="${IFCOPENSHELL_PREFIX};/usr" \
+            -DPython_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
+            -DPython_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}" \
+            -DPYTHON_EXECUTABLE:FILEPATH="${PYTHON_EXECUTABLE}" \
+            -DPYTHON_INCLUDE_DIR:PATH="${PYTHON_INCLUDE_DIR}"
+
+      - name: Build and install standalone IfcPython
+        run: |
+          cmake --build "build-ifcwrap-312" --target install -j "$(nproc)"
+
+      - name: Import installed IfcPython
+        run: |
+          PYTHONPATH="${RUNNER_TEMP}/ifcopenshell-python" python - <<'PY'
+          import ifcopenshell
+
+          print("IfcOpenShell import ok:", ifcopenshell.version)
+          PY
