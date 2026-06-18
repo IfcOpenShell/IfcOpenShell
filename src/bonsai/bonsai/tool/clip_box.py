@@ -38,15 +38,16 @@ if TYPE_CHECKING:
 PlaneTuple = tuple[float, float, float, float]
 PlaneSet = tuple[PlaneTuple, PlaneTuple, PlaneTuple, PlaneTuple, PlaneTuple, PlaneTuple]
 
-# Outward margin (world units) so the empty's CUBE display edges sit
-# safely INSIDE the clip volume. Absolute (not relative-to-scale)
-# because a relative multiplier balloons with scale and produces a
-# visibly-wrong gap between the wireframe and the clipped geometry.
-# Sub-mesh-precision value: visually invisible at any reasonable IFC
-# scale yet large enough to keep the empty's own wireframe edges off
-# the clip planes when float-precision accumulation pushes a corner
-# a fractional epsilon outward.
+# Outward margins so the empty's CUBE display edges sit safely INSIDE
+# the clip volume. A fixed absolute margin fails under rotation: the
+# float error in computing each column's length and in per-vertex dot
+# products at GPU rasterisation scales with the axis's world
+# half-extent, so once the box is spawned at any non-trivial scale it
+# can exceed an absolute floor. The relative term tracks that drift;
+# the absolute term catches sub-unit boxes where the relative term
+# shrinks below float precision.
 _CLIP_EXPAND_ABS = 1e-6
+_CLIP_EXPAND_REL = 1e-5
 
 
 class ClipBox:
@@ -63,6 +64,11 @@ class ClipBox:
 
     _owned: set[int] = set()
     _region_by_key: dict[int, tuple[Any, Any]] = {}
+    # View matrix per region at last clip_border arm. PRE_VIEW only
+    # updates clip_planes; without a snapshot, the C-side clip_bb stays
+    # aligned to the prior view and the edit-mode picker rejects verts
+    # inside the current clip_planes after orbit/pan/zoom.
+    _view_matrix_at_arm: dict[int, tuple] = {}
     _refresh_pending: bool = False
     _last_seen_ifc_id: int = 0
     # Tracks the last matrix we persisted to the pset, keyed by Blender
@@ -152,7 +158,9 @@ class ClipBox:
         prevents the cube's own wireframe from being clipped by its own
         planes.
         """
-        return tool.Cad.obb_clip_planes_from_matrix(obj.matrix_world, expand=_CLIP_EXPAND_ABS)
+        return tool.Cad.obb_clip_planes_from_matrix(
+            obj.matrix_world, expand=_CLIP_EXPAND_ABS, expand_rel=_CLIP_EXPAND_REL
+        )
 
     @classmethod
     def compute_planes_from_matrix(cls, matrix: Any) -> PlaneSet:
@@ -163,7 +171,7 @@ class ClipBox:
         transform offset, while ``obj.matrix_world`` stays at the
         pre-transform value until the operator commits on release.
         """
-        return tool.Cad.obb_clip_planes_from_matrix(matrix, expand=_CLIP_EXPAND_ABS)
+        return tool.Cad.obb_clip_planes_from_matrix(matrix, expand=_CLIP_EXPAND_ABS, expand_rel=_CLIP_EXPAND_REL)
 
     @classmethod
     def apply_clip_planes(cls, planes: PlaneSet) -> None:
@@ -183,6 +191,7 @@ class ClipBox:
             cls._owned.add(key)
             cls._region_by_key[key] = (area, region)
             cls._arm_region(area, region, region_3d, planes)
+            cls._view_matrix_at_arm[key] = tuple(tuple(row) for row in region_3d.view_matrix)
 
     @classmethod
     def _arm_region(cls, area: Any, region: Any, region_3d: Any, planes: PlaneSet) -> None:
@@ -271,6 +280,7 @@ class ClipBox:
         """Drop the ownership table without touching any region. Used on register/reload."""
         cls._owned.clear()
         cls._region_by_key.clear()
+        cls._view_matrix_at_arm.clear()
 
     PSET_NAME = "BBIM_ClipBoxes"
     COLLECTION_NAME = "BBIM_ClipBoxes"
@@ -533,10 +543,16 @@ class ClipBox:
             cls._last_seen_ifc_id = ifc_id
             cls._owned.clear()
             cls._region_by_key.clear()
+            cls._view_matrix_at_arm.clear()
             cls._persisted_matrices.clear()
             cls._last_seen_object_matrices.clear()
             if ifc_file is not None:
                 cls.load_from_project_pset(scene)
+                # .blend carries use_clip_planes / clip_bb forward; the
+                # C-side picker is armed for the prior session's view.
+                # Re-arm against the current view so click-select matches
+                # what the user sees.
+                cls.schedule_refresh()
         # Orphan-empty adoption is deferred while a transform modal is
         # dragging so the active-index change on adoption can't disrupt
         # the move.
@@ -557,6 +573,12 @@ class ClipBox:
             # one save on release, not N saves per frame.
             if ifc_file is not None and prev_matrix is not None:
                 cls.mark_dirty_for_save(obj.name)
+            # clip_bb is stale once the box settles elsewhere. The modal
+            # gate suppresses per-tick re-arms during a live drag and
+            # fires once on release (or on external sets — Python, undo,
+            # constraint).
+            if prev_matrix is not None and not tool.Blender.is_transform_modal_active(bpy.context):
+                cls.schedule_refresh()
         cls.flush_pending_saves(scene)
 
         try:
@@ -594,6 +616,17 @@ class ClipBox:
             return
         region_3d.clip_planes = cls.compute_planes_from_matrix(matrix)
         region_3d.update()
+        # clip_bb captured by view3d.clip_border is view-aligned, so an
+        # orbit/pan/zoom leaves the picker testing against the old
+        # frustum even after clip_planes refresh. Re-arm so the picker
+        # matches the current view.
+        region = getattr(bpy.context, "region", None)
+        if region is not None:
+            key = region.as_pointer()
+            prev_view = cls._view_matrix_at_arm.get(key)
+            current_view = tuple(tuple(row) for row in region_3d.view_matrix)
+            if prev_view is not None and prev_view != current_view:
+                cls.schedule_refresh()
 
     # ------------------------------------------------------------------
     # Cross-section caps
