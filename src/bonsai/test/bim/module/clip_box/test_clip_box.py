@@ -114,6 +114,33 @@ class TestComputePlanes(NewFile):
         planes = tool.ClipBox.compute_planes(host)
         assert tool.Cad.point_is_inside_clip_planes(planes, Vector((5, 7, 0)))
 
+    def test_margin_grows_with_scale(self):
+        # The empty's CUBE display lives at local +-1; the GPU dot
+        # product that tests each wireframe vertex against the clip
+        # planes has float error that scales with the axis's world
+        # half-extent. A fixed absolute margin gets eaten by that drift
+        # once the box is spawned at non-trivial scale, so the half-
+        # extent the planes encode must include a relative term — the
+        # margin between the wireframe edge and the plane must grow
+        # with the scale.
+        bpy.ops.bim.add_clip_box()
+        host = tool.ClipBox.get_active_clip_box()
+
+        host.matrix_world = Matrix.Identity(4)
+        planes_unit = tool.ClipBox.compute_planes(host)
+        # +X plane: normal (-1, 0, 0), d = half_x. Read half from d.
+        half_unit = planes_unit[0][3]
+        margin_unit = half_unit - 1.0
+
+        host.matrix_world = Matrix.Diagonal((100.0, 100.0, 100.0, 1.0))
+        planes_scaled = tool.ClipBox.compute_planes(host)
+        half_scaled = planes_scaled[0][3]
+        margin_scaled = half_scaled - 100.0
+
+        assert margin_scaled > margin_unit * 10, (
+            f"margin must scale with extent: unit={margin_unit:g}, " f"scale-100={margin_scaled:g}"
+        )
+
 
 class TestToggleEnabled(NewFile):
     def test_flips_scene_enabled_flag(self):
@@ -690,3 +717,84 @@ class TestCapRebuildDebounce(NewFile):
         ):
             tool.ClipBox.on_depsgraph_update_caps(bpy.context.scene, None)
         mock_handle.assert_not_called()
+
+
+class TestClipBbReArmTriggers(NewFile):
+    """The C-side clip_bb captured by view3d.clip_border for edit-mode
+    click-select is view-aligned and tied to the box pose at arm time,
+    so it goes stale on either a clip-box transform commit, an external
+    matrix mutation, or an IFC reload that rehydrates from pset. The
+    depsgraph handler schedules a full re-arm at those events; the
+    modal gate suppresses per-tick re-arms during a live drag.
+    """
+
+    def setup_method(self):
+        tool.ClipBox._persisted_matrices.clear()
+        tool.ClipBox._last_seen_ifc_id = 0
+        tool.ClipBox._refresh_pending = False
+
+    def teardown_method(self):
+        tool.ClipBox._persisted_matrices.clear()
+        tool.ClipBox._last_seen_ifc_id = 0
+        tool.ClipBox._refresh_pending = False
+
+    def test_matrix_change_outside_modal_re_arms(self):
+        bpy.ops.bim.add_clip_box()
+        host = tool.ClipBox.get_active_clip_box()
+        # Seed a stale baseline so prev_matrix != current_matrix.
+        stale = tuple(tuple(row) for row in Matrix.Translation((-99.0, 0.0, 0.0)))
+        tool.ClipBox._persisted_matrices[host.name] = stale
+
+        with (
+            patch.object(tool.Blender, "is_transform_modal_active", return_value=False),
+            patch.object(tool.ClipBox, "schedule_refresh") as mock_refresh,
+        ):
+            tool.ClipBox.on_depsgraph_update(bpy.context.scene, bpy.context.evaluated_depsgraph_get())
+        mock_refresh.assert_called_once()
+
+    def test_matrix_change_during_modal_skips_re_arm(self):
+        bpy.ops.bim.add_clip_box()
+        host = tool.ClipBox.get_active_clip_box()
+        stale = tuple(tuple(row) for row in Matrix.Translation((-99.0, 0.0, 0.0)))
+        tool.ClipBox._persisted_matrices[host.name] = stale
+
+        with (
+            patch.object(tool.Blender, "is_transform_modal_active", return_value=True),
+            patch.object(tool.ClipBox, "schedule_refresh") as mock_refresh,
+        ):
+            tool.ClipBox.on_depsgraph_update(bpy.context.scene, bpy.context.evaluated_depsgraph_get())
+        mock_refresh.assert_not_called()
+
+    def test_first_matrix_sighting_does_not_re_arm(self):
+        # No prior persisted-matrix entry: the branch records the
+        # baseline and exits without re-arming. The add path already
+        # armed once; a per-tick re-arm on first sight would double-arm.
+        bpy.ops.bim.add_clip_box()
+        host = tool.ClipBox.get_active_clip_box()
+        tool.ClipBox._persisted_matrices.pop(host.name, None)
+
+        with (
+            patch.object(tool.Blender, "is_transform_modal_active", return_value=False),
+            patch.object(tool.ClipBox, "schedule_refresh") as mock_refresh,
+        ):
+            tool.ClipBox.on_depsgraph_update(bpy.context.scene, bpy.context.evaluated_depsgraph_get())
+        mock_refresh.assert_not_called()
+
+    def test_ifc_reload_re_arms(self):
+        bpy.ops.bim.create_project()
+        bpy.ops.bim.add_clip_box()
+        # Force an ifc-id mismatch so the rehydrate-from-pset branch
+        # fires. The .blend carries the prior session's clip_bb forward;
+        # the picker is armed for the OLD view until this re-arms.
+        tool.ClipBox._last_seen_ifc_id = 0
+
+        with (
+            patch.object(tool.Blender, "is_transform_modal_active", return_value=False),
+            patch.object(tool.ClipBox, "schedule_refresh") as mock_refresh,
+        ):
+            tool.ClipBox.on_depsgraph_update(bpy.context.scene, bpy.context.evaluated_depsgraph_get())
+        # IFC-load triggers a re-arm. (Reading the show_caps pset entry
+        # writes scene_props.show_caps via its update callback, which
+        # is a separate pre-existing re-arm path; the test pins the
+        # invariant "ifc-load arms at least once".)
+        assert mock_refresh.call_count >= 1
