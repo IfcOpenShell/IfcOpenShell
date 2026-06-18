@@ -423,7 +423,11 @@ class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Ifc.get().by_id(pset["id"])
         for array in arrays:
             for child in set(array["children"]):
-                if child_obj := tool.Ifc.get_object(tool.Ifc.get().by_guid(child)):
+                try:
+                    child_element = tool.Ifc.get().by_guid(child)
+                except RuntimeError:
+                    continue
+                if child_obj := tool.Ifc.get_object(child_element):
                     tool.Geometry.delete_ifc_object(child_obj)
             array["children"].clear()
         # Always operate on the parent — this operator can be invoked with

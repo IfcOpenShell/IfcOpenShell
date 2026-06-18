@@ -37,24 +37,16 @@ class IFC_PARSE_API log_message {
   public:
     char code[7];
     int severity;
-    std::string message, instance, product;
+    std::string timestamp, message, instance, product;
 
-    log_message(int severity, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* inst = 0, const IfcUtil::IfcBaseClass* current_product = 0)
-        : severity(severity)
-        , message(message)
-    {
-        snprintf(code, 7, "%s%03u", code_prefix, code_number);
-        if (inst) {
-            std::ostringstream oss;
-            inst->data().toString(nullptr, nullptr, 0, oss, true);
-            instance = oss.str();
-        }
-        if (current_product) {
-            std::ostringstream oss;
-            current_product->toString(oss);
-            product = oss.str();
-        }
-    }
+    log_message(
+        int severity,
+        const char (&code_prefix)[4],
+        uint16_t code_number,
+        const std::string& timestamp,
+        const std::string& message,
+        const IfcUtil::IfcBaseInterface* inst = 0,
+        const IfcUtil::IfcBaseClass* current_product = 0);
 };
 
 class IFC_PARSE_API Logger {

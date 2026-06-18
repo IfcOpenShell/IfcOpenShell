@@ -299,13 +299,16 @@ class iterator(ifcopenshell_wrapper.Iterator):
         include: Optional[Union[list[entity_instance], list[str]]] = None,
         exclude: Optional[Union[list[entity_instance], list[str]]] = None,
         geometry_library: GEOMETRY_LIBRARY = "opencascade",
+        logger=None,
     ):
         self.settings = settings
+        if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
+            logger = logger_type.Root()
         if isinstance(file_or_filename, file):
             self.file = file
             file_or_filename = file_or_filename.wrapped_data
         else:
-            file_or_filename = self.file = open(file_or_filename)
+            file_or_filename = self.file = open(file_or_filename, logger=logger)
 
         if include is not None and exclude is not None:
             raise ValueError("include and exclude cannot be specified simultaneously")
@@ -333,13 +336,18 @@ class iterator(ifcopenshell_wrapper.Iterator):
             else:
                 initializer = ifcopenshell_wrapper.construct_iterator_with_include_exclude
 
-            self.this = initializer(
-                geometry_library, self.settings, file_or_filename, include_or_exclude, include is not None, num_threads
+            args = (
+                geometry_library,
+                self.settings,
+                file_or_filename,
+                include_or_exclude,
+                include is not None,
+                num_threads,
             )
+            self.this = initializer(*args, *((logger,) if logger is not None else ()))
         else:
-            self.this = ifcopenshell_wrapper.construct_iterator(
-                geometry_library, self.settings, file_or_filename, num_threads
-            )
+            args = (geometry_library, self.settings, file_or_filename, num_threads)
+            self.this = ifcopenshell_wrapper.construct_iterator(*args, *((logger,) if logger is not None else ()))
 
     if has_occ:
 
@@ -508,7 +516,11 @@ def create_shape(
     return wrap_shape_creation(
         settings,
         ifcopenshell_wrapper.create_shape(
-            settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library, *(filter(None, (logger,)))
+            settings,
+            inst.wrapped_data,
+            repr.wrapped_data if repr is not None else None,
+            geometry_library,
+            *((logger,) if logger is not None else ()),
         ),
     )
 
@@ -564,6 +576,7 @@ def iterate(
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
+    logger=None,
 ) -> Generator[IteratorOutput, None, None]: ...
 @overload
 def iterate(
@@ -577,6 +590,7 @@ def iterate(
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
+    logger=None,
 ) -> Generator[tuple[int, IteratorOutput], None, None]: ...
 @overload
 def iterate(
@@ -590,6 +604,7 @@ def iterate(
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
+    logger=None,
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]: ...
 def iterate(
     settings: settings,
@@ -602,13 +617,14 @@ def iterate(
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
+    logger=None,
 ) -> Generator[Union[IteratorOutput, tuple[int, IteratorOutput]], None, None]:
     """Get a geometry iterator for the provided file.
 
     :param cache: .h5 cache filepath (might not exist, will be created).
     :param serializer_settings: Settings for cache serializer. Required if `cache` is provided.
     """
-    it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
+    it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library, logger)
     if cache:
         assert serializer_settings, "`serializer_settings` argument is not optional if `cache` is provided."
         hdf5_cache = serializers.hdf5(cache, settings, serializer_settings)

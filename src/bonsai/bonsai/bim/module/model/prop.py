@@ -228,11 +228,7 @@ def update_wall_offset_baseline(self: "BIMWallProperties", context: bpy.types.Co
 def update_railing(self: "BIMRailingProperties", context: bpy.types.Context) -> None:
     """Regenerate railing mesh when property changes."""
     if self.is_editing:
-        # Only FRAMELESS_PANEL can update live via bmesh.
-        # WALL_MOUNTED_HANDRAIL geometry is generated from IFC representation,
-        # so it only updates on "Finish Editing" to avoid modifying IFC during preview.
-        if self.railing_type == "FRAMELESS_PANEL":
-            _get_updater("railing", "update_railing_modifier_bmesh")(context)
+        _get_updater("railing", "update_railing_modifier_bmesh")(context)
 
 
 def update_roof(self: "BIMRoofProperties", context: bpy.types.Context) -> None:
@@ -1691,6 +1687,21 @@ class BIMRoofProperties(PropertyGroup):
         """Copy preset values to target roof properties."""
         for prop_name, prop_value in self.get_general_kwargs().items():
             setattr(target_props, prop_name, prop_value)
+
+
+class BIMSlabProperties(PropertyGroup):
+    """Transient state for the slab disconnect-access gizmo.
+
+    ``is_editing`` flips True when the user clicks the pen icon on a slab
+    that has wall connections — gating the per-wall disconnect icons in
+    ``GizmoSlabUnjoinWalls`` so they're hidden until the user opts in. No
+    IFC draft state lives here: the disconnect operator commits directly,
+    so this PropertyGroup carries only the UI gate."""
+
+    is_editing: bpy.props.BoolProperty(name="Slab Edit Active", default=False, options={"SKIP_SAVE"})
+
+    if TYPE_CHECKING:
+        is_editing: bool
 
 
 class BIMWallProperties(PropertyGroup):

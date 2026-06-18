@@ -34,7 +34,22 @@ namespace {
     inline T dispatch_get_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, const IfcParse::declaration* entity_or_type, uint8_t index_)
     {
         if (storage_model_ == 0) {
-            return array_.storage_ptr->get<T>(index_);
+            try {
+                return array_.storage_ptr->get<T>(index_);
+            } catch (const impl::storage_type_mismatch& e) {
+                throw IfcParse::IfcException(
+                    // entity_or_type not passed, but in v0.9 this is beginning to make sense
+                    (entity_or_type
+                    ? std::string("On instance #" + std::to_string(instance_name_) + " of " + entity_or_type->name() + ": ")
+                    : std::string("")) +
+                    "Requested type <" + e.requested() + "> does not match actual type <" + e.actual() + "> at index " + std::to_string(index_));
+            } catch (const std::out_of_range& e) {
+                throw IfcParse::IfcException(
+                    (entity_or_type
+                    ? std::string("On instance #" + std::to_string(instance_name_) + " of " + entity_or_type->name() + ": ")
+                    : std::string("")) +
+                    e.what());
+            }
         }
 #ifdef IFOPSH_WITH_ROCKSDB
         else {

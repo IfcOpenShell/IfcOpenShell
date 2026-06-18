@@ -82,6 +82,7 @@ if TYPE_CHECKING:
         BIMPolylineProperties,
         BIMRailingProperties,
         BIMRoofProperties,
+        BIMSlabProperties,
         BIMStairProperties,
         BIMSverchokProperties,
         BIMWallProperties,
@@ -117,6 +118,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_slab_props(cls, obj: bpy.types.Object) -> BIMSlabProperties:
+        return obj.BIMSlabProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_pipe_segment_props(cls, obj: bpy.types.Object) -> BIMPipeSegmentProperties:
@@ -809,7 +814,7 @@ class Model(bonsai.core.tool.Model):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_params = tool.Model.get_material_layer_parameters(element)
         layer_offset = layer_params["offset"]
-        thickness = layer_params["thickness"] / unit_scale
+        thickness = layer_params["thickness"]
         props = tool.Material.get_object_material_props(obj)
 
         # Try to load from pset if not already in props
@@ -817,7 +822,7 @@ class Model(bonsai.core.tool.Model):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
             if pset and pset.get("UseCustomOffset", False):
                 # Load from pset
-                custom_offset = pset.get("CustomOffset", 0.0)
+                custom_offset = pset.get("CustomOffset", 0.0) * unit_scale
                 usage_type = tool.Model.get_usage_type(element)
 
                 if usage_type == "LAYER2":
@@ -830,7 +835,7 @@ class Model(bonsai.core.tool.Model):
                 return None
         else:
             # Use current props
-            custom_offset = props.custom_offset / unit_scale
+            custom_offset = props.custom_offset
             if tool.Model.get_usage_type(element) == "LAYER2":
                 custom_offset_reference = props.custom_wall_reference
             elif tool.Model.get_usage_type(element) == "LAYER3":
@@ -841,17 +846,17 @@ class Model(bonsai.core.tool.Model):
         direction_sense = layer_params["direction_sense"]
 
         if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
-            layer_offset = custom_offset - thickness * unit_scale
+            layer_offset = custom_offset - thickness
         if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-            layer_offset = custom_offset - (thickness / 2) * unit_scale
+            layer_offset = custom_offset - (thickness / 2)
         if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
             direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
         ):
             layer_offset = custom_offset
         if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-            layer_offset = custom_offset + (thickness / 2) * unit_scale
+            layer_offset = custom_offset + (thickness / 2)
         if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
-            layer_offset = custom_offset + thickness * unit_scale
+            layer_offset = custom_offset + thickness
 
         return layer_offset / unit_scale
 
@@ -903,6 +908,46 @@ class Model(bonsai.core.tool.Model):
     def has_underside_connection(cls, element: ifcopenshell.entity_instance) -> bool:
         """Return True if element has an IfcRelConnectsElements(TOP) relationship."""
         return any(rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP" for rel in element.ConnectedFrom)
+
+    @classmethod
+    def strip_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> bool:
+        """Remove slab-trim ``IfcBooleanResult`` items from a wall's body chain.
+
+        Returns ``True`` if any boolean was removed, so the caller knows whether
+        a Blender-side body reload is needed to surface the geometry change.
+
+        Hook for the duplicate path (Shift+D): the source wall's clip booleans
+        don't make sense on a copy pulled away from the slab. Booleans whose
+        ``SecondOperand.is_a("IfcTessellatedFaceSet")`` are removed — same
+        imprecise discriminator the rest of the wall-to-underside machinery
+        uses (manual cuts authored from tessellated meshes would also be
+        stripped, but most manual cuts use ``IfcExtrudedAreaSolid`` / CSG
+        primitives and are unaffected).
+
+        Cannot reuse ``remove_wall_to_underside_booleans`` here because the
+        duplicate's ``BBIM_Boolean.Data`` holds the source wall's stale ids —
+        ``get_manual_booleans`` returns empty on the copy and the helper
+        early-returns. The duplicate hook works directly off the chain.
+        """
+        representation = tool.Geometry.get_body_representation(wall)
+        if not representation:
+            return False
+        chain = cls.get_booleans(wall, representation)
+        to_remove = [b for b in chain if (sec := b.SecondOperand) is not None and sec.is_a("IfcTessellatedFaceSet")]
+        for b in to_remove:
+            tool.Geometry.remove_representation_item(b.SecondOperand, wall)
+        # Sweep the now-stale BBIM_Boolean entries on the copy (their ids point
+        # at booleans that were never in this wall's chain — they survived the
+        # ifcopenshell deep copy as JSON text in the pset payload).
+        pset_data = ifcopenshell.util.element.get_pset(wall, "BBIM_Boolean")
+        if pset_data:
+            representation = tool.Geometry.get_body_representation(wall)
+            chain_ids = {b.id() for b in cls.get_booleans(wall, representation)} if representation else set()
+            stored_ids = set(json.loads(pset_data["Data"]))
+            stale_ids = stored_ids - chain_ids
+            if stale_ids:
+                cls.unmark_manual_booleans(wall, list(stale_ids))
+        return bool(to_remove)
 
     @classmethod
     def remove_wall_to_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> None:
@@ -1275,7 +1320,10 @@ class Model(bonsai.core.tool.Model):
             # handle elements unused in the array after regeneration
             removed_children = set(existing_children) - set(array["children"])
             for removed_child in removed_children:
-                element = tool.Ifc.get().by_guid(removed_child)
+                try:
+                    element = tool.Ifc.get().by_guid(removed_child)
+                except RuntimeError:
+                    continue
                 # Strip any wall/slab opening cut by this child before deletion,
                 # so the host's HasOpenings shrinks symmetrically with count.
                 if getattr(element, "FillsVoids", None):
@@ -3023,6 +3071,19 @@ class Model(bonsai.core.tool.Model):
         matrix[:, 3] *= unit_scale
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)
+
+    @classmethod
+    def regenerate_wall(cls, obj: bpy.types.Object) -> None:
+        """Rebuild a wall's body from current IFC state: extrusion + openings
+        first, then re-clip to any surviving ``IfcRelConnectsElements(TOP)``
+        slab. Safe on walls with no openings and no slab connection — both
+        steps no-op against their preconditions."""
+        element = tool.Ifc.get_entity(obj)
+        if element is None:
+            return
+        cls.recreate_wall(element, obj)
+        if cls.has_underside_connection(element):
+            bonsai.core.model.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, cls, [obj])
 
     @classmethod
     def recalculate_walls(cls, walls: list[bpy.types.Object]) -> None:

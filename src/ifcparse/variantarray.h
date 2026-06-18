@@ -37,10 +37,28 @@ variant - which is the maximum size of its constituents - is reduced.
 #include <cstring>
 #include <cstddef>
 #include <limits>
-
-#include "IfcException.h"
+#include <exception>
 
 namespace impl {
+    class storage_type_mismatch : public std::exception {
+      private:
+        std::string requested_, actual__, message_;
+
+      public:
+        storage_type_mismatch(const std::string& requested, const std::string& actual)
+            : requested_(requested), actual__(actual), message_("Requested type " + requested_ + " does not match actual type " + actual__) {}
+
+        const char* what() const noexcept override {
+            return message_.c_str();
+        }
+
+        const std::string& requested() const { return requested_; }
+        const std::string& actual() const { return actual__; }
+    };
+
+    template <typename T>
+    struct VariantTypeName;
+
     // Trait to detect unique_ptr
     template <typename...> struct is_unique_ptr : std::false_type {};
     template<class T, typename... Args>
@@ -166,14 +184,13 @@ public:
         using U = std::decay_t<T>;
         static_assert(::impl::TypeIndex_v<U, Types...> < sizeof...(Types), "Type not supported by variant");
         if (index >= size()) {
-            throw std::out_of_range("Index out of range");
+            throw std::out_of_range("Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size()));
         }
 
         destroy_at_index(index);
 
         size_and_indices_[index + 1] = ::impl::TypeIndex_v<U, Types...>;
         using V = typename std::tuple_element<::impl::TypeIndex_v<U, Types...>, ::impl::MapTypes_t<Types... >>::type;
-        // std::wcout << "setting " << index << " to " << typeid(V).name() << " (" << ::impl::TypeIndex_v<U, Types...> << ")" << std::endl;
         if constexpr (::impl::is_unique_ptr<V>::value) {
             new(&storage_[index]) V(new U(value));
         } else {
@@ -187,8 +204,8 @@ public:
 
     std::size_t index(std::size_t index) const {
         if (index >= size()) {
-            throw IfcParse::IfcException(
-                "Index " + std::to_string(index) + " is out of range for variant of size " + std::to_string(size())
+            throw std::out_of_range(
+                "Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size())
             );
         }
         return size_and_indices_[index + 1];
@@ -197,8 +214,8 @@ public:
     template<typename T>
     T& get(std::size_t index) {
         if (index >= size()) {
-            throw IfcParse::IfcException(
-                "Index " + std::to_string(index) + " is out of range for variant of size " + std::to_string(size())
+            throw std::out_of_range(
+                "Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size())
             );
         }
         if (!has<T>(index)) {
@@ -220,17 +237,16 @@ public:
     template<typename T>
     const T& get(std::size_t index) const {
         if (index >= size()) {
-            throw IfcParse::IfcException(
-				"Index " + std::to_string(index) + " is out of range for variant of size " + std::to_string(size())
+            throw std::out_of_range(
+				"Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size())
             );
         }
         if (size_and_indices_[index + 1] != ::impl::TypeIndex<T, Types...>::value) {
             // @todo this IfcException is silly. Figure out what
             // to do, but at the moment it is specifically caught
             // in various places.
-            throw IfcParse::IfcException(
-                "Type held at index " + std::to_string(index) + " is " +
-                get_type_name(size_and_indices_[index + 1]) + " and not " + typeid(T).name()
+            throw impl::storage_type_mismatch(
+                ::impl::VariantTypeName<T>::get(), get_type_name(size_and_indices_[index + 1])
             );
         }
         using V = typename std::tuple_element<::impl::TypeIndex_v<T, Types...>, ::impl::MapTypes_t<Types... >>::type;
@@ -244,8 +260,8 @@ public:
     template<typename Visitor>
     auto apply_visitor(Visitor&& visitor, std::size_t index) const {
         if (index >= size()) {
-            throw IfcParse::IfcException(
-                "Index " + std::to_string(index) + " is out of range for variant of size " + std::to_string(size())
+            throw std::out_of_range(
+                "Index " + std::to_string(index) + " is out of range for storage of size " + std::to_string(size())
             );
         }
         return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, sizeof...(Types)>{});
@@ -312,19 +328,19 @@ private:
     }
 
     template <size_t I>
-    const char* get_type_name_impl(size_t i) const {
+    std::string get_type_name_impl(size_t i) const {
         if constexpr (I == 0) {
             return "";
         } else {
             if (i == I - 1) {
-                return typeid(std::tuple_element_t<I - 1, std::tuple<Types...>>).name();
+                return ::impl::VariantTypeName<std::tuple_element_t<I - 1, std::tuple<Types...>>>::get();
             } else {
                 return get_type_name_impl<I - 1>(i);
             }
         }
     }
 
-    const char* get_type_name(size_t i) const {
+    std::string get_type_name(size_t i) const {
         return get_type_name_impl<sizeof...(Types)>(i);
     }
 };

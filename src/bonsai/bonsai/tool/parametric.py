@@ -157,6 +157,7 @@ class Parametric(bonsai.core.tool.Parametric):
         ParametricObject("pipe_segment", supports_build_edit_lifecycle=True),
         ParametricObject("duct_segment", supports_build_edit_lifecycle=True),
         ParametricObject("wall"),
+        ParametricObject("slab"),
     ]
 
     # Annotations for the uppercase constants populated from ``EDIT_TYPES`` by
@@ -171,6 +172,7 @@ class Parametric(bonsai.core.tool.Parametric):
     PIPE_SEGMENT: ClassVar[ParametricObject]
     DUCT_SEGMENT: ClassVar[ParametricObject]
     WALL: ClassVar[ParametricObject]
+    SLAB: ClassVar[ParametricObject]
 
     _geom_generation: int = 0
 
@@ -458,6 +460,15 @@ class Parametric(bonsai.core.tool.Parametric):
         if element is None:
             return False
         return tool.Pset.get_element_pset(element, "BBIM_Stair") is not None
+
+    @classmethod
+    def is_slab(cls, element: entity_instance) -> bool:
+        """``True`` for any ``IfcSlab``. The slab edit lifecycle only gates
+        the connection-disconnect UI — no IFC mutation — so we don't narrow
+        further (e.g. by checking for wall connections). Per-gizmo polls
+        layer the "has wall connections" check on top via
+        ``tool.Wall.iter_slab_wall_connections``."""
+        return element is not None and element.is_a("IfcSlab")
 
     @classmethod
     def is_wall(cls, element: entity_instance) -> bool:

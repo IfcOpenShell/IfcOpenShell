@@ -205,6 +205,20 @@ class BIM_PT_project(Panel):
                 row.operator("bim.apply_pending_opening_cuts", text="Apply Openings", icon="PLAY")
                 row.operator("bim.dismiss_pending_opening_cuts", text="", icon="CANCEL")
 
+            if pending := pprops.pending_array_repair:
+                box = self.layout.box()
+                box.alert = True
+                box.label(text="Arrays With Missing Children", icon="ERROR")
+                draw_multiline_text(
+                    box.column(align=True),
+                    f"{len(pending)} array parent(s) reference child GUIDs that don't exist in this file. "
+                    f"The arrays loaded incomplete. Select to inspect, or dismiss.",
+                    context=context,
+                )
+                row = box.row(align=True)
+                row.operator("bim.select_pending_array_repair", text="Select Elements", icon="RESTRICT_SELECT_OFF")
+                row.operator("bim.dismiss_pending_array_repair", text="", icon="CANCEL")
+
             if props.ifc_file:
                 self.draw_loaded_project_ui(context)
             else:

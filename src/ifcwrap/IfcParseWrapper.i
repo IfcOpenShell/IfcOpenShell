@@ -712,10 +712,10 @@ private:
 %newobject stream_from_string;
 
 %inline %{
-	IfcParse::IfcFile* open(const std::string& fn, bool readonly=false) {
+	IfcParse::IfcFile* open(const std::string& fn, bool readonly=false, Logger& logger=Logger::Root()) {
 		IfcParse::IfcFile* f;
 		Py_BEGIN_ALLOW_THREADS;
-		f = new IfcParse::IfcFile(fn, IfcParse::FT_AUTODETECT, readonly);
+		f = new IfcParse::IfcFile(fn, IfcParse::FT_AUTODETECT, readonly, logger);
 		Py_END_ALLOW_THREADS;
 		return f;
 	}
@@ -1238,8 +1238,11 @@ private:
 	}
 	%pythoncode %{
 		severity_string = property(severity_string)
+		def to_dict(self):
+			keys = ("timestamp", "severity", "code", "message", "instance", "product")
+			return dict(zip(keys, self.to_tuple()))
 		def to_tuple(self):
-			return self.severity_string, self.code, self.message, self.instance
+			return self.timestamp, self.severity_string, self.code, self.message, self.instance, self.product
 		def __eq__(self, other):
 			return type(self) == type(other) and self.to_tuple() == other.to_tuple()
 		def __hash__(self):

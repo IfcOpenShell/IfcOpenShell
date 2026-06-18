@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import datetime
+import json
 import logging
 import os
 import time
@@ -256,26 +257,31 @@ class IfcDataGetter:
             return ""
         if cost_item.CostQuantities is None:
             return ""
-        string = "["
+        result = []
         for quantity in cost_item.CostQuantities:
-            string += '["'
+            prefix = ""
             for rel in file.get_inverse(quantity):
                 if rel.is_a("IfcPropertySet") or rel.is_a("IfcElementQuantity"):
-                    prop_set = rel
                     # Find elements that have this property set
-                    for prop_rel in file.get_inverse(prop_set):
+                    for prop_rel in file.get_inverse(rel):
                         if prop_rel.is_a("IfcRelDefinesByProperties"):
                             for obj in prop_rel.RelatedObjects:
                                 if obj.is_a("IfcElement"):
-                                    string += obj.Name + " - "
-            string += quantity.Name
+                                    prefix += (obj.Name or "") + " - "
+            name = prefix + (quantity.Name or "")
+            # Formula is an optional IfcLabel on IfcQuantity* in IFC4+; absent in
+            # IFC2X3, hence the schema-safe getattr.
+            formula = getattr(quantity, "Formula", None) or ""
             if quantity.is_a("IfcPhysicalSimpleQuantity"):
-                string += '", ' + str(quantity[3]) + "],"
+                value = quantity[3]
+                try:
+                    value = float(value) if value is not None else 0.0
+                except (TypeError, ValueError):
+                    value = 0.0
+                result.append([name, value, formula])
             else:
-                string += ' ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0],'
-        string = string.removesuffix(",")
-        string += "]"
-        return string
+                result.append([name + " ERROR: Only IfcPhysicalSimpleQuantity is supported", 0.0, formula])
+        return json.dumps(result, ensure_ascii=False)
 
 
 class SheetData(TypedDict):

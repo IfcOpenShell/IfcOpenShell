@@ -30,7 +30,9 @@ from bonsai.tool.bsdd import Bsdd
 from bonsai.tool.cad import Cad
 from bonsai.tool.clash import Clash
 from bonsai.tool.classification import Classification
+from bonsai.tool.clip_box import ClipBox
 from bonsai.tool.collector import Collector
+from bonsai.tool.connection import Connection
 from bonsai.tool.context import Context
 from bonsai.tool.cost import Cost
 from bonsai.tool.covering import Covering

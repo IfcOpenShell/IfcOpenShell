@@ -30,7 +30,15 @@ import sys
 import tempfile
 import traceback
 import types
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence, Sized
+from collections.abc import (
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+    Sized,
+)
 from datetime import datetime
 from functools import cache, lru_cache
 from pathlib import Path
@@ -574,6 +582,120 @@ class Blender(bonsai.core.tool.Blender):
                     decorator_cls.install(context)
                 else:
                     decorator_cls.uninstall()
+
+    # Bonsai overrides Blender's default move/duplicate keymaps with macros
+    # that wrap TRANSFORM_OT_translate. While a macro is the outer modal
+    # entry, the inner TRANSFORM_OT_translate does not surface in
+    # window.modal_operators — the macro's own idname does. The ``BIM_OT_``
+    # prefix is what Blender returns from ``bl_idname`` at runtime (the
+    # class declaration uses the dotted ``bim.`` form).
+    BONSAI_TRANSFORM_MACROS: frozenset[str] = frozenset(
+        {
+            "BIM_OT_override_move_macro",  # G key
+            "BIM_OT_override_object_duplicate_move_macro",  # Shift+D
+            "BIM_OT_override_object_duplicate_move_linked_macro",  # Alt+D
+            "BIM_OT_object_duplicate_move_linked_aggregate_macro",  # Ctrl+Shift+D
+        }
+    )
+
+    @classmethod
+    def is_transform_modal_active(cls, context: bpy.types.Context) -> bool:
+        """True iff a Blender transform modal (G/R/S and siblings, including
+        Bonsai's macro overrides) is currently driving per-frame
+        ``matrix_world`` updates. Reads ``window.modal_operators`` — the
+        Blender 4.2+ collection of running modal operators. Callers gate
+        per-frame side effects (gizmo positioning, IFC persistence, etc.)
+        on this so they don't fire during the drag.
+
+        Falls back to scanning every window in the window manager when
+        ``context.window`` is ``None`` — depsgraph callbacks run with a
+        limited context where ``context.window`` is typically missing,
+        but the modal is still active on one of the WM's windows.
+        """
+        window = getattr(context, "window", None)
+        if window is not None and getattr(window, "modal_operators", None):
+            windows = [window]
+        else:
+            wm = getattr(context, "window_manager", None) or bpy.context.window_manager
+            if wm is None:
+                return False
+            windows = list(wm.windows)
+        for w in windows:
+            modal_ops = getattr(w, "modal_operators", None)
+            if not modal_ops:
+                continue
+            for op in modal_ops:
+                idname = op.bl_idname
+                if idname.startswith("TRANSFORM_OT_") or idname in cls.BONSAI_TRANSFORM_MACROS:
+                    return True
+        return False
+
+    @classmethod
+    def is_in_edit_mode(cls, context: Optional[bpy.types.Context] = None) -> bool:
+        """True iff the active object is in any edit-style mode.
+
+        Catches every ``EDIT_*`` variant (mesh, curve, armature,
+        metaball, lattice, surface, text, grease pencil). Defaults to
+        ``OBJECT`` when the mode attribute is missing so background-mode
+        callers (no UI context) don't false-positive.
+        """
+        ctx = context if context is not None else bpy.context
+        mode = getattr(ctx, "mode", "OBJECT")
+        return mode.startswith("EDIT_")
+
+    @classmethod
+    def iter_view3d_regions(cls) -> Iterator[tuple[bpy.types.Area, bpy.types.Region, bpy.types.RegionView3D]]:
+        """Yield ``(area, region, region_3d)`` for every WINDOW region in every 3D viewport.
+
+        Useful for features that need to act on every visible 3D viewport
+        (clip planes, draw handlers, region redraw fanout). Empty
+        generator when ``bpy.context.screen`` is unavailable (shutdown,
+        background mode without a screen).
+        """
+        screen = getattr(getattr(bpy, "context", None), "screen", None)
+        if screen is None:
+            return
+        for area in screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            for region in area.regions:
+                if region.type != "WINDOW":
+                    continue
+                region_3d = getattr(region, "data", None)
+                if region_3d is None:
+                    continue
+                yield area, region, region_3d
+
+    @classmethod
+    def get_or_create_collection(cls, scene: bpy.types.Scene, name: str) -> bpy.types.Collection:
+        """Return the named collection, creating + linking it to ``scene`` if absent."""
+        collection = bpy.data.collections.get(name)
+        if collection is None:
+            collection = bpy.data.collections.new(name)
+            scene.collection.children.link(collection)
+        return collection
+
+    @classmethod
+    def serialize_matrix(cls, matrix: Matrix) -> str:
+        """Serialize a 4x4 matrix as a 16-float comma-separated string.
+
+        Round-trip pair with :meth:`deserialize_matrix`. Used for storing
+        a matrix in an IFC pset string property without losing precision
+        (``%.9g`` carries ~9 significant digits, enough for ``float32``
+        round-trip).
+        """
+        return ",".join(f"{matrix[r][c]:.9g}" for r in range(4) for c in range(4))
+
+    @classmethod
+    def deserialize_matrix(cls, text: str) -> Matrix:
+        """Inverse of :meth:`serialize_matrix`."""
+        floats = [float(v) for v in text.split(",")]
+        return Matrix([tuple(floats[r * 4 : r * 4 + 4]) for r in range(4)])
+
+    @classmethod
+    def hash_matrix(cls, matrix: Matrix) -> int:
+        """Hash a 4x4 matrix by its 16 floats. Useful as a cache key."""
+        return hash(tuple(matrix[r][c] for r in range(4) for c in range(4)))
 
     @classmethod
     def is_view_top_down(cls, context: bpy.types.Context, threshold: float = 0.9659) -> bool:
@@ -1274,7 +1396,10 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_object_from_guid(cls, guid: str) -> Union[bpy.types.Object, None]:
-        element = tool.Ifc.get().by_guid(guid)
+        try:
+            element = tool.Ifc.get().by_guid(guid)
+        except RuntimeError:
+            return None
         obj = tool.Ifc.get_object(element)
         if obj:
             return obj

@@ -517,6 +517,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         size=4,
         description="Color of not selected verts/edges (used in profile editing mode)",
     )
+    clip_box_cap_color: bpy.props.FloatVectorProperty(
+        name="Clip Box Caps Color",
+        subtype="COLOR",
+        default=(0.0, 0.0, 0.0, 1.0),
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Fill color of clip-box cross-section caps",
+    )
     decorator_color_special: bpy.props.FloatVectorProperty(
         name="Special Elements Color",
         subtype="COLOR",
@@ -806,6 +815,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_special")
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
+        bonsai.bim.helper.draw_expandable_panel(
+            layout,
+            context,
+            "Clip Box",
+            self.draw_clip_box_colors,
+        )
+
+    def draw_clip_box_colors(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.row().prop(self, "clip_box_cap_color")
 
     def draw_default_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         box = layout.box()
