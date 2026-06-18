@@ -271,7 +271,7 @@ class DumbSlabPlaner:
                 # For instances, a 30 degrees angled extrusion with positive direction has the same extrusion direction as a
                 # -150 degrees angled extrusion with negative direction. The difference lies in the object's rotation.
                 # This means that things can get messy if the user changes the object x angle somehow. We have to figure out an alternative approach.
-                existing_x_angle = obj.rotation_euler.x
+                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle

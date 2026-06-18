@@ -873,7 +873,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 extrusion.Depth = perpendicular_depth
             else:
                 if tool.Model.get_usage_type(element) == "LAYER3":
-                    existing_x_angle = obj.rotation_euler.x
+                    existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                     existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
 
