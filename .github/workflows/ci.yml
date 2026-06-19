@@ -43,7 +43,7 @@ jobs:
       CLICOLOR_FORCE: "1"
       CMAKE_COLOR_DIAGNOSTICS: "ON"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
             submodules: recursive
 
