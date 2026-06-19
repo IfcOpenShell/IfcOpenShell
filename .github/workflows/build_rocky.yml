@@ -54,12 +54,12 @@ jobs:
           aws --version
 
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           submodules: recursive
 
       - name: Checkout Build Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: IfcOpenShell/build-outputs
           path: ./build
