@@ -33,8 +33,10 @@ from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.decorator import (
     BoundingBoxDecorator,
+    MEPSystemPathDecorator,
     SlabDirectionDecorator,
     WallAxisDecorator,
+    WallSystemPathDecorator,
 )
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
@@ -130,6 +132,19 @@ def update_slab_direction_decorator(self: "BIMModelProperties", context: bpy.typ
         SlabDirectionDecorator.install(bpy.context)
     else:
         SlabDirectionDecorator.uninstall()
+
+
+def update_paths_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
+    """Unified toggle for connected-element path overlays. Drives both the
+    MEP and wall path decorators — each decorator's ``draw`` short-circuits
+    when its kind of element isn't selected, so leaving both installed is
+    cheap and lets one toggle cover any connected-element family."""
+    if self.show_paths:
+        MEPSystemPathDecorator.install(bpy.context)
+        WallSystemPathDecorator.install(bpy.context)
+    else:
+        MEPSystemPathDecorator.uninstall()
+        WallSystemPathDecorator.uninstall()
 
 
 def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -> None:
@@ -354,6 +369,19 @@ class BIMModelProperties(PropertyGroup):
         default=False,
         update=update_slab_direction_decorator,
     )
+    show_paths: bpy.props.BoolProperty(
+        name="Show Paths",
+        default=False,
+        update=update_paths_decorator,
+        description=(
+            "Trace the connected element path from the selected element. For "
+            "walls, follows IfcRelConnectsPathElements and draws each "
+            "connected wall's reference axis with endpoint dots. For MEP "
+            "elements, follows IfcRelConnectsPorts and draws each segment's "
+            "axis plus a port-to-port spider for each fitting. Toggle off to "
+            "skip the BFS traversal entirely."
+        ),
+    )
 
     prev_transform_orientation_slot_type: bpy.props.StringProperty(name="Previous Gizmo Orientation Type")
     prev_show_gizmo_object_translate: bpy.props.BoolProperty(name="Previous Gizmo Translate")
@@ -401,6 +429,7 @@ class BIMModelProperties(PropertyGroup):
         offset: float
         show_wall_axis: bool
         show_slab_direction: bool
+        show_paths: bool
 
         prev_transform_orientation_slot_type: str
         prev_show_gizmo_object_translate: bool
