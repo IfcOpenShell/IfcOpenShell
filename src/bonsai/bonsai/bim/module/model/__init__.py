@@ -378,6 +378,11 @@ def unregister():
     # half-unloaded module state.
     opening.DecorationsHandler.uninstall()
 
+    # Network path overlays attach SpaceView3D draw handlers on toggle;
+    # uninstall here so addon disable / Blender shutdown doesn't leak them.
+    decorator.MEPSystemPathDecorator.uninstall()
+    decorator.WallSystemPathDecorator.uninstall()
+
     if not bpy.app.background:
         for tool_data in reversed(tools):
             bpy.utils.unregister_tool(tool_data.tool)
