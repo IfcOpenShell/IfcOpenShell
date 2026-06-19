@@ -39,6 +39,8 @@
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
 
+#include <variant>
+
 #ifdef IFOPSH_SIMPLE_KERNEL
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -179,13 +181,17 @@ namespace ifcopenshell { namespace geometry {
 
 	class IFC_GEOMLIBRARY_API CgalShape : public IfcGeom::ConversionResultShape {
 	private:
+		typedef std::variant<cgal_shape_t, cgal_point_t, cgal_wire_t> cgal_shape_storage_t;
+
 		bool convex_tag_ = false;
-		mutable boost::optional<cgal_shape_t> shape_;
+		mutable boost::optional<cgal_shape_storage_t> shape_;
 #ifndef IFOPSH_SIMPLE_KERNEL
 		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
     public:
 		CgalShape(const cgal_shape_t& shape, bool convex = false, Logger& logger = Logger::Root());
+		CgalShape(const cgal_point_t& point, bool convex = false);
+		CgalShape(const cgal_wire_t& wire, bool convex = false);
 
 #ifndef IFOPSH_SIMPLE_KERNEL
 		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool convex = false) {
@@ -206,14 +212,29 @@ namespace ifcopenshell { namespace geometry {
 		void to_poly() const {}
 #endif
 
-		operator const cgal_shape_t& () const { to_poly();  return *shape_; }
-		const cgal_shape_t& poly() const { to_poly(); return *shape_; }
+		operator const cgal_shape_t& () const { return poly(); }
+		const cgal_shape_t& poly() const;
+		bool is_poly() const { return shape_ && std::holds_alternative<cgal_shape_t>(*shape_); }
+		bool is_point() const { return shape_ && std::holds_alternative<cgal_point_t>(*shape_); }
+		bool is_wire() const { return shape_ && std::holds_alternative<cgal_wire_t>(*shape_); }
+		const cgal_point_t& point() const { return std::get<cgal_point_t>(*shape_); }
+		const cgal_wire_t& wire() const { return std::get<cgal_wire_t>(*shape_); }
 
 		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual IfcGeom::ConversionResultShape* clone() const {
-			return new CgalShape(*shape_);
+			if (shape_) {
+				return std::visit([this](const auto& value) -> IfcGeom::ConversionResultShape* {
+					return new CgalShape(value, convex_tag_);
+				}, *shape_);
+			}
+#ifndef IFOPSH_SIMPLE_KERNEL
+			if (nef_) {
+				return new CgalShape(*nef_, convex_tag_);
+			}
+#endif
+			return nullptr;
 		}
 
 		virtual bool is_manifold() const;
