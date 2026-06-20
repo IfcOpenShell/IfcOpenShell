@@ -46,6 +46,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/graph/copy.hpp>
 
+#include <cstddef>
 #include <list>
 #include <queue>
 #include <memory>
@@ -115,6 +116,23 @@ enum halfspace_operation {
 template <typename Kernel>
 using plane_map = std::map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneLess<Kernel>>;
 // using plane_map = std::unordered_map<typename Kernel::Plane_3, typename Kernel::Plane_3, PlaneHash<Kernel>>;
+
+template <typename Kernel>
+typename Kernel::Plane_3 normalized_plane_for_map(const typename Kernel::Plane_3& plane) {
+	std::array<typename Kernel::FT, 3> abc{ plane.a(), plane.b(), plane.c() };
+	auto minel = std::min_element(abc.begin(), abc.end());
+	auto maxel = std::max_element(abc.begin(), abc.end());
+	auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
+	if (maxval == 0) {
+		return plane;
+	}
+	return typename Kernel::Plane_3(
+		plane.a() / maxval,
+		plane.b() / maxval,
+		plane.c() / maxval,
+		plane.d() / maxval
+	);
+}
 
 // Lexicographic comparator for CGAL Point_d (operator< is deleted in CGAL 6.x)
 struct Point_d_4d_Less {
@@ -264,7 +282,11 @@ class halfspace_tree {
 public:
 	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate() const = 0;
 	virtual void accumulate(std::list<typename Kernel::Plane_3>&) const = 0;
-	virtual std::unique_ptr<halfspace_tree> map(const plane_map<Kernel>&) const = 0;
+	std::unique_ptr<halfspace_tree> map(const plane_map<Kernel>& m) const {
+		std::size_t ignored = 0;
+		return map(m, ignored);
+	}
+	virtual std::unique_ptr<halfspace_tree> map(const plane_map<Kernel>&, std::size_t& mutated) const = 0;
 	virtual std::string dump(int level = 0) const = 0;
 	virtual tree_type kind() const = 0;
 	virtual void merge(CGAL::Nef_polyhedron_3<Kernel>&) const = 0;
@@ -366,10 +388,10 @@ public:
 			op->accumulate(points);
 		}
 	}
-	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const plane_map<Kernel>& m) const {
+	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const plane_map<Kernel>& m, std::size_t& mutated) const {
 		decltype(operands_) mapped;
 		for (auto& op : operands_) {
-			mapped.emplace_back(op->map(m));
+			mapped.emplace_back(op->map(m, mutated));
 		}
 		return std::unique_ptr<halfspace_tree<Kernel>>(new halfspace_tree_nary_branch(operation_, std::move(mapped)));
 	}
@@ -485,21 +507,12 @@ public:
 	virtual void accumulate(std::list<typename Kernel::Plane_3>& points) const {
 		points.push_back(plane_);
 	}
-	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const plane_map<Kernel>& m) const {
-
-		std::array<typename Kernel::FT, 3> abc{ plane_.a(), plane_.b(), plane_.c() };
-		auto minel = std::min_element(abc.begin(), abc.end());
-		auto maxel = std::max_element(abc.begin(), abc.end());
-		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
-		CGAL::Plane_3<Kernel> pp(
-			plane_.a() / maxval,
-			plane_.b() / maxval,
-			plane_.c() / maxval,
-			plane_.d() / maxval
-		);
+	virtual std::unique_ptr<halfspace_tree<Kernel>> map(const plane_map<Kernel>& m, std::size_t& mutated) const {
+		CGAL::Plane_3<Kernel> pp = normalized_plane_for_map<Kernel>(plane_);
 
 		auto it = m.find(pp);
 		if (it != m.end()) {
+			++mutated;
 			return std::unique_ptr<halfspace_tree<Kernel>>(new halfspace_tree_plane(it->second));
 		} else {
 			return std::unique_ptr<halfspace_tree<Kernel>>(new halfspace_tree_plane(plane_));

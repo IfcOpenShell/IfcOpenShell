@@ -276,8 +276,8 @@ namespace ifcopenshell { namespace geometry {
 		virtual ConversionResultShape* intersect(ConversionResultShape*);
 		virtual ConversionResultShape* concat(ConversionResultShape*);
 
-		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
-		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
+		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
+		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
 
 		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const;
@@ -347,8 +347,8 @@ namespace ifcopenshell { namespace geometry {
 			return nullptr;
 		}
 
-		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
-		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
+		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
+		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
 
 		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const {

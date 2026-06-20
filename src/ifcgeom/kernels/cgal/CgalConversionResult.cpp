@@ -78,6 +78,31 @@ namespace {
 		);
 	}
 
+	cgal_plane_t plane_from_opaque(const OpaqueCoordinate<4>& p) {
+#ifdef IFOPSH_SIMPLE_KERNEL
+		return cgal_plane_t(
+			p.get(0)->to_double(),
+			p.get(1)->to_double(),
+			p.get(2)->to_double(),
+			p.get(3)->to_double()
+		);
+#else
+		return cgal_plane_t(
+			static_cast<NumberEpeck*>(p.get(0))->value(),
+			static_cast<NumberEpeck*>(p.get(1))->value(),
+			static_cast<NumberEpeck*>(p.get(2))->value(),
+			static_cast<NumberEpeck*>(p.get(3))->value()
+		);
+#endif
+	}
+
+	void insert_normalized_plane_map(plane_map<Kernel_>& mp, const OpaqueCoordinate<4>& from, const OpaqueCoordinate<4>& to) {
+		mp.insert({
+			normalized_plane_for_map<Kernel_>(plane_from_opaque(from)),
+			normalized_plane_for_map<Kernel_>(plane_from_opaque(to))
+		});
+	}
+
 	cgal_vector_t wire_normal(const cgal_wire_t& wire) {
 		typename Kernel_::FT a(0), b(0), c(0);
 		if (wire.size() < 3) {
@@ -984,11 +1009,11 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::ge
 	return new CgalShape(s, convex_tag_);
 }
 
-void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 
@@ -1165,27 +1190,16 @@ ConversionResultShape* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
+std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
 	plane_map<Kernel_> mp;
-	mp.insert({
-		CGAL::Plane_3<Kernel_>(
-			static_cast<NumberEpeck*>(from.get(0))->value(),
-			static_cast<NumberEpeck*>(from.get(1))->value(),
-			static_cast<NumberEpeck*>(from.get(2))->value(),
-			static_cast<NumberEpeck*>(from.get(3))->value()
-		),
-		CGAL::Plane_3<Kernel_>(
-			static_cast<NumberEpeck*>(to.get(0))->value(),
-			static_cast<NumberEpeck*>(to.get(1))->value(),
-			static_cast<NumberEpeck*>(to.get(2))->value(),
-			static_cast<NumberEpeck*>(to.get(3))->value()
-		)
-	});
-	auto nw = shape_->map(mp);
+	insert_normalized_plane_map(mp, from, to);
+	std::size_t mutated = 0;
+	auto nw = shape_->map(mp, mutated);
 	shape_ = std::move(nw);
+	return mutated;
 }
 
-void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vector<OpaqueCoordinate<4>>& froms, const std::vector<OpaqueCoordinate<4>>& tos) {
+std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vector<OpaqueCoordinate<4>>& froms, const std::vector<OpaqueCoordinate<4>>& tos) {
 	plane_map<Kernel_> mp;
 	if (froms.size() != tos.size()) {
 		throw std::runtime_error("Expected equal size");
@@ -1195,23 +1209,12 @@ void ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const std::vec
 	for (; it < froms.end(); ++it, ++jt) {
 		auto& from = *it;
 		auto& to = *jt;
-		mp.insert({
-			CGAL::Plane_3<Kernel_>(
-				static_cast<NumberEpeck*>(from.get(0))->value(),
-				static_cast<NumberEpeck*>(from.get(1))->value(),
-				static_cast<NumberEpeck*>(from.get(2))->value(),
-				static_cast<NumberEpeck*>(from.get(3))->value()
-			),
-			CGAL::Plane_3<Kernel_>(
-				static_cast<NumberEpeck*>(to.get(0))->value(),
-				static_cast<NumberEpeck*>(to.get(1))->value(),
-				static_cast<NumberEpeck*>(to.get(2))->value(),
-				static_cast<NumberEpeck*>(to.get(3))->value()
-			)
-			});
+		insert_normalized_plane_map(mp, from, to);
 	}
-	auto nw = shape_->map(mp);
+	std::size_t mutated = 0;
+	auto nw = shape_->map(mp, mutated);
 	shape_ = std::move(nw);
+	return mutated;
 }
 
 

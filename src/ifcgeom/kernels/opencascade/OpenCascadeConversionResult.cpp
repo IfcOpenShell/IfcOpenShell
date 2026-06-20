@@ -696,10 +696,10 @@ bool ifcopenshell::geometry::OpenCascadeShape::surface_area_along_direction(doub
 	return true;
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geometry::OpenCascadeShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geometry::OpenCascadeShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
