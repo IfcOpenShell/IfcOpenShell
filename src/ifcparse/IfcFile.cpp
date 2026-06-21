@@ -725,7 +725,8 @@ std::optional<std::tuple<size_t, const IfcParse::declaration*, IfcEntityInstance
             }
 
             if (entity_type->as_entity() == nullptr) {
-                logger_.get().Message(Logger::LOG_ERROR, "SYN", 4, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
+                logger_.get().Message(Logger::LOG_ERROR, "SYN", 4, "Non-entity type " + entity_type->name() + " at offset " + std::to_string(token_stream_[2].startPos));
+                current_id = 0;
                 goto advance;
             }
 

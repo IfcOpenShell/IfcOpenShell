@@ -98,7 +98,8 @@ def is_editing_project_library_update(self: "BIMProjectProperties", context: bpy
         project_library = library_file.by_id(int(self.selected_project_library))
         self.project_library_attributes.clear()
         bonsai.bim.helper.import_attributes(project_library, self.project_library_attributes)
-        self.parent_library = str(tool.Project.get_parent_library(project_library).id())
+        if parent_library := tool.Project.get_parent_library(project_library):
+            self.parent_library = str(parent_library.id())
         ProjectLibraryData.load()  # Show edit icon in enum.
         return
 

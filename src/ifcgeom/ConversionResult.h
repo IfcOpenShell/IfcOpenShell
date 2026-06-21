@@ -24,6 +24,7 @@
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/taxonomy.h"
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -293,8 +294,8 @@ namespace IfcGeom {
 		virtual ConversionResultShape* intersect(ConversionResultShape*) = 0;
 		virtual ConversionResultShape* concat(ConversionResultShape*) = 0;
 
-		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
-		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
+		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
+		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
 		
 		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const = 0;

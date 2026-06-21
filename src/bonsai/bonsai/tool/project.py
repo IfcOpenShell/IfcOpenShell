@@ -32,6 +32,7 @@ from typing import (
     NotRequired,
     Optional,
     TypedDict,
+    Union,
 )
 
 import bpy
@@ -376,12 +377,31 @@ class Project(bonsai.core.tool.Project):
             )
 
     @classmethod
-    def get_parent_library(cls, project_library: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    def get_parent_library(
+        cls, project_library: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the IfcContext that declares or nests ``project_library``.
+
+        Returns ``None`` when ``project_library`` is itself the root of a
+        library-only file (no IfcRelNests, no IfcRelDeclares).
+        """
         if nests := project_library.Nests:
-            # IfcProjectLibrary.
             return nests[0].RelatingObject
-        # IfcProject.
-        return project_library.HasContext[0].RelatingContext
+        if has_context := project_library.HasContext:
+            return has_context[0].RelatingContext
+        return None
+
+    @classmethod
+    def get_root_context(cls, ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        """Return the file's root IfcContext.
+
+        Prefers IfcProject if present, otherwise falls back to IfcProjectLibrary —
+        library-only files are valid per IFC4+ and contain no IfcProject. Caller is
+        responsible for the IFC2X3 guard; IfcContext does not exist in that schema.
+        """
+        if projects := ifc_file.by_type("IfcProject"):
+            return projects[0]
+        return ifc_file.by_type("IfcProjectLibrary")[0]
 
     @classmethod
     def get_project_hierarchy(cls, ifc_file: ifcopenshell.file) -> HiearchyDict:
@@ -401,6 +421,8 @@ class Project(bonsai.core.tool.Project):
             return hierarchy
         for project_library in ifc_file.by_type("IfcProjectLibrary"):
             parent_library = cls.get_parent_library(project_library)
+            if parent_library is None:
+                continue
             hierarchy[parent_library][project_library] = hierarchy[project_library]
         return hierarchy
 

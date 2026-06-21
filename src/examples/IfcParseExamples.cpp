@@ -65,6 +65,30 @@ static_assert(false, "A boost preprocessor sequence of schema identifiers is nee
 #include INCLUDE_SCHEMA_N(14)
 #include INCLUDE_SCHEMA_N(15)
 
+#undef INCLUDE_SCHEMA_N
+
+#define INCLUDE_SCHEMA_N(n) \
+	BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_SEQ_SIZE(SCHEMA_SEQ), n), \
+		BOOST_PP_STRINGIZE(ifcparse/BOOST_PP_CAT(Ifc, BOOST_PP_SEQ_ELEM(BOOST_PP_MIN(n, BOOST_PP_SEQ_SIZE(BOOST_PP_SEQ_POP_BACK(SCHEMA_SEQ))), SCHEMA_SEQ))-definitions.h), \
+		"ifcgeom/empty.h")
+
+#include INCLUDE_SCHEMA_N(0)
+#include INCLUDE_SCHEMA_N(1)
+#include INCLUDE_SCHEMA_N(2)
+#include INCLUDE_SCHEMA_N(3)
+#include INCLUDE_SCHEMA_N(4)
+#include INCLUDE_SCHEMA_N(5)
+#include INCLUDE_SCHEMA_N(6)
+#include INCLUDE_SCHEMA_N(7)
+#include INCLUDE_SCHEMA_N(8)
+#include INCLUDE_SCHEMA_N(9)
+#include INCLUDE_SCHEMA_N(10)
+#include INCLUDE_SCHEMA_N(11)
+#include INCLUDE_SCHEMA_N(12)
+#include INCLUDE_SCHEMA_N(13)
+#include INCLUDE_SCHEMA_N(14)
+#include INCLUDE_SCHEMA_N(15)
+
 #include <iomanip>
 
 #if USE_VLD
