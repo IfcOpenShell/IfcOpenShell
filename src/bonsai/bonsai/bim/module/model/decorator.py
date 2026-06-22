@@ -2069,46 +2069,6 @@ class BoundingBoxDecorator:
                             co2.y -= y_overlap / 2 + min_spacing
 
 
-def _fill_quads_alpha(
-    context: bpy.types.Context,
-    quads: list[
-        tuple[
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
-        ]
-    ],
-    color_rgb: tuple[float, float, float],
-    alpha: float,
-) -> None:
-    """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
-    order) as one TRIS batch with two triangles per quad."""
-    if not quads:
-        return
-    verts: list[tuple[float, float, float]] = []
-    indices: list[tuple[int, int, int]] = []
-    for quad in quads:
-        if len(quad) != 4:
-            continue
-        base = len(verts)
-        verts.extend(tuple(v) for v in quad)
-        indices.append((base, base + 1, base + 2))
-        indices.append((base, base + 2, base + 3))
-    if not tool.Blender.validate_shader_batch_data(verts, indices):
-        return
-    region = getattr(context, "region", None)
-    if region is None:
-        return
-    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-    shader.bind()
-    shader.uniform_float("color", (*color_rgb, alpha))
-    batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=indices)
-    gpu.state.blend_set("ALPHA")
-    batch.draw(shader)
-    gpu.state.blend_set("NONE")
-
-
 def compute_mep_join_location():
     """Midpoint between the closest endpoint pair of two selected MEP
     segments — the world location where a connecting fitting (bend /
