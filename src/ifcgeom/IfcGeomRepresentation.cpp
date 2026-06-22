@@ -81,7 +81,7 @@ bool IfcGeom::Representation::BRep::calculate_surface_area(double& area) const {
 		area = 0.;
 		return false;
 	}
-	area = s->area()->to_double();
+	area = s->area().to_double();
 	return true;
 }
 
@@ -91,7 +91,7 @@ bool IfcGeom::Representation::BRep::calculate_volume(double& volume) const {
 		volume = 0.;
 		return false;
 	}
-	volume = s->volume()->to_double();
+	volume = s->volume().to_double();
 	return true;
 }
 

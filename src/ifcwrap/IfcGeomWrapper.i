@@ -83,16 +83,9 @@
 %newobject IfcGeom::ConversionResultShape::moved;
 %newobject IfcGeom::ConversionResultShape::wrap_in_compound;
 
-%newobject IfcGeom::ConversionResultShape::area;
-%newobject IfcGeom::ConversionResultShape::volume;
-%newobject IfcGeom::ConversionResultShape::length;
 
 %newobject nary_union;
 
-%newobject IfcGeom::OpaqueNumber::operator+;
-%newobject IfcGeom::OpaqueNumber::operator-;
-%newobject IfcGeom::OpaqueNumber::operator*;
-%newobject IfcGeom::OpaqueNumber::operator/;
 
 %inline %{
 template <typename T>
@@ -1180,17 +1173,15 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
 %template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
 
-%newobject create_epeck;
-
 %inline %{
-	IfcGeom::OpaqueNumber* create_epeck(int i) {
-		return new ifcopenshell::geometry::NumberEpeck(i);
+	IfcGeom::OpaqueNumber create_epeck(int i) {
+		return ifcopenshell::geometry::NumberEpeck(i);
 	}
-	IfcGeom::OpaqueNumber* create_epeck(double d) {
-		return new ifcopenshell::geometry::NumberEpeck(d);
+	IfcGeom::OpaqueNumber create_epeck(double d) {
+		return ifcopenshell::geometry::NumberEpeck(d);
 	}
-	IfcGeom::OpaqueNumber* create_epeck(const std::string& s) {
-		return new ifcopenshell::geometry::NumberEpeck(typename CGAL::Epeck::FT::ET(s));
+	IfcGeom::OpaqueNumber create_epeck(const std::string& s) {
+		return ifcopenshell::geometry::NumberEpeck(typename CGAL::Epeck::FT::ET(s));
 	}
 %}
 

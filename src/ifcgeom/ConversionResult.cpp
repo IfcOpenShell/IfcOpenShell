@@ -23,7 +23,7 @@ void IfcGeom::ConversionResult::prepend(ifcopenshell::geometry::taxonomy::matrix
 
 std::string IfcGeom::NumberNativeDouble::to_string() const {
 	std::stringstream ss;
-	ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << value_;
+	ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << value();
 	return ss.str();
 }
 
