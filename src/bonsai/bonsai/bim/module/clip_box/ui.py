@@ -58,6 +58,7 @@ class BIM_MT_clip_box_settings(Menu):
     def draw(self, context):
         scene_props = tool.ClipBox.get_scene_props(context.scene)
         self.layout.prop(scene_props, "clip_only_ifc_products")
+        self.layout.prop(scene_props, "include_linked_ifc")
         self.layout.prop(scene_props, "enable_gizmos")
 
 
