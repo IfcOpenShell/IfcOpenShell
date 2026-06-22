@@ -55,9 +55,11 @@ from typing import (
 
 import bmesh
 import bpy
+import gpu
 import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
+from gpu_extras.batch import batch_for_shader
 from ifcopenshell import entity_instance
 from mathutils import Matrix, Vector
 
@@ -2402,6 +2404,87 @@ class Blender(bonsai.core.tool.Blender):
         """
         tris = [[loop.vert.index for loop in tri] for tri in bm.calc_loop_triangles()]
         draw_batch("TRIS", world_vert_coords, color, tris)
+
+    @classmethod
+    def draw_quads(
+        cls,
+        context: bpy.types.Context,
+        quads: Sequence[
+            tuple[
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+            ]
+        ],
+        *,
+        fill_color: Optional[tuple[float, float, float, float]] = None,
+        outline_color: Optional[tuple[float, float, float, float]] = None,
+        outline_width: float = 1.0,
+    ) -> None:
+        """Render ``quads`` (each a 4-tuple of CCW world-space corners) as
+        a filled TRIS batch, an outline LINES batch, or both.
+
+        Both colors are RGBA 4-tuples. Pass ``fill_color=None`` to skip
+        the fill pass and ``outline_color=None`` to skip the outline.
+        Skipping both is a no-op.
+
+        Replaces the per-decorator quad-fill helpers that used to live
+        inline in each feature module.
+        """
+        if not quads or (fill_color is None and outline_color is None):
+            return
+        region = getattr(context, "region", None)
+        if region is None:
+            return
+
+        verts: list[tuple[float, float, float]] = []
+        tri_indices: list[tuple[int, int, int]] = []
+        line_indices: list[tuple[int, int]] = []
+        for quad in quads:
+            if len(quad) != 4:
+                continue
+            base = len(verts)
+            verts.extend(tuple(v) for v in quad)
+            if fill_color is not None:
+                tri_indices.append((base, base + 1, base + 2))
+                tri_indices.append((base, base + 2, base + 3))
+            if outline_color is not None:
+                line_indices.append((base, base + 1))
+                line_indices.append((base + 1, base + 2))
+                line_indices.append((base + 2, base + 3))
+                line_indices.append((base + 3, base))
+
+        if not cls.validate_shader_batch_data(verts, None):
+            return
+
+        gpu.state.blend_set("ALPHA")
+        try:
+            if fill_color is not None and tri_indices:
+                shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                shader.bind()
+                shader.uniform_float("color", fill_color)
+                batch = batch_for_shader(
+                    shader, "TRIS", {"pos": verts}, indices=tri_indices
+                )
+                batch.draw(shader)
+            if outline_color is not None and line_indices:
+                shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                shader.bind()
+                shader.uniform_float("color", outline_color)
+                # Outline width: the UNIFORM_COLOR shader respects the
+                # GPU's current line-width state; restore on exit.
+                prev_width = gpu.state.line_width_get()
+                gpu.state.line_width_set(outline_width)
+                try:
+                    batch = batch_for_shader(
+                        shader, "LINES", {"pos": verts}, indices=line_indices
+                    )
+                    batch.draw(shader)
+                finally:
+                    gpu.state.line_width_set(prev_width)
+        finally:
+            gpu.state.blend_set("NONE")
 
     @classmethod
     def build_dashed_line_segments(

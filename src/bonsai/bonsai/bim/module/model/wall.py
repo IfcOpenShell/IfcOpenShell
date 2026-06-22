@@ -63,7 +63,6 @@ from bonsai.bim.module.model.decorator import (
     _BBOX_HIGHLIGHT_LINE_WIDTH,
     PolylineDecorator,
     ProductDecorator,
-    _fill_quads_alpha,
     bbox_world_edges,
     draw_polyline_segments,
 )
@@ -4859,7 +4858,7 @@ class WallGizmoPreviewDecorator(tool.Blender.ViewportDecorator):
         ],
         color_rgb: tuple[float, float, float],
     ) -> None:
-        _fill_quads_alpha(context, quads, color_rgb, self.QUAD_ALPHA)
+        tool.Blender.draw_quads(context, quads, fill_color=(*color_rgb, self.QUAD_ALPHA))
 
     @staticmethod
     def _wall_floor_quad(mw: Matrix, x0: float, x1: float, y0: float, y1: float) -> tuple[
