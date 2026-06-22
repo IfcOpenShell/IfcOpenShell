@@ -1950,6 +1950,13 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
+        clip_box_props = tool.ClipBox.get_scene_props(context.scene)
+        row = col.row(align=True)
+        # Grey out the toggles when there is no clip box to act on, so the
+        # user can see the controls but can't flip a switch that does nothing.
+        row.enabled = bool(clip_box_props.clip_boxes)
+        row.prop(clip_box_props, "enabled", text="Enable Clipping")
+        row.prop(clip_box_props, "show_caps", text="Show Caps")
 
 
 class BIM_PT_snappping(Panel):
