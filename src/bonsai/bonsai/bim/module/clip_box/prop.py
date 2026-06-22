@@ -76,6 +76,10 @@ def update_clip_only_ifc_products(self, context):
     tool.ClipBox.invalidate_cap_cache()
 
 
+def update_include_linked_ifc(self, context):
+    tool.ClipBox.invalidate_cap_cache()
+
+
 class BIMSceneClipBoxProperties(PropertyGroup):
     """Scene-level registry of clip boxes in this file.
 
@@ -126,6 +130,21 @@ class BIMSceneClipBoxProperties(PropertyGroup):
             "imported obj, primitive cubes, …)"
         ),
     )
+    # Opt-in inclusion of geometry sitting inside loaded Project › Links
+    # collection-instance empties. Off by default — linked IFCs commonly
+    # carry the entire site / structural / MEP context, and bisecting
+    # them on every clip-box edit can be expensive.
+    include_linked_ifc: bpy.props.BoolProperty(
+        name="Include Linked IFC",
+        default=False,
+        update=update_include_linked_ifc,
+        description=(
+            "Also generate cross-section caps for geometry inside linked "
+            "IFC files (Project ▸ Links). Off by default — linked IFCs may "
+            "carry the entire site / structural backbone, and capping them "
+            "adds per-mesh bisect cost on every clip-box edit"
+        ),
+    )
     # Also Scene-only — gizmo visibility is a per-user editing preference,
     # not a portable IFC property.
     enable_gizmos: bpy.props.BoolProperty(
@@ -142,4 +161,5 @@ class BIMSceneClipBoxProperties(PropertyGroup):
         enabled: bool
         show_caps: bool
         clip_only_ifc_products: bool
+        include_linked_ifc: bool
         enable_gizmos: bool

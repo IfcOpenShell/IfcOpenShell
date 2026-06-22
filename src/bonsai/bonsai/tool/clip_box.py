@@ -29,6 +29,8 @@ import bpy
 import bonsai.tool as tool
 
 if TYPE_CHECKING:
+    from mathutils import Matrix
+
     from bonsai.bim.module.clip_box.prop import (
         BIMClipBoxProperties,
         BIMSceneClipBoxProperties,
@@ -922,6 +924,8 @@ class ClipBox:
         obj: bpy.types.Object,
         world_planes: PlaneSet,
         depsgraph: Optional[Any] = None,
+        *,
+        world_matrix: Optional[Matrix] = None,
     ) -> list[tuple[float, float, float]]:
         """Return triangle vertices for ``obj``'s cap polygons.
 
@@ -934,14 +938,25 @@ class ClipBox:
         objects with subsurf / boolean / mirror modifiers. Falls back to
         ``obj.data`` only for callers without a depsgraph (e.g. unit
         tests that fabricate a mesh outside any eval context).
+
+        ``world_matrix`` overrides ``obj.matrix_world`` for the local↔world
+        transform. Used by the linked-IFC path where the effective world
+        placement of a library-linked mesh is the instance empty's
+        ``matrix_world`` composed with the inner mesh's own matrix, not
+        the linked object's own ``matrix_world`` (which is library-local).
+        When supplied, the depsgraph path is skipped — library-linked
+        objects aren't part of the active scene's depsgraph and their
+        Bonsai-baked meshes don't carry modifier stacks anyway.
         """
         import bmesh
         from mathutils import Vector
 
+        mw = world_matrix if world_matrix is not None else obj.matrix_world
+
         bm = bmesh.new()
         eval_obj = None
         try:
-            if depsgraph is not None:
+            if depsgraph is not None and world_matrix is None:
                 try:
                     eval_obj = obj.evaluated_get(depsgraph)
                     mesh = eval_obj.to_mesh()
@@ -954,7 +969,7 @@ class ClipBox:
                 except (RuntimeError, ReferenceError):
                     return []
 
-            ws_to_ls = obj.matrix_world.inverted_safe()
+            ws_to_ls = mw.inverted_safe()
             rot = ws_to_ls.to_quaternion()
             planes_local = []
             for plane in world_planes:
@@ -976,7 +991,6 @@ class ClipBox:
             if not cap_faces:
                 return []
 
-            mw = obj.matrix_world
             return cls._triangulate_cap_faces(cap_faces, mw)
         finally:
             bm.free()
@@ -1013,6 +1027,38 @@ class ClipBox:
                 if entity is None or not entity.is_a("IfcElement"):
                     continue
             yield obj
+
+    @classmethod
+    def _iter_linked_ifc_capable_meshes(
+        cls, scene: bpy.types.Scene
+    ) -> Iterator[tuple[bpy.types.Object, bpy.types.Object, Matrix]]:
+        """Yield ``(instance_empty, inner_mesh, effective_world_matrix)``
+        for meshes inside loaded Project ▸ Links collection-instance empties.
+
+        Gated by ``BIMSceneClipBoxProperties.include_linked_ifc``: returns
+        nothing when the toggle is off so the main cap path stays untouched.
+
+        The effective world matrix is ``instance.matrix_world @
+        inner.matrix_world`` — the inner object's own ``matrix_world`` is
+        library-local (positioned relative to the linked collection's
+        origin), so the instance empty's placement has to be prepended to
+        land the cap at the right place in the active scene.
+        """
+        scene_props = cls.get_scene_props(scene)
+        if not scene_props.include_linked_ifc:
+            return
+        project_props = tool.Project.get_project_props()
+        for link in project_props.get_loaded_links():
+            instance = tool.Project.get_link_empty_handle(link)
+            if instance is None or instance.instance_collection is None:
+                continue
+            if not instance.visible_get():
+                continue
+            instance_mw = instance.matrix_world
+            for inner in instance.instance_collection.all_objects:
+                if inner.type != "MESH" or inner.data is None:
+                    continue
+                yield instance, inner, instance_mw @ inner.matrix_world
 
     @classmethod
     def invalidate_cap_cache(cls, *, immediate: bool = False) -> None:
@@ -1114,6 +1160,29 @@ class ClipBox:
             verts = cls._compute_caps_for_object(obj, world_planes, depsgraph=depsgraph)
             batch = cls._build_cap_batch(verts) if verts else None
             cls._cap_cache[obj.name] = (cache_key, batch)
+
+        # Linked-IFC inner meshes (gated by include_linked_ifc). The
+        # ``link:`` prefix on the cache name namespaces them so they
+        # cannot collide with a scene-object named identically.
+        for instance, inner, world_matrix in cls._iter_linked_ifc_capable_meshes(scene):
+            cache_name = f"link:{instance.name}:{inner.name}"
+            live_names.add(cache_name)
+            mesh = inner.data
+            cache_key = (
+                getattr(mesh, "session_uid", id(mesh)),
+                tool.Blender.hash_matrix(world_matrix),
+                clip_box_hash,
+            )
+            cached = cls._cap_cache.get(cache_name)
+            if cached is not None and cached[0] == cache_key:
+                continue
+            world_corners = [world_matrix @ Vector(c) for c in inner.bound_box]
+            if not tool.Cad.corners_might_cross_clip_planes(world_planes, world_corners):
+                cls._cap_cache[cache_name] = (cache_key, None)
+                continue
+            verts = cls._compute_caps_for_object(inner, world_planes, depsgraph=depsgraph, world_matrix=world_matrix)
+            batch = cls._build_cap_batch(verts) if verts else None
+            cls._cap_cache[cache_name] = (cache_key, batch)
 
         for name in list(cls._cap_cache):
             if name not in live_names:
