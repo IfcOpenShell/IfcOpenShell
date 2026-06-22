@@ -40,7 +40,6 @@ import bonsai.tool as tool
 
 from . import face_quad
 
-
 # Local-frame bounds of the empty's CUBE display. The display spans
 # ``[-empty_display_size, +empty_display_size]^3``; Bonsai always sets
 # ``empty_display_size = 1.0`` on clip-box hosts, so the local box is
@@ -91,9 +90,7 @@ def _make_face_get_cb(gz: Any, group: Any, axis: int, is_max: bool):
         if empty is None:
             return 0.0
         existing = getattr(gz, "_drag_snapshot", None)
-        if existing is not None and existing.get("empty_name") == getattr(
-            empty, "name", None
-        ):
+        if existing is not None and existing.get("empty_name") == getattr(empty, "name", None):
             return float(existing["world_half"])
 
         world_half = _world_half_extent(empty, axis)
@@ -119,9 +116,7 @@ def _make_ctrl_click_cb(axis: int, is_max: bool):
     """
 
     def _callback(_context: Any, _event: Any) -> None:
-        bpy.ops.bim.align_view_to_clip_face(
-            "INVOKE_DEFAULT", axis=axis, is_max=is_max
-        )
+        bpy.ops.bim.align_view_to_clip_face("INVOKE_DEFAULT", axis=axis, is_max=is_max)
 
     return _callback
 
@@ -206,12 +201,8 @@ class OBJECT_GGT_bim_clip_box(bpy.types.GizmoGroup):  # noqa: N801 — Blender b
             space_type=cls.bl_space_type,
             region_type=cls.bl_region_type,
         )
-        km.keymap_items.new(
-            "gizmogroup.gizmo_tweak", type="LEFTMOUSE", value="CLICK_DRAG"
-        )
-        km.keymap_items.new(
-            "gizmogroup.gizmo_tweak", type="LEFTMOUSE", value="PRESS", ctrl=True
-        )
+        km.keymap_items.new("gizmogroup.gizmo_tweak", type="LEFTMOUSE", value="CLICK_DRAG")
+        km.keymap_items.new("gizmogroup.gizmo_tweak", type="LEFTMOUSE", value="PRESS", ctrl=True)
         return km
 
     def setup(self, context: Any) -> None:
@@ -230,9 +221,7 @@ class OBJECT_GGT_bim_clip_box(bpy.types.GizmoGroup):  # noqa: N801 — Blender b
             gz._last_geometry_state = "solid"
             gz._strips_cache_key = None
             gz.color = face_quad.AXIS_COLOR[axis]
-            gz.color_highlight = tuple(
-                min(1.0, c + 0.3) for c in face_quad.AXIS_COLOR[axis]
-            )
+            gz.color_highlight = tuple(min(1.0, c + 0.3) for c in face_quad.AXIS_COLOR[axis])
             gz.alpha = face_quad.FACE_QUAD_ALPHA
             gz.alpha_highlight = face_quad.FACE_QUAD_ALPHA_HIGHLIGHT
             gz.use_draw_modal = True

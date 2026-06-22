@@ -124,14 +124,16 @@ def class_items(self, context) -> EnumItems:
 
 def type_items(self, context) -> EnumItems:
     return _build_items(
-        "TYPE", "No types defined",
+        "TYPE",
+        "No types defined",
         lambda ifc: [(str(e.id()), _label(e, e.is_a()), "") for e in ifc.by_type("IfcTypeProduct")],
     )
 
 
 def material_items(self, context) -> EnumItems:
     return _build_items(
-        "MATERIAL", "No materials defined",
+        "MATERIAL",
+        "No materials defined",
         lambda ifc: [(str(e.id()), _label(e), "") for e in ifc.by_type("IfcMaterial")],
     )
 
@@ -140,7 +142,8 @@ def profile_items(self, context) -> EnumItems:
     # ProfileName is optional. Skip unnamed profiles — they can't be
     # meaningfully picked from a flat list.
     return _build_items(
-        "PROFILE", "No named profiles",
+        "PROFILE",
+        "No named profiles",
         lambda ifc: [
             (str(e.id()), f"{e.is_a()}: {e.ProfileName}", "")
             for e in ifc.by_type("IfcProfileDef")
@@ -151,12 +154,9 @@ def profile_items(self, context) -> EnumItems:
 
 def drawing_items(self, context) -> EnumItems:
     return _build_items(
-        "DRAWING", "No drawings defined",
-        lambda ifc: [
-            (str(e.id()), _label(e), "")
-            for e in ifc.by_type("IfcAnnotation")
-            if e.ObjectType == "DRAWING"
-        ],
+        "DRAWING",
+        "No drawings defined",
+        lambda ifc: [(str(e.id()), _label(e), "") for e in ifc.by_type("IfcAnnotation") if e.ObjectType == "DRAWING"],
     )
 
 
@@ -184,7 +184,8 @@ def system_items(self, context) -> EnumItems:
     # IfcStructuralAnalysisModel is a structural-grouping container, not a
     # distribution system — excluded to match Bonsai's other system pickers.
     return _build_items(
-        "SYSTEM", "No systems defined",
+        "SYSTEM",
+        "No systems defined",
         lambda ifc: [
             (str(e.id()), _label(e, e.is_a()), "")
             for e in ifc.by_type("IfcSystem")
@@ -197,16 +198,15 @@ def group_items(self, context) -> EnumItems:
     # include_subtypes=False so IfcSystem and IfcZone instances don't appear
     # under Group as well — those get their own picker entries.
     return _build_items(
-        "GROUP", "No groups defined",
-        lambda ifc: [
-            (str(e.id()), _label(e), "")
-            for e in ifc.by_type("IfcGroup", include_subtypes=False)
-        ],
+        "GROUP",
+        "No groups defined",
+        lambda ifc: [(str(e.id()), _label(e), "") for e in ifc.by_type("IfcGroup", include_subtypes=False)],
     )
 
 
 def zone_items(self, context) -> EnumItems:
     return _build_items(
-        "ZONE", "No zones defined",
+        "ZONE",
+        "No zones defined",
         lambda ifc: [(str(e.id()), _label(e), "") for e in ifc.by_type("IfcZone")],
     )

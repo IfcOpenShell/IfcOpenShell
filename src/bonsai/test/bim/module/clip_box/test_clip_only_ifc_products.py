@@ -153,9 +153,7 @@ def _exec_align_view(axis: int, is_max: bool):
         if region is None:
             continue
         with bpy.context.temp_override(area=area, region=region):
-            result = bpy.ops.bim.align_view_to_clip_face(
-                "EXEC_DEFAULT", axis=axis, is_max=is_max
-            )
+            result = bpy.ops.bim.align_view_to_clip_face("EXEC_DEFAULT", axis=axis, is_max=is_max)
             assert result == {"FINISHED"}
             return bpy.context.space_data.region_3d
     pytest.skip("No VIEW_3D area available")
@@ -190,7 +188,9 @@ class TestAlignViewToClipFace(NewFile):
 
         expected_up = (clip_box.matrix_world.to_quaternion() @ Vector((0.0, 0.0, 1.0))).normalized()
         up_world = rv3d.view_rotation @ Vector((0.0, 1.0, 0.0))
-        assert (up_world - expected_up).length < 1e-3, (
+        assert (
+            up_world - expected_up
+        ).length < 1e-3, (
             f"Side-face view must have box-local +Z as up; expected {tuple(expected_up)}, got {tuple(up_world)}"
         )
 
@@ -217,9 +217,9 @@ class TestAlignViewToClipFace(NewFile):
 
         expected_up = (clip_box.matrix_world.to_quaternion() @ Vector((0.0, 0.0, 1.0))).normalized()
         up_world = rv3d.view_rotation @ Vector((0.0, 1.0, 0.0))
-        assert (up_world - expected_up).length < 1e-3, (
-            f"X-rotated box must use box-local Z; expected {tuple(expected_up)}, got {tuple(up_world)}"
-        )
+        assert (
+            up_world - expected_up
+        ).length < 1e-3, f"X-rotated box must use box-local Z; expected {tuple(expected_up)}, got {tuple(up_world)}"
 
     def test_align_view_uses_box_local_y_up_for_top_face(self):
         # Top face (local +Z outward) follows Blender's numpad-7
@@ -257,9 +257,9 @@ class TestNotPersistedToProjectPset(NewFile):
 
         # Whatever the pset stores, it must not carry this scene-only toggle.
         for key in pset:
-            assert "clip_only_ifc" not in key.lower(), (
-                f"Project pset unexpectedly carries the scene-only toggle (key {key!r})"
-            )
+            assert (
+                "clip_only_ifc" not in key.lower()
+            ), f"Project pset unexpectedly carries the scene-only toggle (key {key!r})"
 
     def test_load_from_pset_does_not_touch_clip_only_ifc_products(self):
         # Round-trip: set the toggle on the Scene, simulate a pset load, and

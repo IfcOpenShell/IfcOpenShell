@@ -57,7 +57,6 @@ import bpy
 from bpy_extras.view3d_utils import location_3d_to_region_2d, region_2d_to_location_3d
 from mathutils import Matrix, Vector
 
-
 # ---------------------------------------------------------------------------
 # Public iteration order
 # ---------------------------------------------------------------------------
@@ -236,9 +235,7 @@ def view_axis_parallel_face_mask(
         msg = f"expected 6 face normals, got {len(face_normals_world)}"
         raise ValueError(msg)
     vx, vy, vz = view_dir_world
-    return tuple(
-        abs(n[0] * vx + n[1] * vy + n[2] * vz) >= threshold for n in face_normals_world
-    )
+    return tuple(abs(n[0] * vx + n[1] * vy + n[2] * vz) >= threshold for n in face_normals_world)
 
 
 # ---------------------------------------------------------------------------
@@ -290,9 +287,7 @@ def compute_face_resize(
 # ---------------------------------------------------------------------------
 
 
-def _compute_face_quad_scale(
-    bmin: Any, bmax: Any, axis: int, is_max: bool
-) -> tuple[float, float]:
+def _compute_face_quad_scale(bmin: Any, bmax: Any, axis: int, is_max: bool) -> tuple[float, float]:
     """Return ``(w, h)`` for the face quad's scale matrix."""
     w_axis, h_axis = _QUAD_PERP_AXES[(axis, is_max)]
     w = float(bmax[w_axis] - bmin[w_axis])
@@ -327,9 +322,7 @@ def _shared_edge_corner_keys(
     )
 
 
-def _face_corner_keys(
-    axis: int, is_max: bool
-) -> tuple[
+def _face_corner_keys(axis: int, is_max: bool) -> tuple[
     tuple[int, int, int],
     tuple[int, int, int],
     tuple[int, int, int],
@@ -406,13 +399,9 @@ def _compute_face_basis(
     orient: Any,
 ) -> tuple[Any, Any]:
     """World-space (translation, outward-normal-direction) for one face."""
-    rotated_face_local = (
-        cage_rotation.to_3x3() @ (face_local - pivot_local) + pivot_local
-    )
+    rotated_face_local = cage_rotation.to_3x3() @ (face_local - pivot_local) + pivot_local
     face_world = mw @ rotated_face_local
-    world_axis = (
-        mw_rot @ cage_rotation.to_3x3() @ (orient.to_3x3() @ Vector((0.0, 0.0, 1.0)))
-    ).normalized()
+    world_axis = (mw_rot @ cage_rotation.to_3x3() @ (orient.to_3x3() @ Vector((0.0, 0.0, 1.0)))).normalized()
     return face_world, world_axis
 
 
@@ -431,13 +420,7 @@ def _compose_face_matrix_basis(
     world-space face rectangle, including the host's scale.
     """
     quad_scale = Matrix.Diagonal((w, h, 1.0, 1.0))
-    return (
-        Matrix.Translation(face_world)
-        @ mw_rot_scale.to_4x4()
-        @ cage_rotation
-        @ orient
-        @ quad_scale
-    )
+    return Matrix.Translation(face_world) @ mw_rot_scale.to_4x4() @ cage_rotation @ orient @ quad_scale
 
 
 def _compute_box_corners_world(
@@ -499,9 +482,7 @@ def _world_radius_to_screen_pixels(
     except (AttributeError, ValueError):
         right = Vector((1.0, 0.0, 0.0))
     sample_world = center_world + right * world_radius
-    return _world_segment_to_screen_pixels(
-        region, rv3d, center_world, sample_world, min_pixels=min_pixels
-    )
+    return _world_segment_to_screen_pixels(region, rv3d, center_world, sample_world, min_pixels=min_pixels)
 
 
 def _world_segment_to_screen_pixels(
@@ -601,9 +582,7 @@ class BIM_GT_box_face_quad(bpy.types.Gizmo):  # noqa: N801 — Blender bl_idname
         # Freeze the projection plane at invoke — projection-plane
         # drift on tilted axes causes exponential delta runaway.
         self.depth_point = self.matrix_basis.translation.copy()
-        self.start_location = region_2d_to_location_3d(
-            region, rv3d, (event.mouse_x, event.mouse_y), self.depth_point
-        )
+        self.start_location = region_2d_to_location_3d(region, rv3d, (event.mouse_x, event.mouse_y), self.depth_point)
 
         if getattr(self, "_group", None) is not None:
             self._group._lock_for(self)
@@ -629,9 +608,7 @@ class BIM_GT_box_face_quad(bpy.types.Gizmo):  # noqa: N801 — Blender bl_idname
         rv3d = context.region_data
         if region is None or rv3d is None:
             return {"CANCELLED"}
-        end_location = region_2d_to_location_3d(
-            region, rv3d, (event.mouse_x, event.mouse_y), self.depth_point
-        )
+        end_location = region_2d_to_location_3d(region, rv3d, (event.mouse_x, event.mouse_y), self.depth_point)
         delta = (end_location - self.start_location).dot(self.axis)
         if "SNAP" in tweak:
             delta = round(delta, 1)
@@ -639,9 +616,7 @@ class BIM_GT_box_face_quad(bpy.types.Gizmo):  # noqa: N801 — Blender bl_idname
             delta /= 10.0
         self.move_set_cb(self.init_value + delta)
         if context.area:
-            context.area.header_text_set(
-                f"Value: {self.move_get_cb():.3f} ({delta:.3f})"
-            )
+            context.area.header_text_set(f"Value: {self.move_get_cb():.3f} ({delta:.3f})")
         return {"RUNNING_MODAL"}
 
 
@@ -740,15 +715,11 @@ def apply_face_quad_layout(
     for route_axis, route_is_max in FACE_ROUTES:
         axis_local = Vector(face_outward_axis_local(route_axis, route_is_max))
         n_world = (mw_rot @ cage_rotation_3x3 @ axis_local).normalized()
-        face_normals_world.append(
-            (float(n_world.x), float(n_world.y), float(n_world.z))
-        )
+        face_normals_world.append((float(n_world.x), float(n_world.y), float(n_world.z)))
     front = front_facing_face_mask(tuple(face_normals_world), view_dir_tuple)
 
     box_center_world = mw @ pivot_local
-    corners_world = _compute_box_corners_world(
-        bmin, bmax, pivot_local, cage_rotation_3x3, mw
-    )
+    corners_world = _compute_box_corners_world(bmin, bmax, pivot_local, cage_rotation_3x3, mw)
     route_to_index = {route: i for i, route in enumerate(FACE_ROUTES)}
 
     for i, route in enumerate(FACE_ROUTES):
@@ -787,9 +758,7 @@ def apply_face_quad_layout(
                 orient,
             )
             w, h = _compute_face_quad_scale(bmin, bmax, axis_b, is_max_b)
-            quad_gz.matrix_basis = _compose_face_matrix_basis(
-                face_world, mw_rot_scale, cage_rotation, orient, w, h
-            )
+            quad_gz.matrix_basis = _compose_face_matrix_basis(face_world, mw_rot_scale, cage_rotation, orient, w, h)
             quad_gz.axis = world_axis
             if getattr(quad_gz, "_last_geometry_state", None) != "solid":
                 quad_gz.custom_shape = quad_gz.new_custom_shape("TRIS", _QUAD_TRIS)
@@ -800,16 +769,9 @@ def apply_face_quad_layout(
         # Back-facing: anchor at the back face centre; build halo strips
         # in the planes of the adjacent FRONT faces, extruded outside
         # the silhouette toward this face's outward normal.
-        face_world = mw @ (
-            cage_rotation_3x3 @ (face_midpoints_local[route] - pivot_local)
-            + pivot_local
-        )
+        face_world = mw @ (cage_rotation_3x3 @ (face_midpoints_local[route] - pivot_local) + pivot_local)
         quad_gz.matrix_basis = Matrix.Translation(face_world)
-        quad_gz.axis = (
-            mw_rot
-            @ cage_rotation_3x3
-            @ Vector(face_outward_axis_local(axis_b, is_max_b))
-        ).normalized()
+        quad_gz.axis = (mw_rot @ cage_rotation_3x3 @ Vector(face_outward_axis_local(axis_b, is_max_b))).normalized()
 
         adjacent_front_routes = [
             (axis_a, is_max_a)
@@ -827,9 +789,7 @@ def apply_face_quad_layout(
         face_world_margin = 0.0
         if region is not None:
             sample_end = box_center_world + quad_gz.axis * 1.0
-            screen_step = _world_segment_to_screen_pixels(
-                region, rv3d, box_center_world, sample_end, min_pixels=0.0
-            )
+            screen_step = _world_segment_to_screen_pixels(region, rv3d, box_center_world, sample_end, min_pixels=0.0)
             if screen_step > 0.0:
                 face_world_margin = _FACE_QUAD_HALO_TARGET_PIXELS / screen_step
         if face_world_margin <= 0.0 or not adjacent_front_routes:
@@ -866,9 +826,7 @@ def apply_face_quad_layout(
                 float(wp1.y - face_world.y),
                 float(wp1.z - face_world.z),
             )
-            all_tris.extend(
-                _build_strip_tris_relative(local_p0, local_p1, extrusion_local)
-            )
+            all_tris.extend(_build_strip_tris_relative(local_p0, local_p1, extrusion_local))
 
         if not locked:
             quad_gz.hide = False
@@ -907,12 +865,12 @@ def apply_face_quad_layout(
 
 __all__ = [
     "AXIS_COLOR",
-    "BIM_GT_box_face_outline",
-    "BIM_GT_box_face_quad",
     "FACE_QUAD_ALPHA",
     "FACE_QUAD_ALPHA_HIGHLIGHT",
     "FACE_QUAD_SELECT_BIAS",
     "FACE_ROUTES",
+    "BIM_GT_box_face_outline",
+    "BIM_GT_box_face_quad",
     "apply_face_quad_layout",
     "compute_face_resize",
     "face_outward_axis_local",
