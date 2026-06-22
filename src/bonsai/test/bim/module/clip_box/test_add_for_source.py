@@ -44,13 +44,9 @@ class TestAddClipBoxForSourceSpatial(NewFile):
         storey = ifc.create_entity("IfcBuildingStorey")
         wall_a, _ = _make_ifc_cube(ifc, "IfcWall", location=(0.0, 0.0, 0.0), size=2.0)
         wall_b, _ = _make_ifc_cube(ifc, "IfcWall", location=(4.0, 0.0, 0.0), size=2.0)
-        ifcopenshell.api.spatial.assign_container(
-            ifc, products=[wall_a, wall_b], relating_structure=storey
-        )
+        ifcopenshell.api.spatial.assign_container(ifc, products=[wall_a, wall_b], relating_structure=storey)
 
-        result = bpy.ops.bim.add_clip_box_for_source(
-            source_kind="SPATIAL", source_id=str(storey.id())
-        )
+        result = bpy.ops.bim.add_clip_box_for_source(source_kind="SPATIAL", source_id=str(storey.id()))
 
         assert result == {"FINISHED"}
         scene_props = tool.ClipBox.get_scene_props()
@@ -71,9 +67,7 @@ class TestAddClipBoxForSourceClass(NewFile):
         _make_ifc_cube(ifc, "IfcWall", location=(4.0, 0.0, 0.0), size=2.0)
         _make_ifc_cube(ifc, "IfcWindow", location=(20.0, 0.0, 0.0), size=2.0)
 
-        result = bpy.ops.bim.add_clip_box_for_source(
-            source_kind="CLASS", source_id="IfcWall"
-        )
+        result = bpy.ops.bim.add_clip_box_for_source(source_kind="CLASS", source_id="IfcWall")
 
         assert result == {"FINISHED"}
         scene_props = tool.ClipBox.get_scene_props()
@@ -93,9 +87,7 @@ class TestAddClipBoxForSourceEmpty(NewFile):
         walltype = ifc.create_entity("IfcWallType")
         # No occurrences linked — TYPE source resolves to 0 elements.
         with pytest.raises(RuntimeError, match="No elements found"):
-            bpy.ops.bim.add_clip_box_for_source(
-                source_kind="TYPE", source_id=str(walltype.id())
-            )
+            bpy.ops.bim.add_clip_box_for_source(source_kind="TYPE", source_id=str(walltype.id()))
         scene_props = tool.ClipBox.get_scene_props()
         assert len(scene_props.clip_boxes) == 0
 
@@ -105,9 +97,7 @@ class TestAddClipBoxForSourceEmpty(NewFile):
         from bonsai.bim.module.clip_box import data as clip_data
 
         with pytest.raises(RuntimeError, match="No source selected"):
-            bpy.ops.bim.add_clip_box_for_source(
-                source_kind="SPATIAL", source_id=clip_data.NO_OPTIONS_ID
-            )
+            bpy.ops.bim.add_clip_box_for_source(source_kind="SPATIAL", source_id=clip_data.NO_OPTIONS_ID)
         scene_props = tool.ClipBox.get_scene_props()
         assert len(scene_props.clip_boxes) == 0
 

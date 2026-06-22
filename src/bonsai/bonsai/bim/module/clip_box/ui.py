@@ -24,7 +24,6 @@ from bpy.types import Menu, Panel, UIList
 
 import bonsai.tool as tool
 
-
 # Per-kind icon for the source-picker menu. Picked from Blender's built-in
 # icon set; semantically close to the kind so users can scan the menu visually.
 _SOURCE_MENU_ENTRIES: tuple[tuple[str, str, str], ...] = (

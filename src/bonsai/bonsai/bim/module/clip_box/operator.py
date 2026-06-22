@@ -159,9 +159,7 @@ class BIM_OT_add_clip_box(bpy.types.Operator):
         # Default to a 20m cube (scale 10 around [-1, +1] local cube) so
         # the volume covers a typical building storey or two rather than
         # the meaningless 2m unit cube. The user resizes with S.
-        matrix = Matrix.Translation(context.scene.cursor.location.copy()) @ Matrix.Diagonal(
-            (10.0, 10.0, 10.0, 1.0)
-        )
+        matrix = Matrix.Translation(context.scene.cursor.location.copy()) @ Matrix.Diagonal((10.0, 10.0, 10.0, 1.0))
         tool.ClipBox.create_clip_box_empty(context, matrix, name=CLIP_BOX_NAME)
         return {"FINISHED"}
 

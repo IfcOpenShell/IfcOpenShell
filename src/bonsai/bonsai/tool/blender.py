@@ -2464,9 +2464,7 @@ class Blender(bonsai.core.tool.Blender):
                 shader = gpu.shader.from_builtin("UNIFORM_COLOR")
                 shader.bind()
                 shader.uniform_float("color", fill_color)
-                batch = batch_for_shader(
-                    shader, "TRIS", {"pos": verts}, indices=tri_indices
-                )
+                batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=tri_indices)
                 batch.draw(shader)
             if outline_color is not None and line_indices:
                 shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -2477,9 +2475,7 @@ class Blender(bonsai.core.tool.Blender):
                 prev_width = gpu.state.line_width_get()
                 gpu.state.line_width_set(outline_width)
                 try:
-                    batch = batch_for_shader(
-                        shader, "LINES", {"pos": verts}, indices=line_indices
-                    )
+                    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=line_indices)
                     batch.draw(shader)
                 finally:
                     gpu.state.line_width_set(prev_width)

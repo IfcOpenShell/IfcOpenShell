@@ -154,9 +154,7 @@ class TestFrontFacingFaceMask:
 
     def test_wrong_length_raises(self):
         with pytest.raises(ValueError, match="expected 6 face normals"):
-            face_quad.front_facing_face_mask(
-                [(1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)], (0.0, 0.0, -1.0)
-            )
+            face_quad.front_facing_face_mask([(1.0, 0.0, 0.0), (-1.0, 0.0, 0.0)], (0.0, 0.0, -1.0))
 
 
 # ----------------------------------------------------- apply_face_quad_layout (front/back) ---
@@ -259,9 +257,7 @@ class TestApplyFaceQuadLayout:
         quads = [_FakeQuad() for _ in range(6)]
         outlines = [_FakeOutline() for _ in range(6)]
         # View toward +X: the +X face is at world +X for a standard box.
-        view_rotation = Vector((0.0, 0.0, -1.0)).rotation_difference(
-            Vector((-1.0, 0.0, 0.0))
-        )
+        view_rotation = Vector((0.0, 0.0, -1.0)).rotation_difference(Vector((-1.0, 0.0, 0.0)))
         rv3d = _FakeRV3D(view_rotation, Matrix.Identity(4))
         # Negative X scale (mirroring the cube along world X).
         mw = Matrix.Diagonal((-1.0, 1.0, 1.0, 1.0))

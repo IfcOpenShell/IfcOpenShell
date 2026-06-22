@@ -201,9 +201,7 @@ class TestIterElementsForSource(NewFile):
         storey = ifc.create_entity("IfcBuildingStorey")
         wall_a = ifc.create_entity("IfcWall")
         wall_b = ifc.create_entity("IfcWall")
-        ifcopenshell.api.spatial.assign_container(
-            ifc, products=[wall_a, wall_b], relating_structure=storey
-        )
+        ifcopenshell.api.spatial.assign_container(ifc, products=[wall_a, wall_b], relating_structure=storey)
 
         result = tool.ClipBox.iter_elements_for_source("SPATIAL", str(storey.id()))
 
@@ -215,9 +213,7 @@ class TestIterElementsForSource(NewFile):
         wall_type = ifc.create_entity("IfcWallType")
         wall_a = ifc.create_entity("IfcWall")
         wall_b = ifc.create_entity("IfcWall")
-        ifcopenshell.api.type.assign_type(
-            ifc, related_objects=[wall_a, wall_b], relating_type=wall_type
-        )
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall_a, wall_b], relating_type=wall_type)
 
         result = tool.ClipBox.iter_elements_for_source("TYPE", str(wall_type.id()))
 
@@ -263,9 +259,7 @@ class TestComputeMatrixForSource(NewFile):
         storey = ifc.create_entity("IfcBuildingStorey")
         wall_a, _ = _make_ifc_cube(ifc, "IfcWall", location=(0.0, 0.0, 0.0), size=2.0)
         wall_b, _ = _make_ifc_cube(ifc, "IfcWall", location=(4.0, 0.0, 0.0), size=2.0)
-        ifcopenshell.api.spatial.assign_container(
-            ifc, products=[wall_a, wall_b], relating_structure=storey
-        )
+        ifcopenshell.api.spatial.assign_container(ifc, products=[wall_a, wall_b], relating_structure=storey)
 
         matrix = tool.ClipBox.compute_matrix_for_source("SPATIAL", str(storey.id()))
 
