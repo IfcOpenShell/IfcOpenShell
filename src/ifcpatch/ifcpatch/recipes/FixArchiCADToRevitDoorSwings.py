@@ -190,6 +190,8 @@ class Patcher(ifcpatch.BasePatcher):
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for curve in self.file.by_type("IfcIndexedPolyCurve"):
+            if curve.Segments is None:
+                continue
             if True in [s.is_a("IfcArcIndex") for s in curve.Segments]:
                 shape = ifcopenshell.geom.create_shape(settings, curve)
                 e = shape.edges

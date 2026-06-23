@@ -396,13 +396,13 @@ class Geometry(bonsai.core.tool.Geometry):
         # same OverrideDelete batch.
         if element.is_a("IfcRoot"):
             skip_ids = batch_being_deleted_ids or set()
-            for rel, kind, partner in tool.Connection.find_rels_for_element(element):
+            for subject, kind, partner in tool.Connection.find_rels_for_element(element):
                 bonsai.core.connection.disconnect_rel(
                     tool.Ifc,
                     tool.Geometry,
                     tool.Model,
                     tool.Connection,
-                    rel=rel,
+                    subject=subject,
                     kind=kind,
                     elem=element,
                     partner=partner,

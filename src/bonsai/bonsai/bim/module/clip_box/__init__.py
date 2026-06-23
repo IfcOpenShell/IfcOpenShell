@@ -23,16 +23,24 @@ from bpy.app.handlers import persistent
 
 import bonsai.tool as tool
 
-from . import operator, prop, ui
+from . import face_quad, gizmos, operator, prop, ui
 
 classes = (
     operator.BIM_OT_add_clip_box,
+    operator.BIM_OT_add_clip_box_for_source,
+    operator.BIM_OT_align_view_to_clip_face,
     operator.BIM_OT_duplicate_clip_box,
     operator.BIM_OT_remove_clip_box,
     operator.BIM_OT_set_active_clip_box,
     operator.BIM_OT_toggle_clip_box_enabled,
     prop.BIMClipBoxProperties,
     prop.BIMSceneClipBoxProperties,
+    face_quad.BIM_GT_box_face_quad,
+    face_quad.BIM_GT_box_face_outline,
+    gizmos.OBJECT_GGT_bim_clip_box,
+    ui.BIM_MT_clip_box_add_for_source,
+    ui.BIM_MT_clip_box_info,
+    ui.BIM_MT_clip_box_settings,
     ui.BIM_UL_clip_box,
     ui.BIM_PT_clip_box,
 )

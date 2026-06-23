@@ -2069,46 +2069,6 @@ class BoundingBoxDecorator:
                             co2.y -= y_overlap / 2 + min_spacing
 
 
-def _fill_quads_alpha(
-    context: bpy.types.Context,
-    quads: list[
-        tuple[
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
-        ]
-    ],
-    color_rgb: tuple[float, float, float],
-    alpha: float,
-) -> None:
-    """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
-    order) as one TRIS batch with two triangles per quad."""
-    if not quads:
-        return
-    verts: list[tuple[float, float, float]] = []
-    indices: list[tuple[int, int, int]] = []
-    for quad in quads:
-        if len(quad) != 4:
-            continue
-        base = len(verts)
-        verts.extend(tuple(v) for v in quad)
-        indices.append((base, base + 1, base + 2))
-        indices.append((base, base + 2, base + 3))
-    if not tool.Blender.validate_shader_batch_data(verts, indices):
-        return
-    region = getattr(context, "region", None)
-    if region is None:
-        return
-    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-    shader.bind()
-    shader.uniform_float("color", (*color_rgb, alpha))
-    batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=indices)
-    gpu.state.blend_set("ALPHA")
-    batch.draw(shader)
-    gpu.state.blend_set("NONE")
-
-
 def compute_mep_join_location():
     """Midpoint between the closest endpoint pair of two selected MEP
     segments — the world location where a connecting fitting (bend /
@@ -2609,14 +2569,20 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
     CONNECTION_EPS_SQ = 1e-4 * 1e-4
 
     def __init__(self) -> None:
-        # Two-tier cache. Walk cache keyed on (start_guid, ifc_file): re-walk
-        # only on selection change or file reload. Compare ``ifc_file`` with
+        # Walk cache keyed on (start_guid, ifc_file, geom_gen). Stores STEP
+        # integer ids rather than ``entity_instance`` references — re-resolved
+        # via ``ifc_file.by_id`` on each cache hit. Structurally rules out
+        # the dangling-SWIG-handle class of bug: an entity removed between
+        # frames either bumps geom_gen (cache miss → re-walk) or fails to
+        # re-resolve (handled below by re-walking). Compare ``ifc_file`` with
         # ``is`` (not id()) so a GC-recycled id() can't produce a false hit.
         self._cached_start_guid: str | None = None
         self._cached_ifc_file: Any = None
-        self._cached_walk: list[Any] = []
-        # Geometry cache: shared TokenCache so resolved world-space lines +
-        # dots re-build on every depsgraph / undo / redo / load.
+        self._cached_geom_gen: int = -1
+        self._cached_walk_ids: list[int] = []
+        # Geometry cache: shared TokenCache. Key folds in geom_gen so IFC
+        # mutations that don't surface via the depsgraph still flush the
+        # resolved world-space lines and dots.
         self._geom_cache: TokenCache[
             tuple[
                 list[tuple[tuple[float, float, float], tuple[float, float, float]]],
@@ -2779,9 +2745,22 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
         start_guid = start_element.GlobalId
         if start_guid == self._failed_seed_guid:
             return
-        if start_guid == self._cached_start_guid and ifc_file is self._cached_ifc_file and self._cached_walk:
-            connected = self._cached_walk
-        else:
+        current_geom_gen = tool.Parametric.get_geom_generation()
+        connected: list[Any] | None = None
+        if (
+            start_guid == self._cached_start_guid
+            and ifc_file is self._cached_ifc_file
+            and current_geom_gen == self._cached_geom_gen
+            and self._cached_walk_ids
+        ):
+            try:
+                connected = [ifc_file.by_id(eid) for eid in self._cached_walk_ids]
+            except RuntimeError:
+                # An entity was removed without bumping geom_gen — rare but
+                # possible from non-operator code paths. Force a re-walk
+                # rather than feeding a stale handle to _build_geometry.
+                connected = None
+        if connected is None:
             try:
                 connected = self._walk(start_element)
             except Exception:
@@ -2790,12 +2769,13 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
 
                     traceback.print_exc()
                     self._walk_failure_logged = True
-                self._cached_walk = []
+                self._cached_walk_ids = []
                 self._failed_seed_guid = start_guid
                 return
             self._cached_start_guid = start_guid
             self._cached_ifc_file = ifc_file
-            self._cached_walk = connected
+            self._cached_geom_gen = current_geom_gen
+            self._cached_walk_ids = [e.id() for e in connected]
         if not connected:
             return
 
@@ -2810,7 +2790,7 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
 
         try:
             lines, free_points, connection_points = self._geom_cache.get_or_compute(
-                (start_guid, id(ifc_file)),
+                (start_guid, id(ifc_file), current_geom_gen),
                 lambda: self._build_geometry(connected),
             )
         except Exception:

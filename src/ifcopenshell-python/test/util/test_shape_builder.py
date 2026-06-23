@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from math import degrees, radians
+from math import degrees, radians, sqrt
 from typing import Any, Union
 
 import numpy as np
@@ -28,6 +28,7 @@ import test.bootstrap
 from ifcopenshell.util.shape_builder import (
     ShapeBuilder,
     V,
+    arc_to_polyline_points,
     is_x,
     np_angle,
     np_angle_signed,
@@ -36,7 +37,114 @@ from ifcopenshell.util.shape_builder import (
     np_normal,
     np_rotation_matrix,
     np_to_3d,
+    polygonal_face_set_to_faceted_brep,
 )
+
+
+class TestArcToPolylinePoints:
+    def test_quarter_arc_2d_samples_n_plus_one_points(self):
+        # Quarter arc from (1,0) through (cos45°, sin45°) to (0,1) — unit circle.
+        sqrt_half = sqrt(0.5)
+        points = arc_to_polyline_points((1.0, 0.0), (sqrt_half, sqrt_half), (0.0, 1.0), 8)
+        assert len(points) == 9
+        assert points[0] == pytest.approx((1.0, 0.0), abs=1e-9)
+        assert points[-1] == pytest.approx((0.0, 1.0), abs=1e-9)
+        for x, y in points:
+            assert x * x + y * y == pytest.approx(1.0, abs=1e-9)
+
+    def test_collinear_inputs_fall_back_to_straight_chord(self):
+        points = arc_to_polyline_points((0.0, 0.0), (1.0, 0.0), (2.0, 0.0), 16)
+        assert points == [(0.0, 0.0), (2.0, 0.0)]
+
+    def test_3d_inputs_with_constant_z_preserved(self):
+        points = arc_to_polyline_points((1.0, 0.0, 5.0), (0.7071, 0.7071, 5.0), (0.0, 1.0, 5.0), 4)
+        assert len(points) == 5
+        assert all(p[2] == 5.0 for p in points)
+
+    def test_3d_inputs_with_mismatched_z_raises(self):
+        with pytest.raises(ValueError, match="XY plane"):
+            arc_to_polyline_points((1.0, 0.0, 0.0), (0.0, 1.0, 1.0), (-1.0, 0.0, 0.0))
+
+    def test_3d_inputs_with_near_equal_z_pass_within_tolerance(self):
+        # Real IFC files often have float noise of ~1e-15 in Z values that the
+        # author meant to be identical — kernel transforms introduce it. The
+        # planar check tolerates this rather than rejecting valid input.
+        sqrt_half = sqrt(0.5)
+        points = arc_to_polyline_points(
+            (1.0, 0.0, 5.0), (sqrt_half, sqrt_half, 5.0 + 1e-15), (0.0, 1.0, 5.0 - 2e-16), 4
+        )
+        assert len(points) == 5
+
+    def test_subdivisions_zero_raises(self):
+        with pytest.raises(ValueError, match="subdivisions"):
+            arc_to_polyline_points((1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), 0)
+
+
+class TestPolygonalFaceSetToFacetedBrep(test.bootstrap.IFC4):
+    def test_triangulated_face_set_preserves_coordinates(self):
+        coords = self.file.create_entity(
+            "IfcCartesianPointList3D",
+            CoordList=((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.5, 0.5, 1.0)),
+        )
+        face_set = self.file.create_entity(
+            "IfcTriangulatedFaceSet", Coordinates=coords, CoordIndex=[(1, 2, 4), (2, 3, 4), (3, 1, 4), (1, 3, 2)]
+        )
+
+        brep = polygonal_face_set_to_faceted_brep(face_set)
+
+        assert brep.is_a("IfcFacetedBrep")
+        assert len(brep.Outer.CfsFaces) == 4
+        # Every CoordList vertex appears in the brep at the same coordinate.
+        brep_points = {tuple(p.Coordinates) for f in brep.Outer.CfsFaces for p in f.Bounds[0].Bound.Polygon}
+        assert (0.0, 0.0, 0.0) in brep_points
+        assert (1.0, 0.0, 0.0) in brep_points
+        assert (0.0, 1.0, 0.0) in brep_points
+        assert (0.5, 0.5, 1.0) in brep_points
+
+    def test_polygonal_face_set_with_voids_preserves_inner_bounds(self):
+        # Quad with a triangular hole through it.
+        coords = self.file.create_entity(
+            "IfcCartesianPointList3D",
+            CoordList=(
+                (0.0, 0.0, 0.0),
+                (4.0, 0.0, 0.0),
+                (4.0, 4.0, 0.0),
+                (0.0, 4.0, 0.0),
+                (1.0, 1.0, 0.0),
+                (3.0, 1.0, 0.0),
+                (2.0, 3.0, 0.0),
+            ),
+        )
+        face = self.file.create_entity(
+            "IfcIndexedPolygonalFaceWithVoids",
+            CoordIndex=(1, 2, 3, 4),
+            InnerCoordIndices=[(5, 6, 7)],
+        )
+        face_set = self.file.create_entity("IfcPolygonalFaceSet", Coordinates=coords, Faces=[face])
+
+        brep = polygonal_face_set_to_faceted_brep(face_set)
+
+        assert len(brep.Outer.CfsFaces) == 1
+        bounds = brep.Outer.CfsFaces[0].Bounds
+        # Outer + 1 inner bound.
+        assert len(bounds) == 2
+        outer = next(b for b in bounds if b.is_a("IfcFaceOuterBound"))
+        inner = next(b for b in bounds if not b.is_a("IfcFaceOuterBound"))
+        assert len(outer.Bound.Polygon) == 4
+        assert len(inner.Bound.Polygon) == 3
+
+    def test_wrong_class_raises_typeerror(self):
+        # An IfcCartesianPointList3D is not a face set.
+        not_a_face_set = self.file.create_entity("IfcCartesianPointList3D", CoordList=((0.0, 0.0, 0.0),))
+        with pytest.raises(TypeError, match="IfcPolygonalFaceSet"):
+            polygonal_face_set_to_faceted_brep(not_a_face_set)
+
+    def test_out_of_range_index_raises_valueerror(self):
+        coords = self.file.create_entity("IfcCartesianPointList3D", CoordList=((0.0, 0.0, 0.0),))
+        # CoordIndex 5 doesn't exist in a 1-vertex coord list.
+        face_set = self.file.create_entity("IfcTriangulatedFaceSet", Coordinates=coords, CoordIndex=[(1, 1, 5)])
+        with pytest.raises(ValueError, match="outside CoordList range"):
+            polygonal_face_set_to_faceted_brep(face_set)
 
 
 class TestMathutilsCompatibleMethods(test.bootstrap.IFC4):

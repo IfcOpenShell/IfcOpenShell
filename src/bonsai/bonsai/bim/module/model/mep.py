@@ -693,27 +693,6 @@ def get_connected_element_at_segment_port(segment, at_segment_start):
     return tool.System.get_port_relating_element(connected_port)
 
 
-def find_fitting_between_segments(segment_a, segment_b):
-    """Single IfcFlowFitting bridging segment_a and segment_b via ports, or
-    ``None`` if no fitting (or multiple fittings — only direct one-fitting
-    joins handled)."""
-    if not (segment_a.is_a("IfcFlowSegment") and segment_b.is_a("IfcFlowSegment")):
-        return None
-    b_ports_set = set(tool.System.get_ports(segment_b))
-    for a_port in tool.System.get_ports(segment_a):
-        connected_port = tool.System.get_connected_port(a_port)
-        if connected_port is None:
-            continue
-        fitting = tool.System.get_port_relating_element(connected_port)
-        if fitting is None or not fitting.is_a("IfcFlowFitting"):
-            continue
-        for fitting_port in tool.System.get_ports(fitting):
-            other_port = tool.System.get_connected_port(fitting_port)
-            if other_port is not None and other_port in b_ports_set:
-                return fitting
-    return None
-
-
 def _resolve_active_mep_segment(operator, context):
     """Return the operator's target ``IfcFlowSegment`` or ``None`` after reporting.
 
@@ -808,52 +787,6 @@ class MEPAddObstruction(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class MEPUnjoinAtPort(bpy.types.Operator, tool.Ifc.Operator):
-    """Delete the IfcFlowFitting that bridges a segment's port to a second element.
-
-    Used when the connection at the port is in the JOINED state (the fitting
-    has at least one other port connecting to a different element). The
-    segment isn't resized — only the bridging fitting is removed. Refuses
-    to act on an OBSTRUCTION fitting (those are routed through
-    ``bim.mep_add_obstruction`` with mode=REMOVE which extends the segment
-    to absorb the freed length)."""
-
-    bl_idname = "bim.mep_unjoin_at_port"
-    bl_label = "Unjoin MEP Segment at Port"
-    bl_description = "Disconnect the segment from the fitting at the named port (deletes the fitting)"
-    bl_options = {"REGISTER", "UNDO"}
-    segment_id: bpy.props.IntProperty(name="Segment Element ID", default=0)
-    position: bpy.props.EnumProperty(
-        name="Port",
-        items=[
-            ("START", "At Start", "Operate on the segment's start port"),
-            ("END", "At End", "Operate on the segment's end port"),
-        ],
-        default="END",
-    )
-
-    def _execute(self, context):
-        resolved = _require_port_state(self, context, PORT_JOINED, "joining")
-        if resolved is None:
-            return {"CANCELLED"}
-        element, at_segment_start = resolved
-
-        fitting = get_connected_element_at_segment_port(element, at_segment_start)
-        if fitting is None or not fitting.is_a("IfcFlowFitting"):
-            self.report({"ERROR"}, "Connected port does not lead to a fitting.")
-            return {"CANCELLED"}
-        if getattr(fitting, "PredefinedType", None) == "OBSTRUCTION":
-            self.report({"ERROR"}, "Obstruction fittings are removed via bim.mep_add_obstruction (mode=REMOVE).")
-            return {"CANCELLED"}
-
-        fitting_obj = tool.Ifc.get_object(fitting)
-        if fitting_obj is None:
-            self.report({"ERROR"}, "Fitting has no Blender object.")
-            return {"CANCELLED"}
-        tool.Geometry.delete_ifc_object(fitting_obj)
-        return {"FINISHED"}
-
-
 class MEPRemoveTerminalFitting(bpy.types.Operator, tool.Ifc.Operator):
     """Remove the terminal fitting at a segment's named port.
 
@@ -898,44 +831,6 @@ class MEPRemoveTerminalFitting(bpy.types.Operator, tool.Ifc.Operator):
                 return {"CANCELLED"}
             return {"FINISHED"}
 
-        fitting_obj = tool.Ifc.get_object(fitting)
-        if fitting_obj is None:
-            self.report({"ERROR"}, "Fitting has no Blender object.")
-            return {"CANCELLED"}
-        tool.Geometry.delete_ifc_object(fitting_obj)
-        return {"FINISHED"}
-
-
-class MEPUnjoinPair(bpy.types.Operator, tool.Ifc.Operator):
-    """Delete the IfcFlowFitting joining two selected MEP segments.
-
-    Removes the fitting; segments are left in place for the user to reposition."""
-
-    bl_idname = "bim.mep_unjoin_pair"
-    bl_label = "Unjoin MEP Segments"
-    bl_description = "Delete the fitting joining the two selected MEP segments"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        if not _n_mep_selected(2):
-            cls.poll_message_set("Select exactly 2 MEP segments joined by a fitting.")
-            return False
-        return True
-
-    def _execute(self, context):
-        selected_objs = tool.Blender.get_selected_objects()
-        elements = [tool.Ifc.get_entity(o) for o in selected_objs]
-        if any(e is None or not e.is_a("IfcFlowSegment") for e in elements):
-            self.report({"ERROR"}, "Both selected objects must be MEP segments.")
-            return {"CANCELLED"}
-        fitting = find_fitting_between_segments(elements[0], elements[1])
-        if fitting is None:
-            self.report({"ERROR"}, "No single fitting joins the selected segments.")
-            return {"CANCELLED"}
-        if getattr(fitting, "PredefinedType", None) == "OBSTRUCTION":
-            self.report({"ERROR"}, "Obstruction fittings are removed via bim.mep_add_obstruction (mode=REMOVE).")
-            return {"CANCELLED"}
         fitting_obj = tool.Ifc.get_object(fitting)
         if fitting_obj is None:
             self.report({"ERROR"}, "Fitting has no Blender object.")
@@ -2677,10 +2572,22 @@ def _active_mep_has_connected_neighbor(obj: bpy.types.Object) -> bool:
 
 
 def _active_is_bend_fitting(obj: bpy.types.Object) -> bool:
+    """True iff the active object is a parametric BEND fitting eligible for
+    the bend-preview re-edit path. Re-edit reads parameters from the type's
+    ``BBIM_Fitting`` pset, so that pset's presence is the ground truth for
+    re-editability — not the body representation class. The bend creation
+    path tessellates the swept-disk body as an upstream-geometry-kernel
+    workaround, so a freshly-committed bend's body contains only an
+    ``IfcTriangulatedFaceSet`` and ``has_parametric_body`` correctly
+    returns False for it; the pset gate is what keeps the pen icon
+    eligible."""
     element = tool.Ifc.get_entity(obj)
     if not _is_bend_fitting(element):
         return False
-    return tool.System.has_parametric_body(element)
+    element_type = ifcopenshell.util.element.get_type(element)
+    if element_type is None:
+        return False
+    return ifcopenshell.util.element.get_pset(element_type, "BBIM_Fitting") is not None
 
 
 class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
@@ -2763,20 +2670,20 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
         ),
         IconActionConfig(
             name="unjoin_start",
-            icon="VIEW3D_GT_unjoin",
-            operator="bim.mep_unjoin_at_port",
+            icon="VIEW3D_GT_wall_link_toggle",
+            operator="bim.disconnect_elements",
             visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
         ),
         IconActionConfig(
             name="unjoin_end",
-            icon="VIEW3D_GT_unjoin",
-            operator="bim.mep_unjoin_at_port",
+            icon="VIEW3D_GT_wall_link_toggle",
+            operator="bim.disconnect_elements",
             visibility_condition=lambda obj: _selection_size() == 1 and _active_is_flow_segment(obj),
         ),
         IconActionConfig(
             name="unjoin_pair",
-            icon="VIEW3D_GT_unjoin",
-            operator="bim.mep_unjoin_pair",
+            icon="VIEW3D_GT_wall_link_toggle",
+            operator="bim.disconnect_elements",
             visibility_condition=lambda _active: _n_mep_selected(2),
         ),
     ]
@@ -2794,7 +2701,17 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
         element = tool.Ifc.get_entity(obj)
         if element is None or not tool.System.is_mep_element(element):
             return False
-        return tool.System.has_parametric_body(element)
+        if tool.System.has_parametric_body(element):
+            return True
+        # Bend fittings carry their parametric definition in the type's
+        # ``BBIM_Fitting`` pset because the bend creation path tessellates
+        # the swept-disk body (upstream geometry-kernel workaround), so
+        # ``has_parametric_body`` returns False for them. Fall back to the
+        # pset gate so the pen icon (re_edit_bend) stays reachable.
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type is None:
+            return False
+        return ifcopenshell.util.element.get_pset(element_type, "BBIM_Fitting") is not None
 
     def setup(self, context: bpy.types.Context) -> None:
         super().setup(context)
@@ -2802,11 +2719,13 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
 
     @classmethod
     def _wire_anchored_icon_targets(cls, group) -> None:
-        """Pre-fill ``position`` (and ``mode`` for open-lock) on each anchored
-        icon so a click dispatches to the right port without a per-frame
-        property write; apply the warning-red hover colour to destructive
-        icons. Takes any object with ``action_<name>_gizmo`` attributes so
-        tests can exercise the wiring without instantiating the GizmoGroup."""
+        """Pre-fill ``position`` (and ``mode`` for open-lock) on the lock
+        icons so a click dispatches to the right port without a per-frame
+        property write, and pre-bind the unified ``bim.disconnect_elements``
+        operator on each unjoin icon so :py:meth:`position_gizmos` only has
+        to update the two GUIDs per frame. Takes any object with
+        ``action_<name>_gizmo`` attributes so tests can exercise the wiring
+        without instantiating the GizmoGroup."""
         for config_name, (_icon, position_arg) in cls.LOCK_ICON_CONFIGS.items():
             gz = getattr(group, f"action_{config_name}_gizmo", None)
             if gz is None:
@@ -2820,19 +2739,12 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                 op_props = gz.target_set_operator("bim.mep_remove_terminal_fitting")
                 op_props.position = position_arg
 
-        for config_name, position_arg in (("unjoin_start", "START"), ("unjoin_end", "END")):
-            gz = getattr(group, f"action_{config_name}_gizmo", None)
-            if gz is None:
-                continue
-            op_props = gz.target_set_operator("bim.mep_unjoin_at_port")
-            op_props.position = position_arg
-
-        warning_color = gizmo.get_warning_color_from_prefs(tool.Blender.get_addon_preferences())
+        group.unjoin_op_props = {}
         for config_name in cls.UNJOIN_CONFIGS:
             gz = getattr(group, f"action_{config_name}_gizmo", None)
             if gz is None:
                 continue
-            gz.color_highlight = warning_color
+            group.unjoin_op_props[config_name] = gz.target_set_operator("bim.disconnect_elements")
 
     def position_gizmos(self, context: bpy.types.Context) -> None:
         """Lay out icons across three regions: row above bbox top, segment
@@ -2899,6 +2811,10 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                 if not visible:
                     gz.hide = True
                     continue
+                if config.name.startswith("unjoin_"):
+                    if not self._bind_unjoin_at_port(config.name, obj, endpoint_kind == "START"):
+                        gz.hide = True
+                        continue
                 if segment_endpoints is None:
                     segment_endpoints = tool.Model.get_flow_segment_axis(obj)
                 start_world, end_world = segment_endpoints
@@ -2910,7 +2826,7 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                     if len(selected) == 2:
                         elements = [tool.Ifc.get_entity(o) for o in selected]
                         if all(e is not None and e.is_a("IfcFlowSegment") for e in elements):
-                            pair_fitting = find_fitting_between_segments(elements[0], elements[1]) or False
+                            pair_fitting = tool.System.find_bridging_fitting(elements[0], elements[1]) or False
                         else:
                             pair_fitting = False
                     else:
@@ -2921,6 +2837,13 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
                 if wants_fitting != fitting_present:
                     gz.hide = True
                     continue
+
+                if config.name == "unjoin_pair":
+                    selected = tool.Blender.get_selected_objects()
+                    pair_elements = [tool.Ifc.get_entity(o) for o in selected]
+                    if not self._bind_unjoin_pair(pair_elements):
+                        gz.hide = True
+                        continue
 
                 if not bend_anchor_attempted:
                     bend_anchor = compute_mep_join_location()
@@ -2950,3 +2873,33 @@ class GizmoMEPActions(bpy.types.GizmoGroup, gizmo.BaseIconActionGroup):
         if name in self.ENDPOINT_CONFIGS:
             return self.ICON_SCALE * self.ENDPOINT_SCALE_RATIO
         return self.ICON_SCALE
+
+    def _bind_unjoin_at_port(self, config_name: str, segment_obj: bpy.types.Object, at_segment_start: bool) -> bool:
+        """Resolve the fitting at the named port and bind both GUIDs on the
+        pre-wired ``bim.disconnect_elements`` op_props. Returns False when
+        the partner is unresolvable (port not joined to a disconnectable
+        fitting), and the caller hides the icon."""
+        element = tool.Ifc.get_entity(segment_obj)
+        if element is None:
+            return False
+        fitting = get_connected_element_at_segment_port(element, at_segment_start)
+        if fitting is None or not fitting.is_a("IfcFlowFitting"):
+            return False
+        if getattr(fitting, "PredefinedType", None) == "OBSTRUCTION":
+            return False
+        op_props = self.unjoin_op_props[config_name]
+        op_props.element_a_guid = element.GlobalId
+        op_props.element_b_guid = fitting.GlobalId
+        return True
+
+    def _bind_unjoin_pair(self, pair_elements: list[ifcopenshell.entity_instance | None]) -> bool:
+        """Bind both segment GUIDs on the pair-disconnect icon's pre-wired
+        ``bim.disconnect_elements`` op_props. Returns False when either side
+        is missing a GlobalId (e.g. selection lost an active object), and
+        the caller hides the icon."""
+        if len(pair_elements) != 2 or any(e is None for e in pair_elements):
+            return False
+        op_props = self.unjoin_op_props["unjoin_pair"]
+        op_props.element_a_guid = pair_elements[0].GlobalId
+        op_props.element_b_guid = pair_elements[1].GlobalId
+        return True

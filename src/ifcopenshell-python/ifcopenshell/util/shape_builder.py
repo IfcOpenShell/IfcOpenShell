@@ -21,7 +21,7 @@ from __future__ import annotations
 import collections.abc
 from collections.abc import Sequence
 from itertools import chain
-from math import atan, cos, degrees, pi, radians, sin, sqrt, tan
+from math import atan, atan2, cos, degrees, hypot, isclose, pi, radians, sin, sqrt, tan
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import numpy as np
@@ -299,6 +299,130 @@ def intersect_x_axis_2d(p1: VectorType, p2: VectorType, y=0) -> Optional[float]:
         return
     t = (y - y1) / (y2 - y1)
     return x1 + t * (x2 - x1)
+
+
+def arc_to_polyline_points(
+    start: VectorType, mid: VectorType, end: VectorType, subdivisions: int = 16
+) -> list[tuple[float, ...]]:
+    """Approximate a circular arc through (start, mid, end) with chord points.
+
+    The arc is determined uniquely by three points — a circle is fit in the
+    XY plane and the angle is walked from start through mid to end, sampling
+    ``subdivisions + 1`` points inclusive of the endpoints. Falls back to a
+    straight chord ``[start, end]`` for collinear / degenerate inputs.
+
+    Only planar arcs in the XY plane are supported. For 3D inputs (length 3
+    tuples), the Z coordinate of each output point is held constant at
+    ``start[2]``. Inputs where start/mid/end have differing Z values raise
+    ``ValueError`` rather than silently project — caller should rotate the
+    arc into the XY plane first if it lives in a non-axis-aligned plane.
+
+    :raises ValueError: if subdivisions < 1, or if 3D inputs have mismatched
+        Z coordinates (non-planar arc).
+    """
+    if subdivisions < 1:
+        raise ValueError(f"subdivisions must be >= 1, got {subdivisions}")
+    if len(start) >= 3:
+        # Tolerance accommodates floating-point noise from kernel transforms
+        # — IFC point coordinates that the author wrote as the same Z value
+        # may diverge by ~1e-15 after placement-matrix round-trips.
+        z_tol = 1e-9
+        if not (isclose(start[2], mid[2], abs_tol=z_tol) and isclose(start[2], end[2], abs_tol=z_tol)):
+            raise ValueError(
+                f"arc_to_polyline_points only handles arcs in the XY plane; "
+                f"got mismatched Z coordinates ({start[2]}, {mid[2]}, {end[2]})."
+            )
+    sx, sy = start[0], start[1]
+    mx, my = mid[0], mid[1]
+    ex, ey = end[0], end[1]
+    d = 2 * (sx * (my - ey) + mx * (ey - sy) + ex * (sy - my))
+    if abs(d) < 1e-12:
+        return [tuple(start), tuple(end)]
+    cx = ((sx**2 + sy**2) * (my - ey) + (mx**2 + my**2) * (ey - sy) + (ex**2 + ey**2) * (sy - my)) / d
+    cy = ((sx**2 + sy**2) * (ex - mx) + (mx**2 + my**2) * (sx - ex) + (ex**2 + ey**2) * (mx - sx)) / d
+    a_start = atan2(sy - cy, sx - cx)
+    a_mid = atan2(my - cy, mx - cx)
+    a_end = atan2(ey - cy, ex - cx)
+    sweep = _signed_sweep_through_mid(a_start, a_mid, a_end)
+    radius = hypot(sx - cx, sy - cy)
+    pts: list[tuple[float, ...]] = []
+    for i in range(subdivisions + 1):
+        t = i / subdivisions
+        angle = a_start + sweep * t
+        x = cx + radius * cos(angle)
+        y = cy + radius * sin(angle)
+        if len(start) == 2:
+            pts.append((x, y))
+        else:
+            pts.append((x, y, start[2]))
+    return pts
+
+
+def _signed_sweep_through_mid(a_start: float, a_mid: float, a_end: float) -> float:
+    """Total angle (radians) from a_start to a_end going through a_mid."""
+    two_pi = 2 * pi
+    ccw_total = (a_end - a_start) % two_pi
+    ccw_to_mid = (a_mid - a_start) % two_pi
+    if ccw_to_mid <= ccw_total:
+        return ccw_total
+    return -((a_start - a_end) % two_pi)
+
+
+def polygonal_face_set_to_faceted_brep(face_set: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Convert an ``IfcPolygonalFaceSet`` or ``IfcTriangulatedFaceSet`` into an
+    ``IfcFacetedBrep`` in the same file, preserving vertex coordinates and face
+    topology (including inner voids on ``IfcIndexedPolygonalFaceWithVoids``).
+
+    The returned brep is the canonical IFC2X3-compatible form of these IFC4
+    tessellated representations. The caller is responsible for rewiring inverse
+    references and removing the source face set when downgrading.
+
+    :raises TypeError: if ``face_set`` is not an ``IfcPolygonalFaceSet`` or
+        ``IfcTriangulatedFaceSet``.
+    :raises ValueError: if ``face_set.Coordinates`` is missing or any face's
+        coordinate index references a vertex outside the coordinate list.
+    """
+    if not (face_set.is_a("IfcPolygonalFaceSet") or face_set.is_a("IfcTriangulatedFaceSet")):
+        raise TypeError(
+            f"polygonal_face_set_to_faceted_brep expected IfcPolygonalFaceSet or "
+            f"IfcTriangulatedFaceSet, got {face_set.is_a()}."
+        )
+    if face_set.Coordinates is None:
+        raise ValueError(f"{face_set.is_a()} #{face_set.id()} has no Coordinates point list.")
+    ifc_file = face_set.file
+    coords = face_set.Coordinates.CoordList
+    vertex_count = len(coords)
+    ifc_points = [ifc_file.createIfcCartesianPoint(tuple(c)) for c in coords]
+
+    def _resolve(indices: Sequence[int]) -> list[ifcopenshell.entity_instance]:
+        # IfcIndexedPolygonalFace.CoordIndex / IfcTriangulatedFaceSet.CoordIndex
+        # are 1-based. Out-of-range hits early with a clear message rather
+        # than the cryptic IndexError from list[i-1].
+        out = []
+        for index in indices:
+            if not 1 <= index <= vertex_count:
+                raise ValueError(
+                    f"{face_set.is_a()} #{face_set.id()} face references vertex {index}, "
+                    f"outside CoordList range 1..{vertex_count}."
+                )
+            out.append(ifc_points[index - 1])
+        return out
+
+    ifc_faces: list[ifcopenshell.entity_instance] = []
+    if face_set.is_a("IfcTriangulatedFaceSet"):
+        for triangle in face_set.CoordIndex:
+            loop = ifc_file.createIfcPolyLoop(_resolve(triangle))
+            ifc_faces.append(ifc_file.createIfcFace([ifc_file.createIfcFaceOuterBound(loop, True)]))
+    else:  # IfcPolygonalFaceSet
+        for indexed_face in face_set.Faces:
+            outer_loop = ifc_file.createIfcPolyLoop(_resolve(indexed_face.CoordIndex))
+            bounds = [ifc_file.createIfcFaceOuterBound(outer_loop, True)]
+            if indexed_face.is_a("IfcIndexedPolygonalFaceWithVoids"):
+                for inner in indexed_face.InnerCoordIndices or ():
+                    bounds.append(ifc_file.createIfcFaceBound(ifc_file.createIfcPolyLoop(_resolve(inner)), True))
+            ifc_faces.append(ifc_file.createIfcFace(bounds))
+
+    return ifc_file.createIfcFacetedBrep(ifc_file.createIfcClosedShell(ifc_faces))
 
 
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
