@@ -337,7 +337,7 @@ const cgal_shape_t& ifcopenshell::geometry::CgalShape::poly() const {
 void ifcopenshell::geometry::CgalShape::to_poly() const {
 	if (!shape_) {
 		cgal_shape_t poly;
-		convert_to_polyhedron(*nef_, poly);
+		convert_to_polyhedron(*nef_, poly, std::numeric_limits<std::size_t>::max());
 		if (poly.size_of_vertices() > 0) {
 			// @todo why is this necessary? we have the mark of the volumes?
 			CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(poly);
