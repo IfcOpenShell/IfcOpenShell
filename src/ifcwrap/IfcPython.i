@@ -59,7 +59,6 @@
 %}
 %template(DoubleArray3) std::array<double, 3>;
 
-%ignore IfcGeom::NumberNativeDouble;
 %ignore ifcopenshell::geometry::Converter;
 
 // Not relevant for python: new_IfcBaseClass() calls instantiate()

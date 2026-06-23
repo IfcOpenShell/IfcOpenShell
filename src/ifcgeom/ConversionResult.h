@@ -101,6 +101,12 @@ namespace IfcGeom {
 			virtual const void* value_ptr() const = 0;
 		};
 
+		template <typename T, typename = void>
+		struct has_exact : std::false_type {};
+
+		template <typename T>
+		struct has_exact<T, std::void_t<decltype(std::declval<const T&>().exact())>> : std::true_type {};
+
 		template <typename T>
 		struct NumberModel : NumberConcept {
 			T value;
@@ -116,26 +122,19 @@ namespace IfcGeom {
 				return *same;
 			}
 
-			template <typename U>
-			static auto stream_exact(std::ostream& os, const U& v, int) -> decltype(os << v.exact(), void()) {
-				os << v.exact();
-			}
-
-			template <typename U>
-			static void stream_exact(std::ostream& os, const U& v, long) {
-				if constexpr (std::is_floating_point<U>::value) {
-					os << std::setprecision(std::numeric_limits<U>::digits10 + 1);
-				}
-				os << v;
-			}
-
 			virtual double to_double() const {
 				return static_cast<double>(value);
 			}
 
 			virtual std::string to_string() const {
 				std::stringstream ss;
-				stream_exact(ss, value, 0);
+				if constexpr (has_exact<T>::value) {
+					ss << value.exact();
+				} else if constexpr (std::is_floating_point<T>::value) {
+						ss << std::setprecision(std::numeric_limits<T>::digits10 + 1);
+					}
+					ss << value;
+				}
 				return ss.str();
 			}
 
@@ -204,12 +203,14 @@ namespace IfcGeom {
 		OpaqueNumber() = default;
 		virtual ~OpaqueNumber() = default;
 
+#ifndef SWIG
 		template <
 			typename T,
 			typename Decayed = std::decay_t<T>,
 			typename = std::enable_if_t<!std::is_base_of<OpaqueNumber, Decayed>::value && !is_shared_ptr<Decayed>::value>>
 		explicit OpaqueNumber(T&& value)
 			: data_(std::make_shared<NumberModel<Decayed>>(std::forward<T>(value))) {}
+#endif
 
 		double to_double() const {
 			return data().to_double();
@@ -290,18 +291,6 @@ namespace IfcGeom {
 		OpaqueNumber operator-() const {
 			return negated();
 		}
-	};
-
-	class IFC_GEOM_API NumberNativeDouble : public OpaqueNumber {
-	public:
-		NumberNativeDouble(double v)
-			: OpaqueNumber(v) {}
-
-		double value() const {
-			return value_as<double>();
-		}
-
-		std::string to_string() const;
 	};
 
 	template <size_t N>

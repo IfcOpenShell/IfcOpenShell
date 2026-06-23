@@ -11,11 +11,10 @@
 
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
-using IfcGeom::NumberNativeDouble;
 using IfcGeom::ConversionResultShape;
 
 #ifdef IFOPSH_SIMPLE_KERNEL
-#define NumberType NumberNativeDouble
+#define NumberType OpaqueNumber
 #else
 using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
@@ -101,6 +100,15 @@ namespace {
 			normalized_plane_for_map<Kernel_>(plane_from_opaque(from)),
 			normalized_plane_for_map<Kernel_>(plane_from_opaque(to))
 		});
+	}
+
+	void apply_normalized_plane_map(const plane_map<Kernel_>& mp, std::list<cgal_plane_t>& planes) {
+		for (auto& plane : planes) {
+			auto it = mp.find(normalized_plane_for_map<Kernel_>(plane));
+			if (it != mp.end()) {
+				plane = it->second;
+			}
+		}
 	}
 
 	cgal_vector_t wire_normal(const cgal_wire_t& wire) {
@@ -1196,6 +1204,7 @@ std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueC
 	std::size_t mutated = 0;
 	auto nw = shape_->map(mp, mutated);
 	shape_ = std::move(nw);
+	apply_normalized_plane_map(mp, planes_);
 	return mutated;
 }
 
@@ -1214,6 +1223,7 @@ std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const s
 	std::size_t mutated = 0;
 	auto nw = shape_->map(mp, mutated);
 	shape_ = std::move(nw);
+	apply_normalized_plane_map(mp, planes_);
 	return mutated;
 }
 

@@ -1,8 +1,6 @@
 #include "ConversionResult.h"
 #include "IfcGeomRepresentation.h"
 
-#include <iomanip>
-
 IfcGeom::Representation::Triangulation* IfcGeom::ConversionResultShape::Triangulate(const ifcopenshell::geometry::Settings& settings, Logger& logger) const
 {
 	auto t = IfcGeom::Representation::Triangulation::empty(settings);
@@ -19,12 +17,6 @@ void IfcGeom::ConversionResult::append(ifcopenshell::geometry::taxonomy::matrix4
 
 void IfcGeom::ConversionResult::prepend(ifcopenshell::geometry::taxonomy::matrix4::ptr trsf) {
 	placement_ = make<matrix4>(trsf->ccomponents() * placement_->ccomponents());
-}
-
-std::string IfcGeom::NumberNativeDouble::to_string() const {
-	std::stringstream ss;
-	ss << std::setprecision(std::numeric_limits<double>::digits10 + 1) << value();
-	return ss.str();
 }
 
 template struct IFC_GEOM_API IfcGeom::OpaqueCoordinate<3>;
