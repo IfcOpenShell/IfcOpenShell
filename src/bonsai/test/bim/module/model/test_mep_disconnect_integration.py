@@ -24,7 +24,7 @@ Builds a real IFC scene (two pipe segments joined via ports to a bridging
 fitting) and exercises the full chain:
     tool.Connection.find_rels(seg_a, seg_b)
     → returns (fitting, "mep-pair-fitting")
-    → bonsai.core.connection.disconnect_rel(rel=fitting, kind=...)
+    → bonsai.core.connection.disconnect_rel(subject=fitting, kind=...)
     → tool.Geometry.delete_ifc_object(fitting_obj)
     → cascade-on-delete removes the IfcRelConnectsPorts via remove_port
 
@@ -100,7 +100,7 @@ class TestMEPPairDisconnectEndToEnd(NewFile):
             tool.Geometry,
             tool.Model,
             tool.Connection,
-            rel=bend,
+            subject=bend,
             kind="mep-pair-fitting",
             elem=seg_a,
             partner=seg_b,
@@ -127,7 +127,7 @@ class TestMEPPairDisconnectEndToEnd(NewFile):
             tool.Geometry,
             tool.Model,
             tool.Connection,
-            rel=bend,
+            subject=bend,
             kind="mep-pair-fitting",
             elem=bend,
             partner=seg_a,

@@ -18,25 +18,26 @@
 #
 # This file was generated with the assistance of an AI coding tool.
 
-"""Generic discovery of the relation linking two IFC elements.
+"""Generic discovery of the connection linking two IFC elements.
 
 Used by ``bim.disconnect_elements`` so the operator surface is one operator
 per disconnect intent (active vs. partner, identified by GlobalId) rather
-than one per rel class. The kind label returned alongside the rel lets the
-operator dispatch the right post-disconnect cleanup:
+than one per rel class. Each lookup returns ``(subject, kind)`` tuples where
+``subject`` is the entity whose teardown effects the disconnect:
 
-- ``"path"`` for ``IfcRelConnectsPathElements`` (wall-wall, wall-roof, etc.)
-- ``"element-top"`` for ``IfcRelConnectsElements`` with ``Description=="TOP"``
-  (the rel kind ``extend_walls_to_underside`` creates)
-- ``"element"`` for any other ``IfcRelConnectsElements``
-- ``"mep-pair-fitting"`` for an MEP pair whose disconnect is effected by
-  removing a bridging ``IfcFlowFitting``. The ``rel`` slot for this kind
-  carries the fitting entity itself (not a relationship entity) — the
-  subject whose removal disconnects the pair. ``OBSTRUCTION`` fittings are
-  excluded; those are removed via ``bim.mep_add_obstruction(mode=REMOVE)``.
+- ``"path"`` — ``IfcRelConnectsPathElements`` (wall-wall, wall-roof, etc.).
+  ``subject`` is the rel; removing it disconnects.
+- ``"element-top"`` — ``IfcRelConnectsElements`` with ``Description=="TOP"``
+  (created by ``extend_walls_to_underside``). ``subject`` is the rel.
+- ``"element"`` — any other ``IfcRelConnectsElements``. ``subject`` is the rel.
+- ``"mep-pair-fitting"`` — two MEP elements joined via ``IfcRelConnectsPorts``
+  through a single bridging ``IfcFlowFitting``. ``subject`` is the fitting
+  itself; removing it disconnects. ``OBSTRUCTION`` fittings are excluded
+  here; those go through ``bim.mep_add_obstruction(mode=REMOVE)``.
 
-Add new rel kinds by extending :py:meth:`Connection.find_rel`. The disconnect
-operator's cleanup switch maps each kind to the right post-mutation calls."""
+Add new kinds by extending :py:meth:`Connection.find_rels`. The dispatch in
+``bonsai.core.connection.disconnect_rel`` maps each kind to the right
+post-mutation cleanup; the AST forward-compat guard enforces coverage."""
 
 from __future__ import annotations
 
@@ -55,13 +56,13 @@ class Connection:
         elem_a: ifcopenshell.entity_instance,
         elem_b: ifcopenshell.entity_instance,
     ) -> list[tuple[ifcopenshell.entity_instance, str]]:
-        """Return every supported rel linking ``elem_a`` to ``elem_b`` as a
-        list of ``(rel, kind)`` tuples. Walks both ``ConnectedTo`` and
-        ``ConnectedFrom`` because either side of the rel can be the relating
-        element, and the same pair may carry rels authored with opposite
-        orientations (``disconnect_path``'s ``(relating, related)`` mode only
-        inspects ``relating.ConnectedTo``, so a single call would miss the
-        opposite-orientation rel)."""
+        """Return every supported connection linking ``elem_a`` to ``elem_b``
+        as a list of ``(subject, kind)`` tuples — ``subject`` is the entity
+        whose teardown effects the disconnect (the rel itself for
+        relationship-kinds, the bridging fitting for ``"mep-pair-fitting"``).
+        Walks both ``ConnectedTo`` and ``ConnectedFrom`` because either side
+        of a rel can be the relating element, and the same pair may carry
+        rels authored with opposite orientations."""
         rels: list[tuple[ifcopenshell.entity_instance, str]] = []
         seen: set[int] = set()
 
@@ -98,8 +99,8 @@ class Connection:
         elem_a: ifcopenshell.entity_instance,
         elem_b: ifcopenshell.entity_instance,
     ) -> tuple[ifcopenshell.entity_instance | None, str | None]:
-        """Return the first ``(rel, kind)`` or ``(None, None)``. Cheaper than
-        ``find_rels`` when callers only need to know whether a connection
+        """Return the first ``(subject, kind)`` or ``(None, None)``. Cheaper
+        than ``find_rels`` when callers only need to know whether a connection
         exists or what kind it is."""
         rels = cls.find_rels(elem_a, elem_b)
         return rels[0] if rels else (None, None)
@@ -109,9 +110,10 @@ class Connection:
         cls,
         elem: ifcopenshell.entity_instance,
     ) -> list[tuple[ifcopenshell.entity_instance, str, ifcopenshell.entity_instance]]:
-        """Return every supported rel touching ``elem`` as ``(rel, kind, partner)``
-        triples. ``partner`` is the *other* element on the rel — the side cascade
-        cleanup must operate on when ``elem`` is being deleted.
+        """Return every supported connection touching ``elem`` as
+        ``(subject, kind, partner)`` triples. ``partner`` is the *other*
+        element on the connection — the side cascade cleanup must operate on
+        when ``elem`` is being deleted.
 
         Mirrors :py:meth:`find_rels`'s relationship-kind taxonomy. Notably
         does NOT emit ``"mep-pair-fitting"`` triples: ``IfcRelConnectsPorts``
