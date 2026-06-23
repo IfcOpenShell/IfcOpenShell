@@ -41,7 +41,14 @@ class Patcher(ifcpatch.BasePatcher):
         to a new IFC file. For example, you might want to extract only the walls
         in a model and save it as a new model.
 
-        :param query: A query to select the subset of IFC elements.
+        :param query: A query to select the subset of IFC elements, using the
+            ifcopenshell.util.selector.filter_elements grammar. Supports
+            exclusion (blacklist) via '!' on entity classes and '!=' on
+            attribute / pset / material / classification / location / group
+            facets. Entity-class exclusion does not auto-seed from "all
+            elements", so a bare '! IfcSlab' query returns nothing — start
+            with a broad include (e.g. 'IfcProduct', 'IfcElement') and
+            subtract from it.
         :param assume_asset_uniqueness_by_name: Avoid adding assets (profiles, materials, styles)
             with the same name multiple times. Which helps in avoiding duplicated assets.
             -----
@@ -63,6 +70,12 @@ class Patcher(ifcpatch.BasePatcher):
 
             # Extract all walls and slabs
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, IfcSlab"]})
+
+            # Extract everything except slabs (seed with a broad include, then subtract)
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcProduct, ! IfcSlab"]})
+
+            # Extract walls whose Name is not "Foo"
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ExtractElements", "arguments": ["IfcWall, attribute.Name != \"Foo\""]})
         """
         super().__init__(file, logger)
         self.query = query
