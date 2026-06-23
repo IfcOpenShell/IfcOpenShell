@@ -101,11 +101,13 @@ namespace IfcGeom {
 			virtual const void* value_ptr() const = 0;
 		};
 
+#ifndef SWIG
 		template <typename T, typename = void>
 		struct has_exact : std::false_type {};
 
 		template <typename T>
 		struct has_exact<T, std::void_t<decltype(std::declval<const T&>().exact())>> : std::true_type {};
+#endif
 
 		template <typename T>
 		struct NumberModel : NumberConcept {
@@ -130,7 +132,8 @@ namespace IfcGeom {
 				std::stringstream ss;
 				if constexpr (has_exact<T>::value) {
 					ss << value.exact();
-				} else if constexpr (std::is_floating_point<T>::value) {
+				} else {
+					if constexpr (std::is_floating_point<T>::value) {
 						ss << std::setprecision(std::numeric_limits<T>::digits10 + 1);
 					}
 					ss << value;
