@@ -58,16 +58,16 @@ namespace IfcGeom {
 		IFC_GEOMLIBRARY_API gp_Pnt point_above_plane(const gp_Pln& pln, bool agree = true);
 
 		IFC_GEOMLIBRARY_API bool fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, TopoDS_Shape& box, double& height, double tol);
-		IFC_GEOMLIBRARY_API const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const Handle_Geom_Surface&);
-		IFC_GEOMLIBRARY_API const Handle_Geom_Curve intersect(const Handle_Geom_Surface&, const TopoDS_Face&);
-		IFC_GEOMLIBRARY_API const Handle_Geom_Curve intersect(const TopoDS_Face&, const Handle_Geom_Surface&);
-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Curve&, const Handle_Geom_Surface&, gp_Pnt&);
-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Curve&, const TopoDS_Face&, gp_Pnt&);
-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Curve&, const TopoDS_Shape&, std::vector<gp_Pnt>&);
-		IFC_GEOMLIBRARY_API bool intersect(const Handle_Geom_Surface&, const TopoDS_Shape&, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >&);
+		IFC_GEOMLIBRARY_API const opencascade::handle<Geom_Curve> intersect(const opencascade::handle<Geom_Surface>&, const opencascade::handle<Geom_Surface>&);
+		IFC_GEOMLIBRARY_API const opencascade::handle<Geom_Curve> intersect(const opencascade::handle<Geom_Surface>&, const TopoDS_Face&);
+		IFC_GEOMLIBRARY_API const opencascade::handle<Geom_Curve> intersect(const TopoDS_Face&, const opencascade::handle<Geom_Surface>&);
+		IFC_GEOMLIBRARY_API bool intersect(const opencascade::handle<Geom_Curve>&, const opencascade::handle<Geom_Surface>&, gp_Pnt&);
+		IFC_GEOMLIBRARY_API bool intersect(const opencascade::handle<Geom_Curve>&, const TopoDS_Face&, gp_Pnt&);
+		IFC_GEOMLIBRARY_API bool intersect(const opencascade::handle<Geom_Curve>&, const TopoDS_Shape&, std::vector<gp_Pnt>&);
+		IFC_GEOMLIBRARY_API bool intersect(const opencascade::handle<Geom_Surface>&, const TopoDS_Shape&, std::vector< std::pair<opencascade::handle<Geom_Surface>, opencascade::handle<Geom_Curve> > >&);
 		IFC_GEOMLIBRARY_API bool closest(const gp_Pnt&, const std::vector<gp_Pnt>&, gp_Pnt&);
-		IFC_GEOMLIBRARY_API bool project(const Handle_Geom_Curve&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
-		IFC_GEOMLIBRARY_API bool project(const Handle_Geom_Surface&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen = 0.1);
+		IFC_GEOMLIBRARY_API bool project(const opencascade::handle<Geom_Curve>&, const gp_Pnt&, gp_Pnt& p, double& u, double& d);
+		IFC_GEOMLIBRARY_API bool project(const opencascade::handle<Geom_Surface>&, const TopoDS_Shape&, double& u1, double& v1, double& u2, double& v2, double widen = 0.1);
 
 		IFC_GEOMLIBRARY_API double shape_volume(const TopoDS_Shape& s);
 		IFC_GEOMLIBRARY_API double face_area(const TopoDS_Face& f);

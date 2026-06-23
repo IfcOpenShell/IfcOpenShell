@@ -109,7 +109,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		std::vector<std::tuple<int, int, int>> triangle_indices;
 
 		TopLoc_Location loc;
-		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
+		occ::handle<Poly_Triangulation> tri = BRep_Tool::Triangulation(face, loc);
 
 		if (tri.IsNull()) {
 			Logger::Root().Message(Logger::LOG_ERROR, "GEO", 184, "Triangulation missing for face");
@@ -145,7 +145,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 							normal = normal_direction;
 						}
 					} else {
-						Handle_Geom_Surface surf = BRep_Tool::Surface(face);
+						occ::handle<Geom_Surface> surf = BRep_Tool::Surface(face);
 						// Special case the normal at the poles of a spherical surface
 						if (surf->DynamicType() == STANDARD_TYPE(Geom_SphericalSurface)) {
 							if (fabs(fabs(uv.Y()) - M_PI / 2.) < 1.e-9) {
@@ -165,7 +165,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				}
 			}
 
-			const Poly_Array1OfTriangle& triangles = tri->Triangles();
+			const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
 			for (int i = 1; i <= triangles.Length(); ++i) {
 				int n1, n2, n3;
 				if (face.Orientation() == TopAbs_REVERSED)
@@ -634,7 +634,7 @@ namespace {
 						coords.push_back(tri->Node(i).Transformed(loc).XYZ());
 					}
 
-					const Poly_Array1OfTriangle& triangles = tri->Triangles();
+					const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
 					for (int i = 1; i <= triangles.Length(); ++i) {
 						int n1, n2, n3;
 

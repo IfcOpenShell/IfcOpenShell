@@ -18,20 +18,21 @@
 TopoDS_Edge IfcGeom::util::first_edge(const TopoDS_Wire & w) {
 	TopoDS_Vertex v1, v2;
 	TopExp::Vertices(w, v1, v2);
-	TopTools_IndexedDataMapOfShapeListOfShape wm;
+    NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wm;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, wm);
 	return TopoDS::Edge(wm.FindFromKey(v1).First());
 }
 
 // Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
 TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v, const gp_Pnt & p) {
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 
 	bool all_linear = true, single_circle = false, first = true;
 
-	const TopTools_ListOfShape& edges = map.FindFromKey(v);
-	TopTools_ListIteratorOfListOfShape it(edges);
+	const NCollection_List<TopoDS_Shape>& edges = map.FindFromKey(v);
+
+	NCollection_List<TopoDS_Shape>::Iterator it(edges);
 	for (; it.More(); it.Next()) {
 		const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 		double _, __;
@@ -81,7 +82,7 @@ double IfcGeom::util::deflection_for_approximating_circle(double radius, double 
 	return -radius * std::cos(1. / 2. * param) * std::cos(param) - radius * std::sin(1. / 2. * param) * std::sin(param) + radius;
 }
 
-bool IfcGeom::util::create_edge_over_curve_with_log_messages(const Handle_Geom_Curve & crv, const double eps, const gp_Pnt & p1, const gp_Pnt & p2, TopoDS_Edge & result) {
+bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
 	if (crv->IsClosed() && p1.Distance(p2) <= eps) {
 		BRepBuilderAPI_MakeEdge me(crv);
 		if (me.IsDone()) {
@@ -176,14 +177,14 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS
 	}
 
 	{
-		TopTools_IndexedDataMapOfShapeListOfShape wmap1, wmap2;
+		NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wmap1, wmap2;
 
 		// Find edges connected to end- and begin vertex
 		TopExp::MapShapesAndAncestors(w1, TopAbs_VERTEX, TopAbs_EDGE, wmap1);
 		TopExp::MapShapesAndAncestors(w2, TopAbs_VERTEX, TopAbs_EDGE, wmap2);
 
-		const TopTools_ListOfShape& last_edges = wmap1.FindFromKey(w12);
-		const TopTools_ListOfShape& first_edges = wmap2.FindFromKey(w21);
+		const NCollection_List<TopoDS_Shape>& last_edges = wmap1.FindFromKey(w12);
+		const NCollection_List<TopoDS_Shape>& first_edges = wmap2.FindFromKey(w21);
 
 		double _, __;
 		if (last_edges.Extent() == 1 && first_edges.Extent() == 1) {

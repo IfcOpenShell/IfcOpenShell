@@ -108,7 +108,7 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 		}
 		return true;
 	} else {
-		TopTools_IndexedDataMapOfShapeListOfShape map;
+        NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
 
 		for (int i = 1; i <= map.Extent(); ++i) {
@@ -199,17 +199,17 @@ gp_Trsf IfcGeom::util::combine_offset_and_rotation(const gp_Vec & offset, const 
 }
 
 
-bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
+bool IfcGeom::util::project(const opencascade::handle<Geom_Surface>& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
 	// @todo std::unique_ptr for C++11
 	ShapeAnalysis_Surface* sas = 0;
-	Handle(Geom_Plane) pln;
+	opencascade::handle<Geom_Plane> pln;
 
 	if (srf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		// Optimize projection for specific cases
-		pln = Handle(Geom_Plane)::DownCast(srf);
-	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+		pln = opencascade::handle<Geom_Plane>::DownCast(srf);
+	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && opencascade::handle<Geom_OffsetSurface>::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		// For an offset planar surface the projected UV coords are the same as the basis surface
-		pln = Handle(Geom_Plane)::DownCast(Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface());
+		pln = opencascade::handle<Geom_Plane>::DownCast(opencascade::handle<Geom_OffsetSurface>::DownCast(srf)->BasisSurface());
 	} else {
 		sas = new ShapeAnalysis_Surface(srf);
 	}
@@ -246,7 +246,7 @@ bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& 
 			const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
 
 			double a, b;
-			Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
+			opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, a, b);
 			gp_Pnt p;
 			crv->D0((a + b) / 2., p);
 
@@ -449,24 +449,25 @@ bool IfcGeom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, 
 }
 
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const Handle_Geom_Surface& b) {
+const opencascade::handle<Geom_Curve> IfcGeom::util::intersect(const opencascade::handle<Geom_Surface>& a, const opencascade::handle<Geom_Surface>& b) {
 	GeomAPI_IntSS x(a, b, 1.e-7);
 	if (x.IsDone() && x.NbLines() == 1) {
 		return x.Line(1);
 	} else {
-		return Handle_Geom_Curve();
+		return opencascade::handle<Geom_Curve>();
+
 	}
 }
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Face& b) {
+const opencascade::handle<Geom_Curve> IfcGeom::util::intersect(const opencascade::handle<Geom_Surface>& a, const TopoDS_Face& b) {
 	return intersect(a, BRep_Tool::Surface(b));
 }
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const TopoDS_Face& a, const Handle_Geom_Surface& b) {
+const opencascade::handle<Geom_Curve> IfcGeom::util::intersect(const TopoDS_Face& a, const opencascade::handle<Geom_Surface>& b) {
 	return intersect(BRep_Tool::Surface(a), b);
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surface& b, gp_Pnt& p) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Curve>& a, const opencascade::handle<Geom_Surface>& b, gp_Pnt& p) {
 	GeomAPI_IntCS x(a, b);
 	if (x.IsDone() && x.NbPoints() == 1) {
 		p = x.Point(1);
@@ -476,11 +477,11 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surf
 	}
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Face& b, gp_Pnt &c) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Curve>& a, const TopoDS_Face& b, gp_Pnt &c) {
 	return intersect(a, BRep_Tool::Surface(b), c);
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Curve>& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	gp_Pnt p;
 	for (; exp.More(); exp.Next()) {
@@ -491,12 +492,12 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b,
 	return !out.empty();
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Shape& b, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >& out) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Surface>& a, const TopoDS_Shape& b, std::vector< std::pair<opencascade::handle<Geom_Surface>, opencascade::handle<Geom_Curve> > >& out) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		const TopoDS_Face& f = TopoDS::Face(exp.Current());
-		const Handle_Geom_Surface& s = BRep_Tool::Surface(f);
-		Handle_Geom_Curve crv = intersect(a, s);
+		const opencascade::handle<Geom_Surface>& s = BRep_Tool::Surface(f);
+		opencascade::handle<Geom_Curve> crv = intersect(a, s);
 		if (!crv.IsNull()) {
 			out.push_back(std::make_pair(s, crv));
 		}
@@ -516,7 +517,7 @@ bool IfcGeom::util::closest(const gp_Pnt& a, const std::vector<gp_Pnt>& b, gp_Pn
 	return minimal_distance != std::numeric_limits<double>::infinity();
 }
 
-bool IfcGeom::util::project(const Handle_Geom_Curve& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
+bool IfcGeom::util::project(const opencascade::handle<Geom_Curve>& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
 	ShapeAnalysis_Curve sac;
 	sac.Project(crv, pt, 1e-3, p, u, false);
 	d = pt.Distance(p);
@@ -647,7 +648,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 	TopTools_ListIteratorOfListOfShape face_iterator;
 
 	bool has_shared_edges = false;
-	TopTools_MapOfShape edge_set;
+    NCollection_Map<TopoDS_Shape, TopTools_ShapeMapHasher> edge_set;
 
 	// In case there are wire intersections or failures in non-planar wire triangulations
 	// the idea is to let occt do an exhaustive search of edge partners. But we have not
@@ -875,7 +876,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 	std::function<void(const TopoDS_Shape&)> dump;
 	dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
 		if (!ana.Result(s).IsNull()) {
-			BRepCheck_ListIteratorOfListOfStatus itl;
+            NCollection_List<BRepCheck_Status>::Iterator itl;
 			itl.Initialize(ana.Result(s)->Status());
 			for (; itl.More(); itl.Next()) {
 				if (itl.Value() != BRepCheck_NoError) {

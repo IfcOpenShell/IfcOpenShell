@@ -59,7 +59,7 @@ namespace IfcGeom {
 		};
 
 		template <typename Fn>
-		void shape_pair_enumerate(TopTools_ListIteratorOfListOfShape& it, Fn& fn, bool closed) {
+        void shape_pair_enumerate(NCollection_List<TopoDS_Shape>::Iterator& it, Fn& fn, bool closed) {
 			bool is_first = true;
 			TopoDS_Shape first, previous, current;
 			for (; it.More(); it.Next(), is_first = false) {
@@ -98,7 +98,7 @@ namespace IfcGeom {
 
 		double deflection_for_approximating_circle(double radius, double param);
 
-		bool create_edge_over_curve_with_log_messages(const Handle_Geom_Curve& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result);
+		bool create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result);
 	}
 }
 

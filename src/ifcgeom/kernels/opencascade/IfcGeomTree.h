@@ -1926,7 +1926,7 @@ namespace IfcGeom {
             BVH_Triangulation<Standard_Real, 3> triangulation(builder);
 
             for (int i = 0; i < elem_verts.size(); i += 3) {
-                triangulation.Vertices.push_back(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+                triangulation.Vertices.Append(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
                 verts.push_back(gp_Pnt(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
             }
 
@@ -1938,7 +1938,7 @@ namespace IfcGeom {
                 gp_Vec dir2(v1_pnt, v3_pnt);
                 gp_Vec cross_product = dir1.Crossed(dir2);
                 if (cross_product.Magnitude() > Precision::Confusion()) {
-                    triangulation.Elements.push_back(BVH_Vec4i(
+                    triangulation.Elements.Append(BVH_Vec4i(
                         elem_faces[i], elem_faces[i + 1], elem_faces[i + 2], original_tris_index
                     ));
                     original_tris_index++;

@@ -110,16 +110,16 @@ namespace {
 #endif
 
 template <>
-int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool advanced) {
+int convert_to_ifc(const opencascade::handle<Geom_Curve>& c, IfcSchema::IfcCurve*& curve, bool advanced) {
 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
-		Handle_Geom_TrimmedCurve trim = Handle_Geom_TrimmedCurve::DownCast(c);
-		const Handle_Geom_Curve basis = trim->BasisCurve();
+        opencascade::handle<Geom_TrimmedCurve> trim = opencascade::handle<Geom_TrimmedCurve>::DownCast(c);
+		const opencascade::handle<Geom_Curve> basis = trim->BasisCurve();
 		return convert_to_ifc(basis, curve, advanced);
 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 		IfcSchema::IfcDirection* d;
 		IfcSchema::IfcCartesianPoint* p;
 
-		Handle_Geom_Line line = Handle_Geom_Line::DownCast(c);
+		opencascade::handle<Geom_Line> line = opencascade::handle<Geom_Line>::DownCast(c);
 
 		if (!convert_to_ifc(line->Position().Location(), p, advanced)) {
 			return 0;
@@ -135,7 +135,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Circle)) {
 		IfcSchema::IfcAxis2Placement3D* ax;
 
-		Handle_Geom_Circle circle = Handle_Geom_Circle::DownCast(c);
+		opencascade::handle<Geom_Circle> circle = opencascade::handle<Geom_Circle>::DownCast(c);
 
 		convert_to_ifc(circle->Position(), ax, advanced);
 		curve = new IfcSchema::IfcCircle(ax, circle->Radius());
@@ -144,16 +144,16 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 	} else if (c->DynamicType() == STANDARD_TYPE(Geom_Ellipse)) {
 		IfcSchema::IfcAxis2Placement3D* ax;
 
-		Handle_Geom_Ellipse ellipse = Handle_Geom_Ellipse::DownCast(c);
+		opencascade::handle<Geom_Ellipse> ellipse = opencascade::handle<Geom_Ellipse>::DownCast(c);
 
 		convert_to_ifc(ellipse->Position(), ax, advanced);
 		curve = new IfcSchema::IfcEllipse(ax, ellipse->MajorRadius(), ellipse->MinorRadius());
-
+        
 		return 1;
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BezierCurve)) {
-		Handle_Geom_BezierCurve bezier = Handle_Geom_BezierCurve::DownCast(c);
+		opencascade::handle<Geom_BezierCurve> bezier = opencascade::handle<Geom_BezierCurve>::DownCast(c);
 
 		std::vector<int> mults;
 		std::vector<double> knots;
@@ -162,7 +162,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 		IfcSchema::IfcKnotType::Value knot_spec = IfcSchema::IfcKnotType::IfcKnotType_QUASI_UNIFORM_KNOTS;
 
 		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
-		TColgp_Array1OfPnt poles(1, bezier->NbPoles());
+        NCollection_Array1<gp_Pnt> poles(1, bezier->NbPoles());
 		bezier->Poles(poles);
 		for (int i = 1; i <= bezier->NbPoles(); ++i) {
 			IfcSchema::IfcCartesianPoint* p;
@@ -180,7 +180,7 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 			knots.push_back((double) i - 1);
 		}
 
-		TColStd_Array1OfReal bspline_weights(1, bezier->NbPoles());
+		NCollection_Array1<double> bspline_weights(1, bezier->NbPoles());
 		bezier->Weights(bspline_weights);
 		opencascade_array_to_vector(bspline_weights, weights);
 
@@ -199,10 +199,10 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 		return 1;
 	}
 	else if (c->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
-		Handle_Geom_BSplineCurve bspline = Handle_Geom_BSplineCurve::DownCast(c);
+		opencascade::handle<Geom_BSplineCurve> bspline = opencascade::handle<Geom_BSplineCurve>::DownCast(c);
 
 		IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list);
-		TColgp_Array1OfPnt poles(1, bspline->NbPoles());
+		NCollection_Array1<gp_Pnt> poles(1, bspline->NbPoles());
 		bspline->Poles(poles);
 		for (int i = 1; i <= bspline->NbPoles(); ++i) {
 			IfcSchema::IfcCartesianPoint* p;
@@ -217,9 +217,9 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 		std::vector<double> knots;
 		std::vector<double> weights;
 
-		TColStd_Array1OfInteger bspline_mults(1, bspline->NbKnots());
-		TColStd_Array1OfReal bspline_knots(1, bspline->NbKnots());
-		TColStd_Array1OfReal bspline_weights(1, bspline->NbPoles());
+		NCollection_Array1<int> bspline_mults(1, bspline->NbKnots());
+		NCollection_Array1<double> bspline_knots(1, bspline->NbKnots());
+		NCollection_Array1<double> bspline_weights(1, bspline->NbPoles());
 
 		bspline->Multiplicities(bspline_mults);
 		bspline->Knots(bspline_knots);
@@ -278,9 +278,9 @@ int convert_to_ifc(const Handle_Geom_Curve& c, IfcSchema::IfcCurve*& curve, bool
 }
 
 template <>
-int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface, bool advanced) {
+int convert_to_ifc(const opencascade::handle<Geom_Surface>& s, IfcSchema::IfcSurface*& surface, bool advanced) {
 	if (s->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
-		Handle_Geom_Plane plane = Handle_Geom_Plane::DownCast(s);
+		opencascade::handle<Geom_Plane> plane = opencascade::handle<Geom_Plane>::DownCast(s);
 		IfcSchema::IfcAxis2Placement3D* place;
 		/// @todo: Note that the Ax3 is converted to an Ax2 here
 		if (!convert_to_ifc(plane->Position().Ax2(), place, advanced)) {
@@ -291,7 +291,7 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 	}
 #ifdef SCHEMA_HAS_IfcRationalBSplineSurfaceWithKnots
 	else if (s->DynamicType() == STANDARD_TYPE(Geom_CylindricalSurface)) {
-		Handle_Geom_CylindricalSurface cyl = Handle_Geom_CylindricalSurface::DownCast(s);
+		opencascade::handle<Geom_CylindricalSurface> cyl = opencascade::handle<Geom_CylindricalSurface>::DownCast(s);
 		IfcSchema::IfcAxis2Placement3D* place;
 		/// @todo: Note that the Ax3 is converted to an Ax2 here
 		if (!convert_to_ifc(cyl->Position().Ax2(), place, advanced)) {
@@ -302,10 +302,10 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 	} else if (s->DynamicType() == STANDARD_TYPE(Geom_BSplineSurface)) {
 		typedef aggregate_of_aggregate_of<IfcSchema::IfcCartesianPoint> points_t;
 
-		Handle_Geom_BSplineSurface bspline = Handle_Geom_BSplineSurface::DownCast(s);
+		opencascade::handle<Geom_BSplineSurface> bspline = opencascade::handle<Geom_BSplineSurface>::DownCast(s);
 		points_t::ptr points(new points_t);
 
-		TColgp_Array2OfPnt poles(1, bspline->NbUPoles(), 1, bspline->NbVPoles());
+		NCollection_Array2<gp_Pnt> poles(1, bspline->NbUPoles(), 1, bspline->NbVPoles());
 		bspline->Poles(poles);
 		for (int i = 1; i <= bspline->NbUPoles(); ++i) {
 			std::vector<IfcSchema::IfcCartesianPoint*> ps;
@@ -333,11 +333,11 @@ int convert_to_ifc(const Handle_Geom_Surface& s, IfcSchema::IfcSurface*& surface
 		std::vector<double> vknots;
 		std::vector< std::vector<double> > weights;
 
-		TColStd_Array1OfInteger bspline_umults(1, bspline->NbUKnots());
-		TColStd_Array1OfInteger bspline_vmults(1, bspline->NbVKnots());
-		TColStd_Array1OfReal bspline_uknots(1, bspline->NbUKnots());
-		TColStd_Array1OfReal bspline_vknots(1, bspline->NbVKnots());
-		TColStd_Array2OfReal bspline_weights(1, bspline->NbUPoles(), 1, bspline->NbVPoles());
+		NCollection_Array1<int> bspline_umults(1, bspline->NbUKnots());
+		NCollection_Array1<int> bspline_vmults(1, bspline->NbVKnots());
+		NCollection_Array1<double> bspline_uknots(1, bspline->NbUKnots());
+		NCollection_Array1<double> bspline_vknots(1, bspline->NbVKnots());
+		NCollection_Array2<double> bspline_weights(1, bspline->NbUPoles(), 1, bspline->NbVPoles());
 
 		bspline->UMultiplicities(bspline_umults);
 		bspline->VMultiplicities(bspline_vmults);
@@ -405,7 +405,7 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcCurve*& c, bool advanced)
 	double a, b;
 	IfcSchema::IfcCurve* base;
 
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
+	opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, a, b);
 	if (!convert_to_ifc(crv, base, advanced)) {
 		return 0;
 	}
@@ -436,7 +436,7 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 		return 0;
 	}
 
-	Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
+	opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, a, b);
 
 	if (crv.IsNull()) {
 		return 0;
@@ -460,13 +460,13 @@ int convert_to_ifc(const TopoDS_Edge& e, IfcSchema::IfcEdge*& edge, bool advance
 }
 
 namespace {
-	bool is_polygonal(const Handle_Geom_Curve& crv) {
+	bool is_polygonal(const opencascade::handle<Geom_Curve>& crv) {
 		if (crv->DynamicType() == STANDARD_TYPE(Geom_Line)) {
 			return true;
 		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
-			return is_polygonal(Handle_Geom_TrimmedCurve::DownCast(crv)->BasisCurve());
+			return is_polygonal(opencascade::handle<Geom_TrimmedCurve>::DownCast(crv)->BasisCurve());
 		} else if (crv->DynamicType() == STANDARD_TYPE(Geom_BSplineCurve)) {
-			auto bspl = Handle_Geom_BSplineCurve::DownCast(crv);
+			auto bspl = opencascade::handle<Geom_BSplineCurve>::DownCast(crv);
 			return bspl->NbPoles() == 2 && bspl->Degree() == 1;
 		} else {
 			return false;
@@ -479,7 +479,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 	bool polygonal = true;
 	for (TopExp_Explorer exp(wire, TopAbs_EDGE); exp.More(); exp.Next()) {
 		double a, b;
-		Handle_Geom_Curve crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
 		if (crv.IsNull()) {
 			continue;
 		}
@@ -526,7 +526,7 @@ int convert_to_ifc(const TopoDS_Wire& wire, IfcSchema::IfcLoop*& loop, bool adva
 
 template <>
 int convert_to_ifc(const TopoDS_Face& f, IfcSchema::IfcFace*& face, bool advanced) {
-	Handle_Geom_Surface surf = BRep_Tool::Surface(f);
+	opencascade::handle<Geom_Surface> surf = BRep_Tool::Surface(f);
 	TopExp_Explorer exp(f, TopAbs_WIRE);
 	IfcSchema::IfcFaceBound::list::ptr bounds(new IfcSchema::IfcFaceBound::list);
 	int index = 0;
@@ -723,7 +723,7 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(tesselate)(const TopoDS_Shape& shape, doub
 				IfcSchema::IfcCartesianPoint* cpnt = new IfcSchema::IfcCartesianPoint(xyz);
 				vertices.push_back(cpnt);
 			}
-			const Poly_Array1OfTriangle& triangles = tri->Triangles();
+			const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
 			for (int i = 1; i <= triangles.Length(); ++i) {
 				int n1, n2, n3;
 				triangles(i).Get(n1, n2, n3);

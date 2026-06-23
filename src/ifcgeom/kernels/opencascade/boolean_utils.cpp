@@ -23,7 +23,6 @@
 #include <BOPAlgo_Alerts.hxx>
 #include <ShapeFix_Shape.hxx>
 #include <BRepCheck_Analyzer.hxx>
-#include <BRepCheck_ListIteratorOfListOfStatus.hxx>
 #include <BRepCheck.hxx>
 #include <ShapeAnalysis_Edge.hxx>
 #include <Bnd_OBB.hxx>
@@ -230,7 +229,7 @@ double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_
 	return M;
 }
 
-int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const TopTools_ListOfShape & b, TopTools_ListOfShape & c) {
+int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & b, NCollection_List<TopoDS_Shape> & c) {
 	int N = 0;
 
 	Bnd_Box A;
@@ -240,7 +239,7 @@ int IfcGeom::util::bounding_box_overlap(double p, const TopoDS_Shape & a, const 
 		return 0;
 	}
 
-	TopTools_ListIteratorOfListOfShape it(b);
+	NCollection_List<TopoDS_Shape>::Iterator it(b);
 	for (; it.More(); it.Next()) {
 		Bnd_Box B;
 		BRepBndLib::Add(it.Value(), B);
@@ -263,8 +262,8 @@ bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
 	double _, __;
 
 	auto crv = BRep_Tool::Curve(e, _, __);
-	auto line = Handle_Geom_Line::DownCast(crv);
-	auto bsple = Handle_Geom_BSplineCurve::DownCast(crv);
+	auto line = opencascade::handle<Geom_Line>::DownCast(crv);
+	auto bsple = opencascade::handle<Geom_BSplineCurve>::DownCast(crv);
 
 	if (line) {
 		ax = line->Position();
@@ -297,7 +296,7 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	// This assumes UnifySameDomain has been processed on s, so that
 	// the extrusion top and bottom are a single face.
 
-	TopTools_IndexedDataMapOfShapeListOfShape mapping;
+	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> mapping;
 	TopExp::MapShapesAndAncestors(s, TopAbs_EDGE, TopAbs_FACE, mapping);
 	TopExp::MapShapesAndAncestors(s, TopAbs_VERTEX, TopAbs_FACE, mapping);
 
@@ -406,9 +405,9 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	return true;
 }
 
-int IfcGeom::util::eliminate_narrow_operands(double prec, const TopTools_ListOfShape& bs, TopTools_ListOfShape & c) {
+int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List<TopoDS_Shape>& bs, NCollection_List<TopoDS_Shape> & c) {
 	int N = 0;
-	TopTools_ListIteratorOfListOfShape it(bs);
+	NCollection_List<TopoDS_Shape>::Iterator it(bs);
 	for (; it.More(); it.Next()) {
 
 		Bnd_OBB box;
@@ -430,7 +429,7 @@ int IfcGeom::util::eliminate_narrow_operands(double prec, const TopTools_ListOfS
 	return N;
 }
 
-int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const TopTools_ListOfShape & bs, TopTools_ListOfShape & c) {
+int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & bs, NCollection_List<TopoDS_Shape> & c) {
 	TopTools_IndexedMapOfShape a_faces;
 	TopExp::MapShapes(a, TopAbs_FACE, a_faces);
 
@@ -574,13 +573,13 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 	return N;
 }
 
-bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const TopTools_ListOfShape & b_input, TopoDS_Shape & result, double eps) {
+bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_input, const NCollection_List<TopoDS_Shape> & b_input, TopoDS_Shape & result, double eps) {
 	IfcGeom::impl::tree<int> edge_tree;
 
-	TopTools_ListOfShape ab_input = b_input;
+	NCollection_List<TopoDS_Shape> ab_input = b_input;
 	ab_input.Prepend(a_input);
 
-	TopTools_ListIteratorOfListOfShape it(ab_input);
+	NCollection_List<TopoDS_Shape>::Iterator it(ab_input);
 	int shape_index = 0;
 	int edge_index = 0;
 	std::map<int, int> edge_index_to_shape_index;
@@ -833,7 +832,7 @@ bool IfcGeom::util::points_on_planar_face_generator::operator()(gp_Pnt& p) {
 }
 
 
-bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const TopTools_ListOfShape& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
+bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a_input, const NCollection_List<TopoDS_Shape>& b_input, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
 	using namespace std::string_literals;
 
 	const bool do_unify = true;
@@ -1193,7 +1192,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					std::function<void(const TopoDS_Shape&)> dump;
 					dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
 						if (!ana.Result(s).IsNull()) {
-							BRepCheck_ListIteratorOfListOfStatus itl;
+                            NCollection_List<BRepCheck_Status>::Iterator itl;
 							itl.Initialize(ana.Result(s)->Status());
 							for (; itl.More(); itl.Next()) {
 								if (itl.Value() != BRepCheck_NoError) {
@@ -1234,7 +1233,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					bool operands_nonmanifold = false;
 					if (op == BOPAlgo_CUT) {
 						TopTools_IndexedMapOfShape edges;
-						TopTools_IndexedDataMapOfShapeListOfShape map;
+						NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
 						for (TopTools_ListIteratorOfListOfShape it2(b); it2.More(); it2.Next()) {
 							auto& bb = it2.Value();
 							TopExp::MapShapes(bb, TopAbs_EDGE, edges);
