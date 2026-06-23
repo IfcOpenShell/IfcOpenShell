@@ -27,6 +27,12 @@ disconnect-on-delete). Each rel kind returned by
 :py:meth:`find_rels_for_element` maps to a single arm here, so adding a new
 rel kind means extending one dispatch table — both call sites benefit
 automatically and the AST forward-compat guard enforces coverage.
+
+For the ``"mep-pair-fitting"`` kind the ``rel`` slot carries the
+``IfcFlowFitting`` itself rather than a relationship entity — the subject
+whose removal disconnects the pair. The dispatch treats the slot as the
+deletion target and routes through ``geometry.delete_ifc_object`` so the
+cascade-on-delete contract still owns port-rel cleanup.
 """
 
 from __future__ import annotations
@@ -37,21 +43,20 @@ import bonsai.core.geometry
 from bonsai.core.model import regenerate_wall_to_underside
 
 if TYPE_CHECKING:
-    import bpy
     import ifcopenshell
 
     import bonsai.tool as tool
 
 
 def disconnect_rel(
-    ifc: "type[tool.Ifc]",
-    geometry: "type[tool.Geometry]",
-    model: "type[tool.Model]",
-    connection: "type[tool.Connection]",
-    rel: "ifcopenshell.entity_instance",
+    ifc: type[tool.Ifc],
+    geometry: type[tool.Geometry],
+    model: type[tool.Model],
+    connection: type[tool.Connection],
+    rel: ifcopenshell.entity_instance,
     kind: str,
-    elem: "ifcopenshell.entity_instance",
-    partner: "ifcopenshell.entity_instance",
+    elem: ifcopenshell.entity_instance,
+    partner: ifcopenshell.entity_instance,
     skip_elem_recreate: bool = False,
     skip_partner_recreate: bool = False,
 ) -> None:
@@ -95,5 +100,14 @@ def disconnect_rel(
             relating_element=rel.RelatingElement,
             related_element=rel.RelatedElement,
         )
+    elif kind == "mep-pair-fitting":
+        fitting = rel  # slot semantics: the fitting whose removal disconnects the pair.
+        if skip_elem_recreate and fitting is elem:
+            return
+        if skip_partner_recreate and fitting is partner:
+            return
+        fitting_obj = ifc.get_object(fitting)
+        if fitting_obj is not None:
+            geometry.delete_ifc_object(fitting_obj)
     else:
         raise ValueError(f"Unknown rel kind: {kind!r}")

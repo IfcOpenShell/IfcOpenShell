@@ -64,6 +64,148 @@ def test_fully_overridden_subclass_is_accepted():
 
 
 # ---------------------------------------------------------------------------
+# Cache invalidation — the load-bearing crash guard.
+#
+# Without geom-generation gating, the walk cache holds entity_instance
+# references that outlive their backing IFC entities after an
+# ifcopenshell.api mutation. The next _build_geometry pass calls .is_a
+# on a freed SWIG handle and segfaults Blender. The gate must fire
+# whenever tool.Parametric.get_geom_generation bumps — which is on
+# every tool.Ifc.Operator commit (via refresh_post_commit), covering
+# every disconnect path.
+
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
+
+
+def _seed_cache(decorator, *, start_guid, ifc_file, geom_gen, walk_ids):
+    decorator._cached_start_guid = start_guid
+    decorator._cached_ifc_file = ifc_file
+    decorator._cached_geom_gen = geom_gen
+    decorator._cached_walk_ids = list(walk_ids)
+
+
+def test_walk_cache_reuses_when_seed_file_and_geom_gen_unchanged():
+    """Cache hit: same seed, same ifc_file, same geom_gen → reuse the
+    stored walk. Steady-state path while the IFC is idle."""
+    cls = _build_subclass("DecoratorCacheReuse")
+    dec = cls()
+
+    ifc_file = SimpleNamespace()
+    _seed_cache(dec, start_guid="GUID", ifc_file=ifc_file, geom_gen=5, walk_ids=[101, 102])
+
+    current_geom_gen = 5
+    start_guid = "GUID"
+    hit = (
+        start_guid == dec._cached_start_guid
+        and ifc_file is dec._cached_ifc_file
+        and current_geom_gen == dec._cached_geom_gen
+        and dec._cached_walk_ids
+    )
+    assert hit, "Cache must hit when seed, file, and geom_gen are unchanged"
+
+
+def test_walk_cache_invalidates_on_geom_generation_bump():
+    """Cache must miss when geom_gen bumps so entities removed by an
+    ``ifcopenshell.api`` mutation never survive in the cached walk
+    list into the next draw pass."""
+    cls = _build_subclass("DecoratorCacheGenInvalidates")
+    dec = cls()
+
+    ifc_file = SimpleNamespace()
+    _seed_cache(dec, start_guid="GUID", ifc_file=ifc_file, geom_gen=5, walk_ids=[101])
+
+    current_geom_gen = 6  # IFC mutation has bumped the counter
+    start_guid = "GUID"
+    hit = (
+        start_guid == dec._cached_start_guid
+        and ifc_file is dec._cached_ifc_file
+        and current_geom_gen == dec._cached_geom_gen
+        and dec._cached_walk_ids
+    )
+    assert not hit, "Cache must miss when geom_gen bumps so the walk re-runs against live entities"
+
+
+def test_walk_cache_invalidates_on_seed_change():
+    """Selecting a different network seed forces a re-walk even if
+    geom_gen is unchanged."""
+    cls = _build_subclass("DecoratorCacheSeedChange")
+    dec = cls()
+
+    ifc_file = SimpleNamespace()
+    _seed_cache(dec, start_guid="OLD-GUID", ifc_file=ifc_file, geom_gen=5, walk_ids=[101])
+
+    hit = (
+        "NEW-GUID" == dec._cached_start_guid
+        and ifc_file is dec._cached_ifc_file
+        and 5 == dec._cached_geom_gen
+        and dec._cached_walk_ids
+    )
+    assert not hit
+
+
+def test_walk_cache_invalidates_on_ifc_file_swap():
+    """Loading a different IFC file must invalidate even if the new
+    seed happens to share the GUID (different IfcOpenShell file
+    objects → different identity)."""
+    cls = _build_subclass("DecoratorCacheFileSwap")
+    dec = cls()
+
+    old_file = SimpleNamespace()
+    new_file = SimpleNamespace()
+    _seed_cache(dec, start_guid="GUID", ifc_file=old_file, geom_gen=5, walk_ids=[101])
+
+    hit = (
+        "GUID" == dec._cached_start_guid
+        and new_file is dec._cached_ifc_file
+        and 5 == dec._cached_geom_gen
+        and dec._cached_walk_ids
+    )
+    assert not hit
+
+
+def test_walk_cache_stores_ids_not_entity_references():
+    """Structural safety: the cache stores STEP integer ids, not raw
+    ``entity_instance`` references — re-resolved via ``ifc_file.by_id``
+    on each cache hit. Eliminates the dangling-SWIG-handle class entirely:
+    even if geom_gen mistakenly fails to bump, a deleted entity's id won't
+    resolve, the cache-hit branch returns ``None``, and the next draw
+    re-walks against live entities."""
+    cls = _build_subclass("DecoratorCacheStoresIds")
+    dec = cls()
+    _seed_cache(dec, start_guid="GUID", ifc_file=SimpleNamespace(), geom_gen=5, walk_ids=[42])
+    assert dec._cached_walk_ids == [42]
+    assert all(isinstance(eid, int) for eid in dec._cached_walk_ids)
+
+
+def test_geom_cache_key_includes_geom_generation():
+    """``TokenCache.get_or_compute`` keys that include geom_gen flush
+    the cached world-space geometry on IFC mutations the depsgraph
+    token doesn't observe — without that key component, a re-walk
+    would feed a fresh list to the lambda while the cache still
+    returned the prior result."""
+    import bonsai.bim.decorator_cache as decorator_cache
+    from bonsai.bim.module.model.decorator import MEPSystemPathDecorator
+
+    decorator_cache.reset_for_test()
+    dec = MEPSystemPathDecorator()
+
+    builds: list[int] = []
+
+    def _build():
+        builds.append(1)
+        return ([], [], [])
+
+    ifc_file = SimpleNamespace()
+    dec._geom_cache.get_or_compute(("GUID", id(ifc_file), 1), _build)
+    dec._geom_cache.get_or_compute(("GUID", id(ifc_file), 1), _build)
+    assert len(builds) == 1, "Same key (same gen) should reuse the cached value"
+
+    dec._geom_cache.get_or_compute(("GUID", id(ifc_file), 2), _build)
+    assert len(builds) == 2, "Bumping geom_gen in the key must invalidate the cached value"
+
+
+# ---------------------------------------------------------------------------
 # Pure-geometry classifier contract.
 #
 # Pins the free/connection split that drives the dot colors. The classifier

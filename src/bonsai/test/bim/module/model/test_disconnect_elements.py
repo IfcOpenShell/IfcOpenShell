@@ -47,6 +47,11 @@ def _rel(klass: str, *, relating=None, related=None, description=None, rel_id: i
 
 def _elem(*, connected_to=(), connected_from=()):
     e = Mock()
+    # Default is_a to False so the MEP-pair-fitting branch of find_rels
+    # (which calls ``elem.is_a("IfcFlowSegment")``) early-outs on the
+    # generic _elem stubs used by the wall-side dispatch tests. Test
+    # cases that want is_a("IfcWall")-True explicitly override e.is_a.
+    e.is_a = lambda _c: False
     e.ConnectedTo = list(connected_to)
     e.ConnectedFrom = list(connected_from)
     e.GlobalId = "GUID"
@@ -165,6 +170,140 @@ def test_find_rels_for_element_skips_rels_without_partner():
     elem.ConnectedTo = [bad]
 
     assert tool.Connection.find_rels_for_element(elem) == []
+
+
+# ---------------------------------------------------------------------------
+# tool.Connection.find_rels — MEP pair-fitting detection
+# ---------------------------------------------------------------------------
+
+
+def _mep(elem_id, *, klasses=("IfcFlowSegment",), predefined_type=None, ports=()):
+    """Stand-in IFC element with port mocks and ``is_a`` short-circuits."""
+    e = Mock()
+    e.id = lambda: elem_id
+    e.is_a = lambda c: c in klasses
+    e.PredefinedType = predefined_type
+    # Empty path / element rels so the find_rels prologue iterates cleanly
+    # before reaching the MEP port-walk branch.
+    e.ConnectedTo = []
+    e.ConnectedFrom = []
+    e._ports = list(ports)
+    return e
+
+
+def _port(port_id, owner, connected_to=None):
+    p = Mock()
+    p.id = lambda: port_id
+    p._owner = owner
+    p._connected_to = connected_to
+    return p
+
+
+def _patch_port_walk():
+    """Patch the port helpers ``tool.System.find_bridging_fitting`` consumes
+    so the mep-pair-fitting detection in ``find_rels`` can be exercised
+    without a real IFC fixture. Three patches: ``get_ports`` and
+    ``get_connected_port`` are ``tool.System`` classmethods that delegate
+    to ``ifcopenshell.util.system``; ``get_port_element`` is called
+    directly on ``ifcopenshell.util.system`` inside ``neighbours_at_ports``."""
+    return (
+        patch("bonsai.tool.system.System.get_ports", side_effect=lambda e: e._ports),
+        patch(
+            "bonsai.tool.system.System.get_connected_port",
+            side_effect=lambda p: p._connected_to,
+        ),
+        patch(
+            "bonsai.tool.system.ifcopenshell.util.system.get_port_element",
+            side_effect=lambda p: p._owner,
+        ),
+    )
+
+
+def test_find_rels_detects_segment_segment_bridging_fitting():
+    """Two flow segments joined by a single bridging fitting must surface
+    as ``(fitting, 'mep-pair-fitting')`` — the fitting whose deletion
+    effects the disconnect."""
+    fitting = _mep(99, klasses=("IfcFlowFitting", "IfcDistributionFlowElement"), predefined_type="BEND")
+    seg_a = _mep(1)
+    seg_b = _mep(2)
+
+    a_port = _port(101, seg_a)
+    b_port = _port(102, seg_b)
+    f_port_a = _port(201, fitting, connected_to=a_port)
+    f_port_b = _port(202, fitting, connected_to=b_port)
+    a_port._connected_to = f_port_a
+    b_port._connected_to = f_port_b
+
+    seg_a._ports = [a_port]
+    seg_b._ports = [b_port]
+    fitting._ports = [f_port_a, f_port_b]
+
+    with _patch_port_walk()[0], _patch_port_walk()[1], _patch_port_walk()[2]:
+        rels = tool.Connection.find_rels(seg_a, seg_b)
+
+    assert rels == [(fitting, "mep-pair-fitting")]
+
+
+def test_find_rels_detects_segment_fitting_direct():
+    """A segment + its directly-connected fitting also surface as the
+    same kind, with the fitting itself as the deletion target."""
+    fitting = _mep(99, klasses=("IfcFlowFitting", "IfcDistributionFlowElement"), predefined_type="BEND")
+    seg = _mep(1)
+    seg_port = _port(101, seg)
+    f_port = _port(201, fitting, connected_to=seg_port)
+    seg_port._connected_to = f_port
+    seg._ports = [seg_port]
+    fitting._ports = [f_port]
+
+    with _patch_port_walk()[0], _patch_port_walk()[1], _patch_port_walk()[2]:
+        rels = tool.Connection.find_rels(seg, fitting)
+
+    assert rels == [(fitting, "mep-pair-fitting")]
+
+
+def test_find_rels_skips_obstruction_fitting():
+    """OBSTRUCTION fittings have a dedicated grow/shrink removal flow —
+    they must not surface as a disconnect target."""
+    obstruction = _mep(99, klasses=("IfcFlowFitting", "IfcDistributionFlowElement"), predefined_type="OBSTRUCTION")
+    seg_a = _mep(1)
+    seg_b = _mep(2)
+    a_port = _port(101, seg_a)
+    b_port = _port(102, seg_b)
+    o_port_a = _port(201, obstruction, connected_to=a_port)
+    o_port_b = _port(202, obstruction, connected_to=b_port)
+    a_port._connected_to = o_port_a
+    b_port._connected_to = o_port_b
+    seg_a._ports = [a_port]
+    seg_b._ports = [b_port]
+    obstruction._ports = [o_port_a, o_port_b]
+
+    with _patch_port_walk()[0], _patch_port_walk()[1], _patch_port_walk()[2]:
+        assert tool.Connection.find_rels(seg_a, seg_b) == []
+
+
+def test_find_rels_returns_empty_for_two_unrelated_mep_segments():
+    """No bridging fitting, no detection."""
+    seg_a = _mep(1)
+    seg_b = _mep(2)
+    seg_a._ports = []
+    seg_b._ports = []
+    with _patch_port_walk()[0], _patch_port_walk()[1], _patch_port_walk()[2]:
+        assert tool.Connection.find_rels(seg_a, seg_b) == []
+
+
+def test_find_rels_skips_non_mep_pair():
+    """Walls don't have ports — find_rels must early-out before walking
+    them as if they were MEP."""
+    wall_a = Mock()
+    wall_a.is_a = lambda c: c == "IfcWall"
+    wall_a.ConnectedTo = []
+    wall_a.ConnectedFrom = []
+    wall_b = Mock()
+    wall_b.is_a = lambda c: c == "IfcWall"
+    wall_b.ConnectedTo = []
+    wall_b.ConnectedFrom = []
+
+    assert tool.Connection.find_rels(wall_a, wall_b) == []
 
 
 # ---------------------------------------------------------------------------
