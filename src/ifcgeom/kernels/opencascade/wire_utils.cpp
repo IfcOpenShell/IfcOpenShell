@@ -125,7 +125,7 @@ bool IfcGeom::util::flatten_wire(TopoDS_Wire& wire, double eps) {
 	return true;
 }
 
-IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces) {
+IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces) {
 	// This is a bit of a precarious approach, but seems to work for the
 	// versions of OCCT tested for. OCCT has a Delaunay triangulation function
 	// BRepMesh_Delaun, but it is notoriously hard to interpret the results
@@ -210,11 +210,11 @@ IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std
 
 	int n123[3];
 	TopLoc_Location loc;
-	Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
+	opencascade::handle<Poly_Triangulation> tri = BRep_Tool::Triangulation(face, loc);
 
 	if (!tri.IsNull()) {
 
-		const Poly_Array1OfTriangle& triangles = tri->Triangles();
+		const NCollection_Array1<Poly_Triangle>& triangles = tri->Triangles();
 		for (int i = 1; i <= triangles.Length(); ++i) {
 			if (face.Orientation() == TopAbs_REVERSED)
 				triangles(i).Get(n123[2], n123[1], n123[0]);
@@ -283,7 +283,7 @@ IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std
 		}
 	}
 
-	TopTools_IndexedDataMapOfShapeListOfShape mape, mapn;
+	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> mape, mapn;
 	for (auto& wire : wires) {
 		TopExp::MapShapesAndAncestors(wire, TopAbs_EDGE, TopAbs_WIRE, mape);
 	}
@@ -374,7 +374,7 @@ namespace {
 	}
 }
 
-bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires, const wire_tolerance_settings& settings) {
+bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings) {
 	double eps = get_wire_intersection_tolerance(settings, wire);
 	double eps_real = settings.precision;
 	
@@ -508,7 +508,7 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
 								// Substitute with a new edge from/to the intersection point
 								if (p1.Distance(p2) > eps_real * 2) {
 									double _, __;
-									Handle_Geom_Curve crv = BRep_Tool::Curve(e, _, __);
+									opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, _, __);
 									BRepBuilderAPI_MakeEdge me(crv, p1, p2);
 									TopoDS_Edge ed = me.Edge();
 									mw.Add(ed);
@@ -557,9 +557,9 @@ bool IfcGeom::util::wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfS
 	return intersected;
 }
 
-void IfcGeom::util::select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest) {
+void IfcGeom::util::select_largest(const NCollection_List<TopoDS_Shape>& shapes, TopoDS_Shape& largest) {
 	double mass = 0.;
-	TopTools_ListIteratorOfListOfShape it(shapes);
+    NCollection_List<TopoDS_Shape>::Iterator it(shapes);
 	for (; it.More(); it.Next()) {
 		/*
 		// tfk: bounding box is more efficient probably
@@ -601,7 +601,7 @@ bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, TColgp_Seque
 	TopExp_Explorer exp(w, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
 		double a, b;
-		Handle_Geom_Curve crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
+		opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(TopoDS::Edge(exp.Current()), a, b);
 		if (crv->DynamicType() != STANDARD_TYPE(Geom_Line)) {
 			return false;
 		}
@@ -697,7 +697,7 @@ namespace {
 		return TopoDS_Vertex();
 	}
 
-	TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const TopTools_IndexedDataMapOfShapeListOfShape& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
+	TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher>& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
 		const TopTools_ListOfShape& edges = vertex_to_edges.FindFromKey(current);
 		TopTools_ListIteratorOfListOfShape eit;
 		for (eit.Initialize(edges); eit.More(); eit.Next()) {
@@ -716,10 +716,10 @@ bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape
 	BRepOffsetAPI_Sewing sew;
 	sew.Add(shape);
 
-	TopTools_IndexedDataMapOfShapeListOfShape edge_to_faces;
-	TopTools_IndexedDataMapOfShapeListOfShape vertex_to_edges;
+	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> edge_to_faces;
+	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> vertex_to_edges;
 	std::set<int> visited;
-	TopTools_IndexedMapOfShape edge_set;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edge_set;
 
 	TopExp::MapShapesAndAncestors(shape, TopAbs_EDGE, TopAbs_FACE, edge_to_faces);
 
@@ -802,7 +802,7 @@ bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape
 }
 
 
-bool IfcGeom::util::convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire) {
+bool IfcGeom::util::convert_curve_to_wire(const opencascade::handle<Geom_Curve>& curve, TopoDS_Wire& wire) {
 	try {
 		wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(curve));
 		return true;

@@ -39,12 +39,12 @@ namespace {
 
 			const bool is_rational = !!bc->weights;
 
-			TColgp_Array1OfPnt      Poles(0, bc->control_points.size() - 1);
-			TColStd_Array1OfReal    Weights(0, bc->control_points.size() - 1);
-			TColStd_Array1OfReal    Knots(0, (int)bc->knots.size() - 1);
-			TColStd_Array1OfInteger Mults(0, (int)bc->knots.size() - 1);
-			Standard_Integer        Degree = bc->degree;
-			Standard_Boolean        Periodic = false;
+			NCollection_Array1<gp_Pnt> Poles(0, bc->control_points.size() - 1);
+			NCollection_Array1<double> Weights(0, bc->control_points.size() - 1);
+			NCollection_Array1<double> Knots(0, (int)bc->knots.size() - 1);
+			NCollection_Array1<int> Mults(0, (int)bc->knots.size() - 1);
+			int        Degree = bc->degree;
+			bool        Periodic = false;
 			// @tfk: it appears to be wrong to expect a period curve when the curve is closed, see #586
 			// Standard_Boolean     Periodic = l->ClosedCurve();
 
@@ -287,10 +287,10 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	shape_pair_enumerate(it, bld, force_close);
 	wire = bld.wire();
 
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
-	TopTools_IndexedMapOfShape edges_to_tesselate;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edges_to_tesselate;
 
 	for (int i = 1; i <= map.Extent(); ++i) {
 		auto& edges = map.FindFromIndex(i);

@@ -37,11 +37,11 @@ namespace IfcGeom {
 		};
 
 		/// Triangulate the set of wires. The firstmost wire is assumed to be the outer wire.
-		IFC_GEOMLIBRARY_API triangulate_wire_result triangulate_wire(const std::vector<TopoDS_Wire>& wires, TopTools_ListOfShape& faces);
+        IFC_GEOMLIBRARY_API triangulate_wire_result triangulate_wire(const std::vector<TopoDS_Wire>& wires, NCollection_List<TopoDS_Shape>& faces);
 
-		IFC_GEOMLIBRARY_API bool wire_intersections(const TopoDS_Wire& wire, TopTools_ListOfShape& wires, const wire_tolerance_settings& settings);
+		IFC_GEOMLIBRARY_API bool wire_intersections(const TopoDS_Wire& wire, NCollection_List<TopoDS_Shape>& wires, const wire_tolerance_settings& settings);
 
-		IFC_GEOMLIBRARY_API void select_largest(const TopTools_ListOfShape& shapes, TopoDS_Shape& largest);
+		IFC_GEOMLIBRARY_API void select_largest(const NCollection_List<TopoDS_Shape>& shapes, TopoDS_Shape& largest);
 
 		IFC_GEOMLIBRARY_API bool convert_wire_to_face(const TopoDS_Wire& wire, TopoDS_Face& face, const IfcGeom::util::wire_tolerance_settings& settings);
 
@@ -55,7 +55,7 @@ namespace IfcGeom {
 		IFC_GEOMLIBRARY_API bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
 		IFC_GEOMLIBRARY_API void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
 
-		IFC_GEOMLIBRARY_API bool convert_curve_to_wire(const Handle(Geom_Curve)& curve, TopoDS_Wire& wire);
+		IFC_GEOMLIBRARY_API bool convert_curve_to_wire(const opencascade::handle<Geom_Curve>& curve, TopoDS_Wire& wire);
 	}
 }
 

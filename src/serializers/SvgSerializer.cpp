@@ -134,7 +134,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, boos
 			Handle(Geom2d_Curve) curve2d;
 			if (curve.IsNull()) {
 				TopLoc_Location loc;
-				Handle_Geom_Surface surf;
+				opencascade::handle<Geom_Surface> surf;
 
 				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
 
@@ -1119,7 +1119,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				TopoDS_Compound profile_edges;
 				if (profile_threshold_ != -1 && !(data.product->declaration().is("IfcWall") || data.product->declaration().is("IfcSlab"))) {
-					TopTools_IndexedDataMapOfShapeListOfShape map;
+                    NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
 					if (map.Extent() > profile_threshold_) {
 						BRep_Builder BB;
@@ -1434,8 +1434,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				result = make_transform_mirror_.Shape();
 			}
 
-			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
-			Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+			opencascade::handle<TopTools_HSequenceOfShape> edges = new TopTools_HSequenceOfShape();
+			opencascade::handle<TopTools_HSequenceOfShape> wires = new TopTools_HSequenceOfShape();
 			{
 				TopExp_Explorer exp(result, TopAbs_EDGE);
 				for (; exp.More(); exp.Next()) {

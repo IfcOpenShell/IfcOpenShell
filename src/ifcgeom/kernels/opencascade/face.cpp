@@ -79,13 +79,13 @@ namespace {
 			auto& umults = bs->multiplicities[0];
 			auto& vmults = bs->multiplicities[1];
 
-			TColgp_Array2OfPnt Poles(0, (int)cps.size() - 1, 0, (int)cps[0].size() - 1);
-			TColStd_Array1OfReal UKnots(0, (int)uknots.size() - 1);
-			TColStd_Array1OfReal VKnots(0, (int)vknots.size() - 1);
-			TColStd_Array1OfInteger UMults(0, (int)umults.size() - 1);
-			TColStd_Array1OfInteger VMults(0, (int)vmults.size() - 1);
-			Standard_Integer UDegree = bs->degree[0];
-			Standard_Integer VDegree = bs->degree[1];
+			NCollection_Array2<gp_Pnt> Poles(0, (int)cps.size() - 1, 0, (int)cps[0].size() - 1);
+			NCollection_Array1<double> UKnots(0, (int)uknots.size() - 1);
+			NCollection_Array1<double> VKnots(0, (int)vknots.size() - 1);
+			NCollection_Array1<int> UMults(0, (int)umults.size() - 1);
+			NCollection_Array1<int> VMults(0, (int)vmults.size() - 1);
+			int UDegree = bs->degree[0];
+			int VDegree = bs->degree[1];
 
 			int i = 0, j;
 			for (auto it = cps.begin(); it != cps.end(); ++it, ++i) {
@@ -449,9 +449,9 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 				sfs.SetMsgRegistrator(msg);
 				sfs.Perform();
 
-				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				NCollection_DataMap<TopoDS_Shape, NCollection_List<Message_Msg>, TopTools_ShapeMapHasher>::Iterator jt(msg->MapShape());
 				for (; jt.More(); jt.Next()) {
-					Message_ListIteratorOfListOfMsg kt(jt.Value());
+                    NCollection_List<Message_Msg>::Iterator kt(jt.Value());
 					for (; kt.More(); kt.Next()) {
 						char* c = new char[kt.Value().Original().LengthOfCString() + 1];
 						kt.Value().Original().ToUTF8CString(c);
@@ -510,9 +510,9 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 				sfs.Perform();
 				it.Value() = sfs.Shape();
 
-				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				NCollection_DataMap<TopoDS_Shape, NCollection_List<Message_Msg>, TopTools_ShapeMapHasher>::Iterator jt(msg->MapShape());
 				for (; jt.More(); jt.Next()) {
-					Message_ListIteratorOfListOfMsg kt(jt.Value());
+                    NCollection_List<Message_Msg>::Iterator kt(jt.Value());
 					for (; kt.More(); kt.Next()) {
 						char* c = new char[kt.Value().Original().LengthOfCString() + 1];
 						kt.Value().Original().ToUTF8CString(c);
@@ -537,7 +537,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			const TopoDS_Face& occ_face = TopoDS::Face(it.Value());
 
 			ShapeFix_Face sfs(TopoDS::Face(occ_face));
-			TopTools_DataMapOfShapeListOfShape wire_map;
+			NCollection_DataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wire_map;
 			sfs.FixOrientation(wire_map);
 
 			TopoDS_Iterator jt(occ_face, false);
@@ -546,8 +546,8 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 				// tfk: @todo if wire_map contains w, I would assume wire_senses also contains w,
 				// this is not the case in github issue #405.
 				if (wire_map.IsBound(w) && wire_senses.IsBound(w)) {
-					const TopTools_ListOfShape& shapes = wire_map.Find(w);
-					TopTools_ListIteratorOfListOfShape kt(shapes);
+					const NCollection_List<TopoDS_Shape>& shapes = wire_map.Find(w);
+					NCollection_List<TopoDS_Shape>::Iterator kt(shapes);
 					for (; kt.More(); kt.Next()) {
 						// Apparently the wire got reversed, so register it with opposite orientation in the map
 						wire_senses.Bind(kt.Value(), wire_senses.Find(w) == TopAbs_FORWARD ? TopAbs_REVERSED : TopAbs_FORWARD);

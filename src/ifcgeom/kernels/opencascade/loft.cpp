@@ -307,7 +307,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
                 all_tags.begin() + std::distance(shps.begin(), jt)};
             
 			for (size_t i = 0; i < 2; ++i) {
-                TopTools_IndexedDataMapOfShapeListOfShape ancestors;
+                NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> ancestors;
 				const auto& wire = wp[i];
                 auto& result = profile_points[i];
 
