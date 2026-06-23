@@ -380,9 +380,9 @@ def test_disconnect_dispatches_one_call_per_rel():
     assert dispatch.call_count == 2
     # Both rels dispatch with elem=elem_a, partner=elem_b regardless of orientation
     # — orient_element_top inside disconnect_rel recovers the wall/slab roles.
-    for call, expected_rel, expected_kind in zip(dispatch.call_args_list, [rel1, rel2], ["path", "element-top"]):
+    for call, expected_subject, expected_kind in zip(dispatch.call_args_list, [rel1, rel2], ["path", "element-top"]):
         kw = call.kwargs
-        assert kw["rel"] is expected_rel
+        assert kw["subject"] is expected_subject
         assert kw["kind"] == expected_kind
         assert kw["elem"] is elem_a
         assert kw["partner"] is elem_b
@@ -485,7 +485,7 @@ def test_disconnect_gizmo_direction_symmetry():
     # disconnect_rel sees (rel, "element-top") in both runs; elem/partner swap
     # by argument order but orient_element_top inside disconnect_rel resolves
     # the wall/slab roles symmetrically.
-    assert wall_first["rel"] is rel and slab_first["rel"] is rel
+    assert wall_first["subject"] is rel and slab_first["subject"] is rel
     assert wall_first["kind"] == slab_first["kind"] == "element-top"
     assert {wall_first["elem"], wall_first["partner"]} == {wall, slab}
     assert {slab_first["elem"], slab_first["partner"]} == {wall, slab}

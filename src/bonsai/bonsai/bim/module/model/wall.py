@@ -400,13 +400,13 @@ class DisconnectElements(_CommitWallDraftsFirstMixin, bpy.types.Operator, tool.I
             )
             return
         path_objs: list[bpy.types.Object] = []
-        for rel, kind in rels:
+        for subject, kind in rels:
             bonsai.core.connection.disconnect_rel(
                 tool.Ifc,
                 tool.Geometry,
                 tool.Model,
                 tool.Connection,
-                rel=rel,
+                subject=subject,
                 kind=kind,
                 elem=elem_a,
                 partner=elem_b,

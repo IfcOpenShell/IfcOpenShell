@@ -19,12 +19,12 @@
 # This file was generated with the assistance of an AI coding tool.
 
 """Forward-compat AST contract: ``core.connection.disconnect_rel`` must have a
-branch for every rel ``kind`` emitted by ``tool.connection.Connection`` lookups.
+branch for every ``kind`` emitted by ``tool.connection.Connection`` lookups.
 
-Adding a new rel kind (e.g. ``"void"``, ``"fill"``, ``"interferes"``) to
+Adding a new kind (e.g. ``"void"``, ``"fill"``, ``"interferes"``) to
 ``find_rels`` / ``find_rels_for_element`` without extending ``disconnect_rel``
 would silently regress the disconnect operator and the cascade-on-delete: a new
-kind would reach the dispatch, hit the ``raise ValueError("Unknown rel kind")``
+kind would reach the dispatch, hit the ``raise ValueError("Unknown kind")``
 fallback, and either crash the operator or leave the cascade half-done. This
 guard makes the symmetry mandatory at test time."""
 

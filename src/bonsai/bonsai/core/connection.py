@@ -22,17 +22,18 @@
 
 Used by both ``bim.disconnect_elements`` (explicit user disconnect) and the
 connection cascade in ``tool.Geometry.delete_ifc_object`` (implicit
-disconnect-on-delete). Each rel kind returned by
+disconnect-on-delete). Each kind returned by
 :py:meth:`bonsai.tool.connection.Connection.find_rels` /
 :py:meth:`find_rels_for_element` maps to a single arm here, so adding a new
-rel kind means extending one dispatch table — both call sites benefit
+kind means extending one dispatch table — both call sites benefit
 automatically and the AST forward-compat guard enforces coverage.
 
-For the ``"mep-pair-fitting"`` kind the ``rel`` slot carries the
-``IfcFlowFitting`` itself rather than a relationship entity — the subject
-whose removal disconnects the pair. The dispatch treats the slot as the
-deletion target and routes through ``geometry.delete_ifc_object`` so the
-cascade-on-delete contract still owns port-rel cleanup.
+The ``subject`` parameter is the entity whose teardown effects the
+disconnect: for ``"path"`` / ``"element"`` / ``"element-top"`` kinds it
+carries an ``IfcRel*`` relationship entity (the rel that gets removed);
+for ``"mep-pair-fitting"`` it carries an ``IfcFlowFitting`` (the fitting
+that gets deleted). The slot is uniform on intent — the dispatch decides
+the teardown mechanism by kind.
 """
 
 from __future__ import annotations
@@ -53,14 +54,14 @@ def disconnect_rel(
     geometry: type[tool.Geometry],
     model: type[tool.Model],
     connection: type[tool.Connection],
-    rel: ifcopenshell.entity_instance,
+    subject: ifcopenshell.entity_instance,
     kind: str,
     elem: ifcopenshell.entity_instance,
     partner: ifcopenshell.entity_instance,
     skip_elem_recreate: bool = False,
     skip_partner_recreate: bool = False,
 ) -> None:
-    """Run the post-disconnect cleanup for one rel.
+    """Run the post-disconnect cleanup for one connection.
 
     ``elem`` and ``partner`` are the two endpoints. The ``skip_*_recreate``
     flags suppress per-side regenerate / recreate work — used by the
@@ -70,7 +71,7 @@ def disconnect_rel(
     runs on both sides.
     """
     if kind == "path":
-        bonsai.core.geometry.remove_connection(geometry, connection=rel)
+        bonsai.core.geometry.remove_connection(geometry, connection=subject)
         if not skip_elem_recreate:
             elem_obj = ifc.get_object(elem)
             if elem_obj is not None:
@@ -80,11 +81,11 @@ def disconnect_rel(
             if partner_obj is not None:
                 model.recreate_wall(partner, partner_obj)
     elif kind == "element-top":
-        wall, _slab = connection.orient_element_top(rel, elem, partner)
+        wall, _slab = connection.orient_element_top(subject, elem, partner)
         ifc.run(
             "geometry.disconnect_element",
-            relating_element=rel.RelatingElement,
-            related_element=rel.RelatedElement,
+            relating_element=subject.RelatingElement,
+            related_element=subject.RelatedElement,
         )
         # Skip the wall-side regenerate when the wall is itself being deleted —
         # either it's the elem of this cascade pass, or it's the partner that
@@ -97,17 +98,16 @@ def disconnect_rel(
     elif kind == "element":
         ifc.run(
             "geometry.disconnect_element",
-            relating_element=rel.RelatingElement,
-            related_element=rel.RelatedElement,
+            relating_element=subject.RelatingElement,
+            related_element=subject.RelatedElement,
         )
     elif kind == "mep-pair-fitting":
-        fitting = rel  # slot semantics: the fitting whose removal disconnects the pair.
-        if skip_elem_recreate and fitting is elem:
+        if skip_elem_recreate and subject is elem:
             return
-        if skip_partner_recreate and fitting is partner:
+        if skip_partner_recreate and subject is partner:
             return
-        fitting_obj = ifc.get_object(fitting)
+        fitting_obj = ifc.get_object(subject)
         if fitting_obj is not None:
             geometry.delete_ifc_object(fitting_obj)
     else:
-        raise ValueError(f"Unknown rel kind: {kind!r}")
+        raise ValueError(f"Unknown kind: {kind!r}")
