@@ -352,6 +352,7 @@ void ifcopenshell::geometry::CgalShape::to_nef() const {
 	if (!nef_) {
 		auto shp = poly();
 		if (!convex_tag_) {
+			CGAL::Polygon_mesh_processing::triangulate_faces(shp);
 			if (CGAL::Polygon_mesh_processing::does_self_intersect(shp)) {
 				throw std::runtime_error("Self-intersections detected, unable to proceed");
 			}
