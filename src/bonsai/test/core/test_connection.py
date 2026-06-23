@@ -60,8 +60,14 @@ class TestDisconnectRelPath:
 
         with patch("bonsai.core.connection.bonsai.core.geometry.remove_connection") as remove:
             subject.disconnect_rel(
-                ifc, geometry, model, connection,
-                rel="rel", kind="path", elem="elem_a", partner="elem_b",
+                ifc,
+                geometry,
+                model,
+                connection,
+                rel="rel",
+                kind="path",
+                elem="elem_a",
+                partner="elem_b",
             )
 
         remove.assert_called_once_with(geometry, connection="rel")
@@ -78,8 +84,14 @@ class TestDisconnectRelPath:
 
         with patch("bonsai.core.connection.bonsai.core.geometry.remove_connection"):
             subject.disconnect_rel(
-                ifc, geometry, model, connection,
-                rel="rel", kind="path", elem="elem", partner="partner",
+                ifc,
+                geometry,
+                model,
+                connection,
+                rel="rel",
+                kind="path",
+                elem="elem",
+                partner="partner",
                 skip_elem_recreate=True,
             )
 
@@ -93,8 +105,14 @@ class TestDisconnectRelPath:
 
         with patch("bonsai.core.connection.bonsai.core.geometry.remove_connection"):
             subject.disconnect_rel(
-                ifc, geometry, model, connection,
-                rel="rel", kind="path", elem="elem", partner="partner",
+                ifc,
+                geometry,
+                model,
+                connection,
+                rel="rel",
+                kind="path",
+                elem="elem",
+                partner="partner",
                 skip_partner_recreate=True,
             )
 
@@ -108,8 +126,14 @@ class TestDisconnectRelPath:
 
         with patch("bonsai.core.connection.bonsai.core.geometry.remove_connection") as remove:
             subject.disconnect_rel(
-                ifc, geometry, model, connection,
-                rel="rel", kind="path", elem="elem", partner="partner",
+                ifc,
+                geometry,
+                model,
+                connection,
+                rel="rel",
+                kind="path",
+                elem="elem",
+                partner="partner",
                 skip_elem_recreate=True,
                 skip_partner_recreate=True,
             )
@@ -131,13 +155,17 @@ class TestDisconnectRelElementTop:
 
         with patch("bonsai.core.connection.regenerate_wall_to_underside") as regen:
             subject.disconnect_rel(
-                ifc, geometry, model, connection,
-                rel=rel, kind="element-top", elem="elem", partner="partner",
+                ifc,
+                geometry,
+                model,
+                connection,
+                rel=rel,
+                kind="element-top",
+                elem="elem",
+                partner="partner",
             )
 
-        ifc.run.assert_called_once_with(
-            "geometry.disconnect_element", relating_element="slab", related_element="wall"
-        )
+        ifc.run.assert_called_once_with("geometry.disconnect_element", relating_element="slab", related_element="wall")
         regen.assert_called_once_with(ifc, geometry, model, ["wall_obj"])
 
     def test_slab_delete_cascade_still_regenerates_wall(self):
@@ -150,8 +178,14 @@ class TestDisconnectRelElementTop:
 
         with patch("bonsai.core.connection.regenerate_wall_to_underside") as regen:
             subject.disconnect_rel(
-                ifc, Mock(), Mock(), connection,
-                rel=rel, kind="element-top", elem="slab", partner="wall",
+                ifc,
+                Mock(),
+                Mock(),
+                connection,
+                rel=rel,
+                kind="element-top",
+                elem="slab",
+                partner="wall",
                 skip_elem_recreate=True,  # slab is being deleted
             )
 
@@ -167,8 +201,14 @@ class TestDisconnectRelElementTop:
 
         with patch("bonsai.core.connection.regenerate_wall_to_underside") as regen:
             subject.disconnect_rel(
-                ifc, Mock(), Mock(), connection,
-                rel=rel, kind="element-top", elem="wall", partner="slab",
+                ifc,
+                Mock(),
+                Mock(),
+                connection,
+                rel=rel,
+                kind="element-top",
+                elem="wall",
+                partner="slab",
                 skip_elem_recreate=True,  # wall is being deleted
             )
 
@@ -185,8 +225,14 @@ class TestDisconnectRelElementTop:
 
         with patch("bonsai.core.connection.regenerate_wall_to_underside") as regen:
             subject.disconnect_rel(
-                ifc, Mock(), Mock(), connection,
-                rel=rel, kind="element-top", elem="slab", partner="wall",
+                ifc,
+                Mock(),
+                Mock(),
+                connection,
+                rel=rel,
+                kind="element-top",
+                elem="slab",
+                partner="wall",
                 skip_elem_recreate=True,
                 skip_partner_recreate=True,  # wall also in batch
             )
@@ -200,19 +246,115 @@ class TestDisconnectRelElement:
         ifc = Mock()
 
         subject.disconnect_rel(
-            ifc, Mock(), Mock(), Mock(),
-            rel=rel, kind="element", elem="elem_a", partner="elem_b",
+            ifc,
+            Mock(),
+            Mock(),
+            Mock(),
+            rel=rel,
+            kind="element",
+            elem="elem_a",
+            partner="elem_b",
         )
 
-        ifc.run.assert_called_once_with(
-            "geometry.disconnect_element", relating_element="A", related_element="B"
+        ifc.run.assert_called_once_with("geometry.disconnect_element", relating_element="A", related_element="B")
+
+
+class TestDisconnectRelMEPPairFitting:
+    """The ``mep-pair-fitting`` kind treats the rel slot as the fitting whose
+    removal disconnects the pair — deletion routes through
+    ``geometry.delete_ifc_object`` so the cascade-on-delete contract still
+    owns port-rel cleanup."""
+
+    def test_deletes_fitting_via_delete_ifc_object(self):
+        fitting = Mock(name="fitting")
+        fitting_obj = Mock(name="fitting_obj")
+        ifc = _ifc_with_objects({fitting: fitting_obj})
+        geometry = Mock()
+
+        subject.disconnect_rel(
+            ifc,
+            geometry,
+            Mock(),
+            Mock(),
+            rel=fitting,
+            kind="mep-pair-fitting",
+            elem="seg_a",
+            partner="seg_b",
         )
+
+        geometry.delete_ifc_object.assert_called_once_with(fitting_obj)
+
+    def test_noops_when_fitting_has_no_blender_object(self):
+        """Defensive: a fitting with no bound Blender object can't be
+        deleted via ``delete_ifc_object``; the dispatch must not crash."""
+        fitting = Mock(name="fitting")
+        ifc = _ifc_with_objects({})
+        geometry = Mock()
+
+        subject.disconnect_rel(
+            ifc,
+            geometry,
+            Mock(),
+            Mock(),
+            rel=fitting,
+            kind="mep-pair-fitting",
+            elem="seg_a",
+            partner="seg_b",
+        )
+
+        geometry.delete_ifc_object.assert_not_called()
+
+    def test_skip_elem_recreate_suppresses_delete_when_fitting_is_elem(self):
+        """Cascade case: the fitting is itself the element being deleted
+        — don't try to delete it twice."""
+        fitting = Mock(name="fitting")
+        ifc = _ifc_with_objects({fitting: Mock()})
+        geometry = Mock()
+
+        subject.disconnect_rel(
+            ifc,
+            geometry,
+            Mock(),
+            Mock(),
+            rel=fitting,
+            kind="mep-pair-fitting",
+            elem=fitting,
+            partner="other",
+            skip_elem_recreate=True,
+        )
+
+        geometry.delete_ifc_object.assert_not_called()
+
+    def test_skip_partner_recreate_suppresses_delete_when_fitting_is_partner(self):
+        fitting = Mock(name="fitting")
+        ifc = _ifc_with_objects({fitting: Mock()})
+        geometry = Mock()
+
+        subject.disconnect_rel(
+            ifc,
+            geometry,
+            Mock(),
+            Mock(),
+            rel=fitting,
+            kind="mep-pair-fitting",
+            elem="seg_a",
+            partner=fitting,
+            skip_partner_recreate=True,
+        )
+
+        geometry.delete_ifc_object.assert_not_called()
 
 
 class TestDisconnectRelUnknownKind:
     def test_raises_value_error(self):
         with pytest.raises(ValueError, match="Unknown rel kind"):
             subject.disconnect_rel(
-                Mock(), Mock(), Mock(), Mock(),
-                rel="rel", kind="bogus", elem="a", partner="b",
+                Mock(),
+                Mock(),
+                Mock(),
+                Mock(),
+                rel="rel",
+                kind="bogus",
+                elem="a",
+                partner="b",
             )

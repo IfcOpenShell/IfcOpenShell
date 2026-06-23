@@ -2569,14 +2569,20 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
     CONNECTION_EPS_SQ = 1e-4 * 1e-4
 
     def __init__(self) -> None:
-        # Two-tier cache. Walk cache keyed on (start_guid, ifc_file): re-walk
-        # only on selection change or file reload. Compare ``ifc_file`` with
+        # Walk cache keyed on (start_guid, ifc_file, geom_gen). Stores STEP
+        # integer ids rather than ``entity_instance`` references — re-resolved
+        # via ``ifc_file.by_id`` on each cache hit. Structurally rules out
+        # the dangling-SWIG-handle class of bug: an entity removed between
+        # frames either bumps geom_gen (cache miss → re-walk) or fails to
+        # re-resolve (handled below by re-walking). Compare ``ifc_file`` with
         # ``is`` (not id()) so a GC-recycled id() can't produce a false hit.
         self._cached_start_guid: str | None = None
         self._cached_ifc_file: Any = None
-        self._cached_walk: list[Any] = []
-        # Geometry cache: shared TokenCache so resolved world-space lines +
-        # dots re-build on every depsgraph / undo / redo / load.
+        self._cached_geom_gen: int = -1
+        self._cached_walk_ids: list[int] = []
+        # Geometry cache: shared TokenCache. Key folds in geom_gen so IFC
+        # mutations that don't surface via the depsgraph still flush the
+        # resolved world-space lines and dots.
         self._geom_cache: TokenCache[
             tuple[
                 list[tuple[tuple[float, float, float], tuple[float, float, float]]],
@@ -2739,9 +2745,22 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
         start_guid = start_element.GlobalId
         if start_guid == self._failed_seed_guid:
             return
-        if start_guid == self._cached_start_guid and ifc_file is self._cached_ifc_file and self._cached_walk:
-            connected = self._cached_walk
-        else:
+        current_geom_gen = tool.Parametric.get_geom_generation()
+        connected: list[Any] | None = None
+        if (
+            start_guid == self._cached_start_guid
+            and ifc_file is self._cached_ifc_file
+            and current_geom_gen == self._cached_geom_gen
+            and self._cached_walk_ids
+        ):
+            try:
+                connected = [ifc_file.by_id(eid) for eid in self._cached_walk_ids]
+            except RuntimeError:
+                # An entity was removed without bumping geom_gen — rare but
+                # possible from non-operator code paths. Force a re-walk
+                # rather than feeding a stale handle to _build_geometry.
+                connected = None
+        if connected is None:
             try:
                 connected = self._walk(start_element)
             except Exception:
@@ -2750,12 +2769,13 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
 
                     traceback.print_exc()
                     self._walk_failure_logged = True
-                self._cached_walk = []
+                self._cached_walk_ids = []
                 self._failed_seed_guid = start_guid
                 return
             self._cached_start_guid = start_guid
             self._cached_ifc_file = ifc_file
-            self._cached_walk = connected
+            self._cached_geom_gen = current_geom_gen
+            self._cached_walk_ids = [e.id() for e in connected]
         if not connected:
             return
 
@@ -2770,7 +2790,7 @@ class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
 
         try:
             lines, free_points, connection_points = self._geom_cache.get_or_compute(
-                (start_guid, id(ifc_file)),
+                (start_guid, id(ifc_file), current_geom_gen),
                 lambda: self._build_geometry(connected),
             )
         except Exception:
