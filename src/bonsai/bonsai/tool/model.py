@@ -2124,6 +2124,13 @@ class Model(bonsai.core.tool.Model):
             if voided_obj is not None:
                 voided_objs.add(voided_obj)
 
+            # Preserve user-authored opening geometry (e.g. an IfcPolygonalFaceSet
+            # or other tessellation) instead of replacing it with a default extrusion.
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+            if FilledOpeningGenerator().is_opening_representation_custom(opening):
+                continue
+
             body = tool.Geometry.get_body_representation(opening)
             if body is None:
                 continue

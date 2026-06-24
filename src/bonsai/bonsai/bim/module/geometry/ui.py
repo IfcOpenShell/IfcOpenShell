@@ -148,11 +148,23 @@ class BIM_PT_representations(Panel):
             self.layout.label(text="No Representations Found")
             return
 
+        header = self.layout.row(align=True)
+        header.label(text="Context")
+        header.label(text="Subcontext")
+        header.label(text="View")
+        header.label(text="Identifier")
+        header.label(text="Type")
+        # Blank icon cells reserve the same width as the switch/remove buttons below so the
+        # text columns line up with the data rows.
+        header.label(text="", icon="BLANK1")
+        header.label(text="", icon="BLANK1")
+
         for representation in RepresentationsData.data["representations"]:
             row = self.layout.row(align=True)
             row.label(text=representation["ContextType"])
             row.label(text=representation["ContextIdentifier"])
             row.label(text=representation["TargetView"])
+            row.label(text=representation["RepresentationIdentifier"])
             row.label(text=representation["RepresentationType"])
             op = row.operator(
                 "bim.switch_representation",

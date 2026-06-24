@@ -710,6 +710,16 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if mprops.ifc_parameters:
             core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
 
+        # Persist an edited opening void onto its filling type's 'Reference' template so the
+        # change survives type duplication/append/switching and propagates to siblings. This
+        # catches the edited_objs commit path; the in-place item edit is caught in
+        # bim.override_mode_set_object.
+        edited_element = tool.Ifc.get_entity(obj)
+        if edited_element and edited_element.is_a("IfcOpeningElement"):
+            from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+            FilledOpeningGenerator().update_type_template_from_opening(edited_element)
+
 
 class UpdateParametricRepresentation(bpy.types.Operator):
     bl_idname = "bim.update_parametric_representation"
@@ -2489,6 +2499,15 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return bpy.ops.bim.edit_boundary_geometry()
             elif tool.Geometry.is_representation_item(context.active_object):
                 self.edit_representation_item(context.active_object)
+                # If we just edited an opening's void item, persist the new shape onto the
+                # filling type's 'Reference' template so it survives type duplication/append/
+                # switching and propagates to siblings.
+                rep_obj = tool.Geometry.get_geometry_props().representation_obj
+                edited_element = tool.Ifc.get_entity(rep_obj) if rep_obj else None
+                if edited_element and edited_element.is_a("IfcOpeningElement"):
+                    from bonsai.bim.module.model.opening import FilledOpeningGenerator
+
+                    FilledOpeningGenerator().update_type_template_from_opening(edited_element)
                 tool.Root.reload_item_decorator()
                 # So you can keep hitting tab to cycle out of edit mode
                 context.active_object.select_set(False)
