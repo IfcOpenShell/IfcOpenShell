@@ -48,7 +48,9 @@
 
 #include <BRepAlgoAPI_Fuse.hxx>
 
-#include <TopTools_IndexedMapOfShape.hxx>
+#include <Standard_Macro.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
+#include <NCollection_IndexedMap.hxx>
 
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 
@@ -73,7 +75,7 @@ bool IfcGeom::util::axis_equal(const gp_Ax2d & a, const gp_Ax2d & b, double tole
 
 int IfcGeom::util::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
 	if (unique) {
-		TopTools_IndexedMapOfShape map;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapes(s, t, map);
 		return map.Extent();
 	} else {
@@ -108,7 +110,7 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 		}
 		return true;
 	} else {
-        NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
+        NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
 
 		for (int i = 1; i <= map.Extent(); ++i) {
@@ -590,10 +592,10 @@ TopoDS_Shape IfcGeom::util::halfspace_from_plane(const gp_Pln& pln, const gp_Pnt
 
 gp_Pln IfcGeom::util::plane_from_face(const TopoDS_Face& face) {
 	BRepGProp_Face prop(face);
-	Standard_Real u1, u2, v1, v2;
+	double u1, u2, v1, v2;
 	prop.Bounds(u1, u2, v1, v2);
-	Standard_Real u = (u1 + u2) / 2.0;
-	Standard_Real v = (v1 + v2) / 2.0;
+	double u = (u1 + u2) / 2.0;
+	double v = (v1 + v2) / 2.0;
 	gp_Pnt p;
 	gp_Vec n;
 	prop.Normal(u, v, p, n);
@@ -616,7 +618,7 @@ bool IfcGeom::util::is_compound_of_faces(const TopoDS_Shape& shape) {
 	return has_compounds && has_faces && !has_solids && !has_shells;
 }
 
-bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li) {
+bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, NCollection_List<TopoDS_Shape>& li) {
 	TopExp_Explorer exp(s, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
@@ -626,7 +628,7 @@ bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfSha
 }
 
 bool IfcGeom::util::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape, double tol) {
-	TopTools_ListOfShape face_list;
+	NCollection_List<TopoDS_Shape> face_list;
 	shape_to_face_list(compound, face_list);
 	if (face_list.Extent() == 0) {
 		return false;
@@ -634,7 +636,7 @@ bool IfcGeom::util::create_solid_from_compound(const TopoDS_Shape& compound, Top
 	return create_solid_from_faces(face_list, shape, tol);
 }
 
-bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape, double tol, bool force_sewing) {
+bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>& face_list, TopoDS_Shape& shape, double tol, bool force_sewing) {
 	bool valid_shell = false;
 
 	if (face_list.Extent() == 1) {
@@ -645,7 +647,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		return false;
 	}
 
-	TopTools_ListIteratorOfListOfShape face_iterator;
+	NCollection_List<TopoDS_Shape>::Iterator face_iterator;
 
 	bool has_shared_edges = false;
     NCollection_Map<TopoDS_Shape, TopTools_ShapeMapHasher> edge_set;

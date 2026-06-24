@@ -36,7 +36,13 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
-#include <TopTools_DataMapOfShapeInteger.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <Standard_Integer.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
+#include <NCollection_DataMap.hxx>
+
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepExtrema_ExtPF.hxx>
 #include <TopoDS_Face.hxx>
@@ -145,7 +151,7 @@ namespace IfcGeom {
                 while (exp.More()) {
                     is_closed = true;
                     TopoDS_Shell shell = TopoDS::Shell(exp.Current());
-                    TopTools_IndexedDataMapOfShapeListOfShape edgeFaceMap;
+                    NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> edgeFaceMap;
                     TopExp::MapShapesAndAncestors(s, TopAbs_EDGE, TopAbs_FACE, edgeFaceMap);
 
                     for (int i = 1; i <= edgeFaceMap.Extent(); ++i) {
@@ -1461,13 +1467,13 @@ namespace IfcGeom {
 					, bounds_(b)
 				{}
 
-				Standard_Boolean Reject(const Bnd_Box& b) const {
+				bool Reject(const Bnd_Box& b) const {
 					return bounds_.IsOut(b);
 				}
 
-				Standard_Boolean Accept(const T& o) {
+				bool Accept(const T& o) {
 					results_.push_back(o);
-					return Standard_True;
+                    return true;
 				}
 
 				const std::vector<T>& results() const {
@@ -1922,8 +1928,8 @@ namespace IfcGeom {
             std::vector<gp_Vec> original_normals;
 
             // Attempt to copy exactly what BRepExtrema_TriangleSet is doing under the hood.
-            const auto builder = new BVH_LinearBuilder<Standard_Real, 3>(BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
-            BVH_Triangulation<Standard_Real, 3> triangulation(builder);
+            const auto builder = new BVH_LinearBuilder<double, 3>(BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
+            BVH_Triangulation<double, 3> triangulation(builder);
 
             for (int i = 0; i < elem_verts.size(); i += 3) {
                 triangulation.Vertices.Append(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
@@ -2085,7 +2091,7 @@ namespace IfcGeom {
 		}
 
 	protected:
-		typedef TopTools_DataMapOfShapeInteger face_style_map_t;
+        typedef NCollection_DataMap<TopoDS_Shape, int, TopTools_ShapeMapHasher> face_style_map_t;
 
 		face_style_map_t face_styles_;
 		std::vector<ifcopenshell::geometry::taxonomy::style::ptr> styles_;

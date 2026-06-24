@@ -27,7 +27,7 @@
 bool IfcGeom::util::wire_is_c1_continuous(const TopoDS_Wire & w, double tol) {
 	// NB Note that c0 continuity is NOT checked!
 
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 	for (int i = 1; i <= map.Extent(); ++i) {
 		const auto& li = map.FindFromIndex(i);
@@ -66,7 +66,7 @@ bool IfcGeom::util::wire_to_ax(const TopoDS_Wire & wire, gp_Ax2 & directrix) {
 	// Find first edge
 	TopoDS_Vertex v0, v1;
 	TopExp::Vertices(wire, v0, v1);
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 	if (v0.IsSame(v1) && map.Contains(v0) && map.FindFromKey(v0).Extent() == 2) {
 		// Closed wire, with more than 1 edges
@@ -182,7 +182,7 @@ void IfcGeom::util::process_sweep_as_pipe(const TopoDS_Wire & wire, const TopoDS
 }
 
 void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge>& sorted_edges) {
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(wire, TopAbs_VERTEX, TopAbs_EDGE, map);
 
 	for (int i = 1; i <= map.Extent(); ++i) {
@@ -209,9 +209,9 @@ void IfcGeom::util::sort_edges(const TopoDS_Wire & wire, std::vector<TopoDS_Edge
 		if (!map.Contains(v0)) {
 			throw std::runtime_error("Disconnected vertex");
 		}
-		const TopTools_ListOfShape& es = map.FindFromKey(v0);
+		const NCollection_List<TopoDS_Shape>& es = map.FindFromKey(v0);
 		TopoDS_Vertex ve0, ve1;
-		TopTools_ListIteratorOfListOfShape it(es);
+		NCollection_List<TopoDS_Shape>::Iterator it(es);
 		bool added = false;
 		for (; it.More(); it.Next()) {
 			const TopoDS_Edge& e = TopoDS::Edge(it.Value());

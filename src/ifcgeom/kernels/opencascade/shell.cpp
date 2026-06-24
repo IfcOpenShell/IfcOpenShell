@@ -38,7 +38,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)
 		: minimal_face_area;
 
-	TopTools_ListOfShape face_list;
+	NCollection_List<TopoDS_Shape> face_list;
 	for (auto& face : l->children) {
 		bool success = false;
 		TopoDS_Face occ_face;
@@ -96,7 +96,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
 
-		TopTools_ListIteratorOfListOfShape face_iterator;
+		NCollection_List<TopoDS_Shape>::Iterator face_iterator;
 		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 			builder.Add(compound, face_iterator.Value());
 		}

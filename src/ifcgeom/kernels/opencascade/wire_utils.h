@@ -12,8 +12,9 @@
 #include <TopoDS_Shape.hxx>
 #include <TopoDS_Compound.hxx>
 
-#include <TColgp_SequenceOfPnt.hxx>
-#include <TopTools_ListOfShape.hxx>
+#include <gp_Pnt.hxx>
+#include <NCollection_List.hxx>
+#include <NCollection_Sequence.hxx>
 
 #include <vector>
 
@@ -50,10 +51,10 @@ namespace IfcGeom {
 		IFC_GEOMLIBRARY_API void assert_closed_wire(TopoDS_Wire& wire, double tol);
 
 		IFC_GEOMLIBRARY_API bool fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape, double tol);
-		IFC_GEOMLIBRARY_API void remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol);
-		IFC_GEOMLIBRARY_API void remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol);
-		IFC_GEOMLIBRARY_API bool wire_to_sequence_of_point(const TopoDS_Wire&, TColgp_SequenceOfPnt&);
-		IFC_GEOMLIBRARY_API void sequence_of_point_to_wire(const TColgp_SequenceOfPnt&, TopoDS_Wire&, bool closed);
+        IFC_GEOMLIBRARY_API void remove_duplicate_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol);
+        IFC_GEOMLIBRARY_API void remove_collinear_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol);
+        IFC_GEOMLIBRARY_API bool wire_to_sequence_of_point(const TopoDS_Wire&, NCollection_Sequence<gp_Pnt>&);
+        IFC_GEOMLIBRARY_API void sequence_of_point_to_wire(const NCollection_Sequence<gp_Pnt>&, TopoDS_Wire&, bool closed);
 
 		IFC_GEOMLIBRARY_API bool convert_curve_to_wire(const opencascade::handle<Geom_Curve>& curve, TopoDS_Wire& wire);
 	}

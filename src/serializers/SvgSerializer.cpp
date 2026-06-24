@@ -1119,7 +1119,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 				TopoDS_Compound profile_edges;
 				if (profile_threshold_ != -1 && !(data.product->declaration().is("IfcWall") || data.product->declaration().is("IfcSlab"))) {
-                    NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
+                    NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 					TopExp::MapShapesAndAncestors(*compound_to_hlr, TopAbs_EDGE, TopAbs_FACE, map);
 					if (map.Extent() > profile_threshold_) {
 						BRep_Builder BB;
@@ -1434,8 +1434,8 @@ void SvgSerializer::write(const geometry_data& data) {
 				result = make_transform_mirror_.Shape();
 			}
 
-			opencascade::handle<TopTools_HSequenceOfShape> edges = new TopTools_HSequenceOfShape();
-			opencascade::handle<TopTools_HSequenceOfShape> wires = new TopTools_HSequenceOfShape();
+			opencascade::handle<NCollection_HSequence<TopoDS_Shape>> edges = new NCollection_HSequence<TopoDS_Shape>();
+			opencascade::handle<NCollection_HSequence<TopoDS_Shape>> wires = new NCollection_HSequence<TopoDS_Shape>();
 			{
 				TopExp_Explorer exp(result, TopAbs_EDGE);
 				for (; exp.More(); exp.Next()) {

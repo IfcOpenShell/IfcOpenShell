@@ -13,7 +13,10 @@
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Iterator.hxx>
 #include <TopExp_Explorer.hxx>
-#include <TopTools_ListOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_List.hxx>
 
 #include <Bnd_Box.hxx>
 
@@ -43,14 +46,14 @@ namespace {
 	}
 
 #if OCC_VERSION_HEX >= 0x70200
-	bool split(const TopoDS_Shape& input, const TopTools_ListOfShape& operands, double eps, std::vector<TopoDS_Shape>& slices) {
+    bool split(const TopoDS_Shape& input, const NCollection_List<TopoDS_Shape>& operands, double eps, std::vector<TopoDS_Shape>& slices) {
 		if (operands.Extent() < 2) {
 			// Needs to have at least two cutting surfaces for the ordering based on surface containment to work.
 			return false;
 		}
 
 		BRepAlgoAPI_Splitter split;
-		TopTools_ListOfShape input_list;
+        NCollection_List<TopoDS_Shape> input_list;
 		input_list.Append(input);
 		split.SetArguments(input_list);
 		split.SetTools(operands);
@@ -66,7 +69,7 @@ namespace {
 
 			// NB 1, since first surface has been excluded
 			int i = 1;
-			for (TopTools_ListIteratorOfListOfShape it(operands); it.More(); it.Next(), ++i) {
+			for (NCollection_List<TopoDS_Shape>::Iterator it(operands); it.More(); it.Next(), ++i) {
 				TopExp_Explorer exp(it.Value(), TopAbs_FACE);
 				for (; exp.More(); exp.Next()) {
 					surfaces.insert(std::make_pair(BRep_Tool::Surface(TopoDS::Face(exp.Current())).get(), i));
@@ -172,7 +175,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 	typedef std::vector< std::vector<occ::handle<Geom_Surface>> > folded_surfaces_t;
 	typedef std::vector< std::pair< TopoDS_Face, std::pair<gp_Pnt, gp_Pnt> > > faces_with_mass_t;
 
-	TopTools_ListOfShape shells;
+	NCollection_List<TopoDS_Shape> shells;
 
 	for (folded_surfaces_t::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
 		if (it->empty()) {
@@ -336,7 +339,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 			const TopoDS_Shape& s = std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape();
 			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
 
-			TopTools_ListOfShape operands;
+			NCollection_List<TopoDS_Shape> operands;
 			for (unsigned i = 1; i < surfaces.size() - 1; ++i) {
 				double u1, v1, u2, v2;
 				if (!project(surfaces[i], sld, u1, v1, u2, v2)) {
@@ -406,7 +409,7 @@ bool IfcGeom::util::split_solid_by_shell(const TopoDS_Shape& input, const TopoDS
 	}
 
 #if OCC_VERSION_HEX >= 0x70300
-	TopTools_ListOfShape shapes;
+	NCollection_List<TopoDS_Shape> shapes;
 #else
 	BOPCol_ListOfShape shapes;
 #endif

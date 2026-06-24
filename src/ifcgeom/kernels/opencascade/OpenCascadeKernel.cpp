@@ -138,7 +138,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 
 			if (!is_manifold) {
 				// force sewing, edge identity might have been mudied by FixAdvFace.FixOrientation.MSG5 to fix interior loop winding order
-                TopTools_ListOfShape list;
+                NCollection_List<TopoDS_Shape> list;
                 IfcGeom::util::shape_to_face_list(entity_part, list);
                 IfcGeom::util::create_solid_from_faces(list, entity_part, settings_.get<settings::Precision>().get(), true);
                 is_manifold = util::is_manifold(entity_part);
@@ -205,7 +205,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 				for (;; ++it) {
 					if (it == opening_vector.end() || jt->first / it->first > 10.) {
 
-						TopTools_ListOfShape opening_list;
+						NCollection_List<TopoDS_Shape> opening_list;
 						for (auto kt = jt; kt < it; ++kt) {
 							opening_list.Append(kt->second);
 						}

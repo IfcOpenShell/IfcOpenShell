@@ -23,7 +23,7 @@ namespace {
 		for (;; ++it) {
 			if (it == opening_vector.end() || jt->first / it->first > 10.) {
  
-				TopTools_ListOfShape opening_list;
+				NCollection_List<TopoDS_Shape> opening_list;
 				for (auto kt = jt; kt < it; ++kt) {
 					opening_list.Append(kt->second);
 				}
@@ -90,7 +90,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	const double tol = settings_.get<settings::Precision>().get();
 
 	TopoDS_Shape a;
-	TopTools_ListOfShape b;
+	NCollection_List<TopoDS_Shape> b;
 
 	taxonomy::style::ptr first_item_style;
 

@@ -37,8 +37,6 @@
 #include <TopoDS_Face.hxx>
 #include <Geom_Curve.hxx>
 #include <gp_Pln.hxx>
-#include <TColgp_SequenceOfPnt.hxx>
-#include <TopTools_ListOfShape.hxx>
 #include <BOPAlgo_Operation.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
@@ -105,7 +103,7 @@ private:
 		bool edge(int A, int B, TopoDS_Edge& e);
 
 		bool wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& wire);
-		bool wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopTools_ListOfShape& wires);
+		bool wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires);
 	};
 
 	faceset_helper* faceset_helper_;
