@@ -345,15 +345,9 @@ int IFCImp::DoImport(const TCHAR *file_name, ImpInterface *impitfc, Interface *i
     auto solids = file.instances_by_type("IfcSolidModel");
 
 	// cgal kernels produce std::vector incompatiblities
-    //auto kernel = ifcopenshell::geometry::kernels::construct(&file, "hybrid-cgal-simple-opencascade", settings);
-    
-	//auto kernel = ifcopenshell::geometry::kernels::construct(&file, "opencascade", settings);
-    //IfcGeom::Iterator iterator( std::move( kernel), settings, &file);
-    
-	IfcGeom::Iterator iterator(
-        ifcopenshell::geometry::kernels::construct(&file, "opencascade", settings),
-        settings,
-        &file);
+	// TODO: cgal kernels produce std::vector incompatibilities -> 3ds Max asserts crashes 
+	// ifcopenshell::geometry::kernels::construct(&ifc_file, KernelName.at(Kernel::HybridCGALSimpleOCC), settings),
+	IfcGeom::Iterator iterator(ifcopenshell::geometry::kernels::construct(&file, "opencascade", settings), settings, &file);
 
 
     delete[] fn_mb;
