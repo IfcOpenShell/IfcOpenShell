@@ -41,6 +41,12 @@ def load_post(*args):
         profile.DumbProfileRegenerator().regenerate_from_profile,
     )
 
+    ifcopenshell.api.add_pre_listener(
+        "type.assign_type",
+        "Bonsai.Opening.PreserveOnTypeChange",
+        opening.FilledOpeningGenerator().preserve_opening_on_type_change,
+    )
+
     ifcopenshell.api.add_post_listener(
         "type.assign_type",
         "Bonsai.Opening.RegenerateFromType",
