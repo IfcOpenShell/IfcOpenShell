@@ -721,15 +721,15 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 	std::vector<TopoDS_Face> wire_faces;
 	wire_faces.reserve(wires.size());
 
-	std::vector<BRepTopAdaptor_FClass2d> wire_clss;
-	wire_clss.reserve(wires.size());
+	std::vector<std::unique_ptr<BRepTopAdaptor_FClass2d>> wire_clss;
+    wire_clss.reserve(wires.size());
 
 	std::vector<std::unique_ptr<ShapeAnalysis_Surface>> sass;
 	sass.reserve(wires.size());
 
 	for (auto& w : wires) {
 		wire_faces.push_back(BRepBuilderAPI_MakeFace(w).Face());
-		wire_clss.emplace_back(wire_faces.back(), eps);
+		wire_clss.emplace_back(std::make_unique<BRepTopAdaptor_FClass2d>(wire_faces.back(), eps));
 		sass.push_back(std::make_unique<ShapeAnalysis_Surface>(BRep_Tool::Surface(wire_faces.back())));
 	}
 
@@ -745,7 +745,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 
 		auto pnt = BRep_Tool::Pnt(v);
 		auto p2d = sass[0]->ValueOfUV(pnt, eps);
-		if (wire_clss[0].Perform(p2d) != TopAbs_IN) {
+		if (wire_clss[0]->Perform(p2d) != TopAbs_IN) {
 			// A wire is not contained in the outer wire, it's a subtraction without
 			// any effect and marked as redundant. Feeding it to the builder algo
 			// will likely cause problems.
@@ -787,7 +787,7 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 
 			auto pnt = BRep_Tool::Pnt(v);
 			auto p2d = sass[wire_index]->ValueOfUV(pnt, eps);
-			if (wire_clss[wire_index].Perform(p2d) == TopAbs_IN) {
+			if (wire_clss[wire_index]->Perform(p2d) == TopAbs_IN) {
 				// A wire is contained within another operand
 				redundant[other_index] = true;
 				Logger::Root().Notice("GEO", 125, "Subtraction operand contained in other");
