@@ -1170,6 +1170,20 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %template(svg_loop) std::vector<std::array<double, 2>>;
 %template(svg_loops) std::vector<std::vector<std::array<double, 2>>>;
 
+%extend IfcGeom::OpaqueCoordinate {
+	%pythoncode %{
+		__len__ = size
+		def __iter__(self):
+			yield from (self.get(i) for i in range(len(self)))
+	%}
+}
+
+%extend IfcGeom::OpaqueNumber {
+	%pythoncode %{
+		__abs__ = abs
+	%}
+}
+
 %template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
 %template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
 

@@ -45,6 +45,8 @@ namespace ifcopenshell {
 
 		class IFC_GEOMLIBRARY_API OpenCascadeShape : public IfcGeom::ConversionResultShape {
 		public:
+            std::string type() const override { return "OpenCascadeShape"; }
+
 			OpenCascadeShape(const TopoDS_Shape& shape)
 				: shape_(shape) {}
 			OpenCascadeShape(TopoDS_Shape&& shape)
