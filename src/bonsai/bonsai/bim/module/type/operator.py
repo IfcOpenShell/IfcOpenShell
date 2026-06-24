@@ -65,10 +65,28 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
             if active_drawing:
                 active_target_view = tool.Drawing.get_drawing_target_view(active_drawing)
 
+        compatible: list[tuple[bpy.types.Object, ifcopenshell.entity_instance]] = []
+        skipped_classes: set[str] = set()
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcObject"):
                 continue
+            if not tool.Type.is_relating_type_compatible(element, relating_type):
+                skipped_classes.add(element.is_a())
+                continue
+            compatible.append((obj, element))
+
+        if skipped_classes:
+            self.report(
+                {"WARNING"},
+                f"Skipped {', '.join(sorted(skipped_classes))}: not a valid occurrence for " f"{relating_type.is_a()}.",
+            )
+
+        if not compatible:
+            self.report({"ERROR"}, f"No selected object can be typed by {relating_type.is_a()}.")
+            return {"CANCELLED"}
+
+        for obj, element in compatible:
             core.assign_type(tool.Ifc, tool.Model, tool.Type, element=element, type=relating_type)
 
             # Switch to the drawing's target view if available
@@ -376,12 +394,22 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         if self.assign_selected_objects:
             selected_objects = tool.Blender.get_selected_objects()
             prefs = tool.Blender.get_addon_preferences()
+            skipped_classes: set[str] = set()
             for selected_obj in selected_objects:
                 selected_element = tool.Ifc.get_entity(selected_obj)
-                if selected_element and selected_element.is_a("IfcObject"):
-                    core.assign_type(tool.Ifc, tool.Model, tool.Type, element=selected_element, type=new)
-                    if prefs.occurrence_name_style == "TYPE":
-                        selected_obj.name = tool.Model.generate_occurrence_name(new, selected_element.is_a())
+                if not selected_element or not selected_element.is_a("IfcObject"):
+                    continue
+                if not tool.Type.is_relating_type_compatible(selected_element, new):
+                    skipped_classes.add(selected_element.is_a())
+                    continue
+                core.assign_type(tool.Ifc, tool.Model, tool.Type, element=selected_element, type=new)
+                if prefs.occurrence_name_style == "TYPE":
+                    selected_obj.name = tool.Model.generate_occurrence_name(new, selected_element.is_a())
+            if skipped_classes:
+                self.report(
+                    {"WARNING"},
+                    f"Skipped {', '.join(sorted(skipped_classes))}: not a valid occurrence for " f"{new.is_a()}.",
+                )
 
         if obj in context.selectable_objects:
             tool.Blender.select_and_activate_single_object(context, new_obj)

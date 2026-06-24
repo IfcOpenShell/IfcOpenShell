@@ -1208,6 +1208,7 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
+    def is_relating_type_compatible(cls, occurrence, relating_type): pass
     def record_material_usage_attributes(cls, element): pass
     def restore_material_usage_attributes(cls, element, usage_attributes): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
