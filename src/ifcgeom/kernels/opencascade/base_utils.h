@@ -13,7 +13,9 @@
 #include <gp_Trsf.hxx>
 #include <gp_GTrsf.hxx>
 
-#include <TopTools_ListOfShape.hxx>
+#include <Standard_Macro.hxx>
+#include <NCollection_List.hxx>
+
 #include <TopoDS_Wire.hxx>
 #include <TopoDS_Face.hxx>
 #include <TopoDS_Shape.hxx>
@@ -49,8 +51,8 @@ namespace IfcGeom {
 		// Creates a solid from a compound of faces. When there are multiple connected components,
 		// a compound of solids is returned.
 		IFC_GEOMLIBRARY_API bool create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& solid, double tol);
-		IFC_GEOMLIBRARY_API bool shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li);
-		IFC_GEOMLIBRARY_API bool create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& solid, double tol, bool force_sewing = false);
+        IFC_GEOMLIBRARY_API bool shape_to_face_list(const TopoDS_Shape& s, NCollection_List<TopoDS_Shape>& li);
+        IFC_GEOMLIBRARY_API bool create_solid_from_faces(const NCollection_List<TopoDS_Shape>& face_list, TopoDS_Shape& solid, double tol, bool force_sewing = false);
 		IFC_GEOMLIBRARY_API bool is_compound_of_faces(const TopoDS_Shape& shape);
 		IFC_GEOMLIBRARY_API bool is_convex(const TopoDS_Wire& wire, double tol);
 		IFC_GEOMLIBRARY_API TopoDS_Shape halfspace_from_plane(const gp_Pln& pln, const gp_Pnt& cent);

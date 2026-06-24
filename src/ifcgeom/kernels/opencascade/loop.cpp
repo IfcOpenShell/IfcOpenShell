@@ -9,14 +9,15 @@
 #include <ShapeFix_ShapeTolerance.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <gp_Pnt.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColStd_Array1OfReal.hxx>
-#include <TColStd_Array1OfInteger.hxx>
 #include <Geom_BSplineCurve.hxx>
 
 #include <TopExp.hxx>
 #include <BRep_Tool.hxx>
-#include <TopTools_ListOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_List.hxx>
+
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 
@@ -233,7 +234,7 @@ OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert
 #include "../../../ifcparse/IfcFile.h"
 
 bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
-	TopTools_ListOfShape converted_segments;
+    NCollection_List<TopoDS_Shape> converted_segments;
 
 	for (auto& segment : loop->children) {
 		TopoDS_Wire segment_wire;
@@ -273,7 +274,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	BRepBuilderAPI_MakeWire w;
 	TopoDS_Vertex wire_first_vertex, wire_last_vertex, edge_first_vertex, edge_last_vertex;
 
-	TopTools_ListIteratorOfListOfShape it(converted_segments);
+	NCollection_List<TopoDS_Shape>::Iterator it(converted_segments);
 
 	bool force_close = false;
 	if (loop->instance && loop->instance->as<IfcUtil::IfcBaseEntity>() && loop->instance->as<IfcUtil::IfcBaseEntity>()->file_) {

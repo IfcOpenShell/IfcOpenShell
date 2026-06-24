@@ -244,7 +244,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
 		// belong to any face.
 
-		TopTools_ListOfShape edges;
+		NCollection_List<TopoDS_Shape> edges;
 		// First collect edges part of wire in order
 		for (TopExp_Explorer texp(shape_, TopAbs_WIRE); texp.More(); texp.Next()) {
 			BRepTools_WireExplorer wexp(TopoDS::Wire(texp.Current()));
@@ -258,7 +258,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 			edges.Append(texp.Current());
 		}
 
-		for (TopTools_ListIteratorOfListOfShape texp(edges); texp.More(); texp.Next()) {
+		for (NCollection_List<TopoDS_Shape>::Iterator texp(edges); texp.More(); texp.Next()) {
 			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Value()));
 			GCPnts_QuasiUniformDeflection tessellater(crv, settings.get<settings::MesherLinearDeflection>().get());
 			int n = tessellater.NbPoints();
@@ -494,7 +494,7 @@ ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::wrap_in_compoun
 
 std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::vertices()
 {
-	TopTools_IndexedMapOfShape map;
+    NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapes(shape_, TopAbs_VERTEX, map);
 	std::vector<ConversionResultShape*> vec;
 	for (int i = 1; i <= map.Extent(); ++i) {
@@ -505,7 +505,7 @@ std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::ve
 
 std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::edges()
 {
-	TopTools_IndexedMapOfShape map;
+    NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapes(shape_, TopAbs_EDGE, map);
 	std::vector<ConversionResultShape*> vec;
 	for (int i = 1; i <= map.Extent(); ++i) {
@@ -516,7 +516,7 @@ std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::ed
 
 std::vector<ConversionResultShape*> ifcopenshell::geometry::OpenCascadeShape::facets()
 {
-	TopTools_IndexedMapOfShape map;
+    NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapes(shape_, TopAbs_FACE, map);
 	std::vector<ConversionResultShape*> vec;
 	for (int i = 1; i <= map.Extent(); ++i) {

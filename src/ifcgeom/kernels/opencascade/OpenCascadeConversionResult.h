@@ -24,9 +24,6 @@
 #include <BRepGProp_Face.hxx>
 
 #include <Poly_Triangulation.hxx>
-#include <TColgp_Array1OfPnt.hxx>
-#include <TColgp_Array1OfPnt2d.hxx>
-
 #include <TopExp_Explorer.hxx>
 #include <BRepTools.hxx>
 

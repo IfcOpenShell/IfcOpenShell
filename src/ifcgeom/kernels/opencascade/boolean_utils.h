@@ -21,13 +21,18 @@
 #define BOOLEAN_UTILS_H
 
 #include <TopoDS_Shape.hxx>
-#include <TopTools_ListOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <NCollection_List.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
+#include <NCollection_IndexedMap.hxx>
+
 #include <Geom_Surface.hxx>
 #include <TopoDS_Face.hxx>
 #include <BRepTopAdaptor_FClass2d.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepTools.hxx>
-#include <TopTools_IndexedMapOfShape.hxx>
+
 #include <BOPAlgo_Operation.hxx>
 
 #include "../ifc_geomlibrary_api.h"
@@ -35,7 +40,7 @@
 namespace IfcGeom {
 	namespace util {
 
-		void copy_operand(const TopTools_ListOfShape& l, TopTools_ListOfShape& r);
+		void copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r);
 
 		TopoDS_Shape copy_operand(const TopoDS_Shape& s);
 
@@ -77,7 +82,7 @@ namespace IfcGeom {
 
 		bool get_edge_axis(const TopoDS_Edge& e, gp_Ax1& ax);
 
-		bool is_subset(const TopTools_IndexedMapOfShape& lhs, const TopTools_IndexedMapOfShape& rhs);
+		bool is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& lhs, const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& rhs);
 
 		bool is_extrusion(const gp_Vec& v, const TopoDS_Shape& s, TopoDS_Face& base, std::pair<double, double>& interval);
 

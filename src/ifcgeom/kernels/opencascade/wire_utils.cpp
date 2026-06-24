@@ -19,7 +19,11 @@
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
-#include <TopTools_ListOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_List.hxx>
+
 #include <ShapeExtend_WireData.hxx>
 #include <Standard_Version.hxx>
 #include <GeomAPI_ExtremaCurveCurve.hxx>
@@ -116,7 +120,7 @@ bool IfcGeom::util::flatten_wire(TopoDS_Wire& wire, double eps) {
 	if (!proj.IsDone()) {
 		return false;
 	}
-	TopTools_ListOfShape list;
+    NCollection_List<TopoDS_Shape> list;
 	proj.BuildWire(list);
 	if (list.Extent() != 1) {
 		return false;
@@ -283,11 +287,11 @@ IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std
 		}
 	}
 
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> mape, mapn;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> mape, mapn;
 	for (auto& wire : wires) {
 		TopExp::MapShapesAndAncestors(wire, TopAbs_EDGE, TopAbs_WIRE, mape);
 	}
-	TopTools_ListIteratorOfListOfShape it(faces);
+	NCollection_List<TopoDS_Shape>::Iterator it(faces);
 	for (; it.More(); it.Next()) {
 		TopExp::MapShapesAndAncestors(it.Value(), TopAbs_EDGE, TopAbs_WIRE, mapn);
 	}
@@ -297,12 +301,12 @@ IfcGeom::util::triangulate_wire_result IfcGeom::util::triangulate_wire(const std
 
 	for (int i = 1; i <= mape.Extent(); ++i) {
 #if OCC_VERSION_HEX >= 0x70000
-		TopTools_ListOfShape val;
+        NCollection_List<TopoDS_Shape> val;
 		if (!mapn.FindFromKey(mape.FindKey(i), val)) {
 #else
 		bool contains = false;
 		try {
-			TopTools_ListOfShape val = mapn.FindFromKey(mape.FindKey(i));
+            NCollection_List<TopoDS_Shape> val = mapn.FindFromKey(mape.FindKey(i));
 			contains = true;
 		} catch (Standard_NoSuchObject&) {}
 		if (!contains) {
@@ -597,7 +601,7 @@ void IfcGeom::util::select_largest(const NCollection_List<TopoDS_Shape>& shapes,
 }
 
 
-bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, TColgp_SequenceOfPnt& p) {
+bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, NCollection_Sequence<gp_Pnt>& p) {
 	TopExp_Explorer exp(w, TopAbs_EDGE);
 	for (; exp.More(); exp.Next()) {
 		double a, b;
@@ -624,7 +628,7 @@ bool IfcGeom::util::wire_to_sequence_of_point(const TopoDS_Wire& w, TColgp_Seque
 	return true;
 }
 
-void IfcGeom::util::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, TopoDS_Wire& w, bool close) {
+void IfcGeom::util::sequence_of_point_to_wire(const NCollection_Sequence<gp_Pnt>& p, TopoDS_Wire& w, bool close) {
 	BRepBuilderAPI_MakePolygon builder;
 	for (int i = 1; i <= p.Length(); ++i) {
 		builder.Add(p.Value(i));
@@ -635,7 +639,7 @@ void IfcGeom::util::sequence_of_point_to_wire(const TColgp_SequenceOfPnt& p, Top
 	w = builder.Wire();
 }
 
-void IfcGeom::util::remove_collinear_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
+void IfcGeom::util::remove_collinear_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol) {
 	const int start = closed ? 1 : 2;
 	const int end = polygon.Length() - (closed ? 0 : 1);
 	std::vector<bool> to_remove(polygon.Length(), false);
@@ -659,7 +663,7 @@ void IfcGeom::util::remove_collinear_points_from_loop(TColgp_SequenceOfPnt& poly
 	}
 }
 
-void IfcGeom::util::remove_duplicate_points_from_loop(TColgp_SequenceOfPnt& polygon, bool closed, double tol) {
+void IfcGeom::util::remove_duplicate_points_from_loop(NCollection_Sequence<gp_Pnt>& polygon, bool closed, double tol) {
 	tol *= tol;
 
 	for (;;) {
@@ -697,9 +701,9 @@ namespace {
 		return TopoDS_Vertex();
 	}
 
-	TopoDS_Edge find_next(const TopTools_IndexedMapOfShape& edge_set, const NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher>& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
-		const TopTools_ListOfShape& edges = vertex_to_edges.FindFromKey(current);
-		TopTools_ListIteratorOfListOfShape eit;
+	TopoDS_Edge find_next(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& edge_set, const NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher>& vertex_to_edges, const TopoDS_Vertex& current, const TopoDS_Edge& previous_edge) {
+        const NCollection_List<TopoDS_Shape>& edges = vertex_to_edges.FindFromKey(current);
+        NCollection_List<TopoDS_Shape>::Iterator eit;
 		for (eit.Initialize(edges); eit.More(); eit.Next()) {
 			const TopoDS_Edge& edge = TopoDS::Edge(eit.Value());
 			if (edge.IsSame(previous_edge)) continue;
@@ -716,8 +720,8 @@ bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape
 	BRepOffsetAPI_Sewing sew;
 	sew.Add(shape);
 
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> edge_to_faces;
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> vertex_to_edges;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> edge_to_faces;
+    NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> vertex_to_edges;
 	std::set<int> visited;
 	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edge_set;
 
@@ -725,7 +729,7 @@ bool IfcGeom::util::fill_nonmanifold_wires_with_planar_faces(TopoDS_Shape& shape
 
 	const int num_edges = edge_to_faces.Extent();
 	for (int i = 1; i <= num_edges; ++i) {
-		const TopTools_ListOfShape& faces = edge_to_faces.FindFromIndex(i);
+        const NCollection_List<TopoDS_Shape>& faces = edge_to_faces.FindFromIndex(i);
 		const int count = faces.Extent();
 		// Find only the non-manifold edges: Edges that are only part of a
 		// single face and therefore part of the wire(s) we want to fill.
@@ -841,7 +845,7 @@ void IfcGeom::util::assert_closed_wire(TopoDS_Wire& wire, double tol) {
 bool IfcGeom::util::convert_wire_to_face(const TopoDS_Wire& w, TopoDS_Face& face, const IfcGeom::util::wire_tolerance_settings& settings) {
 	TopoDS_Wire wire = w;
 
-	TopTools_ListOfShape results;
+	NCollection_List<TopoDS_Shape> results;
 
 	if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
 		Logger::Root().Warning("GEO", 227, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");

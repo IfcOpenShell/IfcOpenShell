@@ -241,7 +241,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::edge(int A, int B, TopoDS_Edge&
 }
 
 bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& w) {
-	TopTools_ListOfShape ws;
+    NCollection_List<TopoDS_Shape> ws;
 	if (!wires(loop, ws)) {
 		return false;
 	}
@@ -249,7 +249,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wire(const ifcopenshell::geomet
 	return true;
 }
 
-bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopTools_ListOfShape& wires) {
+bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires) {
 	if (duplicates_.find(loop->identity()) != duplicates_.end()) {
 		return false;
 	}
@@ -270,7 +270,7 @@ bool IfcGeom::OpenCascadeKernel::faceset_helper::wires(const ifcopenshell::geome
 	if (count >= 3) {
 		wire.Closed(true);
 
-		TopTools_ListOfShape results;
+		NCollection_List<TopoDS_Shape> results;
 		if (!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionCheck>().get() && util::wire_intersections(wire, results, {
 			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionCheck>().get(),
 			!kernel_->settings().get<ifcopenshell::geometry::settings::NoWireIntersectionTolerance>().get(), 0.,

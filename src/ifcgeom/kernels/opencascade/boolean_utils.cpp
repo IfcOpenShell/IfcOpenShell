@@ -30,7 +30,7 @@
 #include <vector>
 #include <thread>
 
-void IfcGeom::util::copy_operand(const TopTools_ListOfShape & l, TopTools_ListOfShape & r) {
+void IfcGeom::util::copy_operand(const NCollection_List<TopoDS_Shape>& l, NCollection_List<TopoDS_Shape>& r) {
 #if OCC_VERSION_HEX < 0x70000
 	r.Clear();
 	TopTools_ListIteratorOfListOfShape it(l);
@@ -80,7 +80,7 @@ double IfcGeom::util::min_edge_length(const TopoDS_Shape & a) {
 double IfcGeom::util::min_vertex_edge_distance(const TopoDS_Shape & a, double min_search, double max_search) {
 	double M = std::numeric_limits<double>::infinity();
 
-	TopTools_IndexedMapOfShape vertices, edges;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> vertices, edges;
 
 	TopExp::MapShapes(a, TopAbs_VERTEX, vertices);
 	TopExp::MapShapes(a, TopAbs_EDGE, edges);
@@ -160,7 +160,7 @@ double IfcGeom::util::min_face_face_distance(const TopoDS_Shape & a, double max_
 	*/
 	double M = std::numeric_limits<double>::infinity();
 
-	TopTools_IndexedMapOfShape faces;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> faces;
 
 	TopExp::MapShapes(a, TopAbs_FACE, faces);
 
@@ -279,7 +279,7 @@ bool IfcGeom::util::get_edge_axis(const TopoDS_Edge & e, gp_Ax1 & ax) {
 	return false;
 }
 
-bool IfcGeom::util::is_subset(const TopTools_IndexedMapOfShape & lhs, const TopTools_IndexedMapOfShape & rhs) {
+bool IfcGeom::util::is_subset(const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& lhs, const NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher>& rhs) {
 	if (rhs.Extent() < lhs.Extent()) {
 		return false;
 	}
@@ -296,12 +296,12 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 	// This assumes UnifySameDomain has been processed on s, so that
 	// the extrusion top and bottom are a single face.
 
-	NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> mapping;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> mapping;
 	TopExp::MapShapesAndAncestors(s, TopAbs_EDGE, TopAbs_FACE, mapping);
 	TopExp::MapShapesAndAncestors(s, TopAbs_VERTEX, TopAbs_FACE, mapping);
 
-	TopTools_ListOfShape parallel;
-	TopTools_IndexedMapOfShape curved_orthogonal;
+	NCollection_List<TopoDS_Shape> parallel;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> curved_orthogonal;
 	gp_Ax1 ax;
 	gp_Ax1 V(gp::Origin(), v);
 
@@ -332,9 +332,9 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 
 	// Select the two faces for which their edges are subsets
 	// of the ortho/curved edges
-	TopTools_IndexedMapOfShape ortho_faces;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> ortho_faces;
 	for (TopExp_Explorer exp(s, TopAbs_FACE); exp.More(); exp.Next()) {
-		TopTools_IndexedMapOfShape face_edges;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> face_edges;
 		TopExp::MapShapes(exp.Current(), TopAbs_EDGE, face_edges);
 		if (is_subset(face_edges, curved_orthogonal)) {
 			ortho_faces.Add(exp.Current());
@@ -348,18 +348,18 @@ bool IfcGeom::util::is_extrusion(const gp_Vec & v, const TopoDS_Shape & s, TopoD
 
 	// For the parallel edges assert that its two vertices are part
 	// of both the basis and the top face.
-	for (TopTools_ListIteratorOfListOfShape it(parallel);
+	for (NCollection_List<TopoDS_Shape>::Iterator it(parallel);
 		it.More(); it.Next()) {
 		TopoDS_Vertex v01[2];
 		TopExp::Vertices(TopoDS::Edge(it.Value()), v01[0], v01[1]);
 
-		TopTools_IndexedMapOfShape v_ortho_faces;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> v_ortho_faces;
 		int nb_ortho_faces[2] = { 0,0 };
 
 		for (int i = 0; i < 2; ++i) {
 			auto& faces = mapping.FindFromKey(v01[i]);
 
-			for (TopTools_ListIteratorOfListOfShape jt(faces);
+			for (NCollection_List<TopoDS_Shape>::Iterator jt(faces);
 				jt.More(); jt.Next()) {
 				if (ortho_faces.Contains(jt.Value())) {
 					nb_ortho_faces[i] ++;
@@ -430,7 +430,7 @@ int IfcGeom::util::eliminate_narrow_operands(double prec, const NCollection_List
 }
 
 int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape & a, const NCollection_List<TopoDS_Shape> & bs, NCollection_List<TopoDS_Shape> & c) {
-	TopTools_IndexedMapOfShape a_faces;
+    NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_faces;
 	TopExp::MapShapes(a, TopAbs_FACE, a_faces);
 
 	// Check if any of the faces in a are non-planar, which is
@@ -442,7 +442,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 		}
 	}
 
-	TopTools_IndexedMapOfShape a_vertices;
+	NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> a_vertices;
 	TopExp::MapShapes(a, TopAbs_VERTEX, a_vertices);
 
 	IfcGeom::impl::tree<int> tree;
@@ -454,13 +454,13 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 
 	int N = 0;
 
-	TopTools_ListIteratorOfListOfShape it(bs);
+	NCollection_List<TopoDS_Shape>::Iterator it(bs);
 	for (; it.More(); it.Next()) {
 		bool is_touching = false;
 
 		auto& b = it.Value();
 
-		TopTools_IndexedMapOfShape b_faces;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> b_faces;
 		TopExp::MapShapes(b, TopAbs_FACE, b_faces);
 
 		// Check if any of the faces in b are non-planar, which is
@@ -478,7 +478,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 			continue;
 		}
 
-		TopTools_IndexedMapOfShape b_vertices;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> b_vertices;
 		TopExp::MapShapes(b, TopAbs_VERTEX, b_vertices);
 
 		for (int k = 1; k <= b_faces.Extent(); ++k) {
@@ -490,7 +490,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 			for (auto& i : tree.select_box(B, false)) {
 				const TopoDS_Face& f_a = TopoDS::Face(a_faces(i));
 
-				TopTools_IndexedMapOfShape f_a_vertices;
+				NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> f_a_vertices;
 				TopExp::MapShapes(f_a, TopAbs_VERTEX, f_a_vertices);
 
 				BRepGProp_Face prop_a(f_a);
@@ -531,7 +531,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 					// Check if faces are co-planar
 					if (std::abs((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ())) <= prec) {
 
-						TopTools_IndexedMapOfShape f_b_vertices;
+						NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> f_b_vertices;
 						TopExp::MapShapes(f_b, TopAbs_VERTEX, f_b_vertices);
 
 						bool all_vertices_behind_f_b = true;
@@ -678,10 +678,10 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 						// to see whether inside tolerance. Current DY is hardcoded. The sensible default
 						// for walls.
 						gp_Vec vec(p1, p2);
-						Standard_Real d = vec.Dot(gp::DY());
+						double d = vec.Dot(gp::DY());
 						gp_Vec projected = d * gp::DY();
 						gp_Vec ortho_remainder = vec - projected;
-						Standard_Real ortho_distance = ortho_remainder.Magnitude();
+						double ortho_distance = ortho_remainder.Magnitude();
 
 						const bool unbounded_intersects = ortho_distance < eps;
 						if (unbounded_intersects) {
@@ -877,7 +877,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	// @todo, it does seem a bit odd, we first triangulate non-planar faces
 	// to later unify them again. Can we make this a bit more intelligent?
 	TopoDS_Shape a;
-	TopTools_ListOfShape b;
+    NCollection_List<TopoDS_Shape> b;
 
 	if (do_unify) {
 		PERF("boolean operation: unifying operands");
@@ -893,7 +893,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		);
 
 		{
-			TopTools_ListIteratorOfListOfShape it(b_input);
+			NCollection_List<TopoDS_Shape>::Iterator it(b_input);
 			for (; it.More(); it.Next()) {
 				b.Append(unify(it.Value(), fuzziness));
 				Logger::Root().Message(
@@ -914,7 +914,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	bool success = false;
 	std::unique_ptr<BRepAlgoAPI_BooleanOperation> builder;
-	TopTools_ListOfShape b_tmp;
+	NCollection_List<TopoDS_Shape> b_tmp;
 
 	if (op == BOPAlgo_CUT) {
 		builder.reset(new BRepAlgoAPI_Cut());
@@ -972,7 +972,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			Logger::Root().Notice("GEO", 133, "Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
 		}
 
-		TopTools_ListIteratorOfListOfShape it(b);
+		NCollection_List<TopoDS_Shape>::Iterator it(b);
 		for (int i = 0; it.More(); it.Next(), ++i) {
 			Logger::Root().Notice("GEO", 134, "Operand B " + std::to_string(i) + " is " + (is_manifold(it.Value()) ? ""s : "non-"s) + "manifold");
 		}
@@ -986,7 +986,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		PERF("boolean operation: min edge length");
 
 		min_length_orig = min_edge_length(a);
-		TopTools_ListIteratorOfListOfShape it(b);
+		NCollection_List<TopoDS_Shape>::Iterator it(b);
 		for (; it.More(); it.Next()) {
 			double d = min_edge_length(it.Value());
 			if (d < min_length_orig) {
@@ -1003,7 +1003,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			min_length_orig = d;
 		}
 
-		TopTools_ListIteratorOfListOfShape it(b);
+		NCollection_List<TopoDS_Shape>::Iterator it(b);
 		for (; it.More(); it.Next()) {
 			d = min_vertex_edge_distance(it.Value(), settings.precision, min_length_orig);
 			if (d < min_length_orig) {
@@ -1019,14 +1019,14 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	const double new_fuzziness = fuzziness * 10.;
 	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
 
-	TopTools_ListOfShape s1s;
+	NCollection_List<TopoDS_Shape> s1s;
 	s1s.Append(copy_operand(a));
 
 	if (debug) {
-		TopTools_ListOfShape* lists[2] = { &s1s, &b };
+        NCollection_List<TopoDS_Shape>* lists[2] = {&s1s, &b};
 		static std::string operand_names[2] = { "a", "b" };
 		for (int i = 0; i < 2; ++i) {
-			TopTools_ListIteratorOfListOfShape it(*lists[i]);
+            NCollection_List<TopoDS_Shape>::Iterator it(*lists[i]);
 			for (int j = 0; it.More(); it.Next(), ++j) {
 				std::string fn = debug_identifier + "-" + operand_names[i] + "-" + std::to_string(j) + ".brep";
 				BRepTools::Write(it.Value(), fn.c_str());
@@ -1038,7 +1038,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		TopoDS_Face a_face;
 		std::pair<double, double> a_interval;
 
-		TopTools_ListOfShape b_faces, b_remainder_3d;
+		NCollection_List<TopoDS_Shape> b_faces, b_remainder_3d;
 
 		bool is_extrusion_a = false;
 		if (do_attempt_2d_boolean) {
@@ -1050,7 +1050,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		if (is_extrusion_a) {
 			Logger::Root().Notice("GEO", 136, "Operand A 1/1 is an extrusion");
 
-			TopTools_ListIteratorOfListOfShape it(b);
+			NCollection_List<TopoDS_Shape>::Iterator it(b);
 			for (int nb = 1; it.More(); it.Next(), ++nb) {
 				bool process_2d = false;
 				TopoDS_Face b_face;
@@ -1232,9 +1232,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 					// An exemption for the requirement to be manifold: When the cut operands have overlapping edge belonging to faces that do not overlap.
 					bool operands_nonmanifold = false;
 					if (op == BOPAlgo_CUT) {
-						TopTools_IndexedMapOfShape edges;
-						NCollection_IndexedDataMap<TopoDS_Shape, TopTools_ListOfShape, TopTools_ShapeMapHasher> map;
-						for (TopTools_ListIteratorOfListOfShape it2(b); it2.More(); it2.Next()) {
+                        NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> edges;
+                        NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
+                        for (NCollection_List<TopoDS_Shape>::Iterator it2(b); it2.More(); it2.Next()) {
 							auto& bb = it2.Value();
 							TopExp::MapShapes(bb, TopAbs_EDGE, edges);
 							TopExp::MapShapesAndAncestors(bb, TopAbs_EDGE, TopAbs_FACE, map);
@@ -1261,9 +1261,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 										auto faces_i = map.FindFromKey(edges.FindKey(i));
 										auto faces_j = map.FindFromKey(edges.FindKey(j));
 										bool overlap = false;
-										for (TopTools_ListIteratorOfListOfShape it4(faces_i); it4.More(); it4.Next()) {
+										for (NCollection_List<TopoDS_Shape>::Iterator it4(faces_i); it4.More(); it4.Next()) {
 											auto& fi = it4.Value();
-											for (TopTools_ListIteratorOfListOfShape it2(faces_j); it2.More(); it2.Next()) {
+											for (NCollection_List<TopoDS_Shape>::Iterator it2(faces_j); it2.More(); it2.Next()) {
 												auto& fj = it2.Value();
 												if (faces_overlap(TopoDS::Face(fi), TopoDS::Face(fj))) {
 													overlap = true;
@@ -1426,7 +1426,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 }
 
 bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const TopoDS_Shape& a, const TopoDS_Shape& b, BOPAlgo_Operation op, TopoDS_Shape& result, double fuzziness) {
-	TopTools_ListOfShape bs;
+	NCollection_List<TopoDS_Shape> bs;
 	bs.Append(b);
 	return boolean_operation(settings, a, bs, op, result, fuzziness);
 }
