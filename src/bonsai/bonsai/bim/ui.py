@@ -39,6 +39,7 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
+from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
 from bonsai.bim.module.model.prop import (
     BIMDoorProperties,
@@ -973,6 +974,50 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
+
+        if is_cache_locked_by_other_process():
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="IFC Already Open in Another Blender Instance", icon="ERROR")
+            row.operator("bim.dismiss_multi_instance_warning", text="", icon="CANCEL")
+            draw_multiline_text(
+                box.column(align=True),
+                "This file is open in another Blender instance. Editing the same "
+                "IFC from two instances at once can lose your work or display "
+                "outdated geometry. Close the other Blender instances to continue safely.",
+                context=context,
+            )
+
+        pprops = tool.Project.get_project_props()
+        if pending := pprops.pending_opening_recut:
+            box = self.layout.box()
+            box.alert = True
+            box.label(text="Opening Cuts Skipped", icon="ERROR")
+            draw_multiline_text(
+                box.column(align=True),
+                f"{len(pending)} element(s) had too many openings to cut during load. "
+                f"Apply to recompute their meshes, or dismiss to leave them as they are.",
+                context=context,
+            )
+            row = box.row(align=True)
+            row.operator("bim.select_pending_opening_cuts", text="Select Elements", icon="RESTRICT_SELECT_OFF")
+            row.operator("bim.apply_pending_opening_cuts", text="Apply Openings", icon="PLAY")
+            row.operator("bim.dismiss_pending_opening_cuts", text="", icon="CANCEL")
+
+        if pending := pprops.pending_array_repair:
+            box = self.layout.box()
+            box.alert = True
+            box.label(text="Arrays With Missing Children", icon="ERROR")
+            draw_multiline_text(
+                box.column(align=True),
+                f"{len(pending)} array parent(s) reference child GUIDs that don't exist in this file. "
+                f"The arrays loaded incomplete. Select to inspect, or dismiss.",
+                context=context,
+            )
+            row = box.row(align=True)
+            row.operator("bim.select_pending_array_repair", text="Select Elements", icon="RESTRICT_SELECT_OFF")
+            row.operator("bim.dismiss_pending_array_repair", text="", icon="CANCEL")
 
         gprops = tool.Geometry.get_geometry_props()
         # Check that Blender mode and IFC Mode do match.
