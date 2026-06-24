@@ -146,6 +146,10 @@ namespace ifcopenshell { namespace geometry {
 				return std::make_shared<Model>(CGAL::Epeck::FT(v));
 			}
 
+			virtual std::shared_ptr<const NumberConcept> from_int(int v) const {
+                return std::make_shared<Model>(CGAL::Epeck::FT(v));
+            }
+
 			virtual bool equals(const NumberConcept& other) const {
 				return value == as_same(other).value;
 			}
@@ -182,7 +186,13 @@ namespace ifcopenshell { namespace geometry {
 #ifndef IFOPSH_SIMPLE_KERNEL
 		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
-    public:
+      public:
+#ifdef IFOPSH_SIMPLE_KERNEL
+        std::string type() const override { return "CgalSimpleShape"; }
+#else
+        std::string type() const override { return "CgalShape"; }
+#endif
+
 		CgalShape(const cgal_shape_t& shape, bool convex = false, Logger& logger = Logger::Root());
 		CgalShape(const cgal_point_t& point, bool convex = false);
 		CgalShape(const cgal_wire_t& wire, bool convex = false);
@@ -287,6 +297,8 @@ namespace ifcopenshell { namespace geometry {
 		std::list<CGAL::Plane_3<Kernel_>> planes_;
 
 	public:
+        std::string type() const override { return "CgalShapeHalfSpaceDecomposition"; }
+
 		CgalShapeHalfSpaceDecomposition(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool is_convex) {
 			if (is_convex) {
 				shape_ = std::move(build_halfspace_tree_is_decomposed(shape, planes_));

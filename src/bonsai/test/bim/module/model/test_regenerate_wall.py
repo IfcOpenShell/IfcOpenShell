@@ -83,3 +83,25 @@ def test_regenerate_wall_noops_when_obj_has_no_ifc_entity():
     recreate.assert_not_called()
     has_top.assert_not_called()
     regen.assert_not_called()
+
+
+def test_recreate_wall_noops_when_wall_has_no_layer_set():
+    """``recreate_wall`` must short-circuit when
+    ``regenerate_wall_representation`` returns ``None``. That API only knows
+    how to rebuild ``IfcMaterialLayerSet`` walls; for walls without one it
+    returns ``None``, and feeding ``None`` to ``switch_representation``
+    crashes deep inside ``resolve_representation`` on ``.Items``."""
+    element = Mock()
+    obj = Mock()
+
+    with patch("bonsai.tool.model.tool.Parametric.is_fillet_corner_wall", return_value=False), patch(
+        "bonsai.tool.model.tool.Ifc.get", return_value=Mock()
+    ), patch("bonsai.tool.model.ifcopenshell.api.geometry.regenerate_wall_representation", return_value=None), patch(
+        "bonsai.tool.model.bonsai.core.geometry.switch_representation"
+    ) as switch, patch.object(
+        tool.Geometry, "record_object_materials"
+    ) as record:
+        tool.Model.recreate_wall(element, obj)
+
+    switch.assert_not_called()
+    record.assert_not_called()

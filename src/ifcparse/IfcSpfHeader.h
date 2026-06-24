@@ -60,6 +60,8 @@ class IFC_PARSE_API IfcSpfHeader {
     void read();
     bool tryRead();
 
+    void assign(const IfcSpfHeader& other);
+
     void write(std::ostream& out) const;
 
     const Header_section_schema::file_description* file_description() const;

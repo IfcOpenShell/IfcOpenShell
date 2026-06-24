@@ -183,6 +183,39 @@ class TestAssignType(test.bootstrap.IFC4):
             assert element.PredefinedType == "USERDEFINED"
         assert element.ObjectType == "Test"
 
+    def test_class_mismatched_pair_raises(self):
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError, match=r"IfcWallType cannot type IfcDoor"):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[door], relating_type=wall_type)
+        assert ifcopenshell.util.element.get_type(door) is None
+
+    def test_class_mismatched_pair_does_not_mutate(self):
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        rels_before = self.file.by_type("IfcRelDefinesByType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[door], relating_type=wall_type)
+        rels_after = self.file.by_type("IfcRelDefinesByType")
+        assert rels_after == rels_before
+
+    def test_partial_mismatch_in_selection_rejects_whole_call(self):
+        door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[door, wall], relating_type=wall_type)
+        # The good occurrence must NOT have been typed — partial mutation is the
+        # bug class this guard exists to prevent.
+        assert ifcopenshell.util.element.get_type(wall) is None
+        assert ifcopenshell.util.element.get_type(door) is None
+
+    def test_untypable_occurrence_rejected(self):
+        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        any_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.type.assign_type(self.file, related_objects=[opening], relating_type=any_type)
+
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
     pass

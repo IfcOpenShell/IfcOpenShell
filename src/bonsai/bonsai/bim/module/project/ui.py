@@ -28,9 +28,8 @@ from bpy.types import Menu, Panel, UIList
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import draw_attributes, prop_with_search
-from bonsai.bim.ifc import IfcStore, is_cache_locked_by_other_process
+from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import LinksData, ProjectData
-from bonsai.bim.ui import draw_multiline_text
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import (
@@ -167,20 +166,6 @@ class BIM_PT_project(Panel):
         if pprops.is_loading:
             self.draw_advanced_loading_ui(context)
         elif self.file or props.ifc_file:
-            if is_cache_locked_by_other_process():
-                box = self.layout.box()
-                box.alert = True
-                row = box.row(align=True)
-                row.label(text="IFC Already Open in Another Blender Instance", icon="ERROR")
-                row.operator("bim.dismiss_multi_instance_warning", text="", icon="CANCEL")
-                draw_multiline_text(
-                    box.column(align=True),
-                    "This file is open in another Blender instance. Editing the same "
-                    "IFC from two instances at once can lose your work or display "
-                    "outdated geometry. Close the other Blender instances to continue safely.",
-                    context=context,
-                )
-
             if props.has_blend_warning:
                 box = self.layout.box()
                 box.alert = True
@@ -189,35 +174,6 @@ class BIM_PT_project(Panel):
                 op = row.operator("bim.open_uri", text="", icon="QUESTION")
                 op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
                 row.operator("bim.close_blend_warning", text="", icon="CANCEL")
-
-            if pending := pprops.pending_opening_recut:
-                box = self.layout.box()
-                box.alert = True
-                box.label(text="Opening Cuts Skipped", icon="ERROR")
-                draw_multiline_text(
-                    box.column(align=True),
-                    f"{len(pending)} element(s) had too many openings to cut during load. "
-                    f"Apply to recompute their meshes, or dismiss to leave them as they are.",
-                    context=context,
-                )
-                row = box.row(align=True)
-                row.operator("bim.select_pending_opening_cuts", text="Select Elements", icon="RESTRICT_SELECT_OFF")
-                row.operator("bim.apply_pending_opening_cuts", text="Apply Openings", icon="PLAY")
-                row.operator("bim.dismiss_pending_opening_cuts", text="", icon="CANCEL")
-
-            if pending := pprops.pending_array_repair:
-                box = self.layout.box()
-                box.alert = True
-                box.label(text="Arrays With Missing Children", icon="ERROR")
-                draw_multiline_text(
-                    box.column(align=True),
-                    f"{len(pending)} array parent(s) reference child GUIDs that don't exist in this file. "
-                    f"The arrays loaded incomplete. Select to inspect, or dismiss.",
-                    context=context,
-                )
-                row = box.row(align=True)
-                row.operator("bim.select_pending_array_repair", text="Select Elements", icon="RESTRICT_SELECT_OFF")
-                row.operator("bim.dismiss_pending_array_repair", text="", icon="CANCEL")
 
             if props.ifc_file:
                 self.draw_loaded_project_ui(context)

@@ -95,7 +95,8 @@ namespace IfcGeom {
 			virtual std::shared_ptr<const NumberConcept> divide(const NumberConcept& other) const = 0;
 			virtual std::shared_ptr<const NumberConcept> negate() const = 0;
 			virtual std::shared_ptr<const NumberConcept> from_double(double value) const = 0;
-			virtual bool equals(const NumberConcept& other) const = 0;
+            virtual std::shared_ptr<const NumberConcept> from_int(int value) const = 0;
+            virtual bool equals(const NumberConcept& other) const = 0;
 			virtual bool less_than(const NumberConcept& other) const = 0;
 			virtual const std::type_info& type() const = 0;
 			virtual const void* value_ptr() const = 0;
@@ -164,6 +165,10 @@ namespace IfcGeom {
 			virtual std::shared_ptr<const NumberConcept> from_double(double v) const {
 				return std::make_shared<NumberModel>(T(v));
 			}
+
+			virtual std::shared_ptr<const NumberConcept> from_int(int v) const {
+                return std::make_shared<NumberModel>(T(v));
+            }
 
 			virtual bool equals(const NumberConcept& other) const {
 				return value == as_same(other).value;
@@ -255,9 +260,18 @@ namespace IfcGeom {
 			return OpaqueNumber(data().negate());
 		}
 
+		OpaqueNumber abs() const {
+            auto zero = data().from_int(0);
+            return OpaqueNumber(data().less_than(*zero) ? data().negate() : *this);
+        }
+
 		OpaqueNumber same_type(double value) const {
 			return OpaqueNumber(data().from_double(value));
 		}
+
+		OpaqueNumber same_type(int value) const {
+            return OpaqueNumber(data().from_int(value));
+        }
 
 		bool equals(const OpaqueNumber& other) const {
 			return data().equals(other.data());
@@ -336,7 +350,7 @@ namespace IfcGeom {
 			}
 		}
 
-		std::vector<double> to_doubles() const {
+		std::vector<double> to_double() const {
 			std::vector<double> result;
 			result.reserve(N);
 			for (const auto& value : values_) {
@@ -436,6 +450,8 @@ namespace IfcGeom {
 
 	class IFC_GEOM_API ConversionResultShape {
 	public:
+        virtual std::string type() const = 0;
+
 		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const = 0;
 		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;

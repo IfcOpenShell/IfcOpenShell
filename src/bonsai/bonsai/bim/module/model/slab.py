@@ -620,6 +620,14 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj = context.active_object
+
+        # Commit any in-progress parametric (gizmo) draft on this object
+        # before switching to profile-edit. Otherwise the in-memory draft
+        # state is overwritten when the profile mesh is imported below,
+        # silently discarding the user's pending dimension edits.
+        if feature := tool.Parametric.is_object_editing(obj):
+            tool.Parametric.commit_object_draft(obj, feature.finish_op)
+
         element = tool.Ifc.get_entity(obj)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
