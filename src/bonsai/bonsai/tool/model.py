@@ -3058,6 +3058,9 @@ class Model(bonsai.core.tool.Model):
             regenerate_fillet_corner_wall(element, obj)
             return
         rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
+        if rep is None:
+            # Wall has no IfcMaterialLayerSet — layer-set rebuild not applicable.
+            return
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
