@@ -71,6 +71,15 @@ def get_ifcpatch_recipes(self: "BIMPatchProperties", context: bpy.types.Context)
 
 def update_ifc_patch_recipe(self: "BIMPatchProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.update_ifc_patch_arguments(recipe=self.ifc_patch_recipes)
+    # Blender's script.execute_preset mutates the menu class's bl_label to
+    # the loaded preset's display name (used as a "currently selected"
+    # indicator). The label persists across recipe changes — making the new
+    # recipe's menu falsely show the previous recipe's preset name. Reset
+    # the label to the menu's canonical title so it always matches the
+    # active recipe's preset list.
+    menu_cls = getattr(bpy.types, "BIM_MT_ifc_patch_presets", None)
+    if menu_cls is not None:
+        menu_cls.bl_label = "IFC Patch Presets"
 
 
 class BIMPatchProperties(PropertyGroup):

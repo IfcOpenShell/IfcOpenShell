@@ -1332,19 +1332,26 @@ size_t edge_contract(Graph<Kernel>& G) {
 // For some reason gives better results then Nef_polyhedron_3.convert_to_polyhedron() in some cases
 template <typename Kernel>
 bool convert_to_polyhedron(const CGAL::Nef_polyhedron_3<Kernel>& a, CGAL::Polyhedron_3<Kernel>& b, size_t volume_index=0) {
+	const bool all_volumes = volume_index == std::numeric_limits<size_t>::max();
 	size_t v = 0;
+	Polysoup_builder<Kernel> vis;
 	for (auto it = a.volumes_begin(); it != a.volumes_end(); ++it) {
 		if (!it->mark()) {
 			continue;
 		}
 		for (auto jt = it->shells_begin(); jt != it->shells_end(); ++jt) {
-			if (v++ == volume_index) {
-				Polysoup_builder<Kernel> vis;
+			if (v++ == volume_index || all_volumes) {
 				a.visit_shell_objects(typename CGAL::Nef_polyhedron_3<Kernel>::SFace_const_handle(jt), vis);
-				vis.build(b);
-				return true;
+				if (!all_volumes) {
+					vis.build(b);
+					return true;
+				}
 			}
 		}
+	}
+	if (all_volumes && v > 0) {
+		vis.build(b);
+		return true;
 	}
 	return false;
 }

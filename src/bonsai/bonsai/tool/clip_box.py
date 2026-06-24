@@ -21,7 +21,7 @@
 from __future__ import annotations
 
 import contextlib
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from typing import TYPE_CHECKING, Any, Optional
 
 import bpy
@@ -29,6 +29,8 @@ import bpy
 import bonsai.tool as tool
 
 if TYPE_CHECKING:
+    from mathutils import Matrix
+
     from bonsai.bim.module.clip_box.prop import (
         BIMClipBoxProperties,
         BIMSceneClipBoxProperties,
@@ -37,6 +39,21 @@ if TYPE_CHECKING:
 
 PlaneTuple = tuple[float, float, float, float]
 PlaneSet = tuple[PlaneTuple, PlaneTuple, PlaneTuple, PlaneTuple, PlaneTuple, PlaneTuple]
+
+# Stable contract of Pset_*Common.Status values plus the "absent" entry.
+# Duplicated locally rather than imported so this module has no load-order
+# dependency on the sequence layer that hosts the matching query helper.
+SOURCE_STATUS_VALUES: tuple[str, ...] = (
+    "No Status",
+    "NEW",
+    "EXISTING",
+    "DEMOLISH",
+    "TEMPORARY",
+    "OTHER",
+    "NOTKNOWN",
+    "UNSET",
+)
+
 
 # Outward margins so the empty's CUBE display edges sit safely INSIDE
 # the clip volume. A fixed absolute margin fails under rotation: the
@@ -187,11 +204,37 @@ class ClipBox:
         keeps the bbox aligned with the view the user is actually at.
         """
         for area, region, region_3d in tool.Blender.iter_view3d_regions():
+            # Skip collapsed / initializing regions wholesale: arming one
+            # CTDs Blender (see _region_is_renderable), and recording an
+            # arm signature for a region we didn't actually arm would make
+            # the next view-change comparison spurious.
+            if not cls._region_is_renderable(region, region_3d):
+                continue
             key = region.as_pointer()
             cls._owned.add(key)
             cls._region_by_key[key] = (area, region)
             cls._arm_region(area, region, region_3d, planes)
             cls._view_matrix_at_arm[key] = tuple(tuple(row) for row in region_3d.view_matrix)
+
+    @classmethod
+    def _region_is_renderable(cls, region: Any, region_3d: Any) -> bool:
+        """True iff ``region`` is safe to arm clip planes against.
+
+        A collapsed / still-initializing region (``width`` or ``height``
+        == 0, or no readable ``view_matrix``) has no live view-matrix
+        state. Calling ``region_3d.update()`` against it drives
+        ``ED_view3d_update_viewmat -> GPU_matrix_ortho_set`` into a null
+        deref and HARD-CRASHES Blender (CTD, not a catchable exception) —
+        observed when a 3D viewport is split/collapsed while the clip box
+        re-arms from a timer. Skipping such regions is the load-bearing
+        guard; they get armed on the next refresh once they have a size.
+        """
+        try:
+            if int(getattr(region, "width", 0)) <= 0 or int(getattr(region, "height", 0)) <= 0:
+                return False
+            return getattr(region_3d, "view_matrix", None) is not None
+        except (ReferenceError, AttributeError, TypeError):
+            return False
 
     @classmethod
     def _arm_region(cls, area: Any, region: Any, region_3d: Any, planes: PlaneSet) -> None:
@@ -201,12 +244,25 @@ class ClipBox:
         without leaving the C-side ``clipbb`` degenerate (which would break
         edit-mode click-select). Caller must guarantee a context in which
         operators are legal (not a draw handler / depsgraph callback).
+
+        The ``_region_is_renderable`` guard is the real crash fix — arming a
+        collapsed / initializing region drives ``region_3d.update()`` into a
+        native null deref inside ``GPU_matrix_ortho_set`` that NO Python
+        ``try``/``except`` can catch (it's a CTD, not an exception). The
+        ``suppress`` around ``update()`` is unrelated to that: it only
+        swallows the *catchable* ``RuntimeError`` ("context is incorrect")
+        / ``ReferenceError`` (region freed mid-call) that the override path
+        can still surface — it does NOT and CANNOT make ``update()``
+        crash-safe.
         """
+        if not cls._region_is_renderable(region, region_3d):
+            return
         with bpy.context.temp_override(area=area, region=region):
             bpy.ops.view3d.clip_border(xmin=0, ymin=0, xmax=region.width, ymax=region.height)
             region_3d.clip_planes = planes
             region_3d.use_clip_planes = True
-            region_3d.update()
+            with contextlib.suppress(RuntimeError, ReferenceError):
+                region_3d.update()
 
     @classmethod
     def clear_clip_planes(cls) -> None:
@@ -466,10 +522,15 @@ class ClipBox:
         for area, region, region_3d in tool.Blender.iter_view3d_regions():
             if not region_3d.use_clip_planes:
                 continue
+            # A collapsed / initializing region CTDs inside update() — same
+            # null deref as the operator arm path (see _region_is_renderable).
+            if not cls._region_is_renderable(region, region_3d):
+                continue
             key = region.as_pointer()
             cls._region_by_key[key] = (area, region)
             region_3d.clip_planes = planes
-            region_3d.update()
+            with contextlib.suppress(RuntimeError, ReferenceError):
+                region_3d.update()
             region.tag_redraw()
 
     @classmethod
@@ -615,7 +676,12 @@ class ClipBox:
         except (AttributeError, RuntimeError, ReferenceError):
             return
         region_3d.clip_planes = cls.compute_planes_from_matrix(matrix)
-        region_3d.update()
+        # PRE_VIEW runs for the region being drawn this frame (always sized
+        # and renderable), so the collapsed-region CTD can't occur here.
+        # The suppress only mops up a catchable RuntimeError / ReferenceError
+        # from a region freed mid-draw — same as the arm paths.
+        with contextlib.suppress(RuntimeError, ReferenceError):
+            region_3d.update()
         # clip_bb captured by view3d.clip_border is view-aligned, so an
         # orbit/pan/zoom leaves the picker testing against the old
         # frustum even after clip_planes refresh. Re-arm so the picker
@@ -627,6 +693,219 @@ class ClipBox:
             current_view = tuple(tuple(row) for row in region_3d.view_matrix)
             if prev_view is not None and prev_view != current_view:
                 cls.schedule_refresh()
+
+    @classmethod
+    def create_clip_box_empty(
+        cls,
+        context: bpy.types.Context,
+        matrix: Any,
+        name: str = "ClipBox",
+    ) -> bpy.types.Object:
+        """Create + register a clip-box empty whose ``matrix_world`` is ``matrix``.
+
+        Single entry point for any operator that needs to materialise a
+        clip box: handles the host collection, the per-object
+        ``is_clip_box`` flag, the scene-list entry, auto-enable, viewport
+        re-arm, and project-pset persistence. Returns the new empty.
+        """
+        scene_props = cls.get_scene_props(context.scene)
+
+        obj = bpy.data.objects.new(name, None)
+        obj.empty_display_type = "CUBE"
+        obj.empty_display_size = 1.0
+        obj.show_in_front = True
+        obj.matrix_world = matrix
+
+        collection = tool.Blender.get_or_create_collection(context.scene, cls.COLLECTION_NAME)
+        collection.objects.link(obj)
+
+        cls.get_object_props(obj).is_clip_box = True
+
+        entry = scene_props.clip_boxes.add()
+        entry.obj = obj
+        scene_props.active_clip_box_index = len(scene_props.clip_boxes) - 1
+        # Auto-enable so the user sees the cut immediately rather than
+        # having to find the panel toggle after the add.
+        scene_props.enabled = True
+
+        tool.Blender.set_active_object(obj)
+        cls.refresh(context.scene)
+        # Project-level pset rather than a per-entity placement so IfcRoot's
+        # scale-strip-on-export can't lose the box's dimensions.
+        cls.save_to_project_pset(context.scene)
+        return obj
+
+    # ------------------------------------------------------------------
+    # Source-based presets
+    #
+    # Build the host empty's ``matrix_world`` from a chosen IFC source
+    # (a spatial container, a type, a material, a drawing, …) so the
+    # user gets a clip box pre-sized to the AABB of the matched
+    # elements instead of having to drag a default cube into position.
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def iter_elements_for_source(cls, kind: str, source_id: str) -> list[Any]:
+        """Resolve the IFC products matching ``(kind, source_id)``.
+
+        ``kind`` selects the IFC-graph walk; ``source_id`` is the picker
+        value: an IFC entity id (stringified) for the entity-driven
+        kinds, or one of :data:`SOURCE_STATUS_VALUES` for ``"STATUS"``.
+
+        Empty list when the IFC file is absent, ``source_id`` does not
+        resolve, or the walk has no matches. ``"DRAWING"`` returns the
+        single drawing entity so callers can introspect it; the actual
+        clip volume for that kind is built from the camera frustum, not
+        an AABB of decomposed elements.
+        """
+        import ifcopenshell.util.element
+
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return []
+
+        if kind == "STATUS":
+            if source_id not in SOURCE_STATUS_VALUES:
+                return []
+            return list(tool.Sequence.get_elements_by_status(source_id))
+
+        if kind == "CLASS":
+            # source_id is an IFC class name (e.g. "IfcWall"). by_type with
+            # include_subtypes=True (default) so "IfcWall" matches
+            # IfcWallStandardCase etc., matching "all walls" in user terms.
+            try:
+                return list(ifc_file.by_type(source_id))
+            except RuntimeError:
+                return []
+
+        try:
+            entity_id = int(source_id)
+        except (TypeError, ValueError):
+            return []
+        try:
+            entity = ifc_file.by_id(entity_id)
+        except RuntimeError:
+            return []
+        if entity is None:
+            return []
+
+        if kind == "SPATIAL":
+            return list(ifcopenshell.util.element.get_decomposition(entity, is_recursive=True))
+        if kind == "TYPE":
+            return list(ifcopenshell.util.element.get_types(entity))
+        if kind == "MATERIAL":
+            return list(ifcopenshell.util.element.get_elements_by_material(ifc_file, entity))
+        if kind == "PROFILE":
+            return list(ifcopenshell.util.element.get_elements_by_profile(entity))
+        if kind in ("SYSTEM", "GROUP", "ZONE"):
+            return list(ifcopenshell.util.element.get_grouped_by(entity, is_recursive=True))
+        if kind == "DRAWING":
+            return [entity]
+        return []
+
+    @classmethod
+    def compute_matrix_for_source(cls, kind: str, source_id: str) -> Optional[Any]:
+        """Build the empty's ``matrix_world`` for ``(kind, source_id)``.
+
+        Returns ``None`` when nothing matches — the operator turns that
+        into an ERROR report + ``CANCELLED``.
+
+        ``"DRAWING"`` returns a rotated matrix aligned to the camera and
+        sized to ``clip_start..clip_end`` × the drawing's in-plane
+        extents. All other kinds return an axis-aligned matrix sized to
+        the world AABB of the matched elements' Blender objects.
+        """
+        if kind == "DRAWING":
+            ifc_file = tool.Ifc.get()
+            if ifc_file is None:
+                return None
+            try:
+                entity = ifc_file.by_id(int(source_id))
+            except (TypeError, ValueError, RuntimeError):
+                return None
+            camera_obj = tool.Ifc.get_object(entity)
+            if camera_obj is None or camera_obj.type != "CAMERA":
+                return None
+            return cls._camera_frustum_matrix(camera_obj)
+
+        elements = cls.iter_elements_for_source(kind, source_id)
+        return cls._world_bbox_matrix_for_elements(elements)
+
+    @classmethod
+    def _world_bbox_matrix_for_elements(cls, elements: Iterable[Any]) -> Optional[Any]:
+        """World-AABB matrix of the Blender objects backing ``elements``.
+
+        ``matrix_world = Translation(center) @ Diagonal(half_extents)``
+        so the CUBE empty's local ``[-1, +1]^3`` lands on the AABB
+        corners. Filters out elements without a Blender object and
+        elements whose object has a zero-volume bound box (typical for
+        empties used as containers). Returns ``None`` when nothing
+        survives the filter so the caller can ERROR instead of creating
+        a degenerate clip box.
+
+        Half-extents are floored at :data:`_CLIP_EXPAND_ABS` so a single
+        point or flat slab still produces an invertible matrix.
+        """
+        from mathutils import Matrix
+
+        min_x = min_y = min_z = float("inf")
+        max_x = max_y = max_z = float("-inf")
+        found = False
+        for element in elements:
+            obj = tool.Ifc.get_object(element)
+            if obj is None:
+                continue
+            bbox = tool.Blender.get_object_world_bounding_box(obj)
+            if bbox["dimensions"] == (0.0, 0.0, 0.0):
+                continue
+            min_x = min(min_x, bbox["min_x"])
+            min_y = min(min_y, bbox["min_y"])
+            min_z = min(min_z, bbox["min_z"])
+            max_x = max(max_x, bbox["max_x"])
+            max_y = max(max_y, bbox["max_y"])
+            max_z = max(max_z, bbox["max_z"])
+            found = True
+        if not found:
+            return None
+        cx, cy, cz = (min_x + max_x) / 2, (min_y + max_y) / 2, (min_z + max_z) / 2
+        hx = max((max_x - min_x) / 2, _CLIP_EXPAND_ABS)
+        hy = max((max_y - min_y) / 2, _CLIP_EXPAND_ABS)
+        hz = max((max_z - min_z) / 2, _CLIP_EXPAND_ABS)
+        return Matrix.Translation((cx, cy, cz)) @ Matrix.Diagonal((hx, hy, hz, 1.0))
+
+    @classmethod
+    def _camera_frustum_matrix(cls, camera_obj: bpy.types.Object) -> Optional[Any]:
+        """Rotated matrix matching the camera frustum ``clip_start..clip_end``.
+
+        Bonsai's drawing module parameterises a drawing camera's frustum
+        via ``BIMCameraProperties.width`` and ``.height`` (the printed
+        extents in world units). The CUBE empty inherits the camera's
+        rotation; depth spans ``[clip_start, clip_end]`` along the
+        camera's local −Z (Blender cameras look down −Z).
+
+        Returns ``None`` when the camera has no usable drawing extents —
+        the operator surfaces that as an ERROR + ``CANCELLED``.
+        """
+        from mathutils import Matrix
+
+        cam_data = camera_obj.data
+        cam_props = getattr(cam_data, "BIMCameraProperties", None)
+        if cam_props is None:
+            return None
+        width = float(getattr(cam_props, "width", 0.0) or 0.0)
+        height = float(getattr(cam_props, "height", 0.0) or 0.0)
+        if width <= 0.0 or height <= 0.0:
+            return None
+
+        clip_start = float(getattr(cam_data, "clip_start", 0.0))
+        clip_end = float(getattr(cam_data, "clip_end", 1.0))
+
+        x_half = max(width / 2.0, _CLIP_EXPAND_ABS)
+        y_half = max(height / 2.0, _CLIP_EXPAND_ABS)
+        z_half = max((clip_end - clip_start) / 2.0, _CLIP_EXPAND_ABS)
+        z_center = -(clip_start + clip_end) / 2.0
+        offset = Matrix.Translation((0.0, 0.0, z_center)) @ Matrix.Diagonal((x_half, y_half, z_half, 1.0))
+        return camera_obj.matrix_world @ offset
 
     # ------------------------------------------------------------------
     # Cross-section caps
@@ -645,6 +924,8 @@ class ClipBox:
         obj: bpy.types.Object,
         world_planes: PlaneSet,
         depsgraph: Optional[Any] = None,
+        *,
+        world_matrix: Optional[Matrix] = None,
     ) -> list[tuple[float, float, float]]:
         """Return triangle vertices for ``obj``'s cap polygons.
 
@@ -657,14 +938,25 @@ class ClipBox:
         objects with subsurf / boolean / mirror modifiers. Falls back to
         ``obj.data`` only for callers without a depsgraph (e.g. unit
         tests that fabricate a mesh outside any eval context).
+
+        ``world_matrix`` overrides ``obj.matrix_world`` for the local↔world
+        transform. Used by the linked-IFC path where the effective world
+        placement of a library-linked mesh is the instance empty's
+        ``matrix_world`` composed with the inner mesh's own matrix, not
+        the linked object's own ``matrix_world`` (which is library-local).
+        When supplied, the depsgraph path is skipped — library-linked
+        objects aren't part of the active scene's depsgraph and their
+        Bonsai-baked meshes don't carry modifier stacks anyway.
         """
         import bmesh
         from mathutils import Vector
 
+        mw = world_matrix if world_matrix is not None else obj.matrix_world
+
         bm = bmesh.new()
         eval_obj = None
         try:
-            if depsgraph is not None:
+            if depsgraph is not None and world_matrix is None:
                 try:
                     eval_obj = obj.evaluated_get(depsgraph)
                     mesh = eval_obj.to_mesh()
@@ -677,7 +969,7 @@ class ClipBox:
                 except (RuntimeError, ReferenceError):
                     return []
 
-            ws_to_ls = obj.matrix_world.inverted_safe()
+            ws_to_ls = mw.inverted_safe()
             rot = ws_to_ls.to_quaternion()
             planes_local = []
             for plane in world_planes:
@@ -699,7 +991,6 @@ class ClipBox:
             if not cap_faces:
                 return []
 
-            mw = obj.matrix_world
             return cls._triangulate_cap_faces(cap_faces, mw)
         finally:
             bm.free()
@@ -709,26 +1000,95 @@ class ClipBox:
 
     @classmethod
     def _iter_capable_objects(cls, scene: bpy.types.Scene) -> Iterator[bpy.types.Object]:
-        """Yield mesh objects eligible for capping: visible ``IfcElement``s.
+        """Yield mesh objects eligible for capping.
 
-        Limits to ``IfcElement`` (walls, slabs, doors, windows, …) so
-        spatial structure (``IfcSpace``, ``IfcBuildingStorey``,
-        ``IfcSite``) and annotations / grids never get capped — they're
-        non-physical containers / overlays that shouldn't sprout solid
-        fill polygons at clip boundaries.
+        When ``clip_only_ifc_products`` is set (default), limits to
+        ``IfcElement`` (walls, slabs, doors, windows, …) so spatial
+        structure (``IfcSpace``, ``IfcBuildingStorey``, ``IfcSite``) and
+        annotations / grids never get capped — they're non-physical
+        containers / overlays that shouldn't sprout solid fill polygons
+        at clip boundaries.
+
+        When unset, any visible mesh in the scene is eligible regardless
+        of IFC association — useful for clipping Blender-side reference
+        geometry alongside a loaded IFC.
         """
-        ifc_file = tool.Ifc.get()
-        if ifc_file is None:
+        scene_props = cls.get_scene_props(scene)
+        only_ifc = scene_props.clip_only_ifc_products
+        if only_ifc and tool.Ifc.get() is None:
             return
         for obj in scene.objects:
             if obj.type != "MESH" or obj.data is None:
                 continue
             if not obj.visible_get():
                 continue
-            entity = tool.Ifc.get_entity(obj)
-            if entity is None or not entity.is_a("IfcElement"):
-                continue
+            if only_ifc:
+                entity = tool.Ifc.get_entity(obj)
+                if entity is None or not entity.is_a("IfcElement"):
+                    continue
             yield obj
+
+    @classmethod
+    def _iter_linked_ifc_capable_meshes(
+        cls, scene: bpy.types.Scene
+    ) -> Iterator[tuple[bpy.types.Object, bpy.types.Object, Matrix]]:
+        """Yield ``(instance_empty, inner_mesh, effective_world_matrix)``
+        for meshes inside loaded Project ▸ Links collection-instance empties.
+
+        Gated by ``BIMSceneClipBoxProperties.include_linked_ifc``: returns
+        nothing when the toggle is off so the main cap path stays untouched.
+
+        The effective world matrix is ``instance.matrix_world @
+        inner.matrix_world`` — the inner object's own ``matrix_world`` is
+        library-local (positioned relative to the linked collection's
+        origin), so the instance empty's placement has to be prepended to
+        land the cap at the right place in the active scene.
+        """
+        scene_props = cls.get_scene_props(scene)
+        if not scene_props.include_linked_ifc:
+            return
+        project_props = tool.Project.get_project_props()
+        for link in project_props.get_loaded_links():
+            instance = tool.Project.get_link_empty_handle(link)
+            if instance is None or instance.instance_collection is None:
+                continue
+            if not instance.visible_get():
+                continue
+            instance_mw = instance.matrix_world
+            for inner in instance.instance_collection.all_objects:
+                if inner.type != "MESH" or inner.data is None:
+                    continue
+                yield instance, inner, instance_mw @ inner.matrix_world
+
+    @classmethod
+    def invalidate_cap_cache(cls, *, immediate: bool = False) -> None:
+        """Drop the cap cache and schedule a fresh rebuild.
+
+        Public entry point for property-update callbacks (or any external
+        change to eligibility / clip-box selection) so callers don't reach
+        into the private cache state directly. Pass ``immediate=True`` for
+        UI-driven changes that should rebuild on the next idle tick
+        without waiting for the depsgraph-debounce window.
+        """
+        cls._cap_cache.clear()
+        cls._last_cap_clip_box_hash = 0
+        cls._schedule_cap_rebuild(interval=0.0 if immediate else None)
+
+    @classmethod
+    def rebuild_caps_now(cls, scene: Optional[bpy.types.Scene] = None) -> None:
+        """Drop the cap cache and rebuild SYNCHRONOUSLY, then redraw.
+
+        Public entry point for interactive end-of-drag handlers (e.g. the
+        face-resize gizmo group) where the user expects the caps to
+        re-form the instant they release the handle — without the
+        debounce window the depsgraph path inserts.
+        """
+        cls._cancel_pending_cap_rebuild()
+        cls._cap_cache.clear()
+        cls._last_cap_clip_box_hash = 0
+        cls.rebuild_cap_cache(scene)
+        for _area, region, _region_3d in tool.Blender.iter_view3d_regions():
+            region.tag_redraw()
 
     @classmethod
     def rebuild_cap_cache(
@@ -800,6 +1160,29 @@ class ClipBox:
             verts = cls._compute_caps_for_object(obj, world_planes, depsgraph=depsgraph)
             batch = cls._build_cap_batch(verts) if verts else None
             cls._cap_cache[obj.name] = (cache_key, batch)
+
+        # Linked-IFC inner meshes (gated by include_linked_ifc). The
+        # ``link:`` prefix on the cache name namespaces them so they
+        # cannot collide with a scene-object named identically.
+        for instance, inner, world_matrix in cls._iter_linked_ifc_capable_meshes(scene):
+            cache_name = f"link:{instance.name}:{inner.name}"
+            live_names.add(cache_name)
+            mesh = inner.data
+            cache_key = (
+                getattr(mesh, "session_uid", id(mesh)),
+                tool.Blender.hash_matrix(world_matrix),
+                clip_box_hash,
+            )
+            cached = cls._cap_cache.get(cache_name)
+            if cached is not None and cached[0] == cache_key:
+                continue
+            world_corners = [world_matrix @ Vector(c) for c in inner.bound_box]
+            if not tool.Cad.corners_might_cross_clip_planes(world_planes, world_corners):
+                cls._cap_cache[cache_name] = (cache_key, None)
+                continue
+            verts = cls._compute_caps_for_object(inner, world_planes, depsgraph=depsgraph, world_matrix=world_matrix)
+            batch = cls._build_cap_batch(verts) if verts else None
+            cls._cap_cache[cache_name] = (cache_key, batch)
 
         for name in list(cls._cap_cache):
             if name not in live_names:
@@ -929,14 +1312,17 @@ class ClipBox:
         return relevant
 
     @classmethod
-    def _schedule_cap_rebuild(cls) -> None:
+    def _schedule_cap_rebuild(cls, *, interval: Optional[float] = None) -> None:
         """(Re)schedule the deferred cap rebuild.
 
         Each call cancels any pending timer and registers a fresh one
         so a burst of updates collapses to a single rebuild once the
-        debounce window of quiet elapses.
+        debounce window of quiet elapses. Pass ``interval=0.0`` for
+        next-tick rebuild without debounce (UI-driven changes that
+        only fire on explicit user action, not depsgraph bursts).
         """
         cls._cancel_pending_cap_rebuild()
+        delay = interval if interval is not None else cls._CAP_REBUILD_DEBOUNCE_SECONDS
 
         def _do_rebuild() -> None:
             cls._pending_cap_rebuild = None
@@ -958,7 +1344,7 @@ class ClipBox:
                 region.tag_redraw()
             return None
 
-        bpy.app.timers.register(_do_rebuild, first_interval=cls._CAP_REBUILD_DEBOUNCE_SECONDS)
+        bpy.app.timers.register(_do_rebuild, first_interval=delay)
         cls._pending_cap_rebuild = _do_rebuild
 
     @classmethod

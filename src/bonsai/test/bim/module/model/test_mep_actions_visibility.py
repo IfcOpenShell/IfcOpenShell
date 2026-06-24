@@ -160,46 +160,167 @@ def test_lock_closed_icons_pass_position_to_remove_terminal_fitting():
         )
 
 
-def test_unjoin_port_icons_pass_position_to_unjoin_at_port():
-    """Per-port unjoin icons bind to ``bim.mep_unjoin_at_port`` with
-    ``position`` pinned. Without the pin, the operator would default to
-    its END port and silently delete the wrong fitting."""
+def test_unjoin_icons_bind_unified_disconnect_operator():
+    """Every unjoin icon (pair, start, end) routes to the unified
+    ``bim.disconnect_elements`` operator and the group holds an
+    ``op_props`` slot for each so the per-frame GUID writes have a
+    target."""
     from bonsai.bim.module.model.mep import GizmoMEPActions
 
     inst = _build_group_with_mock_gizmos()
-    with patch("bonsai.bim.module.model.mep.gizmo.get_warning_color_from_prefs", return_value=(1, 0, 0)), patch(
-        "bonsai.bim.module.model.mep.tool.Blender.get_addon_preferences", return_value=MagicMock()
-    ):
-        GizmoMEPActions._wire_anchored_icon_targets(inst)
+    GizmoMEPActions._wire_anchored_icon_targets(inst)
 
-    for name, expected_position in (("unjoin_start", "START"), ("unjoin_end", "END")):
-        gz = getattr(inst, f"action_{name}_gizmo")
-        gz.target_set_operator.assert_any_call("bim.mep_unjoin_at_port")
-        op_props = gz.target_set_operator.return_value
-        assert op_props.position == expected_position or op_props.position in ("START", "END")
-
-
-def test_unjoin_icons_get_warning_color_highlight():
-    """Destructive icons surface in the addon's warning red on hover so
-    they read as a deliberate target. ``color_highlight`` is overridden
-    after ``super().setup()`` wires the default highlight."""
-    from bonsai.bim.module.model.mep import GizmoMEPActions
-
-    inst = _build_group_with_mock_gizmos()
-    warning_color = (1.0, 0.1, 0.1)
-    with patch("bonsai.bim.module.model.mep.gizmo.get_warning_color_from_prefs", return_value=warning_color), patch(
-        "bonsai.bim.module.model.mep.tool.Blender.get_addon_preferences", return_value=MagicMock()
-    ):
-        GizmoMEPActions._wire_anchored_icon_targets(inst)
-
+    assert isinstance(inst.unjoin_op_props, dict)
     for name in GizmoMEPActions.UNJOIN_CONFIGS:
         gz = getattr(inst, f"action_{name}_gizmo")
-        assert gz.color_highlight == warning_color, f"{name} hover colour not overridden with warning red"
+        gz.target_set_operator.assert_any_call("bim.disconnect_elements")
+        assert name in inst.unjoin_op_props, f"missing op_props slot for {name!r}"
+
+
+def test_bind_unjoin_pair_writes_both_guids():
+    """``_bind_unjoin_pair`` is the per-frame hand-off from gizmo
+    position-gizmos to the unified disconnect operator: both segment
+    GlobalIds get written onto the pre-wired op_props so a click
+    dispatches with the right pair."""
+    from bonsai.bim.module.model.mep import GizmoMEPActions
+
+    inst = _build_group_with_mock_gizmos()
+    GizmoMEPActions._wire_anchored_icon_targets(inst)
+    pair_op_props = inst.unjoin_op_props["unjoin_pair"]
+
+    seg_a = Mock(GlobalId="GUID-A")
+    seg_b = Mock(GlobalId="GUID-B")
+
+    assert GizmoMEPActions._bind_unjoin_pair(inst, [seg_a, seg_b]) is True
+    assert pair_op_props.element_a_guid == "GUID-A"
+    assert pair_op_props.element_b_guid == "GUID-B"
+
+
+def test_bind_unjoin_pair_rejects_incomplete_pair():
+    """Defensive: a selection mid-change can hand the gizmo a one-element
+    or None-containing pair. The bind must refuse rather than write a
+    half-resolved op_props that would later CANCEL with a confusing
+    error message."""
+    from bonsai.bim.module.model.mep import GizmoMEPActions
+
+    inst = _build_group_with_mock_gizmos()
+    GizmoMEPActions._wire_anchored_icon_targets(inst)
+
+    assert GizmoMEPActions._bind_unjoin_pair(inst, [Mock(GlobalId="A")]) is False
+    assert GizmoMEPActions._bind_unjoin_pair(inst, [Mock(GlobalId="A"), None]) is False
+
+
+def test_bind_unjoin_at_port_resolves_fitting_and_writes_guids():
+    """The per-port unjoin gizmo resolves the partner fitting at the
+    named port and writes (segment_guid, fitting_guid) onto the
+    pre-wired op_props so the unified disconnect operator gets both
+    endpoints."""
+    from bonsai.bim.module.model.mep import GizmoMEPActions
+
+    inst = _build_group_with_mock_gizmos()
+    GizmoMEPActions._wire_anchored_icon_targets(inst)
+    port_op_props = inst.unjoin_op_props["unjoin_end"]
+
+    segment_obj = Mock()
+    segment = Mock(GlobalId="SEG-GUID")
+    fitting = Mock(GlobalId="FIT-GUID")
+    fitting.is_a = lambda c: c == "IfcFlowFitting"
+    fitting.PredefinedType = "BEND"
+
+    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment), patch(
+        "bonsai.bim.module.model.mep.get_connected_element_at_segment_port", return_value=fitting
+    ):
+        ok = GizmoMEPActions._bind_unjoin_at_port(inst, "unjoin_end", segment_obj, False)
+
+    assert ok is True
+    assert port_op_props.element_a_guid == "SEG-GUID"
+    assert port_op_props.element_b_guid == "FIT-GUID"
+
+
+def test_bind_unjoin_at_port_refuses_obstruction_partner():
+    """OBSTRUCTION fittings have a dedicated grow/shrink removal flow —
+    routing them through the unified disconnect would just delete the
+    fitting and leave a visible gap. Mirror the find_rels exclusion
+    here so the icon hides when the partner is an obstruction."""
+    from bonsai.bim.module.model.mep import GizmoMEPActions
+
+    inst = _build_group_with_mock_gizmos()
+    GizmoMEPActions._wire_anchored_icon_targets(inst)
+
+    segment = Mock(GlobalId="SEG-GUID")
+    obstruction = Mock(GlobalId="OBS-GUID")
+    obstruction.is_a = lambda c: c == "IfcFlowFitting"
+    obstruction.PredefinedType = "OBSTRUCTION"
+
+    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=segment), patch(
+        "bonsai.bim.module.model.mep.get_connected_element_at_segment_port", return_value=obstruction
+    ):
+        assert GizmoMEPActions._bind_unjoin_at_port(inst, "unjoin_end", Mock(), False) is False
 
 
 # ---------------------------------------------------------------------------
 # Visibility predicates — total over degenerate inputs
 # ---------------------------------------------------------------------------
+
+
+def test_active_is_bend_fitting_accepts_tessellated_bend_with_bbim_pset():
+    """A bend whose body has been tessellated as the upstream geometry-kernel
+    workaround still has its parametric definition on the type's
+    ``BBIM_Fitting`` pset — the re-edit operator reads from there, so the
+    pen icon must surface on it. ``has_parametric_body`` would return False
+    for the tessellated body; the pset gate is what makes the icon
+    reachable."""
+    from bonsai.bim.module.model.mep import _active_is_bend_fitting
+
+    bend_obj = Mock()
+    bend_elem = Mock()
+    bend_elem.is_a = lambda c: c == "IfcFlowFitting"
+    bend_type = Mock()
+    bend_type.PredefinedType = "BEND"
+
+    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem), patch(
+        "bonsai.bim.module.model.mep._is_bend_fitting", return_value=True
+    ), patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_type", return_value=bend_type), patch(
+        "bonsai.bim.module.model.mep.ifcopenshell.util.element.get_pset",
+        return_value={"radius": 0.2, "start_length": 0.1, "end_length": 0.1},
+    ):
+        assert _active_is_bend_fitting(bend_obj) is True
+
+
+def test_active_is_bend_fitting_rejects_bend_type_without_bbim_pset():
+    """A fitting that looks like a bend (IfcFlowFitting + type.PredefinedType
+    == BEND) but lacks a ``BBIM_Fitting`` pset on the type can't be re-edited
+    — the re-edit operator reads parameters from the pset. Reject so the pen
+    icon hides rather than dispatching an operator that would CANCEL."""
+    from bonsai.bim.module.model.mep import _active_is_bend_fitting
+
+    bend_obj = Mock()
+    bend_elem = Mock()
+    bend_elem.is_a = lambda c: c == "IfcFlowFitting"
+    bend_type = Mock()
+    bend_type.PredefinedType = "BEND"
+
+    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem), patch(
+        "bonsai.bim.module.model.mep._is_bend_fitting", return_value=True
+    ), patch("bonsai.bim.module.model.mep.ifcopenshell.util.element.get_type", return_value=bend_type), patch(
+        "bonsai.bim.module.model.mep.ifcopenshell.util.element.get_pset", return_value=None
+    ):
+        assert _active_is_bend_fitting(bend_obj) is False
+
+
+def test_active_is_bend_fitting_rejects_non_bend():
+    """Non-bend objects (segments, fittings with PredefinedType != BEND)
+    fail the first gate regardless of pset state."""
+    from bonsai.bim.module.model.mep import _active_is_bend_fitting
+
+    bend_obj = Mock()
+    bend_elem = Mock()
+    bend_elem.is_a = lambda c: c == "IfcFlowFitting"
+
+    with patch("bonsai.bim.module.model.mep.tool.Ifc.get_entity", return_value=bend_elem), patch(
+        "bonsai.bim.module.model.mep._is_bend_fitting", return_value=False
+    ):
+        assert _active_is_bend_fitting(bend_obj) is False
 
 
 def test_active_is_flow_segment_handles_unbound_object():

@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, cast
 import bpy
 import ifcopenshell
 import ifcpatch
+from bl_operators.presets import AddPresetBase
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 import bonsai.bim.handler
@@ -76,6 +77,27 @@ class ExecuteIfcPatch(bpy.types.Operator):
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
+
+    def invoke(self, context, event):
+        # Migrating IFC4 → IFC2X3 is lossy (enum drops, IFC4-only classes
+        # become IfcBuildingElementProxy, tessellated meshes get rebuilt as
+        # IfcFacetedBrep). Confirm before running so the user knows.
+        if tool.Patch.migration_is_lossy_downgrade():
+            return context.window_manager.invoke_props_dialog(self, width=480)
+        return self.execute(context)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Downgrading to IFC2X3 is lossy.", icon="ERROR")
+        column = layout.column(align=True)
+        column.label(text="Geometry will be preserved as faithfully as possible:")
+        column.label(text="• IfcIndexedPolyCurve → IfcPolyline (arcs approximated by chords)")
+        column.label(text="• IfcPolygonalFaceSet / IfcTriangulatedFaceSet → IfcFacetedBrep")
+        column.separator()
+        column.label(text="The following information is lost:")
+        column.label(text="• IFC4-only classes (IfcLamp, IfcPipeSegment, …) → IfcBuildingElementProxy")
+        column.label(text="• PredefinedType enum values absent from IFC2X3 are dropped")
+        column.label(text="  (original class + enum saved as ObjectType, e.g. 'IfcLamp/COMPACTFLUORESCENT')")
 
     def execute(self, context):
         props = tool.Patch.get_patch_props()
@@ -224,3 +246,38 @@ class ExtractSelectedElements(bpy.types.Operator):
         query = tool.Search.get_query_for_selected_elements()
         props.ifc_patch_args_attr[0].string_value = query
         return {"FINISHED"}
+
+
+class AddIfcPatchPreset(AddPresetBase, bpy.types.Operator):
+    """Save / remove ifc-patch argument presets, scoped per recipe.
+
+    Presets live in the standard Blender preset directory under
+    ``bonsai/ifc_patch/<recipe>/`` so a preset created for ``ExtractElements``
+    does not pollute the preset list for ``Migrate``. Persistence across files
+    and sessions is inherited from Blender's preset system."""
+
+    bl_idname = "bim.add_ifc_patch_preset"
+    bl_label = "Add IFC Patch Preset"
+    preset_menu = "BIM_MT_ifc_patch_presets"
+    preset_defines = ["props = bpy.context.scene.BIMPatchProperties"]
+
+    @property
+    def preset_subdir(self) -> str:
+        return tool.Patch.get_preset_subdir()
+
+    @property
+    def preset_values(self) -> list[str]:
+        # `Attribute.get_value_name()` returns the storage field for the
+        # argument's data_type (string_value, bool_value, …). For file
+        # arguments it returns the wrapping PointerProperty (`filepath_value`)
+        # — the scalar path the preset needs is `.single_file` on that.
+        props = tool.Patch.get_patch_props()
+        values = []
+        for i, arg in enumerate(props.ifc_patch_args_attr):
+            field = arg.get_value_name()
+            if not field:
+                continue
+            if arg.data_type == "file":
+                field = f"{field}.single_file"
+            values.append(f"props.ifc_patch_args_attr[{i}].{field}")
+        return values

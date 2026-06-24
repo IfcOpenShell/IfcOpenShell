@@ -489,6 +489,69 @@ class System(bonsai.core.tool.System):
         return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
 
     @classmethod
+    def is_disconnectable_fitting(cls, element: ifcopenshell.entity_instance) -> bool:
+        """A fitting whose deletion is the supported teardown for one of
+        its port connections. ``OBSTRUCTION`` fittings are excluded — they
+        have a dedicated grow/shrink flow (``bim.mep_add_obstruction``
+        with ``mode=REMOVE``) that absorbs the freed segment length."""
+        if not element.is_a("IfcFlowFitting"):
+            return False
+        return getattr(element, "PredefinedType", None) != "OBSTRUCTION"
+
+    @classmethod
+    def neighbours_at_ports(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        """Entities reachable from ``element``'s ports via a single
+        ``IfcRelConnectsPorts`` hop, deduped by IFC id."""
+        neighbours: list[ifcopenshell.entity_instance] = []
+        seen: set[int] = set()
+        for port in cls.get_ports(element):
+            connected_port = cls.get_connected_port(port)
+            if connected_port is None:
+                continue
+            neighbour = ifcopenshell.util.system.get_port_element(connected_port)
+            if neighbour is None or neighbour.id() in seen:
+                continue
+            seen.add(neighbour.id())
+            neighbours.append(neighbour)
+        return neighbours
+
+    @classmethod
+    def find_bridging_fitting(
+        cls,
+        elem_a: ifcopenshell.entity_instance,
+        elem_b: ifcopenshell.entity_instance,
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Return the disconnectable ``IfcFlowFitting`` whose removal
+        disconnects ``elem_a`` from ``elem_b``, or ``None``.
+
+        Two topologies are handled. (1) Direct port-to-port between a
+        segment/fitting and a disconnectable fitting: the fitting endpoint
+        is returned. (2) Two segments joined by a single bridging
+        disconnectable fitting: the bridging fitting is returned.
+        ``OBSTRUCTION`` fittings short-circuit to ``None``."""
+        if not (cls.is_mep_element(elem_a) and cls.is_mep_element(elem_b)):
+            return None
+
+        a_neighbours = cls.neighbours_at_ports(elem_a)
+        b_neighbours = cls.neighbours_at_ports(elem_b)
+        elem_a_id = elem_a.id()
+        elem_b_id = elem_b.id()
+
+        if cls.is_disconnectable_fitting(elem_a) and any(n.id() == elem_b_id for n in a_neighbours):
+            return elem_a
+        if cls.is_disconnectable_fitting(elem_b) and any(n.id() == elem_a_id for n in b_neighbours):
+            return elem_b
+
+        a_fittings = [n for n in a_neighbours if cls.is_disconnectable_fitting(n)]
+        if not a_fittings:
+            return None
+        b_fitting_ids = {n.id() for n in b_neighbours if cls.is_disconnectable_fitting(n)}
+        for fitting in a_fittings:
+            if fitting.id() in b_fitting_ids:
+                return fitting
+        return None
+
+    @classmethod
     def has_parametric_body(cls, element: ifcopenshell.entity_instance) -> bool:
         """True when the MEP element's body representation is a profile sweep
         (``IfcExtrudedAreaSolid`` for segments, ``IfcSweptDiskSolid`` for

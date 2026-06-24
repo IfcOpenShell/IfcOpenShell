@@ -11,11 +11,10 @@
 
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
-using IfcGeom::NumberNativeDouble;
 using IfcGeom::ConversionResultShape;
 
 #ifdef IFOPSH_SIMPLE_KERNEL
-#define NumberType NumberNativeDouble
+#define NumberType OpaqueNumber
 #else
 using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
@@ -40,9 +39,9 @@ namespace {
 
 	OpaqueCoordinate<3> opaque_point(const cgal_point_t& p) {
 		return OpaqueCoordinate<3>(
-			new NumberType(p.cartesian(0)),
-			new NumberType(p.cartesian(1)),
-			new NumberType(p.cartesian(2))
+			NumberType(p.cartesian(0)),
+			NumberType(p.cartesian(1)),
+			NumberType(p.cartesian(2))
 		);
 	}
 
@@ -59,9 +58,9 @@ namespace {
 			throw std::runtime_error("Invalid shape type");
 		}
 		return OpaqueCoordinate<3>(
-			new NumberType(v.x() / maxval),
-			new NumberType(v.y() / maxval),
-			new NumberType(v.z() / maxval)
+			NumberType(v.x() / maxval),
+			NumberType(v.y() / maxval),
+			NumberType(v.z() / maxval)
 		);
 	}
 
@@ -71,27 +70,27 @@ namespace {
 			throw std::runtime_error("Invalid shape type");
 		}
 		return OpaqueCoordinate<4>(
-			new NumberType(p.a() / maxval),
-			new NumberType(p.b() / maxval),
-			new NumberType(p.c() / maxval),
-			new NumberType(p.d() / maxval)
+			NumberType(p.a() / maxval),
+			NumberType(p.b() / maxval),
+			NumberType(p.c() / maxval),
+			NumberType(p.d() / maxval)
 		);
 	}
 
 	cgal_plane_t plane_from_opaque(const OpaqueCoordinate<4>& p) {
 #ifdef IFOPSH_SIMPLE_KERNEL
 		return cgal_plane_t(
-			p.get(0)->to_double(),
-			p.get(1)->to_double(),
-			p.get(2)->to_double(),
-			p.get(3)->to_double()
+			p.get(0).to_double(),
+			p.get(1).to_double(),
+			p.get(2).to_double(),
+			p.get(3).to_double()
 		);
 #else
 		return cgal_plane_t(
-			static_cast<NumberEpeck*>(p.get(0))->value(),
-			static_cast<NumberEpeck*>(p.get(1))->value(),
-			static_cast<NumberEpeck*>(p.get(2))->value(),
-			static_cast<NumberEpeck*>(p.get(3))->value()
+			p.get(0).value_as<CGAL::Epeck::FT>(),
+			p.get(1).value_as<CGAL::Epeck::FT>(),
+			p.get(2).value_as<CGAL::Epeck::FT>(),
+			p.get(3).value_as<CGAL::Epeck::FT>()
 		);
 #endif
 	}
@@ -101,6 +100,15 @@ namespace {
 			normalized_plane_for_map<Kernel_>(plane_from_opaque(from)),
 			normalized_plane_for_map<Kernel_>(plane_from_opaque(to))
 		});
+	}
+
+	void apply_normalized_plane_map(const plane_map<Kernel_>& mp, std::list<cgal_plane_t>& planes) {
+		for (auto& plane : planes) {
+			auto it = mp.find(normalized_plane_for_map<Kernel_>(plane));
+			if (it != mp.end()) {
+				plane = it->second;
+			}
+		}
 	}
 
 	cgal_vector_t wire_normal(const cgal_wire_t& wire) {
@@ -329,7 +337,7 @@ const cgal_shape_t& ifcopenshell::geometry::CgalShape::poly() const {
 void ifcopenshell::geometry::CgalShape::to_poly() const {
 	if (!shape_) {
 		cgal_shape_t poly;
-		convert_to_polyhedron(*nef_, poly);
+		convert_to_polyhedron(*nef_, poly, std::numeric_limits<std::size_t>::max());
 		if (poly.size_of_vertices() > 0) {
 			// @todo why is this necessary? we have the mark of the volumes?
 			CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(poly);
@@ -344,6 +352,7 @@ void ifcopenshell::geometry::CgalShape::to_nef() const {
 	if (!nef_) {
 		auto shp = poly();
 		if (!convex_tag_) {
+			CGAL::Polygon_mesh_processing::triangulate_faces(shp);
 			if (CGAL::Polygon_mesh_processing::does_self_intersect(shp)) {
 				throw std::runtime_error("Self-intersections detected, unable to proceed");
 			}
@@ -697,7 +706,7 @@ int ifcopenshell::geometry::CgalShape::num_faces() const
 	}
 }
 
-OpaqueNumber* ifcopenshell::geometry::CgalShape::CgalShape::length()
+OpaqueNumber ifcopenshell::geometry::CgalShape::CgalShape::length()
 {
 	Kernel_::FT len = 0;
 	if (is_wire()) {
@@ -711,30 +720,30 @@ OpaqueNumber* ifcopenshell::geometry::CgalShape::CgalShape::length()
 			).squared_length());
 		}
 	}
-	return new NumberType(len);
+	return NumberType(len);
 }
 
-OpaqueNumber* ifcopenshell::geometry::CgalShape::area()
+OpaqueNumber ifcopenshell::geometry::CgalShape::area()
 {
 	if (is_wire()) {
-		return new NumberType(wire_area(wire()));
+		return NumberType(wire_area(wire()));
 	}
 	if (is_point()) {
-		return new NumberType(Kernel_::FT(0));
+		return NumberType(Kernel_::FT(0));
 	}
 	auto s = poly();
 	CGAL::Polygon_mesh_processing::triangulate_faces(s);
-	return new NumberType(CGAL::Polygon_mesh_processing::area(s));
+	return NumberType(CGAL::Polygon_mesh_processing::area(s));
 }
 
-OpaqueNumber* ifcopenshell::geometry::CgalShape::volume()
+OpaqueNumber ifcopenshell::geometry::CgalShape::volume()
 {
 	if (is_point() || is_wire()) {
-		return new NumberType(Kernel_::FT(0));
+		return NumberType(Kernel_::FT(0));
 	}
 	auto s = poly();
 	CGAL::Polygon_mesh_processing::triangulate_faces(s);
-	return new NumberType(CGAL::Polygon_mesh_processing::volume(s));
+	return NumberType(CGAL::Polygon_mesh_processing::volume(s));
 }
 
 OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
@@ -760,9 +769,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShape::position()
 			p[i] /= N;
 		}
 		return OpaqueCoordinate<3>(
-			new NumberType(p[0]),
-			new NumberType(p[1]),
-			new NumberType(p[2])
+			NumberType(p[0]),
+			NumberType(p[1]),
+			NumberType(p[2])
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -1058,17 +1067,17 @@ int ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::num_faces() const
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueNumber* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::CgalShapeHalfSpaceDecomposition::length()
+OpaqueNumber ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::CgalShapeHalfSpaceDecomposition::length()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueNumber* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::area()
+OpaqueNumber ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::area()
 {
 	throw std::runtime_error("Not implemented");
 }
 
-OpaqueNumber* ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::volume()
+OpaqueNumber ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::volume()
 {
 	throw std::runtime_error("Not implemented");
 }
@@ -1078,9 +1087,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pos
 	if (planes_.size() == 1) {
 		auto xyz = CGAL::ORIGIN + planes_.front().d() * CGAL::Vector_3<Kernel_>(planes_.front().a(), planes_.front().b(), planes_.front().c());
 		return OpaqueCoordinate<3>(
-			new NumberType(xyz.cartesian(0)),
-			new NumberType(xyz.cartesian(1)),
-			new NumberType(xyz.cartesian(2))
+			NumberType(xyz.cartesian(0)),
+			NumberType(xyz.cartesian(1)),
+			NumberType(xyz.cartesian(2))
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -1095,9 +1104,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::axi
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		return OpaqueCoordinate<3>(
-			new NumberType(planes_.front().a() / maxval),
-			new NumberType(planes_.front().b() / maxval),
-			new NumberType(planes_.front().c() / maxval)
+			NumberType(planes_.front().a() / maxval),
+			NumberType(planes_.front().b() / maxval),
+			NumberType(planes_.front().c() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -1112,10 +1121,10 @@ OpaqueCoordinate<4> ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::pla
 		auto maxel = std::max_element(abc.begin(), abc.end());
 		auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
 		return OpaqueCoordinate<4>(
-			new NumberType(planes_.front().a() / maxval),
-			new NumberType(planes_.front().b() / maxval),
-			new NumberType(planes_.front().c() / maxval),
-			new NumberType(planes_.front().d() / maxval)
+			NumberType(planes_.front().a() / maxval),
+			NumberType(planes_.front().b() / maxval),
+			NumberType(planes_.front().c() / maxval),
+			NumberType(planes_.front().d() / maxval)
 		);
 	} else {
 		throw std::runtime_error("Invalid shape type");
@@ -1196,6 +1205,7 @@ std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(OpaqueC
 	std::size_t mutated = 0;
 	auto nw = shape_->map(mp, mutated);
 	shape_ = std::move(nw);
+	apply_normalized_plane_map(mp, planes_);
 	return mutated;
 }
 
@@ -1214,6 +1224,7 @@ std::size_t ifcopenshell::geometry::CgalShapeHalfSpaceDecomposition::map(const s
 	std::size_t mutated = 0;
 	auto nw = shape_->map(mp, mutated);
 	shape_ = std::move(nw);
+	apply_normalized_plane_map(mp, planes_);
 	return mutated;
 }
 

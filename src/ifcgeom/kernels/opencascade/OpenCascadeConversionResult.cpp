@@ -31,7 +31,6 @@
 
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
-using IfcGeom::NumberNativeDouble;
 using IfcGeom::ConversionResultShape;
 
 namespace {
@@ -385,28 +384,28 @@ int ifcopenshell::geometry::OpenCascadeShape::num_faces() const
 	return IfcGeom::util::count(shape_, TopAbs_FACE);
 }
 
-OpaqueNumber* ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape::length()
+OpaqueNumber ifcopenshell::geometry::OpenCascadeShape::OpenCascadeShape::length()
 {
 	GProp_GProps prop;
 	BRepGProp::LinearProperties(shape_, prop);
 	double l = prop.Mass();
-	return new NumberNativeDouble(l);
+	return OpaqueNumber(l);
 }
 
-OpaqueNumber* ifcopenshell::geometry::OpenCascadeShape::area()
+OpaqueNumber ifcopenshell::geometry::OpenCascadeShape::area()
 {
 	GProp_GProps prop;
 	BRepGProp::SurfaceProperties(shape_, prop);
 	double l = prop.Mass();
-	return new NumberNativeDouble(l);
+	return OpaqueNumber(l);
 }
 
-OpaqueNumber* ifcopenshell::geometry::OpenCascadeShape::volume()
+OpaqueNumber ifcopenshell::geometry::OpenCascadeShape::volume()
 {
 	GProp_GProps prop;
 	BRepGProp::VolumeProperties(shape_, prop);
 	double l = prop.Mass();
-	return new NumberNativeDouble(l);
+	return OpaqueNumber(l);
 }
 
 #include <Geom_Plane.hxx>
@@ -419,9 +418,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::position()
 		if (plane) {
 			auto loc = plane->Location();
 			return OpaqueCoordinate<3>(
-				new NumberNativeDouble(loc.X()),
-				new NumberNativeDouble(loc.Y()),
-				new NumberNativeDouble(loc.Z())
+				OpaqueNumber(loc.X()),
+				OpaqueNumber(loc.Y()),
+				OpaqueNumber(loc.Z())
 			);
 		}
 	}
@@ -436,9 +435,9 @@ OpaqueCoordinate<3> ifcopenshell::geometry::OpenCascadeShape::axis()
 		if (plane) {
 			auto dir = plane->Axis().Direction();
 			return OpaqueCoordinate<3>(
-				new NumberNativeDouble(dir.X()),
-				new NumberNativeDouble(dir.Y()),
-				new NumberNativeDouble(dir.Z())
+				OpaqueNumber(dir.X()),
+				OpaqueNumber(dir.Y()),
+				OpaqueNumber(dir.Z())
 			);
 		}
 	}
@@ -454,10 +453,10 @@ OpaqueCoordinate<4> ifcopenshell::geometry::OpenCascadeShape::plane_equation()
 			double a, b, c, d;
 			plane->Pln().Coefficients(a, b, c, d);
 			return OpaqueCoordinate<4>(
-				new NumberNativeDouble(a),
-				new NumberNativeDouble(b),
-				new NumberNativeDouble(c),
-				new NumberNativeDouble(d)
+				OpaqueNumber(a),
+				OpaqueNumber(b),
+				OpaqueNumber(c),
+				OpaqueNumber(d)
 			);
 		}
 	}

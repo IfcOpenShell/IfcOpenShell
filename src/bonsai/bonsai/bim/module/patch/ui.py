@@ -29,6 +29,20 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
 
 
+class BIM_MT_ifc_patch_presets(bpy.types.Menu):
+    """Lists ifc-patch presets for the currently selected recipe.
+
+    ``preset_subdir`` is resolved per draw so switching recipes swaps the
+    preset list without re-registering the menu."""
+
+    bl_label = "IFC Patch Presets"
+    preset_operator = "script.execute_preset"
+
+    def draw(self, context: bpy.types.Context) -> None:
+        self.preset_subdir = tool.Patch.get_preset_subdir()
+        bpy.types.Menu.draw_preset(self, context)
+
+
 class BIM_PT_patch(bpy.types.Panel):
     bl_label = "Patch"
     bl_idname = "BIM_PT_patch"
@@ -66,6 +80,11 @@ class BIM_PT_patch(bpy.types.Panel):
                 row.operator("bim.patch_query_from_selected", text="", icon="EYEDROPPER")
 
         if props.ifc_patch_args_attr:
+            preset_row = layout.row(heading="Preset", align=True)
+            preset_row.menu("BIM_MT_ifc_patch_presets", text=BIM_MT_ifc_patch_presets.bl_label)
+            preset_row.operator("bim.add_ifc_patch_preset", text="", icon="ADD")
+            preset_row.operator("bim.add_ifc_patch_preset", text="", icon="REMOVE").remove_active = True
+
             draw_callback = draw_callback_ if props.ifc_patch_recipes == "ExtractElements" else None
             draw_attributes(props.ifc_patch_args_attr, layout, callback=draw_callback)
 
