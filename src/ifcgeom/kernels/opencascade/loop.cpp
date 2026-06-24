@@ -40,8 +40,8 @@ namespace {
 
 			const bool is_rational = !!bc->weights;
 
-			NCollection_Array1<gp_Pnt> Poles(0, bc->control_points.size() - 1);
-			NCollection_Array1<double> Weights(0, bc->control_points.size() - 1);
+			NCollection_Array1<gp_Pnt> Poles(0, (int)bc->control_points.size() - 1);
+			NCollection_Array1<double> Weights(0, (int)bc->control_points.size() - 1);
 			NCollection_Array1<double> Knots(0, (int)bc->knots.size() - 1);
 			NCollection_Array1<int> Mults(0, (int)bc->knots.size() - 1);
 			int        Degree = bc->degree;

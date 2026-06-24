@@ -1315,7 +1315,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 						}
 
 						if (has_open_shells) {
-							TopTools_IndexedMapOfShape faces;
+                            NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> faces;
 							TopExp::MapShapes(r, TopAbs_FACE, faces);
 							for (TopExp_Explorer exp(a, TopAbs_FACE); exp.More(); exp.Next()) {
 								auto& f = TopoDS::Face(exp.Current());

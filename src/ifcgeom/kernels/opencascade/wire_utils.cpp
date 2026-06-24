@@ -904,7 +904,7 @@ bool IfcGeom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compound&
 		}
 	}
 
-	TopTools_ListOfShape results;
+	NCollection_List<TopoDS_Shape> results;
 	if (settings.use_wire_intersection_check && util::wire_intersections(w, results, settings)) {
 		Logger::Root().Warning("GEO", 229, "Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
 	} else {
@@ -919,7 +919,7 @@ bool IfcGeom::util::convert_wire_to_faces(const TopoDS_Wire& w, TopoDS_Compound&
 	std::list<std::pair<double, TopoDS_Face>> face_list;
 	double max_area = 0.;
 
-	TopTools_ListIteratorOfListOfShape it(results);
+	NCollection_List<TopoDS_Shape>::Iterator it(results);
 	for (; it.More(); it.Next()) {
 		const TopoDS_Wire& wire = TopoDS::Wire(it.Value());
 		if (!is_2d) {

@@ -41,7 +41,11 @@
 #include <BRepTools.hxx>
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
-#include <TopTools_HSequenceOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_HSequence.hxx>
+
 #include <TopExp.hxx>
 
 #include <BRepAdaptor_Curve.hxx>
