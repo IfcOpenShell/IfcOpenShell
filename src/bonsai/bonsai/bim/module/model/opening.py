@@ -706,6 +706,7 @@ class FilledOpeningGenerator:
         if not new_representation:
             return
         new_representation = ifcopenshell.util.representation.resolve_representation(new_representation)
+        voided_objs_to_reload: set[bpy.types.Object] = set()
         for rel in opening.HasFillings:
             filling_type = ifcopenshell.util.element.get_type(rel.RelatedBuildingElement)
             if not filling_type:
@@ -720,6 +721,58 @@ class FilledOpeningGenerator:
                         inverse.MappedRepresentation = new_representation
                 ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_template)
             self.set_type_opening_representation(filling_type, new_representation)
+
+            # Re-map every other occurrence's opening onto the type template so the edit
+            # propagates even to siblings that have their own independent opening geometry
+            # (i.e. openings that never shared the template's IfcRepresentationMap).
+            for occurrence in ifcopenshell.util.element.get_types(filling_type):
+                sibling_opening = (
+                    occurrence.FillsVoids[0].RelatingOpeningElement
+                    if getattr(occurrence, "FillsVoids", None)
+                    else None
+                )
+                if not sibling_opening or sibling_opening == opening:
+                    continue
+                if not self._remap_opening_to_template(sibling_opening, new_representation):
+                    continue
+                if sibling_opening.VoidsElements:
+                    voided_element = sibling_opening.VoidsElements[0].RelatingBuildingElement
+                    for part in ifcopenshell.util.element.get_parts(voided_element) or [voided_element]:
+                        if voided_obj := tool.Ifc.get_object(part):
+                            voided_objs_to_reload.add(voided_obj)
+
+        # Reload affected host objects so the viewport re-booleans with the propagated void.
+        for voided_obj in voided_objs_to_reload:
+            representation = tool.Geometry.get_active_representation(voided_obj)
+            if representation:
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=voided_obj, representation=representation
+                )
+
+    def _remap_opening_to_template(
+        self, opening: ifcopenshell.entity_instance, template_representation: ifcopenshell.entity_instance
+    ) -> bool:
+        """Point an opening's Body at the shared type template, purging its old standalone body.
+
+        :return: True if the opening was changed, False if it already maps over the template.
+        """
+        ifc_file = tool.Ifc.get()
+        old_body = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        if old_body is not None and (
+            ifcopenshell.util.representation.resolve_representation(old_body) == template_representation
+        ):
+            return False
+        mapped_representation = ifcopenshell.api.geometry.map_representation(
+            ifc_file, representation=template_representation
+        )
+        # The mapped wrapper is the opening's own Body (the 'Reference' identifier belongs to
+        # the type template it maps over, not to the occurrence's representation).
+        mapped_representation.RepresentationIdentifier = "Body"
+        if old_body is not None:
+            ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_body)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_body)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=opening, representation=mapped_representation)
+        return True
 
     def promote_opening_to_type(self, filling_type: ifcopenshell.entity_instance) -> None:
         """Promote a custom opening from an occurrence to a 'Reference' template on the type.
