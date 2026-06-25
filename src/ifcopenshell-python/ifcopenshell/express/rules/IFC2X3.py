@@ -95,12 +95,12 @@ EXPRESS_ONE_BASED_INDEXING = 1
 def typeof(inst):
     if not inst:
         return express_set([])
-    schema_name = inst.is_a(True).split('.')[0].lower()
+    schema_name = inst.is_a(True).split('.')[0].upper()
 
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
-            yield '.'.join((schema_name, decl.name().lower()))
+            yield '.'.join((schema_name, decl.name().upper()))
             if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
                 decl = decl.supertype()
             else:
@@ -3592,7 +3592,7 @@ class IfcBoxAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right'])) is not False
 
 class IfcCompoundPlaneAngleMeasure_WR1:
     SCOPE = 'type'
@@ -3655,7 +3655,7 @@ class IfcFontStyle_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'italic', 'oblique'])) is not False
 
 class IfcFontVariant_WR1:
     SCOPE = 'type'
@@ -3664,7 +3664,7 @@ class IfcFontVariant_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'small-caps'])) is not False
 
 class IfcFontWeight_WR1:
     SCOPE = 'type'
@@ -3673,7 +3673,7 @@ class IfcFontWeight_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900'])) is not False
 
 class IfcHeatingValueMeasure_WR1:
     SCOPE = 'type'
@@ -3781,7 +3781,7 @@ class IfcTextAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['left', 'right', 'center', 'justify'])) is not False
 
 class IfcTextDecoration_WR1:
     SCOPE = 'type'
@@ -3790,7 +3790,7 @@ class IfcTextDecoration_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['none', 'underline', 'overline', 'line-through', 'blink'])) is not False
 
 class IfcTextTransformation_WR1:
     SCOPE = 'type'
@@ -3799,7 +3799,7 @@ class IfcTextTransformation_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['capitalize', 'uppercase', 'lowercase', 'none'])) is not False
 
 class Ifc2DCompositeCurve_WR1:
     SCOPE = 'entity'
@@ -3876,7 +3876,7 @@ class IfcAnnotationCurveOccurrence_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'ifc2x3.ifccurve' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
+        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'IFC2X3.IFCCURVE' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
 
 class IfcAnnotationFillAreaOccurrence_WR31:
     SCOPE = 'entity'
@@ -3885,7 +3885,7 @@ class IfcAnnotationFillAreaOccurrence_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'ifc2x3.ifcannotationfillarea' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
+        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'IFC2X3.IFCANNOTATIONFILLAREA' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
 
 class IfcAnnotationSurface_WR01:
     SCOPE = 'entity'
@@ -3895,7 +3895,7 @@ class IfcAnnotationSurface_WR01:
     @staticmethod
     def __call__(self):
         item = express_getattr(self, 'Item', INDETERMINATE)
-        assert (sizeof(['ifc2x3.ifcsurface', 'ifc2x3.ifcshellbasedsurfacemodel', 'ifc2x3.ifcfacebasedsurfacemodel', 'ifc2x3.ifcsolidmodel', 'ifc2x3.ifcbooleanresult', 'ifc2x3.ifccsgprimitive3d'] * typeof(item)) >= 1) is not False
+        assert (sizeof(['IFC2X3.IFCSURFACE', 'IFC2X3.IFCSHELLBASEDSURFACEMODEL', 'IFC2X3.IFCFACEBASEDSURFACEMODEL', 'IFC2X3.IFCSOLIDMODEL', 'IFC2X3.IFCBOOLEANRESULT', 'IFC2X3.IFCCSGPRIMITIVE3D'] * typeof(item)) >= 1) is not False
 
 class IfcAnnotationSurfaceOccurrence_WR31:
     SCOPE = 'entity'
@@ -3904,7 +3904,7 @@ class IfcAnnotationSurfaceOccurrence_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or sizeof(['ifc2x3.ifcsurface', 'ifc2x3.ifcfacebasedsurfacemodel', 'ifc2x3.ifcshellbasedsurfacemodel', 'ifc2x3.ifcsolidmodel'] * typeof(express_getattr(self, 'Item', INDETERMINATE))) > 0) is not False
+        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or sizeof(['IFC2X3.IFCSURFACE', 'IFC2X3.IFCFACEBASEDSURFACEMODEL', 'IFC2X3.IFCSHELLBASEDSURFACEMODEL', 'IFC2X3.IFCSOLIDMODEL'] * typeof(express_getattr(self, 'Item', INDETERMINATE))) > 0) is not False
 
 class IfcAnnotationSymbolOccurrence_WR31:
     SCOPE = 'entity'
@@ -3913,7 +3913,7 @@ class IfcAnnotationSymbolOccurrence_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'ifc2x3.ifcdefinedsymbol' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
+        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'IFC2X3.IFCDEFINEDSYMBOL' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
 
 class IfcAnnotationTextOccurrence_WR31:
     SCOPE = 'entity'
@@ -3922,7 +3922,7 @@ class IfcAnnotationTextOccurrence_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'ifc2x3.ifctextliteral' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
+        assert (not exists(express_getattr(self, 'Item', INDETERMINATE)) or 'IFC2X3.IFCTEXTLITERAL' in typeof(express_getattr(self, 'Item', INDETERMINATE))) is not False
 
 class IfcAppliedValue_WR1:
     SCOPE = 'entity'
@@ -3953,7 +3953,7 @@ class IfcArbitraryClosedProfileDef_WR2:
     @staticmethod
     def __call__(self):
         outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (not 'ifc2x3.ifcline' in typeof(outercurve)) is not False
+        assert (not 'IFC2X3.IFCLINE' in typeof(outercurve)) is not False
 
 class IfcArbitraryClosedProfileDef_WR3:
     SCOPE = 'entity'
@@ -3963,7 +3963,7 @@ class IfcArbitraryClosedProfileDef_WR3:
     @staticmethod
     def __call__(self):
         outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (not 'ifc2x3.ifcoffsetcurve2d' in typeof(outercurve)) is not False
+        assert (not 'IFC2X3.IFCOFFSETCURVE2D' in typeof(outercurve)) is not False
 
 class IfcArbitraryOpenProfileDef_WR11:
     SCOPE = 'entity'
@@ -3972,7 +3972,7 @@ class IfcArbitraryOpenProfileDef_WR11:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifccenterlineprofiledef' in typeof(self) or express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
+        assert ('IFC2X3.IFCCENTERLINEPROFILEDEF' in typeof(self) or express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
 
 class IfcArbitraryOpenProfileDef_WR12:
     SCOPE = 'entity'
@@ -4011,7 +4011,7 @@ class IfcArbitraryProfileDefWithVoids_WR3:
     @staticmethod
     def __call__(self):
         innercurves = express_getattr(self, 'InnerCurves', INDETERMINATE)
-        assert (sizeof([temp for temp in innercurves if 'ifc2x3.ifcline' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in innercurves if 'IFC2X3.IFCLINE' in typeof(temp)]) == 0) is not False
 
 class IfcAsset_WR1:
     SCOPE = 'entity'
@@ -4020,7 +4020,7 @@ class IfcAsset_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc2x3.ifcelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'IFC2X3.IFCELEMENT' in typeof(temp)]) == 0) is not False
 
 class IfcAxis1Placement_WR1:
     SCOPE = 'entity'
@@ -4150,7 +4150,7 @@ class IfcBlobTexture_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
+        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['BMP', 'JPG', 'GIF', 'PNG'])) is not False
 
 class IfcBoilerType_WR1:
     SCOPE = 'entity'
@@ -4170,7 +4170,7 @@ class IfcBooleanClippingResult_WR1:
     @staticmethod
     def __call__(self):
         firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
-        assert ('ifc2x3.ifcsweptareasolid' in typeof(firstoperand) or 'ifc2x3.ifcbooleanclippingresult' in typeof(firstoperand)) is not False
+        assert ('IFC2X3.IFCSWEPTAREASOLID' in typeof(firstoperand) or 'IFC2X3.IFCBOOLEANCLIPPINGRESULT' in typeof(firstoperand)) is not False
 
 class IfcBooleanClippingResult_WR2:
     SCOPE = 'entity'
@@ -4180,7 +4180,7 @@ class IfcBooleanClippingResult_WR2:
     @staticmethod
     def __call__(self):
         secondoperand = express_getattr(self, 'SecondOperand', INDETERMINATE)
-        assert ('ifc2x3.ifchalfspacesolid' in typeof(secondoperand)) is not False
+        assert ('IFC2X3.IFCHALFSPACESOLID' in typeof(secondoperand)) is not False
 
 class IfcBooleanClippingResult_WR3:
     SCOPE = 'entity'
@@ -4217,7 +4217,7 @@ class IfcBoxedHalfSpace_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (not 'ifc2x3.ifccurveboundedplane' in typeof(express_getattr(self, 'BaseSurface', INDETERMINATE))) is not False
+        assert (not 'IFC2X3.IFCCURVEBOUNDEDPLANE' in typeof(express_getattr(self, 'BaseSurface', INDETERMINATE))) is not False
 
 class IfcBuildingElementProxy_WR1:
     SCOPE = 'entity'
@@ -4515,7 +4515,7 @@ class IfcCompositeCurveSegment_WR1:
     @staticmethod
     def __call__(self):
         parentcurve = express_getattr(self, 'ParentCurve', INDETERMINATE)
-        assert ('ifc2x3.ifcboundedcurve' in typeof(parentcurve)) is not False
+        assert ('IFC2X3.IFCBOUNDEDCURVE' in typeof(parentcurve)) is not False
 
 def calc_IfcCompositeCurveSegment_Dim(self):
     parentcurve = express_getattr(self, 'ParentCurve', INDETERMINATE)
@@ -4539,7 +4539,7 @@ class IfcCompositeProfileDef_WR2:
     @staticmethod
     def __call__(self):
         profiles = express_getattr(self, 'Profiles', INDETERMINATE)
-        assert (sizeof([temp for temp in profiles if 'ifc2x3.ifccompositeprofiledef' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in profiles if 'IFC2X3.IFCCOMPOSITEPROFILEDEF' in typeof(temp)]) == 0) is not False
 
 class IfcCompressorType_WR1:
     SCOPE = 'entity'
@@ -4686,7 +4686,7 @@ class IfcCurveStyle_WR11:
     @staticmethod
     def __call__(self):
         curvewidth = express_getattr(self, 'CurveWidth', INDETERMINATE)
-        assert (not exists(curvewidth) or 'ifc2x3.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc2x3.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
+        assert (not exists(curvewidth) or 'IFC2X3.IFCPOSITIVELENGTHMEASURE' in typeof(curvewidth) or ('IFC2X3.IFCDESCRIPTIVEMEASURE' in typeof(curvewidth) and curvewidth == 'by layer')) is not False
 
 class IfcCurveStyleFontPattern_WR01:
     SCOPE = 'entity'
@@ -4749,7 +4749,7 @@ class IfcDimensionCalloutRelationship_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['primary', 'secondary']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['primary', 'secondary'])) is not False
 
 class IfcDimensionCalloutRelationship_WR12:
     SCOPE = 'entity'
@@ -4758,7 +4758,7 @@ class IfcDimensionCalloutRelationship_WR12:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(typeof(express_getattr(self, 'RelatingDraughtingCallout', INDETERMINATE)) * ['ifc2x3.ifcangulardimension', 'ifc2x3.ifcdiameterdimension', 'ifc2x3.ifclineardimension', 'ifc2x3.ifcradiusdimension']) == 1) is not False
+        assert (sizeof(typeof(express_getattr(self, 'RelatingDraughtingCallout', INDETERMINATE)) * ['IFC2X3.IFCANGULARDIMENSION', 'IFC2X3.IFCDIAMETERDIMENSION', 'IFC2X3.IFCLINEARDIMENSION', 'IFC2X3.IFCRADIUSDIMENSION']) == 1) is not False
 
 class IfcDimensionCalloutRelationship_WR13:
     SCOPE = 'entity'
@@ -4767,7 +4767,7 @@ class IfcDimensionCalloutRelationship_WR13:
 
     @staticmethod
     def __call__(self):
-        assert (not 'ifc2x3.ifcdimensioncurvedirectedcallout' in typeof(express_getattr(self, 'RelatedDraughtingCallout', INDETERMINATE))) is not False
+        assert (not 'IFC2X3.IFCDIMENSIONCURVEDIRECTEDCALLOUT' in typeof(express_getattr(self, 'RelatedDraughtingCallout', INDETERMINATE))) is not False
 
 class IfcDimensionCurve_WR51:
     SCOPE = 'entity'
@@ -4776,7 +4776,7 @@ class IfcDimensionCurve_WR51:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(usedin(self, 'ifc2x3.ifcdraughtingcallout.contents')) >= 1) is not False
+        assert (sizeof(usedin(self, 'IFC2X3.IFCDRAUGHTINGCALLOUT.CONTENTS')) >= 1) is not False
 
 class IfcDimensionCurve_WR52:
     SCOPE = 'entity'
@@ -4785,7 +4785,7 @@ class IfcDimensionCurve_WR52:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([dct1 for dct1 in usedin(self, 'ifc2x3.' + 'ifcterminatorsymbol.annotatedcurve') if express_getattr(dct1, 'Role', INDETERMINATE) == express_getattr(IfcDimensionExtentUsage, 'ORIGIN', INDETERMINATE)]) <= 1 and sizeof([dct2 for dct2 in usedin(self, 'ifc2x3.' + 'ifcterminatorsymbol.annotatedcurve') if express_getattr(dct2, 'Role', INDETERMINATE) == express_getattr(IfcDimensionExtentUsage, 'TARGET', INDETERMINATE)]) <= 1) is not False
+        assert (sizeof([dct1 for dct1 in usedin(self, 'IFC2X3.' + 'IFCTERMINATORSYMBOL.ANNOTATEDCURVE') if express_getattr(dct1, 'Role', INDETERMINATE) == express_getattr(IfcDimensionExtentUsage, 'ORIGIN', INDETERMINATE)]) <= 1 and sizeof([dct2 for dct2 in usedin(self, 'IFC2X3.' + 'IFCTERMINATORSYMBOL.ANNOTATEDCURVE') if express_getattr(dct2, 'Role', INDETERMINATE) == express_getattr(IfcDimensionExtentUsage, 'TARGET', INDETERMINATE)]) <= 1) is not False
 
 class IfcDimensionCurve_WR53:
     SCOPE = 'entity'
@@ -4795,7 +4795,7 @@ class IfcDimensionCurve_WR53:
     @staticmethod
     def __call__(self):
         annotatedbysymbols = express_getattr(self, 'AnnotatedBySymbols', INDETERMINATE)
-        assert (sizeof([dct for dct in annotatedbysymbols if not 'ifc2x3.ifcdimensioncurveterminator' in typeof(dct)]) == 0) is not False
+        assert (sizeof([dct for dct in annotatedbysymbols if not 'IFC2X3.IFCDIMENSIONCURVETERMINATOR' in typeof(dct)]) == 0) is not False
 
 class IfcDimensionCurveDirectedCallout_WR41:
     SCOPE = 'entity'
@@ -4804,7 +4804,7 @@ class IfcDimensionCurveDirectedCallout_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([dc for dc in express_getattr(self, 'Contents', INDETERMINATE) if 'ifc2x3.ifcdimensioncurve' in typeof(dc)]) == 1) is not False
+        assert (sizeof([dc for dc in express_getattr(self, 'Contents', INDETERMINATE) if 'IFC2X3.IFCDIMENSIONCURVE' in typeof(dc)]) == 1) is not False
 
 class IfcDimensionCurveDirectedCallout_WR42:
     SCOPE = 'entity'
@@ -4814,7 +4814,7 @@ class IfcDimensionCurveDirectedCallout_WR42:
     @staticmethod
     def __call__(self):
         contents = express_getattr(self, 'Contents', INDETERMINATE)
-        assert (sizeof([dc for dc in express_getattr(self, 'contents', INDETERMINATE) if 'ifc2x3.ifcprojectioncurve' in typeof(dc)]) <= 2) is not False
+        assert (sizeof([dc for dc in express_getattr(self, 'contents', INDETERMINATE) if 'IFC2X3.IFCPROJECTIONCURVE' in typeof(dc)]) <= 2) is not False
 
 class IfcDimensionCurveTerminator_WR61:
     SCOPE = 'entity'
@@ -4823,7 +4823,7 @@ class IfcDimensionCurveTerminator_WR61:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifcdimensioncurve' in typeof(express_getattr(self, 'AnnotatedCurve', INDETERMINATE))) is not False
+        assert ('IFC2X3.IFCDIMENSIONCURVE' in typeof(express_getattr(self, 'AnnotatedCurve', INDETERMINATE))) is not False
 
 class IfcDimensionPair_WR11:
     SCOPE = 'entity'
@@ -4832,7 +4832,7 @@ class IfcDimensionPair_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['chained', 'parallel']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['chained', 'parallel'])) is not False
 
 class IfcDimensionPair_WR12:
     SCOPE = 'entity'
@@ -4841,7 +4841,7 @@ class IfcDimensionPair_WR12:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(typeof(express_getattr(self, 'RelatingDraughtingCallout', INDETERMINATE)) * ['ifc2x3.ifcangulardimension', 'ifc2x3.ifcdiameterdimension', 'ifc2x3.ifclineardimension', 'ifc2x3.ifcradiusdimension']) == 1) is not False
+        assert (sizeof(typeof(express_getattr(self, 'RelatingDraughtingCallout', INDETERMINATE)) * ['IFC2X3.IFCANGULARDIMENSION', 'IFC2X3.IFCDIAMETERDIMENSION', 'IFC2X3.IFCLINEARDIMENSION', 'IFC2X3.IFCRADIUSDIMENSION']) == 1) is not False
 
 class IfcDimensionPair_WR13:
     SCOPE = 'entity'
@@ -4850,7 +4850,7 @@ class IfcDimensionPair_WR13:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(typeof(express_getattr(self, 'RelatedDraughtingCallout', INDETERMINATE)) * ['ifc2x3.ifcangulardimension', 'ifc2x3.ifcdiameterdimension', 'ifc2x3.ifclineardimension', 'ifc2x3.ifcradiusdimension']) == 1) is not False
+        assert (sizeof(typeof(express_getattr(self, 'RelatedDraughtingCallout', INDETERMINATE)) * ['IFC2X3.IFCANGULARDIMENSION', 'IFC2X3.IFCDIAMETERDIMENSION', 'IFC2X3.IFCLINEARDIMENSION', 'IFC2X3.IFCRADIUSDIMENSION']) == 1) is not False
 
 def calc_IfcDirection_Dim(self):
     directionratios = express_getattr(self, 'DirectionRatios', INDETERMINATE)
@@ -4929,7 +4929,7 @@ class IfcDoorLiningProperties_WR35:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc2x3.ifcdoorstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'IFC2X3.IFCDOORSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcDoorPanelProperties_WR31:
     SCOPE = 'entity'
@@ -4938,7 +4938,7 @@ class IfcDoorPanelProperties_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc2x3.ifcdoorstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'IFC2X3.IFCDOORSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcDraughtingPreDefinedColour_WR31:
     SCOPE = 'entity'
@@ -4947,7 +4947,7 @@ class IfcDraughtingPreDefinedColour_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'by layer'])) is not False
 
 class IfcDraughtingPreDefinedCurveFont_WR31:
     SCOPE = 'entity'
@@ -4956,7 +4956,7 @@ class IfcDraughtingPreDefinedCurveFont_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['continuous', 'chain', 'chain double dash', 'dashed', 'dotted', 'by layer'])) is not False
 
 class IfcDraughtingPreDefinedTextFont_WR31:
     SCOPE = 'entity'
@@ -4965,7 +4965,7 @@ class IfcDraughtingPreDefinedTextFont_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['iso3098-1fonta', 'iso3098-1fontb']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['ISO 3098-1 font A', 'ISO 3098-1 font B'])) is not False
 
 class IfcDuctFittingType_WR2:
     SCOPE = 'entity'
@@ -5104,7 +5104,7 @@ class IfcFace_WR1:
     @staticmethod
     def __call__(self):
         bounds = express_getattr(self, 'Bounds', INDETERMINATE)
-        assert (sizeof([temp for temp in bounds if 'ifc2x3.ifcfaceouterbound' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in bounds if 'IFC2X3.IFCFACEOUTERBOUND' in typeof(temp)]) <= 1) is not False
 
 def calc_IfcFaceBasedSurfaceModel_Dim(self):
     return 3
@@ -5126,7 +5126,7 @@ class IfcFillAreaStyle_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'ifc2x3.ifccolour' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'IFC2X3.IFCCOLOUR' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyle_WR12:
     SCOPE = 'entity'
@@ -5135,7 +5135,7 @@ class IfcFillAreaStyle_WR12:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'ifc2x3.ifcexternallydefinedhatchstyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'IFC2X3.IFCEXTERNALLYDEFINEDHATCHSTYLE' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyle_WR13:
     SCOPE = 'entity'
@@ -5154,7 +5154,7 @@ class IfcFillAreaStyleHatching_WR21:
     @staticmethod
     def __call__(self):
         startofnexthatchline = express_getattr(self, 'StartOfNextHatchLine', INDETERMINATE)
-        assert (not 'ifc2x3.ifctwodirectionrepeatfactor' in typeof(startofnexthatchline)) is not False
+        assert (not 'IFC2X3.IFCTWODIRECTIONREPEATFACTOR' in typeof(startofnexthatchline)) is not False
 
 class IfcFillAreaStyleHatching_WR22:
     SCOPE = 'entity'
@@ -5233,7 +5233,7 @@ class IfcGeometricCurveSet_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Elements', INDETERMINATE) if 'ifc2x3.ifcsurface' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Elements', INDETERMINATE) if 'IFC2X3.IFCSURFACE' in typeof(temp)]) == 0) is not False
 
 class IfcGeometricRepresentationSubContext_WR31:
     SCOPE = 'entity'
@@ -5243,7 +5243,7 @@ class IfcGeometricRepresentationSubContext_WR31:
     @staticmethod
     def __call__(self):
         parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
-        assert (not 'ifc2x3.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
+        assert (not 'IFC2X3.IFCGEOMETRICREPRESENTATIONSUBCONTEXT' in typeof(parentcontext)) is not False
 
 class IfcGeometricRepresentationSubContext_WR32:
     SCOPE = 'entity'
@@ -5383,7 +5383,7 @@ class IfcInventory_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc2x3.ifcspace' in typeof(temp) or 'ifc2x3.ifcasset' in typeof(temp) or 'ifc2x3.ifcfurnishingelement' in typeof(temp))]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('IFC2X3.IFCSPACE' in typeof(temp) or 'IFC2X3.IFCASSET' in typeof(temp) or 'IFC2X3.IFCFURNISHINGELEMENT' in typeof(temp))]) == 0) is not False
 
 class IfcLShapeProfileDef_WR21:
     SCOPE = 'entity'
@@ -5446,7 +5446,7 @@ class IfcMaterialDefinitionRepresentation_WR11:
     @staticmethod
     def __call__(self):
         representations = express_getattr(self, 'Representations', INDETERMINATE)
-        assert (sizeof([temp for temp in representations if not 'ifc2x3.ifcstyledrepresentation' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representations if not 'IFC2X3.IFCSTYLEDREPRESENTATION' in typeof(temp)]) == 0) is not False
 
 def calc_IfcMaterialLayerSet_TotalThickness(self):
     return IfcMlsTotalThickness(self)
@@ -5528,7 +5528,7 @@ class IfcMove_WR2:
     @staticmethod
     def __call__(self):
         operateson = express_getattr(self, 'OperatesOn', INDETERMINATE)
-        assert (sizeof([temp for temp in operateson if sizeof([temp2 for temp2 in express_getattr(temp, 'RelatedObjects', INDETERMINATE) if 'ifc2x3.ifcactor' in typeof(temp2) or 'ifc2x3.ifcequipmentelement' in typeof(temp2) or 'ifc2x3.ifcfurnishingelement' in typeof(temp2)]) >= 1]) >= 1) is not False
+        assert (sizeof([temp for temp in operateson if sizeof([temp2 for temp2 in express_getattr(temp, 'RelatedObjects', INDETERMINATE) if 'IFC2X3.IFCACTOR' in typeof(temp2) or 'IFC2X3.IFCEQUIPMENTELEMENT' in typeof(temp2) or 'IFC2X3.IFCFURNISHINGELEMENT' in typeof(temp2)]) >= 1]) >= 1) is not False
 
 class IfcMove_WR3:
     SCOPE = 'entity'
@@ -5556,7 +5556,7 @@ class IfcObject_WR1:
     @staticmethod
     def __call__(self):
         isdefinedby = express_getattr(self, 'IsDefinedBy', INDETERMINATE)
-        assert (sizeof([temp for temp in isdefinedby if 'ifc2x3.ifcreldefinesbytype' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in isdefinedby if 'IFC2X3.IFCRELDEFINESBYTYPE' in typeof(temp)]) <= 1) is not False
 
 class IfcObjective_WR21:
     SCOPE = 'entity'
@@ -5606,7 +5606,7 @@ class IfcOrientedEdge_WR1:
     @staticmethod
     def __call__(self):
         edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
-        assert (not 'ifc2x3.ifcorientededge' in typeof(edgeelement)) is not False
+        assert (not 'IFC2X3.IFCORIENTEDEDGE' in typeof(edgeelement)) is not False
 
 def calc_IfcOrientedEdge_EdgeStart(self):
     edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
@@ -5760,7 +5760,7 @@ class IfcPolygonalBoundedHalfSpace_WR42:
     @staticmethod
     def __call__(self):
         polygonalboundary = express_getattr(self, 'PolygonalBoundary', INDETERMINATE)
-        assert (sizeof(typeof(polygonalboundary) * ['ifc2x3.ifcpolyline', 'ifc2x3.ifccompositecurve']) == 1) is not False
+        assert (sizeof(typeof(polygonalboundary) * ['IFC2X3.IFCPOLYLINE', 'IFC2X3.IFCCOMPOSITECURVE']) == 1) is not False
 
 class IfcPolyline_WR41:
     SCOPE = 'entity'
@@ -5795,7 +5795,7 @@ class IfcPreDefinedDimensionSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['arclength', 'conicaltaper', 'counterbore', 'countersink', 'depth', 'diameter', 'plusminus', 'radius', 'slope', 'sphericaldiameter', 'sphericalradius', 'square']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['arc length', 'conical taper', 'counterbore', 'countersink', 'depth', 'diameter', 'plus minus', 'radius', 'slope', 'spherical diameter', 'spherical radius', 'square'])) is not False
 
 class IfcPreDefinedPointMarkerSymbol_WR31:
     SCOPE = 'entity'
@@ -5804,7 +5804,7 @@ class IfcPreDefinedPointMarkerSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['asterisk', 'circle', 'dot', 'plus', 'square', 'triangle', 'x']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['asterisk', 'circle', 'dot', 'plus', 'square', 'triangle', 'x'])) is not False
 
 class IfcPreDefinedTerminatorSymbol_WR31:
     SCOPE = 'entity'
@@ -5813,7 +5813,7 @@ class IfcPreDefinedTerminatorSymbol_WR31:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['blankedarrow', 'blankedbox', 'blankeddot', 'dimensionorigin', 'filledarrow', 'filledbox', 'filleddot', 'integralsymbol', 'openarrow', 'slash', 'unfilledarrow']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['blanked arrow', 'blanked box', 'blanked dot', 'dimension origin', 'filled arrow', 'filled box', 'filled dot', 'integral symbol', 'open arrow', 'slash', 'unfilled arrow'])) is not False
 
 class IfcProcedure_WR1:
     SCOPE = 'entity'
@@ -5822,7 +5822,7 @@ class IfcProcedure_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Decomposes', INDETERMINATE) if not 'ifc2x3.ifcrelnests' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Decomposes', INDETERMINATE) if not 'IFC2X3.IFCRELNESTS' in typeof(temp)]) == 0) is not False
 
 class IfcProcedure_WR2:
     SCOPE = 'entity'
@@ -5831,7 +5831,7 @@ class IfcProcedure_WR2:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'IsDecomposedBy', INDETERMINATE) if not 'ifc2x3.ifcrelnests' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'IsDecomposedBy', INDETERMINATE) if not 'IFC2X3.IFCRELNESTS' in typeof(temp)]) == 0) is not False
 
 class IfcProcedure_WR3:
     SCOPE = 'entity'
@@ -5861,7 +5861,7 @@ class IfcProduct_WR1:
     def __call__(self):
         objectplacement = express_getattr(self, 'ObjectPlacement', INDETERMINATE)
         representation = express_getattr(self, 'Representation', INDETERMINATE)
-        assert (exists(representation) and exists(objectplacement) or (exists(representation) and (not 'ifc2x3.ifcproductdefinitionshape' in typeof(representation))) or (not exists(representation))) is not False
+        assert (exists(representation) and exists(objectplacement) or (exists(representation) and (not 'IFC2X3.IFCPRODUCTDEFINITIONSHAPE' in typeof(representation))) or (not exists(representation))) is not False
 
 class IfcProductDefinitionShape_WR11:
     SCOPE = 'entity'
@@ -5871,7 +5871,7 @@ class IfcProductDefinitionShape_WR11:
     @staticmethod
     def __call__(self):
         representations = express_getattr(self, 'Representations', INDETERMINATE)
-        assert (sizeof([temp for temp in representations if not 'ifc2x3.ifcshapemodel' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representations if not 'IFC2X3.IFCSHAPEMODEL' in typeof(temp)]) == 0) is not False
 
 class IfcProject_WR31:
     SCOPE = 'entity'
@@ -5890,7 +5890,7 @@ class IfcProject_WR32:
     @staticmethod
     def __call__(self):
         representationcontexts = express_getattr(self, 'RepresentationContexts', INDETERMINATE)
-        assert (sizeof([temp for temp in representationcontexts if 'ifc2x3.ifcgeometricrepresentationsubcontext' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representationcontexts if 'IFC2X3.IFCGEOMETRICREPRESENTATIONSUBCONTEXT' in typeof(temp)]) == 0) is not False
 
 class IfcProject_WR33:
     SCOPE = 'entity'
@@ -6241,7 +6241,7 @@ class IfcRectangularTrimmedSurface_WR3:
         u1 = express_getattr(self, 'U1', INDETERMINATE)
         u2 = express_getattr(self, 'U2', INDETERMINATE)
         usense = express_getattr(self, 'Usense', INDETERMINATE)
-        assert ('ifc2x3.ifcelementarysurface' in typeof(basissurface) and (not 'ifc2x3.ifcplane' in typeof(basissurface)) or 'ifc2x3.ifcsurfaceofrevolution' in typeof(basissurface) or usense == (u2 > u1)) is not False
+        assert ('IFC2X3.IFCELEMENTARYSURFACE' in typeof(basissurface) and (not 'IFC2X3.IFCPLANE' in typeof(basissurface)) or 'IFC2X3.IFCSURFACEOFREVOLUTION' in typeof(basissurface) or usense == (u2 > u1)) is not False
 
 class IfcRectangularTrimmedSurface_WR4:
     SCOPE = 'entity'
@@ -6296,7 +6296,7 @@ class IfcRelAssignsTasks_WR2:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifctask' in typeof(express_getitem(express_getattr(self, 'RelatedObjects', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert ('IFC2X3.IFCTASK' in typeof(express_getitem(express_getattr(self, 'RelatedObjects', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcRelAssignsTasks_WR3:
     SCOPE = 'entity'
@@ -6305,7 +6305,7 @@ class IfcRelAssignsTasks_WR3:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifcworkcontrol' in typeof(express_getattr(self, 'RelatingControl', INDETERMINATE))) is not False
+        assert ('IFC2X3.IFCWORKCONTROL' in typeof(express_getattr(self, 'RelatingControl', INDETERMINATE))) is not False
 
 class IfcRelAssignsToActor_WR1:
     SCOPE = 'entity'
@@ -6375,7 +6375,7 @@ class IfcRelAssociates_WR21:
     @staticmethod
     def __call__(self):
         relatedobjects = express_getattr(self, 'RelatedObjects', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedobjects if not ('ifc2x3.ifcobjectdefinition' in typeof(temp) or 'ifc2x3.ifcpropertydefinition' in typeof(temp))]) == 0) is not False
+        assert (sizeof([temp for temp in relatedobjects if not ('IFC2X3.IFCOBJECTDEFINITION' in typeof(temp) or 'IFC2X3.IFCPROPERTYDEFINITION' in typeof(temp))]) == 0) is not False
 
 class IfcRelAssociatesMaterial_WR21:
     SCOPE = 'entity'
@@ -6384,7 +6384,7 @@ class IfcRelAssociatesMaterial_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc2x3.ifcfeatureelementsubtraction' in typeof(temp) or 'ifc2x3.ifcvirtualelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'IFC2X3.IFCFEATUREELEMENTSUBTRACTION' in typeof(temp) or 'IFC2X3.IFCVIRTUALELEMENT' in typeof(temp)]) == 0) is not False
 
 class IfcRelAssociatesMaterial_WR22:
     SCOPE = 'entity'
@@ -6393,7 +6393,7 @@ class IfcRelAssociatesMaterial_WR22:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if not 'ifc2x3.ifcproduct' in typeof(temp) and (not 'ifc2x3.ifctypeproduct' in typeof(temp))]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if not 'IFC2X3.IFCPRODUCT' in typeof(temp) and (not 'IFC2X3.IFCTYPEPRODUCT' in typeof(temp))]) == 0) is not False
 
 class IfcRelConnectsElements_WR31:
     SCOPE = 'entity'
@@ -6414,7 +6414,7 @@ class IfcRelContainedInSpatialStructure_WR31:
     @staticmethod
     def __call__(self):
         relatedelements = express_getattr(self, 'RelatedElements', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedelements if 'ifc2x3.ifcspatialstructureelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in relatedelements if 'IFC2X3.IFCSPATIALSTRUCTUREELEMENT' in typeof(temp)]) == 0) is not False
 
 class IfcRelDecomposes_WR31:
     SCOPE = 'entity'
@@ -6453,7 +6453,7 @@ class IfcRelReferencedInSpatialStructure_WR31:
     @staticmethod
     def __call__(self):
         relatedelements = express_getattr(self, 'RelatedElements', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedelements if 'ifc2x3.ifcspatialstructureelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in relatedelements if 'IFC2X3.IFCSPATIALSTRUCTUREELEMENT' in typeof(temp)]) == 0) is not False
 
 class IfcRelSchedulesCostItems_WR11:
     SCOPE = 'entity'
@@ -6462,7 +6462,7 @@ class IfcRelSchedulesCostItems_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if not 'ifc2x3.ifccostitem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if not 'IFC2X3.IFCCOSTITEM' in typeof(temp)]) == 0) is not False
 
 class IfcRelSchedulesCostItems_WR12:
     SCOPE = 'entity'
@@ -6471,7 +6471,7 @@ class IfcRelSchedulesCostItems_WR12:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifccostschedule' in typeof(express_getattr(self, 'RelatingControl', INDETERMINATE))) is not False
+        assert ('IFC2X3.IFCCOSTSCHEDULE' in typeof(express_getattr(self, 'RelatingControl', INDETERMINATE))) is not False
 
 class IfcRelSequence_WR1:
     SCOPE = 'entity'
@@ -6493,7 +6493,7 @@ class IfcRelSpaceBoundary_WR1:
     def __call__(self):
         relatedbuildingelement = express_getattr(self, 'RelatedBuildingElement', INDETERMINATE)
         physicalorvirtualboundary = express_getattr(self, 'PhysicalOrVirtualBoundary', INDETERMINATE)
-        assert (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (exists(relatedbuildingelement) and (not 'ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement))) or (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and (not exists(relatedbuildingelement) or 'ifc2x3.ifcvirtualelement' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
+        assert (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (exists(relatedbuildingelement) and (not 'IFC2X3.IFCVIRTUALELEMENT' in typeof(relatedbuildingelement))) or (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and (not exists(relatedbuildingelement) or 'IFC2X3.IFCVIRTUALELEMENT' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
 
 class IfcRevolvedAreaSolid_WR31:
     SCOPE = 'entity'
@@ -6602,7 +6602,7 @@ class IfcShapeRepresentation_WR21:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifcgeometricrepresentationcontext' in typeof(express_getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
+        assert ('IFC2X3.IFCGEOMETRICREPRESENTATIONCONTEXT' in typeof(express_getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
 
 class IfcShapeRepresentation_WR22:
     SCOPE = 'entity'
@@ -6612,7 +6612,7 @@ class IfcShapeRepresentation_WR22:
     @staticmethod
     def __call__(self):
         items = express_getattr(self, 'Items', INDETERMINATE)
-        assert (sizeof([temp for temp in items if 'ifc2x3.ifctopologicalrepresentationitem' in typeof(temp) and (not sizeof(['ifc2x3.ifcvertexpoint', 'ifc2x3.ifcedgecurve', 'ifc2x3.ifcfacesurface'] * typeof(temp)) == 1)]) == 0) is not False
+        assert (sizeof([temp for temp in items if 'IFC2X3.IFCTOPOLOGICALREPRESENTATIONITEM' in typeof(temp) and (not sizeof(['IFC2X3.IFCVERTEXPOINT', 'IFC2X3.IFCEDGECURVE', 'IFC2X3.IFCFACESURFACE'] * typeof(temp)) == 1)]) == 0) is not False
 
 class IfcShapeRepresentation_WR23:
     SCOPE = 'entity'
@@ -6665,7 +6665,7 @@ class IfcSpatialStructureElement_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (hiindex(express_getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'ifc2x3.ifcrelaggregates' in typeof(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc2x3.ifcproject' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'ifc2x3.ifcspatialstructureelement' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
+        assert (hiindex(express_getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'IFC2X3.IFCRELAGGREGATES' in typeof(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('IFC2X3.IFCPROJECT' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'IFC2X3.IFCSPATIALSTRUCTUREELEMENT' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
 
 class IfcStair_WR1:
     SCOPE = 'entity'
@@ -6683,7 +6683,7 @@ class IfcStructuralLinearAction_WR61:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc2x3.ifcstructuralloadlinearforce', 'ifc2x3.ifcstructuralloadtemperature'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC2X3.IFCSTRUCTURALLOADLINEARFORCE', 'IFC2X3.IFCSTRUCTURALLOADTEMPERATURE'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 def calc_IfcStructuralLinearActionVarying_VaryingAppliedLoads(self):
     subsequentappliedloads = express_getattr(self, 'SubsequentAppliedLoads', INDETERMINATE)
@@ -6696,7 +6696,7 @@ class IfcStructuralPlanarAction_WR61:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc2x3.ifcstructuralloadplanarforce', 'ifc2x3.ifcstructuralloadtemperature'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC2X3.IFCSTRUCTURALLOADPLANARFORCE', 'IFC2X3.IFCSTRUCTURALLOADTEMPERATURE'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 def calc_IfcStructuralPlanarActionVarying_VaryingAppliedLoads(self):
     subsequentappliedloads = express_getattr(self, 'SubsequentAppliedLoads', INDETERMINATE)
@@ -6709,7 +6709,7 @@ class IfcStructuralPointAction_WR61:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc2x3.ifcstructuralloadsingleforce', 'ifc2x3.ifcstructuralloadsingledisplacement'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC2X3.IFCSTRUCTURALLOADSINGLEFORCE', 'IFC2X3.IFCSTRUCTURALLOADSINGLEDISPLACEMENT'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralPointReaction_WR61:
     SCOPE = 'entity'
@@ -6718,7 +6718,7 @@ class IfcStructuralPointReaction_WR61:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc2x3.ifcstructuralloadsingleforce', 'ifc2x3.ifcstructuralloadsingledisplacement'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC2X3.IFCSTRUCTURALLOADSINGLEFORCE', 'IFC2X3.IFCSTRUCTURALLOADSINGLEDISPLACEMENT'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralProfileProperties_WR21:
     SCOPE = 'entity'
@@ -6785,7 +6785,7 @@ class IfcStructuralSurfaceMemberVarying_WR63:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'VaryingThicknessLocation', INDETERMINATE), 'ShapeRepresentations', INDETERMINATE) if not ('ifc2x3.ifccartesianpoint' in typeof(express_getitem(express_getattr(temp, 'Items', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc2x3.ifcpointonsurface' in typeof(express_getitem(express_getattr(temp, 'Items', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'VaryingThicknessLocation', INDETERMINATE), 'ShapeRepresentations', INDETERMINATE) if not ('IFC2X3.IFCCARTESIANPOINT' in typeof(express_getitem(express_getattr(temp, 'Items', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'IFC2X3.IFCPOINTONSURFACE' in typeof(express_getitem(express_getattr(temp, 'Items', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))]) == 0) is not False
 
 def calc_IfcStructuralSurfaceMemberVarying_VaryingThickness(self):
     subsequentthickness = express_getattr(self, 'SubsequentThickness', INDETERMINATE)
@@ -6799,7 +6799,7 @@ class IfcStructuredDimensionCallout_WR31:
     @staticmethod
     def __call__(self):
         contents = express_getattr(self, 'Contents', INDETERMINATE)
-        assert (sizeof([ato for ato in [con for con in express_getattr(self, 'contents', INDETERMINATE) if 'ifc2x3.ifcannotationtextoccurrence' in typeof(con)] if not express_getattr(express_getattr(ato, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['dimensionvalue', 'tolerancevalue', 'unittext', 'prefixtext', 'suffixtext']]) == 0) is not False
+        assert (sizeof([ato for ato in [con for con in express_getattr(self, 'contents', INDETERMINATE) if 'IFC2X3.IFCANNOTATIONTEXTOCCURRENCE' in typeof(con)] if not express_getattr(express_getattr(ato, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['dimension value', 'tolerance value', 'unit text', 'prefix text', 'suffix text'])]) == 0) is not False
 
 class IfcStyledItem_WR11:
     SCOPE = 'entity'
@@ -6819,7 +6819,7 @@ class IfcStyledItem_WR12:
     @staticmethod
     def __call__(self):
         item = express_getattr(self, 'Item', INDETERMINATE)
-        assert (not 'ifc2x3.ifcstyleditem' in typeof(item)) is not False
+        assert (not 'IFC2X3.IFCSTYLEDITEM' in typeof(item)) is not False
 
 class IfcStyledRepresentation_WR21:
     SCOPE = 'entity'
@@ -6828,7 +6828,7 @@ class IfcStyledRepresentation_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'ifc2x3.ifcstyleditem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'IFC2X3.IFCSTYLEDITEM' in typeof(temp)]) == 0) is not False
 
 class IfcSurfaceOfLinearExtrusion_WR41:
     SCOPE = 'entity'
@@ -6856,7 +6856,7 @@ class IfcSurfaceStyle_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc2x3.ifcsurfacestyleshading' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC2X3.IFCSURFACESTYLESHADING' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_WR12:
     SCOPE = 'entity'
@@ -6865,7 +6865,7 @@ class IfcSurfaceStyle_WR12:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc2x3.ifcsurfacestylelighting' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC2X3.IFCSURFACESTYLELIGHTING' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_WR13:
     SCOPE = 'entity'
@@ -6874,7 +6874,7 @@ class IfcSurfaceStyle_WR13:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc2x3.ifcsurfacestylerefraction' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC2X3.IFCSURFACESTYLEREFRACTION' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_WR14:
     SCOPE = 'entity'
@@ -6883,7 +6883,7 @@ class IfcSurfaceStyle_WR14:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc2x3.ifcsurfacestylewithtextures' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC2X3.IFCSURFACESTYLEWITHTEXTURES' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_WR15:
     SCOPE = 'entity'
@@ -6892,7 +6892,7 @@ class IfcSurfaceStyle_WR15:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc2x3.ifcexternallydefinedsurfacestyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC2X3.IFCEXTERNALLYDEFINEDSURFACESTYLE' in typeof(style)]) <= 1) is not False
 
 class IfcSweptAreaSolid_WR22:
     SCOPE = 'entity'
@@ -6933,7 +6933,7 @@ class IfcSweptSurface_WR1:
     @staticmethod
     def __call__(self):
         sweptcurve = express_getattr(self, 'SweptCurve', INDETERMINATE)
-        assert (not 'ifc2x3.ifcderivedprofiledef' in typeof(sweptcurve)) is not False
+        assert (not 'IFC2X3.IFCDERIVEDPROFILEDEF' in typeof(sweptcurve)) is not False
 
 class IfcSweptSurface_WR2:
     SCOPE = 'entity'
@@ -7030,7 +7030,7 @@ class IfcTask_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Decomposes', INDETERMINATE) if not 'ifc2x3.ifcrelnests' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Decomposes', INDETERMINATE) if not 'IFC2X3.IFCRELNESTS' in typeof(temp)]) == 0) is not False
 
 class IfcTask_WR2:
     SCOPE = 'entity'
@@ -7039,7 +7039,7 @@ class IfcTask_WR2:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'IsDecomposedBy', INDETERMINATE) if not 'ifc2x3.ifcrelnests' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'IsDecomposedBy', INDETERMINATE) if not 'IFC2X3.IFCRELNESTS' in typeof(temp)]) == 0) is not False
 
 class IfcTask_WR3:
     SCOPE = 'entity'
@@ -7082,7 +7082,7 @@ class IfcTextLiteralWithExtent_WR31:
     @staticmethod
     def __call__(self):
         extent = express_getattr(self, 'Extent', INDETERMINATE)
-        assert (not 'ifc2x3.ifcplanarbox' in typeof(extent)) is not False
+        assert (not 'IFC2X3.IFCPLANARBOX' in typeof(extent)) is not False
 
 class IfcTextStyleFontModel_WR31:
     SCOPE = 'entity'
@@ -7091,7 +7091,7 @@ class IfcTextStyleFontModel_WR31:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc2x3.ifclengthmeasure' in typeof(express_getattr(self, 'FontSize', INDETERMINATE)) and express_getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
+        assert ('IFC2X3.IFCLENGTHMEASURE' in typeof(express_getattr(self, 'FontSize', INDETERMINATE)) and express_getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
 
 class IfcTextureMap_WR11:
     SCOPE = 'entity'
@@ -7100,7 +7100,7 @@ class IfcTextureMap_WR11:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc2x3.ifcshellbasedsurfacemodel', 'ifc2x3.ifcfacebasedsurfacemodel', 'ifc2x3.ifcfacetedbrep', 'ifc2x3.ifcfacetedbrepwithvoids'] * typeof(express_getattr(express_getitem(express_getattr(self, 'AnnotatedSurface', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Item', INDETERMINATE))) >= 1) is not False
+        assert (sizeof(['IFC2X3.IFCSHELLBASEDSURFACEMODEL', 'IFC2X3.IFCFACEBASEDSURFACEMODEL', 'IFC2X3.IFCFACETEDBREP', 'IFC2X3.IFCFACETEDBREPWITHVOIDS'] * typeof(express_getattr(express_getitem(express_getattr(self, 'AnnotatedSurface', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Item', INDETERMINATE))) >= 1) is not False
 
 class IfcTimeSeriesSchedule_WR41:
     SCOPE = 'entity'
@@ -7119,7 +7119,7 @@ class IfcTopologyRepresentation_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'ifc2x3.ifctopologicalrepresentationitem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'IFC2X3.IFCTOPOLOGICALREPRESENTATIONITEM' in typeof(temp)]) == 0) is not False
 
 class IfcTopologyRepresentation_WR22:
     SCOPE = 'entity'
@@ -7167,7 +7167,7 @@ class IfcTrimmedCurve_WR43:
     @staticmethod
     def __call__(self):
         basiscurve = express_getattr(self, 'BasisCurve', INDETERMINATE)
-        assert (not 'ifc2x3.ifcboundedcurve' in typeof(basiscurve)) is not False
+        assert (not 'IFC2X3.IFCBOUNDEDCURVE' in typeof(basiscurve)) is not False
 
 class IfcTubeBundleType_WR1:
     SCOPE = 'entity'
@@ -7195,7 +7195,7 @@ class IfcTypeProduct_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(lambda : express_getitem(express_getattr(self, 'ObjectTypeOf', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'ObjectTypeOf', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc2x3.ifcproduct' in typeof(temp)]) == 0) is not False
+        assert (not exists(lambda : express_getitem(express_getattr(self, 'ObjectTypeOf', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'ObjectTypeOf', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'IFC2X3.IFCPRODUCT' in typeof(temp)]) == 0) is not False
 
 class IfcUShapeProfileDef_WR21:
     SCOPE = 'entity'
@@ -7280,7 +7280,7 @@ class IfcWall_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'HasAssociations', INDETERMINATE) if 'ifc2x3.ifcrelassociatesmaterial' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'HasAssociations', INDETERMINATE) if 'IFC2X3.IFCRELASSOCIATESMATERIAL' in typeof(temp)]) <= 1) is not False
 
 class IfcWallStandardCase_WR1:
     SCOPE = 'entity'
@@ -7289,7 +7289,7 @@ class IfcWallStandardCase_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc2x3.ifcrelassociates.relatedobjects') if 'ifc2x3.ifcrelassociatesmaterial' in typeof(temp) and 'ifc2x3.ifcmateriallayersetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC2X3.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC2X3.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC2X3.IFCMATERIALLAYERSETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcWindowLiningProperties_WR31:
     SCOPE = 'entity'
@@ -7331,7 +7331,7 @@ class IfcWindowLiningProperties_WR34:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'ifc2x3.ifcwindowstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and 'IFC2X3.IFCWINDOWSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))) is not False
 
 class IfcWorkControl_WR1:
     SCOPE = 'entity'
@@ -7361,7 +7361,7 @@ class IfcZone_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc2x3.ifczone' in typeof(temp) or 'ifc2x3.ifcspace' in typeof(temp))]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('IFC2X3.IFCZONE' in typeof(temp) or 'IFC2X3.IFCSPACE' in typeof(temp))]) == 0) is not False
 
 class IfcRepresentationContextSameWCS:
     SCOPE = 'file'
@@ -7590,10 +7590,10 @@ def IfcCorrectFillAreaStyle(styles):
     tiles = 0
     colour = 0
     external = 0
-    external = sizeof([style for style in styles if 'ifc2x3.ifcexternallydefinedhatchstyle' in typeof(style)])
-    hatching = sizeof([style for style in styles if 'ifc2x3.ifcfillareastylehatching' in typeof(style)])
-    tiles = sizeof([style for style in styles if 'ifc2x3.ifcfillareastyletiles' in typeof(style)])
-    colour = sizeof([style for style in styles if 'ifc2x3.ifccolour' in typeof(style)])
+    external = sizeof([style for style in styles if 'IFC2X3.IFCEXTERNALLYDEFINEDHATCHSTYLE' in typeof(style)])
+    hatching = sizeof([style for style in styles if 'IFC2X3.IFCFILLAREASTYLEHATCHING' in typeof(style)])
+    tiles = sizeof([style for style in styles if 'IFC2X3.IFCFILLAREASTYLETILES' in typeof(style)])
+    colour = sizeof([style for style in styles if 'IFC2X3.IFCCOLOUR' in typeof(style)])
     if external > 1:
         return False
     if external == 1 and (hatching > 0 or tiles > 0 or colour > 0):
@@ -7606,12 +7606,12 @@ def IfcCorrectFillAreaStyle(styles):
 
 def IfcCorrectLocalPlacement(axisplacement, relplacement):
     if exists(relplacement):
-        if 'ifc2x3.ifcgridplacement' in typeof(relplacement):
+        if 'IFC2X3.IFCGRIDPLACEMENT' in typeof(relplacement):
             return None
-        if 'ifc2x3.ifclocalplacement' in typeof(relplacement):
-            if 'ifc2x3.ifcaxis2placement2d' in typeof(axisplacement):
+        if 'IFC2X3.IFCLOCALPLACEMENT' in typeof(relplacement):
+            if 'IFC2X3.IFCAXIS2PLACEMENT2D' in typeof(axisplacement):
                 return True
-            if 'ifc2x3.ifcaxis2placement3d' in typeof(axisplacement):
+            if 'IFC2X3.IFCAXIS2PLACEMENT3D' in typeof(axisplacement):
                 if express_getattr(express_getattr(relplacement, 'RelativePlacement', INDETERMINATE), 'Dim', INDETERMINATE) == 3:
                     return True
                 else:
@@ -7626,25 +7626,25 @@ def IfcCorrectObjectAssignment(constraint, objects):
     if constraint == express_getattr(IfcObjectTypeEnum, 'NOTDEFINED', INDETERMINATE):
         return True
     elif constraint == express_getattr(IfcObjectTypeEnum, 'PRODUCT', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcproduct' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCPRODUCT' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'PROCESS', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcprocess' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCPROCESS' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'CONTROL', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifccontrol' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCCONTROL' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'RESOURCE', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcresource' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCRESOURCE' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'ACTOR', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcactor' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCACTOR' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'GROUP', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcgroup' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCGROUP' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'PROJECT', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc2x3.ifcproject' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC2X3.IFCPROJECT' in typeof(temp)])
         return count == 0
     else:
         return None
@@ -7655,13 +7655,13 @@ def IfcCorrectUnitAssignment(units):
     monetaryunitnumber = 0
     namedunitnames = express_set([])
     derivedunitnames = express_set([])
-    namedunitnumber = sizeof([temp for temp in units if 'ifc2x3.ifcnamedunit' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    derivedunitnumber = sizeof([temp for temp in units if 'ifc2x3.ifcderivedunit' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    monetaryunitnumber = sizeof([temp for temp in units if 'ifc2x3.ifcmonetaryunit' in typeof(temp)])
+    namedunitnumber = sizeof([temp for temp in units if 'IFC2X3.IFCNAMEDUNIT' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    derivedunitnumber = sizeof([temp for temp in units if 'IFC2X3.IFCDERIVEDUNIT' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    monetaryunitnumber = sizeof([temp for temp in units if 'IFC2X3.IFCMONETARYUNIT' in typeof(temp)])
     for i in range(1, sizeof(units) + 1):
-        if 'ifc2x3.ifcnamedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
+        if 'IFC2X3.IFCNAMEDUNIT' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
             namedunitnames = namedunitnames + express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
-        if 'ifc2x3.ifcderivedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
+        if 'IFC2X3.IFCDERIVEDUNIT' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
             derivedunitnames = derivedunitnames + express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
     return sizeof(namedunitnames) == namedunitnumber and sizeof(derivedunitnames) == derivedunitnumber and (monetaryunitnumber <= 1)
 
@@ -7682,21 +7682,21 @@ def IfcCrossProduct(arg1, arg2):
         return result
 
 def IfcCurveDim(curve):
-    if 'ifc2x3.ifcline' in typeof(curve):
+    if 'IFC2X3.IFCLINE' in typeof(curve):
         return express_getattr(express_getattr(curve, 'Pnt', INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc2x3.ifcconic' in typeof(curve):
+    if 'IFC2X3.IFCCONIC' in typeof(curve):
         return express_getattr(express_getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc2x3.ifcpolyline' in typeof(curve):
+    if 'IFC2X3.IFCPOLYLINE' in typeof(curve):
         return express_getattr(express_getitem(express_getattr(curve, 'Points', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc2x3.ifctrimmedcurve' in typeof(curve):
+    if 'IFC2X3.IFCTRIMMEDCURVE' in typeof(curve):
         return IfcCurveDim(express_getattr(curve, 'BasisCurve', INDETERMINATE))
-    if 'ifc2x3.ifccompositecurve' in typeof(curve):
+    if 'IFC2X3.IFCCOMPOSITECURVE' in typeof(curve):
         return express_getattr(express_getitem(express_getattr(curve, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc2x3.ifcbsplinecurve' in typeof(curve):
+    if 'IFC2X3.IFCBSPLINECURVE' in typeof(curve):
         return express_getattr(express_getitem(express_getattr(curve, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc2x3.ifcoffsetcurve2d' in typeof(curve):
+    if 'IFC2X3.IFCOFFSETCURVE2D' in typeof(curve):
         return 2
-    if 'ifc2x3.ifcoffsetcurve3d' in typeof(curve):
+    if 'IFC2X3.IFCOFFSETCURVE3D' in typeof(curve):
         return 3
     return None
 
@@ -7860,7 +7860,7 @@ def IfcNormalise(arg):
         return None
     else:
         ndim = express_getattr(arg, 'Dim', INDETERMINATE)
-        if 'ifc2x3.ifcvector' in typeof(arg):
+        if 'IFC2X3.IFCVECTOR' in typeof(arg):
             v.DirectionRatios = express_getattr(express_getattr(arg, 'Orientation', INDETERMINATE), 'DirectionRatios', INDETERMINATE)
             vec.Magnitude = express_getattr(arg, 'Magnitude', INDETERMINATE)
             vec.Orientation = v
@@ -7879,7 +7879,7 @@ def IfcNormalise(arg):
                 temp = list(express_getattr(v, 'DirectionRatios', INDETERMINATE))
                 temp[i - EXPRESS_ONE_BASED_INDEXING] = express_getitem(express_getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) / mag
                 v.DirectionRatios = temp
-            if 'ifc2x3.ifcvector' in typeof(arg):
+            if 'IFC2X3.IFCVECTOR' in typeof(arg):
                 vec.Orientation = v
                 result = vec
             else:
@@ -7949,7 +7949,7 @@ def IfcScalarTimesVector(scalar, vec):
     if not exists(scalar) or not exists(vec):
         return None
     else:
-        if 'ifc2x3.ifcvector' in typeof(vec):
+        if 'IFC2X3.IFCVECTOR' in typeof(vec):
             v = express_getattr(vec, 'Orientation', INDETERMINATE)
             mag = scalar * express_getattr(vec, 'Magnitude', INDETERMINATE)
         else:
@@ -7978,57 +7978,57 @@ def IfcSecondProjAxis(zaxis, xaxis, arg):
 
 def IfcShapeRepresentationTypes(reptype, items):
     count = 0
-    if express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve2d':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifccurve' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'annotation2d':
-        count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['ifc2x3.ifcpoint', 'ifc2x3.ifccurve', 'ifc2x3.ifcgeometriccurveset', 'ifc2x3.ifcannotationfillarea', 'ifc2x3.ifcdefinedsymbol', 'ifc2x3.ifctextliteral', 'ifc2x3.ifcdraughtingcallout']) == 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'geometricset':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcgeometricset' in typeof(temp) or 'ifc2x3.ifcpoint' in typeof(temp) or 'ifc2x3.ifccurve' in typeof(temp) or ('ifc2x3.ifcsurface' in typeof(temp))])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'geometriccurveset':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcgeometriccurveset' in typeof(temp) or 'ifc2x3.ifcgeometricset' in typeof(temp) or 'ifc2x3.ifcpoint' in typeof(temp) or ('ifc2x3.ifccurve' in typeof(temp))])
+    if reptype == 'Curve2D':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCCURVE' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
+    elif reptype == 'Annotation2D':
+        count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['IFC2X3.IFCPOINT', 'IFC2X3.IFCCURVE', 'IFC2X3.IFCGEOMETRICCURVESET', 'IFC2X3.IFCANNOTATIONFILLAREA', 'IFC2X3.IFCDEFINEDSYMBOL', 'IFC2X3.IFCTEXTLITERAL', 'IFC2X3.IFCDRAUGHTINGCALLOUT']) == 1])
+    elif reptype == 'GeometricSet':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCGEOMETRICSET' in typeof(temp) or 'IFC2X3.IFCPOINT' in typeof(temp) or 'IFC2X3.IFCCURVE' in typeof(temp) or ('IFC2X3.IFCSURFACE' in typeof(temp))])
+    elif reptype == 'GeometricCurveSet':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCGEOMETRICCURVESET' in typeof(temp) or 'IFC2X3.IFCGEOMETRICSET' in typeof(temp) or 'IFC2X3.IFCPOINT' in typeof(temp) or ('IFC2X3.IFCCURVE' in typeof(temp))])
         for i in range(1, hiindex(items) + 1):
-            if 'ifc2x3.ifcgeometricset' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-                if sizeof([temp for temp in express_getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'ifc2x3.ifcsurface' in typeof(temp)]) > 0:
+            if 'IFC2X3.IFCGEOMETRICSET' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                if sizeof([temp for temp in express_getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'IFC2X3.IFCSURFACE' in typeof(temp)]) > 0:
                     count = count - 1
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surfacemodel':
-        count = sizeof([temp for temp in items if sizeof(['ifc2x3.ifcshellbasedsurfacemodel', 'ifc2x3.ifcfacebasedsurfacemodel', 'ifc2x3.ifcfacetedbrep', 'ifc2x3.ifcfacetedbrepwithvoids'] * typeof(temp)) >= 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'solidmodel':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsolidmodel' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sweptsolid':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsweptareasolid' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'csg':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanresult' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'clipping':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcbooleanclippingresult' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsweptsolid':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsurfacecurvesweptareasolid' in typeof(temp) or 'ifc2x3.ifcsweptdisksolid' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'brep':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcfacetedbrep' in typeof(temp) or 'ifc2x3.ifcfacetedbrepwithvoids' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'boundingbox':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcboundingbox' in typeof(temp)])
+    elif reptype == 'SurfaceModel':
+        count = sizeof([temp for temp in items if sizeof(['IFC2X3.IFCSHELLBASEDSURFACEMODEL', 'IFC2X3.IFCFACEBASEDSURFACEMODEL', 'IFC2X3.IFCFACETEDBREP', 'IFC2X3.IFCFACETEDBREPWITHVOIDS'] * typeof(temp)) >= 1])
+    elif reptype == 'SolidModel':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCSOLIDMODEL' in typeof(temp)])
+    elif reptype == 'SweptSolid':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCSWEPTAREASOLID' in typeof(temp)])
+    elif reptype == 'CSG':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCBOOLEANRESULT' in typeof(temp)])
+    elif reptype == 'Clipping':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCBOOLEANCLIPPINGRESULT' in typeof(temp)])
+    elif reptype == 'AdvancedSweptSolid':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCSURFACECURVESWEPTAREASOLID' in typeof(temp) or 'IFC2X3.IFCSWEPTDISKSOLID' in typeof(temp)])
+    elif reptype == 'Brep':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCFACETEDBREP' in typeof(temp) or 'IFC2X3.IFCFACETEDBREPWITHVOIDS' in typeof(temp)])
+    elif reptype == 'BoundingBox':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCBOUNDINGBOX' in typeof(temp)])
         if sizeof(items) > 1:
             count = 0
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedspine':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcsectionedspine' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'mappedrepresentation':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcmappeditem' in typeof(temp)])
+    elif reptype == 'SectionedSpine':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCSECTIONEDSPINE' in typeof(temp)])
+    elif reptype == 'MappedRepresentation':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCMAPPEDITEM' in typeof(temp)])
     else:
         return None
     return count == sizeof(items)
 
 def IfcTopologyRepresentationTypes(reptype, items):
     count = 0
-    if express_getattr(reptype, 'lower', INDETERMINATE)() == 'vertex':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcvertex' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'edge':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcedge' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'path':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcpath' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'face':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcface' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'shell':
-        count = sizeof([temp for temp in items if 'ifc2x3.ifcopenshell' in typeof(temp) or 'ifc2x3.ifcclosedshell' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'undefined':
+    if reptype == 'Vertex':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCVERTEX' in typeof(temp)])
+    elif reptype == 'Edge':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCEDGE' in typeof(temp)])
+    elif reptype == 'Path':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCPATH' in typeof(temp)])
+    elif reptype == 'Face':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCFACE' in typeof(temp)])
+    elif reptype == 'Shell':
+        count = sizeof([temp for temp in items if 'IFC2X3.IFCOPENSHELL' in typeof(temp) or 'IFC2X3.IFCCLOSEDSHELL' in typeof(temp)])
+    elif reptype == 'Undefined':
         return True
     else:
         return None
@@ -8069,13 +8069,13 @@ def IfcVectorDifference(arg1, arg2):
     if (not exists(arg1) or not exists(arg2)) or express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
-        if 'ifc2x3.ifcvector' in typeof(arg1):
+        if 'IFC2X3.IFCVECTOR' in typeof(arg1):
             mag1 = express_getattr(arg1, 'Magnitude', INDETERMINATE)
             vec1 = express_getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
-        if 'ifc2x3.ifcvector' in typeof(arg2):
+        if 'IFC2X3.IFCVECTOR' in typeof(arg2):
             mag2 = express_getattr(arg2, 'Magnitude', INDETERMINATE)
             vec2 = express_getattr(arg2, 'Orientation', INDETERMINATE)
         else:
@@ -8101,13 +8101,13 @@ def IfcVectorSum(arg1, arg2):
     if (not exists(arg1) or not exists(arg2)) or express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
-        if 'ifc2x3.ifcvector' in typeof(arg1):
+        if 'IFC2X3.IFCVECTOR' in typeof(arg1):
             mag1 = express_getattr(arg1, 'Magnitude', INDETERMINATE)
             vec1 = express_getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
-        if 'ifc2x3.ifcvector' in typeof(arg2):
+        if 'IFC2X3.IFCVECTOR' in typeof(arg2):
             mag2 = express_getattr(arg2, 'Magnitude', INDETERMINATE)
             vec2 = express_getattr(arg2, 'Orientation', INDETERMINATE)
         else:

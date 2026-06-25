@@ -443,7 +443,10 @@ class entity_instance:
 
     def __eq__(self, other: entity_instance) -> bool:
         if not isinstance(self, type(other)):
-            return False
+            if not self.is_entity():
+                return self[0] == other
+            else:
+                return False
         elif None in (self.wrapped_data.file, other.wrapped_data.file):
             # when not added to a file, we can only compare attribute values
             # and we need this for where rule evaluation

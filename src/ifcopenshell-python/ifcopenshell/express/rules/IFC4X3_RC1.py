@@ -95,12 +95,12 @@ EXPRESS_ONE_BASED_INDEXING = 1
 def typeof(inst):
     if not inst:
         return express_set([])
-    schema_name = inst.is_a(True).split('.')[0].lower()
+    schema_name = inst.is_a(True).split('.')[0].upper()
 
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
-            yield '.'.join((schema_name, decl.name().lower()))
+            yield '.'.join((schema_name, decl.name().upper()))
             if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
                 decl = decl.supertype()
             else:
@@ -5128,7 +5128,7 @@ class IfcBoxAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right'])) is not False
 
 class IfcCardinalPointReference_GreaterThanZero:
     SCOPE = 'type'
@@ -5209,7 +5209,7 @@ class IfcFontStyle_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'italic', 'oblique'])) is not False
 
 class IfcFontVariant_WR1:
     SCOPE = 'type'
@@ -5218,7 +5218,7 @@ class IfcFontVariant_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'small-caps'])) is not False
 
 class IfcFontWeight_WR1:
     SCOPE = 'type'
@@ -5227,7 +5227,7 @@ class IfcFontWeight_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900'])) is not False
 
 class IfcHeatingValueMeasure_WR1:
     SCOPE = 'type'
@@ -5326,7 +5326,7 @@ class IfcTextAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['left', 'right', 'center', 'justify'])) is not False
 
 class IfcTextDecoration_WR1:
     SCOPE = 'type'
@@ -5335,7 +5335,7 @@ class IfcTextDecoration_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['none', 'underline', 'overline', 'line-through', 'blink'])) is not False
 
 class IfcTextTransformation_WR1:
     SCOPE = 'type'
@@ -5344,7 +5344,7 @@ class IfcTextTransformation_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['capitalize', 'uppercase', 'lowercase', 'none'])) is not False
 
 class IfcActorRole_WR1:
     SCOPE = 'entity'
@@ -5374,7 +5374,7 @@ class IfcActuator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcactuatortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCACTUATORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcActuatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5403,7 +5403,7 @@ class IfcAdvancedBrep_HasAdvancedFaces:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([afs for afs in express_getattr(express_getattr(self, 'Outer', INDETERMINATE), 'CfsFaces', INDETERMINATE) if not 'ifc4x3_rc1.ifcadvancedface' in typeof(afs)]) == 0) is not False
+        assert (sizeof([afs for afs in express_getattr(express_getattr(self, 'Outer', INDETERMINATE), 'CfsFaces', INDETERMINATE) if not 'IFC4X3_RC1.IFCADVANCEDFACE' in typeof(afs)]) == 0) is not False
 
 class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     SCOPE = 'entity'
@@ -5413,7 +5413,7 @@ class IfcAdvancedBrepWithVoids_VoidsHaveAdvancedFaces:
     @staticmethod
     def __call__(self):
         voids = express_getattr(self, 'Voids', INDETERMINATE)
-        assert (sizeof([vsh for vsh in voids if sizeof([afs for afs in express_getattr(vsh, 'CfsFaces', INDETERMINATE) if not 'ifc4x3_rc1.ifcadvancedface' in typeof(afs)]) == 0]) == 0) is not False
+        assert (sizeof([vsh for vsh in voids if sizeof([afs for afs in express_getattr(vsh, 'CfsFaces', INDETERMINATE) if not 'IFC4X3_RC1.IFCADVANCEDFACE' in typeof(afs)]) == 0]) == 0) is not False
 
 class IfcAdvancedFace_ApplicableSurface:
     SCOPE = 'entity'
@@ -5422,7 +5422,7 @@ class IfcAdvancedFace_ApplicableSurface:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc1.ifcelementarysurface', 'ifc4x3_rc1.ifcsweptsurface', 'ifc4x3_rc1.ifcbsplinesurface'] * typeof(express_getattr(self, 'FaceSurface', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC4X3_RC1.IFCELEMENTARYSURFACE', 'IFC4X3_RC1.IFCSWEPTSURFACE', 'IFC4X3_RC1.IFCBSPLINESURFACE'] * typeof(express_getattr(self, 'FaceSurface', INDETERMINATE))) == 1) is not False
 
 class IfcAdvancedFace_RequiresEdgeCurve:
     SCOPE = 'entity'
@@ -5431,7 +5431,7 @@ class IfcAdvancedFace_RequiresEdgeCurve:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in express_getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_rc1.ifcedgeloop' in typeof(express_getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in express_getattr(express_getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not 'ifc4x3_rc1.ifcedgecurve' in typeof(express_getattr(oe, 'EdgeElement', INDETERMINATE))]) == 0]) == 0) is not False
+        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in express_getattr(self, 'Bounds', INDETERMINATE) if 'IFC4X3_RC1.IFCEDGELOOP' in typeof(express_getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in express_getattr(express_getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not 'IFC4X3_RC1.IFCEDGECURVE' in typeof(express_getattr(oe, 'EdgeElement', INDETERMINATE))]) == 0]) == 0) is not False
 
 class IfcAdvancedFace_ApplicableEdgeCurves:
     SCOPE = 'entity'
@@ -5440,7 +5440,7 @@ class IfcAdvancedFace_ApplicableEdgeCurves:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in express_getattr(self, 'Bounds', INDETERMINATE) if 'ifc4x3_rc1.ifcedgeloop' in typeof(express_getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in express_getattr(express_getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not sizeof(['ifc4x3_rc1.ifcline', 'ifc4x3_rc1.ifcconic', 'ifc4x3_rc1.ifcpolyline', 'ifc4x3_rc1.ifcbsplinecurve'] * typeof(express_getattr(express_getattr(oe, 'EdgeElement', INDETERMINATE), 'EdgeGeometry', INDETERMINATE))) == 1]) == 0]) == 0) is not False
+        assert (sizeof([elpfbnds for elpfbnds in [bnds for bnds in express_getattr(self, 'Bounds', INDETERMINATE) if 'IFC4X3_RC1.IFCEDGELOOP' in typeof(express_getattr(bnds, 'Bound', INDETERMINATE))] if not sizeof([oe for oe in express_getattr(express_getattr(elpfbnds, 'Bound', INDETERMINATE), 'EdgeList', INDETERMINATE) if not sizeof(['IFC4X3_RC1.IFCLINE', 'IFC4X3_RC1.IFCCONIC', 'IFC4X3_RC1.IFCPOLYLINE', 'IFC4X3_RC1.IFCBSPLINECURVE'] * typeof(express_getattr(express_getattr(oe, 'EdgeElement', INDETERMINATE), 'EdgeGeometry', INDETERMINATE))) == 1]) == 0]) == 0) is not False
 
 class IfcAirTerminal_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5460,7 +5460,7 @@ class IfcAirTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcairterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCAIRTERMINALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirTerminalBox_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5480,7 +5480,7 @@ class IfcAirTerminalBox_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcairterminalboxtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCAIRTERMINALBOXTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirTerminalBoxType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5520,7 +5520,7 @@ class IfcAirToAirHeatRecovery_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcairtoairheatrecoverytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCAIRTOAIRHEATRECOVERYTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAirToAirHeatRecoveryType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5550,7 +5550,7 @@ class IfcAlarm_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcalarmtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCALARMTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAlarmType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5591,7 +5591,7 @@ class IfcArbitraryClosedProfileDef_WR2:
     @staticmethod
     def __call__(self):
         outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcline' in typeof(outercurve)) is not False
+        assert (not 'IFC4X3_RC1.IFCLINE' in typeof(outercurve)) is not False
 
 class IfcArbitraryClosedProfileDef_WR3:
     SCOPE = 'entity'
@@ -5601,7 +5601,7 @@ class IfcArbitraryClosedProfileDef_WR3:
     @staticmethod
     def __call__(self):
         outercurve = express_getattr(self, 'OuterCurve', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcoffsetcurve2d' in typeof(outercurve)) is not False
+        assert (not 'IFC4X3_RC1.IFCOFFSETCURVE2D' in typeof(outercurve)) is not False
 
 class IfcArbitraryOpenProfileDef_WR11:
     SCOPE = 'entity'
@@ -5610,7 +5610,7 @@ class IfcArbitraryOpenProfileDef_WR11:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc1.ifccenterlineprofiledef' in typeof(self) or express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
+        assert ('IFC4X3_RC1.IFCCENTERLINEPROFILEDEF' in typeof(self) or express_getattr(self, 'ProfileType', INDETERMINATE) == express_getattr(IfcProfileTypeEnum, 'CURVE', INDETERMINATE)) is not False
 
 class IfcArbitraryOpenProfileDef_WR12:
     SCOPE = 'entity'
@@ -5649,7 +5649,7 @@ class IfcArbitraryProfileDefWithVoids_WR3:
     @staticmethod
     def __call__(self):
         innercurves = express_getattr(self, 'InnerCurves', INDETERMINATE)
-        assert (sizeof([temp for temp in innercurves if 'ifc4x3_rc1.ifcline' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in innercurves if 'IFC4X3_RC1.IFCLINE' in typeof(temp)]) == 0) is not False
 
 class IfcAsymmetricIShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -5717,7 +5717,7 @@ class IfcAudioVisualAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcaudiovisualappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCAUDIOVISUALAPPLIANCETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcAudioVisualApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -5965,7 +5965,7 @@ class IfcBeam_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcbeamtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCBEAMTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBeamStandardCase_HasMaterialProfileSetUsage:
     SCOPE = 'entity'
@@ -5974,7 +5974,7 @@ class IfcBeamStandardCase_HasMaterialProfileSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc1.ifcrelassociates.relatedobjects') if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc1.ifcmaterialprofilesetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC4X3_RC1.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC4X3_RC1.IFCMATERIALPROFILESETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcBeamType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6004,7 +6004,7 @@ class IfcBearing_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcbearingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCBEARINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBearingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6023,7 +6023,7 @@ class IfcBlobTexture_SupportedRasterFormat:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['bmp', 'jpg', 'gif', 'png']) is not False
+        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['BMP', 'JPG', 'GIF', 'PNG'])) is not False
 
 class IfcBlobTexture_RasterCodeByteStream:
     SCOPE = 'entity'
@@ -6053,7 +6053,7 @@ class IfcBoiler_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcboilertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCBOILERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBoilerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6073,7 +6073,7 @@ class IfcBooleanClippingResult_FirstOperandType:
     @staticmethod
     def __call__(self):
         firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
-        assert ('ifc4x3_rc1.ifcsweptareasolid' in typeof(firstoperand) or 'ifc4x3_rc1.ifcsweptdiscsolid' in typeof(firstoperand) or 'ifc4x3_rc1.ifcbooleanclippingresult' in typeof(firstoperand)) is not False
+        assert ('IFC4X3_RC1.IFCSWEPTAREASOLID' in typeof(firstoperand) or 'IFC4X3_RC1.IFCSWEPTDISCSOLID' in typeof(firstoperand) or 'IFC4X3_RC1.IFCBOOLEANCLIPPINGRESULT' in typeof(firstoperand)) is not False
 
 class IfcBooleanClippingResult_SecondOperandType:
     SCOPE = 'entity'
@@ -6083,7 +6083,7 @@ class IfcBooleanClippingResult_SecondOperandType:
     @staticmethod
     def __call__(self):
         secondoperand = express_getattr(self, 'SecondOperand', INDETERMINATE)
-        assert ('ifc4x3_rc1.ifchalfspacesolid' in typeof(secondoperand)) is not False
+        assert ('IFC4X3_RC1.IFCHALFSPACESOLID' in typeof(secondoperand)) is not False
 
 class IfcBooleanClippingResult_OperatorType:
     SCOPE = 'entity'
@@ -6114,7 +6114,7 @@ class IfcBooleanResult_FirstOperandClosed:
     @staticmethod
     def __call__(self):
         firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifctessellatedfaceset' in typeof(firstoperand) or (exists(express_getattr(firstoperand, 'Closed', INDETERMINATE)) and express_getattr(firstoperand, 'Closed', INDETERMINATE))) is not False
+        assert (not 'IFC4X3_RC1.IFCTESSELLATEDFACESET' in typeof(firstoperand) or (exists(express_getattr(firstoperand, 'Closed', INDETERMINATE)) and express_getattr(firstoperand, 'Closed', INDETERMINATE))) is not False
 
 class IfcBooleanResult_SecondOperandClosed:
     SCOPE = 'entity'
@@ -6124,7 +6124,7 @@ class IfcBooleanResult_SecondOperandClosed:
     @staticmethod
     def __call__(self):
         secondoperand = express_getattr(self, 'SecondOperand', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifctessellatedfaceset' in typeof(secondoperand) or (exists(express_getattr(secondoperand, 'Closed', INDETERMINATE)) and express_getattr(secondoperand, 'Closed', INDETERMINATE))) is not False
+        assert (not 'IFC4X3_RC1.IFCTESSELLATEDFACESET' in typeof(secondoperand) or (exists(express_getattr(secondoperand, 'Closed', INDETERMINATE)) and express_getattr(secondoperand, 'Closed', INDETERMINATE))) is not False
 
 def calc_IfcBooleanResult_Dim(self):
     firstoperand = express_getattr(self, 'FirstOperand', INDETERMINATE)
@@ -6149,7 +6149,7 @@ class IfcBoxedHalfSpace_UnboundedSurface:
 
     @staticmethod
     def __call__(self):
-        assert (not 'ifc4x3_rc1.ifccurveboundedplane' in typeof(express_getattr(self, 'BaseSurface', INDETERMINATE))) is not False
+        assert (not 'IFC4X3_RC1.IFCCURVEBOUNDEDPLANE' in typeof(express_getattr(self, 'BaseSurface', INDETERMINATE))) is not False
 
 class IfcBuildingElementPart_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6169,7 +6169,7 @@ class IfcBuildingElementPart_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcbuildingelementparttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCBUILDINGELEMENTPARTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBuildingElementPartType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6208,7 +6208,7 @@ class IfcBuildingElementProxy_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcbuildingelementproxytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCBUILDINGELEMENTPROXYTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBuildingElementProxyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6227,7 +6227,7 @@ class IfcBuiltElement_MaxOneMaterialAssociation:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'HasAssociations', INDETERMINATE) if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'HasAssociations', INDETERMINATE) if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp)]) <= 1) is not False
 
 class IfcBuiltSystem_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6257,7 +6257,7 @@ class IfcBurner_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcburnertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCBURNERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcBurnerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6323,7 +6323,7 @@ class IfcCableCarrierFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccablecarrierfittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCABLECARRIERFITTINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableCarrierFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6353,7 +6353,7 @@ class IfcCableCarrierSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccablecarriersegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCABLECARRIERSEGMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableCarrierSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6383,7 +6383,7 @@ class IfcCableFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccablefittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCABLEFITTINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6413,7 +6413,7 @@ class IfcCableSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccablesegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCABLESEGMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCableSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6443,7 +6443,7 @@ class IfcCaissonFoundation_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccaissonfoundationtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCAISSONFOUNDATIONTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCaissonFoundationType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6621,7 +6621,7 @@ class IfcChiller_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcchillertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCHILLERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcChillerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6651,7 +6651,7 @@ class IfcChimney_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcchimneytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCHIMNEYTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcChimneyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6691,7 +6691,7 @@ class IfcCoil_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccoiltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOILTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoilType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6721,7 +6721,7 @@ class IfcColumn_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccolumntype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOLUMNTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcColumnStandardCase_HasMaterialProfileSetUsage:
     SCOPE = 'entity'
@@ -6730,7 +6730,7 @@ class IfcColumnStandardCase_HasMaterialProfileSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc1.ifcrelassociates.relatedobjects') if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc1.ifcmaterialprofilesetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC4X3_RC1.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC4X3_RC1.IFCMATERIALPROFILESETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcColumnType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6760,7 +6760,7 @@ class IfcCommunicationsAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccommunicationsappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOMMUNICATIONSAPPLIANCETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCommunicationsApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6863,7 +6863,7 @@ class IfcCompositeCurveSegment_ParentIsBoundedCurve:
     @staticmethod
     def __call__(self):
         parentcurve = express_getattr(self, 'ParentCurve', INDETERMINATE)
-        assert ('ifc4x3_rc1.ifcboundedcurve' in typeof(parentcurve)) is not False
+        assert ('IFC4X3_RC1.IFCBOUNDEDCURVE' in typeof(parentcurve)) is not False
 
 def calc_IfcCompositeCurveSegment_Dim(self):
     parentcurve = express_getattr(self, 'ParentCurve', INDETERMINATE)
@@ -6887,7 +6887,7 @@ class IfcCompositeProfileDef_NoRecursion:
     @staticmethod
     def __call__(self):
         profiles = express_getattr(self, 'Profiles', INDETERMINATE)
-        assert (sizeof([temp for temp in profiles if 'ifc4x3_rc1.ifccompositeprofiledef' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in profiles if 'IFC4X3_RC1.IFCCOMPOSITEPROFILEDEF' in typeof(temp)]) == 0) is not False
 
 class IfcCompressor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6907,7 +6907,7 @@ class IfcCompressor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccompressortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOMPRESSORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCompressorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -6937,7 +6937,7 @@ class IfcCondenser_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccondensertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCONDENSERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCondenserType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7037,7 +7037,7 @@ class IfcController_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccontrollertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCONTROLLERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcControllerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7067,7 +7067,7 @@ class IfcConveyorSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcconveyorsegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCONVEYORSEGMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcConveyorSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7097,7 +7097,7 @@ class IfcCooledBeam_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccooledbeamtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOOLEDBEAMTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCooledBeamType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7127,7 +7127,7 @@ class IfcCoolingTower_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccoolingtowertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOOLINGTOWERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoolingTowerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7157,7 +7157,7 @@ class IfcCourse_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccoursetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOURSETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCourseType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7187,7 +7187,7 @@ class IfcCovering_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccoveringtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCOVERINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCoveringType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7240,7 +7240,7 @@ class IfcCurtainWall_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifccurtainwalltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCCURTAINWALLTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcCurtainWallType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7263,7 +7263,7 @@ class IfcCurveStyle_MeasureOfWidth:
     @staticmethod
     def __call__(self):
         curvewidth = express_getattr(self, 'CurveWidth', INDETERMINATE)
-        assert (not exists(curvewidth) or 'ifc4x3_rc1.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc4x3_rc1.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
+        assert (not exists(curvewidth) or 'IFC4X3_RC1.IFCPOSITIVELENGTHMEASURE' in typeof(curvewidth) or ('IFC4X3_RC1.IFCDESCRIPTIVEMEASURE' in typeof(curvewidth) and curvewidth == 'by layer')) is not False
 
 class IfcCurveStyle_IdentifiableCurveStyle:
     SCOPE = 'entity'
@@ -7305,7 +7305,7 @@ class IfcDamper_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcdampertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDAMPERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDamperType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7325,7 +7325,7 @@ class IfcDeepFoundation_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcdeepfoundationtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDEEPFOUNDATIONTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDerivedProfileDef_InvariantProfileType:
     SCOPE = 'entity'
@@ -7385,7 +7385,7 @@ class IfcDirectrixCurveSweptAreaSolid_DirectrixBounded:
         directrix = express_getattr(self, 'Directrix', INDETERMINATE)
         startparam = express_getattr(self, 'StartParam', INDETERMINATE)
         endparam = express_getattr(self, 'EndParam', INDETERMINATE)
-        assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_rc1.ifcconic', 'ifc4x3_rc1.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
+        assert (exists(startparam) and exists(endparam) or sizeof(['IFC4X3_RC1.IFCCONIC', 'IFC4X3_RC1.IFCBOUNDEDCURVE'] * typeof(directrix)) == 1) is not False
 
 class IfcDiscreteAccessory_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7405,7 +7405,7 @@ class IfcDiscreteAccessory_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcdiscreteaccessorytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDISCRETEACCESSORYTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDiscreteAccessoryType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7435,7 +7435,7 @@ class IfcDistributionBoard_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcdistributionboardtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDISTRIBUTIONBOARDTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDistributionBoardType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7465,7 +7465,7 @@ class IfcDistributionChamberElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcdistributionchamberelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDISTRIBUTIONCHAMBERELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDistributionChamberElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7496,7 +7496,7 @@ class IfcDoor_CorrectStyleAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcdoortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDOORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDoorLiningProperties_WR31:
     SCOPE = 'entity'
@@ -7549,7 +7549,7 @@ class IfcDoorLiningProperties_WR35:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc1.ifcdoortype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc1.ifcdoorstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('IFC4X3_RC1.IFCDOORTYPE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'IFC4X3_RC1.IFCDOORSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
 
 class IfcDoorPanelProperties_ApplicableToType:
     SCOPE = 'entity'
@@ -7558,7 +7558,7 @@ class IfcDoorPanelProperties_ApplicableToType:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc1.ifcdoortype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc1.ifcdoorstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('IFC4X3_RC1.IFCDOORTYPE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'IFC4X3_RC1.IFCDOORSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
 
 class IfcDoorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7577,7 +7577,7 @@ class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'by layer'])) is not False
 
 class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
     SCOPE = 'entity'
@@ -7586,7 +7586,7 @@ class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['continuous', 'chain', 'chain double dash', 'dashed', 'dotted', 'by layer'])) is not False
 
 class IfcDuctFitting_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7606,7 +7606,7 @@ class IfcDuctFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcductfittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDUCTFITTINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7636,7 +7636,7 @@ class IfcDuctSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcductsegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDUCTSEGMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7666,7 +7666,7 @@ class IfcDuctSilencer_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcductsilencertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCDUCTSILENCERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcDuctSilencerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7740,7 +7740,7 @@ class IfcElectricAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectricappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICAPPLIANCETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7770,7 +7770,7 @@ class IfcElectricDistributionBoard_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectricdistributionboardtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICDISTRIBUTIONBOARDTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricDistributionBoardType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7800,7 +7800,7 @@ class IfcElectricFlowStorageDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectricflowstoragedevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICFLOWSTORAGEDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricFlowStorageDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7830,7 +7830,7 @@ class IfcElectricFlowTreatmentDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectricflowtreatmentdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICFLOWTREATMENTDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricFlowTreatmentDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7860,7 +7860,7 @@ class IfcElectricGenerator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectricgeneratortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICGENERATORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricGeneratorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7890,7 +7890,7 @@ class IfcElectricMotor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectricmotortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICMOTORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricMotorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7920,7 +7920,7 @@ class IfcElectricTimeControl_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelectrictimecontroltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELECTRICTIMECONTROLTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElectricTimeControlType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7950,7 +7950,7 @@ class IfcElementAssembly_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcelementassemblytype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCELEMENTASSEMBLYTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcElementAssemblyType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7990,7 +7990,7 @@ class IfcEngine_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcenginetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCENGINETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEngineType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8020,7 +8020,7 @@ class IfcEvaporativeCooler_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcevaporativecoolertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCEVAPORATIVECOOLERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEvaporativeCoolerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8050,7 +8050,7 @@ class IfcEvaporator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcevaporatortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCEVAPORATORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcEvaporatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8142,7 +8142,7 @@ class IfcFace_HasOuterBound:
     @staticmethod
     def __call__(self):
         bounds = express_getattr(self, 'Bounds', INDETERMINATE)
-        assert (sizeof([temp for temp in bounds if 'ifc4x3_rc1.ifcfaceouterbound' in typeof(temp)]) <= 1) is not False
+        assert (sizeof([temp for temp in bounds if 'IFC4X3_RC1.IFCFACEOUTERBOUND' in typeof(temp)]) <= 1) is not False
 
 def calc_IfcFaceBasedSurfaceModel_Dim(self):
     return 3
@@ -8165,7 +8165,7 @@ class IfcFan_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcfantype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFANTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFanType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8195,7 +8195,7 @@ class IfcFastener_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcfastenertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFASTENERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFastenerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8232,7 +8232,7 @@ class IfcFillAreaStyle_MaxOneColour:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_rc1.ifccolour' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'IFC4X3_RC1.IFCCOLOUR' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyle_MaxOneExtHatchStyle:
     SCOPE = 'entity'
@@ -8241,7 +8241,7 @@ class IfcFillAreaStyle_MaxOneExtHatchStyle:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'ifc4x3_rc1.ifcexternallydefinedhatchstyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'FillStyles', INDETERMINATE) if 'IFC4X3_RC1.IFCEXTERNALLYDEFINEDHATCHSTYLE' in typeof(style)]) <= 1) is not False
 
 class IfcFillAreaStyle_ConsistentHatchStyleDef:
     SCOPE = 'entity'
@@ -8290,7 +8290,7 @@ class IfcFilter_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcfiltertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFILTERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFilterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8320,7 +8320,7 @@ class IfcFireSuppressionTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcfiresuppressionterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFIRESUPPRESSIONTERMINALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFireSuppressionTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8350,7 +8350,7 @@ class IfcFlowInstrument_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcflowinstrumenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFLOWINSTRUMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFlowInstrumentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8380,7 +8380,7 @@ class IfcFlowMeter_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcflowmetertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFLOWMETERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFlowMeterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8410,7 +8410,7 @@ class IfcFooting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcfootingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFOOTINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFootingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8440,7 +8440,7 @@ class IfcFurniture_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcfurnituretype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCFURNITURETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcFurnitureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8470,7 +8470,7 @@ class IfcGeographicElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcgeographicelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCGEOGRAPHICELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcGeographicElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8489,7 +8489,7 @@ class IfcGeometricCurveSet_NoSurfaces:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Elements', INDETERMINATE) if 'ifc4x3_rc1.ifcsurface' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Elements', INDETERMINATE) if 'IFC4X3_RC1.IFCSURFACE' in typeof(temp)]) == 0) is not False
 
 class IfcGeometricRepresentationContext_North2D:
     SCOPE = 'entity'
@@ -8509,7 +8509,7 @@ class IfcGeometricRepresentationSubContext_ParentNoSub:
     @staticmethod
     def __call__(self):
         parentcontext = express_getattr(self, 'ParentContext', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcgeometricrepresentationsubcontext' in typeof(parentcontext)) is not False
+        assert (not 'IFC4X3_RC1.IFCGEOMETRICREPRESENTATIONSUBCONTEXT' in typeof(parentcontext)) is not False
 
 class IfcGeometricRepresentationSubContext_UserTargetProvided:
     SCOPE = 'entity'
@@ -8604,7 +8604,7 @@ class IfcHeatExchanger_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcheatexchangertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCHEATEXCHANGERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcHeatExchangerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8634,7 +8634,7 @@ class IfcHumidifier_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifchumidifiertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCHUMIDIFIERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcHumidifierType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8700,7 +8700,7 @@ class IfcImpactProtectionDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcimpactprotectiondevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCIMPACTPROTECTIONDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcImpactProtectionDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8740,7 +8740,7 @@ class IfcInterceptor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcinterceptortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCINTERCEPTORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcInterceptorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8788,7 +8788,7 @@ class IfcJunctionBox_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcjunctionboxtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCJUNCTIONBOXTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcJunctionBoxType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8850,7 +8850,7 @@ class IfcLamp_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifclamptype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCLAMPTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLampType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8880,7 +8880,7 @@ class IfcLightFixture_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifclightfixturetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCLIGHTFIXTURETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLightFixtureType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8921,7 +8921,7 @@ class IfcLiquidTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcliquidterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCLIQUIDTERMINALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcLiquidTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -8962,7 +8962,7 @@ class IfcMaterialDefinitionRepresentation_OnlyStyledRepresentations:
     @staticmethod
     def __call__(self):
         representations = express_getattr(self, 'Representations', INDETERMINATE)
-        assert (sizeof([temp for temp in representations if not 'ifc4x3_rc1.ifcstyledrepresentation' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representations if not 'IFC4X3_RC1.IFCSTYLEDREPRESENTATION' in typeof(temp)]) == 0) is not False
 
 class IfcMaterialLayer_NormalizedPriority:
     SCOPE = 'entity'
@@ -9005,7 +9005,7 @@ class IfcMechanicalFastener_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcmechanicalfastenertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCMECHANICALFASTENERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMechanicalFastenerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9035,7 +9035,7 @@ class IfcMedicalDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcmedicaldevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCMEDICALDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMedicalDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9065,7 +9065,7 @@ class IfcMember_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcmembertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCMEMBERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMemberStandardCase_HasMaterialProfileSetUsage:
     SCOPE = 'entity'
@@ -9074,7 +9074,7 @@ class IfcMemberStandardCase_HasMaterialProfileSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc1.ifcrelassociates.relatedobjects') if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc1.ifcmaterialprofilesetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC4X3_RC1.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC4X3_RC1.IFCMATERIALPROFILESETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcMemberType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9107,7 +9107,7 @@ class IfcMobileTelecommunicationsAppliance_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcmobiletelecommunicationsappliancetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCMOBILETELECOMMUNICATIONSAPPLIANCETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMobileTelecommunicationsApplianceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9137,7 +9137,7 @@ class IfcMooringDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcmooringdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCMOORINGDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMooringDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9167,7 +9167,7 @@ class IfcMotorConnection_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcmotorconnectiontype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCMOTORCONNECTIONTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcMotorConnectionType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9206,7 +9206,7 @@ class IfcNavigationElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcnavigationelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCNAVIGATIONELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcNavigationElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9307,7 +9307,7 @@ class IfcOrientedEdge_EdgeElementNotOriented:
     @staticmethod
     def __call__(self):
         edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcorientededge' in typeof(edgeelement)) is not False
+        assert (not 'IFC4X3_RC1.IFCORIENTEDEDGE' in typeof(edgeelement)) is not False
 
 def calc_IfcOrientedEdge_EdgeStart(self):
     edgeelement = express_getattr(self, 'EdgeElement', INDETERMINATE)
@@ -9337,7 +9337,7 @@ class IfcOutlet_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcoutlettype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCOUTLETTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcOutletType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9441,7 +9441,7 @@ class IfcPile_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcpiletype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPILETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPileType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9471,7 +9471,7 @@ class IfcPipeFitting_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcpipefittingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPIPEFITTINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPipeFittingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9501,7 +9501,7 @@ class IfcPipeSegment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcpipesegmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPIPESEGMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPipeSegmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9587,7 +9587,7 @@ class IfcPlate_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcplatetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPLATETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPlateStandardCase_HasMaterialLayerSetUsage:
     SCOPE = 'entity'
@@ -9596,7 +9596,7 @@ class IfcPlateStandardCase_HasMaterialLayerSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc1.ifcrelassociates.relatedobjects') if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc1.ifcmateriallayersetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC4X3_RC1.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC4X3_RC1.IFCMATERIALLAYERSETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcPlateType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9644,7 +9644,7 @@ class IfcPolygonalBoundedHalfSpace_BoundaryType:
     @staticmethod
     def __call__(self):
         polygonalboundary = express_getattr(self, 'PolygonalBoundary', INDETERMINATE)
-        assert (sizeof(typeof(polygonalboundary) * ['ifc4x3_rc1.ifcpolyline', 'ifc4x3_rc1.ifccompositecurve']) == 1) is not False
+        assert (sizeof(typeof(polygonalboundary) * ['IFC4X3_RC1.IFCPOLYLINE', 'IFC4X3_RC1.IFCCOMPOSITECURVE']) == 1) is not False
 
 class IfcPolyline_SameDim:
     SCOPE = 'entity'
@@ -9689,7 +9689,7 @@ class IfcPresentationLayerAssignment_ApplicableItems:
     @staticmethod
     def __call__(self):
         assigneditems = express_getattr(self, 'AssignedItems', INDETERMINATE)
-        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_rc1.ifcshaperepresentation', 'ifc4x3_rc1.ifcgeometricrepresentationitem', 'ifc4x3_rc1.ifcmappeditem']) == 1]) == sizeof(assigneditems)) is not False
+        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['IFC4X3_RC1.IFCSHAPEREPRESENTATION', 'IFC4X3_RC1.IFCGEOMETRICREPRESENTATIONITEM', 'IFC4X3_RC1.IFCMAPPEDITEM']) == 1]) == sizeof(assigneditems)) is not False
 
 class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
     SCOPE = 'entity'
@@ -9699,7 +9699,7 @@ class IfcPresentationLayerWithStyle_ApplicableOnlyToItems:
     @staticmethod
     def __call__(self):
         assigneditems = express_getattr(self, 'AssignedItems', INDETERMINATE)
-        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['ifc4x3_rc1.ifcgeometricrepresentationitem', 'ifc4x3_rc1.ifcmappeditem']) >= 1]) == sizeof(assigneditems)) is not False
+        assert (sizeof([temp for temp in assigneditems if sizeof(typeof(temp) * ['IFC4X3_RC1.IfcGeometricRepresentationItem', 'IFC4X3_RC1.IfcMappedItem']) >= 1]) == sizeof(assigneditems)) is not False
 
 class IfcProcedure_HasName:
     SCOPE = 'entity'
@@ -9739,7 +9739,7 @@ class IfcProduct_PlacementForShapeRepresentation:
     def __call__(self):
         objectplacement = express_getattr(self, 'ObjectPlacement', INDETERMINATE)
         representation = express_getattr(self, 'Representation', INDETERMINATE)
-        assert (exists(representation) and exists(objectplacement) or (exists(representation) and sizeof([temp for temp in express_getattr(representation, 'Representations', INDETERMINATE) if 'ifc4x3_rc1.ifcshaperepresentation' in typeof(temp)]) == 0) or (not exists(representation))) is not False
+        assert (exists(representation) and exists(objectplacement) or (exists(representation) and sizeof([temp for temp in express_getattr(representation, 'Representations', INDETERMINATE) if 'IFC4X3_RC1.IFCSHAPEREPRESENTATION' in typeof(temp)]) == 0) or (not exists(representation))) is not False
 
 class IfcProductDefinitionShape_OnlyShapeModel:
     SCOPE = 'entity'
@@ -9749,7 +9749,7 @@ class IfcProductDefinitionShape_OnlyShapeModel:
     @staticmethod
     def __call__(self):
         representations = express_getattr(self, 'Representations', INDETERMINATE)
-        assert (sizeof([temp for temp in representations if not 'ifc4x3_rc1.ifcshapemodel' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in representations if not 'IFC4X3_RC1.IFCSHAPEMODEL' in typeof(temp)]) == 0) is not False
 
 class IfcProject_HasName:
     SCOPE = 'entity'
@@ -9767,7 +9767,7 @@ class IfcProject_CorrectContext:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(express_getattr(self, 'RepresentationContexts', INDETERMINATE)) or sizeof([temp for temp in express_getattr(self, 'RepresentationContexts', INDETERMINATE) if 'ifc4x3_rc1.ifcgeometricrepresentationsubcontext' in typeof(temp)]) == 0) is not False
+        assert (not exists(express_getattr(self, 'RepresentationContexts', INDETERMINATE)) or sizeof([temp for temp in express_getattr(self, 'RepresentationContexts', INDETERMINATE) if 'IFC4X3_RC1.IFCGEOMETRICREPRESENTATIONSUBCONTEXT' in typeof(temp)]) == 0) is not False
 
 class IfcProject_NoDecomposition:
     SCOPE = 'entity'
@@ -9948,7 +9948,7 @@ class IfcProtectiveDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcprotectivedevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPROTECTIVEDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcProtectiveDeviceTrippingUnit_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -9968,7 +9968,7 @@ class IfcProtectiveDeviceTrippingUnit_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcprotectivedevicetrippingunittype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPROTECTIVEDEVICETRIPPINGUNITTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcProtectiveDeviceTrippingUnitType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10017,7 +10017,7 @@ class IfcPump_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcpumptype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCPUMPTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcPumpType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10152,7 +10152,7 @@ class IfcRail_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcrailtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCRAILTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRailType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10182,7 +10182,7 @@ class IfcRailing_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcrailingtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCRAILINGTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRailingType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10212,7 +10212,7 @@ class IfcRamp_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcramptype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCRAMPTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRampFlight_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10232,7 +10232,7 @@ class IfcRampFlight_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcrampflighttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCRAMPFLIGHTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRampFlightType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10366,7 +10366,7 @@ class IfcRectangularTrimmedSurface_UsenseCompatible:
         u1 = express_getattr(self, 'U1', INDETERMINATE)
         u2 = express_getattr(self, 'U2', INDETERMINATE)
         usense = express_getattr(self, 'Usense', INDETERMINATE)
-        assert ('ifc4x3_rc1.ifcelementarysurface' in typeof(basissurface) and (not 'ifc4x3_rc1.ifcplane' in typeof(basissurface)) or 'ifc4x3_rc1.ifcsurfaceofrevolution' in typeof(basissurface) or usense == (u2 > u1)) is not False
+        assert ('IFC4X3_RC1.IFCELEMENTARYSURFACE' in typeof(basissurface) and (not 'IFC4X3_RC1.IFCPLANE' in typeof(basissurface)) or 'IFC4X3_RC1.IFCSURFACEOFREVOLUTION' in typeof(basissurface) or usense == (u2 > u1)) is not False
 
 class IfcRectangularTrimmedSurface_VsenseCompatible:
     SCOPE = 'entity'
@@ -10408,7 +10408,7 @@ class IfcReinforcingBar_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcreinforcingbartype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCREINFORCINGBARTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcReinforcingBarType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10449,7 +10449,7 @@ class IfcReinforcingMesh_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcreinforcingmeshtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCREINFORCINGMESHTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcReinforcingMeshType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10561,7 +10561,7 @@ class IfcRelAssociatesMaterial_NoVoidElement:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_rc1.ifcfeatureelementsubtraction' in typeof(temp) or 'ifc4x3_rc1.ifcvirtualelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'IFC4X3_RC1.IFCFEATUREELEMENTSUBTRACTION' in typeof(temp) or 'IFC4X3_RC1.IFCVIRTUALELEMENT' in typeof(temp)]) == 0) is not False
 
 class IfcRelAssociatesMaterial_AllowedElements:
     SCOPE = 'entity'
@@ -10570,7 +10570,7 @@ class IfcRelAssociatesMaterial_AllowedElements:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if sizeof(typeof(temp) * ['ifc4x3_rc1.ifcelement', 'ifc4x3_rc1.ifcelementtype', 'ifc4x3_rc1.ifcwindowstyle', 'ifc4x3_rc1.ifcdoorstyle', 'ifc4x3_rc1.ifcstructuralmember', 'ifc4x3_rc1.ifcport']) == 0]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'RelatedObjects', INDETERMINATE) if sizeof(typeof(temp) * ['IFC4X3_RC1.IFCELEMENT', 'IFC4X3_RC1.IFCELEMENTTYPE', 'IFC4X3_RC1.IFCWINDOWSTYLE', 'IFC4X3_RC1.IFCDOORSTYLE', 'IFC4X3_RC1.IFCSTRUCTURALMEMBER', 'IFC4X3_RC1.IFCPORT']) == 0]) == 0) is not False
 
 class IfcRelConnectsElements_NoSelfReference:
     SCOPE = 'entity'
@@ -10622,7 +10622,7 @@ class IfcRelContainedInSpatialStructure_WR31:
     @staticmethod
     def __call__(self):
         relatedelements = express_getattr(self, 'RelatedElements', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_rc1.ifcspatialstructureelement' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in relatedelements if 'IFC4X3_RC1.IFCSPATIALSTRUCTUREELEMENT' in typeof(temp)]) == 0) is not False
 
 class IfcRelDeclares_NoSelfReference:
     SCOPE = 'entity'
@@ -10642,7 +10642,7 @@ class IfcRelDefinesByProperties_NoRelatedTypeObject:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([types for types in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'ifc4x3_rc1.ifctypeobject' in typeof(types)]) == 0) is not False
+        assert (sizeof([types for types in express_getattr(self, 'RelatedObjects', INDETERMINATE) if 'IFC4X3_RC1.IFCTYPEOBJECT' in typeof(types)]) == 0) is not False
 
 class IfcRelInterferesElements_NoSelfReference:
     SCOPE = 'entity'
@@ -10685,7 +10685,7 @@ class IfcRelReferencedInSpatialStructure_AllowedRelatedElements:
     @staticmethod
     def __call__(self):
         relatedelements = express_getattr(self, 'RelatedElements', INDETERMINATE)
-        assert (sizeof([temp for temp in relatedelements if 'ifc4x3_rc1.ifcspatialstructureelement' in typeof(temp) and (not 'ifc4x3_rc1.ifcspace' in typeof(temp))]) == 0) is not False
+        assert (sizeof([temp for temp in relatedelements if 'IFC4X3_RC1.IFCSPATIALSTRUCTUREELEMENT' in typeof(temp) and (not 'IFC4X3_RC1.IFCSPACE' in typeof(temp))]) == 0) is not False
 
 class IfcRelSequence_AvoidInconsistentSequence:
     SCOPE = 'entity'
@@ -10718,7 +10718,7 @@ class IfcRelSpaceBoundary_CorrectPhysOrVirt:
     def __call__(self):
         relatedbuildingelement = express_getattr(self, 'RelatedBuildingElement', INDETERMINATE)
         physicalorvirtualboundary = express_getattr(self, 'PhysicalOrVirtualBoundary', INDETERMINATE)
-        assert (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (not 'ifc4x3_rc1.ifcvirtualelement' in typeof(relatedbuildingelement)) or (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and ('ifc4x3_rc1.ifcvirtualelement' in typeof(relatedbuildingelement) or 'ifc4x3_rc1.ifcopeningelement' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
+        assert (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Physical', INDETERMINATE) and (not 'IFC4X3_RC1.IFCVIRTUALELEMENT' in typeof(relatedbuildingelement)) or (physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'Virtual', INDETERMINATE) and ('IFC4X3_RC1.IFCVIRTUALELEMENT' in typeof(relatedbuildingelement) or 'IFC4X3_RC1.IFCOPENINGELEMENT' in typeof(relatedbuildingelement))) or physicalorvirtualboundary == express_getattr(IfcPhysicalOrVirtualEnum, 'NotDefined', INDETERMINATE)) is not False
 
 class IfcReparametrisedCompositeCurveSegment_PositiveLengthParameter:
     SCOPE = 'entity'
@@ -10738,7 +10738,7 @@ class IfcRepresentationMap_ApplicableMappedRepr:
     @staticmethod
     def __call__(self):
         mappedrepresentation = express_getattr(self, 'MappedRepresentation', INDETERMINATE)
-        assert ('ifc4x3_rc1.ifcshapemodel' in typeof(mappedrepresentation)) is not False
+        assert ('IFC4X3_RC1.IFCSHAPEMODEL' in typeof(mappedrepresentation)) is not False
 
 class IfcRevolvedAreaSolid_AxisStartInXY:
     SCOPE = 'entity'
@@ -10791,7 +10791,7 @@ class IfcRoof_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcrooftype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCROOFTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcRoofType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10834,7 +10834,7 @@ class IfcSanitaryTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcsanitaryterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSANITARYTERMINALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSanitaryTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10967,7 +10967,7 @@ class IfcSensor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcsensortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSENSORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSensorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -10997,7 +10997,7 @@ class IfcShadingDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcshadingdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSHADINGDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcShadingDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11026,7 +11026,7 @@ class IfcShapeRepresentation_CorrectContext:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc1.ifcgeometricrepresentationcontext' in typeof(express_getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
+        assert ('IFC4X3_RC1.IFCGEOMETRICREPRESENTATIONCONTEXT' in typeof(express_getattr(self, 'ContextOfItems', INDETERMINATE))) is not False
 
 class IfcShapeRepresentation_NoTopologicalItem:
     SCOPE = 'entity'
@@ -11036,7 +11036,7 @@ class IfcShapeRepresentation_NoTopologicalItem:
     @staticmethod
     def __call__(self):
         items = express_getattr(self, 'Items', INDETERMINATE)
-        assert (sizeof([temp for temp in items if 'ifc4x3_rc1.ifctopologicalrepresentationitem' in typeof(temp) and (not sizeof(['ifc4x3_rc1.ifcvertexpoint', 'ifc4x3_rc1.ifcedgecurve', 'ifc4x3_rc1.ifcfacesurface'] * typeof(temp)) == 1)]) == 0) is not False
+        assert (sizeof([temp for temp in items if 'IFC4X3_RC1.IFCTOPOLOGICALREPRESENTATIONITEM' in typeof(temp) and (not sizeof(['IFC4X3_RC1.IFCVERTEXPOINT', 'IFC4X3_RC1.IFCEDGECURVE', 'IFC4X3_RC1.IFCFACESURFACE'] * typeof(temp)) == 1)]) == 0) is not False
 
 class IfcShapeRepresentation_HasRepresentationType:
     SCOPE = 'entity'
@@ -11086,7 +11086,7 @@ class IfcSign_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcsigntype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSIGNTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSignType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11116,7 +11116,7 @@ class IfcSignal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcsignaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSIGNALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSignalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11146,7 +11146,7 @@ class IfcSlab_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcslabtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSLABTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSlabElementedCase_HasDecomposition:
     SCOPE = 'entity'
@@ -11164,7 +11164,7 @@ class IfcSlabStandardCase_HasMaterialLayerSetusage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc1.ifcrelassociates.relatedobjects') if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc1.ifcmateriallayersetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC4X3_RC1.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC4X3_RC1.IFCMATERIALLAYERSETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcSlabType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11194,7 +11194,7 @@ class IfcSolarDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcsolardevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSOLARDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSolarDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11227,7 +11227,7 @@ class IfcSpace_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcspacetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSPACETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpaceHeater_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11247,7 +11247,7 @@ class IfcSpaceHeater_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcspaceheatertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSPACEHEATERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpaceHeaterType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11276,7 +11276,7 @@ class IfcSpatialStructureElement_WR41:
 
     @staticmethod
     def __call__(self):
-        assert (hiindex(express_getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'ifc4x3_rc1.ifcrelaggregates' in typeof(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc1.ifcproject' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'ifc4x3_rc1.ifcspatialstructureelement' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
+        assert (hiindex(express_getattr(self, 'Decomposes', INDETERMINATE)) == 1 and 'IFC4X3_RC1.IFCRELAGGREGATES' in typeof(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('IFC4X3_RC1.IFCPROJECT' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)) or 'IFC4X3_RC1.IFCSPATIALSTRUCTUREELEMENT' in typeof(express_getattr(express_getitem(express_getattr(self, 'Decomposes', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingObject', INDETERMINATE)))) is not False
 
 class IfcSpatialZone_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11296,7 +11296,7 @@ class IfcSpatialZone_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcspatialzonetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSPATIALZONETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSpatialZoneType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11326,7 +11326,7 @@ class IfcStackTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcstackterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSTACKTERMINALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStackTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11356,7 +11356,7 @@ class IfcStair_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcstairtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSTAIRTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStairFlight_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11376,7 +11376,7 @@ class IfcStairFlight_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcstairflighttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSTAIRFLIGHTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcStairFlightType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11475,7 +11475,7 @@ class IfcStructuralLinearAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc1.ifcstructuralloadlinearforce', 'ifc4x3_rc1.ifcstructuralloadtemperature'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC4X3_RC1.IFCSTRUCTURALLOADLINEARFORCE', 'IFC4X3_RC1.IFCSTRUCTURALLOADTEMPERATURE'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralLinearAction_ConstPredefinedType:
     SCOPE = 'entity'
@@ -11525,7 +11525,7 @@ class IfcStructuralPlanarAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc1.ifcstructuralloadplanarforce', 'ifc4x3_rc1.ifcstructuralloadtemperature'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC4X3_RC1.IFCSTRUCTURALLOADPLANARFORCE', 'IFC4X3_RC1.IFCSTRUCTURALLOADTEMPERATURE'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralPlanarAction_ConstPredefinedType:
     SCOPE = 'entity'
@@ -11543,7 +11543,7 @@ class IfcStructuralPointAction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc1.ifcstructuralloadsingleforce', 'ifc4x3_rc1.ifcstructuralloadsingledisplacement'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC4X3_RC1.IFCSTRUCTURALLOADSINGLEFORCE', 'IFC4X3_RC1.IFCSTRUCTURALLOADSINGLEDISPLACEMENT'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralPointReaction_SuitableLoadType:
     SCOPE = 'entity'
@@ -11552,7 +11552,7 @@ class IfcStructuralPointReaction_SuitableLoadType:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(['ifc4x3_rc1.ifcstructuralloadsingleforce', 'ifc4x3_rc1.ifcstructuralloadsingledisplacement'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
+        assert (sizeof(['IFC4X3_RC1.IFCSTRUCTURALLOADSINGLEFORCE', 'IFC4X3_RC1.IFCSTRUCTURALLOADSINGLEDISPLACEMENT'] * typeof(express_getattr(self, 'AppliedLoad', INDETERMINATE))) == 1) is not False
 
 class IfcStructuralResultGroup_HasObjectType:
     SCOPE = 'entity'
@@ -11612,7 +11612,7 @@ class IfcStyledItem_ApplicableItem:
     @staticmethod
     def __call__(self):
         item = express_getattr(self, 'Item', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcstyleditem' in typeof(item)) is not False
+        assert (not 'IFC4X3_RC1.IFCSTYLEDITEM' in typeof(item)) is not False
 
 class IfcStyledRepresentation_OnlyStyledItems:
     SCOPE = 'entity'
@@ -11621,7 +11621,7 @@ class IfcStyledRepresentation_OnlyStyledItems:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_rc1.ifcstyleditem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'IFC4X3_RC1.IFCSTYLEDITEM' in typeof(temp)]) == 0) is not False
 
 class IfcSubContractResource_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11664,7 +11664,7 @@ class IfcSurfaceCurve_CurveIsNotPcurve:
     @staticmethod
     def __call__(self):
         curve3d = express_getattr(self, 'Curve3D', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcpcurve' in typeof(curve3d)) is not False
+        assert (not 'IFC4X3_RC1.IFCPCURVE' in typeof(curve3d)) is not False
 
 def calc_IfcSurfaceCurve_BasisSurface(self):
     return IfcGetBasisSurface(self)
@@ -11747,7 +11747,7 @@ class IfcSurfaceStyle_MaxOneShading:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc1.ifcsurfacestyleshading' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC4X3_RC1.IFCSURFACESTYLESHADING' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneLighting:
     SCOPE = 'entity'
@@ -11756,7 +11756,7 @@ class IfcSurfaceStyle_MaxOneLighting:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc1.ifcsurfacestylelighting' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC4X3_RC1.IFCSURFACESTYLELIGHTING' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneRefraction:
     SCOPE = 'entity'
@@ -11765,7 +11765,7 @@ class IfcSurfaceStyle_MaxOneRefraction:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc1.ifcsurfacestylerefraction' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC4X3_RC1.IFCSURFACESTYLEREFRACTION' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneTextures:
     SCOPE = 'entity'
@@ -11774,7 +11774,7 @@ class IfcSurfaceStyle_MaxOneTextures:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc1.ifcsurfacestylewithtextures' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC4X3_RC1.IFCSURFACESTYLEWITHTEXTURES' in typeof(style)]) <= 1) is not False
 
 class IfcSurfaceStyle_MaxOneExtDefined:
     SCOPE = 'entity'
@@ -11783,7 +11783,7 @@ class IfcSurfaceStyle_MaxOneExtDefined:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'ifc4x3_rc1.ifcexternallydefinedsurfacestyle' in typeof(style)]) <= 1) is not False
+        assert (sizeof([style for style in express_getattr(self, 'Styles', INDETERMINATE) if 'IFC4X3_RC1.IFCEXTERNALLYDEFINEDSURFACESTYLE' in typeof(style)]) <= 1) is not False
 
 class IfcSweptAreaSolid_SweptAreaType:
     SCOPE = 'entity'
@@ -11826,7 +11826,7 @@ class IfcSweptDiskSolid_DirectrixBounded:
         directrix = express_getattr(self, 'Directrix', INDETERMINATE)
         startparam = express_getattr(self, 'StartParam', INDETERMINATE)
         endparam = express_getattr(self, 'EndParam', INDETERMINATE)
-        assert (exists(startparam) and exists(endparam) or sizeof(['ifc4x3_rc1.ifcconic', 'ifc4x3_rc1.ifcboundedcurve'] * typeof(directrix)) == 1) is not False
+        assert (exists(startparam) and exists(endparam) or sizeof(['IFC4X3_RC1.IFCCONIC', 'IFC4X3_RC1.IFCBOUNDEDCURVE'] * typeof(directrix)) == 1) is not False
 
 class IfcSweptDiskSolidPolygonal_CorrectRadii:
     SCOPE = 'entity'
@@ -11845,7 +11845,7 @@ class IfcSweptDiskSolidPolygonal_DirectrixIsPolyline:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc1.ifcpolyline' in typeof(express_getattr(self, 'Directrix', INDETERMINATE)) or ('ifc4x3_rc1.ifcindexedpolycurve' in typeof(express_getattr(self, 'Directrix', INDETERMINATE)) and (not exists(express_getattr(express_getattr(self, 'Directrix', INDETERMINATE), 'Segments', INDETERMINATE))))) is not False
+        assert ('IFC4X3_RC1.IFCPOLYLINE' in typeof(express_getattr(self, 'Directrix', INDETERMINATE)) or ('IFC4X3_RC1.IFCINDEXEDPOLYCURVE' in typeof(express_getattr(self, 'Directrix', INDETERMINATE)) and (not exists(express_getattr(express_getattr(self, 'Directrix', INDETERMINATE), 'Segments', INDETERMINATE))))) is not False
 
 class IfcSweptSurface_SweptCurveType:
     SCOPE = 'entity'
@@ -11875,7 +11875,7 @@ class IfcSwitchingDevice_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcswitchingdevicetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSWITCHINGDEVICETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSwitchingDeviceType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11905,7 +11905,7 @@ class IfcSystemFurnitureElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcsystemfurnitureelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCSYSTEMFURNITUREELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcSystemFurnitureElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -11989,7 +11989,7 @@ class IfcTank_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctanktype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTANKTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTankType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12063,7 +12063,7 @@ class IfcTendon_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctendontype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTENDONTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonAnchor_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12083,7 +12083,7 @@ class IfcTendonAnchor_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctendonanchortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTENDONANCHORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonAnchorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12113,7 +12113,7 @@ class IfcTendonConduit_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctendonconduittype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTENDONCONDUITTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTendonConduitType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12146,7 +12146,7 @@ class IfcTextLiteralWithExtent_WR31:
     @staticmethod
     def __call__(self):
         extent = express_getattr(self, 'Extent', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcplanarbox' in typeof(extent)) is not False
+        assert (not 'IFC4X3_RC1.IFCPLANARBOX' in typeof(extent)) is not False
 
 class IfcTextStyleFontModel_MeasureOfFontSize:
     SCOPE = 'entity'
@@ -12155,7 +12155,7 @@ class IfcTextStyleFontModel_MeasureOfFontSize:
 
     @staticmethod
     def __call__(self):
-        assert ('ifc4x3_rc1.ifclengthmeasure' in typeof(express_getattr(self, 'FontSize', INDETERMINATE)) and express_getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
+        assert ('IFC4X3_RC1.IFCLENGTHMEASURE' in typeof(express_getattr(self, 'FontSize', INDETERMINATE)) and express_getattr(self, 'FontSize', INDETERMINATE) > 0.0) is not False
 
 class IfcTopologyRepresentation_WR21:
     SCOPE = 'entity'
@@ -12164,7 +12164,7 @@ class IfcTopologyRepresentation_WR21:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'ifc4x3_rc1.ifctopologicalrepresentationitem' in typeof(temp)]) == 0) is not False
+        assert (sizeof([temp for temp in express_getattr(self, 'Items', INDETERMINATE) if not 'IFC4X3_RC1.IFCTOPOLOGICALREPRESENTATIONITEM' in typeof(temp)]) == 0) is not False
 
 class IfcTopologyRepresentation_WR22:
     SCOPE = 'entity'
@@ -12213,7 +12213,7 @@ class IfcTrackElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctrackelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTRACKELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTrackElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12243,7 +12243,7 @@ class IfcTransformer_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctranformertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTRANFORMERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTransformerType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12273,7 +12273,7 @@ class IfcTransportElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctransportelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTRANSPORTELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTransportElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12326,7 +12326,7 @@ class IfcTrimmedCurve_NoTrimOfBoundedCurves:
     @staticmethod
     def __call__(self):
         basiscurve = express_getattr(self, 'BasisCurve', INDETERMINATE)
-        assert (not 'ifc4x3_rc1.ifcboundedcurve' in typeof(basiscurve)) is not False
+        assert (not 'IFC4X3_RC1.IFCBOUNDEDCURVE' in typeof(basiscurve)) is not False
 
 class IfcTubeBundle_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12346,7 +12346,7 @@ class IfcTubeBundle_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifctubebundletype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCTUBEBUNDLETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcTubeBundleType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12384,7 +12384,7 @@ class IfcTypeProduct_ApplicableOccurrence:
 
     @staticmethod
     def __call__(self):
-        assert (not exists(lambda : express_getitem(express_getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'ifc4x3_rc1.ifcproduct' in typeof(temp)]) == 0) is not False
+        assert (not exists(lambda : express_getitem(express_getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'Types', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not 'IFC4X3_RC1.IFCPRODUCT' in typeof(temp)]) == 0) is not False
 
 class IfcUShapeProfileDef_ValidFlangeThickness:
     SCOPE = 'entity'
@@ -12436,7 +12436,7 @@ class IfcUnitaryControlElement_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcunitarycontrolelementtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCUNITARYCONTROLELEMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcUnitaryControlElementType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12466,7 +12466,7 @@ class IfcUnitaryEquipment_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcunitaryequipmenttype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCUNITARYEQUIPMENTTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcUnitaryEquipmentType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12496,7 +12496,7 @@ class IfcValve_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcvalvetype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCVALVETYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcValveType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12540,7 +12540,7 @@ class IfcVibrationDamper_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcvibrationdampertype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCVIBRATIONDAMPERTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVibrationDamperType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12570,7 +12570,7 @@ class IfcVibrationIsolator_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcvibrationisolatortype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCVIBRATIONISOLATORTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcVibrationIsolatorType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12610,7 +12610,7 @@ class IfcWall_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcwalltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCWALLTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWallElementedCase_HasDecomposition:
     SCOPE = 'entity'
@@ -12628,7 +12628,7 @@ class IfcWallStandardCase_HasMaterialLayerSetUsage:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof([temp for temp in usedin(self, 'ifc4x3_rc1.ifcrelassociates.relatedobjects') if 'ifc4x3_rc1.ifcrelassociatesmaterial' in typeof(temp) and 'ifc4x3_rc1.ifcmateriallayersetusage' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
+        assert (sizeof([temp for temp in usedin(self, 'IFC4X3_RC1.IFCRELASSOCIATES.RELATEDOBJECTS') if 'IFC4X3_RC1.IFCRELASSOCIATESMATERIAL' in typeof(temp) and 'IFC4X3_RC1.IFCMATERIALLAYERSETUSAGE' in typeof(express_getattr(temp, 'RelatingMaterial', INDETERMINATE))]) == 1) is not False
 
 class IfcWallType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12658,7 +12658,7 @@ class IfcWasteTerminal_CorrectTypeAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcwasteterminaltype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCWASTETERMINALTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWasteTerminalType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12678,7 +12678,7 @@ class IfcWindow_CorrectStyleAssigned:
     @staticmethod
     def __call__(self):
         istypedby = express_getattr(self, 'IsTypedBy', INDETERMINATE)
-        assert (sizeof(istypedby) == 0 or 'ifc4x3_rc1.ifcwindowtype' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
+        assert (sizeof(istypedby) == 0 or 'IFC4X3_RC1.IFCWINDOWTYPE' in typeof(express_getattr(express_getitem(express_getattr(self, 'IsTypedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingType', INDETERMINATE))) is not False
 
 class IfcWindowLiningProperties_WR31:
     SCOPE = 'entity'
@@ -12720,7 +12720,7 @@ class IfcWindowLiningProperties_WR34:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc1.ifcwindowtype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc1.ifcwindowstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('IFC4X3_RC1.IFCWINDOWTYPE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'IFC4X3_RC1.IFCWINDOWSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
 
 class IfcWindowPanelProperties_ApplicableToType:
     SCOPE = 'entity'
@@ -12729,7 +12729,7 @@ class IfcWindowPanelProperties_ApplicableToType:
 
     @staticmethod
     def __call__(self):
-        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('ifc4x3_rc1.ifcwindowtype' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'ifc4x3_rc1.ifcwindowstyle' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
+        assert (exists(lambda : express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and ('IFC4X3_RC1.IFCWINDOWTYPE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) or 'IFC4X3_RC1.IFCWINDOWSTYLE' in typeof(express_getitem(express_getattr(self, 'DefinesType', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)))) is not False
 
 class IfcWindowType_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -12789,7 +12789,7 @@ class IfcZone_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (sizeof(express_getattr(self, 'IsGroupedBy', INDETERMINATE)) == 0 or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('ifc4x3_rc1.ifczone' in typeof(temp) or 'ifc4x3_rc1.ifcspace' in typeof(temp) or 'ifc4x3_rc1.ifcspatialzone' in typeof(temp))]) == 0) is not False
+        assert (sizeof(express_getattr(self, 'IsGroupedBy', INDETERMINATE)) == 0 or sizeof([temp for temp in express_getattr(express_getitem(express_getattr(self, 'IsGroupedBy', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatedObjects', INDETERMINATE) if not ('IFC4X3_RC1.IFCZONE' in typeof(temp) or 'IFC4X3_RC1.IFCSPACE' in typeof(temp) or 'IFC4X3_RC1.IFCSPATIALZONE' in typeof(temp))]) == 0) is not False
 
 class IfcRepresentationContextSameWCS:
     SCOPE = 'file'
@@ -13052,10 +13052,10 @@ def IfcCorrectFillAreaStyle(styles):
     tiles = 0
     colour = 0
     external = 0
-    external = sizeof([style for style in styles if 'ifc4x3_rc1.ifcexternallydefinedhatchstyle' in typeof(style)])
-    hatching = sizeof([style for style in styles if 'ifc4x3_rc1.ifcfillareastylehatching' in typeof(style)])
-    tiles = sizeof([style for style in styles if 'ifc4x3_rc1.ifcfillareastyletiles' in typeof(style)])
-    colour = sizeof([style for style in styles if 'ifc4x3_rc1.ifccolour' in typeof(style)])
+    external = sizeof([style for style in styles if 'IFC4X3_RC1.IFCEXTERNALLYDEFINEDHATCHSTYLE' in typeof(style)])
+    hatching = sizeof([style for style in styles if 'IFC4X3_RC1.IFCFILLAREASTYLEHATCHING' in typeof(style)])
+    tiles = sizeof([style for style in styles if 'IFC4X3_RC1.IFCFILLAREASTYLETILES' in typeof(style)])
+    colour = sizeof([style for style in styles if 'IFC4X3_RC1.IFCCOLOUR' in typeof(style)])
     if external > 1:
         return False
     if external == 1 and (hatching > 0 or tiles > 0 or colour > 0):
@@ -13068,12 +13068,12 @@ def IfcCorrectFillAreaStyle(styles):
 
 def IfcCorrectLocalPlacement(axisplacement, relplacement):
     if exists(relplacement):
-        if 'ifc4x3_rc1.ifcgridplacement' in typeof(relplacement):
+        if 'IFC4X3_RC1.IFCGRIDPLACEMENT' in typeof(relplacement):
             return None
-        if 'ifc4x3_rc1.ifclocalplacement' in typeof(relplacement):
-            if 'ifc4x3_rc1.ifcaxis2placement2d' in typeof(axisplacement):
+        if 'IFC4X3_RC1.IFCLOCALPLACEMENT' in typeof(relplacement):
+            if 'IFC4X3_RC1.IFCAXIS2PLACEMENT2D' in typeof(axisplacement):
                 return True
-            if 'ifc4x3_rc1.ifcaxis2placement3d' in typeof(axisplacement):
+            if 'IFC4X3_RC1.IFCAXIS2PLACEMENT3D' in typeof(axisplacement):
                 if express_getattr(express_getattr(relplacement, 'RelativePlacement', INDETERMINATE), 'Dim', INDETERMINATE) == 3:
                     return True
                 else:
@@ -13088,25 +13088,25 @@ def IfcCorrectObjectAssignment(constraint, objects):
     if constraint == express_getattr(IfcObjectTypeEnum, 'NOTDEFINED', INDETERMINATE):
         return True
     elif constraint == express_getattr(IfcObjectTypeEnum, 'PRODUCT', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifcproduct' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCPRODUCT' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'PROCESS', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifcprocess' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCPROCESS' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'CONTROL', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifccontrol' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCCONTROL' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'RESOURCE', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifcresource' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCRESOURCE' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'ACTOR', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifcactor' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCACTOR' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'GROUP', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifcgroup' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCGROUP' in typeof(temp)])
         return count == 0
     elif constraint == express_getattr(IfcObjectTypeEnum, 'PROJECT', INDETERMINATE):
-        count = sizeof([temp for temp in objects if not 'ifc4x3_rc1.ifcproject' in typeof(temp)])
+        count = sizeof([temp for temp in objects if not 'IFC4X3_RC1.IFCPROJECT' in typeof(temp)])
         return count == 0
     else:
         return None
@@ -13117,13 +13117,13 @@ def IfcCorrectUnitAssignment(units):
     monetaryunitnumber = 0
     namedunitnames = express_set([])
     derivedunitnames = express_set([])
-    namedunitnumber = sizeof([temp for temp in units if 'ifc4x3_rc1.ifcnamedunit' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    derivedunitnumber = sizeof([temp for temp in units if 'ifc4x3_rc1.ifcderivedunit' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
-    monetaryunitnumber = sizeof([temp for temp in units if 'ifc4x3_rc1.ifcmonetaryunit' in typeof(temp)])
+    namedunitnumber = sizeof([temp for temp in units if 'IFC4X3_RC1.IFCNAMEDUNIT' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    derivedunitnumber = sizeof([temp for temp in units if 'IFC4X3_RC1.IFCDERIVEDUNIT' in typeof(temp) and (not express_getattr(temp, 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE))])
+    monetaryunitnumber = sizeof([temp for temp in units if 'IFC4X3_RC1.IFCMONETARYUNIT' in typeof(temp)])
     for i in range(1, sizeof(units) + 1):
-        if 'ifc4x3_rc1.ifcnamedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
+        if 'IFC4X3_RC1.IFCNAMEDUNIT' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcUnitEnum, 'USERDEFINED', INDETERMINATE)):
             namedunitnames = namedunitnames + express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
-        if 'ifc4x3_rc1.ifcderivedunit' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
+        if 'IFC4X3_RC1.IFCDERIVEDUNIT' in typeof(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)) and (not express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE) == express_getattr(IfcDerivedUnitEnum, 'USERDEFINED', INDETERMINATE)):
             derivedunitnames = derivedunitnames + express_getattr(express_getitem(units, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'UnitType', INDETERMINATE)
     return sizeof(namedunitnames) == namedunitnumber and sizeof(derivedunitnames) == derivedunitnumber and (monetaryunitnumber <= 1)
 
@@ -13144,31 +13144,31 @@ def IfcCrossProduct(arg1, arg2):
         return result
 
 def IfcCurveDim(curve):
-    if 'ifc4x3_rc1.ifcline' in typeof(curve):
+    if 'IFC4X3_RC1.IFCLINE' in typeof(curve):
         return express_getattr(express_getattr(curve, 'Pnt', INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc1.ifcconic' in typeof(curve):
+    if 'IFC4X3_RC1.IFCCONIC' in typeof(curve):
         return express_getattr(express_getattr(curve, 'Position', INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc1.ifcpolyline' in typeof(curve):
+    if 'IFC4X3_RC1.IFCPOLYLINE' in typeof(curve):
         return express_getattr(express_getitem(express_getattr(curve, 'Points', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc1.ifctrimmedcurve' in typeof(curve):
+    if 'IFC4X3_RC1.IFCTRIMMEDCURVE' in typeof(curve):
         return IfcCurveDim(express_getattr(curve, 'BasisCurve', INDETERMINATE))
-    if 'ifc4x3_rc1.ifccompositecurve' in typeof(curve):
+    if 'IFC4X3_RC1.IFCCOMPOSITECURVE' in typeof(curve):
         return express_getattr(express_getitem(express_getattr(curve, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc1.ifcbsplinecurve' in typeof(curve):
+    if 'IFC4X3_RC1.IFCBSPLINECURVE' in typeof(curve):
         return express_getattr(express_getitem(express_getattr(curve, 'ControlPointsList', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Dim', INDETERMINATE)
-    if 'ifc4x3_rc1.ifcoffsetcurve2d' in typeof(curve):
+    if 'IFC4X3_RC1.IFCOFFSETCURVE2D' in typeof(curve):
         return 2
-    if 'ifc4x3_rc1.ifcoffsetcurve3d' in typeof(curve):
+    if 'IFC4X3_RC1.IFCOFFSETCURVE3D' in typeof(curve):
         return 3
-    if 'ifc4x3_rc1.ifcoffsetcurvebydistances' in typeof(curve):
+    if 'IFC4X3_RC1.IFCOFFSETCURVEBYDISTANCES' in typeof(curve):
         return 3
-    if 'ifc4x3_rc1.ifccurvesegment2d' in typeof(curve):
+    if 'IFC4X3_RC1.IFCCURVESEGMENT2D' in typeof(curve):
         return 2
-    if 'ifc4x3_rc1.ifcalignmentcurve' in typeof(curve):
+    if 'IFC4X3_RC1.IFCALIGNMENTCURVE' in typeof(curve):
         return 3
-    if 'ifc4x3_rc1.ifcpcurve' in typeof(curve):
+    if 'IFC4X3_RC1.IFCPCURVE' in typeof(curve):
         return 3
-    if 'ifc4x3_rc1.ifcindexedpolycurve' in typeof(curve):
+    if 'IFC4X3_RC1.IFCINDEXEDPOLYCURVE' in typeof(curve):
         return express_getattr(express_getattr(curve, 'Points', INDETERMINATE), 'Dim', INDETERMINATE)
     return None
 
@@ -13294,13 +13294,13 @@ def IfcFirstProjAxis(zaxis, arg):
 
 def IfcGetBasisSurface(c):
     surfs = []
-    if 'ifc4x3_rc1.ifcpcurve' in typeof(c):
+    if 'IFC4X3_RC1.IFCPCURVE' in typeof(c):
         surfs = [express_getattr(c, 'BasisSurface', INDETERMINATE)]
-    elif 'ifc4x3_rc1.ifcsurfacecurve' in typeof(c):
+    elif 'IFC4X3_RC1.IFCSURFACECURVE' in typeof(c):
         n = sizeof(express_getattr(c, 'AssociatedGeometry', INDETERMINATE))
         for i in range(1, n + 1):
             surfs = surfs + IfcAssociatedSurface(express_getitem(express_getattr(c, 'AssociatedGeometry', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE))
-    if 'ifc4x3_rc1.ifccompositecurveonsurface' in typeof(c):
+    if 'IFC4X3_RC1.IFCCOMPOSITECURVEONSURFACE' in typeof(c):
         n = sizeof(express_getattr(c, 'Segments', INDETERMINATE))
         surfs = IfcGetBasisSurface(express_getattr(express_getitem(express_getattr(c, 'Segments', INDETERMINATE), 1 - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'ParentCurve', INDETERMINATE))
         if n > 1:
@@ -13355,7 +13355,7 @@ def IfcNormalise(arg):
     if not exists(arg):
         return None
     else:
-        if 'ifc4x3_rc1.ifcvector' in typeof(arg):
+        if 'IFC4X3_RC1.IFCVECTOR' in typeof(arg):
             ndim = express_getattr(arg, 'Dim', INDETERMINATE)
             v.DirectionRatios = express_getattr(express_getattr(arg, 'Orientation', INDETERMINATE), 'DirectionRatios', INDETERMINATE)
             vec.Magnitude = express_getattr(arg, 'Magnitude', INDETERMINATE)
@@ -13376,7 +13376,7 @@ def IfcNormalise(arg):
                 temp = list(express_getattr(v, 'DirectionRatios', INDETERMINATE))
                 temp[i - EXPRESS_ONE_BASED_INDEXING] = express_getitem(express_getattr(v, 'DirectionRatios', INDETERMINATE), i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE) / mag
                 v.DirectionRatios = temp
-            if 'ifc4x3_rc1.ifcvector' in typeof(arg):
+            if 'IFC4X3_RC1.IFCVECTOR' in typeof(arg):
                 vec.Orientation = v
                 result = vec
             else:
@@ -13401,9 +13401,9 @@ def IfcPathHeadToTail(apath):
     return p
 
 def IfcPointListDim(pointlist):
-    if 'ifc4x3_rc1.ifccartesianpointlist2d' in typeof(pointlist):
+    if 'IFC4X3_RC1.IFCCARTESIANPOINTLIST2D' in typeof(pointlist):
         return 2
-    if 'ifc4x3_rc1.ifccartesianpointlist3d' in typeof(pointlist):
+    if 'IFC4X3_RC1.IFCCARTESIANPOINTLIST3D' in typeof(pointlist):
         return 3
     return None
 
@@ -13453,7 +13453,7 @@ def IfcScalarTimesVector(scalar, vec):
     if not exists(scalar) or not exists(vec):
         return None
     else:
-        if 'ifc4x3_rc1.ifcvector' in typeof(vec):
+        if 'IFC4X3_RC1.IFCVECTOR' in typeof(vec):
             v = express_getattr(vec, 'Orientation', INDETERMINATE)
             mag = scalar * express_getattr(vec, 'Magnitude', INDETERMINATE)
         else:
@@ -13482,68 +13482,68 @@ def IfcSecondProjAxis(zaxis, xaxis, arg):
 
 def IfcShapeRepresentationTypes(reptype, items):
     count = 0
-    if express_getattr(reptype, 'lower', INDETERMINATE)() == 'point':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcpoint' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'pointcloud':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifccartesianpointlist3d' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifccurve' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve2d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifccurve' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'curve3d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifccurve' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 3])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surface':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcsurface' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surface2d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcsurface' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surface3d':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcsurface' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 3])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'fillarea':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcannotationfillarea' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'text':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifctextliteral' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsurface':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcbsplinesurface' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'annotation2d':
-        count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['ifc4x3_rc1.ifcpoint', 'ifc4x3_rc1.ifccurve', 'ifc4x3_rc1.ifcgeometriccurveset', 'ifc4x3_rc1.ifcannotationfillarea', 'ifc4x3_rc1.ifctextliteral']) == 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'geometricset':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcgeometricset' in typeof(temp) or 'ifc4x3_rc1.ifcpoint' in typeof(temp) or 'ifc4x3_rc1.ifccurve' in typeof(temp) or ('ifc4x3_rc1.ifcsurface' in typeof(temp))])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'geometriccurveset':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcgeometriccurveset' in typeof(temp) or 'ifc4x3_rc1.ifcgeometricset' in typeof(temp) or 'ifc4x3_rc1.ifcpoint' in typeof(temp) or ('ifc4x3_rc1.ifccurve' in typeof(temp))])
+    if reptype == 'Point':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCPOINT' in typeof(temp)])
+    elif reptype == 'PointCloud':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCCARTESIANPOINTLIST3D' in typeof(temp)])
+    elif reptype == 'Curve':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCCURVE' in typeof(temp)])
+    elif reptype == 'Curve2D':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCCURVE' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
+    elif reptype == 'Curve3D':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCCURVE' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 3])
+    elif reptype == 'Surface':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCSURFACE' in typeof(temp)])
+    elif reptype == 'Surface2D':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCSURFACE' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 2])
+    elif reptype == 'Surface3D':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCSURFACE' in typeof(temp) and express_getattr(temp, 'Dim', INDETERMINATE) == 3])
+    elif reptype == 'FillArea':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCANNOTATIONFILLAREA' in typeof(temp)])
+    elif reptype == 'Text':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCTEXTLITERAL' in typeof(temp)])
+    elif reptype == 'AdvancedSurface':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCBSPLINESURFACE' in typeof(temp)])
+    elif reptype == 'Annotation2D':
+        count = sizeof([temp for temp in items if sizeof(typeof(temp) * ['IFC4X3_RC1.IFCPOINT', 'IFC4X3_RC1.IFCCURVE', 'IFC4X3_RC1.IFCGEOMETRICCURVESET', 'IFC4X3_RC1.IFCANNOTATIONFILLAREA', 'IFC4X3_RC1.IFCTEXTLITERAL']) == 1])
+    elif reptype == 'GeometricSet':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCGEOMETRICSET' in typeof(temp) or 'IFC4X3_RC1.IFCPOINT' in typeof(temp) or 'IFC4X3_RC1.IFCCURVE' in typeof(temp) or ('IFC4X3_RC1.IFCSURFACE' in typeof(temp))])
+    elif reptype == 'GeometricCurveSet':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCGEOMETRICCURVESET' in typeof(temp) or 'IFC4X3_RC1.IFCGEOMETRICSET' in typeof(temp) or 'IFC4X3_RC1.IFCPOINT' in typeof(temp) or ('IFC4X3_RC1.IFCCURVE' in typeof(temp))])
         for i in range(1, hiindex(items) + 1):
-            if 'ifc4x3_rc1.ifcgeometricset' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
-                if sizeof([temp for temp in express_getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'ifc4x3_rc1.ifcsurface' in typeof(temp)]) > 0:
+            if 'IFC4X3_RC1.IFCGEOMETRICSET' in typeof(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+                if sizeof([temp for temp in express_getattr(express_getitem(items, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Elements', INDETERMINATE) if 'IFC4X3_RC1.IFCSURFACE' in typeof(temp)]) > 0:
                     count = count - 1
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'tessellation':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifctessellateditem' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surfaceorsolidmodel':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc1.ifctessellateditem', 'ifc4x3_rc1.ifcshellbasedsurfacemodel', 'ifc4x3_rc1.ifcfacebasedsurfacemodel', 'ifc4x3_rc1.ifcsolidmodel'] * typeof(temp)) >= 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'surfacemodel':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc1.ifctessellateditem', 'ifc4x3_rc1.ifcshellbasedsurfacemodel', 'ifc4x3_rc1.ifcfacebasedsurfacemodel'] * typeof(temp)) >= 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'solidmodel':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcsolidmodel' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sweptsolid':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc1.ifcextrudedareasolid', 'ifc4x3_rc1.ifcrevolvedareasolid'] * typeof(temp)) >= 1 and sizeof(['ifc4x3_rc1.ifcextrudedareasolidtapered', 'ifc4x3_rc1.ifcrevolvedareasolidtapered'] * typeof(temp)) == 0])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedsweptsolid':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc1.ifcsweptareasolid', 'ifc4x3_rc1.ifcsweptdisksolid'] * typeof(temp)) >= 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'csg':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc1.ifcbooleanresult', 'ifc4x3_rc1.ifccsgprimitive3d', 'ifc4x3_rc1.ifccsgsolid'] * typeof(temp)) >= 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'clipping':
-        count = sizeof([temp for temp in items if sizeof(['ifc4x3_rc1.ifccsgsolid', 'ifc4x3_rc1.ifcbooleanclippingresult'] * typeof(temp)) >= 1])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'brep':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcfacetedbrep' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'advancedbrep':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcmanifoldsolidbrep' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'boundingbox':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcboundingbox' in typeof(temp)])
+    elif reptype == 'Tessellation':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCTESSELLATEDITEM' in typeof(temp)])
+    elif reptype == 'SurfaceOrSolidModel':
+        count = sizeof([temp for temp in items if sizeof(['IFC4X3_RC1.IFCTESSELLATEDITEM', 'IFC4X3_RC1.IFCSHELLBASEDSURFACEMODEL', 'IFC4X3_RC1.IFCFACEBASEDSURFACEMODEL', 'IFC4X3_RC1.IFCSOLIDMODEL'] * typeof(temp)) >= 1])
+    elif reptype == 'SurfaceModel':
+        count = sizeof([temp for temp in items if sizeof(['IFC4X3_RC1.IFCTESSELLATEDITEM', 'IFC4X3_RC1.IFCSHELLBASEDSURFACEMODEL', 'IFC4X3_RC1.IFCFACEBASEDSURFACEMODEL'] * typeof(temp)) >= 1])
+    elif reptype == 'SolidModel':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCSOLIDMODEL' in typeof(temp)])
+    elif reptype == 'SweptSolid':
+        count = sizeof([temp for temp in items if sizeof(['IFC4X3_RC1.IFCEXTRUDEDAREASOLID', 'IFC4X3_RC1.IFCREVOLVEDAREASOLID'] * typeof(temp)) >= 1 and sizeof(['IFC4X3_RC1.IFCEXTRUDEDAREASOLIDTAPERED', 'IFC4X3_RC1.IFCREVOLVEDAREASOLIDTAPERED'] * typeof(temp)) == 0])
+    elif reptype == 'AdvancedSweptSolid':
+        count = sizeof([temp for temp in items if sizeof(['IFC4X3_RC1.IFCSWEPTAREASOLID', 'IFC4X3_RC1.IFCSWEPTDISKSOLID'] * typeof(temp)) >= 1])
+    elif reptype == 'CSG':
+        count = sizeof([temp for temp in items if sizeof(['IFC4X3_RC1.IFCBOOLEANRESULT', 'IFC4X3_RC1.IFCCSGPRIMITIVE3D', 'IFC4X3_RC1.IFCCSGSOLID'] * typeof(temp)) >= 1])
+    elif reptype == 'Clipping':
+        count = sizeof([temp for temp in items if sizeof(['IFC4X3_RC1.IFCCSGSOLID', 'IFC4X3_RC1.IFCBOOLEANCLIPPINGRESULT'] * typeof(temp)) >= 1])
+    elif reptype == 'Brep':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCFACETEDBREP' in typeof(temp)])
+    elif reptype == 'AdvancedBrep':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCMANIFOLDSOLIDBREP' in typeof(temp)])
+    elif reptype == 'BoundingBox':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCBOUNDINGBOX' in typeof(temp)])
         if sizeof(items) > 1:
             count = 0
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'sectionedspine':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcsectionedspine' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'lightsource':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifclightsource' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'mappedrepresentation':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcmappeditem' in typeof(temp)])
+    elif reptype == 'SectionedSpine':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCSECTIONEDSPINE' in typeof(temp)])
+    elif reptype == 'LightSource':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCLIGHTSOURCE' in typeof(temp)])
+    elif reptype == 'MappedRepresentation':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCMAPPEDITEM' in typeof(temp)])
     else:
         return None
     return count == sizeof(items)
@@ -13560,12 +13560,12 @@ def IfcSurfaceWeightsPositive(b):
 
 def IfcTaperedSweptAreaProfiles(startarea, endarea):
     result = False
-    if 'ifc4x3_rc1.ifcparameterizedprofiledef' in typeof(startarea):
-        if 'ifc4x3_rc1.ifcderivedprofiledef' in typeof(endarea):
+    if 'IFC4X3_RC1.IFCPARAMETERIZEDPROFILEDEF' in typeof(startarea):
+        if 'IFC4X3_RC1.IFCDERIVEDPROFILEDEF' in typeof(endarea):
             result = startarea == express_getattr(endarea, 'ParentProfile', INDETERMINATE)
         else:
             result = typeof(startarea) == typeof(endarea)
-    elif 'ifc4x3_rc1.ifcderivedprofiledef' in typeof(endarea):
+    elif 'IFC4X3_RC1.IFCDERIVEDPROFILEDEF' in typeof(endarea):
         result = startarea == express_getattr(endarea, 'ParentProfile', INDETERMINATE)
     else:
         result = False
@@ -13573,17 +13573,17 @@ def IfcTaperedSweptAreaProfiles(startarea, endarea):
 
 def IfcTopologyRepresentationTypes(reptype, items):
     count = 0
-    if express_getattr(reptype, 'lower', INDETERMINATE)() == 'vertex':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcvertex' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'edge':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcedge' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'path':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcpath' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'face':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcface' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'shell':
-        count = sizeof([temp for temp in items if 'ifc4x3_rc1.ifcopenshell' in typeof(temp) or 'ifc4x3_rc1.ifcclosedshell' in typeof(temp)])
-    elif express_getattr(reptype, 'lower', INDETERMINATE)() == 'undefined':
+    if reptype == 'Vertex':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCVERTEX' in typeof(temp)])
+    elif reptype == 'Edge':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCEDGE' in typeof(temp)])
+    elif reptype == 'Path':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCPATH' in typeof(temp)])
+    elif reptype == 'Face':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCFACE' in typeof(temp)])
+    elif reptype == 'Shell':
+        count = sizeof([temp for temp in items if 'IFC4X3_RC1.IFCOPENSHELL' in typeof(temp) or 'IFC4X3_RC1.IFCCLOSEDSHELL' in typeof(temp)])
+    elif reptype == 'Undefined':
         return True
     else:
         return None
@@ -13595,9 +13595,9 @@ def IfcUniqueDefinitionNames(relations):
         return True
     for i in range(1, hiindex(relations) + 1):
         definition = express_getattr(express_getitem(relations, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'RelatingPropertyDefinition', INDETERMINATE)
-        if 'ifc4x3_rc1.ifcpropertysetdefinition' in typeof(definition):
+        if 'IFC4X3_RC1.IFCPROPERTYSETDEFINITION' in typeof(definition):
             properties = properties + definition
-        elif 'ifc4x3_rc1.ifcpropertysetdefinitionset' in typeof(definition):
+        elif 'IFC4X3_RC1.IFCPROPERTYSETDEFINITIONSET' in typeof(definition):
             definitionset = definition
             for j in range(1, hiindex(definitionset) + 1):
                 properties = properties + express_getitem(definitionset, j - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)
@@ -13614,7 +13614,7 @@ def IfcUniquePropertySetNames(properties):
     names = express_set([])
     unnamed = 0
     for i in range(1, hiindex(properties) + 1):
-        if 'ifc4x3_rc1.ifcpropertyset' in typeof(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
+        if 'IFC4X3_RC1.IFCPROPERTYSET' in typeof(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE)):
             names = names + express_getattr(express_getitem(properties, i - EXPRESS_ONE_BASED_INDEXING, INDETERMINATE), 'Name', INDETERMINATE)
         else:
             unnamed = unnamed + 1
@@ -13636,13 +13636,13 @@ def IfcVectorDifference(arg1, arg2):
     if (not exists(arg1) or not exists(arg2)) or express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
-        if 'ifc4x3_rc1.ifcvector' in typeof(arg1):
+        if 'IFC4X3_RC1.IFCVECTOR' in typeof(arg1):
             mag1 = express_getattr(arg1, 'Magnitude', INDETERMINATE)
             vec1 = express_getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
-        if 'ifc4x3_rc1.ifcvector' in typeof(arg2):
+        if 'IFC4X3_RC1.IFCVECTOR' in typeof(arg2):
             mag2 = express_getattr(arg2, 'Magnitude', INDETERMINATE)
             vec2 = express_getattr(arg2, 'Orientation', INDETERMINATE)
         else:
@@ -13668,13 +13668,13 @@ def IfcVectorSum(arg1, arg2):
     if (not exists(arg1) or not exists(arg2)) or express_getattr(arg1, 'Dim', INDETERMINATE) != express_getattr(arg2, 'Dim', INDETERMINATE):
         return None
     else:
-        if 'ifc4x3_rc1.ifcvector' in typeof(arg1):
+        if 'IFC4X3_RC1.IFCVECTOR' in typeof(arg1):
             mag1 = express_getattr(arg1, 'Magnitude', INDETERMINATE)
             vec1 = express_getattr(arg1, 'Orientation', INDETERMINATE)
         else:
             mag1 = 1.0
             vec1 = arg1
-        if 'ifc4x3_rc1.ifcvector' in typeof(arg2):
+        if 'IFC4X3_RC1.IFCVECTOR' in typeof(arg2):
             mag2 = express_getattr(arg2, 'Magnitude', INDETERMINATE)
             vec2 = express_getattr(arg2, 'Orientation', INDETERMINATE)
         else:

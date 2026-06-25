@@ -414,7 +414,7 @@ def process_expression(context):
                     is_literal_str_list = False
                 if is_literal_str_list:
                     a, b = map(str, context.simple_expression.branches())
-                    return f"{a}.lower() {str(context.rel_op_extended)} {b}"
+                    return f"{a}.lower() {str(context.rel_op_extended)} map(str.lower, {b})"
             return concat(context.rel_op_extended, context.simple_expression)
     elif context.multiplication_like_op:
         if str(context.multiplication_like_op.branches()[0]) == "||":
@@ -695,6 +695,14 @@ codegen_rule("MOD", lambda context: "%")
 codegen_rule("TRUE", lambda context: "True")
 codegen_rule("FALSE", lambda context: "False")
 
+def _dotted_name(node: ast.AST):
+    """Return dotted name for Name/Attribute chains, else None."""
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        base = _dotted_name(node.value)
+        return f"{base}.{node.attr}" if base else node.attr
+    return None
 
 class AttributeGetattrTransformer(ast.NodeTransformer):
     def visit_Attribute(self, node):
@@ -712,7 +720,7 @@ class AttributeGetattrTransformer(ast.NodeTransformer):
         if isinstance(node.ctx, ast.Store):
             return node
 
-        if node.attr == "create_entity":
+        if _dotted_name(node) in ('ifcopenshell.create_entity', 'str.lower'):
             return node
 
         if node.attr.startswith("__"):
@@ -928,11 +936,11 @@ def typeof(inst):
     if not inst:
         # If V evaluates to indeterminate (?), an empty set is returned.
         return express_set([])
-    schema_name = inst.is_a(True).split('.')[0].lower()
+    schema_name = inst.is_a(True).split('.')[0].upper()
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
-            yield '.'.join((schema_name, decl.name().lower()))
+            yield '.'.join((schema_name, decl.name().upper()))
             if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
                 decl = decl.supertype()
             else:
