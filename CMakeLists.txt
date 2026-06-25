@@ -1,6 +1,6 @@
+# This file was generated with the assistance of an AI coding tool.
 # Root-level CMakeLists.txt for building IfcOpenShell for UE 5.8 on Windows x64.
 # Place this file in the root of a cloned IfcOpenShell repository, next to /cmake and /src.
-#
 # IMPORTANT CHANGE vs. the previous revision:
 #   IfcOpenShell is now built as STATIC libraries (BUILD_SHARED_LIBS OFF).
 #
