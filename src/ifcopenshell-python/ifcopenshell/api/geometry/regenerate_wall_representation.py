@@ -44,7 +44,7 @@ def regenerate_wall_representation(
     length: float = 1.0,
     height: float = 1.0,
     angle: Optional[float] = None,
-) -> ifcopenshell.entity_instance:
+) -> Optional[ifcopenshell.entity_instance]:
     """
     Regenerate the body representation of a wall taking into account connections.
 
@@ -94,7 +94,10 @@ def regenerate_wall_representation(
         default height in SI units.
     :param angle: If the wall doesn't already have a slope, this is the default
         angle in radians. Left as none or 0 defines no slope.
-    :return: The newly generated body IfcShapeRepresentation
+    :return: The newly generated body IfcShapeRepresentation, or ``None`` if
+        the wall has no ``IfcMaterialLayerSet`` (the layer-set rebuild is the
+        only mode this function knows; without layers there is nothing to
+        regenerate and callers should leave the existing representation alone).
     """
     return Regenerator(file).regenerate(wall, length=length, height=height, angle=angle)
 

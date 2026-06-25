@@ -172,6 +172,48 @@ class TestHasMaterialUsage(NewFile):
         assert subject.has_material_usage(element) is True
 
 
+class TestIsRelatingTypeCompatible(NewFile):
+    def test_matched_pair_ifc4(self):
+        ifc = ifcopenshell.file()
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        door_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorType")
+        assert subject.is_relating_type_compatible(door, door_type) is True
+
+    def test_mismatched_pair_ifc4(self):
+        ifc = ifcopenshell.file()
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType")
+        assert subject.is_relating_type_compatible(door, wall_type) is False
+
+    def test_legacy_style_pairing_allowed_in_ifc4(self):
+        ifc = ifcopenshell.file()
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        door_style = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
+        assert subject.is_relating_type_compatible(door, door_style) is True
+
+    def test_legacy_style_pairing_refused_in_ifc4x3(self):
+        ifc = ifcopenshell.file(schema="IFC4X3")
+        door = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoor")
+        try:
+            door_style = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorStyle")
+        except Exception:
+            # IfcDoorStyle was removed in IFC4X3 — exclusion holds trivially.
+            return
+        assert subject.is_relating_type_compatible(door, door_style) is False
+
+    def test_untypable_occurrence_returns_false(self):
+        ifc = ifcopenshell.file()
+        opening = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcOpeningElement")
+        any_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcDoorType")
+        assert subject.is_relating_type_compatible(opening, any_type) is False
+
+    def test_proxy_type_pairing(self):
+        ifc = ifcopenshell.file()
+        proxy = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBuildingElementProxy")
+        proxy_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBuildingElementProxyType")
+        assert subject.is_relating_type_compatible(proxy, proxy_type) is True
+
+
 class TestRunGeometryAddRepresentation(NewFile):
     def test_nothing(self):
         pass

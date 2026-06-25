@@ -181,6 +181,33 @@ bool IfcSpfHeader::tryRead() {
     }
 }
 
+void IfcParse::IfcSpfHeader::assign(const IfcSpfHeader& other) {
+    if (this != &other) {
+        auto copy_inst = [](IfcUtil::IfcBaseEntity* new_entity, IfcUtil::IfcBaseEntity* entity, const IfcParse::entity* decl, IfcParse::impl::in_memory_file_storage* own_storage, IfcParse::impl::in_memory_file_storage* other_storage) {
+            if (!new_entity || !entity) {
+                return;
+            }
+            for (size_t i = 0; i < decl->attribute_count(); ++i) {
+                entity->data().apply_visitor(other_storage, decl, entity->identity(), [i, decl, new_entity, own_storage](const auto& v) {
+                    using U = std::decay_t<decltype(v)>;
+                    if constexpr (std::is_same_v<U, IfcUtil::IfcBaseClass*>) {
+                    } else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                    } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                    } else if constexpr (std::is_same_v<U, empty_aggregate_t>) {
+                    } else if constexpr (std::is_same_v<U, empty_aggregate_of_aggregate_t>) {
+                    } else {
+                        new_entity->set_attribute_value(i, v);
+                    } 
+                }, i);
+            }
+        };
+
+        copy_inst(file_description_, other.file_description_, &Header_section_schema::file_description::Class(), storage_, other.storage_);
+        copy_inst(file_name_, other.file_name_, &Header_section_schema::file_name::Class(), storage_, other.storage_);
+        copy_inst(file_schema_, other.file_schema_, &Header_section_schema::file_schema::Class(), storage_, other.storage_);
+    }
+}
+
 void IfcSpfHeader::write(std::ostream& out) const {
     out << ISO_10303_21 << ";"
         << "\n";
