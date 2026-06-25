@@ -158,6 +158,7 @@ actions = {
 to_emit = set(id for id, expr in express)
 emitted = set()
 to_combine = set(["simple_id"])
+to_original_text = set(["simple_string_literal"])
 statements = []
 
 terminals = reduce(lambda x, y: x | y, (find_bytype(e, Terminal) for id, e in express))
@@ -187,6 +188,8 @@ while True:
             stmt = "(%s)" % expr
             if id in to_combine:
                 stmt = " + ".join(itertools.chain(negated_keywords, ("originalTextFor(Combine%s)" % stmt,)))
+            elif id in to_original_text:
+                stmt = "originalTextFor%s" % stmt
             if id not in no_action and not isinstance(expr.contents, Keyword) and not id in to_combine:
                 node_type = "ListNode" if "ZeroOrMore" in stmt else "Node"
                 action = actions.get(id, 'lambda s, loc, t: %s(s, loc, t, rule="%s")' % (node_type, id))
@@ -204,6 +207,8 @@ for id in to_emit:
     stmt = "(%s)" % expr
     if id in to_combine:
         stmt = "Suppress%s" % stmt
+    elif id in to_original_text:
+        stmt = "originalTextFor%s" % stmt
     if id not in no_action and not isinstance(expr.contents, Keyword):
         children = list(
             map(operator.attrgetter("contents"), reduce(lambda x, y: x | y, (find_bytype(e, Keyword) for e in [expr])))
