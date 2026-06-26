@@ -95,12 +95,12 @@ EXPRESS_ONE_BASED_INDEXING = 1
 def typeof(inst):
     if not inst:
         return express_set([])
-    schema_name = inst.is_a(True).split('.')[0].upper()
+    schema_name = inst.is_a(True).split('.')[0].lower()
 
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
-            yield '.'.join((schema_name, decl.name().upper()))
+            yield '.'.join((schema_name, decl.name().lower()))
             if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
                 decl = decl.supertype()
             else:
@@ -5193,7 +5193,7 @@ class IfcBoxAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['top-left', 'top-middle', 'top-right', 'middle-left', 'center', 'middle-right', 'bottom-left', 'bottom-middle', 'bottom-right']) is not False
 
 class IfcCardinalPointReference_GreaterThanZero:
     SCOPE = 'type'
@@ -5274,7 +5274,7 @@ class IfcFontStyle_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'italic', 'oblique'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'italic', 'oblique']) is not False
 
 class IfcFontVariant_WR1:
     SCOPE = 'type'
@@ -5283,7 +5283,7 @@ class IfcFontVariant_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'small-caps'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps']) is not False
 
 class IfcFontWeight_WR1:
     SCOPE = 'type'
@@ -5292,7 +5292,7 @@ class IfcFontWeight_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['normal', 'small-caps', '100', '200', '300', '400', '500', '600', '700', '800', '900']) is not False
 
 class IfcHeatingValueMeasure_WR1:
     SCOPE = 'type'
@@ -5391,7 +5391,7 @@ class IfcTextAlignment_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['left', 'right', 'center', 'justify'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['left', 'right', 'center', 'justify']) is not False
 
 class IfcTextDecoration_WR1:
     SCOPE = 'type'
@@ -5400,7 +5400,7 @@ class IfcTextDecoration_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['none', 'underline', 'overline', 'line-through', 'blink'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['none', 'underline', 'overline', 'line-through', 'blink']) is not False
 
 class IfcTextTransformation_WR1:
     SCOPE = 'type'
@@ -5409,7 +5409,7 @@ class IfcTextTransformation_WR1:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(self, 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['capitalize', 'uppercase', 'lowercase', 'none'])) is not False
+        assert (express_getattr(self, 'lower', INDETERMINATE)() in ['capitalize', 'uppercase', 'lowercase', 'none']) is not False
 
 class IfcActorRole_WR1:
     SCOPE = 'entity'
@@ -6136,7 +6136,7 @@ class IfcBlobTexture_SupportedRasterFormat:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['BMP', 'JPG', 'GIF', 'PNG'])) is not False
+        assert (express_getattr(express_getattr(self, 'RasterFormat', INDETERMINATE), 'lower', INDETERMINATE)() in ['BMP', 'JPG', 'GIF', 'PNG']) is not False
 
 class IfcBoiler_CorrectPredefinedType:
     SCOPE = 'entity'
@@ -7725,7 +7725,7 @@ class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'by layer'])) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'by layer']) is not False
 
 class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
     SCOPE = 'entity'
@@ -7734,7 +7734,7 @@ class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in map(express_getattr(str, 'lower', INDETERMINATE), ['continuous', 'chain', 'chain double dash', 'dashed', 'dotted', 'by layer'])) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chain double dash', 'dashed', 'dotted', 'by layer']) is not False
 
 class IfcDuctFitting_CorrectPredefinedType:
     SCOPE = 'entity'
