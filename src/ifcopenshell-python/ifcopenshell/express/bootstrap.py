@@ -18,8 +18,6 @@
 
 
 import os
-import sys
-import string
 import operator
 import itertools
 
@@ -189,7 +187,8 @@ while True:
             if id in to_combine:
                 stmt = " + ".join(itertools.chain(negated_keywords, ("originalTextFor(Combine%s)" % stmt,)))
             elif id in to_original_text:
-                stmt = "originalTextFor%s" % stmt
+                # We use lower() because it better matches the previous default of the CaselessLiterals for individual lexemes and express dictates case-insensitive comparisons anyway
+                stmt = "(originalTextFor%s).addParseAction(tokenMap(str.lower))" % stmt
             if id not in no_action and not isinstance(expr.contents, Keyword) and not id in to_combine:
                 node_type = "ListNode" if "ZeroOrMore" in stmt else "Node"
                 action = actions.get(id, 'lambda s, loc, t: %s(s, loc, t, rule="%s")' % (node_type, id))
@@ -208,7 +207,7 @@ for id in to_emit:
     if id in to_combine:
         stmt = "Suppress%s" % stmt
     elif id in to_original_text:
-        stmt = "originalTextFor%s" % stmt
+        stmt = "(originalTextFor%s).addParseAction(tokenMap(str.lower))" % stmt
     if id not in no_action and not isinstance(expr.contents, Keyword):
         children = list(
             map(operator.attrgetter("contents"), reduce(lambda x, y: x | y, (find_bytype(e, Keyword) for e in [expr])))
