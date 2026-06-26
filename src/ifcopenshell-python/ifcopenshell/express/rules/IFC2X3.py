@@ -4001,6 +4001,7 @@ class IfcArbitraryProfileDefWithVoids_WR2:
     @staticmethod
     def __call__(self):
         innercurves = express_getattr(self, 'InnerCurves', INDETERMINATE)
+        breakpoint()
         assert (sizeof([temp for temp in innercurves if express_getattr(temp, 'Dim', INDETERMINATE) != 2]) == 0) is not False
 
 class IfcArbitraryProfileDefWithVoids_WR3:

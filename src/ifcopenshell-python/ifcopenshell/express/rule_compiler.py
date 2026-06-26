@@ -414,7 +414,7 @@ def process_expression(context):
                     is_literal_str_list = False
                 if is_literal_str_list:
                     a, b = map(str, context.simple_expression.branches())
-                    return f"{a}.lower() {str(context.rel_op_extended)} map(str.lower, {b})"
+                    return f"{a}.lower() {str(context.rel_op_extended)} {b}"
             return concat(context.rel_op_extended, context.simple_expression)
     elif context.multiplication_like_op:
         if str(context.multiplication_like_op.branches()[0]) == "||":
@@ -936,11 +936,11 @@ def typeof(inst):
     if not inst:
         # If V evaluates to indeterminate (?), an empty set is returned.
         return express_set([])
-    schema_name = inst.is_a(True).split('.')[0].upper()
+    schema_name = inst.is_a(True).split('.')[0].lower()
     def inner():
         decl = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(inst.is_a())
         while decl:
-            yield '.'.join((schema_name, decl.name().upper()))
+            yield '.'.join((schema_name, decl.name().lower()))
             if isinstance(decl, ifcopenshell.ifcopenshell_wrapper.entity):
                 decl = decl.supertype()
             else:
