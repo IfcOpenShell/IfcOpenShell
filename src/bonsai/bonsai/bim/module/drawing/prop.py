@@ -1052,7 +1052,7 @@ def _update_force_perpendicular(self, context):
         return
 
     new_value = self.force_perpendicular_to_face
-    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
 
     targets = []
     for obj in context.selected_objects:
@@ -1149,7 +1149,7 @@ def _set_line_position(self, value: float) -> None:
     if not file:
         return
 
-    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
 
     targets = []
     import bpy as _bpy
