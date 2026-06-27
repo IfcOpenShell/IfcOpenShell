@@ -1904,6 +1904,10 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", existing_object_by_name=obj.name)
 
 
+# AddElevationAnnotation is defined after SetDimensionAnchor (below) because it
+# inherits from it.  This placeholder keeps the module namespace tidy.
+
+
 class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
@@ -6628,7 +6632,7 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             return False
         ptype = ifcopenshell.util.element.get_predefined_type(element)
         if ptype not in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"):
-            cls.poll_message_set("Annotation must be a dimension type.")
+            cls.poll_message_set("Annotation must be a dimension or elevation type.")
             return False
         return True
 
@@ -6908,6 +6912,25 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
             return
 
         _do_write_anchor(self._annotation, self._annotation_obj, anchor, self._active_vertex_idx, self._shape_cache)
+
+        # For elevation annotations the whole object should jump to the face hit
+        # (XY and Z), not just update Z via the object-placement path in
+        # _update_elevation_marker_z.
+        ptype = ifcopenshell.util.element.get_predefined_type(self._annotation)
+        if ptype in ("SECTION_LEVEL", "PLAN_LEVEL"):
+            from mathutils import Vector as _mVector
+            hit_pt = anchor.get("pt")
+            target_z = float(hit_pt[2]) if hit_pt else float(location.z)
+            hit_world = _mVector((float(location.x), float(location.y), target_z))
+            m = self._annotation_obj.matrix_world.copy()
+            m.translation = hit_world
+            ifcopenshell.api.run("geometry.edit_object_placement", file, product=self._annotation, matrix=np.array(m))
+            if self._annotation_obj.parent:
+                self._annotation_obj.location = self._annotation_obj.parent.matrix_world.inverted() @ hit_world
+            else:
+                self._annotation_obj.location = hit_world
+            _zero_elevation_annotation_spline_z(self._annotation, self._annotation_obj)
+
         self.report(
             {"INFO"},
             f"Vertex {self._active_vertex_idx} → {element.is_a()}/{element.Name or element.GlobalId} [{anchor.get('type')}]",
@@ -7415,30 +7438,37 @@ class SetDimensionAnchor(bpy.types.Operator, tool.Ifc.Operator):
 def _do_write_anchor(annotation, annotation_obj, new_anchor: dict, vertex_index: int, shape_cache=None) -> None:
     """Write one anchor into the BBIM_Dimension pset and regenerate the curve."""
     file = tool.Ifc.get()
+    ptype = ifcopenshell.util.element.get_predefined_type(annotation)
+    _is_elevation = ptype in ("SECTION_LEVEL", "PLAN_LEVEL")
 
     pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
 
-    if pset_data and pset_data.get("Anchors"):
-        try:
-            anchors: list = json.loads(pset_data["Anchors"])
-        except Exception:
-            anchors = []
+    if _is_elevation:
+        # Elevation markers use exactly one anchor (the Z reference point).
+        anchors: list = [new_anchor]
     else:
-        anchors = _anchors_from_spline(annotation_obj, file)
+        if pset_data and pset_data.get("Anchors"):
+            try:
+                anchors = json.loads(pset_data["Anchors"])
+            except Exception:
+                anchors = []
+        else:
+            anchors = _anchors_from_spline(annotation_obj, file)
 
-    while len(anchors) <= vertex_index:
-        idx = len(anchors)
-        if annotation_obj and annotation_obj.data and hasattr(annotation_obj.data, "splines") and annotation_obj.data.splines:
-            pts = annotation_obj.data.splines[0].points
-            if idx < len(pts):
-                co = annotation_obj.matrix_world @ pts[idx].co.xyz
-                import ifcopenshell.api.drawing as drawing_api
-                anchors.append(drawing_api.make_world_anchor([float(co.x), float(co.y), float(co.z)]))
-                continue
-        import ifcopenshell.api.drawing as drawing_api
-        anchors.append(drawing_api.make_world_anchor([0.0, 0.0, 0.0]))
+        while len(anchors) <= vertex_index:
+            idx = len(anchors)
+            if annotation_obj and annotation_obj.data and hasattr(annotation_obj.data, "splines") and annotation_obj.data.splines:
+                pts = annotation_obj.data.splines[0].points
+                if idx < len(pts):
+                    co = annotation_obj.matrix_world @ pts[idx].co.xyz
+                    import ifcopenshell.api.drawing as drawing_api
+                    anchors.append(drawing_api.make_world_anchor([float(co.x), float(co.y), float(co.z)]))
+                    continue
+            import ifcopenshell.api.drawing as drawing_api
+            anchors.append(drawing_api.make_world_anchor([0.0, 0.0, 0.0]))
 
-    anchors[vertex_index] = new_anchor
+        anchors[vertex_index] = new_anchor
+
     anchors_json = json.dumps(anchors)
 
     if pset_data:
@@ -7466,16 +7496,225 @@ def _do_write_anchor(annotation, annotation_obj, new_anchor: dict, vertex_index:
         except Exception:
             pass
 
-    import ifcopenshell.api.drawing as drawing_api
-    resolved_pts = drawing_api.regenerate_dimension(
-        file,
-        annotation,
-        shape_cache=shape_cache,
-        placement_override=placement_override,
-    )
-    if resolved_pts:
-        _update_blender_curve(annotation, resolved_pts)
+    if _is_elevation:
+        _update_elevation_marker_z(file, annotation, shape_cache=shape_cache, placement_override=placement_override)
+    else:
+        import ifcopenshell.api.drawing as drawing_api
+        resolved_pts = drawing_api.regenerate_dimension(
+            file,
+            annotation,
+            shape_cache=shape_cache,
+            placement_override=placement_override,
+        )
+        if resolved_pts:
+            _update_blender_curve(annotation, resolved_pts)
 
+
+
+class AddElevationAnnotation(SetDimensionAnchor):
+    """Interactively place a SECTION_LEVEL or PLAN_LEVEL annotation.
+
+    Runs the same face / layer / edge / vertex snap UI as SetDimensionAnchor but
+    creates the annotation only AFTER the user clicks, placing it directly at the
+    picked elevation.  The anchor is stored in BBIM_Dimension so the annotation
+    tracks the element if it moves.
+    """
+
+    bl_idname = "bim.add_elevation_annotation"
+    bl_label = "Add Elevation Annotation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not context.scene.camera or not tool.Ifc.get_entity(context.scene.camera):
+            cls.poll_message_set("No active drawing.")
+            return False
+        if context.mode != "OBJECT":
+            cls.poll_message_set("Must be in Object Mode.")
+            return False
+        if not getattr(context, "space_data", None) or context.space_data.type != "VIEW_3D":
+            return False
+        ann_props = tool.Drawing.get_annotation_props()
+        return ann_props.object_type in ("SECTION_LEVEL", "PLAN_LEVEL")
+
+    def _invoke(self, context, event):
+        props = tool.Drawing.get_annotation_props()
+        dprops = tool.Drawing.get_document_props()
+        self._create_drawing = dprops.get_active_drawing()
+        if not self._create_drawing:
+            self.report({"WARNING"}, "No active drawing.")
+            return {"CANCELLED"}
+        self._create_object_type = props.object_type
+        self._create_relating_type = (
+            tool.Ifc.get().by_id(int(props.relating_type_id))
+            if props.relating_type_id and props.relating_type_id != "0"
+            else None
+        )
+        # No existing annotation — we create it on the click.
+        self._annotation = None
+        self._annotation_obj = None
+        self._shape_cache = {}
+        self._phase = "PICK_FACE"
+        self._active_vertex_idx = 0
+        self._hover_candidates = []
+        self._hover_index = 0
+        self._hover_last_px = (-9999, -9999)
+        self._hover_highlighted_obj = None
+        self._snap_mode = "FACE"
+        _anchor_hover_draw_data.clear()
+        self._draw_handler = bpy.types.SpaceView3D.draw_handler_add(
+            _draw_anchor_hover_global, (), "WINDOW", "POST_PIXEL"
+        )
+        self._region, self._rv3d = None, None
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                for region in area.regions:
+                    if region.type == "WINDOW":
+                        self._region = region
+                        break
+                if area.spaces and area.spaces[0].type == "VIEW_3D":
+                    self._rv3d = area.spaces[0].region_3d
+                break
+        context.workspace.status_text_set(
+            f"Hover over an element  |  Click: place {self._create_object_type}"
+            "  |  TAB: cycle snap  |  RMB/ESC: Cancel"
+        )
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def _modal(self, context, event):
+        if event.type == "ESC" or (event.type == "RIGHTMOUSE" and event.value == "PRESS"):
+            self._cleanup(context)
+            return {"FINISHED"}
+
+        if event.type == "MOUSEMOVE" and self._phase == "PICK_FACE":
+            self._handle_hover(context, event)
+            return {"RUNNING_MODAL"}
+
+        if event.type == "TAB" and event.value == "PRESS" and self._phase == "PICK_FACE":
+            self._cycle_hover(context)
+            return {"RUNNING_MODAL"}
+
+        if event.type == "LEFTMOUSE" and event.value == "RELEASE":
+            return {"RUNNING_MODAL"}
+
+        if event.type == "LEFTMOUSE" and event.value == "PRESS":
+            wrote = self._handle_face_pick_create(context, event)
+            if wrote:
+                self._cleanup(context)
+                return {"FINISHED"}
+            return {"RUNNING_MODAL"}
+
+        return {"PASS_THROUGH"}
+
+    def _handle_face_pick_create(self, context, event):
+        """Pick a face, create the elevation annotation there, write the anchor."""
+        region = self._region
+        rv3d = self._rv3d
+        if not region or not rv3d:
+            return False
+
+        self._clear_hover_highlight(context)
+
+        coord = (event.mouse_x - region.x, event.mouse_y - region.y)
+        dx = coord[0] - self._hover_last_px[0]
+        dy = coord[1] - self._hover_last_px[1]
+        if dx * dx + dy * dy > self._HOVER_THROTTLE_PX_SQ or not self._hover_candidates:
+            self._hover_candidates = self._compute_candidates(context, coord)
+            self._hover_index = 0
+
+        if not self._hover_candidates:
+            self.report({"WARNING"}, "Nothing under cursor — click on a model element")
+            return False
+
+        idx = min(self._hover_index, len(self._hover_candidates) - 1)
+        hit_obj, hit_mesh, hit_mesh_mx, location, normal, face_index = self._hover_candidates[idx]
+
+        element = tool.Ifc.get_entity(hit_obj)
+        if not element:
+            self.report({"WARNING"}, f"'{hit_obj.name}' is not an IFC element")
+            return False
+
+        file = tool.Ifc.get()
+        placement_override = {element.id(): np.array(hit_obj.matrix_world)}
+        snap = self._compute_snap_geom(hit_obj, face_index, coord)
+        snap_type = snap.get("type", "FACE")
+
+        import ifcopenshell.api.drawing as drawing_api
+        try:
+            if snap_type == "LAYER" and snap.get("method") == "LAYER_BOUNDARY":
+                anchor = drawing_api.build_anchor_from_layer_boundary(file, element, snap)
+            elif snap_type == "VERTEX" and snap.get("profile_x_m") is not None:
+                anchor = drawing_api.build_anchor_from_profile_vert(file, element, snap)
+            elif snap_type == "EDGE" and snap.get("profile_x_m") is not None:
+                anchor = drawing_api.build_anchor_from_profile_edge(file, element, snap)
+            elif snap_type in ("VERTEX", "EDGE") and snap.get("snap_world") is not None:
+                sw = snap["snap_world"]
+                local_m = snap.get("local_m")
+                if local_m is not None:
+                    anchor = drawing_api.build_anchor_from_local_point(element, snap_type, sw, local_m)
+                else:
+                    anchor = drawing_api.make_world_anchor([float(sw[0]), float(sw[1]), float(sw[2])])
+            else:
+                hit_m = (float(location.x), float(location.y), float(location.z))
+                normal_m = (float(normal.x), float(normal.y), float(normal.z))
+                anchor = drawing_api.build_anchor_from_hit(
+                    file, element, hit_m, normal_m,
+                    shape_cache=self._shape_cache,
+                    placement_override=placement_override,
+                )
+        except Exception as exc:
+            import traceback as _tb
+            _tb.print_exc()
+            self.report({"ERROR"}, f"build_anchor failed: {exc}")
+            return False
+
+        obj = core.add_annotation(
+            tool.Ifc, tool.Collector, tool.Drawing,
+            drawing=self._create_drawing,
+            object_type=self._create_object_type,
+            relating_type=self._create_relating_type,
+            enable_editing=False,
+        )
+        if not obj:
+            return False
+
+        annotation = tool.Ifc.get_entity(obj)
+        self._annotation = annotation
+        self._annotation_obj = obj
+        _do_write_anchor(annotation, obj, anchor, 0, self._shape_cache)
+
+        # Move annotation to the face hit position (XY and Z).
+        # obj.matrix_world may be stale (depsgraph not yet evaluated), so we
+        # override the translation column directly from the known hit point.
+        from mathutils import Vector as _mVector
+        hit_pt = anchor.get("pt")
+        target_z = float(hit_pt[2]) if hit_pt else float(location.z)
+        hit_world = _mVector((float(location.x), float(location.y), target_z))
+        m = obj.matrix_world.copy()
+        m.translation = hit_world
+        ifcopenshell.api.run("geometry.edit_object_placement", file, product=annotation, matrix=np.array(m))
+        if obj.parent:
+            obj.location = obj.parent.matrix_world.inverted() @ hit_world
+        else:
+            obj.location = hit_world
+
+        # Spline points were built from camera-space coords and may have a large
+        # local Z offset.  Zero it so the line sits at the same world elevation
+        # as the object origin (where the gizmo is drawn).
+        _zero_elevation_annotation_spline_z(annotation, obj)
+
+        tool.Blender.select_and_activate_single_object(context, obj)
+        self.report(
+            {"INFO"},
+            f"Vertex 0 → {element.is_a()}/{element.Name or element.GlobalId} [{anchor.get('type')}]",
+        )
+        return True
+
+    def _execute(self, context):
+        pass  # This operator is modal-only; always invoke with INVOKE_DEFAULT.
 
 
 class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
@@ -7541,10 +7780,13 @@ class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
             if not pset:
                 continue
 
-            # Sync anchor count to curve vertex count in case the user added or
-            # removed vertices in Edit Mode since the last regeneration.
+            ptype = ifcopenshell.util.element.get_predefined_type(annotation)
+            _is_elevation = ptype in ("SECTION_LEVEL", "PLAN_LEVEL")
+
+            # Sync anchor count to curve vertex count for true dimensions only.
+            # Elevation markers always have exactly one anchor regardless of vertex count.
             ann_obj = tool.Ifc.get_object(annotation)
-            if ann_obj and ann_obj.type == "CURVE":
+            if not _is_elevation and ann_obj and ann_obj.type == "CURVE":
                 _sync_dimension_anchors_to_curve(file, annotation, ann_obj)
 
             # Build a placement override from each referenced element's current
@@ -7572,19 +7814,27 @@ class RegenerateDimensions(bpy.types.Operator, tool.Ifc.Operator):
             except Exception:
                 pass
 
-            resolved_pts = drawing_api.regenerate_dimension(
-                file, annotation,
-                settings=geom_settings,
-                shape_cache=shape_cache,
-                placement_override=placement_override,
-            )
-            if not resolved_pts:
-                continue
+            if _is_elevation:
+                if _update_elevation_marker_z(
+                    file, annotation,
+                    settings=geom_settings,
+                    shape_cache=shape_cache,
+                    placement_override=placement_override,
+                ):
+                    updated += 1
+            else:
+                resolved_pts = drawing_api.regenerate_dimension(
+                    file, annotation,
+                    settings=geom_settings,
+                    shape_cache=shape_cache,
+                    placement_override=placement_override,
+                )
+                if not resolved_pts:
+                    continue
+                _update_blender_curve(annotation, resolved_pts)
+                updated += 1
 
-            _update_blender_curve(annotation, resolved_pts)
-            updated += 1
-
-        self.report({"INFO"}, f"Regenerated {updated} parametric dimension(s).")
+        self.report({"INFO"}, f"Regenerated {updated} parametric annotation(s).")
 
 
 # ---------------------------------------------------------------------------
@@ -7661,8 +7911,107 @@ def _update_blender_curve(
         pass
 
 
+def _update_elevation_marker_z(
+    file: "ifcopenshell.file",
+    annotation: "ifcopenshell.entity_instance",
+    settings=None,
+    shape_cache: Optional[dict] = None,
+    placement_override: Optional[dict] = None,
+) -> bool:
+    """For SECTION_LEVEL / PLAN_LEVEL: resolve anchor 0 elevation and slide all spline vertices to that Z.
+
+    Unlike regenerate_dimension (which rebuilds the full polyline from N anchors),
+    this preserves every vertex's X/Y and only updates Z, keeping the annotation's
+    drawn shape intact while tracking the anchored element's elevation.
+    Returns True if the spline was updated.
+    """
+    from ifcopenshell.api.drawing.resolve_anchor import resolve_anchor as _resolve_anchor
+    import ifcopenshell.api.pset as _pset_api
+    import json as _json
+
+    pset_data = ifcopenshell.util.element.get_pset(annotation, "BBIM_Dimension")
+    if not pset_data or not pset_data.get("Anchors"):
+        return False
+
+    try:
+        anchors: list = _json.loads(pset_data["Anchors"])
+    except Exception:
+        return False
+
+    if not anchors:
+        return False
+
+    pt = _resolve_anchor(file, anchors[0], settings, shape_cache or {}, placement_override)
+    if pt is None:
+        cached = anchors[0].get("pt")
+        pt = tuple(cached) if cached else None
+    if pt is None:
+        return False
+
+    target_z = pt[2]
+
+    # Persist the resolved pt so the index stays warm
+    anchors[0]["pt"] = list(pt)
+    pset_entity = file.by_id(pset_data["id"])
+    _pset_api.edit_pset(file, pset=pset_entity, properties={"Anchors": _json.dumps(anchors)})
+
+    obj = tool.Ifc.get_object(annotation)
+    if not obj:
+        return False
+
+    is_2d = _annotation_is_2d(annotation)
+    if is_2d:
+        # 2D annotations encode elevation in the object placement (world Z), not curve points.
+        from mathutils import Vector as _Vector
+        current_world = obj.matrix_world.to_translation()
+        new_world = _Vector((current_world.x, current_world.y, target_z))
+        # Build updated world matrix (replace Z translation only, preserve rotation/scale)
+        m = obj.matrix_world.copy()
+        m[2][3] = target_z
+        ifcopenshell.api.run("geometry.edit_object_placement", file, product=annotation, matrix=np.array(m))
+        # Update Blender visual position
+        if obj.parent:
+            obj.location = obj.parent.matrix_world.inverted() @ new_world
+        else:
+            obj.location = new_world
+        return True
+
+    if not obj.data or not hasattr(obj.data, "splines") or not obj.data.splines:
+        return True
+
+    from mathutils import Vector as _Vector
+    mx = obj.matrix_world
+    inv_mx = mx.inverted()
+
+    for spline in obj.data.splines:
+        for spt in spline.points:
+            world_pos = mx @ spt.co.to_3d()
+            new_local = inv_mx @ _Vector((world_pos.x, world_pos.y, target_z))
+            spt.co = (*new_local, 1.0)
+
+    try:
+        world_pts = []
+        for spline in obj.data.splines:
+            for spt in spline.points:
+                wp = mx @ spt.co.to_3d()
+                world_pts.append((wp.x, wp.y, wp.z))
+        _update_ifc_polyline(file, annotation, obj, world_pts)
+    except Exception:
+        pass
+
+    return True
+
+
 def _annotation_is_2d(annotation: ifcopenshell.entity_instance) -> bool:
-    """Return True if the annotation's representation uses 2D coordinates (plan view)."""
+    """Return True when elevation is encoded in the object placement (not spline Z values).
+
+    PLAN_LEVEL and SECTION_LEVEL always encode elevation in object placement regardless
+    of whether the curve representation happens to use 2D or 3D coordinates.
+    For other annotation types we fall back to inspecting the geometry.
+    """
+    ptype = ifcopenshell.util.element.get_predefined_type(annotation)
+    if ptype in ("SECTION_LEVEL", "PLAN_LEVEL"):
+        return True
     if not getattr(annotation, "Representation", None):
         return False
     for rep in annotation.Representation.Representations:
@@ -7739,6 +8088,37 @@ def _update_ifc_polyline(
                     for coords in new_coords
                 ]
             return
+
+
+def _zero_elevation_annotation_spline_z(annotation: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+    """Flatten all spline-point local Z to 0 for PLAN_LEVEL / SECTION_LEVEL annotations.
+
+    For elevation annotations the elevation is encoded in the object placement (world Z).
+    Spline points are created from camera-space coords and may carry a large local Z
+    offset.  Zeroing it ensures the visible line and the gizmo sit at the same elevation.
+    """
+    if not obj.data or not hasattr(obj.data, "splines"):
+        return
+    changed = False
+    for spline in obj.data.splines:
+        for pt in spline.points:
+            if pt.co.z != 0.0:
+                pt.co = (pt.co.x, pt.co.y, 0.0, pt.co.w)
+                changed = True
+    if not changed or not getattr(annotation, "Representation", None):
+        return
+    for rep in annotation.Representation.Representations:
+        curve = _find_curve_item(rep)
+        if curve is None:
+            continue
+        if curve.is_a("IfcIndexedPolyCurve"):
+            pts_list = curve.Points
+            if not pts_list.is_a("IfcCartesianPointList2D"):
+                pts_list.CoordList = tuple((c[0], c[1], 0.0) for c in pts_list.CoordList)
+        elif curve.is_a("IfcPolyline") and curve.Points:
+            for ifc_pt in curve.Points:
+                if len(ifc_pt.Coordinates) >= 3:
+                    ifc_pt.Coordinates = (ifc_pt.Coordinates[0], ifc_pt.Coordinates[1], 0.0)
 
 
 def _find_curve_item(rep: ifcopenshell.entity_instance) -> Optional[ifcopenshell.entity_instance]:
@@ -7828,17 +8208,30 @@ class ClickNearestDimensionAnchor(bpy.types.Operator):
             if not obj.data.splines:
                 continue
 
-            for i, pt in enumerate(obj.data.splines[0].points):
-                world_pos = obj.matrix_world @ pt.co.to_3d()
+            ptype = _ue.get_predefined_type(element)
+            if ptype in ("SECTION_LEVEL", "PLAN_LEVEL"):
+                # Gizmo is drawn at the object origin for elevation annotations.
+                world_pos = obj.matrix_world.translation.copy()
                 sp = location_3d_to_region_2d(region, rv3d, world_pos)
-                if not sp:
-                    continue
-                dx, dy = cx - sp.x, cy - sp.y
-                d2 = dx * dx + dy * dy
-                if d2 < r2 and d2 < best_dist_sq:
-                    best_dist_sq = d2
-                    best_idx = i
-                    best_obj = obj
+                if sp:
+                    dx, dy = cx - sp.x, cy - sp.y
+                    d2 = dx * dx + dy * dy
+                    if d2 < r2 and d2 < best_dist_sq:
+                        best_dist_sq = d2
+                        best_idx = 0
+                        best_obj = obj
+            else:
+                for i, pt in enumerate(obj.data.splines[0].points):
+                    world_pos = obj.matrix_world @ pt.co.to_3d()
+                    sp = location_3d_to_region_2d(region, rv3d, world_pos)
+                    if not sp:
+                        continue
+                    dx, dy = cx - sp.x, cy - sp.y
+                    d2 = dx * dx + dy * dy
+                    if d2 < r2 and d2 < best_dist_sq:
+                        best_dist_sq = d2
+                        best_idx = i
+                        best_obj = obj
 
         if best_obj is None:
             return {"PASS_THROUGH"}
@@ -7890,7 +8283,8 @@ class MakeDimensionParametric(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Make Dimension Parametric"
     bl_options = {"REGISTER", "UNDO"}
 
-    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
+    _ELEVATION_TYPES = frozenset(("SECTION_LEVEL", "PLAN_LEVEL"))
 
     @classmethod
     def poll(cls, context):
@@ -7899,20 +8293,21 @@ class MakeDimensionParametric(bpy.types.Operator, tool.Ifc.Operator):
             return False
         obj = context.active_object
         if not obj or obj.type != "CURVE":
-            cls.poll_message_set("Active object must be a dimension curve.")
+            cls.poll_message_set("Active object must be an annotation curve.")
             return False
         element = tool.Ifc.get_entity(obj)
         if not element or not element.is_a("IfcAnnotation"):
             cls.poll_message_set("Active object must be an IfcAnnotation.")
             return False
-        if ifcopenshell.util.element.get_predefined_type(element) not in cls._DIM_TYPES:
-            cls.poll_message_set("Annotation must be a dimension type.")
+        ptype = ifcopenshell.util.element.get_predefined_type(element)
+        if ptype not in cls._DIM_TYPES and ptype not in cls._ELEVATION_TYPES:
+            cls.poll_message_set("Annotation must be a dimension or elevation type.")
             return False
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
         if pset and pset.get("Anchors"):
-            cls.poll_message_set("Dimension is already parametric.")
+            cls.poll_message_set("Annotation is already parametric.")
             return False
-        if not obj.data.splines or len(obj.data.splines[0].points) < 2:
+        if ptype in cls._DIM_TYPES and (not obj.data.splines or len(obj.data.splines[0].points) < 2):
             cls.poll_message_set("Curve has fewer than 2 points.")
             return False
         return True
@@ -7923,12 +8318,18 @@ class MakeDimensionParametric(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         file = tool.Ifc.get()
+        ptype = ifcopenshell.util.element.get_predefined_type(element)
 
-        spline = obj.data.splines[0]
-        anchors = [
-            drawing_api.make_world_anchor(list(obj.matrix_world @ pt.co.to_3d()))
-            for pt in spline.points
-        ]
+        if ptype in self._ELEVATION_TYPES:
+            # One free-world anchor at the object origin (the current elevation).
+            world_pos = list(obj.matrix_world.translation)
+            anchors = [drawing_api.make_world_anchor(world_pos)]
+        else:
+            spline = obj.data.splines[0]
+            anchors = [
+                drawing_api.make_world_anchor(list(obj.matrix_world @ pt.co.to_3d()))
+                for pt in spline.points
+            ]
 
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Dimension")
         if not pset_data:
@@ -7945,7 +8346,7 @@ class MakeDimensionParametric(bpy.types.Operator, tool.Ifc.Operator):
                 area.tag_redraw()
                 break
 
-        self.report({"INFO"}, f"'{obj.name}' is now parametric with {len(anchors)} free-end anchors.")
+        self.report({"INFO"}, f"'{obj.name}' is now parametric with {len(anchors)} free-end anchor(s).")
 
 
 class BakeParametricDimension(bpy.types.Operator, tool.Ifc.Operator):

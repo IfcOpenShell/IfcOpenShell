@@ -32,6 +32,7 @@ classes = (
     operator.ActivateModel,
     operator.AddAnnotation,
     operator.AddAnnotationType,
+    operator.AddElevationAnnotation,
     operator.AddDrawing,
     operator.AddDrawingStyle,
     operator.AddDrawingToSheet,

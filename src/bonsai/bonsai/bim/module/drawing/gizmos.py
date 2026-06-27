@@ -2744,10 +2744,19 @@ class DimensionAnchorWidget(types.GizmoGroup):
         spline = obj.data.splines[0]
         n = min(len(spline.points), len(anchors), self._MAX_ANCHORS)
 
+        import ifcopenshell.util.element as _ue_gz
+        _ptype_gz = _ue_gz.get_predefined_type(element)
+        _is_elevation_gz = _ptype_gz in ("SECTION_LEVEL", "PLAN_LEVEL")
+
         for i in range(n):
             gz = self._handles[i]
-            raw_co = spline.points[i].co
-            world_co = obj.matrix_world @ raw_co.to_3d()
+            if _is_elevation_gz:
+                # The object origin IS the anchor reference point (placed at face hit).
+                # Spline vertices are offset from the origin and should not be used.
+                world_co = obj.matrix_world.translation.copy()
+            else:
+                raw_co = spline.points[i].co
+                world_co = obj.matrix_world @ raw_co.to_3d()
             gz.matrix_basis = Matrix.Translation(world_co)
             gz.anchor_index = i
             if i == _active_anchor_idx and obj is _editing_annotation_obj:
@@ -2787,7 +2796,7 @@ class DimensionLinePositionWidget(types.GizmoGroup):
     bl_region_type = "WINDOW"
     bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
 
-    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"))
+    _DIM_TYPES = frozenset(("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"))
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:

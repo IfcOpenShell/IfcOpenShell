@@ -209,6 +209,17 @@ class Drawing(bonsai.core.tool.Drawing):
             co_end = co1 + vec * scaled_length
             obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
             obj.matrix_world = obj.matrix_world @ Matrix.Rotation(math.radians(-90), 4, "Z")
+        elif object_type == "SECTION_LEVEL":
+            co1, _, co3, _ = annotation.Annotator.get_placeholder_coords()
+            # co3 - co1 is the camera X direction (horizontal in a section view).
+            vec = co3 - co1
+            if vec.length == 0:
+                vec = Vector((1, 0, 0))
+            else:
+                vec = vec.normalized()
+            scaled_length = 0.023 * scale
+            co_end = co1 + vec * scaled_length
+            obj = annotation.Annotator.add_line_to_annotation(obj, co_end, co1)
         elif object_type != "TEXT":
             obj = annotation.Annotator.add_line_to_annotation(obj)
 

@@ -293,7 +293,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
         if update.is_updated_geometry and obj.type == "CURVE" and element.is_a("IfcAnnotation"):
             import ifcopenshell.util.element as _ue
             ptype = _ue.get_predefined_type(element)
-            if ptype in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE", "PLAN_LEVEL", "SECTION_LEVEL"):
+            if ptype in ("DIMENSION", "RADIUS", "DIAMETER", "ANGLE"):
                 changed = _sync_dimension_anchors_to_curve(file, element, obj)
                 if changed:
                     edited_annotation_ids.add(element.id())
@@ -313,7 +313,7 @@ def depsgraph_update_post_handler(scene, depsgraph):
 
     import ifcopenshell.api.drawing as drawing_api
     import ifcopenshell.geom
-    from bonsai.bim.module.drawing.operator import _update_blender_curve
+    from bonsai.bim.module.drawing.operator import _update_blender_curve, _update_elevation_marker_z
 
     geom_settings = ifcopenshell.geom.settings()
     geom_settings.set("APPLY_DEFAULT_MATERIALS", False)
@@ -350,14 +350,23 @@ def depsgraph_update_post_handler(scene, depsgraph):
             except Exception:
                 pass
 
-            resolved_pts = drawing_api.regenerate_dimension(
-                file,
-                annotation,
-                settings=geom_settings,
-                shape_cache=_dim_shape_cache,
-                placement_override=placement_override,
-            )
-            if resolved_pts:
-                _update_blender_curve(annotation, resolved_pts)
+            ptype = ifcopenshell.util.element.get_predefined_type(annotation)
+            if ptype in ("SECTION_LEVEL", "PLAN_LEVEL"):
+                _update_elevation_marker_z(
+                    file, annotation,
+                    settings=geom_settings,
+                    shape_cache=_dim_shape_cache,
+                    placement_override=placement_override,
+                )
+            else:
+                resolved_pts = drawing_api.regenerate_dimension(
+                    file,
+                    annotation,
+                    settings=geom_settings,
+                    shape_cache=_dim_shape_cache,
+                    placement_override=placement_override,
+                )
+                if resolved_pts:
+                    _update_blender_curve(annotation, resolved_pts)
     finally:
         _dim_handler_running = False
