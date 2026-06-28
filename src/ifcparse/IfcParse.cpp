@@ -1885,6 +1885,9 @@ void IfcFile::addEntities(aggregate_of_instance::ptr entities) {
 }
 
 IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id) {
+    const bool copying_from_other_file =
+        entity->file_ != nullptr && entity->file_ != this;
+
     if (id != -1) {
         bool id_already_exists = false;
         try {
@@ -2164,7 +2167,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
     // @todo verify whether this is still needed. If instances are created directly on the file
     // with create() (which is a necessity for using rocksdb storage) then it should be sufficient
     // to register inverses only on attribute updates.
-    if ((ty->as_entity() != nullptr)) {
+    if (!copying_from_other_file && (ty->as_entity() != nullptr)) {
         build_inverses_(new_entity);
     }
 
