@@ -167,12 +167,12 @@ namespace {
 }
 
 
-bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<occ::handle<Geom_Surface>>>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
+bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<opencascade::handle<Geom_Surface>>>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false, false, tol);
 
-	typedef std::vector< std::vector<occ::handle<Geom_Surface>> > folded_surfaces_t;
+	typedef std::vector< std::vector<opencascade::handle<Geom_Surface>> > folded_surfaces_t;
 	typedef std::vector< std::pair< TopoDS_Face, std::pair<gp_Pnt, gp_Pnt> > > faces_with_mass_t;
 
 	NCollection_List<TopoDS_Shape> shells;
@@ -181,7 +181,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 		if (it->empty()) {
 			continue;
 		} else if (it->size() == 1) {
-			const occ::handle<Geom_Surface>& surface = (*it)[0];
+			const opencascade::handle<Geom_Surface>& surface = (*it)[0];
 			double u1, v1, u2, v2;
 			if (!project(surface, input, u1, v1, u2, v2)) {
 				continue;
@@ -190,7 +190,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 		} else {
 			faces_with_mass_t solids;
 			for (folded_surfaces_t::value_type::const_iterator jt = it->begin(); jt != it->end(); ++jt) {
-				const occ::handle<Geom_Surface>& surface = *jt;
+				const opencascade::handle<Geom_Surface>& surface = *jt;
 				double u1, v1, u2, v2;
 				if (!project(surface, input, u1, v1, u2, v2)) {
 					continue;
@@ -284,7 +284,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 
 }
 
-bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<occ::handle<Geom_Surface>>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
+bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<opencascade::handle<Geom_Surface>>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
 	if (surfaces.size() < 3) {
 
 		return false;
@@ -373,7 +373,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 }
 
 
-bool IfcGeom::util::split_solid_by_surface(const TopoDS_Shape& input, const occ::handle<Geom_Surface>& surface, TopoDS_Shape& front, TopoDS_Shape& back, double tol) {
+bool IfcGeom::util::split_solid_by_surface(const TopoDS_Shape& input, const opencascade::handle<Geom_Surface>& surface, TopoDS_Shape& front, TopoDS_Shape& back, double tol) {
 	// Use an unbounded surface, that isolate part of the input shape,
 	// to split this shape into two parts. Make sure that the addition
 	// of the two result volumes matches that of the input.

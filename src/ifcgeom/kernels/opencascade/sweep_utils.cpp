@@ -117,7 +117,7 @@ bool IfcGeom::util::is_single_linear_edge(const TopoDS_Wire & wire) {
 		return false;
 	}
 	double u, v;
-	occ::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
+	opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	return crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 }
 
@@ -132,7 +132,7 @@ bool IfcGeom::util::is_single_circular_edge(const TopoDS_Wire & wire) {
 		return false;
 	}
 	double u, v;
-    occ::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	return crv->DynamicType() == STANDARD_TYPE(Geom_Circle);
 }
 
@@ -140,7 +140,7 @@ void IfcGeom::util::process_sweep_as_extrusion(const TopoDS_Wire & wire, const T
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
 	double u, v;
-    occ::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	const auto& dir = Handle(Geom_Line)::DownCast(crv)->Position().Direction();
 	// OCCT line is normalized so diff in parametric coords equals length
 	const double depth = std::abs(u - v);
@@ -153,7 +153,7 @@ void IfcGeom::util::process_sweep_as_revolution(const TopoDS_Wire & wire, const 
 	TopExp_Explorer exp(wire, TopAbs_EDGE);
 	TopoDS_Edge e = TopoDS::Edge(exp.Current());
 	double u, v;
-    occ::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
+    opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 	auto circ = Handle(Geom_Circle)::DownCast(crv);
 	// @todo we could be extruding the wire only when we know this is an intermediate edge.
 	const double depth = std::abs(u - v);
@@ -269,7 +269,7 @@ void IfcGeom::util::segment_adjacent_non_linear(const TopoDS_Wire & wire, std::v
 
 	for (int i = 0; i < (int)sorted_edges.size() - 1; ++i) {
 		const auto& e = sorted_edges[i];
-        occ::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
+        opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, u, v);
 		const bool is_linear = crv->DynamicType() == STANDARD_TYPE(Geom_Line);
 
 		const auto& f = sorted_edges[i + 1];
