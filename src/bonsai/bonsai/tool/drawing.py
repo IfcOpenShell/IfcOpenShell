@@ -1643,7 +1643,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_auto_annotation(cls, element: ifcopenshell.entity_instance):
-        return element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")
+        if not (element.is_a("IfcAnnotation") and element.ObjectType in ("GRID", "SECTION", "ELEVATION", "SECTION_LEVEL")):
+            return False
+        ptype = ifcopenshell.util.element.get_predefined_type(element)
+        if ptype in ("SECTION_LEVEL", "PLAN_LEVEL") and ifcopenshell.util.element.get_pset(element, "BBIM_Dimension"):
+            return False
+        return True
 
     @classmethod
     def get_drawing_reference_annotation(
