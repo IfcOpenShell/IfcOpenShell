@@ -1650,6 +1650,9 @@ class Drawing(bonsai.core.tool.Drawing):
             return False
         if ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "IsManualDrawingReference"):
             return False
+        ptype = ifcopenshell.util.element.get_predefined_type(element)
+        if ptype in ("SECTION_LEVEL", "PLAN_LEVEL") and ifcopenshell.util.element.get_pset(element, "BBIM_Dimension"):
+            return False
         return True
 
     @classmethod
