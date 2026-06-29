@@ -33,11 +33,16 @@
 #include "Log.h"
 
 #include <emscripten/emscripten.h>
+#include <emscripten/html5.h>
 
 namespace {
 
+// CSS selector for the host <canvas>; must match shell.html + the
+// WebViewportHost selector below.
+constexpr const char* kCanvasSelector = "#viewer-canvas";
+
 struct AppState {
-    WebViewportHost host{ "#viewer-canvas" };
+    WebViewportHost host{ kCanvasSelector };
     ViewportCore    core{ &host };
     int             last_w = 0;
     int             last_h = 0;
@@ -45,11 +50,85 @@ struct AppState {
     // raf_tick_c skips render() until then; before that point the wgpu
     // state pointers inside core are still null and any draw would crash.
     bool            ready  = false;
+
+    // ---- Mouse navigation state ----
+    // A drag is armed on mousedown and released on mouseup. button is the
+    // DOM button code (0 left, 1 middle, 2 right). Left orbits; middle or
+    // right pans — matches common web 3D-viewer bindings and covers both
+    // three-button mice and trackpad (right-drag) users.
+    bool nav_active = false;
+    int  nav_button = 0;
 };
 
 // One global so the JS-side RAF loop can recover state through a
 // pointer round-trip (set into Module._app_ptr from on_complete).
 AppState* g_app = nullptr;
+
+// Logical (CSS-pixel) height of the canvas. Mouse movementX/Y deltas are
+// in CSS pixels, so pan's world-units-per-pixel must use CSS-pixel height
+// too (not the DPR-scaled framebuffer height).
+int canvasCssHeight() {
+    double w = 0.0, h = 0.0;
+    emscripten_get_element_css_size(kCanvasSelector, &w, &h);
+    return (h > 1.0) ? int(h) : 1;
+}
+
+EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    if (e->button == 0 || e->button == 1 || e->button == 2) {
+        app->nav_active = true;
+        app->nav_button = e->button;
+    }
+    return EM_TRUE;
+}
+
+EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    if (!app->ready || !app->nav_active) return EM_FALSE;
+
+    const float dx = float(e->movementX);
+    const float dy = float(e->movementY);
+    if (app->nav_button == 0) {
+        app->core.orbitBy(dx, dy);
+    } else {
+        app->core.panBy(dx, dy, canvasCssHeight());
+    }
+    return EM_TRUE;
+}
+
+EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* /*e*/, void* user) {
+    static_cast<AppState*>(user)->nav_active = false;
+    return EM_TRUE;
+}
+
+EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    if (!app->ready) return EM_FALSE;
+
+    // Normalise to "notches" like the desktop wheel (one notch ≈ 120
+    // angle-units ≈ 100 px of deltaY). Line/page modes are scaled to a
+    // comparable pixel magnitude. Negate so wheel-up (deltaY < 0) zooms in.
+    double dy = e->deltaY;
+    if (e->deltaMode == DOM_DELTA_LINE)      dy *= 16.0;
+    else if (e->deltaMode == DOM_DELTA_PAGE) dy *= 800.0;
+    app->core.dollyBy(-float(dy) / 100.0f);
+    return EM_TRUE;  // consume so the page doesn't scroll
+}
+
+// Register pointer + wheel handlers once the app is live. mousedown binds
+// to the canvas; mousemove/up bind to the window so a drag keeps tracking
+// when the pointer leaves the canvas. A JS-side contextmenu suppressor
+// lets right-drag pan without popping the browser menu.
+void installInputHandlers(AppState* app) {
+    emscripten_set_mousedown_callback(kCanvasSelector, app, EM_FALSE, onMouseDown);
+    emscripten_set_mousemove_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onMouseMove);
+    emscripten_set_mouseup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onMouseUp);
+    emscripten_set_wheel_callback(kCanvasSelector, app, EM_FALSE, onWheel);
+    EM_ASM({
+        var c = document.querySelector(UTF8ToString($0));
+        if (c) c.addEventListener('contextmenu', function(ev) { ev.preventDefault(); });
+    }, kCanvasSelector);
+}
 
 } // namespace
 
@@ -101,6 +180,11 @@ int main(int /*argc*/, char** /*argv*/) {
         }
 
         g_app->ready = true;
+
+        // Now that the camera + render path are live, start listening for
+        // orbit/pan/zoom input. (Pick is still deferred — it needs the
+        // async buffer-readback rewrite before it's safe on web.)
+        installInputHandlers(g_app);
 
         // Hand the app pointer to the JS-side RAF loop (set up in
         // shell.html's onRuntimeInitialized). The loop polls for
