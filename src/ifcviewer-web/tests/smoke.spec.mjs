@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // End-to-end smoke test for the WebGPU build. Every bug from the bring-up
 // of camera input + file loading was exactly this shape — the page would
@@ -58,5 +62,59 @@ test('renders the sample and orbits without WebGPU errors', async ({ page }) => 
   ).not.toBe(0);
 
   // No WebGPU validation/OOM noise at any point.
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('loads a user-picked sidecar through the Blob.slice byte-range path', async ({ page }) => {
+  // Exercises #88: the picked File is read via Blob.slice (metadata head/tail
+  // + per-chunk byte ranges) WITHOUT copying the whole file into the wasm
+  // heap. Distinct code path from the embedded MEMFS sample above, so it
+  // needs its own coverage — a broken blob read renders blank.
+  const gpuErrors = [];
+  page.on('console', (msg) => {
+    const t = msg.text();
+    if (/Uncaptured WebGPU error|is invalid|Not enough memory left/i.test(t)) {
+      gpuErrors.push(t);
+    }
+  });
+  page.on('pageerror', (e) => gpuErrors.push('pageerror: ' + e.message));
+
+  await page.goto('/IfcViewerWeb.html');
+  await page.waitForFunction(
+    () => !!(window.Module && window.Module._app_ptr),
+    null,
+    { timeout: 30_000 },
+  );
+
+  // Pick the sample sidecar through the hidden file input. setInputFiles
+  // hands the page a real File, so the browser's Blob.slice reads it exactly
+  // as it would a user's 200-500 MB sidecar — just smaller. Wait for the C
+  // side to confirm the blob load landed (logged to stderr → console).
+  const samplePath = resolve(__dirname, '..', 'sample.ifcview');
+  const loaded = page.waitForEvent('console', {
+    predicate: (m) => /loaded blob sidecar/.test(m.text()),
+    timeout: 15_000,
+  });
+  await page.locator('#file-input').setInputFiles(samplePath);
+  await loaded;
+  await page.waitForTimeout(800);  // let the chunk stream + a few frames draw
+
+  // Orbit: the composited canvas must change, proving the blob-streamed
+  // geometry rendered and input still drives it.
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  const before = await shot(page);
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  await page.mouse.move(cx + 140, cy + 50, { steps: 10 });
+  await page.mouse.up();
+  await page.waitForTimeout(500);
+  const after = await shot(page);
+  expect(
+    Buffer.compare(before, after),
+    'orbit after blob load did not change the canvas — blob read or stream failed',
+  ).not.toBe(0);
+
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
