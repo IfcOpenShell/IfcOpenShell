@@ -14,10 +14,17 @@
     background: rgba(20,22,28,.78); padding: 6px 10px; border-radius: 4px;
     white-space: pre-wrap; pointer-events: auto; }
   #status.error { background: rgba(120,30,30,.85); color: #fff; }
+  #open-btn { position: fixed; top: 8px; right: 12px; z-index: 10;
+    background: #2b6cb0; color: #fff; border: none; padding: 6px 12px;
+    border-radius: 4px; font-size: 12px; cursor: pointer; }
+  #open-btn:hover { background: #3182ce; }
+  #file-input { display: none; }
 </style>
 </head>
 <body>
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<button id="open-btn">Open .ifcview…</button>
+<input id="file-input" type="file" accept=".ifcview">
 <div id="status">Starting…</div>
 <script>
   // Emscripten Module hook: route stderr to the status overlay so any
@@ -69,6 +76,37 @@
     statusEl.textContent = 'navigator.gpu is missing — open in a browser with WebGPU enabled';
     statusEl.classList.add('error');
   }
+
+  // File-browse loading. The picked file's bytes are written into MEMFS
+  // (the same virtual FS the wasm fopen()s) and then load_uploaded_model_c
+  // is invoked to read + render it. No drag-drop: that needs an X11 drag
+  // source (a file manager), which a minimal WM may not provide; the
+  // native file chooser this button opens is WM-independent.
+  var openBtn = document.getElementById('open-btn');
+  var fileInput = document.getElementById('file-input');
+  openBtn.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function(ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    if (!Module.FS || !Module._load_uploaded_model_c) {
+      statusEl.textContent += 'viewer not ready yet — wait for WebGPU init\n';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function() {
+      try {
+        var bytes = new Uint8Array(reader.result);
+        try { Module.FS.mkdir('/uploads'); } catch (e) { /* already exists */ }
+        Module.FS.writeFile('/uploads/model.ifcview', bytes);
+        Module._load_uploaded_model_c();
+      } catch (e) {
+        statusEl.textContent += 'load failed: ' + e + '\n';
+        statusEl.classList.add('error');
+      }
+      fileInput.value = '';  // let the same file be re-picked
+    };
+    reader.readAsArrayBuffer(f);
+  });
 </script>
 <!-- IfcViewerWeb.js is emitted alongside this shell by the emcc build;
      `--shell-file` injects this HTML around it. -->

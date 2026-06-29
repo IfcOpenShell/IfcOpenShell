@@ -41,6 +41,10 @@ namespace {
 // WebViewportHost selector below.
 constexpr const char* kCanvasSelector = "#viewer-canvas";
 
+// MEMFS path the file-browse handler writes the picked sidecar to, and
+// that load_uploaded_model_c reads back. Must match shell.html.
+constexpr const char* kUploadPath = "/uploads/model.ifcview";
+
 struct AppState {
     WebViewportHost host{ kCanvasSelector };
     ViewportCore    core{ &host };
@@ -150,6 +154,28 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
     if (app->host.consumeFrameRequest()) {
         app->core.render();
     }
+}
+
+// Called from shell.html's file-browse handler after it has written the
+// picked file's bytes into MEMFS at kUploadPath. Replaces whatever is
+// currently loaded (the embedded sample on first use, or a prior upload)
+// with the new sidecar and frames it. Geometry becomes resident over the
+// next frames via render()'s inline driveStreamingLoads. Exported to JS
+// via EXPORTED_FUNCTIONS in CMakeLists.txt.
+extern "C" EMSCRIPTEN_KEEPALIVE void load_uploaded_model_c() {
+    if (!g_app || !g_app->ready) return;
+
+    // resetScene drops the previous model's GPU resources so a fresh load
+    // replaces rather than accumulates (loadSidecarFromPath appends).
+    g_app->core.resetScene();
+    const unsigned int mid = g_app->core.loadSidecarFromPath(kUploadPath);
+    if (mid == 0) {
+        Log::warn() << "ifcviewer-web: uploaded model load failed";
+        return;
+    }
+    g_app->core.viewAll();
+    g_app->host.requestFrame();
+    Log::info() << "ifcviewer-web: loaded uploaded model (id " << mid << ")";
 }
 
 int main(int /*argc*/, char** /*argv*/) {

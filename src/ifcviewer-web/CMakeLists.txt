@@ -96,10 +96,17 @@ target_link_options(IfcViewerWeb PRIVATE
     # main() to set noExitRuntime as a side effect — registers a RAF
     # that starves the device promise (observed: ~10s delay in Firefox).
     "-sEXIT_RUNTIME=0"
-    # Expose the C tick entry point to JS so shell.html's RAF loop
-    # can call Module._raf_tick_c. EMSCRIPTEN_KEEPALIVE alone keeps
-    # the symbol in the binary but doesn't add it to Module.
-    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c']"
+    # Expose the C entry points to JS. _raf_tick_c drives the RAF loop
+    # (shell.html); _load_uploaded_model_c loads a user-picked sidecar
+    # that JS has written into MEMFS. EMSCRIPTEN_KEEPALIVE alone keeps
+    # the symbols in the binary but doesn't add them to Module.
+    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_uploaded_model_c']"
+    # FS lets shell.html's file-browse handler write the picked file's
+    # bytes into MEMFS before calling _load_uploaded_model_c (which
+    # fopen()s the virtual path). Drag-drop is intentionally not used —
+    # it depends on an X11 drag source (file manager), which a minimal
+    # WM may not provide; the native file chooser is WM-independent.
+    "-sEXPORTED_RUNTIME_METHODS=['FS']"
     # Streaming + chunked geometry want a heap that can grow as buffers
     # arrive. 256 MB initial, 2 GB ceiling (matches the wasm32 pointer
     # cap; --shared64 / MEMORY64 would lift this later if we need it).
