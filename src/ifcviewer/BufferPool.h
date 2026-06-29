@@ -132,6 +132,11 @@ private:
         uint64_t               capacity = 0;
         uint64_t               used = 0;
         std::vector<FreeRange> free_ranges;
+        // Web-only: true between addSubBuffer creating the buffer and the
+        // async error scope confirming it didn't OOM. alloc() and the
+        // capacity/free tallies skip provisional sub-pools so an
+        // unvalidated (possibly invalid) buffer is never handed out.
+        bool                   provisional = false;
     };
 
     // Append a new sub-buffer to the pool. Starts at last_growth_size_
@@ -148,6 +153,15 @@ private:
     // refused, at which point growth_disabled_ latches.
     bool addSubBuffer();
 
+#if defined(__EMSCRIPTEN__)
+    // Web-only async-growth resolver. Called from the AllowSpontaneous
+    // PopErrorScope callback addSubBuffer arms: `failed` true means the
+    // provisional sub-buffer OOM'd → drop it and latch growth_disabled_;
+    // false means it's good → clear its provisional flag so alloc can use
+    // it. Clears growth_pending_ either way.
+    void resolveProvisionalGrowth(bool failed);
+#endif
+
     std::vector<SubPool> sub_pools_;
 
     WGPUInstance     instance_                 = nullptr;
@@ -162,6 +176,10 @@ private:
     // subsequent grow is wasted work.
     uint64_t         last_growth_size_         = 0;
     bool             growth_disabled_          = false;
+    // Web-only: a provisional sub-buffer is awaiting async OOM validation.
+    // Blocks a second concurrent grow so a stalled validation can't spawn
+    // a pile of sub-buffers.
+    bool             growth_pending_           = false;
     std::string      label_prefix_;
 };
 
