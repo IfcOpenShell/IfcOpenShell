@@ -38,6 +38,7 @@
 #include <BRepClass3d_SolidClassifier.hxx>
 
 #include <Standard_Macro.hxx>
+#include <Standard_Version.hxx>
 #include <TopoDS_Shape.hxx>
 #include <Standard_Integer.hxx>
 #include <TopTools_ShapeMapHasher.hxx>
@@ -1932,7 +1933,11 @@ namespace IfcGeom {
             BVH_Triangulation<double, 3> triangulation(builder);
 
             for (int i = 0; i < elem_verts.size(); i += 3) {
+#if OCC_VERSION_HEX >= 0x80000
                 triangulation.Vertices.Append(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+#else
+                triangulation.Vertices.push_back(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+#endif
                 verts.push_back(gp_Pnt(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
             }
 
@@ -1944,7 +1949,11 @@ namespace IfcGeom {
                 gp_Vec dir2(v1_pnt, v3_pnt);
                 gp_Vec cross_product = dir1.Crossed(dir2);
                 if (cross_product.Magnitude() > Precision::Confusion()) {
+#if OCC_VERSION_HEX >= 0x80000
                     triangulation.Elements.Append(BVH_Vec4i(
+#else
+                    triangulation.Elements.push_back(BVH_Vec4i(
+#endif
                         elem_faces[i], elem_faces[i + 1], elem_faces[i + 2], original_tris_index
                     ));
                     original_tris_index++;

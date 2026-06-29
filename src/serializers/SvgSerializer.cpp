@@ -42,9 +42,14 @@
 #include <BRepAlgoAPI_Section.hxx>
 #include <ShapeAnalysis_FreeBounds.hxx>
 
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX >= 0x80000
 #include <Standard_Macro.hxx>
 #include <TopoDS_Shape.hxx>
 #include <NCollection_HSequence.hxx>
+#else
+#include <TopTools_HSequenceOfShape.hxx>
+#endif
 
 #include <TopExp.hxx>
 
@@ -57,7 +62,6 @@
 #include <Geom_Circle.hxx>
 #include <Geom_Ellipse.hxx>
 #include <gp_Ax22d.hxx>
-#include <Standard_Version.hxx>
 #include <GeomAPI.hxx>
 #include <TopoDS_Wire.hxx>
 
@@ -1438,8 +1442,13 @@ void SvgSerializer::write(const geometry_data& data) {
 				result = make_transform_mirror_.Shape();
 			}
 
+#if OCC_VERSION_HEX >= 0x80000
 			opencascade::handle<NCollection_HSequence<TopoDS_Shape>> edges = new NCollection_HSequence<TopoDS_Shape>();
 			opencascade::handle<NCollection_HSequence<TopoDS_Shape>> wires = new NCollection_HSequence<TopoDS_Shape>();
+#else
+			Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+			Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+#endif
 			{
 				TopExp_Explorer exp(result, TopAbs_EDGE);
 				for (; exp.More(); exp.Next()) {
