@@ -2275,6 +2275,18 @@ void ViewportCore::driveStreamingLoads() {
         //   queue requests with nothing to drain them. Chunks would
         //   never go resident.
 #if defined(__EMSCRIPTEN__)
+        // Blob-sourced models read chunk bytes asynchronously via
+        // Blob.slice (the whole file is never in the heap). The chunk goes
+        // resident in the JS completion callback; hold is_loading until then
+        // so it isn't re-issued every frame. The embedded MEMFS sample falls
+        // through to the synchronous fopen path below.
+        if (cand.m->streaming_from_blob) {
+            c.is_loading = true;
+            c.last_visible_frame_idx = streaming_frame_idx_;
+            beginWebChunkLoad(cand.mid, cand.ci);
+            ++enqueued;
+            continue;
+        }
         const bool use_sync = true;
 #else
         const bool use_sync = !pending_screenshot_path_.empty();
@@ -3046,6 +3058,251 @@ std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
     applyCachedModel(mid, std::move(*meta_opt));
     return mid;
 }
+
+#if defined(__EMSCRIPTEN__)
+// ===========================================================================
+// Web byte-range streaming (#88): Blob.slice source + async chunk loads
+// ===========================================================================
+//
+// The desktop streaming path fopen()s the sidecar and fread()s chunk byte
+// ranges synchronously from a worker thread. On web there is no worker (no
+// pthreads yet) and Blob.slice() is inherently async, so chunk bytes are
+// pulled through the JS event loop: webReadRangesAsync issues one Blob.slice
+// per coalesced read plan, scatters the bytes into the destination, then
+// invokes a continuation once the whole range set has landed. The picked
+// File stays in JS (Module.__ifcvFile) — only chunk-sized slices ever enter
+// the wasm heap, so a 500 MB sidecar never does.
+
+namespace {
+
+// Size of the JS-registered File in bytes, or 0 if none. Bounds the metadata
+// tail read (index-section end .. EOF).
+EM_JS(double, ifcvFileSize, (void), {
+    return (Module["__ifcvFile"] && Module["__ifcvFile"].size)
+               ? Module["__ifcvFile"].size : 0;
+});
+
+// Read [offset, offset+size) of the registered File into dst (which must hold
+// `size` bytes), then call back _ifcv_on_range_done(reqId, ok). Async — the
+// Blob is sliced and its ArrayBuffer copied into the wasm heap on resolve.
+EM_JS(void, ifcvReadRangeInto, (int reqId, double offset, double size, void* dst), {
+    var f = Module["__ifcvFile"];
+    if (!f) { Module["_ifcv_on_range_done"](reqId, 0); return; }
+    f.slice(offset, offset + size).arrayBuffer().then(function(buf) {
+        HEAPU8.set(new Uint8Array(buf), dst);
+        Module["_ifcv_on_range_done"](reqId, 1);
+    }).catch(function(e) {
+        Module["_ifcv_on_range_done"](reqId, 0);
+    });
+});
+
+// One in-flight multi-range read: a sequence of coalesced plans, each read
+// into `scratch` then scattered into `out`. `done(ok, out)` fires once every
+// plan has landed, or on the first failure.
+struct WebRangeRead {
+    std::vector<SidecarReadPlan> plans;
+    std::size_t                  plan_idx = 0;
+    std::vector<std::uint8_t>    scratch;
+    std::vector<std::uint8_t>    out;
+    std::function<void(bool, std::vector<std::uint8_t>&&)> done;
+};
+
+std::unordered_map<int, WebRangeRead> g_web_reads;
+int g_web_read_next = 1;
+
+// Issue the current plan's Blob.slice, or finish (success) if all plans done.
+void webIssueCurrentPlan(int id) {
+    auto it = g_web_reads.find(id);
+    if (it == g_web_reads.end()) return;
+    WebRangeRead& r = it->second;
+    if (r.plan_idx >= r.plans.size()) {
+        auto done = std::move(r.done);
+        std::vector<std::uint8_t> out = std::move(r.out);
+        g_web_reads.erase(it);
+        if (done) done(true, std::move(out));
+        return;
+    }
+    const SidecarReadPlan& p = r.plans[r.plan_idx];
+    r.scratch.assign(std::size_t(p.read_size), 0);
+    ifcvReadRangeInto(id, double(p.file_offset), double(p.read_size),
+                      r.scratch.data());
+}
+
+// Read `ranges` (section-relative (offset,size)) into a destination laid out
+// in input order, then call done(true, bytes). On any failure: done(false,{}).
+// `section_offset` makes the offsets absolute (pass 0 if already absolute).
+void webReadRangesAsync(
+        std::uint64_t section_offset,
+        const std::vector<std::pair<std::uint64_t, std::uint64_t>>& ranges,
+        std::function<void(bool, std::vector<std::uint8_t>&&)> done) {
+    std::uint64_t total = 0;
+    for (const auto& rg : ranges) total += rg.second;
+
+    WebRangeRead r;
+    r.out.assign(std::size_t(total), 0);
+    // Coalesce within 1 MB: each Blob.slice is an async round trip, so a
+    // generous gap trades a few wasted bytes for far fewer JS hops.
+    r.plans = planSidecarReadRanges(section_offset, ranges, std::uint64_t(1) << 20);
+    r.done  = std::move(done);
+
+    if (r.plans.empty()) {  // nothing to read — complete synchronously
+        if (r.done) r.done(true, std::move(r.out));
+        return;
+    }
+    const int id = g_web_read_next++;
+    g_web_reads.emplace(id, std::move(r));
+    webIssueCurrentPlan(id);
+}
+
+}  // namespace
+
+// JS completion callback for one Blob.slice plan. Scatters the landed bytes
+// and advances to the next plan, or fails the whole read. Exported as
+// _ifcv_on_range_done (see ifcviewer-web/CMakeLists.txt).
+extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
+    auto it = g_web_reads.find(reqId);
+    if (it == g_web_reads.end()) return;
+    WebRangeRead& r = it->second;
+    if (!ok) {
+        auto done = std::move(r.done);
+        g_web_reads.erase(it);
+        if (done) done(false, {});
+        return;
+    }
+    const SidecarReadPlan& p = r.plans[r.plan_idx];
+    for (const auto& s : p.slices) {
+        std::memcpy(r.out.data() + s.dst_offset,
+                    r.scratch.data() + s.src_offset, std::size_t(s.bytes));
+    }
+    ++r.plan_idx;
+    webIssueCurrentPlan(reqId);
+}
+
+void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_idx) {
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) return;
+    ModelGpuData& m = it->second;
+    if (chunk_idx >= m.chunks.size()) return;
+
+    const StreamingThread::Request req = makeChunkRequest(m, chunk_idx, model_id);
+    const std::uint64_t vsec = req.vertex_section_offset;
+    const std::uint64_t isec = req.index_section_offset;
+    const std::vector<std::pair<std::uint64_t, std::uint64_t>> v_ranges = req.v_ranges;
+    // i_ranges are (first_u32, count_u32); convert to byte ranges.
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> i_byte_ranges;
+    i_byte_ranges.reserve(req.i_ranges.size());
+    for (const auto& [first_u32, count] : req.i_ranges)
+        i_byte_ranges.emplace_back(first_u32 * 4u, count * 4u);
+
+    // Read vertex ranges, then index ranges, then apply. Re-look-up the model
+    // in each callback: a resetScene() could have landed mid-flight, in which
+    // case the model id is gone and we simply drop the result.
+    webReadRangesAsync(vsec, v_ranges,
+        [this, model_id, chunk_idx, isec, i_byte_ranges]
+        (bool ok, std::vector<std::uint8_t>&& vbytes) {
+            auto mit = models_gpu_.find(model_id);
+            if (mit == models_gpu_.end()) return;
+            if (chunk_idx >= mit->second.chunks.size()) return;
+            if (!ok) { mit->second.chunks[chunk_idx].is_loading = false; return; }
+
+            auto vb = std::make_shared<std::vector<std::uint8_t>>(std::move(vbytes));
+            webReadRangesAsync(isec, i_byte_ranges,
+                [this, model_id, chunk_idx, vb]
+                (bool ok2, std::vector<std::uint8_t>&& ibytes) {
+                    auto mit2 = models_gpu_.find(model_id);
+                    if (mit2 == models_gpu_.end()) return;
+                    ModelGpuData& mm = mit2->second;
+                    if (chunk_idx >= mm.chunks.size()) return;
+                    if (!ok2) { mm.chunks[chunk_idx].is_loading = false; return; }
+
+                    std::vector<std::uint32_t> idx(ibytes.size() / sizeof(std::uint32_t));
+                    if (!idx.empty())
+                        std::memcpy(idx.data(), ibytes.data(),
+                                    idx.size() * sizeof(std::uint32_t));
+                    if (!applyStreamedChunk(mm, chunk_idx, *vb, idx))
+                        mm.chunks[chunk_idx].is_loading = false;  // pool full; retry later
+                    else
+                        host_->requestFrame();
+                });
+        });
+}
+
+void ViewportCore::loadSidecarFromBlobWeb() {
+    if (!device_ || !queue_) {
+        Log::warn() << "loadSidecarFromBlobWeb: wgpu not initialised";
+        return;
+    }
+    const double fsize = ifcvFileSize();
+    if (fsize <= 0.0) {
+        Log::warn() << "loadSidecarFromBlobWeb: no File registered";
+        return;
+    }
+
+    // Head (16 B) → num_vertex_bytes; then the 4-byte index count after the
+    // vertex section; then the metadata tail (index-section end .. EOF). Each
+    // hop is a tiny Blob.slice; the bulk vertex/index sections are never read
+    // here — they stream per chunk through beginWebChunkLoad.
+    webReadRangesAsync(0, {{0, SIDECAR_HEAD_BYTES}},
+        [this, fsize](bool ok, std::vector<std::uint8_t>&& head) {
+            std::uint32_t nvb = 0;
+            if (!ok || !parseSidecarHead(head.data(), head.size(), nvb)) {
+                Log::warn() << "loadSidecarFromBlobWeb: bad sidecar head";
+                return;
+            }
+            const std::uint64_t vsec          = SIDECAR_HEAD_BYTES;
+            const std::uint64_t idx_count_off = std::uint64_t(SIDECAR_HEAD_BYTES) + nvb;
+
+            webReadRangesAsync(0, {{idx_count_off, 4}},
+                [this, fsize, nvb, vsec, idx_count_off]
+                (bool ok2, std::vector<std::uint8_t>&& cnt) {
+                    if (!ok2 || cnt.size() < 4) {
+                        Log::warn() << "loadSidecarFromBlobWeb: short index count";
+                        return;
+                    }
+                    std::uint32_t num_indices = 0;
+                    std::memcpy(&num_indices, cnt.data(), 4);
+                    const std::uint64_t isec     = idx_count_off + 4;
+                    const std::uint64_t tail_off = isec + std::uint64_t(num_indices) * 4u;
+                    if (double(tail_off) > fsize) {
+                        Log::warn() << "loadSidecarFromBlobWeb: tail offset past EOF";
+                        return;
+                    }
+                    const std::uint64_t tail_len = std::uint64_t(fsize) - tail_off;
+
+                    webReadRangesAsync(0, {{tail_off, tail_len}},
+                        [this, vsec, nvb, isec, num_indices]
+                        (bool ok3, std::vector<std::uint8_t>&& tail) {
+                            if (!ok3) {
+                                Log::warn() << "loadSidecarFromBlobWeb: tail read failed";
+                                return;
+                            }
+                            StreamingSidecar sc;
+                            sc.file_path             = "blob:model.ifcview";
+                            sc.vertex_section_offset = vsec;
+                            sc.vertex_total_bytes    = nvb;
+                            sc.index_section_offset  = isec;
+                            sc.index_total_count     = num_indices;
+                            if (!parseSidecarTail(tail.data(), tail.size(), sc.meta)) {
+                                Log::warn() << "loadSidecarFromBlobWeb: bad metadata tail";
+                                return;
+                            }
+                            const std::size_t n_meshes    = sc.meta.meshes.size();
+                            const std::size_t n_instances = sc.meta.instances.size();
+                            const std::uint32_t mid = next_model_id_++;
+                            applyCachedModel(mid, std::move(sc));
+                            auto mit = models_gpu_.find(mid);
+                            if (mit != models_gpu_.end())
+                                mit->second.streaming_from_blob = true;
+                            viewAll();
+                            host_->requestFrame();
+                            Log::info() << "ifcviewer-web: loaded blob sidecar (id "
+                                        << mid << ", " << n_meshes << " meshes, "
+                                        << n_instances << " instances)";
+                        });
+                });
+        });
+}
+#endif  // __EMSCRIPTEN__
 
 void ViewportCore::finalizeModel(std::uint32_t model_id) {
     auto it = pending_direct_loads_.find(model_id);

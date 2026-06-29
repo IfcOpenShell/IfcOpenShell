@@ -41,10 +41,6 @@ namespace {
 // WebViewportHost selector below.
 constexpr const char* kCanvasSelector = "#viewer-canvas";
 
-// MEMFS path the file-browse handler writes the picked sidecar to, and
-// that load_uploaded_model_c reads back. Must match shell.html.
-constexpr const char* kUploadPath = "/uploads/model.ifcview";
-
 struct AppState {
     WebViewportHost host{ kCanvasSelector };
     ViewportCore    core{ &host };
@@ -156,26 +152,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
     }
 }
 
-// Called from shell.html's file-browse handler after it has written the
-// picked file's bytes into MEMFS at kUploadPath. Replaces whatever is
-// currently loaded (the embedded sample on first use, or a prior upload)
-// with the new sidecar and frames it. Geometry becomes resident over the
-// next frames via render()'s inline driveStreamingLoads. Exported to JS
-// via EXPORTED_FUNCTIONS in CMakeLists.txt.
-extern "C" EMSCRIPTEN_KEEPALIVE void load_uploaded_model_c() {
+// Called from shell.html's file-browse handler after it has stashed the
+// picked File on Module.__ifcvFile. Replaces whatever is currently loaded
+// (the embedded sample on first use, or a prior pick) with the new sidecar.
+// Byte-range (#88): the whole file is NOT copied into the wasm heap — the
+// metadata is read via Blob.slice and chunk bytes stream per-chunk, so a
+// 500 MB sidecar stays in the browser File object. Asynchronous: this
+// returns immediately and the model frames itself from the JS completion
+// callback. Exported to JS via EXPORTED_FUNCTIONS in CMakeLists.txt.
+extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_blob_c() {
     if (!g_app || !g_app->ready) return;
 
     // resetScene drops the previous model's GPU resources so a fresh load
-    // replaces rather than accumulates (loadSidecarFromPath appends).
+    // replaces rather than accumulates (loadSidecar* appends).
     g_app->core.resetScene();
-    const unsigned int mid = g_app->core.loadSidecarFromPath(kUploadPath);
-    if (mid == 0) {
-        Log::warn() << "ifcviewer-web: uploaded model load failed";
-        return;
-    }
-    g_app->core.viewAll();
-    g_app->host.requestFrame();
-    Log::info() << "ifcviewer-web: loaded uploaded model (id " << mid << ")";
+    g_app->core.loadSidecarFromBlobWeb();
 }
 
 int main(int /*argc*/, char** /*argv*/) {
@@ -199,8 +190,10 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->core.buildPickPipeline();
 
         // Load the embedded sample sidecar (mounted into MEMFS via
-        // --embed-file in CMakeLists.txt). Replaced by an
-        // emscripten_fetch + Range backend in #88.
+        // --embed-file in CMakeLists.txt). The sample stays on the
+        // synchronous MEMFS read; user-picked files go through the
+        // Blob.slice byte-range path (load_sidecar_from_blob_c) so large
+        // sidecars never enter the wasm heap.
         if (!g_app->core.loadSidecarFromPath("/sample.ifcview")) {
             Log::warn() << "ifcviewer-web: sample sidecar load failed";
         }

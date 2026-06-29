@@ -356,6 +356,23 @@ public:
     // mismatch) and the freshly-assigned model_id on success.
     std::uint32_t loadSidecarFromPath(const std::string& path);
 
+#if defined(__EMSCRIPTEN__)
+    // Web byte-range load (#88). Loads a sidecar from the JS-registered
+    // File (Module.__ifcvFile) WITHOUT copying the whole file into the
+    // wasm heap: the head + tail metadata are read via Blob.slice, the
+    // streaming model is built, and it is tagged blob-sourced so each
+    // chunk's vertex/index byte ranges are pulled lazily through the async
+    // path. Asynchronous — returns immediately and frames the model from
+    // the JS completion callback. resetScene() first to replace.
+    void loadSidecarFromBlobWeb();
+
+    // Kick off the async blob read of one chunk's vertex + index byte
+    // ranges. applyStreamedChunk runs in the JS completion callback;
+    // c.is_loading is held until then. No-op if the model/chunk vanished
+    // mid-flight (e.g. a resetScene landed between issue and completion).
+    void beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_idx);
+#endif
+
     // Direct-load (bonsai-side) entry points. Bonsai's SceneLoader feeds
     // the viewer one mesh + one instance at a time, then calls
     // finalizeModel once everything's staged. The staging map lives on

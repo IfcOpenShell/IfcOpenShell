@@ -88,35 +88,31 @@
     statusEl.classList.add('error');
   }
 
-  // File-browse loading. The picked file's bytes are written into MEMFS
-  // (the same virtual FS the wasm fopen()s) and then load_uploaded_model_c
-  // is invoked to read + render it. No drag-drop: that needs an X11 drag
-  // source (a file manager), which a minimal WM may not provide; the
-  // native file chooser this button opens is WM-independent.
+  // File-browse loading (#88, byte-range). The picked File object is stashed
+  // on Module.__ifcvFile and load_sidecar_from_blob_c reads it lazily via
+  // Blob.slice — the file is NOT copied into the wasm heap, so a 500 MB
+  // sidecar stays in the browser File object and only chunk-sized slices
+  // ever cross into wasm. No drag-drop: that needs an X11 drag source (a
+  // file manager), which a minimal WM may not provide; the native file
+  // chooser this button opens is WM-independent.
   var openBtn = document.getElementById('open-btn');
   var fileInput = document.getElementById('file-input');
   openBtn.addEventListener('click', function() { fileInput.click(); });
   fileInput.addEventListener('change', function(ev) {
     var f = ev.target.files && ev.target.files[0];
     if (!f) return;
-    if (!Module.FS || !Module._load_uploaded_model_c) {
+    if (!Module._load_sidecar_from_blob_c) {
       statusEl.textContent += 'viewer not ready yet — wait for WebGPU init\n';
       return;
     }
-    var reader = new FileReader();
-    reader.onload = function() {
-      try {
-        var bytes = new Uint8Array(reader.result);
-        try { Module.FS.mkdir('/uploads'); } catch (e) { /* already exists */ }
-        Module.FS.writeFile('/uploads/model.ifcview', bytes);
-        Module._load_uploaded_model_c();
-      } catch (e) {
-        statusEl.textContent += 'load failed: ' + e + '\n';
-        statusEl.classList.add('error');
-      }
-      fileInput.value = '';  // let the same file be re-picked
-    };
-    reader.readAsArrayBuffer(f);
+    try {
+      Module.__ifcvFile = f;          // kept alive for lazy Blob.slice reads
+      Module._load_sidecar_from_blob_c();
+    } catch (e) {
+      statusEl.textContent += 'load failed: ' + e + '\n';
+      statusEl.classList.add('error');
+    }
+    fileInput.value = '';  // let the same file be re-picked
   });
 </script>
 <!-- IfcViewerWeb.js is emitted alongside this shell by the emcc build;

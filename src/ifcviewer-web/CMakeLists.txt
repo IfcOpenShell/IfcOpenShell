@@ -97,31 +97,26 @@ target_link_options(IfcViewerWeb PRIVATE
     # that starves the device promise (observed: ~10s delay in Firefox).
     "-sEXIT_RUNTIME=0"
     # Expose the C entry points to JS. _raf_tick_c drives the RAF loop
-    # (shell.html); _load_uploaded_model_c loads a user-picked sidecar
-    # that JS has written into MEMFS. EMSCRIPTEN_KEEPALIVE alone keeps
-    # the symbols in the binary but doesn't add them to Module.
-    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_uploaded_model_c']"
-    # FS lets shell.html's file-browse handler write the picked file's
-    # bytes into MEMFS before calling _load_uploaded_model_c (which
-    # fopen()s the virtual path). Drag-drop is intentionally not used —
-    # it depends on an X11 drag source (file manager), which a minimal
-    # WM may not provide; the native file chooser is WM-independent.
-    "-sEXPORTED_RUNTIME_METHODS=['FS']"
+    # (shell.html); _load_sidecar_from_blob_c loads a user-picked File via
+    # byte-range Blob.slice reads; _ifcv_on_range_done is the completion
+    # callback the JS range reader invokes when a slice has landed in the
+    # heap. EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but
+    # doesn't add them to Module.
+    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_blob_c','_ifcv_on_range_done']"
     # Streaming + chunked geometry want a heap that can grow as buffers
     # arrive. 256 MB initial, 2 GB ceiling (matches the wasm32 pointer
     # cap; --shared64 / MEMORY64 would lift this later if we need it).
     "-sALLOW_MEMORY_GROWTH=1"
     "-sINITIAL_MEMORY=268435456"        # 256 MB
     "-sMAXIMUM_MEMORY=2147483648"       # 2 GB
-    # FETCH lets emscripten_fetch issue HTTP Range requests for the
-    # sidecar byte-range loader. Not used yet by the scaffold but
-    # needed by the upcoming #27 web streaming I/O backend.
+    # FETCH lets emscripten_fetch issue HTTP Range requests. The local
+    # file path (#88) reads byte ranges via Blob.slice and does NOT need
+    # this; it's retained for the remote-URL Range backend (follow-up).
     "-sFETCH=1"
-    # Bundle a small sample sidecar into Emscripten's MEMFS so the
-    # scaffold can prove the load path end-to-end without needing
-    # emscripten_fetch + COOP/COEP wiring. The @ separator mounts the
-    # file at the virtual path the wasm uses to fopen() it. Replaced
-    # by an emscripten_fetch + Range backend in #88.
+    # Bundle a small sample sidecar into Emscripten's MEMFS so the page
+    # renders something on first load without a user pick. The @ separator
+    # mounts the file at the virtual path the wasm fopen()s. User-picked
+    # files instead stream via Blob.slice byte ranges (load_sidecar_from_blob_c).
     "--embed-file=${CMAKE_CURRENT_SOURCE_DIR}/sample.ifcview@/sample.ifcview"
     # Shell template wraps the JS output in our canvas page.
     "--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
