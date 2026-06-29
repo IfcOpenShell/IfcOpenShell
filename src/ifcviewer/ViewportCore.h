@@ -184,6 +184,26 @@ public:
     void setCamera(float tx, float ty, float tz,
                    float dist, float yaw_deg, float pitch_deg);
     void setStandardView(float yaw_deg, float pitch_deg);
+
+    // ---- Incremental orbit navigation ---------------------------------------
+    //
+    // Pixel-delta camera moves, shared by every host (Qt desktop + web).
+    // Hosts translate raw pointer/wheel events into these calls and own
+    // their own UI concerns (drag promotion, pivot indicator, cursor
+    // capture); the orbit math lives here so it can't drift between
+    // platforms. Each schedules a frame via the host.
+    //
+    // orbitBy:  drag-right yaws the world right (yaw -= dx), drag-down
+    //           tilts the camera up (pitch += dy). 0.4 deg/px matches GL.
+    // panBy:    shifts the target in the camera's screen plane; world
+    //           units/pixel track the frustum height at the pivot so the
+    //           feel is zoom-independent. Needs the viewport height.
+    // dollyBy:  each wheel notch zooms ~10% (distance *= 0.9^notches);
+    //           positive notches zoom in.
+    void orbitBy(float dx_px, float dy_px);
+    void panBy(float dx_px, float dy_px, int viewport_height_px);
+    void dollyBy(float notches);
+
     void toggleProjection();
     bool projectionOrtho() const { return projection_ortho_; }
     std::string cameraString() const;
