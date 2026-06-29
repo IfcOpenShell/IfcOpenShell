@@ -35,6 +35,9 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
+#include <cmath>
+#include <cstdint>
+
 namespace {
 
 // CSS selector for the host <canvas>; must match shell.html + the
@@ -58,7 +61,17 @@ struct AppState {
     // three-button mice and trackpad (right-drag) users.
     bool nav_active = false;
     int  nav_button = 0;
+    // Accumulated |movement| since mousedown, in CSS px. A left release under
+    // the click threshold (no real drag) is treated as a pick instead of an
+    // orbit. Captures the down position (canvas-relative CSS px) for the pick.
+    float nav_drag_px = 0.0f;
+    long  down_x = 0;
+    long  down_y = 0;
 };
+
+// Click vs drag threshold (CSS px). Below this total travel a left release is
+// a pick, above it the gesture was an orbit.
+constexpr float kClickDragThresholdPx = 4.0f;
 
 // One global so the JS-side RAF loop can recover state through a
 // pointer round-trip (set into Module._app_ptr from on_complete).
@@ -76,8 +89,11 @@ int canvasCssHeight() {
 EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
     if (e->button == 0 || e->button == 1 || e->button == 2) {
-        app->nav_active = true;
-        app->nav_button = e->button;
+        app->nav_active  = true;
+        app->nav_button  = e->button;
+        app->nav_drag_px = 0.0f;
+        app->down_x      = e->targetX;  // canvas-relative CSS px
+        app->down_y      = e->targetY;
     }
     return EM_TRUE;
 }
@@ -88,6 +104,7 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
 
     const float dx = float(e->movementX);
     const float dy = float(e->movementY);
+    app->nav_drag_px += std::abs(dx) + std::abs(dy);
     if (app->nav_button == 0) {
         app->core.orbitBy(dx, dy);
     } else {
@@ -96,8 +113,27 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     return EM_TRUE;
 }
 
-EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* /*e*/, void* user) {
-    static_cast<AppState*>(user)->nav_active = false;
+EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    const bool was_active = app->nav_active;
+    const int  button     = app->nav_button;
+    app->nav_active = false;
+
+    // Left release with no real drag → pick the object under the cursor and
+    // route it through selection (Shift add, Ctrl remove, plain replace).
+    // Async readback: the highlight appears a frame after the result lands.
+    if (was_active && button == 0 && app->ready &&
+        app->nav_drag_px <= kClickDragThresholdPx) {
+        const double dpr = emscripten_get_device_pixel_ratio();
+        const int px = int(app->down_x * dpr);
+        const int py = int(app->down_y * dpr);
+        const bool add    = e->shiftKey;
+        const bool remove = e->ctrlKey;
+        app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
+            app->core.applyPickToSelection(id, add, remove);
+            app->host.requestFrame();
+        });
+    }
     return EM_TRUE;
 }
 

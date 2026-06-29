@@ -533,6 +533,11 @@ public:
     // to the supplied size. Idempotent when dimensions match.
     void ensurePickAttachments(int w, int h);
 
+    // Encode the one-shot pick pass + copy the (x, y) texel into the pick
+    // staging buffer(s) and submit. Shared by the sync (pickObjectAt) and
+    // async (pickObjectAtAsync) readbacks. Caller validates bounds/attachments.
+    void encodePickReadbackToStaging(int x_pixels, int y_pixels, bool want_normal);
+
     // Tear down every pick-owned wgpu resource (pipeline + MRTs +
     // staging buffers). Called from shutdown() before device_ dies.
     void releasePickResources();
@@ -543,6 +548,21 @@ public:
     // unit world-space normal. Synchronous (interactive click path).
     std::uint32_t pickObjectAt(int x_pixels, int y_pixels,
                                Eigen::Vector3f* normal_out = nullptr);
+
+    // Route a pick result into the selection state machine (replace / add /
+    // remove / empty-click-clear), mirroring the desktop click semantics.
+    // Marks selection_ dirty for the next render's flush.
+    void applyPickToSelection(std::uint32_t object_id, bool add, bool remove);
+
+#if defined(__EMSCRIPTEN__)
+    // Async object pick for the web build: encodes the same pick pass as
+    // pickObjectAt but reads the staging buffer back via a spontaneous map
+    // callback (no blocking spin, which would hang the JS event loop) and
+    // delivers object_id to `cb`. Object-id only; one pick in flight at a
+    // time (a pick issued while another is mapping is dropped → cb(0)).
+    void pickObjectAtAsync(int x_pixels, int y_pixels,
+                           std::function<void(std::uint32_t)> cb);
+#endif
 
     // Marquee box select: encode the pick pass, copy the (x, y, w, h)
     // sub-rect of the object_id MRT back, return the set of unique
@@ -775,6 +795,12 @@ private:
     int                pick_h_                     = 0;
     WGPUBuffer         box_pick_staging_buffer_    = nullptr;
     std::uint64_t      box_pick_staging_capacity_  = 0;
+#if defined(__EMSCRIPTEN__)
+    // Async object-pick state (web). Held while the staging map is in flight;
+    // pick_async_cb_ fires with object_id when the spontaneous map resolves.
+    bool                              pick_async_in_flight_ = false;
+    std::function<void(std::uint32_t)> pick_async_cb_;
+#endif
 
     // ---- Frame uniforms + selection bind ----------------------------------
     //

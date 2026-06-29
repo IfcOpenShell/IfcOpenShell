@@ -4373,18 +4373,13 @@ void ViewportCore::releasePickResources() {
     pick_w_ = pick_h_ = 0;
 }
 
-std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
-                                         Eigen::Vector3f* normal_out) {
-    if (normal_out) *normal_out = Eigen::Vector3f(0, 0, 1);
-    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
-    if (configured_w_ <= 0 || configured_h_ <= 0) return 0;
-    if (x_pixels < 0 || y_pixels < 0 ||
-        x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
-
-    ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
-    if (normal_out && !pick_normal_staging_buffer_) return 0;
-
+// Encode the one-shot pick pass (object_id + optional normal targets) and
+// copy the texel at (x, y) into the pick staging buffer(s), then submit.
+// Shared by the synchronous desktop pickObjectAt and the async web pick —
+// only the readback after this differs (blocking map-spin vs spontaneous
+// callback). Assumes the caller validated bounds + attachments.
+void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
+                                               bool want_normal) {
     // The current frame's visible_draws are already on the GPU (uploaded
     // by the last render's cullModelCpuUpload). Encode a one-shot pass.
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
@@ -4449,7 +4444,7 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
 
     wgpuCommandEncoderCopyTextureToBuffer(enc, &src, &dst, &extent);
 
-    if (normal_out) {
+    if (want_normal) {
         WGPUTexelCopyTextureInfo nsrc = {};
         nsrc.texture  = pick_normal_texture_;
         nsrc.aspect   = WGPUTextureAspect_All;
@@ -4468,6 +4463,21 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
     wgpuQueueSubmit(queue_, 1, &cmd);
     wgpuCommandBufferRelease(cmd);
     wgpuCommandEncoderRelease(enc);
+}
+
+std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
+                                         Eigen::Vector3f* normal_out) {
+    if (normal_out) *normal_out = Eigen::Vector3f(0, 0, 1);
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return 0;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return 0;
+    if (x_pixels < 0 || y_pixels < 0 ||
+        x_pixels >= configured_w_ || y_pixels >= configured_h_) return 0;
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) return 0;
+    if (normal_out && !pick_normal_staging_buffer_) return 0;
+
+    encodePickReadbackToStaging(x_pixels, y_pixels, normal_out != nullptr);
 
     // Sync wait — pick is rare (click), so the GPU stall is fine.
     struct MapReq { bool done = false; bool ok = false; };
@@ -4539,6 +4549,70 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
 
     return object_id;
 }
+
+// Route a pick result through the selection state machine. Mirrors the
+// desktop ViewportWindow::mouseReleaseEvent semantics: no modifier replaces,
+// add(=Shift) extends, remove(=Ctrl) subtracts, and an empty-space click
+// (id == 0) with no modifier clears. Marks selection_ dirty so the next
+// render's uploadSelectionFlagsIfDirty flushes the highlight.
+void ViewportCore::applyPickToSelection(std::uint32_t object_id, bool add, bool remove) {
+    if (object_id == 0) {
+        if (!add && !remove) selection_.clear();
+        return;
+    }
+    if (remove)      selection_.remove(object_id);
+    else if (add)    selection_.add(object_id);
+    else             selection_.replace(object_id);
+}
+
+#if defined(__EMSCRIPTEN__)
+void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
+                                     std::function<void(std::uint32_t)> cb) {
+    // Async sibling of pickObjectAt for the web build, where the blocking
+    // map-spin would hang the JS event loop. Encodes the same pick pass, then
+    // maps the staging buffer with a spontaneous callback (AllowSpontaneous +
+    // the browser microtask loop) that delivers object_id to `cb`. No normal
+    // readback — object pick only (surface pick lands in a follow-up).
+    auto miss = [&cb](std::uint32_t id) { if (cb) cb(id); };
+
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) { miss(0); return; }
+    if (configured_w_ <= 0 || configured_h_ <= 0) { miss(0); return; }
+    if (x_pixels < 0 || y_pixels < 0 ||
+        x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(0); return; }
+
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_ || !pick_staging_buffer_) { miss(0); return; }
+
+    // One pick in flight at a time. Clicks are far slower than a readback, so
+    // dropping a pick issued while another is mapping is acceptable (and
+    // avoids racing two maps on the same staging buffer).
+    if (pick_async_in_flight_) { miss(0); return; }
+    pick_async_in_flight_ = true;
+    pick_async_cb_ = std::move(cb);
+
+    encodePickReadbackToStaging(x_pixels, y_pixels, /*want_normal=*/false);
+
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;  // AllowSpontaneous on web
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* self = static_cast<ViewportCore*>(ud1);
+        std::uint32_t object_id = 0;
+        if (status == WGPUMapAsyncStatus_Success) {
+            const std::uint32_t* mapped = static_cast<const std::uint32_t*>(
+                wgpuBufferGetConstMappedRange(self->pick_staging_buffer_, 0, 256));
+            object_id = mapped ? mapped[0] : 0u;
+            wgpuBufferUnmap(self->pick_staging_buffer_);
+        }
+        auto cb = std::move(self->pick_async_cb_);
+        self->pick_async_cb_ = nullptr;
+        self->pick_async_in_flight_ = false;
+        if (cb) cb(object_id);
+    };
+    mcb.userdata1 = this;
+    wgpuBufferMapAsync(pick_staging_buffer_, WGPUMapMode_Read, 0, 256, mcb);
+}
+#endif  // __EMSCRIPTEN__
 
 std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
     std::vector<std::uint32_t> out;
