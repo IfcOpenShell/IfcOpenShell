@@ -409,18 +409,16 @@ class FilledOpeningGenerator:
                 representation = tool.Geometry.get_representation_by_context(voided_element, context)
                 assert representation
 
-                bonsai.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=voided_obj,
-                    representation=representation,
-                )
+                tool.Geometry.recut_host(voided_obj, representation)
 
     def regenerate_from_type(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
         relating_type = settings["relating_type"]
 
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object)
+        # Filling type-switch on an array of fillings fans out N host recuts —
+        # one per related object — without batching. Coalesce them.
+        with tool.Geometry.batch_host_recut():
+            for related_object in settings["related_objects"]:
+                self._regenerate_from_type(related_object)
 
     def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
         filling = related_object
@@ -469,12 +467,7 @@ class FilledOpeningGenerator:
             representation = tool.Geometry.get_active_representation(voided_obj)
             if not representation:
                 continue
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=voided_obj,
-                representation=representation,
-            )
+            tool.Geometry.recut_host(voided_obj, representation)
 
     def generate_opening_from_filling(
         self,
@@ -609,6 +602,12 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
+        # N selected fillings × M voided host parts would fire N×M host recuts
+        # without batching. Coalesce per host.
+        with tool.Geometry.batch_host_recut():
+            return self._recalculate_fills(context)
+
+    def _recalculate_fills(self, context):
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
@@ -637,12 +636,7 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                 if building_obj and building_obj.data:
                     representation = tool.Geometry.get_active_representation(building_obj)
                     if representation:
-                        bonsai.core.geometry.switch_representation(
-                            tool.Ifc,
-                            tool.Geometry,
-                            obj=building_obj,
-                            representation=representation,
-                        )
+                        tool.Geometry.recut_host(building_obj, representation)
 
         # Refresh cut decorator
         DecoratorData.cut_cache.clear()
@@ -1022,6 +1016,12 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
+        # The voided host may be an aggregate whose parts each get recut.
+        # Coalesce per host so a many-parts aggregate doesn't fan out.
+        with tool.Geometry.batch_host_recut():
+            return self._clone_opening(context)
+
+    def _clone_opening(self, context):
         # NOTE: Operator displayed in UI only with IfcOpeningElement being active.
         ifc_file = tool.Ifc.get()
         objects = bpy.context.selected_objects
@@ -1051,12 +1051,7 @@ class CloneOpening(Operator, tool.Ifc.Operator):
                 continue
             representation = tool.Geometry.get_active_representation(obj)
             assert representation
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-            )
+            tool.Geometry.recut_host(obj, representation)
 
         return {"FINISHED"}
 
