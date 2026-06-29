@@ -1207,7 +1207,7 @@ void ViewportCore::updateFrameUniforms() {
 }
 
 // ===========================================================================
-// Lifecycle (#84-l): initWgpu + probeAndCreatePool + shutdown
+// Lifecycle (#84-l): initWgpu + createPool + shutdown
 // ===========================================================================
 
 #if defined(__EMSCRIPTEN__)
@@ -1295,101 +1295,50 @@ void onUncapturedError(WGPUDevice const* /*device*/,
 }
 } // namespace
 
-bool ViewportCore::probeAndCreatePool() {
-    // Discover the largest single buffer the runtime will grant. Each
-    // attempt sits inside OOM + Validation error scopes so a failed
-    // allocation doesn't surface as a noisy uncaptured-error warning.
+bool ViewportCore::createPool() {
+    // Size the streaming pool to *demand*: configure a modest initial
+    // sub-buffer and let BufferPool::addSubBuffer grow it lazily (and
+    // halve-retry down to its 64 MB floor on constrained devices) as the
+    // working set needs more.
+    //
+    // We deliberately do NOT grab the largest momentarily-allocatable
+    // buffer up front. Drivers can advertise an effectively unbounded
+    // maxBufferSize (1 TB observed on this Linux/wgpu-native stack), so a
+    // "probe for the biggest single buffer" walk lands on multiple GB.
+    // Allocating that for a 1 MB model starves the depth/MSAA/HiZ/pick
+    // attachments and the selection-flags buffer, OOMing the device on
+    // the next tiny allocation. A single chunk is capped at
+    // WGPU_CHUNK_VERTEX_BYTES_LIMIT (16 MB), so the initial sub-buffer
+    // only has to clear that floor; everything beyond is added on demand.
     WGPULimits device_limits = {};
     wgpuDeviceGetLimits(device_, &device_limits);
 
     constexpr uint64_t MIN_POOL_CAPACITY = 64ull * 1024 * 1024;
-    constexpr uint64_t MAX_PROBE_START   = 4ull * 1024 * 1024 * 1024;
+#if defined(__EMSCRIPTEN__)
+    // Web stays at the 64 MB floor: Chrome's WebGPU process contends
+    // badly on large first allocations (and any other WebGPU tab on the
+    // same origin makes it worse), so a small first sub-buffer keeps
+    // first-frame cheap. See the web-init gotchas note.
+    constexpr uint64_t INITIAL_SUB_BUFFER = 64ull * 1024 * 1024;
+#else
+    // Desktop has no such contention constraint; a larger initial
+    // sub-buffer means fewer sub-buffers (and per-chunk bind groups) for
+    // big models. 256 MB holds ~16 max-size chunks; if the device can't
+    // grant it, addSubBuffer halve-retries down to the 64 MB floor.
+    constexpr uint64_t INITIAL_SUB_BUFFER = 256ull * 1024 * 1024;
+#endif
     const WGPUBufferUsage pool_usage = WGPUBufferUsage_Storage
                                      | WGPUBufferUsage_CopyDst;
-
-#if defined(__EMSCRIPTEN__)
-    // Web: don't try to grab `device_limits.maxBufferSize` (256 MB on
-    // Dawn-web's spec floor) on the first sub-buffer. Browsers
-    // throttle / queue / hang on giant allocations — observed in
-    // Chrome: allocating 256 MB for the first chunk (~1 KB of geometry)
-    // freezes the tab indefinitely, and contention from any other
-    // WebGPU page on the same origin makes it worse. Start with a
-    // small sub-buffer (16 MB) so first-frame is cheap; the pool
-    // grows lazily via additional sub-buffers as the working set
-    // needs more, each capped at maxBufferSize but only created when
-    // actually demanded. (Dawn-web's PopErrorScope callbacks are also
-    // unreliable from a sync-spin pattern, so the desktop probe is
-    // skipped entirely on web.)
-    // 64 MB matches BufferPool::addSubBuffer's MIN_SUB_BUFFER_BYTES
-    // floor — smaller values would just be clamped up by the pool's
-    // halve-retry loop anyway. The earlier 256 MB ceiling hung Chrome
-    // not because of size per se, but because the pool's pop-error-scope
-    // spin-wait blocked the JS event loop indefinitely (now fixed in
-    // BufferPool::addSubBuffer for Emscripten).
-    constexpr std::uint64_t WEB_INITIAL_SUB_BUFFER = 64ull * 1024 * 1024;
-    const std::uint64_t per_sub = std::min<std::uint64_t>(
+    const uint64_t per_sub = std::min<uint64_t>(
         device_limits.maxBufferSize,
-        std::max<std::uint64_t>(MIN_POOL_CAPACITY, WEB_INITIAL_SUB_BUFFER));
+        std::max<uint64_t>(MIN_POOL_CAPACITY, INITIAL_SUB_BUFFER));
     pool_.configure(instance_, device_, pool_usage, per_sub,
                     "ifcviewer-wgpu.pool");
     Log::info() << "wgpu: pool per-sub-buffer capacity = "
-                << (per_sub / (1024 * 1024)) << " MB"
-                << " (web: small initial sub-buffer, grows lazily;"
-                << " device maxBufferSize = "
+                << (per_sub / (1024 * 1024)) << " MB (grows lazily on "
+                << "demand; device maxBufferSize = "
                 << (device_limits.maxBufferSize / (1024 * 1024)) << " MB)";
     return true;
-#else
-    uint64_t try_size = std::min<uint64_t>(device_limits.maxBufferSize,
-                                           MAX_PROBE_START);
-    if (try_size < MIN_POOL_CAPACITY) try_size = MIN_POOL_CAPACITY;
-
-    while (try_size >= MIN_POOL_CAPACITY) {
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_Validation);
-        wgpuDevicePushErrorScope(device_, WGPUErrorFilter_OutOfMemory);
-
-        WGPUBufferDescriptor desc = {};
-        desc.usage             = pool_usage;
-        desc.size              = try_size;
-        desc.label.data        = "ifcviewer-wgpu.pool_probe";
-        desc.label.length      = std::strlen("ifcviewer-wgpu.pool_probe");
-        WGPUBuffer probe_buf   = wgpuDeviceCreateBuffer(device_, &desc);
-
-        struct PopResult { bool done = false; bool error = false; };
-        auto pop = [&](PopResult& pr) {
-            WGPUPopErrorScopeCallbackInfo pcb = {};
-            pcb.mode = kAsyncCbMode;
-            pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
-                              WGPUStringView, void* ud1, void* /*ud2*/) {
-                auto* p = static_cast<PopResult*>(ud1);
-                p->done = true;
-                p->error = (type != WGPUErrorType_NoError);
-            };
-            pcb.userdata1 = &pr;
-            wgpuDevicePopErrorScope(device_, pcb);
-            while (!pr.done) waitTickInstance(instance_);
-        };
-        PopResult oom_pop, validation_pop;
-        pop(oom_pop);
-        pop(validation_pop);
-
-        if (probe_buf) wgpuBufferRelease(probe_buf);
-        if (probe_buf && !oom_pop.error && !validation_pop.error) {
-            pool_.configure(instance_, device_, pool_usage, try_size,
-                            "ifcviewer-wgpu.pool");
-            Log::info() << "wgpu: pool per-sub-buffer capacity = "
-                        << (try_size / (1024 * 1024)) << " MB"
-                        << " (device maxBufferSize = "
-                        << (device_limits.maxBufferSize / (1024 * 1024))
-                        << " MB); pool will grow on demand";
-            return true;
-        }
-        try_size /= 2;
-    }
-
-    Log::warn() << "wgpu: pool probe found no allocatable size >= "
-                << (MIN_POOL_CAPACITY / (1024 * 1024)) << " MB";
-    return false;
-#endif  // !__EMSCRIPTEN__
 }
 
 bool ViewportCore::initWgpu(bool web_limits) {
@@ -1463,9 +1412,9 @@ bool ViewportCore::initWgpu(bool web_limits) {
     // browser's adapter-reported limits include values it won't grant
     // back to a device. nullptr means "no specific requirements; give
     // me default limits", which the spec guarantees succeeds and is
-    // exactly what we need: the pool probe still discovers the actual
-    // buffer-size ceiling via probeAndCreatePool, so we don't lose
-    // anything by deferring to defaults here.
+    // exactly what we need: the pool sizes itself to demand in
+    // createPool and grows lazily, so we don't lose anything by
+    // deferring to defaults here.
     (void)web_floor_limits;
     (void)web_limits;
     dev_desc.requiredLimits = nullptr;
@@ -1528,8 +1477,8 @@ bool ViewportCore::initWgpu(bool web_limits) {
     queue_  = wgpuDeviceGetQueue(device_);
     Log::info() << "[initWgpu] 4/7d device + queue ready";
 
-    Log::info() << "[initWgpu] 5/7 probeAndCreatePool";
-    if (!probeAndCreatePool()) {
+    Log::info() << "[initWgpu] 5/7 createPool";
+    if (!createPool()) {
         Log::warn() << "wgpu: streaming pool probe failed; cannot start";
         return false;
     }
@@ -1627,7 +1576,7 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
                 return;
             }
 
-            if (!c->core->probeAndCreatePool()) {
+            if (!c->core->createPool()) {
                 Log::warn() << "[web init] pool create failed";
                 c->on_complete(false);
                 delete c;

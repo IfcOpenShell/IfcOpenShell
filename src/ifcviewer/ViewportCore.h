@@ -620,7 +620,7 @@ public:
     mutable std::uint64_t lod1_dbg_tris_saved_      = 0;
 
 private:
-    bool probeAndCreatePool();
+    bool createPool();
 
 public:
 
