@@ -118,3 +118,44 @@ test('loads a user-picked sidecar through the Blob.slice byte-range path', async
 
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
+
+test('click selects an object and the highlight renders (async pick)', async ({ page }) => {
+  // Exercises the async object-pick readback: a click maps the pick staging
+  // buffer via a spontaneous callback (no blocking spin, which would hang the
+  // page), routes object_id through selection, and the next render flushes the
+  // highlight. A broken async pick either hangs init/never selects (canvas
+  // unchanged) or spams WebGPU errors.
+  const gpuErrors = [];
+  page.on('console', (msg) => {
+    const t = msg.text();
+    if (/Uncaptured WebGPU error|is invalid|Not enough memory left/i.test(t)) {
+      gpuErrors.push(t);
+    }
+  });
+  page.on('pageerror', (e) => gpuErrors.push('pageerror: ' + e.message));
+
+  await page.goto('/IfcViewerWeb.html');
+  await page.waitForFunction(
+    () => !!(window.Module && window.Module._app_ptr),
+    null,
+    { timeout: 30_000 },
+  );
+  await page.waitForTimeout(1000);  // sample framed + a few frames drawn
+
+  // Click dead-centre, where the framed sample geometry sits. A plain
+  // down+up at one point is a pick (no drag), so it must change the canvas
+  // (selection highlight). If centre happens to miss, the assertion guards it.
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  const before = await shot(page);
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(600);  // async pick result + flush + render
+  const after = await shot(page);
+  expect(
+    Buffer.compare(before, after),
+    'click did not change the canvas — async pick failed or hit empty space',
+  ).not.toBe(0);
+
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
