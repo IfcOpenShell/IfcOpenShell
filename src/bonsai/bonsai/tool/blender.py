@@ -1524,6 +1524,10 @@ class Blender(bonsai.core.tool.Blender):
                 bpy.ops.bim.enable_editing_railing_path()
             elif feature := tool.Parametric.is_object_editing(obj):
                 tool.Parametric.run_bim_op(feature.finish_op)
+            elif tool.Parametric.is_wall(element):
+                # Placed after the generic finish dispatch so the TAB toggle splits:
+                # wall already editing → finish above; wall not editing → enter here.
+                bpy.ops.bim.enable_editing_wall()
             else:
                 return False
             return True
