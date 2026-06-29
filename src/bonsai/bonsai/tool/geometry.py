@@ -24,6 +24,7 @@ import multiprocessing
 import struct
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
+from contextlib import contextmanager
 from math import pi, radians
 from typing import (
     TYPE_CHECKING,
@@ -129,6 +130,77 @@ class Geometry(bonsai.core.tool.Geometry):
             return
         if cache and hasattr(element, "GlobalId"):
             cache.remove(element.GlobalId)
+
+    # Per-host work coalesced by `batch_host_recut`. Keys are voided element ifc ids;
+    # dict insertion preserves call ordering. Recut values store the representation at
+    # enqueue time, but the drain re-reads `get_active_representation` so the recut
+    # always reflects current IFC state.
+    _host_batch_depth: int = 0
+    _host_recut_queue: dict[int, tuple[bpy.types.Object, ifcopenshell.entity_instance]] = {}
+    _host_update_queue: dict[int, bpy.types.Object] = {}
+
+    @classmethod
+    @contextmanager
+    def batch_host_recut(cls) -> Generator[None, None, None]:
+        """Coalesce host body work — `recut_host` and `update_host_representation`
+        calls inside the with-block enqueue by voided element id. On the outermost
+        exit: every host's `update_representation` runs first (writes Blender mesh
+        back to IFC), then every host's `switch_representation` runs (reads IFC +
+        openings → Blender mesh). The two-phase order matters: a recut that ran
+        before the matching update_representation would re-tessellate against stale
+        IFC, losing the user's edits.
+
+        Nests safely — only the outermost exit drains. The depth counter and queues
+        are reset on exit even if the body raises."""
+        cls._host_batch_depth += 1
+        try:
+            yield
+        finally:
+            cls._host_batch_depth -= 1
+            if cls._host_batch_depth == 0:
+                update_queue = cls._host_update_queue
+                recut_queue = cls._host_recut_queue
+                cls._host_update_queue = {}
+                cls._host_recut_queue = {}
+                for voided_obj in update_queue.values():
+                    if not voided_obj or not voided_obj.data:
+                        continue
+                    if tool.Ifc.get_entity(voided_obj) is None:
+                        continue
+                    bpy.ops.bim.update_representation(obj=voided_obj.name)
+                for voided_obj, _ in recut_queue.values():
+                    if not voided_obj or not voided_obj.data:
+                        continue
+                    if tool.Ifc.get_entity(voided_obj) is None:
+                        continue
+                    current_rep = cls.get_active_representation(voided_obj)
+                    if current_rep is None:
+                        continue
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc, cls, obj=voided_obj, representation=current_rep
+                    )
+
+    @classmethod
+    def recut_host(cls, voided_obj: bpy.types.Object, representation: ifcopenshell.entity_instance) -> None:
+        """Recut a host's body representation. Inside `batch_host_recut`, enqueues
+        by voided element id; outside, fires `switch_representation` directly."""
+        if cls._host_batch_depth > 0:
+            element = tool.Ifc.get_entity(voided_obj)
+            if element is not None:
+                cls._host_recut_queue[element.id()] = (voided_obj, representation)
+            return
+        bonsai.core.geometry.switch_representation(tool.Ifc, cls, obj=voided_obj, representation=representation)
+
+    @classmethod
+    def update_host_representation(cls, voided_obj: bpy.types.Object) -> None:
+        """Run `bim.update_representation` on a host. Inside `batch_host_recut`,
+        enqueues by voided element id; outside, fires the operator directly."""
+        if cls._host_batch_depth > 0:
+            element = tool.Ifc.get_entity(voided_obj)
+            if element is not None:
+                cls._host_update_queue[element.id()] = voided_obj
+            return
+        bpy.ops.bim.update_representation(obj=voided_obj.name)
 
     @classmethod
     def has_axis_representation(cls, element: ifcopenshell.entity_instance) -> bool:

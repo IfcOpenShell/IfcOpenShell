@@ -59,6 +59,12 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
+        # Multi-opening drops on the same host fan out N update_representation
+        # writes + N switch_representation recuts without batching. Coalesce.
+        with tool.Geometry.batch_host_recut():
+            return self._add_openings(context)
+
+    def _add_openings(self, context):
         selected_objects = context.selected_objects
         target_object = selected_objects[0]
 
@@ -165,7 +171,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                             voided_obj.scale = (1.0, 1.0, 1.0)
                             tool.Ifc.finish_edit(voided_obj)
                         else:
-                            bpy.ops.bim.update_representation(obj=voided_obj.name)
+                            tool.Geometry.update_host_representation(voided_obj)
 
                     if tool.Ifc.is_moved(voided_obj):
                         bonsai.core.geometry.edit_object_placement(
@@ -174,12 +180,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
                     representation = tool.Geometry.get_active_representation(voided_obj)
                     assert representation
-                    bonsai.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=voided_obj,
-                        representation=representation,
-                    )
+                    tool.Geometry.recut_host(voided_obj, representation)
                 tool.Geometry.lock_scale(voided_obj)
 
             if not has_visible_openings:
@@ -217,12 +218,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
             if building_obj and building_obj.data:
                 representation = tool.Geometry.get_active_representation(building_obj)
                 assert representation
-                bonsai.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=building_obj,
-                    representation=representation,
-                )
+                tool.Geometry.recut_host(building_obj, representation)
         tool.Geometry.unlock_scale_object_with_openings(obj)
         tool.Geometry.clear_cache(element)
         return {"FINISHED"}

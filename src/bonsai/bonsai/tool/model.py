@@ -1244,6 +1244,13 @@ class Model(bonsai.core.tool.Model):
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
     ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
+        with tool.Geometry.batch_host_recut():
+            cls._regenerate_array_body(parent_obj, data, array_layers_to_apply)
+
+    @classmethod
+    def _regenerate_array_body(
+        cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int]
+    ) -> None:
         parent_element = tool.Ifc.get_entity(parent_obj)
 
         if pset := ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array"):
@@ -1442,9 +1449,7 @@ class Model(bonsai.core.tool.Model):
             representation = tool.Geometry.get_representation_by_context(voided_element, context)
             if representation is None:
                 continue
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc, tool.Geometry, obj=voided_obj, representation=representation
-            )
+            tool.Geometry.recut_host(voided_obj, representation)
 
     @classmethod
     def unshare_opening_representation(cls, filling: ifcopenshell.entity_instance) -> None:
