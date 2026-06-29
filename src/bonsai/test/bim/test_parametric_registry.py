@@ -123,6 +123,31 @@ def test_every_predicate_does_not_raise_on_non_matching_element(registry):
     )
 
 
+def test_default_parameters_field_per_registry_entry_with_defaults(registry):
+    """Every entry flagged ``has_default_parameters=True`` must have a matching
+    ``<name>: PointerProperty`` field on ``ui.DefaultParameters`` pointing at
+    its ``BIM<Name>Properties`` class.
+
+    The addon-preferences ``Default Parameters`` panel iterates flagged entries
+    to render per-type defaults sections, and the matching create operator
+    (``bim.add_door``, ``bim.add_window``, …) reads the field to seed new
+    instances from the user's preset values. A missing field means the preset
+    silently never reaches the operator.
+
+    Entries WITHOUT the flag are not required to appear — the contract is
+    one-directional: ``has_default_parameters=True`` implies a field, but
+    ``False`` allows absence."""
+    from bonsai.bim import ui
+
+    annotations = getattr(ui.DefaultParameters, "__annotations__", {})
+    missing = [e.name for e in registry if e.has_default_parameters and e.name not in annotations]
+    assert not missing, (
+        f"ui.DefaultParameters missing PointerProperty field(s) for: {missing} — "
+        f"each EDIT_TYPES entry with has_default_parameters=True must have a matching "
+        f"<name>: PointerProperty(type=BIM<Name>Properties) field"
+    )
+
+
 def test_gizmo_preferences_field_per_registry_entry(registry):
     """Every registry entry must have a matching ``<name>: BoolProperty`` field
     on ``ui.GizmoPreferences`` so the addon-preferences UI auto-renders a

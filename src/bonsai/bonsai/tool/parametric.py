@@ -81,11 +81,19 @@ class ParametricObject:
     ``_cancel_targets``) and that therefore wire their operators through
     ``build_edit_lifecycle``. Entries with bespoke edit lifecycles (per-attribute
     diff dispatch, layer-stack editing, mid-spline gizmo drag) leave this
-    False and declare their operator classes directly."""
+    False and declare their operator classes directly.
+
+    ``has_default_parameters`` marks entries whose ``BIM<Name>Properties``
+    class exposes ``get_general_kwargs`` / ``copy_to`` and a matching
+    ``draw_<name>_properties`` UI helper, so the addon-preferences panel can
+    surface a per-type defaults section and the create operator can seed new
+    instances from the preset. Entries without that machinery leave this False
+    and don't appear in the preferences ``Default Parameters`` panel."""
 
     name: str
     has_non_editable_path: bool = False
     supports_build_edit_lifecycle: bool = False
+    has_default_parameters: bool = False
 
     def __post_init__(self) -> None:
         if not _VALID_NAME_RE.match(self.name):
@@ -148,11 +156,17 @@ class Parametric(bonsai.core.tool.Parametric):
             self._gen = None
 
     EDIT_TYPES: list[ParametricObject] = [
-        ParametricObject("door", has_non_editable_path=True, supports_build_edit_lifecycle=True),
-        ParametricObject("window", has_non_editable_path=True, supports_build_edit_lifecycle=True),
-        ParametricObject("stair", has_non_editable_path=True, supports_build_edit_lifecycle=True),
-        ParametricObject("railing", supports_build_edit_lifecycle=True),
-        ParametricObject("roof", supports_build_edit_lifecycle=True),
+        ParametricObject(
+            "door", has_non_editable_path=True, supports_build_edit_lifecycle=True, has_default_parameters=True
+        ),
+        ParametricObject(
+            "window", has_non_editable_path=True, supports_build_edit_lifecycle=True, has_default_parameters=True
+        ),
+        ParametricObject(
+            "stair", has_non_editable_path=True, supports_build_edit_lifecycle=True, has_default_parameters=True
+        ),
+        ParametricObject("railing", supports_build_edit_lifecycle=True, has_default_parameters=True),
+        ParametricObject("roof", supports_build_edit_lifecycle=True, has_default_parameters=True),
         ParametricObject("array", supports_build_edit_lifecycle=True),
         ParametricObject("pipe_segment", supports_build_edit_lifecycle=True),
         ParametricObject("duct_segment", supports_build_edit_lifecycle=True),
