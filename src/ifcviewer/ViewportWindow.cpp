@@ -2051,42 +2051,11 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     }
 
     if (nav_drag_kind_ == NavDrag::Orbit) {
-        // Drag-right rotates the world right (yaw -= dx), drag-down tilts
-        // the camera up so we see more of the object's top (pitch += dy).
-        // 0.4 deg/px matches GL ViewportWindow.
-        camera_yaw_deg_   -= float(dx) * 0.4f;
-        camera_pitch_deg_ += float(dy) * 0.4f;
-        camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
-        requestUpdate();
+        // Orbit math lives in ViewportCore so desktop + web can't drift.
+        core_.orbitBy(float(dx), float(dy));
     } else if (nav_drag_kind_ == NavDrag::Pan) {
-        // Pan in the camera's screen-space plane. World units per pixel
-        // tracks the view-frustum width at the pivot's depth so panning
-        // feels constant regardless of zoom. Within 1° of straight up/down
-        // the world-Z up-reference degenerates (cross with forward is the
-        // zero vector → NaN), so switch to world-Y up — matches the
-        // up-vector switch in buildViewProj so top/bottom views still pan.
-        const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
-        const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
-                                       camera_yaw_deg_, camera_pitch_deg_);
-        const Eigen::Vector3f fwd   = (target - eye).normalized();
-        const Eigen::Vector3f world_up = (std::abs(camera_pitch_deg_) >= 89.0f)
-                                 ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
-                                 : Eigen::Vector3f(0.0f, 0.0f, 1.0f);
-        const Eigen::Vector3f right = fwd.cross(world_up).normalized();
-        const Eigen::Vector3f up    = right.cross(fwd).normalized();
-
-        const float half_h_world = camera_distance_
-            * std::tan(qDegreesToRadians(camera_fov_y_deg_) * 0.5f);
-        const float pan_per_pixel = (height() > 0)
-            ? (2.0f * half_h_world / float(height()))
-            : 0.0f;
-
-        const Eigen::Vector3f shift = -right * (float(dx) * pan_per_pixel)
-                              +  up    * (float(dy) * pan_per_pixel);
-        camera_target_[0] += shift.x();
-        camera_target_[1] += shift.y();
-        camera_target_[2] += shift.z();
-        requestUpdate();
+        // Pan needs the viewport height to size world-units-per-pixel.
+        core_.panBy(float(dx), float(dy), height());
     }
 }
 
@@ -2288,13 +2257,11 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
             << "[wgpu] fly speed: " << QString::number(fps_move_speed_, 'f', 2) << " m/s";
         return;
     }
-    // Orbit mode: each notch zooms ~10% in/out; sign matches "wheel up = in".
-    const float factor = std::pow(0.9f, notches);
-    camera_distance_   = std::max(0.01f, camera_distance_ * factor);
+    // Orbit mode: zoom in/out around the pivot (math in ViewportCore).
+    core_.dollyBy(notches);
     // Pivot afterglow on wheel — visible for 600 ms so the user can see
     // what they're zooming around without holding a drag.
     setPivotIndicatorVisible(true, 600);
-    requestUpdate();
 }
 
 void ViewportWindow::shutdown() {
