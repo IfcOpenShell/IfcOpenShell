@@ -28,6 +28,7 @@ venv
 !.vscode/launch.json
 !.vscode/tasks.json
 .vs
+/*.code-workspace
 
 # PyCharm files
 .idea
@@ -128,3 +129,4 @@ src/ifcopenshell-python/ifcopenshell/express/*.exp.cache.dat
 *.claude
 *.py.tmp*
 *.json.tmp*
+
