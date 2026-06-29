@@ -47,14 +47,32 @@ struct SidecarHeaderRaw {
     uint32_t endian;
 };
 
-template<typename T>
-bool readVec(FILE* f, std::vector<T>& v) {
-    uint32_t n;
-    if (std::fread(&n, 4, 1, f) != 1) return false;
-    v.resize(n);
-    if (n > 0 && std::fread(v.data(), sizeof(T), n, f) != n) return false;
-    return true;
-}
+// Bounds-checked forward cursor over an in-memory buffer. parseSidecarTail
+// walks the metadata tail through one of these so a truncated buffer fails
+// cleanly (return false) instead of reading out of bounds.
+struct BufCursor {
+    const uint8_t* p;
+    size_t remaining;
+
+    bool take(void* dst, size_t bytes) {
+        if (bytes > remaining) return false;
+        std::memcpy(dst, p, bytes);
+        p += bytes;
+        remaining -= bytes;
+        return true;
+    }
+
+    // Read a uint32 length prefix followed by length*sizeof(T) elements.
+    template<typename T>
+    bool takeVec(std::vector<T>& v) {
+        uint32_t n;
+        if (!take(&n, 4)) return false;
+        if (uint64_t(n) * sizeof(T) > remaining) return false;
+        v.resize(n);
+        if (n > 0 && !take(v.data(), size_t(n) * sizeof(T))) return false;
+        return true;
+    }
+};
 
 std::string sidecarPath(const std::string& ifc_path) {
     std::string p = ifc_path;
@@ -70,6 +88,37 @@ std::string sidecarPath(const std::string& ifc_path) {
 
 }  // namespace
 
+bool parseSidecarHead(const uint8_t* data, size_t n, uint32_t& out_num_vertex_bytes) {
+    if (n < SIDECAR_HEAD_BYTES) return false;
+    SidecarHeaderRaw hdr;
+    std::memcpy(&hdr, data, sizeof(hdr));
+    if (hdr.magic   != SIDECAR_MAGIC)  return false;
+    if (hdr.version != SIDECAR_VERSION) return false;
+    if (hdr.endian  != SIDECAR_ENDIAN) return false;
+    std::memcpy(&out_num_vertex_bytes, data + sizeof(hdr), 4);
+    return true;
+}
+
+bool parseSidecarTail(const uint8_t* data, size_t n, SidecarData& out) {
+    BufCursor c{data, n};
+    if (!c.takeVec(out.meshes))    return false;
+    if (!c.takeVec(out.instances)) return false;
+
+    // v11 georef block (148 bytes total).
+    if (!c.take(&out.has_coordinate_operation, 4))                  return false;
+    if (!c.take(out.coordinate_operation_meters, sizeof(double) * 16)) return false;
+    if (!c.take(&out.project_length_to_meters, sizeof(double)))     return false;
+    if (!c.take(&out.map_unit_to_meters, sizeof(double)))          return false;
+
+    if (!c.takeVec(out.elements)) return false;
+    uint32_t stbl_len = 0;
+    if (!c.take(&stbl_len, 4))       return false;
+    if (stbl_len > c.remaining)      return false;
+    out.string_table.resize(stbl_len);
+    if (stbl_len > 0 && !c.take(out.string_table.data(), stbl_len)) return false;
+    return true;
+}
+
 std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_path) {
     const std::string path = sidecarPath(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
@@ -80,52 +129,40 @@ std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_p
         return std::nullopt;
     };
 
-    SidecarHeaderRaw hdr;
-    if (std::fread(&hdr, sizeof(hdr), 1, f) != 1)      return fail();
-    if (hdr.magic   != SIDECAR_MAGIC)                  return fail();
-    if (hdr.version != SIDECAR_VERSION)                return fail();
-    if (hdr.endian  != SIDECAR_ENDIAN)                 return fail();
+    // Head: 12-byte header + the vertex-byte count. The vertex section starts
+    // immediately after, at SIDECAR_HEAD_BYTES.
+    uint8_t head[SIDECAR_HEAD_BYTES];
+    if (std::fread(head, 1, SIDECAR_HEAD_BYTES, f) != SIDECAR_HEAD_BYTES) return fail();
+    uint32_t num_vertex_bytes = 0;
+    if (!parseSidecarHead(head, SIDECAR_HEAD_BYTES, num_vertex_bytes)) return fail();
 
     StreamingSidecar out;
-    out.file_path = path;
-
-    // Vertex section: read count, record offset of data, seek past.
-    uint32_t num_vertex_bytes = 0;
-    if (std::fread(&num_vertex_bytes, 4, 1, f) != 1)   return fail();
-    out.vertex_section_offset = uint64_t(std::ftell(f));
+    out.file_path             = path;
+    out.vertex_section_offset = SIDECAR_HEAD_BYTES;
     out.vertex_total_bytes    = num_vertex_bytes;
-    if (std::fseek(f, long(num_vertex_bytes), SEEK_CUR) != 0) return fail();
 
-    // Index section: same dance, in u32 units.
+    // Skip the vertex section; read the index count that follows it.
+    if (std::fseek(f, long(num_vertex_bytes), SEEK_CUR) != 0) return fail();
     uint32_t num_indices = 0;
     if (std::fread(&num_indices, 4, 1, f) != 1)        return fail();
     out.index_section_offset = uint64_t(std::ftell(f));
     out.index_total_count    = num_indices;
+
+    // Skip the index section; the metadata tail runs from there to EOF.
     if (std::fseek(f, long(num_indices) * 4, SEEK_CUR) != 0) return fail();
+    const long tail_off = std::ftell(f);
+    if (tail_off < 0)                          return fail();
+    if (std::fseek(f, 0, SEEK_END) != 0)       return fail();
+    const long file_end = std::ftell(f);
+    if (file_end < tail_off)                   return fail();
+    if (std::fseek(f, tail_off, SEEK_SET) != 0) return fail();
 
-    // Mesh dict + instance dict — small, load into meta.
-    if (!readVec(f, out.meta.meshes))    return fail();
-    if (!readVec(f, out.meta.instances)) return fail();
-
-    // v11 georef block (148 bytes total).
-    if (std::fread(&out.meta.has_coordinate_operation, 4, 1, f) != 1) return fail();
-    if (std::fread(out.meta.coordinate_operation_meters,
-                   sizeof(double), 16, f) != 16)                      return fail();
-    if (std::fread(&out.meta.project_length_to_meters,
-                   sizeof(double), 1, f) != 1)                        return fail();
-    if (std::fread(&out.meta.map_unit_to_meters,
-                   sizeof(double), 1, f) != 1)                        return fail();
-
-    // Element table + string table.
-    if (!readVec(f, out.meta.elements))                return fail();
-    uint32_t stbl_len = 0;
-    if (std::fread(&stbl_len, 4, 1, f) != 1)           return fail();
-    out.meta.string_table.resize(stbl_len);
-    if (stbl_len > 0 &&
-        std::fread(out.meta.string_table.data(), 1, stbl_len, f) != stbl_len)
+    std::vector<uint8_t> tail(size_t(file_end - tail_off));
+    if (!tail.empty() && std::fread(tail.data(), 1, tail.size(), f) != tail.size())
         return fail();
-
     std::fclose(f);
+
+    if (!parseSidecarTail(tail.data(), tail.size(), out.meta)) return std::nullopt;
     return out;
 }
 
@@ -171,33 +208,14 @@ bool readSidecarIndexChunk(const std::string& ifc_path,
     return got == size_t(chunk_index_count);
 }
 
-// Coalesce ranges that are close in file order into single reads. The
-// input order is preserved in the destination buffer; we just merge
-// reads on the file side. A `max_gap_bytes` tolerance lets us swallow
-// small file gaps when reading would be cheaper than seeking.
+// Coalesce ranges that are close in file order into single reads. The input
+// order is preserved in the destination buffer; we just merge reads on the
+// source side. A `max_gap_bytes` tolerance lets us swallow small gaps when one
+// read is cheaper than a seek + fresh read.
 //
-// SIDE EFFECT: callers must give the dst buffer in INPUT order; the
-// reader scatters bytes via per-input-range dst offsets after a single
-// coalesced fread. Returns false on any I/O failure.
-namespace {
-
-struct ReadPlan {
-    uint64_t file_offset;   // absolute file offset
-    uint64_t read_size;     // total bytes to read
-    // Per input range: where its bytes land in this read, and where to
-    // copy them into the destination buffer.
-    struct Slice {
-        uint64_t src_offset;   // offset within the read buffer
-        uint64_t dst_offset;   // offset within the destination buffer
-        uint64_t bytes;
-    };
-    std::vector<Slice> slices;
-};
-
-// Build a plan that merges adjacent file ranges into single reads.
-// `ranges` are (section-relative offset, size). `max_gap_bytes` is the
-// largest "wasted bytes" we'll read to bridge two ranges into one read.
-std::vector<ReadPlan> buildReadPlan(
+// Callers must lay out the destination in INPUT order; the reader scatters
+// bytes via per-input-range dst offsets after a single coalesced read.
+std::vector<SidecarReadPlan> planSidecarReadRanges(
         uint64_t section_offset,
         const std::vector<std::pair<uint64_t, uint64_t>>& ranges,
         uint64_t max_gap_bytes) {
@@ -214,11 +232,11 @@ std::vector<ReadPlan> buildReadPlan(
     std::sort(sorted.begin(), sorted.end(),
               [](const Indexed& a, const Indexed& b) { return a.off < b.off; });
 
-    std::vector<ReadPlan> plans;
+    std::vector<SidecarReadPlan> plans;
     for (const auto& r : sorted) {
         if (r.size == 0) continue;
         if (!plans.empty()) {
-            ReadPlan& back = plans.back();
+            SidecarReadPlan& back = plans.back();
             const uint64_t end_of_back = back.file_offset + back.read_size;
             const uint64_t r_file = section_offset + r.off;
             if (r_file >= end_of_back && r_file - end_of_back <= max_gap_bytes) {
@@ -233,7 +251,7 @@ std::vector<ReadPlan> buildReadPlan(
                 continue;
             }
         }
-        ReadPlan np;
+        SidecarReadPlan np;
         np.file_offset = section_offset + r.off;
         np.read_size   = r.size;
         np.slices.push_back({0, r.dst, r.size});
@@ -241,8 +259,6 @@ std::vector<ReadPlan> buildReadPlan(
     }
     return plans;
 }
-
-}  // namespace
 
 bool readSidecarVertexRanges(const std::string& ifc_path,
                              uint64_t vertex_section_offset,
@@ -255,7 +271,7 @@ bool readSidecarVertexRanges(const std::string& ifc_path,
 
     // 64 KB max gap: on SSDs a small contiguous read is much cheaper
     // than a seek + fresh read, even if some bytes are discarded.
-    auto plans = buildReadPlan(vertex_section_offset, ranges, 64 * 1024);
+    auto plans = planSidecarReadRanges(vertex_section_offset, ranges, 64 * 1024);
 
     const std::string path = sidecarPath(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
@@ -296,7 +312,7 @@ bool readSidecarIndexRanges(const std::string& ifc_path,
         byte_ranges.emplace_back(first_u32 * 4u, count * 4u);
         out_byte_cursor += count * 4u;
     }
-    auto plans = buildReadPlan(index_section_offset, byte_ranges, 64 * 1024);
+    auto plans = planSidecarReadRanges(index_section_offset, byte_ranges, 64 * 1024);
 
     const std::string path = sidecarPath(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");

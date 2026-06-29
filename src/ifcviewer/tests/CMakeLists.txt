@@ -50,6 +50,15 @@ add_ifcviewer_unit_test(test_sidecar_cache
     SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp
 )
 
+# StreamingLoader: metadata-only read + range readers + the pure buffer-based
+# parse / read-plan helpers shared with the web (Blob.slice) path. Needs
+# SidecarCache.cpp for writeSidecar (to lay down on-disk fixtures).
+add_ifcviewer_unit_test(test_streaming_loader
+    SOURCES
+        ${IFCVIEWER_SRC}/StreamingLoader.cpp
+        ${IFCVIEWER_SRC}/SidecarCache.cpp
+)
+
 add_ifcviewer_unit_test(test_instanced_geometry)
 
 # ChunkPlanner: Morton sort + greedy-pack — pure CPU, no Qt / no wgpu.

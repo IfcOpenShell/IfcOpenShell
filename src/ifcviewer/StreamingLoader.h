@@ -22,9 +22,11 @@
 
 #include "SidecarCache.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 // Metadata-only sidecar load — the foundation for streaming. Reads the v13
@@ -64,6 +66,56 @@ struct StreamingSidecar {
 // version error (same failure modes as readSidecar). The file is closed
 // before return — callers re-open for per-chunk reads.
 std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_path);
+
+// --- Pure, buffer-based building blocks ------------------------------------
+//
+// The metadata lives in two disjoint regions of the file: a small fixed
+// "head" (12-byte header + the 4-byte vertex-byte count) that precedes the
+// bulk vertex/index sections, and a "tail" (mesh dict, instance dict, georef,
+// element table, string table) that follows them. Both desktop (FILE*) and
+// web (Blob.slice / fetch Range) readers slice those two regions out of the
+// source and hand the bytes to these parsers, so the wire-format knowledge
+// lives in exactly one place and is unit-testable without touching a file.
+
+// Bytes the head spans: SidecarHeader (12) + uint32 num_vertex_bytes (4).
+inline constexpr std::size_t SIDECAR_HEAD_BYTES = 16;
+
+// Parse the 16-byte head. Validates magic / version / endian and, on success,
+// writes the vertex-section byte count (which locates the index-count field at
+// SIDECAR_HEAD_BYTES + out_num_vertex_bytes). Returns false if `n` is short or
+// the header is wrong. `data` must point at the start of the file.
+bool parseSidecarHead(const std::uint8_t* data, std::size_t n,
+                      std::uint32_t& out_num_vertex_bytes);
+
+// Parse the metadata tail (everything after the index section): mesh dict,
+// instance dict, georef block, element table, string table. `data` points at
+// the first tail byte; `n` is the tail length (read to EOF). Returns false on
+// any bounds overrun (truncated buffer), leaving out_meta partially filled.
+bool parseSidecarTail(const std::uint8_t* data, std::size_t n,
+                      SidecarData& out_meta);
+
+// A coalesced read plan: a single contiguous source read whose bytes are
+// scattered into the destination at the recorded offsets. Merging adjacent
+// (or near-adjacent, within max_gap_bytes) ranges into one read amortises seek
+// cost on disk and request count over the network / Blob boundary.
+struct SidecarReadPlan {
+    std::uint64_t file_offset;   // absolute source offset of this read
+    std::uint64_t read_size;     // bytes to read
+    struct Slice {
+        std::uint64_t src_offset;   // offset within the read buffer
+        std::uint64_t dst_offset;   // offset within the destination buffer
+        std::uint64_t bytes;
+    };
+    std::vector<Slice> slices;
+};
+
+// Build read plans for `ranges` (section-relative (offset, size) pairs) that
+// land in a destination laid out in input order. `section_offset` is added to
+// turn section-relative offsets into absolute source offsets. Pure — no I/O.
+std::vector<SidecarReadPlan> planSidecarReadRanges(
+        std::uint64_t section_offset,
+        const std::vector<std::pair<std::uint64_t, std::uint64_t>>& ranges,
+        std::uint64_t max_gap_bytes);
 
 // Read a byte range from a sidecar's vertex section. `chunk_byte_offset` is
 // RELATIVE to vertex_section_offset (i.e. 0 = first vertex byte). Returns
