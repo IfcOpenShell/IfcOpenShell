@@ -688,6 +688,14 @@ private:
     WGPUTextureFormat surface_view_format_ = WGPUTextureFormat_Undefined;
     bool              surface_configured_ = false;
 
+public:
+    // Latched by the device-lost callback (web) when the GPU reclaims our
+    // device — typically GPU-memory pressure from another client. render()
+    // bails while set so the loop doesn't hammer a dead surface (which freezes
+    // the tab). Public so the spontaneous C callback can set it.
+    bool              device_lost_ = false;
+private:
+
     // ---- Pipelines + bind-group layouts (built once after init) -------------
     //
     // Main render pipeline group: one shader module + two bind group

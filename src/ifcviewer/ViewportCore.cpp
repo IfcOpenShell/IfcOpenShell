@@ -1625,6 +1625,24 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
         // RequestDevice silently never resolves the promise when passed
         // nullptr.
         WGPUDeviceDescriptor dd = {};
+        // Device-lost handler. If another GPU client (e.g. the desktop app
+        // launched alongside this tab) exhausts GPU memory, the browser can
+        // reclaim our device. Without this we'd keep driving render() on a
+        // dead device — wgpuSurfaceGetCurrentTexture returns Lost forever and
+        // the reconfigure+requestFrame retry becomes a tight loop that hangs
+        // the tab. Latch a flag so render() bails and the loop goes idle.
+        // Skip the intentional Destroyed reason (fired by our own shutdown).
+        dd.deviceLostCallbackInfo.mode     = WGPUCallbackMode_AllowSpontaneous;
+        dd.deviceLostCallbackInfo.callback =
+            [](const WGPUDevice* /*dev*/, WGPUDeviceLostReason reason,
+               WGPUStringView msg, void* ud1, void* /*ud2*/) {
+                if (reason == WGPUDeviceLostReason_Destroyed) return;
+                auto* core = static_cast<ViewportCore*>(ud1);
+                core->device_lost_ = true;
+                Log::warn() << "[wgpu] device lost (GPU memory reclaimed?): "
+                            << svToStr(msg) << " — reload the page";
+            };
+        dd.deviceLostCallbackInfo.userdata1 = c->core;
         wgpuAdapterRequestDevice(adapter, &dd, dcb);
     };
     acb.userdata1 = ctx;
@@ -5400,6 +5418,10 @@ inline float srgbToLinear(float c) {
 
 void ViewportCore::render() {
     if (!device_ || !queue_ || !surface_) return;
+    // Device lost (e.g. GPU memory reclaimed by another client). Stop here so
+    // we don't busy-loop reconfiguring a dead surface — that retry storm is
+    // what otherwise freezes the tab. The page logs guidance to reload.
+    if (device_lost_) return;
 
     Stopwatch frame_timer;
     frame_timer.start();
