@@ -277,11 +277,12 @@ struct ModelGpuData {
     std::string streaming_file_path;
     uint64_t    streaming_vertex_section_offset = 0;
     uint64_t    streaming_index_section_offset  = 0;
-    // Web only: chunk byte ranges come from the JS-registered File via
-    // Blob.slice (async), not from a synchronous fopen on streaming_file_path.
-    // Set by loadSidecarFromBlobWeb so driveStreamingLoads routes this model
-    // through the async blob path instead of the MEMFS sync read.
-    bool        streaming_from_blob = false;
+    // Web only: chunk byte ranges come from the JS-side source — a picked File
+    // (Blob.slice) or a remote URL (HTTP Range) — read asynchronously, not via
+    // a synchronous fopen on streaming_file_path. Set by loadSidecarMetadataWeb
+    // so driveStreamingLoads routes this model through the async web path
+    // instead of the MEMFS sync read.
+    bool        streaming_from_web = false;
 
     // For each mesh in meshes[], the chunk it lives in plus the chunk-local
     // offsets into that chunk's vertex_storage and index_buffer. Populated

@@ -98,11 +98,14 @@ target_link_options(IfcViewerWeb PRIVATE
     "-sEXIT_RUNTIME=0"
     # Expose the C entry points to JS. _raf_tick_c drives the RAF loop
     # (shell.html); _load_sidecar_from_blob_c loads a user-picked File via
-    # byte-range Blob.slice reads; _ifcv_on_range_done is the completion
-    # callback the JS range reader invokes when a slice has landed in the
-    # heap. EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but
-    # doesn't add them to Module.
-    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_blob_c','_ifcv_on_range_done']"
+    # byte-range Blob.slice reads; _load_sidecar_from_url_c streams a remote
+    # sidecar via HTTP Range; _ifcv_on_range_done / _ifcv_source_ready are the
+    # JS→C completion callbacks for a landed range / a resolved URL size.
+    # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
+    # add them to Module. ccall lets shell.html pass a JS string (the ?model
+    # URL) to load_sidecar_from_url_c without manual heap marshalling.
+    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_blob_c','_load_sidecar_from_url_c','_ifcv_on_range_done','_ifcv_source_ready']"
+    "-sEXPORTED_RUNTIME_METHODS=['ccall']"
     # Streaming + chunked geometry want a heap that can grow as buffers
     # arrive. 256 MB initial, 2 GB ceiling (matches the wasm32 pointer
     # cap; --shared64 / MEMORY64 would lift this later if we need it).

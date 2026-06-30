@@ -167,7 +167,7 @@ test('loads a user-picked sidecar through the Blob.slice byte-range path', async
   // side to confirm the blob load landed (logged to stderr → console).
   const samplePath = resolve(__dirname, '..', 'sample.ifcview');
   const loaded = page.waitForEvent('console', {
-    predicate: (m) => /loaded blob sidecar/.test(m.text()),
+    predicate: (m) => /loaded sidecar \(blob:/.test(m.text()),
     timeout: 15_000,
   });
   await page.locator('#file-input').setInputFiles(samplePath);
@@ -191,6 +191,43 @@ test('loads a user-picked sidecar through the Blob.slice byte-range path', async
     'orbit after blob load did not change the canvas — blob read or stream failed',
   ).not.toBe(0);
 
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('streams a remote sidecar over HTTP Range (?model= URL backend)', async ({ page }) => {
+  // The remote backend: ?model=URL resolves total size (HEAD), then reads the
+  // metadata + per-chunk byte ranges via HTTP Range (206) — same async-chunk
+  // path as the local Blob load, different byte source. serve.mjs answers
+  // Range requests, so this exercises it end-to-end (same-origin, no CORS).
+  const gpuErrors = [];
+  page.on('console', (msg) => {
+    if (/Uncaptured WebGPU error|is invalid|Not enough memory left/i.test(msg.text()))
+      gpuErrors.push(msg.text());
+  });
+  page.on('pageerror', (e) => gpuErrors.push('pageerror: ' + e.message));
+
+  // Wait for the C side to confirm the URL-sourced load landed.
+  const loaded = page.waitForEvent('console', {
+    predicate: (m) => /loaded sidecar \(net:/.test(m.text()),
+    timeout: 20_000,
+  });
+  await page.goto('/IfcViewerWeb.html?model=/sample.ifcview');
+  await page.waitForFunction(
+    () => !!(window.Module && window.Module._app_ptr), null, { timeout: 30_000 });
+  await loaded;
+  await page.waitForTimeout(800);  // stream the chunk + a few frames
+
+  // The remote-streamed model must render: centre patch (cube) != corner.
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const patch = (cx, cy) => page.screenshot({
+    clip: { x: Math.round(cx - 12), y: Math.round(cy - 12), width: 24, height: 24 },
+  });
+  const center = await patch(box.x + box.width / 2, box.y + box.height / 2);
+  const corner = await patch(box.x + 16, box.y + 16);
+  expect(
+    Buffer.compare(center, corner),
+    'remote-streamed model did not render — HTTP Range path failed',
+  ).not.toBe(0);
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
 

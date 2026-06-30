@@ -71,11 +71,20 @@
       // chain — which is the configuration that stalls device-callback
       // delivery (verified during web bring-up).
       var collapsedOnce = false;
+      var urlLoadTried = false;
+      var modelUrl = new URLSearchParams(location.search).get('model');
       function shellTick() {
         if (Module._app_ptr && Module._raf_tick_c) {
           // First time the app goes live, collapse the log overlay so it
           // stops covering the viewport.
           if (!collapsedOnce) { statusEl.classList.add('ready'); collapsedOnce = true; }
+          // ?model=URL streams a remote sidecar via HTTP Range once the app
+          // is live (one-shot). Same-origin needs no CORS; cross-origin URLs
+          // require the host to send CORS + Accept-Ranges headers.
+          if (!urlLoadTried && modelUrl && Module.ccall) {
+            urlLoadTried = true;
+            Module.ccall('load_sidecar_from_url_c', null, ['string'], [modelUrl]);
+          }
           Module._raf_tick_c(Module._app_ptr);
         }
         requestAnimationFrame(shellTick);

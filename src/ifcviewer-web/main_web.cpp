@@ -205,6 +205,17 @@ extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_blob_c() {
     g_app->core.loadSidecarFromBlobWeb();
 }
 
+// Called from shell.html (e.g. a ?model=URL query param) to stream a sidecar
+// hosted at `url` via HTTP Range requests — the same per-chunk byte-range path
+// as the local File load, but the bytes come off the network instead of a
+// Blob. Asynchronous; the model frames itself once metadata lands. Exported
+// to JS via EXPORTED_FUNCTIONS in CMakeLists.txt.
+extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_url_c(const char* url) {
+    if (!g_app || !g_app->ready || !url) return;
+    g_app->core.resetScene();
+    g_app->core.loadSidecarFromUrlWeb(url);
+}
+
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();
