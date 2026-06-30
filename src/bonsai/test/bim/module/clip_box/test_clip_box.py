@@ -728,15 +728,23 @@ class TestClipBbReArmTriggers(NewFile):
     modal gate suppresses per-tick re-arms during a live drag.
     """
 
-    def setup_method(self):
+    @pytest.fixture(autouse=True)
+    def reset_clipbox_state_after_newfile(self, setup):
+        # ``setup`` is NewFile's autouse fixture; declaring it as a parameter
+        # forces this fixture to run AFTER it. NewFile.setup calls
+        # wm.read_homefile, which fires our load_pre handler and leaves the
+        # _file_loading gate True — tests below exercise on_depsgraph_update
+        # in the normal (post-load) state, so the gate must be open here.
+        tool.ClipBox._file_loading = False
+        tool.ClipBox._post_load_paint_pending = False
         tool.ClipBox._persisted_matrices.clear()
         tool.ClipBox._last_seen_ifc_id = 0
-        tool.ClipBox._refresh_pending = False
+        tool.ClipBox._cancel_pending_refresh()
 
     def teardown_method(self):
         tool.ClipBox._persisted_matrices.clear()
         tool.ClipBox._last_seen_ifc_id = 0
-        tool.ClipBox._refresh_pending = False
+        tool.ClipBox._cancel_pending_refresh()
 
     def test_matrix_change_outside_modal_re_arms(self):
         bpy.ops.bim.add_clip_box()
@@ -798,3 +806,96 @@ class TestClipBbReArmTriggers(NewFile):
         # is a separate pre-existing re-arm path; the test pins the
         # invariant "ifc-load arms at least once".)
         assert mock_refresh.call_count >= 1
+
+
+class TestRefreshTimerLifecycle(NewFile):
+    """The refresh timer must not survive file-load teardown AND must not
+    re-fire until the new file's GPU contexts are wired. A timer that
+    arms against pre-init regions CTDs Blender inside GPU_matrix_ortho_set.
+    The gate spans load_pre → first on_pre_view tick (first paint = GPU
+    ready); load_post fires too early and intentionally does not clear it."""
+
+    @pytest.fixture(autouse=True)
+    def reset_clipbox_state_after_newfile(self, setup):
+        # ``setup`` is NewFile's autouse fixture; declaring it as a parameter
+        # forces this fixture to run AFTER it, so the file-load gate that
+        # NewFile.setup's wm.read_homefile leaves True is reset here.
+        tool.ClipBox._file_loading = False
+        tool.ClipBox._post_load_paint_pending = False
+        tool.ClipBox._cancel_pending_refresh()
+        tool.ClipBox._cancel_pending_cap_rebuild()
+
+    def teardown_method(self):
+        tool.ClipBox._file_loading = False
+        tool.ClipBox._post_load_paint_pending = False
+        tool.ClipBox._cancel_pending_refresh()
+        tool.ClipBox._cancel_pending_cap_rebuild()
+
+    def test_load_pre_cancels_pending_refresh(self):
+        from bonsai.bim.module.clip_box import _on_load_pre
+
+        tool.ClipBox.schedule_refresh()
+        pending = tool.ClipBox._pending_refresh
+        assert pending is not None
+        assert bpy.app.timers.is_registered(pending)
+
+        _on_load_pre("ignored.blend")
+
+        assert tool.ClipBox._pending_refresh is None
+        assert not bpy.app.timers.is_registered(pending)
+        assert tool.ClipBox._file_loading is True
+        assert tool.ClipBox._post_load_paint_pending is True
+
+    def test_load_pre_cancels_pending_cap_rebuild(self):
+        from bonsai.bim.module.clip_box import _on_load_pre
+
+        tool.ClipBox._schedule_cap_rebuild(interval=10.0)
+        pending = tool.ClipBox._pending_cap_rebuild
+        assert pending is not None
+        assert bpy.app.timers.is_registered(pending)
+
+        _on_load_pre("ignored.blend")
+
+        assert tool.ClipBox._pending_cap_rebuild is None
+        assert not bpy.app.timers.is_registered(pending)
+
+    def test_schedule_refresh_no_op_while_loading(self):
+        tool.ClipBox._file_loading = True
+        tool.ClipBox.schedule_refresh()
+        assert tool.ClipBox._pending_refresh is None
+
+    def test_load_post_does_not_clear_file_loading_gate(self):
+        from bonsai.bim.module.clip_box import _on_load_post
+
+        tool.ClipBox._file_loading = True
+        tool.ClipBox._post_load_paint_pending = True
+
+        _on_load_post("ignored.blend")
+
+        assert tool.ClipBox._file_loading is True
+        assert tool.ClipBox._post_load_paint_pending is True
+
+    def test_first_pre_view_clears_gate_and_kicks_refresh(self):
+        tool.ClipBox._file_loading = True
+        tool.ClipBox._post_load_paint_pending = True
+
+        with patch.object(tool.ClipBox, "schedule_refresh") as mock_refresh:
+            tool.ClipBox.on_pre_view()
+
+        assert tool.ClipBox._file_loading is False
+        assert tool.ClipBox._post_load_paint_pending is False
+        mock_refresh.assert_called_once()
+
+    def test_subsequent_pre_view_does_not_re_kick(self):
+        with patch.object(tool.ClipBox, "schedule_refresh") as mock_refresh:
+            tool.ClipBox.on_pre_view()
+
+        mock_refresh.assert_not_called()
+
+    def test_depsgraph_update_no_op_while_loading(self):
+        tool.ClipBox._file_loading = True
+
+        with patch.object(tool.ClipBox, "_active_scene_props") as mock_props:
+            tool.ClipBox.on_depsgraph_update(bpy.context.scene, bpy.context.evaluated_depsgraph_get())
+
+        mock_props.assert_not_called()
