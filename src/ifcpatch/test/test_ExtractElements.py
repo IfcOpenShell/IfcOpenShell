@@ -18,13 +18,18 @@
 
 import os
 
+import numpy as np
+
 import ifcopenshell
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
+import ifcopenshell.api.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import pytest
 
 import ifcpatch
@@ -105,6 +110,35 @@ class TestExtractElements(test.bootstrap.IFC4):
         conversion = output.by_type("IfcMapConversion")[0]
         assert conversion.Eastings == 100000.0
         assert conversion.Northings == 200000.0
+
+    def test_georeferencing_offset_not_baked_into_local_placement(self):
+        # Regression test for #8199: when extracting from a georeferenced model,
+        # element local placements must stay in local coordinates. Before the fix,
+        # IfcMapConversion was missing from the output, so auto_global2local() in
+        # append_asset() had no georef to undo and the full easting/northing offset
+        # was baked into every element's ObjectPlacement ("Blender offset" symptom).
+        if self.file.schema == "IFC2X3":
+            pytest.skip("IfcMapConversion does not exist in IFC2X3")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            coordinate_operation={"Eastings": 100000.0, "Northings": 200000.0},
+        )
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        m = np.eye(4)
+        m[:3, 3] = [5.0, 10.0, 0.0]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=m)
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        wall_out = output.by_type("IfcWall")[0]
+        pos = ifcopenshell.util.placement.get_local_placement(wall_out.ObjectPlacement)[:3, 3]
+        # Position must stay at local (5, 10, 0), not shift to (100005, 200010, 0).
+        assert np.allclose(pos, [5.0, 10.0, 0.0], atol=1e-3)
 
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
