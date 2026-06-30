@@ -1,8 +1,28 @@
 import { test, expect } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import zlib from 'node:zlib';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Decode the first pixel (RGB) of a PNG buffer. For a 1x1 image the row-0
+// first pixel is filter-agnostic (every PNG predictor references zero
+// neighbours), so we can skip full filter handling.
+function firstPixelRGB(png) {
+  let off = 8, colorType = 6;
+  const idat = [];
+  while (off + 8 <= png.length) {
+    const len = png.readUInt32BE(off);
+    const type = png.toString('ascii', off + 4, off + 8);
+    const data = png.subarray(off + 8, off + 8 + len);
+    if (type === 'IHDR') colorType = data[9];
+    else if (type === 'IDAT') idat.push(data);
+    else if (type === 'IEND') break;
+    off += 12 + len;
+  }
+  const raw = zlib.inflateSync(Buffer.concat(idat));
+  return [raw[1], raw[2], raw[3]];  // skip the row filter byte
+}
 
 // End-to-end smoke test for the WebGPU build. Every bug from the bring-up
 // of camera input + file loading was exactly this shape — the page would
@@ -96,6 +116,28 @@ test('sample renders without any interaction (streaming settle loop)', async ({ 
     'centre patch matches corner — sample never rendered without interaction',
   ).not.toBe(0);
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('background renders in sRGB, not crushed-dark (surface sRGB view)', async ({ page }) => {
+  // Regression for the dark-colors bug: the shader pre-decodes sRGB to cancel
+  // the surface's linear→sRGB write encode, which only works on an sRGB
+  // target. The browser canvas is plain Unorm, so without rendering to an
+  // sRGB *view* the whole image renders ~linear (≈3× too dark): the authored
+  // background (0.125,0.137,0.161 → ~32,35,41) collapses to ~3,4,6.
+  await page.goto('/IfcViewerWeb.html');
+  await page.waitForFunction(
+    () => !!(window.Module && window.Module._app_ptr), null, { timeout: 30_000 });
+  await page.waitForTimeout(1200);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  // A 1x1 sample of a top-left corner — background, clear of the framed cube.
+  const px = await page.screenshot({
+    clip: { x: Math.round(box.x + 6), y: Math.round(box.y + 6), width: 1, height: 1 },
+  });
+  const [r, g, b] = firstPixelRGB(px);
+  // Correct sRGB background is ~(32,35,41); the bug crushes it to <10.
+  expect(r, `background too dark — sRGB encode missing (got ${r},${g},${b})`).toBeGreaterThan(20);
+  expect(b).toBeGreaterThan(20);
 });
 
 test('loads a user-picked sidecar through the Blob.slice byte-range path', async ({ page }) => {

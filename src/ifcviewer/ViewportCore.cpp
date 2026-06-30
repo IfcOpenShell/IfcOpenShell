@@ -993,7 +993,7 @@ bool ViewportCore::buildPipelines() {
 
     // ---- Render pipeline -------------------------------------------------
     WGPUColorTargetState color_target = {};
-    color_target.format    = surface_format_;
+    color_target.format    = surface_view_format_;  // sRGB view (see configureSurface)
     color_target.writeMask = WGPUColorWriteMask_All;
 
     WGPUFragmentState frag = {};
@@ -1293,6 +1293,22 @@ void onUncapturedError(WGPUDevice const* /*device*/,
                        void* /*ud1*/, void* /*ud2*/) {
     Log::warn() << "[wgpu device error " << int(type) << "] " << svToStr(message);
 }
+
+// The fragment shader pre-decodes sRGB→linear to cancel the surface's
+// automatic linear→sRGB write encoding (so the final bytes match the GL
+// backend). That only works when the render target is an sRGB format. On
+// desktop the surface's preferred format already is (e.g. BGRA8UnormSrgb);
+// the browser canvas only offers the plain Unorm format, so we render to an
+// sRGB *view* of it instead (configured via viewFormats). Maps a Unorm
+// surface format to its sRGB sibling; returns the input unchanged when it is
+// already sRGB (or has no sibling), so the desktop path is untouched.
+WGPUTextureFormat srgbViewFormat(WGPUTextureFormat f) {
+    switch (f) {
+        case WGPUTextureFormat_BGRA8Unorm: return WGPUTextureFormat_BGRA8UnormSrgb;
+        case WGPUTextureFormat_RGBA8Unorm: return WGPUTextureFormat_RGBA8UnormSrgb;
+        default:                           return f;
+    }
+}
 } // namespace
 
 bool ViewportCore::createPool() {
@@ -1500,10 +1516,12 @@ bool ViewportCore::initWgpu(bool web_limits) {
         Log::warn() << "wgpuSurfaceGetCapabilities returned no formats";
         return false;
     }
-    surface_format_ = caps.formats[0];
+    surface_format_      = caps.formats[0];
+    surface_view_format_ = srgbViewFormat(surface_format_);
     wgpuSurfaceCapabilitiesFreeMembers(caps);
 
-    Log::info() << "wgpu init OK; surface format = " << int(surface_format_);
+    Log::info() << "wgpu init OK; surface format = " << int(surface_format_)
+                << " view format = " << int(surface_view_format_);
     return true;
 }
 
@@ -1592,11 +1610,13 @@ void ViewportCore::initWgpuAsyncWeb(std::function<void(bool)> on_complete) {
                 delete c;
                 return;
             }
-            c->core->surface_format_ = caps.formats[0];
+            c->core->surface_format_      = caps.formats[0];
+            c->core->surface_view_format_ = srgbViewFormat(c->core->surface_format_);
             wgpuSurfaceCapabilitiesFreeMembers(caps);
 
             Log::info() << "[web init] wgpu device + surface ready (format="
-                        << int(c->core->surface_format_) << ")";
+                        << int(c->core->surface_format_) << " view format="
+                        << int(c->core->surface_view_format_) << ")";
             c->on_complete(true);
             delete c;
         };
@@ -3979,7 +3999,7 @@ void ViewportCore::ensureMsaaColorTexture(int w, int h) {
     desc.size.width    = std::uint32_t(w);
     desc.size.height   = std::uint32_t(h);
     desc.size.depthOrArrayLayers = 1;
-    desc.format        = surface_format_;
+    desc.format        = surface_view_format_;  // matches the surface sRGB view + main pipeline target
     desc.mipLevelCount = 1;
     desc.sampleCount   = kViewportSampleCount;
     desc.label         = svFromCStr("ifcviewer-wgpu.msaa_color");
@@ -4095,7 +4115,7 @@ bool ViewportCore::buildEdgePipeline() {
     blend.alpha.operation = WGPUBlendOperation_Add;
 
     WGPUColorTargetState target = {};
-    target.format    = surface_format_;
+    target.format    = surface_view_format_;  // sRGB view, matches the main pass target
     target.blend     = &blend;
     target.writeMask = WGPUColorWriteMask_All;
 
@@ -5081,6 +5101,13 @@ void ViewportCore::configureSurface(int width_px, int height_px) {
     WGPUSurfaceConfiguration cfg = {};
     cfg.device      = device_;
     cfg.format      = surface_format_;
+    // When the surface's own format isn't sRGB (browser canvas), render to an
+    // sRGB view of it so the shader's sRGB encode-cancel lands the same way it
+    // does on desktop. Advertise the view format so the view is creatable.
+    if (surface_view_format_ != surface_format_) {
+        cfg.viewFormatCount = 1;
+        cfg.viewFormats     = &surface_view_format_;
+    }
     // CopySrc lets the screenshot path copy the surface texture back to
     // host memory. Trivial cost on all known backends.
     cfg.usage       = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
@@ -5403,7 +5430,19 @@ void ViewportCore::render() {
             return;
     }
 
-    WGPUTextureView view = wgpuTextureCreateView(surf_tex.texture, nullptr);
+    // Render through an sRGB view of the surface texture. On desktop the
+    // surface is already sRGB so the view format matches the texture (a plain
+    // default view); on web the surface is plain Unorm and this view is its
+    // sRGB sibling (advertised via cfg.viewFormats) so the shader's sRGB
+    // encode-cancel lands correctly. The screenshot path still reads the base
+    // texture, so its BGRA byte-order check stays on surface_format_.
+    WGPUTextureViewDescriptor view_desc = {};
+    view_desc.format          = surface_view_format_;
+    view_desc.dimension       = WGPUTextureViewDimension_2D;
+    view_desc.mipLevelCount   = 1;
+    view_desc.arrayLayerCount = 1;
+    view_desc.aspect          = WGPUTextureAspect_All;
+    WGPUTextureView view = wgpuTextureCreateView(surf_tex.texture, &view_desc);
 
     updateFrameUniforms();
 

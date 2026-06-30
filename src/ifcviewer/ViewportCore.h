@@ -682,6 +682,10 @@ private:
     WGPUQueue         queue_              = nullptr;
     WGPUSurface       surface_            = nullptr;
     WGPUTextureFormat surface_format_     = WGPUTextureFormat_Undefined;
+    // Format the colour pipelines + surface view actually render through. Equals
+    // surface_format_ on desktop (already sRGB); on web it's the sRGB sibling of
+    // the plain-Unorm canvas format so the shader's sRGB encode-cancel works.
+    WGPUTextureFormat surface_view_format_ = WGPUTextureFormat_Undefined;
     bool              surface_configured_ = false;
 
     // ---- Pipelines + bind-group layouts (built once after init) -------------
