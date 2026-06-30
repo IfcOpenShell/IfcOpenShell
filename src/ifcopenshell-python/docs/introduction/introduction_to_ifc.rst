@@ -67,7 +67,7 @@ Begin learning IFC
 ------------------
 
 IFC has three versions published by ISO: **IFC2X3** from 2007, **IFC4** from
-2017, and **IFC4X3** in draft form. Each version improves on the previous
+2017, and **IFC4X3** from 2024. Each version improves on the previous
 version, and will have different **IFC Classes** with different attributes and
 different **IFC Concepts**.
 
@@ -85,6 +85,9 @@ You can access the official documentation here:
    It is recommended to use IFC4. However, the IFC4X3 documentation is a lot
    more friendly to newcomers.
 
+   For infrastructure projects IFC4X3 is recommended to use as this has implemented
+   **IFC Classes** for road, railway, bridge and common infrastructure elements.
+   
 The official ISO documentation is written for a technical audience and may be
 overwhelming. This guide will take you slowly through the core concepts, and
 leave you with the knowledge you need to discover more.
