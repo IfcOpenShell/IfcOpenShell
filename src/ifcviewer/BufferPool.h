@@ -111,6 +111,13 @@ public:
     // could rescue them, or whether eviction is the only path.
     bool     can_grow() const { return !growth_disabled_ && per_sub_buffer_capacity_ > 0; }
 
+    // Proactively add a sub-buffer (no allocation). On web this kicks off the
+    // async provisional-validation cycle so validated free space appears a
+    // frame or two later — letting the streaming driver grow the pool BEFORE
+    // fetching a chunk's bytes, instead of fetching, failing the alloc on a
+    // not-yet-grown pool, and re-fetching. No-op if growth is pending/disabled.
+    bool     requestGrowth() { return addSubBuffer(); }
+
     // Test-only seam. Production code populates sub-pools lazily through
     // alloc() → addSubBuffer() → wgpuDeviceCreateBuffer; that path needs a
     // real WGPUDevice and is impractical to exercise from a unit test.

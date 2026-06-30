@@ -2267,6 +2267,36 @@ void ViewportCore::driveStreamingLoads() {
 
         const std::uint64_t need = c.vertex_byte_size
                                  + c.index_count * sizeof(std::uint32_t);
+
+#if defined(__EMSCRIPTEN__)
+        // Web async loads only allocate pool space when they COMPLETE, and pool
+        // growth is itself async (provisional sub-buffers validated off the JS
+        // event loop). Gate issuance on what the pool can hold so we never fetch
+        // bytes we can't place (which would re-fetch → network thrash; a 531 MB
+        // model re-fetched 4×).
+        if (cand.m->streaming_from_web
+            && pool_.total_free_bytes() < streaming_web_inflight_bytes_ + need) {
+            // Not enough VALIDATED pool space for this chunk plus what's already
+            // in flight. Don't fetch — the bytes would arrive, fail the alloc on
+            // a not-yet-grown pool, and re-fetch (network thrash). Instead grow
+            // the pool first (async on web: a provisional sub-buffer validates a
+            // frame or two later, then this chunk fits and is fetched exactly
+            // once). When the pool is saturated (model exceeds GPU memory) hold
+            // the chunk off for the full cooldown so we keep a stable resident
+            // subset instead of re-fetching what will never fit. Blocking before
+            // the evictor also avoids phase-2 visible↔visible swap thrash.
+            if (pool_.can_grow()) {
+                pool_.requestGrowth();
+                c.blocked_cooldown_until_frame_idx =
+                    streaming_frame_idx_ + kGrowBackoffFrames;
+            } else {
+                c.blocked_cooldown_until_frame_idx =
+                    streaming_frame_idx_ + kBlockedCooldownFrames;
+            }
+            more_pending = true;
+            continue;
+        }
+#endif
         while (!pool_can_fit(c.vertex_byte_size)
                || (c.index_count > 0
                    && !pool_can_fit(c.index_count * sizeof(std::uint32_t)))
@@ -3326,6 +3356,13 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
     for (const auto& [first_u32, count] : req.i_ranges)
         i_byte_ranges.emplace_back(first_u32 * 4u, count * 4u);
 
+    // Reserve this load's pool footprint while it's in flight (released when it
+    // resolves) so driveStreamingLoads doesn't over-commit the pool — see
+    // streaming_web_inflight_bytes_.
+    const std::uint64_t need = m.chunks[chunk_idx].vertex_byte_size
+        + std::uint64_t(m.chunks[chunk_idx].index_count) * sizeof(std::uint32_t);
+    streaming_web_inflight_bytes_ += need;
+
     // Fire the vertex and index range reads CONCURRENTLY and join when both
     // land — over a network this halves per-chunk latency vs reading vertices
     // then indices serially (two round trips → one). The join holds both
@@ -3338,17 +3375,30 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
         bool v_done = false, i_done = false, v_ok = false, i_ok = false;
     };
     auto join = std::make_shared<ChunkJoin>();
-    std::function<void()> finish = [this, model_id, chunk_idx, join]() {
+    std::function<void()> finish = [this, model_id, chunk_idx, need, join]() {
         if (!join->v_done || !join->i_done) return;  // wait for the other read
+        // Release the in-flight reservation (clamped — a mid-flight resetScene
+        // could have zeroed it) regardless of what happens below.
+        streaming_web_inflight_bytes_ -=
+            std::min(streaming_web_inflight_bytes_, need);
+
         auto mit = models_gpu_.find(model_id);
         if (mit == models_gpu_.end()) return;
         ModelGpuData& mm = mit->second;
         if (chunk_idx >= mm.chunks.size()) return;
-        if (!join->v_ok || !join->i_ok) { mm.chunks[chunk_idx].is_loading = false; return; }
-        if (!applyStreamedChunk(mm, chunk_idx, join->vbytes, join->idx))
-            mm.chunks[chunk_idx].is_loading = false;  // pool full; retry later
-        else
-            host_->requestFrame();
+        auto& cc = mm.chunks[chunk_idx];
+        cc.is_loading = false;
+        // On read failure or a full pool, back off instead of re-candidating
+        // next frame → re-fetch thrash. If the pool can still grow (its async
+        // sub-buffer is mid-validation), retry soon; if it's saturated, hold
+        // off for the full cooldown.
+        if (!join->v_ok || !join->i_ok
+            || !applyStreamedChunk(mm, chunk_idx, join->vbytes, join->idx)) {
+            cc.blocked_cooldown_until_frame_idx = streaming_frame_idx_
+                + (pool_.can_grow() ? kGrowBackoffFrames : kBlockedCooldownFrames);
+            return;
+        }
+        host_->requestFrame();
     };
 
     webReadRangesAsync(vsec, v_ranges,

@@ -890,6 +890,23 @@ private:
     int  streaming_loads_this_frame_ = 0;
     bool streaming_more_pending_     = false;
 
+    // Frames a chunk that couldn't fit (or whose async load failed) is held off
+    // the candidate list before retrying. Shared by the sync evictor and the
+    // web async-failure path so a saturated pool backs off instead of thrashing.
+    static constexpr std::uint64_t kBlockedCooldownFrames = 180;
+    // Short backoff when a web load couldn't fit but the pool can still grow
+    // (provisional sub-buffer validating) — retry soon, don't long-cooldown.
+    static constexpr std::uint64_t kGrowBackoffFrames = 8;
+
+    // Web only: bytes reserved by in-flight async chunk loads. A web load only
+    // consumes pool space when it COMPLETES (async), so without reserving here
+    // the per-frame issuance over-commits the pool — chunks get fetched, then
+    // applyStreamedChunk fails on a full pool and re-fetches (observed: a 531 MB
+    // model re-fetched 4× over the network). Incremented at issue, decremented
+    // when the load resolves (success or failure); driveStreamingLoads blocks
+    // candidates that won't fit total_free - this.
+    std::uint64_t streaming_web_inflight_bytes_ = 0;
+
     // Settle burst: keep the render loop alive for a few frames after any
     // streaming activity so the cull→load→display latency (the draw + cull
     // precede driveStreamingLoads, so a freshly-resident chunk paints a frame
