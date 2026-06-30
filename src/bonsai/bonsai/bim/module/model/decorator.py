@@ -1597,7 +1597,7 @@ class WallAxisDecorator(tool.Blender.ViewportDecorator):
         self.line_shader.uniform_float("lineWidth", 2.0)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if element.is_a("IfcWall"):
+            if element and element.is_a("IfcWall"):
                 layers = tool.Model.get_material_layer_parameters(element)
                 axis = tool.Model.get_wall_axis(obj, layers)
                 side = [tuple(list(v) + [obj.location.z]) for v in axis["side"]]
@@ -2702,7 +2702,7 @@ class MEPSystemPathDecorator(_ConnectedNetworkPathDecorator):
         lines: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
         port_positions: list[tuple[float, float, float]] = []
         for element in connected:
-            if element.is_a("IfcFlowSegment"):
+            if element and element.is_a("IfcFlowSegment"):
                 if not tool.Geometry.has_axis_representation(element):
                     continue
                 obj = tool.Ifc.get_object(element)

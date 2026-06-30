@@ -158,12 +158,13 @@ class AggregateDecorator(tool.Blender.ViewportDecorator):
                 aggregates.append(obj)
                 continue
 
+            aggregate = None
             aggregates_list = tool.Aggregate.get_aggregates_recursively(element)
             if props.in_aggregate_mode and props.editing_aggregate:
                 index = aggregates_list.index(tool.Ifc.get_entity(props.editing_aggregate))
                 if index > 0:
                     aggregate = aggregates_list[index - 1]
-            else:
+            elif aggregates_list:
                 aggregate = aggregates_list[-1]
             if aggregate:
                 aggregates.append(tool.Ifc.get_object(aggregate))
