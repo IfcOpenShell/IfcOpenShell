@@ -216,6 +216,18 @@ extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_url_c(const char* url) {
     g_app->core.loadSidecarFromUrlWeb(url);
 }
 
+// Streaming progress for the loading bar (shell.html polls these each frame).
+// total == 0 while still fetching metadata; resident climbs to total as
+// geometry chunks arrive.
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_chunks_resident_c() {
+    if (!g_app) return 0;
+    int r = 0, t = 0; g_app->core.streamingProgress(r, t); return r;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_chunks_total_c() {
+    if (!g_app) return 0;
+    int r = 0, t = 0; g_app->core.streamingProgress(r, t); return t;
+}
+
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();

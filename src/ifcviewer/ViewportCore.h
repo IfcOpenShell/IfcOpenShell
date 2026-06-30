@@ -386,6 +386,11 @@ public:
     void beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_idx);
 #endif
 
+    // Streaming progress for a loading UI: resident vs total streaming chunks
+    // across all models. total == 0 means no streaming model is set up yet
+    // (still in the metadata phase). Cheap; safe to poll every frame.
+    void streamingProgress(int& resident_chunks, int& total_chunks) const;
+
     // Direct-load (bonsai-side) entry points. Bonsai's SceneLoader feeds
     // the viewer one mesh + one instance at a time, then calls
     // finalizeModel once everything's staged. The staging map lives on

@@ -3219,7 +3219,10 @@ EM_JS(double, ifcvFileSize, (void), {
 // works (just without the bandwidth saving).
 EM_JS(void, ifcvReadRangeInto, (int reqId, double offset, double size, void* dst), {
     var deliver = function(ok, buf) {
-        if (ok && buf) HEAPU8.set(new Uint8Array(buf), dst);
+        if (ok && buf) {
+            HEAPU8.set(new Uint8Array(buf), dst);
+            Module["__ifcvBytesLoaded"] = (Module["__ifcvBytesLoaded"] || 0) + buf.byteLength;
+        }
         Module["_ifcv_on_range_done"](reqId, ok ? 1 : 0);
     };
     var f = Module["__ifcvFile"];
@@ -3607,6 +3610,17 @@ void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
         });
 }
 #endif  // __EMSCRIPTEN__
+
+void ViewportCore::streamingProgress(int& resident_chunks, int& total_chunks) const {
+    resident_chunks = 0;
+    total_chunks    = 0;
+    for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& c : m.chunks) {
+            ++total_chunks;
+            if (c.is_resident) ++resident_chunks;
+        }
+    }
+}
 
 void ViewportCore::finalizeModel(std::uint32_t model_id) {
     auto it = pending_direct_loads_.find(model_id);

@@ -26,10 +26,22 @@
     border-radius: 4px; font-size: 12px; cursor: pointer; }
   #open-btn:hover { background: #3182ce; }
   #file-input { display: none; }
+  /* Streaming loading bar: a thin top progress strip + a centred caption.
+     Shown only while a network/file model streams; hidden once resident. */
+  #progress { position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    background: rgba(43,108,176,.2); z-index: 20; display: none; }
+  #progress-fill { height: 100%; width: 0%; background: #3182ce;
+    transition: width .15s ease; }
+  #progress-text { position: fixed; top: 10px; left: 50%;
+    transform: translateX(-50%); z-index: 20; font-size: 12px;
+    background: rgba(20,22,28,.85); padding: 4px 12px; border-radius: 4px;
+    pointer-events: none; display: none; }
 </style>
 </head>
 <body>
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<div id="progress"><div id="progress-fill"></div></div>
+<div id="progress-text"></div>
 <button id="open-btn">Open .ifcview…</button>
 <input id="file-input" type="file" accept=".ifcview">
 <div id="status">Starting…</div>
@@ -83,8 +95,10 @@
           // require the host to send CORS + Accept-Ranges headers.
           if (!urlLoadTried && modelUrl && Module.ccall) {
             urlLoadTried = true;
+            window.beginLoadProgress();
             Module.ccall('load_sidecar_from_url_c', null, ['string'], [modelUrl]);
           }
+          window.updateLoadProgress();
           Module._raf_tick_c(Module._app_ptr);
         }
         requestAnimationFrame(shellTick);
@@ -96,6 +110,44 @@
     statusEl.textContent = 'navigator.gpu is missing — open in a browser with WebGPU enabled';
     statusEl.classList.add('error');
   }
+
+  // --- Streaming loading bar ------------------------------------------------
+  // Driven by the C-side progress exports (resident/total chunks) + the
+  // bytes-downloaded counter the EM_JS range reader maintains. Shown only for
+  // streamed loads (URL / picked file), not the tiny embedded sample.
+  var progEl  = document.getElementById('progress');
+  var fillEl  = document.getElementById('progress-fill');
+  var textEl  = document.getElementById('progress-text');
+  var loadActive = false;
+  window.beginLoadProgress = function() {
+    loadActive = true;
+    Module.__ifcvBytesLoaded = 0;
+    fillEl.style.width = '0%';
+    progEl.style.display = 'block';
+    textEl.style.display = 'block';
+    textEl.textContent = 'Loading model…';
+  };
+  function endLoadProgress() { progEl.style.display = 'none'; textEl.style.display = 'none'; }
+  window.updateLoadProgress = function() {
+    if (!loadActive) return;
+    var R  = Module._ifcv_chunks_resident_c ? Module._ifcv_chunks_resident_c() : 0;
+    var T  = Module._ifcv_chunks_total_c    ? Module._ifcv_chunks_total_c()    : 0;
+    var mb = ((Module.__ifcvBytesLoaded || 0) / 1e6).toFixed(1);
+    if (T === 0) {                       // still fetching critical metadata
+      fillEl.style.width = '6%';
+      textEl.textContent = 'Loading model… ' + mb + ' MB';
+      return;
+    }
+    var pct = Math.round(100 * R / T);
+    fillEl.style.width = pct + '%';
+    if (R >= T) {                        // all chunks resident → done
+      textEl.textContent = 'Loaded — ' + T + ' chunks · ' + mb + ' MB';
+      loadActive = false;
+      setTimeout(endLoadProgress, 900);
+      return;
+    }
+    textEl.textContent = 'Loading geometry — ' + R + ' / ' + T + ' chunks · ' + mb + ' MB';
+  };
 
   // File-browse loading (#88, byte-range). The picked File object is stashed
   // on Module.__ifcvFile and load_sidecar_from_blob_c reads it lazily via
@@ -116,6 +168,7 @@
     }
     try {
       Module.__ifcvFile = f;          // kept alive for lazy Blob.slice reads
+      window.beginLoadProgress();
       Module._load_sidecar_from_blob_c();
     } catch (e) {
       statusEl.textContent += 'load failed: ' + e + '\n';
