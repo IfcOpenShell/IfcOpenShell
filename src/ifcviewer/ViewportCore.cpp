@@ -3326,36 +3326,47 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
     for (const auto& [first_u32, count] : req.i_ranges)
         i_byte_ranges.emplace_back(first_u32 * 4u, count * 4u);
 
-    // Read vertex ranges, then index ranges, then apply. Re-look-up the model
-    // in each callback: a resetScene() could have landed mid-flight, in which
-    // case the model id is gone and we simply drop the result.
+    // Fire the vertex and index range reads CONCURRENTLY and join when both
+    // land — over a network this halves per-chunk latency vs reading vertices
+    // then indices serially (two round trips → one). The join holds both
+    // payloads + completion flags; whichever read finishes second runs the
+    // apply. Re-look-up the model at apply time: a resetScene() could have
+    // landed mid-flight, in which case the model id is gone and we drop it.
+    struct ChunkJoin {
+        std::vector<std::uint8_t>  vbytes;
+        std::vector<std::uint32_t> idx;
+        bool v_done = false, i_done = false, v_ok = false, i_ok = false;
+    };
+    auto join = std::make_shared<ChunkJoin>();
+    std::function<void()> finish = [this, model_id, chunk_idx, join]() {
+        if (!join->v_done || !join->i_done) return;  // wait for the other read
+        auto mit = models_gpu_.find(model_id);
+        if (mit == models_gpu_.end()) return;
+        ModelGpuData& mm = mit->second;
+        if (chunk_idx >= mm.chunks.size()) return;
+        if (!join->v_ok || !join->i_ok) { mm.chunks[chunk_idx].is_loading = false; return; }
+        if (!applyStreamedChunk(mm, chunk_idx, join->vbytes, join->idx))
+            mm.chunks[chunk_idx].is_loading = false;  // pool full; retry later
+        else
+            host_->requestFrame();
+    };
+
     webReadRangesAsync(vsec, v_ranges,
-        [this, model_id, chunk_idx, isec, i_byte_ranges]
-        (bool ok, std::vector<std::uint8_t>&& vbytes) {
-            auto mit = models_gpu_.find(model_id);
-            if (mit == models_gpu_.end()) return;
-            if (chunk_idx >= mit->second.chunks.size()) return;
-            if (!ok) { mit->second.chunks[chunk_idx].is_loading = false; return; }
-
-            auto vb = std::make_shared<std::vector<std::uint8_t>>(std::move(vbytes));
-            webReadRangesAsync(isec, i_byte_ranges,
-                [this, model_id, chunk_idx, vb]
-                (bool ok2, std::vector<std::uint8_t>&& ibytes) {
-                    auto mit2 = models_gpu_.find(model_id);
-                    if (mit2 == models_gpu_.end()) return;
-                    ModelGpuData& mm = mit2->second;
-                    if (chunk_idx >= mm.chunks.size()) return;
-                    if (!ok2) { mm.chunks[chunk_idx].is_loading = false; return; }
-
-                    std::vector<std::uint32_t> idx(ibytes.size() / sizeof(std::uint32_t));
-                    if (!idx.empty())
-                        std::memcpy(idx.data(), ibytes.data(),
-                                    idx.size() * sizeof(std::uint32_t));
-                    if (!applyStreamedChunk(mm, chunk_idx, *vb, idx))
-                        mm.chunks[chunk_idx].is_loading = false;  // pool full; retry later
-                    else
-                        host_->requestFrame();
-                });
+        [join, finish](bool ok, std::vector<std::uint8_t>&& vbytes) {
+            join->v_ok = ok;
+            join->vbytes = std::move(vbytes);
+            join->v_done = true;
+            finish();
+        });
+    webReadRangesAsync(isec, i_byte_ranges,
+        [join, finish](bool ok, std::vector<std::uint8_t>&& ibytes) {
+            join->i_ok = ok;
+            join->idx.resize(ibytes.size() / sizeof(std::uint32_t));
+            if (!join->idx.empty())
+                std::memcpy(join->idx.data(), ibytes.data(),
+                            join->idx.size() * sizeof(std::uint32_t));
+            join->i_done = true;
+            finish();
         });
 }
 
