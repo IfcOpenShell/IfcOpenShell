@@ -3008,6 +3008,7 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         inst_gpu.push_back(ig);
     }
     next_object_id_ = object_id_base + max_local_id + 1;
+    m.object_id_base = object_id_base;  // deferred elements rebase to match
     const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
     m.instance_storage = createBufferWithData(
         device_, queue_,
@@ -3603,11 +3604,41 @@ void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
             }
             mit->second.elements             = std::move(tmp.elements);
             mit->second.string_table         = std::move(tmp.string_table);
+            // Rebase element object_ids to the model's global id space so they
+            // match the (already-rebased) instance ids used by pick/selection.
+            const std::uint32_t base = mit->second.object_id_base;
+            for (auto& e : mit->second.elements) e.object_id += base;
             mit->second.deferred_meta_loaded = true;
             Log::info() << "ifcviewer-web: loaded deferred metadata ("
                         << mit->second.elements.size() << " elements)";
             if (done) done(true);
         });
+}
+
+void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
+    InstanceCompose::InstanceLookup lk;
+    if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
+    const std::uint32_t model_id = lk.model_id;
+    loadDeferredMetadataWeb(model_id, [this, object_id, model_id](bool ok) {
+        if (!ok) {
+            Log::warn() << "pick: deferred property fetch failed for object " << object_id;
+            return;
+        }
+        auto it = models_gpu_.find(model_id);
+        if (it == models_gpu_.end()) return;
+        const ModelGpuData& m = it->second;
+        for (const auto& e : m.elements) {
+            if (e.object_id != object_id) continue;
+            std::string guid =
+                (e.guid_length > 0 &&
+                 std::size_t(e.guid_offset) + e.guid_length <= m.string_table.size())
+                    ? m.string_table.substr(e.guid_offset, e.guid_length)
+                    : std::string("(none)");
+            Log::info() << "pick: object " << object_id << " GUID " << guid;
+            return;
+        }
+        Log::info() << "pick: object " << object_id << " not in element table";
+    });
 }
 #endif  // __EMSCRIPTEN__
 

@@ -131,6 +131,9 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
         const bool remove = e->ctrlKey;
         app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
             app->core.applyPickToSelection(id, add, remove);
+            // Demo the v15 on-demand deferred fetch: log the picked object's
+            // IFC GUID (first pick fetches the property block off the network).
+            if (id != 0) app->core.logSelectedObjectGuidWeb(id);
             app->host.requestFrame();
         });
     }

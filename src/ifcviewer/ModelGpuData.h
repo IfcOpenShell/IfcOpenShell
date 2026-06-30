@@ -299,6 +299,10 @@ struct ModelGpuData {
     uint64_t    deferred_meta_offset = 0;
     uint64_t    deferred_meta_bytes  = 0;
     bool        deferred_meta_loaded = false;
+    // applyCachedModel rebases instance object_ids by this base to keep them
+    // globally unique across models; deferred elements carry the sidecar's
+    // original (local) ids, so they're rebased by the same amount on load.
+    uint32_t    object_id_base = 0;
 
     // For each mesh in meshes[], the chunk it lives in plus the chunk-local
     // offsets into that chunk's vertex_storage and index_buffer. Populated

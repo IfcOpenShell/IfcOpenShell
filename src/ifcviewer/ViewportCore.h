@@ -375,9 +375,15 @@ public:
     // table) for a web-streamed model — what a UI (object tree / selected-name
     // / search) needs, fetched only when asked so first paint never waits on
     // it. Populates ModelGpuData.elements/string_table; fires done(ok). At most
-    // one fetch per model. Currently unwired (no consumer yet) but complete.
+    // one fetch per model.
     void loadDeferredMetadataWeb(std::uint32_t model_id,
                                  std::function<void(bool)> done = {});
+
+    // Demo consumer of the deferred fetch: on pick, ensure the owning model's
+    // property block is loaded (loadDeferredMetadataWeb — fetched once, on
+    // demand), then log the picked object's IFC GUID. The first pick triggers
+    // the network fetch; later picks reuse the cached element table.
+    void logSelectedObjectGuidWeb(std::uint32_t object_id);
 
     // Kick off the async read of one chunk's vertex + index byte ranges (from
     // the active web source). applyStreamedChunk runs in the JS completion
