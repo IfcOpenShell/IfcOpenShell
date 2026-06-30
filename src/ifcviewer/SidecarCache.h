@@ -65,8 +65,25 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       composition has reduced them to viewport-local float-sized values.
 // v13 = Map unit scale in cached ModelGeoref is derived from
 //       IfcMapConversion.Scale, not IfcProjectedCRS.MapUnit.
-static constexpr uint32_t SIDECAR_VERSION = 13;
+// v14 = Geometry is laid out in streaming-chunk order (SidecarLayout) and a
+//       chunk table-of-contents (`chunks`) is appended.  The loader builds its
+//       chunks from the TOC instead of re-deriving the Morton/greedy plan, so
+//       each chunk is one CONTIGUOUS byte range — fixing network read
+//       amplification.  The plan can't be re-derived at load because the float
+//       Morton quantisation isn't bit-identical across toolchains (x86 baker vs
+//       wasm loader), so it must be baked in.  No back-compat: v13 sidecars are
+//       rejected (regenerate them).
+static constexpr uint32_t SIDECAR_VERSION = 14;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
+
+// Chunk table-of-contents entry (v14+).  A chunk is a CONTIGUOUS range of
+// meshes in the (reordered) meshes array — and therefore a contiguous span of
+// vertex + index bytes, since the geometry is laid out in chunk order.  The
+// loader builds chunk `i` from meshes [first_mesh, first_mesh + mesh_count).
+struct SidecarChunk {
+    uint32_t first_mesh;
+    uint32_t mesh_count;
+};
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs
 // into a separate string table.
@@ -111,6 +128,13 @@ struct SidecarData {
     // Element tree metadata.
     std::vector<PackedElementInfo> elements;
     std::string               string_table;
+
+    // Streaming chunk TOC.  Always written on disk (v14); geometry is laid out
+    // in this chunk order (see SidecarLayout) so each chunk is one contiguous
+    // range and the loader builds chunks directly from it. Stays empty only for
+    // in-memory direct loads (finalizeModel), which don't stream and fall back
+    // to deriving the plan.
+    std::vector<SidecarChunk> chunks;
 };
 
 // Sidecar is keyed on the path stem: foo.ifc and foo.ifcdb/ both resolve to

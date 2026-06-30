@@ -19,6 +19,7 @@
 
 #include "SceneLoader.h"
 #include "AppSettings.h"
+#include "SidecarLayout.h"
 
 #include <QFileInfo>
 #include <QTimer>
@@ -392,6 +393,9 @@ void SceneLoader::onStreamerFinished() {
                 }
                 QElapsedTimer wt; wt.start();
                 SidecarData data = m.sidecar_builder->finalize(georef, m.streamed_elements);
+                // Lay geometry out in streaming-chunk order + bake the chunk TOC
+                // (v14) so it streams as one contiguous range per chunk.
+                reorderSidecarByMorton(data);
                 const bool ok = writeSidecar(m.file_path.toStdString(), data);
                 std::fprintf(stderr,
                     "[info]   Sidecar finalize + write: %lld ms (%s)\n",

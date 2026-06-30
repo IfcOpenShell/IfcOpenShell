@@ -33,6 +33,7 @@
 
 #include "InstancedGeometry.h"
 #include "BufferPool.h"
+#include "ChunkPlanner.h"  // WGPU_CHUNK_VERTEX_BYTES_LIMIT (shared with bake)
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
@@ -62,7 +63,9 @@
 // (~4 MB) with single-fread chunk loads, but the difference between
 // 16 MB and 4 MB is much smaller than the difference between 128 MB
 // and 16 MB.
-static constexpr uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 16ull * 1024 * 1024;
+//
+// The limit itself lives in ChunkPlanner.h (pure, no wgpu) so the bake-time
+// layout pass can share it; re-exported here for the existing call sites.
 
 struct ModelGpuData {
     // std430 layout: 16 bytes per entry, naturally aligned. base_vertex is

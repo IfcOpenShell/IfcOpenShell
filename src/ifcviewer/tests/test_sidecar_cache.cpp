@@ -155,8 +155,24 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 TEST_CASE("MeshInfo and InstanceCpu have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
     REQUIRE(sizeof(InstanceGpu) == 80);
-    REQUIRE(SIDECAR_VERSION == 13);
+    REQUIRE(SIDECAR_VERSION == 14);
+    REQUIRE(sizeof(SidecarChunk) == 8);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
+}
+
+TEST_CASE("writeSidecar/readSidecar round-trip the v14 chunk TOC", "[sidecar]") {
+    fs::path dir = makeScratchDir("chunks");
+    fs::path ifc = dir / "model.ifc";
+    SidecarData sd = buildFixture();
+    sd.chunks = { {0, 1}, {1, 1} };  // two chunks over the two meshes
+    REQUIRE(writeSidecar(ifc.string(), sd));
+    auto loaded = readSidecar(ifc.string());
+    REQUIRE(loaded.has_value());
+    REQUIRE(loaded->chunks.size() == 2);
+    REQUIRE(loaded->chunks[0].first_mesh == 0);
+    REQUIRE(loaded->chunks[0].mesh_count == 1);
+    REQUIRE(loaded->chunks[1].first_mesh == 1);
+    REQUIRE(loaded->chunks[1].mesh_count == 1);
 }
 
 TEST_CASE("writeSidecar then readSidecar round-trips the full fixture", "[sidecar]") {

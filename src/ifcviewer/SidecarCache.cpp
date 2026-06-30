@@ -116,6 +116,9 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
         fclose(f); return false;
     }
 
+    // v14 chunk TOC.
+    if (!writeVec(f, data.chunks)) { fclose(f); return false; }
+
     fclose(f);
     return true;
 }
@@ -155,6 +158,9 @@ std::optional<SidecarData> readSidecar(const std::string& ifc_path) {
     data.string_table.resize(stbl_len);
     if (stbl_len > 0 && fread(data.string_table.data(), 1, stbl_len, f) != stbl_len)
         return fail();
+
+    // v14 chunk TOC.
+    if (!readVec(f, data.chunks)) return fail();
 
     fclose(f);
     return data;

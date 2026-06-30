@@ -30,6 +30,17 @@
 #include <cstdint>
 #include <vector>
 
+// Vertex-bytes ceiling for one streaming chunk. The greedy packer starts a new
+// chunk before a mesh would push the running vertex bytes over this. Lives here
+// (pure, no wgpu) so the bake-time layout pass and the GPU loader share one
+// value.
+//
+// 4 MB (down from 16 MB): with v14 each chunk is one contiguous range read, so
+// small chunks are cheap, and they paint progressively far sooner over a
+// network — first-paint payload ≈ metadata + (concurrency cap × this). In line
+// with what streaming viewers (Cesium 3D Tiles, xeokit, SVF2) use.
+static constexpr std::uint64_t WGPU_CHUNK_VERTEX_BYTES_LIMIT = 4ull * 1024 * 1024;
+
 namespace ChunkPlanner {
 
 // Interleave the low 21 bits of v with two zero bits between each,

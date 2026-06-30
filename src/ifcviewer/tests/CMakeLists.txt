@@ -66,6 +66,16 @@ add_ifcviewer_unit_test(test_chunk_planner
     SOURCES ${IFCVIEWER_SRC}/ChunkPlanner.cpp
 )
 
+# SidecarLayout: bake-time reorder of geometry into the loader's chunk order
+# for streaming locality. Needs ChunkPlanner (Morton sort) + SidecarCache
+# (SidecarData). Pure.
+add_ifcviewer_unit_test(test_sidecar_layout
+    SOURCES
+        ${IFCVIEWER_SRC}/SidecarLayout.cpp
+        ${IFCVIEWER_SRC}/ChunkPlanner.cpp
+        ${IFCVIEWER_SRC}/SidecarCache.cpp
+)
+
 # InstanceCompose: matrix composition + cross-model object_id lookup.
 # Pulls in wgpu_native for the WGPUBuffer typedef via ModelGpuData.h
 # (never touched at runtime). Eigen for Matrix4d.

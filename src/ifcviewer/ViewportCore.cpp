@@ -2349,8 +2349,21 @@ void ViewportCore::driveStreamingLoads() {
         // hold is_loading until then so it isn't re-issued every frame. The
         // embedded MEMFS sample falls through to the synchronous fopen path.
         if (cand.m->streaming_from_web) {
+            // Cap concurrent chunk downloads. The browser multiplexes every
+            // in-flight Range request over one HTTP/2 connection, so without a
+            // cap all visible chunks download at once, split the bandwidth N
+            // ways, and finish together — nothing paints until ~the whole model
+            // has arrived (measured: 9 in flight → first paint after 113 of
+            // 118 MB). A small cap lets the highest-priority chunks (candidates
+            // are priority-sorted) finish first and paint, then the next —
+            // progressive, no special first-chunk handling.
+            if (streaming_web_inflight_count_ >= kMaxWebInflightChunks) {
+                more_pending = true;
+                break;  // resume next frame as in-flight loads complete
+            }
             c.is_loading = true;
             c.last_visible_frame_idx = streaming_frame_idx_;
+            ++streaming_web_inflight_count_;
             beginWebChunkLoad(cand.mid, cand.ci);
             ++enqueued;
             continue;
@@ -2805,49 +2818,67 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     m.streaming_index_section_offset  = metadata.index_section_offset;
 
     // ---- Spatial chunk plan ----------------------------------------------
-    // Sort meshes by 3D Morton code over centroids, then greedy-pack into
-    // chunks <= WGPU_CHUNK_VERTEX_BYTES_LIMIT. Each chunk's AABB ends up
-    // tight rather than spanning the whole model, so the distance-based
-    // streaming evictor can meaningfully distinguish chunks.
+    // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
+    // run of meshes, laid out contiguously in the file (see SidecarLayout), so
+    // we build chunks straight from it — one contiguous byte range per chunk.
+    // The plan is NOT re-derived here because the float Morton quantisation
+    // isn't bit-identical across toolchains (x86 baker vs wasm loader), which
+    // would scatter the chunks. In-memory direct loads (finalizeModel) carry
+    // no TOC, so they fall back to deriving the same Morton + greedy plan.
     const std::size_t n_meshes = metadata.meta.meshes.size();
     m.mesh_chunk_idx.assign(n_meshes, 0);
     m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
     m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
     m.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
 
-    std::vector<float>    mesh_cx(n_meshes, 0.0f),
-                          mesh_cy(n_meshes, 0.0f),
-                          mesh_cz(n_meshes, 0.0f);
-    std::vector<std::uint32_t> mesh_inst_count(n_meshes, 0);
-    for (const auto& inst : metadata.meta.instances) {
-        if (inst.mesh_id >= n_meshes) continue;
-        mesh_cx[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
-        mesh_cy[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
-        mesh_cz[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
-        ++mesh_inst_count[inst.mesh_id];
-    }
-    for (std::size_t i = 0; i < n_meshes; ++i) {
-        if (mesh_inst_count[i] > 0) {
-            const float inv = 1.0f / float(mesh_inst_count[i]);
-            mesh_cx[i] *= inv; mesh_cy[i] *= inv; mesh_cz[i] *= inv;
-        }
-    }
-
     std::vector<std::vector<std::uint32_t>> chunk_mesh_ids;
     std::vector<std::uint32_t>              instance_to_chunk;
     instance_to_chunk.assign(metadata.meta.instances.size(), 0);
-    {
+
+    if (!metadata.meta.chunks.empty()) {
+        // Baked TOC: chunk ci is meshes [first_mesh, first_mesh + mesh_count).
+        chunk_mesh_ids.reserve(metadata.meta.chunks.size());
+        for (const auto& ch : metadata.meta.chunks) {
+            std::vector<std::uint32_t> ids;
+            ids.reserve(ch.mesh_count);
+            for (std::uint32_t k = 0; k < ch.mesh_count; ++k) {
+                const std::uint32_t mi = ch.first_mesh + k;
+                if (mi < n_meshes) ids.push_back(mi);
+            }
+            chunk_mesh_ids.push_back(std::move(ids));
+        }
+    } else {
+        // No TOC (direct load): derive the plan from mesh centroids.
+        std::vector<float>    mesh_cx(n_meshes, 0.0f),
+                              mesh_cy(n_meshes, 0.0f),
+                              mesh_cz(n_meshes, 0.0f);
+        std::vector<std::uint32_t> mesh_inst_count(n_meshes, 0);
+        for (const auto& inst : metadata.meta.instances) {
+            if (inst.mesh_id >= n_meshes) continue;
+            mesh_cx[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
+            mesh_cy[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
+            mesh_cz[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
+            ++mesh_inst_count[inst.mesh_id];
+        }
+        for (std::size_t i = 0; i < n_meshes; ++i) {
+            if (mesh_inst_count[i] > 0) {
+                const float inv = 1.0f / float(mesh_inst_count[i]);
+                mesh_cx[i] *= inv; mesh_cy[i] *= inv; mesh_cz[i] *= inv;
+            }
+        }
         std::vector<std::uint32_t> sorted_mesh_ids = ChunkPlanner::sortMeshIdsByMorton(
             n_meshes, mesh_cx, mesh_cy, mesh_cz, mesh_inst_count);
         std::vector<std::uint32_t> mesh_vertex_count;
         mesh_vertex_count.reserve(n_meshes);
-        for (std::size_t i = 0; i < n_meshes; ++i) {
+        for (std::size_t i = 0; i < n_meshes; ++i)
             mesh_vertex_count.push_back(metadata.meta.meshes[i].vertex_count);
-        }
         chunk_mesh_ids = ChunkPlanner::greedyPackChunks(
             sorted_mesh_ids, mesh_vertex_count,
             INSTANCED_VERTEX_STRIDE_BYTES,
             WGPU_CHUNK_VERTEX_BYTES_LIMIT);
+    }
+
+    {
         std::vector<std::uint32_t> mesh_to_chunk(n_meshes, 0);
         for (std::size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
             for (std::uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = std::uint32_t(ci);
@@ -3378,9 +3409,11 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
     std::function<void()> finish = [this, model_id, chunk_idx, need, join]() {
         if (!join->v_done || !join->i_done) return;  // wait for the other read
         // Release the in-flight reservation (clamped — a mid-flight resetScene
-        // could have zeroed it) regardless of what happens below.
+        // could have zeroed it) + the concurrency slot, regardless of outcome.
         streaming_web_inflight_bytes_ -=
             std::min(streaming_web_inflight_bytes_, need);
+        if (streaming_web_inflight_count_ > 0) --streaming_web_inflight_count_;
+        host_->requestFrame();  // a slot freed — let driveStreamingLoads issue more
 
         auto mit = models_gpu_.find(model_id);
         if (mit == models_gpu_.end()) return;

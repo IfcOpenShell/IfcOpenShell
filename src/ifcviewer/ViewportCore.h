@@ -907,6 +907,15 @@ private:
     // candidates that won't fit total_free - this.
     std::uint64_t streaming_web_inflight_bytes_ = 0;
 
+    // Web only: number of chunk loads in flight, and the cap. The browser
+    // multiplexes all in-flight Range requests over one HTTP/2 connection, so
+    // an unbounded count splits the bandwidth N ways and nothing finishes (so
+    // nothing paints) until ~the whole model has downloaded. A small cap lets
+    // the highest-priority chunks finish + paint first, then the next —
+    // progressive streaming. Tune for first-paint vs latency-hiding.
+    static constexpr int kMaxWebInflightChunks = 2;
+    int streaming_web_inflight_count_ = 0;
+
     // Settle burst: keep the render loop alive for a few frames after any
     // streaming activity so the cull→load→display latency (the draw + cull
     // precede driveStreamingLoads, so a freshly-resident chunk paints a frame

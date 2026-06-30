@@ -116,6 +116,9 @@ bool parseSidecarTail(const uint8_t* data, size_t n, SidecarData& out) {
     if (stbl_len > c.remaining)      return false;
     out.string_table.resize(stbl_len);
     if (stbl_len > 0 && !c.take(out.string_table.data(), stbl_len)) return false;
+
+    // v14 chunk TOC.
+    if (!c.takeVec(out.chunks)) return false;
     return true;
 }
 
