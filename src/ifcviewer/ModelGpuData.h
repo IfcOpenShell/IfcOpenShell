@@ -34,6 +34,7 @@
 #include "InstancedGeometry.h"
 #include "BufferPool.h"
 #include "ChunkPlanner.h"  // WGPU_CHUNK_VERTEX_BYTES_LIMIT (shared with bake)
+#include "SidecarCache.h"  // PackedElementInfo (deferred property metadata)
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
@@ -286,6 +287,18 @@ struct ModelGpuData {
     // so driveStreamingLoads routes this model through the async web path
     // instead of the MEMFS sync read.
     bool        streaming_from_web = false;
+
+    // v15 deferred property metadata (web, on-demand). The IFC element tree
+    // (elements + string_table — names/GUIDs/hierarchy, for UI/picking, never
+    // rendering) lives in a separate file block fetched only when a consumer
+    // asks, so first paint doesn't wait on it. Empty until
+    // loadDeferredMetadataWeb fetches [deferred_meta_offset, +bytes) and parses
+    // it; deferred_meta_loaded latches so it fetches at most once.
+    std::vector<PackedElementInfo> elements;
+    std::string                    string_table;
+    uint64_t    deferred_meta_offset = 0;
+    uint64_t    deferred_meta_bytes  = 0;
+    bool        deferred_meta_loaded = false;
 
     // For each mesh in meshes[], the chunk it lives in plus the chunk-local
     // offsets into that chunk's vertex_storage and index_buffer. Populated

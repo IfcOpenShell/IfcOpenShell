@@ -155,7 +155,7 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 TEST_CASE("MeshInfo and InstanceCpu have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
     REQUIRE(sizeof(InstanceGpu) == 80);
-    REQUIRE(SIDECAR_VERSION == 14);
+    REQUIRE(SIDECAR_VERSION == 15);
     REQUIRE(sizeof(SidecarChunk) == 8);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }

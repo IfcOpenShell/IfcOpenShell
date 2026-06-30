@@ -73,7 +73,15 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       Morton quantisation isn't bit-identical across toolchains (x86 baker vs
 //       wasm loader), so it must be baked in.  No back-compat: v13 sidecars are
 //       rejected (regenerate them).
-static constexpr uint32_t SIDECAR_VERSION = 14;
+// v15 = The post-index metadata is split into a render-CRITICAL block (meshes,
+//       instances, georef, chunk TOC) followed by a DEFERRED block (elements +
+//       string_table — the IFC element tree, used for UI/picking, never for
+//       rendering), with the critical block's byte length written just after
+//       the index section.  The web loader reads only the critical block before
+//       painting, so first geometry no longer waits on the property data; the
+//       deferred block is fetched lazily (or skipped where unused).  Desktop
+//       reads both.  No back-compat: regenerate sidecars.
+static constexpr uint32_t SIDECAR_VERSION = 15;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Chunk table-of-contents entry (v14+).  A chunk is a CONTIGUOUS range of

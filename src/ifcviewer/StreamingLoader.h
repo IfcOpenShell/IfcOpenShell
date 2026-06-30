@@ -58,6 +58,14 @@ struct StreamingSidecar {
     uint64_t index_section_offset  = 0;
     uint64_t index_total_count     = 0;  // u32 indices, NOT bytes
 
+    // v15 deferred-metadata locator. The render-critical metadata block starts
+    // at critical_meta_offset and is critical_meta_bytes long; the deferred
+    // block (elements + string_table) runs from there to EOF. The web loader
+    // reads only the critical block before painting and fetches the deferred
+    // block on demand from [critical_meta_offset + critical_meta_bytes, EOF).
+    uint64_t critical_meta_offset  = 0;
+    uint64_t critical_meta_bytes   = 0;
+
     // Resolved on-disk path so subsequent chunk reads can re-open / seek.
     std::string file_path;
 };
@@ -87,12 +95,18 @@ inline constexpr std::size_t SIDECAR_HEAD_BYTES = 16;
 bool parseSidecarHead(const std::uint8_t* data, std::size_t n,
                       std::uint32_t& out_num_vertex_bytes);
 
-// Parse the metadata tail (everything after the index section): mesh dict,
-// instance dict, georef block, element table, string table. `data` points at
-// the first tail byte; `n` is the tail length (read to EOF). Returns false on
-// any bounds overrun (truncated buffer), leaving out_meta partially filled.
-bool parseSidecarTail(const std::uint8_t* data, std::size_t n,
-                      SidecarData& out_meta);
+// Parse the v15 render-CRITICAL metadata block (mesh dict, instance dict,
+// georef, chunk TOC) — everything needed to set up + draw the scene. `data`
+// points at the first critical byte; `n` is critical_meta_bytes. Returns false
+// on any bounds overrun, leaving out_meta partially filled.
+bool parseSidecarCritical(const std::uint8_t* data, std::size_t n,
+                          SidecarData& out_meta);
+
+// Parse the v15 DEFERRED metadata block (element table + string table — the
+// IFC property tree, used for UI/picking, never for rendering). Fetched on
+// demand. `data` points at the first deferred byte; `n` is its length.
+bool parseSidecarDeferred(const std::uint8_t* data, std::size_t n,
+                          SidecarData& out_meta);
 
 // A coalesced read plan: a single contiguous source read whose bytes are
 // scattered into the destination at the recorded offsets. Merging adjacent

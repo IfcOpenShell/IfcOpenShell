@@ -3491,43 +3491,66 @@ void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
                     }
                     std::uint32_t num_indices = 0;
                     std::memcpy(&num_indices, cnt.data(), 4);
-                    const std::uint64_t isec     = idx_count_off + 4;
-                    const std::uint64_t tail_off = isec + std::uint64_t(num_indices) * 4u;
-                    if (double(tail_off) > fsize) {
-                        Log::warn() << "loadSidecarMetadataWeb: tail offset past EOF";
+                    const std::uint64_t isec          = idx_count_off + 4;
+                    const std::uint64_t crit_size_off = isec + std::uint64_t(num_indices) * 4u;
+                    if (double(crit_size_off + 8) > fsize) {
+                        Log::warn() << "loadSidecarMetadataWeb: critical size past EOF";
                         return;
                     }
-                    const std::uint64_t tail_len = std::uint64_t(fsize) - tail_off;
-
-                    webReadRangesAsync(0, {{tail_off, tail_len}},
-                        [this, vsec, nvb, isec, num_indices, source_label]
-                        (bool ok3, std::vector<std::uint8_t>&& tail) {
-                            if (!ok3) {
-                                Log::warn() << "loadSidecarMetadataWeb: tail read failed";
+                    // v15: read the 8-byte critical-block length, then the
+                    // render-critical metadata only. The deferred block
+                    // (elements/strings) is fetched on demand later — first
+                    // paint no longer waits on the property tree.
+                    webReadRangesAsync(0, {{crit_size_off, 8}},
+                        [this, vsec, nvb, isec, num_indices, source_label, crit_size_off, fsize]
+                        (bool okc, std::vector<std::uint8_t>&& cb) {
+                            if (!okc || cb.size() < 8) {
+                                Log::warn() << "loadSidecarMetadataWeb: short critical size";
                                 return;
                             }
-                            StreamingSidecar sc;
-                            sc.file_path             = source_label;
-                            sc.vertex_section_offset = vsec;
-                            sc.vertex_total_bytes    = nvb;
-                            sc.index_section_offset  = isec;
-                            sc.index_total_count     = num_indices;
-                            if (!parseSidecarTail(tail.data(), tail.size(), sc.meta)) {
-                                Log::warn() << "loadSidecarMetadataWeb: bad metadata tail";
+                            std::uint64_t crit_bytes = 0;
+                            std::memcpy(&crit_bytes, cb.data(), 8);
+                            const std::uint64_t crit_off = crit_size_off + 8;
+                            if (double(crit_off + crit_bytes) > fsize) {
+                                Log::warn() << "loadSidecarMetadataWeb: critical block past EOF";
                                 return;
                             }
-                            const std::size_t n_meshes    = sc.meta.meshes.size();
-                            const std::size_t n_instances = sc.meta.instances.size();
-                            const std::uint32_t mid = next_model_id_++;
-                            applyCachedModel(mid, std::move(sc));
-                            auto mit = models_gpu_.find(mid);
-                            if (mit != models_gpu_.end())
-                                mit->second.streaming_from_web = true;
-                            viewAll();
-                            host_->requestFrame();
-                            Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
-                                        << ", id " << mid << ", " << n_meshes << " meshes, "
-                                        << n_instances << " instances)";
+                            webReadRangesAsync(0, {{crit_off, crit_bytes}},
+                                [this, vsec, nvb, isec, num_indices, source_label,
+                                 crit_off, crit_bytes, fsize]
+                                (bool ok3, std::vector<std::uint8_t>&& crit) {
+                                    if (!ok3) {
+                                        Log::warn() << "loadSidecarMetadataWeb: critical read failed";
+                                        return;
+                                    }
+                                    StreamingSidecar sc;
+                                    sc.file_path             = source_label;
+                                    sc.vertex_section_offset = vsec;
+                                    sc.vertex_total_bytes    = nvb;
+                                    sc.index_section_offset  = isec;
+                                    sc.index_total_count     = num_indices;
+                                    if (!parseSidecarCritical(crit.data(), crit.size(), sc.meta)) {
+                                        Log::warn() << "loadSidecarMetadataWeb: bad critical metadata";
+                                        return;
+                                    }
+                                    const std::size_t n_meshes    = sc.meta.meshes.size();
+                                    const std::size_t n_instances = sc.meta.instances.size();
+                                    const std::uint32_t mid = next_model_id_++;
+                                    applyCachedModel(mid, std::move(sc));
+                                    auto mit = models_gpu_.find(mid);
+                                    if (mit != models_gpu_.end()) {
+                                        mit->second.streaming_from_web    = true;
+                                        // Deferred block: [end of critical, EOF).
+                                        mit->second.deferred_meta_offset  = crit_off + crit_bytes;
+                                        mit->second.deferred_meta_bytes   =
+                                            std::uint64_t(fsize) - (crit_off + crit_bytes);
+                                    }
+                                    viewAll();
+                                    host_->requestFrame();
+                                    Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
+                                                << ", id " << mid << ", " << n_meshes << " meshes, "
+                                                << n_instances << " instances)";
+                                });
                         });
                 });
         });
@@ -3548,6 +3571,40 @@ void ViewportCore::loadSidecarFromUrlWeb(std::string url) {
     // the shared bootstrap once Module.__ifcvUrl/__ifcvUrlSize are populated.
     g_url_ready_core = this;
     ifcvBeginUrlSource(url.c_str());
+}
+
+void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
+                                           std::function<void(bool)> done) {
+    // On-demand fetch of the v15 deferred block (element tree + string table)
+    // for a web-streamed model — the property data a UI needs (tree, selected-
+    // object name, search) but rendering doesn't. Fetches at most once. Valid
+    // only for the currently-loaded model, since the JS byte-source
+    // (Module.__ifcvUrl/File) tracks the latest load.
+    auto it = models_gpu_.find(model_id);
+    if (it == models_gpu_.end()) { if (done) done(false); return; }
+    ModelGpuData& m = it->second;
+    if (m.deferred_meta_loaded || m.deferred_meta_bytes == 0) {
+        m.deferred_meta_loaded = true;
+        if (done) done(true);
+        return;
+    }
+    webReadRangesAsync(0, {{m.deferred_meta_offset, m.deferred_meta_bytes}},
+        [this, model_id, done](bool ok, std::vector<std::uint8_t>&& buf) {
+            auto mit = models_gpu_.find(model_id);
+            if (mit == models_gpu_.end()) { if (done) done(false); return; }
+            SidecarData tmp;
+            if (!ok || !parseSidecarDeferred(buf.data(), buf.size(), tmp)) {
+                Log::warn() << "loadDeferredMetadataWeb: read/parse failed";
+                if (done) done(false);
+                return;
+            }
+            mit->second.elements             = std::move(tmp.elements);
+            mit->second.string_table         = std::move(tmp.string_table);
+            mit->second.deferred_meta_loaded = true;
+            Log::info() << "ifcviewer-web: loaded deferred metadata ("
+                        << mit->second.elements.size() << " elements)";
+            if (done) done(true);
+        });
 }
 #endif  // __EMSCRIPTEN__
 

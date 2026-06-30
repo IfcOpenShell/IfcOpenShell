@@ -99,26 +99,28 @@ bool parseSidecarHead(const uint8_t* data, size_t n, uint32_t& out_num_vertex_by
     return true;
 }
 
-bool parseSidecarTail(const uint8_t* data, size_t n, SidecarData& out) {
+bool parseSidecarCritical(const uint8_t* data, size_t n, SidecarData& out) {
+    // v15 render-critical block: meshes, instances, georef, chunk TOC.
     BufCursor c{data, n};
     if (!c.takeVec(out.meshes))    return false;
     if (!c.takeVec(out.instances)) return false;
-
-    // v11 georef block (148 bytes total).
     if (!c.take(&out.has_coordinate_operation, 4))                  return false;
     if (!c.take(out.coordinate_operation_meters, sizeof(double) * 16)) return false;
     if (!c.take(&out.project_length_to_meters, sizeof(double)))     return false;
     if (!c.take(&out.map_unit_to_meters, sizeof(double)))          return false;
+    if (!c.takeVec(out.chunks)) return false;
+    return true;
+}
 
+bool parseSidecarDeferred(const uint8_t* data, size_t n, SidecarData& out) {
+    // v15 deferred block: element tree + string table (UI/picking, not rendered).
+    BufCursor c{data, n};
     if (!c.takeVec(out.elements)) return false;
     uint32_t stbl_len = 0;
     if (!c.take(&stbl_len, 4))       return false;
     if (stbl_len > c.remaining)      return false;
     out.string_table.resize(stbl_len);
     if (stbl_len > 0 && !c.take(out.string_table.data(), stbl_len)) return false;
-
-    // v14 chunk TOC.
-    if (!c.takeVec(out.chunks)) return false;
     return true;
 }
 
@@ -165,7 +167,22 @@ std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_p
         return fail();
     std::fclose(f);
 
-    if (!parseSidecarTail(tail.data(), tail.size(), out.meta)) return std::nullopt;
+    // Tail (v15) = [critical_meta_bytes (8)][critical block][deferred block].
+    // Desktop is local, so read both; the web path reads only the critical
+    // block before painting and the deferred block on demand.
+    if (tail.size() < sizeof(uint64_t)) return std::nullopt;
+    uint64_t crit_bytes = 0;
+    std::memcpy(&crit_bytes, tail.data(), sizeof(crit_bytes));
+    const size_t crit_off = sizeof(crit_bytes);
+    if (crit_off + crit_bytes > tail.size()) return std::nullopt;
+    out.critical_meta_offset = out.index_section_offset
+        + uint64_t(num_indices) * 4u + crit_off;
+    out.critical_meta_bytes  = crit_bytes;
+    if (!parseSidecarCritical(tail.data() + crit_off, size_t(crit_bytes), out.meta))
+        return std::nullopt;
+    if (!parseSidecarDeferred(tail.data() + crit_off + crit_bytes,
+                              tail.size() - crit_off - size_t(crit_bytes), out.meta))
+        return std::nullopt;
     return out;
 }
 

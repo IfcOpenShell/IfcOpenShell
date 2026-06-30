@@ -371,6 +371,14 @@ public:
     void loadSidecarFromUrlWeb(std::string url);
     void loadSidecarMetadataWeb(std::string source_label);
 
+    // On-demand fetch of the v15 deferred property block (element tree + string
+    // table) for a web-streamed model — what a UI (object tree / selected-name
+    // / search) needs, fetched only when asked so first paint never waits on
+    // it. Populates ModelGpuData.elements/string_table; fires done(ok). At most
+    // one fetch per model. Currently unwired (no consumer yet) but complete.
+    void loadDeferredMetadataWeb(std::uint32_t model_id,
+                                 std::function<void(bool)> done = {});
+
     // Kick off the async read of one chunk's vertex + index byte ranges (from
     // the active web source). applyStreamedChunk runs in the JS completion
     // callback; c.is_loading is held until then. No-op if the model/chunk

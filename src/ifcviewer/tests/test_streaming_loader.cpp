@@ -201,35 +201,39 @@ TEST_CASE("parseSidecarHead validates magic / version / length", "[streaming]") 
     REQUIRE_FALSE(parseSidecarHead(bad, sizeof(bad), got));
 }
 
-TEST_CASE("parseSidecarTail rejects a truncated tail", "[streaming]") {
-    // A valid full tail, then everything but its last byte must fail.
-    fs::path dir = makeScratchDir("tailtrunc");
+TEST_CASE("v15 critical/deferred metadata split round-trips + rejects truncation",
+          "[streaming]") {
+    fs::path dir = makeScratchDir("v15split");
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
+    sd.chunks = { {0, 1}, {1, 1} };  // a TOC, so the critical block carries chunks
     REQUIRE(writeSidecar(ifc.string(), sd));
+
+    // readSidecarMetadataOnly (desktop) reads BOTH blocks + records the locator.
     auto meta = readSidecarMetadataOnly(ifc.string());
     REQUIRE(meta.has_value());
+    REQUIRE(meta->meta.meshes.size()      == sd.meshes.size());   // critical
+    REQUIRE(meta->meta.chunks.size()      == sd.chunks.size());   // critical
+    REQUIRE(meta->meta.elements.size()    == sd.elements.size()); // deferred
+    REQUIRE(meta->meta.string_table       == sd.string_table);    // deferred
+    REQUIRE(meta->critical_meta_bytes > 0);
 
-    // Re-read the raw tail bytes from disk (offset = index section end).
-    const uint64_t tail_off =
-        meta->index_section_offset + meta->index_total_count * 4u;
+    // Pull the raw critical block via the recorded locator and parse it alone —
+    // exactly what the web loader does before painting.
     FILE* f = std::fopen((dir / "model.ifcview").string().c_str(), "rb");
     REQUIRE(f);
-    std::fseek(f, 0, SEEK_END);
-    const long end = std::ftell(f);
-    const size_t tail_len = size_t(end - long(tail_off));
-    std::vector<uint8_t> tail(tail_len);
-    std::fseek(f, long(tail_off), SEEK_SET);
-    REQUIRE(std::fread(tail.data(), 1, tail_len, f) == tail_len);
+    std::vector<uint8_t> crit(size_t(meta->critical_meta_bytes));
+    std::fseek(f, long(meta->critical_meta_offset), SEEK_SET);
+    REQUIRE(std::fread(crit.data(), 1, crit.size(), f) == crit.size());
     std::fclose(f);
 
-    SidecarData full;
-    REQUIRE(parseSidecarTail(tail.data(), tail.size(), full));
-    REQUIRE(full.meshes.size() == sd.meshes.size());
-    REQUIRE(full.string_table == sd.string_table);
-
+    SidecarData c;
+    REQUIRE(parseSidecarCritical(crit.data(), crit.size(), c));
+    REQUIRE(c.meshes.size()    == sd.meshes.size());
+    REQUIRE(c.chunks.size()    == sd.chunks.size());
+    REQUIRE(c.elements.empty());  // the critical block has no property data
     SidecarData chopped;
-    REQUIRE_FALSE(parseSidecarTail(tail.data(), tail.size() - 1, chopped));
+    REQUIRE_FALSE(parseSidecarCritical(crit.data(), crit.size() - 1, chopped));
 }
 
 TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split",
