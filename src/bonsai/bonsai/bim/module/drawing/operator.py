@@ -2319,7 +2319,8 @@ class ActivateDrawingBase(tool.Ifc.Operator):
     bl_description = (
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK to load a quick preview of the drawing view"
+        + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
     )
 
     drawing: bpy.props.IntProperty()
@@ -2335,13 +2336,23 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         default=False,
         options={"SKIP_SAVE"},
     )
+    load_selected_annotations: bpy.props.BoolProperty(
+        name="Load Selected Annotations",
+        description="Load the annotations of all selected drawings without switching the active view.",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     if TYPE_CHECKING:
         drawing: int
         should_view_from_camera: bool
         use_quick_preview: bool
+        load_selected_annotations: bool
 
     def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
+        if event.type == "LEFTMOUSE" and event.shift and event.ctrl:
+            self.load_selected_annotations = True
+            return self.execute(context)
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
         if event.type == "LEFTMOUSE" and event.shift:
@@ -2353,6 +2364,18 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         if props.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()
+
+        if self.load_selected_annotations:
+            for d in props.drawings:
+                if not (d.is_drawing and d.is_selected):
+                    continue
+                selected_drawing = tool.Ifc.get().by_id(d.ifc_definition_id)
+                # Importing the camera (if missing) ensures the drawing's
+                # collection exists so the annotations get collected into it.
+                if not tool.Ifc.get_object(selected_drawing):
+                    tool.Drawing.import_drawing(selected_drawing)
+                tool.Drawing.import_annotations_in_group(tool.Drawing.get_drawing_group(selected_drawing))
+            return {"FINISHED"}
 
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = tool.Drawing.get_document_props()
@@ -2439,7 +2462,8 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
     bl_description = (
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK to load a quick preview of the drawing view"
+        + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
     )
 
 
