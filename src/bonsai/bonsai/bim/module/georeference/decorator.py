@@ -180,6 +180,10 @@ class GeoreferenceDecorator(tool.Blender.ViewportDecorator):
         decorator_color_error = self.addon_prefs.decorator_color_error
 
         gpu.state.blend_set("ALPHA")
+        # The georef gizmo is a coordinate-system overlay: it must communicate
+        # orientation regardless of model contents, so depth testing is bypassed.
+        original_depth_test = gpu.state.depth_test_get()
+        gpu.state.depth_test_set("ALWAYS")
 
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -317,6 +321,8 @@ class GeoreferenceDecorator(tool.Blender.ViewportDecorator):
                 verts = [Vector((0, 0, 0)), location * 3]
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
                 self.draw_dashed_line(location * 3, location * 6, decorator_color_error)
+
+        gpu.state.depth_test_set(original_depth_test)
 
     def draw_dashed_line(self, start, end, colour, should_scale=True):
         direction = (end - start).normalized()
