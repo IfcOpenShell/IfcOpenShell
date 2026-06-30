@@ -76,7 +76,7 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_container(assembly).GlobalId == container.GlobalId
 
     def test_getting_the_psets_of_a_product_as_a_dictionary(self):
-        ifc = ifcopenshell.open(os.path.join(os.getcwd(), "test", "files", "basic.ifc"))
+        ifc = ifcopenshell.open(os.path.join(os.path.dirname(__file__), "files", "basic.ifc"))
         output = ifcpatch.execute({"file": ifc, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
         assert output.by_type("IfcWall")
         assert not output.by_type("IfcSlab")
