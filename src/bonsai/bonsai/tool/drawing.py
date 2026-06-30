@@ -2267,14 +2267,19 @@ class Drawing(bonsai.core.tool.Drawing):
         cls, drawing: ifcopenshell.entity_instance, ifc_file: Optional[ifcopenshell.file] = None
     ) -> set[ifcopenshell.entity_instance]:
         """returns a set of elements that are included in the drawing"""
-        if ifc_file is None:
+        param_was_none = ifc_file is None
+        if param_was_none:
             ifc_file = tool.Ifc.get()
-            elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
-        else:
-            # This can probably be smarter
-            elements = set(ifc_file.by_type("IfcElement"))
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
         include = pset.get("Include", None)
+
+        # Only the active IFC file has Blender objects we can test against the
+        # camera's view frustum, which lets us drop elements - including those
+        # picked by an Include filter - that fall outside the drawing boundary.
+        camera_view_elements = None
+        if (param_was_none or include) and ifc_file is tool.Ifc.get():
+            camera_view_elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
+
         if include:
             try:
                 data = json.loads(include)
@@ -2286,7 +2291,16 @@ class Drawing(bonsai.core.tool.Drawing):
                     elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
             except (json.JSONDecodeError, ValueError):
                 elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
+            # The Include filter chooses which elements may appear, but they must
+            # still fall within the drawing's camera boundary.
+            if camera_view_elements is not None:
+                elements &= camera_view_elements
         else:
+            if param_was_none:
+                elements = camera_view_elements
+            else:
+                # This can probably be smarter
+                elements = set(ifc_file.by_type("IfcElement"))
             if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
