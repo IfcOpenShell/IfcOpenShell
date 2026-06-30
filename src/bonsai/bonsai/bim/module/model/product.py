@@ -837,6 +837,7 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
+        print(f"[mirror_obj] element={element.GlobalId} ({element.is_a()}, Name={element.Name!r})")
         type_element = ifcopenshell.util.element.get_type(element)
 
         active_context = tool.Geometry.get_active_representation_context(obj)
@@ -870,11 +871,13 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         usage_type = tool.Model.get_usage_type(element)
         type_has_reps = bool(type_element and (type_element.RepresentationMaps or []))
+        print(f"[mirror_obj]   mirror_axes={mirror_axes}  usage_type={usage_type!r}  type_element={getattr(type_element,'GlobalId',None)}  type_has_reps={type_has_reps}")
         # LAYER2 (walls) and LAYER3 (slabs) generate instance-specific bodies via DumbWallGenerator /
         # DumbSlabGenerator rather than mapping the type's RepresentationMaps.  assign_inverted_type
         # only flips the *type* geometry and would leave the instance body unchanged, so both layer
         # usage types must go through invert_representation instead.
         is_assign_type_path = bool(type_element and element.id() != type_element.id() and usage_type not in ("LAYER2", "LAYER3") and type_has_reps)
+        print(f"[mirror_obj]   is_assign_type_path={is_assign_type_path}")
         if is_assign_type_path:
             self.assign_inverted_type(element, mirror_axes)
         else:
@@ -897,12 +900,48 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
 
         context.view_layer.update()
 
+        print(f"[mirror_obj]   obj.location BEFORE origin move={tuple(round(v,4) for v in obj.location)}")
+        print(f"[mirror_obj]   obj.matrix_world.translation BEFORE={tuple(round(v,4) for v in obj.matrix_world.translation)}")
+        print(f"[mirror_obj]   obj.matrix_world.to_euler()={tuple(round(v,4) for v in obj.matrix_world.to_euler())}")
         if mirror_ref:
-            # Reflect object origin about the mirror reference's YZ plane
-            origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
-            origin_in_mirror.x *= -1
-            obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
+            print(f"[mirror_obj]   mirror_ref={mirror_ref.name}  mirror_ref.matrix_world.translation={tuple(round(v,4) for v in mirror_ref.matrix_world.translation)}")
+            if is_assign_type_path:
+                # assign_inverted_type already applied any needed rotation change; only reflect translation.
+                origin_in_mirror = mirror_ref.matrix_world.inverted() @ obj.matrix_world.translation
+                print(f"[mirror_obj]   (assign_type) origin_in_mirror BEFORE x-flip={tuple(round(v,4) for v in origin_in_mirror)}")
+                origin_in_mirror.x *= -1
+                print(f"[mirror_obj]   (assign_type) origin_in_mirror AFTER  x-flip={tuple(round(v,4) for v in origin_in_mirror)}")
+                obj.matrix_world.translation = mirror_ref.matrix_world @ origin_in_mirror
+                print(f"[mirror_obj]   (assign_type) obj.matrix_world.translation AFTER={tuple(round(v,4) for v in obj.matrix_world.translation)}")
+            else:
+                # invert_representation path: reflect translation AND rotation.
+                # P_world = Householder from mirror plane normal = mirror_ref's local X.
+                # P_local = diagonal from the geometry flip applied by invert_representation.
+                #   For IfcExtrudedAreaSolid the 2D profile is flipped along mirror_axes[:2]:
+                #   P_local = diag(1-2*mx, 1-2*my, 1).
+                # Correct formula: new_R = P_world @ R_obj @ P_local
+                #   det(P_world)*det(P_local) = (-1)*(-1) = +1 so new_R is a valid rotation.
+                #   Flat walls (P_local≠P_world) stay at the same orientation; inclined
+                #   roofs (P_local==P_world) flip correctly to ±45° as required.
+                n_world = mirror_ref.matrix_world.to_3x3().col[0].normalized()
+                print(f"[mirror_obj]   (invert_rep) n_world={tuple(round(v,4) for v in n_world)}")
+                print(f"[mirror_obj]   (invert_rep) obj.matrix_world euler BEFORE={tuple(round(v,4) for v in obj.matrix_world.to_euler())}")
+                P_world = Matrix.Scale(-1, 4, n_world).to_3x3()
+                sx = -1.0 if mirror_axes[0] > 0.5 else 1.0
+                sy = -1.0 if mirror_axes[1] > 0.5 else 1.0
+                P_local = Matrix([[sx, 0, 0], [0, sy, 0], [0, 0, 1]])
+                R_obj = obj.matrix_world.to_3x3()
+                new_R = P_world @ R_obj @ P_local
+                t_mr = mirror_ref.matrix_world.translation
+                t_obj = obj.matrix_world.translation.copy()
+                new_t = t_mr + P_world @ (t_obj - t_mr)
+                new_mat = new_R.to_4x4()
+                new_mat.translation = new_t
+                obj.matrix_world = new_mat
+                print(f"[mirror_obj]   (invert_rep) obj.matrix_world.translation AFTER={tuple(round(v,4) for v in obj.matrix_world.translation)}")
+                print(f"[mirror_obj]   (invert_rep) obj.matrix_world euler AFTER={tuple(round(v,4) for v in obj.matrix_world.to_euler())}")
         else:
+            print(f"[mirror_obj]   no mirror_ref — x-only bounding-box correction")
             # Fall back: nudge in place to compensate for bounding box shift after inversion
             mirrored_bb_data = tool.Blender.get_object_bounding_box(obj)
             x_correction_factor = mirrored_bb_data["min_x"] - bb_data["min_x"]
@@ -1038,17 +1077,19 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                         builder.mirror(item, mirror_axes_2d, create_copy=False)
 
     def invert_general_object(self, element, mirror_axes=(1, 0, 0)):
+        print(f"[invert_general_object] element={element.GlobalId} mirror_axes={mirror_axes}")
         # ShapeBuilder.mirror works in 2D; use only the XY components
         mirror_axes_2d = mirror_axes[:2]
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
         def mirror_item(item):
+            print(f"[mirror_item]   item={item.is_a()} id={item.id()}")
             if item.is_a("IfcBooleanResult"):
                 mirror_item(item.FirstOperand)
                 try:
                     mirror_item(item.SecondOperand)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"[mirror_item]     SecondOperand failed: {e}")
             elif item.is_a("IfcFacetedBrep") or item.is_a("IfcFacetedBrepWithVoids"):
                 shells = [item.Outer]
                 if item.is_a("IfcFacetedBrepWithVoids"):
@@ -1079,19 +1120,40 @@ class TrueMirrorElements(bpy.types.Operator, tool.Ifc.Operator):
                             for bound in face.Bounds:
                                 if bound.Bound.is_a("IfcPolyLoop"):
                                     bound.Bound.Polygon = list(reversed(bound.Bound.Polygon))
+                print(f"[mirror_item]     IfcFacetedBrep: {len(points_done)} pts mirrored, num_flipped={num_flipped}")
             elif item.is_a("IfcMappedItem"):
+                print(f"[mirror_item]     IfcMappedItem — recursing into MappedRepresentation")
                 for sub in item.MappingSource.MappedRepresentation.Items:
                     mirror_item(sub)
             else:
+                print(f"[mirror_item]     fallback → builder.mirror axes_2d={mirror_axes_2d}  full_3d={mirror_axes}")
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    sw = item.SweptArea
+                    print(f"[mirror_item]     SweptArea={sw.is_a() if sw else None}  OuterCurve={getattr(sw, 'OuterCurve', 'N/A') if sw else None}")
+                    print(f"[mirror_item]     ExtrudedDirection BEFORE={item.ExtrudedDirection.DirectionRatios}  Position={item.Position}")
+                    oc = getattr(sw, "OuterCurve", None) if sw else None
+                    if oc and oc.is_a("IfcIndexedPolyCurve"):
+                        pts = oc.Points
+                        coords = list(pts.CoordList) if pts else []
+                        print(f"[mirror_item]     ProfilePoints BEFORE (first3)={coords[:3]}")
                 try:
                     builder.mirror(item, mirror_axes_2d, create_copy=False)
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"[mirror_item]     builder.mirror FAILED: {e}")
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    print(f"[mirror_item]     ExtrudedDirection AFTER ={item.ExtrudedDirection.DirectionRatios}")
+                    oc = getattr(item.SweptArea, "OuterCurve", None) if item.SweptArea else None
+                    if oc and oc.is_a("IfcIndexedPolyCurve"):
+                        pts = oc.Points
+                        coords = list(pts.CoordList) if pts else []
+                        print(f"[mirror_item]     ProfilePoints AFTER  (first3)={coords[:3]}")
 
         if element.is_a("IfcProduct"):
             if not element.Representation:
+                print(f"[invert_general_object]   no Representation, skipping")
                 return
             for representation in element.Representation.Representations:
+                print(f"[invert_general_object]   rep={representation.RepresentationIdentifier!r}/{representation.RepresentationType!r} items={len(representation.Items)}")
                 for item in representation.Items:
                     mirror_item(item)
         elif element.is_a("IfcTypeProduct"):

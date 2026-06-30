@@ -919,7 +919,10 @@ class ShapeBuilder:
         np_XY = slice(2)
         np_X, np_Y, np_Z = 0, 1, 2
 
-        multiple_objects = isinstance(curve_or_item, collections.abc.Iterable)
+        # Use list/tuple check rather than Iterable — entity_instance objects are iterable
+        # over their IFC attributes, so isinstance(entity, Iterable) is always True and
+        # would wrongly treat a single entity as a sequence of attribute values.
+        multiple_objects = isinstance(curve_or_item, (list, tuple))
         curve_or_item = [curve_or_item] if not multiple_objects else curve_or_item
         multiple_transformations = not isinstance(mirror_axes[0], (float, int))
         mirror_axes_data = [mirror_axes] if not multiple_transformations else mirror_axes
@@ -962,12 +965,19 @@ class ShapeBuilder:
                     c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
 
                 elif c.is_a("IfcExtrudedAreaSolid"):
-                    placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
-                    base_position = c.Position.Location.Coordinates
-                    # TODO: add support for Z-axis too
-                    new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
-                    new_position = np_to_3d(new_position, base_position[np_Z])
-                    c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    if c.Position is not None:
+                        placement_matrix_ = ifcopenshell.util.placement.get_axis2placement(c.Position)[:3, :3]
+                        base_position = c.Position.Location.Coordinates
+                        # TODO: add support for Z-axis too
+                        new_position = self.mirror_2d_point(base_position[np_XY], mirror_axes, mirror_point)
+                        new_position = np_to_3d(new_position, base_position[np_Z])
+                        c.Position.Location.Coordinates = ifc_safe_vector_type(new_position)
+                    else:
+                        # Position is optional; None means identity (origin, no rotation).
+                        # Profile coords are already in the parent frame — just mirror them.
+                        placement_matrix_ = np.eye(3)
+                        base_position = np.zeros(3)
+                        new_position = np.zeros(3)
 
                     # TODO: add support for Z-axis too
                     self.translate(c.SweptArea.OuterCurve, base_position[np_XY])
