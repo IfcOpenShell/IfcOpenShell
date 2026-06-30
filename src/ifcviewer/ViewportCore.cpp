@@ -2305,7 +2305,35 @@ void ViewportCore::driveStreamingLoads() {
         }
     }
     loads += enqueued;
-    if (loads > 0 || streaming_thread_.inFlightApprox() > 0) host_->requestFrame();
+
+    // Keep the render loop alive while streaming settles. The main draw + cull
+    // run *before* this point in render(), so a chunk that becomes resident
+    // here is only drawn on a later frame — and on web a sync load finishes
+    // instantly (inFlightApprox stays 0), so a single requestFrame after a
+    // load isn't enough to flush that cull→display latency. Arm a short settle
+    // burst whenever there's streaming activity (a load this frame, work still
+    // queued, or a visible chunk not yet resident) and bleed it down over the
+    // next few frames so an on-demand render loop doesn't stall before the
+    // geometry actually appears. Bounded, so the loop still quiesces at idle.
+    bool visible_pending = false;
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.streaming_file_path.empty() || m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            if (!c.is_resident && (c.frustum_visible_count > 0 || c.is_loading)) {
+                visible_pending = true;
+                break;
+            }
+        }
+        if (visible_pending) break;
+    }
+    if (loads > 0 || more_pending || visible_pending
+        || streaming_thread_.inFlightApprox() > 0) {
+        streaming_settle_frames_ = kStreamingSettleFrames;
+    }
+    if (streaming_settle_frames_ > 0) {
+        --streaming_settle_frames_;
+        host_->requestFrame();
+    }
 
     streaming_loads_this_frame_ = loads;
     streaming_more_pending_     = more_pending;

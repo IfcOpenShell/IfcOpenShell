@@ -65,6 +65,39 @@ test('renders the sample and orbits without WebGPU errors', async ({ page }) => 
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
 
+test('sample renders without any interaction (streaming settle loop)', async ({ page }) => {
+  // Regression for the blank-until-click stall: the main draw + cull precede
+  // driveStreamingLoads, so a freshly-resident chunk paints a frame later. On
+  // web's on-demand loop a single post-load requestFrame wasn't enough, so the
+  // sample stayed blank until some input re-armed the loop. The settle burst
+  // keeps frames coming until streaming converges. Here: NO mouse input at all
+  // — a centred patch (the framed cube) must differ from a corner patch
+  // (background). If the loop stalls blank, both patches are background.
+  const gpuErrors = [];
+  page.on('console', (msg) => {
+    if (/Uncaptured WebGPU error|is invalid|Not enough memory left/i.test(msg.text()))
+      gpuErrors.push(msg.text());
+  });
+  await page.goto('/IfcViewerWeb.html');
+  await page.waitForFunction(
+    () => !!(window.Module && window.Module._app_ptr), null, { timeout: 30_000 });
+
+  // Settle window — strictly no pointer events.
+  await page.waitForTimeout(1500);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const patch = (cx, cy) => page.screenshot({
+    clip: { x: Math.round(cx - 12), y: Math.round(cy - 12), width: 24, height: 24 },
+  });
+  const center = await patch(box.x + box.width / 2, box.y + box.height / 2);
+  const corner = await patch(box.x + 16, box.y + 16);
+  expect(
+    Buffer.compare(center, corner),
+    'centre patch matches corner — sample never rendered without interaction',
+  ).not.toBe(0);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
 test('loads a user-picked sidecar through the Blob.slice byte-range path', async ({ page }) => {
   // Exercises #88: the picked File is read via Blob.slice (metadata head/tail
   // + per-chunk byte ranges) WITHOUT copying the whole file into the wasm

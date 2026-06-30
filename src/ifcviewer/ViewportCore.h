@@ -873,6 +873,14 @@ private:
     int  streaming_loads_this_frame_ = 0;
     bool streaming_more_pending_     = false;
 
+    // Settle burst: keep the render loop alive for a few frames after any
+    // streaming activity so the cull→load→display latency (the draw + cull
+    // precede driveStreamingLoads, so a freshly-resident chunk paints a frame
+    // later) flushes even under an on-demand render loop (web). Bounded, so
+    // the loop still quiesces when streaming is done. See driveStreamingLoads.
+    static constexpr int kStreamingSettleFrames = 4;
+    int streaming_settle_frames_ = 0;
+
     // Per-frame breakdown counters consumed by the WGPU_STREAM_DEBUG
     // log. All reset at the top of driveStreamingLoads.
     int  streaming_candidates_this_frame_      = 0;
