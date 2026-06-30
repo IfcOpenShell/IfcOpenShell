@@ -20,6 +20,8 @@ import os
 
 import ifcopenshell
 import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.georeference
 import ifcopenshell.api.root
 import ifcopenshell.api.spatial
 import ifcopenshell.util.element
@@ -78,6 +80,31 @@ class TestExtractElements(test.bootstrap.IFC4):
         output = ifcpatch.execute({"file": ifc, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
         assert output.by_type("IfcWall")
         assert not output.by_type("IfcSlab")
+
+    def test_preserving_georeferencing(self):
+        # Regression test for #8199: ExtractElements must carry IfcMapConversion
+        # and IfcProjectedCRS into the output. Without the fix these entities are
+        # silently dropped because they reference the IfcGeometricRepresentationContext
+        # via an inverse attribute and are therefore not reachable through the
+        # IfcProject forward-attribute walk used by self.new.add().
+        if self.file.schema == "IFC2X3":
+            pytest.skip("IfcMapConversion does not exist in IFC2X3")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            coordinate_operation={"Eastings": 100000.0, "Northings": 200000.0},
+        )
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+
+        assert len(output.by_type("IfcMapConversion")) == 1
+        assert len(output.by_type("IfcProjectedCRS")) == 1
+        conversion = output.by_type("IfcMapConversion")[0]
+        assert conversion.Eastings == 100000.0
+        assert conversion.Northings == 200000.0
 
     @pytest.mark.skipif(
         "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
