@@ -638,6 +638,55 @@ class FilledOpeningGenerator:
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         return any(not item.is_a("IfcExtrudedAreaSolid") for item in representation.Items)
 
+    def should_preserve_opening(self, opening: ifcopenshell.entity_instance) -> bool:
+        """Whether an opening's geometry is worth anchoring on the type as a template.
+
+        True for user-authored geometry (a tessellation, brep, etc.) or a *manually adjusted*
+        extrusion - one that no longer matches the default ``generate_opening_from_filling``
+        would produce for its filling. A plain generated extrusion is regenerable, so it
+        returns False and is left to regenerate.
+        """
+        if self.is_opening_representation_custom(opening):
+            return True
+        return self._is_adjusted_extrusion(opening)
+
+    def _is_adjusted_extrusion(self, opening: ifcopenshell.entity_instance) -> bool:
+        """Whether the opening's extrusion diverges from the default for its filling.
+
+        Generates the default transiently, compares the axis-aligned bounding boxes of the
+        two bodies (both in the opening's local frame), then removes the temporary default.
+        A conservative False is returned when the default cannot be computed.
+        """
+        filling = opening.HasFillings[0].RelatedBuildingElement if getattr(opening, "HasFillings", None) else None
+        filling_obj = tool.Ifc.get_object(filling) if filling else None
+        current = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
+        if not filling_obj or current is None:
+            return False
+        current = ifcopenshell.util.representation.resolve_representation(current)
+        default_representation = self.generate_opening_from_filling(filling, filling_obj)
+        try:
+            settings = ifcopenshell.geom.settings()
+            current_bbox = self._representation_bbox(settings, current)
+            default_bbox = self._representation_bbox(settings, default_representation)
+        finally:
+            ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=default_representation)
+        if current_bbox is None or default_bbox is None:
+            return False
+        (cur_min, cur_max), (def_min, def_max) = current_bbox, default_bbox
+        tolerance = 1e-3  # 1 mm; differing extents/position => manually adjusted
+        return bool(np.any(np.abs(cur_min - def_min) > tolerance) or np.any(np.abs(cur_max - def_max) > tolerance))
+
+    @staticmethod
+    def _representation_bbox(settings: Any, representation: ifcopenshell.entity_instance):
+        try:
+            geometry = ifcopenshell.geom.create_shape(settings, representation)
+        except Exception:
+            return None
+        verts = ifcopenshell.util.shape.get_vertices(geometry)
+        if len(verts) == 0:
+            return None
+        return verts.min(axis=0), verts.max(axis=0)
+
     def get_type_opening_representation(
         self, filling_type: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
@@ -788,7 +837,7 @@ class FilledOpeningGenerator:
             if not getattr(occurrence, "FillsVoids", None):
                 continue
             opening = occurrence.FillsVoids[0].RelatingOpeningElement
-            if not self.is_opening_representation_custom(opening):
+            if not self.should_preserve_opening(opening):
                 continue
             representation = ifcopenshell.util.representation.get_representation(
                 opening, "Model", "Body", "MODEL_VIEW"
