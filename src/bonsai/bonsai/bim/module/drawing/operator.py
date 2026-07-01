@@ -27,7 +27,6 @@ import time
 import traceback
 from math import radians
 from pathlib import Path
-from timeit import default_timer as timer
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -49,6 +48,7 @@ import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.util.element
+import ifcopenshell.util.profiler
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape_builder
@@ -85,21 +85,6 @@ if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import Link
 
 cwd = os.path.dirname(os.path.realpath(__file__))
-
-
-class profile:
-    """
-    A python context manager timing utility
-    """
-
-    def __init__(self, task):
-        self.task = task
-
-    def __enter__(self):
-        self.start = timer()
-
-    def __exit__(self, *args):
-        print(self.task, timer() - self.start)
 
 
 class LineworkContexts(NamedTuple):
@@ -354,8 +339,8 @@ class CreateDrawing(bpy.types.Operator):
             self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
             self.file = tool.Ifc.get()
 
-            with profile("Drawing generation process"):
-                with profile("Initialize drawing generation process"):
+            with ifcopenshell.util.profiler.Profiler("Drawing generation process"):
+                with ifcopenshell.util.profiler.Profiler("Initialize drawing generation process"):
                     self.cprops = tool.Drawing.get_camera_props(self.camera)
                     self.drawing = self.file.by_id(drawing_id)
                     self.drawing_name = self.drawing.Name
@@ -381,7 +366,7 @@ class CreateDrawing(bpy.types.Operator):
                 linework_svg = None
                 annotation_svg = None
 
-                with profile("Generate underlay"):
+                with ifcopenshell.util.profiler.Profiler("Generate underlay"):
                     if self.should_generate_underlay and ifcopenshell.util.element.get_pset(
                         self.drawing, "EPset_Drawing", "HasUnderlay"
                     ):
@@ -411,18 +396,18 @@ class CreateDrawing(bpy.types.Operator):
 
                         underlay_svg = self.generate_underlay(context)
 
-                with profile("Generate linework"):
+                with ifcopenshell.util.profiler.Profiler("Generate linework"):
                     if self.should_generate_linework and tool.Drawing.is_camera_orthographic():
                         if self.cprops.linework_mode == "OPENCASCADE":
                             linework_svg = self.generate_linework(context)
                         elif self.cprops.linework_mode == "FREESTYLE":
                             linework_svg = self.generate_freestyle_linework(context)
 
-                with profile("Generate annotation"):
+                with ifcopenshell.util.profiler.Profiler("Generate annotation"):
                     if self.should_generate_annotation and tool.Drawing.is_camera_orthographic():
                         annotation_svg = self.generate_annotation(context)
 
-                with profile("Combine SVG layers"):
+                with ifcopenshell.util.profiler.Profiler("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
             if self.open_viewer:
@@ -632,7 +617,7 @@ class CreateDrawing(bpy.types.Operator):
         drawing_elements = drawing_elements.copy()
         contexts_: list[list[int]] = getattr(contexts, context_type)
         for context in contexts_:
-            with profile(f"Processing {context_type} context"):
+            with ifcopenshell.util.profiler.Profiler(f"Processing {context_type} context"):
                 if not context or not drawing_elements:
                     continue
                 geom_settings = ifcopenshell.geom.settings()
@@ -923,7 +908,7 @@ class CreateDrawing(bpy.types.Operator):
 
         # in case of printing multiple drawings we need to sync just once
         if self.sync and self.drawing_index == 0:
-            with profile("sync"):
+            with ifcopenshell.util.profiler.Profiler("sync"):
                 # All very hackish whilst prototyping
                 exporter = bonsai.bim.export_ifc.IfcExporter(None)
                 exporter.file = tool.Ifc.get()
@@ -979,7 +964,7 @@ class CreateDrawing(bpy.types.Operator):
             self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view)
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
-                with profile("Camera element"):
+                with ifcopenshell.util.profiler.Profiler("Camera element"):
                     # The camera must always be included, regardless of any include/exclude filters.
                     geom_settings = ifcopenshell.geom.settings()
                     geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
@@ -987,7 +972,7 @@ class CreateDrawing(bpy.types.Operator):
                     for elem in it:
                         self.serialiser.write(elem)
 
-        with profile("Finalizing"):
+        with ifcopenshell.util.profiler.Profiler("Finalizing"):
             self.serialiser.finalize()
         results = self.svg_buffer.get_value()
 
