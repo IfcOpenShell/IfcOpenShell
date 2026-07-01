@@ -24,6 +24,7 @@ import os
 import shutil
 import subprocess
 import time
+import traceback
 from math import radians
 from pathlib import Path
 from timeit import default_timer as timer
@@ -261,11 +262,19 @@ class CreateDrawing(bpy.types.Operator):
         description="Could save some time if you're sure IFC and current Blender session are already in sync",
         default=True,
     )
+    # Stage toggles, mainly for bim.debug_active_drawing so it can reproduce a failure
+    # by running only the culprit stage instead of the full (slow) generation each time.
+    should_generate_underlay: bpy.props.BoolProperty(name="Generate Underlay", default=True, options={"SKIP_SAVE"})
+    should_generate_linework: bpy.props.BoolProperty(name="Generate Linework", default=True, options={"SKIP_SAVE"})
+    should_generate_annotation: bpy.props.BoolProperty(name="Generate Annotation", default=True, options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         print_all: bool
         open_viewer: bool
         sync: bool
+        should_generate_underlay: bool
+        should_generate_linework: bool
+        should_generate_annotation: bool
 
     drawing_name: str
     is_manifold_cache: dict[str, bool]
@@ -298,6 +307,23 @@ class CreateDrawing(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        try:
+            return self._execute(context)
+        except Exception:
+            # Print the full traceback so developers (and `bim.debug_active_drawing`,
+            # which bisects the drawing to find the offending element) still get it.
+            traceback.print_exc()
+            drawing_name = getattr(self, "drawing_name", None) or "?"
+            self.report(
+                {"ERROR"},
+                f"Failed to create drawing '{drawing_name}'. This is usually caused by a corrupt or "
+                "out-of-bounds element in the drawing (e.g. an annotation with a runaway coordinate). "
+                "Run Debug > 'Search Active Drawing For Failing Elements' (bpy.ops.bim.debug_active_drawing) "
+                "to locate the offending element.",
+            )
+            return {"CANCELLED"}
+
+    def _execute(self, context):
         self.props = tool.Drawing.get_document_props()
         assert context.scene and context.scene.camera
 
@@ -356,7 +382,9 @@ class CreateDrawing(bpy.types.Operator):
                 annotation_svg = None
 
                 with profile("Generate underlay"):
-                    if ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
+                    if self.should_generate_underlay and ifcopenshell.util.element.get_pset(
+                        self.drawing, "EPset_Drawing", "HasUnderlay"
+                    ):
                         drawing_style = self.cprops.get_active_drawing_style()
                         if not drawing_style:
                             self.report(
@@ -384,16 +412,14 @@ class CreateDrawing(bpy.types.Operator):
                         underlay_svg = self.generate_underlay(context)
 
                 with profile("Generate linework"):
-                    if tool.Drawing.is_camera_orthographic():
+                    if self.should_generate_linework and tool.Drawing.is_camera_orthographic():
                         if self.cprops.linework_mode == "OPENCASCADE":
                             linework_svg = self.generate_linework(context)
                         elif self.cprops.linework_mode == "FREESTYLE":
                             linework_svg = self.generate_freestyle_linework(context)
-                    elif self.cprops.linework_mode == "FREESTYLE":
-                        linework_svg = self.generate_freestyle_linework(context)
 
                 with profile("Generate annotation"):
-                    if tool.Drawing.is_camera_orthographic():
+                    if self.should_generate_annotation and tool.Drawing.is_camera_orthographic():
                         annotation_svg = self.generate_annotation(context)
 
                 with profile("Combine SVG layers"):

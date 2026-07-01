@@ -18,12 +18,14 @@
 
 import contextlib
 import io
+import itertools
 import logging
 import os
 import platform
 import random
 import subprocess
 import sys
+import threading
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -929,6 +931,49 @@ class PipInstall(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class _ConsoleSpinner:
+    """Animate a spinner on the real stdout while a blocking call runs on the main thread.
+
+    Writes to ``sys.__stdout__`` so it isn't swallowed by ``contextlib.redirect_stdout()``,
+    which the drawing search uses to silence ``create_drawing``'s own output. The animation
+    runs on a daemon thread that only touches stdout (never bpy data), so it's safe while a
+    synchronous ``bpy.ops`` call blocks the main thread.
+    """
+
+    def __init__(self, message: str = "Working"):
+        self.message = message
+        self._stop = threading.Event()
+        self._thread: Union[threading.Thread, None] = None
+        self._start_time = 0.0
+
+    def __enter__(self) -> "_ConsoleSpinner":
+        self._start_time = time.time()
+        if sys.__stdout__ is not None:
+            self._thread = threading.Thread(target=self._spin, daemon=True)
+            self._thread.start()
+        return self
+
+    def _spin(self) -> None:
+        out = sys.__stdout__
+        assert out is not None
+        for frame in itertools.cycle("|/-\\"):
+            if self._stop.wait(0.1):
+                break
+            elapsed = time.time() - self._start_time
+            out.write(f"\r  {frame} {self.message} ({elapsed:0.0f}s) ")
+            out.flush()
+
+    def __exit__(self, *args: object) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join()
+        out = sys.__stdout__
+        if out is not None:
+            # Clear the spinner line so it doesn't linger before the next print.
+            out.write("\r" + " " * (len(self.message) + 24) + "\r")
+            out.flush()
+
+
 class DebugActiveDrawing(bpy.types.Operator):
     bl_idname = "bim.debug_active_drawing"
     bl_label = "Search Active Drawing For Failing Elements"
@@ -967,7 +1012,8 @@ class DebugActiveDrawing(bpy.types.Operator):
 
         def elem_label(e: ifcopenshell.entity_instance) -> str:
             name = getattr(e, "Name", None) or "?"
-            return f"#{e.id()} {e.is_a()} '{name}'"
+            guid = getattr(e, "GlobalId", None) or "?"
+            return f"#{e.id()} {e.is_a()} '{name}' ({guid})"
 
         # run create drawing with sync for once
         # to make sure everything is actually in sync
@@ -985,6 +1031,33 @@ class DebugActiveDrawing(bpy.types.Operator):
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         failing_elements: list[ifcopenshell.entity_instance] = []
 
+        # Figure out which generation stage actually reproduces the failure so the
+        # bisection below can run ONLY that stage. The three stages (underlay, linework,
+        # annotation) produce independent SVGs, and re-running the expensive underlay/
+        # linework stages on every bisection step is what makes this operator slow --
+        # a single full create_drawing can take ~1 minute. Isolating the failing stage
+        # can cut each iteration (and thus the whole search) by more than half.
+        STAGES = ("underlay", "linework", "annotation")
+
+        def create_drawing_fails(**stage_toggles: bool) -> bool:
+            try:
+                with _ConsoleSpinner("Isolating failing stage"), contextlib.redirect_stdout(io.StringIO()):
+                    bpy.ops.bim.create_drawing(sync=False, **stage_toggles)
+                return False
+            except Exception:
+                return True
+
+        # Default: run everything (used if we can't isolate a single failing stage).
+        active_stages = {f"should_generate_{s}": True for s in STAGES}
+        for stage in ("annotation", "linework", "underlay"):
+            only_stage = {f"should_generate_{s}": (s == stage) for s in STAGES}
+            if create_drawing_fails(**only_stage):
+                active_stages = only_stage
+                print(f"{CYAN}Failure reproduces in the '{stage}' stage -- bisecting with only that stage.{END}")
+                break
+        else:
+            print(f"{CYAN}Could not isolate a single failing stage -- bisecting with all stages (slower).{END}")
+
         def drawing_fails_to_load(chunk_to_include: set[ifcopenshell.entity_instance]) -> bool:
             current_elements = all_elements - chunk_to_include
             excluded_guids = ", ".join([e.GlobalId for e in current_elements if hasattr(e, "GlobalId")])
@@ -993,8 +1066,10 @@ class DebugActiveDrawing(bpy.types.Operator):
             ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"Exclude": new_exclude})
 
             try:
-                with contextlib.redirect_stdout(io.StringIO()):
-                    bpy.ops.bim.create_drawing(sync=False)
+                with _ConsoleSpinner(f"Testing {len(chunk_to_include)} element(s)"), contextlib.redirect_stdout(
+                    io.StringIO()
+                ):
+                    bpy.ops.bim.create_drawing(sync=False, **active_stages)
                 failed = False
             except Exception:
                 failed = True
