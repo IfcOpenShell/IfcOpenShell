@@ -29,6 +29,14 @@
   #open-btn:hover { background: #3182ce; }
   #add-btn:hover  { background: #3b465c; }
   #file-input { display: none; }
+  /* Navigation toolbar (bottom-centre): buttons mirror the desktop hotkeys. */
+  #nav-toolbar { position: fixed; bottom: 10px; left: 50%;
+    transform: translateX(-50%); z-index: 10; display: flex; gap: 4px;
+    background: rgba(20,22,28,.82); padding: 5px 6px; border-radius: 6px; }
+  #nav-toolbar button { background: #2d3748; color: #c8ccd6; border: none;
+    padding: 5px 9px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  #nav-toolbar button:hover { background: #3b465c; }
+  #nav-toolbar .sep { width: 1px; background: #3b465c; margin: 2px 3px; }
   /* Streaming loading UI: a thin top progress strip (aggregate) + a centred
      panel with a per-model segmented bar. Shown only while models stream. */
   #progress { position: fixed; top: 0; left: 0; right: 0; height: 3px;
@@ -60,6 +68,18 @@
 <button id="add-btn" title="Add file(s) to the current scene (federation)">Add</button>
 <button id="open-btn">Open .ifcview…</button>
 <input id="file-input" type="file" accept=".ifcview" multiple>
+<div id="nav-toolbar">
+  <button data-act="fit"   title="Fit all (Home)">Fit</button>
+  <button data-act="focus" title="Zoom to selected (F)">Focus</button>
+  <button data-act="ortho" id="ortho-btn" title="Toggle orthographic / perspective (P)">Persp</button>
+  <span class="sep"></span>
+  <button data-view="0" title="Front (X)">Front</button>
+  <button data-view="1" title="Back (Shift+X)">Back</button>
+  <button data-view="2" title="Left (Shift+Y)">Left</button>
+  <button data-view="3" title="Right (Y)">Right</button>
+  <button data-view="4" title="Top (Z)">Top</button>
+  <button data-view="5" title="Bottom (Shift+Z)">Bottom</button>
+</div>
 <div id="status">Starting…</div>
 <script>
   // Emscripten Module hook: route stderr to the status overlay so any
@@ -272,6 +292,24 @@
       statusEl.classList.add('error');
     }
     fileInput.value = '';  // let the same file be re-picked
+  });
+
+  // Navigation toolbar → C camera calls (same core methods as the hotkeys).
+  function refreshOrthoLabel() {
+    var b = document.getElementById('ortho-btn');
+    if (b && Module._projection_is_ortho_c)
+      b.textContent = Module._projection_is_ortho_c() ? 'Ortho' : 'Persp';
+  }
+  document.querySelectorAll('#nav-toolbar button').forEach(function(b) {
+    b.addEventListener('click', function() {
+      if (!Module._view_all_c) return;         // viewer not ready yet
+      var act = b.getAttribute('data-act');
+      var view = b.getAttribute('data-view');
+      if (act === 'fit')        Module._view_all_c();
+      else if (act === 'focus') Module._frame_selection_c();
+      else if (act === 'ortho') { Module._toggle_projection_c(); refreshOrthoLabel(); }
+      else if (view !== null)   Module._standard_view_c(parseInt(view, 10));
+    });
   });
 </script>
 <!-- IfcViewerWeb.js is emitted alongside this shell by the emcc build;

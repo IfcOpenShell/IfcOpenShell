@@ -1519,31 +1519,10 @@ bool ViewportWindow::computeObjectAabb(uint32_t id,
 
 void ViewportWindow::focusOnSelectedObject() {
     if (fps_mode_) return;
-    if (selection_.count() == 0) {
-        Log::info() << "[wgpu] focus: no object selected";
-        return;
+    // Shared math lives in ViewportCore::frameSelection (also the web path).
+    if (!core_.frameSelection()) {
+        Log::info() << "[wgpu] focus: no object selected / no AABB available";
     }
-    float lo[3] = {  std::numeric_limits<float>::infinity(),
-                     std::numeric_limits<float>::infinity(),
-                     std::numeric_limits<float>::infinity() };
-    float hi[3] = { -std::numeric_limits<float>::infinity(),
-                    -std::numeric_limits<float>::infinity(),
-                    -std::numeric_limits<float>::infinity() };
-    bool any = false;
-    for (uint32_t id : selection_.selectionIds()) {
-        float mn[3], mx[3];
-        if (!computeObjectAabb(id, mn, mx)) continue;
-        for (int i = 0; i < 3; ++i) {
-            lo[i] = std::min(lo[i], mn[i]);
-            hi[i] = std::max(hi[i], mx[i]);
-        }
-        any = true;
-    }
-    if (!any) {
-        Log::info() << "[wgpu] focus: no AABB available";
-        return;
-    }
-    frameAabb(lo, hi, 1.30f);
 }
 
 // setStandardView / toggleProjection / cameraString moved to ViewportCore (#84-i).
@@ -2226,10 +2205,11 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
         && (mods == Qt::NoModifier || mods == Qt::ShiftModifier)
         && !event->isAutoRepeat()) {
         const bool neg = (mods & Qt::ShiftModifier);
+        using SV = ViewportCore::StandardView;
         switch (key) {
-        case Qt::Key_X: setStandardView(neg ? 180.0f : 0.0f,   0.0f); break;
-        case Qt::Key_Y: setStandardView(neg ? 270.0f : 90.0f,  0.0f); break;
-        case Qt::Key_Z: setStandardView(camera_yaw_deg_, neg ? -90.0f : 90.0f); break;
+        case Qt::Key_X: core_.setStandardView(neg ? SV::Back   : SV::Front); break;
+        case Qt::Key_Y: core_.setStandardView(neg ? SV::Left   : SV::Right); break;
+        case Qt::Key_Z: core_.setStandardView(neg ? SV::Bottom : SV::Top);   break;
         }
         return;
     }

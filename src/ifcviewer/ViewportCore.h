@@ -185,6 +185,19 @@ public:
                    float dist, float yaw_deg, float pitch_deg);
     void setStandardView(float yaw_deg, float pitch_deg);
 
+    // Named axis-aligned views. Front/Back/Left/Right pin yaw at 0/180/270/90
+    // (pitch 0); Top/Bottom pin pitch at ±90° and keep the current yaw. Wraps
+    // setStandardView(yaw,pitch) so the mapping lives in one place (shared by
+    // the desktop hotkeys and the web toolbar/keys).
+    enum class StandardView { Front, Back, Left, Right, Top, Bottom };
+    void setStandardView(StandardView view);
+
+    // Frame the current selection: union the selected objects' world AABBs and
+    // fit the camera to them (same 1.30 padding as the desktop "F" hotkey).
+    // No-op with an empty selection or no resolvable AABBs; returns whether it
+    // framed anything. Uses the shared selection + computeObjectAabb/frameAabb.
+    bool frameSelection();
+
     // ---- Incremental orbit navigation ---------------------------------------
     //
     // Pixel-delta camera moves, shared by every host (Qt desktop + web).

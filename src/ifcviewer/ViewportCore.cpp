@@ -445,6 +445,40 @@ void ViewportCore::setStandardView(float yaw_deg, float pitch_deg) {
     host_->requestFrame();
 }
 
+void ViewportCore::setStandardView(StandardView view) {
+    switch (view) {
+    case StandardView::Front:  setStandardView(0.0f,   0.0f);   break;
+    case StandardView::Back:   setStandardView(180.0f, 0.0f);   break;
+    case StandardView::Right:  setStandardView(90.0f,  0.0f);   break;
+    case StandardView::Left:   setStandardView(270.0f, 0.0f);   break;
+    case StandardView::Top:    setStandardView(camera_yaw_deg_,  90.0f); break;
+    case StandardView::Bottom: setStandardView(camera_yaw_deg_, -90.0f); break;
+    }
+}
+
+bool ViewportCore::frameSelection() {
+    if (selection_.count() == 0) return false;
+    float lo[3] = {  std::numeric_limits<float>::infinity(),
+                     std::numeric_limits<float>::infinity(),
+                     std::numeric_limits<float>::infinity() };
+    float hi[3] = { -std::numeric_limits<float>::infinity(),
+                    -std::numeric_limits<float>::infinity(),
+                    -std::numeric_limits<float>::infinity() };
+    bool any = false;
+    for (uint32_t id : selection_.selectionIds()) {
+        float mn[3], mx[3];
+        if (!computeObjectAabb(id, mn, mx)) continue;
+        for (int i = 0; i < 3; ++i) {
+            lo[i] = std::min(lo[i], mn[i]);
+            hi[i] = std::max(hi[i], mx[i]);
+        }
+        any = true;
+    }
+    if (!any) return false;
+    frameAabb(lo, hi, 1.30f);
+    return true;
+}
+
 void ViewportCore::orbitBy(float dx_px, float dy_px) {
     // 0.4 deg/px matches the GL viewport. pitch is clamped just shy of
     // the pole so orbitEye() stays well-conditioned.

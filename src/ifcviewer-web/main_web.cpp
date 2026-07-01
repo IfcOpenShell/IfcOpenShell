@@ -37,6 +37,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 
 namespace {
 
@@ -154,6 +155,27 @@ EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
     return EM_TRUE;  // consume so the page doesn't scroll
 }
 
+// Viewport nav hotkeys, matching the desktop bindings (ViewportWindow):
+//   Home     view all        F   zoom to selected     P   ortho/persp toggle
+//   X/Y/Z    front/right/top   Shift+X/Y/Z   back/left/bottom
+// `.code` is layout-independent (physical key), so this works on any keymap.
+EM_BOOL onKeyDown(int, const EmscriptenKeyboardEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    if (!app->ready || e->repeat) return EM_FALSE;
+    const char* code = e->code;
+    const bool  shift = e->shiftKey;
+    using SV = ViewportCore::StandardView;
+    if      (!std::strcmp(code, "Home"))            app->core.viewAll();
+    else if (!std::strcmp(code, "KeyF") && !shift)  app->core.frameSelection();
+    else if (!std::strcmp(code, "KeyP") && !shift)  app->core.toggleProjection();
+    else if (!std::strcmp(code, "KeyX")) app->core.setStandardView(shift ? SV::Back   : SV::Front);
+    else if (!std::strcmp(code, "KeyY")) app->core.setStandardView(shift ? SV::Left   : SV::Right);
+    else if (!std::strcmp(code, "KeyZ")) app->core.setStandardView(shift ? SV::Bottom : SV::Top);
+    else return EM_FALSE;  // let every other key through to the browser
+    app->host.requestFrame();
+    return EM_TRUE;
+}
+
 // Register pointer + wheel handlers once the app is live. mousedown binds
 // to the canvas; mousemove/up bind to the window so a drag keeps tracking
 // when the pointer leaves the canvas. A JS-side contextmenu suppressor
@@ -163,6 +185,7 @@ void installInputHandlers(AppState* app) {
     emscripten_set_mousemove_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onMouseMove);
     emscripten_set_mouseup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onMouseUp);
     emscripten_set_wheel_callback(kCanvasSelector, app, EM_FALSE, onWheel);
+    emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onKeyDown);
     EM_ASM({
         var c = document.querySelector(UTF8ToString($0));
         if (c) c.addEventListener('contextmenu', function(ev) { ev.preventDefault(); });
@@ -208,6 +231,32 @@ extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
 extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
     if (!g_app || !g_app->ready) return;
     g_app->core.resetScene();
+}
+
+// Viewport-navigation entry points for the shell.html toolbar (buttons that
+// mirror the keyboard hotkeys). Each schedules a frame.
+extern "C" EMSCRIPTEN_KEEPALIVE void view_all_c() {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.viewAll();               g_app->host.requestFrame();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void frame_selection_c() {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.frameSelection();        g_app->host.requestFrame();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_projection_c() {
+    if (!g_app || !g_app->ready) return;
+    g_app->core.toggleProjection();      g_app->host.requestFrame();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int projection_is_ortho_c() {
+    return (g_app && g_app->ready && g_app->core.projectionOrtho()) ? 1 : 0;
+}
+// id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom.
+extern "C" EMSCRIPTEN_KEEPALIVE void standard_view_c(int id) {
+    if (!g_app || !g_app->ready || id < 0 || id > 5) return;
+    using SV = ViewportCore::StandardView;
+    static const SV map[6] = { SV::Front, SV::Back, SV::Left, SV::Right, SV::Top, SV::Bottom };
+    g_app->core.setStandardView(map[id]);
+    g_app->host.requestFrame();
 }
 
 // Streaming progress for the loading bar (shell.html polls these each frame).
