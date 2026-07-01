@@ -287,6 +287,11 @@ struct ModelGpuData {
     // so driveStreamingLoads routes this model through the async web path
     // instead of the MEMFS sync read.
     bool        streaming_from_web = false;
+    // Web analog of streaming_file_path: which registered JS byte-source
+    // (Module.__ifcvSources[id] = a picked File or a remote URL) this model's
+    // chunk + deferred reads pull from. Lets several federated models stream
+    // from different files at once, mirroring the desktop per-model path.
+    int         web_source_id = 0;
 
     // v15 deferred property metadata (web, on-demand). The IFC element tree
     // (elements + string_table — names/GUIDs/hierarchy, for UI/picking, never

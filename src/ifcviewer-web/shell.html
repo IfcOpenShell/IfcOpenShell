@@ -21,10 +21,13 @@
   #status.error { background: rgba(120,30,30,.85); color: #fff; }
   /* Errors re-expand and re-opaque even after the ready-collapse. */
   #status.ready.error { max-height: 28vh; opacity: 1; }
-  #open-btn { position: fixed; top: 8px; right: 12px; z-index: 10;
+  #open-btn, #add-btn { position: fixed; top: 8px; z-index: 10;
     background: #2b6cb0; color: #fff; border: none; padding: 6px 12px;
     border-radius: 4px; font-size: 12px; cursor: pointer; }
+  #open-btn { right: 12px; }
+  #add-btn  { right: 120px; background: #2d3748; }
   #open-btn:hover { background: #3182ce; }
+  #add-btn:hover  { background: #3b465c; }
   #file-input { display: none; }
   /* Streaming loading bar: a thin top progress strip + a centred caption.
      Shown only while a network/file model streams; hidden once resident. */
@@ -42,8 +45,9 @@
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
 <div id="progress"><div id="progress-fill"></div></div>
 <div id="progress-text"></div>
+<button id="add-btn" title="Add file(s) to the current scene (federation)">Add</button>
 <button id="open-btn">Open .ifcview…</button>
-<input id="file-input" type="file" accept=".ifcview">
+<input id="file-input" type="file" accept=".ifcview" multiple>
 <div id="status">Starting…</div>
 <script>
   // Emscripten Module hook: route stderr to the status overlay so any
@@ -93,10 +97,16 @@
           // ?model=URL streams a remote sidecar via HTTP Range once the app
           // is live (one-shot). Same-origin needs no CORS; cross-origin URLs
           // require the host to send CORS + Accept-Ranges headers.
-          if (!urlLoadTried && modelUrl && Module.ccall) {
+          if (!urlLoadTried && modelUrl && Module._load_sidecar_from_source_c) {
             urlLoadTried = true;
             window.beginLoadProgress();
-            Module.ccall('load_sidecar_from_url_c', null, ['string'], [modelUrl]);
+            registerUrlSource(modelUrl).then(function(sid) {
+              Module._clear_scene_c();                  // replace the embedded sample
+              Module._load_sidecar_from_source_c(sid);
+            }).catch(function(e) {
+              statusEl.textContent += 'url load failed: ' + e + '\n';
+              statusEl.classList.add('error');
+            });
           }
           window.updateLoadProgress();
           Module._raf_tick_c(Module._app_ptr);
@@ -109,6 +119,33 @@
   if (!navigator.gpu) {
     statusEl.textContent = 'navigator.gpu is missing — open in a browser with WebGPU enabled';
     statusEl.classList.add('error');
+  }
+
+  // --- Byte-source registry (multi-file federation) -------------------------
+  // Each model streams from its own source: a picked File (Blob.slice) or a
+  // remote URL (HTTP Range), registered here and read lazily by the wasm side
+  // via Module.__ifcvSources[id]. URLs are sized up front (HEAD, else a 0-0
+  // Range's Content-Range) so the loader can bound its reads.
+  Module.__ifcvSources = Module.__ifcvSources || [];
+  function registerFileSource(file) {
+    var sid = Module.__ifcvSources.length;
+    Module.__ifcvSources.push({ file: file, url: null, size: file.size });
+    return sid;
+  }
+  function registerUrlSource(url) {
+    return fetch(url, { method: 'HEAD' }).then(function(resp) {
+      var len = resp.ok ? parseInt(resp.headers.get('Content-Length') || '0', 10) : 0;
+      if (len > 0) return len;
+      return fetch(url, { headers: { Range: 'bytes=0-0' } }).then(function(r2) {
+        var cr = r2.headers.get('Content-Range');   // "bytes 0-0/12345"
+        return cr ? parseInt(cr.split('/')[1] || '0', 10) : 0;
+      });
+    }).then(function(size) {
+      if (!size) throw new Error('could not size ' + url + ' (need HEAD or Range)');
+      var sid = Module.__ifcvSources.length;
+      Module.__ifcvSources.push({ file: null, url: url, size: size });
+      return sid;
+    });
   }
 
   // --- Streaming loading bar ------------------------------------------------
@@ -156,20 +193,30 @@
   // ever cross into wasm. No drag-drop: that needs an X11 drag source (a
   // file manager), which a minimal WM may not provide; the native file
   // chooser this button opens is WM-independent.
+  // "Open" replaces the scene with the picked file(s); "Add" appends them to
+  // the current scene (federation). Multiple files can be picked at once. Each
+  // File is registered as its own byte-source (kept alive in __ifcvSources for
+  // lazy Blob.slice reads) and streamed independently.
   var openBtn = document.getElementById('open-btn');
+  var addBtn = document.getElementById('add-btn');
   var fileInput = document.getElementById('file-input');
-  openBtn.addEventListener('click', function() { fileInput.click(); });
+  var pendingMode = 'replace';
+  openBtn.addEventListener('click', function() { pendingMode = 'replace'; fileInput.click(); });
+  addBtn.addEventListener('click',  function() { pendingMode = 'add';     fileInput.click(); });
   fileInput.addEventListener('change', function(ev) {
-    var f = ev.target.files && ev.target.files[0];
-    if (!f) return;
-    if (!Module._load_sidecar_from_blob_c) {
+    var files = ev.target.files;
+    if (!files || !files.length) return;
+    if (!Module._load_sidecar_from_source_c) {
       statusEl.textContent += 'viewer not ready yet — wait for WebGPU init\n';
       return;
     }
     try {
-      Module.__ifcvFile = f;          // kept alive for lazy Blob.slice reads
+      if (pendingMode === 'replace') Module._clear_scene_c();
       window.beginLoadProgress();
-      Module._load_sidecar_from_blob_c();
+      for (var i = 0; i < files.length; i++) {
+        var sid = registerFileSource(files[i]);
+        Module._load_sidecar_from_source_c(sid);
+      }
     } catch (e) {
       statusEl.textContent += 'load failed: ' + e + '\n';
       statusEl.classList.add('error');

@@ -3203,22 +3203,22 @@ std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
 
 namespace {
 
-// Active byte-source size in bytes, or 0 if none. Bounds the metadata tail
-// read (index-section end .. EOF). The source is either a picked File
-// (Module.__ifcvFile, local) or a remote URL whose total length was resolved
-// up front (Module.__ifcvUrlSize). The File takes precedence if both are set.
-EM_JS(double, ifcvFileSize, (void), {
-    if (Module["__ifcvFile"] && Module["__ifcvFile"].size) return Module["__ifcvFile"].size;
-    if (Module["__ifcvUrl"]) return Module["__ifcvUrlSize"] || 0;
-    return 0;
+// Byte-source registry (multi-file federation). Module.__ifcvSources[id] is
+// { file: File|null, url: string|null, size: number } — a picked File or a
+// remote URL, registered + sized by shell.html before the load. Several models
+// can stream from different sources at once (the web analog of the desktop
+// per-model streaming_file_path). Size of source `sid`, or 0 if unknown.
+EM_JS(double, ifcvSourceSize, (int sid), {
+    var s = Module["__ifcvSources"] && Module["__ifcvSources"][sid];
+    return s ? (s.size || 0) : 0;
 });
 
-// Read [offset, offset+size) of the active source into dst (which must hold
-// `size` bytes), then call back _ifcv_on_range_done(reqId, ok). Async. Local:
-// Blob.slice. Remote: an HTTP Range request — if a server ignores Range and
+// Read [offset, offset+size) of source `sid` into dst (which must hold `size`
+// bytes), then call back _ifcv_on_range_done(reqId, ok). Async. File:
+// Blob.slice. URL: an HTTP Range request — if a server ignores Range and
 // returns the whole body (200), slice out the requested window so it still
 // works (just without the bandwidth saving).
-EM_JS(void, ifcvReadRangeInto, (int reqId, double offset, double size, void* dst), {
+EM_JS(void, ifcvReadRangeInto, (int sid, int reqId, double offset, double size, void* dst), {
     var deliver = function(ok, buf) {
         if (ok && buf) {
             HEAPU8.set(new Uint8Array(buf), dst);
@@ -3226,17 +3226,16 @@ EM_JS(void, ifcvReadRangeInto, (int reqId, double offset, double size, void* dst
         }
         Module["_ifcv_on_range_done"](reqId, ok ? 1 : 0);
     };
-    var f = Module["__ifcvFile"];
-    if (f) {
-        f.slice(offset, offset + size).arrayBuffer()
+    var s = Module["__ifcvSources"] && Module["__ifcvSources"][sid];
+    if (s && s.file) {
+        s.file.slice(offset, offset + size).arrayBuffer()
             .then(function(buf) { deliver(1, buf); })
             .catch(function(e) { deliver(0, null); });
         return;
     }
-    var url = Module["__ifcvUrl"];
-    if (url) {
+    if (s && s.url) {
         var end = offset + size - 1;
-        fetch(url, { headers: { "Range": "bytes=" + offset + "-" + end } })
+        fetch(s.url, { headers: { "Range": "bytes=" + offset + "-" + end } })
             .then(function(resp) {
                 if (resp.status !== 206 && resp.status !== 200) { deliver(0, null); return; }
                 var full = resp.status === 200;
@@ -3251,32 +3250,11 @@ EM_JS(void, ifcvReadRangeInto, (int reqId, double offset, double size, void* dst
     Module["_ifcv_on_range_done"](reqId, 0);
 });
 
-// Switch the active source to a remote URL and resolve its total byte length
-// (needed to bound the metadata tail read), then call _ifcv_source_ready(ok).
-// Tries a HEAD's Content-Length first, then a 0-0 ranged GET's Content-Range
-// total. Clears any local File so the URL source is used.
-EM_JS(void, ifcvBeginUrlSource, (const char* urlPtr), {
-    var url = UTF8ToString(urlPtr);
-    Module["__ifcvFile"]    = null;
-    Module["__ifcvUrl"]     = url;
-    Module["__ifcvUrlSize"] = 0;
-    var ready = function(ok) { Module["_ifcv_source_ready"](ok ? 1 : 0); };
-    fetch(url, { method: "HEAD" }).then(function(resp) {
-        var len = resp.ok ? parseInt(resp.headers.get("Content-Length") || "0", 10) : 0;
-        if (len > 0) { Module["__ifcvUrlSize"] = len; ready(1); return; }
-        return fetch(url, { headers: { "Range": "bytes=0-0" } }).then(function(r2) {
-            var cr = r2.headers.get("Content-Range");  // "bytes 0-0/12345"
-            var total = cr ? parseInt(cr.split("/")[1] || "0", 10) : 0;
-            Module["__ifcvUrlSize"] = total;
-            ready(total > 0);
-        });
-    }).catch(function(e) { ready(0); });
-});
-
 // One in-flight multi-range read: a sequence of coalesced plans, each read
 // into `scratch` then scattered into `out`. `done(ok, out)` fires once every
 // plan has landed, or on the first failure.
 struct WebRangeRead {
+    int                          source_id = 0;  // Module.__ifcvSources index
     std::vector<SidecarReadPlan> plans;
     std::size_t                  plan_idx = 0;
     std::vector<std::uint8_t>    scratch;
@@ -3286,11 +3264,6 @@ struct WebRangeRead {
 
 std::unordered_map<int, WebRangeRead> g_web_reads;
 int g_web_read_next = 1;
-
-// The ViewportCore awaiting an async URL-source size resolution. Set by
-// loadSidecarFromUrlWeb; consumed by the ifcv_source_ready callback. One
-// ViewportCore exists on web, so a single slot suffices.
-ViewportCore* g_url_ready_core = nullptr;
 
 // Issue the current plan's Blob.slice, or finish (success) if all plans done.
 void webIssueCurrentPlan(int id) {
@@ -3306,7 +3279,7 @@ void webIssueCurrentPlan(int id) {
     }
     const SidecarReadPlan& p = r.plans[r.plan_idx];
     r.scratch.assign(std::size_t(p.read_size), 0);
-    ifcvReadRangeInto(id, double(p.file_offset), double(p.read_size),
+    ifcvReadRangeInto(r.source_id, id, double(p.file_offset), double(p.read_size),
                       r.scratch.data());
 }
 
@@ -3314,6 +3287,7 @@ void webIssueCurrentPlan(int id) {
 // in input order, then call done(true, bytes). On any failure: done(false,{}).
 // `section_offset` makes the offsets absolute (pass 0 if already absolute).
 void webReadRangesAsync(
+        int source_id,
         std::uint64_t section_offset,
         const std::vector<std::pair<std::uint64_t, std::uint64_t>>& ranges,
         std::function<void(bool, std::vector<std::uint8_t>&&)> done) {
@@ -3321,6 +3295,7 @@ void webReadRangesAsync(
     for (const auto& rg : ranges) total += rg.second;
 
     WebRangeRead r;
+    r.source_id = source_id;
     r.out.assign(std::size_t(total), 0);
     // Coalesce within 1 MB: each Blob.slice is an async round trip, so a
     // generous gap trades a few wasted bytes for far fewer JS hops.
@@ -3360,21 +3335,6 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
     webIssueCurrentPlan(reqId);
 }
 
-// JS callback once a remote URL source's total size has been resolved. Runs
-// the shared metadata bootstrap against the now-active URL source. Exported as
-// _ifcv_source_ready (see ifcviewer-web/CMakeLists.txt).
-extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_source_ready(int ok) {
-    ViewportCore* core = g_url_ready_core;
-    g_url_ready_core = nullptr;
-    if (!core) return;
-    if (!ok) {
-        Log::warn() << "ifcviewer-web: could not resolve remote sidecar size "
-                       "(server must support HEAD or Range)";
-        return;
-    }
-    core->loadSidecarMetadataWeb("net:model.ifcview");
-}
-
 void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_idx) {
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) return;
@@ -3382,6 +3342,7 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
     if (chunk_idx >= m.chunks.size()) return;
 
     const StreamingThread::Request req = makeChunkRequest(m, chunk_idx, model_id);
+    const int sid = m.web_source_id;  // which registered byte-source to read from
     const std::uint64_t vsec = req.vertex_section_offset;
     const std::uint64_t isec = req.index_section_offset;
     const std::vector<std::pair<std::uint64_t, std::uint64_t>> v_ranges = req.v_ranges;
@@ -3438,14 +3399,14 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
         host_->requestFrame();
     };
 
-    webReadRangesAsync(vsec, v_ranges,
+    webReadRangesAsync(sid, vsec, v_ranges,
         [join, finish](bool ok, std::vector<std::uint8_t>&& vbytes) {
             join->v_ok = ok;
             join->vbytes = std::move(vbytes);
             join->v_done = true;
             finish();
         });
-    webReadRangesAsync(isec, i_byte_ranges,
+    webReadRangesAsync(sid, isec, i_byte_ranges,
         [join, finish](bool ok, std::vector<std::uint8_t>&& ibytes) {
             join->i_ok = ok;
             join->idx.resize(ibytes.size() / sizeof(std::uint32_t));
@@ -3465,19 +3426,19 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
 // here — they stream per chunk through beginWebChunkLoad. `source_label` is a
 // log/identity tag stored as file_path (chunk reads go through the JS source,
 // not this path).
-void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
+void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_label) {
     if (!device_ || !queue_) {
         Log::warn() << "loadSidecarMetadataWeb: wgpu not initialised";
         return;
     }
-    const double fsize = ifcvFileSize();
+    const double fsize = ifcvSourceSize(source_id);
     if (fsize <= 0.0) {
-        Log::warn() << "loadSidecarMetadataWeb: no active source / zero size";
+        Log::warn() << "loadSidecarMetadataWeb: source " << source_id << " has zero size";
         return;
     }
 
-    webReadRangesAsync(0, {{0, SIDECAR_HEAD_BYTES}},
-        [this, fsize, source_label](bool ok, std::vector<std::uint8_t>&& head) {
+    webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
+        [this, fsize, source_id, source_label](bool ok, std::vector<std::uint8_t>&& head) {
             std::uint32_t nvb = 0;
             if (!ok || !parseSidecarHead(head.data(), head.size(), nvb)) {
                 Log::warn() << "loadSidecarMetadataWeb: bad sidecar head";
@@ -3486,8 +3447,8 @@ void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
             const std::uint64_t vsec          = SIDECAR_HEAD_BYTES;
             const std::uint64_t idx_count_off = std::uint64_t(SIDECAR_HEAD_BYTES) + nvb;
 
-            webReadRangesAsync(0, {{idx_count_off, 4}},
-                [this, fsize, nvb, vsec, idx_count_off, source_label]
+            webReadRangesAsync(source_id, 0, {{idx_count_off, 4}},
+                [this, fsize, nvb, vsec, idx_count_off, source_id, source_label]
                 (bool ok2, std::vector<std::uint8_t>&& cnt) {
                     if (!ok2 || cnt.size() < 4) {
                         Log::warn() << "loadSidecarMetadataWeb: short index count";
@@ -3505,8 +3466,9 @@ void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
                     // render-critical metadata only. The deferred block
                     // (elements/strings) is fetched on demand later — first
                     // paint no longer waits on the property tree.
-                    webReadRangesAsync(0, {{crit_size_off, 8}},
-                        [this, vsec, nvb, isec, num_indices, source_label, crit_size_off, fsize]
+                    webReadRangesAsync(source_id, 0, {{crit_size_off, 8}},
+                        [this, vsec, nvb, isec, num_indices, source_id, source_label,
+                         crit_size_off, fsize]
                         (bool okc, std::vector<std::uint8_t>&& cb) {
                             if (!okc || cb.size() < 8) {
                                 Log::warn() << "loadSidecarMetadataWeb: short critical size";
@@ -3519,8 +3481,8 @@ void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
                                 Log::warn() << "loadSidecarMetadataWeb: critical block past EOF";
                                 return;
                             }
-                            webReadRangesAsync(0, {{crit_off, crit_bytes}},
-                                [this, vsec, nvb, isec, num_indices, source_label,
+                            webReadRangesAsync(source_id, 0, {{crit_off, crit_bytes}},
+                                [this, vsec, nvb, isec, num_indices, source_id, source_label,
                                  crit_off, crit_bytes, fsize]
                                 (bool ok3, std::vector<std::uint8_t>&& crit) {
                                     if (!ok3) {
@@ -3544,6 +3506,7 @@ void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
                                     auto mit = models_gpu_.find(mid);
                                     if (mit != models_gpu_.end()) {
                                         mit->second.streaming_from_web    = true;
+                                        mit->second.web_source_id         = source_id;
                                         // Deferred block: [end of critical, EOF).
                                         mit->second.deferred_meta_offset  = crit_off + crit_bytes;
                                         mit->second.deferred_meta_bytes   =
@@ -3560,30 +3523,13 @@ void ViewportCore::loadSidecarMetadataWeb(std::string source_label) {
         });
 }
 
-void ViewportCore::loadSidecarFromBlobWeb() {
-    // The picked File is already on Module.__ifcvFile (set by shell.html); the
-    // metadata bootstrap reads it via Blob.slice.
-    loadSidecarMetadataWeb("blob:model.ifcview");
-}
-
-void ViewportCore::loadSidecarFromUrlWeb(std::string url) {
-    if (!device_ || !queue_) {
-        Log::warn() << "loadSidecarFromUrlWeb: wgpu not initialised";
-        return;
-    }
-    // Resolve the URL's total size first (async); ifcv_source_ready then runs
-    // the shared bootstrap once Module.__ifcvUrl/__ifcvUrlSize are populated.
-    g_url_ready_core = this;
-    ifcvBeginUrlSource(url.c_str());
-}
-
 void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
                                            std::function<void(bool)> done) {
     // On-demand fetch of the v15 deferred block (element tree + string table)
     // for a web-streamed model — the property data a UI needs (tree, selected-
-    // object name, search) but rendering doesn't. Fetches at most once. Valid
-    // only for the currently-loaded model, since the JS byte-source
-    // (Module.__ifcvUrl/File) tracks the latest load.
+    // object name, search) but rendering doesn't. Fetches at most once. Reads
+    // from the model's own registered byte-source, so it works per-model even
+    // with several federated files loaded.
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) { if (done) done(false); return; }
     ModelGpuData& m = it->second;
@@ -3592,7 +3538,7 @@ void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
         if (done) done(true);
         return;
     }
-    webReadRangesAsync(0, {{m.deferred_meta_offset, m.deferred_meta_bytes}},
+    webReadRangesAsync(m.web_source_id, 0, {{m.deferred_meta_offset, m.deferred_meta_bytes}},
         [this, model_id, done](bool ok, std::vector<std::uint8_t>&& buf) {
             auto mit = models_gpu_.find(model_id);
             if (mit == models_gpu_.end()) { if (done) done(false); return; }

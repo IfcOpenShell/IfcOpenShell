@@ -191,32 +191,23 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
     }
 }
 
-// Called from shell.html's file-browse handler after it has stashed the
-// picked File on Module.__ifcvFile. Replaces whatever is currently loaded
-// (the embedded sample on first use, or a prior pick) with the new sidecar.
-// Byte-range (#88): the whole file is NOT copied into the wasm heap — the
-// metadata is read via Blob.slice and chunk bytes stream per-chunk, so a
-// 500 MB sidecar stays in the browser File object. Asynchronous: this
-// returns immediately and the model frames itself from the JS completion
-// callback. Exported to JS via EXPORTED_FUNCTIONS in CMakeLists.txt.
-extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_blob_c() {
+// Stream a sidecar from a registered JS byte-source and APPEND it to the scene
+// (federation). shell.html registers the source first — a picked File or a
+// remote URL, sized up front — into Module.__ifcvSources[source_id], then calls
+// this. Byte-range: the file is never copied whole into the wasm heap; metadata
+// is read via ranges and chunks stream per-chunk, so a 500 MB sidecar stays in
+// the File / on the server. Asynchronous; the model frames itself from the JS
+// completion callback. Call clear_scene_c first to replace instead of append.
+extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
     if (!g_app || !g_app->ready) return;
-
-    // resetScene drops the previous model's GPU resources so a fresh load
-    // replaces rather than accumulates (loadSidecar* appends).
-    g_app->core.resetScene();
-    g_app->core.loadSidecarFromBlobWeb();
+    g_app->core.loadSidecarMetadataWeb(source_id, "source");
 }
 
-// Called from shell.html (e.g. a ?model=URL query param) to stream a sidecar
-// hosted at `url` via HTTP Range requests — the same per-chunk byte-range path
-// as the local File load, but the bytes come off the network instead of a
-// Blob. Asynchronous; the model frames itself once metadata lands. Exported
-// to JS via EXPORTED_FUNCTIONS in CMakeLists.txt.
-extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_url_c(const char* url) {
-    if (!g_app || !g_app->ready || !url) return;
+// Drop all loaded models (used by shell.html to replace the embedded sample /
+// a prior federation before loading a fresh set).
+extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
+    if (!g_app || !g_app->ready) return;
     g_app->core.resetScene();
-    g_app->core.loadSidecarFromUrlWeb(url);
 }
 
 // Streaming progress for the loading bar (shell.html polls these each frame).

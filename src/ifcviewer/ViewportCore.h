@@ -362,14 +362,12 @@ public:
     // are read via byte ranges, the streaming model is built, and it is tagged
     // web-sourced so each chunk's vertex/index ranges are pulled lazily.
     // Asynchronous — returns immediately and frames the model from the JS
-    // completion callback. resetScene() first to replace.
-    //
-    //  - Blob:  the picked File on Module.__ifcvFile (Blob.slice).
-    //  - URL:   a remote sidecar (HTTP Range); resolves total size first, then
-    //           runs the shared bootstrap via the ifcv_source_ready callback.
-    void loadSidecarFromBlobWeb();
-    void loadSidecarFromUrlWeb(std::string url);
-    void loadSidecarMetadataWeb(std::string source_label);
+    // completion callback. APPENDS the model (federation); call resetScene()
+    // first to replace. `source_id` indexes the JS byte-source registry
+    // (Module.__ifcvSources[source_id] — a picked File or remote URL, already
+    // sized by shell.html); each federated model streams from its own source.
+    // `source_label` is a log/identity tag.
+    void loadSidecarMetadataWeb(int source_id, std::string source_label);
 
     // On-demand fetch of the v15 deferred property block (element tree + string
     // table) for a web-streamed model — what a UI (object tree / selected-name

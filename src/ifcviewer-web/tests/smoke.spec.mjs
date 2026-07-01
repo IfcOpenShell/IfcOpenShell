@@ -167,7 +167,7 @@ test('loads a user-picked sidecar through the Blob.slice byte-range path', async
   // side to confirm the blob load landed (logged to stderr → console).
   const samplePath = resolve(__dirname, '..', 'sample.ifcview');
   const loaded = page.waitForEvent('console', {
-    predicate: (m) => /loaded sidecar \(blob:/.test(m.text()),
+    predicate: (m) => /loaded sidecar \(source/.test(m.text()),
     timeout: 15_000,
   });
   await page.locator('#file-input').setInputFiles(samplePath);
@@ -208,7 +208,7 @@ test('streams a remote sidecar over HTTP Range (?model= URL backend)', async ({ 
 
   // Wait for the C side to confirm the URL-sourced load landed.
   const loaded = page.waitForEvent('console', {
-    predicate: (m) => /loaded sidecar \(net:/.test(m.text()),
+    predicate: (m) => /loaded sidecar \(source/.test(m.text()),
     timeout: 20_000,
   });
   await page.goto('/IfcViewerWeb.html?model=/sample.ifcview');
