@@ -48,14 +48,16 @@
     background: rgba(20,22,28,.9); padding: 8px 12px; border-radius: 6px;
     pointer-events: none; display: none; min-width: 280px; max-width: 60vw; }
   #progress-summary { margin-bottom: 6px; white-space: nowrap; }
-  /* One flex segment per model — fills blue as it streams, green when done,
-     grey while its metadata is still pending. Visualises parallel loading. */
-  #progress-segs { display: flex; gap: 2px; }
-  #progress-segs > div { flex: 1 1 0; height: 7px; border-radius: 2px;
-    background: #2d3748; overflow: hidden; }
-  #progress-segs > div > i { display: block; height: 100%; width: 0%;
-    background: #3182ce; transition: width .15s ease; }
-  #progress-segs > div.done > i { background: #38a169; }
+  /* Combined bar over the FULL model content: dark track = not needed for this
+     view, dim = needed-but-not-loaded, bright = loaded. So the bright fill vs
+     the dim span shows "loaded / needed", and the dim span vs the whole track
+     shows "needed / total". */
+  #progress-track { position: relative; height: 8px; border-radius: 3px;
+    background: #232833; overflow: hidden; }
+  #progress-needed, #progress-loaded { position: absolute; left: 0; top: 0;
+    height: 100%; width: 0%; transition: width .2s ease; }
+  #progress-needed { background: #2b4a6b; }
+  #progress-loaded { background: #3182ce; }
 </style>
 </head>
 <body>
@@ -63,7 +65,10 @@
 <div id="progress"><div id="progress-fill"></div></div>
 <div id="progress-panel">
   <div id="progress-summary"></div>
-  <div id="progress-segs"></div>
+  <div id="progress-track">
+    <div id="progress-needed"></div>
+    <div id="progress-loaded"></div>
+  </div>
 </div>
 <button id="add-btn" title="Add file(s) to the current scene (federation)">Add</button>
 <button id="open-btn">Open .ifcview…</button>
@@ -198,59 +203,77 @@
   var fillEl    = document.getElementById('progress-fill');
   var panelEl   = document.getElementById('progress-panel');
   var summaryEl = document.getElementById('progress-summary');
-  var segsEl    = document.getElementById('progress-segs');
+  var neededEl  = document.getElementById('progress-needed');
+  var loadedEl  = document.getElementById('progress-loaded');
   var loadActive = false;
   var expectedModels = 1;
+  var caughtUpAt = 0;
   // Call with the number of models this batch will load (federation).
   window.beginLoadProgress = function(nModels) {
     loadActive = true;
     expectedModels = Math.max(1, nModels || 1);
     Module.__ifcvBytesLoaded = 0;
-    fillEl.style.width = '0%';
-    segsEl.innerHTML = '';
-    progEl.style.display   = 'block';
-    panelEl.style.display  = 'block';
-    summaryEl.textContent  = 'Loading ' + expectedModels +
+    caughtUpAt = 0;
+    progEl.style.display  = 'block';
+    panelEl.style.display = 'block';
+    summaryEl.textContent = 'Loading ' + expectedModels +
       ' model' + (expectedModels === 1 ? '' : 's') + '…';
   };
-  function endLoadProgress() { progEl.style.display = 'none'; panelEl.style.display = 'none'; }
+  function endLoadProgress() {
+    progEl.style.display = 'none'; panelEl.style.display = 'none'; loadActive = false;
+  }
+  function fmtMB(b) { return (b / 1e6).toFixed(b < 1e8 ? 1 : 0); }
+  // Combined progress over the whole federation, honouring contribution culling:
+  //   loaded / needed  = how done THIS view is
+  //   needed / total   = how much of the whole model this view even requires
+  // Auto-shows whenever there's work (initial load OR navigation revealing new
+  // chunks) and fades shortly after the current view is fully loaded.
   window.updateLoadProgress = function() {
-    if (!loadActive) return;
+    if (!Module._ifcv_bytes_total_c) return;
+    var total  = Module._ifcv_bytes_total_c();
+    var needed = Module._ifcv_bytes_needed_c();
+    var loaded = Module._ifcv_bytes_loaded_c();
     var mc = Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0;
-    var N  = Math.max(expectedModels, mc);
-    var mb = ((Module.__ifcvBytesLoaded || 0) / 1e6).toFixed(1);
-    // One segment per model; add/remove to match N.
-    while (segsEl.children.length < N) {
-      var d = document.createElement('div'); d.appendChild(document.createElement('i'));
-      segsEl.appendChild(d);
-    }
-    while (segsEl.children.length > N) segsEl.removeChild(segsEl.lastChild);
-    var aggR = 0, aggT = 0, done = 0;
-    for (var i = 0; i < N; i++) {
-      var seg = segsEl.children[i];
-      if (i < mc) {                       // model has metadata → show its progress
-        var r = Module._ifcv_model_resident_c(i);
-        var t = Module._ifcv_model_total_c(i);
-        aggR += r; aggT += t;
-        var isDone = t > 0 && r >= t;
-        if (isDone) done++;
-        seg.className = isDone ? 'done' : '';
-        seg.firstChild.style.width =
-          (isDone ? 100 : (t > 0 ? Math.round(100 * r / t) : 4)) + '%';  // sliver = metadata only
-      } else {                            // metadata not fetched yet → waiting
-        seg.className = '';
-        seg.firstChild.style.width = '0%';
-      }
-    }
-    fillEl.style.width = (aggT > 0 ? Math.round(100 * aggR / aggT) : 4) + '%';
-    if (N > 0 && done >= N) {             // every model fully resident → done
-      summaryEl.textContent = 'Loaded ' + N + ' model' + (N === 1 ? '' : 's') + ' · ' + mb + ' MB';
-      loadActive = false;
-      setTimeout(endLoadProgress, 1200);
+    var dlMB = (Module.__ifcvBytesLoaded || 0) / 1e6;
+    // No geometry chunks yet = still fetching the per-model "overhead" (mesh +
+    // instance metadata) needed before we can even tell which chunks are visible.
+    var overhead  = total === 0;
+    var streaming = needed > loaded + 1;            // geometry still to fetch for this view
+    if (overhead || streaming) { loadActive = true; caughtUpAt = 0; }
+    if (!loadActive) return;
+    // Re-assert visibility every active frame so the bar REAPPEARS when
+    // navigation reveals new chunks after a previous hide (fix: was only set
+    // in beginLoadProgress, so it stayed hidden).
+    progEl.style.display  = 'block';
+    panelEl.style.display = 'block';
+
+    if (overhead) {
+      var frac = expectedModels > 0 ? mc / expectedModels : 0;
+      neededEl.style.width = '100%';
+      loadedEl.style.width = (100 * frac) + '%';
+      fillEl.style.width   = Math.max(4, 100 * frac) + '%';
+      summaryEl.textContent = 'Loading model data — ' + dlMB.toFixed(1) + ' MB · ' +
+        mc + ' / ' + expectedModels + ' models ready';
       return;
     }
-    summaryEl.textContent = 'Loading ' + N + ' model' + (N === 1 ? '' : 's') + ' — ' +
-      done + ' done · ' + (mc - done) + ' streaming · ' + (N - mc) + ' waiting · ' + mb + ' MB';
+
+    // Geometry phase: bar spans the whole model; dim = needed for this view,
+    // bright = loaded. "loaded / needed" = this view's progress; "needed / total"
+    // = how much of the model this view requires.
+    neededEl.style.width = (100 * needed / total) + '%';
+    loadedEl.style.width = (100 * loaded / total) + '%';
+    fillEl.style.width   = (needed > 0 ? Math.round(100 * loaded / needed) : 100) + '%';
+    var pctNeeded = Math.round(100 * needed / total);
+    var more = (mc < expectedModels) ? ' · ' + mc + '/' + expectedModels + ' models' : '';
+    if (streaming) {
+      summaryEl.textContent = 'Loading ' + fmtMB(loaded) + ' / ' + fmtMB(needed) +
+        ' MB for this view · ' + pctNeeded + '% of ' + fmtMB(total) + ' MB total' + more;
+    } else {
+      summaryEl.textContent = (pctNeeded >= 99 ? 'Loaded ' : 'View loaded — ') +
+        fmtMB(loaded) + ' MB · ' + pctNeeded + '% of ' + fmtMB(total) + ' MB total' + more;
+      if (!caughtUpAt) caughtUpAt = performance.now();
+      if (performance.now() - caughtUpAt > 1500) endLoadProgress();
+    }
   };
 
   // File-browse loading (#88, byte-range). The picked File object is stashed

@@ -2280,7 +2280,12 @@ void ViewportCore::driveStreamingLoads() {
             auto& c = m.chunks[ci];
             if (c.is_resident)                       continue;
             if (c.is_loading)                        continue;
-            if (c.frustum_visible_count == 0)        continue;
+            // Contribution cull: only fetch chunks big enough on screen to
+            // actually draw at the current view — not everything in the
+            // frustum. Zoomed out over a big federation this skips the fine
+            // chunks that project to sub-pixel, so the network only pulls
+            // what's resolvable now; the rest stream in as you approach.
+            if (c.contribution_visible_count == 0)   continue;
             if (c.blocked_cooldown_until_frame_idx > streaming_frame_idx_) continue;
             candidates.push_back({&m, ci, mid, candidate_priority(c)});
         }
@@ -2589,6 +2594,7 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         c.opaque_visible_vertices = 0;
         c.opaque_visible_draws    = 0;
         c.frustum_visible_count   = 0;
+        c.contribution_visible_count = 0;
         c.current_priority        = 0.0f;
     }
 
@@ -2652,6 +2658,10 @@ std::uint32_t ViewportCore::cullModelCpuCompute(
         // per-instance test, so letting cheap contribution drops happen
         // first cuts the HiZ-tested population by ~5× on real scenes.
         if (contrib_enabled && projected_px < min_radius_px) return;
+
+        // Passed frustum + contribution (pre-HiZ). Streaming uses this to
+        // decide what's worth fetching for the current view.
+        ++c.contribution_visible_count;
 
         if (hiz_active
             && hiz_occluded(inst.world_aabb_min, inst.world_aabb_max)) {
@@ -3653,6 +3663,29 @@ void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
     for (const auto& c : it->second.chunks) {
         ++total_chunks;
         if (c.is_resident) ++resident_chunks;
+    }
+}
+
+void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
+                                         std::uint64_t& needed_bytes,
+                                         std::uint64_t& loaded_bytes) const {
+    // total  = all geometry across every model (the whole federation).
+    // needed = chunks the CURRENT view wants (passed contribution culling).
+    // loaded = the needed chunks that are resident.
+    // So loaded/needed = how done this view is; needed/total = how much of the
+    // whole model this view even requires.
+    total_bytes = needed_bytes = loaded_bytes = 0;
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const auto& c : m.chunks) {
+            const std::uint64_t bytes =
+                c.vertex_byte_size + c.index_count * sizeof(std::uint32_t);
+            total_bytes += bytes;
+            if (c.contribution_visible_count > 0) {
+                needed_bytes += bytes;
+                if (c.is_resident) loaded_bytes += bytes;
+            }
+        }
     }
 }
 

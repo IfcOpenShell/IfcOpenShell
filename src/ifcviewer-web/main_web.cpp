@@ -285,6 +285,25 @@ extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_total_c(int idx) {
     int r = 0, t = 0; g_app->core.streamingModelProgress(idx, r, t); return t;
 }
 
+// Combined byte progress for the loading bar: total geometry, bytes the current
+// view needs (contribution-culled), and how much of that is loaded. Doubles so
+// JS gets exact byte counts well past 2 GB.
+extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_total_c() {
+    if (!g_app) return 0.0;
+    std::uint64_t tot = 0, need = 0, load = 0;
+    g_app->core.streamingByteProgress(tot, need, load); return double(tot);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_needed_c() {
+    if (!g_app) return 0.0;
+    std::uint64_t tot = 0, need = 0, load = 0;
+    g_app->core.streamingByteProgress(tot, need, load); return double(need);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_loaded_c() {
+    if (!g_app) return 0.0;
+    std::uint64_t tot = 0, need = 0, load = 0;
+    g_app->core.streamingByteProgress(tot, need, load); return double(load);
+}
+
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();

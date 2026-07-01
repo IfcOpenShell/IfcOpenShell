@@ -123,6 +123,13 @@ struct ModelGpuData {
         uint32_t      total_visible_vertices  = 0;
         uint32_t      total_visible_draws     = 0;
         uint32_t      frustum_visible_count   = 0;
+        // Instances that passed frustum AND the contribution cull (projected
+        // radius ≥ min_radius_px), but BEFORE HiZ. Streaming gates on this so
+        // it only fetches chunks big enough on screen to actually draw —
+        // without coupling to HiZ occlusion (which flips frame-to-frame and
+        // would thrash the loader). Stable while the camera is still; changes
+        // only on navigation, which is exactly when the working set should.
+        uint32_t      contribution_visible_count = 0;
 
         // Opaque-first partition counts.  The cull loop fills
         // visible_draws_scratch with all opaque visible instances first,

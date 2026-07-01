@@ -416,6 +416,14 @@ public:
     void streamingModelProgress(int idx, int& resident_chunks,
                                 int& total_chunks) const;
 
+    // Byte-level streaming progress for a combined loading bar. total = all
+    // geometry bytes; needed = bytes the current view wants (contribution-
+    // culled working set); loaded = the resident subset of needed. Lets the UI
+    // show "loaded / needed" for this view and "needed / total" as context.
+    void streamingByteProgress(std::uint64_t& total_bytes,
+                               std::uint64_t& needed_bytes,
+                               std::uint64_t& loaded_bytes) const;
+
     // Direct-load (bonsai-side) entry points. Bonsai's SceneLoader feeds
     // the viewer one mesh + one instance at a time, then calls
     // finalizeModel once everything's staged. The staging map lives on
