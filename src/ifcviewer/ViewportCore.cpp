@@ -3599,6 +3599,29 @@ void ViewportCore::streamingProgress(int& resident_chunks, int& total_chunks) co
     }
 }
 
+int ViewportCore::streamingModelCount() const {
+    return int(models_gpu_.size());
+}
+
+void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
+                                          int& total_chunks) const {
+    resident_chunks = 0;
+    total_chunks    = 0;
+    if (idx < 0 || idx >= int(models_gpu_.size())) return;
+    // Order by model_id (= load order) so a model keeps the same UI slot as it
+    // streams, instead of hopping with unordered_map iteration order.
+    std::vector<std::uint32_t> ids;
+    ids.reserve(models_gpu_.size());
+    for (const auto& [mid, m] : models_gpu_) ids.push_back(mid);
+    std::sort(ids.begin(), ids.end());
+    auto it = models_gpu_.find(ids[std::size_t(idx)]);
+    if (it == models_gpu_.end()) return;
+    for (const auto& c : it->second.chunks) {
+        ++total_chunks;
+        if (c.is_resident) ++resident_chunks;
+    }
+}
+
 void ViewportCore::finalizeModel(std::uint32_t model_id) {
     auto it = pending_direct_loads_.find(model_id);
     if (it == pending_direct_loads_.end()) {

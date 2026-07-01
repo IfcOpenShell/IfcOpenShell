@@ -395,6 +395,14 @@ public:
     // (still in the metadata phase). Cheap; safe to poll every frame.
     void streamingProgress(int& resident_chunks, int& total_chunks) const;
 
+    // Per-model progress for a federation loading UI. count() is how many
+    // models have metadata (are in the scene); progress(idx,…) gives the
+    // idx-th model's resident/total chunks, ordered by model_id (= load order)
+    // so each model keeps a stable UI slot as it streams.
+    int  streamingModelCount() const;
+    void streamingModelProgress(int idx, int& resident_chunks,
+                                int& total_chunks) const;
+
     // Direct-load (bonsai-side) entry points. Bonsai's SceneLoader feeds
     // the viewer one mesh + one instance at a time, then calls
     // finalizeModel once everything's staged. The staging map lives on

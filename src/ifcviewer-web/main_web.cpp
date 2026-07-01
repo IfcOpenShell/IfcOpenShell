@@ -222,6 +222,20 @@ extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_chunks_total_c() {
     int r = 0, t = 0; g_app->core.streamingProgress(r, t); return t;
 }
 
+// Per-model progress for the federation loading panel: how many models are in
+// the scene, and the idx-th model's resident/total chunks (idx ordered by load).
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_count_c() {
+    return g_app ? g_app->core.streamingModelCount() : 0;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_resident_c(int idx) {
+    if (!g_app) return 0;
+    int r = 0, t = 0; g_app->core.streamingModelProgress(idx, r, t); return r;
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_total_c(int idx) {
+    if (!g_app) return 0;
+    int r = 0, t = 0; g_app->core.streamingModelProgress(idx, r, t); return t;
+}
+
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();

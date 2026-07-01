@@ -29,22 +29,34 @@
   #open-btn:hover { background: #3182ce; }
   #add-btn:hover  { background: #3b465c; }
   #file-input { display: none; }
-  /* Streaming loading bar: a thin top progress strip + a centred caption.
-     Shown only while a network/file model streams; hidden once resident. */
+  /* Streaming loading UI: a thin top progress strip (aggregate) + a centred
+     panel with a per-model segmented bar. Shown only while models stream. */
   #progress { position: fixed; top: 0; left: 0; right: 0; height: 3px;
     background: rgba(43,108,176,.2); z-index: 20; display: none; }
   #progress-fill { height: 100%; width: 0%; background: #3182ce;
     transition: width .15s ease; }
-  #progress-text { position: fixed; top: 10px; left: 50%;
+  #progress-panel { position: fixed; top: 10px; left: 50%;
     transform: translateX(-50%); z-index: 20; font-size: 12px;
-    background: rgba(20,22,28,.85); padding: 4px 12px; border-radius: 4px;
-    pointer-events: none; display: none; }
+    background: rgba(20,22,28,.9); padding: 8px 12px; border-radius: 6px;
+    pointer-events: none; display: none; min-width: 280px; max-width: 60vw; }
+  #progress-summary { margin-bottom: 6px; white-space: nowrap; }
+  /* One flex segment per model — fills blue as it streams, green when done,
+     grey while its metadata is still pending. Visualises parallel loading. */
+  #progress-segs { display: flex; gap: 2px; }
+  #progress-segs > div { flex: 1 1 0; height: 7px; border-radius: 2px;
+    background: #2d3748; overflow: hidden; }
+  #progress-segs > div > i { display: block; height: 100%; width: 0%;
+    background: #3182ce; transition: width .15s ease; }
+  #progress-segs > div.done > i { background: #38a169; }
 </style>
 </head>
 <body>
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
 <div id="progress"><div id="progress-fill"></div></div>
-<div id="progress-text"></div>
+<div id="progress-panel">
+  <div id="progress-summary"></div>
+  <div id="progress-segs"></div>
+</div>
 <button id="add-btn" title="Add file(s) to the current scene (federation)">Add</button>
 <button id="open-btn">Open .ifcview…</button>
 <input id="file-input" type="file" accept=".ifcview" multiple>
@@ -88,24 +100,34 @@
       // delivery (verified during web bring-up).
       var collapsedOnce = false;
       var urlLoadTried = false;
-      var modelUrl = new URLSearchParams(location.search).get('model');
+      // Models to auto-load from the query string, as a federation. Accepts
+      // either repeated params (?model=a&model=b&…) or a comma list
+      // (?models=a,b,c) — or a mix. Each becomes its own streamed source.
+      var qs = new URLSearchParams(location.search);
+      var modelUrls = qs.getAll('model');
+      var modelsCsv = qs.get('models');
+      if (modelsCsv) modelUrls = modelUrls.concat(
+        modelsCsv.split(',').map(function(s){ return s.trim(); }).filter(Boolean));
       function shellTick() {
         if (Module._app_ptr && Module._raf_tick_c) {
           // First time the app goes live, collapse the log overlay so it
           // stops covering the viewport.
           if (!collapsedOnce) { statusEl.classList.add('ready'); collapsedOnce = true; }
-          // ?model=URL streams a remote sidecar via HTTP Range once the app
-          // is live (one-shot). Same-origin needs no CORS; cross-origin URLs
-          // require the host to send CORS + Accept-Ranges headers.
-          if (!urlLoadTried && modelUrl && Module._load_sidecar_from_source_c) {
+          // Auto-load every ?model= sidecar via HTTP Range once the app is live
+          // (one-shot). Same-origin needs no CORS; cross-origin URLs require the
+          // host to send CORS + Accept-Ranges headers. They stream concurrently
+          // into one scene (chunk concurrency is globally capped downstream).
+          if (!urlLoadTried && modelUrls.length && Module._load_sidecar_from_source_c) {
             urlLoadTried = true;
-            window.beginLoadProgress();
-            registerUrlSource(modelUrl).then(function(sid) {
-              Module._clear_scene_c();                  // replace the embedded sample
-              Module._load_sidecar_from_source_c(sid);
-            }).catch(function(e) {
-              statusEl.textContent += 'url load failed: ' + e + '\n';
-              statusEl.classList.add('error');
+            window.beginLoadProgress(modelUrls.length);
+            Module._clear_scene_c();                    // replace the embedded sample once
+            modelUrls.forEach(function(url) {
+              registerUrlSource(url).then(function(sid) {
+                Module._load_sidecar_from_source_c(sid);
+              }).catch(function(e) {
+                statusEl.textContent += 'url load failed (' + url + '): ' + e + '\n';
+                statusEl.classList.add('error');
+              });
             });
           }
           window.updateLoadProgress();
@@ -152,38 +174,63 @@
   // Driven by the C-side progress exports (resident/total chunks) + the
   // bytes-downloaded counter the EM_JS range reader maintains. Shown only for
   // streamed loads (URL / picked file), not the tiny embedded sample.
-  var progEl  = document.getElementById('progress');
-  var fillEl  = document.getElementById('progress-fill');
-  var textEl  = document.getElementById('progress-text');
+  var progEl    = document.getElementById('progress');
+  var fillEl    = document.getElementById('progress-fill');
+  var panelEl   = document.getElementById('progress-panel');
+  var summaryEl = document.getElementById('progress-summary');
+  var segsEl    = document.getElementById('progress-segs');
   var loadActive = false;
-  window.beginLoadProgress = function() {
+  var expectedModels = 1;
+  // Call with the number of models this batch will load (federation).
+  window.beginLoadProgress = function(nModels) {
     loadActive = true;
+    expectedModels = Math.max(1, nModels || 1);
     Module.__ifcvBytesLoaded = 0;
     fillEl.style.width = '0%';
-    progEl.style.display = 'block';
-    textEl.style.display = 'block';
-    textEl.textContent = 'Loading model…';
+    segsEl.innerHTML = '';
+    progEl.style.display   = 'block';
+    panelEl.style.display  = 'block';
+    summaryEl.textContent  = 'Loading ' + expectedModels +
+      ' model' + (expectedModels === 1 ? '' : 's') + '…';
   };
-  function endLoadProgress() { progEl.style.display = 'none'; textEl.style.display = 'none'; }
+  function endLoadProgress() { progEl.style.display = 'none'; panelEl.style.display = 'none'; }
   window.updateLoadProgress = function() {
     if (!loadActive) return;
-    var R  = Module._ifcv_chunks_resident_c ? Module._ifcv_chunks_resident_c() : 0;
-    var T  = Module._ifcv_chunks_total_c    ? Module._ifcv_chunks_total_c()    : 0;
+    var mc = Module._ifcv_model_count_c ? Module._ifcv_model_count_c() : 0;
+    var N  = Math.max(expectedModels, mc);
     var mb = ((Module.__ifcvBytesLoaded || 0) / 1e6).toFixed(1);
-    if (T === 0) {                       // still fetching critical metadata
-      fillEl.style.width = '6%';
-      textEl.textContent = 'Loading model… ' + mb + ' MB';
-      return;
+    // One segment per model; add/remove to match N.
+    while (segsEl.children.length < N) {
+      var d = document.createElement('div'); d.appendChild(document.createElement('i'));
+      segsEl.appendChild(d);
     }
-    var pct = Math.round(100 * R / T);
-    fillEl.style.width = pct + '%';
-    if (R >= T) {                        // all chunks resident → done
-      textEl.textContent = 'Loaded — ' + T + ' chunks · ' + mb + ' MB';
+    while (segsEl.children.length > N) segsEl.removeChild(segsEl.lastChild);
+    var aggR = 0, aggT = 0, done = 0;
+    for (var i = 0; i < N; i++) {
+      var seg = segsEl.children[i];
+      if (i < mc) {                       // model has metadata → show its progress
+        var r = Module._ifcv_model_resident_c(i);
+        var t = Module._ifcv_model_total_c(i);
+        aggR += r; aggT += t;
+        var isDone = t > 0 && r >= t;
+        if (isDone) done++;
+        seg.className = isDone ? 'done' : '';
+        seg.firstChild.style.width =
+          (isDone ? 100 : (t > 0 ? Math.round(100 * r / t) : 4)) + '%';  // sliver = metadata only
+      } else {                            // metadata not fetched yet → waiting
+        seg.className = '';
+        seg.firstChild.style.width = '0%';
+      }
+    }
+    fillEl.style.width = (aggT > 0 ? Math.round(100 * aggR / aggT) : 4) + '%';
+    if (N > 0 && done >= N) {             // every model fully resident → done
+      summaryEl.textContent = 'Loaded ' + N + ' model' + (N === 1 ? '' : 's') + ' · ' + mb + ' MB';
       loadActive = false;
-      setTimeout(endLoadProgress, 900);
+      setTimeout(endLoadProgress, 1200);
       return;
     }
-    textEl.textContent = 'Loading geometry — ' + R + ' / ' + T + ' chunks · ' + mb + ' MB';
+    summaryEl.textContent = 'Loading ' + N + ' model' + (N === 1 ? '' : 's') + ' — ' +
+      done + ' done · ' + (mc - done) + ' streaming · ' + (N - mc) + ' waiting · ' + mb + ' MB';
   };
 
   // File-browse loading (#88, byte-range). The picked File object is stashed
@@ -211,8 +258,11 @@
       return;
     }
     try {
+      // Replace: N = picked files. Add: existing models + picked files.
+      var existing = (pendingMode === 'add' && Module._ifcv_model_count_c)
+        ? Module._ifcv_model_count_c() : 0;
       if (pendingMode === 'replace') Module._clear_scene_c();
-      window.beginLoadProgress();
+      window.beginLoadProgress(existing + files.length);
       for (var i = 0; i < files.length; i++) {
         var sid = registerFileSource(files[i]);
         Module._load_sidecar_from_source_c(sid);
