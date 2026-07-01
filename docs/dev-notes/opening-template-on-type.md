@@ -97,20 +97,41 @@ switch/edit round-trips against the new `assign_type`.
 ### Write-back on void edit
 
 Editing an occurrence's void writes the new geometry back to the type's `Reference`
-template via `update_type_template_from_opening` (creates the template if absent;
-re-points the shared map so siblings follow). Hooked at both commit paths:
+template via `update_type_template_from_opening` (creates the template if absent), then
+**re-maps every occurrence's opening onto the template** and reloads the affected host walls
+(`switch_representation`) so they re-boolean. The re-map (`_remap_opening_to_template`) is the
+key part: an earlier version only re-pointed a *pre-existing* shared map, so siblings whose
+openings were **independent** (their own `IfcRepresentationMap`, never sharing the template)
+didn't follow — the common real-world case. Now they do. Hooked at both commit paths:
 `UpdateRepresentation._execute` (the `edited_objs` path) and
 `OverrideModeSetObject` after `edit_representation_item` (the in-place item edit). The
 older `edit_openings`/`is_edited` path also calls it. `set_type_opening_representation`
 has replace semantics (one `Reference` map per type).
 
+### Preserving adjusted extrusions (duplicate_type)
+
+`is_opening_representation_custom` only flags *non-extrusion* geometry (tessellation, brep,
+CSG) as worth preserving — a proxy for "not regenerable". That mis-classifies a *manually
+adjusted* extrusion, which is still an `IfcExtrudedAreaSolid`, so a hand-tweaked extrusion
+opening was reset to the default on `duplicate_type`.
+
+`promote_opening_to_type` now gates on `should_preserve_opening` = custom **or**
+`_is_adjusted_extrusion`. The latter generates the default (`generate_opening_from_filling`,
+which yields the default since no template exists at promote time) *transiently*, compares the
+two bodies' axis-aligned bounding boxes (1 mm tolerance) via the geom engine, then removes the
+temporary default. Divergence ⇒ the extrusion was adjusted ⇒ promote it; a plain default
+matches ⇒ left regenerable (not frozen — see the "freeze" discussion). Scoped to the duplicate
+path so the generate-and-compare stays out of the hot predicate. Limitation: bbox comparison
+misses a shape change that preserves the bbox (upgrade to a vertex-set compare if needed).
+
 ## Status — implemented (manually verified in Blender)
 
 - core `map_type_representations.py`: skip `Reference` maps.
 - `model/opening.py`: `get_/set_type_opening_representation`, `promote_opening_to_type`,
-  `update_type_template_from_opening`, `preserve_opening_on_type_change`;
-  `generate_opening_from_filling` consults the template; PR1 guard removed from
-  `_regenerate_from_type`.
+  `update_type_template_from_opening` (+ `_remap_opening_to_template`),
+  `preserve_opening_on_type_change`, `should_preserve_opening` (+ `_is_adjusted_extrusion`,
+  `_representation_bbox`); `generate_opening_from_filling` consults the template; PR1 guard
+  removed from `_regenerate_from_type`.
 - `model/handler.py`: pre + post assign_type listeners.
 - `type/operator.py` `DuplicateType`: promote before copy.
 - `project/operator.py` `AppendLibraryElement`: `harvest_opening_template`.
@@ -118,7 +139,9 @@ has replace semantics (one `Reference` map per type).
   `OverrideModeSetObject`; `reimport_element_representations` renders the requested rep.
 - `geometry/data.py` + `geometry/ui.py`: `RepresentationIdentifier` column + headers.
 
-Committed as a single commit on branch `opening-template-on-type` (10 files).
+Branch `opening-template-on-type` (#8200): initial feature commit + the #7916 build-conflict
+ancestry-merge + void-propagation-to-all-occurrences + adjusted-extrusion preservation. The
+`docs/dev-notes/` convention itself lives on the stacked branch `dev-notes-system` (#8201).
 
 Still **deferred:** explicit "Apply/Reset to type" operators + a "diverges from type"
 indicator; import never auto-writes back. `update_simple_openings` still keeps its
@@ -133,7 +156,10 @@ indicator; import never auto-writes back. `update_simple_openings` still keeps i
   coords — same assumption as `append_asset`).
 - Switch X→Y→X round-trip restores each type's void; switching to a plain (template-less)
   type gives its default extrusion, not the previous faceset.
-- Edit a void → type's `Reference` row updates; siblings follow; survives duplicate.
+- Edit a void → type's `Reference` row updates; **all** occurrences follow (including ones
+  that had independent openings) and their host walls re-boolean; survives duplicate.
+- `duplicate_type` on a type whose extrusion opening was **manually adjusted** → Type B keeps
+  the adjusted extrusion; a type with a plain/default extrusion stays regenerable (not frozen).
 - Three write-back hooks are intentional (different commit paths) — candidate for
   consolidation in review.
 - Re-test against upstream's new `assign_type` (see NOTE under "Type switching").
