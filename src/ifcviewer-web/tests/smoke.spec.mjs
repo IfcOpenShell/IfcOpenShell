@@ -271,3 +271,75 @@ test('click selects an object and the highlight renders (async pick)', async ({ 
 
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
+
+// --- Nav / viewing features added on top of the streaming core --------------
+// These drive the exported C hooks that the desktop reaches via hotkeys, so a
+// break in the shared ViewportCore math (fly, visibility, x-ray) or the web
+// wiring shows up here. All run against the embedded sample.
+
+async function ready(page) {
+  await page.goto('/IfcViewerWeb.html');
+  await page.waitForFunction(
+    () => !!(window.Module && window.Module._app_ptr), null, { timeout: 30_000 });
+  await page.waitForTimeout(1000);
+}
+
+test('fly mode: enter, WASD moves the camera, exit', async ({ page }) => {
+  const gpuErrors = [];
+  page.on('console', (m) => { if (/Uncaptured WebGPU error|is invalid/i.test(m.text())) gpuErrors.push(m.text()); });
+  await ready(page);
+
+  await page.evaluate(() => window.Module._toggle_fly_c());
+  expect(await page.evaluate(() => window.Module._fly_is_active_c())).toBe(1);
+
+  const before = await shot(page);
+  await page.keyboard.down('w');       // fly forward
+  await page.waitForTimeout(500);
+  await page.keyboard.up('w');
+  await page.waitForTimeout(200);
+  const after = await shot(page);
+  expect(Buffer.compare(before, after), 'holding W did not move the fly camera').not.toBe(0);
+
+  await page.keyboard.press('Escape');  // single Esc exits
+  expect(await page.evaluate(() => window.Module._fly_is_active_c())).toBe(0);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('x-ray toggles translucency on and off', async ({ page }) => {
+  const gpuErrors = [];
+  page.on('console', (m) => { if (/Uncaptured WebGPU error|is invalid/i.test(m.text())) gpuErrors.push(m.text()); });
+  await ready(page);
+
+  const base = await shot(page);
+  await page.evaluate(() => window.Module._toggle_xray_c());
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.Module._xray_is_active_c())).toBe(1);
+  const xray = await shot(page);
+  expect(Buffer.compare(base, xray), 'x-ray on did not change the render').not.toBe(0);
+
+  await page.evaluate(() => window.Module._toggle_xray_c());
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => window.Module._xray_is_active_c())).toBe(0);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('hide selected removes geometry after a pick', async ({ page }) => {
+  const gpuErrors = [];
+  page.on('console', (m) => { if (/Uncaptured WebGPU error|is invalid/i.test(m.text())) gpuErrors.push(m.text()); });
+  await ready(page);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const before = await shot(page);
+  // select whatever is under the centre, then hide it
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await page.waitForTimeout(400);
+  await page.evaluate(() => window.Module._hide_selected_c());
+  await page.waitForTimeout(400);
+  const after = await shot(page);
+  expect(Buffer.compare(before, after), 'hide did not change the canvas — nothing picked or hide is a no-op').not.toBe(0);
+
+  // show all brings it back
+  await page.evaluate(() => window.Module._show_all_c());
+  await page.waitForTimeout(400);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});

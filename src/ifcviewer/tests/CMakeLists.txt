@@ -126,6 +126,20 @@ if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
     )
 endif()
 
+# ViewportCore camera + visibility ops (fly math, x-ray, hide/show-all), the
+# math shared verbatim by desktop + web. ViewportCore.cpp is the monster TU that
+# can't compile standalone, so link the built IfcViewerCore lib; a mock
+# ViewportHost stands in for the window, and no GPU is created (construction /
+# teardown / the tested ops touch no wgpu).
+add_ifcviewer_unit_test(test_viewport_camera
+    LIBS IfcViewerCore Eigen3::Eigen
+)
+if(UNIX AND NOT APPLE AND WGPU_NATIVE_LIB_DIR)
+    set_target_properties(test_viewport_camera PROPERTIES
+        BUILD_RPATH "${WGPU_NATIVE_LIB_DIR}"
+    )
+endif()
+
 # Federation is Qt-derived (QObject + signals). It has to pull Qt6 in
 # directly and enable AUTOMOC for the Q_OBJECT moc-generation.
 find_package(Qt${QT_VERSION} COMPONENTS Core Gui Test REQUIRED PATHS ${QT_DIR})
