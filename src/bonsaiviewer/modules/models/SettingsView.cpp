@@ -39,12 +39,16 @@ QString formatNumber(double value) {
 
 QString formatAngleDms(double degrees) {
     const double absolute = std::fabs(degrees);
-    const int d = static_cast<int>(absolute);
-    const double minutes_total = (absolute - static_cast<double>(d)) * 60.0;
-    const int m = static_cast<int>(minutes_total);
-    const double s = (minutes_total - static_cast<double>(m)) * 60.0;
+    const int degree_part = static_cast<int>(absolute);
+    const double minutes_total = (absolute - static_cast<double>(degree_part)) * 60.0;
+    const int minute_part = static_cast<int>(minutes_total);
+    const double second_part = (minutes_total - static_cast<double>(minute_part)) * 60.0;
     const QString sign = degrees < 0.0 ? "-" : "";
-    return QString("%1%2° %3' %4\"").arg(sign).arg(d).arg(m, 2, 10, QChar('0')).arg(formatNumber(s));
+    return QString("%1%2° %3' %4\"")
+        .arg(sign)
+        .arg(degree_part)
+        .arg(minute_part, 2, 10, QChar('0'))
+        .arg(formatNumber(second_part));
 }
 
 SelectedModelGeorefState unknownState(const QString& georef, const QString& type) {
@@ -74,8 +78,8 @@ QString formatCachedUnitScale(double meters_per_unit) {
 std::string enumString(const attribute_value& av) {
     if (av.isNull()) return {};
     if (av.type() != ifcopenshell::Argument_ENUMERATION) return {};
-    enumeration_reference er = av;
-    return std::string(er.value() ? er.value() : "");
+    enumeration_reference enumeration = av;
+    return std::string(enumeration.value() ? enumeration.value() : "");
 }
 
 QString formatNamedUnit(const express::Base& unit) {
@@ -224,18 +228,18 @@ void SettingsView::refresh(const QString& fed_id) const {
         return;
     }
 
-    const uint32_t mid = session_state_->modelIdForFedId(fed_id);
-    if (mid == 0) {
+    const uint32_t model_id = session_state_->modelIdForFedId(fed_id);
+    if (model_id == 0) {
         widget_->renderSelectedModelGeoref(unknownState("Not loaded", "No live model"));
         return;
     }
 
-    if (auto* ifc_file = loader->ifcFile(mid)) {
+    if (auto* ifc_file = loader->ifcFile(model_id)) {
         widget_->renderSelectedModelGeoref(stateFromLiveFile(ifc_file));
         return;
     }
 
-    const ModelGeoref* georef = loader->modelGeoref(mid);
+    const ModelGeoref* georef = loader->modelGeoref(model_id);
     if (!georef) {
         widget_->renderSelectedModelGeoref(unknownState("Not available yet", "No data source"));
         return;

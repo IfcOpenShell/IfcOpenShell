@@ -189,8 +189,8 @@ void ConnectorProcess::dispatchLine(const QByteArray& line) {
 void ConnectorProcess::failPendingAndClear(int code, const QString& message) {
     QHash<QString, Pending> snapshot;
     snapshot.swap(pending_);
-    for (const auto& p : snapshot) {
-        if (p.on_error) p.on_error(code, message);
+    for (const auto& pending_request : snapshot) {
+        if (pending_request.on_error) pending_request.on_error(code, message);
     }
 }
 

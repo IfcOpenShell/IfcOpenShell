@@ -50,10 +50,10 @@ public:
 
 private:
     void refresh();
-    void applyCoordinateOperation(uint32_t mid);
-    void applyModelTransformation(uint32_t mid);
-    void applyModelVisibility(uint32_t mid);
-    void guessFederatedFalseOriginFromFirstModel(uint32_t mid);
+    void applyCoordinateOperation(uint32_t model_id);
+    void applyModelTransformation(uint32_t model_id);
+    void applyModelVisibility(uint32_t model_id);
+    void guessFederatedFalseOriginFromFirstModel(uint32_t model_id);
     void updateVolumeReadout();
 
     bonsaiviewer::SessionState* session_state_ = nullptr;

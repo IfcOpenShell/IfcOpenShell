@@ -26,22 +26,22 @@ namespace bonsaiviewer { class SessionState; }
 
 namespace bonsaiviewer::modules::viewport::commands {
 
-void setHome(SessionState& session, ViewportWindow& vp);
-void goHome(SessionState& session, ViewportWindow& vp);
-void viewSelected(ViewportWindow& vp);
+void setHome(SessionState& session, ViewportWindow& viewport);
+void goHome(SessionState& session, ViewportWindow& viewport);
+void viewSelected(ViewportWindow& viewport);
 
-void fly(SessionState& session, ViewportWindow& vp);
-void toggleSection(SessionState& session, ViewportWindow& vp);
-void clearSection(SessionState& session, ViewportWindow& vp);
+void fly(SessionState& session, ViewportWindow& viewport);
+void toggleSection(SessionState& session, ViewportWindow& viewport);
+void clearSection(SessionState& session, ViewportWindow& viewport);
 
-void toggleDistance(ViewportWindow& vp);
-void toggleArea(ViewportWindow& vp);
-void toggleVolume(ViewportWindow& vp);
+void toggleDistance(ViewportWindow& viewport);
+void toggleArea(ViewportWindow& viewport);
+void toggleVolume(ViewportWindow& viewport);
 
-void hideSelected(ViewportWindow& vp);
-void isolateSelected(ViewportWindow& vp);
-void showAll(ViewportWindow& vp);
-void invertVisibility(ViewportWindow& vp);
+void hideSelected(ViewportWindow& viewport);
+void isolateSelected(ViewportWindow& viewport);
+void showAll(ViewportWindow& viewport);
+void invertVisibility(ViewportWindow& viewport);
 
 } // namespace bonsaiviewer::modules::viewport::commands
 

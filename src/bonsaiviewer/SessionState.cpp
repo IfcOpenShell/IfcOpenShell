@@ -64,25 +64,25 @@ void SessionState::createLoader(ViewportWindow* viewport) {
     });
     connect(loader_, &SceneLoader::progressChanged, this, &SessionState::setProgress);
     connect(loader_, &SceneLoader::loadedFromSidecar, this,
-            [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
+            [this, format_elapsed](uint32_t model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 from cache in %2")
-                .arg(loader_->displayName(mid))
+                .arg(loader_->displayName(model_id))
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
-        emit modelGeometryReady(mid);
+        emit modelGeometryReady(model_id);
     });
     connect(loader_, &SceneLoader::loadedFromStream, this,
-            [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
+            [this, format_elapsed](uint32_t model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 streamed in %2")
-                .arg(loader_->displayName(mid))
+                .arg(loader_->displayName(model_id))
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
-        emit modelGeometryReady(mid);
+        emit modelGeometryReady(model_id);
     });
-    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t mid) {
-        setStatusMessage("Cancelled", loader_->displayName(mid));
+    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t model_id) {
+        setStatusMessage("Cancelled", loader_->displayName(model_id));
         endProgress();
     });
     connect(loader_, &SceneLoader::loadError, this,

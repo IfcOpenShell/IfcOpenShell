@@ -82,10 +82,11 @@ int main(int argc, char* argv[]) {
         const QStringList parts = parser.value("camera").split(',');
         if (parts.size() == 6) {
             bool ok = true;
-            float v[6];
-            for (int i = 0; i < 6 && ok; ++i) v[i] = parts[i].toFloat(&ok);
+            float camera_values[6];
+            for (int i = 0; i < 6 && ok; ++i) camera_values[i] = parts[i].toFloat(&ok);
             if (ok) {
-                viewport->setCamera(v[0], v[1], v[2], v[3], v[4], v[5]);
+                viewport->setCamera(camera_values[0], camera_values[1], camera_values[2],
+                                    camera_values[3], camera_values[4], camera_values[5]);
             } else {
                 Log::warn() << "--camera: failed to parse "
                             << parser.value("camera");

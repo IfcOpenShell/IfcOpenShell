@@ -52,25 +52,25 @@ struct SidecarHeaderRaw {
 // walks the metadata tail through one of these so a truncated buffer fails
 // cleanly (return false) instead of reading out of bounds.
 struct BufCursor {
-    const uint8_t* p;
-    size_t remaining;
+    const uint8_t* cursor;
+    size_t remaining_bytes;
 
     bool take(void* dst, size_t bytes) {
-        if (bytes > remaining) return false;
-        std::memcpy(dst, p, bytes);
-        p += bytes;
-        remaining -= bytes;
+        if (bytes > remaining_bytes) return false;
+        std::memcpy(dst, cursor, bytes);
+        cursor += bytes;
+        remaining_bytes -= bytes;
         return true;
     }
 
     // Read a uint32 length prefix followed by length*sizeof(T) elements.
     template<typename T>
-    bool takeVec(std::vector<T>& v) {
+    bool takeVec(std::vector<T>& values) {
         uint32_t n;
         if (!take(&n, 4)) return false;
-        if (uint64_t(n) * sizeof(T) > remaining) return false;
-        v.resize(n);
-        if (n > 0 && !take(v.data(), size_t(n) * sizeof(T))) return false;
+        if (uint64_t(n) * sizeof(T) > remaining_bytes) return false;
+        values.resize(n);
+        if (n > 0 && !take(values.data(), size_t(n) * sizeof(T))) return false;
         return true;
     }
 };
@@ -119,7 +119,7 @@ bool parseSidecarDeferred(const uint8_t* data, size_t n, SidecarData& out) {
     if (!c.takeVec(out.elements)) return false;
     uint32_t stbl_len = 0;
     if (!c.take(&stbl_len, 4))       return false;
-    if (stbl_len > c.remaining)      return false;
+    if (stbl_len > c.remaining_bytes) return false;
     out.string_table.resize(stbl_len);
     if (stbl_len > 0 && !c.take(out.string_table.data(), stbl_len)) return false;
     return true;

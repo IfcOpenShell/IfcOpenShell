@@ -166,10 +166,10 @@ void SettingsDialog::setupUi() {
     federation_unit_form->setHorizontalSpacing(16);
     federation_unit_form->setVerticalSpacing(10);
     unit_combo_ = new QComboBox(federation_unit_body);
-    for (const auto& uc : kUnitChoices) {
+    for (const auto& unit_choice : kUnitChoices) {
         QStringList data;
-        data << QString::fromUtf8(uc.prefix) << QString::fromUtf8(uc.name);
-        unit_combo_->addItem(uc.label, data);
+        data << QString::fromUtf8(unit_choice.prefix) << QString::fromUtf8(unit_choice.name);
+        unit_combo_->addItem(unit_choice.label, data);
     }
     federation_unit_form->addRow("Unit", unit_combo_);
     federation_unit_section->addBodyWidget(unit_hint);
@@ -341,13 +341,13 @@ void SettingsDialog::setupUi() {
 void SettingsDialog::syncFromFederation() {
     if (!federation_) return;
 
-    const auto& cfg = federation_->config();
+    const auto& config = federation_->config();
     int idx = -1;
     for (int i = 0; i < unit_combo_->count(); ++i) {
         const QStringList data = unit_combo_->itemData(i).toStringList();
         if (data.size() == 2 &&
-            data[0].toStdString() == cfg.unit_prefix &&
-            data[1].toStdString() == cfg.unit_name) {
+            data[0].toStdString() == config.unit_prefix &&
+            data[1].toStdString() == config.unit_name) {
             idx = i;
             break;
         }
@@ -370,7 +370,7 @@ void SettingsDialog::populateModelTable() {
 
     int row = 0;
     for (const auto& model : federation_->models()) {
-        const auto& xf = model.model_transformation;
+        const auto& transformation = model.model_transformation;
         model_table_->insertRow(row);
 
         auto* model_item = new QTableWidgetItem(model.display_name.isEmpty() ? model.id : model.display_name);
@@ -383,13 +383,13 @@ void SettingsDialog::populateModelTable() {
         widgets.frame = new QComboBox(model_table_);
         widgets.frame->addItem("Local", static_cast<int>(AFrame::ModelLocal));
         widgets.frame->addItem("Global", static_cast<int>(AFrame::ModelGlobal));
-        widgets.frame->setCurrentIndex(xf.a_frame == AFrame::ModelGlobal ? 1 : 0);
+        widgets.frame->setCurrentIndex(transformation.a_frame == AFrame::ModelGlobal ? 1 : 0);
         model_table_->setCellWidget(row, 1, widgets.frame);
 
-        widgets.from_point = new QTableWidgetItem(formatVector3(xf.a));
-        widgets.to_point = new QTableWidgetItem(formatVector3(xf.b));
-        widgets.rotate = new QTableWidgetItem(formatVector3(xf.rxyz_deg));
-        widgets.pivot = new QTableWidgetItem(formatVector3(xf.pivot));
+        widgets.from_point = new QTableWidgetItem(formatVector3(transformation.a));
+        widgets.to_point = new QTableWidgetItem(formatVector3(transformation.b));
+        widgets.rotate = new QTableWidgetItem(formatVector3(transformation.rxyz_deg));
+        widgets.pivot = new QTableWidgetItem(formatVector3(transformation.pivot));
         model_table_->setItem(row, 2, widgets.from_point);
         model_table_->setItem(row, 3, widgets.to_point);
         model_table_->setItem(row, 4, widgets.rotate);
@@ -454,12 +454,12 @@ void SettingsDialog::updateSelectedModelGeoref() {
 void SettingsDialog::onAccepted() {
     if (federation_) {
         const QStringList data = unit_combo_->currentData().toStringList();
-        FederationConfig cfg;
+        FederationConfig config;
         if (data.size() == 2) {
-            cfg.unit_prefix = data[0].toStdString();
-            cfg.unit_name = data[1].toStdString();
+            config.unit_prefix = data[0].toStdString();
+            config.unit_name = data[1].toStdString();
         }
-        federation_->setConfig(cfg);
+        federation_->setConfig(config);
 
         FederatedFalseOrigin origin;
         origin.xyz = Eigen::Vector3d(parseNumber(xyz_x_), parseNumber(xyz_y_), parseNumber(xyz_z_));
@@ -467,13 +467,13 @@ void SettingsDialog::onAccepted() {
         federation_->setFederatedFalseOrigin(origin);
 
         for (const auto& row : model_rows_) {
-            ModelTransformation xf;
-            xf.a_frame = static_cast<AFrame>(row.frame->currentData().toInt());
-            xf.a = parseVector3(row.from_point->text());
-            xf.b = parseVector3(row.to_point->text());
-            xf.rxyz_deg = parseVector3(row.rotate->text());
-            xf.pivot = parseVector3(row.pivot->text());
-            federation_->setModelTransformation(row.fed_id, xf);
+            ModelTransformation transformation;
+            transformation.a_frame = static_cast<AFrame>(row.frame->currentData().toInt());
+            transformation.a = parseVector3(row.from_point->text());
+            transformation.b = parseVector3(row.to_point->text());
+            transformation.rxyz_deg = parseVector3(row.rotate->text());
+            transformation.pivot = parseVector3(row.pivot->text());
+            federation_->setModelTransformation(row.fed_id, transformation);
         }
         if (session_state_) {
             session_state_->notifyFederationChanged();

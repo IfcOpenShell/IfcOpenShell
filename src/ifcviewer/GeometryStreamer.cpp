@@ -42,29 +42,29 @@ struct MaterialInfo {
 };
 
 static MaterialInfo materialFromStyle(const ifcopenshell::geometry::taxonomy::style::ptr& style) {
-    MaterialInfo m;
-    if (!style) return m;
+    MaterialInfo material;
+    if (!style) return material;
     const auto& color = style->get_color();
     if (color) {
-        m.r = static_cast<float>(color.r());
-        m.g = static_cast<float>(color.g());
-        m.b = static_cast<float>(color.b());
+        material.r = static_cast<float>(color.r());
+        material.g = static_cast<float>(color.g());
+        material.b = static_cast<float>(color.b());
     }
     if (!std::isnan(style->transparency)) {
-        m.a = 1.0f - static_cast<float>(style->transparency);
+        material.a = 1.0f - static_cast<float>(style->transparency);
     }
-    return m;
+    return material;
 }
 
-static inline uint32_t packRGBA8(const MaterialInfo& m) {
-    auto to_byte = [](float v) -> uint32_t {
-        float c = std::clamp(v, 0.0f, 1.0f);
-        return static_cast<uint32_t>(c * 255.0f + 0.5f);
+static inline uint32_t packRGBA8(const MaterialInfo& material) {
+    auto to_byte = [](float channel_value) -> uint32_t {
+        float clamped_value = std::clamp(channel_value, 0.0f, 1.0f);
+        return static_cast<uint32_t>(clamped_value * 255.0f + 0.5f);
     };
-    uint32_t r = to_byte(m.r);
-    uint32_t g = to_byte(m.g);
-    uint32_t b = to_byte(m.b);
-    uint32_t a = to_byte(m.a);
+    uint32_t r = to_byte(material.r);
+    uint32_t g = to_byte(material.g);
+    uint32_t b = to_byte(material.b);
+    uint32_t a = to_byte(material.a);
     // Little-endian byte layout [r,g,b,a] for GL_UNSIGNED_BYTE * 4 normalized.
     return r | (g << 8) | (b << 16) | (a << 24);
 }
@@ -188,12 +188,12 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
     chunk.indices.reserve(faces.size());
 
     // Track local AABB as we emit vertices.
-    float amin[3] = { std::numeric_limits<float>::max(),
-                      std::numeric_limits<float>::max(),
-                      std::numeric_limits<float>::max() };
-    float amax[3] = { -std::numeric_limits<float>::max(),
-                      -std::numeric_limits<float>::max(),
-                      -std::numeric_limits<float>::max() };
+    float local_aabb_min[3] = { std::numeric_limits<float>::max(),
+                                std::numeric_limits<float>::max(),
+                                std::numeric_limits<float>::max() };
+    float local_aabb_max[3] = { -std::numeric_limits<float>::max(),
+                                -std::numeric_limits<float>::max(),
+                                -std::numeric_limits<float>::max() };
 
     auto emit_vertex = [&](uint32_t orig_idx, int mat_id) -> uint32_t {
         const uint64_t key = make_key(orig_idx, mat_id);
@@ -211,9 +211,12 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
         chunk.vertices.push_back(px);
         chunk.vertices.push_back(py);
         chunk.vertices.push_back(pz);
-        if (px < amin[0]) amin[0] = px; if (px > amax[0]) amax[0] = px;
-        if (py < amin[1]) amin[1] = py; if (py > amax[1]) amax[1] = py;
-        if (pz < amin[2]) amin[2] = pz; if (pz > amax[2]) amax[2] = pz;
+        if (px < local_aabb_min[0]) local_aabb_min[0] = px;
+        if (px > local_aabb_max[0]) local_aabb_max[0] = px;
+        if (py < local_aabb_min[1]) local_aabb_min[1] = py;
+        if (py > local_aabb_max[1]) local_aabb_max[1] = py;
+        if (pz < local_aabb_min[2]) local_aabb_min[2] = pz;
+        if (pz > local_aabb_max[2]) local_aabb_max[2] = pz;
 
         if (orig_idx * 3 + 2 < normals.size()) {
             chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 0]));
@@ -246,11 +249,11 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
     }
 
     if (chunk.vertices.empty()) {
-        for (int a = 0; a < 3; ++a) amin[a] = amax[a] = 0.0f;
+        for (int a = 0; a < 3; ++a) local_aabb_min[a] = local_aabb_max[a] = 0.0f;
     }
     for (int a = 0; a < 3; ++a) {
-        chunk.local_aabb_min[a] = amin[a];
-        chunk.local_aabb_max[a] = amax[a];
+        chunk.local_aabb_min[a] = local_aabb_min[a];
+        chunk.local_aabb_max[a] = local_aabb_max[a];
     }
     return chunk;
 }
@@ -527,7 +530,6 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
                 return false;
             }
-
             if (!iterator->initialize()) {
                 // No geometry survived this context for the remaining ids.
                 // Subsequent contexts will pick them up; nothing to emit.
@@ -604,15 +606,15 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
 
                     MeshChunk mesh_chunk =
                         buildMeshChunk(model_id_, local_mesh_id, tri_elem, offset);
-                    MeshAabb ma;
+                    MeshAabb mesh_aabb;
                     for (int a = 0; a < 3; ++a) {
-                        ma.lmin[a] = mesh_chunk.local_aabb_min[a];
-                        ma.lmax[a] = mesh_chunk.local_aabb_max[a];
-                        ma.offset[a] = offset[a];
+                        mesh_aabb.lmin[a] = mesh_chunk.local_aabb_min[a];
+                        mesh_aabb.lmax[a] = mesh_chunk.local_aabb_max[a];
+                        mesh_aabb.offset[a] = offset[a];
                     }
-                    ma.has_offset = (offset.squaredNorm() > 0.0);
+                    mesh_aabb.has_offset = (offset.squaredNorm() > 0.0);
                     if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
-                    mesh_aabbs[local_mesh_id] = ma;
+                    mesh_aabbs[local_mesh_id] = mesh_aabb;
                     if (!mesh_chunk.indices.empty()) {
                         emit meshReady(std::move(mesh_chunk));
                     }
@@ -626,11 +628,11 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 Eigen::Matrix4d mat_d =
                     tri_elem->transformation().data()->ccomponents();
                 if (mesh_aabbs[local_mesh_id].has_offset) {
-                    const Eigen::Vector3d off(
+                    const Eigen::Vector3d mesh_rebase_offset(
                         mesh_aabbs[local_mesh_id].offset[0],
                         mesh_aabbs[local_mesh_id].offset[1],
                         mesh_aabbs[local_mesh_id].offset[2]);
-                    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * off;
+                    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * mesh_rebase_offset;
                 }
 
                 InstanceChunk inst;
@@ -642,25 +644,25 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     inst.transform[i] = mat_d.data()[i];
                 }
 
-                const MeshAabb& ma = mesh_aabbs[local_mesh_id];
+                const MeshAabb& mesh_aabb = mesh_aabbs[local_mesh_id];
                 float mat_f[16];
                 for (int i = 0; i < 16; ++i) {
                     mat_f[i] = static_cast<float>(inst.transform[i]);
                 }
-                worldAabbFromLocal(ma.lmin, ma.lmax, mat_f,
+                worldAabbFromLocal(mesh_aabb.lmin, mesh_aabb.lmax, mat_f,
                                    inst.world_aabb_min, inst.world_aabb_max);
 
                 emit instanceReady(std::move(inst));
                 total_shapes++;
                 yielded_count++;
 
-                const int p = total_count > 0
+                const int progress_percent = total_count > 0
                     ? static_cast<int>((100 * yielded_count) / total_count)
                     : 100;
-                if (p != last_emitted_progress) {
-                    last_emitted_progress = p;
-                    progress_ = p;
-                    emit progressChanged(p);
+                if (progress_percent != last_emitted_progress) {
+                    last_emitted_progress = progress_percent;
+                    progress_ = progress_percent;
+                    emit progressChanged(progress_percent);
                 }
             } while (iterator->next());
 

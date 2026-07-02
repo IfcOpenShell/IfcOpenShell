@@ -53,10 +53,10 @@ void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
                       -std::numeric_limits<float>::infinity(),
                       -std::numeric_limits<float>::infinity() };
     for (size_t i = 0; i < n_verts; ++i) {
-        const float* v = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
+        const float* vertex = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
         for (int a = 0; a < 3; ++a) {
-            if (v[a] < bmin[a]) bmin[a] = v[a];
-            if (v[a] > bmax[a]) bmax[a] = v[a];
+            if (vertex[a] < bmin[a]) bmin[a] = vertex[a];
+            if (vertex[a] > bmax[a]) bmax[a] = vertex[a];
         }
     }
     float extent_recip[3];
@@ -99,25 +99,25 @@ void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
 }
 
 void SidecarBuilder::onInstanceReady(const InstanceChunk& chunk) {
-    InstanceCpu inst;
-    inst.mesh_id              = chunk.local_mesh_id;
-    inst.object_id            = chunk.object_id;
-    inst.color_override_rgba8 = chunk.color_override_rgba8;
-    inst.model_id             = chunk.model_id;
+    InstanceCpu instance;
+    instance.mesh_id              = chunk.local_mesh_id;
+    instance.object_id            = chunk.object_id;
+    instance.color_override_rgba8 = chunk.color_override_rgba8;
+    instance.model_id             = chunk.model_id;
 
     // The streamer's chunk.transform is the double-precision
     // placement_transformation.  The cached float transform/world_aabb is only
     // an identity-stage baseline; applyCachedModel recomposes from placement
     // against the consumer's stage matrices at load time.
-    std::memcpy(inst.placement_transformation, chunk.transform,
-                sizeof(inst.placement_transformation));
+    std::memcpy(instance.placement_transformation, chunk.transform,
+                sizeof(instance.placement_transformation));
     for (int i = 0; i < 16; ++i) {
-        inst.transform[i] = static_cast<float>(chunk.transform[i]);
+        instance.transform[i] = static_cast<float>(chunk.transform[i]);
     }
-    std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
-    std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
+    std::memcpy(instance.world_aabb_min, chunk.world_aabb_min, sizeof(instance.world_aabb_min));
+    std::memcpy(instance.world_aabb_max, chunk.world_aabb_max, sizeof(instance.world_aabb_max));
 
-    sidecar_data_.instances.push_back(inst);
+    sidecar_data_.instances.push_back(instance);
 }
 
 SidecarData SidecarBuilder::finalize(const ModelGeoref& georef,

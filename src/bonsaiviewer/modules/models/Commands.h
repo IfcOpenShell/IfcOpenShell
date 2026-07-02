@@ -52,35 +52,35 @@ namespace bonsaiviewer::modules::models::commands {
 
 // User-facing commands. Each one is responsible for emitting any notify()
 // signals exactly once, at the end of its execution.
-void toggleVisibility(SessionState& s, ItemKind kind, const QString& id);
-void addGroup(SessionState& s, QWidget& host, const QString& parent_group_id);
-void renameGroup(SessionState& s, QWidget& host, const QString& group_id);
-void moveGroup(SessionState& s, const QString& id, const QString& parent_group_id);
-void moveModels(SessionState& s, const QStringList& ids, const QString& parent_group_id);
-void removeGroup(SessionState& s, QWidget& host, const QString& group_id);
-void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QString& fed_id);
-void addModel(SessionState& s, QWidget& host);
+void toggleVisibility(SessionState& session, ItemKind kind, const QString& id);
+void addGroup(SessionState& session, QWidget& host, const QString& parent_group_id);
+void renameGroup(SessionState& session, QWidget& host, const QString& group_id);
+void moveGroup(SessionState& session, const QString& id, const QString& parent_group_id);
+void moveModels(SessionState& session, const QStringList& ids, const QString& parent_group_id);
+void removeGroup(SessionState& session, QWidget& host, const QString& group_id);
+void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& fed_id);
+void addModel(SessionState& session, QWidget& host);
 // Connector picker → pull_models_interactive → addCloudModel + load.
 // Reachable from AddModelDialog's CloudModel button; the underlying call
 // is async, so addModelFromCloud returns immediately after kicking it off.
-void addModelFromCloud(SessionState& s, QWidget& host);
+void addModelFromCloud(SessionState& session, QWidget& host);
 // push_model: push a cloud-sourced model back to its existing target.
 // Only valid when model.source_connector != "local". Async.
-void saveModelToCloud(SessionState& s, QWidget& host, const QString& fed_id);
+void saveModelToCloud(SessionState& session, QWidget& host, const QString& fed_id);
 // push_model_interactive: pick a connector and push to a fresh cloud
 // target. Valid for any model (local or already cloud-sourced). Async.
-void saveModelAsToCloud(SessionState& s, QWidget& host, const QString& fed_id);
-void convertIfcToDatabase(SessionState& s, QWidget& host);
-void exportGeometryDatabase(SessionState& s, QWidget& host);
-void openSettings(SessionState& s, QWidget& host);
+void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& fed_id);
+void convertIfcToDatabase(SessionState& session, QWidget& host);
+void exportGeometryDatabase(SessionState& session, QWidget& host);
+void openSettings(SessionState& session, QWidget& host);
 
 // Internal building blocks shared by commands here and by ProjectController.
 // These NEVER call notify*() — the caller is responsible for emitting once
 // at the end of its execution.
 namespace detail {
 
-// Queues already-federated models on the loader and maps their fed-ids to mids.
-void loadModels(SessionState& s, const QStringList& paths, const QStringList& fed_ids);
+// Queues already-federated models on the loader and maps their federation-ids to mids.
+void loadModels(SessionState& session, const QStringList& paths, const QStringList& fed_ids);
 
 } // namespace detail
 

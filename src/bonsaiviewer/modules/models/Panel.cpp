@@ -197,8 +197,9 @@ private:
             if (!target_index.isValid()) return true;
             if (kindOf(target_index) != ItemKind::Group) return false;
             if (group_id == target_group_id) return false;
-            for (QModelIndex cur = target_index; cur.isValid(); cur = cur.parent()) {
-                if (idOf(cur) == group_id) return false;
+            for (QModelIndex ancestor_index = target_index; ancestor_index.isValid();
+                 ancestor_index = ancestor_index.parent()) {
+                if (idOf(ancestor_index) == group_id) return false;
             }
             return true;
         }

@@ -60,9 +60,9 @@ ConnectorPickerDialog::ConnectorPickerDialog(const std::vector<ConnectorManifest
     row->setSpacing(components::style::metrics::padding);
 
     QList<QToolButton*> buttons;
-    for (const auto& m : manifests) {
-        auto* button = components::buttons::makeButton(m.name, ":/icons/cloud-square.svg", choices);
-        const QString id = m.id;
+    for (const auto& manifest : manifests) {
+        auto* button = components::buttons::makeButton(manifest.name, ":/icons/cloud-square.svg", choices);
+        const QString id = manifest.id;
         connect(button, &QToolButton::clicked, this, [this, id]() {
             selected_id_ = id;
             accept();

@@ -26,37 +26,42 @@
 #include <vector>
 
 void reorderSidecarByMorton(SidecarData& sd) {
-    const std::size_t n = sd.meshes.size();
-    if (n < 2) return;
+    const std::size_t mesh_count = sd.meshes.size();
+    if (mesh_count < 2) return;
 
     // Per-mesh centroid + instance count, exactly as the loader computes them
     // before chunk planning (average of instance world-AABB centres).
-    std::vector<float>         cx(n, 0.0f), cy(n, 0.0f), cz(n, 0.0f);
-    std::vector<std::uint32_t> cnt(n, 0);
+    std::vector<float>         mesh_centroid_x(mesh_count, 0.0f),
+                               mesh_centroid_y(mesh_count, 0.0f),
+                               mesh_centroid_z(mesh_count, 0.0f);
+    std::vector<std::uint32_t> mesh_instance_count(mesh_count, 0);
     for (const auto& inst : sd.instances) {
-        if (inst.mesh_id >= n) continue;
-        cx[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
-        cy[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
-        cz[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
-        ++cnt[inst.mesh_id];
+        if (inst.mesh_id >= mesh_count) continue;
+        mesh_centroid_x[inst.mesh_id] += 0.5f * (inst.world_aabb_min[0] + inst.world_aabb_max[0]);
+        mesh_centroid_y[inst.mesh_id] += 0.5f * (inst.world_aabb_min[1] + inst.world_aabb_max[1]);
+        mesh_centroid_z[inst.mesh_id] += 0.5f * (inst.world_aabb_min[2] + inst.world_aabb_max[2]);
+        ++mesh_instance_count[inst.mesh_id];
     }
-    for (std::size_t i = 0; i < n; ++i) {
-        if (cnt[i] > 0) {
-            const float inv = 1.0f / float(cnt[i]);
-            cx[i] *= inv; cy[i] *= inv; cz[i] *= inv;
+    for (std::size_t i = 0; i < mesh_count; ++i) {
+        if (mesh_instance_count[i] > 0) {
+            const float inv = 1.0f / float(mesh_instance_count[i]);
+            mesh_centroid_x[i] *= inv;
+            mesh_centroid_y[i] *= inv;
+            mesh_centroid_z[i] *= inv;
         }
     }
 
     // order[new_id] = old mesh id, in the loader's Morton order.
     const std::vector<std::uint32_t> order =
-        ChunkPlanner::sortMeshIdsByMorton(n, cx, cy, cz, cnt);
+        ChunkPlanner::sortMeshIdsByMorton(
+            mesh_count, mesh_centroid_x, mesh_centroid_y, mesh_centroid_z, mesh_instance_count);
 
     // Greedy-pack the sorted order into chunks (the same plan the loader used
     // to derive). Each chunk is a CONSECUTIVE run of `order`, so once we lay
     // meshes out in `order` the chunk is a contiguous mesh range — recorded in
     // the TOC as {first_mesh, mesh_count}.
-    std::vector<std::uint32_t> mesh_vertex_count(n, 0);
-    for (std::size_t i = 0; i < n; ++i) mesh_vertex_count[i] = sd.meshes[i].vertex_count;
+    std::vector<std::uint32_t> mesh_vertex_count(mesh_count, 0);
+    for (std::size_t i = 0; i < mesh_count; ++i) mesh_vertex_count[i] = sd.meshes[i].vertex_count;
     const std::vector<std::vector<std::uint32_t>> packed = ChunkPlanner::greedyPackChunks(
         order, mesh_vertex_count, INSTANCED_VERTEX_STRIDE_BYTES,
         WGPU_CHUNK_VERTEX_BYTES_LIMIT);
@@ -74,58 +79,61 @@ void reorderSidecarByMorton(SidecarData& sd) {
     // MeshInfo.first_instance: the baker leaves it 0 for every mesh and stores
     // instances ungrouped, so first_instance describes nothing. Grouping here
     // by mesh_id both reorders instances correctly AND fixes first_instance.
-    std::vector<std::vector<std::uint32_t>> insts_by_mesh(n);
-    for (std::uint32_t ii = 0; ii < sd.instances.size(); ++ii) {
-        const std::uint32_t mid = sd.instances[ii].mesh_id;
-        if (mid < n) insts_by_mesh[mid].push_back(ii);
+    std::vector<std::vector<std::uint32_t>> insts_by_mesh(mesh_count);
+    for (std::uint32_t instance_index = 0; instance_index < sd.instances.size(); ++instance_index) {
+        const std::uint32_t mesh_id = sd.instances[instance_index].mesh_id;
+        if (mesh_id < mesh_count) insts_by_mesh[mesh_id].push_back(instance_index);
     }
 
     std::vector<std::uint8_t>   new_vertices;  new_vertices.reserve(sd.vertices.size());
     std::vector<std::uint32_t>  new_indices;   new_indices.reserve(sd.indices.size());
-    std::vector<MeshInfo>       new_meshes(n);
+    std::vector<MeshInfo>       new_meshes(mesh_count);
     std::vector<InstanceCpu>    new_instances; new_instances.reserve(sd.instances.size());
 
     // Pass A: vertices + LOD0 indices + instances, mesh-by-mesh in the new
     // order, recording the new offsets on each MeshInfo.
-    for (std::uint32_t ni = 0; ni < n; ++ni) {
-        const std::uint32_t old = order[ni];
-        const MeshInfo& om = sd.meshes[old];
-        MeshInfo nm = om;  // carries AABB; offsets/instance fields overwritten below
+    for (std::uint32_t new_mesh_index = 0; new_mesh_index < mesh_count; ++new_mesh_index) {
+        const std::uint32_t old = order[new_mesh_index];
+        const MeshInfo& old_mesh_info = sd.meshes[old];
+        MeshInfo new_mesh_info = old_mesh_info;  // carries AABB; offsets/instance fields overwritten below
 
-        nm.vbo_byte_offset = std::uint32_t(new_vertices.size());
-        const std::size_t vbytes = std::size_t(om.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        new_mesh_info.vbo_byte_offset = std::uint32_t(new_vertices.size());
+        const std::size_t vbytes = std::size_t(old_mesh_info.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
         new_vertices.insert(new_vertices.end(),
-                            sd.vertices.begin() + om.vbo_byte_offset,
-                            sd.vertices.begin() + om.vbo_byte_offset + vbytes);
+                            sd.vertices.begin() + old_mesh_info.vbo_byte_offset,
+                            sd.vertices.begin() + old_mesh_info.vbo_byte_offset + vbytes);
 
-        nm.ebo_byte_offset = std::uint32_t(new_indices.size() * sizeof(std::uint32_t));
-        const std::size_t i0 = om.ebo_byte_offset / sizeof(std::uint32_t);
+        new_mesh_info.ebo_byte_offset = std::uint32_t(new_indices.size() * sizeof(std::uint32_t));
+        const std::size_t i0 = old_mesh_info.ebo_byte_offset / sizeof(std::uint32_t);
         new_indices.insert(new_indices.end(),
                            sd.indices.begin() + i0,
-                           sd.indices.begin() + i0 + om.index_count);
+                           sd.indices.begin() + i0 + old_mesh_info.index_count);
 
-        nm.first_instance = std::uint32_t(new_instances.size());
-        nm.instance_count = std::uint32_t(insts_by_mesh[old].size());
-        for (std::uint32_t ii : insts_by_mesh[old]) {
-            InstanceCpu ic = sd.instances[ii];
-            ic.mesh_id = ni;
-            new_instances.push_back(ic);
+        new_mesh_info.first_instance = std::uint32_t(new_instances.size());
+        new_mesh_info.instance_count = std::uint32_t(insts_by_mesh[old].size());
+        for (std::uint32_t instance_index : insts_by_mesh[old]) {
+            InstanceCpu instance = sd.instances[instance_index];
+            instance.mesh_id = new_mesh_index;
+            new_instances.push_back(instance);
         }
 
-        new_meshes[ni] = nm;
+        new_meshes[new_mesh_index] = new_mesh_info;
     }
 
     // Pass B: LOD1 indices appended after all LOD0 (same global layout as the
     // baker), in the new order, so a chunk's LOD1 slice is contiguous too.
-    for (std::uint32_t ni = 0; ni < n; ++ni) {
-        const MeshInfo& om = sd.meshes[order[ni]];
-        MeshInfo& nm = new_meshes[ni];
-        if (om.lod1_index_count == 0) { nm.lod1_ebo_byte_offset = 0; continue; }
-        nm.lod1_ebo_byte_offset = std::uint32_t(new_indices.size() * sizeof(std::uint32_t));
-        const std::size_t l0 = om.lod1_ebo_byte_offset / sizeof(std::uint32_t);
+    for (std::uint32_t new_mesh_index = 0; new_mesh_index < mesh_count; ++new_mesh_index) {
+        const MeshInfo& old_mesh_info = sd.meshes[order[new_mesh_index]];
+        MeshInfo& new_mesh_info = new_meshes[new_mesh_index];
+        if (old_mesh_info.lod1_index_count == 0) {
+            new_mesh_info.lod1_ebo_byte_offset = 0;
+            continue;
+        }
+        new_mesh_info.lod1_ebo_byte_offset = std::uint32_t(new_indices.size() * sizeof(std::uint32_t));
+        const std::size_t l0 = old_mesh_info.lod1_ebo_byte_offset / sizeof(std::uint32_t);
         new_indices.insert(new_indices.end(),
                            sd.indices.begin() + l0,
-                           sd.indices.begin() + l0 + om.lod1_index_count);
+                           sd.indices.begin() + l0 + old_mesh_info.lod1_index_count);
     }
 
     sd.vertices  = std::move(new_vertices);

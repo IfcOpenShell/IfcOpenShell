@@ -58,10 +58,10 @@ public:
     std::optional<express::Base> findEntity(uint32_t object_id) const;
 
 private:
-    void onSidecarElementsReady(uint32_t mid,
+    void onSidecarElementsReady(uint32_t model_id,
                                 std::vector<PackedElementInfo> elements,
                                 std::string string_table);
-    void onStreamedElementsReady(uint32_t mid, std::vector<ElementInfo> elements);
+    void onStreamedElementsReady(uint32_t model_id, std::vector<ElementInfo> elements);
 
     SceneLoader* loader_ = nullptr;
     std::unordered_map<uint32_t, BasicElementInfo> elements_;

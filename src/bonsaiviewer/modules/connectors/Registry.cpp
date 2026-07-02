@@ -48,14 +48,14 @@ void ConnectorRegistry::refresh() {
     // exec changed under us. Surviving entries keep their running process.
     for (auto it = processes_.begin(); it != processes_.end();) {
         const QString id = it.key();
-        ConnectorProcess* p = it.value();
-        const ConnectorManifest* now = manifestFor(id);
-        const bool stale = !now || !p ||
-                           p->manifest().exec_path != now->exec_path;
+        ConnectorProcess* process = it.value();
+        const ConnectorManifest* current_manifest = manifestFor(id);
+        const bool stale = !current_manifest || !process ||
+                           process->manifest().exec_path != current_manifest->exec_path;
         if (stale) {
-            if (p) {
-                p->shutdown();
-                p->deleteLater();
+            if (process) {
+                process->shutdown();
+                process->deleteLater();
             }
             it = processes_.erase(it);
         } else {
@@ -65,8 +65,8 @@ void ConnectorRegistry::refresh() {
 }
 
 const ConnectorManifest* ConnectorRegistry::manifestFor(const QString& id) const {
-    for (const auto& m : manifests_) {
-        if (m.id == id) return &m;
+    for (const auto& manifest : manifests_) {
+        if (manifest.id == id) return &manifest;
     }
     return nullptr;
 }
@@ -90,7 +90,7 @@ ConnectorProcess* ConnectorRegistry::get(const QString& id) {
     processes_.insert(id, proc);
     connect(proc, &ConnectorProcess::crashed, this, [this, id](const QString& message) {
         qWarning() << "ifcviewer connectors:" << message;
-        if (auto* p = processes_.take(id)) p->deleteLater();
+        if (auto* process = processes_.take(id)) process->deleteLater();
     });
     return proc;
 }
@@ -99,9 +99,9 @@ void ConnectorRegistry::shutdownAll() {
     const auto procs = processes_;
     processes_.clear();
     for (auto it = procs.begin(); it != procs.end(); ++it) {
-        if (auto* p = it.value()) {
-            p->shutdown();
-            p->deleteLater();
+        if (auto* process = it.value()) {
+            process->shutdown();
+            process->deleteLater();
         }
     }
 }

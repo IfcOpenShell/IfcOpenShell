@@ -164,8 +164,8 @@ void FederationItemModel::refreshSubtreeVisibility(QStandardItem* root) {
         const auto kind = static_cast<ItemKind>(item->data(KindRole).toInt());
         bool visible = true;
         if (kind == ItemKind::Group) {
-            const Federation::Group* g = federation_->findGroupById(id);
-            visible = g && g->visible;
+            const Federation::Group* group = federation_->findGroupById(id);
+            visible = group && group->visible;
         } else {
             visible = federation_->isModelEffectivelyVisible(id);
         }

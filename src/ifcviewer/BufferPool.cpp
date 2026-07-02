@@ -41,8 +41,8 @@ void BufferPool::configure(WGPUInstance instance, WGPUDevice device,
 }
 
 void BufferPool::destroy() {
-    for (auto& sp : sub_pools_) {
-        if (sp.buffer) wgpuBufferRelease(sp.buffer);
+    for (auto& sub_pool : sub_pools_) {
+        if (sub_pool.buffer) wgpuBufferRelease(sub_pool.buffer);
     }
     sub_pools_.clear();
     device_                  = nullptr;
@@ -140,7 +140,7 @@ bool BufferPool::addSubBuffer() {
         WGPUBuffer buf = wgpuDeviceCreateBuffer(device_, &desc);
 
         struct PopResult { bool done = false; bool error = false; };
-        auto pop = [&](PopResult& pr) {
+        auto pop = [&](PopResult& pop_result) {
             WGPUPopErrorScopeCallbackInfo pcb = {};
             pcb.mode = WGPUCallbackMode_AllowProcessEvents;
             pcb.callback = [](WGPUPopErrorScopeStatus, WGPUErrorType type,
@@ -149,9 +149,9 @@ bool BufferPool::addSubBuffer() {
                 p->done  = true;
                 p->error = (type != WGPUErrorType_NoError);
             };
-            pcb.userdata1 = &pr;
+            pcb.userdata1 = &pop_result;
             wgpuDevicePopErrorScope(device_, pcb);
-            while (!pr.done) wgpuInstanceProcessEvents(instance_);
+            while (!pop_result.done) wgpuInstanceProcessEvents(instance_);
         };
         PopResult oom_pop, validation_pop;
         pop(oom_pop);
@@ -205,11 +205,12 @@ void BufferPool::resolveProvisionalGrowth(bool failed) {
                 (unsigned long long)(total_capacity_bytes() / (1024 * 1024)),
                 sub_pools_.size());
         } else {
-            sub_pools_[i].provisional = false;
+            SubPool& sub_pool = sub_pools_[i];
+            sub_pool.provisional = false;
             std::fprintf(stderr,
                 "[wgpu pool] added sub-buffer %zu (%llu MB); pool total now %llu MB\n",
                 i,
-                (unsigned long long)(sub_pools_[i].capacity / (1024 * 1024)),
+                (unsigned long long)(sub_pool.capacity / (1024 * 1024)),
                 (unsigned long long)(total_capacity_bytes() / (1024 * 1024)));
         }
         return;
@@ -225,34 +226,34 @@ BufferPool::Slice BufferPool::alloc(uint64_t size, uint64_t align) {
     // adding another sub-buffer and retry once.
     for (int attempt = 0; attempt < 2; ++attempt) {
         for (size_t sp_idx = 0; sp_idx < sub_pools_.size(); ++sp_idx) {
-            SubPool& sp = sub_pools_[sp_idx];
+            SubPool& sub_pool = sub_pools_[sp_idx];
             // Web: never allocate out of a sub-buffer still awaiting OOM
             // validation — its handle may be a Dawn error buffer.
-            if (sp.provisional) continue;
-            for (size_t i = 0; i < sp.free_ranges.size(); ++i) {
-                const FreeRange& r = sp.free_ranges[i];
-                const uint64_t aligned = (r.offset + (align - 1)) & ~(align - 1);
-                const uint64_t pad     = aligned - r.offset;
-                if (pad >= r.size)           continue;
-                if (size > r.size - pad)     continue;
+            if (sub_pool.provisional) continue;
+            for (size_t i = 0; i < sub_pool.free_ranges.size(); ++i) {
+                const FreeRange& free_range = sub_pool.free_ranges[i];
+                const uint64_t aligned = (free_range.offset + (align - 1)) & ~(align - 1);
+                const uint64_t alignment_padding = aligned - free_range.offset;
+                if (alignment_padding >= free_range.size)           continue;
+                if (size > free_range.size - alignment_padding)     continue;
 
                 const uint64_t post_off  = aligned + size;
-                const uint64_t post_size = (r.offset + r.size) - post_off;
+                const uint64_t post_size = (free_range.offset + free_range.size) - post_off;
 
-                if (pad == 0 && post_size == 0) {
-                    sp.free_ranges.erase(sp.free_ranges.begin() + i);
-                } else if (pad == 0) {
-                    sp.free_ranges[i] = {post_off, post_size};
+                if (alignment_padding == 0 && post_size == 0) {
+                    sub_pool.free_ranges.erase(sub_pool.free_ranges.begin() + i);
+                } else if (alignment_padding == 0) {
+                    sub_pool.free_ranges[i] = {post_off, post_size};
                 } else if (post_size == 0) {
-                    sp.free_ranges[i] = {r.offset, pad};
+                    sub_pool.free_ranges[i] = {free_range.offset, alignment_padding};
                 } else {
-                    sp.free_ranges[i] = {r.offset, pad};
-                    sp.free_ranges.insert(sp.free_ranges.begin() + i + 1,
+                    sub_pool.free_ranges[i] = {free_range.offset, alignment_padding};
+                    sub_pool.free_ranges.insert(sub_pool.free_ranges.begin() + i + 1,
                                           {post_off, post_size});
                 }
 
-                sp.used += size;
-                out.buffer  = sp.buffer;
+                sub_pool.used += size;
+                out.buffer  = sub_pool.buffer;
                 out.offset  = aligned;
                 out.size    = size;
                 out.sub_idx = int(sp_idx);
@@ -270,50 +271,56 @@ BufferPool::Slice BufferPool::alloc(uint64_t size, uint64_t align) {
 void BufferPool::free(const Slice& s) {
     if (!s.valid())                                       return;
     if (s.sub_idx < 0 || size_t(s.sub_idx) >= sub_pools_.size()) return;
-    SubPool& sp = sub_pools_[size_t(s.sub_idx)];
-    assert(s.offset + s.size <= sp.capacity);
+    SubPool& sub_pool = sub_pools_[size_t(s.sub_idx)];
+    assert(s.offset + s.size <= sub_pool.capacity);
 
     size_t i = 0;
-    while (i < sp.free_ranges.size() && sp.free_ranges[i].offset < s.offset) ++i;
-    sp.free_ranges.insert(sp.free_ranges.begin() + i, {s.offset, s.size});
-    sp.used -= s.size;
+    while (i < sub_pool.free_ranges.size() && sub_pool.free_ranges[i].offset < s.offset) ++i;
+    sub_pool.free_ranges.insert(sub_pool.free_ranges.begin() + i, {s.offset, s.size});
+    sub_pool.used -= s.size;
 
-    if (i + 1 < sp.free_ranges.size()
-        && sp.free_ranges[i].offset + sp.free_ranges[i].size == sp.free_ranges[i + 1].offset) {
-        sp.free_ranges[i].size += sp.free_ranges[i + 1].size;
-        sp.free_ranges.erase(sp.free_ranges.begin() + i + 1);
+    if (i + 1 < sub_pool.free_ranges.size()
+        && sub_pool.free_ranges[i].offset + sub_pool.free_ranges[i].size
+            == sub_pool.free_ranges[i + 1].offset) {
+        sub_pool.free_ranges[i].size += sub_pool.free_ranges[i + 1].size;
+        sub_pool.free_ranges.erase(sub_pool.free_ranges.begin() + i + 1);
     }
     if (i > 0
-        && sp.free_ranges[i - 1].offset + sp.free_ranges[i - 1].size == sp.free_ranges[i].offset) {
-        sp.free_ranges[i - 1].size += sp.free_ranges[i].size;
-        sp.free_ranges.erase(sp.free_ranges.begin() + i);
+        && sub_pool.free_ranges[i - 1].offset + sub_pool.free_ranges[i - 1].size
+            == sub_pool.free_ranges[i].offset) {
+        sub_pool.free_ranges[i - 1].size += sub_pool.free_ranges[i].size;
+        sub_pool.free_ranges.erase(sub_pool.free_ranges.begin() + i);
     }
 }
 
 uint64_t BufferPool::total_capacity_bytes() const {
-    uint64_t s = 0;
+    uint64_t total_capacity = 0;
     // Skip provisional sub-pools (web, awaiting OOM validation) — their
     // capacity isn't usable yet, so counting it would mislead the
     // evictor's "is there room?" heuristics.
-    for (const auto& sp : sub_pools_) if (!sp.provisional) s += sp.capacity;
-    return s;
+    for (const auto& sub_pool : sub_pools_) {
+        if (!sub_pool.provisional) total_capacity += sub_pool.capacity;
+    }
+    return total_capacity;
 }
 
 uint64_t BufferPool::total_used_bytes() const {
-    uint64_t s = 0;
-    for (const auto& sp : sub_pools_) if (!sp.provisional) s += sp.used;
-    return s;
+    uint64_t total_used = 0;
+    for (const auto& sub_pool : sub_pools_) {
+        if (!sub_pool.provisional) total_used += sub_pool.used;
+    }
+    return total_used;
 }
 
 uint64_t BufferPool::largest_free_run_bytes() const {
-    uint64_t m = 0;
-    for (const auto& sp : sub_pools_) {
-        if (sp.provisional) continue;
-        for (const auto& r : sp.free_ranges) {
-            if (r.size > m) m = r.size;
+    uint64_t largest_free_run = 0;
+    for (const auto& sub_pool : sub_pools_) {
+        if (sub_pool.provisional) continue;
+        for (const auto& free_range : sub_pool.free_ranges) {
+            if (free_range.size > largest_free_run) largest_free_run = free_range.size;
         }
     }
-    return m;
+    return largest_free_run;
 }
 
 void BufferPool::addSubBufferForTesting(WGPUBuffer fake_buffer, uint64_t capacity) {
