@@ -1301,10 +1301,13 @@ class DumbWallGenerator:
         return walls, is_polyline_closed
 
     def _curve_has_arc_segments(self, curve: ifcopenshell.entity_instance) -> bool:
+        """Detect whether an IfcIndexedPolyCurve perimeter includes arc segments."""
         if not curve.is_a("IfcIndexedPolyCurve"):
             return False
         segments = getattr(curve, "Segments", None) or ()
         for segment in segments:
+            # Different schema wrappers expose segment typing either as entities
+            # (IfcArcIndex / IfcLineIndex) or as index tuples.
             if hasattr(segment, "is_a"):
                 if segment.is_a("IfcArcIndex"):
                     return True
@@ -1319,6 +1322,7 @@ class DumbWallGenerator:
     def _derive_points_from_arc_segments(
         self, slab_obj: bpy.types.Object, elevation: float, curve: ifcopenshell.entity_instance
     ) -> list[Vector]:
+        """Return world-space perimeter points for an indexed curve with arc segments."""
         points: list[Vector] = []
         coord_list = curve.Points.CoordList
         arc_resolution = self.SLAB_ARC_RESOLUTION
@@ -1335,6 +1339,8 @@ class DumbWallGenerator:
                 p1 = self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[0]])
                 p2 = self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[1]])
                 p3 = self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[2]])
+                # create_arc_segments returns (sampled_points, sampled_edges);
+                # only sampled_points are needed for wall generation.
                 arc_points, _ = tool.Cad.create_arc_segments([p1, p2, p3], num_verts=arc_resolution + 1)
                 arc_points = [Vector(arc_point) for arc_point in arc_points]
                 # Cad.create_arc_segments may return samples from end->start for a
@@ -1345,8 +1351,8 @@ class DumbWallGenerator:
                 for arc_point in arc_points:
                     append_point(arc_point)
             elif len(segment_indices) >= 2:
-                append_point(self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[0]]))
-                append_point(self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[1]]))
+                for segment_index in segment_indices:
+                    append_point(self._world_xy_point(slab_obj, elevation, coord_list[segment_index]))
 
         if points and (points[0] - points[-1]).length >= precision:
             points.append(points[0].copy())
