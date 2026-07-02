@@ -196,3 +196,25 @@ TEST_CASE("hideSelected hides the selection; showAll restores", "[camera][visibi
     core.showAll();
     REQUIRE(core.hiddenCount() == 0);
 }
+
+TEST_CASE("applyMarqueeToSelection: replace / add / remove", "[camera][selection]") {
+    MockHost host; ViewportCore core(&host);
+    // No public selection accessor, so verify via hideSelected → hiddenCount.
+    SECTION("plain marquee replaces the selection") {
+        core.applyMarqueeToSelection({1, 2, 3}, /*add*/false, /*remove*/false);
+        core.hideSelected();
+        REQUIRE(core.hiddenCount() == 3);
+    }
+    SECTION("add unions, remove subtracts") {
+        core.applyMarqueeToSelection({5},    false, false);  // replace → {5}
+        core.applyMarqueeToSelection({6, 7}, true,  false);  // add     → {5,6,7}
+        core.applyMarqueeToSelection({6},    false, true);   // remove  → {5,7}
+        core.hideSelected();
+        REQUIRE(core.hiddenCount() == 2);
+    }
+    SECTION("id 0 is ignored") {
+        core.applyMarqueeToSelection({0, 9, 0}, false, false);
+        core.hideSelected();
+        REQUIRE(core.hiddenCount() == 1);
+    }
+}

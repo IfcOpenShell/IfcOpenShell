@@ -5018,6 +5018,17 @@ void ViewportCore::applyPickToSelection(std::uint32_t object_id, bool add, bool 
     else             selection_.replace(object_id);
 }
 
+void ViewportCore::applyMarqueeToSelection(const std::vector<std::uint32_t>& ids,
+                                           bool add, bool remove) {
+    if (!add && !remove) selection_.clear();   // plain marquee replaces
+    for (std::uint32_t id : ids) {
+        if (id == 0) continue;
+        if (remove) selection_.remove(id);
+        else        selection_.add(id);        // replace (post-clear) or add
+    }
+    host_->requestFrame();
+}
+
 void ViewportCore::hideSelected() {
     if (selection_.count() == 0) return;
     for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
@@ -5110,19 +5121,20 @@ void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
 }
 #endif  // __EMSCRIPTEN__
 
-std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
-    std::vector<std::uint32_t> out;
-    if (w <= 0 || h <= 0) return out;
-    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return out;
-    if (configured_w_ <= 0 || configured_h_ <= 0) return out;
+bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                          std::uint64_t& padded_bpr_out,
+                                          std::uint64_t& needed_bytes_out) {
+    if (w <= 0 || h <= 0) return false;
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return false;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return false;
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
     if (x + w > configured_w_) w = configured_w_ - x;
     if (y + h > configured_h_) h = configured_h_ - y;
-    if (w <= 0 || h <= 0) return out;
+    if (w <= 0 || h <= 0) return false;
 
     ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_) return out;
+    if (!pick_color_view_ || !pick_depth_view_) return false;
 
     // Padded bytes-per-row. R32UInt = 4 B/texel; align to 256 B.
     constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
@@ -5144,7 +5156,7 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
         box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
         box_pick_staging_capacity_ = cap;
     }
-    if (!box_pick_staging_buffer_) return out;
+    if (!box_pick_staging_buffer_) return false;
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
@@ -5212,22 +5224,14 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
     wgpuCommandBufferRelease(cmd);
     wgpuCommandEncoderRelease(enc);
 
-    struct MapReq { bool done = false; bool ok = false; };
-    MapReq req;
-    WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = kAsyncCbMode;
-    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                      void* ud1, void* /*ud2*/) {
-        auto* r = static_cast<MapReq*>(ud1);
-        r->done = true;
-        r->ok   = (status == WGPUMapAsyncStatus_Success);
-    };
-    mcb.userdata1 = &req;
-    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read,
-                       0, needed_bytes, mcb);
-    while (!req.done) waitTickInstance(instance_);
-    if (!req.ok) return out;
+    padded_bpr_out   = padded_bpr;
+    needed_bytes_out = needed_bytes;
+    return true;
+}
 
+std::vector<std::uint32_t> ViewportCore::collectMappedBoxPickIds(
+        std::uint64_t padded_bpr, int w, int h, std::uint64_t needed_bytes) {
+    std::vector<std::uint32_t> out;
     const std::uint8_t* mapped = static_cast<const std::uint8_t*>(
         wgpuBufferGetConstMappedRange(box_pick_staging_buffer_, 0, needed_bytes));
     std::unordered_set<std::uint32_t> seen;
@@ -5242,11 +5246,70 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
         }
     }
     wgpuBufferUnmap(box_pick_staging_buffer_);
-
     out.reserve(seen.size());
     for (std::uint32_t id : seen) out.push_back(id);
     return out;
 }
+
+std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
+    std::uint64_t padded_bpr = 0, needed_bytes = 0;
+    if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) return {};
+
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read, 0, needed_bytes, mcb);
+    while (!req.done) waitTickInstance(instance_);
+    if (!req.ok) return {};
+    return collectMappedBoxPickIds(padded_bpr, w, h, needed_bytes);
+}
+
+#if defined(__EMSCRIPTEN__)
+void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
+                                    std::function<void(std::vector<std::uint32_t>)> cb) {
+    auto miss = [&cb]() { if (cb) cb({}); };
+    if (box_pick_async_in_flight_) { miss(); return; }
+    std::uint64_t padded_bpr = 0, needed_bytes = 0;
+    if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) { miss(); return; }
+
+    // Stash the (clamped) rect so the spontaneous map callback can walk the
+    // padded staging rows without recomputing.
+    box_pick_async_w_          = w;
+    box_pick_async_h_          = h;
+    box_pick_async_padded_bpr_ = padded_bpr;
+    box_pick_async_bytes_      = needed_bytes;
+    box_pick_async_in_flight_  = true;
+    box_pick_async_cb_         = std::move(cb);
+
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;  // AllowSpontaneous on web
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* self = static_cast<ViewportCore*>(ud1);
+        std::vector<std::uint32_t> ids;
+        if (status == WGPUMapAsyncStatus_Success) {
+            ids = self->collectMappedBoxPickIds(self->box_pick_async_padded_bpr_,
+                                                self->box_pick_async_w_,
+                                                self->box_pick_async_h_,
+                                                self->box_pick_async_bytes_);
+        }
+        auto cb = std::move(self->box_pick_async_cb_);
+        self->box_pick_async_cb_ = nullptr;
+        self->box_pick_async_in_flight_ = false;
+        if (cb) cb(std::move(ids));
+    };
+    mcb.userdata1 = this;
+    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read, 0, needed_bytes, mcb);
+}
+#endif
 
 bool ViewportCore::pickSurfaceAt(int x_pixels, int y_pixels,
                                  std::uint32_t& object_id_out,

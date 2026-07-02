@@ -35,9 +35,12 @@
 #include <emscripten/emscripten.h>
 #include <emscripten/html5.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <vector>
 
 namespace {
 
@@ -110,6 +113,24 @@ int canvasCssHeight() {
     return (h > 1.0) ? int(h) : 1;
 }
 
+// Marquee rectangle overlay. The rubber-band is a plain DOM <div> (shell.html)
+// positioned in CSS px — the canvas fills the viewport, so canvas-relative
+// coords are viewport coords. Cheaper + pixel-perfect vs a GPU overlay pass
+// (which the web lib doesn't have anyway).
+void showMarquee(int x, int y, int w, int h) {
+    EM_ASM({
+        var m = document.getElementById('marquee');
+        if (m) {
+            m.style.display = 'block';
+            m.style.left = $0 + 'px'; m.style.top    = $1 + 'px';
+            m.style.width = $2 + 'px'; m.style.height = $3 + 'px';
+        }
+    }, x, y, w, h);
+}
+void hideMarquee() {
+    EM_ASM({ var m = document.getElementById('marquee'); if (m) m.style.display = 'none'; });
+}
+
 NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
                       bool shift, bool ctrl, bool alt) {
     using MB = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;
@@ -152,7 +173,14 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     app->nav_drag_px += std::abs(dx) + std::abs(dy);
     if (app->nav_kind == NavKind::Orbit)     app->core.orbitBy(dx, dy);
     else if (app->nav_kind == NavKind::Pan)  app->core.panBy(dx, dy, canvasCssHeight());
-    // NavKind::Select drag → marquee box-select (next step).
+    else if (app->nav_kind == NavKind::Select && app->nav_drag_px > kClickDragThresholdPx) {
+        // Select-button drag → draw the marquee rubber-band (CSS px).
+        const long x0 = std::min<long>(app->down_x, e->targetX);
+        const long y0 = std::min<long>(app->down_y, e->targetY);
+        showMarquee(int(x0), int(y0),
+                    int(std::labs(long(e->targetX) - app->down_x)),
+                    int(std::labs(long(e->targetY) - app->down_y)));
+    }
     return EM_TRUE;
 }
 
@@ -163,23 +191,36 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
     app->nav_active = false;
     app->nav_kind   = NavKind::None;
 
-    // Select-button release with no real drag → pick the object under the cursor
-    // and route it through selection (Shift add, Ctrl remove, plain replace).
-    // Async readback: the highlight appears a frame after the result lands.
-    if (was_active && kind == NavKind::Select && app->ready &&
-        app->nav_drag_px <= kClickDragThresholdPx) {
-        const double dpr = emscripten_get_device_pixel_ratio();
-        const int px = int(app->down_x * dpr);
-        const int py = int(app->down_y * dpr);
-        const bool add    = e->shiftKey;
-        const bool remove = e->ctrlKey;
-        app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
-            app->core.applyPickToSelection(id, add, remove);
-            // Demo the v15 on-demand deferred fetch: log the picked object's
-            // IFC GUID (first pick fetches the property block off the network).
-            if (id != 0) app->core.logSelectedObjectGuidWeb(id);
-            app->host.requestFrame();
-        });
+    if (was_active && kind == NavKind::Select && app->ready) {
+        const double dpr    = emscripten_get_device_pixel_ratio();
+        const bool   add    = e->shiftKey;
+        const bool   remove = e->ctrlKey;
+        if (app->nav_drag_px > kClickDragThresholdPx) {
+            // Marquee drag → box-pick the rect (device px) and apply to selection.
+            hideMarquee();
+            const long x0 = std::min<long>(app->down_x, e->targetX);
+            const long y0 = std::min<long>(app->down_y, e->targetY);
+            const int  rx = int(x0 * dpr), ry = int(y0 * dpr);
+            const int  rw = int(std::labs(long(e->targetX) - app->down_x) * dpr);
+            const int  rh = int(std::labs(long(e->targetY) - app->down_y) * dpr);
+            app->core.picksInRectAsync(rx, ry, rw, rh,
+                [app, add, remove](std::vector<std::uint32_t> ids) {
+                    app->core.applyMarqueeToSelection(ids, add, remove);
+                    app->host.requestFrame();
+                });
+        } else {
+            // No real drag → single pick under the cursor (Shift add, Ctrl remove,
+            // plain replace). Async readback: highlight lands a frame later.
+            const int px = int(app->down_x * dpr);
+            const int py = int(app->down_y * dpr);
+            app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
+                app->core.applyPickToSelection(id, add, remove);
+                // v15 on-demand deferred fetch: log the picked object's IFC GUID
+                // (first pick fetches the property block off the network).
+                if (id != 0) app->core.logSelectedObjectGuidWeb(id);
+                app->host.requestFrame();
+            });
+        }
     }
     return EM_TRUE;
 }

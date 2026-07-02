@@ -632,6 +632,20 @@ public:
     // async (pickObjectAtAsync) readbacks. Caller validates bounds/attachments.
     void encodePickReadbackToStaging(int x_pixels, int y_pixels, bool want_normal);
 
+    // Encode the pick pass + copy the (x,y,w,h) object_id sub-rect into
+    // box_pick_staging_buffer_ and submit. Clamps the rect (x/y/w/h in-out) and
+    // reports the padded bytes-per-row + total mapped size. Shared by the sync
+    // picksInRect and async picksInRectAsync — they differ only in the map.
+    // False if nothing is pickable or the rect is empty.
+    bool encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                std::uint64_t& padded_bpr_out,
+                                std::uint64_t& needed_bytes_out);
+    // Read the (already-mapped) box-pick staging buffer → unique non-zero ids in
+    // the w×h rect (rows padded to padded_bpr). Unmaps before returning.
+    std::vector<std::uint32_t> collectMappedBoxPickIds(std::uint64_t padded_bpr,
+                                                       int w, int h,
+                                                       std::uint64_t needed_bytes);
+
     // Tear down every pick-owned wgpu resource (pipeline + MRTs +
     // staging buffers). Called from shutdown() before device_ dies.
     void releasePickResources();
@@ -647,6 +661,11 @@ public:
     // remove / empty-click-clear), mirroring the desktop click semantics.
     // Marks selection_ dirty for the next render's flush.
     void applyPickToSelection(std::uint32_t object_id, bool add, bool remove);
+
+    // Apply a marquee box-pick result to the selection: plain = replace with
+    // `ids`, add = union, remove = subtract. Schedules a frame.
+    void applyMarqueeToSelection(const std::vector<std::uint32_t>& ids,
+                                 bool add, bool remove);
 
     // Visibility + X-ray, shared by desktop (H / Shift+H / Alt+H / Alt+X) and
     // web. Hidden objects are skipped by the cull and xray_alpha_cap_ is read
@@ -673,8 +692,17 @@ public:
 
     // Marquee box select: encode the pick pass, copy the (x, y, w, h)
     // sub-rect of the object_id MRT back, return the set of unique
-    // non-zero ids. Synchronous (rare interaction).
+    // non-zero ids. Synchronous (rare interaction) — desktop only path.
     std::vector<std::uint32_t> picksInRect(int x, int y, int w, int h);
+
+#if defined(__EMSCRIPTEN__)
+    // Async marquee box select for web (the sync spin-map would hang the JS
+    // loop). Same pick pass + rect copy as picksInRect, mapped via a spontaneous
+    // callback that delivers the unique non-zero ids to `cb`. One in flight at a
+    // time (a box-pick issued while another is mapping is dropped → cb({})).
+    void picksInRectAsync(int x, int y, int w, int h,
+                          std::function<void(std::vector<std::uint32_t>)> cb);
+#endif
 
     // Run pickObjectAt + raycast against every instance carrying the
     // hit object_id, then return the closest hit's world position,
@@ -919,6 +947,14 @@ private:
     // pick_async_cb_ fires with object_id when the spontaneous map resolves.
     bool                              pick_async_in_flight_ = false;
     std::function<void(std::uint32_t)> pick_async_cb_;
+    // Async box-pick (marquee) state (web). Rect dims are stashed so the
+    // spontaneous map callback knows how to walk the padded staging rows.
+    bool                              box_pick_async_in_flight_ = false;
+    std::function<void(std::vector<std::uint32_t>)> box_pick_async_cb_;
+    int                               box_pick_async_w_ = 0;
+    int                               box_pick_async_h_ = 0;
+    std::uint64_t                     box_pick_async_padded_bpr_ = 0;
+    std::uint64_t                     box_pick_async_bytes_      = 0;
 #endif
 
     // ---- Frame uniforms + selection bind ----------------------------------

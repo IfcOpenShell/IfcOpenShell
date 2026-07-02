@@ -8,6 +8,10 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #viewer-canvas { display: block; width: 100vw; height: 100vh; outline: none;
     background: #1a1d24; }
+  /* Marquee (box-select) rubber-band. Positioned in CSS px by main_web; never
+     eats pointer events so the drag keeps reaching the canvas. */
+  #marquee { position: fixed; display: none; z-index: 50; pointer-events: none;
+    border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
   /* Log overlay sits bottom-left and never eats pointer events (so it
      can't block orbit drags over the canvas). It auto-scrolls to the
      newest line. Capped small; collapses further once the app is live. */
@@ -63,6 +67,7 @@
 </head>
 <body>
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<div id="marquee"></div>
 <div id="progress"><div id="progress-fill"></div></div>
 <div id="progress-panel">
   <div id="progress-summary"></div>
@@ -302,6 +307,14 @@
   // the current scene (federation). Multiple files can be picked at once. Each
   // File is registered as its own byte-source (kept alive in __ifcvSources for
   // lazy Blob.slice reads) and streamed independently.
+  // RMB is the select/marquee button in the Web nav preset, so suppress the
+  // browser context menu over the canvas. (Firefox forces its native menu on
+  // Shift+RightClick regardless — a browser escape hatch pages can't override.)
+  var viewerCanvas = document.getElementById('viewer-canvas');
+  if (viewerCanvas) {
+    viewerCanvas.addEventListener('contextmenu', function(ev) { ev.preventDefault(); });
+  }
+
   var openBtn = document.getElementById('open-btn');
   var addBtn = document.getElementById('add-btn');
   var fileInput = document.getElementById('file-input');
