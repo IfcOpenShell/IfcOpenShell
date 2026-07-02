@@ -2065,9 +2065,8 @@ class Model(bonsai.core.tool.Model):
         it matches ``filling``'s current parametric dimensions.
 
         Returns the voided host Blender object so the caller can recut it,
-        or ``None`` if ``filling`` has no opening to refresh. Callers
-        targeting a single user-selected filling should use this rather than
-        the family-wide variant to avoid touching unrelated sibling sources."""
+        or ``None`` if ``filling`` has no opening to refresh or the host is
+        an aggregate (no mesh data to recut against)."""
         from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
         if not filling.FillsVoids:
@@ -2076,7 +2075,7 @@ class Model(bonsai.core.tool.Model):
         ifc_file = tool.Ifc.get()
         opening = filling.FillsVoids[0].RelatingOpeningElement
         voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
-        if voided_obj is None:
+        if voided_obj is None or voided_obj.data is None:
             return None
 
         old_representation = tool.Geometry.get_body_representation(opening)

@@ -33,6 +33,7 @@ from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.model.opening import is_filling_supported
 from bonsai.bim.module.model.wall import (
     _get_wall_geom_cached,
     _wall_camera_facing_icon_y,
@@ -52,16 +53,18 @@ def is_supported_host(element) -> bool:
     return tool.Parametric.is_path_connectable_wall(element) or element.is_a("IfcSlab") or element.is_a("IfcRoof")
 
 
-def is_supported_filling(element) -> bool:
-    """Total predicate. A ``None`` element (raw Blender mesh) is accepted
-    because the apply-opening operator converts unclassified meshes into
-    ``IfcOpeningElement`` instances. IFC entities are accepted only when
-    their class is one the operator can dispatch on: ``IfcDoor`` /
-    ``IfcWindow`` (filled openings) or ``IfcOpeningElement`` (existing
-    opening reassigned to a new host)."""
+def is_supported_filling_or_opening(element) -> bool:
+    """Total predicate for the add-opening gizmo poll. ``None`` (raw Blender
+    mesh) is accepted because the operator converts unclassified meshes
+    into ``IfcOpeningElement`` instances. ``IfcOpeningElement`` is accepted
+    because reassigning an existing opening to a new host is a legal path
+    through the operator. Otherwise defer to the generator's own
+    supported-filling predicate."""
     if element is None:
         return True
-    return element.is_a("IfcDoor") or element.is_a("IfcWindow") or element.is_a("IfcOpeningElement")
+    if element.is_a("IfcOpeningElement"):
+        return True
+    return is_filling_supported(element)
 
 
 def _resolve_active_host(context: bpy.types.Context, n_selected: int):
@@ -126,7 +129,7 @@ class GizmoHostAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
             return False
         if not hasattr(host_element, "HasOpenings"):
             return False
-        return is_supported_filling(filling_element)
+        return is_supported_filling_or_opening(filling_element)
 
     def setup(self, context: bpy.types.Context) -> None:
         default_color, highlight_color = self.get_decoration_colors()

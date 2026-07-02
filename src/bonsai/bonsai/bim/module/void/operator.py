@@ -26,7 +26,7 @@ import bonsai.bim.handler
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
+from bonsai.bim.module.model.opening import FilledOpeningGenerator, is_filling_supported
 
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -86,15 +86,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     self.report({"INFO"}, "You can't add an opening to another opening.")
                     continue
                 elif not element1.is_a("IfcOpeningElement") and not element2.is_a("IfcOpeningElement"):
-                    # Bonsai currently derives opening geometry only from
-                    # IfcDoor and IfcWindow (via OverallWidth/OverallHeight
-                    # or their type's ELEVATION_VIEW profile). IFC's schema
-                    # permits any IfcElement as a filling; broadening this
-                    # gate is future work in the opening generator, not a
-                    # schema requirement.
-                    if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):  # Add a fill to an element.
+                    if is_filling_supported(element1):  # Add a fill to an element.
                         obj1, obj2 = obj2, obj1
-                    elif not (element2.is_a("IfcWindow") or element2.is_a("IfcDoor")):
+                    elif not is_filling_supported(element2):
                         self.report(
                             {"INFO"},
                             f"Cannot apply {element2.is_a()} as an opening — Bonsai currently supports only IfcDoor and IfcWindow as parametric fillings.",

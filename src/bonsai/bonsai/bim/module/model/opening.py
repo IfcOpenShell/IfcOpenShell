@@ -240,6 +240,15 @@ def _store_batch_in_cache(cache_key: tuple[int, str], batch: "gpu.types.GPUBatch
     _batch_cache[cache_key] = (epoch, batch)
 
 
+def is_filling_supported(element) -> bool:
+    """True when Bonsai's opening generator can derive an opening from this
+    element. IFC's schema permits any IfcElement as a filling; Bonsai
+    currently supports only IfcDoor and IfcWindow because those are the
+    classes with OverallWidth/OverallHeight attributes (or their types'
+    ELEVATION_VIEW profiles) that the generator can consume."""
+    return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
+
+
 class FilledOpeningGenerator:
     def generate(
         self,

@@ -61,16 +61,19 @@ _IFC_CLASS_BY_KIND = {
 class _FakeIfcEntity:
     """Minimal stand-in for an ``ifcopenshell.entity_instance`` in poll tests.
 
-    Provides the two surfaces the gizmo's poll consults: ``is_a(type_name)``
-    (used directly by ``is_supported_host`` for slab/roof) and an optional
-    ``HasOpenings`` attribute (probed by the poll's ``hasattr`` guard)."""
+    Mirrors ``ifcopenshell.entity_instance.is_a``'s two call shapes:
+    ``is_a("Foo")`` returns True when the entity's class is ``Foo``, and
+    ``is_a()`` returns the class name as a string. ``HasOpenings`` is
+    optional so the poll's ``hasattr`` guard branch is reachable."""
 
     def __init__(self, ifc_class: str, has_openings: bool = True):
         self._ifc_class = ifc_class
         if has_openings:
             self.HasOpenings = ()
 
-    def is_a(self, type_name: str) -> bool:
+    def is_a(self, type_name: str | None = None):
+        if type_name is None:
+            return self._ifc_class
         return self._ifc_class == type_name
 
 
@@ -334,6 +337,50 @@ def test_layer3_branch_always_parks_above_top_face(patched_tool, other_z):
     from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
 
     pos = _run_position_layer3_branch(patched_tool, host_world_z_range=(0.0, 0.2), other_z=other_z, other_xy=(0.7, 0.4))
+    assert pos.x == pytest.approx(0.7)
+    assert pos.y == pytest.approx(0.4)
+    assert pos.z == pytest.approx(0.2 + BaseParametricGizmoGroup.ICON_Z_OFFSET)
+
+
+def test_position_gizmos_identifies_host_by_class_when_selected_second(patched_tool):
+    """Host role in ``position_gizmos`` is resolved by IFC class, not by
+    active-object position — so a slab clicked SECOND (filling first,
+    host active or not) still anchors the icon correctly on the slab.
+    This pins the selection-order independence of the positioner (the
+    poll's independence is covered separately by the poll parametrize)."""
+    from bonsai.bim.module.drawing import gizmos as gizmo_module
+    from bonsai.bim.module.model.host_add_opening_gizmo import GizmoHostAddOpening
+
+    other = SimpleNamespace(matrix_world=Matrix.Translation(Vector((0.7, 0.4, 1.0))))
+    host_obj = SimpleNamespace(matrix_world=Matrix.Identity(4), bound_box=[(0.0, 0.0, 0.0), (0.0, 0.0, 0.2)] * 4)
+    # Host at index 1; the filling (no IFC entity) sits at index 0 as active.
+    selected = [other, host_obj]
+    context = SimpleNamespace(active_object=other)
+    icon = SimpleNamespace(matrix_basis=None, hide=True)
+    self_stub = SimpleNamespace(add_opening_icon=icon)
+
+    entity_map = {id(host_obj): _FakeIfcEntity("IfcSlab"), id(other): None}
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(
+            patched_tool(
+                selected_list=selected,
+                entity=lambda o: entity_map.get(id(o)),
+                modifier_predicates={"is_path_connectable_wall": False},
+            )
+        )
+        stack.enter_context(patch.object(gizmo_module, "get_billboard_rotation", return_value=Matrix.Identity(4)))
+        stack.enter_context(
+            patch.object(
+                gizmo_module, "billboarded_at", side_effect=lambda pos, rot, scale=0.5: Matrix.Translation(pos)
+            )
+        )
+        GizmoHostAddOpening.position_gizmos(self_stub, context)
+
+    # Icon anchors on the host's top face (slab bound_box top-Z = 0.2) at
+    # the void's XY — same result as when the host was at index 0.
+    from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
+
+    pos = icon.matrix_basis.translation
     assert pos.x == pytest.approx(0.7)
     assert pos.y == pytest.approx(0.4)
     assert pos.z == pytest.approx(0.2 + BaseParametricGizmoGroup.ICON_Z_OFFSET)
