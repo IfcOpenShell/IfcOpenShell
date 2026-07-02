@@ -608,6 +608,25 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
             return self._recalculate_fills(context)
 
     def _recalculate_fills(self, context):
+        # Refresh each selected filling's mapped opening source before
+        # recutting the host. Dedup by source id covers the common shared-
+        # source case in one rewrite while leaving unrelated sibling sources
+        # untouched.
+        seen_source_ids: set[int] = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.FillsVoids:
+                continue
+            opening = element.FillsVoids[0].RelatingOpeningElement
+            body = tool.Geometry.get_body_representation(opening)
+            if body is None:
+                continue
+            source = tool.Geometry.resolve_mapped_representation(body)
+            if source.id() in seen_source_ids:
+                continue
+            seen_source_ids.add(source.id())
+            tool.Model.regenerate_filling_opening_body(element)
+
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
