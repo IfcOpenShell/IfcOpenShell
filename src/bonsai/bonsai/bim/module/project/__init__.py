@@ -74,6 +74,7 @@ classes = (
     operator.SaveLibraryFile,
     operator.SelectLibraryFile,
     operator.SelectLinkedModelElement,
+    operator.SelectLinkFilepath,
     operator.SelectLinkHandle,
     operator.ToggleFilterCategories,
     operator.ToggleLinkSelectability,

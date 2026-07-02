@@ -1662,13 +1662,27 @@ except Exception as e:
             self.link.georeferenced = "FULL_COMPATIBLE" if crs_name == data["model_crs"] else "NOT_COMPATIBLE"
 
 
-class ReloadLink(bpy.types.Operator):
+class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reload_link"
     bl_label = "Reload Link"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload the selected file"
+    bl_description = "Reload the selected file, optionally changing its file path and load options"
 
     link_index: bpy.props.IntProperty(name="Link Index")
+    filepath: bpy.props.StringProperty(
+        name="File Path",
+        description="Path to the linked IFC file",
+    )
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Whether to store linked model path relative to the currently opened IFC file.",
+        default=False,
+    )
+    use_cache: bpy.props.BoolProperty(
+        name="Use Cache",
+        description="Reuse the cached geometry if it's still valid instead of reprocessing the IFC",
+        default=False,
+    )
     query: bpy.props.StringProperty(
         name="Query",
         description=(
@@ -1679,26 +1693,121 @@ class ReloadLink(bpy.types.Operator):
 
     if TYPE_CHECKING:
         link_index: int
+        filepath: str
+        use_relative_path: bool
+        use_cache: bool
         query: str
 
     def invoke(self, context, event):
         link = tool.Project.get_project_props().links[self.link_index]
-        self.query = link.query
+        # Properties may arrive pre-set when the dialog is reopened
+        # by bim.select_link_filepath - don't clobber them.
+        if not self.properties.is_property_set("filepath"):
+            self.filepath = link.filepath
+        if not self.properties.is_property_set("use_relative_path"):
+            self.use_relative_path = not Path(link.filepath).is_absolute()
+        if not self.properties.is_property_set("query"):
+            self.query = link.query
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         assert self.layout
+        pprops = tool.Project.get_project_props()
+        row = self.layout.row(align=True)
+        row.prop(self, "filepath")
+        op = row.operator("bim.select_link_filepath", text="", icon="FILEBROWSER")
+        op.link_index = self.link_index
+        # Carry the current dialog state through the file browser round-trip.
+        op.use_relative_path = self.use_relative_path
+        op.use_cache = self.use_cache
+        op.query = self.query
+        row = self.layout.row()
+        row.prop(self, "use_relative_path")
+        row = self.layout.row()
+        row.prop(self, "use_cache")
+        row = self.layout.row()
+        row.label(text="False Origin Mode:")
+        row = self.layout.row()
+        row.prop(pprops, "false_origin_mode", text="")
+        if pprops.false_origin_mode == "MANUAL":
+            row = self.layout.row()
+            row.prop(pprops, "false_origin")
+            row = self.layout.row()
+            row.prop(pprops, "project_north")
         self.layout.prop(self, "query", placeholder="IfcElement")
 
-    def execute(self, context):
+    def _execute(self, context):
         link = tool.Project.get_project_props().links[self.link_index]
-        # An unset query means the operator was called without the dialog
-        # (e.g. from a script) - preserve the link's stored query instead
-        # of overwriting it with the empty default.
+        # Unset properties mean the operator was called without the dialog
+        # (e.g. from a script) - preserve the link's stored values instead
+        # of overwriting them with the defaults.
         if self.properties.is_property_set("query"):
             link.query = self.query
+
+        filepath = self.filepath if self.properties.is_property_set("filepath") else link.filepath
+        if self.properties.is_property_set("use_relative_path"):
+            use_relative_path = self.use_relative_path
+        else:
+            use_relative_path = not Path(link.filepath).is_absolute()
+
+        abs_filepath = Path(tool.Ifc.resolve_uri(filepath))
+        if not abs_filepath.exists():
+            self.report({"ERROR"}, f"File does not exist: '{abs_filepath}'")
+            return {"CANCELLED"}
+        filepath = tool.Ifc.get_uri(abs_filepath, use_relative_path=use_relative_path)
+        if filepath != link.filepath:
+            link.name = filepath
+            link.filepath = filepath
+            if tool.Ifc.get() and link.ifc_definition_id:
+                reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+                reference.Location = filepath.replace("\\", "/")
+                if document := tool.Document.get_reference_document(reference):
+                    document.Name = Path(filepath).name
+
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False, query=link.query) or {"FINISHED"}
+        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=self.use_cache, query=link.query) or {
+            "FINISHED"
+        }
+
+
+class SelectLinkFilepath(bpy.types.Operator):
+    bl_idname = "bim.select_link_filepath"
+    bl_label = "Select Link File Path"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_description = "Select a new file path for the linked model and return to the reload dialog"
+
+    link_index: bpy.props.IntProperty(name="Link Index")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    # Reload dialog state carried through the file browser round-trip.
+    use_relative_path: bpy.props.BoolProperty(options={"HIDDEN"})
+    use_cache: bpy.props.BoolProperty(options={"HIDDEN"})
+    query: bpy.props.StringProperty(options={"HIDDEN"})
+
+    if TYPE_CHECKING:
+        link_index: int
+        filepath: str
+        filter_glob: str
+        use_relative_path: bool
+        use_cache: bool
+        query: str
+
+    def invoke(self, context, event):
+        link = tool.Project.get_project_props().links[self.link_index]
+        self.filepath = tool.Ifc.resolve_uri(link.filepath)
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+    def execute(self, context):
+        bpy.ops.bim.reload_link(
+            "INVOKE_DEFAULT",
+            link_index=self.link_index,
+            filepath=self.filepath,
+            use_relative_path=self.use_relative_path,
+            use_cache=self.use_cache,
+            query=self.query,
+        )
+        return {"FINISHED"}
 
 
 class ToggleLinkSelectability(bpy.types.Operator):
