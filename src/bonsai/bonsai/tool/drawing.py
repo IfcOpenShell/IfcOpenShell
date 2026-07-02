@@ -464,9 +464,7 @@ class Drawing(bonsai.core.tool.Drawing):
         }
 
     @classmethod
-    def sync_perspective_camera_shifts(
-        cls, drawing: ifcopenshell.entity_instance, camera: bpy.types.Camera
-    ) -> None:
+    def sync_perspective_camera_shifts(cls, drawing: ifcopenshell.entity_instance, camera: bpy.types.Camera) -> None:
         if camera.type != "PERSP":
             return
 
