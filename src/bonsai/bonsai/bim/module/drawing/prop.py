@@ -604,6 +604,7 @@ class BIMCameraProperties(PropertyGroup):
         return tool.Blender.get_active_uilist_element(dprops.drawing_styles, self.active_drawing_style_index)
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
+    # Perspective camera shift is stored in EPset_Drawing and intentionally excluded here.
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed
     def update_representation(self, matrix_world: Matrix) -> bool:
         """Update ``representation`` based on current camera properties and the provided world matrix.

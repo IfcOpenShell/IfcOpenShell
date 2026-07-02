@@ -5,7 +5,7 @@ FILE_NAME('EPset_Drawing.ifc','2020-01-01T00:00:00',$,$,'EPset_Drawing','EPset_D
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#23,#22,#27,#24,#19,#12,#26,#9,#8,#7,#6,#4,#18,#11,#5,#20,#25,#14,#10,#17,#28,#16,#3,#21,#13,#15,#2));
+#1=IFCPROPERTYSETTEMPLATE('2JhNIvqZrFnAgxfhK0XVQX',$,'EPset_Drawing','',.PSET_OCCURRENCEDRIVEN.,'IfcAnnotation/DRAWING',(#23,#22,#27,#24,#29,#30,#19,#12,#26,#9,#8,#7,#6,#4,#18,#11,#5,#20,#25,#14,#10,#17,#28,#16,#3,#21,#13,#15,#2));
 #2=IFCSIMPLEPROPERTYTEMPLATE('23JavTMk98ZxXhrUEnjAcf',$,'TargetView','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1yVWUt5H9DAOuu0OaMMLpe',$,'Scale','The scale of this drawing represented as a numerator and denominator, such as 1/100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3gsuPBtU93b8f0gg1pjkq6',$,'HumanScale','The scale of this drawing in human readable format, such as 1:100',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -33,5 +33,7 @@ DATA;
 #26=IFCSIMPLEPROPERTYTEMPLATE('2iwERDOW55Pf4hCbuFRe1Q',$,'FillMode','Method to fill areas seen in projection',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #27=IFCSIMPLEPROPERTYTEMPLATE('1YF$qLzBzF19Io8aB2N8cE',$,'CutMode','Method for cutting geometry',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #28=IFCSIMPLEPROPERTYTEMPLATE('1YSnFzurrEyRNtoLdmmddP',$,'BringToFront','The objects with these SVG classes will render in front of all other objects.Ex: IfcBeam, IfcColumn',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
+#29=IFCSIMPLEPROPERTYTEMPLATE('0lP6Y8q9v2QhDnR4sT7uVx',$,'PerspectiveShiftX','Horizontal perspective camera shift stored as drawing metadata using Blender camera shift units.',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
+#30=IFCSIMPLEPROPERTYTEMPLATE('2mR8b1NcW5EoFyG7hJ9kLp',$,'PerspectiveShiftY','Vertical perspective camera shift stored as drawing metadata using Blender camera shift units.',.P_SINGLEVALUE.,'IfcReal',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;
