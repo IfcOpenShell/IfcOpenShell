@@ -1012,11 +1012,12 @@ class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
                 "Please select a slab.",
             )
             return {"FINISHED"}
-        walls = DumbWallGenerator(self.relating_type).generate("SLAB")
+        wall_groups = DumbWallGenerator(self.relating_type).generate("SLAB")
 
-        if walls:
-            for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
-                DumbWallJoiner().connect(wall2["obj"], wall1["obj"])
+        if wall_groups:
+            for walls in wall_groups:
+                for wall1, wall2 in zip(walls, walls[1:] + [walls[0]]):
+                    DumbWallJoiner().connect(wall2["obj"], wall1["obj"])
 
 
 class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
@@ -1403,7 +1404,7 @@ class DumbWallGenerator:
             profiles = swept_area.Profiles
         else:
             profiles = [swept_area]
-        walls = []
+        wall_groups = []
         for profile in profiles:
             outer_curve = profile.OuterCurve
             if self._curve_has_arc_segments(outer_curve):
@@ -1420,12 +1421,15 @@ class DumbWallGenerator:
                 continue
             if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
                 polyline_points = polyline_points[::-1]
+            loop_walls = []
             for i in range(len(polyline_points) - 1):
                 vec1 = polyline_points[i]
                 vec2 = polyline_points[i + 1]
                 coords = (vec1, vec2)
-                walls.append(self.create_wall_from_2_points(coords))
-        return walls
+                loop_walls.append(self.create_wall_from_2_points(coords))
+            if loop_walls:
+                wall_groups.append(loop_walls)
+        return wall_groups
 
     def create_wall_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
         direction = coords[1] - coords[0]
