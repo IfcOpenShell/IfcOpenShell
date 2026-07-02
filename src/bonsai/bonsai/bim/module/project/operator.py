@@ -1422,6 +1422,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
+            new.query = self.query
             bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query)
 
 
@@ -1492,6 +1493,10 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
+        # Fall back to the Link's stored query so callers that omit it
+        # still replay the filter the link was created with.
+        if not self.query and self.link.query:
+            self.query = self.link.query
         filepath = Path(tool.Ifc.resolve_uri(self.link.filepath))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
@@ -1659,13 +1664,32 @@ class ReloadLink(bpy.types.Operator):
     bl_description = "Reload the selected file"
 
     link_index: bpy.props.IntProperty(name="Link Index")
+    query: bpy.props.StringProperty(
+        name="Query",
+        description=(
+            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
+            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+        ),
+    )
 
     if TYPE_CHECKING:
         link_index: int
+        query: str
+
+    def invoke(self, context, event):
+        link = tool.Project.get_project_props().links[self.link_index]
+        self.query = link.query
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        assert self.layout
+        self.layout.prop(self, "query", placeholder="IfcElement")
 
     def execute(self, context):
+        link = tool.Project.get_project_props().links[self.link_index]
+        link.query = self.query
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False) or {"FINISHED"}
+        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False, query=self.query) or {"FINISHED"}
 
 
 class ToggleLinkSelectability(bpy.types.Operator):
