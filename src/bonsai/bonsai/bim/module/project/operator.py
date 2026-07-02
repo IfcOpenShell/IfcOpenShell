@@ -1904,10 +1904,16 @@ class EnableEditingLink(bpy.types.Operator):
     bl_idname = "bim.enable_editing_link"
     bl_label = "Enable Editing Link"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Enable editing link location"
+    bl_description = "Unlock the link's position for editing. Any movement is saved automatically"
+
+    link_index: bpy.props.IntProperty(name="Link Index", default=-1)
+
+    if TYPE_CHECKING:
+        link_index: int
 
     def execute(self, context):
-        link = tool.Project.get_project_props().active_link
+        props = tool.Project.get_project_props()
+        link = props.active_link if self.link_index == -1 else props.links[self.link_index]
         assert link
         link.is_editing = True
         obj = tool.Project.get_link_empty_handle(link)
@@ -1916,70 +1922,25 @@ class EnableEditingLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DisableEditingLink(bpy.types.Operator):
+class DisableEditingLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_link"
     bl_label = "Disable Editing Link"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Disable editing link and restore to previously saved location"
+    bl_description = "Lock the link at its current location"
 
-    def execute(self, context):
-        link = tool.Project.get_project_props().active_link
-        assert link
-        link.is_editing = False
-        obj = tool.Project.get_link_empty_handle(link)
-        assert obj
-        obj.matrix_world = tool.Project.calculate_link_matrix(link)
-        tool.Geometry.lock_object(obj)
-        return {"FINISHED"}
+    link_index: bpy.props.IntProperty(name="Link Index", default=-1)
 
-
-class EditLink(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.edit_link"
-    bl_label = "Edit Link"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Disable editing link and restore to previously saved location"
+    if TYPE_CHECKING:
+        link_index: int
 
     def _execute(self, context):
-        link = tool.Project.get_project_props().active_link
+        props = tool.Project.get_project_props()
+        link = props.active_link if self.link_index == -1 else props.links[self.link_index]
         assert link
         link.is_editing = False
         obj = tool.Project.get_link_empty_handle(link)
         assert obj
-        new_obj_matrix = obj.matrix_world
-
-        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
-        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
-            metadata = json.load(f)
-
-        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
-            radians(-float(metadata["model_project_north"])), 4, "Z"
-        )
-        global_matrix = rot @ np.eye(4)
-        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
-
-        gprops = tool.Georeference.get_georeference_props()
-        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
-        local_matrix = rot @ np.eye(4)
-        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
-
-        # obj_matrix is typically calculated as:
-        # obj_matrix = np.linalg.inv(local_matrix) @ transformation @ global_matrix
-        identity_blender_matrix = np.linalg.inv(local_matrix) @ global_matrix
-        if np.allclose(np.array(new_obj_matrix), identity_blender_matrix, atol=1e-5):
-            link.has_transformation = False
-            transformation = ",".join(map(str, np.eye(4).reshape(-1)))
-        else:
-            transformed_global_matrix = local_matrix @ np.array(new_obj_matrix)
-            transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
-            link.has_transformation = True
-            transformation = ",".join(map(str, transformation.reshape(-1)))
-
-        if tool.Ifc.get():
-            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
-            reference[1] = transformation
-        else:
-            link.transformation = transformation
-
+        tool.Project.save_link_transformation(link)
         obj.matrix_world = tool.Project.calculate_link_matrix(link)
         tool.Geometry.lock_object(obj)
 
