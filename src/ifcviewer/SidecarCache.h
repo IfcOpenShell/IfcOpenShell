@@ -81,16 +81,32 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       painting, so first geometry no longer waits on the property data; the
 //       deferred block is fetched lazily (or skipped where unused).  Desktop
 //       reads both.  No back-compat: regenerate sidecars.
-static constexpr uint32_t SIDECAR_VERSION = 15;
+// v16 = Geometry + metadata are zstd-COMPRESSED.  Each chunk's vertex bytes and
+//       index bytes are stored as two independent zstd frames (so per-chunk
+//       Range streaming still works — you fetch + decompress just one chunk),
+//       and the critical + deferred metadata blocks are single zstd frames.
+//       The chunk TOC records each chunk's compressed blob offsets/sizes plus
+//       the raw (decompressed) sizes.  ~3-5x fewer bytes over the wire while
+//       keeping HTTP Range intact (unlike server Content-Encoding).  No
+//       back-compat: regenerate sidecars.
+static constexpr uint32_t SIDECAR_VERSION = 16;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
-// Chunk table-of-contents entry (v14+).  A chunk is a CONTIGUOUS range of
-// meshes in the (reordered) meshes array — and therefore a contiguous span of
-// vertex + index bytes, since the geometry is laid out in chunk order.  The
-// loader builds chunk `i` from meshes [first_mesh, first_mesh + mesh_count).
+// Chunk table-of-contents entry (v16).  A chunk is a CONTIGUOUS range of meshes
+// [first_mesh, first_mesh + mesh_count).  Its vertex + index bytes are stored as
+// two zstd frames in the geometry section; the loader fetches [v_comp_off,
+// +v_comp_size) / [i_comp_off, +i_comp_size) (offsets relative to the geometry
+// section start) and decompresses them to v_raw_size / i_raw_size bytes — the
+// chunk-local (vbytes, idx) applyStreamedChunk consumes.
 struct SidecarChunk {
     uint32_t first_mesh;
     uint32_t mesh_count;
+    uint64_t v_comp_off;
+    uint64_t v_comp_size;
+    uint64_t v_raw_size;
+    uint64_t i_comp_off;
+    uint64_t i_comp_size;
+    uint64_t i_raw_size;
 };
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs

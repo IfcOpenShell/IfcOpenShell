@@ -46,8 +46,18 @@ if(WITH_MESH_OPTIMIZER)
     target_compile_definitions(test_lod_builder PRIVATE -DWITH_MESH_OPTIMIZER)
 endif()
 
+# SidecarCompress: zstd compress/decompress wrappers. Links the system libzstd.
+# SidecarCache now (de)compresses geometry + metadata, so every test that
+# compiles SidecarCache.cpp needs SidecarCompress.cpp + libzstd too.
+find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+add_ifcviewer_unit_test(test_sidecar_compress
+    SOURCES ${IFCVIEWER_SRC}/SidecarCompress.cpp
+    LIBS ${ZSTD_LIBRARY}
+)
+
 add_ifcviewer_unit_test(test_sidecar_cache
-    SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp
+    SOURCES ${IFCVIEWER_SRC}/SidecarCache.cpp ${IFCVIEWER_SRC}/SidecarCompress.cpp
+    LIBS ${ZSTD_LIBRARY}
 )
 
 # StreamingLoader: metadata-only read + range readers + the pure buffer-based
@@ -57,6 +67,8 @@ add_ifcviewer_unit_test(test_streaming_loader
     SOURCES
         ${IFCVIEWER_SRC}/StreamingLoader.cpp
         ${IFCVIEWER_SRC}/SidecarCache.cpp
+        ${IFCVIEWER_SRC}/SidecarCompress.cpp
+    LIBS ${ZSTD_LIBRARY}
 )
 
 add_ifcviewer_unit_test(test_instanced_geometry)
@@ -74,6 +86,8 @@ add_ifcviewer_unit_test(test_sidecar_layout
         ${IFCVIEWER_SRC}/SidecarLayout.cpp
         ${IFCVIEWER_SRC}/ChunkPlanner.cpp
         ${IFCVIEWER_SRC}/SidecarCache.cpp
+        ${IFCVIEWER_SRC}/SidecarCompress.cpp
+    LIBS ${ZSTD_LIBRARY}
 )
 
 # InstanceCompose: matrix composition + cross-model object_id lookup.

@@ -38,7 +38,7 @@
 # Better to keep the web path's machinery local to this directory.
 
 cmake_minimum_required(VERSION 3.21)
-project(IfcViewerWeb LANGUAGES CXX)
+project(IfcViewerWeb LANGUAGES C CXX)  # C for the vendored zstd decoder
 
 if(NOT EMSCRIPTEN)
     message(FATAL_ERROR
@@ -114,7 +114,7 @@ target_link_options(IfcViewerWeb PRIVATE
     # cap; --shared64 / MEMORY64 would lift this later if we need it).
     "-sALLOW_MEMORY_GROWTH=1"
     "-sINITIAL_MEMORY=268435456"        # 256 MB
-    "-sMAXIMUM_MEMORY=2147483648"       # 2 GB
+    "-sMAXIMUM_MEMORY=4294967296"       # 4 GB (wasm32 max) — big federations need the headroom
     # FETCH lets emscripten_fetch issue HTTP Range requests. The local
     # file path (#88) reads byte ranges via Blob.slice and does NOT need
     # this; it's retained for the remote-URL Range backend (follow-up).

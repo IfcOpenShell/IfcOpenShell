@@ -44,15 +44,15 @@
 class StreamingThread {
 public:
     struct Request {
-        uint32_t                                       model_id;
-        std::size_t                                    chunk_idx;
-        std::string                                    file_path;
-        uint64_t                                       vertex_section_offset;
-        uint64_t                                       index_section_offset;
-        // (section-relative byte_offset, byte_size)
-        std::vector<std::pair<uint64_t, uint64_t>>     v_ranges;
-        // (first_u32, count_u32)
-        std::vector<std::pair<uint64_t, uint64_t>>     i_ranges;
+        uint32_t     model_id;
+        std::size_t  chunk_idx;
+        std::string  file_path;
+        // v16: the chunk's two zstd frames in the geometry section. The reader
+        // fetches [geometry_section_offset + *_comp_off, +*_comp_size) and
+        // decompresses to *_raw_size.
+        uint64_t     geometry_section_offset = 0;
+        uint64_t     v_comp_off = 0, v_comp_size = 0, v_raw_size = 0;
+        uint64_t     i_comp_off = 0, i_comp_size = 0, i_raw_size = 0;
     };
 
     struct Result {

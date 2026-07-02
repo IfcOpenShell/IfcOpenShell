@@ -118,6 +118,9 @@ SidecarData buildFixture() {
         e.name_offset = 1;  e.name_length = 4;   // "Wall"
         e.type_offset = 6;  e.type_length = 4;   // "Slab"
     }
+    // v16 stores geometry per-chunk (compressed), so a fixture with geometry
+    // needs a chunk TOC covering its meshes for write/read to round-trip.
+    sd.chunks = { {0, 2} };
     return sd;
 }
 
@@ -155,8 +158,8 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 TEST_CASE("MeshInfo and InstanceCpu have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
     REQUIRE(sizeof(InstanceGpu) == 80);
-    REQUIRE(SIDECAR_VERSION == 15);
-    REQUIRE(sizeof(SidecarChunk) == 8);
+    REQUIRE(SIDECAR_VERSION == 16);
+    REQUIRE(sizeof(SidecarChunk) == 56);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }
 

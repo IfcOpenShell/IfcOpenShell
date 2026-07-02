@@ -177,6 +177,14 @@ struct ModelGpuData {
         // is recovered by walking mesh_ids and the model's MeshInfo[].
         uint64_t vertex_byte_size             = 0;
         uint64_t index_count                  = 0;
+        // v16: where this chunk's two zstd frames live in the file's geometry
+        // section (offsets relative to model.geometry_section_offset) and their
+        // compressed sizes. The raw sizes are vertex_byte_size / index_count*4.
+        // A per-chunk load fetches [off, +comp) and decompresses.
+        uint64_t v_comp_off                   = 0;
+        uint64_t v_comp_size                  = 0;
+        uint64_t i_comp_off                   = 0;
+        uint64_t i_comp_size                  = 0;
         // Of `index_count`, how many are LOD1 indices. LOD0 indices occupy
         // chunk-local u32 offsets [0, index_count - lod1_index_count); LOD1
         // indices occupy [index_count - lod1_index_count, index_count). 0
@@ -286,8 +294,9 @@ struct ModelGpuData {
     // streaming path: chunks may be non-resident and need byte-range reads
     // from this file. Empty path = legacy non-streaming load.
     std::string streaming_file_path;
-    uint64_t    streaming_vertex_section_offset = 0;
-    uint64_t    streaming_index_section_offset  = 0;
+    // v16: file offset of the compressed geometry section. A chunk's blobs are
+    // at geometry_section_offset + chunk.{v_comp_off,i_comp_off}.
+    uint64_t    geometry_section_offset = 0;
     // Web only: chunk byte ranges come from the JS-side source — a picked File
     // (Blob.slice) or a remote URL (HTTP Range) — read asynchronously, not via
     // a synchronous fopen on streaming_file_path. Set by loadSidecarMetadataWeb
@@ -308,8 +317,11 @@ struct ModelGpuData {
     // it; deferred_meta_loaded latches so it fetches at most once.
     std::vector<PackedElementInfo> elements;
     std::string                    string_table;
-    uint64_t    deferred_meta_offset = 0;
-    uint64_t    deferred_meta_bytes  = 0;
+    // v16: the deferred block is a single zstd frame at deferred_comp_offset of
+    // deferred_comp_size bytes, expanding to deferred_raw_size.
+    uint64_t    deferred_comp_offset = 0;
+    uint64_t    deferred_comp_size   = 0;
+    uint64_t    deferred_raw_size    = 0;
     bool        deferred_meta_loaded = false;
     // applyCachedModel rebases instance object_ids by this base to keep them
     // globally unique across models; deferred elements carry the sidecar's

@@ -143,10 +143,46 @@ set(IFCVIEWER_CORE_SOURCES
     InstanceCompose.cpp
     LodBuilder.cpp
     SidecarCache.cpp
+    SidecarCompress.cpp
     StreamingLoader.cpp
     StreamingThread.cpp
     ViewportCore.cpp
 )
+# Web needs a zstd DECODER (Emscripten has no zstd port; the desktop links the
+# full libzstd below). Rather than vendor a generated blob, fetch the pinned
+# zstd source and compile its decompress-only subset — the exact set zstd's
+# own single-file decoder inlines — straight into the wasm.
+if(EMSCRIPTEN)
+    include(FetchContent)
+    FetchContent_Declare(zstd_dec
+        GIT_REPOSITORY https://github.com/facebook/zstd.git
+        GIT_TAG        v1.5.7
+        GIT_SHALLOW    TRUE
+        # zstd's CMake lives in build/cmake, not the root — point SOURCE_SUBDIR
+        # at a non-existent dir so MakeAvailable only POPULATES the source and
+        # never tries to configure zstd's own (non-emscripten) build.
+        SOURCE_SUBDIR  does-not-exist)
+    FetchContent_MakeAvailable(zstd_dec)
+    set(ZSTD_DEC_DIR "${zstd_dec_SOURCE_DIR}/lib")
+    set(ZSTD_DEC_SRC
+        ${ZSTD_DEC_DIR}/decompress/zstd_decompress.c
+        ${ZSTD_DEC_DIR}/decompress/zstd_decompress_block.c
+        ${ZSTD_DEC_DIR}/decompress/zstd_ddict.c
+        ${ZSTD_DEC_DIR}/decompress/huf_decompress.c
+        ${ZSTD_DEC_DIR}/common/entropy_common.c
+        ${ZSTD_DEC_DIR}/common/error_private.c
+        ${ZSTD_DEC_DIR}/common/fse_decompress.c
+        ${ZSTD_DEC_DIR}/common/pool.c
+        ${ZSTD_DEC_DIR}/common/threading.c
+        ${ZSTD_DEC_DIR}/common/xxhash.c
+        ${ZSTD_DEC_DIR}/common/zstd_common.c
+        ${ZSTD_DEC_DIR}/common/debug.c)
+    # wasm isn't x86-64 → no BMI2 asm path (belt-and-braces disable).
+    set_source_files_properties(${ZSTD_DEC_SRC} PROPERTIES
+        COMPILE_DEFINITIONS "ZSTD_DISABLE_ASM=1")
+    # NOT appended to IFCVIEWER_CORE_SOURCES — those get a source-dir PREPEND
+    # below which would mangle these absolute paths; added via target_sources.
+endif()
 set(IFCVIEWER_CORE_HEADERS
     BufferPool.h
     CameraMath.h
@@ -162,6 +198,7 @@ set(IFCVIEWER_CORE_HEADERS
     SectionPlane.h
     SelectionState.h
     SidecarCache.h
+    SidecarCompress.h
     StreamingLoader.h
     StreamingThread.h
     VertexQuantization.h
@@ -182,6 +219,19 @@ target_link_libraries(IfcViewerCore PUBLIC
 if(UNIX AND NOT APPLE)
     find_package(Threads REQUIRED)
     target_link_libraries(IfcViewerCore PUBLIC Threads::Threads)
+endif()
+# Sidecar (de)compression. Web compiles the vendored single-file decoder (added
+# to the sources above) + uses the vendored zstd.h; desktop links the full
+# libzstd (compress + decompress) and takes zstd.h from the system.
+if(EMSCRIPTEN)
+    target_sources(IfcViewerCore PRIVATE ${ZSTD_DEC_SRC})
+    target_include_directories(IfcViewerCore PRIVATE ${ZSTD_DEC_DIR})
+else()
+    find_library(ZSTD_LIBRARY NAMES zstd libzstd)
+    if(NOT ZSTD_LIBRARY)
+        message(FATAL_ERROR "libzstd not found (needed for .ifcview compression)")
+    endif()
+    target_link_libraries(IfcViewerCore PUBLIC ${ZSTD_LIBRARY})
 endif()
 install(TARGETS IfcViewerCore EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 

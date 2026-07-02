@@ -189,6 +189,7 @@ void SceneLoader::startNextLoad() {
                      (long long)rt.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<StreamingSidecar>>(std::move(cached));
         QMetaObject::invokeMethod(this, [this, mid, result, is_sidecar_source]() {
+            auto it = models_.find(mid);
             if (*result && !(*result)->meta.instances.empty()) {
                 applySidecarData(mid, std::move(**result));
                 if (!is_sidecar_source) {
@@ -197,7 +198,6 @@ void SceneLoader::startNextLoad() {
                 return;
             }
 
-            auto it = models_.find(mid);
             if (it == models_.end()) return;
 
             if (is_sidecar_source) {
@@ -236,10 +236,9 @@ void SceneLoader::applySidecarData(uint32_t mid, StreamingSidecar metadata) {
     SidecarData& d = metadata.meta;
 
     std::fprintf(stderr,
-        "[info] Sidecar hit: %s (%zu metadata bytes, %zu indices, %zu meshes, %zu instances, %zu elements)\n",
+        "[info] Sidecar hit: %s (%zu chunks, %zu meshes, %zu instances, %zu elements)\n",
         model.file_path.toStdString().c_str(),
-        size_t(metadata.vertex_total_bytes),
-        size_t(metadata.index_total_count),
+        d.chunks.size(),
         d.meshes.size(),
         d.instances.size(),
         d.elements.size());

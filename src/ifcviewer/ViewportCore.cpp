@@ -1384,6 +1384,15 @@ bool ViewportCore::createPool() {
         std::max<uint64_t>(MIN_POOL_CAPACITY, INITIAL_SUB_BUFFER));
     pool_.configure(instance_, device_, pool_usage, per_sub,
                     "ifcviewer-wgpu.pool");
+#if defined(__EMSCRIPTEN__)
+    // Cap total pool capacity below the wasm heap ceiling. On web a growth that
+    // would push the heap past MAXIMUM_MEMORY is a bad_alloc → uncatchable
+    // abort, so the pool must stop growing (and evict) before then. Leave
+    // headroom for metadata (instances/maps), transient decompression buffers,
+    // and wgpu overhead. Big federations then keep a bounded, highest-priority
+    // resident set instead of aborting.
+    pool_.setMaxTotalCapacity(3072ull * 1024 * 1024);  // 3 GB (heap ceiling 4 GB)
+#endif
     Log::info() << "wgpu: pool per-sub-buffer capacity = "
                 << (per_sub / (1024 * 1024)) << " MB (grows lazily on "
                 << "demand; device maxBufferSize = "
@@ -1723,6 +1732,7 @@ void ViewportCore::shutdown() {
 // ===========================================================================
 
 #include "StreamingLoader.h"
+#include "SidecarCompress.h"
 
 namespace {
 
@@ -1941,37 +1951,17 @@ StreamingThread::Request ViewportCore::makeChunkRequest(
         std::uint32_t model_id) {
     const auto& c = m.chunks[chunk_idx];
     StreamingThread::Request req;
-    req.model_id              = model_id;
-    req.chunk_idx             = chunk_idx;
-    req.file_path             = m.streaming_file_path;
-    req.vertex_section_offset = m.streaming_vertex_section_offset;
-    req.index_section_offset  = m.streaming_index_section_offset;
-    req.v_ranges.reserve(c.mesh_ids.size());
-    req.i_ranges.reserve(c.mesh_ids.size());
-    for (std::uint32_t mi : c.mesh_ids) {
-        const MeshInfo& mesh = m.meshes[mi];
-        const std::uint64_t v_bytes =
-            std::uint64_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-        if (v_bytes > 0) {
-            req.v_ranges.emplace_back(std::uint64_t(mesh.vbo_byte_offset), v_bytes);
-        }
-        if (mesh.index_count > 0) {
-            req.i_ranges.emplace_back(
-                std::uint64_t(mesh.ebo_byte_offset / sizeof(std::uint32_t)),
-                std::uint64_t(mesh.index_count));
-        }
-    }
-    // LOD1 indices second pass — matches the chunk-local packing order
-    // (all LOD0 first, then LOD1) so the worker's concatenated index
-    // result lands at the offsets recorded in
-    // m.mesh_chunk_local_lod1_first_u32.
-    for (std::uint32_t mi : c.mesh_ids) {
-        const MeshInfo& mesh = m.meshes[mi];
-        if (mesh.lod1_index_count == 0) continue;
-        req.i_ranges.emplace_back(
-            std::uint64_t(mesh.lod1_ebo_byte_offset / sizeof(std::uint32_t)),
-            std::uint64_t(mesh.lod1_index_count));
-    }
+    req.model_id                = model_id;
+    req.chunk_idx               = chunk_idx;
+    req.file_path               = m.streaming_file_path;
+    // v16: one compressed vertex frame + one compressed index frame per chunk.
+    req.geometry_section_offset = m.geometry_section_offset;
+    req.v_comp_off  = c.v_comp_off;
+    req.v_comp_size = c.v_comp_size;
+    req.v_raw_size  = c.vertex_byte_size;
+    req.i_comp_off  = c.i_comp_off;
+    req.i_comp_size = c.i_comp_size;
+    req.i_raw_size  = c.index_count * sizeof(std::uint32_t);
     return req;
 }
 
@@ -1982,34 +1972,18 @@ bool ViewportCore::loadChunkBytesAndUploadGpu(ModelGpuData& m,
     if (c.is_resident) return true;
     if (m.streaming_file_path.empty()) return false;
 
-    // Synchronous fallback: build the request, do the disk read inline,
-    // apply. Used only when the async path can't be — i.e. by the
-    // screenshot test on first frame.
-    StreamingThread::Request req = makeChunkRequest(m, chunk_idx, /*model_id*/ 0);
-
+    // Synchronous fallback: read + decompress the chunk inline, apply. Used
+    // only when the async path can't be — i.e. by the screenshot test on the
+    // first frame.
     std::vector<std::uint8_t>  vbytes;
     std::vector<std::uint32_t> idx;
-    if (!req.v_ranges.empty()) {
-        if (!readSidecarVertexRanges(req.file_path,
-                                     req.vertex_section_offset,
-                                     req.v_ranges, vbytes)) {
-            Log::warn() << "[wgpu stream] failed to read vertex chunk "
-                        << chunk_idx
-                        << " (" << req.v_ranges.size() << " ranges, total "
-                        << c.vertex_byte_size << " B)";
-            return false;
-        }
-    }
-    if (!req.i_ranges.empty()) {
-        if (!readSidecarIndexRanges(req.file_path,
-                                    req.index_section_offset,
-                                    req.i_ranges, idx)) {
-            Log::warn() << "[wgpu stream] failed to read index chunk "
-                        << chunk_idx
-                        << " (" << req.i_ranges.size() << " ranges, total "
-                        << c.index_count << " indices)";
-            return false;
-        }
+    if (!readChunkGeometryCompressed(
+            m.streaming_file_path, m.geometry_section_offset,
+            c.v_comp_off, c.v_comp_size, c.vertex_byte_size,
+            c.i_comp_off, c.i_comp_size, c.index_count * sizeof(std::uint32_t),
+            vbytes, idx)) {
+        Log::warn() << "[wgpu stream] failed to read/decompress chunk " << chunk_idx;
+        return false;
     }
     return applyStreamedChunk(m, chunk_idx, vbytes, idx);
 }
@@ -2316,24 +2290,34 @@ void ViewportCore::driveStreamingLoads() {
         if (cand.m->streaming_from_web
             && pool_.total_free_bytes() < streaming_web_inflight_bytes_ + need) {
             // Not enough VALIDATED pool space for this chunk plus what's already
-            // in flight. Don't fetch — the bytes would arrive, fail the alloc on
-            // a not-yet-grown pool, and re-fetch (network thrash). Instead grow
-            // the pool first (async on web: a provisional sub-buffer validates a
-            // frame or two later, then this chunk fits and is fetched exactly
-            // once). When the pool is saturated (model exceeds GPU memory) hold
-            // the chunk off for the full cooldown so we keep a stable resident
-            // subset instead of re-fetching what will never fit. Blocking before
-            // the evictor also avoids phase-2 visible↔visible swap thrash.
+            // in flight. If the pool can still grow, grow FIRST (async on web: a
+            // provisional sub-buffer validates a frame or two later) — cheaper
+            // than evict/refetch thrash while the model still fits by growing.
             if (pool_.can_grow()) {
                 pool_.requestGrowth();
                 c.blocked_cooldown_until_frame_idx =
                     streaming_frame_idx_ + kGrowBackoffFrames;
-            } else {
+                more_pending = true;
+                continue;
+            }
+            // At the hard capacity budget (setMaxTotalCapacity): growth can't
+            // help — growing further would abort the wasm heap. Evict lower-
+            // priority / LRU resident chunks so this priority-sorted candidate
+            // fits. This is the only path that keeps a big federation navigable
+            // once it exceeds the memory budget (highest-contribution chunks win).
+            while (pool_.total_free_bytes() < streaming_web_inflight_bytes_ + need) {
+                if (evict_one_lru()) continue;
+                if (evict_lowest_priority_than(cand.mid, std::uint32_t(cand.ci),
+                                               cand.priority)) continue;
+                break;
+            }
+            if (pool_.total_free_bytes() < streaming_web_inflight_bytes_ + need) {
                 c.blocked_cooldown_until_frame_idx =
                     streaming_frame_idx_ + kBlockedCooldownFrames;
+                more_pending = true;
+                continue;  // couldn't free enough — hold off this frame
             }
-            more_pending = true;
-            continue;
+            // Freed enough — fall through to the web load below.
         }
 #endif
         while (!pool_can_fit(c.vertex_byte_size)
@@ -2853,13 +2837,12 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     }
 
     ModelGpuData m;
-    m.vertex_bytes   = metadata.vertex_total_bytes;
-    m.index_count    = std::uint32_t(metadata.index_total_count);
+    m.vertex_bytes   = 0;  // accumulated from chunks below (v16 has no section)
+    m.index_count    = 0;
     m.mesh_count     = std::uint32_t(metadata.meta.meshes.size());
     m.instance_count = std::uint32_t(metadata.meta.instances.size());
-    m.streaming_file_path             = metadata.file_path;
-    m.streaming_vertex_section_offset = metadata.vertex_section_offset;
-    m.streaming_index_section_offset  = metadata.index_section_offset;
+    m.streaming_file_path      = metadata.file_path;
+    m.geometry_section_offset  = metadata.geometry_section_offset;
 
     // ---- Spatial chunk plan ----------------------------------------------
     // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
@@ -2978,6 +2961,14 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         c.vertex_byte_size = std::uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
         c.index_count      = chunk_local_i + chunk_local_lod1;
         c.lod1_index_count = chunk_local_lod1;
+        // v16: compressed-blob locators from the baked TOC (streaming path).
+        if (ci < metadata.meta.chunks.size()) {
+            const SidecarChunk& sc = metadata.meta.chunks[ci];
+            c.v_comp_off = sc.v_comp_off; c.v_comp_size = sc.v_comp_size;
+            c.i_comp_off = sc.i_comp_off; c.i_comp_size = sc.i_comp_size;
+        }
+        m.vertex_bytes += c.vertex_byte_size;
+        m.index_count  += std::uint32_t(c.index_count);
 
         // Small per-chunk buffers, allocated upfront so cull can write into
         // them. visible_draws_buffer cap = chunk's instance count.
@@ -3385,44 +3376,33 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
     ModelGpuData& m = it->second;
     if (chunk_idx >= m.chunks.size()) return;
 
-    const StreamingThread::Request req = makeChunkRequest(m, chunk_idx, model_id);
+    const ModelGpuData::Chunk& c = m.chunks[chunk_idx];
     const int sid = m.web_source_id;  // which registered byte-source to read from
-    const std::uint64_t vsec = req.vertex_section_offset;
-    const std::uint64_t isec = req.index_section_offset;
-    const std::vector<std::pair<std::uint64_t, std::uint64_t>> v_ranges = req.v_ranges;
-    // i_ranges are (first_u32, count_u32); convert to byte ranges.
-    std::vector<std::pair<std::uint64_t, std::uint64_t>> i_byte_ranges;
-    i_byte_ranges.reserve(req.i_ranges.size());
-    for (const auto& [first_u32, count] : req.i_ranges)
-        i_byte_ranges.emplace_back(first_u32 * 4u, count * 4u);
+    const std::uint64_t geom        = m.geometry_section_offset;
+    const std::uint64_t v_comp_off  = c.v_comp_off,  v_comp_size = c.v_comp_size;
+    const std::uint64_t i_comp_off  = c.i_comp_off,  i_comp_size = c.i_comp_size;
+    const std::uint64_t v_raw       = c.vertex_byte_size;
+    const std::uint64_t i_raw       = std::uint64_t(c.index_count) * sizeof(std::uint32_t);
 
-    // Reserve this load's pool footprint while it's in flight (released when it
-    // resolves) so driveStreamingLoads doesn't over-commit the pool — see
-    // streaming_web_inflight_bytes_.
-    const std::uint64_t need = m.chunks[chunk_idx].vertex_byte_size
-        + std::uint64_t(m.chunks[chunk_idx].index_count) * sizeof(std::uint32_t);
+    // Reserve the RAW (decompressed) footprint while in flight so
+    // driveStreamingLoads doesn't over-commit the pool.
+    const std::uint64_t need = v_raw + i_raw;
     streaming_web_inflight_bytes_ += need;
 
-    // Fire the vertex and index range reads CONCURRENTLY and join when both
-    // land — over a network this halves per-chunk latency vs reading vertices
-    // then indices serially (two round trips → one). The join holds both
-    // payloads + completion flags; whichever read finishes second runs the
-    // apply. Re-look-up the model at apply time: a resetScene() could have
-    // landed mid-flight, in which case the model id is gone and we drop it.
+    // Fetch the chunk's two zstd frames CONCURRENTLY (vertex + index) and join
+    // when both land, then decompress and apply. Re-look-up the model at apply
+    // time: a resetScene() could have landed mid-flight.
     struct ChunkJoin {
-        std::vector<std::uint8_t>  vbytes;
-        std::vector<std::uint32_t> idx;
+        std::vector<std::uint8_t> vz, iz;  // compressed frames
         bool v_done = false, i_done = false, v_ok = false, i_ok = false;
     };
     auto join = std::make_shared<ChunkJoin>();
-    std::function<void()> finish = [this, model_id, chunk_idx, need, join]() {
-        if (!join->v_done || !join->i_done) return;  // wait for the other read
-        // Release the in-flight reservation (clamped — a mid-flight resetScene
-        // could have zeroed it) + the concurrency slot, regardless of outcome.
-        streaming_web_inflight_bytes_ -=
-            std::min(streaming_web_inflight_bytes_, need);
+    std::function<void()> finish =
+        [this, model_id, chunk_idx, need, v_raw, i_raw, join]() {
+        if (!join->v_done || !join->i_done) return;  // wait for the other frame
+        streaming_web_inflight_bytes_ -= std::min(streaming_web_inflight_bytes_, need);
         if (streaming_web_inflight_count_ > 0) --streaming_web_inflight_count_;
-        host_->requestFrame();  // a slot freed — let driveStreamingLoads issue more
+        host_->requestFrame();
 
         auto mit = models_gpu_.find(model_id);
         if (mit == models_gpu_.end()) return;
@@ -3430,12 +3410,16 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
         if (chunk_idx >= mm.chunks.size()) return;
         auto& cc = mm.chunks[chunk_idx];
         cc.is_loading = false;
-        // On read failure or a full pool, back off instead of re-candidating
-        // next frame → re-fetch thrash. If the pool can still grow (its async
-        // sub-buffer is mid-validation), retry soon; if it's saturated, hold
-        // off for the full cooldown.
-        if (!join->v_ok || !join->i_ok
-            || !applyStreamedChunk(mm, chunk_idx, join->vbytes, join->idx)) {
+
+        std::vector<std::uint8_t>  vbytes(static_cast<std::size_t>(v_raw));
+        std::vector<std::uint32_t> idx(static_cast<std::size_t>(i_raw / sizeof(std::uint32_t)));
+        const bool ok = join->v_ok && join->i_ok
+            && SidecarCompress::decompress(join->vz.data(), join->vz.size(),
+                                           vbytes.data(), vbytes.size())
+            && SidecarCompress::decompress(join->iz.data(), join->iz.size(),
+                                           reinterpret_cast<std::uint8_t*>(idx.data()),
+                                           std::size_t(i_raw));
+        if (!ok || !applyStreamedChunk(mm, chunk_idx, vbytes, idx)) {
             cc.blocked_cooldown_until_frame_idx = streaming_frame_idx_
                 + (pool_.can_grow() ? kGrowBackoffFrames : kBlockedCooldownFrames);
             return;
@@ -3443,22 +3427,13 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
         host_->requestFrame();
     };
 
-    webReadRangesAsync(sid, vsec, v_ranges,
-        [join, finish](bool ok, std::vector<std::uint8_t>&& vbytes) {
-            join->v_ok = ok;
-            join->vbytes = std::move(vbytes);
-            join->v_done = true;
-            finish();
+    webReadRangesAsync(sid, geom, {{v_comp_off, v_comp_size}},
+        [join, finish](bool ok, std::vector<std::uint8_t>&& vz) {
+            join->v_ok = ok; join->vz = std::move(vz); join->v_done = true; finish();
         });
-    webReadRangesAsync(sid, isec, i_byte_ranges,
-        [join, finish](bool ok, std::vector<std::uint8_t>&& ibytes) {
-            join->i_ok = ok;
-            join->idx.resize(ibytes.size() / sizeof(std::uint32_t));
-            if (!join->idx.empty())
-                std::memcpy(join->idx.data(), ibytes.data(),
-                            join->idx.size() * sizeof(std::uint32_t));
-            join->i_done = true;
-            finish();
+    webReadRangesAsync(sid, geom, {{i_comp_off, i_comp_size}},
+        [join, finish](bool ok, std::vector<std::uint8_t>&& iz) {
+            join->i_ok = ok; join->iz = std::move(iz); join->i_done = true; finish();
         });
 }
 
@@ -3481,80 +3456,76 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
         return;
     }
 
+    // Head (v16): [header 12][geom_bytes 8]. The two compressed metadata blocks
+    // follow the compressed geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     webReadRangesAsync(source_id, 0, {{0, SIDECAR_HEAD_BYTES}},
         [this, fsize, source_id, source_label](bool ok, std::vector<std::uint8_t>&& head) {
-            std::uint32_t nvb = 0;
-            if (!ok || !parseSidecarHead(head.data(), head.size(), nvb)) {
-                Log::warn() << "loadSidecarMetadataWeb: bad sidecar head";
+            std::uint64_t geom_bytes = 0;
+            if (!ok || !parseSidecarHead(head.data(), head.size(), geom_bytes)) {
+                Log::warn() << "loadSidecarMetadataWeb: bad sidecar head (wrong version?)";
                 return;
             }
-            const std::uint64_t vsec          = SIDECAR_HEAD_BYTES;
-            const std::uint64_t idx_count_off = std::uint64_t(SIDECAR_HEAD_BYTES) + nvb;
-
-            webReadRangesAsync(source_id, 0, {{idx_count_off, 4}},
-                [this, fsize, nvb, vsec, idx_count_off, source_id, source_label]
-                (bool ok2, std::vector<std::uint8_t>&& cnt) {
-                    if (!ok2 || cnt.size() < 4) {
-                        Log::warn() << "loadSidecarMetadataWeb: short index count";
-                        return;
-                    }
-                    std::uint32_t num_indices = 0;
-                    std::memcpy(&num_indices, cnt.data(), 4);
-                    const std::uint64_t isec          = idx_count_off + 4;
-                    const std::uint64_t crit_size_off = isec + std::uint64_t(num_indices) * 4u;
-                    if (double(crit_size_off + 8) > fsize) {
-                        Log::warn() << "loadSidecarMetadataWeb: critical size past EOF";
-                        return;
-                    }
-                    // v15: read the 8-byte critical-block length, then the
-                    // render-critical metadata only. The deferred block
-                    // (elements/strings) is fetched on demand later — first
-                    // paint no longer waits on the property tree.
-                    webReadRangesAsync(source_id, 0, {{crit_size_off, 8}},
-                        [this, vsec, nvb, isec, num_indices, source_id, source_label,
-                         crit_size_off, fsize]
-                        (bool okc, std::vector<std::uint8_t>&& cb) {
-                            if (!okc || cb.size() < 8) {
-                                Log::warn() << "loadSidecarMetadataWeb: short critical size";
+            const std::uint64_t meta_off = std::uint64_t(SIDECAR_HEAD_BYTES) + geom_bytes;
+            if (double(meta_off + 16) > fsize) {
+                Log::warn() << "loadSidecarMetadataWeb: metadata past EOF";
+                return;
+            }
+            // Critical block on disk: [comp u64][raw u64][zstd frame].
+            webReadRangesAsync(source_id, 0, {{meta_off, 16}},
+                [this, fsize, meta_off, source_id, source_label]
+                (bool ok2, std::vector<std::uint8_t>&& h) {
+                    if (!ok2 || h.size() < 16) { Log::warn() << "loadSidecarMetadataWeb: short crit header"; return; }
+                    std::uint64_t crit_comp = 0, crit_raw = 0;
+                    std::memcpy(&crit_comp, h.data(), 8);
+                    std::memcpy(&crit_raw, h.data() + 8, 8);
+                    const std::uint64_t crit_off = meta_off + 16;
+                    if (double(crit_off + crit_comp + 16) > fsize) { Log::warn() << "loadSidecarMetadataWeb: crit past EOF"; return; }
+                    webReadRangesAsync(source_id, 0, {{crit_off, crit_comp}},
+                        [this, crit_off, crit_comp, crit_raw, source_id, source_label]
+                        (bool ok3, std::vector<std::uint8_t>&& cz) {
+                            if (!ok3) { Log::warn() << "loadSidecarMetadataWeb: critical read failed"; return; }
+                            std::vector<std::uint8_t> crit(static_cast<std::size_t>(crit_raw));
+                            if (!SidecarCompress::decompress(cz.data(), cz.size(), crit.data(), crit.size())) {
+                                Log::warn() << "loadSidecarMetadataWeb: critical decompress failed";
                                 return;
                             }
-                            std::uint64_t crit_bytes = 0;
-                            std::memcpy(&crit_bytes, cb.data(), 8);
-                            const std::uint64_t crit_off = crit_size_off + 8;
-                            if (double(crit_off + crit_bytes) > fsize) {
-                                Log::warn() << "loadSidecarMetadataWeb: critical block past EOF";
+                            StreamingSidecar sc;
+                            sc.file_path               = source_label;
+                            sc.geometry_section_offset = SIDECAR_HEAD_BYTES;
+                            if (!parseSidecarCritical(crit.data(), crit.size(), sc.meta)) {
+                                Log::warn() << "loadSidecarMetadataWeb: bad critical metadata";
                                 return;
                             }
-                            webReadRangesAsync(source_id, 0, {{crit_off, crit_bytes}},
-                                [this, vsec, nvb, isec, num_indices, source_id, source_label,
-                                 crit_off, crit_bytes, fsize]
-                                (bool ok3, std::vector<std::uint8_t>&& crit) {
-                                    if (!ok3) {
-                                        Log::warn() << "loadSidecarMetadataWeb: critical read failed";
-                                        return;
-                                    }
-                                    StreamingSidecar sc;
-                                    sc.file_path             = source_label;
-                                    sc.vertex_section_offset = vsec;
-                                    sc.vertex_total_bytes    = nvb;
-                                    sc.index_section_offset  = isec;
-                                    sc.index_total_count     = num_indices;
-                                    if (!parseSidecarCritical(crit.data(), crit.size(), sc.meta)) {
-                                        Log::warn() << "loadSidecarMetadataWeb: bad critical metadata";
-                                        return;
-                                    }
-                                    const std::size_t n_meshes    = sc.meta.meshes.size();
-                                    const std::size_t n_instances = sc.meta.instances.size();
-                                    const std::uint32_t mid = next_model_id_++;
-                                    applyCachedModel(mid, std::move(sc));
+                            const std::size_t n_meshes    = sc.meta.meshes.size();
+                            const std::size_t n_instances = sc.meta.instances.size();
+                            const std::uint32_t mid = next_model_id_++;
+                            applyCachedModel(mid, std::move(sc));
+                            // Mark web-streamed + set the source IMMEDIATELY — the
+                            // model now has non-resident chunks and the RAF loop's
+                            // driveStreamingLoads will run before the deferred-header
+                            // read below returns. If streaming_from_web weren't set
+                            // yet it would take the sync fopen path and fail
+                            // ("failed to read/decompress chunk 0").
+                            if (auto m0 = models_gpu_.find(mid); m0 != models_gpu_.end()) {
+                                m0->second.streaming_from_web = true;
+                                m0->second.web_source_id      = source_id;
+                            }
+                            // Read the deferred block header to record its locator
+                            // (the property block is fetched on demand later).
+                            const std::uint64_t def_hdr_off = crit_off + crit_comp;
+                            webReadRangesAsync(source_id, 0, {{def_hdr_off, 16}},
+                                [this, mid, def_hdr_off, source_id, source_label, n_meshes, n_instances]
+                                (bool ok4, std::vector<std::uint8_t>&& dh) {
                                     auto mit = models_gpu_.find(mid);
                                     if (mit != models_gpu_.end()) {
-                                        mit->second.streaming_from_web    = true;
-                                        mit->second.web_source_id         = source_id;
-                                        // Deferred block: [end of critical, EOF).
-                                        mit->second.deferred_meta_offset  = crit_off + crit_bytes;
-                                        mit->second.deferred_meta_bytes   =
-                                            std::uint64_t(fsize) - (crit_off + crit_bytes);
+                                        if (ok4 && dh.size() >= 16) {
+                                            std::uint64_t dc = 0, dr = 0;
+                                            std::memcpy(&dc, dh.data(), 8);
+                                            std::memcpy(&dr, dh.data() + 8, 8);
+                                            mit->second.deferred_comp_offset = def_hdr_off + 16;
+                                            mit->second.deferred_comp_size   = dc;
+                                            mit->second.deferred_raw_size    = dr;
+                                        }
                                     }
                                     viewAll();
                                     host_->requestFrame();
@@ -3577,18 +3548,22 @@ void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) { if (done) done(false); return; }
     ModelGpuData& m = it->second;
-    if (m.deferred_meta_loaded || m.deferred_meta_bytes == 0) {
+    if (m.deferred_meta_loaded || m.deferred_comp_size == 0) {
         m.deferred_meta_loaded = true;
         if (done) done(true);
         return;
     }
-    webReadRangesAsync(m.web_source_id, 0, {{m.deferred_meta_offset, m.deferred_meta_bytes}},
-        [this, model_id, done](bool ok, std::vector<std::uint8_t>&& buf) {
+    const std::uint64_t raw_size = m.deferred_raw_size;
+    webReadRangesAsync(m.web_source_id, 0, {{m.deferred_comp_offset, m.deferred_comp_size}},
+        [this, model_id, raw_size, done](bool ok, std::vector<std::uint8_t>&& cz) {
             auto mit = models_gpu_.find(model_id);
             if (mit == models_gpu_.end()) { if (done) done(false); return; }
+            std::vector<std::uint8_t> buf(static_cast<std::size_t>(raw_size));
             SidecarData tmp;
-            if (!ok || !parseSidecarDeferred(buf.data(), buf.size(), tmp)) {
-                Log::warn() << "loadDeferredMetadataWeb: read/parse failed";
+            if (!ok ||
+                !SidecarCompress::decompress(cz.data(), cz.size(), buf.data(), buf.size()) ||
+                !parseSidecarDeferred(buf.data(), buf.size(), tmp)) {
+                Log::warn() << "loadDeferredMetadataWeb: read/decompress/parse failed";
                 if (done) done(false);
                 return;
             }
@@ -3678,8 +3653,11 @@ void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
     for (const auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& c : m.chunks) {
-            const std::uint64_t bytes =
-                c.vertex_byte_size + c.index_count * sizeof(std::uint32_t);
+            // Report COMPRESSED bytes — what actually crosses the network. Fall
+            // back to raw for direct (in-memory) loads that have no blobs.
+            const std::uint64_t bytes = (c.v_comp_size + c.i_comp_size > 0)
+                ? c.v_comp_size + c.i_comp_size
+                : c.vertex_byte_size + c.index_count * sizeof(std::uint32_t);
             total_bytes += bytes;
             if (c.contribution_visible_count > 0) {
                 needed_bytes += bytes;
@@ -3719,10 +3697,9 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     // applyStreamedChunk loop below).
     StreamingSidecar metadata;
     metadata.meta = std::move(s);
-    metadata.vertex_section_offset = 0;
-    metadata.vertex_total_bytes    = metadata.meta.vertices.size();
-    metadata.index_section_offset  = 0;
-    metadata.index_total_count     = metadata.meta.indices.size();
+    // Direct load: geometry is already in memory (uploaded below), streamed
+    // from nothing — leave file_path empty so the streaming worker skips it.
+    metadata.geometry_section_offset = 0;
     metadata.file_path.clear();
 
     std::vector<std::uint8_t>  raw_vertices = std::move(metadata.meta.vertices);

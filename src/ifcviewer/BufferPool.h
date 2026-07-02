@@ -109,7 +109,18 @@ public:
     // false the first time addSubBuffer is refused even at the floor
     // size — eviction callers need this to know whether a future alloc
     // could rescue them, or whether eviction is the only path.
-    bool     can_grow() const { return !growth_disabled_ && per_sub_buffer_capacity_ > 0; }
+    bool     can_grow() const {
+        return !growth_disabled_ && per_sub_buffer_capacity_ > 0
+            && (max_total_capacity_bytes_ == 0
+                || total_capacity_bytes() < max_total_capacity_bytes_);
+    }
+
+    // Hard ceiling on total pool capacity (0 = unlimited). Once total capacity
+    // reaches this, can_grow() returns false so the streaming driver EVICTS
+    // instead of growing. Critical on web: a growth past the wasm heap ceiling
+    // is a bad_alloc that -fno-exceptions turns into an uncatchable abort, so
+    // the async grow-OOM detection can't save us — we must stop first.
+    void     setMaxTotalCapacity(uint64_t max_bytes) { max_total_capacity_bytes_ = max_bytes; }
 
     // Proactively add a sub-buffer (no allocation). On web this kicks off the
     // async provisional-validation cycle so validated free space appears a
@@ -175,6 +186,7 @@ private:
     WGPUDevice       device_                   = nullptr;
     WGPUBufferUsage  usage_                    = 0;
     uint64_t         per_sub_buffer_capacity_  = 0;
+    uint64_t         max_total_capacity_bytes_ = 0;  // 0 = unlimited (see can_grow)
     // The largest size addSubBuffer last *succeeded* at, in bytes.
     // Starts at per_sub_buffer_capacity_ (the probe's discovered max)
     // and decays as the driver refuses larger allocations. Future grow

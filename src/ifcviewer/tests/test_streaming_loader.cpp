@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "SidecarCache.h"
+#include "SidecarCompress.h"
 #include "StreamingLoader.h"
 
 #include <catch2/catch_test_macros.hpp>
@@ -85,12 +86,15 @@ SidecarData buildFixture() {
         sd.elements[i].ifc_id    = int32_t(1000 + i);
         sd.elements[i].parent_id = (i == 0) ? -1 : int32_t(100);
     }
+    // v16 stores geometry per-chunk (compressed); a fixture with geometry needs
+    // a chunk TOC covering its meshes (one chunk per mesh here).
+    sd.chunks = { {0, 1}, {1, 1} };
     return sd;
 }
 
 }  // namespace
 
-TEST_CASE("readSidecarMetadataOnly returns metadata + section offsets, skips bulk",
+TEST_CASE("readSidecarMetadataOnly returns metadata, skips bulk geometry",
           "[streaming]") {
     fs::path dir = makeScratchDir("metaonly");
     fs::path ifc = dir / "model.ifc";
@@ -100,19 +104,19 @@ TEST_CASE("readSidecarMetadataOnly returns metadata + section offsets, skips bul
     auto meta = readSidecarMetadataOnly(ifc.string());
     REQUIRE(meta.has_value());
 
-    // Bulk sections are skipped, not loaded.
+    // Bulk geometry is skipped, not loaded.
     REQUIRE(meta->meta.vertices.empty());
     REQUIRE(meta->meta.indices.empty());
 
-    // Offsets locate the two skipped sections. The vertex section starts
-    // right after the 16-byte head.
-    REQUIRE(meta->vertex_section_offset == SIDECAR_HEAD_BYTES);
-    REQUIRE(meta->vertex_total_bytes == sd.vertices.size());
-    REQUIRE(meta->index_total_count == sd.indices.size());
-    REQUIRE(meta->index_section_offset ==
-            SIDECAR_HEAD_BYTES + sd.vertices.size() + 4);
+    // v16: the compressed geometry section starts right after the 20-byte head.
+    REQUIRE(meta->geometry_section_offset == SIDECAR_HEAD_BYTES);
+    // Chunk TOC carries compressed blob locators for each chunk.
+    REQUIRE(meta->meta.chunks.size() == sd.chunks.size());
+    REQUIRE(meta->meta.chunks[0].v_comp_size > 0);
+    // The deferred (property) block locator is recorded for on-demand fetch.
+    REQUIRE(meta->deferred_comp_size > 0);
 
-    // Tail metadata round-trips.
+    // Metadata round-trips.
     REQUIRE(meta->meta.meshes.size() == sd.meshes.size());
     REQUIRE(meta->meta.instances.size() == sd.instances.size());
     REQUIRE(meta->meta.elements.size() == sd.elements.size());
@@ -140,100 +144,90 @@ TEST_CASE("readSidecarMetadataOnly rejects missing / corrupt files", "[streaming
     REQUIRE_FALSE(readSidecarMetadataOnly(bad.string()).has_value());
 }
 
-TEST_CASE("readSidecarVertexRanges scatters byte ranges in input order", "[streaming]") {
-    fs::path dir = makeScratchDir("vranges");
+TEST_CASE("readChunkGeometryCompressed decompresses a chunk's blobs", "[streaming]") {
+    fs::path dir = makeScratchDir("chunkgeom");
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
     REQUIRE(writeSidecar(ifc.string(), sd));
     auto meta = readSidecarMetadataOnly(ifc.string());
     REQUIRE(meta.has_value());
+    REQUIRE(meta->meta.chunks.size() == 2);
 
-    // Two section-relative ranges given out of file order; the destination
-    // must preserve input order (second mesh's bytes first, then first).
+    // Chunk 0 = mesh 0: vertices [0, 2*stride), indices {0,1,2}.
+    const auto& c0 = meta->meta.chunks[0];
     const uint64_t stride = INSTANCED_VERTEX_STRIDE_BYTES;
-    std::vector<std::pair<uint64_t, uint64_t>> ranges = {
-        {2 * stride, 2 * stride},  // last 2 vertices
-        {0, 2 * stride},           // first 2 vertices
-    };
-    std::vector<uint8_t> out;
-    REQUIRE(readSidecarVertexRanges(ifc.string(), meta->vertex_section_offset,
-                                    ranges, out));
-    REQUIRE(out.size() == 4 * stride);
-    REQUIRE(std::memcmp(out.data(), sd.vertices.data() + 2 * stride, 2 * stride) == 0);
-    REQUIRE(std::memcmp(out.data() + 2 * stride, sd.vertices.data(), 2 * stride) == 0);
+    std::vector<uint8_t>  vbytes;
+    std::vector<uint32_t> idx;
+    REQUIRE(readChunkGeometryCompressed(
+        ifc.string(), meta->geometry_section_offset,
+        c0.v_comp_off, c0.v_comp_size, c0.v_raw_size,
+        c0.i_comp_off, c0.i_comp_size, c0.i_raw_size, vbytes, idx));
+    REQUIRE(vbytes.size() == 2 * stride);
+    REQUIRE(std::memcmp(vbytes.data(), sd.vertices.data(), 2 * stride) == 0);
+    REQUIRE(idx == std::vector<uint32_t>({0, 1, 2}));
+
+    // Chunk 1 = mesh 1: indices {1,2,3}.
+    const auto& c1 = meta->meta.chunks[1];
+    REQUIRE(readChunkGeometryCompressed(
+        ifc.string(), meta->geometry_section_offset,
+        c1.v_comp_off, c1.v_comp_size, c1.v_raw_size,
+        c1.i_comp_off, c1.i_comp_size, c1.i_raw_size, vbytes, idx));
+    REQUIRE(idx == std::vector<uint32_t>({1, 2, 3}));
+    REQUIRE(std::memcmp(vbytes.data(), sd.vertices.data() + 2 * stride, 2 * stride) == 0);
 }
 
-TEST_CASE("readSidecarIndexRanges reads u32 index ranges", "[streaming]") {
-    fs::path dir = makeScratchDir("iranges");
-    fs::path ifc = dir / "model.ifc";
-    SidecarData sd = buildFixture();
-    REQUIRE(writeSidecar(ifc.string(), sd));
-    auto meta = readSidecarMetadataOnly(ifc.string());
-    REQUIRE(meta.has_value());
-
-    std::vector<std::pair<uint64_t, uint64_t>> ranges = {{3, 3}};  // indices[3..6)
-    std::vector<uint32_t> out;
-    REQUIRE(readSidecarIndexRanges(ifc.string(), meta->index_section_offset,
-                                   ranges, out));
-    REQUIRE(out == std::vector<uint32_t>({1, 2, 3}));
-}
-
-TEST_CASE("parseSidecarHead validates magic / version / length", "[streaming]") {
+TEST_CASE("parseSidecarHead validates magic / version, reads geom length", "[streaming]") {
     uint8_t head[SIDECAR_HEAD_BYTES] = {};
     uint32_t magic = SIDECAR_MAGIC, version = SIDECAR_VERSION, endian = SIDECAR_ENDIAN;
-    uint32_t nvb = 4096;
+    uint64_t geom = 123456;
     std::memcpy(head + 0, &magic, 4);
     std::memcpy(head + 4, &version, 4);
     std::memcpy(head + 8, &endian, 4);
-    std::memcpy(head + 12, &nvb, 4);
+    std::memcpy(head + 12, &geom, 8);
 
-    uint32_t got = 0;
+    uint64_t got = 0;
     REQUIRE(parseSidecarHead(head, sizeof(head), got));
-    REQUIRE(got == 4096);
+    REQUIRE(got == 123456);
 
-    // Short buffer.
     REQUIRE_FALSE(parseSidecarHead(head, SIDECAR_HEAD_BYTES - 1, got));
 
-    // Wrong magic.
     uint8_t bad[SIDECAR_HEAD_BYTES];
     std::memcpy(bad, head, sizeof(bad));
     bad[0] ^= 0xFF;
     REQUIRE_FALSE(parseSidecarHead(bad, sizeof(bad), got));
 }
 
-TEST_CASE("v15 critical/deferred metadata split round-trips + rejects truncation",
-          "[streaming]") {
-    fs::path dir = makeScratchDir("v15split");
+TEST_CASE("v16 deferred block: fetch via locator, decompress, parse", "[streaming]") {
+    fs::path dir = makeScratchDir("v16def");
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
-    sd.chunks = { {0, 1}, {1, 1} };  // a TOC, so the critical block carries chunks
     REQUIRE(writeSidecar(ifc.string(), sd));
 
-    // readSidecarMetadataOnly (desktop) reads BOTH blocks + records the locator.
     auto meta = readSidecarMetadataOnly(ifc.string());
     REQUIRE(meta.has_value());
-    REQUIRE(meta->meta.meshes.size()      == sd.meshes.size());   // critical
-    REQUIRE(meta->meta.chunks.size()      == sd.chunks.size());   // critical
-    REQUIRE(meta->meta.elements.size()    == sd.elements.size()); // deferred
-    REQUIRE(meta->meta.string_table       == sd.string_table);    // deferred
-    REQUIRE(meta->critical_meta_bytes > 0);
+    REQUIRE(meta->meta.meshes.size()   == sd.meshes.size());   // critical
+    REQUIRE(meta->meta.chunks.size()   == sd.chunks.size());
+    REQUIRE(meta->meta.elements.size() == sd.elements.size()); // desktop reads deferred too
+    REQUIRE(meta->deferred_comp_size > 0);
 
-    // Pull the raw critical block via the recorded locator and parse it alone —
-    // exactly what the web loader does before painting.
+    // The on-demand path (web) fetches the compressed deferred frame via the
+    // recorded locator and decompresses it — verify that round-trips.
     FILE* f = std::fopen((dir / "model.ifcview").string().c_str(), "rb");
     REQUIRE(f);
-    std::vector<uint8_t> crit(size_t(meta->critical_meta_bytes));
-    std::fseek(f, long(meta->critical_meta_offset), SEEK_SET);
-    REQUIRE(std::fread(crit.data(), 1, crit.size(), f) == crit.size());
+    std::vector<uint8_t> cz(size_t(meta->deferred_comp_size));
+    std::fseek(f, long(meta->deferred_comp_offset), SEEK_SET);
+    REQUIRE(std::fread(cz.data(), 1, cz.size(), f) == cz.size());
     std::fclose(f);
 
-    SidecarData c;
-    REQUIRE(parseSidecarCritical(crit.data(), crit.size(), c));
-    REQUIRE(c.meshes.size()    == sd.meshes.size());
-    REQUIRE(c.chunks.size()    == sd.chunks.size());
-    REQUIRE(c.elements.empty());  // the critical block has no property data
+    std::vector<uint8_t> raw(size_t(meta->deferred_raw_size));
+    REQUIRE(SidecarCompress::decompress(cz.data(), cz.size(), raw.data(), raw.size()));
+    SidecarData d;
+    REQUIRE(parseSidecarDeferred(raw.data(), raw.size(), d));
+    REQUIRE(d.elements.size()  == sd.elements.size());
+    REQUIRE(d.string_table     == sd.string_table);
+
     SidecarData chopped;
-    REQUIRE_FALSE(parseSidecarCritical(crit.data(), crit.size() - 1, chopped));
+    REQUIRE_FALSE(parseSidecarDeferred(raw.data(), raw.size() - 1, chopped));
 }
 
 TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split",

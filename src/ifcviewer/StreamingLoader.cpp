@@ -34,6 +34,7 @@
 // can be range-read on demand. File handle is closed before return.
 
 #include "StreamingLoader.h"
+#include "SidecarCompress.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -88,14 +89,14 @@ std::string sidecarPath(const std::string& ifc_path) {
 
 }  // namespace
 
-bool parseSidecarHead(const uint8_t* data, size_t n, uint32_t& out_num_vertex_bytes) {
+bool parseSidecarHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
     if (n < SIDECAR_HEAD_BYTES) return false;
     SidecarHeaderRaw hdr;
     std::memcpy(&hdr, data, sizeof(hdr));
     if (hdr.magic   != SIDECAR_MAGIC)  return false;
     if (hdr.version != SIDECAR_VERSION) return false;
     if (hdr.endian  != SIDECAR_ENDIAN) return false;
-    std::memcpy(&out_num_vertex_bytes, data + sizeof(hdr), 4);
+    std::memcpy(&out_geom_bytes, data + sizeof(hdr), 8);
     return true;
 }
 
@@ -134,56 +135,77 @@ std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_p
         return std::nullopt;
     };
 
-    // Head: 12-byte header + the vertex-byte count. The vertex section starts
-    // immediately after, at SIDECAR_HEAD_BYTES.
+    // Head (v16): 12-byte header + the compressed-geometry-section length. The
+    // metadata blocks follow the geometry at SIDECAR_HEAD_BYTES + geom_bytes.
     uint8_t head[SIDECAR_HEAD_BYTES];
     if (std::fread(head, 1, SIDECAR_HEAD_BYTES, f) != SIDECAR_HEAD_BYTES) return fail();
-    uint32_t num_vertex_bytes = 0;
-    if (!parseSidecarHead(head, SIDECAR_HEAD_BYTES, num_vertex_bytes)) return fail();
+    uint64_t geom_bytes = 0;
+    if (!parseSidecarHead(head, SIDECAR_HEAD_BYTES, geom_bytes)) return fail();
 
     StreamingSidecar out;
-    out.file_path             = path;
-    out.vertex_section_offset = SIDECAR_HEAD_BYTES;
-    out.vertex_total_bytes    = num_vertex_bytes;
+    out.file_path                = path;
+    out.geometry_section_offset  = SIDECAR_HEAD_BYTES;
 
-    // Skip the vertex section; read the index count that follows it.
-    if (std::fseek(f, long(num_vertex_bytes), SEEK_CUR) != 0) return fail();
-    uint32_t num_indices = 0;
-    if (std::fread(&num_indices, 4, 1, f) != 1)        return fail();
-    out.index_section_offset = uint64_t(std::ftell(f));
-    out.index_total_count    = num_indices;
-
-    // Skip the index section; the metadata tail runs from there to EOF.
-    if (std::fseek(f, long(num_indices) * 4, SEEK_CUR) != 0) return fail();
-    const long tail_off = std::ftell(f);
-    if (tail_off < 0)                          return fail();
-    if (std::fseek(f, 0, SEEK_END) != 0)       return fail();
-    const long file_end = std::ftell(f);
-    if (file_end < tail_off)                   return fail();
-    if (std::fseek(f, tail_off, SEEK_SET) != 0) return fail();
-
-    std::vector<uint8_t> tail(size_t(file_end - tail_off));
-    if (!tail.empty() && std::fread(tail.data(), 1, tail.size(), f) != tail.size())
+    // Skip the geometry section; the two compressed metadata blocks follow.
+    if (std::fseek(f, long(SIDECAR_HEAD_BYTES) + long(geom_bytes), SEEK_SET) != 0)
         return fail();
+
+    // Each metadata block on disk is [comp u64][raw u64][zstd frame].
+    auto readBlock = [&](std::vector<uint8_t>& raw,
+                         uint64_t* comp_off = nullptr, uint64_t* comp_sz = nullptr,
+                         uint64_t* raw_sz = nullptr) -> bool {
+        uint64_t comp = 0, rawn = 0;
+        if (std::fread(&comp, 8, 1, f) != 1 || std::fread(&rawn, 8, 1, f) != 1) return false;
+        const long here = std::ftell(f);
+        std::vector<uint8_t> z(static_cast<size_t>(comp));
+        if (comp && std::fread(z.data(), 1, z.size(), f) != z.size()) return false;
+        raw.assign(size_t(rawn), 0);
+        if (comp_off) *comp_off = uint64_t(here);
+        if (comp_sz)  *comp_sz  = comp;
+        if (raw_sz)   *raw_sz   = rawn;
+        return SidecarCompress::decompress(z.data(), z.size(), raw.data(), raw.size());
+    };
+
+    std::vector<uint8_t> crit, def;
+    if (!readBlock(crit)) return fail();
+    if (!readBlock(def, &out.deferred_comp_offset, &out.deferred_comp_size,
+                   &out.deferred_raw_size)) return fail();
     std::fclose(f);
 
-    // Tail (v15) = [critical_meta_bytes (8)][critical block][deferred block].
-    // Desktop is local, so read both; the web path reads only the critical
-    // block before painting and the deferred block on demand.
-    if (tail.size() < sizeof(uint64_t)) return std::nullopt;
-    uint64_t crit_bytes = 0;
-    std::memcpy(&crit_bytes, tail.data(), sizeof(crit_bytes));
-    const size_t crit_off = sizeof(crit_bytes);
-    if (crit_off + crit_bytes > tail.size()) return std::nullopt;
-    out.critical_meta_offset = out.index_section_offset
-        + uint64_t(num_indices) * 4u + crit_off;
-    out.critical_meta_bytes  = crit_bytes;
-    if (!parseSidecarCritical(tail.data() + crit_off, size_t(crit_bytes), out.meta))
-        return std::nullopt;
-    if (!parseSidecarDeferred(tail.data() + crit_off + crit_bytes,
-                              tail.size() - crit_off - size_t(crit_bytes), out.meta))
-        return std::nullopt;
+    // Desktop reads both blocks up front; the web path reads only critical
+    // before painting and fetches the deferred block on demand.
+    if (!parseSidecarCritical(crit.data(), crit.size(), out.meta)) return std::nullopt;
+    if (!parseSidecarDeferred(def.data(), def.size(), out.meta))   return std::nullopt;
     return out;
+}
+
+bool readChunkGeometryCompressed(const std::string& ifc_path,
+                                 std::uint64_t geometry_section_offset,
+                                 std::uint64_t v_comp_off, std::uint64_t v_comp_size,
+                                 std::uint64_t v_raw_size,
+                                 std::uint64_t i_comp_off, std::uint64_t i_comp_size,
+                                 std::uint64_t i_raw_size,
+                                 std::vector<std::uint8_t>&  out_vbytes,
+                                 std::vector<std::uint32_t>& out_idx) {
+    const std::string path = sidecarPath(ifc_path);
+    FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return false;
+    auto readFrame = [&](std::uint64_t off, std::uint64_t comp, std::uint64_t raw,
+                         std::uint8_t* dst) -> bool {
+        if (raw == 0) return comp == 0;
+        std::vector<std::uint8_t> z(static_cast<size_t>(comp));
+        if (std::fseek(f, long(geometry_section_offset + off), SEEK_SET) != 0) return false;
+        if (comp && std::fread(z.data(), 1, z.size(), f) != z.size()) return false;
+        return SidecarCompress::decompress(z.data(), z.size(), dst, size_t(raw));
+    };
+    out_vbytes.assign(size_t(v_raw_size), 0);
+    out_idx.assign(size_t(i_raw_size / sizeof(std::uint32_t)), 0);
+    const bool ok =
+        readFrame(v_comp_off, v_comp_size, v_raw_size, out_vbytes.data()) &&
+        readFrame(i_comp_off, i_comp_size, i_raw_size,
+                  reinterpret_cast<std::uint8_t*>(out_idx.data()));
+    std::fclose(f);
+    return ok;
 }
 
 bool readSidecarVertexChunk(const std::string& ifc_path,

@@ -46,25 +46,20 @@
 struct StreamingSidecar {
     // Everything except vertices + indices — same shape as SidecarData but
     // with empty vertices / indices vectors. The renderer uses meshes /
-    // instances / georef / elements immediately.
+    // instances / georef / chunks immediately (elements/strings deferred).
     SidecarData meta;
 
-    // Byte offsets in the on-disk file where the vertex and index sections
-    // start (after their 4-byte count headers). Pair with vertex_total_bytes
-    // / index_total_bytes for the section length; per-chunk reads slice
-    // arbitrary ranges within these.
-    uint64_t vertex_section_offset = 0;
-    uint64_t vertex_total_bytes    = 0;
-    uint64_t index_section_offset  = 0;
-    uint64_t index_total_count     = 0;  // u32 indices, NOT bytes
+    // v16: the compressed geometry section starts here. Each chunk's two zstd
+    // blobs live at geometry_section_offset + SidecarChunk.{v_comp_off,i_comp_off};
+    // a per-chunk load fetches [that, +*_comp_size) and decompresses to *_raw_size.
+    uint64_t geometry_section_offset = 0;
 
-    // v15 deferred-metadata locator. The render-critical metadata block starts
-    // at critical_meta_offset and is critical_meta_bytes long; the deferred
-    // block (elements + string_table) runs from there to EOF. The web loader
-    // reads only the critical block before painting and fetches the deferred
-    // block on demand from [critical_meta_offset + critical_meta_bytes, EOF).
-    uint64_t critical_meta_offset  = 0;
-    uint64_t critical_meta_bytes   = 0;
+    // v16 deferred (property) block locator: a single zstd frame at
+    // deferred_comp_offset of deferred_comp_size bytes → deferred_raw_size. The
+    // web loader fetches it on demand (elements/strings); desktop reads it up front.
+    uint64_t deferred_comp_offset = 0;
+    uint64_t deferred_comp_size   = 0;
+    uint64_t deferred_raw_size    = 0;
 
     // Resolved on-disk path so subsequent chunk reads can re-open / seek.
     std::string file_path;
@@ -74,6 +69,20 @@ struct StreamingSidecar {
 // version error (same failure modes as readSidecar). The file is closed
 // before return — callers re-open for per-chunk reads.
 std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_path);
+
+// Read + decompress one chunk's geometry (v16) from disk: the vertex zstd frame
+// at [geometry_section_offset + v_comp_off, +v_comp_size) → out_vbytes (v_raw
+// bytes) and the index frame → out_idx (i_raw/4 u32s). Returns false on I/O or
+// decompress failure. Used by the desktop StreamingThread worker + the sync
+// first-frame fallback; the web path decompresses in beginWebChunkLoad instead.
+bool readChunkGeometryCompressed(const std::string& ifc_path,
+                                 std::uint64_t geometry_section_offset,
+                                 std::uint64_t v_comp_off, std::uint64_t v_comp_size,
+                                 std::uint64_t v_raw_size,
+                                 std::uint64_t i_comp_off, std::uint64_t i_comp_size,
+                                 std::uint64_t i_raw_size,
+                                 std::vector<std::uint8_t>&  out_vbytes,
+                                 std::vector<std::uint32_t>& out_idx);
 
 // --- Pure, buffer-based building blocks ------------------------------------
 //
@@ -85,15 +94,15 @@ std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_p
 // source and hand the bytes to these parsers, so the wire-format knowledge
 // lives in exactly one place and is unit-testable without touching a file.
 
-// Bytes the head spans: SidecarHeader (12) + uint32 num_vertex_bytes (4).
-inline constexpr std::size_t SIDECAR_HEAD_BYTES = 16;
+// Bytes the head spans: SidecarHeader (12) + uint64 geometry-section length (8).
+inline constexpr std::size_t SIDECAR_HEAD_BYTES = 20;
 
-// Parse the 16-byte head. Validates magic / version / endian and, on success,
-// writes the vertex-section byte count (which locates the index-count field at
-// SIDECAR_HEAD_BYTES + out_num_vertex_bytes). Returns false if `n` is short or
-// the header is wrong. `data` must point at the start of the file.
+// Parse the 20-byte head (v16). Validates magic / version / endian and, on
+// success, writes the compressed-geometry-section byte length (the metadata
+// blocks follow at SIDECAR_HEAD_BYTES + out_geom_bytes). Returns false if `n`
+// is short or the header is wrong. `data` must point at the start of the file.
 bool parseSidecarHead(const std::uint8_t* data, std::size_t n,
-                      std::uint32_t& out_num_vertex_bytes);
+                      std::uint64_t& out_geom_bytes);
 
 // Parse the v15 render-CRITICAL metadata block (mesh dict, instance dict,
 // georef, chunk TOC) — everything needed to set up + draw the scene. `data`

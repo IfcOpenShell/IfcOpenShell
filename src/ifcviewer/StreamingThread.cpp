@@ -97,21 +97,11 @@ void StreamingThread::workerLoop() {
         Result res;
         res.model_id  = req.model_id;
         res.chunk_idx = req.chunk_idx;
-        res.success   = true;
-        if (!req.v_ranges.empty()) {
-            if (!readSidecarVertexRanges(req.file_path,
-                                         req.vertex_section_offset,
-                                         req.v_ranges, res.vbytes)) {
-                res.success = false;
-            }
-        }
-        if (res.success && !req.i_ranges.empty()) {
-            if (!readSidecarIndexRanges(req.file_path,
-                                        req.index_section_offset,
-                                        req.i_ranges, res.idx)) {
-                res.success = false;
-            }
-        }
+        res.success   = readChunkGeometryCompressed(
+            req.file_path, req.geometry_section_offset,
+            req.v_comp_off, req.v_comp_size, req.v_raw_size,
+            req.i_comp_off, req.i_comp_size, req.i_raw_size,
+            res.vbytes, res.idx);
 
         {
             std::unique_lock lk(mu_);
