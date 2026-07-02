@@ -4996,6 +4996,49 @@ void ViewportCore::applyPickToSelection(std::uint32_t object_id, bool add, bool 
     else             selection_.replace(object_id);
 }
 
+void ViewportCore::hideSelected() {
+    if (selection_.count() == 0) return;
+    for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
+    const size_t n = selection_.count();
+    selection_.clear();   // hiding deselects, matching the desktop/GL behaviour
+    Log::info().noquote().nospace() << "[wgpu] hid " << n << " selected";
+    host_->requestFrame();
+}
+
+void ViewportCore::isolateSelected() {
+    if (selection_.count() == 0) return;
+    // Hide every object in a VISIBLE model that isn't selected. Model-hidden
+    // objects stay model-hidden (element-level hiding on top is redundant), and
+    // object_id 0 (unpickable) is skipped.
+    const auto& sel_ids = selection_.selectionIds();
+    for (const auto& [mid, m] : models_gpu_) {
+        if (m.hidden) continue;
+        for (const InstanceCpu& inst : m.instances) {
+            if (inst.object_id == 0) continue;
+            if (sel_ids.find(inst.object_id) == sel_ids.end())
+                visibility_.hide(inst.object_id);
+        }
+    }
+    Log::info().noquote().nospace() << "[wgpu] isolated " << selection_.count();
+    host_->requestFrame();
+}
+
+void ViewportCore::showAll() {
+    if (visibility_.hiddenCount() == 0) return;
+    visibility_.clear();
+    Log::info() << "[wgpu] show all";
+    host_->requestFrame();
+}
+
+void ViewportCore::toggleXray() {
+    constexpr float kXrayOnCap = 0.3f;
+    xray_alpha_cap_ = (xray_alpha_cap_ < 1.0f) ? 1.0f : kXrayOnCap;
+    Log::info().noquote().nospace()
+        << "[wgpu] x-ray " << (xray_alpha_cap_ < 1.0f ? "ON" : "OFF")
+        << " (cap=" << xray_alpha_cap_ << ")";
+    host_->requestFrame();
+}
+
 #if defined(__EMSCRIPTEN__)
 void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
                                      std::function<void(std::uint32_t)> cb) {

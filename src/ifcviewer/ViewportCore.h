@@ -624,6 +624,19 @@ public:
     // Marks selection_ dirty for the next render's flush.
     void applyPickToSelection(std::uint32_t object_id, bool add, bool remove);
 
+    // Visibility + X-ray, shared by desktop (H / Shift+H / Alt+H / Alt+X) and
+    // web. Hidden objects are skipped by the cull and xray_alpha_cap_ is read
+    // by the frame uniform, both per frame — so each call just mutates state and
+    // schedules a frame; no GPU buffers to rebuild.
+    void hideSelected();      // hide the selected objects, then clear selection
+    void isolateSelected();   // hide everything that is NOT selected
+    void showAll();           // clear the hidden set
+    size_t hiddenCount() const { return visibility_.hiddenCount(); }
+    // Global X-ray: translucent everything. Flips the frame uniform's alpha cap;
+    // the cull classifier routes every instance through the transparent pass.
+    void toggleXray();
+    bool xrayActive() const { return xray_alpha_cap_ < 1.0f; }
+
 #if defined(__EMSCRIPTEN__)
     // Async object pick for the web build: encodes the same pick pass as
     // pickObjectAt but reads the staging buffer back via a spontaneous map

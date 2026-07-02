@@ -1124,36 +1124,11 @@ void ViewportWindow::setSelectedObjectId(uint32_t id) {
     if (isExposed()) requestUpdate();
 }
 
-void ViewportWindow::hideSelectedElements() {
-    if (selection_.count() == 0) return;
-    for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
-    selection_.clear();
-    if (isExposed()) requestUpdate();
-}
-
-void ViewportWindow::isolateSelectedElements() {
-    if (selection_.count() == 0) return;
-    // Hide every object in a visible model that isn't in the selection.
-    // Model-hidden objects stay model-hidden — element-level hiding on
-    // top of that is redundant and just bloats hidden_ids_.
-    const auto& sel_ids = selection_.selectionIds();
-    for (const auto& [mid, m] : models_gpu_) {
-        if (m.hidden) continue;
-        for (const InstanceCpu& inst : m.instances) {
-            if (inst.object_id == 0) continue;
-            if (sel_ids.find(inst.object_id) == sel_ids.end()) {
-                visibility_.hide(inst.object_id);
-            }
-        }
-    }
-    if (isExposed()) requestUpdate();
-}
-
-void ViewportWindow::showAllElements() {
-    if (visibility_.hiddenCount() == 0) return;
-    visibility_.clear();
-    if (isExposed()) requestUpdate();
-}
+// Visibility ops now live in ViewportCore (shared with web); these stay as thin
+// Qt-facing wrappers for the menu actions.
+void ViewportWindow::hideSelectedElements()    { core_.hideSelected(); }
+void ViewportWindow::isolateSelectedElements() { core_.isolateSelected(); }
+void ViewportWindow::showAllElements()         { core_.showAll(); }
 
 void ViewportWindow::invertElementVisibility() {
     // Compute the new hidden set: every live object_id in a visible model
@@ -1988,53 +1963,13 @@ void ViewportWindow::keyPressEvent(QKeyEvent* event) {
     //   Shift+H  — isolate selected
     //   Alt+H    — show all (clear hidden set)
     //   Shift+F  — enter fly mode (Esc exits)
-    if (key == Qt::Key_H && mods == Qt::AltModifier) {
-        if (visibility_.hiddenCount() == 0) return;
-        visibility_.clear();
-        Log::info() << "[wgpu] show all";
-        requestUpdate();
-        return;
-    }
-    // Alt+X — toggle global X-ray (translucent everything). The frame
-    // uniform `xray_alpha_cap` clamps `fs_main`'s output alpha; the cull
-    // classifier sees `xray_alpha_cap_ < 1` and routes every instance
-    // through the transparent pass so the blend actually fires.
+    // Visibility + X-ray math lives in ViewportCore (shared with web).
+    if (key == Qt::Key_H && mods == Qt::AltModifier) { core_.showAll();        return; }
     if (key == Qt::Key_X && mods == Qt::AltModifier && !event->isAutoRepeat()) {
-        constexpr float kXrayOnCap = 0.3f;
-        xray_alpha_cap_ = (xray_alpha_cap_ < 1.0f) ? 1.0f : kXrayOnCap;
-        Log::info().noquote().nospace()
-            << "[wgpu] x-ray "
-            << (xray_alpha_cap_ < 1.0f ? "ON"  : "OFF")
-            << " (cap=" << xray_alpha_cap_ << ")";
-        requestUpdate();
-        return;
+        core_.toggleXray(); return;
     }
-    if (key == Qt::Key_H && mods == Qt::ShiftModifier) {
-        if (selection_.count() == 0) return;
-        size_t hidden_now = 0;
-        for (auto& [mid, m] : models_gpu_) {
-            for (const auto& inst : m.instances) {
-                if (selection_.contains(inst.object_id)) continue;
-                if (!visibility_.isHidden(inst.object_id)) {
-                    visibility_.hide(inst.object_id);
-                    ++hidden_now;
-                }
-            }
-        }
-        Log::info().noquote().nospace() << "[wgpu] isolated " << selection_.count()
-                                    << " (hid " << hidden_now << " others)";
-        requestUpdate();
-        return;
-    }
-    if (key == Qt::Key_H && mods == Qt::NoModifier) {
-        if (selection_.count() == 0) return;
-        for (uint32_t id : selection_.selectionIds()) visibility_.hide(id);
-        const size_t n = selection_.count();
-        selection_.clear();   // hiding deselects, matching GL behaviour
-        Log::info().noquote().nospace() << "[wgpu] hid " << n << " selected";
-        requestUpdate();
-        return;
-    }
+    if (key == Qt::Key_H && mods == Qt::ShiftModifier) { core_.isolateSelected(); return; }
+    if (key == Qt::Key_H && mods == Qt::NoModifier)    { core_.hideSelected();    return; }
     if (key == Qt::Key_F && mods == Qt::ShiftModifier && !event->isAutoRepeat()) {
         enterFpsMode();
         return;

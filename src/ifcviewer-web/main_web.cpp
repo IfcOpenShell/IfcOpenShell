@@ -227,6 +227,16 @@ EM_BOOL onKeyDown(int, const EmscriptenKeyboardEvent* e, void* user) {
     // While flying, WASDQE/Shift are held-movement keys, not hotkeys.
     if (app->fly_mode) { if (setFlyKey(app, code, true)) return EM_TRUE; return EM_FALSE; }
     if (e->repeat) return EM_FALSE;
+    const bool alt = e->altKey;
+    // Visibility + X-ray, matching desktop: H hide selected · Shift+H isolate ·
+    // Alt+H show all · Alt+X x-ray.
+    if (!std::strcmp(code, "KeyH")) {
+        if      (alt)   app->core.showAll();
+        else if (shift) app->core.isolateSelected();
+        else            app->core.hideSelected();
+        return EM_TRUE;
+    }
+    if (!std::strcmp(code, "KeyX") && alt) { app->core.toggleXray(); return EM_TRUE; }
     using SV = ViewportCore::StandardView;
     if      (!std::strcmp(code, "Home"))            app->core.viewAll();
     else if (!std::strcmp(code, "KeyF") && !shift)  app->core.frameSelection();
@@ -355,6 +365,13 @@ extern "C" EMSCRIPTEN_KEEPALIVE void toggle_fly_c() {
 extern "C" EMSCRIPTEN_KEEPALIVE int fly_is_active_c() {
     return (g_app && g_app->ready && g_app->fly_mode) ? 1 : 0;
 }
+
+// Visibility + X-ray, for the toolbar (same ops as the H/Shift+H/Alt+H/Alt+X keys).
+extern "C" EMSCRIPTEN_KEEPALIVE void hide_selected_c()    { if (g_app && g_app->ready) g_app->core.hideSelected(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void isolate_selected_c() { if (g_app && g_app->ready) g_app->core.isolateSelected(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->ready) g_app->core.showAll(); }
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
+extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
 
 // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom.
 extern "C" EMSCRIPTEN_KEEPALIVE void standard_view_c(int id) {

@@ -86,6 +86,11 @@
   <button data-view="3" title="Right (Y)">Right</button>
   <button data-view="4" title="Top (Z)">Top</button>
   <button data-view="5" title="Bottom (Shift+Z)">Bottom</button>
+  <span class="sep"></span>
+  <button data-act="hide"    title="Hide selected (H)">Hide</button>
+  <button data-act="isolate" title="Isolate selected (Shift+H)">Isolate</button>
+  <button data-act="showall" title="Show all (Alt+H)">Show all</button>
+  <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
 </div>
 <div id="status">Starting…</div>
 <script>
@@ -161,6 +166,10 @@
           if (Module._fly_is_active_c) {
             var fb = document.getElementById('fly-btn');
             if (fb) fb.classList.toggle('active', !!Module._fly_is_active_c());
+          }
+          if (Module._xray_is_active_c) {
+            var xb = document.getElementById('xray-btn');
+            if (xb) xb.classList.toggle('active', !!Module._xray_is_active_c());
           }
           Module._raf_tick_c(Module._app_ptr);
         }
@@ -338,6 +347,10 @@
       else if (act === 'focus') Module._frame_selection_c();
       else if (act === 'ortho') { Module._toggle_projection_c(); refreshOrthoLabel(); }
       else if (act === 'fly')   Module._toggle_fly_c();
+      else if (act === 'hide')    Module._hide_selected_c();
+      else if (act === 'isolate') Module._isolate_selected_c();
+      else if (act === 'showall') Module._show_all_c();
+      else if (act === 'xray')    Module._toggle_xray_c();
       else if (view !== null)   Module._standard_view_c(parseInt(view, 10));
     });
   });
