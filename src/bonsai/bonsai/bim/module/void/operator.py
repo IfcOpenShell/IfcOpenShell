@@ -26,7 +26,7 @@ import bonsai.bim.handler
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
-from bonsai.bim.module.model.opening import FilledOpeningGenerator
+from bonsai.bim.module.model.opening import FilledOpeningGenerator, is_filling_supported
 
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -34,11 +34,13 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Apply Opening"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Apply opening objects to an Element.\n\n"
-        "The Element and the openings to be applied should be selected. The order of selection is not important.\n"
-        "Opening can be just a Blender mesh object.\n\n"
-        "Shift+click: keep the filling at its current matrix_world — skip the wall-axis snap "
-        "and the rl1/rl2 Z-elevation default that the regular click applies."
+        "Cuts openings in a wall, slab, or roof using selected shape objects — "
+        "doors, windows, existing openings, or plain (non-IFC) meshes. "
+        "Selection order doesn't matter.\n\n"
+        "Doors and windows also fill the opening. Other IFC classes are currently "
+        "unsupported by the opening generator and get skipped with a warning.\n\n"
+        "Shift+click: keep each opening at its shape object's current position "
+        "instead of snapping to the wall."
     )
 
     # Toggled by ``invoke`` when the user holds SHIFT during a gizmo / hotkey
@@ -84,8 +86,14 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     self.report({"INFO"}, "You can't add an opening to another opening.")
                     continue
                 elif not element1.is_a("IfcOpeningElement") and not element2.is_a("IfcOpeningElement"):
-                    if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):  # Add a fill to an element.
+                    if is_filling_supported(element1):  # Add a fill to an element.
                         obj1, obj2 = obj2, obj1
+                    elif not is_filling_supported(element2):
+                        self.report(
+                            {"INFO"},
+                            f"Cannot apply {element2.is_a()} as an opening — Bonsai currently supports only IfcDoor and IfcWindow as parametric fillings.",
+                        )
+                        continue
                     FilledOpeningGenerator().generate(
                         obj2,
                         obj1,

@@ -33,6 +33,7 @@ from mathutils import Vector
 
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.model.opening import is_filling_supported
 from bonsai.bim.module.model.wall import (
     _get_wall_geom_cached,
     _wall_camera_facing_icon_y,
@@ -50,6 +51,20 @@ def is_supported_host(element) -> bool:
     if element is None:
         return False
     return tool.Parametric.is_path_connectable_wall(element) or element.is_a("IfcSlab") or element.is_a("IfcRoof")
+
+
+def is_supported_filling_or_opening(element) -> bool:
+    """Total predicate for the add-opening gizmo poll. ``None`` (raw Blender
+    mesh) is accepted because the operator converts unclassified meshes
+    into ``IfcOpeningElement`` instances. ``IfcOpeningElement`` is accepted
+    because reassigning an existing opening to a new host is a legal path
+    through the operator. Otherwise defer to the generator's own
+    supported-filling predicate."""
+    if element is None:
+        return True
+    if element.is_a("IfcOpeningElement"):
+        return True
+    return is_filling_supported(element)
 
 
 def _resolve_active_host(context: bpy.types.Context, n_selected: int):
@@ -72,12 +87,14 @@ def _resolve_active_host(context: bpy.types.Context, n_selected: int):
 
 
 class GizmoHostAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin):
-    """Activates when a host element (wall / slab / roof) is the active object
-    and exactly one other selected object is *not* itself a host.
+    """Activates when exactly two objects are selected and one is a fillable
+    host (wall / slab / roof) while the other is a valid filling (door /
+    window / existing opening, or a plain Blender mesh).
 
-    Renders a single ``VIEW3D_GT_add_opening`` icon at the void object's
-    projected location on the host. A click dispatches ``bim.add_opening``,
-    which handles any element exposing the ``HasOpenings`` inverse.
+    Selection-order independent: the host role is identified by class, not
+    by active state. The "+" icon anchors on the host's surface regardless
+    of which object was clicked first. The dispatched ``bim.add_opening``
+    operator also handles either order.
 
     Per-frame positioning keeps the icon facing the camera as the viewport
     orbits."""
@@ -90,22 +107,29 @@ class GizmoHostAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
 
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
-        element = _resolve_active_host(context, n_selected=2)
-        if element is None:
+        if not _wall_gizmo_poll_gate(context):
             return False
-        # The operator itself filters on HasOpenings, but checking here keeps
-        # the icon from appearing on host classes that can't accept openings
-        # in the active IFC schema.
-        if not hasattr(element, "HasOpenings"):
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 2:
             return False
         active = context.active_object
-        other = next(o for o in tool.Blender.get_selected_objects() if o is not active)
-        # Host + host pairings are claimed by host-specific gizmos (wall-join,
-        # extend-vertical, …) — suppress here so the add-opening icon never
-        # stacks on top of them.
-        if is_supported_host(tool.Ifc.get_entity(other)):
+        if active is None or active not in selected:
             return False
-        return True
+        a_element = tool.Ifc.get_entity(selected[0])
+        b_element = tool.Ifc.get_entity(selected[1])
+        return cls._is_apply_opening_pair(a_element, b_element) or cls._is_apply_opening_pair(b_element, a_element)
+
+    @staticmethod
+    def _is_apply_opening_pair(host_element, filling_element) -> bool:
+        """``host_element`` qualifies as a fillable host AND ``filling_element``
+        qualifies as a filling. Used twice with the operands swapped so the
+        gizmo polls true regardless of which of the two selected objects is
+        active."""
+        if not is_supported_host(host_element):
+            return False
+        if not hasattr(host_element, "HasOpenings"):
+            return False
+        return is_supported_filling_or_opening(filling_element)
 
     def setup(self, context: bpy.types.Context) -> None:
         default_color, highlight_color = self.get_decoration_colors()
@@ -114,18 +138,20 @@ class GizmoHostAddOpening(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMixin
         )
 
     def position_gizmos(self, context: bpy.types.Context) -> None:
-        host_obj = context.active_object
-        if not host_obj:
+        selected = list(tool.Blender.get_selected_objects())
+        if len(selected) != 2:
             return
-        selected = tool.Blender.get_selected_objects()
-        other = next((o for o in selected if o is not host_obj), None)
-        if not other:
-            return
-        element = tool.Ifc.get_entity(host_obj)
-        if not element:
+        a, b = selected[0], selected[1]
+        a_element = tool.Ifc.get_entity(a)
+        b_element = tool.Ifc.get_entity(b)
+        if is_supported_host(a_element):
+            host_obj, host_element, other = a, a_element, b
+        elif is_supported_host(b_element):
+            host_obj, host_element, other = b, b_element, a
+        else:
             return
 
-        if tool.Parametric.is_path_connectable_wall(element):
+        if tool.Parametric.is_path_connectable_wall(host_element):
             world_pos = wall_anchor(context, self, host_obj, other)
         else:
             world_pos = layer3_anchor(host_obj, other)

@@ -2060,47 +2060,86 @@ class Model(bonsai.core.tool.Model):
         return (vertices, edges, faces)
 
     @classmethod
-    def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+    def regenerate_filling_opening_body(cls, filling: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
+        """Regenerate only the mapped source used by ``filling``'s opening so
+        it matches ``filling``'s current parametric dimensions.
+
+        Returns the voided host Blender object so the caller can recut it,
+        or ``None`` if ``filling`` has no opening to refresh or the host is
+        an aggregate (no mesh data to recut against)."""
         from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
-        ifc_file = tool.Ifc.get()
-        fillings = {e: tool.Ifc.get_object(e) for e in tool.Array.get_parametric_propagation_targets(element)}
+        if not filling.FillsVoids:
+            return None
 
-        voided_objs = set()
-        has_replaced_opening_representation = False
+        ifc_file = tool.Ifc.get()
+        opening = filling.FillsVoids[0].RelatingOpeningElement
+        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+        if voided_obj is None or voided_obj.data is None:
+            return None
+
+        old_representation = tool.Geometry.get_body_representation(opening)
+        if old_representation is None:
+            return voided_obj
+        old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+
+        ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_representation)
+
+        filling_obj = tool.Ifc.get_object(filling)
+        new_representation = FilledOpeningGenerator().generate_opening_from_filling(
+            filling, filling_obj, voided_obj.dimensions[1]
+        )
+
+        for inverse in ifc_file.get_inverse(old_representation):
+            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
+
+        return voided_obj
+
+    @classmethod
+    def regenerate_simple_opening_bodies(cls, element: ifcopenshell.entity_instance) -> set:
+        """Regenerate every distinct mapped opening source within ``element``'s
+        type-occurrence family so each one matches the family's current
+        parametric dimensions.
+
+        Most occurrences share a single mapped source — refreshing it once
+        propagates to every filling via inverse-substitution. Some families,
+        especially those imported from foreign authoring tools, fragment into
+        several mapped sources for the same type; dedup is by source id so
+        every distinct source gets one refresh. Returns the set of Blender
+        objects whose host representation needs a viewport-level recut
+        (callers handle the recut themselves)."""
+        ifc_file = tool.Ifc.get()
+        fillings = list(tool.Array.get_parametric_propagation_targets(element))
+
+        voided_objs: set = set()
+        seen_source_ids: set[int] = set()
         for filling in fillings:
             if not filling.FillsVoids:
                 continue
 
             opening = filling.FillsVoids[0].RelatingOpeningElement
             voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
-            voided_objs.add(voided_obj)
+            if voided_obj is not None:
+                voided_objs.add(voided_obj)
 
-            # We assume all occurrences of the same element type (e.g. a window)
-            # will use openings of the same thickness.
-            # Generator we use by default will create a really thick opening representation
-            # to make sure it will fit for walls with different thickness.
-            if has_replaced_opening_representation:
+            body = tool.Geometry.get_body_representation(opening)
+            if body is None:
                 continue
+            source = tool.Geometry.resolve_mapped_representation(body)
+            if source.id() in seen_source_ids:
+                continue
+            seen_source_ids.add(source.id())
 
-            old_representation = ifcopenshell.util.representation.get_representation(
-                opening, "Model", "Body", "MODEL_VIEW"
-            )
-            old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
-            ifcopenshell.api.geometry.unassign_representation(
-                ifc_file, product=opening, representation=old_representation
-            )
+            cls.regenerate_filling_opening_body(filling)
 
-            new_representation = FilledOpeningGenerator().generate_opening_from_filling(
-                filling, fillings[filling], voided_obj.dimensions[1]
-            )
+        return voided_objs
 
-            for inverse in ifc_file.get_inverse(old_representation):
-                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-
-            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
-
-            has_replaced_opening_representation = True
+    @classmethod
+    def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+        voided_objs = cls.regenerate_simple_opening_bodies(element)
+        fillings = {e: tool.Ifc.get_object(e) for e in tool.Array.get_parametric_propagation_targets(element)}
 
         tool.Model.reload_body_representation(voided_objs)
         if fillings:
@@ -3108,6 +3147,26 @@ class Model(bonsai.core.tool.Model):
                 obj = tool.Ifc.get_object(rel.RelatingElement)
                 tool.Geometry.commit_placement_if_moved(obj)
                 queue.add((rel.RelatingElement, obj))
+
+        # Sync filling and opening placements so subsequent wall recuts
+        # operate on the up-to-date opening positions — a filling moved
+        # along the wall's reference line otherwise stays cut at its old
+        # spot.
+        for element, wall in queue:
+            if not wall:
+                continue
+            for rel in getattr(element, "HasOpenings", []) or []:
+                opening = rel.RelatedOpeningElement
+                for fill_rel in getattr(opening, "HasFillings", []) or []:
+                    filling = fill_rel.RelatedBuildingElement
+                    filling_obj = tool.Ifc.get_object(filling)
+                    if filling_obj is None or not tool.Ifc.is_moved(filling_obj):
+                        continue
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
+                    ifcopenshell.api.geometry.edit_object_placement(
+                        tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+                    )
+
         for element, wall in queue:
             if not wall:
                 continue
