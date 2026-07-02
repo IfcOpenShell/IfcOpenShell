@@ -1398,27 +1398,33 @@ class DumbWallGenerator:
         elevation = self.container_obj.location.z
         representation = ifcopenshell.util.representation.get_representation(slab, "Model", "Body", "MODEL_VIEW")
         extrusion = tool.Model.get_extrusion(representation)
-        outer_curve = extrusion.SweptArea.OuterCurve
-        if self._curve_has_arc_segments(outer_curve):
-            polyline_points = self._derive_points_from_arc_segments(slab_obj, elevation, outer_curve)
-        elif outer_curve.is_a("IfcCircle"):
-            polyline_points = self._derive_points_from_circle(slab_obj, elevation, outer_curve)
+        swept_area = extrusion.SweptArea
+        if swept_area.is_a("IfcCompositeProfileDef"):
+            profiles = swept_area.Profiles
         else:
-            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
-            polyline_points = builder.get_polyline_coords(outer_curve)
-            polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
-            polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
-
-        if len(polyline_points) < 3:
-            return []
-        if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
-            polyline_points = polyline_points[::-1]
+            profiles = [swept_area]
         walls = []
-        for i in range(len(polyline_points) - 1):
-            vec1 = polyline_points[i]
-            vec2 = polyline_points[i + 1]
-            coords = (vec1, vec2)
-            walls.append(self.create_wall_from_2_points(coords))
+        for profile in profiles:
+            outer_curve = profile.OuterCurve
+            if self._curve_has_arc_segments(outer_curve):
+                polyline_points = self._derive_points_from_arc_segments(slab_obj, elevation, outer_curve)
+            elif outer_curve.is_a("IfcCircle"):
+                polyline_points = self._derive_points_from_circle(slab_obj, elevation, outer_curve)
+            else:
+                builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+                polyline_points = builder.get_polyline_coords(outer_curve)
+                polyline_points = [[(v * self.unit_scale) for v in p] for p in polyline_points]
+                polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
+
+            if len(polyline_points) < 3:
+                continue
+            if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
+                polyline_points = polyline_points[::-1]
+            for i in range(len(polyline_points) - 1):
+                vec1 = polyline_points[i]
+                vec2 = polyline_points[i + 1]
+                coords = (vec1, vec2)
+                walls.append(self.create_wall_from_2_points(coords))
         return walls
 
     def create_wall_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
