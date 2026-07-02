@@ -111,6 +111,11 @@ void ViewportCore::removeModel(uint32_t model_id) {
 void ViewportCore::resetScene() {
     for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
+    // A fresh scene should auto-frame its first model. Without this the flag
+    // stays set from the previous scene (on web, the embedded sample sets it at
+    // startup), so the next load — e.g. a ?model= federation after clear_scene_c
+    // — would never get framed.
+    initial_view_applied_ = false;
     host_->requestFrame();
 }
 
@@ -3587,7 +3592,11 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                             mit->second.deferred_raw_size    = dr;
                                         }
                                     }
-                                    viewAll();
+                                    // NOTE: no viewAll() here — applyCachedModel
+                                    // already frames the FIRST model (gated by
+                                    // initial_view_applied_), matching desktop.
+                                    // Reframing per model would jump the camera
+                                    // as each federated model streams in.
                                     host_->requestFrame();
                                     Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
                                                 << ", id " << mid << ", " << n_meshes << " meshes, "
