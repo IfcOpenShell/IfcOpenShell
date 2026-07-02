@@ -261,7 +261,7 @@ test('click selects an object and the highlight renders (async pick)', async ({ 
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   const before = await shot(page);
-  await page.mouse.click(cx, cy);
+  await page.mouse.click(cx, cy, { button: 'right' });  // Web preset: RMB selects
   await page.waitForTimeout(600);  // async pick result + flush + render
   const after = await shot(page);
   expect(
@@ -330,8 +330,8 @@ test('hide selected removes geometry after a pick', async ({ page }) => {
 
   const box = await page.locator('#viewer-canvas').boundingBox();
   const before = await shot(page);
-  // select whatever is under the centre, then hide it
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  // select whatever is under the centre (Web preset: RMB selects), then hide it
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
   await page.waitForTimeout(400);
   await page.evaluate(() => window.Module._hide_selected_c());
   await page.waitForTimeout(400);

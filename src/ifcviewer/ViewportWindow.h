@@ -239,12 +239,15 @@ public:
 private:
     // Re-aim the orbit camera so the bounding sphere of [mn, mx] fits.
     void frameAabb(const float mn[3], const float mx[3], float padding);
-    // Resolve nav_preset_ env var to orbit/pan bindings.
-    void applyNavPreset(const char* name);
 
     // chunkScreenAreaPx moved to ViewportCore (#84-h).
 
 public:
+    // Apply a nav mouse preset by name ("blender"|"rhino"|"revit"|"web").
+    // Sources the shared binding table from ViewportCore; called from init
+    // (env / persisted setting) and live from the Settings dialog.
+    void applyNavPreset(const char* name);
+
 
     // Queue a one-shot framebuffer capture: the next rendered frame is
     // copied back to host memory and saved to `path` as PNG. If
@@ -800,10 +803,15 @@ private:
     // so the click-vs-drag distinction at mouseReleaseEvent's pick path keeps
     // working. Set at init from WGPU_NAV_PRESET=blender|rhino|revit (default
     // blender, matching GL's AppSettings::NavPreset::Blender default).
-    Qt::MouseButton       orbit_button_ = Qt::MiddleButton;
-    Qt::KeyboardModifiers orbit_mods_   = Qt::NoModifier;
-    Qt::MouseButton       pan_button_   = Qt::MiddleButton;
-    Qt::KeyboardModifiers pan_mods_     = Qt::ShiftModifier;
+    // Mirror of ViewportCore's preset bindings, mapped to Qt types by
+    // applyNavPreset (the core owns the preset table; these are the Qt-side
+    // cache the mouse handlers compare against).
+    Qt::MouseButton       orbit_button_  = Qt::MiddleButton;
+    Qt::KeyboardModifiers orbit_mods_    = Qt::NoModifier;
+    Qt::MouseButton       pan_button_    = Qt::MiddleButton;
+    Qt::KeyboardModifiers pan_mods_      = Qt::ShiftModifier;
+    Qt::MouseButton       select_button_ = Qt::LeftButton;
+    Qt::KeyboardModifiers select_mods_   = Qt::NoModifier;
     // Set by mousePressEvent based on which binding matched; consumed by
     // mouseMoveEvent so mid-drag modifier changes don't switch axes.
     enum class NavDrag : uint8_t { Inactive, Orbit, Pan };

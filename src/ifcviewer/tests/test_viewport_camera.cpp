@@ -143,6 +143,44 @@ TEST_CASE("toggleXray flips the active state", "[camera][xray]") {
     REQUIRE_FALSE(core.xrayActive());
 }
 
+TEST_CASE("setNavPreset maps names to the shared button bindings", "[camera][nav]") {
+    MockHost host; ViewportCore core(&host);
+    using B = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;
+
+    // Default is blender: orbit MMB, pan Shift+MMB, select LMB.
+    {
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Middle);  REQUIRE(b.orbit_mod == M::Plain);
+        REQUIRE(b.pan   == B::Middle);  REQUIRE(b.pan_mod   == M::Shift);
+        REQUIRE(b.select == B::Left);   REQUIRE(b.select_mod == M::Plain);
+    }
+    SECTION("web: orbit LMB, pan MMB, select RMB") {
+        core.setNavPreset("web");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Left);    REQUIRE(b.orbit_mod == M::Plain);
+        REQUIRE(b.pan   == B::Middle);  REQUIRE(b.pan_mod   == M::Plain);
+        REQUIRE(b.select == B::Right);  REQUIRE(b.select_mod == M::Plain);
+    }
+    SECTION("rhino: orbit RMB, pan Shift+RMB") {
+        core.setNavPreset("rhino");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Right);   REQUIRE(b.pan == B::Right);
+        REQUIRE(b.pan_mod == M::Shift); REQUIRE(b.select == B::Left);
+    }
+    SECTION("revit: orbit Shift+MMB, pan MMB") {
+        core.setNavPreset("revit");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Middle);  REQUIRE(b.orbit_mod == M::Shift);
+        REQUIRE(b.pan == B::Middle);    REQUIRE(b.pan_mod == M::Plain);
+    }
+    SECTION("unknown name falls back to blender") {
+        core.setNavPreset("web");
+        core.setNavPreset("nonsense");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Middle);  REQUIRE(b.select == B::Left);
+    }
+}
+
 TEST_CASE("hideSelected hides the selection; showAll restores", "[camera][visibility]") {
     MockHost host; ViewportCore core(&host);
     REQUIRE(core.hiddenCount() == 0);

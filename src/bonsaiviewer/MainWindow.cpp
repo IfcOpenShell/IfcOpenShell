@@ -100,10 +100,10 @@ void MainWindow::setupChrome() {
                    QMainWindow::AllowTabbedDocks |
                    QMainWindow::GroupedDragging);
 
-    auto bind_shortcut = [this](const QKeySequence& sequence, auto fn) {
+    auto bind_shortcut = [this](const QKeySequence& sequence, auto handler) {
         auto* shortcut = new QShortcut(sequence, this);
         shortcut->setContext(Qt::WindowShortcut);
-        connect(shortcut, &QShortcut::activated, this, fn);
+        connect(shortcut, &QShortcut::activated, this, handler);
     };
     bind_shortcut(QKeySequence("Ctrl+Shift+L"), [this]() {
         modules::viewport::commands::toggleDistance(*viewport_widget_->viewport());
@@ -496,6 +496,20 @@ void MainWindow::setupStatus() {
         status_perf_label_->setVisible(show);
         if (!show) status_perf_label_->clear();
     });
+
+    // Nav mouse preset. The WGPU_NAV_PRESET env var is a dev override applied at
+    // ViewportWindow construction; otherwise apply the persisted Settings choice
+    // here, and re-apply live whenever the user changes it in the dialog.
+    if (!std::getenv("WGPU_NAV_PRESET")) {
+        if (auto* vp = viewport_widget_->viewport())
+            vp->applyNavPreset(AppSettings::navPresetName(AppSettings::instance().navPreset()));
+    }
+    connect(&AppSettings::instance(), &AppSettings::navPresetChanged, this,
+            [this](AppSettings::NavPreset preset) {
+                if (auto* vp = viewport_widget_->viewport())
+                    vp->applyNavPreset(AppSettings::navPresetName(preset));
+            });
+
     connect(session_state_, &bonsaiviewer::SessionState::statusMessageChanged,
             this, [this](const QString& mode, const QString& detail) {
         status_mode_label_->setText(mode);
@@ -530,17 +544,17 @@ void MainWindow::setupLoader() {
     });
 
     connect(viewport_widget_->viewport(), &ViewportWindow::frameStatsUpdated, this,
-            [this](const ViewportWindow::FrameStats& s) {
+            [this](const ViewportWindow::FrameStats& stats) {
         if (!status_perf_label_->isVisible()) return;
         status_perf_label_->setText(
             QString("%1 fps | %2 ms | %3/%4 obj | %5/%6 tri | %7 draws")
-                .arg(s.fps, 0, 'f', 1)
-                .arg(s.frame_time_ms, 0, 'f', 1)
-                .arg(s.visible_objects)
-                .arg(s.total_objects)
-                .arg(s.visible_triangles)
-                .arg(s.total_triangles)
-                .arg(s.gl_draw_calls));
+                .arg(stats.fps, 0, 'f', 1)
+                .arg(stats.frame_time_ms, 0, 'f', 1)
+                .arg(stats.visible_objects)
+                .arg(stats.total_objects)
+                .arg(stats.visible_triangles)
+                .arg(stats.total_triangles)
+                .arg(stats.gl_draw_calls));
     });
     connect(viewport_widget_->viewport(), &ViewportWindow::objectPicked,
             this, [this](uint32_t object_id) {

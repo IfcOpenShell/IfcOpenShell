@@ -1533,21 +1533,32 @@ void ViewportWindow::fpsIntegrate() {
 
 // chunkScreenAreaPx moved to ViewportCore (#84-h).
 
-void ViewportWindow::applyNavPreset(const char* name) {
-    // Matches GL AppSettings::NavPreset semantics exactly.
-    //   blender — Orbit MMB,        Pan Shift+MMB   (default)
-    //   rhino   — Orbit RMB,        Pan Shift+RMB
-    //   revit   — Orbit Shift+MMB,  Pan MMB
-    if (name && std::strcmp(name, "rhino") == 0) {
-        orbit_button_ = Qt::RightButton;  orbit_mods_ = Qt::NoModifier;
-        pan_button_   = Qt::RightButton;  pan_mods_   = Qt::ShiftModifier;
-    } else if (name && std::strcmp(name, "revit") == 0) {
-        orbit_button_ = Qt::MiddleButton; orbit_mods_ = Qt::ShiftModifier;
-        pan_button_   = Qt::MiddleButton; pan_mods_   = Qt::NoModifier;
-    } else {
-        orbit_button_ = Qt::MiddleButton; orbit_mods_ = Qt::NoModifier;
-        pan_button_   = Qt::MiddleButton; pan_mods_   = Qt::ShiftModifier;
+static Qt::MouseButton toQtBtn(ViewportCore::MouseBtn b) {
+    switch (b) {
+        case ViewportCore::MouseBtn::Left:   return Qt::LeftButton;
+        case ViewportCore::MouseBtn::Middle: return Qt::MiddleButton;
+        case ViewportCore::MouseBtn::Right:  return Qt::RightButton;
     }
+    return Qt::LeftButton;
+}
+static Qt::KeyboardModifiers toQtMod(ViewportCore::NavMod m) {
+    switch (m) {
+        case ViewportCore::NavMod::Plain:  return Qt::NoModifier;
+        case ViewportCore::NavMod::Shift: return Qt::ShiftModifier;
+        case ViewportCore::NavMod::Ctrl:  return Qt::ControlModifier;
+        case ViewportCore::NavMod::Alt:   return Qt::AltModifier;
+    }
+    return Qt::NoModifier;
+}
+
+void ViewportWindow::applyNavPreset(const char* name) {
+    // The preset table lives in ViewportCore (shared with web). Map its bindings
+    // to the Qt types the mouse handlers compare against.
+    core_.setNavPreset(name);
+    const auto& b = core_.navBindings();
+    orbit_button_  = toQtBtn(b.orbit);   orbit_mods_  = toQtMod(b.orbit_mod);
+    pan_button_    = toQtBtn(b.pan);      pan_mods_    = toQtMod(b.pan_mod);
+    select_button_ = toQtBtn(b.select);  select_mods_ = toQtMod(b.select_mod);
 }
 
 // -----------------------------------------------------------------------------
@@ -1633,15 +1644,15 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
         nav_drag_kind_ = NavDrag::Pan;
         setPivotIndicatorVisible(true);
-    } else if (event->button() == Qt::LeftButton
+    } else if (event->button() == select_button_
             && !section_tool_active_
             && tool_mode_ != ToolMode::Area
             && tool_mode_ != ToolMode::Length
             && nav_drag_kind_ == NavDrag::Inactive) {
-        // Arm marquee box-select. Plain / Shift / Ctrl LMB without a tool
-        // intercepting the click; if the cursor never moves past the
-        // threshold this stays armed-only and the release falls through
-        // to single-pick.
+        // Arm marquee box-select. Plain / Shift / Ctrl on the select button
+        // (Shift/Ctrl = add/remove) without a tool intercepting the click; if
+        // the cursor never moves past the threshold this stays armed-only and
+        // the release falls through to single-pick.
         box_select_armed_      = true;
         box_select_active_     = false;
         box_select_start_pos_  = nav_press_pos_;
@@ -1660,7 +1671,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
     // Marquee finalisation: only commit when the drag actually became
     // active (cursor moved past threshold). Press-time mods decide the
     // set op so a mid-drag Shift release doesn't flip the behaviour.
-    if (box_select_armed_ && event->button() == Qt::LeftButton) {
+    if (box_select_armed_ && event->button() == select_button_) {
         const bool was_active = box_select_active_;
         box_select_armed_  = false;
         box_select_active_ = false;
@@ -1702,7 +1713,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         // LMB-click without drag → pick the object under the cursor and
         // route through the selection state. Shift = add, Ctrl = remove,
         // no modifier = replace. Empty-space click clears.
-        if (event->button() == Qt::LeftButton && !nav_dragged_) {
+        if (event->button() == select_button_ && !nav_dragged_) {
             const Eigen::Vector2i pos = toV2i(event->position().toPoint());
             const int px = int(pos.x() * devicePixelRatio());
             const int py = int(pos.y() * devicePixelRatio());

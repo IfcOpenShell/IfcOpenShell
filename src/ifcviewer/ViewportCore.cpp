@@ -461,6 +461,18 @@ void ViewportCore::setStandardView(StandardView view) {
     }
 }
 
+void ViewportCore::setNavPreset(const char* name) {
+    using B = MouseBtn; using M = NavMod;
+    if (name && std::strcmp(name, "rhino") == 0)
+        nav_bindings_ = { B::Right,  M::Plain,  B::Right,  M::Shift, B::Left,  M::Plain };
+    else if (name && std::strcmp(name, "revit") == 0)
+        nav_bindings_ = { B::Middle, M::Shift, B::Middle, M::Plain,  B::Left,  M::Plain };
+    else if (name && std::strcmp(name, "web") == 0)
+        nav_bindings_ = { B::Left,   M::Plain,  B::Middle, M::Plain,  B::Right, M::Plain };
+    else  // blender (default)
+        nav_bindings_ = { B::Middle, M::Plain,  B::Middle, M::Shift, B::Left,  M::Plain };
+}
+
 bool ViewportCore::frameSelection() {
     if (selection_.count() == 0) return false;
     float lo[3] = {  std::numeric_limits<float>::infinity(),
@@ -2901,13 +2913,13 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         models_gpu_.erase(it);
     }
 
-    ModelGpuData m;
-    m.vertex_bytes   = 0;  // accumulated from chunks below (v16 has no section)
-    m.index_count    = 0;
-    m.mesh_count     = std::uint32_t(metadata.meta.meshes.size());
-    m.instance_count = std::uint32_t(metadata.meta.instances.size());
-    m.streaming_file_path      = metadata.file_path;
-    m.geometry_section_offset  = metadata.geometry_section_offset;
+    ModelGpuData model_gpu_data;
+    model_gpu_data.vertex_bytes   = 0;  // accumulated from chunks below (v16 has no section)
+    model_gpu_data.index_count    = 0;
+    model_gpu_data.mesh_count     = std::uint32_t(metadata.meta.meshes.size());
+    model_gpu_data.instance_count = std::uint32_t(metadata.meta.instances.size());
+    model_gpu_data.streaming_file_path      = metadata.file_path;
+    model_gpu_data.geometry_section_offset  = metadata.geometry_section_offset;
 
     // ---- Spatial chunk plan ----------------------------------------------
     // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
@@ -2918,10 +2930,10 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     // would scatter the chunks. In-memory direct loads (finalizeModel) carry
     // no TOC, so they fall back to deriving the same Morton + greedy plan.
     const std::size_t n_meshes = metadata.meta.meshes.size();
-    m.mesh_chunk_idx.assign(n_meshes, 0);
-    m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
-    m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
-    m.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_idx.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
 
     std::vector<std::vector<std::uint32_t>> chunk_mesh_ids;
     std::vector<std::uint32_t>              instance_to_chunk;
@@ -2930,14 +2942,14 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     if (!metadata.meta.chunks.empty()) {
         // Baked TOC: chunk ci is meshes [first_mesh, first_mesh + mesh_count).
         chunk_mesh_ids.reserve(metadata.meta.chunks.size());
-        for (const auto& ch : metadata.meta.chunks) {
-            std::vector<std::uint32_t> ids;
-            ids.reserve(ch.mesh_count);
-            for (std::uint32_t k = 0; k < ch.mesh_count; ++k) {
-                const std::uint32_t mi = ch.first_mesh + k;
-                if (mi < n_meshes) ids.push_back(mi);
+        for (const auto& sidecar_chunk : metadata.meta.chunks) {
+            std::vector<std::uint32_t> mesh_ids;
+            mesh_ids.reserve(sidecar_chunk.mesh_count);
+            for (std::uint32_t k = 0; k < sidecar_chunk.mesh_count; ++k) {
+                const std::uint32_t mesh_index = sidecar_chunk.first_mesh + k;
+                if (mesh_index < n_meshes) mesh_ids.push_back(mesh_index);
             }
-            chunk_mesh_ids.push_back(std::move(ids));
+            chunk_mesh_ids.push_back(std::move(mesh_ids));
         }
     } else {
         // No TOC (direct load): derive the plan from mesh centroids.
@@ -2972,25 +2984,27 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
 
     {
         std::vector<std::uint32_t> mesh_to_chunk(n_meshes, 0);
-        for (std::size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-            for (std::uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = std::uint32_t(ci);
+        for (std::size_t chunk_index = 0; chunk_index < chunk_mesh_ids.size(); ++chunk_index) {
+            for (std::uint32_t mesh_index : chunk_mesh_ids[chunk_index]) {
+                mesh_to_chunk[mesh_index] = std::uint32_t(chunk_index);
+            }
         }
         for (std::size_t i = 0; i < metadata.meta.instances.size(); ++i) {
-            const std::uint32_t mi = metadata.meta.instances[i].mesh_id;
-            if (mi < n_meshes) instance_to_chunk[i] = mesh_to_chunk[mi];
+            const std::uint32_t mesh_index = metadata.meta.instances[i].mesh_id;
+            if (mesh_index < n_meshes) instance_to_chunk[i] = mesh_to_chunk[mesh_index];
         }
     }
 
     std::vector<std::uint32_t> chunk_instance_count(chunk_mesh_ids.size(), 0);
     for (std::size_t i = 0; i < instance_to_chunk.size(); ++i) {
-        const std::uint32_t ci = instance_to_chunk[i];
-        if (ci < chunk_instance_count.size()) ++chunk_instance_count[ci];
+        const std::uint32_t chunk_index = instance_to_chunk[i];
+        if (chunk_index < chunk_instance_count.size()) ++chunk_instance_count[chunk_index];
     }
 
     // ---- Allocate per-chunk state. NO pool slices yet (chunks are
     // non-resident); the per-frame loader brings them in as cull marks
     // them visible.
-    m.chunks.resize(chunk_mesh_ids.size());
+    model_gpu_data.chunks.resize(chunk_mesh_ids.size());
     struct MeshLocal {
         std::uint32_t base_vertex;
         std::uint32_t ebo_first;
@@ -2998,46 +3012,51 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     };
     std::vector<std::unordered_map<std::uint32_t, MeshLocal>>
         chunk_mesh_offsets(chunk_mesh_ids.size());
-    for (std::size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-        ModelGpuData::Chunk& c = m.chunks[ci];
-        c.mesh_ids    = std::move(chunk_mesh_ids[ci]);
-        c.is_resident = false;
+    for (std::size_t chunk_index = 0; chunk_index < chunk_mesh_ids.size(); ++chunk_index) {
+        ModelGpuData::Chunk& chunk = model_gpu_data.chunks[chunk_index];
+        chunk.mesh_ids    = std::move(chunk_mesh_ids[chunk_index]);
+        chunk.is_resident = false;
 
-        std::uint32_t chunk_local_v = 0;
-        std::uint32_t chunk_local_i = 0;
-        for (std::uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = metadata.meta.meshes[mi];
-            m.mesh_chunk_idx[mi]                 = std::uint32_t(ci);
-            m.mesh_chunk_local_base_vertex[mi]   = chunk_local_v;
-            m.mesh_chunk_local_ebo_first_u32[mi] = chunk_local_i;
-            chunk_mesh_offsets[ci][mi] = MeshLocal{chunk_local_v, chunk_local_i, 0};
-            chunk_local_v += mesh.vertex_count;
-            chunk_local_i += mesh.index_count;
+        std::uint32_t chunk_local_vertex_count = 0;
+        std::uint32_t chunk_local_index_count = 0;
+        for (std::uint32_t mesh_index : chunk.mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mesh_index];
+            model_gpu_data.mesh_chunk_idx[mesh_index] = std::uint32_t(chunk_index);
+            model_gpu_data.mesh_chunk_local_base_vertex[mesh_index] = chunk_local_vertex_count;
+            model_gpu_data.mesh_chunk_local_ebo_first_u32[mesh_index] = chunk_local_index_count;
+            chunk_mesh_offsets[chunk_index][mesh_index] =
+                MeshLocal{chunk_local_vertex_count, chunk_local_index_count, 0};
+            chunk_local_vertex_count += mesh.vertex_count;
+            chunk_local_index_count += mesh.index_count;
         }
         std::uint32_t chunk_local_lod1 = 0;
-        for (std::uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = metadata.meta.meshes[mi];
+        for (std::uint32_t mesh_index : chunk.mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mesh_index];
             if (mesh.lod1_index_count == 0) continue;
-            m.mesh_chunk_local_lod1_first_u32[mi] = chunk_local_i + chunk_local_lod1;
-            chunk_mesh_offsets[ci][mi].lod1_first = chunk_local_i + chunk_local_lod1;
+            model_gpu_data.mesh_chunk_local_lod1_first_u32[mesh_index] =
+                chunk_local_index_count + chunk_local_lod1;
+            chunk_mesh_offsets[chunk_index][mesh_index].lod1_first =
+                chunk_local_index_count + chunk_local_lod1;
             chunk_local_lod1 += mesh.lod1_index_count;
         }
-        c.vertex_count     = chunk_local_v;
-        c.vertex_byte_size = std::uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
-        c.index_count      = chunk_local_i + chunk_local_lod1;
-        c.lod1_index_count = chunk_local_lod1;
+        chunk.vertex_count     = chunk_local_vertex_count;
+        chunk.vertex_byte_size = std::uint64_t(chunk_local_vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        chunk.index_count      = chunk_local_index_count + chunk_local_lod1;
+        chunk.lod1_index_count = chunk_local_lod1;
         // v16: compressed-blob locators from the baked TOC (streaming path).
-        if (ci < metadata.meta.chunks.size()) {
-            const SidecarChunk& sc = metadata.meta.chunks[ci];
-            c.v_comp_off = sc.v_comp_off; c.v_comp_size = sc.v_comp_size;
-            c.i_comp_off = sc.i_comp_off; c.i_comp_size = sc.i_comp_size;
+        if (chunk_index < metadata.meta.chunks.size()) {
+            const SidecarChunk& sidecar_chunk = metadata.meta.chunks[chunk_index];
+            chunk.v_comp_off = sidecar_chunk.v_comp_off;
+            chunk.v_comp_size = sidecar_chunk.v_comp_size;
+            chunk.i_comp_off = sidecar_chunk.i_comp_off;
+            chunk.i_comp_size = sidecar_chunk.i_comp_size;
         }
-        m.vertex_bytes += c.vertex_byte_size;
-        m.index_count  += std::uint32_t(c.index_count);
+        model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
+        model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
 
         // Small per-chunk buffers, allocated upfront so cull can write into
         // them. visible_draws_buffer cap = chunk's instance count.
-        const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[ci], 1);
+        const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[chunk_index], 1);
         const std::size_t draws_bytes = chunk_inst * sizeof(ModelGpuData::VisibleDrawGpu);
         const std::size_t ps_bytes    = (chunk_inst + 1) * sizeof(std::uint32_t);
 
@@ -3045,27 +3064,27 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         vd_desc.size  = std::max<std::uint64_t>(draws_bytes, 16);
         vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
         vd_desc.label = svFromCStr("model.chunk.visible_draws");
-        c.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
-        c.visible_draws_capacity = chunk_inst;
-        m.vram_bytes_ssbo += vd_desc.size;
+        chunk.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
+        chunk.visible_draws_capacity = chunk_inst;
+        model_gpu_data.vram_bytes_ssbo += vd_desc.size;
 
         WGPUBufferDescriptor ps_desc = {};
         ps_desc.size  = std::max<std::uint64_t>(ps_bytes, 16);
         ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
         ps_desc.label = svFromCStr("model.chunk.prefix_sums");
-        c.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-        c.prefix_sums_capacity = chunk_inst + 1;
-        m.vram_bytes_ssbo += ps_desc.size;
+        chunk.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
+        chunk.prefix_sums_capacity = chunk_inst + 1;
+        model_gpu_data.vram_bytes_ssbo += ps_desc.size;
 
         WGPUBufferDescriptor mu_desc = {};
         mu_desc.size  = 16;
         mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
         mu_desc.label = svFromCStr("model.chunk.uniform");
-        c.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
-        m.vram_bytes_ssbo += 16;
+        chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+        model_gpu_data.vram_bytes_ssbo += 16;
 
-        c.visible_draws_scratch.reserve(chunk_inst);
-        c.prefix_sums_scratch.reserve(chunk_inst + 1);
+        chunk.visible_draws_scratch.reserve(chunk_inst);
+        chunk.prefix_sums_scratch.reserve(chunk_inst + 1);
     }
 
     // Index section is NOT loaded upfront. Each chunk's index slice is
@@ -3074,115 +3093,116 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     // MeshGpu storage (per-mesh quant basis).
     std::vector<MeshGpu> mesh_gpu;
     mesh_gpu.reserve(metadata.meta.meshes.size());
-    for (const auto& mi : metadata.meta.meshes) {
-        MeshGpu mg = {};
-        mg.aabb_min[0] = mi.local_aabb_min[0];
-        mg.aabb_min[1] = mi.local_aabb_min[1];
-        mg.aabb_min[2] = mi.local_aabb_min[2];
-        mg.aabb_max[0] = mi.local_aabb_max[0];
-        mg.aabb_max[1] = mi.local_aabb_max[1];
-        mg.aabb_max[2] = mi.local_aabb_max[2];
-        mesh_gpu.push_back(mg);
+    for (const auto& mesh_info : metadata.meta.meshes) {
+        MeshGpu mesh_gpu_record = {};
+        mesh_gpu_record.aabb_min[0] = mesh_info.local_aabb_min[0];
+        mesh_gpu_record.aabb_min[1] = mesh_info.local_aabb_min[1];
+        mesh_gpu_record.aabb_min[2] = mesh_info.local_aabb_min[2];
+        mesh_gpu_record.aabb_max[0] = mesh_info.local_aabb_max[0];
+        mesh_gpu_record.aabb_max[1] = mesh_info.local_aabb_max[1];
+        mesh_gpu_record.aabb_max[2] = mesh_info.local_aabb_max[2];
+        mesh_gpu.push_back(mesh_gpu_record);
     }
     const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
-    m.mesh_storage = createBufferWithData(
+    model_gpu_data.mesh_storage = createBufferWithData(
         device_, queue_,
         mesh_gpu.data(), mesh_storage_bytes,
         WGPUBufferUsage_Storage,
         "model.mesh_storage");
-    m.vram_bytes_ssbo += mesh_storage_bytes;
+    model_gpu_data.vram_bytes_ssbo += mesh_storage_bytes;
 
     // InstanceGpu storage. Rebase object_ids globally.
     const std::uint32_t object_id_base = next_object_id_;
     std::uint32_t max_local_id = 0;
     std::vector<InstanceGpu> inst_gpu;
     inst_gpu.reserve(metadata.meta.instances.size());
-    for (auto& ic : metadata.meta.instances) {
-        if (ic.object_id > max_local_id) max_local_id = ic.object_id;
-        ic.object_id = object_id_base + ic.object_id;
-        InstanceGpu ig = {};
-        std::memcpy(ig.transform, ic.transform, sizeof(ig.transform));
-        ig.object_id            = ic.object_id;
-        ig.color_override_rgba8 = ic.color_override_rgba8;
-        ig.mesh_id              = ic.mesh_id;
-        inst_gpu.push_back(ig);
+    for (auto& instance_cpu : metadata.meta.instances) {
+        if (instance_cpu.object_id > max_local_id) max_local_id = instance_cpu.object_id;
+        instance_cpu.object_id = object_id_base + instance_cpu.object_id;
+        InstanceGpu instance_gpu = {};
+        std::memcpy(instance_gpu.transform, instance_cpu.transform, sizeof(instance_gpu.transform));
+        instance_gpu.object_id            = instance_cpu.object_id;
+        instance_gpu.color_override_rgba8 = instance_cpu.color_override_rgba8;
+        instance_gpu.mesh_id              = instance_cpu.mesh_id;
+        inst_gpu.push_back(instance_gpu);
     }
     next_object_id_ = object_id_base + max_local_id + 1;
-    m.object_id_base = object_id_base;  // deferred elements rebase to match
+    model_gpu_data.object_id_base = object_id_base;  // deferred elements rebase to match
     const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
-    m.instance_storage = createBufferWithData(
+    model_gpu_data.instance_storage = createBufferWithData(
         device_, queue_,
         inst_gpu.data(), inst_storage_bytes,
         WGPUBufferUsage_Storage,
         "model.instance_storage");
-    m.vram_bytes_ssbo += inst_storage_bytes;
+    model_gpu_data.vram_bytes_ssbo += inst_storage_bytes;
 
     // Hand off CPU mirrors.
-    m.meshes    = std::move(metadata.meta.meshes);
-    m.instances = std::move(metadata.meta.instances);
+    model_gpu_data.meshes    = std::move(metadata.meta.meshes);
+    model_gpu_data.instances = std::move(metadata.meta.instances);
 
     // Streaming defers per-mesh vertex data until the owning chunk is
     // loaded. Both volumes + Area-tool CPU shadow fill in per-chunk
     // inside applyStreamedChunk as the bytes arrive.
-    m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
-    m.mesh_triangles_cache.assign(m.meshes.size(), ModelGpuData::MeshTriangles{});
-    m.mesh_has_alpha.assign(m.meshes.size(), std::uint8_t(0));
+    model_gpu_data.mesh_local_volumes.assign(model_gpu_data.meshes.size(), 0.0);
+    model_gpu_data.mesh_triangles_cache.assign(model_gpu_data.meshes.size(), ModelGpuData::MeshTriangles{});
+    model_gpu_data.mesh_has_alpha.assign(model_gpu_data.meshes.size(), std::uint8_t(0));
 
     // object_id → instance index lookup. Volume tool reads it on every
     // selection mutation; per-pick latency stays O(K) instead of O(K*N).
-    m.object_id_to_instance.clear();
-    m.object_id_to_instance.reserve(m.instances.size());
-    for (std::uint32_t i = 0; i < std::uint32_t(m.instances.size()); ++i) {
-        m.object_id_to_instance.emplace(m.instances[i].object_id, i);
+    model_gpu_data.object_id_to_instance.clear();
+    model_gpu_data.object_id_to_instance.reserve(model_gpu_data.instances.size());
+    for (std::uint32_t i = 0; i < std::uint32_t(model_gpu_data.instances.size()); ++i) {
+        model_gpu_data.object_id_to_instance.emplace(model_gpu_data.instances[i].object_id, i);
     }
 
     // Per-chunk world AABBs + instance-id lists from instance_to_chunk.
-    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        m.chunks[ci].instance_ids.reserve(m.instances.size() / m.chunks.size() + 4);
+    for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
+        model_gpu_data.chunks[chunk_index].instance_ids.reserve(
+            model_gpu_data.instances.size() / model_gpu_data.chunks.size() + 4);
     }
-    for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
-        const auto& inst = m.instances[inst_idx];
-        const std::uint32_t ci = instance_to_chunk[inst_idx];
-        if (ci >= m.chunks.size()) continue;
-        auto& c = m.chunks[ci];
+    for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(model_gpu_data.instances.size()); ++inst_idx) {
+        const auto& inst = model_gpu_data.instances[inst_idx];
+        const std::uint32_t chunk_index = instance_to_chunk[inst_idx];
+        if (chunk_index >= model_gpu_data.chunks.size()) continue;
+        auto& chunk = model_gpu_data.chunks[chunk_index];
         for (int a = 0; a < 3; ++a) {
-            c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
-            c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
+            chunk.aabb_min[a] = std::min(chunk.aabb_min[a], inst.world_aabb_min[a]);
+            chunk.aabb_max[a] = std::max(chunk.aabb_max[a], inst.world_aabb_max[a]);
         }
-        c.instance_ids.push_back(inst_idx);
+        chunk.instance_ids.push_back(inst_idx);
     }
 
     // Populate per-instance arrays from the per-chunk per-mesh offsets
     // computed during chunk construction.
     {
-        const std::size_t n_inst = m.instances.size();
-        m.instance_chunk_idx.assign(n_inst, 0);
-        m.instance_base_vertex.assign(n_inst, 0);
-        m.instance_ebo_first_u32.assign(n_inst, 0);
-        m.instance_lod1_first_u32.assign(n_inst, 0);
+        const std::size_t n_inst = model_gpu_data.instances.size();
+        model_gpu_data.instance_chunk_idx.assign(n_inst, 0);
+        model_gpu_data.instance_base_vertex.assign(n_inst, 0);
+        model_gpu_data.instance_ebo_first_u32.assign(n_inst, 0);
+        model_gpu_data.instance_lod1_first_u32.assign(n_inst, 0);
         for (std::size_t i = 0; i < n_inst; ++i) {
-            const std::uint32_t ci = instance_to_chunk[i];
-            const std::uint32_t mi = m.instances[i].mesh_id;
-            if (ci >= chunk_mesh_offsets.size()) continue;
-            auto it_off = chunk_mesh_offsets[ci].find(mi);
-            if (it_off == chunk_mesh_offsets[ci].end()) continue;
-            m.instance_chunk_idx[i]      = ci;
-            m.instance_base_vertex[i]    = it_off->second.base_vertex;
-            m.instance_ebo_first_u32[i]  = it_off->second.ebo_first;
-            m.instance_lod1_first_u32[i] = it_off->second.lod1_first;
+            const std::uint32_t chunk_index = instance_to_chunk[i];
+            const std::uint32_t mesh_index = model_gpu_data.instances[i].mesh_id;
+            if (chunk_index >= chunk_mesh_offsets.size()) continue;
+            auto it_off = chunk_mesh_offsets[chunk_index].find(mesh_index);
+            if (it_off == chunk_mesh_offsets[chunk_index].end()) continue;
+            model_gpu_data.instance_chunk_idx[i]      = chunk_index;
+            model_gpu_data.instance_base_vertex[i]    = it_off->second.base_vertex;
+            model_gpu_data.instance_ebo_first_u32[i]  = it_off->second.ebo_first;
+            model_gpu_data.instance_lod1_first_u32[i] = it_off->second.lod1_first;
         }
     }
 
-    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
-    ModelGpuData& mref = inserted->second;
+    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(model_gpu_data));
+    ModelGpuData& inserted_model = inserted->second;
 
     Log::info()
         << "[wgpu stream] applyCachedModel mid=" << model_id
-        << " verts=" << mref.vertex_bytes << "B (deferred)"
-        << " idx="   << mref.index_count
-        << " meshes=" << mref.mesh_count
-        << " instances=" << mref.instance_count
-        << " chunks=" << mref.chunks.size();
+        << " verts=" << inserted_model.vertex_bytes << "B (deferred)"
+        << " idx="   << inserted_model.index_count
+        << " meshes=" << inserted_model.mesh_count
+        << " instances=" << inserted_model.instance_count
+        << " chunks=" << inserted_model.chunks.size();
 
     if (!initial_view_applied_) {
         viewAll();
@@ -3208,10 +3228,10 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
                       -std::numeric_limits<float>::infinity(),
                       -std::numeric_limits<float>::infinity() };
     for (std::size_t i = 0; i < n_verts; ++i) {
-        const float* v = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
+        const float* vertex = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
         for (int a = 0; a < 3; ++a) {
-            if (v[a] < bmin[a]) bmin[a] = v[a];
-            if (v[a] > bmax[a]) bmax[a] = v[a];
+            if (vertex[a] < bmin[a]) bmin[a] = vertex[a];
+            if (vertex[a] > bmax[a]) bmax[a] = vertex[a];
         }
     }
     float extent_recip[3];
@@ -3256,20 +3276,20 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
 void ViewportCore::uploadInstanceChunk(const InstanceChunk& chunk) {
     SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
 
-    InstanceCpu inst{};
-    inst.mesh_id              = chunk.local_mesh_id;
-    inst.object_id            = chunk.object_id;
-    inst.color_override_rgba8 = chunk.color_override_rgba8;
-    inst.model_id             = chunk.model_id;
-    std::memcpy(inst.placement_transformation, chunk.transform,
-                sizeof(inst.placement_transformation));
+    InstanceCpu instance{};
+    instance.mesh_id              = chunk.local_mesh_id;
+    instance.object_id            = chunk.object_id;
+    instance.color_override_rgba8 = chunk.color_override_rgba8;
+    instance.model_id             = chunk.model_id;
+    std::memcpy(instance.placement_transformation, chunk.transform,
+                sizeof(instance.placement_transformation));
     for (int i = 0; i < 16; ++i) {
-        inst.transform[i] = float(chunk.transform[i]);
+        instance.transform[i] = float(chunk.transform[i]);
     }
-    std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
-    std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
+    std::memcpy(instance.world_aabb_min, chunk.world_aabb_min, sizeof(instance.world_aabb_min));
+    std::memcpy(instance.world_aabb_max, chunk.world_aabb_max, sizeof(instance.world_aabb_max));
 
-    s.instances.push_back(inst);
+    s.instances.push_back(instance);
 }
 
 std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
@@ -3746,16 +3766,16 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     }
     std::unique_ptr<SidecarData> staging_ptr = std::move(it->second);
     pending_direct_loads_.erase(it);
-    SidecarData& s = *staging_ptr;
+    SidecarData& sidecar_data = *staging_ptr;
 
     if (!device_ || !queue_) {
         Log::warn() << "[wgpu direct] finalizeModel without an initialised device";
         return;
     }
-    if (s.meshes.empty() || s.instances.empty()) {
+    if (sidecar_data.meshes.empty() || sidecar_data.instances.empty()) {
         Log::info() << "[wgpu direct] finalizeModel(" << model_id
-                    << "): empty staging (meshes=" << s.meshes.size()
-                    << " instances=" << s.instances.size() << ")";
+                    << "): empty staging (meshes=" << sidecar_data.meshes.size()
+                    << " instances=" << sidecar_data.instances.size() << ")";
         return;
     }
 
@@ -3765,7 +3785,7 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     // that to skip these chunks (they're already resident after the
     // applyStreamedChunk loop below).
     StreamingSidecar metadata;
-    metadata.meta = std::move(s);
+    metadata.meta = std::move(sidecar_data);
     // Direct load: geometry is already in memory (uploaded below), streamed
     // from nothing — leave file_path empty so the streaming worker skips it.
     metadata.geometry_section_offset = 0;
@@ -3783,38 +3803,40 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
             << "): applyCachedModel produced no model entry";
         return;
     }
-    ModelGpuData& m = model_it->second;
+    ModelGpuData& model_gpu_data = model_it->second;
 
     // Gather each chunk's vertex + index bytes from the staged buffers.
     std::size_t chunks_uploaded = 0;
-    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        auto& c = m.chunks[ci];
-        if (c.mesh_ids.empty()) continue;
+    for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
+        auto& chunk = model_gpu_data.chunks[chunk_index];
+        if (chunk.mesh_ids.empty()) continue;
 
-        std::vector<std::uint8_t>  vbytes(c.vertex_byte_size);
-        std::vector<std::uint32_t> idx;
-        idx.reserve(c.index_count);
+        std::vector<std::uint8_t>  vbytes(chunk.vertex_byte_size);
+        std::vector<std::uint32_t> indices;
+        indices.reserve(chunk.index_count);
 
-        for (std::uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = m.meshes[mi];
-            const std::size_t vsz = std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-            if (vsz > 0) {
-                const std::size_t dst_off = std::size_t(m.mesh_chunk_local_base_vertex[mi])
+        for (std::uint32_t mesh_index : chunk.mesh_ids) {
+            const MeshInfo& mesh = model_gpu_data.meshes[mesh_index];
+            const std::size_t vertex_byte_count =
+                std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (vertex_byte_count > 0) {
+                const std::size_t destination_vertex_offset =
+                    std::size_t(model_gpu_data.mesh_chunk_local_base_vertex[mesh_index])
                                           * INSTANCED_VERTEX_STRIDE_BYTES;
-                std::memcpy(vbytes.data() + dst_off,
-                            raw_vertices.data() + mesh.vbo_byte_offset, vsz);
+                std::memcpy(vbytes.data() + destination_vertex_offset,
+                            raw_vertices.data() + mesh.vbo_byte_offset, vertex_byte_count);
             }
             if (mesh.index_count > 0) {
                 const std::uint32_t* src = raw_indices.data()
                                          + (mesh.ebo_byte_offset / sizeof(std::uint32_t));
-                idx.insert(idx.end(), src, src + mesh.index_count);
+                indices.insert(indices.end(), src, src + mesh.index_count);
             }
         }
 
-        if (!applyStreamedChunk(m, ci, vbytes, idx)) {
+        if (!applyStreamedChunk(model_gpu_data, chunk_index, vbytes, indices)) {
             Log::warn()
                 << "[wgpu direct] finalizeModel(" << model_id
-                << "): applyStreamedChunk failed on chunk " << ci
+                << "): applyStreamedChunk failed on chunk " << chunk_index
                 << " (pool OOM?)";
             continue;
         }
@@ -3823,9 +3845,9 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
 
     Log::info()
         << "[wgpu direct] finalizeModel mid=" << model_id
-        << " meshes=" << m.meshes.size()
-        << " instances=" << m.instances.size()
-        << " chunks=" << chunks_uploaded << "/" << m.chunks.size()
+        << " meshes=" << model_gpu_data.meshes.size()
+        << " instances=" << model_gpu_data.instances.size()
+        << " chunks=" << chunks_uploaded << "/" << model_gpu_data.chunks.size()
         << " verts=" << raw_vertices.size() << "B"
         << " idx=" << raw_indices.size();
 }

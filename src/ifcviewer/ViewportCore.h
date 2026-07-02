@@ -192,6 +192,30 @@ public:
     enum class StandardView { Front, Back, Left, Right, Top, Bottom };
     void setStandardView(StandardView view);
 
+    // ---- Navigation mouse bindings (shared, preset-driven) ------------------
+    //
+    // Which mouse button (+ modifier) orbits / pans / selects. Owned by the core
+    // as pure data so BOTH hosts and ALL presets share one source of truth — the
+    // desktop maps these to Qt::MouseButton, the web to DOM button codes. Select
+    // is preset-driven too (not hardcoded to LMB) so a "web" preset can move it
+    // to RMB. Marquee box-select uses the same button as select (drag vs click).
+    enum class MouseBtn { Left, Middle, Right };
+    // Plain (not "None": X11 #defines None to 0L, which would corrupt the token).
+    enum class NavMod   { Plain, Shift, Ctrl, Alt };
+    struct NavBindings {
+        MouseBtn orbit;  NavMod orbit_mod;
+        MouseBtn pan;    NavMod pan_mod;
+        MouseBtn select; NavMod select_mod;
+    };
+    // name: "blender" (default) | "rhino" | "revit" | "web". Unknown → blender.
+    //   blender  orbit MMB,        pan Shift+MMB,  select LMB
+    //   rhino    orbit RMB,        pan Shift+RMB,  select LMB
+    //   revit    orbit Shift+MMB,  pan MMB,        select LMB
+    //   web      orbit LMB,        pan MMB,        select RMB (LMB stays free to
+    //            orbit-drag; RMB click-selects / drag-marquees, no ambiguity)
+    void setNavPreset(const char* name);
+    const NavBindings& navBindings() const { return nav_bindings_; }
+
     // Frame the current selection: union the selected objects' world AABBs and
     // fit the camera to them (same 1.30 padding as the desktop "F" hotkey).
     // No-op with an empty selection or no resolvable AABBs; returns whether it
@@ -1151,6 +1175,10 @@ private:
     // Fly-camera move speed (m/s), wheel-adjustable via flyAdjustSpeed. Shared
     // by desktop + web fly mode; the mode flag itself lives in each host.
     float fly_move_speed_    = 5.0f;
+    // Nav mouse bindings; default matches the historical "blender" preset.
+    NavBindings nav_bindings_ = { MouseBtn::Middle, NavMod::Plain,
+                                  MouseBtn::Middle, NavMod::Shift,
+                                  MouseBtn::Left,   NavMod::Plain };
     // Perspective by default; toggleProjection (P key) flips this. When
     // true, buildViewProj uses an orthographic matrix sized by
     // camera_distance_ × tan(fov/2) so toggling looks like a smooth

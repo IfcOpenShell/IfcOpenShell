@@ -188,10 +188,11 @@ void SettingsDialog::setupUi() {
         nav_preset_combo_->addItem("Blender (Orbit MMB, Pan Shift+MMB)");
         nav_preset_combo_->addItem("Rhino (Orbit RMB, Pan Shift+RMB)");
         nav_preset_combo_->addItem("Revit (Orbit Shift+MMB, Pan MMB)");
+        nav_preset_combo_->addItem("Web (Orbit LMB, Pan MMB, Select RMB)");
         nav_preset_combo_->setToolTip(
-            "Mouse-button mapping for orbit and pan.  Selection stays on "
-            "left mouse button for every preset, so click + box-select "
-            "always work.");
+            "Mouse-button mapping for orbit, pan, and selection.  Selection is "
+            "on the left mouse button for Blender/Rhino/Revit and on the right "
+            "for Web; click + box-select use whichever the preset assigns.");
         form->addRow("Preset", nav_preset_combo_);
 
         section->addBodyWidget(body);
@@ -390,20 +391,20 @@ QWidget* SettingsDialog::buildConnectorsTab() {
         body_layout->addWidget(empty);
     }
 
-    for (const auto& m : manifests) {
+    for (const auto& manifest : manifests) {
         auto* row = new QWidget(body);
         auto* row_layout = new QHBoxLayout(row);
         row_layout->setContentsMargins(0, 0, 0, 0);
         row_layout->setSpacing(8);
 
-        auto* name = new QLabel(m.name, row);
+        auto* name = new QLabel(manifest.name, row);
         auto* version = new QLabel(
-            m.version.isEmpty() ? QString() : QString("v%1").arg(m.version), row);
+            manifest.version.isEmpty() ? QString() : QString("v%1").arg(manifest.version), row);
         version->setProperty("textRole", "secondary");
 
         auto* settings_button = new QPushButton("Settings…", row);
         settings_button->setIcon(components::icons::makeSvgIcon(":/icons/settings.svg"));
-        const QString connector_id = m.id;
+        const QString connector_id = manifest.id;
         connect(settings_button, &QPushButton::clicked, this,
                 [this, connector_id, settings_button]() {
             if (!session_state_) return;

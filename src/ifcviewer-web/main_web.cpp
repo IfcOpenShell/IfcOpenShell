@@ -45,6 +45,9 @@ namespace {
 // WebViewportHost selector below.
 constexpr const char* kCanvasSelector = "#viewer-canvas";
 
+// What a mouse drag drives, decided against the active nav preset's bindings.
+enum class NavKind { None, Orbit, Pan, Select };
+
 struct AppState {
     WebViewportHost host{ kCanvasSelector };
     ViewportCore    core{ &host };
@@ -56,15 +59,14 @@ struct AppState {
     bool            ready  = false;
 
     // ---- Mouse navigation state ----
-    // A drag is armed on mousedown and released on mouseup. button is the
-    // DOM button code (0 left, 1 middle, 2 right). Left orbits; middle or
-    // right pans — matches common web 3D-viewer bindings and covers both
-    // three-button mice and trackpad (right-drag) users.
-    bool nav_active = false;
-    int  nav_button = 0;
-    // Accumulated |movement| since mousedown, in CSS px. A left release under
-    // the click threshold (no real drag) is treated as a pick instead of an
-    // orbit. Captures the down position (canvas-relative CSS px) for the pick.
+    // A drag is armed on mousedown and released on mouseup. What the press
+    // drives (orbit / pan / select) is decided against the active nav preset's
+    // bindings (ViewportCore::navBindings), so any preset works on web too.
+    bool    nav_active = false;
+    NavKind nav_kind   = NavKind::None;
+    // Accumulated |movement| since mousedown, in CSS px. A select-button release
+    // under the click threshold (no real drag) is treated as a pick; a drag will
+    // become a marquee. Captures the down position (canvas-relative CSS px).
     float nav_drag_px = 0.0f;
     long  down_x = 0;
     long  down_y = 0;
@@ -78,7 +80,13 @@ struct AppState {
     // Distinguishes "lock lost" (Esc/click-out → exit fly) from "lock denied on
     // entry" (headless / permission) where fly stays keyboard-drivable.
     bool   fly_locked = false;
-    bool   k_w = false, k_a = false, k_s = false, k_d = false, k_q = false, k_e = false, k_shift = false;
+    bool   key_w_pressed = false;
+    bool   key_a_pressed = false;
+    bool   key_s_pressed = false;
+    bool   key_d_pressed = false;
+    bool   key_q_pressed = false;
+    bool   key_e_pressed = false;
+    bool   key_shift_pressed = false;
     double fly_last_ms = 0.0;
 };
 
@@ -102,13 +110,26 @@ int canvasCssHeight() {
     return (h > 1.0) ? int(h) : 1;
 }
 
+NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
+                      bool shift, bool ctrl, bool alt) {
+    using MB = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;
+    const MB btn = (em_button == 0) ? MB::Left : (em_button == 1) ? MB::Middle : MB::Right;
+    const M  mod = shift ? M::Shift : ctrl ? M::Ctrl : alt ? M::Alt : M::Plain;
+    if (btn == b.orbit && mod == b.orbit_mod) return NavKind::Orbit;
+    if (btn == b.pan   && mod == b.pan_mod)   return NavKind::Pan;
+    if (btn == b.select)                      return NavKind::Select;  // Shift/Ctrl = add/remove
+    return NavKind::None;
+}
+
 EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
     // In fly mode a click exits (matches the desktop app).
     if (app->fly_mode) { setFlyMode(app, false); return EM_TRUE; }
-    if (e->button == 0 || e->button == 1 || e->button == 2) {
+    const NavKind kind = classifyPress(app->core.navBindings(), e->button,
+                                       e->shiftKey, e->ctrlKey, e->altKey);
+    if (kind != NavKind::None) {
         app->nav_active  = true;
-        app->nav_button  = e->button;
+        app->nav_kind    = kind;
         app->nav_drag_px = 0.0f;
         app->down_x      = e->targetX;  // canvas-relative CSS px
         app->down_y      = e->targetY;
@@ -129,24 +150,23 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     const float dx = float(e->movementX);
     const float dy = float(e->movementY);
     app->nav_drag_px += std::abs(dx) + std::abs(dy);
-    if (app->nav_button == 0) {
-        app->core.orbitBy(dx, dy);
-    } else {
-        app->core.panBy(dx, dy, canvasCssHeight());
-    }
+    if (app->nav_kind == NavKind::Orbit)     app->core.orbitBy(dx, dy);
+    else if (app->nav_kind == NavKind::Pan)  app->core.panBy(dx, dy, canvasCssHeight());
+    // NavKind::Select drag → marquee box-select (next step).
     return EM_TRUE;
 }
 
 EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
-    const bool was_active = app->nav_active;
-    const int  button     = app->nav_button;
+    const bool    was_active = app->nav_active;
+    const NavKind kind       = app->nav_kind;
     app->nav_active = false;
+    app->nav_kind   = NavKind::None;
 
-    // Left release with no real drag → pick the object under the cursor and
-    // route it through selection (Shift add, Ctrl remove, plain replace).
+    // Select-button release with no real drag → pick the object under the cursor
+    // and route it through selection (Shift add, Ctrl remove, plain replace).
     // Async readback: the highlight appears a frame after the result lands.
-    if (was_active && button == 0 && app->ready &&
+    if (was_active && kind == NavKind::Select && app->ready &&
         app->nav_drag_px <= kClickDragThresholdPx) {
         const double dpr = emscripten_get_device_pixel_ratio();
         const int px = int(app->down_x * dpr);
@@ -183,14 +203,14 @@ EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
 // Track a held fly movement key (W/A/S/D/Q/E/Shift). Returns true if `code` was
 // one. Physical `.code` so it's keymap-independent.
 bool setFlyKey(AppState* app, const char* code, bool down) {
-    if      (!std::strcmp(code, "KeyW")) app->k_w = down;
-    else if (!std::strcmp(code, "KeyA")) app->k_a = down;
-    else if (!std::strcmp(code, "KeyS")) app->k_s = down;
-    else if (!std::strcmp(code, "KeyD")) app->k_d = down;
-    else if (!std::strcmp(code, "KeyQ")) app->k_q = down;
-    else if (!std::strcmp(code, "KeyE")) app->k_e = down;
+    if      (!std::strcmp(code, "KeyW")) app->key_w_pressed = down;
+    else if (!std::strcmp(code, "KeyA")) app->key_a_pressed = down;
+    else if (!std::strcmp(code, "KeyS")) app->key_s_pressed = down;
+    else if (!std::strcmp(code, "KeyD")) app->key_d_pressed = down;
+    else if (!std::strcmp(code, "KeyQ")) app->key_q_pressed = down;
+    else if (!std::strcmp(code, "KeyE")) app->key_e_pressed = down;
     else if (!std::strcmp(code, "ShiftLeft") || !std::strcmp(code, "ShiftRight"))
-        app->k_shift = down;
+        app->key_shift_pressed = down;
     else return false;
     return true;
 }
@@ -205,7 +225,9 @@ void setFlyMode(AppState* app, bool on) {
         emscripten_request_pointerlock(kCanvasSelector, EM_TRUE);
         Log::info() << "[fly] on — WASD/QE move, mouse looks, Shift boosts, wheel = speed, Esc exits";
     } else {
-        app->k_w = app->k_a = app->k_s = app->k_d = app->k_q = app->k_e = app->k_shift = false;
+        app->key_w_pressed = app->key_a_pressed = app->key_s_pressed = false;
+        app->key_d_pressed = app->key_q_pressed = app->key_e_pressed = false;
+        app->key_shift_pressed = false;
         app->fly_locked = false;
         emscripten_exit_pointerlock();
         Log::info() << "[fly] off";
@@ -312,8 +334,10 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
         const double now = emscripten_get_now();
         const float dt = float((now - app->fly_last_ms) / 1000.0);
         app->fly_last_ms = now;
-        app->core.flyMove(app->k_w, app->k_s, app->k_d, app->k_a,
-                          app->k_e, app->k_q, app->k_shift, dt);
+        app->core.flyMove(app->key_w_pressed, app->key_s_pressed,
+                          app->key_d_pressed, app->key_a_pressed,
+                          app->key_e_pressed, app->key_q_pressed,
+                          app->key_shift_pressed, dt);
     }
 
     if (app->host.consumeFrameRequest()) {
@@ -387,11 +411,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void standard_view_c(int id) {
 // geometry chunks arrive.
 extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_chunks_resident_c() {
     if (!g_app) return 0;
-    int r = 0, t = 0; g_app->core.streamingProgress(r, t); return r;
+    int resident_chunks = 0, total_chunks = 0;
+    g_app->core.streamingProgress(resident_chunks, total_chunks);
+    return resident_chunks;
 }
 extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_chunks_total_c() {
     if (!g_app) return 0;
-    int r = 0, t = 0; g_app->core.streamingProgress(r, t); return t;
+    int resident_chunks = 0, total_chunks = 0;
+    g_app->core.streamingProgress(resident_chunks, total_chunks);
+    return total_chunks;
 }
 
 // Per-model progress for the federation loading panel: how many models are in
@@ -401,11 +429,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_count_c() {
 }
 extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_resident_c(int idx) {
     if (!g_app) return 0;
-    int r = 0, t = 0; g_app->core.streamingModelProgress(idx, r, t); return r;
+    int resident_chunks = 0, total_chunks = 0;
+    g_app->core.streamingModelProgress(idx, resident_chunks, total_chunks);
+    return resident_chunks;
 }
 extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_total_c(int idx) {
     if (!g_app) return 0;
-    int r = 0, t = 0; g_app->core.streamingModelProgress(idx, r, t); return t;
+    int resident_chunks = 0, total_chunks = 0;
+    g_app->core.streamingModelProgress(idx, resident_chunks, total_chunks);
+    return total_chunks;
 }
 
 // Combined byte progress for the loading bar: total geometry, bytes the current
@@ -413,23 +445,28 @@ extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_model_total_c(int idx) {
 // JS gets exact byte counts well past 2 GB.
 extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_total_c() {
     if (!g_app) return 0.0;
-    std::uint64_t tot = 0, need = 0, load = 0;
-    g_app->core.streamingByteProgress(tot, need, load); return double(tot);
+    std::uint64_t total_bytes = 0, needed_bytes = 0, loaded_bytes = 0;
+    g_app->core.streamingByteProgress(total_bytes, needed_bytes, loaded_bytes);
+    return double(total_bytes);
 }
 extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_needed_c() {
     if (!g_app) return 0.0;
-    std::uint64_t tot = 0, need = 0, load = 0;
-    g_app->core.streamingByteProgress(tot, need, load); return double(need);
+    std::uint64_t total_bytes = 0, needed_bytes = 0, loaded_bytes = 0;
+    g_app->core.streamingByteProgress(total_bytes, needed_bytes, loaded_bytes);
+    return double(needed_bytes);
 }
 extern "C" EMSCRIPTEN_KEEPALIVE double ifcv_bytes_loaded_c() {
     if (!g_app) return 0.0;
-    std::uint64_t tot = 0, need = 0, load = 0;
-    g_app->core.streamingByteProgress(tot, need, load); return double(load);
+    std::uint64_t total_bytes = 0, needed_bytes = 0, loaded_bytes = 0;
+    g_app->core.streamingByteProgress(total_bytes, needed_bytes, loaded_bytes);
+    return double(loaded_bytes);
 }
 
 int main(int /*argc*/, char** /*argv*/) {
     Log::info() << "ifcviewer-web: starting";
     g_app = new AppState();
+    // Default to the web mouse scheme: LMB orbit, MMB pan, RMB select/marquee.
+    g_app->core.setNavPreset("web");
     g_app->core.initWgpuAsyncWeb([](bool ok) {
         if (!ok) {
             Log::warn() << "ifcviewer-web: wgpu init failed";
