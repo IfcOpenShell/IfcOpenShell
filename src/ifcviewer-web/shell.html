@@ -36,6 +36,7 @@
   #nav-toolbar button { background: #2d3748; color: #c8ccd6; border: none;
     padding: 5px 9px; border-radius: 4px; font-size: 12px; cursor: pointer; }
   #nav-toolbar button:hover { background: #3b465c; }
+  #nav-toolbar button.active { background: #2b6cb0; color: #fff; }
   #nav-toolbar .sep { width: 1px; background: #3b465c; margin: 2px 3px; }
   /* Streaming loading UI: a thin top progress strip (aggregate) + a centred
      panel with a per-model segmented bar. Shown only while models stream. */
@@ -77,6 +78,7 @@
   <button data-act="fit"   title="Fit all (Home)">Fit</button>
   <button data-act="focus" title="Zoom to selected (F)">Focus</button>
   <button data-act="ortho" id="ortho-btn" title="Toggle orthographic / perspective (P)">Persp</button>
+  <button data-act="fly"   id="fly-btn" title="Fly / first-person — WASD+mouse (⇧F)">Fly</button>
   <span class="sep"></span>
   <button data-view="0" title="Front (X)">Front</button>
   <button data-view="1" title="Back (Shift+X)">Back</button>
@@ -156,6 +158,10 @@
             });
           }
           window.updateLoadProgress();
+          if (Module._fly_is_active_c) {
+            var fb = document.getElementById('fly-btn');
+            if (fb) fb.classList.toggle('active', !!Module._fly_is_active_c());
+          }
           Module._raf_tick_c(Module._app_ptr);
         }
         requestAnimationFrame(shellTick);
@@ -331,6 +337,7 @@
       if (act === 'fit')        Module._view_all_c();
       else if (act === 'focus') Module._frame_selection_c();
       else if (act === 'ortho') { Module._toggle_projection_c(); refreshOrthoLabel(); }
+      else if (act === 'fly')   Module._toggle_fly_c();
       else if (view !== null)   Module._standard_view_c(parseInt(view, 10));
     });
   });

@@ -217,6 +217,25 @@ public:
     void panBy(float dx_px, float dy_px, int viewport_height_px);
     void dollyBy(float notches);
 
+    // ---- First-person / fly navigation --------------------------------------
+    //
+    // Shared fly-camera math (desktop + web). The HOST owns the fly-mode flag,
+    // held-key tracking, cursor/pointer-lock, and per-frame timing; it calls
+    // these each frame while flying. Behaviour is identical across platforms.
+    //
+    // flyMove:  WASD moves in the view plane, QE rises/falls along world +Z;
+    //           forward = eye→target so it doesn't snap after orbiting. `boost`
+    //           (Shift) is 5x. Speed is metres/second (flyAdjustSpeed tunes it);
+    //           `dt` seconds is clamped to 0.1 so a stall can't warp the camera.
+    // flyLook:  mouse-look — turn the camera in place (yaw/pitch) with the eye
+    //           pinned; pixel deltas, 0.2 deg/px, pitch clamped to ±89.9.
+    // flyAdjustSpeed: wheel scales the move speed (x1.25 per notch, clamped).
+    void flyMove(bool fwd, bool back, bool right, bool left,
+                 bool up, bool down, bool boost, float dt_seconds);
+    void flyLook(float dx_px, float dy_px);
+    void flyAdjustSpeed(float notches);
+    float flySpeed() const { return fly_move_speed_; }
+
     void toggleProjection();
     bool projectionOrtho() const { return projection_ortho_; }
     std::string cameraString() const;
@@ -1116,6 +1135,9 @@ private:
     float camera_fov_y_deg_  = 45.0f;
     float camera_near_       = 0.1f;
     float camera_far_        = 10000.0f;
+    // Fly-camera move speed (m/s), wheel-adjustable via flyAdjustSpeed. Shared
+    // by desktop + web fly mode; the mode flag itself lives in each host.
+    float fly_move_speed_    = 5.0f;
     // Perspective by default; toggleProjection (P key) flips this. When
     // true, buildViewProj uses an orthographic matrix sized by
     // camera_distance_ × tan(fov/2) so toggling looks like a smooth

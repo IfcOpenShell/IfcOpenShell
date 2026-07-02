@@ -779,12 +779,8 @@ private:
     Stopwatch    fps_last_tick_;
     Eigen::Vector2i       fps_press_center_;
     bool         fps_ignore_next_mouse_move_  = false;
-    // Fly base speed in m/s at no-modifier (Shift gives a 5× boost). Default
-    // 5.0 matches GL fps_move_speed_. Scrollwheel in fly mode adjusts this
-    // by ×1.25 / ×0.8 per notch, Blender-style — wheel does NOT zoom while
-    // in fly mode (which would change camera_distance_ underneath us and
-    // make speed jitter if speed were distance-scaled).
-    float        fps_move_speed_              = 5.0f;
+    // Fly base speed (m/s) + wheel adjustment now live in ViewportCore
+    // (fly_move_speed_ / flyAdjustSpeed), shared with the web fly path.
     // Per-frame [fly] dt log when WGPU_FLY_DEBUG=1. Diagnoses stutter:
     // print dt of each fpsIntegrate call and the prior render's elapsed
     // ms. Off by default (env-gated) so the normal log stays clean.

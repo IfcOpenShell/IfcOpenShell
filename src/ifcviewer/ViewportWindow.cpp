@@ -77,10 +77,6 @@ static inline float srgbToLinear(float s) {
 static constexpr uint64_t WGPU_BYTES_PER_ROW_ALIGN = 256;
 
 
-// Forward declaration — defined below alongside updateFrameUniforms. Used
-// by render() to extract camera/frustum state without duplicating the math.
-static Eigen::Vector3f orbitEye(const float target[3], float dist,
-                          float yaw_deg, float pitch_deg);
 
 // computeMeshLocalVolumeQuantised moved to ViewportCore.cpp anon
 // namespace (#84-n).
@@ -1467,21 +1463,8 @@ void ViewportWindow::driveStreamingLoads() { core_.driveStreamingLoads(); }
 // rotation about Z (positive = anticlockwise looking down +Z); pitch is
 // elevation above the XY plane.
 
-static Eigen::Vector3f orbitEye(const float target[3], float dist,
-                          float yaw_deg, float pitch_deg) {
-    // Matches the GL ViewportWindow::updateCamera convention exactly so the
-    // orbit pivot, framing, and benchmark camera path align between backends.
-    //   eye.x = target.x + dist * cos(pitch) * cos(yaw)
-    //   eye.y = target.y + dist * cos(pitch) * sin(yaw)
-    //   eye.z = target.z + dist * sin(pitch)
-    const float yaw = qDegreesToRadians(yaw_deg);
-    const float pit = qDegreesToRadians(pitch_deg);
-    const float cp = std::cos(pit), sp = std::sin(pit);
-    const float cy = std::cos(yaw), sy = std::sin(yaw);
-    return Eigen::Vector3f(target[0] + dist * cp * cy,
-                     target[1] + dist * cp * sy,
-                     target[2] + dist * sp);
-}
+// orbitEye moved to ViewportCore (its last ViewportWindow uses — fly-mode step
+// + mouse-look — now go through ViewportCore::flyMove / flyLook).
 
 // Shared camera-math helper. Every site that needs (view, proj) for cull,
 // streaming projection, pick, or render uniforms calls this so the
@@ -1565,58 +1548,12 @@ void ViewportWindow::fpsIntegrate() {
     float dt = float(double(elapsed_ns) / 1e9);
     if (dt > 0.1f) dt = 0.1f;
 
-    // Forward = orbit eye -> target, kept as the camera's view direction in
-    // fly mode too so a Shift+F right after orbiting doesn't snap to a new
-    // heading. WASD moves in the screen plane; QE rises/falls along world +Z.
-    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
-    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
-                                   camera_yaw_deg_, camera_pitch_deg_);
-    Eigen::Vector3f forward = (target - eye); forward.normalize();
-    // When looking straight up/down, cross(forward, worldZ) degenerates;
-    // fall back to worldY so right doesn't go NaN and WASD still works.
-    const Eigen::Vector3f world_up(0.0f, 0.0f, 1.0f);
-    const Eigen::Vector3f right_basis = (std::abs(camera_pitch_deg_) >= 89.0f)
-                                ? Eigen::Vector3f(0.0f, 1.0f, 0.0f)
-                                : world_up;
-    Eigen::Vector3f right = forward.cross(right_basis);
-    right.normalize();
-
-    Eigen::Vector3f move(0, 0, 0);
-    if (fps_keys_held_.count(Qt::Key_W)) move += forward;
-    if (fps_keys_held_.count(Qt::Key_S)) move -= forward;
-    if (fps_keys_held_.count(Qt::Key_D)) move += right;
-    if (fps_keys_held_.count(Qt::Key_A)) move -= right;
-    if (fps_keys_held_.count(Qt::Key_E)) move += world_up;
-    if (fps_keys_held_.count(Qt::Key_Q)) move -= world_up;
-    if (move.isZero()) return;
-    move.normalize();
-
-    // Absolute m/s, scrollwheel-adjustable (Blender / GL convention).
-    // Scaling with camera_distance_ produced "stuttery" speed on big scenes
-    // because distance varies frame-to-frame (and worse, wheel zoom kept
-    // changing it underneath fly mode).
-    const float speed = fps_move_speed_
-                      * (fps_keys_held_.count(Qt::Key_Shift) ? 5.0f : 1.0f);
-    const Eigen::Vector3f delta = move * (speed * dt);
-
-    camera_target_[0] += delta.x();
-    camera_target_[1] += delta.y();
-    camera_target_[2] += delta.z();
-    requestUpdate();
-
-    if (fly_debug_) {
-        // dt timeline: see if values jitter (under/over-integration symptoms).
-        // Show in ms with 2dp so small jumps are visible.
-        const qint64 since_render_ns = fly_render_clock_.isValid()
-                                     ? fly_render_clock_.nsecsElapsed() : 0;
-        fly_render_clock_.restart();
-        Log::info().noquote().nospace()
-            << "[fly] dt=" << QString::number(dt * 1000.0f, 'f', 2) << "ms"
-            << " render_gap=" << QString::number(double(since_render_ns) / 1e6, 'f', 2) << "ms"
-            << " keys=" << fps_keys_held_.size()
-            << " speed=" << QString::number(speed, 'f', 2) << "m/s"
-            << " delta=" << QString::number(delta.norm(), 'f', 4) << "m";
-    }
+    // Fly-camera math lives in ViewportCore (shared with the web path).
+    core_.flyMove(
+        fps_keys_held_.count(Qt::Key_W) != 0, fps_keys_held_.count(Qt::Key_S) != 0,
+        fps_keys_held_.count(Qt::Key_D) != 0, fps_keys_held_.count(Qt::Key_A) != 0,
+        fps_keys_held_.count(Qt::Key_E) != 0, fps_keys_held_.count(Qt::Key_Q) != 0,
+        fps_keys_held_.count(Qt::Key_Shift) != 0, dt);
 }
 
 // chunkScreenAreaPx moved to ViewportCore (#84-h).
@@ -1980,32 +1917,9 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
         const int dx = pos.x() - fps_press_center_.x();
         const int dy = pos.y() - fps_press_center_.y();
 
-        // Save eye BEFORE rotating so we can pin it after.
-        const Eigen::Vector3f pinned_eye = orbitEye(camera_target_, camera_distance_,
-                                              camera_yaw_deg_, camera_pitch_deg_);
-
-        // Convention: mouse-up looks up, mouse-down looks down (non-inverted).
-        // orbitEye stores pitch with sin(pitch) controlling eye.z relative to
-        // target → larger pitch = eye higher = looking down. To make mouse-up
-        // (dy<0) look up (i.e. raise pitch in our stored convention so the
-        // camera tilts down toward the target… wait, with eye pinned in FPS
-        // mode the relationship inverts: increasing pitch pulls *target* up,
-        // which means forward tilts down). Net: dy>0 (down) increases pitch
-        // → forward tilts down → looking down. `+=` is correct here even
-        // though orbit-mode also uses `+=` for the opposite visual reason.
-        camera_yaw_deg_   -= float(dx) * 0.2f;
-        camera_pitch_deg_ += float(dy) * 0.2f;
-        camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
-
-        // Re-derive target so orbitEye(target, dist, new_yaw, new_pitch) ==
-        // pinned_eye. eye = target + dist*(cp*cy, cp*sy, sp) → invert.
-        const float yaw = qDegreesToRadians(camera_yaw_deg_);
-        const float pit = qDegreesToRadians(camera_pitch_deg_);
-        const float cp = std::cos(pit), sp = std::sin(pit);
-        const float cy = std::cos(yaw), sy = std::sin(yaw);
-        camera_target_[0] = pinned_eye.x() - camera_distance_ * cp * cy;
-        camera_target_[1] = pinned_eye.y() - camera_distance_ * cp * sy;
-        camera_target_[2] = pinned_eye.z() - camera_distance_ * sp;
+        // Mouse-look math (turn-in-place) lives in ViewportCore, shared with
+        // the web pointer-lock path.
+        core_.flyLook(float(dx), float(dy));
 
         fps_ignore_next_mouse_move_ = true;
         QCursor::setPos(mapToGlobal(QPoint(fps_press_center_.x(), fps_press_center_.y())));
@@ -2231,10 +2145,9 @@ void ViewportWindow::wheelEvent(QWheelEvent* event) {
     // Zooming would re-aim the orbit pivot and yank speed (if it were
     // distance-scaled) — neither belongs in a free-fly camera.
     if (fps_mode_) {
-        const float factor = std::pow(1.25f, notches);
-        fps_move_speed_ = std::clamp(fps_move_speed_ * factor, 0.05f, 1000.0f);
+        core_.flyAdjustSpeed(notches);  // shared: x1.25/notch, clamped
         Log::info().noquote().nospace()
-            << "[wgpu] fly speed: " << QString::number(fps_move_speed_, 'f', 2) << " m/s";
+            << "[wgpu] fly speed: " << QString::number(core_.flySpeed(), 'f', 2) << " m/s";
         return;
     }
     // Orbit mode: zoom in/out around the pivot (math in ViewportCore).

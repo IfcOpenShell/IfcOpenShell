@@ -68,6 +68,18 @@ struct AppState {
     float nav_drag_px = 0.0f;
     long  down_x = 0;
     long  down_y = 0;
+
+    // ---- Fly (first-person) mode ----
+    // Shift+F enters (pointer-locks the canvas), Esc exits. While flying, held
+    // W/A/S/D/Q/E + Shift are integrated each frame via ViewportCore::flyMove,
+    // and pointer-lock mouse deltas drive flyLook. dt from fly_last_ms.
+    bool   fly_mode = false;
+    // True once the browser actually granted pointer lock for this fly session.
+    // Distinguishes "lock lost" (Esc/click-out → exit fly) from "lock denied on
+    // entry" (headless / permission) where fly stays keyboard-drivable.
+    bool   fly_locked = false;
+    bool   k_w = false, k_a = false, k_s = false, k_d = false, k_q = false, k_e = false, k_shift = false;
+    double fly_last_ms = 0.0;
 };
 
 // Click vs drag threshold (CSS px). Below this total travel a left release is
@@ -77,6 +89,9 @@ constexpr float kClickDragThresholdPx = 4.0f;
 // One global so the JS-side RAF loop can recover state through a
 // pointer round-trip (set into Module._app_ptr from on_complete).
 AppState* g_app = nullptr;
+
+// Defined below (with the fly helpers); onMouseDown needs it to exit fly on click.
+void setFlyMode(AppState* app, bool on);
 
 // Logical (CSS-pixel) height of the canvas. Mouse movementX/Y deltas are
 // in CSS pixels, so pan's world-units-per-pixel must use CSS-pixel height
@@ -89,6 +104,8 @@ int canvasCssHeight() {
 
 EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
+    // In fly mode a click exits (matches the desktop app).
+    if (app->fly_mode) { setFlyMode(app, false); return EM_TRUE; }
     if (e->button == 0 || e->button == 1 || e->button == 2) {
         app->nav_active  = true;
         app->nav_button  = e->button;
@@ -101,7 +118,13 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
 
 EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
-    if (!app->ready || !app->nav_active) return EM_FALSE;
+    if (!app->ready) return EM_FALSE;
+    // Fly mode: pointer-locked mouse deltas turn the camera in place.
+    if (app->fly_mode) {
+        app->core.flyLook(float(e->movementX), float(e->movementY));
+        return EM_TRUE;
+    }
+    if (!app->nav_active) return EM_FALSE;
 
     const float dx = float(e->movementX);
     const float dy = float(e->movementY);
@@ -151,19 +174,59 @@ EM_BOOL onWheel(int, const EmscriptenWheelEvent* e, void* user) {
     double dy = e->deltaY;
     if (e->deltaMode == DOM_DELTA_LINE)      dy *= 16.0;
     else if (e->deltaMode == DOM_DELTA_PAGE) dy *= 800.0;
+    // In fly mode the wheel tunes move speed (Blender convention), not zoom.
+    if (app->fly_mode) { app->core.flyAdjustSpeed(-float(dy) / 100.0f); return EM_TRUE; }
     app->core.dollyBy(-float(dy) / 100.0f);
     return EM_TRUE;  // consume so the page doesn't scroll
 }
 
-// Viewport nav hotkeys, matching the desktop bindings (ViewportWindow):
-//   Home     view all        F   zoom to selected     P   ortho/persp toggle
-//   X/Y/Z    front/right/top   Shift+X/Y/Z   back/left/bottom
-// `.code` is layout-independent (physical key), so this works on any keymap.
+// Track a held fly movement key (W/A/S/D/Q/E/Shift). Returns true if `code` was
+// one. Physical `.code` so it's keymap-independent.
+bool setFlyKey(AppState* app, const char* code, bool down) {
+    if      (!std::strcmp(code, "KeyW")) app->k_w = down;
+    else if (!std::strcmp(code, "KeyA")) app->k_a = down;
+    else if (!std::strcmp(code, "KeyS")) app->k_s = down;
+    else if (!std::strcmp(code, "KeyD")) app->k_d = down;
+    else if (!std::strcmp(code, "KeyQ")) app->k_q = down;
+    else if (!std::strcmp(code, "KeyE")) app->k_e = down;
+    else if (!std::strcmp(code, "ShiftLeft") || !std::strcmp(code, "ShiftRight"))
+        app->k_shift = down;
+    else return false;
+    return true;
+}
+
+// Enter/leave fly mode: pointer-lock the canvas for mouse-look on enter, release
+// on exit. Shared camera math is ViewportCore::flyMove/flyLook.
+void setFlyMode(AppState* app, bool on) {
+    if (app->fly_mode == on) return;
+    app->fly_mode = on;
+    if (on) {
+        app->fly_last_ms = emscripten_get_now();
+        emscripten_request_pointerlock(kCanvasSelector, EM_TRUE);
+        Log::info() << "[fly] on — WASD/QE move, mouse looks, Shift boosts, wheel = speed, Esc exits";
+    } else {
+        app->k_w = app->k_a = app->k_s = app->k_d = app->k_q = app->k_e = app->k_shift = false;
+        app->fly_locked = false;
+        emscripten_exit_pointerlock();
+        Log::info() << "[fly] off";
+    }
+    app->host.requestFrame();
+}
+
+// Viewport hotkeys, matching the desktop bindings (ViewportWindow):
+//   Home view all · F zoom to selected · P ortho/persp · X/Y/Z (+Shift) views
+//   Shift+F enter fly · Esc exit fly · while flying: W/A/S/D/Q/E held + Shift.
 EM_BOOL onKeyDown(int, const EmscriptenKeyboardEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
-    if (!app->ready || e->repeat) return EM_FALSE;
+    if (!app->ready) return EM_FALSE;
     const char* code = e->code;
     const bool  shift = e->shiftKey;
+    // Shift+F toggles fly; Esc leaves it.
+    if (!std::strcmp(code, "KeyF") && shift && !e->repeat) { setFlyMode(app, !app->fly_mode); return EM_TRUE; }
+    if (!std::strcmp(code, "Escape") && app->fly_mode)     { setFlyMode(app, false);          return EM_TRUE; }
+    // While flying, WASDQE/Shift are held-movement keys, not hotkeys.
+    if (app->fly_mode) { if (setFlyKey(app, code, true)) return EM_TRUE; return EM_FALSE; }
+    if (e->repeat) return EM_FALSE;
     using SV = ViewportCore::StandardView;
     if      (!std::strcmp(code, "Home"))            app->core.viewAll();
     else if (!std::strcmp(code, "KeyF") && !shift)  app->core.frameSelection();
@@ -173,6 +236,26 @@ EM_BOOL onKeyDown(int, const EmscriptenKeyboardEvent* e, void* user) {
     else if (!std::strcmp(code, "KeyZ")) app->core.setStandardView(shift ? SV::Bottom : SV::Top);
     else return EM_FALSE;  // let every other key through to the browser
     app->host.requestFrame();
+    return EM_TRUE;
+}
+
+EM_BOOL onKeyUp(int, const EmscriptenKeyboardEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    return setFlyKey(app, e->code, false) ? EM_TRUE : EM_FALSE;
+}
+
+// Pointer-lock is the fly-look mechanism. When it's LOST (the browser eats the
+// first Esc to release it, or the user clicks out) leave fly mode — this is what
+// makes a single Esc exit cleanly. `fly_locked` guards against a denied lock on
+// entry (headless / permission) firing this and insta-exiting: we only treat a
+// loss as an exit if we'd actually acquired the lock.
+EM_BOOL onPointerLockChange(int, const EmscriptenPointerlockChangeEvent* e, void* user) {
+    auto* app = static_cast<AppState*>(user);
+    if (e->isActive) {
+        app->fly_locked = true;
+    } else if (app->fly_locked && app->fly_mode) {
+        setFlyMode(app, false);
+    }
     return EM_TRUE;
 }
 
@@ -186,6 +269,9 @@ void installInputHandlers(AppState* app) {
     emscripten_set_mouseup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onMouseUp);
     emscripten_set_wheel_callback(kCanvasSelector, app, EM_FALSE, onWheel);
     emscripten_set_keydown_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onKeyDown);
+    emscripten_set_keyup_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, app, EM_FALSE, onKeyUp);
+    emscripten_set_pointerlockchange_callback(EMSCRIPTEN_EVENT_TARGET_DOCUMENT, app, EM_FALSE,
+                                              onPointerLockChange);
     EM_ASM({
         var c = document.querySelector(UTF8ToString($0));
         if (c) c.addEventListener('contextmenu', function(ev) { ev.preventDefault(); });
@@ -207,6 +293,17 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
         app->core.configureSurface(w, h);
         app->last_w = w;
         app->last_h = h;
+    }
+
+    // Fly mode: integrate held-key movement each frame (dt from wall clock).
+    // flyMove schedules a frame when it actually moves, so a still fly camera
+    // costs nothing.
+    if (app->fly_mode) {
+        const double now = emscripten_get_now();
+        const float dt = float((now - app->fly_last_ms) / 1000.0);
+        app->fly_last_ms = now;
+        app->core.flyMove(app->k_w, app->k_s, app->k_d, app->k_a,
+                          app->k_e, app->k_q, app->k_shift, dt);
     }
 
     if (app->host.consumeFrameRequest()) {
@@ -250,6 +347,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void toggle_projection_c() {
 extern "C" EMSCRIPTEN_KEEPALIVE int projection_is_ortho_c() {
     return (g_app && g_app->ready && g_app->core.projectionOrtho()) ? 1 : 0;
 }
+// Toggle fly (first-person) mode from the toolbar. The button click is a user
+// gesture, so the pointer-lock request inside succeeds.
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_fly_c() {
+    if (g_app && g_app->ready) setFlyMode(g_app, !g_app->fly_mode);
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int fly_is_active_c() {
+    return (g_app && g_app->ready && g_app->fly_mode) ? 1 : 0;
+}
+
 // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom.
 extern "C" EMSCRIPTEN_KEEPALIVE void standard_view_c(int id) {
     if (!g_app || !g_app->ready || id < 0 || id > 5) return;

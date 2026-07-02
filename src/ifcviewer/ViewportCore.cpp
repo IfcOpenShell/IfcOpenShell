@@ -526,6 +526,66 @@ void ViewportCore::dollyBy(float notches) {
     host_->requestFrame();
 }
 
+void ViewportCore::flyMove(bool fwd, bool back, bool right, bool left,
+                           bool up, bool down, bool boost, float dt_seconds) {
+    if (dt_seconds <= 0.0f) return;
+    if (dt_seconds > 0.1f) dt_seconds = 0.1f;  // stall clamp
+    // Forward = orbit eye -> target, kept as the view direction in fly mode too
+    // so entering fly right after orbiting doesn't snap to a new heading.
+    const Eigen::Vector3f target(camera_target_[0], camera_target_[1], camera_target_[2]);
+    const Eigen::Vector3f eye = orbitEye(camera_target_, camera_distance_,
+                                         camera_yaw_deg_, camera_pitch_deg_);
+    Eigen::Vector3f forward = target - eye;
+    if (forward.norm() < 1e-6f) return;
+    forward.normalize();
+    // Looking straight up/down degenerates cross(forward, worldZ); fall back to
+    // worldY so `right` doesn't go NaN.
+    const Eigen::Vector3f world_up(0.0f, 0.0f, 1.0f);
+    const Eigen::Vector3f right_basis =
+        (std::abs(camera_pitch_deg_) >= 89.0f) ? Eigen::Vector3f(0.0f, 1.0f, 0.0f) : world_up;
+    Eigen::Vector3f right_vec = forward.cross(right_basis);
+    right_vec.normalize();
+    Eigen::Vector3f move(0.0f, 0.0f, 0.0f);
+    if (fwd)   move += forward;
+    if (back)  move -= forward;
+    if (right) move += right_vec;
+    if (left)  move -= right_vec;
+    if (up)    move += world_up;
+    if (down)  move -= world_up;
+    if (move.isZero()) return;
+    move.normalize();
+    const float speed = fly_move_speed_ * (boost ? 5.0f : 1.0f);  // absolute m/s
+    const Eigen::Vector3f delta = move * (speed * dt_seconds);
+    camera_target_[0] += delta.x();
+    camera_target_[1] += delta.y();
+    camera_target_[2] += delta.z();
+    host_->requestFrame();
+}
+
+void ViewportCore::flyLook(float dx_px, float dy_px) {
+    // Turn in place: pin the eye, rotate yaw/pitch, then re-derive the orbit
+    // target so orbitEye(target, dist, new_yaw, new_pitch) == the pinned eye.
+    const Eigen::Vector3f pinned_eye = orbitEye(camera_target_, camera_distance_,
+                                                camera_yaw_deg_, camera_pitch_deg_);
+    camera_yaw_deg_   -= dx_px * 0.2f;
+    camera_pitch_deg_ += dy_px * 0.2f;
+    camera_pitch_deg_ = std::clamp(camera_pitch_deg_, -89.9f, 89.9f);
+    constexpr float kDeg2Rad = 0.01745329251994329577f;
+    const float yaw = camera_yaw_deg_ * kDeg2Rad;
+    const float pit = camera_pitch_deg_ * kDeg2Rad;
+    const float cp = std::cos(pit), sp = std::sin(pit);
+    const float cy = std::cos(yaw), sy = std::sin(yaw);
+    camera_target_[0] = pinned_eye.x() - camera_distance_ * cp * cy;
+    camera_target_[1] = pinned_eye.y() - camera_distance_ * cp * sy;
+    camera_target_[2] = pinned_eye.z() - camera_distance_ * sp;
+    host_->requestFrame();
+}
+
+void ViewportCore::flyAdjustSpeed(float notches) {
+    const float factor = std::pow(1.25f, notches);  // up = faster
+    fly_move_speed_ = std::clamp(fly_move_speed_ * factor, 0.05f, 1000.0f);
+}
+
 void ViewportCore::toggleProjection() {
     projection_ortho_ = !projection_ortho_;
     std::fprintf(stderr, "[info] [wgpu] projection: %s\n",
