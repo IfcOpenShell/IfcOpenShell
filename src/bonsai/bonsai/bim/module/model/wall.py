@@ -3158,7 +3158,12 @@ def _apply_fillet_corner_geometry(
 
 
 def _resolve_two_walls(context: bpy.types.Context) -> tuple[bpy.types.Object, bpy.types.Object] | None:
-    """``(active, other)`` from a 2-wall selection, both LAYER2 with straight axes."""
+    """``(active, other)`` from a 2-element selection, both LAYER2 with straight axes.
+
+    IFC-class agnostic: the fillet only needs two straight LAYER2 bodies (the
+    corner it creates inherits the active element's type), so coverings / siding
+    fillet the same way walls do. The ``has_layer2_usage`` check below is the
+    real gate, not entity type."""
     selected = list(tool.Blender.get_selected_objects())
     if len(selected) != 2:
         return None
@@ -3170,7 +3175,7 @@ def _resolve_two_walls(context: bpy.types.Context) -> tuple[bpy.types.Object, bp
         return None
     for obj in (active, other):
         element = tool.Ifc.get_entity(obj)
-        if element is None or not element.is_a("IfcWall"):
+        if element is None:
             return None
         if not tool.Wall.has_layer2_usage(element):
             return None
@@ -4654,7 +4659,7 @@ class GizmoWallFilletReedit(bpy.types.GizmoGroup, _WallGeomCachedBillboardingMix
         if len(selected) != 1:
             return False
         element = tool.Ifc.get_entity(active)
-        if element is None or not element.is_a("IfcWall"):
+        if element is None:
             return False
         # IsFilletCorner pset is the authoritative signal — the re-edit
         # operator separately verifies both neighbour connections exist and
@@ -4721,7 +4726,7 @@ class GizmoWallFilletToggleOpenings(bpy.types.GizmoGroup, _WallGeomCachedBillboa
         if len(list(tool.Blender.get_selected_objects())) != 1:
             return False
         element = tool.Ifc.get_entity(active)
-        if element is None or not element.is_a("IfcWall"):
+        if element is None:
             return False
         return tool.Parametric.is_fillet_corner_wall(element)
 
