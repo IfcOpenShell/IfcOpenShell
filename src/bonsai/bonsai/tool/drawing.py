@@ -78,6 +78,7 @@ if TYPE_CHECKING:
 
 class Drawing(bonsai.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
+    PERSPECTIVE_CAMERA_SHIFT_PROPERTIES = ("PerspectiveShiftX", "PerspectiveShiftY")
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
     LocationHintLiteral = Literal["PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST"]
     LOCATION_HINT_LITERALS = ("PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST")
@@ -452,6 +453,43 @@ class Drawing(bonsai.core.tool.Drawing):
             props.diagram_scale = "1:100|1/100"
         camera.matrix_world = matrix
         return camera
+
+    @classmethod
+    def get_perspective_camera_shifts(cls, drawing: ifcopenshell.entity_instance) -> dict[str, float]:
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") or {}
+        shift_x_prop, shift_y_prop = cls.PERSPECTIVE_CAMERA_SHIFT_PROPERTIES
+        return {
+            "shift_x": float(pset.get(shift_x_prop, 0.0) or 0.0),
+            "shift_y": float(pset.get(shift_y_prop, 0.0) or 0.0),
+        }
+
+    @classmethod
+    def sync_perspective_camera_shifts(
+        cls, drawing: ifcopenshell.entity_instance, camera: bpy.types.Camera
+    ) -> None:
+        if camera.type != "PERSP":
+            return
+
+        shift_x_prop, shift_y_prop = cls.PERSPECTIVE_CAMERA_SHIFT_PROPERTIES
+        current_shifts = cls.get_perspective_camera_shifts(drawing)
+        new_shifts = {"shift_x": float(camera.shift_x or 0.0), "shift_y": float(camera.shift_y or 0.0)}
+        if tool.Cad.is_x(current_shifts["shift_x"], new_shifts["shift_x"]) and tool.Cad.is_x(
+            current_shifts["shift_y"], new_shifts["shift_y"]
+        ):
+            return
+
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
+            pset=pset,
+            properties={
+                shift_x_prop: new_shifts["shift_x"],
+                shift_y_prop: new_shifts["shift_y"],
+            },
+        )
 
     @classmethod
     def create_svg_schedule(cls, schedule: ifcopenshell.entity_instance) -> None:
@@ -1009,6 +1047,8 @@ class Drawing(bonsai.core.tool.Drawing):
         camera_props.has_annotation = True
         camera_props.target_view = "PLAN_VIEW"
         camera_props.is_nts = False
+        camera.shift_x = 0.0
+        camera.shift_y = 0.0
 
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
@@ -1044,6 +1084,10 @@ class Drawing(bonsai.core.tool.Drawing):
                 camera_props.fill_mode = str(pset["FillMode"])
             if "CutMode" in pset:
                 camera_props.cut_mode = str(pset["CutMode"])
+            if camera.type == "PERSP":
+                shifts = cls.get_perspective_camera_shifts(drawing)
+                camera.shift_x = shifts["shift_x"]
+                camera.shift_y = shifts["shift_y"]
 
         camera_props.update_props = update_props
 
