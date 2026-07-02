@@ -1360,6 +1360,36 @@ class DumbWallGenerator:
             points.append(points[0].copy())
         return points
 
+    def _derive_points_from_circle(
+        self, slab_obj: bpy.types.Object, elevation: float, circle: ifcopenshell.entity_instance
+    ) -> list[Vector]:
+        """Return world-space perimeter points for an IfcCircle perimeter."""
+        points: list[Vector] = []
+        arc_resolution = self.SLAB_ARC_RESOLUTION
+        precision = self.SLAB_POINT_MERGE_TOLERANCE
+        radius = circle.Radius * self.unit_scale
+
+        circle_position = Matrix.Identity(4)
+        if getattr(circle, "Position", None):
+            circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(circle.Position).tolist())
+            circle_position.translation *= self.unit_scale
+
+        def append_point(point: Vector) -> None:
+            if points and (points[-1] - point).length < precision:
+                return
+            points.append(point)
+
+        for i in range(arc_resolution):
+            theta = (2 * math.pi * i) / arc_resolution
+            local_point = Vector((radius * math.cos(theta), radius * math.sin(theta), 0.0))
+            world_point = slab_obj.matrix_world @ circle_position @ local_point
+            world_point.z = elevation
+            append_point(world_point)
+
+        if points:
+            points.append(points[0].copy())
+        return points
+
     def derive_from_slab(self):
         slab_obj = bpy.context.active_object
         slab = tool.Ifc.get_entity(slab_obj)
@@ -1371,6 +1401,8 @@ class DumbWallGenerator:
         outer_curve = extrusion.SweptArea.OuterCurve
         if self._curve_has_arc_segments(outer_curve):
             polyline_points = self._derive_points_from_arc_segments(slab_obj, elevation, outer_curve)
+        elif outer_curve.is_a("IfcCircle"):
+            polyline_points = self._derive_points_from_circle(slab_obj, elevation, outer_curve)
         else:
             builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
             polyline_points = builder.get_polyline_coords(outer_curve)
