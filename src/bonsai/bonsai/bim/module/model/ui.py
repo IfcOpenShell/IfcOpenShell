@@ -22,9 +22,9 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import bpy
+import ifcopenshell.util.unit
 from bpy.types import Panel
 
-import ifcopenshell.util.unit
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
