@@ -1316,8 +1316,10 @@ class DumbWallGenerator:
                 return True
         return False
 
-    def _world_xy_point(self, slab_obj: bpy.types.Object, elevation: float, coord: Any) -> Vector:
-        return slab_obj.matrix_world @ Vector((coord[0] * self.unit_scale, coord[1] * self.unit_scale, elevation))
+    def _world_xy_point(self, slab_obj: bpy.types.Object, elevation: float, ifc_coord: Any) -> Vector:
+        return slab_obj.matrix_world @ Vector(
+            (ifc_coord[0] * self.unit_scale, ifc_coord[1] * self.unit_scale, elevation)
+        )
 
     def _derive_points_from_arc_segments(
         self, slab_obj: bpy.types.Object, elevation: float, curve: ifcopenshell.entity_instance
@@ -1341,14 +1343,14 @@ class DumbWallGenerator:
                 p3 = self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[2]])
                 # create_arc_segments returns (sampled_points, sampled_edges);
                 # only sampled_points are needed for wall generation.
-                arc_points, _ = tool.Cad.create_arc_segments([p1, p2, p3], num_verts=arc_resolution + 1)
-                arc_points = [Vector(arc_point) for arc_point in arc_points]
+                sampled_arc_points, _ = tool.Cad.create_arc_segments([p1, p2, p3], num_verts=arc_resolution + 1)
+                sampled_arc_points = [Vector(arc_point) for arc_point in sampled_arc_points]
                 # Cad.create_arc_segments may return samples from end->start for a
                 # [start, through, end] input, so normalize to start->end to keep
                 # perimeter traversal contiguous with neighboring line segments.
-                if arc_points and (arc_points[0] - p1).length > (arc_points[-1] - p1).length:
-                    arc_points.reverse()
-                for arc_point in arc_points:
+                if sampled_arc_points and (sampled_arc_points[0] - p1).length > (sampled_arc_points[-1] - p1).length:
+                    sampled_arc_points.reverse()
+                for arc_point in sampled_arc_points:
                     append_point(arc_point)
             elif len(segment_indices) >= 2:
                 for segment_index in segment_indices:
