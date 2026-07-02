@@ -2661,7 +2661,7 @@ class QueryLinkedElement(bpy.types.Operator):
 
         guid = tool.Project.Link.get_guid_by_face_index(obj, face_index)
         assert guid is not None
-        tool.Project.Link.select_linked_element(context, obj, guid)
+        tool.Project.Link.select_linked_element(context, obj, guid, instance_matrix)
 
         self.report({"INFO"}, f"Loaded data for {guid}")
         ProjectDecorator.install(bpy.context)
@@ -2785,6 +2785,19 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and tool.Ifc.get_object(element_type) is None:
             self.import_type_from_ifc(element_type, context)
+
+        # If the link was moved, place the appended element where the link
+        # is displayed rather than at its original coordinates.
+        obj = tool.Ifc.get_object(element)
+        if isinstance(obj, bpy.types.Object):
+            linked_filepath = Path(queried_obj["ifc_filepath"])
+            for link in props.links:
+                if Path(tool.Ifc.resolve_uri(link.filepath)) != linked_filepath:
+                    continue
+                delta = tool.Project.calculate_link_delta_matrix(link)
+                if not delta.is_identity:
+                    obj.matrix_world = delta @ obj.matrix_world
+                break
 
         return {"FINISHED"}
 

@@ -118,6 +118,32 @@ class Project(bonsai.core.tool.Project):
         return Matrix(np.linalg.inv(local_matrix) @ global_matrix)
 
     @classmethod
+    def calculate_link_delta_matrix(cls, link: Link) -> Matrix:
+        """Get the matrix mapping the link's unmoved world positions to its moved ones.
+
+        Returns identity when the link has no saved transformation.
+        """
+        if tool.Ifc.get():
+            transformation = tool.Ifc.get().by_id(link.ifc_definition_id)[1]  # Identification
+        else:
+            transformation = link.transformation
+
+        if not transformation:
+            return Matrix.Identity(4)
+        transformation = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+        if np.allclose(transformation, np.eye(4)):
+            return Matrix.Identity(4)
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+
+        # Link empty matrix is inv(local) @ transformation @ global (see
+        # calculate_link_matrix), so moved = inv(local) @ T @ local @ unmoved.
+        return Matrix(np.linalg.inv(local_matrix) @ transformation @ local_matrix)
+
+    @classmethod
     def save_link_transformation(cls, link: Link) -> None:
         """Persist the link handle's current world matrix as the link's saved transformation."""
         obj = cls.get_link_empty_handle(link)
@@ -898,8 +924,15 @@ class Project(bonsai.core.tool.Project):
 
             selected_vertices = [obj.matrix_world @ mesh.vertices[vi].co for vi in vert_map]
             for polygon in guid_polygons:
-                selected_tris.append(tuple(vert_map[vi] for vi in polygon.vertices))
                 selected_edges.extend(tuple([vert_map[vi] for vi in e]) for e in polygon.edge_keys)
+
+            # Polygons are not necessarily triangles (e.g. layerset-sliced
+            # meshes contain ngons), so triangles come from the loop triangles.
+            mesh.calc_loop_triangles()
+            polygon_range = range(*slice_.indices(len(mesh.polygons)))
+            for tri in mesh.loop_triangles:
+                if tri.polygon_index in polygon_range:
+                    selected_tris.append(tuple(vert_map[vi] for vi in tri.vertices))
 
             obj["selected_vertices"] = selected_vertices
             obj["selected_edges"] = selected_edges
@@ -937,11 +970,9 @@ class Project(bonsai.core.tool.Project):
             from bonsai.bim.module.project.data import LinksData
             from bonsai.bim.module.project.decorator import ProjectDecorator
 
-            # Not sure if there's a difference between `instance_matrix` coming from `ray_cast`
-            # and usual `matrix_world`, maybe we can just get it from object always.
-            if instance_matrix is None:
-                instance_matrix = obj.matrix_world
-
+            # `instance_matrix` is the world matrix of the hit collection instance
+            # from `ray_cast` (link empty matrix included). Without it, the root
+            # empty is resolved as the collection's only instance.
             cls.deselect_queried_linked_element()
             cls.set_queried_linked_element(obj, guid, instance_matrix)
             cls.select_linked_element_geom(obj, guid)
@@ -998,7 +1029,7 @@ class Project(bonsai.core.tool.Project):
             ProjectDecorator.install(context)
 
         @classmethod
-        def set_queried_linked_element(cls, obj: bpy.types.Object, guid: str, instance_matrix: Matrix) -> None:
+        def set_queried_linked_element(cls, obj: bpy.types.Object, guid: str, instance_matrix: Matrix | None) -> None:
             props = tool.Project.get_project_props()
             props.queried_obj = obj
             props.queried_obj_root = cls.find_obj_root(obj, instance_matrix)
@@ -1017,17 +1048,22 @@ class Project(bonsai.core.tool.Project):
                     del obj[field]
 
         @classmethod
-        def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix) -> bpy.types.Object | None:
+        def find_obj_root(cls, obj: bpy.types.Object, matrix: Matrix | None) -> bpy.types.Object | None:
             collections = set(obj.users_collection)
-            for o in bpy.data.objects:
-                if (
-                    o.type != "EMPTY"
-                    or o.instance_type != "COLLECTION"
-                    or o.instance_collection not in collections
-                    or not np.allclose(matrix, o.matrix_world, atol=1e-4)
-                ):
-                    continue
-                return o
+            candidates = [
+                o
+                for o in bpy.data.objects
+                if o.type == "EMPTY" and o.instance_type == "COLLECTION" and o.instance_collection in collections
+            ]
+            if matrix is not None:
+                # `matrix` is the instance's world matrix - the instancing
+                # empty's matrix combined with the object's own local matrix
+                # (non-identity for instanced occurrence objects).
+                for o in candidates:
+                    if np.allclose(matrix, np.array(o.matrix_world) @ np.array(obj.matrix_world), atol=1e-4):
+                        return o
+            if len(candidates) == 1:
+                return candidates[0]
 
         class SelectedGeometry(NamedTuple):
             selected_vertices: list[tuple[float, float, float]]
@@ -1036,8 +1072,11 @@ class Project(bonsai.core.tool.Project):
 
         @classmethod
         def get_selected_geometry(cls, obj: bpy.types.Object) -> SelectedGeometry:
+            # ID properties are returned as IDPropertyArrays (the whole
+            # property when empty, the items otherwise), which the GPU module
+            # rejects as batch indices - convert to plain tuples.
             return cls.SelectedGeometry(
-                obj["selected_vertices"],
-                obj["selected_edges"],
-                obj["selected_tris"],
+                [tuple(v) for v in obj["selected_vertices"]],
+                [tuple(e) for e in obj["selected_edges"]],
+                [tuple(t) for t in obj["selected_tris"]],
             )
