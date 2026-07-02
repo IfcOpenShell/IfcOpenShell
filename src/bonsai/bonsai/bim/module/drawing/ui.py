@@ -101,8 +101,8 @@ class BIM_PT_camera(Panel):
             row.prop(props, "camera_type")
             if props.camera_type == "PERSP":
                 row = self.layout.row(align=True)
-                row.prop(camera_data, "shift_x")
-                row.prop(camera_data, "shift_y")
+                row.prop(camera_data, "shift_x", text="Camera Shift X/Y:")
+                row.prop(camera_data, "shift_y", text="")
 
         row = self.layout.row()
         row.prop(props, "linework_mode")
