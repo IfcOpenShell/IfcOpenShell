@@ -3148,6 +3148,26 @@ class Model(bonsai.core.tool.Model):
                 obj = tool.Ifc.get_object(rel.RelatingElement)
                 tool.Geometry.commit_placement_if_moved(obj)
                 queue.add((rel.RelatingElement, obj))
+
+        # Sync filling and opening placements so subsequent wall recuts
+        # operate on the up-to-date opening positions — a filling moved
+        # along the wall's reference line otherwise stays cut at its old
+        # spot.
+        for element, wall in queue:
+            if not wall:
+                continue
+            for rel in getattr(element, "HasOpenings", []) or []:
+                opening = rel.RelatedOpeningElement
+                for fill_rel in getattr(opening, "HasFillings", []) or []:
+                    filling = fill_rel.RelatedBuildingElement
+                    filling_obj = tool.Ifc.get_object(filling)
+                    if filling_obj is None or not tool.Ifc.is_moved(filling_obj):
+                        continue
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
+                    ifcopenshell.api.geometry.edit_object_placement(
+                        tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+                    )
+
         for element, wall in queue:
             if not wall:
                 continue
