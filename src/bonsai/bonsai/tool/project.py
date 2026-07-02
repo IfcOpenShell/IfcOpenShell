@@ -334,6 +334,14 @@ class Project(bonsai.core.tool.Project):
                 if reference[1]:
                     m = np.fromstring(reference[1], sep=",", dtype=np.float64).reshape(4, 4)
                     link.has_transformation = not np.allclose(m, np.eye(4))
+                # The selector query used at link time is persisted only in the
+                # sidecar cache JSON; restore it so Reload/Load replay the filter.
+                json_filepath = Path(tool.Ifc.resolve_uri(filepath)).with_suffix(".ifc.cache.json")
+                if json_filepath.exists():
+                    try:
+                        link.query = json.loads(json_filepath.read_text()).get("query", "")
+                    except (OSError, json.JSONDecodeError):
+                        pass
 
     @classmethod
     def get_project_library_elements(
