@@ -82,12 +82,10 @@ You can access the official documentation here:
 
 .. tip::
 
-   It is recommended to use IFC4. However, the IFC4X3 documentation is a lot
-   more friendly to newcomers.
+   For most buildings, IFC4 is recommended. For infrastructure projects (road,
+   railway, bridge, and other civil elements), use IFC4X3. The IFC4X3 documentation
+   is also generally more newcomer-friendly.
 
-   For infrastructure projects IFC4X3 is recommended to use as this has implemented
-   **IFC Classes** for road, railway, bridge and common infrastructure elements.
-   
 The official ISO documentation is written for a technical audience and may be
 overwhelming. This guide will take you slowly through the core concepts, and
 leave you with the knowledge you need to discover more.
