@@ -2127,6 +2127,12 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
     meshes: dict[str, bpy.types.Mesh]
     # Material names is derived from diffuse as in 'r-g-b-a'.
     blender_mats: dict[str, bpy.types.Material]
+    # Materials appended from external .blend styles, keyed by style id.
+    # None means the style has no loadable external .blend style.
+    external_style_mats: dict[int, Union[bpy.types.Material, None]]
+    # Appended data-blocks keyed by (filepath, data_block_type, name)
+    # so styles sharing the same external material don't append duplicates.
+    appended_external_blocks: dict[tuple[str, str, str], Union[bpy.types.Material, None]]
 
     def invoke(self, context, event):
         # Invoke is for debugging purposes, users are not intended to use this method really.
@@ -2212,6 +2218,9 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         with open(self.json_filepath, "w") as f:
             json.dump(data, f)
 
+        self.external_style_mats = {}
+        self.appended_external_blocks = {}
+
         for settings in tool.Loader.settings.context_settings:
             if not self.elements:
                 break
@@ -2251,8 +2260,10 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                     mat = tuple(mat)
                     blender_mat = blender_mats.get(mat, None)
                     if not blender_mat:
-                        blender_mat = bpy.data.materials.new("Chunk")
-                        blender_mat.diffuse_color = mat
+                        blender_mat = self.get_external_material(int(mat[4]))
+                        if not blender_mat:
+                            blender_mat = bpy.data.materials.new("Chunk")
+                            blender_mat.diffuse_color = mat[:4]
                         blender_mats[mat] = blender_mat
                     mat_results.append(blender_mat)
 
@@ -2270,11 +2281,16 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                 while True:  # Main loop.
                     shape = iterator.get()
                     assert isinstance(shape, W.TriangulationElement)
-                    results.add(self.file.by_id(shape.id))
+                    element = self.file.by_id(shape.id)
+                    results.add(element)
                     geometry = shape.geometry
 
-                    # Elements with a lot of geometry benefit from instancing to save memory
-                    if ifcopenshell.util.shape.get_faces(geometry).shape[0] > 333:  # 333 tris
+                    # Elements with a lot of geometry benefit from instancing to save memory.
+                    # Multi-layer elements also take this path as they need their own
+                    # local-space mesh to be sliced into per-layer materials.
+                    if ifcopenshell.util.shape.get_faces(geometry).shape[0] > 333 or self.is_multilayer_element(
+                        element
+                    ):  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
                             if not chunked_verts:
@@ -2291,9 +2307,15 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
 
                     ms = np.vstack([default_mat, ifcopenshell.util.shape.get_material_colors(shape.geometry)])
                     mi = ifcopenshell.util.shape.get_faces_material_style_ids(shape.geometry)
+                    # Style ids ride along as a 5th column so styles with
+                    # external .blend materials survive the per-color dedup.
+                    style_ids = np.zeros((len(ms), 1))
                     for geom_material_idx, geom_material in enumerate(shape.geometry.materials):
                         if not geom_material.instance_id():
                             ms[geom_material_idx + 1] = (0.8, 0.8, 0.8, 1)
+                        elif self.get_external_material(geom_material.instance_id()):
+                            style_ids[geom_material_idx + 1] = geom_material.instance_id()
+                    ms = np.hstack((ms, style_ids))
                     chunked_materials.append(ms)
                     chunked_material_ids.append(mi + material_offset + 1)
                     material_offset += len(ms)
@@ -2380,12 +2402,14 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
                     diffuse = (material.diffuse.r(), material.diffuse.g(), material.diffuse.b(), alpha)
                 else:
                     diffuse = (0.8, 0.8, 0.8, 1)  # Blender's default material
-                material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
-                blender_mat = self.blender_mats.get(material_name, None)
+                blender_mat = self.get_external_material(material.instance_id())
                 if not blender_mat:
-                    blender_mat = bpy.data.materials.new(material_name)
-                    blender_mat.diffuse_color = diffuse
-                    self.blender_mats[material_name] = blender_mat
+                    material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+                    blender_mat = self.blender_mats.get(material_name, None)
+                    if not blender_mat:
+                        blender_mat = bpy.data.materials.new(material_name)
+                        blender_mat.diffuse_color = diffuse
+                        self.blender_mats[material_name] = blender_mat
                 slot_index = mesh.materials.find(material.name)
                 if slot_index == -1:
                     mesh.materials.append(blender_mat)
@@ -2398,6 +2422,8 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             mesh.polygons.foreach_set("material_index", material_index)
             mesh.update()
 
+            mesh = tool.Loader.slice_layerset_mesh(element, mesh, style_to_material=self.get_style_material)
+
             self.meshes[geometry.id] = mesh
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
@@ -2409,6 +2435,88 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
         obj["ifc_filepath"] = self.filepath
 
         self.collection.objects.link(obj)
+
+    def get_external_material(self, style_id: int) -> Union[bpy.types.Material, None]:
+        """Get the Blender material referenced by a style's external .blend style, if it has one.
+
+        The material is appended from the external .blend file on first use and
+        cached, so it ends up saved inside the link's .cache.blend.
+        """
+        if not style_id:
+            return None
+        if style_id in self.external_style_mats:
+            return self.external_style_mats[style_id]
+
+        material = None
+        # instance_id may also refer to an IfcMaterial when the item has
+        # a material but no style, hence the class check.
+        style = self.file.by_id(style_id)
+        external = None
+        if style.is_a("IfcSurfaceStyle"):
+            external = next((s for s in style.Styles if s.is_a("IfcExternallyDefinedSurfaceStyle")), None)
+
+        if (
+            external
+            and external.Location
+            and external.Location.endswith(".blend")
+            and external.Identification
+            and "/" in external.Identification
+        ):
+            location = Path(external.Location)
+            if not location.is_absolute():
+                # Relative locations are relative to the linked IFC, not the host.
+                location = Path(self.filepath).parent / location
+            data_block_type, data_block = external.Identification.split("/", 1)
+            key = (str(location), data_block_type, data_block)
+            if key in self.appended_external_blocks:
+                material = self.appended_external_blocks[key]
+            elif not location.exists():
+                print(f"WARNING. External style file not found for {style}: '{location}'")
+                self.appended_external_blocks[key] = None
+            else:
+                db = tool.Blender.append_data_block(str(location), data_block_type, data_block)
+                material = db["data_block"]
+                if not isinstance(material, bpy.types.Material):
+                    print(f"WARNING. Failed to load external style for {style}: {db['msg'] or 'not a material'}")
+                    material = None
+                else:
+                    # The source .blend may have been authored in a Bonsai session -
+                    # unlink any stale IFC id so it's not misinterpreted here or in the host.
+                    tool.Style.get_material_style_props(material).ifc_definition_id = 0
+                self.appended_external_blocks[key] = material
+
+        self.external_style_mats[style_id] = material
+        return material
+
+    def is_multilayer_element(self, element: ifcopenshell.entity_instance) -> bool:
+        material = ifcopenshell.util.element.get_material(element)
+        return bool(
+            material and material.is_a("IfcMaterialLayerSetUsage") and len(material.ForLayerSet.MaterialLayers) > 1
+        )
+
+    def get_style_material(self, style: ifcopenshell.entity_instance) -> Union[bpy.types.Material, None]:
+        """Resolve a style to a Blender material for slice_layerset_mesh.
+
+        Prefers the style's external .blend material, falling back to a flat
+        diffuse material as used for the rest of the linked geometry.
+        """
+        if material := self.get_external_material(style.id()):
+            return material
+        # IfcSurfaceStyleRendering is a subclass of IfcSurfaceStyleShading.
+        shading = next((s for s in style.Styles if s.is_a("IfcSurfaceStyleShading")), None)
+        if shading:
+            colour = shading.SurfaceColour
+            alpha = 1.0 - (getattr(shading, "Transparency", None) or 0.0)
+            diffuse = (colour.Red, colour.Green, colour.Blue, alpha)
+        else:
+            diffuse = (0.8, 0.8, 0.8, 1.0)
+        material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+        material = self.blender_mats.get(material_name, None)
+        if not material:
+            material = bpy.data.materials.new(material_name)
+            material.diffuse_color = diffuse
+            self.blender_mats[material_name] = material
+        return material
 
     def create_object(
         self,

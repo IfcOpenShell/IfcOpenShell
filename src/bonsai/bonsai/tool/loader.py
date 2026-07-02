@@ -23,7 +23,7 @@ import os
 import re
 from math import atan, radians
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, Callable, Optional, Union, cast
 
 import bmesh
 import bpy
@@ -1073,7 +1073,19 @@ class Loader(bonsai.core.tool.Loader):
         return mesh
 
     @classmethod
-    def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
+    def slice_layerset_mesh(
+        cls,
+        element: ifcopenshell.entity_instance,
+        mesh: bpy.types.Mesh,
+        style_to_material: Optional[Callable[[ifcopenshell.entity_instance], Union[bpy.types.Material, None]]] = None,
+    ) -> bpy.types.Mesh:
+        """Bisect a layerset element's mesh at layer boundaries and assign each layer its material style.
+
+        :param style_to_material: Callback resolving an IfcSurfaceStyle to a Blender material.
+            Defaults to the IFC-linked material, which only works for the actively edited project.
+        """
+        if style_to_material is None:
+            style_to_material = tool.Ifc.get_object
         if not (material := ifcopenshell.util.element.get_material(element)):
             return mesh
         elif material.is_a("IfcMaterialLayerSetUsage"):
@@ -1121,7 +1133,8 @@ class Loader(bonsai.core.tool.Loader):
                 continue
             if (material_index := styles.get(style, None)) is None:
                 material_index = len(mesh.materials)
-                mesh.materials.append(tool.Ifc.get_object(style))
+                mesh.materials.append(style_to_material(style))
+                styles[style] = material_index
             if i == last_i:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
