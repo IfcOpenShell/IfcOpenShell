@@ -1243,6 +1243,9 @@ class DumbWallAligner:
 
 
 class DumbWallGenerator:
+    SLAB_ARC_RESOLUTION = 24
+    SLAB_POINT_MERGE_TOLERANCE = 1e-6
+
     def __init__(self, relating_type):
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1302,7 +1305,11 @@ class DumbWallGenerator:
             return False
         segments = getattr(curve, "Segments", None) or ()
         for segment in segments:
-            if (hasattr(segment, "is_a") and segment.is_a("IfcArcIndex")) or len(segment[0]) == 3:
+            if hasattr(segment, "is_a"):
+                if segment.is_a("IfcArcIndex"):
+                    return True
+                continue
+            if len(segment[0]) == 3:
                 return True
         return False
 
@@ -1314,8 +1321,8 @@ class DumbWallGenerator:
     ) -> list[Vector]:
         points: list[Vector] = []
         coord_list = curve.Points.CoordList
-        arc_resolution = 24
-        precision = 1e-6
+        arc_resolution = self.SLAB_ARC_RESOLUTION
+        precision = self.SLAB_POINT_MERGE_TOLERANCE
 
         def append_point(point: Vector) -> None:
             if points and (points[-1] - point).length < precision:
@@ -1330,6 +1337,9 @@ class DumbWallGenerator:
                 p3 = self._world_xy_point(slab_obj, elevation, coord_list[segment_indices[2]])
                 arc_points, _ = tool.Cad.create_arc_segments([p1, p2, p3], num_verts=arc_resolution + 1)
                 arc_points = [Vector(arc_point) for arc_point in arc_points]
+                # Cad.create_arc_segments may return samples from end->start for a
+                # [start, through, end] input, so normalize to start->end to keep
+                # perimeter traversal contiguous with neighboring line segments.
                 if arc_points and (arc_points[0] - p1).length > (arc_points[-1] - p1).length:
                     arc_points.reverse()
                 for arc_point in arc_points:
