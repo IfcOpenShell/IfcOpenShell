@@ -977,27 +977,29 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         for opening_element in opening_elements:
             opening_obj = tool.Ifc.get_object(opening_element)
 
-            similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening_element)
-            similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
-                tool.Ifc, similar_openings
-            )
-            building_objs.update(similar_openings_building_objs)
-
             if opening_obj:
-                if tool.Ifc.is_edited(opening_obj):
-                    tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                opening_edited = tool.Ifc.is_edited(opening_obj)
+                opening_moved = tool.Ifc.is_moved(opening_obj)
+                # Sibling walls only need a viewport-level refresh when the
+                # opening's shape or placement actually changed — a pure
+                # show/hide toggle leaves them in their existing state.
+                if opening_edited or opening_moved:
+                    similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening_element)
+                    similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
+                        tool.Ifc, similar_openings
+                    )
+                    building_objs.update(similar_openings_building_objs)
+                    if opening_edited:
+                        tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    else:
+                        bonsai.core.geometry.edit_object_placement(
+                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
+                        )
                     bonsai.core.geometry.edit_similar_opening_placement(
                         tool.Geometry, opening_element, similar_openings
                     )
-                elif tool.Ifc.is_moved(opening_obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj)
-                    bonsai.core.geometry.edit_similar_opening_placement(
-                        tool.Geometry, opening_element, similar_openings
-                    )
+                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening_element))
 
-                building_objs.update(
-                    self.get_all_building_objects_of_similar_openings(opening_element)
-                )  # NB this has nothing to do with clone similar_opening
                 tool.Ifc.unlink(element=opening_element)
                 if props.representation_obj == opening_obj:
                     props.representation_obj = None
