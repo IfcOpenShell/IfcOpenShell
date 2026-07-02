@@ -118,6 +118,46 @@ class Project(bonsai.core.tool.Project):
         return Matrix(np.linalg.inv(local_matrix) @ global_matrix)
 
     @classmethod
+    def save_link_transformation(cls, link: Link) -> None:
+        """Persist the link handle's current world matrix as the link's saved transformation."""
+        obj = cls.get_link_empty_handle(link)
+        assert obj
+        new_obj_matrix = np.array(obj.matrix_world)
+
+        filepath = Path(tool.Ifc.resolve_uri(link.filepath))
+        with open(filepath.with_suffix(".ifc.cache.json"), "r") as f:
+            metadata = json.load(f)
+
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(
+            radians(-float(metadata["model_project_north"])), 4, "Z"
+        )
+        global_matrix = rot @ np.eye(4)
+        global_matrix[:, 3][:3] = [float(o) for o in metadata["model_origin_si"].split(",")]
+
+        gprops = tool.Georeference.get_georeference_props()
+        rot = ifcopenshell.util.shape_builder.np_rotation_matrix(radians(-float(gprops.model_project_north)), 4, "Z")
+        local_matrix = rot @ np.eye(4)
+        local_matrix[:, 3][:3] = [float(o) for o in gprops.model_origin_si.split(",")]
+
+        # obj_matrix is typically calculated as:
+        # obj_matrix = np.linalg.inv(local_matrix) @ transformation @ global_matrix
+        identity_blender_matrix = np.linalg.inv(local_matrix) @ global_matrix
+        if np.allclose(new_obj_matrix, identity_blender_matrix, atol=1e-5):
+            link.has_transformation = False
+            transformation = ",".join(map(str, np.eye(4).reshape(-1)))
+        else:
+            transformed_global_matrix = local_matrix @ new_obj_matrix
+            transformation = transformed_global_matrix @ np.linalg.inv(global_matrix)
+            link.has_transformation = True
+            transformation = ",".join(map(str, transformation.reshape(-1)))
+
+        if tool.Ifc.get():
+            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            reference[1] = transformation
+        else:
+            link.transformation = transformation
+
+    @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor
         filepath = tool.Blender.get_data_dir_path(Path("templates") / "projects" / template)
