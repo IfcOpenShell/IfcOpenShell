@@ -1687,9 +1687,13 @@ class ReloadLink(bpy.types.Operator):
 
     def execute(self, context):
         link = tool.Project.get_project_props().links[self.link_index]
-        link.query = self.query
+        # An unset query means the operator was called without the dialog
+        # (e.g. from a script) - preserve the link's stored query instead
+        # of overwriting it with the empty default.
+        if self.properties.is_property_set("query"):
+            link.query = self.query
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False, query=self.query) or {"FINISHED"}
+        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False, query=link.query) or {"FINISHED"}
 
 
 class ToggleLinkSelectability(bpy.types.Operator):
