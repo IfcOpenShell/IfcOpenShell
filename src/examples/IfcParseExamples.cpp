@@ -20,166 +20,21 @@
 // TODO: Multiple schemas
 #define IfcSchema Ifc2x3
 
+#include "../helpers/pset.h"
 #include "../ifcparse/file.h"
 #include "../ifcparse/logger.h"
 #include "../ifcparse/schemas/Ifc2x3.h"
-
-#ifdef _MSC_VER 
-#define strcasecmp _stricmp
-#endif
-
-#include <iomanip>
 
 #if USE_VLD
 #include <vld.h>
 #endif
 
-template<class T, class = void>
-struct is_ifc4_or_higher : std::false_type {};
-
-template<class T>
-struct is_ifc4_or_higher<T, std::void_t<decltype(T::IfcMaterialDefinition)>> : std::true_type { };
-
-typedef std::map<std::string, std::map<std::string, std::string>> element_properties;
-
-std::string format_string(const attribute_value& argument) {
-	// Argument is a runtime tagged variant for the various data types in a IFC model,
-	// in this particular case we only care about flattening it to a string.
-	// @todo mostly duplicated from XmlSerializer.cpp
-	if (argument.isNull()) {
-		return "-";
-	}
-	auto argument_type = argument.type();
-	switch (argument_type) {
-	case ifcopenshell::Argument_BOOL: {
-		const bool b = argument;
-		return b ? "true" : "false";
-	}
-	case ifcopenshell::Argument_DOUBLE: {
-		const double d = argument;
-		std::stringstream stream;
-		stream << std::setprecision(std::numeric_limits< double >::max_digits10) << d;
-		return stream.str();
-		break; }
-	case ifcopenshell::Argument_STRING:
-	case ifcopenshell::Argument_ENUMERATION: {
-		return static_cast<std::string>(argument);
-		break; }
-	case ifcopenshell::Argument_INT: {
-		const int v = argument;
-		std::stringstream stream;
-		stream << v;
-		return stream.str();
-		break; }
-	}
-	return "?";
-}
-
-template <typename Schema, typename T>
-void process_pset(element_properties& props, const T& inst) {
-	// Process an individual Property or Quantity set.
-	if (auto pset = inst.template as<typename Schema::IfcPropertySet>()) {
-		if (!pset.Name()) {
-			return;
-		}
-		auto ps = pset.HasProperties();
-		for (auto& p : ps) {
-			if (auto singleval = p.template as<typename Schema::IfcPropertySingleValue>()) {
-				std::string propname, propvalue;
-				if constexpr (is_ifc4_or_higher<Schema>::value) {
-					if (!singleval.Name()) {
-						continue;
-					}
-					propname = *singleval.Name();
-				}
-				if constexpr (!is_ifc4_or_higher<Schema>::value) {
-					propname = singleval.Name();
-				}
-				if (!singleval.NominalValue()) {
-					propvalue = "-";
-				} else {
-					props[*pset.Name()][propname] = format_string(singleval.NominalValue().concrete().get_attribute_value(0));
-				}
-			}
-		}
-	}
-	if (auto qset = inst.template as<typename Schema::IfcElementQuantity>()) {
-		if (!qset.Name()) {
-			return;
-		}
-		auto qs = qset.Quantities();
-		for (auto& q : qs) {
-			if (q.template as<typename Schema::IfcPhysicalSimpleQuantity>() && q.get_attribute_value(3).type() == ifcopenshell::Argument_DOUBLE) {
-				double v = q.get_attribute_value(3);
-				props[*qset.Name()][q.Name()] = std::to_string(v);
-			}
-		}
-	}
-	if constexpr (is_ifc4_or_higher<Schema>::value) {
-		if (auto extprops = inst->template as<typename Schema::IfcExtendedProperties>()) {
-			// @todo
-		}
-	}
-}
-
-template <typename Schema>
-void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefinition& inst) {
-	// Extracts the property definitions for an IFC instance. 
-	if (auto tyob = inst.template as<typename Schema::IfcTypeObject>()) {
-		if (tyob.HasPropertySets()) {
-			auto defs = *tyob.HasPropertySets();
-			for (auto& def : defs) {
-				process_pset<Schema>(props, def);
-			}
-		}
-	}
-	if constexpr (is_ifc4_or_higher<Schema>::value) {
-		if (auto mdef = inst.template as<typename Schema::IfcMaterialDefinition>()) {
-			auto defs = mdef.HasProperties();
-			for (auto& def : defs) {
-				process_pset<Schema>(props, def);
-			}
-		}
-		if (auto pdef = inst.template as<typename Schema::IfcProfileDef>()) {
-			auto defs = pdef->HasProperties();
-			for (auto& def : defs) {
-				process_pset<Schema>(props, def);
-			}
-		}
-	}
-	if (auto ob = inst.template as<typename Schema::IfcObject>()) {
-		if constexpr (is_ifc4_or_higher<Schema>::value) {
-			auto rels = ob.IsTypedBy();
-			for (auto& rel : rels) {
-				get_psets_s<Schema>(props, rel->RelatingType());
-			}
-		}
-		{
-			auto rels = ob.IsDefinedBy();
-			for (auto& rel : rels) {
-				if (auto bytype = rel.template as<typename Schema::IfcRelDefinesByType>()) {
-					get_psets_s<Schema>(props, bytype.RelatingType());
-				} else if (auto byprops = rel.template as<typename Schema::IfcRelDefinesByProperties>()) {
-					process_pset<Schema>(props, byprops.RelatingPropertyDefinition());
-				}
-			}
-		}
-	}
-}
-
-void get_psets(element_properties& props, const express::Base& inst) {
-	auto schema_name = inst.declaration().schema()->name().c_str();
-	if (strcasecmp(schema_name, "Ifc2x3") == 0) {
-		get_psets_s<Ifc2x3>(props, inst.as<Ifc2x3::IfcObjectDefinition>());
-	}
-}
-
 int main(int argc, char** argv) {
-	if (argc != 2) {
+    if (argc != 2) {
         std::cout << "usage: IfcParseExamples <filename.ifc>" << std::endl;
         return 1;
     }
-    
+
     // Redirect the output (both progress and log) to stdout
     logger::set_output(&std::cout, &std::cout);
 
@@ -206,13 +61,13 @@ int main(int argc, char** argv) {
     // we need to cast them to IfcWindows. Since these properties
     // are optional we need to make sure the properties are
     // defined for the window in question before accessing them.
-	auto elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
+    auto elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
 
     std::cout << "Found " << elements.size() << " elements in " << argv[1] << ":" << std::endl;
 
     for (auto& element : elements) {
-		element.to_string(std::cout);
-		std::cout << std::endl;
+        element.to_string(std::cout);
+        std::cout << std::endl;
 
         if (auto window = element.as<IfcSchema::IfcWindow>()) {
             if (window.OverallWidth() && window.OverallHeight()) {
@@ -221,22 +76,21 @@ int main(int argc, char** argv) {
             }
         }
 
-		element_properties props;
-		get_psets(props, element);
+        element_properties props = get_psets(element);
 
-		for (auto& ps : props) {
-			std::cout << ps.first << std::endl;
-			std::cout << std::string(ps.first.size(), '=') << std::endl;
-			size_t max_key_len = 0;
-			for (auto& p : ps.second) {
-				if (p.first.size() > max_key_len) {
-					max_key_len = p.first.size();
-				}
-			}
-			for (auto& p : ps.second) {
-				std::cout << p.first << std::string(max_key_len - p.first.size(), ' ') << ":" << p.second << std::endl;
-			}
-			std::cout << std::endl;
-		}
+        for (auto& ps : props) {
+            std::cout << ps.first << std::endl;
+            std::cout << std::string(ps.first.size(), '=') << std::endl;
+            size_t max_key_len = 0;
+            for (auto& p : ps.second) {
+                if (p.first.size() > max_key_len) {
+                    max_key_len = p.first.size();
+                }
+            }
+            for (auto& p : ps.second) {
+                std::cout << p.first << std::string(max_key_len - p.first.size(), ' ') << ":" << p.second << std::endl;
+            }
+            std::cout << std::endl;
+        }
     }
 }
