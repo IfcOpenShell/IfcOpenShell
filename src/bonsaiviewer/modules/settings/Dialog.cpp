@@ -274,11 +274,84 @@ void SettingsDialog::setupUi() {
         return tab;
     };
 
+    auto make_about_tab = [this]() {
+        auto* tab = new QWidget(this);
+        auto* layout = new QVBoxLayout(tab);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->setSpacing(components::style::metrics::padding);
+        layout->setAlignment(Qt::AlignTop);
+
+        auto make_rich_label = [](const QString& text, QWidget* parent) {
+            const QString link_color = bonsaiviewer::ViewerSettings::instance().color("icon_accent_color");
+            auto* label = new QLabel(QString("<style>a { color: %1; }</style>%2").arg(link_color, text), parent);
+            label->setTextFormat(Qt::RichText);
+            label->setTextInteractionFlags(Qt::TextBrowserInteraction);
+            label->setOpenExternalLinks(true);
+            label->setWordWrap(true);
+            return label;
+        };
+
+        auto* about_section = new components::Section(
+            "About Bonsai Viewer", components::SectionHeaderMode::Visible, tab);
+        auto* about_body = new QWidget(about_section);
+        auto* about_layout = new QVBoxLayout(about_body);
+        about_layout->setContentsMargins(0, 0, 0, 0);
+        about_layout->setSpacing(8);
+        about_layout->addWidget(make_rich_label(
+            "<b>Bonsai Viewer</b><br>"
+            "A high performance IFC viewing and coordination tool for large OpenBIM projects.<br><br>"
+            "<a href=\"https://bonsaibim.org\">bonsaibim.org</a> | "
+            "<a href=\"https://github.com/IfcOpenShell/IfcOpenShell\">Source code</a>",
+            about_body));
+        about_section->addBodyWidget(about_body);
+        layout->addWidget(about_section);
+
+        auto* license_section = new components::Section("License", components::SectionHeaderMode::Visible, tab);
+        auto* license_body = new QWidget(license_section);
+        auto* license_layout = new QVBoxLayout(license_body);
+        license_layout->setContentsMargins(0, 0, 0, 0);
+        license_layout->setSpacing(8);
+        license_layout->addWidget(make_rich_label(
+            "Bonsai Viewer is free software: you can redistribute it and/or modify it under the terms of "
+            "the <b>GNU General Public License</b> as published by the Free Software Foundation, either "
+            "version 3.0 of the License, or (at your option) any later version.<br><br>"
+            "Bonsai Viewer is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; "
+            "without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. "
+            "See the <a href=\"https://www.gnu.org/licenses/gpl-3.0.html\">GNU General Public License</a> "
+            "for more details.",
+            license_body));
+        license_section->addBodyWidget(license_body);
+        layout->addWidget(license_section);
+
+        auto* dependencies_section = new components::Section(
+            "Third-party licenses", components::SectionHeaderMode::Visible, tab);
+        auto* dependencies_body = new QWidget(dependencies_section);
+        auto* dependencies_layout = new QVBoxLayout(dependencies_body);
+        dependencies_layout->setContentsMargins(0, 0, 0, 0);
+        dependencies_layout->setSpacing(8);
+        dependencies_layout->addWidget(make_rich_label(
+            "<ul>"
+            "<li>IfcOpenShell and IfcViewer - LGPL-3.0-or-later</li>"
+            "<li>Qt - LGPL-3.0-only, GPL-3.0-only, or commercial license depending on distribution</li>"
+            "<li>Open CASCADE Technology - LGPL-2.1-only with OCCT exception</li>"
+            "<li>Eigen - MPL-2.0</li>"
+            "<li>wgpu-native - MPL-2.0</li>"
+            "<li>zstd - BSD-3-Clause</li>"
+            "<li>meshoptimizer - MIT, when enabled</li>"
+            "</ul>"
+            "See the bundled dependency notices and source distributions for the complete license texts.",
+            dependencies_body));
+        dependencies_section->addBodyWidget(dependencies_body);
+        layout->addWidget(dependencies_section);
+        layout->addStretch(1);
+        return tab;
+    };
+
     addTab("Interface", interface_tab);
     addTab("Keybindings", make_placeholder_tab("Keybindings", "Shortcut presets and command bindings will live here."));
     addTab("Graphics", graphics_tab);
     addTab("Connectors", buildConnectorsTab());
-    addTab("About", make_placeholder_tab("About", "Version, credits, and environment information will live here."));
+    addTab("About", make_about_tab());
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
     if (auto* ok = buttons->button(QDialogButtonBox::Ok)) {
