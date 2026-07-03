@@ -38,6 +38,15 @@
 
 #include <webgpu/wgpu.h>  // wgpu-native extensions (logging, MULTI_DRAW_INDIRECT, …)
 
+#if defined(Q_OS_WIN)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#define NOGDI
+#define NOMCX
+#define NOSERVICE
+#include <Windows.h>
+#endif
+
 #include <algorithm>
 #include <atomic>
 #include <cmath>
