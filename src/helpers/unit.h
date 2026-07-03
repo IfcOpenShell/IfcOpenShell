@@ -18,9 +18,7 @@
  ********************************************************************************/
 
 // Port of selected helpers from
-// src/ifcopenshell-python/ifcopenshell/util/unit.py.  Lives in src/ifcviewer/
-// for now alongside Geolocation; will move out once ifcopenshell.util is
-// ported to C++.
+// src/ifcopenshell-python/ifcopenshell/util/unit.py.
 
 #ifndef UNIT_H
 #define UNIT_H
@@ -31,7 +29,9 @@
 #include <string>
 #include <unordered_map>
 
-namespace ifcopenshell { class file; }
+namespace ifcopenshell {
+class file;
+}
 
 // SI prefix multipliers, e.g. "MILLI" -> 1e-3.  Empty key not present;
 // callers should pass an empty prefix string for "no prefix".
@@ -67,7 +67,7 @@ std::optional<express::Base> get_unit_assignment(ifcopenshell::file* ifc_file);
 // First unit in the project's IfcUnitAssignment matching `unit_type`
 // (e.g. "LENGTHUNIT").  Returns nullopt if not found.
 std::optional<express::Base> get_project_unit(ifcopenshell::file* ifc_file,
-                                             const std::string& unit_type);
+                                              const std::string& unit_type);
 
 // Project unit -> SI base scale (e.g. project in mm => 0.001).  Defaults
 // to 1.0 when no project unit of the requested type is set.
@@ -78,8 +78,10 @@ double calculate_unit_scale(ifcopenshell::file* ifc_file,
 // SQUARE_/CUBIC_ prefixed SI names get the prefix multiplier squared/cubed
 // (matches python ifcopenshell.util.unit.convert).
 double convert(double value,
-               const std::string& from_prefix, const std::string& from_unit,
-               const std::string& to_prefix,   const std::string& to_unit);
+               const std::string& from_prefix,
+               const std::string& from_unit,
+               const std::string& to_prefix,
+               const std::string& to_unit);
 
 // Convert between two IfcNamedUnit entities.  Pulls Name and Prefix off each
 // and delegates to convert().  IfcConversionBasedUnit names that don't appear

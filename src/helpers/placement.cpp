@@ -19,9 +19,10 @@
 
 #include "placement.h"
 
-#include "../ifcparse/instance_data.h"
-#include "../ifcparse/schema.h"
+#include "../ifcparse/exception.h"
+#include "schema_dispatch.i"
 
+#include <type_traits>
 #include <vector>
 
 namespace {
@@ -32,14 +33,99 @@ Eigen::Vector3d safe_normalize(const Eigen::Vector3d& v,
     return (n > 0.0) ? Eigen::Vector3d(v / n) : fallback;
 }
 
-std::vector<double> read_direction_ratios(const express::Base& dir) {
-    if (!dir) return {};
-    auto attr = dir.as<express::Entity>().get("DirectionRatios");
-    if (attr.isNull()) return {};
-    return attr;
+template <typename Schema, typename = void>
+struct has_axis2_placement_linear : std::false_type {};
+
+template <typename Schema>
+struct has_axis2_placement_linear<Schema, std::void_t<typename Schema::IfcAxis2PlacementLinear>> : std::true_type {};
+
+[[noreturn]] void unsupported_schema(const std::string& name) {
+    throw ifcopenshell::exception("No helper implementation was built for schema " + name);
 }
 
-}  // namespace
+template <typename Schema>
+Eigen::Vector3d direction_or(const typename Schema::IfcDirection& direction,
+                             const Eigen::Vector3d& fallback) {
+    if (!direction) {
+        return fallback;
+    }
+    const auto ratios = direction.DirectionRatios();
+    if (ratios.size() < 2) {
+        return fallback;
+    }
+    return Eigen::Vector3d(ratios[0], ratios[1], ratios.size() > 2 ? ratios[2] : 0.0);
+}
+
+template <typename Schema>
+std::optional<Eigen::Vector3d> cartesian_point(const typename Schema::IfcPoint& point) {
+    const auto cartesian = point.template as<typename Schema::IfcCartesianPoint>();
+    if (!cartesian) {
+        return std::nullopt;
+    }
+    const auto coordinates = cartesian.Coordinates();
+    if (coordinates.size() < 2) {
+        return std::nullopt;
+    }
+    return Eigen::Vector3d(coordinates[0], coordinates[1], coordinates.size() > 2 ? coordinates[2] : 0.0);
+}
+
+template <typename Schema, typename Placement>
+Eigen::Matrix4d axis2_placement_3d_s(const Placement& placement) {
+    const auto origin = cartesian_point<Schema>(placement.Location());
+    if (!origin) {
+        return Eigen::Matrix4d::Identity();
+    }
+    const auto z = direction_or<Schema>(placement.Axis(), Eigen::Vector3d::UnitZ());
+    const auto x = direction_or<Schema>(placement.RefDirection(), Eigen::Vector3d::UnitX());
+    return axes_to_placement(*origin, z, x);
+}
+
+template <typename Schema>
+Eigen::Matrix4d get_axis2_placement_s(const express::Base& placement) {
+    if (auto axis3 = placement.template as<typename Schema::IfcAxis2Placement3D>()) {
+        return axis2_placement_3d_s<Schema>(axis3);
+    }
+    if constexpr (has_axis2_placement_linear<Schema>::value) {
+        if (auto linear = placement.template as<typename Schema::IfcAxis2PlacementLinear>()) {
+            return axis2_placement_3d_s<Schema>(linear);
+        }
+    }
+    if (auto axis2 = placement.template as<typename Schema::IfcAxis2Placement2D>()) {
+        const auto origin = cartesian_point<Schema>(axis2.Location());
+        if (!origin) {
+            return Eigen::Matrix4d::Identity();
+        }
+        const auto x = direction_or<Schema>(axis2.RefDirection(), Eigen::Vector3d::UnitX());
+        return axes_to_placement(*origin, Eigen::Vector3d::UnitZ(), x);
+    }
+    if (auto axis1 = placement.template as<typename Schema::IfcAxis1Placement>()) {
+        const auto origin = cartesian_point<Schema>(axis1.Location());
+        if (!origin) {
+            return Eigen::Matrix4d::Identity();
+        }
+        const auto z = direction_or<Schema>(axis1.Axis(), Eigen::Vector3d::UnitZ());
+        return axes_to_placement(*origin, z, Eigen::Vector3d::UnitX());
+    }
+    return Eigen::Matrix4d::Identity();
+}
+
+template <typename Schema>
+Eigen::Matrix4d get_local_placement_s(const express::Base& placement) {
+    if (auto local = placement.template as<typename Schema::IfcLocalPlacement>()) {
+        Eigen::Matrix4d parent = Eigen::Matrix4d::Identity();
+        if (const auto relative_to = local.PlacementRelTo()) {
+            parent = get_local_placement_s<Schema>(relative_to);
+        }
+        const auto relative = local.RelativePlacement();
+        if (!relative) {
+            return parent;
+        }
+        return parent * get_axis2_placement_s<Schema>(relative.concrete());
+    }
+    return get_axis2_placement_s<Schema>(placement);
+}
+
+} // namespace
 
 Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
                                   const Eigen::Vector3d& z,
@@ -57,88 +143,27 @@ Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
 }
 
 Eigen::Matrix4d get_axis2_placement(const express::Base& placement) {
-    if (!placement) return Eigen::Matrix4d::Identity();
-    const auto& decl = placement.declaration();
-    auto entity = placement.as<express::Entity>();
-
-    Eigen::Vector3d z(0.0, 0.0, 1.0);
-    Eigen::Vector3d x(1.0, 0.0, 0.0);
-    Eigen::Vector3d o(0.0, 0.0, 0.0);
-
-    if (decl.is("IfcAxis2Placement3D") || decl.is("IfcAxis2PlacementLinear")) {
-        auto axis_attr = entity.get("Axis");
-        if (!axis_attr.isNull()) {
-            auto dr = read_direction_ratios((express::Base) axis_attr);
-            if (dr.size() >= 3) z = Eigen::Vector3d(dr[0], dr[1], dr[2]);
-        }
-        auto refdir_attr = entity.get("RefDirection");
-        if (!refdir_attr.isNull()) {
-            auto dr = read_direction_ratios((express::Base) refdir_attr);
-            if (dr.size() >= 3) x = Eigen::Vector3d(dr[0], dr[1], dr[2]);
-        }
-        auto loc_attr = entity.get("Location");
-        if (loc_attr.isNull()) return Eigen::Matrix4d::Identity();
-        express::Base location = loc_attr;
-        auto coords_attr = location.as<express::Entity>().get("Coordinates");
-        if (coords_attr.isNull()) return Eigen::Matrix4d::Identity();
-        std::vector<double> coords = coords_attr;
-        if (coords.size() >= 3) o = Eigen::Vector3d(coords[0], coords[1], coords[2]);
-    } else if (decl.is("IfcAxis2Placement2D")) {
-        auto refdir_attr = entity.get("RefDirection");
-        if (!refdir_attr.isNull()) {
-            auto dr = read_direction_ratios((express::Base) refdir_attr);
-            if (dr.size() >= 1) {
-                x = Eigen::Vector3d(dr.size() > 0 ? dr[0] : 1.0,
-                                    dr.size() > 1 ? dr[1] : 0.0,
-                                    0.0);
-            }
-        }
-        auto loc_attr = entity.get("Location");
-        if (loc_attr.isNull()) return Eigen::Matrix4d::Identity();
-        express::Base location = loc_attr;
-        auto coords_attr = location.as<express::Entity>().get("Coordinates");
-        if (coords_attr.isNull()) return Eigen::Matrix4d::Identity();
-        std::vector<double> coords = coords_attr;
-        if (coords.size() >= 2) {
-            o = Eigen::Vector3d(coords[0], coords[1],
-                                coords.size() >= 3 ? coords[2] : 0.0);
-        }
-    } else if (decl.is("IfcAxis1Placement")) {
-        auto axis_attr = entity.get("Axis");
-        if (!axis_attr.isNull()) {
-            auto dr = read_direction_ratios((express::Base) axis_attr);
-            if (dr.size() >= 3) z = Eigen::Vector3d(dr[0], dr[1], dr[2]);
-        }
-        auto loc_attr = entity.get("Location");
-        if (loc_attr.isNull()) return Eigen::Matrix4d::Identity();
-        express::Base location = loc_attr;
-        auto coords_attr = location.as<express::Entity>().get("Coordinates");
-        if (coords_attr.isNull()) return Eigen::Matrix4d::Identity();
-        std::vector<double> coords = coords_attr;
-        if (coords.size() >= 3) o = Eigen::Vector3d(coords[0], coords[1], coords[2]);
-    } else {
+    if (!placement) {
         return Eigen::Matrix4d::Identity();
     }
-
-    return axes_to_placement(o, z, x);
+    const auto name = placement.declaration().schema()->name();
+#define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
+    if (name == Identifier)                       \
+        return get_axis2_placement_s<Schema>(placement);
+    IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
+#undef IFCOPENSHELL_DISPATCH
+    unsupported_schema(name);
 }
 
 Eigen::Matrix4d get_local_placement(const express::Base& placement) {
-    if (!placement) return Eigen::Matrix4d::Identity();
-    const auto& decl = placement.declaration();
-
-    if (decl.is("IfcLocalPlacement")) {
-        auto entity = placement.as<express::Entity>();
-        Eigen::Matrix4d parent = Eigen::Matrix4d::Identity();
-        auto rel_attr = entity.get("PlacementRelTo");
-        if (!rel_attr.isNull()) {
-            parent = get_local_placement((express::Base) rel_attr);
-        }
-        auto rp_attr = entity.get("RelativePlacement");
-        if (rp_attr.isNull()) return parent;
-        return parent * get_axis2_placement((express::Base) rp_attr);
+    if (!placement) {
+        return Eigen::Matrix4d::Identity();
     }
-
-    // IfcAxis2Placement* / IfcAxis1Placement passed in directly.
-    return get_axis2_placement(placement);
+    const auto name = placement.declaration().schema()->name();
+#define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
+    if (name == Identifier)                       \
+        return get_local_placement_s<Schema>(placement);
+    IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
+#undef IFCOPENSHELL_DISPATCH
+    unsupported_schema(name);
 }

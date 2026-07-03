@@ -18,11 +18,7 @@
  ********************************************************************************/
 
 // Port of selected helpers from
-// src/ifcopenshell-python/ifcopenshell/util/geolocation.py — primarily
-// auto_local_to_global, which builds a 4x4 matrix that lifts an element's local
-// transform into the model's global (georeferenced) frame.  The python utils
-// are expected to be ported to C++ in their own module later; this file is
-// the temporary home until that lands.
+// src/ifcopenshell-python/ifcopenshell/util/geolocation.py.
 
 #ifndef GEOLOCATION_H
 #define GEOLOCATION_H
@@ -30,21 +26,22 @@
 #include "../ifcparse/express.h"
 
 #include <Eigen/Dense>
-
 #include <optional>
 
-namespace ifcopenshell { class file; }
+namespace ifcopenshell {
+class file;
+}
 
 struct HelmertTransformation {
-    double e        = 0.0;  // eastings offset
-    double n        = 0.0;  // northings offset
-    double h        = 0.0;  // orthogonal-height offset
-    double xaa      = 1.0;  // X-axis abscissa  (cos of grid-rotation angle)
-    double xao      = 0.0;  // X-axis ordinate  (sin of grid-rotation angle)
-    double scale    = 1.0;  // unit scale (project unit -> map unit)
-    double factor_x = 1.0;  // combined scale factor along X
-    double factor_y = 1.0;  // combined scale factor along Y
-    double factor_z = 1.0;  // combined scale factor along Z
+    double e = 0.0;        // eastings offset
+    double n = 0.0;        // northings offset
+    double h = 0.0;        // orthogonal-height offset
+    double xaa = 1.0;      // X-axis abscissa  (cos of grid-rotation angle)
+    double xao = 0.0;      // X-axis ordinate  (sin of grid-rotation angle)
+    double scale = 1.0;    // unit scale (project unit -> map unit)
+    double factor_x = 1.0; // combined scale factor along X
+    double factor_y = 1.0; // combined scale factor along Y
+    double factor_z = 1.0; // combined scale factor along Z
 };
 
 // Detect a Helmert transformation in the IFC model.  Reads IfcMapConversion /

@@ -30,6 +30,8 @@ message("Running CMakeLists.txt in /src/helpers")
 #                   (ifcopenshell.util.geolocation)
 #   * Placement   — IfcLocalPlacement / IfcAxis2Placement reduction
 #                   (ifcopenshell.util.placement)
+#   * Pset        — property and quantity retrieval
+#                   (ifcopenshell.util.element)
 
 find_package(Eigen3 REQUIRED)
 
@@ -37,6 +39,16 @@ file(GLOB HELPER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 file(GLOB HELPER_H_FILES   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
 add_library(helpers STATIC ${HELPER_CPP_FILES} ${HELPER_H_FILES})
+
+# The installed headers stay schema-agnostic. Implementations are compiled
+# against only the schema plugins selected for this build and dispatch from an
+# untyped entry point to generated, compiler-checked entity accessors.
+foreach(schema ${SCHEMA_VERSIONS})
+    target_compile_definitions(helpers PRIVATE
+        IFCOPENSHELL_HELPER_SCHEMA_${schema}
+    )
+    list(APPEND HELPER_SCHEMA_LIBRARIES parse_schema_ifc${schema})
+endforeach()
 
 set_target_properties(helpers PROPERTIES
     VERSION   "${PROJECT_VERSION}"
@@ -51,6 +63,8 @@ target_include_directories(helpers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(helpers PUBLIC
     IfcParse
     Eigen3::Eigen
+    PRIVATE
+    ${HELPER_SCHEMA_LIBRARIES}
 )
 
 install(TARGETS helpers EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
