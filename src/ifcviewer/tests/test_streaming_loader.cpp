@@ -84,7 +84,6 @@ SidecarData buildFixture() {
         sd.elements[i].object_id = uint32_t(100 + i);
         sd.elements[i].model_id  = 1;
         sd.elements[i].ifc_id    = int32_t(1000 + i);
-        sd.elements[i].parent_id = (i == 0) ? -1 : int32_t(100);
     }
     // v16 stores geometry per-chunk (compressed); a fixture with geometry needs
     // a chunk TOC covering its meshes (one chunk per mesh here).
@@ -113,8 +112,8 @@ TEST_CASE("readSidecarMetadataOnly returns metadata, skips bulk geometry",
     // Chunk TOC carries compressed blob locators for each chunk.
     REQUIRE(meta->meta.chunks.size() == sd.chunks.size());
     REQUIRE(meta->meta.chunks[0].v_comp_size > 0);
-    // The deferred (property) block locator is recorded for on-demand fetch.
-    REQUIRE(meta->deferred_comp_size > 0);
+    // The element metadata block locator is recorded for on-demand fetch.
+    REQUIRE(meta->element_metadata_comp_size > 0);
 
     // Metadata round-trips.
     REQUIRE(meta->meta.meshes.size() == sd.meshes.size());
@@ -197,37 +196,37 @@ TEST_CASE("parseSidecarHead validates magic / version, reads geom length", "[str
     REQUIRE_FALSE(parseSidecarHead(bad, sizeof(bad), got));
 }
 
-TEST_CASE("v16 deferred block: fetch via locator, decompress, parse", "[streaming]") {
-    fs::path dir = makeScratchDir("v16def");
+TEST_CASE("v16 element metadata block: fetch via locator, decompress, parse", "[streaming]") {
+    fs::path dir = makeScratchDir("v16element");
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
     REQUIRE(writeSidecar(ifc.string(), sd));
 
     auto meta = readSidecarMetadataOnly(ifc.string());
     REQUIRE(meta.has_value());
-    REQUIRE(meta->meta.meshes.size()   == sd.meshes.size());   // critical
+    REQUIRE(meta->meta.meshes.size()   == sd.meshes.size());   // geometry metadata
     REQUIRE(meta->meta.chunks.size()   == sd.chunks.size());
-    REQUIRE(meta->meta.elements.size() == sd.elements.size()); // desktop reads deferred too
-    REQUIRE(meta->deferred_comp_size > 0);
+    REQUIRE(meta->meta.elements.size() == sd.elements.size()); // desktop reads element metadata too
+    REQUIRE(meta->element_metadata_comp_size > 0);
 
-    // The on-demand path (web) fetches the compressed deferred frame via the
+    // The on-demand path (web) fetches the compressed element metadata frame via the
     // recorded locator and decompresses it — verify that round-trips.
     FILE* f = std::fopen((dir / "model.ifcview").string().c_str(), "rb");
     REQUIRE(f);
-    std::vector<uint8_t> cz(size_t(meta->deferred_comp_size));
-    std::fseek(f, long(meta->deferred_comp_offset), SEEK_SET);
+    std::vector<uint8_t> cz(size_t(meta->element_metadata_comp_size));
+    std::fseek(f, long(meta->element_metadata_comp_offset), SEEK_SET);
     REQUIRE(std::fread(cz.data(), 1, cz.size(), f) == cz.size());
     std::fclose(f);
 
-    std::vector<uint8_t> raw(size_t(meta->deferred_raw_size));
+    std::vector<uint8_t> raw(size_t(meta->element_metadata_raw_size));
     REQUIRE(SidecarCompress::decompress(cz.data(), cz.size(), raw.data(), raw.size()));
     SidecarData d;
-    REQUIRE(parseSidecarDeferred(raw.data(), raw.size(), d));
+    REQUIRE(parseSidecarElementMetadata(raw.data(), raw.size(), d));
     REQUIRE(d.elements.size()  == sd.elements.size());
     REQUIRE(d.string_table     == sd.string_table);
 
     SidecarData chopped;
-    REQUIRE_FALSE(parseSidecarDeferred(raw.data(), raw.size() - 1, chopped));
+    REQUIRE_FALSE(parseSidecarElementMetadata(raw.data(), raw.size() - 1, chopped));
 }
 
 TEST_CASE("planSidecarReadRanges coalesces adjacent ranges, keeps far ones split",

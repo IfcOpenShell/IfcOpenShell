@@ -34,7 +34,7 @@
 #include "InstancedGeometry.h"
 #include "BufferPool.h"
 #include "ChunkPlanner.h"  // WGPU_CHUNK_VERTEX_BYTES_LIMIT (shared with bake)
-#include "SidecarCache.h"  // PackedElementInfo (deferred property metadata)
+#include "SidecarCache.h"  // ElementTableRecord (element metadata)
 
 // Per-model wgpu state. Mirrors the GL backend's ModelGpuData but with
 // wgpu handles. Stage 2 only allocates and uploads the four core buffers;
@@ -305,26 +305,27 @@ struct ModelGpuData {
     bool        streaming_from_web = false;
     // Web analog of streaming_file_path: which registered JS byte-source
     // (Module.__ifcvSources[id] = a picked File or a remote URL) this model's
-    // chunk + deferred reads pull from. Lets several federated models stream
+    // chunk + element metadata reads pull from. Lets several federated models stream
     // from different files at once, mirroring the desktop per-model path.
     int         web_source_id = 0;
 
-    // v15 deferred property metadata (web, on-demand). The IFC element tree
-    // (elements + string_table — names/GUIDs/hierarchy, for UI/picking, never
+    // v15 element metadata (web, on-demand). The IFC element metadata
+    // (elements + string_table — names/GUIDs, for UI/picking, never
     // rendering) lives in a separate file block fetched only when a consumer
     // asks, so first paint doesn't wait on it. Empty until
-    // loadDeferredMetadataWeb fetches [deferred_meta_offset, +bytes) and parses
-    // it; deferred_meta_loaded latches so it fetches at most once.
-    std::vector<PackedElementInfo> elements;
+    // loadElementMetadataWeb fetches [element_metadata_comp_offset, +bytes) and parses
+    // it; element_metadata_loaded latches so it fetches at most once.
+    std::vector<ElementTableRecord> elements;
     std::string                    string_table;
-    // v16: the deferred block is a single zstd frame at deferred_comp_offset of
-    // deferred_comp_size bytes, expanding to deferred_raw_size.
-    uint64_t    deferred_comp_offset = 0;
-    uint64_t    deferred_comp_size   = 0;
-    uint64_t    deferred_raw_size    = 0;
-    bool        deferred_meta_loaded = false;
+    // v16: the element metadata block is a single zstd frame at
+    // element_metadata_comp_offset of element_metadata_comp_size bytes,
+    // expanding to element_metadata_raw_size.
+    uint64_t    element_metadata_comp_offset = 0;
+    uint64_t    element_metadata_comp_size   = 0;
+    uint64_t    element_metadata_raw_size    = 0;
+    bool        element_metadata_loaded      = false;
     // applyCachedModel rebases instance object_ids by this base to keep them
-    // globally unique across models; deferred elements carry the sidecar's
+    // globally unique across models; element metadata records carry the sidecar's
     // original (local) ids, so they're rebased by the same amount on load.
     uint32_t    object_id_base = 0;
 
@@ -378,10 +379,10 @@ struct ModelGpuData {
 
     // CPU side, kept for cull / picking / federation recompose.
     std::vector<MeshInfo>    meshes;
-    std::vector<InstanceCpu> instances;
+    std::vector<InstanceInfo> instances;
 
     // Per-mesh "any vertex has alpha < 255?" flag, indexed by mesh_id.
-    // Populated at uploadMeshChunk / applyStreamedChunk as vertex bytes
+    // Populated at uploadStreamedMesh / applyStreamedChunk as vertex bytes
     // become CPU-resident. Used at cull time to classify each instance
     // into the opaque or transparent draw partition: an instance with
     // color_override_rgba8==0 (the "use baked vertex color" sentinel)

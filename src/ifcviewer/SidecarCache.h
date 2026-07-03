@@ -46,7 +46,7 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //      same cache serves either source format.  Staleness is user-managed
 //      (delete the sidecar to force a rebuild).
 // v9 = unused `reserved` field dropped from header (16 B -> 12 B).
-// v10 = InstanceCpu gains placement_transformation[16] alongside transform[16]
+// v10 = InstanceInfo gains placement_transformation[16] alongside transform[16]
 //       — record grew from 104 B to 168 B.  placement_transformation is the
 //       raw streamer output; transform is the composed FederatedFalseOrigin ·
 //       ModelTransformation · CoordinateOperation · placement_transformation
@@ -59,8 +59,8 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       georef without re-parsing the IFC source.  Edits to the IFC's
 //       IfcMapConversion do NOT invalidate the sidecar — delete the
 //       .ifcview manually if you change the source's georef parameters.
-// v12 = InstanceCpu::placement_transformation is double[16], and
-//       InstanceChunk carries the streamer placement as double[16].  This keeps
+// v12 = InstanceInfo::placement_transformation is double[16], and
+//       StreamedInstance carries the streamer placement as double[16].  This keeps
 //       large IFC placements exact until CoordinateOperation / FederatedFalseOrigin
 //       composition has reduced them to viewport-local float-sized values.
 // v13 = Map unit scale in cached ModelGeoref is derived from
@@ -73,23 +73,25 @@ static constexpr uint32_t SIDECAR_MAGIC   = 0x49465657;  // "IFVW"
 //       Morton quantisation isn't bit-identical across toolchains (x86 baker vs
 //       wasm loader), so it must be baked in.  No back-compat: v13 sidecars are
 //       rejected (regenerate them).
-// v15 = The post-index metadata is split into a render-CRITICAL block (meshes,
-//       instances, georef, chunk TOC) followed by a DEFERRED block (elements +
-//       string_table — the IFC element tree, used for UI/picking, never for
-//       rendering), with the critical block's byte length written just after
-//       the index section.  The web loader reads only the critical block before
+// v15 = The post-index metadata is split into a geometry metadata block (meshes,
+//       instances, georef, chunk TOC) followed by an element metadata block (elements +
+//       string_table — IFC element metadata, used for UI/picking, never for
+//       rendering), with the geometry block's byte length written just after
+//       the index section.  The web loader reads only the geometry block before
 //       painting, so first geometry no longer waits on the property data; the
-//       deferred block is fetched lazily (or skipped where unused).  Desktop
+//       element block is fetched lazily (or skipped where unused).  Desktop
 //       reads both.  No back-compat: regenerate sidecars.
 // v16 = Geometry + metadata are zstd-COMPRESSED.  Each chunk's vertex bytes and
 //       index bytes are stored as two independent zstd frames (so per-chunk
 //       Range streaming still works — you fetch + decompress just one chunk),
-//       and the critical + deferred metadata blocks are single zstd frames.
+//       and the geometry + element metadata blocks are single zstd frames.
 //       The chunk TOC records each chunk's compressed blob offsets/sizes plus
 //       the raw (decompressed) sizes.  ~3-5x fewer bytes over the wire while
 //       keeping HTTP Range intact (unlike server Content-Encoding).  No
 //       back-compat: regenerate sidecars.
-static constexpr uint32_t SIDECAR_VERSION = 16;
+// v17 = Removes unused element hierarchy metadata. No back-compat: regenerate
+//       sidecars.
+static constexpr uint32_t SIDECAR_VERSION = 17;
 static constexpr uint32_t SIDECAR_ENDIAN  = 0x01020304;
 
 // Chunk table-of-contents entry (v16).  A chunk is a CONTIGUOUS range of meshes
@@ -111,11 +113,10 @@ struct SidecarChunk {
 
 // Fixed-size element record.  Strings are stored as (offset, length) pairs
 // into a separate string table.
-struct PackedElementInfo {
+struct ElementTableRecord {
     uint32_t object_id;
     uint32_t model_id;
     int32_t  ifc_id;
-    int32_t  parent_id;
     uint32_t guid_offset;
     uint32_t guid_length;
     uint32_t name_offset;
@@ -134,7 +135,7 @@ struct SidecarData {
 
     // Mesh dictionary and per-instance data.
     std::vector<MeshInfo>     meshes;        // indexed by local_mesh_id
-    std::vector<InstanceCpu>  instances;     // sorted by mesh_id
+    std::vector<InstanceInfo>  instances;     // sorted by mesh_id
 
     // CoordinateOperation cache (v11+).  Mirrors ModelGeoref so a sidecar
     // load can apply georef without re-parsing the IFC source.
@@ -149,8 +150,8 @@ struct SidecarData {
     double   map_unit_to_meters       = 1.0;
     uint32_t has_coordinate_operation = 0;
 
-    // Element tree metadata.
-    std::vector<PackedElementInfo> elements;
+    // Element metadata.
+    std::vector<ElementTableRecord> elements;
     std::string               string_table;
 
     // Streaming chunk TOC.  Always written on disk (v14); geometry is laid out

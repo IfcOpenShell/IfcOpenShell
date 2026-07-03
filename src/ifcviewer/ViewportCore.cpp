@@ -2858,8 +2858,8 @@ void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
 }
 
 // ===========================================================================
-// Sidecar / direct load (#84-q): applyCachedModel + uploadMeshChunk +
-// uploadInstanceChunk + finalizeModel
+// Sidecar / direct load (#84-q): applyCachedModel + uploadStreamedMesh +
+// uploadStreamedInstance + finalizeModel
 // ===========================================================================
 
 #include "ChunkPlanner.h"
@@ -3220,14 +3220,14 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     host_->requestFrame();
 }
 
-void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
-    if (chunk.vertices.empty() || chunk.indices.empty()) return;
-    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
+void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
+    if (mesh.vertices.empty() || mesh.indices.empty()) return;
+    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, mesh.model_id);
 
     // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
     // Same quantisation as SidecarBuilder::onMeshReady so direct-load and
     // sidecar-load produce byte-identical GPU buffers.
-    const std::size_t n_verts = chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
+    const std::size_t n_verts = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 
     float bmin[3] = {  std::numeric_limits<float>::infinity(),
                        std::numeric_limits<float>::infinity(),
@@ -3236,7 +3236,7 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
                       -std::numeric_limits<float>::infinity(),
                       -std::numeric_limits<float>::infinity() };
     for (std::size_t i = 0; i < n_verts; ++i) {
-        const float* vertex = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
+        const float* vertex = mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
         for (int a = 0; a < 3; ++a) {
             if (vertex[a] < bmin[a]) bmin[a] = vertex[a];
             if (vertex[a] > bmax[a]) bmax[a] = vertex[a];
@@ -3251,7 +3251,7 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
     const std::size_t vb_offset = s.vertices.size();
     s.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
     for (std::size_t i = 0; i < n_verts; ++i) {
-        quantizeVertex(chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
+        quantizeVertex(mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
                        bmin, extent_recip,
                        s.vertices.data() + vb_offset
                            + i * INSTANCED_VERTEX_STRIDE_BYTES);
@@ -3259,13 +3259,13 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
 
     const std::size_t ib_offset = s.indices.size();
     s.indices.insert(s.indices.end(),
-                     chunk.indices.begin(), chunk.indices.end());
+                     mesh.indices.begin(), mesh.indices.end());
 
     MeshInfo info{};
     info.vbo_byte_offset = std::uint32_t(vb_offset);
     info.vertex_count    = std::uint32_t(n_verts);
     info.ebo_byte_offset = std::uint32_t(ib_offset * sizeof(std::uint32_t));
-    info.index_count     = std::uint32_t(chunk.indices.size());
+    info.index_count     = std::uint32_t(mesh.indices.size());
     for (int a = 0; a < 3; ++a) {
         info.local_aabb_min[a] = bmin[a];
         info.local_aabb_max[a] = bmax[a];
@@ -3275,27 +3275,27 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (s.meshes.size() <= chunk.local_mesh_id) {
-        s.meshes.resize(chunk.local_mesh_id + 1);
+    if (s.meshes.size() <= mesh.local_mesh_id) {
+        s.meshes.resize(mesh.local_mesh_id + 1);
     }
-    s.meshes[chunk.local_mesh_id] = info;
+    s.meshes[mesh.local_mesh_id] = info;
 }
 
-void ViewportCore::uploadInstanceChunk(const InstanceChunk& chunk) {
-    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
+void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_record) {
+    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, instance_record.model_id);
 
     InstanceInfo instance{};
-    instance.mesh_id              = chunk.local_mesh_id;
-    instance.object_id            = chunk.object_id;
-    instance.color_override_rgba8 = chunk.color_override_rgba8;
-    instance.model_id             = chunk.model_id;
-    std::memcpy(instance.placement_transformation, chunk.transform,
+    instance.mesh_id              = instance_record.local_mesh_id;
+    instance.object_id            = instance_record.object_id;
+    instance.color_override_rgba8 = instance_record.color_override_rgba8;
+    instance.model_id             = instance_record.model_id;
+    std::memcpy(instance.placement_transformation, instance_record.transform,
                 sizeof(instance.placement_transformation));
     for (int i = 0; i < 16; ++i) {
-        instance.transform[i] = float(chunk.transform[i]);
+        instance.transform[i] = float(instance_record.transform[i]);
     }
-    std::memcpy(instance.world_aabb_min, chunk.world_aabb_min, sizeof(instance.world_aabb_min));
-    std::memcpy(instance.world_aabb_max, chunk.world_aabb_max, sizeof(instance.world_aabb_max));
+    std::memcpy(instance.world_aabb_min, instance_record.world_aabb_min, sizeof(instance.world_aabb_min));
+    std::memcpy(instance.world_aabb_max, instance_record.world_aabb_max, sizeof(instance.world_aabb_max));
 
     s.instances.push_back(instance);
 }

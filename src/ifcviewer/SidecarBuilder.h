@@ -58,8 +58,8 @@ public:
 
     // Accumulator interface. Safe to call repeatedly from the same thread the
     // streamer signals are delivered to.
-    void onMeshReady(const MeshChunk& chunk);
-    void onInstanceReady(const InstanceChunk& chunk);
+    void onMeshReady(const StreamedMesh& mesh);
+    void onInstanceReady(const StreamedInstance& instance_record);
 
     // Finishes assembly using the georef + element batch the host collected
     // during streaming. Returns the assembled SidecarData by move; the
@@ -76,4 +76,3 @@ private:
 };
 
 #endif // SIDECARBUILDER_H
-

@@ -84,7 +84,7 @@ bool findInstanceInModels(
         if (it == model_data.object_id_to_instance.end()) continue;
         const uint32_t instance_index = it->second;
         if (instance_index >= model_data.instances.size()) continue;
-        const InstanceCpu& instance = model_data.instances[instance_index];
+        const InstanceInfo& instance = model_data.instances[instance_index];
         out.model_id = model_id;
         out.mesh_id  = instance.mesh_id;
         std::memcpy(out.placement_transformation,

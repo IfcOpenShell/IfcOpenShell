@@ -279,7 +279,7 @@ void SceneLoader::applySidecarData(uint32_t mid, StreamingSidecar metadata) {
         model.has_georef                   = true;
     }
 
-    std::vector<PackedElementInfo> elements = std::move(d.elements);
+    std::vector<ElementTableRecord> elements = std::move(d.elements);
     std::string stbl                        = std::move(d.string_table);
 
     viewport_->applyCachedModel(mid, std::move(metadata));
@@ -331,24 +331,24 @@ void SceneLoader::onStreamerProgressChanged(int percent) {
     emit progressChanged(percent);
 }
 
-void SceneLoader::onStreamerMeshReady(MeshChunk chunk) {
-    viewport_->uploadMeshChunk(chunk);
+void SceneLoader::onStreamerMeshReady(StreamedMesh mesh) {
+    viewport_->uploadStreamedMesh(mesh);
     if (loading_model_id_ != 0) {
         auto it = models_.find(loading_model_id_);
         if (it != models_.end() && it->second.sidecar_builder) {
-            it->second.sidecar_builder->onMeshReady(chunk);
+            it->second.sidecar_builder->onMeshReady(mesh);
         }
     }
 }
 
-void SceneLoader::onStreamerInstanceReady(InstanceChunk chunk) {
+void SceneLoader::onStreamerInstanceReady(StreamedInstance instance_record) {
     if (loading_model_id_ != 0) {
         auto it = models_.find(loading_model_id_);
         if (it != models_.end() && it->second.sidecar_builder) {
-            it->second.sidecar_builder->onInstanceReady(chunk);
+            it->second.sidecar_builder->onInstanceReady(instance_record);
         }
     }
-    viewport_->uploadInstanceChunk(chunk);
+    viewport_->uploadStreamedInstance(instance_record);
 }
 
 void SceneLoader::onElementPollTick() {

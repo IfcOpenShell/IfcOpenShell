@@ -472,8 +472,8 @@ public:
     // the viewer one mesh + one instance at a time, then calls
     // finalizeModel once everything's staged. The staging map lives on
     // ViewportCore so both halves can share it.
-    void uploadMeshChunk(const MeshChunk& chunk);
-    void uploadInstanceChunk(const InstanceChunk& chunk);
+    void uploadStreamedMesh(const StreamedMesh& mesh);
+    void uploadStreamedInstance(const StreamedInstance& instance_record);
     void finalizeModel(std::uint32_t model_id);
 
     // ---- Cross-chunk + screenshot capture (#84-v) -------------------------
@@ -1162,8 +1162,8 @@ private:
     // completes.
     std::string pending_screenshot_path_;
 
-    // Bonsai direct-load staging map. uploadMeshChunk +
-    // uploadInstanceChunk append into entries keyed by model_id; the
+    // Bonsai direct-load staging map. uploadStreamedMesh +
+    // uploadStreamedInstance append into entries keyed by model_id; the
     // finalizeModel call moves the entry out, hands it to
     // applyCachedModel, and uploads the chunk slices synchronously.
     std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>

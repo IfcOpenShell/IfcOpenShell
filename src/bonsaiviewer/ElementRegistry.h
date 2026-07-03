@@ -30,7 +30,7 @@
 #include <vector>
 
 class SceneLoader;
-struct PackedElementInfo;
+struct ElementTableRecord;
 struct ElementInfo;
 
 namespace bonsaiviewer {
@@ -39,7 +39,6 @@ struct BasicElementInfo {
     uint32_t object_id = 0;
     uint32_t model_id = 0;
     int ifc_id = 0;
-    int parent_id = 0;
     QString guid;
     QString name;
     QString type;
@@ -59,7 +58,7 @@ public:
 
 private:
     void onSidecarElementsReady(uint32_t model_id,
-                                std::vector<PackedElementInfo> elements,
+                                std::vector<ElementTableRecord> elements,
                                 std::string string_table);
     void onStreamedElementsReady(uint32_t model_id, std::vector<ElementInfo> elements);
 

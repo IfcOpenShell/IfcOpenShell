@@ -81,7 +81,7 @@ SidecarData buildFixture() {
     for (uint32_t k = 0; k < 3; ++k) {         // outer loop = interleave
         for (int i = 0; i < N; ++i) {
             if (k >= ninst(i)) continue;
-            InstanceCpu ic;
+            InstanceInfo ic;
             ic.mesh_id   = uint32_t(i);        // authoritative
             ic.object_id = obj++;
             ic.model_id  = 1;
@@ -114,7 +114,7 @@ struct InstSig {
     }
 };
 
-InstSig sigFor(const SidecarData& sd, const InstanceCpu& inst) {
+InstSig sigFor(const SidecarData& sd, const InstanceInfo& inst) {
     const MeshInfo& m = sd.meshes.at(inst.mesh_id);
     InstSig s{};
     s.verts.assign(sd.vertices.begin() + m.vbo_byte_offset,

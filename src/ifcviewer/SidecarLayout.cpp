@@ -88,7 +88,7 @@ void reorderSidecarByMorton(SidecarData& sd) {
     std::vector<std::uint8_t>   new_vertices;  new_vertices.reserve(sd.vertices.size());
     std::vector<std::uint32_t>  new_indices;   new_indices.reserve(sd.indices.size());
     std::vector<MeshInfo>       new_meshes(mesh_count);
-    std::vector<InstanceCpu>    new_instances; new_instances.reserve(sd.instances.size());
+    std::vector<InstanceInfo>    new_instances; new_instances.reserve(sd.instances.size());
 
     // Pass A: vertices + LOD0 indices + instances, mesh-by-mesh in the new
     // order, recording the new offsets on each MeshInfo.
@@ -112,7 +112,7 @@ void reorderSidecarByMorton(SidecarData& sd) {
         new_mesh_info.first_instance = std::uint32_t(new_instances.size());
         new_mesh_info.instance_count = std::uint32_t(insts_by_mesh[old].size());
         for (std::uint32_t instance_index : insts_by_mesh[old]) {
-            InstanceCpu instance = sd.instances[instance_index];
+            InstanceInfo instance = sd.instances[instance_index];
             instance.mesh_id = new_mesh_index;
             new_instances.push_back(instance);
         }

@@ -550,17 +550,19 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, StreamingSidecar metada
 }
 
 // -----------------------------------------------------------------------------
-// Direct-IFC ingestion (mirrors GL ViewportWindow::uploadMeshChunk /
-// uploadInstanceChunk / finalizeModel). Streamer pushes chunks; we stage
+// Direct-IFC ingestion (mirrors GL ViewportWindow::uploadStreamedMesh /
+// uploadStreamedInstance / finalizeModel). Streamer pushes transfer records; we stage
 // them into a SidecarData-shaped buffer and commit at finalize via the
 // same chunk planner the sidecar load uses.
 // -----------------------------------------------------------------------------
 
 // getOrCreateDirectStaging moved to ViewportCore (anon namespace) (#84-q).
 
-void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) { core_.uploadMeshChunk(chunk); }
+void ViewportWindow::uploadStreamedMesh(const StreamedMesh& mesh) { core_.uploadStreamedMesh(mesh); }
 
-void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) { core_.uploadInstanceChunk(chunk); }
+void ViewportWindow::uploadStreamedInstance(const StreamedInstance& instance_record) {
+    core_.uploadStreamedInstance(instance_record);
+}
 
 void ViewportWindow::finalizeModel(uint32_t model_id) { core_.finalizeModel(model_id); }
 

@@ -39,8 +39,8 @@
 static constexpr int INSTANCED_VERTEX_STRIDE_BYTES = 12;
 
 // Streamer-side intermediate format: 7 floats per vertex (pos3 + normal3 +
-// color-as-float).  GeometryStreamer writes this into MeshChunk.vertices;
-// ViewportWindow::uploadMeshChunk quantizes it down to STRIDE_BYTES on the
+// color-as-float).  GeometryStreamer writes this into StreamedMesh.vertices;
+// ViewportWindow::uploadStreamedMesh quantizes it down to STRIDE_BYTES on the
 // way to the VBO.  Not the GPU layout — purely a transfer convention.
 static constexpr int INSTANCED_VERTEX_STRIDE_FLOATS = 7;
 
@@ -109,7 +109,7 @@ static_assert(sizeof(InstanceGpu) == 80, "InstanceGpu must be 80 bytes");
 // uploaded to the SSBO, and used to compute world_aabb_*.  When ViewportWindow's
 // stage matrices are all identity (default), transform is the float rendering
 // copy of placement_transformation.
-struct InstanceCpu {
+struct InstanceInfo {
     uint32_t mesh_id                  = 0;  // index into meshes array
     uint32_t object_id                = 0;
     uint32_t color_override_rgba8     = 0;
@@ -120,12 +120,12 @@ struct InstanceCpu {
     float    world_aabb_max[3]{};
 };
 
-// Chunks emitted by the streamer to the viewport (main thread).
+// Transfer records emitted by the streamer to the viewport (main thread).
 
 // Emitted the first time a representation id is seen.  Carries the mesh
 // geometry in local coords.  `local_mesh_id` is the streamer-assigned id
 // within this model.
-struct MeshChunk {
+struct StreamedMesh {
     uint32_t model_id      = 0;
     uint32_t local_mesh_id = 0;
     std::vector<float>    vertices;  // 7 floats * N_verts (pos3+norm3+color1_packed)
@@ -135,9 +135,9 @@ struct MeshChunk {
 };
 
 // Emitted for every placement (every triangulation element from the
-// iterator).  For the first instance of a mesh, the MeshChunk is emitted
+// iterator).  For the first instance of a mesh, the StreamedMesh is emitted
 // just before this.
-struct InstanceChunk {
+struct StreamedInstance {
     uint32_t model_id             = 0;
     uint32_t local_mesh_id        = 0;
     uint32_t object_id            = 0;

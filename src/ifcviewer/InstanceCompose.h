@@ -66,7 +66,7 @@ void composeInstance(
 
 // Result of a successful findInstance lookup. The placement_transformation
 // is double[16] column-major (pre-CoordinateOperation / FederatedFalseOrigin
-// / ModelTransformation) — the same convention as InstanceCpu so the
+// / ModelTransformation) — the same convention as InstanceInfo so the
 // measurement / picking tools can re-compose at need.
 struct InstanceLookup {
     uint32_t model_id = 0;

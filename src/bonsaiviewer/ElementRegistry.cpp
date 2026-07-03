@@ -89,7 +89,7 @@ std::optional<express::Base> ElementRegistry::findEntity(uint32_t object_id) con
 }
 
 void ElementRegistry::onSidecarElementsReady(uint32_t /*model_id*/,
-                                             std::vector<PackedElementInfo> elements,
+                                             std::vector<ElementTableRecord> elements,
                                              std::string string_table) {
     auto string_from_table = [&](uint32_t offset, uint32_t length) -> QString {
         if (length == 0 || offset + length > string_table.size()) return {};
@@ -101,7 +101,6 @@ void ElementRegistry::onSidecarElementsReady(uint32_t /*model_id*/,
         info.object_id = packed_element.object_id;
         info.model_id = packed_element.model_id;
         info.ifc_id = packed_element.ifc_id;
-        info.parent_id = packed_element.parent_id;
         info.guid = string_from_table(packed_element.guid_offset, packed_element.guid_length);
         info.name = string_from_table(packed_element.name_offset, packed_element.name_length);
         info.type = string_from_table(packed_element.type_offset, packed_element.type_length);
@@ -115,7 +114,6 @@ void ElementRegistry::onStreamedElementsReady(uint32_t /*model_id*/, std::vector
         info.object_id = element.object_id;
         info.model_id = element.model_id;
         info.ifc_id = element.ifc_id;
-        info.parent_id = element.parent_id;
         info.guid = QString::fromStdString(element.guid);
         info.name = QString::fromStdString(element.name);
         info.type = QString::fromStdString(element.type);

@@ -30,7 +30,7 @@
 //   MeshInfo[num_meshes]
 //
 //   uint32_t  num_instances
-//   InstanceCpu[num_instances]   (already sorted by mesh_id; v13 layout)
+//   InstanceInfo[num_instances]   (already sorted by mesh_id; v13 layout)
 //
 //   uint32_t  has_coordinate_operation              (v11+)
 //   double[16] coordinate_operation_meters          (v11+; column-major)
@@ -38,7 +38,7 @@
 //   double    map_unit_to_meters                    (v11+)
 //
 //   uint32_t  num_elements
-//   PackedElementInfo[num_elements]
+//   ElementTableRecord[num_elements]
 //   uint32_t  string_table_bytes
 //   char[string_table_bytes]
 
@@ -205,24 +205,24 @@ bool writeSidecar(const std::string& ifc_path, const SidecarData& data) {
     if (!wrU64(std::uint64_t(geom_end - geom_start))) { fclose(f); return false; }
     if (fseek(f, geom_end, SEEK_SET) != 0) { fclose(f); return false; }
 
-    // --- Critical metadata block (zstd): meshes, instances, georef, chunk TOC
-    std::vector<std::uint8_t> critical_metadata;
-    appendVec(critical_metadata, data.meshes);
-    appendVec(critical_metadata, data.instances);
-    appendBytes(critical_metadata, &data.has_coordinate_operation, 4);
-    appendBytes(critical_metadata, data.coordinate_operation_meters, sizeof(double) * 16);
-    appendBytes(critical_metadata, &data.project_length_to_meters, sizeof(double));
-    appendBytes(critical_metadata, &data.map_unit_to_meters, sizeof(double));
-    appendVec(critical_metadata, chunks);
-    if (!wrBlock(critical_metadata)) { fclose(f); return false; }
+    // --- Geometry metadata block (zstd): meshes, instances, georef, chunk TOC
+    std::vector<std::uint8_t> geometry_metadata;
+    appendVec(geometry_metadata, data.meshes);
+    appendVec(geometry_metadata, data.instances);
+    appendBytes(geometry_metadata, &data.has_coordinate_operation, 4);
+    appendBytes(geometry_metadata, data.coordinate_operation_meters, sizeof(double) * 16);
+    appendBytes(geometry_metadata, &data.project_length_to_meters, sizeof(double));
+    appendBytes(geometry_metadata, &data.map_unit_to_meters, sizeof(double));
+    appendVec(geometry_metadata, chunks);
+    if (!wrBlock(geometry_metadata)) { fclose(f); return false; }
 
-    // --- Deferred metadata block (zstd): element tree + string table ---------
-    std::vector<std::uint8_t> deferred_metadata;
-    appendVec(deferred_metadata, data.elements);
+    // --- Element metadata block (zstd): elements + string table --------------
+    std::vector<std::uint8_t> element_metadata;
+    appendVec(element_metadata, data.elements);
     std::uint32_t stbl_len = static_cast<std::uint32_t>(data.string_table.size());
-    appendBytes(deferred_metadata, &stbl_len, 4);
-    appendBytes(deferred_metadata, data.string_table.data(), stbl_len);
-    if (!wrBlock(deferred_metadata)) { fclose(f); return false; }
+    appendBytes(element_metadata, &stbl_len, 4);
+    appendBytes(element_metadata, data.string_table.data(), stbl_len);
+    if (!wrBlock(element_metadata)) { fclose(f); return false; }
 
     fclose(f);
     return true;
@@ -286,12 +286,12 @@ std::optional<SidecarData> readSidecar(const std::string& ifc_path) {
         out.assign(std::size_t(raw), 0);
         return SidecarCompress::decompress(z.data(), z.size(), out.data(), out.size());
     };
-    std::vector<std::uint8_t> critical_metadata, deferred_metadata;
-    if (!readBlock(critical_metadata) || !readBlock(deferred_metadata)) return fail();
+    std::vector<std::uint8_t> geometry_metadata, element_metadata;
+    if (!readBlock(geometry_metadata) || !readBlock(element_metadata)) return fail();
     fclose(f);
 
     SidecarData data;
-    BufReader cr{ critical_metadata.data(), critical_metadata.size() };
+    BufReader cr{ geometry_metadata.data(), geometry_metadata.size() };
     if (!cr.takeVec(data.meshes))    return std::nullopt;
     if (!cr.takeVec(data.instances)) return std::nullopt;
     if (!cr.take(&data.has_coordinate_operation, 4))                    return std::nullopt;
@@ -300,7 +300,7 @@ std::optional<SidecarData> readSidecar(const std::string& ifc_path) {
     if (!cr.take(&data.map_unit_to_meters, sizeof(double)))             return std::nullopt;
     if (!cr.takeVec(data.chunks))    return std::nullopt;
 
-    BufReader dr{ deferred_metadata.data(), deferred_metadata.size() };
+    BufReader dr{ element_metadata.data(), element_metadata.size() };
     if (!dr.takeVec(data.elements)) return std::nullopt;
     std::uint32_t stbl_len = 0;
     if (!dr.take(&stbl_len, 4)) return std::nullopt;

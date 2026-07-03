@@ -122,8 +122,8 @@ public:
                           struct StreamingSidecar metadata);
 
     // Direct-IFC ingestion (mirrors GL ViewportWindow). The host (typically
-    // a GeometryStreamer running on a worker) calls uploadMeshChunk +
-    // uploadInstanceChunk once per representation / placement as the IFC
+    // a GeometryStreamer running on a worker) calls uploadStreamedMesh +
+    // uploadStreamedInstance once per representation / placement as the IFC
     // triangulates; finalizeModel commits when the iterator finishes.
     // Staged in CPU memory; finalizeModel runs the chunk planner over the
     // staged data, allocates pool slices, and uploads — same render path
@@ -131,8 +131,8 @@ public:
     // every chunk lands `is_resident=true` immediately. The streamer's
     // model_id is passed through unchanged; the viewport's globally-unique
     // object_id rebasing happens at finalize time.
-    void uploadMeshChunk(const struct MeshChunk& chunk);
-    void uploadInstanceChunk(const struct InstanceChunk& chunk);
+    void uploadStreamedMesh(const struct StreamedMesh& mesh);
+    void uploadStreamedInstance(const struct StreamedInstance& instance_record);
     void finalizeModel(uint32_t model_id);
 
     void removeModel(uint32_t model_id);
