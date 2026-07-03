@@ -33,28 +33,28 @@ message("Running CMakeLists.txt in /src/ifcutil")
 
 find_package(Eigen3 REQUIRED)
 
-file(GLOB IFCUTIL_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
-file(GLOB IFCUTIL_H_FILES   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+file(GLOB HELPER_CPP_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file(GLOB HELPER_H_FILES   ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
-add_library(IfcUtil STATIC ${IFCUTIL_CPP_FILES} ${IFCUTIL_H_FILES})
+add_library(helpers STATIC ${HELPER_CPP_FILES} ${HELPER_H_FILES})
 
-set_target_properties(IfcUtil PROPERTIES
+set_target_properties(helpers PROPERTIES
     VERSION   "${PROJECT_VERSION}"
     SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
 )
 
 # PUBLIC: callers (IfcViewer, test_federation, future tools) get
 # `#include "Unit.h"` etc. via this directory automatically, no
-# `#include "../ifcutil/Unit.h"` ugliness at call sites.
-target_include_directories(IfcUtil PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# `#include "../helpers/Unit.h"` ugliness at call sites.
+target_include_directories(helpers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(IfcUtil PUBLIC
+target_link_libraries(helpers PUBLIC
     IfcParse
     Eigen3::Eigen
 )
 
-install(TARGETS IfcUtil EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
+install(TARGETS helpers EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 
-install(FILES ${IFCUTIL_H_FILES}
-    DESTINATION ${INCLUDEDIR}/ifcutil
+install(FILES ${HELPER_H_FILES}
+    DESTINATION ${INCLUDEDIR}/helpers
 )

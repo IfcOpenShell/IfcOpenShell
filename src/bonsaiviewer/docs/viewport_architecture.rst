@@ -33,7 +33,7 @@ Stack
   the event loop driving render scheduling, and the timer/elapsed
   primitives used in instrumentation.
 * **IfcOpenShell C++ libs** (IfcParse / IfcGeom) for IFC parsing and
-  geometry generation, plus **IfcUtil** for the schema-agnostic
+  geometry generation, plus **helpers** for the schema-agnostic
   helpers (``Unit``, ``Geolocation``, ``Placement``).
 * **Eigen3** for 4×4 matrices and small linear algebra.
 * **meshoptimizer** at sidecar-build time only — decimates each

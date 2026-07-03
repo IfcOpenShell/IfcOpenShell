@@ -708,11 +708,11 @@ if(BUILD_BONSAIVIEWER_TESTS)
 endif()
 
 if(BUILD_BONSAIVIEWER)
-    # IfcUtil first — schema-agnostic helpers (Unit, Geolocation,
+    # helpers first — schema-agnostic helpers (Unit, Geolocation,
     # Placement) that IfcViewer's Federation links against. Adding here
     # before ifcviewer/ so the link target exists when IfcViewer's
     # CMakeLists runs.
-    add_subdirectory(../src/ifcutil ifcutil)
+    add_subdirectory(../src/helpers helpers)
     # IfcViewer is the unified scene + render lib since the wgpu/ifcviewer
     # merge — wgpu-native is fetched inside its CMakeLists.txt.
     add_subdirectory(../src/ifcviewer ifcviewer)

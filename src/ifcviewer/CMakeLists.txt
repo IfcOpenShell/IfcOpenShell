@@ -275,7 +275,7 @@ add_dependencies(IfcViewer ${kernel_libraries} ${mapping_libraries})
 
 target_link_libraries(IfcViewer PUBLIC
     IfcViewerCore
-    IfcUtil
+    helpers
     IfcGeom
     IfcParse
     ${OpenCASCADE_LIBRARIES}
