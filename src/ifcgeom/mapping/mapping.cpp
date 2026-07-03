@@ -197,8 +197,14 @@ std::vector<express::Base> mapping::find_openings(const express::Base& inst) {
                 // Only aggregation, not nesting is considered.
                 break;
             }
-            auto rel_obdef = decomposes.front().as<IfcSchema::IfcRelAggregates>().RelatingObject();
-            if (rel_obdef.as<IfcSchema::IfcElement>() && !rel_obdef.as<IfcSchema::IfcFeatureElementSubtraction>()) {
+            IfcSchema::IfcObjectDefinition rel_obdef;
+            try {
+                rel_obdef = decomposes.front().as<IfcSchema::IfcRelAggregates>().RelatingObject();
+            } catch (const std::exception&) {
+                // exception already logged as part of handling of placement
+                break;
+            }
+            if (rel_obdef && rel_obdef.as<IfcSchema::IfcElement>() && !rel_obdef.as<IfcSchema::IfcFeatureElementSubtraction>()) {
                 auto element = rel_obdef.as<IfcSchema::IfcElement>();
                 auto rels = element.HasOpenings();
                 for (auto& rel : rels) {
@@ -578,6 +584,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
             }
             // Check if it's failed or just some unsupported case.
             if (failed_on_purpose_.find(styled_item) == failed_on_purpose_.end()) {
+                failed_on_purpose_.insert(material);
                 return nullptr;
             }
             logger::warning("Skipping unsupported material style for material: ", material);
@@ -585,6 +592,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
     }
 
     // When material does not have a representation we don't create a style from it
+    failed_on_purpose_.insert(material);
     return nullptr;
 
     /*

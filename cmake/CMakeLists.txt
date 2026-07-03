@@ -269,6 +269,14 @@ if (WITH_ROCKSDB)
     endif()
 
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
+    # See https://github.com/facebook/rocksdb/issues/981.
+    if(TARGET RocksDB::rocksdb)
+        set(IFCOPENSHELL_ROCKSDB_TARGET RocksDB::rocksdb)
+    elseif(TARGET RocksDB::rocksdb-shared)
+        set(IFCOPENSHELL_ROCKSDB_TARGET RocksDB::rocksdb-shared)
+    else()
+        message(FATAL_ERROR "RocksDB found but neither RocksDB::rocksdb nor RocksDB::rocksdb-shared target exists")
+    endif()
 
     if (WITH_ZSTD)
         # @todo do we actually need the zstd include dir or rather just pass

@@ -64,10 +64,11 @@ def assign_container(
         spatial.disable_editing(obj)
         all_elements.add(root_element)
         all_elements.update(spatial.get_decomposition(root_element))
-    if products := [e for e in root_elements if spatial.can_contain(container, root_element)]:
+    if products := [e for e in root_elements if spatial.can_contain(container, e)]:
         ifc.run("spatial.assign_container", products=products, relating_structure=container)
     for element in all_elements:
-        collector.assign(ifc.get_object(element))
+        if obj := ifc.get_object(element):
+            collector.assign(obj)
 
 
 def enable_editing_container(spatial: type[tool.Spatial], obj: bpy.types.Object) -> None:

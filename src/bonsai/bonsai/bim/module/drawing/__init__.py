@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import bpy
 
@@ -136,14 +138,34 @@ classes = (
     gizmos.GizmoArrow2D,
     gizmos.GizmoCone,
     gizmos.GizmoDimension,
-    gizmos.GizmoLock,
+    gizmos.GizmoLockOpen,
+    gizmos.GizmoLockClosed,
     gizmos.GizmoArc,
+    gizmos.GizmoLinkToggle,
+    gizmos.GizmoFillet,
+    gizmos.GizmoWallCornerIcon,
+    gizmos.GizmoWallTeeIcon,
     gizmos.GizmoPen,
     gizmos.GizmoValidate,
     gizmos.GizmoCancel,
     gizmos.GizmoPlus,
     gizmos.GizmoMinus,
+    gizmos.GizmoTrash,
+    gizmos.GizmoArrayParent,
+    gizmos.GizmoArrayAll,
+    gizmos.GizmoArrayLayerIndicator,
+    gizmos.GizmoCountLabel,
+    gizmos.GizmoMerge,
+    gizmos.GizmoSplit,
+    gizmos.GizmoUnjoin,
+    gizmos.GizmoExtend,
+    gizmos.GizmoExtendVertical,
+    gizmos.GizmoOffsetExterior,
+    gizmos.GizmoOffsetCenter,
+    gizmos.GizmoOffsetInterior,
+    gizmos.GizmoAddOpening,
     gizmos.GizmoCycle,
+    gizmos.GizmoMenu,
     # Drawing-specific gizmos
     gizmos.UglyDotGizmo,
     gizmos.ExtrusionGuidesGizmo,

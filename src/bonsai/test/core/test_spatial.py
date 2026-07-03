@@ -52,6 +52,35 @@ class TestAssignContainer:
         collector.assign("obj2").should_be_called()
         subject.assign_container(ifc, collector, spatial, container="container", objs=["obj"])
 
+    def test_root_resolves_to_self_for_a_filling(self, ifc, collector, spatial):
+        ifc.get_entity("door_obj").should_be_called().will_return("door")
+        spatial.get_root_element("door").should_be_called().will_return("door")
+        spatial.disable_editing("door_obj").should_be_called()
+        spatial.get_decomposition("door").should_be_called().will_return(["door"])
+        spatial.can_contain("container", "door").should_be_called().will_return(True)
+        ifc.run("spatial.assign_container", products=["door"], relating_structure="container").should_be_called()
+        ifc.get_object("door").should_be_called().will_return("door_obj")
+        collector.assign("door_obj").should_be_called()
+        subject.assign_container(ifc, collector, spatial, container="container", objs=["door_obj"])
+
+    def test_can_contain_is_evaluated_per_root_element(self, ifc, collector, spatial):
+        ifc.get_entity("door_obj").should_be_called().will_return("door")
+        spatial.get_root_element("door").should_be_called().will_return("door")
+        spatial.disable_editing("door_obj").should_be_called()
+        spatial.get_decomposition("door").should_be_called().will_return(["door"])
+        ifc.get_entity("opening_obj").should_be_called().will_return("opening")
+        spatial.get_root_element("opening").should_be_called().will_return("opening")
+        spatial.disable_editing("opening_obj").should_be_called()
+        spatial.get_decomposition("opening").should_be_called().will_return(["opening"])
+        spatial.can_contain("container", "door").should_be_called().will_return(True)
+        spatial.can_contain("container", "opening").should_be_called().will_return(False)
+        ifc.run("spatial.assign_container", products=["door"], relating_structure="container").should_be_called()
+        ifc.get_object("door").should_be_called().will_return("door_obj")
+        ifc.get_object("opening").should_be_called().will_return("opening_obj")
+        collector.assign("door_obj").should_be_called()
+        collector.assign("opening_obj").should_be_called()
+        subject.assign_container(ifc, collector, spatial, container="container", objs=["door_obj", "opening_obj"])
+
 
 class TestEnableEditingContainer:
     def test_run(self, spatial):

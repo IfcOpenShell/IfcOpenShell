@@ -20,6 +20,7 @@
 # ruff: noqa: F401
 
 from bonsai.tool.aggregate import Aggregate
+from bonsai.tool.array import Array
 from bonsai.tool.attribute import Attribute
 from bonsai.tool.bcf import Bcf
 from bonsai.tool.blender import Blender
@@ -37,6 +38,7 @@ from bonsai.tool.debug import Debug
 from bonsai.tool.demo import Demo
 from bonsai.tool.document import Document
 from bonsai.tool.drawing import Drawing
+from bonsai.tool.duplicate import Duplicate
 from bonsai.tool.feature import Feature
 from bonsai.tool.geometry import Geometry
 from bonsai.tool.georeference import Georeference
@@ -51,6 +53,7 @@ from bonsai.tool.misc import Misc
 from bonsai.tool.model import Model
 from bonsai.tool.nest import Nest
 from bonsai.tool.owner import Owner
+from bonsai.tool.parametric import Parametric
 from bonsai.tool.patch import Patch
 from bonsai.tool.polyline import Polyline
 from bonsai.tool.profile import Profile
@@ -63,6 +66,7 @@ from bonsai.tool.resource import Resource
 from bonsai.tool.root import Root
 from bonsai.tool.search import Search
 from bonsai.tool.sequence import Sequence
+from bonsai.tool.slab import Slab
 from bonsai.tool.snap import Snap
 from bonsai.tool.spatial import Spatial
 from bonsai.tool.structural import Structural
@@ -72,4 +76,5 @@ from bonsai.tool.system import System
 from bonsai.tool.tester import Tester
 from bonsai.tool.type import Type
 from bonsai.tool.unit import Unit
+from bonsai.tool.wall import Wall
 from bonsai.tool.web import Web

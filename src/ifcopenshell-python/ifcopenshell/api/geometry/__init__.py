@@ -33,7 +33,20 @@ from .add_door_representation import add_door_representation
 from .add_footprint_representation import add_footprint_representation
 from .add_mesh_representation import add_mesh_representation
 from .add_profile_representation import add_profile_representation
-from .add_railing_representation import add_railing_representation
+
+# add_railing_representation is the pilot for a "pure-compute + IFC-wrap" split:
+# compute_wall_mounted_handrail_geometry returns a dataclass with the raw geometry,
+# add_railing_representation wraps it into an IfcShapeRepresentation. The split lets
+# downstream consumers (Blender gizmo previews, etc.) drive the same math without
+# round-tripping through an IFC file. Future add_X_representation work is encouraged
+# to follow the same shape — sibling compute_X_geometry function + thin IFC wrapper.
+from .add_railing_representation import (
+    RailingSupport,
+    TERMINAL_TYPE,
+    WallMountedHandrailGeometry,
+    add_railing_representation,
+    compute_wall_mounted_handrail_geometry,
+)
 
 try:
     from .add_representation import add_representation
@@ -72,8 +85,12 @@ __all__ = [
     "add_door_representation",
     "add_footprint_representation",
     "add_mesh_representation",
+    "RailingSupport",
+    "TERMINAL_TYPE",
+    "WallMountedHandrailGeometry",
     "add_profile_representation",
     "add_railing_representation",
+    "compute_wall_mounted_handrail_geometry",
     "add_representation",
     "add_shape_aspect",
     "add_slab_representation",

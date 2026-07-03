@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string>
 #include <iomanip>
+#include <charconv>
 
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
@@ -47,60 +48,6 @@
 #define PERMISSIVE_FLOAT
 
 using namespace ifcopenshell;
-
-// A static locale for the real number parser. strtod() is locale-dependent, causing issues
-// in locales that have ',' as a decimal separator. Therefore the non standard _strtod_l() /
-// strtod_l() is used and a reference to the "C" locale is obtained here. The alternative is
-// to use std::istringstream::imbue(std::locale::classic()), but there are subtleties in
-// parsing in MSVC2010 and it appears to be much slower.
-#if defined(_MSC_VER)
-
-static _locale_t locale = (_locale_t)0;
-void init_locale() {
-    if (locale == (_locale_t)0) {
-        locale = _create_locale(LC_NUMERIC, "C");
-    }
-}
-
-#else
-
-#if defined(__MINGW64__) || defined(__MINGW32__)
-#include <locale>
-#include <sstream>
-
-typedef void* locale_t;
-static locale_t locale = (locale_t)0;
-
-void init_locale() {}
-
-double strtod_l(const char* start, char** end, locale_t loc) {
-    double d;
-    std::stringstream ss;
-    ss.imbue(std::locale::classic());
-    ss << start;
-    ss >> d;
-    size_t nread = ss.tellg();
-    *end = const_cast<char*>(start) + nread;
-    return d;
-}
-
-#else
-
-#ifdef __APPLE__
-#include <xlocale.h>
-#endif
-#include <locale.h>
-
-static locale_t locale = (locale_t)0;
-void init_locale() {
-    if (locale == (locale_t)0) {
-        locale = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
-    }
-}
-
-#endif
-
-#endif
 
 template <typename Reader>
 spf_lexer<Reader>::spf_lexer(Reader* stream_) {
@@ -174,27 +121,22 @@ std::string& spf_lexer<Reader>::get_temp_string() const {
 
 namespace {
 
-bool parse_int_(const char* pStart, int& val) {
-    char* pEnd;
-    long result = strtol(pStart, &pEnd, 10);
-    if (*pEnd != 0) {
+template <typename T>
+bool parse_num_(const char* pStart, size_t size, T& val) {
+    if (size == 0) {
         return false;
     }
-    val = (int)result;
-    return true;
-}
-
-bool parse_float_(const char* pStart, double& val) {
-    char* pEnd;
-#ifdef _MSC_VER
-    double result = _strtod_l(pStart, &pEnd, locale);
-#else
-    double result = strtod_l(pStart, &pEnd, locale);
-#endif
-    if (*pEnd != 0) {
+    if (*pStart == '+') {
+        ++pStart;
+        --size;
+        if (size == 0) {
+            return false;
+        }
+    }
+    auto re = std::from_chars(pStart, pStart + size, val);
+    if (re.ec != std::errc() || re.ptr != pStart + size) {
         return false;
     }
-    val = result;
     return true;
 }
 
@@ -382,7 +324,7 @@ token spf_lexer<Reader>::next() {
             return token(pos, token::Token_BOOL, str[0]);
         } else if (ttype == token::Token_IDENTIFIER) {
             int int_val;
-            if (!parse_int_(str.c_str(), int_val)) {
+            if (!parse_num_(str.c_str(), str.size(), int_val)) {
                 throw invalid_token_exception(pos, str, "instance name");
             }
             pop_pool_entry();
@@ -394,11 +336,11 @@ token spf_lexer<Reader>::next() {
             if ((first >= 'A' && first <= 'Z') || (first >= 'a' && first <= 'z')) {
                 ttype = token::Token_KEYWORD;
                 return token(pos, ttype, str);
-            } else if (parse_int_(str.c_str(), int_val)) {
+            } else if (parse_num_(str.c_str(), str.size(), int_val)) {
                 ttype = token::Token_INT;
                 pop_pool_entry();
                 return token(pos, ttype, int_val);
-            } else if (parse_float_(str.c_str(), float_val)) {
+            } else if (parse_num_(str.c_str(), str.size(), float_val)) {
                 ttype = token::Token_FLOAT;
                 pop_pool_entry();
                 return token(pos, float_val);
@@ -572,61 +514,490 @@ std::string token::to_string() {
     return result;
 }
 
-//
-// Reads the arguments from a list of token
-// Aditionally, registers the ids (i.e. #[\d]+) in the inverse map
-//
-template <typename Reader>
-void ifcopenshell::impl::in_memory_file_storage::load(ifcopenshell::spf_lexer<Reader>* tokens, std::optional<size_t> entity_instance_name, const ifcopenshell::entity* entity, parse_context& context, int attribute_index) {
-    token next = tokens->next();
+namespace {
 
-    size_t attribute_index_within_data = 0;
-    size_t return_value = 0;
+template<typename Variant, typename T>
+struct is_type_in_variant;
+
+template<typename T, typename First, typename... Rest>
+struct is_type_in_variant<std::variant<First, Rest...>, T>
+{
+    static constexpr bool value = std::is_same<T, First>::value || is_type_in_variant<std::variant<Rest...>, T>::value;
+};
+
+template<typename T, typename Last>
+struct is_type_in_variant<std::variant<Last>, T>
+{
+    static constexpr bool value = std::is_same<T, Last>::value;
+};
+
+template<typename Variant, typename T>
+constexpr bool is_type_in_variant_v = is_type_in_variant<Variant, T>::value;
+
+class parameter_type_view {
+    const ifcopenshell::declaration* declaration_;
+    const std::vector<const ifcopenshell::attribute*>* attributes_;
+    std::unique_ptr<ifcopenshell::named_type> transient_named_type_;
+
+public:
+    parameter_type_view(const ifcopenshell::declaration* declaration)
+        : declaration_(declaration)
+        , attributes_(nullptr)
+    {
+        if (declaration_ && declaration_->as_entity()) {
+            attributes_ = &declaration_->as_entity()->all_attributes();
+        } else if (declaration_ && declaration_->as_enumeration_type()) {
+            transient_named_type_.reset(new ifcopenshell::named_type(const_cast<ifcopenshell::declaration*>(declaration_)));
+        }
+    }
+
+    size_t size() const {
+        if (attributes_) {
+            return attributes_->size();
+        }
+        return declaration_ ? 1 : 0;
+    }
+
+    const ifcopenshell::parameter_type* operator[](size_t index) const {
+        if (attributes_) {
+            return index < attributes_->size() ? (*attributes_)[index]->type_of_attribute() : nullptr;
+        }
+        if (index != 0 || !declaration_) {
+            return nullptr;
+        }
+        if (auto* type_declaration = declaration_->as_type_declaration()) {
+            return type_declaration->declared_type();
+        }
+        if (declaration_->as_enumeration_type()) {
+            return transient_named_type_.get();
+        }
+        return nullptr;
+    }
+};
+
+const ifcopenshell::parameter_type* unwrap_type_declarations(const ifcopenshell::parameter_type* parameter_type) {
+    while (parameter_type && parameter_type->as_named_type() &&
+        parameter_type->as_named_type()->declared_type()->as_type_declaration()) {
+        parameter_type = parameter_type->as_named_type()->declared_type()->as_type_declaration()->declared_type();
+    }
+    return parameter_type;
+}
+
+ifcopenshell::declaration* declared_type(const ifcopenshell::parameter_type* parameter_type) {
+    parameter_type = unwrap_type_declarations(parameter_type);
+    return parameter_type && parameter_type->as_named_type() ? parameter_type->as_named_type()->declared_type() : nullptr;
+}
+
+const ifcopenshell::aggregation_type* aggregate_parameter_type(const ifcopenshell::parameter_type* parameter_type) {
+    parameter_type = unwrap_type_declarations(parameter_type);
+    return parameter_type ? parameter_type->as_aggregation_type() : nullptr;
+}
+
+const ifcopenshell::aggregation_type* nested_aggregation_type(const ifcopenshell::aggregation_type* aggregate_type) {
+    return aggregate_type ? aggregate_parameter_type(aggregate_type->type_of_element()) : nullptr;
+}
+
+void warn_attribute_count(
+    const ifcopenshell::declaration* declaration,
+    std::optional<size_t> instance_name,
+    size_t expected_size,
+    size_t actual_size
+) {
+    if (!declaration || expected_size == actual_size) {
+        return;
+    }
+    if (declaration->schema() == &Header_section_schema::get_schema()) {
+        logger::warning("Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + " for header entity " + declaration->name());
+    } else {
+        logger::warning("Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + (instance_name ? std::string(" for instance #" + std::to_string(*instance_name)) : std::string("")));
+    }
+}
+
+template <typename Fn>
+void dispatch_token_direct(ifcopenshell::token token, ifcopenshell::declaration* declaration, int attribute_index, Fn&& fn) {
+    if (token.is_binary()) {
+        fn(token.as_binary());
+    } else if (token.is_bool()) {
+        fn(token.as_bool());
+    } else if (token.is_logical()) {
+        fn(token.as_logical());
+    } else if (token.is_enumeration()) {
+        const auto& value = token.as_string();
+        if (declaration && declaration->as_enumeration_type()) {
+            try {
+                fn(enumeration_reference(declaration->as_enumeration_type(), declaration->as_enumeration_type()->lookup_enum_offset(value)));
+            } catch (ifcopenshell::exception&) {
+                logger::error("An enumeration literal '" + value + "' is not valid for type '" + declaration->name() + "' at offset " + std::to_string(token.start_pos));
+            }
+        } else {
+            logger::error("An enumeration literal '" + value + "' is not expected at attribute index '" + std::to_string(attribute_index) + "' at offset " + std::to_string(token.start_pos));
+        }
+    } else if (token.is_int()) {
+        fn(token.as_int());
+    } else if (token.is_float()) {
+        fn(token.as_float());
+    } else if (token.is_identifier()) {
+        fn(ifcopenshell::reference_or_simple_type{ifcopenshell::instance_reference{(int) token.as_identifier(), token.start_pos}});
+    } else if (token.is_string()) {
+        fn(token.as_string());
+    } else if (token.is_operator('*')) {
+        fn(derived{});
+    }
+}
+
+typedef std::variant<
+    blank,
+
+    std::vector<int>,
+    std::vector<double>,
+    std::vector<std::string>,
+    std::vector<boost::dynamic_bitset<>>,
+    std::vector<ifcopenshell::reference_or_simple_type>,
+
+    std::vector<std::vector<int>>,
+    std::vector<std::vector<double>>,
+    std::vector<std::vector<ifcopenshell::reference_or_simple_type>>
+> direct_aggregate_storage;
+
+struct direct_aggregate {
+    direct_aggregate_storage storage;
+    size_t pending_empty_aggregates = 0;
+    size_t values = 0;
+
+    template <typename T>
+    void append(const T& value) {
+        ++values;
+        if constexpr (is_type_in_variant_v<direct_aggregate_storage, std::vector<std::decay_t<T>>>) {
+            if constexpr (
+                std::is_same_v<std::decay_t<T>, std::vector<int>> ||
+                std::is_same_v<std::decay_t<T>, std::vector<double>> ||
+                std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>>
+            ) {
+                if (storage.index() == 0 && pending_empty_aggregates) {
+                    append_promoted(value);
+                    return;
+                }
+            }
+            if (pending_empty_aggregates) {
+                logger::error("Inconsistent aggregate valuation while attempting to append " + std::string(typeid(T).name()) + " after an empty nested aggregate");
+                pending_empty_aggregates = 0;
+            }
+            if (storage.index() == 0) {
+                storage = std::vector<std::decay_t<T>>{value};
+            } else if (auto* vector = std::get_if<std::vector<std::decay_t<T>>>(&storage)) {
+                vector->push_back(value);
+            } else {
+                append_promoted(value);
+            }
+        } else {
+            logger::error(std::string("Aggregates of ") + typeid(T).name() + " are not supported in the IfcOpenShell parser");
+        }
+    }
+
+    void append_empty_nested() {
+        ++values;
+        if (auto* int_vector = std::get_if<std::vector<std::vector<int>>>(&storage)) {
+            int_vector->emplace_back();
+        } else if (auto* double_vector = std::get_if<std::vector<std::vector<double>>>(&storage)) {
+            double_vector->emplace_back();
+        } else if (auto* reference_vector = std::get_if<std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>(&storage)) {
+            reference_vector->emplace_back();
+        } else if (storage.index() == 0) {
+            ++pending_empty_aggregates;
+        } else {
+            logger::error("Inconsistent aggregate valuation while attempting to append an empty nested aggregate");
+        }
+    }
+
+private:
+    template <typename T>
+    void append_promoted(const T& value) {
+        if constexpr (std::is_same_v<std::decay_t<T>, int>) {
+            if (auto* vector = std::get_if<std::vector<double>>(&storage)) {
+                vector->push_back((double) value);
+                return;
+            }
+        }
+        if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+            if (auto* vector = std::get_if<std::vector<int>>(&storage)) {
+                std::vector<double> promoted(vector->begin(), vector->end());
+                promoted.push_back(value);
+                storage = std::move(promoted);
+                return;
+            }
+        }
+        if constexpr (std::is_same_v<std::decay_t<T>, std::vector<int>>) {
+            if (storage.index() == 0) {
+                std::vector<std::vector<int>> promoted(pending_empty_aggregates);
+                pending_empty_aggregates = 0;
+                promoted.push_back(value);
+                storage = std::move(promoted);
+                return;
+            }
+            if (auto* vector = std::get_if<std::vector<std::vector<int>>>(&storage)) {
+                vector->push_back(value);
+                return;
+            }
+            if (auto* vector = std::get_if<std::vector<std::vector<double>>>(&storage)) {
+                std::vector<double> promoted(value.begin(), value.end());
+                vector->push_back(std::move(promoted));
+                return;
+            }
+        }
+        if constexpr (std::is_same_v<std::decay_t<T>, std::vector<double>>) {
+            if (storage.index() == 0) {
+                std::vector<std::vector<double>> promoted(pending_empty_aggregates);
+                pending_empty_aggregates = 0;
+                promoted.push_back(value);
+                storage = std::move(promoted);
+                return;
+            }
+            if (auto* vector = std::get_if<std::vector<std::vector<double>>>(&storage)) {
+                vector->push_back(value);
+                return;
+            }
+            if (auto* vector = std::get_if<std::vector<std::vector<int>>>(&storage)) {
+                std::vector<std::vector<double>> promoted;
+                promoted.reserve(vector->size() + 1);
+                for (const auto& nested : *vector) {
+                    promoted.emplace_back(nested.begin(), nested.end());
+                }
+                promoted.push_back(value);
+                storage = std::move(promoted);
+                return;
+            }
+        }
+        if constexpr (std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>>) {
+            if (storage.index() == 0) {
+                std::vector<std::vector<ifcopenshell::reference_or_simple_type>> promoted(pending_empty_aggregates);
+                pending_empty_aggregates = 0;
+                promoted.push_back(value);
+                storage = std::move(promoted);
+                return;
+            }
+            if (auto* vector = std::get_if<std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>(&storage)) {
+                vector->push_back(value);
+                return;
+            }
+        }
+
+        auto current = std::visit([](auto v) {
+            if constexpr (!std::is_same_v<decltype(v), blank>) {
+                return std::string(typeid(typename decltype(v)::value_type).name());
+            } else {
+                return std::string{};
+            }
+        }, storage);
+        logger::error("Inconsistent aggregate valuation while attempting to append " + std::string(typeid(T).name()) + " to an aggregate of " + current);
+    }
+};
+
+void append_empty_direct_aggregate(const ifcopenshell::aggregation_type* aggregate_type, direct_aggregate& target) {
+    if (!aggregate_type) {
+        target.append_empty_nested();
+        return;
+    }
+
+    auto argument_type = ifcopenshell::make_aggregate(ifcopenshell::from_parameter_type(aggregate_type->type_of_element()));
+    if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_INT) {
+        target.storage = std::vector<int>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_DOUBLE) {
+        target.storage = std::vector<double>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_STRING) {
+        target.storage = std::vector<std::string>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_BINARY) {
+        target.storage = std::vector<boost::dynamic_bitset<>>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+        target.storage = std::vector<ifcopenshell::reference_or_simple_type>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
+        target.storage = std::vector<std::vector<int>>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+        target.storage = std::vector<std::vector<double>>{};
+    } else if (argument_type == ifcopenshell::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+        target.storage = std::vector<std::vector<ifcopenshell::reference_or_simple_type>>{};
+    } else {
+        target.append_empty_nested();
+    }
+}
+
+template <typename T>
+void set_direct_attribute(
+    in_memory_attribute_storage& storage,
+    std::optional<size_t> instance_name,
+    ifcopenshell::unresolved_references* references_to_resolve,
+    size_t attribute_index,
+    int resolve_reference_index,
+    const T& value
+) {
+    if constexpr (std::is_same_v<std::decay_t<T>, ifcopenshell::reference_or_simple_type>) {
+        if (instance_name && references_to_resolve) {
+            references_to_resolve->push_back(std::make_pair(
+                mutable_attribute_value{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index},
+                value
+            ));
+        }
+    } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<ifcopenshell::reference_or_simple_type>>) {
+        if (instance_name && references_to_resolve) {
+            references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, value});
+        }
+    } else if constexpr (std::is_same_v<std::decay_t<T>, std::vector<std::vector<ifcopenshell::reference_or_simple_type>>>) {
+        if (instance_name && references_to_resolve) {
+            references_to_resolve->push_back({{(uint32_t) *instance_name, resolve_reference_index == -1 ? (uint8_t) attribute_index : (uint8_t) resolve_reference_index}, value});
+        }
+    } else {
+        storage.set(attribute_index, value);
+    }
+}
+
+template <typename Reader>
+void skip_aggregate(ifcopenshell::spf_lexer<Reader>* tokens) {
+    size_t depth = 1;
+    while (depth) {
+        token next = tokens->next();
+        if (!next) {
+            break;
+        }
+        if (next.is_operator('(')) {
+            ++depth;
+        } else if (next.is_operator(')')) {
+            --depth;
+        }
+    }
+}
+
+template <typename Reader>
+direct_aggregate read_direct_aggregate(
+    ifcopenshell::impl::in_memory_file_storage& storage,
+    ifcopenshell::spf_lexer<Reader>* tokens,
+    std::optional<size_t> entity_instance_name,
+    const ifcopenshell::entity* entity,
+    int attribute_index,
+    const ifcopenshell::aggregation_type* aggregate_type
+) {
+    direct_aggregate aggregate;
+    token next = tokens->next();
 
     while (next) {
         if (next.is_operator(',')) {
-            if (attribute_index == -1) {
-                attribute_index_within_data += 1;
-            }
         } else if (next.is_operator(')')) {
             break;
         } else if (next.is_operator('(')) {
-            return_value++;
-            load(tokens, entity_instance_name, entity, context.push(), attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
-        } else {
-            return_value++;
-            if (next.is_identifier() && entity && entity_instance_name) {
-                register_inverse(*entity_instance_name, entity, next.value_int, attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
+            auto nested = read_direct_aggregate(storage, tokens, entity_instance_name, entity, attribute_index, nested_aggregation_type(aggregate_type));
+            if (nested.values == 0 && nested.storage.index() == 0) {
+                aggregate.append_empty_nested();
+            } else {
+                std::visit([&aggregate](const auto& value) {
+                    if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
+                        aggregate.append(value);
+                    }
+                }, nested.storage);
             }
+        } else if (next.is_keyword()) {
+            try {
+                const auto* declaration = (storage.schema ? storage.schema : storage.file->schema())->declaration_by_name(next.as_string());
+                tokens->next();
+                auto data = storage.load(tokens, entity_instance_name, declaration, entity, attribute_index);
+                storage.read_simple_type_instances.push_back(data);
+                aggregate.append(ifcopenshell::reference_or_simple_type{express::Base(data)});
+            } catch (exception& e) {
+                logger::message(logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
+            }
+        } else {
+            if (next.is_identifier() && entity && entity_instance_name) {
+                storage.register_inverse((unsigned)*entity_instance_name, entity, next.value_int, attribute_index);
+            }
+            dispatch_token_direct(next, aggregate_type && aggregate_type->type_of_element()->as_named_type() ? aggregate_type->type_of_element()->as_named_type()->declared_type() : nullptr, attribute_index, [&aggregate](const auto& value) {
+                aggregate.append(value);
+            });
+        }
+        next = tokens->next();
+    }
 
-            if (next.is_keyword()) {
+    if (aggregate.values == 0) {
+        append_empty_direct_aggregate(aggregate_type, aggregate);
+    }
+
+    return aggregate;
+}
+
+} // namespace
+
+//
+// Reads the arguments from a list of tokens directly into instance_data storage.
+// Additionally, registers the ids (i.e. #[\d]+) in the inverse map.
+//
+template <typename Reader>
+shared_pointer_type ifcopenshell::impl::in_memory_file_storage::load(
+    ifcopenshell::spf_lexer<Reader>* tokens,
+    std::optional<size_t> entity_instance_name,
+    const ifcopenshell::declaration* declaration,
+    const ifcopenshell::entity* entity,
+    int attribute_index,
+    bool coerce_attribute_count
+) {
+    static_cast<void>(coerce_attribute_count);
+
+    parameter_type_view parameter_types(declaration);
+    const size_t expected_size = parameter_types.size();
+    in_memory_attribute_storage storage(expected_size);
+
+    token next = tokens->next();
+    size_t attribute_index_within_data = 0;
+    size_t values_read = 0;
+
+    while (next) {
+        if (next.is_operator(',')) {
+            ++attribute_index_within_data;
+        } else if (next.is_operator(')')) {
+            break;
+        } else {
+            ++values_read;
+            const bool retain_value = attribute_index_within_data < expected_size;
+            const ifcopenshell::parameter_type* parameter_type = retain_value ? parameter_types[attribute_index_within_data] : nullptr;
+            const int reference_attribute_index = attribute_index == -1 ? (int) attribute_index_within_data : attribute_index;
+
+            if (next.is_operator('(')) {
+                if (retain_value) {
+                    auto aggregate = read_direct_aggregate(*this, tokens, entity_instance_name, entity, reference_attribute_index, aggregate_parameter_type(parameter_type));
+                    std::visit([&](const auto& value) {
+                        if constexpr (!std::is_same_v<std::decay_t<decltype(value)>, blank>) {
+                            set_direct_attribute(storage, entity_instance_name, references_to_resolve, attribute_index_within_data, attribute_index, value);
+                        }
+                    }, aggregate.storage);
+                } else {
+                    skip_aggregate(tokens);
+                }
+            } else if (next.is_keyword()) {
                 try {
-                    const auto* decl = (schema ? schema : file->schema())->declaration_by_name(next.as_string());
-                    parse_context ps;
+                    const auto* simple_declaration = (schema ? schema : file->schema())->declaration_by_name(next.as_string());
                     tokens->next();
-                    // The only case we know where a defined type contains entity
-                    // instance references is IfcPropertySetDefinitionSet. For
-                    // that purpose we propagate the entity_instance_name to
-                    // register inverses to the host entity (and not the defined
-                    // type) and to be able to actually register the references in
-                    // the 2nd pass.
-                    load(tokens, entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
-                    express::Base simple_type_instance(read_simple_type_instances.emplace_back(
-                        ps.construct(file, entity_instance_name, *references_to_resolve, decl, std::nullopt, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index))
-                    );
-                    // @todo do we need express::Base here? Or should we just push instance_data?
-                    context.push(simple_type_instance);
+                    if (retain_value) {
+                        auto data = load(tokens, entity_instance_name, simple_declaration, entity, reference_attribute_index);
+                        read_simple_type_instances.push_back(data);
+                        storage.set(attribute_index_within_data, express::Base(data));
+                    } else {
+                        skip_aggregate(tokens);
+                    }
                 } catch (exception& e) {
                     logger::message(logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
-                    // #4070 We didn't actually capture an aggregate entry, undo length increment.
-                    return_value--;
+                    --values_read;
                 }
             } else {
-                context.push(next);
+                if (next.is_identifier() && entity && entity_instance_name) {
+                    register_inverse((unsigned)*entity_instance_name, entity, next.value_int, reference_attribute_index);
+                }
+                if (retain_value) {
+                    dispatch_token_direct(next, declared_type(parameter_type), (int) attribute_index_within_data, [&](const auto& value) {
+                        set_direct_attribute(storage, entity_instance_name, references_to_resolve, attribute_index_within_data, attribute_index, value);
+                    });
+                }
             }
         }
         next = tokens->next();
     }
+
+    warn_attribute_count(declaration, entity_instance_name, expected_size, values_read);
+    return ifcopenshell::make_pointer_type<instance_data>(file, declaration, (declaration && declaration->as_entity()) ? (uint32_t)entity_instance_name.value_or(0) : 0, std::move(storage));
 }
 
 template <typename Reader>
@@ -640,17 +1011,13 @@ void ifcopenshell::impl::in_memory_file_storage::try_read_semicolon(ifcopenshell
 
 void ifcopenshell::impl::in_memory_file_storage::register_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, int inst_id, int attribute_index) {
     // Assume a check on token type has already been performed
-    byref_excl_[inst_id][{from_entity->index_in_schema(), attribute_index}].push_back(id_from);
+    byref_excl_.add((uint32_t)inst_id, (uint32_t)id_from, (uint16_t)from_entity->index_in_schema(), attribute_index);
 }
 
 void ifcopenshell::impl::in_memory_file_storage::unregister_inverse(unsigned id_from, const ifcopenshell::entity* from_entity, const express::Base& inst, int attribute_index) {
-    auto& ids = byref_excl_[inst.id()][{from_entity->index_in_schema(), attribute_index}];
-    auto iter = std::find(ids.begin(), ids.end(), id_from);
-    if (iter == ids.end()) {
+    if (!byref_excl_.remove((uint32_t)inst.id(), (uint32_t)id_from, (uint16_t)from_entity->index_in_schema(), attribute_index)) {
         // @todo inverses also need to be populated when multiple instances are added to a new file.
         // throw ifcopenshell::exception("Instance not found among inverses");
-    } else {
-        ids.erase(iter);
     }
 }
 
@@ -1382,17 +1749,16 @@ void read_terminal(spf_lexer<Reader>& lexer, const std::string& term, bool trail
 }
 
 template <typename Reader>
-std::shared_ptr<instance_data> read_header_entity(
+shared_pointer_type read_header_entity(
     ifcopenshell::file* file,
     ifcopenshell::impl::in_memory_file_storage& storage,
     spf_lexer<Reader>& lexer,
     ifcopenshell::unresolved_references& references_to_resolve,
     const ifcopenshell::entity& decl) {
-    parse_context pc;
     lexer.next();
-    storage.load(&lexer, std::nullopt, nullptr, pc, -1);
-    auto result = pc.construct(file, std::nullopt, references_to_resolve, &decl, decl.attribute_count(), -1);
-    return result;
+    storage.file = file;
+    storage.references_to_resolve = &references_to_resolve;
+    return storage.load(&lexer, std::nullopt, &decl, nullptr, -1);
 }
 
 template <typename Reader>
@@ -1480,6 +1846,20 @@ void ifcopenshell::instance_streamer<Reader>::initialize_header() {
     }
 
     storage_.schema = schema_;
+
+    types_to_bypass_materialized_.resize(schema_->declarations().size(), false);
+    for (auto& bp : types_to_bypass_) {
+        std::function<void(const ifcopenshell::entity*)> mark;
+        mark = [&](const ifcopenshell::entity* e) {
+            types_to_bypass_materialized_[e->index_in_schema()] = true;
+            for (auto& subtype : e->subtypes()) {
+                mark(subtype);
+            }
+        };
+        if (auto* e = bp->as_entity()) {
+            mark(e);
+        }
+    }
 }
 
 template <typename Reader>
@@ -1546,8 +1926,6 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(ifcopenshell::file* f
     , schema_(nullptr)
     , progress_(0)
 {
-    init_locale();
-
     if constexpr (std::is_same_v<Reader, file_reader<full_buffer_impl>>) {
         owned_stream_ = std::make_unique<Reader>(caller_fed_tag{});
     } else if constexpr (std::is_same_v<Reader, file_reader<pushed_sequential_impl>>) {
@@ -1570,10 +1948,9 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(const std::string& fn
     , owner_(f)
     , token_stream_(3, token{})
     , schema_(nullptr)
-    , progress_(0) {
-    init_locale();
-
-    if constexpr (std::is_same_v<Reader, file_reader<full_buffer_impl>>) {
+    , progress_(0)
+{
+   if constexpr (std::is_same_v<Reader, file_reader<full_buffer_impl>>) {
         (void)mmap;
         owned_stream_ = std::make_unique<Reader>(fn);
 #ifdef USE_MMAP
@@ -1600,8 +1977,6 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(void* data, int lengt
     , schema_(nullptr)
     , progress_(0)
 {
-    init_locale();
-
     if constexpr (std::is_same_v<Reader, file_reader<full_buffer_impl>>) {
         owned_stream_ = std::make_unique<Reader>(std::string((char*)data, length), caller_fed_tag{});
     } else if constexpr (std::is_same_v<Reader, file_reader<pushed_sequential_impl>>) {
@@ -1623,9 +1998,8 @@ ifcopenshell::instance_streamer<Reader>::instance_streamer(Reader* stream, ifcop
     , owner_(f)
     , token_stream_(3, token{})
     , schema_(nullptr)
-    , progress_(0) {
-    init_locale();
-
+    , progress_(0)
+{
     lexer_ = std::make_unique<spf_lexer<Reader>>(stream_);
     good_ = file_open_status::NO_HEADER;
     initialize_header();
@@ -1643,25 +2017,37 @@ void ifcopenshell::instance_streamer<Reader>::bypass_types(const std::set<std::s
 }
 
 template <typename Reader>
-std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_ptr<instance_data>>> ifcopenshell::instance_streamer<Reader>::read_instance() {
-    std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_ptr<instance_data>>> return_value;
+std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointer_type>> ifcopenshell::instance_streamer<Reader>::read_instance() {
+    std::optional<std::tuple<size_t, const ifcopenshell::declaration*, shared_pointer_type>> return_value;
 
     if (yield_header_instances_ && header_ && yielded_header_instances_ < 3) {
         if (yielded_header_instances_ == 0) {
             return_value.emplace(
                 0,
                 &header_->file_description().declaration(),
+#ifdef IFOPSH_SAFE_INSTANCE
                 header_->file_description().data_weak().lock());
+#else
+                header_->file_description().data_weak());
+#endif
         } else if (yielded_header_instances_ == 1) {
             return_value.emplace(
                 0,
                 &header_->file_name().declaration(),
+#ifdef IFOPSH_SAFE_INSTANCE
                 header_->file_name().data_weak().lock());
+#else
+                header_->file_name().data_weak());
+#endif
         } else if (yielded_header_instances_ == 2) {
             return_value.emplace(
                 0,
                 &header_->file_schema().declaration(),
+#ifdef IFOPSH_SAFE_INSTANCE
                 header_->file_schema().data_weak().lock());
+#else
+                header_->file_schema().data_weak());
+#endif
         }
         yielded_header_instances_ += 1;
         return return_value;
@@ -1688,36 +2074,31 @@ std::optional<std::tuple<size_t, const ifcopenshell::declaration*, std::shared_p
                 goto advance;
             }
 
-            for (auto& ty : types_to_bypass_) {
-                if (entity_type->is(*ty)) {
-                    bypassed_instances_.push_back(current_id);
-                    current_id = 0;
-                    goto advance;
-                }
+            if (types_to_bypass_materialized_[entity_type->index_in_schema()]) {
+                bypassed_instances_.push_back(current_id);
+                current_id = 0;
+                goto advance;
             }
 
-            parse_context ps;
             lexer_->next();
             try {
-                storage_.load(lexer_.get(), current_id, entity_type->as_entity(), ps, -1);
+                auto data = storage_.load(lexer_.get(), current_id, entity_type, entity_type->as_entity(), -1, coerce_attribute_count);
+
+                if (((++progress_) % 1000) == 0) {
+                    std::stringstream ss;
+                    ss << "\r#" << current_id;
+                    logger::status(ss.str(), false);
+                }
+
+                return_value.emplace(
+                    (size_t)current_id,
+                    entity_type,
+                    data);
             } catch (const invalid_token_exception& e) {
                 good_ = file_open_status::INVALID_SYNTAX;
                 logger::error(e);
                 break;
             }
-
-            if (((++progress_) % 1000) == 0) {
-                std::stringstream ss;
-                ss << "\r#" << current_id;
-                logger::status(ss.str(), false);
-            }
-
-            auto data = ps.construct(owner_, current_id, references_to_resolve_, entity_type, std::nullopt, -1, coerce_attribute_count);
-
-            return_value.emplace(
-                (size_t)current_id,
-                entity_type,
-                data);
         }
     advance:
         token next_token;
@@ -1747,8 +2128,6 @@ template class IFC_PARSE_API ifcopenshell::instance_streamer<file_reader<full_bu
 
 template <typename Reader>
 void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, const ifcopenshell::schema_definition*& schema, unsigned int& max_id, const std::set<std::string>& typed_to_bypass) {
-    init_locale();
-
     schema = nullptr;
 
     if (!s->size() || s->eof()) {
@@ -1831,7 +2210,8 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
     }
 
     good_ = streamer.status();
-    byref_excl_ = streamer.inverses();
+    byref_excl_ = std::move(streamer.inverses());
+    byref_excl_.sort();
     read_simple_type_instances = streamer.steal_instances();
 
     logger::status("\rDone scanning file   ");
@@ -1861,7 +2241,11 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                         express::Base inst = storage->get_attribute_value(attr_index);
                         if (!inst.declaration().as_entity()) {
                             // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
+#ifdef IFOPSH_SAFE_INSTANCE
                             storage = inst.data_weak().lock();
+#else
+                            storage = inst.data_weak();
+#endif
                             attr_index = 0;
                         }
                     }
@@ -1901,7 +2285,11 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 express::Base inst = storage->get_attribute_value(attr_index);
                 if (!inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
+#ifdef IFOPSH_SAFE_INSTANCE
                     storage = inst.data_weak().lock();
+#else
+                    storage = inst.data_weak();
+#endif
                     attr_index = 0;
                 }
             }
@@ -1939,7 +2327,11 @@ void ifcopenshell::impl::in_memory_file_storage::read_from_stream(Reader* s, con
                 express::Base inst = storage->get_attribute_value(attr_index);
                 if (!inst.declaration().as_entity()) {
                     // Probably a case of IfcPropertySetDefinitionSet, divert storage of reference to the simply type instance
+#ifdef IFOPSH_SAFE_INSTANCE
                     storage = inst.data_weak().lock();
+#else
+                    storage = inst.data_weak();
+#endif
                     attr_index = 0;
                 }
             }
@@ -2362,28 +2754,7 @@ void ifcopenshell::impl::in_memory_file_storage::process_deletion_inverse(const 
 
     // Delete inverses into entity
     byref_excl_.erase(id);
-
-    // This is based on traversal which needs instances to still be contained in the map.
-    // another option would be to keep byid intact for the remainder of this loop
-    auto entity_attributes = traverse(entity, 1);
-    for (auto it = entity_attributes.begin(); it != entity_attributes.end(); ++it) {
-        auto entity_attribute = *it;
-        if (entity_attribute == entity) {
-            continue;
-        }
-        const unsigned int name = entity_attribute.id();
-        // Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
-        if (name != 0) {
-            // Find instances entity -> other
-            // and update inverses from entity into other
-            auto submap = byref_excl_.find(name);
-            if (submap != byref_excl_.end()) {
-                for (auto& [key, ids] : submap->second) {
-                    ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
-                }
-            }
-        }
-    }
+    byref_excl_.remove_source(id);
 }
 
 namespace {
@@ -2453,14 +2824,10 @@ std::vector<express::Base> file::instances_by_reference(int t) {
     std::vector<express::Base> ret;
     std::visit([this, t, &ret](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto submap = x.byref_excl_.find(t);
-            if (submap == x.byref_excl_.end()) {
-                return;
-            }
-            for (auto& [key, ids] : submap->second) {
-                for (auto& i : ids) {
-                    ret.push_back(instance_by_id(i));
-                }
+            auto range = x.byref_excl_.equal_range((uint32_t)t);
+            ret.reserve(ret.size() + (size_t)std::distance(range.first, range.second));
+            for (auto it = range.first; it != range.second; ++it) {
+                ret.push_back(instance_by_id(it->source_id));
             }
         }
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -2611,18 +2978,16 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
 
     // Mapping of instance id to attribute offset.
     std::map<int, std::vector<int>> mapping;
+    bool handled = false;
 
-    std::visit([&mapping, instance_id](const auto& x) {
+    std::visit([&mapping, &return_value, &handled, instance_id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto submap = x.byref_excl_.find(instance_id);
-            if (submap == x.byref_excl_.end()) {
-                return;
-            }
-            for (auto& [key, ids] : submap->second) {
-                for (auto& i : ids) {
-                    mapping[i].push_back(std::get<1>(key));
-                }
+            handled = true;
+            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
+            return_value.reserve((size_t)std::distance(range.first, range.second));
+            for (auto it = range.first; it != range.second; ++it) {
+                return_value.push_back(it->attribute_index);
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -2642,6 +3007,10 @@ std::vector<int> file::get_inverse_indices_by_id(int instance_id) {
 #endif
         }
     }, storage_);
+
+    if (handled) {
+        return return_value;
+    }
 
     auto refs = instances_by_reference(instance_id);
 
@@ -2677,29 +3046,19 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
         return return_value;
     }
     
-    std::visit([&return_value, this, attribute_index, instance_id, type](const auto& x) {
+    std::visit([&return_value, this, attribute_index, instance_id, type](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto submap = x.byref_excl_.find(instance_id);
-            if (submap != x.byref_excl_.end()) {
-                visit_subtypes(type->as_entity(), [this, attribute_index, instance_id, &return_value, &submap](const ifcopenshell::declaration* ent) {
-                    if (attribute_index == -1) {
-                        auto lower = submap->second.lower_bound({ent->index_in_schema(), std::numeric_limits<short>::min()});
-                        auto upper = submap->second.upper_bound({ent->index_in_schema(), std::numeric_limits<short>::max()});
-                        for (auto it = lower; it != upper; ++it) {
-                            for (auto& i : it->second) {
-                                return_value.push_back(instance_by_id(i).template as<express::Entity>());
-                            }
-                        }
-                    } else {
-                        auto it = submap->second.find({ent->index_in_schema(), attribute_index});
-                        if (it != submap->second.end()) {
-                            for (auto& i : it->second) {
-                                return_value.push_back(instance_by_id(i).template as<express::Entity>());
-                            }
-                        }
-                    }
-                });
+            std::vector<uint8_t> source_types(schema()->declarations().size(), 0);
+            visit_subtypes(type->as_entity(), [&source_types](const ifcopenshell::declaration* ent) {
+                source_types[ent->index_in_schema()] = 1;
+            });
+            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
+            for (auto it = range.first; it != range.second; ++it) {
+                if (it->source_entity < source_types.size() && source_types[it->source_entity] &&
+                    (attribute_index == -1 || it->attribute_index == attribute_index)) {
+                    return_value.push_back(instance_by_id(it->source_id).template as<express::Entity>());
+                }
             }
         }
 #ifdef IFOPSH_WITH_ROCKSDB
@@ -2737,17 +3096,12 @@ std::vector<express::Entity> file::get_inverse(int instance_id, const ifcopenshe
 size_t file::get_total_inverses(int instance_id) {
     std::set<uint32_t> counted_ids;
 
-    std::visit([&counted_ids, instance_id](const auto& x) {
+    std::visit([&counted_ids, instance_id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            auto submap = x.byref_excl_.find(instance_id);
-            if (submap == x.byref_excl_.end()) {
-                return;
-            }
-            for (auto& [key, ids] : submap->second) {
-                for (auto& i : ids) {
-                    counted_ids.insert(i);
-                }
+            auto range = x.byref_excl_.equal_range((uint32_t)instance_id);
+            for (auto it = range.first; it != range.second; ++it) {
+                counted_ids.insert(it->source_id);
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             // @todo
@@ -2846,7 +3200,7 @@ void ifcopenshell::file::build_inverses_(const express::Base& inst) {
             std::visit([entity_attribute_id, decl, idx, inst](auto& x) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-                    x.byref_excl_[entity_attribute_id][{decl->index_in_schema(), idx}].push_back(inst.id());
+                    x.byref_excl_.add(entity_attribute_id, inst.id(), (uint16_t)decl->index_in_schema(), idx);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
                     // @todo
                 }

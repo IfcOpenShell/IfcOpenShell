@@ -22,7 +22,8 @@ uv run pyodide xbuildenv install "${PYODIDE_VERSION}"
 uv run pyodide xbuildenv install-emscripten
 
 EMSDK_ROOT="${PYODIDE_XBUILDENV}/emsdk"
-source "${EMSDK_ROOT}/emsdk_env.sh"
+[ -f "${EMSDK_ROOT}/emsdk_env.sh" ] && source "${EMSDK_ROOT}/emsdk_env.sh"
+[ -f "${EMSDK_ROOT}/../../emsdk_env.sh" ] && source "${EMSDK_ROOT}/../../emsdk_env.sh"
 which emcc
 emcc --version
 

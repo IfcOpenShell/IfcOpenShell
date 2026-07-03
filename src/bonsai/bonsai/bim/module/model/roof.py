@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from math import cos, pi, radians, tan
-from typing import Any, Literal, Union
+from math import atan2, cos, degrees, pi, radians, tan
+from typing import Any, ClassVar, Literal, Union
 
 import bmesh
 import bpy
@@ -32,8 +32,11 @@ from mathutils import Quaternion, Vector
 
 import bonsai.core.root
 import bonsai.tool as tool
+from bonsai.bim.module.drawing import gizmos as gizmo
+from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig, IconSlot
 from bonsai.bim.module.model.data import RoofData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.parametric_lifecycle import CycleTypeMixin, PathPreservingEditMixin
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoof.htm
@@ -210,7 +213,13 @@ def generate_hipped_roof_bmesh(
 
     new_verts = [bm.verts.new(v) for v in verts]
     new_edges = [bm.edges.new([new_verts[vi] for vi in edge]) for edge in edges]
-    new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces]
+    # Skip degenerate faces. ``bpypolyskel.polygonize`` can emit a face whose
+    # vertex list contains the same index twice on certain footprint /
+    # slope combinations (the straight-skeleton collapses two ridge events
+    # onto the same vertex). ``bm.faces.new`` rejects those with
+    # ``found the same (BMVert) used multiple times``; dropping them keeps
+    # the rest of the roof intact instead of aborting the whole rebuild.
+    new_faces = [bm.faces.new([new_verts[vi] for vi in face]) for face in faces if len(set(face)) == len(face)]
 
     if mode == "HEIGHT":  # Calculate the angle we ended up with.
         new_faces[0].normal_update()
@@ -396,6 +405,11 @@ def generate_hipped_roof_bmesh(
         if is_internal:
             faces_to_delete.add(face)
     bmesh.ops.delete(bm, geom=list(faces_to_delete), context="FACES")
+    # Final pass: ``remove_doubles`` + internal-face deletion above can leave
+    # the bottom slab faces flipped at low slopes, where the kernel's
+    # "outward" inference becomes ambiguous on near-flat geometry. Recompute
+    # once more on the final topology so the eave plane points down.
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     return bm
 
 
@@ -608,61 +622,169 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         tool.Model.add_body_representation(obj)
 
 
-class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_roof"
-    bl_label = "Enable Editing Roof"
-    bl_options = {"REGISTER"}
+class _RoofEditMixin(PathPreservingEditMixin):
+    """Type-specific hooks for roof parametric-edit operators. Single-object
+    (active_object). ``path_data`` is preserved through the edit; the separate
+    ``Enable/Finish/CancelEditingRoofPath`` operators handle path editing."""
 
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        props = tool.Model.get_roof_props(obj)
-        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
-        # required since we could load pset from .ifc and BIMRoofProperties won't be set
-        props.set_props_kwargs_from_ifc_data(data)
-        props.is_editing = True
-        return {"FINISHED"}
+    pset_name = "BBIM_Roof"
 
+    @classmethod
+    def _is_element_type(cls, element):
+        return tool.Parametric.is_roof(element)
 
-class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.cancel_editing_roof"
-    bl_label = "Cancel Editing Roof"
-    bl_options = {"REGISTER"}
+    @classmethod
+    def _get_props(cls, obj: bpy.types.Object):
+        return tool.Model.get_roof_props(obj)
 
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
-        props = tool.Model.get_roof_props(obj)
+    @classmethod
+    def _update_pset(cls, element, data: dict) -> None:
+        update_bbim_roof_pset(element, data)
 
-        # restore previous settings since editing was canceled
-        props.set_props_kwargs_from_ifc_data(data)
+    @classmethod
+    def _update_modifier_ifc_data(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        update_roof_modifier_ifc_data(context)
+
+    @classmethod
+    def _update_modifier_bmesh(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
         update_roof_modifier_bmesh(obj)
 
-        props.is_editing = False
-        return {"FINISHED"}
+    @classmethod
+    def _restore_viewport_after_cancel(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        """Rebuild the roof bmesh from the just-restored draft props so the
+        viewport reverts to the pre-edit geometry. Same helper the modal
+        edits use, just driven by the cancelled props instead of in-flight
+        drag values."""
+        update_roof_modifier_bmesh(obj)
 
 
-class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.finish_editing_roof"
-    bl_label = "Finish Editing Roof"
-    bl_options = {"REGISTER"}
+EnableEditingRoof, FinishEditingRoof, CancelEditingRoof = tool.Parametric.build_edit_lifecycle(
+    "roof",
+    _RoofEditMixin,
+    labels=(
+        ("Enable Editing Roof", ""),
+        ("Finish Editing Roof", ""),
+        ("Cancel Editing Roof", ""),
+    ),
+    module_name=__name__,
+)
 
-    def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        props = tool.Model.get_roof_props(obj)
 
-        pset_data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")
-        path_data = pset_data["data_dict"]["path_data"]
+# Fixed horizontal run for the slope gizmo: the draggable value is the
+# vertical rise at this distance from the anchor, in the rise/run convention.
+_ROOF_SLOPE_REFERENCE_RUN = 1.0
+# One degree shy of vertical; avoids tan() blow-up when the user drags the
+# rise handle past the gizmo's anchor.
+_ROOF_MAX_SLOPE_ANGLE = pi / 2 - 0.001
 
-        roof_data = props.get_general_kwargs(convert_to_project_units=True)
-        roof_data["path_data"] = path_data
-        props.is_editing = False
 
-        update_bbim_roof_pset(element, roof_data)
-        update_roof_modifier_ifc_data(context)
-        return {"FINISHED"}
+def _roof_has_openings() -> bool:
+    """``visible_when`` predicate for the toggle_openings idle slot. True iff
+    the active object's IFC element exposes a non-empty HasOpenings inverse."""
+    obj = bpy.context.active_object
+    if obj is None:
+        return False
+    element = tool.Ifc.get_entity(obj)
+    if element is None:
+        return False
+    return tool.Geometry.has_openings(element)
+
+
+class CycleRoofGenerationMethod(bpy.types.Operator, tool.Ifc.Operator, CycleTypeMixin):
+    """Cycle the roof generation method (HEIGHT ↔ ANGLE). Shift+click cycles in reverse."""
+
+    bl_idname = "bim.cycle_roof_generation_method"
+    bl_label = "Cycle Roof Generation Method"
+    bl_options = {"REGISTER", "UNDO"}
+
+    element_checker = tool.Parametric.is_roof
+    props_getter = tool.Model.get_roof_props
+    type_literal = tool.Model.RoofGenerationMethod
+    type_attr = "generation_method"
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        return self._cycle_type(context)
+
+
+class GizmoRoofEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
+    bl_idname = "OBJECT_GGT_bim_roof_edition"
+    bl_label = "Roof Editing Gizmo"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "WINDOW"
+    bl_options = {"3D", "PERSISTENT"}
+
+    enable_editing_operator = "bim.enable_editing_roof"
+    finish_editing_operator = "bim.finish_editing_roof"
+    cancel_editing_operator = "bim.cancel_editing_roof"
+    cycle_type_operator = "bim.cycle_roof_generation_method"
+
+    # Positions for all three dimensions are set per-frame by the position
+    # override below; no static ``matrix_position`` is needed.
+    dimension_gizmo_props = [
+        DimensionGizmoConfig(
+            attr_name="height",
+            axis=(0, 0, 1),
+            min_value=0.01,
+            visibility_condition=lambda p: p.generation_method == "HEIGHT",
+        ),
+        DimensionGizmoConfig(
+            attr_name="angle",
+            axis=(0, 0, 1),
+            prop_name="Slope",
+            min_value=0.0,
+            visibility_condition=lambda p: p.generation_method == "ANGLE",
+            compute_value=lambda p: tan(p.angle) * _ROOF_SLOPE_REFERENCE_RUN,
+            apply_value=lambda p, rise: setattr(
+                p, "angle", min(_ROOF_MAX_SLOPE_ANGLE, max(0.0, atan2(rise, _ROOF_SLOPE_REFERENCE_RUN)))
+            ),
+            text_formatter=lambda p, rise: (f"{tool.Unit.format_distance(rise)} ({degrees(p.angle):.1f}°)"),
+        ),
+        DimensionGizmoConfig(
+            attr_name="roof_thickness",
+            axis=(0, 0, -1),
+            min_value=0.001,
+            # The line shows the perpendicular slab thickness (matching the
+            # pset value and the drag delta); the true vertical span is
+            # ``roof_thickness / cos(angle)``, longer than what is drawn.
+        ),
+    ]
+
+    props_getter = tool.Model.get_roof_props
+    gizmo_pref_name = "roof"
+
+    idle_slots: ClassVar[tuple[IconSlot, ...]] = (
+        IconSlot(
+            name="toggle_openings",
+            gizmo_idname="VIEW3D_GT_add_opening",
+            operator="bim.toggle_host_openings",
+            visible_when=lambda gg: _roof_has_openings(),
+        ),
+    )
+
+    @classmethod
+    def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
+        return tool.Parametric.is_roof(element)
+
+    def _update_dimension_gizmo_positions(self, context: bpy.types.Context, mw, props) -> None:  # noqa: ARG002
+        """Anchor every dimension gizmo at the object origin. Each gizmo's
+        declared axis (height/slope along +Z, thickness along -Z) separates
+        them in 3D so they don't visually collide despite sharing a
+        position; the height + slope gizmos themselves are mutually
+        exclusive via ``visibility_condition`` on ``generation_method``."""
+        origin = Vector((0.0, 0.0, 0.0))
+        self.set_dimension_gizmo_position("height", mw, origin, (0, 0, 1))
+        self.set_dimension_gizmo_position("angle", mw, origin, (0, 0, 1))
+        self.set_dimension_gizmo_position("roof_thickness", mw, origin, (0, 0, -1))
+
+    def get_element_height(self, props) -> float:  # noqa: ARG002
+        """Object-local Z of the mesh's topmost vertex, so the pen / validate /
+        cancel / cycle row anchors visibly above sloped or stepped roof
+        bodies rather than at the parametric ``props.height`` which may not
+        match the rendered apex on ANGLE-generation roofs."""
+        obj = bpy.context.active_object
+        if obj is None or not getattr(obj, "bound_box", None):
+            return 1.0
+        return max(c[2] for c in obj.bound_box)
 
 
 class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):

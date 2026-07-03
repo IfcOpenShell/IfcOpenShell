@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from collections.abc import Sequence
 from math import radians
@@ -41,7 +43,201 @@ from mathutils import Matrix, Vector
 
 import bonsai.core.geometry
 import bonsai.tool as tool
+from bonsai.bim import decorator_cache
 from bonsai.bim.module.drawing.decoration import DecoratorData
+
+# Multi-entry cache for the opening preview's dissolved-edges fallback.
+# Single-entry wouldn't fit: the draw handler iterates every active opening
+# per frame, each with its own mesh. Bumped wholesale on the shared
+# decorator-cache token (depsgraph / undo / redo / load), one slot per
+# (mesh.session_uid, angle_limit). Outlier vs. the per-object caches below —
+# consulted only on world-draw-data miss, so the global wipe rarely fires in
+# steady state and the simpler invalidation is enough.
+_dissolved_edges_cache: dict[
+    tuple[int, float],
+    tuple[list[Vector], list[tuple[int, int]]],
+] = {}
+_dissolved_edges_cache_token: int = -1
+
+
+def _get_cached_dissolved_edges(
+    mesh: bpy.types.Mesh,
+    angle_limit: float = radians(1.0),
+) -> tuple[list[Vector], list[tuple[int, int]]]:
+    global _dissolved_edges_cache_token
+    token = decorator_cache.get_decorator_cache_token()
+    if token != _dissolved_edges_cache_token:
+        _dissolved_edges_cache.clear()
+        _dissolved_edges_cache_token = token
+    key = (mesh.session_uid, angle_limit)
+    cached = _dissolved_edges_cache.get(key)
+    if cached is not None:
+        return cached
+    result = tool.Geometry.get_dissolved_edges(mesh, angle_limit=angle_limit)
+    _dissolved_edges_cache[key] = result
+    return result
+
+
+# Per-object epoch: bumped only when this specific object's transform or geometry
+# updates land in the depsgraph delta. Invalidation work scales with the number
+# of changed objects, not total scene size — moving one object leaves every
+# other entry valid. Bumped by the depsgraph handler below; cleared on
+# undo/redo/load alongside the cache dicts.
+_object_epochs: dict[int, int] = {}
+
+
+@bpy.app.handlers.persistent
+def _bump_object_epochs_for_decoration(*args) -> None:
+    # depsgraph_update_post is called as (scene, depsgraph) in 4.x but the
+    # *args signature follows decorator_cache's defensive idiom.
+    depsgraph = args[1] if len(args) >= 2 else None
+    if depsgraph is None or not hasattr(depsgraph, "updates"):
+        return
+    for u in depsgraph.updates:
+        if not isinstance(u.id, bpy.types.Object):
+            continue
+        if not (u.is_updated_geometry or u.is_updated_transform):
+            continue
+        # u.id is the evaluated COW copy; the cache keys are written from the
+        # original Object (read by the draw handler), and session_uid can
+        # differ across the COW boundary. Resolve to the original before keying.
+        original = getattr(u.id, "original", u.id)
+        if original is None:
+            continue
+        uid = original.session_uid
+        _object_epochs[uid] = _object_epochs.get(uid, 0) + 1
+
+
+@bpy.app.handlers.persistent
+def _clear_decoration_caches_globally(*args) -> None:
+    # Undo/redo/load: depsgraph deltas can't be trusted to describe the
+    # transition, so wipe every per-object cache state.
+    _object_epochs.clear()
+    _world_draw_data_cache.clear()
+    _batch_cache.clear()
+
+
+def _decoration_invalidation_hooks() -> tuple:
+    return (
+        bpy.app.handlers.undo_post,
+        bpy.app.handlers.redo_post,
+        bpy.app.handlers.load_post,
+    )
+
+
+def install_decoration_cache_handlers() -> None:
+    if _bump_object_epochs_for_decoration not in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.append(_bump_object_epochs_for_decoration)
+    for hook in _decoration_invalidation_hooks():
+        if _clear_decoration_caches_globally not in hook:
+            hook.append(_clear_decoration_caches_globally)
+
+
+def uninstall_decoration_cache_handlers() -> None:
+    try:
+        bpy.app.handlers.depsgraph_update_post.remove(_bump_object_epochs_for_decoration)
+    except ValueError:
+        pass
+    for hook in _decoration_invalidation_hooks():
+        try:
+            hook.remove(_clear_decoration_caches_globally)
+        except ValueError:
+            pass
+
+
+# Per-object world-space draw payload: line_verts (dissolved or ios_edges-filtered),
+# verts (full mesh, indexed by loop_triangles), edges_indices, tris. Entries are
+# (epoch, payload) tuples; lookup compares epoch to _object_epochs[uid], so a
+# stale entry for an object that didn't change since the last build still hits.
+_world_draw_data_cache: dict[
+    int,
+    tuple[
+        int,
+        tuple[
+            list[tuple[float, float, float]],
+            list[tuple[float, float, float]],
+            list[tuple[int, int]],
+            list[tuple[int, ...]],
+        ],
+    ],
+] = {}
+
+
+def _get_cached_world_draw_data(
+    obj: bpy.types.Object,
+) -> tuple[
+    list[tuple[float, float, float]],
+    list[tuple[float, float, float]],
+    list[tuple[int, int]],
+    list[tuple[int, ...]],
+]:
+    uid = obj.session_uid
+    epoch = _object_epochs.get(uid, 0)
+    entry = _world_draw_data_cache.get(uid)
+    if entry is not None and entry[0] == epoch:
+        return entry[1]
+
+    mw = obj.matrix_world
+    verts = [tuple(mw @ v.co) for v in obj.data.vertices]
+    obj.data.calc_loop_triangles()
+    tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
+
+    ios_edges_attribute = obj.data.attributes.get("ios_edges")
+    if ios_edges_attribute:
+        # Loader-curated edges: read the attribute aligned with bm.edges order.
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        edges_indices = [
+            tuple(v.index for v in e.verts) for i, e in enumerate(bm.edges) if ios_edges_attribute.data[i].value
+        ]
+        bm.free()
+        line_verts = verts
+    else:
+        dissolved, edges_indices = _get_cached_dissolved_edges(obj.data)
+        line_verts = [tuple(mw @ v) for v in dissolved]
+
+    result = (line_verts, verts, edges_indices, tris)
+    _world_draw_data_cache[uid] = (epoch, result)
+    return result
+
+
+# GPUBatch cache: skip per-frame batch_for_shader. Entries are (epoch, batch);
+# lookup compares epoch to _object_epochs[uid] so other objects' batches stay
+# alive when one object's depsgraph delta bumps only its own epoch. The cached
+# batches reference GPU-side buffers tied to Blender's built-in shaders, which
+# are themselves cached by name (gpu.shader.from_builtin returns the same
+# handle each call), so they stay drawable across frames.
+_batch_cache: dict[tuple[int, str], tuple[int, "gpu.types.GPUBatch"]] = {}
+
+# CAD hidden-line convention for the occluded back-pass: world-space dashes so
+# density stays coherent across zoom. Dash + gap = period; dash_width controls
+# the "on" portion.
+_DASH_PERIOD_METERS: float = 0.20
+_DASH_WIDTH_METERS: float = 0.10
+# Solid front pass is rendered wider than the dashed back pass so its halo
+# overpowers the dashed center on visible edges even when the WIRE-display
+# overlay biases the depth buffer at outline pixels.
+_DASH_LINE_WIDTH: float = 1.5
+_SOLID_LINE_WIDTH: float = 2.5
+# Per-iteration default line width used by every non-occlusion draw call in
+# this decorator's ``__call__``. Restored after each occlusion pair so the
+# next draw isn't silently inheriting the wider solid-pass override.
+_DEFAULT_LINE_WIDTH: float = 2.0
+
+
+def _get_cached_batch_or_none(cache_key: tuple[int, str]) -> "gpu.types.GPUBatch | None":
+    uid = cache_key[0]
+    epoch = _object_epochs.get(uid, 0)
+    entry = _batch_cache.get(cache_key)
+    if entry is not None and entry[0] == epoch:
+        return entry[1]
+    return None
+
+
+def _store_batch_in_cache(cache_key: tuple[int, str], batch: "gpu.types.GPUBatch") -> None:
+    uid = cache_key[0]
+    epoch = _object_epochs.get(uid, 0)
+    _batch_cache[cache_key] = (epoch, batch)
 
 
 class FilledOpeningGenerator:
@@ -50,9 +246,15 @@ class FilledOpeningGenerator:
         filling_obj: bpy.types.Object,
         voided_obj: bpy.types.Object,
         target: Optional[Vector] = None,
+        preserve_placement: bool = False,
     ) -> Union[None, str]:
         """
         :param target: Target opening position. If ommited, cursor position is used.
+        :param preserve_placement: If True, keep ``filling_obj.matrix_world`` as-is
+            and skip the snap-to-wall-axis / rl1-rl2 Z-default logic. The opening
+            is still created at the filling's current world position. Useful
+            when the caller (e.g. the SHIFT-add-opening gizmo flow) has
+            already positioned the filling intentionally.
         :return: None if there was no errors, otherwise returns a string with error message.
         """
         props = tool.Model.get_model_props()
@@ -74,7 +276,7 @@ class FilledOpeningGenerator:
             should_set_z_level = False
 
         # Sometimes, the voided_obj may be an aggregate, which won't have any representation.
-        if voided_obj.data:
+        if not preserve_placement and voided_obj.data:
             raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.01)
             if not raycast[0]:
                 target = filling_obj.matrix_world.translation.copy()
@@ -558,6 +760,29 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         tool.Root.reload_item_decorator()
 
 
+class ToggleHostOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_host_openings"
+    bl_label = "Toggle Openings"
+    bl_description = "Show or hide opening fills (doors and windows) in the viewport\n\nHotkey: Alt+O"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        # Opening visibility is independent of host geometry — don't commit any
+        # active parametric edit; the user can keep editing the host.
+        if tool.Model.get_model_props().openings:
+            bpy.ops.bim.edit_openings(apply_all=True)
+        else:
+            bpy.ops.bim.show_openings()
+        return {"FINISHED"}
+
+
 class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_openings"
     bl_label = "Show Openings"
@@ -941,7 +1166,6 @@ class SelectBoolean(Operator):
         return {"FINISHED"}
 
 
-# TODO: merge with ProfileDecorator?
 class DecorationsHandler:
     installed = None
 
@@ -951,6 +1175,7 @@ class DecorationsHandler:
             cls.uninstall()
         handler = cls()
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
+        install_decoration_cache_handlers()
 
     @classmethod
     def uninstall(cls):
@@ -959,14 +1184,78 @@ class DecorationsHandler:
         except ValueError:
             pass
         cls.installed = None
+        uninstall_decoration_cache_handlers()
 
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
+    def _get_or_build_batch(self, shader, shader_type, content_pos, indices=None, cache_key=None):
+        if cache_key is not None:
+            cached = _get_cached_batch_or_none(cache_key)
+            if cached is not None:
+                return cached
         if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
+            return None
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        if cache_key is not None:
+            _store_batch_in_cache(cache_key, batch)
+        return batch
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None, cache_key=None):
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = self._get_or_build_batch(shader, shader_type, content_pos, indices, cache_key=cache_key)
+        if batch is None:
+            return
         shader.uniform_float("color", color)
         batch.draw(shader)
+
+    def _draw_lines_with_occlusion(self, verts, color, edges_indices, cache_key=None):
+        # Two-pass CAD hidden-line convention. Both passes use POLYLINE_UNIFORM_COLOR.
+        #
+        # The solid front pass is rendered WIDER than the dashed back pass so it
+        # produces a halo around the line center, beyond the depth-bias zone that
+        # Blender's overlay engine writes when an opening is set to WIRE display.
+        # Without the width difference, the wire bias makes the center-pixel
+        # ``LESS_EQUAL`` comparison fail (line ends up slightly behind the biased
+        # wire depth) so the solid pass would lose to the dashed back pass even
+        # on visible edges. The halo gives the solid pass enough screen-space to
+        # overpower the dashed pattern visually.
+        #
+        # Dashed renders first at the standard width so the solid overlay's wider
+        # halo cleanly hides it on visible edges; on occluded edges the solid
+        # ``LESS_EQUAL`` pass fails against the wall depth and the dashed remains.
+        front_batch = self._get_or_build_batch(self.line_shader, "LINES", verts, edges_indices, cache_key=cache_key)
+        if front_batch is None:
+            return
+
+        dashed_cache_key = (cache_key[0], cache_key[1] + "_dashed") if cache_key is not None else None
+        dash_batch = None
+        if dashed_cache_key is not None:
+            dash_batch = _get_cached_batch_or_none(dashed_cache_key)
+        if dash_batch is None:
+            dash_verts, dash_edges = tool.Blender.build_dashed_line_segments(
+                verts, edges_indices, _DASH_PERIOD_METERS, _DASH_WIDTH_METERS
+            )
+            dash_batch = self._get_or_build_batch(self.line_shader, "LINES", dash_verts, dash_edges)
+            if dash_batch is not None and dashed_cache_key is not None:
+                _store_batch_in_cache(dashed_cache_key, dash_batch)
+
+        original_depth_test = gpu.state.depth_test_get()
+        front_color = list(color)
+        front_color[3] = 1.0
+        self.line_shader.uniform_float("color", front_color)
+
+        if dash_batch is not None:
+            self.line_shader.uniform_float("lineWidth", _DASH_LINE_WIDTH)
+            gpu.state.depth_test_set("ALWAYS")
+            dash_batch.draw(self.line_shader)
+
+        self.line_shader.uniform_float("lineWidth", _SOLID_LINE_WIDTH)
+        gpu.state.depth_test_set("LESS_EQUAL")
+        front_batch.draw(self.line_shader)
+
+        # Restore the per-iteration default set at the top of __call__ so
+        # subsequent draws (the HalfSpaceSolid arrow, future call-sites) are
+        # not silently affected by the front-pass width override.
+        self.line_shader.uniform_float("lineWidth", _DEFAULT_LINE_WIDTH)
+        gpu.state.depth_test_set(original_depth_test)
 
     def __call__(self, context):
         props = tool.Model.get_model_props()
@@ -1001,7 +1290,7 @@ class DecorationsHandler:
             self.line_shader.bind()  # required to be able to change uniforms of the shader
             # POLYLINE_UNIFORM_COLOR specific uniforms
             self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
-            self.line_shader.uniform_float("lineWidth", 2.0)
+            self.line_shader.uniform_float("lineWidth", _DEFAULT_LINE_WIDTH)
 
             # general shader
             self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
@@ -1039,23 +1328,18 @@ class DecorationsHandler:
                 self.draw_batch("LINES", verts, selected_elements_color, selected_edges)
                 self.draw_batch("POINTS", unselected_vertices, unselected_elements_color)
                 self.draw_batch("POINTS", selected_vertices, selected_elements_color)
+                tool.Blender.draw_bmesh_face_tris(bm, verts, transparent_color(special_elements_color), self.draw_batch)
             else:
-                bm = bmesh.new()
-                bm.from_mesh(obj.data)
-
-                verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
-                if ios_edges_attribute := obj.data.attributes.get("ios_edges"):
-                    edges = [e for i, e in enumerate(bm.edges) if ios_edges_attribute.data[i].value]
-                else:
-                    edges = bm.edges
-                edges_indices = [tuple([v.index for v in e.verts]) for e in edges]
-
+                line_verts, verts, edges_indices, tris = _get_cached_world_draw_data(obj)
                 color = selected_elements_color if obj in context.selected_objects else special_elements_color
-                self.draw_batch("LINES", verts, color, edges_indices)
-
-            obj.data.calc_loop_triangles()
-            tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
-            self.draw_batch("TRIS", verts, transparent_color(special_elements_color), tris)
+                self._draw_lines_with_occlusion(line_verts, color, edges_indices, cache_key=(obj.session_uid, "lines"))
+                self.draw_batch(
+                    "TRIS",
+                    verts,
+                    transparent_color(special_elements_color),
+                    tris,
+                    cache_key=(obj.session_uid, "tris"),
+                )
 
             if "HalfSpaceSolid" in obj.name:
                 # Arrow shape
@@ -1069,7 +1353,4 @@ class DecorationsHandler:
                 ]
                 edges = [(0, 1), (1, 2), (1, 3), (1, 4), (1, 5)]
                 color = selected_elements_color if obj in context.selected_objects else special_elements_color
-                self.draw_batch("LINES", verts, color, edges)
-
-            if obj.mode != "EDIT":
-                bm.free()
+                self._draw_lines_with_occlusion(verts, color, edges, cache_key=(obj.session_uid, "arrow"))

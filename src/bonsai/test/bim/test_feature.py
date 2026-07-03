@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 from __future__ import annotations
 
@@ -1131,6 +1133,17 @@ def the_variable_key_is_value(key, value):
     variables[key] = eval(replace_variables(value))
 
 
+@then(parsers.parse('the variable "{key}" equals "{value}"'))
+def the_variable_key_equals_value(key, value):
+    assert key in variables, f'Variable "{key}" was never set'
+    expected = eval(replace_variables(value))
+    actual = variables[key]
+    if isinstance(actual, float) and isinstance(expected, float):
+        assert abs(actual - expected) < 1e-5, f'Variable "{key}" is {actual!r}, expected {expected!r}'
+    else:
+        assert actual == expected, f'Variable "{key}" is {actual!r}, expected {expected!r}'
+
+
 @then("nothing happens")
 def nothing_happens():
     pass
@@ -1751,7 +1764,17 @@ def i_load_the_ifc_test_file(filepath):
 @given("I load the demo construction library")
 @when("I load the demo construction library")
 def i_add_a_construction_library():
-    lib_path = "./bonsai/bim/data/libraries/IFC4 Demo Library.ifc"
+    # Pick the library file whose schema matches the current project so the
+    # appended types are valid (IFC2X3-vs-IFC4 entity attributes differ).
+    schema_to_library = {
+        "IFC2X3": "IFC2X3 Demo Library.ifc",
+        "IFC4": "IFC4 Demo Library.ifc",
+        "IFC4X3": "IFC4X3 Demo Library.ifc",
+        "IFC4X3_ADD2": "IFC4X3 Demo Library.ifc",
+    }
+    schema = tool.Ifc.get().schema
+    lib_name = schema_to_library.get(schema, "IFC4 Demo Library.ifc")
+    lib_path = f"./bonsai/bim/data/libraries/{lib_name}"
     bpy.ops.bim.select_library_file(filepath=lib_path, append_all=True)
 
 

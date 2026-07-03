@@ -11,16 +11,16 @@ using namespace ifcopenshell;
 
 namespace {
 
-std::shared_ptr<instance_data> make_header_entity(ifcopenshell::file* file, const ifcopenshell::entity& decl) {
+shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopenshell::entity& decl) {
     const bool in_memory = file == nullptr || std::visit([](auto& storage) {
         return std::is_same_v<std::decay_t<decltype(storage)>, ifcopenshell::impl::in_memory_file_storage>;
     }, file->storage_);
 
     if (in_memory) {
-        return std::make_shared<instance_data>(file, &decl, 0, in_memory_attribute_storage(decl.attribute_count()));
+        return ifcopenshell::make_pointer_type<instance_data>(file, &decl, 0, in_memory_attribute_storage(decl.attribute_count()));
     }
 
-    return std::make_shared<instance_data>(file, &decl, 0, rocks_db_attribute_storage{});
+    return ifcopenshell::make_pointer_type<instance_data>(file, &decl, 0, rocks_db_attribute_storage{});
 }
 
 } // namespace
@@ -60,15 +60,15 @@ void ifcopenshell::spf_header::owner_file(ifcopenshell::file* file) {
     file_ = file;
 }
 
-void ifcopenshell::spf_header::set_file_description(const std::shared_ptr<instance_data>& data) {
+void ifcopenshell::spf_header::set_file_description(const shared_pointer_type& data) {
     header_entities_[0] = data;
 }
 
-void ifcopenshell::spf_header::set_file_name(const std::shared_ptr<instance_data>& data) {
+void ifcopenshell::spf_header::set_file_name(const shared_pointer_type& data) {
     header_entities_[1] = data;
 }
 
-void ifcopenshell::spf_header::set_file_schema(const std::shared_ptr<instance_data>& data) {
+void ifcopenshell::spf_header::set_file_schema(const shared_pointer_type& data) {
     header_entities_[2] = data;
 }
 

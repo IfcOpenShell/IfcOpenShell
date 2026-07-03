@@ -86,7 +86,7 @@ pass query results directly into ``ifcedit run`` parameters, or pipe JSON into
         --products "$(ifcquery model.ifc --format ids select 'IfcWall')"
 
     # Fan-out — one operation per element, model opened and saved once
-    $ ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+    $ ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product '{id}'
 
     # Render an element highlighted against everything related to it
     $ ifcquery model.ifc render -o relations.png \

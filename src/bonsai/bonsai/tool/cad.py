@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import math
 import sys
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Union
 
 import bmesh
@@ -45,6 +46,13 @@ if TYPE_CHECKING:
 
 
 VTX_PRECISION = 1.0e-5
+# Tolerances below are in Blender units (SI metres).
+# Looser than VTX_PRECISION because regen-time numeric drift exceeds CAD snap precision.
+WELD_TOLERANCE = 1.0e-4
+# How close a vertex must be to the cut plane to count as on it.
+BISECT_TOLERANCE = 1.0e-4
+# Strict weld for cleaning up exactly-coincident vertices.
+WELD_EPSILON = 1.0e-6
 
 
 class Cad:
@@ -168,6 +176,14 @@ class Cad:
                     return True
             return False
         return (x + tolerance) > value > (x - tolerance)
+
+    @classmethod
+    def is_multiple_of_pi(cls, value: float) -> bool:
+        """True when ``value`` is an integer multiple of π within tolerance —
+        the parallelism / anti-parallelism check rotation-difference logic
+        reaches for (segments aligned modulo a 180° flip)."""
+        n = round(value / math.pi)
+        return cls.is_x(abs(value - n * math.pi), 0)
 
     @classmethod
     def normalise_angle(cls, angle: float) -> float:
@@ -996,3 +1012,106 @@ class Cad:
             y = height_half + height_half * (prj[1] / w)
             return Vector((float(x), float(y)))
         return default
+
+    @classmethod
+    def sweep_disk_along_polyline(
+        cls,
+        bm: bmesh.types.BMesh,
+        points: Sequence[Vector],
+        radius: float,
+        arc_indices: Sequence[int] = (),
+        profile_segments: int = 8,
+    ) -> None:
+        """Append a tube of ``radius`` along the polyline ``points`` to ``bm``.
+
+        Viewport-quality approximation of an IFC ``IfcSweptDiskSolid``: each
+        consecutive pair of points becomes a capped cylinder. The cylinders
+        overlap at joints rather than being mitered — the visual artifact is
+        negligible at typical handrail radii (~25mm) and acceptable for
+        live parametric-edit preview.
+
+        ``arc_indices`` is accepted for API symmetry with the IFC builder
+        (which receives the same data structure), but is currently unused —
+        arcs are visualised as polyline kinks. Tessellating each arc with a
+        Lagrange or circular interpolation would smooth the joints; deferred
+        until profile fidelity becomes a concern.
+
+        :param bm: target bmesh, mutated in place.
+        :param points: polyline vertices.
+        :param radius: tube radius (project units).
+        :param arc_indices: indices of arc midpoints (currently ignored).
+        :param profile_segments: sides on each cylinder cross-section.
+        """
+        del arc_indices  # accepted for forward compatibility; see docstring
+        if len(points) < 2:
+            return
+        for p0, p1 in zip(points, points[1:]):
+            cls._add_capped_cylinder(bm, Vector(p0), Vector(p1), radius, profile_segments)
+
+    @classmethod
+    def add_disk_extrusion(
+        cls,
+        bm: bmesh.types.BMesh,
+        position: Vector,
+        radius: float,
+        depth: float,
+        axis_rotation_z: float,
+        profile_segments: int = 12,
+    ) -> None:
+        """Append a flat cylinder (disk extrusion) to ``bm``.
+
+        A disk of ``radius`` extruded by ``depth`` along the +Y axis rotated
+        by ``axis_rotation_z`` radians around Z. ``position`` is the disk's
+        base, not its centre.
+
+        :param bm: target bmesh, mutated in place.
+        :param position: base of the extrusion in object-local coordinates.
+        :param radius: disk radius.
+        :param depth: extrusion depth along the (rotated) Y axis.
+        :param axis_rotation_z: rotation around Z applied to the +Y axis to
+            obtain the extrusion direction.
+        :param profile_segments: sides on the disk's edge.
+        """
+        # The +Y axis rotated by axis_rotation_z around Z gives the extrusion
+        # direction: (-sin(θ), cos(θ), 0). The disk axis points along it.
+        axis = Vector((-math.sin(axis_rotation_z), math.cos(axis_rotation_z), 0.0))
+        end = position + axis * depth
+        cls._add_capped_cylinder(bm, position, end, radius, profile_segments)
+
+    @classmethod
+    def _add_capped_cylinder(
+        cls,
+        bm: bmesh.types.BMesh,
+        p0: Vector,
+        p1: Vector,
+        radius: float,
+        segments: int,
+    ) -> None:
+        """Append one capped cylinder of ``radius`` from ``p0`` to ``p1`` to ``bm``."""
+        direction = p1 - p0
+        length = direction.length
+        if length < 1e-9:
+            return
+        direction = direction / length
+
+        z_axis = Vector((0.0, 0.0, 1.0))
+        dot = direction.dot(z_axis)
+        if dot > 1.0 - 1e-6:
+            rotation = Matrix.Identity(4)
+        elif dot < -1.0 + 1e-6:
+            # Anti-parallel: rotate 180° around X so the cone flips bottom-to-top.
+            rotation = Matrix.Rotation(math.pi, 4, "X")
+        else:
+            rotation = z_axis.rotation_difference(direction).to_matrix().to_4x4()
+
+        matrix = Matrix.Translation((p0 + p1) * 0.5) @ rotation
+        bmesh.ops.create_cone(
+            bm,
+            cap_ends=True,
+            cap_tris=False,
+            segments=segments,
+            radius1=radius,
+            radius2=radius,
+            depth=length,
+            matrix=matrix,
+        )

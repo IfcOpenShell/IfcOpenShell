@@ -31,6 +31,23 @@
 class aggregate_of_instance;
 
 namespace ifcopenshell {
+
+#ifdef IFOPSH_SAFE_INSTANCE
+using pointer_type = std::weak_ptr<instance_data>;
+using shared_pointer_type = shared_pointer_type;
+template <typename T, typename... Args>
+shared_pointer_type make_pointer_type(Args&&... args) {
+    return std::make_shared<T>(std::forward<Args>(args)...);
+}
+#else
+using pointer_type = instance_data*;
+using shared_pointer_type = instance_data*;
+template <typename T, typename... Args>
+shared_pointer_type make_pointer_type(Args&&... args) {
+    return new T(std::forward<Args>(args)...);
+}
+#endif
+
 class file;
 namespace impl {
 struct in_memory_file_storage;
@@ -49,12 +66,16 @@ class DeclaredType;
 
 class IFC_PARSE_API Base {
   protected:
-    std::weak_ptr<instance_data> data_;
+    ifcopenshell::pointer_type data_;
     const instance_data* data() const;
     instance_data* data();
   public:
     operator bool() const {
+#ifdef IFOPSH_SAFE_INSTANCE
         return !data_.expired();
+#else
+        return data_ != nullptr;
+#endif
     }
 
     bool operator<(const Base& other) const {
@@ -69,12 +90,16 @@ class IFC_PARSE_API Base {
         return !(*this == other);
     }
 
-    Base() {};
+    Base() {
+#ifndef IFOPSH_SAFE_INSTANCE
+        data_ = nullptr;
+#endif
+    };
     Base(std::nullopt_t) noexcept : Base() {}
-    Base(const std::weak_ptr<instance_data>& data) : data_(data) {}
+    Base(const ifcopenshell::pointer_type& data) : data_(data) {}
 
     // @todo try and make this private over time too
-    const std::weak_ptr<instance_data>& data_weak() const { return data_; }
+    const ifcopenshell::pointer_type& data_weak() const { return data_; }
 
     const ifcopenshell::declaration& declaration() const;
 
@@ -150,7 +175,7 @@ class IFC_PARSE_API Select : public Base {
   public:
     Select() {}
     Select(std::nullopt_t) noexcept : Base() {}
-    Select(const std::weak_ptr<instance_data>& data) : Base(data) {}
+    Select(const ifcopenshell::pointer_type& data) : Base(data) {}
     Select(const Base& base) : Base(base.data_weak()) {}
 
     Base concrete() const {

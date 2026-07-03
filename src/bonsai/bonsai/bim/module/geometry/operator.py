@@ -60,6 +60,7 @@ import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -545,6 +546,13 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         objs = [bpy.data.objects[obj_name]] if obj_name else context.selected_objects
         self.file = tool.Ifc.get()
 
+        # Tessellated face sets (IfcTriangulatedFaceSet/IfcPolygonalFaceSet) were
+        # introduced in IFC4 and do not exist in IFC2X3. Catch this early so we
+        # don't silently fall back to a faceted brep after stripping materials.
+        if self.ifc_representation_class == "IfcTessellatedFaceSet" and self.file.schema == "IFC2X3":
+            self.report({"ERROR"}, "Tessellated face sets are not supported in IFC2X3.")
+            return {"CANCELLED"}
+
         for obj in objs:
             # TODO: write unit tests to see how this bulk operation handles
             # contradictory ifc_representation_class values and when
@@ -1023,10 +1031,10 @@ class OverrideDelete(bpy.types.Operator):
 
         for array_parent in array_parents:
             array_parent_obj = tool.Ifc.get_object(array_parent)
-            data = [(i, data) for i, data in enumerate(tool.Blender.Modifier.Array.get_modifiers_data(array_parent))]
+            data = [(i, data) for i, data in enumerate(tool.Array.get_modifiers_data(array_parent))]
             # NOTE: there is a way to remove arrays more precisely but it's more complex
             for i, modifier_data in reversed(data):
-                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                children = set(tool.Array.get_children_objects(modifier_data))
                 if children.issubset(selected_objects):
                     with context.temp_override(active_object=array_parent_obj):
                         bpy.ops.bim.remove_array(item=i)
@@ -1180,7 +1188,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False
     ) -> set["rna_enums.OperatorReturnItems"]:
         # Deep magick from the dawn of time
-        if tool.Ifc.get():
+        if tool.Ifc.get() and tool.Model.has_selected_ifc_objects(include_active=False):
             IfcStore.execute_ifc_operator(operator, context)
             return {"FINISHED"}
 
@@ -1283,6 +1291,9 @@ class OverrideDuplicateMove(bpy.types.Operator):
                             part_obj = tool.Ifc.get_object(part)
                             if part_obj:
                                 all_objects_to_select.add(part_obj)
+
+        # Non-IFC duplicates aren't tracked in old_to_new but are left selected by duplicate_ifc_objects
+        all_objects_to_select.update(obj for obj in context.selected_objects if not tool.Ifc.get_entity(obj))
 
         # Deselect everything first
         bpy.ops.object.select_all(action="DESELECT")
@@ -2220,6 +2231,8 @@ class OverrideEscape(bpy.types.Operator):
             bpy.ops.bim.hide_all_openings()
         elif tool.Aggregate.get_aggregate_props().in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
+        elif preview_base.try_cancel_active_preview(context):
+            pass
         elif active_object := context.active_object:
             if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
                 pass
@@ -2261,6 +2274,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 gprops = tool.Geometry.get_geometry_props()
                 if gprops.representation_obj:
                     tool.Geometry.disable_item_mode()
+                    if active_obj := bpy.context.active_object:
+                        active_obj.select_set(False)
                 else:
                     bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
                 return {"FINISHED"}
@@ -2347,6 +2362,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             and usage in ("LAYER1", "LAYER2")
         ):
             self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
+            obj.select_set(False)
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
@@ -2355,6 +2371,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                     {"INFO"},
                     f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
                 )
+                obj.select_set(False)
                 return
             tool.Ifc.link(item, obj.data)
             self.enable_edit_mode(context)
@@ -2482,9 +2499,9 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                     profile = tool.Ifc.get().by_id(profile_id)
                     if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
                         bpy.ops.bim.edit_arbitrary_profile()
-                elif tool.Blender.Modifier.is_railing(element):
+                elif tool.Parametric.is_railing(element):
                     bpy.ops.bim.finish_editing_railing_path()
-                elif tool.Blender.Modifier.is_roof(element):
+                elif tool.Parametric.is_roof(element):
                     bpy.ops.bim.finish_editing_roof_path()
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
@@ -3153,7 +3170,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 product_reps = element.RepresentationMaps
             item_aspect = {}
             for product_rep in product_reps:
-                for aspect in product_rep.HasShapeAspects:
+                for aspect in getattr(product_rep, "HasShapeAspects", ()):
                     for aspect_rep in aspect.ShapeRepresentations:
                         if aspect_rep.ContextOfItems != representation.ContextOfItems:
                             continue

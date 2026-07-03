@@ -30,7 +30,7 @@ jobs:
           uv tool install ruff
           uv tool install black
           uv tool install poethepoet
-          uv tool install ty
+          uv tool install ty==0.0.34
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
@@ -95,8 +95,7 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           }
 
-          run_check poe ruff-main
-          run_check poe ruff-old
+          run_check poe ruff
 
           exit $ERROR
         continue-on-error: true

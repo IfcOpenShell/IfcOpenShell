@@ -33,6 +33,10 @@ variant - which is the maximum size of its constituents - is reduced.
 #include <utility>
 #include <memory>
 #include <tuple>
+#include <cstdint>
+#include <cstring>
+#include <cstddef>
+#include <limits>
 
 #include "exception.h"
 

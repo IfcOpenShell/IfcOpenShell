@@ -39,6 +39,8 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.drawing import gizmos as gizmo
 from bonsai.bim.module.drawing.gizmos import DimensionGizmoConfig
+from bonsai.bim.module.model.wall_offset_gizmos import WALL_OFFSET_GIZMO_CONFIGS
+from bonsai.bim.parametric_lifecycle import FeatureModifierEditMixin, PickTypeMixin
 
 if TYPE_CHECKING:
     from bonsai.bim.module.model.prop import BIMWindowProperties
@@ -482,90 +484,53 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
+class _WindowEditMixin(FeatureModifierEditMixin):
+    """Type-specific hooks for window parametric-edit operators. Single-object
+    by design (window edits target the active object only)."""
+
+    pset_name = "BBIM_Window"
+
+    @classmethod
+    def _is_element_type(cls, element):
+        return tool.Parametric.is_window(element)
+
+    @classmethod
+    def _get_props(cls, obj: bpy.types.Object):
+        return tool.Model.get_window_props(obj)
+
+    @classmethod
+    def _update_modifier_representation(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        update_window_modifier_representation(context)
+
+
+class CancelEditingWindow(_WindowEditMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_window"
     bl_label = "Cancel Editing Window"
     bl_description = "Cancel editing and revert window parameters to their previous values"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context: bpy.types.Context) -> set[str]:
-        obj = context.active_object
-        assert obj
-        element = tool.Ifc.get_entity(obj)
-        assert element
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
-        data.update(data.pop("lining_properties"))
-        data.update(data.pop("panel_properties"))
-        props = tool.Model.get_window_props(obj)
-        props.set_props_kwargs_from_ifc_data(data)
-
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=body,
-        )
-
-        props.is_editing = False
-        return {"FINISHED"}
+        return self._cancel_targets(context)
 
 
-class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
+class FinishEditingWindow(_WindowEditMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_window"
     bl_label = "Finish Editing Window"
     bl_description = "Apply changes and finish editing window parameters"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context: bpy.types.Context) -> set[str]:
-        obj = context.active_object
-        assert obj
-        element = tool.Ifc.get_entity(obj)
-        assert element
-        props = tool.Model.get_window_props(obj)
-
-        window_data = props.get_general_kwargs(convert_to_project_units=True)
-        lining_props = props.get_lining_kwargs(convert_to_project_units=True)
-        panel_props = props.get_panel_kwargs(convert_to_project_units=True)
-
-        window_data["lining_properties"] = lining_props
-        window_data["panel_properties"] = panel_props
-
-        props.is_editing = False
-
-        update_window_modifier_representation(context)
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type:
-            tool.Model.mark_thumbnail_for_update(element_type)
-
-        pset = tool.Pset.get_element_pset(element, "BBIM_Window")
-        window_data = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))
-        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": window_data})
-        return {"FINISHED"}
+        return self._finish_targets(context)
 
 
-class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWindow(_WindowEditMixin, bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_window"
     bl_label = "Enable Editing Window"
     bl_description = "Enter edit mode to modify window parameters interactively"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context: bpy.types.Context) -> set[str]:
-        obj = context.active_object
-        assert obj
-        props = tool.Model.get_window_props(obj)
-        element = tool.Ifc.get_entity(obj)
-        assert element
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
-        data.update(data.pop("lining_properties"))
-        data.update(data.pop("panel_properties"))
-        data.update(tool.Model.get_constituents_props_data(element))
-
-        # required since we could load pset from .ifc and BIMWindowProperties won't be set
-        props.set_props_kwargs_from_ifc_data(data)
-
-        props.is_editing = True
-        return {"FINISHED"}
+        return self._enable_targets(context)
 
 
 class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
@@ -587,20 +552,20 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class CycleWindowType(bpy.types.Operator, tool.Ifc.Operator, gizmo.CycleTypeMixin):
-    """Cycle through available window types. Shift+click to cycle in reverse."""
+class PickWindowType(bpy.types.Operator, tool.Ifc.Operator, PickTypeMixin):
+    """Pick a window type from a popup menu."""
 
-    bl_idname = "bim.cycle_window_type"
-    bl_label = "Cycle Window Type"
+    bl_idname = "bim.pick_window_type"
+    bl_label = "Pick Window Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    element_checker = "is_window"
-    props_getter = "get_window_props"
+    element_checker = tool.Parametric.is_window
+    props_getter = tool.Model.get_window_props
     type_literal = tool.Model.WindowType
     type_attr = "window_type"
 
     def _execute(self, context: bpy.types.Context) -> set[str]:
-        return self._cycle_type(context)
+        return self._pick_type(context)
 
 
 # Frame accessor factory - creates callbacks that delegate to BIMWindowProperties methods
@@ -638,7 +603,7 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
     enable_editing_operator = "bim.enable_editing_window"
     finish_editing_operator = "bim.finish_editing_window"
     cancel_editing_operator = "bim.cancel_editing_window"
-    cycle_type_operator = "bim.cycle_window_type"
+    pick_type_operator = "bim.pick_window_type"
 
     # matrix_position lambdas replace the get_dimension_matrix_* methods
     dimension_gizmo_props = [
@@ -779,14 +744,15 @@ class GizmoWindowEdition(bpy.types.GizmoGroup, gizmo.BaseParametricGizmoGroup):
         ),
         # lining_offset is handled specially in _update_dimension_gizmo_positions due to negative value support
         DimensionGizmoConfig(attr_name="lining_offset", axis=(0, 1, 0), min_value=-10.0),
+        *WALL_OFFSET_GIZMO_CONFIGS,
     ]
 
-    props_getter = "get_window_props"
+    props_getter = tool.Model.get_window_props
     gizmo_pref_name = "window"
 
     @classmethod
     def is_element_type(cls, element: ifcopenshell.entity_instance) -> bool:
-        return tool.Blender.Modifier.is_window(element)
+        return tool.Parametric.is_window(element)
 
     def get_icon_y_extent(self, props: "BIMWindowProperties") -> tuple[float, float]:
         """Get Y extents for window icon positioning.

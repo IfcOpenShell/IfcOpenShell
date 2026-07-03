@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# /// script
+# ///
 ###############################################################################
 #                                                                             #
 # This file is part of IfcOpenShell.                                          #
@@ -123,15 +125,8 @@ ssl._create_default_https_context = ssl._create_unverified_context
 import time
 from collections.abc import Generator, Sequence
 from pathlib import Path
+from typing import Literal, Union
 from urllib.request import urlretrieve
-
-try:
-    from typing import Literal, Union
-except:
-    # python 3.6 compatibility for rocky 8
-    from typing import Union
-
-    from typing_extensions import Literal
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -154,7 +154,13 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 		typedef std::array<int, 2> edge_t;
 		typedef std::set<edge_t> edge_set_t;
-		std::set<edge_set_t> edge_sets;
+		// When a single face fills an interior loop, their edge_sets (canonicalized edges) will be identical.
+		// We can differentiate in this scenario in two ways:
+		//   - std::map<edge_t, bool> retain the edge order from the bool passed to the loop_() lambda
+		//   - std::pair<bool, edge_set_t> with pair::first populated from external (FaceBound / OuterBound)
+		// The second has been found more reliable for typical models, because inner bound winding can be wrong.
+		// The can be made more resilient by first checking correct population of external and falling back to approach 1.
+		std::set<std::pair<bool, edge_set_t>> edge_sets;
 
 		for (auto& loop : loops) {
 			std::vector<std::pair<int, int> > segments;
@@ -165,12 +171,12 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 				segments.push_back(std::make_pair(C, D));
 			});
 
-			if (edge_sets.find(segment_set) != edge_sets.end()) {
+			if (edge_sets.find({loop->external.value_or(false), segment_set}) != edge_sets.end()) {
 				duplicate_faces++;
 				duplicates_.insert(loop->identity());
 				continue;
 			}
-			edge_sets.insert(segment_set);
+            edge_sets.insert({loop->external.value_or(false), segment_set});
 
 			if (segments.size() >= 3) {
 				for (auto& p : segments) {

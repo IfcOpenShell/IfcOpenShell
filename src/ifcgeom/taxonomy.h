@@ -17,6 +17,13 @@
 #include <tuple>
 #include <exception>
 #include <numeric>
+#include <cstdint>
+#include <cmath>
+#include <array>
+#include <limits>
+#include <functional>
+#include <algorithm>
+#include <stdexcept>
 
 #ifndef TAXONOMY_USE_UNIQUE_PTR
 #ifndef TAXONOMY_USE_NAKED_PTR
@@ -1623,25 +1630,25 @@ typedef item const* ptr;
 				// @todo Sad... now that we have templated collection members,
 				// we can't generally use collection_base anymore as a cast target.
 				if (auto s = taxonomy::dcast<taxonomy::collection>(i)) {
-					visit<taxonomy::collection>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::collection>(s, fn);
 				}
 				else if (auto s = taxonomy::dcast<taxonomy::loop>(i)) {
-					visit<taxonomy::loop>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::loop>(s, fn);
 				}
 				else if (auto s = taxonomy::dcast<taxonomy::face>(i)) {
-					visit<taxonomy::face>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::face>(s, fn);
 				}
 				else if (auto s = taxonomy::dcast<taxonomy::shell>(i)) {
-					visit<taxonomy::shell>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::shell>(s, fn);
 				}
 				else if (auto s = taxonomy::dcast<taxonomy::solid>(i)) {
-					visit<taxonomy::solid>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::solid>(s, fn);
 				}
 				else if (auto s = taxonomy::dcast<taxonomy::loft>(i)) {
-					visit<taxonomy::loft>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::loft>(s, fn);
 				}
 				else if (auto s = taxonomy::dcast<taxonomy::boolean_result>(i)) {
-					visit<taxonomy::boolean_result>(s, fn);
+					ifcopenshell::geometry::visit<taxonomy::boolean_result>(s, fn);
 				}
 				else {
 					fn(i);

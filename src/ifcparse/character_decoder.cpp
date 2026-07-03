@@ -288,7 +288,7 @@ namespace {
                 if (character >= 0x20 && character <= 0x7e) {
                     stream.put((char)character);
                 } else {
-                    stream << "\\u" << character;
+                    stream << "\\u" << static_cast<uint32_t>(character);
                 }
             });
             return stream.str();

@@ -914,7 +914,7 @@ class FacetTransformer(lark.Transformer):
         if self.elements:
             self.results.append(self.elements)
             self.elements = set()
-            self.has_additive_facet_in_current_list = False
+        self.has_additive_facet_in_current_list = False
 
     def instance(self, args):
         self.has_additive_facet_in_current_list = True

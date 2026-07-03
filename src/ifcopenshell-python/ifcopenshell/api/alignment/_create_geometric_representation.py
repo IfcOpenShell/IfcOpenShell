@@ -35,6 +35,8 @@ def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_
     4) Vertical only (this occurs when horizontal is reused from a parent alignment) -> IfcGradientCurve
     5) Vertical + Cant (this occurs when horizontal is reused from a parent alignment) -> IfcSegmentedReferenceCurve
 
+    This method creates the geometric representation entity and assigns it to the alignment, but does not populate the geometry of the representation.
+
     :param alignment: The alignment for which the representation is being created
     :return: None
     """
@@ -42,13 +44,6 @@ def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_
     expected_type = "IfcAlignment"
     if not alignment.is_a(expected_type):
         raise TypeError(f"Expected {expected_type} but got {alignment.is_a()}")
-
-    placement = file.createIfcLocalPlacement(
-        PlacementRelTo=None,
-        RelativePlacement=file.createIfcAxis2Placement2D(Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0))),
-    )
-
-    alignment.ObjectPlacement = placement
 
     axis_geom_subcontext = ifcopenshell.api.alignment.get_axis_subcontext(file)
 
@@ -126,7 +121,7 @@ def _create_geometric_representation(file: ifcopenshell.file, alignment: entity_
         ifcopenshell.api.geometry.assign_representation(file, alignment, representation)
 
     for child_alignment in children:
-        child_alignment.ObjectPlacement = placement
+        child_alignment.ObjectPlacement = alignment.ObjectPlacement
         child_layouts = ifcopenshell.api.alignment.get_alignment_layouts(child_alignment)
         if len(child_layouts) == 1:
             assert child_layouts[0].is_a("IfcAlignmentVertical")

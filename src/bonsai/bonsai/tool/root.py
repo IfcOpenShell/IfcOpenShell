@@ -72,6 +72,18 @@ class Root(bonsai.core.tool.Root):
             )
 
     @classmethod
+    def has_material_styles(cls, element: ifcopenshell.entity_instance) -> bool:
+        """``True`` if any constituent material on ``element`` carries a style
+        representation. Body styles should NOT be applied directly when this
+        is True — the material-inherited style is the authoritative source.
+        Paired with ``assign_body_styles``: callers check this first and only
+        call ``assign_body_styles`` when it returns False."""
+        materials = ifcopenshell.util.element.get_materials(element)
+        if not materials:
+            return False
+        return any(getattr(m, "HasRepresentation", None) for m in materials)
+
+    @classmethod
     def copy_representation(
         cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance
     ) -> dict[int, ifcopenshell.entity_instance]:
@@ -381,7 +393,7 @@ class Root(bonsai.core.tool.Root):
                 # Make sure that the array children also get reassigned to the correct aggregate
                 pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
                 if pset:
-                    array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
+                    array_children = tool.Array.get_all_children_objects(new[0])
                     for obj in array_children:
                         bonsai.core.aggregate.assign_object(
                             tool.Ifc,

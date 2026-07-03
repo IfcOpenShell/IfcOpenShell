@@ -630,13 +630,23 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
 
             if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
-                if "CardinalPoint" in attributes:
+                if "CardinalPoint" in attributes and attributes["CardinalPoint"] is not None:
                     attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
                 ifcopenshell.api.material.edit_profile_usage(
                     self.file,
                     usage=material_set_usage,
                     attributes=attributes,
                 )
+
+                for obj in objects:
+                    obj_element = tool.Ifc.get_entity(obj)
+                    if not obj_element:
+                        continue
+                    obj_material_usage = ifcopenshell.util.element.get_material(obj_element)
+                    if obj_material_usage and obj_material_usage.is_a("IfcMaterialProfileSetUsage"):
+                        obj_material_usage.CardinalPoint = material_set_usage.CardinalPoint
+                        obj_material_usage.ReferenceExtent = material_set_usage.ReferenceExtent
+
                 model_profile.DumbProfileRecalculator().recalculate(objects)
 
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)

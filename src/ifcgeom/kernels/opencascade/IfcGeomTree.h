@@ -49,6 +49,7 @@
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
+#include <cstdint>
 #include <BRepExtrema_TriangleSet.hxx>
 #include <BRepLProp_SLProps.hxx>
 #include <BVH_BinaryTree.hxx>

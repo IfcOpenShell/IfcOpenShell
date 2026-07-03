@@ -285,6 +285,7 @@ Scenario: Split a wall which has a flipped door
     And the object "IfcWall/Wall" is selected
     And I press "bim.hotkey(hotkey='S_K')"
     Then the object "IfcDoor/Door" is at "8.01,0.1,0"
+    And the object "IfcWall/Wall.001" is filled by "IfcDoor/Door"
 
 Scenario: Offset walls
     Given an empty IFC project
@@ -672,6 +673,120 @@ Scenario: Create door type based on door modifier, add an occurrence of it and e
     And I press "bim.enable_editing_door()"
     And I press "bim.finish_editing_door()"
     Then nothing happens
+
+Scenario: Saving with a door mid-edit auto-commits the draft value to the IFC pset
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Class" property to "IfcDoorType"
+    And I set the "Predefined Type" property to "DOOR"
+    And I set the "Representation" property to "Door"
+    When I click "OK"
+    And I press "bim.add_occurrence"
+    And I press "bim.enable_editing_door()"
+    And I set "active_object.BIMDoorProperties.overall_height" to "2.5"
+    Then "active_object.BIMDoorProperties.is_editing" is "True"
+    When I press "bim.save_project(filepath='{temp_project_path}', should_save_as=True)"
+    Then "active_object.BIMDoorProperties.is_editing" is "False"
+    # BBIM_<Type> psets store project units, not raw Blender SI. The empty project
+    # used in an_empty_blender_session is METRIC_MM, so 2.5 m → 2500 mm in the pset.
+    And the variable "saved_height" is "__import__('json').loads(ifcopenshell.util.element.get_pset({ifc}.by_type('IfcDoor')[0], 'BBIM_Door', 'Data'))['overall_height']"
+    And the variable "saved_height" equals "2500.0"
+
+Scenario: Saving with no parametric edits in progress leaves the door pset unchanged
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Class" property to "IfcDoorType"
+    And I set the "Predefined Type" property to "DOOR"
+    And I set the "Representation" property to "Door"
+    When I click "OK"
+    And I press "bim.add_occurrence"
+    And the variable "pre_save_height" is "__import__('json').loads(ifcopenshell.util.element.get_pset({ifc}.by_type('IfcDoor')[0], 'BBIM_Door', 'Data'))['overall_height']"
+    When I press "bim.save_project(filepath='{temp_project_path}', should_save_as=True)"
+    Then the variable "post_save_height" is "__import__('json').loads(ifcopenshell.util.element.get_pset({ifc}.by_type('IfcDoor')[0], 'BBIM_Door', 'Data'))['overall_height']"
+    And the variable "post_save_height" equals "{pre_save_height}"
+
+Scenario: Saving with a wall mid-edit auto-commits the draft to IFC
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And I press "bim.enable_editing_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "True"
+    When I press "bim.save_project(filepath='{temp_project_path}', should_save_as=True)"
+    Then "active_object.BIMWallProperties.is_editing" is "False"
+
+Scenario: Enabling and finishing a wall edit with no drag is a no-op
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And the variable "entity_count_before" is "len(list({ifc}))"
+    When I press "bim.enable_editing_wall()"
+    And I press "bim.finish_editing_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "False"
+    And the variable "entity_count_after" is "len(list({ifc}))"
+    And the variable "entity_count_after" equals "{entity_count_before}"
+
+Scenario: Cancelling a wall edit clears is_editing
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And I press "bim.enable_editing_wall()"
+    When I press "bim.cancel_editing_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "False"
+
+Scenario: Wall parametric edit works on IFC2X3 projects
+    Given an empty IFC2X3 project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    When I press "bim.enable_editing_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "True"
+    When I press "bim.finish_editing_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "False"
+
+Scenario: Rotate a wall 90° via bim.rotate_wall_90
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    When I press "bim.rotate_wall_90()"
+    Then the object "IfcWall/Wall" dimensions are "1,0.1,3"
+    And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
+    And the object "IfcWall/Wall" top right corner is at "-0.1,1,3"
+
+Scenario: Splitting a wall with another wall mid-edit commits the pending edit first
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And I press "bim.enable_editing_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "True"
+    When I press "bim.split_wall()"
+    Then "active_object.BIMWallProperties.is_editing" is "False"
 
 Scenario: Create a door, undo and create a new door
     Given an empty IFC project

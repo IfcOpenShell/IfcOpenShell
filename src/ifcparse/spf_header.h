@@ -32,7 +32,7 @@ class IFC_PARSE_API spf_header {
   private:
     ifcopenshell::file* file_;
 
-    std::array<std::shared_ptr<instance_data>, 3> header_entities_;
+    std::array<shared_pointer_type, 3> header_entities_;
 
   public:
     explicit spf_header(ifcopenshell::file* owner_file);
@@ -43,9 +43,9 @@ class IFC_PARSE_API spf_header {
     ifcopenshell::file* owner_file() { return file_; }
     void owner_file(ifcopenshell::file* file);
 
-    void set_file_description(const std::shared_ptr<instance_data>& description_data);
-    void set_file_name(const std::shared_ptr<instance_data>& name_data);
-    void set_file_schema(const std::shared_ptr<instance_data>& schema_data);
+    void set_file_description(const shared_pointer_type& description_data);
+    void set_file_name(const shared_pointer_type& name_data);
+    void set_file_schema(const shared_pointer_type& schema_data);
 
     const Header_section_schema::file_description file_description() const;
     const Header_section_schema::file_name file_name() const;

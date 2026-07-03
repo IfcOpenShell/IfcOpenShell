@@ -81,7 +81,11 @@ namespace {
 			try {
 				module = manager.load(path);
 			} catch (const std::exception& e) {
+#ifdef IFOPSH_PLUGIN_DEBUG
 				std::cerr << "[ifcopenshell.plugin] skip kernel plugin " << path << ": " << e.what() << std::endl;
+#else
+				static_cast<void>(e);
+#endif
 				continue;
 			}
 			if (module.meta().kind_ != ifcopenshell::plugin::kind::kernel) {

@@ -313,7 +313,7 @@ def format_distance(
             if not feet and not add_inches:
                 tx_dist += str(feet) + "'"
 
-            if not feet and add_inches:
+            if not feet and add_inches and unit_length != "INCHES":
                 if value < 0:
                     tx_dist += "-0' - "
                 else:

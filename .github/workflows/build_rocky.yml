@@ -9,6 +9,13 @@ jobs:
     container: rockylinux:9
 
     steps:
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Install Python
+        # Installs latest Python version so it's preferred by uv over Rocky's system Python.
+        run: uv python install
+
       - name: Install Dependencies
         run: |
           dnf update -y
@@ -48,10 +55,10 @@ jobs:
       - name: Unpack Dependencies
         run: |
           cd build
-          python3 ../nix/cache_dependencies.py unpack
+          uv run ../nix/cache_dependencies.py unpack
 
       - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2.22
+        uses: hendrikmuhs/ccache-action@v1.2.23
         with:
           key: ubuntu-22.04-${{ runner.arch }}-rockylinux9
 
@@ -59,7 +66,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON python3 ./nix/build-all.py -v --diskcleanup --shared 2>&1 | tee build.log
+          CXXFLAGS="-O3" CFLAGS="-O3 ${DARWIN_C_SOURCE}" ADD_COMMIT_SHA=1 BUILD_CFG=Release BUILD_BONSAIVIEWER=ON uv run ./nix/build-all.py -v --diskcleanup 2>&1 | tee build.log
 
       - name: Upload Build Logs
         if: always()
@@ -74,7 +81,7 @@ jobs:
       - name: Pack Dependencies
         run: |
           cd build
-          python3 ../nix/cache_dependencies.py pack
+          uv run ../nix/cache_dependencies.py pack
 
       - name: Commit and Push Changes to Build Repository
         run: |

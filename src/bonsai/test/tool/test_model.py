@@ -588,6 +588,10 @@ class TestGenerateStair2DProfile(NewFile):
 
 
 class TestUsingArrays(NewFile):
+    @staticmethod
+    def _array_objects() -> list[bpy.types.Object]:
+        return [o for o in bpy.data.objects if (e := tool.Ifc.get_entity(o)) and e.is_a("IfcActuator")]
+
     def setup_array(self, add_second_layer=False, sync_children=False):
         tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
@@ -605,7 +609,7 @@ class TestUsingArrays(NewFile):
         props.count = 4
         props.x = 4
         props.sync_children = sync_children
-        bpy.ops.bim.edit_array(item=0)
+        bpy.ops.bim.finish_editing_array()
 
         if add_second_layer:
             bpy.ops.bim.add_array()
@@ -614,14 +618,14 @@ class TestUsingArrays(NewFile):
             props.count = 3
             props.y = 4
             props.sync_children = sync_children
-            bpy.ops.bim.edit_array(item=1)
+            bpy.ops.bim.finish_editing_array()
 
     def test_remove_array_last_to_first(self):
         self.setup_array(add_second_layer=True)
         bpy.ops.bim.remove_array(item=1)
-        assert len(bpy.context.selected_objects) == 4
+        assert len(self._array_objects()) == 4
         bpy.ops.bim.remove_array(item=0)
-        assert len(bpy.context.selected_objects) == 1
+        assert len(self._array_objects()) == 1
 
     def test_remove_array_first_to_last(self):
         self.setup_array(add_second_layer=True)
@@ -647,7 +651,7 @@ class TestUsingArrays(NewFile):
         bpy.ops.bim.apply_array()  # apply second layer
         bpy.ops.bim.apply_array()  # apply first layer
 
-        objs = bpy.context.selected_objects
+        objs = self._array_objects()
         assert len(objs) == 12
 
         # check BBIM_Array psets are removed
@@ -930,3 +934,88 @@ class TestOffsetWall(NewFile):
         usage.DirectionSense = "NEGATIVE"
         subject.offset_wall(obj, "EXTERIOR")
         assert usage.OffsetFromReferenceLine == 100
+
+
+class TestGetSiblingOccurrenceCount(NewFile):
+    """The pen-icon dispatcher's pre-edit warning depends on this count: zero
+    means the edit is safe (unique geometry), non-zero means the edit will
+    silently mutate other instances sharing the same resolved body rep."""
+
+    def _make_body_subcontext(self, ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+        import ifcopenshell.api.context
+
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject", name="Project")
+        parent = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        return ifcopenshell.api.context.add_context(
+            ifc,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=parent,
+        )
+
+    def _create_wall_with_body_rep(
+        self,
+        ifc: ifcopenshell.file,
+        body_subcontext: ifcopenshell.entity_instance,
+        name: str = "Wall",
+    ) -> ifcopenshell.entity_instance:
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", name=name)
+        rep = ifc.createIfcShapeRepresentation(
+            ContextOfItems=body_subcontext,
+            RepresentationIdentifier="Body",
+            RepresentationType="SweptSolid",
+            Items=[ifc.createIfcExtrudedAreaSolid()],
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=wall, representation=rep)
+        return wall
+
+    def test_returns_zero_when_element_has_no_body_representation(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        assert subject.get_sibling_occurrence_count(wall) == 0
+
+    def test_returns_zero_when_element_has_unique_body_representation(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        body = self._make_body_subcontext(ifc)
+        wall = self._create_wall_with_body_rep(ifc, body)
+        assert subject.get_sibling_occurrence_count(wall) == 0
+
+    def test_returns_sibling_count_excluding_self_and_type(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        body = self._make_body_subcontext(ifc)
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType", name="WAL01")
+        type_rep = ifc.createIfcShapeRepresentation(
+            ContextOfItems=body,
+            RepresentationIdentifier="Body",
+            RepresentationType="SweptSolid",
+            Items=[ifc.createIfcExtrudedAreaSolid()],
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=wall_type, representation=type_rep)
+
+        occurrences = [ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", name=f"Wall{i}") for i in range(3)]
+        ifcopenshell.api.type.assign_type(ifc, related_objects=occurrences, relating_type=wall_type)
+
+        assert subject.get_sibling_occurrence_count(occurrences[0]) == 2
+        assert subject.get_sibling_occurrence_count(occurrences[1]) == 2
+        assert subject.get_sibling_occurrence_count(occurrences[2]) == 2
+
+    def test_type_with_occurrences_reports_its_occurrence_count(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        body = self._make_body_subcontext(ifc)
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType", name="WAL01")
+        type_rep = ifc.createIfcShapeRepresentation(
+            ContextOfItems=body,
+            RepresentationIdentifier="Body",
+            RepresentationType="SweptSolid",
+            Items=[ifc.createIfcExtrudedAreaSolid()],
+        )
+        ifcopenshell.api.geometry.assign_representation(ifc, product=wall_type, representation=type_rep)
+        occurrences = [ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall", name=f"Wall{i}") for i in range(2)]
+        ifcopenshell.api.type.assign_type(ifc, related_objects=occurrences, relating_type=wall_type)
+
+        assert subject.get_sibling_occurrence_count(wall_type) == 2

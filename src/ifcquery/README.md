@@ -474,11 +474,11 @@ ifcedit run model.ifc spatial.unassign_container \
     --products "$(ifcquery model.ifc --format ids select 'IfcWall')"
 
 # Delete every window (model opened and saved once)
-ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product {id}
+ifcquery model.ifc select 'IfcWindow' | ifcedit foreach model.ifc root.remove_product --product '{id}'
 
 # Bulk rename all doors
 ifcquery model.ifc select 'IfcDoor' | ifcedit foreach model.ifc attribute.edit_attributes \
-    --product {id} --attributes '{"Name": "Door"}'
+    --product '{id}' --attributes '{"Name": "Door"}'
 
 # Render an element highlighted against everything related to it
 ifcquery model.ifc render relations.png \

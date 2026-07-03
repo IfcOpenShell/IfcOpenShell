@@ -18,10 +18,12 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 
@@ -73,6 +75,34 @@ class Pset(bonsai.core.tool.Pset):
         pset = ifcopenshell.util.element.get_pset(element, pset_name)
         if pset:
             return tool.Ifc.get().by_id(pset["id"])
+
+    @classmethod
+    def upsert_pset(
+        cls,
+        element: ifcopenshell.entity_instance,
+        pset_name: str,
+        properties: dict[str, Any],
+    ) -> ifcopenshell.entity_instance:
+        """Get or create ``pset_name`` on ``element``, write ``properties``, return the pset.
+        Centralises the get-element-pset → add-pset-if-missing → edit-pset idiom."""
+        ifc_file = tool.Ifc.get()
+        pset = cls.get_element_pset(element, pset_name)
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=pset_name)
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=properties)
+        return pset
+
+    @classmethod
+    def write_bbim_data(
+        cls,
+        element: ifcopenshell.entity_instance,
+        pset_name: str,
+        data: dict[str, Any],
+    ) -> ifcopenshell.entity_instance:
+        """Get or create the BBIM_<Type> pset and write ``data`` as the IfcText-serialised
+        JSON ``Data`` property. Canonical writer for parametric-modifier pset state."""
+        data_text = tool.Ifc.get().createIfcText(json.dumps(data, default=list))
+        return cls.upsert_pset(element, pset_name, {"Data": data_text})
 
     @classmethod
     def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> PsetProperties:

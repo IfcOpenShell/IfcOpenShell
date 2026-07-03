@@ -15,6 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+#
+# This file was modified with the assistance of an AI coding tool.
 
 import datetime
 import json
@@ -61,6 +63,7 @@ import bonsai.core.project as core
 import bonsai.tool as tool
 from bonsai.bim import export_ifc, import_ifc
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.model import preview_base
 from bonsai.bim.module.model.decorator import FaceAreaDecorator, PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
@@ -1220,6 +1223,19 @@ class LoadProjectElements(bpy.types.Operator):
         props = tool.Project.get_project_props()
         props.is_loading = False
 
+        # Stash elements the kernel skipped opening cuts on (HasOpenings > void_limit).
+        # The Project panel banner offers the user a one-click recut.
+        props.pending_opening_recut.clear()
+        if ifc_importer.gross_elements:
+            for element in ifc_importer.gross_elements:
+                item = props.pending_opening_recut.add()
+                item.ifc_definition_id = element.id()
+            self.report(
+                {"WARNING"},
+                f"{len(ifc_importer.gross_elements)} element(s) had too many openings and were loaded without cuts. "
+                f"Apply manually from the Project panel.",
+            )
+
         tool.Project.load_default_thumbnails()
         tool.Project.set_default_context()
         tool.Project.set_default_modeling_dimensions()
@@ -1902,11 +1918,11 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
 
         self.use_relative_path = tool.Project.get_project_props().use_relative_project_path
         props = tool.Blender.get_bim_props()
-        if (filepath := props.ifc_file) and not self.should_save_as:
-            self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
-            return self.execute(context)
-
-        return ExportHelper.invoke(self, context, event)
+        filepath = props.ifc_file
+        if not filepath or self.should_save_as:
+            return ExportHelper.invoke(self, context, event)
+        self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
+        return self.execute(context)
 
     def check(self, context):
         # ExportHelper is automatically adjusting suffix to `filename_ext`.
@@ -1932,6 +1948,20 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
     def _execute(self, context):
+        committed, failed_commits = tool.Parametric.commit_pending_edits()
+        # Previews are session-transient — discard rather than commit. Sibling
+        # gizmo polls gate on each preview's is_active flag, and a stuck flag
+        # persisted through the save would silently hide them on reload.
+        preview_base.discard_pending_previews(context.scene)
+        # Suffix is appended to the IFC save-success report below so the auto-commit
+        # info isn't immediately overwritten by the success message in Blender's
+        # status bar (only the latest self.report({"INFO"}, ...) sticks).
+        commit_suffix = f" (auto-committed {committed} pending parametric edit(s))" if committed else ""
+        if failed_commits:
+            names = ", ".join(o.name for o in failed_commits)
+            msg = f"Auto-commit failed for {len(failed_commits)} object(s): {names}"
+            print(f"Bonsai: {msg} (their drafts are NOT saved to the IFC file).")
+            self.report({"ERROR"}, msg)
         start = time.time()
         logger = logging.getLogger("ExportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
@@ -2000,7 +2030,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                     blendmetadata_path = output_file + suffix
                 self.report(
                     {"INFO"},
-                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}',
+                    f'IFC Project "{os.path.basename(output_file)}" And Metadata File Saved to: {os.path.basename(blendmetadata_path)}{commit_suffix}',
                 )
             except Exception as e:
                 self.report({"ERROR"}, f"Failed to save blend metadata file: {e}")
@@ -2010,7 +2040,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
                 bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
             self.report(
                 {"INFO"},
-                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
+                f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved{commit_suffix}',
             )
 
         bonsai.bim.handler.refresh_ui_data()
@@ -3402,4 +3432,109 @@ class GenerateUVMap(bpy.types.Operator):
             return {"CANCELLED"}
         tool.Loader.load_generated_uv_map(obj.data)
         self.report({"INFO"}, "Generated UV map for selected mesh.")
+        return {"FINISHED"}
+
+
+class BIM_OT_apply_pending_opening_cuts(bpy.types.Operator, tool.Ifc.Operator):
+    """Recompute the wall mesh including opening subtractions for every host
+    that the load-time ``void_limit`` filter skipped. Clears the deferred
+    list on completion so the panel banner disappears."""
+
+    bl_idname = "bim.apply_pending_opening_cuts"
+    bl_label = "Apply Pending Opening Cuts"
+    bl_description = (
+        "Recompute meshes for elements whose openings were skipped at load because they had too many openings"
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context: bpy.types.Context) -> set[str]:
+        pending = tool.Project.get_project_props().pending_opening_recut
+        applied = 0
+        skipped = 0
+        failed = 0
+        for item in pending:
+            try:
+                element = tool.Ifc.get().by_id(item.ifc_definition_id)
+            except RuntimeError:
+                skipped += 1
+                continue
+            obj = tool.Ifc.get_object(element)
+            if obj is None:
+                skipped += 1
+                continue
+            body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+            if body is None:
+                skipped += 1
+                continue
+            try:
+                tool.Geometry.reimport_element_representations(obj, body, apply_openings=True)
+                applied += 1
+            except (RuntimeError, OSError, AttributeError) as exc:
+                # Programmer errors (TypeError, ValueError, etc.) must surface — don't swallow them.
+                failed += 1
+                print(f"apply_pending_opening_cuts: failed to recompute {element} ({exc})")
+
+        pending.clear()
+        message = f"Applied opening cuts to {applied} element(s)."
+        if skipped:
+            message += f" {skipped} entry/entries skipped (entity or object no longer available)."
+        if failed:
+            message += f" {failed} entry/entries failed (see system console)."
+            self.report({"WARNING"}, message)
+        else:
+            self.report({"INFO"}, message)
+        return {"FINISHED"}
+
+
+class BIM_OT_dismiss_pending_opening_cuts(bpy.types.Operator):
+    bl_idname = "bim.dismiss_pending_opening_cuts"
+    bl_label = "Dismiss Pending Opening Cuts"
+    bl_description = "Clear the pending opening-cut list without applying it. Walls stay solid where openings would have been subtracted."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        tool.Project.get_project_props().pending_opening_recut.clear()
+        return {"FINISHED"}
+
+
+class BIM_OT_dismiss_multi_instance_warning(bpy.types.Operator):
+    bl_idname = "bim.dismiss_multi_instance_warning"
+    bl_label = "Dismiss Multi-Instance Warning"
+    bl_description = (
+        "Hide the warning that another Blender instance has this IFC file open. Sticky for the current session."
+    )
+    bl_options = {"REGISTER"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        from bonsai.bim.ifc import dismiss_multi_instance_warning
+
+        dismiss_multi_instance_warning()
+        return {"FINISHED"}
+
+
+class BIM_OT_select_pending_opening_cuts(bpy.types.Operator):
+    bl_idname = "bim.select_pending_opening_cuts"
+    bl_label = "Select Elements With Skipped Opening Cuts"
+    bl_description = "Select the Blender objects whose openings were skipped at load. Useful for locating which elements need attention."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            self.report({"INFO"}, "No IFC file loaded.")
+            return {"CANCELLED"}
+        objects: list[bpy.types.Object] = []
+        for item in tool.Project.get_project_props().pending_opening_recut:
+            try:
+                element = ifc_file.by_id(item.ifc_definition_id)
+            except RuntimeError:
+                continue
+            obj = tool.Ifc.get_object(element)
+            if obj is not None:
+                objects.append(obj)
+        if not objects:
+            self.report({"INFO"}, "No matching Blender objects found for the pending list.")
+            return {"CANCELLED"}
+        tool.Blender.set_objects_selection(context, active_object=objects[0], selected_objects=objects)
+        self.report({"INFO"}, f"Selected {len(objects)} element(s).")
         return {"FINISHED"}

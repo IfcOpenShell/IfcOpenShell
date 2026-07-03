@@ -34,6 +34,7 @@ import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.module.model.data import RailingData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.parametric_lifecycle import PathPreservingEditMixin
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
@@ -92,7 +93,6 @@ def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         representation_data = {
-            "railing_type": props.railing_type,
             "context": body,
             "railing_path": railing_path,
             "use_manual_supports": props.use_manual_supports,
@@ -406,66 +406,65 @@ class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.enable_editing_railing"
-    bl_label = "Enable Editing Railing"
-    bl_options = {"REGISTER"}
+class _RailingEditMixin(PathPreservingEditMixin):
+    """Type-specific hooks for railing parametric-edit operators. Single-object
+    (active_object). ``path_data`` is preserved through the edit; the separate
+    ``Enable/Finish/CancelEditingRailingPath`` operators handle path editing."""
 
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        props = tool.Model.get_railing_props(obj)
-        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
+    pset_name = "BBIM_Railing"
+
+    @classmethod
+    def _is_element_type(cls, element):
+        return tool.Parametric.is_railing(element)
+
+    @classmethod
+    def _get_props(cls, obj: bpy.types.Object):
+        return tool.Model.get_railing_props(obj)
+
+    @classmethod
+    def _post_load_data(cls, data: dict) -> dict:
+        # BIMRailingProperties.path_data is a StringProperty holding JSON.
         data["path_data"] = json.dumps(data["path_data"])
+        return data
 
-        # required since we could load pset from .ifc and BIMRailingProperties won't be set
-        props.set_props_kwargs_from_ifc_data(data)
+    @classmethod
+    def _update_pset(cls, element, data: dict) -> None:
+        update_bbim_railing_pset(element, data)
 
-        props.is_editing = True
-        return {"FINISHED"}
+    @classmethod
+    def _update_modifier_ifc_data(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
+        update_railing_modifier_ifc_data(context)
 
-
-class CancelEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.cancel_editing_railing"
-    bl_label = "Cancel Editing Railing"
-    bl_options = {"REGISTER"}
-
-    def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Railing")["data_dict"]
-        props = tool.Model.get_railing_props(obj)
-
-        # restore previous settings since editing was canceled
-        props.set_props_kwargs_from_ifc_data(data)
+    @classmethod
+    def _update_modifier_bmesh(cls, obj: bpy.types.Object, context: bpy.types.Context) -> None:
         update_railing_modifier_bmesh(context)
 
-        props.is_editing = False
-        return {"FINISHED"}
 
-
-class FinishEditingRailing(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.finish_editing_railing"
-    bl_label = "Finish Editing Railing"
-    bl_options = {"REGISTER"}
+class EnableEditingRailing(_RailingEditMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_railing"
+    bl_label = "Enable Editing Railing"
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        element = tool.Ifc.get_entity(obj)
-        assert element
-        props = tool.Model.get_railing_props(obj)
+        return self._enable_targets(context)
 
-        pset_data = tool.Model.get_modeling_bbim_pset_data(bpy.context.active_object, "BBIM_Railing")
-        path_data = pset_data["data_dict"]["path_data"]
 
-        railing_data = props.get_general_kwargs(convert_to_project_units=True)
-        railing_data["path_data"] = path_data
-        props.is_editing = False
+class CancelEditingRailing(_RailingEditMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.cancel_editing_railing"
+    bl_label = "Cancel Editing Railing"
+    bl_options = {"REGISTER", "UNDO"}
 
-        update_bbim_railing_pset(element, railing_data)
-        update_railing_modifier_ifc_data(context)
-        return {"FINISHED"}
+    def _execute(self, context):
+        return self._cancel_targets(context)
+
+
+class FinishEditingRailing(_RailingEditMixin, bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.finish_editing_railing"
+    bl_label = "Finish Editing Railing"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        return self._finish_targets(context)
 
 
 class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
