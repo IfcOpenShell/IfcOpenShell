@@ -198,18 +198,21 @@ class SelectGroupElements(bpy.types.Operator):
     bl_description = (
         "Select objects assigned to the selected group and all nested groups"
         "\nSHIFT + CLICK to remove from selection set"
-        "\nCTRL + CLICK to exclude children"
+        "\nCTRL + CLICK to filter selection to matching objects only"
+        "\nCTRL + SHIFT + CLICK to exclude children"
         "\nALT + CLICK to also unhide hidden objects (viewport and local hide)"
     )
     group: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=True, options={"SKIP_SAVE"})
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        self.is_recursive = not event.ctrl
+        self.is_recursive = not (event.ctrl and event.shift)
         self.should_unhide = event.alt
-        self.remove_from_selection = event.shift
+        self.remove_from_selection = event.shift and not event.ctrl
+        self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
     def execute(self, context):
@@ -217,6 +220,7 @@ class SelectGroupElements(bpy.types.Operator):
             ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive),
             unhide=self.should_unhide,
             remove=self.remove_from_selection,
+            filter_selection=self.filter_selection,
         )
         return {"FINISHED"}
 

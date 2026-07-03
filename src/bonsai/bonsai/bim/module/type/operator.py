@@ -221,7 +221,7 @@ class SelectType(bpy.types.Operator):
 
 
 class SelectSimilarType(bpy.types.Operator):
-    """Select Similar Type\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"""
+    """Select Similar Type\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"""
 
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"
@@ -229,15 +229,17 @@ class SelectSimilarType(bpy.types.Operator):
     related_object: bpy.props.StringProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         self.should_unhide = event.alt
-        self.remove_from_selection = event.shift
+        self.remove_from_selection = event.shift and not event.ctrl
+        self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
     def execute(self, context):
         self.file = tool.Ifc.get()
-        if self.remove_from_selection:
+        if self.remove_from_selection or self.filter_selection:
             objects = [context.active_object] if context.active_object else []
         else:
             objects = bpy.context.selected_objects
@@ -251,6 +253,13 @@ class SelectSimilarType(bpy.types.Operator):
                 # Keep objects without a type selected (retain current selection)
                 continue
             relating_types.add(relating_type)
+
+        if self.filter_selection:
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element or ifcopenshell.util.element.get_type(element) not in relating_types:
+                    obj.select_set(False)
+            return {"FINISHED"}
 
         result = ""
         for relating_type in relating_types:

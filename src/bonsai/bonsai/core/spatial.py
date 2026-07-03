@@ -125,9 +125,13 @@ def select_similar_container(
     is_recursive: bool = True,
     should_unhide: bool = False,
     remove_from_selection: bool = False,
+    filter_selection: bool = False,
 ) -> None:
     spatial.select_products(
-        spatial.get_decomposed_elements(container, is_recursive), unhide=should_unhide, remove=remove_from_selection
+        spatial.get_decomposed_elements(container, is_recursive),
+        unhide=should_unhide,
+        remove=remove_from_selection,
+        filter_selection=filter_selection,
     )
 
 

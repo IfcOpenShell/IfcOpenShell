@@ -975,7 +975,7 @@ class Spatial:
     def run_spatial_assign_container(cls, container, objs): pass
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
-    def select_products(cls, products, unhide=False, remove=False): pass
+    def select_products(cls, products, unhide=False, remove=False, filter_selection=False): pass
     def set_active_object(cls, obj, selection_mode=None): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
     def set_target_container_as_default(cls): pass

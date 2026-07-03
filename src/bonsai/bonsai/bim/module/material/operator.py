@@ -61,15 +61,17 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
-    bl_description = "Select objects using the provided material\n\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"
+    bl_description = "Select objects using the provided material\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         self.should_unhide = event.alt
-        self.remove_from_selection = event.shift
+        self.remove_from_selection = event.shift and not event.ctrl
+        self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
     def execute(self, context):
@@ -80,6 +82,7 @@ class SelectByMaterial(bpy.types.Operator):
             material=material,
             should_unhide=self.should_unhide,
             remove_from_selection=self.remove_from_selection,
+            filter_selection=self.filter_selection,
         )
 
         # copy selection query to clipboard
