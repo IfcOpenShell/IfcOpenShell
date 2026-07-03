@@ -19,13 +19,6 @@
 
 #include "ViewportCore.h"
 
-#include <algorithm>
-#include <cmath>
-#include <cstdio>
-#include <cstring>
-#include <limits>
-#include <vector>
-
 // wgpu-native extensions (log callback, MULTI_DRAW_INDIRECT). The web
 // build (emdawnwebgpu / Dawn) doesn't ship this header — validation
 // errors there go to the browser console, so the log-callback path
@@ -38,6 +31,15 @@
 #include "InstanceCompose.h"
 #include "Log.h"
 
+#include <boost/math/constants/constants.hpp>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <limits>
+#include <vector>
+
 namespace {
 // Orbit camera around target_. World +Z up (BIM convention). Yaw is
 // rotation about Z (positive = anticlockwise looking down +Z); pitch
@@ -45,7 +47,7 @@ namespace {
 // updateCamera convention so framing aligns between backends.
 Eigen::Vector3f orbitEye(const float target[3], float dist,
                          float yaw_deg, float pitch_deg) {
-    constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
     const float yaw = yaw_deg   * kDeg2Rad;
     const float pit = pitch_deg * kDeg2Rad;
     const float cp = std::cos(pit), sp = std::sin(pit);
@@ -176,7 +178,7 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
                             : 1.0f;
     Eigen::Matrix4f p;
     if (projection_ortho_) {
-        constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+        constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
         const float half_h = camera_distance_
             * std::tan(camera_fov_y_deg_ * 0.5f * kDeg2Rad);
         const float half_w = half_h * aspect;
@@ -380,7 +382,7 @@ void ViewportCore::composeInstanceFromPlacement(InstanceCpu& inst,
 
 void ViewportCore::frameAabb(const float mn[3], const float mx[3],
                              float padding) {
-    constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
     const float cx = 0.5f * (mn[0] + mx[0]);
     const float cy = 0.5f * (mn[1] + mx[1]);
     const float cz = 0.5f * (mn[2] + mx[2]);
@@ -494,7 +496,7 @@ void ViewportCore::orbitBy(float dx_px, float dy_px) {
 }
 
 void ViewportCore::panBy(float dx_px, float dy_px, int viewport_height_px) {
-    constexpr float kDeg2Rad = float(M_PI) / 180.0f;
+    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
 
     // Pan in the camera's screen-space plane. Within 1° of straight
     // up/down the world-Z up-reference degenerates (cross with forward
@@ -5802,7 +5804,7 @@ namespace {
 // degrees → radians. Inline-only, used inside render() for the
 // focal-length derivation.
 constexpr float degreesToRadians(float deg) {
-    return deg * float(M_PI) / 180.0f;
+    return deg * boost::math::constants::pi<float>() / 180.0f;
 }
 
 // Format a float with N decimals into the running Log line. Used to
