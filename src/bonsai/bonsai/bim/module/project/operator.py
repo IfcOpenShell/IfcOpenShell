@@ -1424,6 +1424,9 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 reference = ifcopenshell.api.document.add_reference(tool.Ifc.get(), information=document)
                 reference[1] = ",".join([str(o) for o in np.eye(4).flatten().tolist()])
                 reference.Location = filepath.replace("\\", "/")
+                # Persist the query per reference (Description is IFC4+ only).
+                if self.query and hasattr(reference, "Description"):
+                    reference.Description = self.query
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
@@ -1487,9 +1490,12 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
 
+    # SKIP_SAVE: Blender reuses an operator's last-used property values on the
+    # next interactive invocation, which would leak one link's query/cache
+    # settings into another link's load.
     link_index: bpy.props.IntProperty(name="Link Index")
-    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
-    query: bpy.props.StringProperty()
+    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True, options={"SKIP_SAVE"})
+    query: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     if TYPE_CHECKING:
         link_index: int
@@ -1538,22 +1544,22 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
             self.link.is_loaded = False
 
     def link_ifc(self) -> Union[set[str], None]:
-        blend_filepath = self.filepath_.with_suffix(".ifc.cache.blend")
-        h5_filepath = self.filepath_.with_suffix(".ifc.cache.h5")
-        json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
+        blend_filepath, json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query)
 
         def should_clear_cache() -> bool:
             if not self.use_cache:
                 return True
             if not blend_filepath.exists():
                 return False
+            if not json_filepath.exists():
+                return True
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
             query = data.get("query", "")
             return query != self.query
 
-        if should_clear_cache():
+        if should_clear_cache() and blend_filepath.exists():
             os.remove(blend_filepath)
 
         if not blend_filepath.exists():
@@ -1630,7 +1636,7 @@ except Exception as e:
         if len(tool.Project.get_project_props().links) > 1:
             return  # Only the first link sets the origin
 
-        json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
+        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query)[1]
         if not json_filepath.exists():
             return
 
@@ -1649,8 +1655,7 @@ except Exception as e:
         if not (crs_name := (ifcopenshell.util.geolocation.get_crs(tool.Ifc.get()) or {}).get("Name", "")):
             self.link.georeferenced = "NONE"
             return
-        reference = tool.Ifc.get().by_id(self.link.ifc_definition_id)
-        json_filepath = Path(reference.Location).with_suffix(".ifc.cache.json")
+        json_filepath = tool.Project.get_link_cache_paths(self.filepath_, self.query)[1]
         if not json_filepath.exists():
             self.link.georeferenced = "NONE"
             return
@@ -1668,20 +1673,26 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Reload the selected file, optionally changing its file path and load options"
 
+    # SKIP_SAVE: this operator distinguishes "provided" from "unset" properties
+    # via is_property_set, so last-used property retention between interactive
+    # invocations would leak one link's settings into another's reload.
     link_index: bpy.props.IntProperty(name="Link Index")
     filepath: bpy.props.StringProperty(
         name="File Path",
         description="Path to the linked IFC file",
+        options={"SKIP_SAVE"},
     )
     use_relative_path: bpy.props.BoolProperty(
         name="Use Relative Path",
         description="Whether to store linked model path relative to the currently opened IFC file.",
         default=False,
+        options={"SKIP_SAVE"},
     )
     use_cache: bpy.props.BoolProperty(
         name="Use Cache",
         description="Reuse the cached geometry if it's still valid instead of reprocessing the IFC",
         default=False,
+        options={"SKIP_SAVE"},
     )
     query: bpy.props.StringProperty(
         name="Query",
@@ -1689,6 +1700,7 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
             "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
             "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
         ),
+        options={"SKIP_SAVE"},
     )
 
     if TYPE_CHECKING:
@@ -1763,6 +1775,10 @@ class ReloadLink(bpy.types.Operator, tool.Ifc.Operator):
                 reference.Location = filepath.replace("\\", "/")
                 if document := tool.Document.get_reference_document(reference):
                     document.Name = Path(filepath).name
+        if tool.Ifc.get() and link.ifc_definition_id:
+            reference = tool.Ifc.get().by_id(link.ifc_definition_id)
+            if hasattr(reference, "Description"):
+                reference.Description = link.query or None
 
         bpy.ops.bim.unload_link(link_index=self.link_index)
         return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=self.use_cache, query=link.query) or {
@@ -1825,7 +1841,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
-            Path(link.filepath).with_suffix(".ifc.cache.blend")
+            tool.Project.get_link_cache_paths(link.filepath, link.query)[0]
         )
         link.is_selectable = (is_selectable := not link.is_selectable)
         for collection in self.get_linked_collections():
@@ -1862,7 +1878,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         props = tool.Project.get_project_props()
         link = props.links[self.link_index]
         self.library_filepath = tool.Blender.ensure_blender_path_is_abs(
-            Path(link.filepath).with_suffix(".ifc.cache.blend")
+            tool.Project.get_link_cache_paths(link.filepath, link.query)[0]
         )
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
@@ -2266,7 +2282,7 @@ class LoadLinkedProject(bpy.types.Operator, ImportHelper):
             tool.Loader.guess_false_origin(self.file)
 
         tool.Georeference.set_model_origin()
-        self.json_filepath = self.filepath + ".cache.json"
+        self.json_filepath = str(tool.Project.get_link_cache_paths(self.filepath, self.query)[1])
         data = {
             "model_is_georeferenced": gprops.model_is_georeferenced,
             "model_crs": gprops.model_crs,
@@ -2790,14 +2806,22 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
         # is displayed rather than at its original coordinates.
         obj = tool.Ifc.get_object(element)
         if isinstance(obj, bpy.types.Object):
+            # Prefer matching the link by the queried instance's root empty -
+            # the same file may be linked several times (different queries)
+            # and moved to different locations.
+            root = props.queried_obj_root
             linked_filepath = Path(queried_obj["ifc_filepath"])
+            link_match = None
             for link in props.links:
-                if Path(tool.Ifc.resolve_uri(link.filepath)) != linked_filepath:
-                    continue
-                delta = tool.Project.calculate_link_delta_matrix(link)
+                if root is not None and tool.Project.get_link_empty_handle(link) == root:
+                    link_match = link
+                    break
+                if link_match is None and Path(tool.Ifc.resolve_uri(link.filepath)) == linked_filepath:
+                    link_match = link
+            if link_match:
+                delta = tool.Project.calculate_link_delta_matrix(link_match)
                 if not delta.is_identity:
                     obj.matrix_world = delta @ obj.matrix_world
-                break
 
         return {"FINISHED"}
 
