@@ -23,9 +23,9 @@
 
 #include "../../SessionState.h"
 #include "../../../ifcviewer/Federation.h"
-#include "../../../ifcutil/Geolocation.h"
+#include "../../../helpers/geolocation.h"
 #include "../../../ifcviewer/SceneLoader.h"
-#include "../../../ifcutil/Unit.h"
+#include "../../../helpers/unit.h"
 
 #include <cmath>
 
@@ -89,8 +89,8 @@ QString formatNamedUnit(const express::Base& unit) {
             text += QString::fromStdString(prefix) + " ";
         }
         text += QString::fromStdString(name);
-        auto symbol_it = kUnitSymbols.find(name);
-        if (symbol_it != kUnitSymbols.end()) {
+        auto symbol_it = UNIT_SYMBOLS.find(name);
+        if (symbol_it != UNIT_SYMBOLS.end()) {
             text += " (" + QString::fromStdString(symbol_it->second) + ")";
         }
         return text;
@@ -100,8 +100,8 @@ QString formatNamedUnit(const express::Base& unit) {
     if (name_attr.isNull()) return "—";
     const std::string name = static_cast<std::string>(name_attr);
     QString text = QString::fromStdString(name);
-    auto symbol_it = kUnitSymbols.find(name);
-    if (symbol_it != kUnitSymbols.end()) {
+    auto symbol_it = UNIT_SYMBOLS.find(name);
+    if (symbol_it != UNIT_SYMBOLS.end()) {
         text += " (" + QString::fromStdString(symbol_it->second) + ")";
     }
     return text;
@@ -119,7 +119,7 @@ std::optional<QString> coordinateOperationType(ifcopenshell::file* ifc_file) {
     }
 
     if (ifc_file->schema()->name() == "IFC2X3") {
-        if (getHelmertTransformationParameters(ifc_file)) {
+        if (get_helmert_transformation_parameters(ifc_file)) {
             return QStringLiteral("ePSet_MapConversion");
         }
     }
@@ -129,10 +129,10 @@ std::optional<QString> coordinateOperationType(ifcopenshell::file* ifc_file) {
 SelectedModelGeorefState stateFromLiveFile(ifcopenshell::file* ifc_file) {
     if (!ifc_file) return unknownState("Not available yet", "No data source");
 
-    const auto params = getHelmertTransformationParameters(ifc_file);
+    const auto params = get_helmert_transformation_parameters(ifc_file);
     const auto coordop_type = coordinateOperationType(ifc_file);
-    const auto project_unit_value = getProjectUnit(ifc_file, "LENGTHUNIT");
-    const auto map_unit_value = getMapUnit(ifc_file);
+    const auto project_unit_value = get_project_unit(ifc_file, "LENGTHUNIT");
+    const auto map_unit_value = get_map_unit(ifc_file);
     const QString project_unit = project_unit_value ? formatNamedUnit(*project_unit_value) : QString("—");
     const QString map_unit = map_unit_value ? formatNamedUnit(*map_unit_value) : project_unit;
 
@@ -143,7 +143,7 @@ SelectedModelGeorefState stateFromLiveFile(ifcopenshell::file* ifc_file) {
         return state;
     }
 
-    const double rotation_dd = xaxis2angleDeg(params->xaa, params->xao);
+    const double rotation_dd = x_axis_to_angle_deg(params->xaa, params->xao);
     return {
         "Yes",
         coordop_type.value_or("Unknown"),

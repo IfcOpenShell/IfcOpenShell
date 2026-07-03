@@ -34,7 +34,7 @@ Stack
   primitives used in instrumentation.
 * **IfcOpenShell C++ libs** (IfcParse / IfcGeom) for IFC parsing and
   geometry generation, plus **helpers** for the schema-agnostic
-  helpers (``Unit``, ``Geolocation``, ``Placement``).
+  helpers (``unit``, ``geolocation``, ``placement``).
 * **Eigen3** for 4×4 matrices and small linear algebra.
 * **meshoptimizer** at sidecar-build time only — decimates each
   unique mesh into an LOD1 slice. Not pulled at runtime.

@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "Federation.h"
-#include "Geolocation.h"
+#include "geolocation.h"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -467,7 +467,7 @@ TEST_CASE("helmert metres transform consumes Scale through map unit scale",
 
     const double project_length_to_meters = 0.001;
     const double map_unit_to_meters = project_length_to_meters / params.scale;
-    Eigen::Matrix4d M = helmertMetersFromParameters(params, map_unit_to_meters);
+    Eigen::Matrix4d M = helmert_meters_from_parameters(params, map_unit_to_meters);
 
     Eigen::Vector4d local_m(10.0, 20.0, 0.0, 1.0);
     Eigen::Vector4d global_m = M * local_m;

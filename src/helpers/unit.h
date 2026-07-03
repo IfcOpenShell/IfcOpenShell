@@ -35,44 +35,44 @@ namespace ifcopenshell { class file; }
 
 // SI prefix multipliers, e.g. "MILLI" -> 1e-3.  Empty key not present;
 // callers should pass an empty prefix string for "no prefix".
-extern const std::unordered_map<std::string, double> kSiPrefixes;
+extern const std::unordered_map<std::string, double> SI_PREFIXES;
 
 // SI prefix display symbols, e.g. "MILLI" -> "m".
-extern const std::unordered_map<std::string, std::string> kSiPrefixSymbols;
+extern const std::unordered_map<std::string, std::string> SI_PREFIX_SYMBOLS;
 
 // Conversion-based unit name (lowercase, IFC convention) -> SI base scale.
 // e.g. "foot" -> 0.3048, "square foot" -> 0.09290304.
-extern const std::unordered_map<std::string, double> kSiConversions;
+extern const std::unordered_map<std::string, double> SI_CONVERSIONS;
 
 // Conversion-based unit name -> IFC unit type, e.g. "foot" -> "LENGTHUNIT".
-extern const std::unordered_map<std::string, std::string> kImperialTypes;
+extern const std::unordered_map<std::string, std::string> IMPERIAL_TYPES;
 
 // Display symbol per unit name.  Covers IfcSIUnit names ("METRE" -> "m") and
 // IfcConversionBasedUnit names ("foot" -> "ft").
-extern const std::unordered_map<std::string, std::string> kUnitSymbols;
+extern const std::unordered_map<std::string, std::string> UNIT_SYMBOLS;
 
 // Returns the multiplier for an SI prefix.  Empty string returns 1.0.
-double getPrefixMultiplier(const std::string& prefix);
+double get_prefix_multiplier(const std::string& prefix);
 
 // Returns the SI scale for an IfcNamedUnit such that
 //   value_in_unit * scale == value_in_si_base
 // Walks IfcConversionBasedUnit chains down to IfcSIUnit.  Returns nullopt
 // when the chain bottoms out in IfcContextDependentUnit (cannot convert).
-std::optional<double> siScaleFromNamedUnit(express::Base named_unit);
+std::optional<double> si_scale_from_named_unit(express::Base named_unit);
 
 // IfcProject.UnitsInContext (the IfcUnitAssignment).  Returns nullopt if
 // the file has no project or no assignment.
-std::optional<express::Base> getUnitAssignment(ifcopenshell::file* ifc_file);
+std::optional<express::Base> get_unit_assignment(ifcopenshell::file* ifc_file);
 
 // First unit in the project's IfcUnitAssignment matching `unit_type`
 // (e.g. "LENGTHUNIT").  Returns nullopt if not found.
-std::optional<express::Base> getProjectUnit(ifcopenshell::file* ifc_file,
-                                            const std::string& unit_type);
+std::optional<express::Base> get_project_unit(ifcopenshell::file* ifc_file,
+                                             const std::string& unit_type);
 
 // Project unit -> SI base scale (e.g. project in mm => 0.001).  Defaults
 // to 1.0 when no project unit of the requested type is set.
-double calculateUnitScale(ifcopenshell::file* ifc_file,
-                          const std::string& unit_type = "LENGTHUNIT");
+double calculate_unit_scale(ifcopenshell::file* ifc_file,
+                            const std::string& unit_type = "LENGTHUNIT");
 
 // Convert between two units identified by name + optional SI prefix.
 // SQUARE_/CUBIC_ prefixed SI names get the prefix multiplier squared/cubed
@@ -83,7 +83,7 @@ double convert(double value,
 
 // Convert between two IfcNamedUnit entities.  Pulls Name and Prefix off each
 // and delegates to convert().  IfcConversionBasedUnit names that don't appear
-// in kSiConversions return the value unchanged.
-double convertUnit(double value, express::Base from_unit, express::Base to_unit);
+// in SI_CONVERSIONS return the value unchanged.
+double convert_unit(double value, express::Base from_unit, express::Base to_unit);
 
 #endif // UNIT_H

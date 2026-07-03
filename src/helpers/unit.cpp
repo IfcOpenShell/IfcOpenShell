@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Unit.h"
+#include "unit.h"
 
 #include "../ifcparse/file.h"
 #include "../ifcparse/instance_data.h"
@@ -26,7 +26,7 @@
 #include <algorithm>
 #include <cctype>
 
-const std::unordered_map<std::string, double> kSiPrefixes = {
+const std::unordered_map<std::string, double> SI_PREFIXES = {
     { "EXA",   1e18  },
     { "PETA",  1e15  },
     { "TERA",  1e12  },
@@ -45,7 +45,7 @@ const std::unordered_map<std::string, double> kSiPrefixes = {
     { "ATTO",  1e-18 },
 };
 
-const std::unordered_map<std::string, std::string> kSiPrefixSymbols = {
+const std::unordered_map<std::string, std::string> SI_PREFIX_SYMBOLS = {
     { "EXA",   "E"  },
     { "PETA",  "P"  },
     { "TERA",  "T"  },
@@ -64,7 +64,7 @@ const std::unordered_map<std::string, std::string> kSiPrefixSymbols = {
     { "ATTO",  "a"  },
 };
 
-const std::unordered_map<std::string, double> kSiConversions = {
+const std::unordered_map<std::string, double> SI_CONVERSIONS = {
     { "thou",            0.0000254     },
     { "inch",            0.0254        },
     { "foot",            0.3048        },
@@ -105,7 +105,7 @@ const std::unordered_map<std::string, double> kSiConversions = {
     { "fahrenheit",      1.8           },
 };
 
-const std::unordered_map<std::string, std::string> kImperialTypes = {
+const std::unordered_map<std::string, std::string> IMPERIAL_TYPES = {
     { "thou", "LENGTHUNIT" }, { "inch", "LENGTHUNIT" }, { "foot", "LENGTHUNIT" },
     { "yard", "LENGTHUNIT" }, { "mile", "LENGTHUNIT" },
     { "square thou", "AREAUNIT" }, { "square inch", "AREAUNIT" },
@@ -127,7 +127,7 @@ const std::unordered_map<std::string, std::string> kImperialTypes = {
     { "fahrenheit", "THERMODYNAMICTEMPERATUREUNIT" },
 };
 
-const std::unordered_map<std::string, std::string> kUnitSymbols = {
+const std::unordered_map<std::string, std::string> UNIT_SYMBOLS = {
     // SI base / derived
     { "CUBIC_METRE",  "m3" },
     { "GRAM",         "g"  },
@@ -162,7 +162,7 @@ const std::unordered_map<std::string, std::string> kUnitSymbols = {
 
 namespace {
 
-std::string toLower(const std::string& s) {
+std::string to_lower(const std::string& s) {
     std::string r;
     r.resize(s.size());
     std::transform(s.begin(), s.end(), r.begin(),
@@ -171,7 +171,7 @@ std::string toLower(const std::string& s) {
 }
 
 // Pull an enumeration string off an attribute_value, or "" if null/invalid.
-std::string enumString(const attribute_value& av) {
+std::string enum_string(const attribute_value& av) {
     if (av.isNull()) return {};
     if (av.type() != ifcopenshell::Argument_ENUMERATION) return {};
     enumeration_reference er = av;
@@ -180,13 +180,13 @@ std::string enumString(const attribute_value& av) {
 
 }  // namespace
 
-double getPrefixMultiplier(const std::string& prefix) {
+double get_prefix_multiplier(const std::string& prefix) {
     if (prefix.empty()) return 1.0;
-    auto it = kSiPrefixes.find(prefix);
-    return (it == kSiPrefixes.end()) ? 1.0 : it->second;
+    auto it = SI_PREFIXES.find(prefix);
+    return (it == SI_PREFIXES.end()) ? 1.0 : it->second;
 }
 
-std::optional<double> siScaleFromNamedUnit(express::Base unit) {
+std::optional<double> si_scale_from_named_unit(express::Base unit) {
     double scale = 1.0;
     while (unit && unit.declaration().is("IfcConversionBasedUnit")) {
         auto e = unit.as<express::Entity>();
@@ -195,8 +195,8 @@ std::optional<double> siScaleFromNamedUnit(express::Base unit) {
         std::string name;
         auto name_attr = e.get("Name");
         if (!name_attr.isNull()) name = (std::string) name_attr;
-        if (auto it = kSiConversions.find(toLower(name));
-            it != kSiConversions.end()) {
+        if (auto it = SI_CONVERSIONS.find(to_lower(name));
+            it != SI_CONVERSIONS.end()) {
             return scale * it->second;
         }
 
@@ -217,15 +217,15 @@ std::optional<double> siScaleFromNamedUnit(express::Base unit) {
 
     if (unit && unit.declaration().is("IfcSIUnit")) {
         auto e = unit.as<express::Entity>();
-        const std::string prefix = enumString(e.get("Prefix"));
-        const std::string name   = enumString(e.get("Name"));
-        double m = getPrefixMultiplier(prefix);
+        const std::string prefix = enum_string(e.get("Prefix"));
+        const std::string name   = enum_string(e.get("Name"));
+        double m = get_prefix_multiplier(prefix);
         // SQUARE_/CUBIC_-prefixed SI names: prefix multiplier squared/cubed.
         if (name.find("SQUARE") != std::string::npos) {
-            m *= getPrefixMultiplier(prefix);
+            m *= get_prefix_multiplier(prefix);
         } else if (name.find("CUBIC") != std::string::npos) {
-            m *= getPrefixMultiplier(prefix);
-            m *= getPrefixMultiplier(prefix);
+            m *= get_prefix_multiplier(prefix);
+            m *= get_prefix_multiplier(prefix);
         }
         return scale * m;
     }
@@ -238,7 +238,7 @@ std::optional<double> siScaleFromNamedUnit(express::Base unit) {
     return scale;
 }
 
-std::optional<express::Base> getUnitAssignment(ifcopenshell::file* ifc_file) {
+std::optional<express::Base> get_unit_assignment(ifcopenshell::file* ifc_file) {
     auto projects = ifc_file->instances_by_type("IfcProject");
     if (projects.empty()) return std::nullopt;
     auto ua_attr = projects[0].as<express::Entity>().get("UnitsInContext");
@@ -246,9 +246,9 @@ std::optional<express::Base> getUnitAssignment(ifcopenshell::file* ifc_file) {
     return (express::Base) ua_attr;
 }
 
-std::optional<express::Base> getProjectUnit(ifcopenshell::file* ifc_file,
-                                            const std::string& unit_type) {
-    auto ua = getUnitAssignment(ifc_file);
+std::optional<express::Base> get_project_unit(ifcopenshell::file* ifc_file,
+                                             const std::string& unit_type) {
+    auto ua = get_unit_assignment(ifc_file);
     if (!ua) return std::nullopt;
     auto units_attr = ua->as<express::Entity>().get("Units");
     if (units_attr.isNull()) return std::nullopt;
@@ -260,60 +260,60 @@ std::optional<express::Base> getProjectUnit(ifcopenshell::file* ifc_file,
             continue;
         }
         auto ut = unit.as<express::Entity>().get("UnitType");
-        if (enumString(ut) == unit_type) return unit;
+        if (enum_string(ut) == unit_type) return unit;
     }
     return std::nullopt;
 }
 
-double calculateUnitScale(ifcopenshell::file* ifc_file,
-                          const std::string& unit_type) {
-    auto unit = getProjectUnit(ifc_file, unit_type);
+double calculate_unit_scale(ifcopenshell::file* ifc_file,
+                            const std::string& unit_type) {
+    auto unit = get_project_unit(ifc_file, unit_type);
     if (!unit) return 1.0;
-    auto scale = siScaleFromNamedUnit(*unit);
+    auto scale = si_scale_from_named_unit(*unit);
     return scale.value_or(1.0);
 }
 
 double convert(double value,
                const std::string& from_prefix, const std::string& from_unit,
                const std::string& to_prefix,   const std::string& to_unit) {
-    const std::string fl = toLower(from_unit);
-    const std::string tl = toLower(to_unit);
+    const std::string fl = to_lower(from_unit);
+    const std::string tl = to_lower(to_unit);
 
-    if (auto it = kSiConversions.find(fl); it != kSiConversions.end()) {
+    if (auto it = SI_CONVERSIONS.find(fl); it != SI_CONVERSIONS.end()) {
         value *= it->second;
     } else if (!from_prefix.empty()) {
-        value *= getPrefixMultiplier(from_prefix);
+        value *= get_prefix_multiplier(from_prefix);
         if (from_unit.find("SQUARE") != std::string::npos) {
-            value *= getPrefixMultiplier(from_prefix);
+            value *= get_prefix_multiplier(from_prefix);
         } else if (from_unit.find("CUBIC") != std::string::npos) {
-            value *= getPrefixMultiplier(from_prefix);
-            value *= getPrefixMultiplier(from_prefix);
+            value *= get_prefix_multiplier(from_prefix);
+            value *= get_prefix_multiplier(from_prefix);
         }
     }
 
-    if (auto it = kSiConversions.find(tl); it != kSiConversions.end()) {
+    if (auto it = SI_CONVERSIONS.find(tl); it != SI_CONVERSIONS.end()) {
         return value * (1.0 / it->second);
     } else if (!to_prefix.empty()) {
-        value *= 1.0 / getPrefixMultiplier(to_prefix);
+        value *= 1.0 / get_prefix_multiplier(to_prefix);
         // NB: python ifcopenshell.util.unit.convert checks `from_unit` (not
         // `to_unit`) here.  Mirrored for parity — from_unit and to_unit are
         // always the same dimension in valid calls, so behaviour is the same.
         if (from_unit.find("SQUARE") != std::string::npos) {
-            value *= 1.0 / getPrefixMultiplier(to_prefix);
+            value *= 1.0 / get_prefix_multiplier(to_prefix);
         } else if (from_unit.find("CUBIC") != std::string::npos) {
-            value *= 1.0 / getPrefixMultiplier(to_prefix);
-            value *= 1.0 / getPrefixMultiplier(to_prefix);
+            value *= 1.0 / get_prefix_multiplier(to_prefix);
+            value *= 1.0 / get_prefix_multiplier(to_prefix);
         }
     }
     return value;
 }
 
-double convertUnit(double value, express::Base from_unit, express::Base to_unit) {
+double convert_unit(double value, express::Base from_unit, express::Base to_unit) {
     auto pull = [](express::Base u, std::string& prefix, std::string& name) {
         auto e = u.as<express::Entity>();
         if (u.declaration().is("IfcSIUnit")) {
-            prefix = enumString(e.get("Prefix"));
-            name   = enumString(e.get("Name"));
+            prefix = enum_string(e.get("Prefix"));
+            name   = enum_string(e.get("Name"));
         } else {
             // IfcConversionBasedUnit / IfcContextDependentUnit: no Prefix,
             // Name is a string attribute.

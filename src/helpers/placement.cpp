@@ -17,7 +17,7 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Placement.h"
+#include "placement.h"
 
 #include "../ifcparse/instance_data.h"
 #include "../ifcparse/schema.h"
@@ -26,13 +26,13 @@
 
 namespace {
 
-Eigen::Vector3d safeNormalize(const Eigen::Vector3d& v,
-                              const Eigen::Vector3d& fallback) {
+Eigen::Vector3d safe_normalize(const Eigen::Vector3d& v,
+                               const Eigen::Vector3d& fallback) {
     const double n = v.norm();
     return (n > 0.0) ? Eigen::Vector3d(v / n) : fallback;
 }
 
-std::vector<double> readDirectionRatios(const express::Base& dir) {
+std::vector<double> read_direction_ratios(const express::Base& dir) {
     if (!dir) return {};
     auto attr = dir.as<express::Entity>().get("DirectionRatios");
     if (attr.isNull()) return {};
@@ -41,12 +41,12 @@ std::vector<double> readDirectionRatios(const express::Base& dir) {
 
 }  // namespace
 
-Eigen::Matrix4d a2p(const Eigen::Vector3d& origin,
-                    const Eigen::Vector3d& z,
-                    const Eigen::Vector3d& x) {
-    const Eigen::Vector3d xn = safeNormalize(x, Eigen::Vector3d::UnitX());
-    const Eigen::Vector3d zn = safeNormalize(z, Eigen::Vector3d::UnitZ());
-    const Eigen::Vector3d yn = safeNormalize(zn.cross(xn), Eigen::Vector3d::UnitY());
+Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
+                                  const Eigen::Vector3d& z,
+                                  const Eigen::Vector3d& x) {
+    const Eigen::Vector3d xn = safe_normalize(x, Eigen::Vector3d::UnitX());
+    const Eigen::Vector3d zn = safe_normalize(z, Eigen::Vector3d::UnitZ());
+    const Eigen::Vector3d yn = safe_normalize(zn.cross(xn), Eigen::Vector3d::UnitY());
 
     Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
     m.block<3, 1>(0, 0) = xn;
@@ -56,7 +56,7 @@ Eigen::Matrix4d a2p(const Eigen::Vector3d& origin,
     return m;
 }
 
-Eigen::Matrix4d getAxis2Placement(const express::Base& placement) {
+Eigen::Matrix4d get_axis2_placement(const express::Base& placement) {
     if (!placement) return Eigen::Matrix4d::Identity();
     const auto& decl = placement.declaration();
     auto entity = placement.as<express::Entity>();
@@ -68,12 +68,12 @@ Eigen::Matrix4d getAxis2Placement(const express::Base& placement) {
     if (decl.is("IfcAxis2Placement3D") || decl.is("IfcAxis2PlacementLinear")) {
         auto axis_attr = entity.get("Axis");
         if (!axis_attr.isNull()) {
-            auto dr = readDirectionRatios((express::Base) axis_attr);
+            auto dr = read_direction_ratios((express::Base) axis_attr);
             if (dr.size() >= 3) z = Eigen::Vector3d(dr[0], dr[1], dr[2]);
         }
         auto refdir_attr = entity.get("RefDirection");
         if (!refdir_attr.isNull()) {
-            auto dr = readDirectionRatios((express::Base) refdir_attr);
+            auto dr = read_direction_ratios((express::Base) refdir_attr);
             if (dr.size() >= 3) x = Eigen::Vector3d(dr[0], dr[1], dr[2]);
         }
         auto loc_attr = entity.get("Location");
@@ -86,7 +86,7 @@ Eigen::Matrix4d getAxis2Placement(const express::Base& placement) {
     } else if (decl.is("IfcAxis2Placement2D")) {
         auto refdir_attr = entity.get("RefDirection");
         if (!refdir_attr.isNull()) {
-            auto dr = readDirectionRatios((express::Base) refdir_attr);
+            auto dr = read_direction_ratios((express::Base) refdir_attr);
             if (dr.size() >= 1) {
                 x = Eigen::Vector3d(dr.size() > 0 ? dr[0] : 1.0,
                                     dr.size() > 1 ? dr[1] : 0.0,
@@ -106,7 +106,7 @@ Eigen::Matrix4d getAxis2Placement(const express::Base& placement) {
     } else if (decl.is("IfcAxis1Placement")) {
         auto axis_attr = entity.get("Axis");
         if (!axis_attr.isNull()) {
-            auto dr = readDirectionRatios((express::Base) axis_attr);
+            auto dr = read_direction_ratios((express::Base) axis_attr);
             if (dr.size() >= 3) z = Eigen::Vector3d(dr[0], dr[1], dr[2]);
         }
         auto loc_attr = entity.get("Location");
@@ -120,10 +120,10 @@ Eigen::Matrix4d getAxis2Placement(const express::Base& placement) {
         return Eigen::Matrix4d::Identity();
     }
 
-    return a2p(o, z, x);
+    return axes_to_placement(o, z, x);
 }
 
-Eigen::Matrix4d getLocalPlacement(const express::Base& placement) {
+Eigen::Matrix4d get_local_placement(const express::Base& placement) {
     if (!placement) return Eigen::Matrix4d::Identity();
     const auto& decl = placement.declaration();
 
@@ -132,13 +132,13 @@ Eigen::Matrix4d getLocalPlacement(const express::Base& placement) {
         Eigen::Matrix4d parent = Eigen::Matrix4d::Identity();
         auto rel_attr = entity.get("PlacementRelTo");
         if (!rel_attr.isNull()) {
-            parent = getLocalPlacement((express::Base) rel_attr);
+            parent = get_local_placement((express::Base) rel_attr);
         }
         auto rp_attr = entity.get("RelativePlacement");
         if (rp_attr.isNull()) return parent;
-        return parent * getAxis2Placement((express::Base) rp_attr);
+        return parent * get_axis2_placement((express::Base) rp_attr);
     }
 
     // IfcAxis2Placement* / IfcAxis1Placement passed in directly.
-    return getAxis2Placement(placement);
+    return get_axis2_placement(placement);
 }

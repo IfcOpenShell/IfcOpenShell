@@ -17,8 +17,8 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "Geolocation.h"
-#include "Placement.h"
+#include "geolocation.h"
+#include "placement.h"
 
 #include "../ifcparse/express.h"
 #include "../ifcparse/file.h"
@@ -35,7 +35,7 @@ namespace {
 // ePSet_MapConversion stores eastings/northings/scale as IfcLengthMeasure or
 // IfcReal wrapped inside IfcValue (a SELECT) — get_attribute_value(0) peels
 // the wrapper.  Returns nullopt if the value is missing or non-numeric.
-std::optional<double> readPropertyValueDouble(const express::Base& property) {
+std::optional<double> read_property_value_double(const express::Base& property) {
     if (!property.declaration().is("IfcPropertySingleValue")) return std::nullopt;
     auto pe = property.as<express::Entity>();
     auto nv = pe.get("NominalValue");
@@ -53,7 +53,7 @@ std::optional<double> readPropertyValueDouble(const express::Base& property) {
 }  // namespace
 
 std::optional<HelmertTransformation>
-getHelmertTransformationParameters(ifcopenshell::file* ifc_file) {
+get_helmert_transformation_parameters(ifcopenshell::file* ifc_file) {
     HelmertTransformation p;
     const std::string schema_name = ifc_file->schema()->name();
 
@@ -81,7 +81,7 @@ getHelmertTransformationParameters(ifcopenshell::file* ifc_file) {
                 auto pname_attr = pe.get("Name");
                 if (pname_attr.isNull()) continue;
                 std::string pname = pname_attr;
-                auto value = readPropertyValueDouble(prop);
+                auto value = read_property_value_double(prop);
                 if (!value) continue;
                 if      (pname == "Eastings")         p.e = *value;
                 else if (pname == "Northings")        p.n = *value;
@@ -153,7 +153,7 @@ getHelmertTransformationParameters(ifcopenshell::file* ifc_file) {
     return p;
 }
 
-std::optional<Eigen::Matrix4d> getWcs(ifcopenshell::file* ifc_file) {
+std::optional<Eigen::Matrix4d> get_wcs(ifcopenshell::file* ifc_file) {
     auto contexts = ifc_file->instances_by_type_excl_subtypes(
         "IfcGeometricRepresentationContext");
     express::Base wcs;
@@ -175,11 +175,11 @@ std::optional<Eigen::Matrix4d> getWcs(ifcopenshell::file* ifc_file) {
     if (!(decl.is("IfcAxis2Placement3D") || decl.is("IfcAxis2PlacementLinear"))) {
         return std::nullopt;
     }
-    return getAxis2Placement(wcs);
+    return get_axis2_placement(wcs);
 }
 
-Eigen::Matrix4d local2global(const Eigen::Matrix4d& matrix,
-                             const HelmertTransformation& p) {
+Eigen::Matrix4d local_to_global(const Eigen::Matrix4d& matrix,
+                                const HelmertTransformation& p) {
     const double theta = std::atan2(p.xao, p.xaa);
     const double c = std::cos(theta);
     const double s = std::sin(theta);
@@ -208,17 +208,17 @@ Eigen::Matrix4d local2global(const Eigen::Matrix4d& matrix,
     return result;
 }
 
-Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
-                                 const Eigen::Matrix4d& matrix,
-                                 bool should_return_in_map_units) {
-    auto params = getHelmertTransformationParameters(ifc_file);
+Eigen::Matrix4d auto_local_to_global(ifcopenshell::file* ifc_file,
+                                     const Eigen::Matrix4d& matrix,
+                                     bool should_return_in_map_units) {
+    auto params = get_helmert_transformation_parameters(ifc_file);
     if (!params) return matrix;
 
     Eigen::Matrix4d m = matrix;
-    if (auto wcs = getWcs(ifc_file)) {
+    if (auto wcs = get_wcs(ifc_file)) {
         m = wcs->inverse() * m;
     }
-    Eigen::Matrix4d result = local2global(m, *params);
+    Eigen::Matrix4d result = local_to_global(m, *params);
     if (!should_return_in_map_units) {
         result(0, 3) /= params->scale;
         result(1, 3) /= params->scale;
@@ -227,8 +227,8 @@ Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
     return result;
 }
 
-Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& p,
-                                            double map_unit_to_meters) {
+Eigen::Matrix4d helmert_meters_from_parameters(const HelmertTransformation& p,
+                                               double map_unit_to_meters) {
     const double theta = std::atan2(p.xao, p.xaa);
     const double c = std::cos(theta);
     const double s = std::sin(theta);
@@ -247,7 +247,7 @@ Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& p,
     return M;
 }
 
-std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file) {
+std::optional<express::Base> get_map_unit(ifcopenshell::file* ifc_file) {
     std::vector<express::Base> coordops;
     try {
         coordops = ifc_file->instances_by_type("IfcCoordinateOperation");
@@ -264,7 +264,7 @@ std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file) {
     return (express::Base) mu_attr;
 }
 
-double xaxis2angleDeg(double xaa, double xao) {
-    constexpr double kPi = 3.14159265358979323846;
-    return -std::atan2(xao, xaa) * (180.0 / kPi);
+double x_axis_to_angle_deg(double xaa, double xao) {
+    constexpr double PI = 3.14159265358979323846;
+    return -std::atan2(xao, xaa) * (180.0 / PI);
 }

@@ -32,19 +32,19 @@
 // Build a 4x4 placement matrix from an origin + Z + X axis triple, mirroring
 // ifcopenshell.util.placement.a2p.  The Y axis is derived as Z × X.  Inputs
 // don't need to be unit; vectors are renormalised internally.
-Eigen::Matrix4d a2p(const Eigen::Vector3d& origin,
-                    const Eigen::Vector3d& z,
-                    const Eigen::Vector3d& x);
+Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
+                                  const Eigen::Vector3d& z,
+                                  const Eigen::Vector3d& x);
 
 // IfcAxis2Placement{2D,3D,Linear} / IfcAxis1Placement -> 4x4 matrix.  Mirrors
 // ifcopenshell.util.placement.get_axis2placement.  Returns identity for null
 // or unparseable inputs.  Translation is in the IFC's project length unit.
-Eigen::Matrix4d getAxis2Placement(const express::Base& placement);
+Eigen::Matrix4d get_axis2_placement(const express::Base& placement);
 
 // Resolve an IfcLocalPlacement (or an IfcAxis2Placement* directly) into a
 // 4x4 matrix in the IFC project's length unit, walking the PlacementRelTo
 // chain.  Mirrors ifcopenshell.util.placement.get_local_placement.  Returns
 // identity for a null input.
-Eigen::Matrix4d getLocalPlacement(const express::Base& placement);
+Eigen::Matrix4d get_local_placement(const express::Base& placement);
 
 #endif // PLACEMENT_H

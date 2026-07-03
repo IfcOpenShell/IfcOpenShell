@@ -101,7 +101,7 @@ struct ModelTransformation {
 };
 
 // Per-model unit scales captured at load time.  project_length_to_meters comes
-// from calculateUnitScale(file, "LENGTHUNIT").  map_unit_to_meters is derived
+// from calculate_unit_scale(file, "LENGTHUNIT").  map_unit_to_meters is derived
 // from IfcMapConversion.Scale as project_length_to_meters / Scale; the
 // IfcProjectedCRS.MapUnit named unit is metadata and does not affect the
 // transform composition.
@@ -161,7 +161,7 @@ Eigen::Matrix4d composeFederatedFalseOrigin(const FederatedFalseOrigin&,
 
 // Compose ModelTransformation into a 4x4 matrix in metres.
 // `coordinate_operation_meters` is the model's CoordinateOperation matrix
-// (e.g. helmertMetersFromParameters · inv(wcs_meters)) — needed to lift
+// (e.g. helmert_meters_from_parameters · inv(wcs_meters)) — needed to lift
 // `a` into metres when a_frame == ModelLocal.  Pass identity when the
 // CoordinateOperation is disabled or absent.
 Eigen::Matrix4d composeModelTransformation(const ModelTransformation&,

@@ -158,9 +158,9 @@ target_link_libraries(test_federation PRIVATE
     Qt${QT_VERSION}::Gui    # Federation::HomeView uses QVector3D from QtGui
     Qt${QT_VERSION}::Test   # QSignalSpy
     Eigen3::Eigen           # Federation.h: composed matrices use Eigen
-    # helpers provides Unit::convert + Geolocation helpers
-    # (helmertMetersFromParameters, getWcs, getMapUnit) + Placement
-    # (getAxis2Placement, called from Geolocation::getWcs). Linking the
+    # helpers provides unit conversion and geolocation helpers
+    # (helmert_meters_from_parameters, get_wcs, get_map_unit) + Placement
+    # (get_axis2_placement, called from geolocation::get_wcs). Linking the
     # static lib avoids re-compiling those .cpp files here and pulls
     # the src/helpers include dir + IfcParse transitively.
     helpers

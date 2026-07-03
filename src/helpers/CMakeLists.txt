@@ -17,7 +17,7 @@
 #                                                                              #
 ################################################################################
 
-message("Running CMakeLists.txt in /src/ifcutil")
+message("Running CMakeLists.txt in /src/helpers")
 
 # Schema-agnostic IFC helpers ported from ifcopenshell.util.*. Pure
 # IfcParse + Eigen, no Qt, no IfcGeom, no viewer/renderer deps — so unit
@@ -44,8 +44,8 @@ set_target_properties(helpers PROPERTIES
 )
 
 # PUBLIC: callers (IfcViewer, test_federation, future tools) get
-# `#include "Unit.h"` etc. via this directory automatically, no
-# `#include "../helpers/Unit.h"` ugliness at call sites.
+# `#include "unit.h"` etc. via this directory automatically, no
+# `#include "../helpers/unit.h"` ugliness at call sites.
 target_include_directories(helpers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(helpers PUBLIC

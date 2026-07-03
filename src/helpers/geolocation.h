@@ -19,7 +19,7 @@
 
 // Port of selected helpers from
 // src/ifcopenshell-python/ifcopenshell/util/geolocation.py — primarily
-// auto_local2global, which builds a 4x4 matrix that lifts an element's local
+// auto_local_to_global, which builds a 4x4 matrix that lifts an element's local
 // transform into the model's global (georeferenced) frame.  The python utils
 // are expected to be ported to C++ in their own module later; this file is
 // the temporary home until that lands.
@@ -52,28 +52,28 @@ struct HelmertTransformation {
 // IfcProject.ePSet_MapConversion property set in IFC2X3.  Returns nullopt
 // when the model has no map conversion.
 std::optional<HelmertTransformation>
-getHelmertTransformationParameters(ifcopenshell::file* ifc_file);
+get_helmert_transformation_parameters(ifcopenshell::file* ifc_file);
 
 // Read the IfcGeometricRepresentationContext.WorldCoordinateSystem (preferring
 // the "Model" context) as a 4x4 matrix.  Returns nullopt when the model has
 // no parseable WCS.
-std::optional<Eigen::Matrix4d> getWcs(ifcopenshell::file* ifc_file);
+std::optional<Eigen::Matrix4d> get_wcs(ifcopenshell::file* ifc_file);
 
 // Apply a Helmert transformation to a 4x4 local matrix.
-Eigen::Matrix4d local2global(const Eigen::Matrix4d& matrix,
-                             const HelmertTransformation& params);
+Eigen::Matrix4d local_to_global(const Eigen::Matrix4d& matrix,
+                                const HelmertTransformation& params);
 
 // Lift a 4x4 local matrix into global (map) coordinates using the IFC model's
 // georeferencing data.  When no map conversion is present the matrix is
 // returned unchanged.  When should_return_in_map_units is false, the
 // translation column is divided by the map scale so the result is expressed
 // in project length units.
-Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
-                                 const Eigen::Matrix4d& matrix,
-                                 bool should_return_in_map_units = true);
+Eigen::Matrix4d auto_local_to_global(ifcopenshell::file* ifc_file,
+                                     const Eigen::Matrix4d& matrix,
+                                     bool should_return_in_map_units = true);
 
 // Build the Helmert transformation as a meter-input / meter-output 4x4 matrix
-// directly from parsed parameters, bypassing autoLocal2Global's normalisation
+// directly from parsed parameters, bypassing auto_local_to_global's normalisation
 // step.  Used by callers that want a single per-model georef matrix to compose
 // with placement matrices at upload time.
 //
@@ -86,26 +86,26 @@ Eigen::Matrix4d autoLocal2Global(ifcopenshell::file* ifc_file,
 // meter inputs from the geometry iterator, Scale is represented by that unit
 // conversion and is not applied again in the linear block.  The caller composes
 // any IfcGeometricRepresentationContext WCS on the right:
-//     G = helmertMetersFromParameters(...) · inv(wcs_meters)
+//     G = helmert_meters_from_parameters(...) · inv(wcs_meters)
 // (where wcs_meters has its translation column converted from project units
-// to meters via calculateUnitScale).
+// to meters via calculate_unit_scale).
 //
-// Unlike autoLocal2Global, this preserves IfcMapConversionScaled.FactorX/Y/Z
+// Unlike auto_local_to_global, this preserves IfcMapConversionScaled.FactorX/Y/Z
 // in the rotation block, so they apply correctly to placement translations
 // when composing per-model.
-Eigen::Matrix4d helmertMetersFromParameters(const HelmertTransformation& params,
-                                            double map_unit_to_meters);
+Eigen::Matrix4d helmert_meters_from_parameters(const HelmertTransformation& params,
+                                               double map_unit_to_meters);
 
 // IfcCoordinateOperation.TargetCRS.MapUnit (the IfcNamedUnit), if present.
 // Returns nullopt for IFC2X3, models without an IfcCoordinateOperation, or
 // when MapUnit is absent on the IfcProjectedCRS.  This is retained for UI /
 // metadata inspection; transform composition derives map unit scale from
 // IfcMapConversion.Scale instead.
-std::optional<express::Base> getMapUnit(ifcopenshell::file* ifc_file);
+std::optional<express::Base> get_map_unit(ifcopenshell::file* ifc_file);
 
 // "How do I rotate project east to get to grid east?" — i.e. -atan2(xao, xaa)
 // converted to degrees, anticlockwise positive.  Mirrors
 // ifcopenshell.util.geolocation.xaxis2angle.
-double xaxis2angleDeg(double xaa, double xao);
+double x_axis_to_angle_deg(double xaa, double xao);
 
 #endif // GEOLOCATION_H

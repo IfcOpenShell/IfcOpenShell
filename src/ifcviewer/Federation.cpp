@@ -18,8 +18,8 @@
  ********************************************************************************/
 
 #include "Federation.h"
-#include "Geolocation.h"
-#include "Unit.h"
+#include "geolocation.h"
+#include "unit.h"
 
 #include <QDir>
 #include <QFile>
@@ -103,18 +103,18 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file) {
     if (!ifc_file) return out;
 
     out.units.project_length_to_meters =
-        calculateUnitScale(ifc_file, "LENGTHUNIT");
+        calculate_unit_scale(ifc_file, "LENGTHUNIT");
 
-    auto params = getHelmertTransformationParameters(ifc_file);
+    auto params = get_helmert_transformation_parameters(ifc_file);
     const double scale = (params && params->scale != 0.0) ? params->scale : 1.0;
     out.units.map_unit_to_meters = out.units.project_length_to_meters / scale;
     if (!params) return out;
 
     Eigen::Matrix4d helmert =
-        helmertMetersFromParameters(*params, out.units.map_unit_to_meters);
+        helmert_meters_from_parameters(*params, out.units.map_unit_to_meters);
 
-    if (auto wcs = getWcs(ifc_file)) {
-        // getWcs returns the WCS in project units (translation in project
+    if (auto wcs = get_wcs(ifc_file)) {
+        // get_wcs returns the WCS in project units (translation in project
         // length units).  Convert translation to metres before inverting.
         Eigen::Matrix4d wcs_m = *wcs;
         wcs_m(0, 3) *= out.units.project_length_to_meters;
@@ -147,11 +147,11 @@ guessFederatedFalseOrigin(const Eigen::Vector3d& first_geometry_point_m,
     out.xyz = t_m * u_fed_inv;
 
     // Rotation: helmert grid-north baked into coordinate_operation_meters.
-    // helmertMetersFromParameters built that block as R_z(theta)·diag(fx,fy,fz)
-    // with theta = atan2(xao, xaa); xaxis2angle is `-theta` in degrees.
+    // helmert_meters_from_parameters built that block as R_z(theta)·diag(fx,fy,fz)
+    // with theta = atan2(xao, xaa); x_axis_to_angle_deg is `-theta` in degrees.
     if (use_coord_op) {
         const Eigen::Matrix4d& M = georef.coordinate_operation_meters;
-        out.rz_deg = xaxis2angleDeg(M(0, 0), M(1, 0));
+        out.rz_deg = x_axis_to_angle_deg(M(0, 0), M(1, 0));
     }
     return out;
 }
