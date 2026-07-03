@@ -577,6 +577,43 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
+
+    def update_autosave_settings(self, context: bpy.types.Context) -> None:
+        if self.autosave_enabled:
+            tool.Autosave.reset_timer()
+        else:
+            tool.Autosave.cancel_timer()
+
+    autosave_enabled: BoolProperty(
+        name="Enable IFC Autosave Timer",
+        description="Periodically remind you to save or automatically create a backup copy of the IFC file",
+        default=False,
+        update=update_autosave_settings,
+    )
+    autosave_interval_minutes: bpy.props.IntProperty(
+        name="Autosave Interval (Minutes)",
+        description="Time between autosave reminders or backups. The timer resets whenever you open or save a project",
+        default=10,
+        min=1,
+        max=1440,
+        update=update_autosave_settings,
+    )
+    autosave_mode: bpy.props.EnumProperty(
+        name="Autosave Mode",
+        items=[
+            (
+                "PROMPT",
+                "Prompt to Save",
+                "Show a dialog offering to save the IFC project when the timer expires",
+            ),
+            (
+                "BACKUP",
+                "Automatic Backup",
+                "Save a backup copy as filename_autosaved.ifc when the timer expires",
+            ),
+        ],
+        default="PROMPT",
+    )
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_always_cache: BoolProperty(
         name="Always Cache Geometry",
@@ -689,6 +726,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         bsdd_load_test_dictionaries: bool
         bsdd_baseurl: str
         should_disable_undo_on_save: bool
+        autosave_enabled: bool
+        autosave_interval_minutes: int
+        autosave_mode: Literal["PROMPT", "BACKUP"]
         should_stream: bool
         should_always_cache: bool
         occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
@@ -837,6 +877,12 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
         layout.prop(self, "should_disable_undo_on_save")
+        layout.separator()
+        layout.label(text="Autosave:")
+        layout.prop(self, "autosave_enabled")
+        if self.autosave_enabled:
+            layout.prop(self, "autosave_interval_minutes")
+            layout.prop(self, "autosave_mode")
         layout.prop(self, "should_stream")
         layout.prop(self, "should_always_cache")
         layout.label(text="bSDD:")

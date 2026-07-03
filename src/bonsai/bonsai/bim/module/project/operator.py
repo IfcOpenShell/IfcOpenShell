@@ -985,8 +985,10 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         ),
         default=False,
     )
+    skip_autosave_recovery: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
     use_detailed_tooltip: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
     filename_ext = ".ifc"
+    skip_recent: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     if TYPE_CHECKING:
         filepath: str
@@ -995,6 +997,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         use_relative_path: bool
         should_start_fresh_session: bool
         import_without_ifc_data: bool
+        skip_autosave_recovery: bool
         use_detailed_tooltip: bool
 
     @classmethod
@@ -1041,7 +1044,26 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
 
         return tooltip
 
+    def check_autosave_recovery(self, context: bpy.types.Context) -> set["rna_enums.OperatorReturnItems"] | None:
+        if self.skip_autosave_recovery:
+            return None
+        autosaved_filepath = tool.Autosave.get_newer_autosaved_path(self.get_filepath_abs())
+        if not autosaved_filepath:
+            return None
+        return bpy.ops.bim.load_autosaved_recovery_popup(
+            "INVOKE_DEFAULT",
+            original_filepath=str(self.get_filepath_abs()),
+            autosaved_filepath=autosaved_filepath,
+            is_advanced=self.is_advanced,
+            use_relative_path=self.use_relative_path,
+            should_start_fresh_session=self.should_start_fresh_session,
+            import_without_ifc_data=self.import_without_ifc_data,
+        )
+
     def execute(self, context):
+        if recovery := self.check_autosave_recovery(context):
+            return recovery
+
         if (
             tool.Blender.get_addon_preferences().save_metadata_blend_file
             and self.should_start_fresh_session
@@ -1136,7 +1158,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
             props.should_save_metadata_for_this_file = metadata_doc is not None
 
             tool.Blender.register_toolbar()
-            tool.Project.add_recent_ifc_project(self.get_filepath_abs())
+            if not self.skip_recent:
+                tool.Project.add_recent_ifc_project(self.get_filepath_abs())
 
             if self.is_advanced:
                 pass
@@ -1149,10 +1172,13 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
         except:
             bonsai.last_error = traceback.format_exc()
             raise
+        tool.Autosave.reset_timer()
         return {"FINISHED"}
 
     def invoke(self, context, event):
         if self.filepath:
+            if recovery := self.check_autosave_recovery(context):
+                return recovery
             return self.execute(context)
         return ImportHelper.invoke(self, context, event)
 
@@ -1947,6 +1973,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    skip_recent: bpy.props.BoolProperty(default=False, options={"HIDDEN", "SKIP_SAVE"})
 
     if TYPE_CHECKING:
         filter_glob: str
@@ -2007,6 +2034,18 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
     def _execute(self, context):
+        project_props = tool.Project.get_project_props()
+        project_props.use_relative_project_path = self.use_relative_path
+
+        # Fallback if filepath is not set
+        if not getattr(self, "filepath", None) or self.filepath.strip() in ("", ".ifc"):
+            props = tool.Blender.get_bim_props()
+            if props.ifc_file:
+                self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(props.ifc_file)))
+            else:
+                self.report({"ERROR"}, "No filepath available for saving.")
+                return {"CANCELLED"}
+
         committed, failed_commits = tool.Parametric.commit_pending_edits()
         # Previews are session-transient — discard rather than commit. Sibling
         # gizmo polls gate on each preview's is_active flag, and a stuck flag
@@ -2069,7 +2108,8 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         settings.logger.info("Export finished in {:.2f} seconds".format(time.time() - start))
         print("Export finished in {:.2f} seconds".format(time.time() - start))
         # New project created in Bonsai should be in recent projects too.
-        tool.Project.add_recent_ifc_project(Path(output_file))
+        if not self.skip_recent:
+            tool.Project.add_recent_ifc_project(Path(output_file))
         props = tool.Project.get_project_props()
         if props.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
@@ -2103,12 +2143,134 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
             )
 
         bonsai.bim.handler.refresh_ui_data()
+        tool.Autosave.reset_timer()
 
     @classmethod
     def description(cls, context, properties):
         if properties.should_save_as:
             return "Save the IFC file under a new name, or relocate file"
         return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
+
+
+class LoadAutosavedRecoveryPopup(bpy.types.Operator):
+    bl_idname = "bim.load_autosaved_recovery_popup"
+    bl_label = "Recover Autosaved File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    original_filepath: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    autosaved_filepath: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    is_advanced: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_relative_path: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    should_start_fresh_session: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    import_without_ifc_data: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="A newer autosaved copy was found:", icon="INFO")
+        layout.label(text=os.path.basename(self.autosaved_filepath))
+        layout.separator()
+        layout.label(text=f"Original: {os.path.basename(self.original_filepath)}")
+        layout.label(text="Which one do you want to load?")
+
+        row = layout.row(align=True)
+        op = row.operator("bim.load_autosaved_recovery", text="Load Original", icon="LOOP_BACK")
+        op.file_type = "ORIGINAL"
+        self._pass_props(op)
+
+        op = row.operator("bim.load_autosaved_recovery", text="Load Autosave", icon="LOOP_FORWARDS")
+        op.file_type = "AUTOSAVE"
+        self._pass_props(op)
+
+    def _pass_props(self, op):
+        op.original_filepath = self.original_filepath
+        op.autosaved_filepath = self.autosaved_filepath
+        op.is_advanced = self.is_advanced
+        op.use_relative_path = self.use_relative_path
+        op.should_start_fresh_session = self.should_start_fresh_session
+        op.import_without_ifc_data = self.import_without_ifc_data
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_popup(self, width=420)
+
+    def execute(self, context):
+        # This should almost never run
+        self.report({"INFO"}, "Popup closed without choosing")
+        return {"FINISHED"}
+
+
+class LoadAutosavedRecovery(bpy.types.Operator):
+    bl_idname = "bim.load_autosaved_recovery"
+    bl_label = "Recover Autosaved File"
+    bl_options = {"REGISTER", "UNDO"}
+
+    file_type: bpy.props.StringProperty(default="AUTOSAVE")
+    original_filepath: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    autosaved_filepath: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    is_advanced: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    use_relative_path: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    should_start_fresh_session: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+    import_without_ifc_data: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def execute(self, context):
+        if self.file_type == "ORIGINAL":
+            filepath = self.original_filepath
+        else:
+            filepath = self.autosaved_filepath
+
+        # Call the real loader
+        result = bpy.ops.bim.load_project(
+            filepath=filepath,
+            skip_autosave_recovery=True,  # Prevent infinite loop
+            is_advanced=self.is_advanced,
+            use_relative_path=self.use_relative_path,
+            should_start_fresh_session=self.should_start_fresh_session,
+            import_without_ifc_data=self.import_without_ifc_data,
+            skip_recent=(self.file_type == "AUTOSAVE")
+        )
+
+        # If user chose autosave, override the stored path
+        if self.file_type == "AUTOSAVE":
+            tool.Ifc.set_path(self.original_filepath)
+
+        return result
+
+
+class AutosavePrompt(bpy.types.Operator):
+    bl_idname = "bim.autosave_prompt"
+    bl_label = "Autosave Reminder"
+    bl_options = set()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(
+            self, width=400, confirm_text="Save", title="Autosave Reminder"
+        )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="The autosave timer has expired.", icon="INFO")
+        layout.label(text="Would you like to save your IFC project now?")
+
+    def execute(self, context):
+        # Get current IFC path
+        props = tool.Blender.get_bim_props()
+        current_ifc_path = props.ifc_file
+
+        if not current_ifc_path:
+            self.report({"WARNING"}, "No IFC file path set. Please save manually.")
+            tool.Autosave.reset_timer()
+            return {"CANCELLED"}
+
+        # Call save_project with explicit filepath using EXEC_DEFAULT
+        result = bpy.ops.bim.save_project(
+            "EXEC_DEFAULT", filepath=current_ifc_path, should_save_as=False, skip_recent=True
+        )
+
+        tool.Autosave.reset_timer()
+        return result
+
+    def cancel(self, context):
+        tool.Autosave.reset_timer()
+        return {"CANCELLED"}
 
 
 class LoadLinkedProject(bpy.types.Operator, ImportHelper):
