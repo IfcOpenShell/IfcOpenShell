@@ -2577,10 +2577,19 @@ class Drawing(bonsai.core.tool.Drawing):
                     has_context = True
                     break
 
+        linked_handles: set[bpy.types.Object] = set()
+        for link in tool.Project.get_project_props().get_loaded_links_for_drawings():
+            try:
+                handle = tool.Project.get_link_empty_handle(link)
+            except Exception:
+                continue
+            if handle:
+                linked_handles.add(handle)
+
         visible_objects = []
         for obj in bpy.context.view_layer.objects:
             if element := tool.Ifc.get_entity(obj):
-                if element in filtered_elements:
+                if element in filtered_elements or obj in linked_handles:
                     visible_objects.append(obj)
             else:
                 if obj.hide_get() is False:
