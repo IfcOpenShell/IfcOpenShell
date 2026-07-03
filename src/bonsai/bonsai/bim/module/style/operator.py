@@ -744,7 +744,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
         if self.ifc_class == "IfcSurfaceStyleLighting":
 
             def callback(attribute_name: str, _: object, data: dict[str, Any]) -> None:
-                assert attributes
+                assert attributes is not None
                 color = attributes.add()
                 assert isinstance(color, ColourRgb)
                 color.name = attribute_name
@@ -782,34 +782,40 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.props = tool.Style.get_style_props()
         self.style = tool.Ifc.get().by_id(self.props.is_editing_style)
+        prev_update_graph = self.props.update_graph
+        self.props["update_graph"] = False
 
-        style_elements = tool.Style.get_style_elements(self.style)
-        # NOTE: currently this operator is used to edit existing (and only existing) IfcSurfaceStyles
-        # or new or existing IfcSurfaceStyle components (shading, etc)
-        # which is kind of confusing.
-        if self.props.is_editing_class == "IfcSurfaceStyle":
-            self.surface_style = self.style
-        else:
-            self.surface_style = style_elements.get(self.props.is_editing_class, None)
-            self.shading_style = style_elements.get("IfcSurfaceStyleShading", None)
-            self.rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
-            self.texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
+        try:
+            style_elements = tool.Style.get_style_elements(self.style)
 
-        if self.surface_style:
-            result = self.edit_existing_style()
-        else:
-            result = self.add_new_style()
+            # NOTE: currently this operator is used to edit existing (and only existing) IfcSurfaceStyles
+            # or new or existing IfcSurfaceStyle components (shading, etc)
+            # which is kind of confusing.
+            if self.props.is_editing_class == "IfcSurfaceStyle":
+                self.surface_style = self.style
+            else:
+                self.surface_style = style_elements.get(self.props.is_editing_class, None)
+                self.shading_style = style_elements.get("IfcSurfaceStyleShading", None)
+                self.rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
+                self.texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
 
-        if result:
-            return result
+            if self.surface_style:
+                result = self.edit_existing_style()
+            else:
+                result = self.add_new_style()
 
-        tool.Style.disable_editing()
-        core.load_styles(tool.Style, style_type=self.props.style_type)
+            if result:
+                return result
 
-        # restore selected style type
-        material = tool.Ifc.get_object(self.style)
-        msprops = tool.Style.get_material_style_props(material)
-        msprops.active_style_type = msprops.active_style_type
+            tool.Style.disable_editing()
+            core.load_styles(tool.Style, style_type=self.props.style_type)
+
+            # restore selected style type
+            material = tool.Ifc.get_object(self.style)
+            msprops = tool.Style.get_material_style_props(material)
+            msprops.active_style_type = msprops.active_style_type
+        finally:
+            self.props["update_graph"] = prev_update_graph
 
     def edit_existing_style(self) -> None:
         ifc_file = tool.Ifc.get()
@@ -1231,4 +1237,5 @@ class RemoveSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         surface_style = tool.Style.get_style_elements(style)[props.is_editing_class]
         ifcopenshell.api.style.remove_surface_style(ifc_file, surface_style)
         core.disable_editing_style(tool.Style)
+        core.load_styles(tool.Style, style_type=props.style_type)
         return {"FINISHED"}

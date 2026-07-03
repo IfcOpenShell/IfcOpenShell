@@ -185,6 +185,13 @@ class ColourRgb(PropertyGroup):
     # to fit blender.bim.helper.draw_attribute
     is_optional = False
     special_type = ""
+    data_type = ""
+    ifc_class = ""
+    use_explorer_ui = False
+
+    @property
+    def display_name(self):
+        return self.name
 
     def get_value_name(self, *args, **kwargs):
         return "color_value"

@@ -176,8 +176,30 @@ class BIM_PT_styles(Panel):
         row.prop(self.props, "reflectance_method")
 
         if self.props.reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
-            self.layout.label(text="Supported reflectance methods are:")
-            self.layout.label(text="PHYSICAL / NOTDEFINED / FLAT")
+            self.layout.label(
+                text=f"{self.props.reflectance_method} will be skipped: only PHYSICAL / NOTDEFINED / FLAT are supported",
+                icon="ERROR",
+            )
+        elif self.props.reflectance_method in ("PHYSICAL", "NOTDEFINED"):
+            if self.props.specular_colour_class == "IfcColourRgb":
+                self.layout.label(
+                    text="Metallic color is IFC-only in PHYSICAL/NOTDEFINED and does not affect Blender appearance",
+                    icon="ERROR",
+                )
+        elif self.props.reflectance_method == "FLAT":
+            if self.props.diffuse_colour_class == "IfcNormalisedRatioMeasure":
+                self.layout.label(
+                    text="Emissive ratio is IFC-only in FLAT Reflectance method and does not affect Blender appearance",
+                    icon="ERROR",
+                )
+            self.layout.label(
+                text="Specular value is IFC-only in FLAT Reflectance method and does not affect Blender appearance",
+                icon="ERROR",
+            )
+            self.layout.label(
+                text="Highlight value is IFC-only in FLAT Reflectance method and does not affect Blender appearance",
+                icon="ERROR",
+            )
 
         row = self.layout.row(align=True)
         row.label(text="Emissive" if self.props.reflectance_method == "FLAT" else "Diffuse")
@@ -232,6 +254,8 @@ class BIM_PT_styles(Panel):
         row.operator("bim.add_surface_texture", text="", icon="ADD")
         if textures:
             self.layout.prop(self.props, "uv_mode")
+            if self.props.uv_mode in ("Generated", "Camera"):
+                self.layout.label(text="Not available in SOLID Mode", icon="INFO")
 
         for i, texture in enumerate(textures):
             split = self.layout.split(factor=0.30, align=True)
@@ -244,6 +268,22 @@ class BIM_PT_styles(Panel):
             op_clear = row.operator("bim.remove_texture_map", text="", icon="X")
             op_path.texture_map_index = op_clear.texture_map_index = i
 
+            reflectance = self.props.reflectance_method
+            mode = texture.mode
+            if reflectance == "FLAT":
+                if mode != "EMISSIVE":
+                    self.layout.label(
+                        text=f"{mode} will be skipped: only EMISSIVE is supported for Render Reflectance FLAT",
+                        icon="ERROR",
+                    )
+            elif reflectance in ("PHYSICAL", "NOTDEFINED"):
+                _SUPPORTED = {"DIFFUSE", "NORMAL", "METALLICROUGHNESS", "EMISSIVE", "OCCLUSION"}
+                if mode not in _SUPPORTED:
+                    self.layout.label(
+                        text=f"{mode} will be skipped: not supported for Render Reflectance PHYSICAL/NOTDEFINED",
+                        icon="ERROR",
+                    )
+
     def draw_externally_defined_surface_style(self):
         row = self.layout.row()
         op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
@@ -252,10 +292,17 @@ class BIM_PT_styles(Panel):
         bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout, enable_search=True)
 
     def draw_refraction_surface_style(self):
+        self.layout.label(
+            text="Refraction values are IFC-only and do not affect Blender surface appearance",
+            icon="ERROR",
+        )
         bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout, enable_search=True)
-        row = self.layout.row(align=True)
 
     def draw_lighting_surface_style(self):
+        self.layout.label(
+            text="Lighting values are IFC-only and do not affect Blender surface appearance",
+            icon="ERROR",
+        )
         bonsai.bim.helper.draw_attributes(self.props.lighting_style_colours, self.layout)
 
     def draw_edit_ui(self, edit_label: str):
