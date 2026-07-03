@@ -1264,21 +1264,25 @@ class SelectGlobalId(Operator):
 
 
 class SelectIfcClass(Operator):
-    """Click to select all objects that match with the given IFC class\nSHIFT + Click to also match Predefined Type\nALT + Click to also unhide hidden objects (viewport and local hide)"""
+    """Click to select all objects that match with the given IFC class\nSHIFT + Click to remove from selection set\nALT + Click to also unhide hidden objects (viewport and local hide)"""
 
     bl_idname = "bim.select_ifc_class"
     bl_label = "Select IFC Class"
     bl_options = {"REGISTER", "UNDO"}
     should_filter_predefined_type: BoolProperty(default=False)
     should_unhide: BoolProperty(default=False)
+    remove_from_selection: BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        self.should_filter_predefined_type = event.shift
+        self.remove_from_selection = event.shift
         self.should_unhide = event.alt
         return self.execute(context)
 
     def execute(self, context):
-        objects = context.selected_objects
+        if self.remove_from_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
         classes = set()
         predefined_types = set()
         for obj in objects:
@@ -1297,7 +1301,10 @@ class SelectIfcClass(Operator):
                     if self.should_unhide:
                         obj.hide_viewport = False
                         obj.hide_set(False)
-                    tool.Blender.select_object(obj)
+                    if self.remove_from_selection:
+                        tool.Blender.deselect_object(obj)
+                    else:
+                        tool.Blender.select_object(obj)
 
             # copy selection query to clipboard
             if not result:

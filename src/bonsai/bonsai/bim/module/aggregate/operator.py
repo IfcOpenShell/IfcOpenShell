@@ -267,32 +267,39 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         name="One Level Deep", description="Select only immediate children, not recursively", default=False
     )
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep\nALT+Click to also unhide hidden objects (viewport and local hide)"
+            return "Select Aggregate and Parts.\n\nCtrl+click to select only one level deep\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select Aggregate\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+            return "Select Aggregate\n\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.ctrl:
             self.one_level_deep = True
         self.should_unhide = event.alt
+        self.remove_from_selection = event.shift
         return self.execute(context)
 
     def execute(self, context):
+        if self.remove_from_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
         all_parts = []
-        for obj in context.selected_objects:
+        for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element:
                 aggregate = ifcopenshell.util.element.get_aggregate(element)
                 if aggregate:
                     all_parts.append(aggregate)
-                    obj.select_set(False)
+                    if not self.remove_from_selection:
+                        obj.select_set(False)
                 else:
                     pass
-            if not element:
+            if not element and not self.remove_from_selection:
                 obj.select_set(False)
 
         if self.select_parts:
@@ -322,7 +329,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                     if self.should_unhide:
                         obj.hide_viewport = False
                         obj.hide_set(False)
-                    obj.select_set(True)
+                    obj.select_set(not self.remove_from_selection)
 
         else:
             for aggregate_element in all_parts:
@@ -331,8 +338,9 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                     if self.should_unhide:
                         aggregate_obj.hide_viewport = False
                         aggregate_obj.hide_set(False)
-                    aggregate_obj.select_set(True)
-                    bpy.context.view_layer.objects.active = aggregate_obj
+                    aggregate_obj.select_set(not self.remove_from_selection)
+                    if not self.remove_from_selection:
+                        bpy.context.view_layer.objects.active = aggregate_obj
 
         # copy selection query to clipboard
         result = ""
@@ -416,21 +424,28 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     select_parts: bpy.props.BoolProperty(default=False)
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, properties):
         if properties.select_parts:
-            return "Select all aggregates, subaggregates and all their parts\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+            return "Select all aggregates, subaggregates and all their parts\n\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"
         else:
-            return "Select all aggregates\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+            return "Select all aggregates\n\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"
 
     def invoke(self, context, event):
         self.should_unhide = event.alt
+        self.remove_from_selection = event.shift
         return self.execute(context)
 
     def execute(self, context):
-        for obj in context.selected_objects:
-            obj.select_set(False)
+        if self.remove_from_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
+        for obj in objects:
+            if not self.remove_from_selection:
+                obj.select_set(False)
             element = tool.Ifc.get_entity(obj)
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if not aggregate:
@@ -462,7 +477,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                             if self.should_unhide:
                                 obj.hide_viewport = False
                                 obj.hide_set(False)
-                            obj.select_set(True)
+                            obj.select_set(not self.remove_from_selection)
                 else:
                     for element in parts:
                         obj = tool.Ifc.get_object(element)
@@ -470,7 +485,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator):
                             if self.should_unhide:
                                 obj.hide_viewport = False
                                 obj.hide_set(False)
-                            obj.select_set(True)
+                            obj.select_set(not self.remove_from_selection)
 
         return {"FINISHED"}
 

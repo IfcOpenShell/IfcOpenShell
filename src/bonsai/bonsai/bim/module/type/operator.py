@@ -221,21 +221,26 @@ class SelectType(bpy.types.Operator):
 
 
 class SelectSimilarType(bpy.types.Operator):
-    """Select Similar Type\nALT+Click to also unhide hidden objects (viewport and local hide)"""
+    """Select Similar Type\nSHIFT+Click to remove from selection set\nALT+Click to also unhide hidden objects (viewport and local hide)"""
 
     bl_idname = "bim.select_similar_type"
     bl_label = "Select Similar Type"
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         self.should_unhide = event.alt
+        self.remove_from_selection = event.shift
         return self.execute(context)
 
     def execute(self, context):
         self.file = tool.Ifc.get()
-        objects = bpy.context.selected_objects
+        if self.remove_from_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = bpy.context.selected_objects
 
         # store relating types to avoid selecting same elements multiple times
         relating_types = set()
@@ -257,7 +262,7 @@ class SelectSimilarType(bpy.types.Operator):
                     if self.should_unhide:
                         obj.hide_viewport = False
                         obj.hide_set(False)
-                    obj.select_set(True)
+                    obj.select_set(not self.remove_from_selection)
 
             # copy selection query to clipboard
             related_objects_class = related_objects[0].is_a()

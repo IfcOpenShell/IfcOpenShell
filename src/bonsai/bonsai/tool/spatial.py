@@ -192,7 +192,9 @@ class Spatial(bonsai.core.tool.Spatial):
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
 
     @classmethod
-    def select_products(cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False) -> None:
+    def select_products(
+        cls, products: Iterable[ifcopenshell.entity_instance], unhide: bool = False, remove: bool = False
+    ) -> None:
         assert (view_layer := bpy.context.view_layer)
         # Update view layer, otherwise `objects` might be missing just created objects.
         view_layer.update()
@@ -202,7 +204,7 @@ class Spatial(bonsai.core.tool.Spatial):
                 if unhide:
                     obj.hide_viewport = False
                     obj.hide_set(False)
-                obj.select_set(True)
+                obj.select_set(not remove)
 
     @classmethod
     def filter_products(
