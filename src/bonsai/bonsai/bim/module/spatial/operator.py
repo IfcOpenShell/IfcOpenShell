@@ -284,17 +284,21 @@ class SelectContainer(bpy.types.Operator):
 class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
-    bl_description = "Recursively selects all objects in the container.\n\nCtrl+click to select only one level deep\nAlt+click to also unhide hidden objects (viewport and local hide)"
+    bl_description = "Recursively selects all objects in the container.\n\nShift+click to remove from selection set\nCtrl+click to filter selection to matching objects only\nCtrl+Shift+click to select only one level deep\nAlt+click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
 
     container: bpy.props.IntProperty(default=0)
     is_recursive: bpy.props.BoolProperty(default=True)
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.ctrl:
+        if event.type == "LEFTMOUSE" and event.ctrl and event.shift:
             self.is_recursive = False
         self.should_unhide = event.alt
+        self.remove_from_selection = event.shift and not event.ctrl
+        self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
     def execute(self, context):
@@ -303,9 +307,14 @@ class SelectSimilarContainer(bpy.types.Operator):
             ifc_container = tool.Ifc.get().by_id(self.container)
             containers = {ifc_container.id(): ifc_container} if ifc_container else {}
         else:
-            # Called from 3D viewport — derive containers from all selected objects
+            # Called from 3D viewport — derive containers from the selected objects
+            # (active object only in remove/filter mode, so a single criteria source)
+            if self.remove_from_selection or self.filter_selection:
+                objects = [context.active_object] if context.active_object else []
+            else:
+                objects = context.selected_objects or [context.active_object]
             containers = {}
-            for obj in context.selected_objects or [context.active_object]:
+            for obj in objects:
                 element = tool.Ifc.get_entity(obj)
                 if not element:
                     continue
@@ -320,6 +329,8 @@ class SelectSimilarContainer(bpy.types.Operator):
             tool.Spatial.select_products(
                 tool.Spatial.get_decomposed_elements(container, self.is_recursive),
                 unhide=self.should_unhide,
+                remove=self.remove_from_selection,
+                filter_selection=self.filter_selection,
             )
 
         result = " + ".join(f'location = "{c.Name}"' for c in containers.values())
@@ -451,27 +462,33 @@ class SelectDecomposedElements(bpy.types.Operator):
     container: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     @classmethod
     def description(cls, context, operator):
         return (
             "Select the active item"
-            + "\nSHIFT+CLICK to select all listed elements.\nCTRL+CLICK to select only one level deep"
+            + "\nSHIFT+CLICK to remove from selection set.\nCTRL+CLICK to filter selection to matching objects only"
+            + "\nCTRL+SHIFT+CLICK to select only one level deep"
             + "\nALT+CLICK to also unhide hidden objects (viewport and local hide)"
         )
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE":
-            if event.shift:
-                self.should_filter = False
-            if event.ctrl:
+            if event.ctrl and event.shift:
                 self.is_recursive = False
             self.should_unhide = event.alt
+            self.remove_from_selection = event.shift and not event.ctrl
+            self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
     def execute(self, context):
         tool.Spatial.select_products(
-            tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive), unhide=self.should_unhide
+            tool.Spatial.get_filtered_elements(self.should_filter, self.is_recursive),
+            unhide=self.should_unhide,
+            remove=self.remove_from_selection,
+            filter_selection=self.filter_selection,
         )
 
         # Make selected active element in list, the active object
@@ -483,7 +500,8 @@ class SelectDecomposedElements(bpy.types.Operator):
             obj = tool.Ifc.get_object(ifc_entity)
             if obj:
                 context.view_layer.objects.active = obj
-                obj.select_set(True)
+                if not self.filter_selection:
+                    obj.select_set(not self.remove_from_selection)
         return {"FINISHED"}
 
 

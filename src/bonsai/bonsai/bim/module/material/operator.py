@@ -61,13 +61,17 @@ class DisableEditingMaterials(bpy.types.Operator):
 class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
-    bl_description = "Select objects using the provided material\n\nALT+Click to also unhide hidden objects (viewport and local hide)"
+    bl_description = "Select objects using the provided material\n\nSHIFT+Click to remove from selection set\nCTRL+Click to filter selection to matching objects only\nALT+Click to also unhide hidden objects (viewport and local hide)"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
     should_unhide: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filter_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         self.should_unhide = event.alt
+        self.remove_from_selection = event.shift and not event.ctrl
+        self.filter_selection = event.ctrl and not event.shift
         return self.execute(context)
 
     def execute(self, context):
@@ -80,8 +84,12 @@ class SelectByMaterial(bpy.types.Operator):
             ref_mat = tool.Ifc.get().by_id(self.material)
             layer_index = self._get_layer_index(ref_mat)
 
+        if self.remove_from_selection or self.filter_selection:
+            objects = [context.active_object] if context.active_object else []
+        else:
+            objects = context.selected_objects
         materials = {}
-        for obj in context.selected_objects:
+        for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -101,7 +109,14 @@ class SelectByMaterial(bpy.types.Operator):
             return {"FINISHED"}
 
         for mat in materials.values():
-            core.select_by_material(tool.Material, tool.Spatial, material=mat, should_unhide=self.should_unhide)
+            core.select_by_material(
+                tool.Material,
+                tool.Spatial,
+                material=mat,
+                should_unhide=self.should_unhide,
+                remove_from_selection=self.remove_from_selection,
+                filter_selection=self.filter_selection,
+            )
 
         result = " + ".join(f'material = "{self._get_name(m)}"' for m in materials.values())
         bpy.context.window_manager.clipboard = result
