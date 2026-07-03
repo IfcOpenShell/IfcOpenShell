@@ -372,3 +372,25 @@ test('RMB marquee drag box-selects (Web preset)', async ({ page }) => {
   expect(hiddenAfter, 'marquee was not hidden after release').toBe(true);
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });
+
+test('section tool: click a surface cuts geometry, clear restores', async ({ page }) => {
+  const gpuErrors = [];
+  page.on('console', (m) => { if (/Uncaptured WebGPU error|is invalid/i.test(m.text())) gpuErrors.push(m.text()); });
+  await ready(page);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  const before = await shot(page);
+  await page.evaluate(() => window.Module._toggle_section_c());
+  expect(await page.evaluate(() => window.Module._section_is_active_c())).toBe(1);
+  // Section tool claims LMB: a left click on the model drops a cut.
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(700);  // async surface pick + add plane + render
+  const cut = await shot(page);
+  expect(Buffer.compare(before, cut), 'section cut did not change the render').not.toBe(0);
+  await page.evaluate(() => window.Module._clear_section_c());
+  await page.waitForTimeout(400);
+  const cleared = await shot(page);
+  expect(Buffer.compare(cleared, cut), 'clearing cuts did not change the render').not.toBe(0);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});

@@ -96,6 +96,9 @@
   <button data-act="isolate" title="Isolate selected (Shift+H)">Isolate</button>
   <button data-act="showall" title="Show all (Alt+H)">Show all</button>
   <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
+  <span class="sep"></span>
+  <button data-act="section" id="section-btn" title="Section tool — click a surface to cut (K)">Section</button>
+  <button data-act="clearcut" title="Clear all section cuts (Shift+K)">Clear cuts</button>
 </div>
 <div id="status">Starting…</div>
 <script>
@@ -175,6 +178,10 @@
           if (Module._xray_is_active_c) {
             var xb = document.getElementById('xray-btn');
             if (xb) xb.classList.toggle('active', !!Module._xray_is_active_c());
+          }
+          if (Module._section_is_active_c) {
+            var sb = document.getElementById('section-btn');
+            if (sb) sb.classList.toggle('active', !!Module._section_is_active_c());
           }
           Module._raf_tick_c(Module._app_ptr);
         }
@@ -364,6 +371,8 @@
       else if (act === 'isolate') Module._isolate_selected_c();
       else if (act === 'showall') Module._show_all_c();
       else if (act === 'xray')    Module._toggle_xray_c();
+      else if (act === 'section') Module._toggle_section_c();
+      else if (act === 'clearcut') Module._clear_section_c();
       else if (view !== null)   Module._standard_view_c(parseInt(view, 10));
     });
   });

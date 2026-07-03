@@ -396,7 +396,7 @@ public:
     // A point that actually lies on the model's first instance — the
     // first instance's mesh AABB centre transformed by that instance's
     // placement, in metres, pre-CoordinateOperation. Lookup only — the
-    // viewport already keeps the CPU-side MeshInfo + InstanceCpu around
+    // viewport already keeps the CPU-side MeshInfo + InstanceInfo around
     // for picking / measurement; the federation false-origin guess
     // (ViewportView::guessFederatedFalseOriginFromFirstModel) consumes
     // this lazily on modelGeometryReady. Returns false when the model
@@ -737,20 +737,9 @@ private:
     Qt::KeyboardModifiers      box_select_press_mods_ = Qt::NoModifier;
     static constexpr int       kBoxSelectThresholdPx  = 5;
     // box_pick_staging_buffer_/_capacity_ moved to ViewportCore (#84-t).
-    // Drag-to-move state for the arrow gizmo. While `section_drag_active_`
-    // is true, mouseMoveEvent calls updateSectionDrag instead of letting
-    // the press fall through to the orbit/pan handlers.
-    bool                      section_drag_active_  = false;
-    int                       section_drag_index_   = -1;
-    Eigen::Vector2i                    section_drag_start_mouse_;
-    Eigen::Vector3f                 section_drag_start_origin_;
-    // Mirrors GL ViewportWindow::hitTestSectionGizmo: returns the index of
-    // the plane whose arrow gizmo is within grab_px of (x, y), or -1.
-    int   hitTestSectionGizmo(int x, int y) const;
-    // Mirrors GL ViewportWindow::updateSectionDrag: projects the cursor
-    // delta onto the plane's normal in screen space and slides the plane
-    // along that direction.
-    void  updateSectionDrag(int x, int y);
+    // Section-gizmo drag state + hit-test/drag math moved to ViewportCore
+    // (shared with web; the mouse handlers call core_.begin/update/endSectionDrag
+    // and core_.hitTestSectionGizmo).
 
     // HiZ slot + pyramid aliases (storage in core_, #84-r). VW's render
     // loop reads hiz_valid_ / hiz_vp_ to gate the HizOccludedFn, and

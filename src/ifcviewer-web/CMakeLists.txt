@@ -104,7 +104,7 @@ target_link_options(IfcViewerWeb PRIVATE
     # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
     # add them to Module. ccall lets shell.html pass a JS string (the ?model
     # URL) to load_sidecar_from_url_c without manual heap marshalling.
-    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_toggle_xray_c','_xray_is_active_c']"
+    "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c']"
     # ccall: shell.html passes the ?model URL string to load_sidecar_from_url_c.
     # HEAPU8: lets tooling/tests read the wasm heap size (e.g. to verify a large
     # sidecar streams by range instead of loading whole). Standard, zero-cost.

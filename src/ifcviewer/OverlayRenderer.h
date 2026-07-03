@@ -64,12 +64,8 @@ public:
                      const OverlayFrame& f,
                      bool visible);
 
-    // Per-plane wireframe gizmo (2 × 2 m quad outline + arrow shaft +
-    // arrow head). Drawn at each plane's origin in its local basis;
-    // colour comes from Bonsai's decorator_color_error.
-    void encodeSectionGizmos(WGPURenderPassEncoder pass,
-                             const OverlayFrame& f,
-                             const std::vector<SectionPlane>& planes);
+    // Section-plane gizmos moved to the shared SectionGizmoRenderer (drawn by
+    // ViewportCore for both desktop + web).
 
     // Replace the highlight-triangle list. `world_xyz` is 3 floats per
     // vertex, 3 vertices per triangle, in world space (post-composed-
@@ -175,7 +171,6 @@ public:
 
 private:
     bool buildAxisIndicator();
-    bool buildSectionVisualizer();
     bool buildMarquee();
     bool buildOverlayLines();
     bool buildOverlayPoints();
@@ -217,16 +212,6 @@ private:
     WGPUBuffer          axis_uniform_buffer_      = nullptr;
     WGPUBindGroup       axis_bind_group_          = nullptr;
     static constexpr uint32_t kAxisUniformSlotSize = 256;
-
-    // ---- Section plane gizmos (1 pipeline, dynamic offset per plane) ----
-    WGPUShaderModule    section_shader_module_    = nullptr;
-    WGPUBindGroupLayout section_bgl_              = nullptr;
-    WGPUPipelineLayout  section_pipeline_layout_  = nullptr;
-    WGPURenderPipeline  section_pipeline_         = nullptr;
-    WGPUBuffer          section_vertex_buffer_    = nullptr;
-    WGPUBuffer          section_uniform_buffer_   = nullptr;
-    WGPUBindGroup       section_bind_group_       = nullptr;
-    static constexpr uint32_t kSectionUniformSlotSize = 256;
 
     // ---- Marquee (fill + outline pipelines, one uniform buffer) ----
     WGPUShaderModule    marquee_shader_module_      = nullptr;

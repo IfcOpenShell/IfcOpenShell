@@ -143,6 +143,25 @@ TEST_CASE("toggleXray flips the active state", "[camera][xray]") {
     REQUIRE_FALSE(core.xrayActive());
 }
 
+TEST_CASE("section planes: add appends, clear drops all, capped at the max",
+          "[camera][section]") {
+    MockHost host; ViewportCore core(&host);
+    REQUIRE(core.sectionPlaneCount() == 0);
+
+    const Eigen::Vector3f pt(1, 2, 3), n(0, 0, 1);
+    REQUIRE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE(core.sectionPlaneCount() == 2);
+
+    // Fill to the cap (kMaxSectionPlanes == 6); further adds are rejected.
+    while (core.sectionPlaneCount() < 6) REQUIRE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE_FALSE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE(core.sectionPlaneCount() == 6);
+
+    core.clearSectionPlanes();
+    REQUIRE(core.sectionPlaneCount() == 0);
+}
+
 TEST_CASE("setNavPreset maps names to the shared button bindings", "[camera][nav]") {
     MockHost host; ViewportCore core(&host);
     using B = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;

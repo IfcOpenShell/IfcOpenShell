@@ -67,6 +67,11 @@ struct AppState {
     // bindings (ViewportCore::navBindings), so any preset works on web too.
     bool    nav_active = false;
     NavKind nav_kind   = NavKind::None;
+    // Section-cut tool: while active, a select-button click drops a clip plane
+    // at the picked surface (K toggles, Shift+K clears — matches desktop).
+    bool    section_tool_active = false;
+    // True while dragging a section-plane gizmo (LMB down on the arrow → slide).
+    bool    section_dragging    = false;
     // Accumulated |movement| since mousedown, in CSS px. A select-button release
     // under the click threshold (no real drag) is treated as a pick; a drag will
     // become a marquee. Captures the down position (canvas-relative CSS px).
@@ -146,6 +151,14 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
     // In fly mode a click exits (matches the desktop app).
     if (app->fly_mode) { setFlyMode(app, false); return EM_TRUE; }
+    // Section tool: LMB on a plane's gizmo arrow grabs it to slide (logical px).
+    if (app->section_tool_active && e->button == 0) {
+        const int hit = app->core.hitTestSectionGizmo(int(e->targetX), int(e->targetY));
+        if (hit >= 0 && app->core.beginSectionDrag(hit, int(e->targetX), int(e->targetY))) {
+            app->section_dragging = true;
+            return EM_TRUE;  // claim the press — don't orbit
+        }
+    }
     const NavKind kind = classifyPress(app->core.navBindings(), e->button,
                                        e->shiftKey, e->ctrlKey, e->altKey);
     if (kind != NavKind::None) {
@@ -164,6 +177,11 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     // Fly mode: pointer-locked mouse deltas turn the camera in place.
     if (app->fly_mode) {
         app->core.flyLook(float(e->movementX), float(e->movementY));
+        return EM_TRUE;
+    }
+    // Section gizmo drag: slide the grabbed plane along its normal (logical px).
+    if (app->section_dragging) {
+        app->core.updateSectionDrag(int(e->targetX), int(e->targetY));
         return EM_TRUE;
     }
     if (!app->nav_active) return EM_FALSE;
@@ -191,11 +209,33 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
     app->nav_active = false;
     app->nav_kind   = NavKind::None;
 
-    if (was_active && kind == NavKind::Select && app->ready) {
-        const double dpr    = emscripten_get_device_pixel_ratio();
-        const bool   add    = e->shiftKey;
-        const bool   remove = e->ctrlKey;
-        if (app->nav_drag_px > kClickDragThresholdPx) {
+    // End a section-gizmo drag (took over the press; no pick/orbit on release).
+    if (app->section_dragging) {
+        app->core.endSectionDrag();
+        app->section_dragging = false;
+        return EM_TRUE;
+    }
+
+    if (!was_active || !app->ready) return EM_TRUE;
+    const double dpr     = emscripten_get_device_pixel_ratio();
+    const bool   no_drag = app->nav_drag_px <= kClickDragThresholdPx;
+
+    // Section tool claims a LEFT-button click ("click a surface to cut"); LMB
+    // drag still orbits. Takes priority over nav while the tool is active.
+    if (app->section_tool_active && e->button == 0 && no_drag) {
+        const int px = int(app->down_x * dpr), py = int(app->down_y * dpr);
+        app->core.pickSurfaceAtAsync(px, py, [app](ViewportCore::SurfaceHit hit) {
+            if (hit.found)  // pad past the AABB so the cut reads as a cap
+                app->core.addSectionPlaneAtSurface(hit.world_pos, hit.world_normal,
+                                                   hit.aabb_radius * 1.5f);
+            app->host.requestFrame();
+        });
+        return EM_TRUE;
+    }
+
+    if (kind == NavKind::Select) {
+        const bool add = e->shiftKey, remove = e->ctrlKey;
+        if (!no_drag) {
             // Marquee drag → box-pick the rect (device px) and apply to selection.
             hideMarquee();
             const long x0 = std::min<long>(app->down_x, e->targetX);
@@ -209,14 +249,11 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
                     app->host.requestFrame();
                 });
         } else {
-            // No real drag → single pick under the cursor (Shift add, Ctrl remove,
-            // plain replace). Async readback: highlight lands a frame later.
-            const int px = int(app->down_x * dpr);
-            const int py = int(app->down_y * dpr);
+            // Single pick under the cursor (Shift add, Ctrl remove, plain replace).
+            const int px = int(app->down_x * dpr), py = int(app->down_y * dpr);
             app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
                 app->core.applyPickToSelection(id, add, remove);
-                // v15 on-demand deferred fetch: log the picked object's IFC GUID
-                // (first pick fetches the property block off the network).
+                // v15 on-demand element metadata fetch: log the picked object's IFC GUID.
                 if (id != 0) app->core.logSelectedObjectGuidWeb(id);
                 app->host.requestFrame();
             });
@@ -300,6 +337,25 @@ EM_BOOL onKeyDown(int, const EmscriptenKeyboardEvent* e, void* user) {
         return EM_TRUE;
     }
     if (!std::strcmp(code, "KeyX") && alt) { app->core.toggleXray(); return EM_TRUE; }
+    // Section tool: K toggles drop-a-plane mode, Shift+K clears all cuts.
+    if (!std::strcmp(code, "KeyK")) {
+        if (shift) app->core.clearSectionPlanes();
+        else {
+            app->section_tool_active = !app->section_tool_active;
+            Log::info() << "[section] tool "
+                        << (app->section_tool_active ? "active — click a surface" : "off");
+        }
+        app->host.requestFrame();
+        return EM_TRUE;
+    }
+    // Del/Backspace removes the most recent cut while the tool is active.
+    if (app->section_tool_active &&
+        (!std::strcmp(code, "Delete") || !std::strcmp(code, "Backspace"))) {
+        const int n = app->core.sectionPlaneCount();
+        if (n > 0) app->core.removeSectionPlane(n - 1);
+        app->host.requestFrame();
+        return EM_TRUE;
+    }
     using SV = ViewportCore::StandardView;
     if      (!std::strcmp(code, "Home"))            app->core.viewAll();
     else if (!std::strcmp(code, "KeyF") && !shift)  app->core.frameSelection();
@@ -437,6 +493,21 @@ extern "C" EMSCRIPTEN_KEEPALIVE void isolate_selected_c() { if (g_app && g_app->
 extern "C" EMSCRIPTEN_KEEPALIVE void show_all_c()         { if (g_app && g_app->ready) g_app->core.showAll(); }
 extern "C" EMSCRIPTEN_KEEPALIVE void toggle_xray_c()      { if (g_app && g_app->ready) g_app->core.toggleXray(); }
 extern "C" EMSCRIPTEN_KEEPALIVE int  xray_is_active_c()   { return (g_app && g_app->ready && g_app->core.xrayActive()) ? 1 : 0; }
+
+// Section-cut tool: toggle the drop-a-plane mode, clear all planes, query state.
+extern "C" EMSCRIPTEN_KEEPALIVE void toggle_section_c() {
+    if (!g_app || !g_app->ready) return;
+    g_app->section_tool_active = !g_app->section_tool_active;
+    Log::info() << "[section] tool "
+                << (g_app->section_tool_active ? "active — click a surface to cut" : "off");
+    g_app->host.requestFrame();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void clear_section_c() {
+    if (g_app && g_app->ready) { g_app->core.clearSectionPlanes(); g_app->host.requestFrame(); }
+}
+extern "C" EMSCRIPTEN_KEEPALIVE int section_is_active_c() {
+    return (g_app && g_app->ready && g_app->section_tool_active) ? 1 : 0;
+}
 
 // id: 0 Front, 1 Back, 2 Left, 3 Right, 4 Top, 5 Bottom.
 extern "C" EMSCRIPTEN_KEEPALIVE void standard_view_c(int id) {

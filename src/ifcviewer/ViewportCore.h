@@ -50,6 +50,7 @@
 #include "InstanceCompose.h"
 #include "InstancedGeometry.h"
 #include "ModelGpuData.h"
+#include "SectionGizmoRenderer.h"
 #include "SectionPlane.h"
 #include "SelectionState.h"
 #include "SidecarCache.h"
@@ -110,7 +111,7 @@ public:
     // from the mesh-local one. Used by the per-model recompose path
     // after any of the four federation matrices change. Pure scene
     // math — no GPU touch.
-    void composeInstanceFromPlacement(InstanceCpu& inst,
+    void composeInstanceFromPlacement(InstanceInfo& inst,
                                       const ModelGpuData& m) const;
 
     // Cross-model object_id lookup. Delegates to
@@ -425,16 +426,16 @@ public:
     // `source_label` is a log/identity tag.
     void loadSidecarMetadataWeb(int source_id, std::string source_label);
 
-    // On-demand fetch of the v15 deferred property block (element tree + string
+    // On-demand fetch of the v15 element metadata block (elements + string
     // table) for a web-streamed model — what a UI (object tree / selected-name
     // / search) needs, fetched only when asked so first paint never waits on
     // it. Populates ModelGpuData.elements/string_table; fires done(ok). At most
     // one fetch per model.
-    void loadDeferredMetadataWeb(std::uint32_t model_id,
-                                 std::function<void(bool)> done = {});
+    void loadElementMetadataWeb(std::uint32_t model_id,
+                                std::function<void(bool)> done = {});
 
-    // Demo consumer of the deferred fetch: on pick, ensure the owning model's
-    // property block is loaded (loadDeferredMetadataWeb — fetched once, on
+    // Demo consumer of the element metadata fetch: on pick, ensure the owning model's
+    // property block is loaded (loadElementMetadataWeb — fetched once, on
     // demand), then log the picked object's IFC GUID. The first pick triggers
     // the network fetch; later picks reuse the cached element table.
     void logSelectedObjectGuidWeb(std::uint32_t object_id);
@@ -523,6 +524,22 @@ public:
 
     // Drop every section plane. No-op when none are active.
     void clearSectionPlanes();
+
+    // Number of active section planes (0..kMaxSectionPlanes).
+    int sectionPlaneCount() const { return int(section_planes_.size()); }
+
+    // ---- Section gizmo interaction (shared desktop + web) -------------------
+    //
+    // All coords are LOGICAL (CSS) pixels; the core derives the logical viewport
+    // from the host. hitTestSectionGizmo returns the plane index whose gizmo
+    // arrow is under (x,y), or -1. The drag trio slides a plane along its normal:
+    // begin captures the plane origin + press point, update reprojects and moves
+    // it, end finishes.
+    int  hitTestSectionGizmo(int x, int y);
+    bool beginSectionDrag(int gizmo_index, int mouse_x, int mouse_y);
+    void updateSectionDrag(int mouse_x, int mouse_y);
+    void endSectionDrag() { section_drag_active_ = false; }
+    bool sectionDragActive() const { return section_drag_active_; }
 
     // ---- Render loop (#84-x) ----------------------------------------------
     //
@@ -646,6 +663,27 @@ public:
                                                        int w, int h,
                                                        std::uint64_t needed_bytes);
 
+    // CPU half of pickSurfaceAt: cast the pixel's world ray against every
+    // instance carrying `object_id`, returning the closest hit's world pos,
+    // normal (mrt_normal if non-degenerate, else the AABB-face normal), and the
+    // instance bounding-sphere radius. Shared by the sync pickSurfaceAt and the
+    // async pickSurfaceAtAsync. False if no instance is hit.
+    bool raycastSurfaceForObject(std::uint32_t object_id, int x_pixels, int y_pixels,
+                                 const Eigen::Vector3f& mrt_normal,
+                                 Eigen::Vector3f& world_pos_out,
+                                 Eigen::Vector3f& world_normal_out,
+                                 float& aabb_radius_out);
+    // Decode the RGBA16F pick-normal from the (already-mapped) normal staging
+    // buffer into a unit world normal; unmaps. False if degenerate. Shared by
+    // the sync pickObjectAt and the async pickSurfaceAtAsync.
+    bool decodeMappedPickNormal(Eigen::Vector3f& out);
+    // Logical (CSS-px) viewport size from the host framebuffer / DPR, for the
+    // section-gizmo hit-test + drag (which work in logical pixels).
+    void sectionLogicalViewport(int& w, int& h) const;
+    // Decode the RGBA32F exact world position from the (already-mapped) position
+    // staging buffer; unmaps. False if the texel was a miss (w == 0).
+    bool decodeMappedPickPosition(Eigen::Vector3f& out);
+
     // Tear down every pick-owned wgpu resource (pipeline + MRTs +
     // staging buffers). Called from shutdown() before device_ dies.
     void releasePickResources();
@@ -715,8 +753,24 @@ public:
                        Eigen::Vector3f& world_normal_out,
                        float* aabb_radius_out = nullptr);
 
+#if defined(__EMSCRIPTEN__)
+    // Async surface pick for web (drives the section tool). Reuses the async
+    // object pick (no new GPU readback), then runs the same CPU ray-AABB cast as
+    // pickSurfaceAt. On web the normal is the AABB-face normal (the precise MRT
+    // normal would need a second async map — a later refinement).
+    struct SurfaceHit {
+        bool            found        = false;
+        std::uint32_t   object_id    = 0;
+        Eigen::Vector3f world_pos    = Eigen::Vector3f::Zero();
+        Eigen::Vector3f world_normal = Eigen::Vector3f::UnitZ();
+        float           aabb_radius  = 0.0f;
+    };
+    void pickSurfaceAtAsync(int x_pixels, int y_pixels,
+                            std::function<void(SurfaceHit)> cb);
+#endif
+
     // Per-pick result for the Area / Length / Volume tools. The
-    // composed_transform mirrors InstanceCpu::transform so callers can
+    // composed_transform mirrors InstanceInfo::transform so callers can
     // round-trip from mesh-local back to world without re-deriving it.
     struct MeshLocalPick {
         std::uint32_t object_id   = 0;
@@ -845,6 +899,10 @@ private:
     WGPUPipelineLayout  pipeline_layout_          = nullptr;
     WGPURenderPipeline  main_pipeline_            = nullptr;
     WGPURenderPipeline  main_pipeline_transparent_ = nullptr;
+    // Section-plane gizmo, shared by desktop + web (both render via render()).
+    // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
+    // everywhere; the desktop's OverlayRenderer no longer draws it.
+    SectionGizmoRenderer section_gizmo_;
 
     // HiZ occlusion-cull pipeline group. Downsamples MSAA depth into a
     // mip pyramid; consumed by next-frame cull.
@@ -934,10 +992,13 @@ private:
     WGPUTextureView    pick_color_view_            = nullptr;
     WGPUTexture        pick_normal_texture_        = nullptr;
     WGPUTextureView    pick_normal_view_           = nullptr;
+    WGPUTexture        pick_position_texture_      = nullptr;  // RGBA32F exact world pos
+    WGPUTextureView    pick_position_view_         = nullptr;
     WGPUTexture        pick_depth_texture_         = nullptr;
     WGPUTextureView    pick_depth_view_            = nullptr;
     WGPUBuffer         pick_staging_buffer_        = nullptr;
     WGPUBuffer         pick_normal_staging_buffer_ = nullptr;
+    WGPUBuffer         pick_position_staging_buffer_ = nullptr;
     int                pick_w_                     = 0;
     int                pick_h_                     = 0;
     WGPUBuffer         box_pick_staging_buffer_    = nullptr;
@@ -955,6 +1016,14 @@ private:
     int                               box_pick_async_h_ = 0;
     std::uint64_t                     box_pick_async_padded_bpr_ = 0;
     std::uint64_t                     box_pick_async_bytes_      = 0;
+    // Async surface pick (section tool): chained id→normal staging maps. Reuses
+    // pick_async_in_flight_ (same staging buffers as the single object pick).
+    std::function<void(SurfaceHit)>   surface_async_cb_;
+    int                               surface_async_x_  = 0;
+    int                               surface_async_y_  = 0;
+    std::uint32_t                     surface_async_id_ = 0;
+    Eigen::Vector3f                   surface_async_normal_ = Eigen::Vector3f::Zero();
+    void finishSurfaceAsync(SurfaceHit hit);
 #endif
 
     // ---- Frame uniforms + selection bind ----------------------------------
@@ -978,6 +1047,13 @@ private:
     // removeSectionPlane (still Qt-bound — they wire into the input
     // path). Reading happens here.
     std::vector<SectionPlane> section_planes_;
+    // Section-gizmo drag state (shared): which plane, its press-time origin, and
+    // the press point (logical px) so update can slide it along the normal.
+    bool            section_drag_active_       = false;
+    int             section_drag_index_        = -1;
+    Eigen::Vector3f section_drag_start_origin_ = Eigen::Vector3f::Zero();
+    int             section_drag_start_mx_     = 0;
+    int             section_drag_start_my_     = 0;
 
     // X-ray mode alpha clamp: when < 1.0 every instance routes through
     // the transparent pass with fragment.a clamped to min(in.color.a, cap).
