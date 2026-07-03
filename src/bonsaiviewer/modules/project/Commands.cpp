@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -53,28 +53,28 @@ namespace {
 // Pure helper — clears the loaded scene without emitting any signals. The
 // caller (newProject / openProject) emits projectReset / projectOpened once
 // the whole flow finishes.
-void clearScene(SessionState& s, ViewportWindow& vp) {
-    vp.setSelectedObjectId(0);
-    s.setSelectedObjectId(0);
-    for (uint32_t mid : s.modelIds()) {
-        vp.removeModel(mid);
-        s.loader()->removeModel(mid);
+void clearScene(SessionState& session, ViewportWindow& viewport) {
+    viewport.setSelectedObjectId(0);
+    session.setSelectedObjectId(0);
+    for (uint32_t model_id : session.modelIds()) {
+        viewport.removeModel(model_id);
+        session.loader()->removeModel(model_id);
     }
-    s.clearModelMappings();
-    s.elementRegistry()->clear();
+    session.clearModelMappings();
+    session.elementRegistry()->clear();
 }
 
 // Returns false if the user cancelled (i.e. don't proceed with the destructive
 // op). Handles the Save → Discard → Cancel branch including a follow-on save.
-bool confirmDiscardIfDirty(SessionState& s, QWidget& host) {
-    if (!s.federation()->isDirty()) return true;
+bool confirmDiscardIfDirty(SessionState& session, QWidget& host) {
+    if (!session.federation()->isDirty()) return true;
     const auto result = QMessageBox::question(
         &host, "Unsaved Project",
         "The current project has unsaved changes. Save before continuing?",
         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
         QMessageBox::Save);
     if (result == QMessageBox::Cancel) return false;
-    if (result == QMessageBox::Save) return saveProject(s, host);
+    if (result == QMessageBox::Save) return saveProject(session, host);
     return true;
 }
 
@@ -88,18 +88,18 @@ bool confirmDiscardIfDirty(SessionState& s, QWidget& host) {
 //   - if no scene entry exists yet (initial open), queue a load.
 // Per spec, connector errors are not surfaced to the user; the connector
 // has already shown its own UI.
-void resolveCloudModels(SessionState& s, ViewportWindow& vp) {
-    auto* fed = s.federation();
+void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
+    auto* federation = session.federation();
     QHash<QString, QStringList> connector_to_fed_ids;
-    for (const auto& m : fed->models()) {
-        if (m.source_connector == "local") continue;
-        connector_to_fed_ids[m.source_connector].push_back(m.id);
+    for (const auto& model : federation->models()) {
+        if (model.source_connector == "local") continue;
+        connector_to_fed_ids[model.source_connector].push_back(model.id);
     }
     if (connector_to_fed_ids.isEmpty()) return;
 
-    auto* registry = s.connectorRegistry();
-    QPointer<SessionState> sguard(&s);
-    QPointer<ViewportWindow> vguard(&vp);
+    auto* registry = session.connectorRegistry();
+    QPointer<SessionState> sguard(&session);
+    QPointer<ViewportWindow> vguard(&viewport);
 
     for (auto it = connector_to_fed_ids.constBegin();
               it != connector_to_fed_ids.constEnd(); ++it) {
@@ -115,13 +115,13 @@ void resolveCloudModels(SessionState& s, ViewportWindow& vp) {
 
         QJsonArray params;
         for (const QString& fed_id : fed_ids) {
-            const Federation::Model* m = fed->findById(fed_id);
-            if (!m) continue;
-            QJsonObject source = m->source_data;
-            source["connector"] = m->source_connector;
+            const Federation::Model* model = federation->findById(fed_id);
+            if (!model) continue;
+            QJsonObject source = model->source_data;
+            source["connector"] = model->source_connector;
             QJsonObject entry;
-            entry["display_name"] = m->display_name;
-            entry["id"] = m->id;
+            entry["display_name"] = model->display_name;
+            entry["id"] = model->id;
             entry["source"] = source;
             params.append(entry);
         }
@@ -187,7 +187,7 @@ void resolveCloudModels(SessionState& s, ViewportWindow& vp) {
               it != connector_to_fed_ids.constEnd(); ++it) {
         total += it.value().size();
     }
-    s.setStatusMessage("Cloud", QString("Resolving %1 model(s)...").arg(total));
+    session.setStatusMessage("Cloud", QString("Resolving %1 model(s)...").arg(total));
 }
 
 // Byte-equality check for "is this .ifcfed the same as what we have loaded?"
@@ -203,29 +203,29 @@ bool isIfcfedUnchanged(const QString& current_path, const QString& candidate_pat
     return a.readAll() == b.readAll();
 }
 
-bool openProjectAt(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path) {
-    SceneLoader* loader = s.loader();
+bool openProjectAt(SessionState& session, QWidget& host, ViewportWindow& viewport, const QString& path) {
+    SceneLoader* loader = session.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(
             &host, "Open Project",
             "Wait until the current model load finishes before opening another project.");
         return false;
     }
-    if (!confirmDiscardIfDirty(s, host)) return false;
+    if (!confirmDiscardIfDirty(session, host)) return false;
 
     QStringList warnings;
     QString err;
-    if (!s.federation()->load(path, &warnings, &err)) {
+    if (!session.federation()->load(path, &warnings, &err)) {
         QMessageBox::warning(&host, "Open Project",
                              QString("Could not open project:\n%1").arg(err));
         return false;
     }
 
-    clearScene(s, vp);
+    clearScene(session, viewport);
 
     QStringList paths;
     QStringList fed_ids;
-    for (const auto& model : s.federation()->models()) {
+    for (const auto& model : session.federation()->models()) {
         if (model.source_connector != "local") continue;
         if (!QFileInfo::exists(model.source_path)) {
             warnings << QString("Source not found, kept in project: %1").arg(model.source_path);
@@ -234,58 +234,58 @@ bool openProjectAt(SessionState& s, QWidget& host, ViewportWindow& vp, const QSt
         paths << model.source_path;
         fed_ids << model.id;
     }
-    modules::models::commands::detail::loadModels(s, paths, fed_ids);
+    modules::models::commands::detail::loadModels(session, paths, fed_ids);
 
     if (!warnings.isEmpty()) {
         QMessageBox::warning(&host, "Open Project",
                              "Project opened with warnings:\n\n" + warnings.join("\n"));
     }
 
-    s.federation()->markClean();
-    if (s.federation()->hasHomeView()) {
-        const auto& hv = s.federation()->homeView();
-        vp.setCamera(hv.target.x(), hv.target.y(), hv.target.z(),
-                     hv.distance, hv.yaw, hv.pitch);
+    session.federation()->markClean();
+    if (session.federation()->hasHomeView()) {
+        const auto& home_view = session.federation()->homeView();
+        viewport.setCamera(home_view.target.x(), home_view.target.y(), home_view.target.z(),
+                     home_view.distance, home_view.yaw, home_view.pitch);
     }
-    s.setStatusMessage("Project", QFileInfo(path).fileName());
-    s.notifyProjectOpened(path);
+    session.setStatusMessage("Project", QFileInfo(path).fileName());
+    session.notifyProjectOpened(path);
 
-    resolveCloudModels(s, vp);
+    resolveCloudModels(session, viewport);
     return true;
 }
 
-bool saveProjectTo(SessionState& s, QWidget& host, const QString& path) {
+bool saveProjectTo(SessionState& session, QWidget& host, const QString& path) {
     QString err;
-    if (!s.federation()->save(path, &err)) {
+    if (!session.federation()->save(path, &err)) {
         QMessageBox::warning(&host, "Save Project",
                              QString("Could not save project:\n%1").arg(err));
         return false;
     }
-    s.setStatusMessage("Project", QFileInfo(path).fileName());
-    s.notifyProjectSaved(path);
+    session.setStatusMessage("Project", QFileInfo(path).fileName());
+    session.notifyProjectSaved(path);
     return true;
 }
 
 } // namespace
 
-bool newProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
-    SceneLoader* loader = s.loader();
+bool newProject(SessionState& session, QWidget& host, ViewportWindow& viewport) {
+    SceneLoader* loader = session.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(
             &host, "New Project",
             "Wait until the current model load finishes before creating a new project.");
         return false;
     }
-    if (!confirmDiscardIfDirty(s, host)) return false;
+    if (!confirmDiscardIfDirty(session, host)) return false;
 
-    clearScene(s, vp);
-    s.federation()->clear();
-    s.setStatusMessage("Project", "Untitled");
-    s.notifyProjectReset();
+    clearScene(session, viewport);
+    session.federation()->clear();
+    session.setStatusMessage("Project", "Untitled");
+    session.notifyProjectReset();
     return true;
 }
 
-bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
+bool openProject(SessionState& session, QWidget& host, ViewportWindow& viewport) {
     QFileDialog file_dialog(&host, "Open Project");
     file_dialog.setFileMode(QFileDialog::ExistingFile);
     file_dialog.setNameFilter("IFC Federation (*.ifcfed);;All Files (*)");
@@ -294,25 +294,25 @@ bool openProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
 
     const QString path = file_dialog.selectedFiles().value(0);
     if (path.isEmpty()) return false;
-    return openProjectAt(s, host, vp, path);
+    return openProjectAt(session, host, viewport, path);
 }
 
-bool openProjectPath(SessionState& s, QWidget& host, ViewportWindow& vp, const QString& path) {
+bool openProjectPath(SessionState& session, QWidget& host, ViewportWindow& viewport, const QString& path) {
     if (path.isEmpty()) return false;
-    return openProjectAt(s, host, vp, path);
+    return openProjectAt(session, host, viewport, path);
 }
 
-bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
-    SceneLoader* loader = s.loader();
+bool openCloudProject(SessionState& session, QWidget& host, ViewportWindow& viewport) {
+    SceneLoader* loader = session.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(
             &host, "Open from Cloud",
             "Wait until the current model load finishes before opening another project.");
         return false;
     }
-    if (!confirmDiscardIfDirty(s, host)) return false;
+    if (!confirmDiscardIfDirty(session, host)) return false;
 
-    auto* registry = s.connectorRegistry();
+    auto* registry = session.connectorRegistry();
     const auto& manifests = registry->available();
     if (manifests.empty()) {
         QMessageBox::information(&host, "Open from Cloud",
@@ -336,12 +336,12 @@ bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
         return false;
     }
 
-    s.beginProgress(QString("Opening project from %1...").arg(connector_id));
-    s.setStatusMessage("Cloud", QString("Browsing %1...").arg(connector_id));
+    session.beginProgress(QString("Opening project from %1...").arg(connector_id));
+    session.setStatusMessage("Cloud", QString("Browsing %1...").arg(connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
     QPointer<QWidget> hguard(&host);
-    QPointer<ViewportWindow> vguard(&vp);
+    QPointer<ViewportWindow> vguard(&viewport);
 
     proc->call("pull_ifcfed_interactive", QJsonValue(),
         [sguard, hguard, vguard, connector_id](const QJsonValue& result) {
@@ -371,16 +371,16 @@ bool openCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     return true;
 }
 
-bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
-    auto* fed = s.federation();
+bool syncCloudProject(SessionState& session, QWidget& host, ViewportWindow& viewport) {
+    auto* federation = session.federation();
 
     // Per spec, sync has two independent phases — refreshing the .ifcfed
     // (requires manifest) and refreshing cloud models (requires any
     // non-local source). Either is sufficient.
-    const bool has_manifest = fed->hasManifest();
+    const bool has_manifest = federation->hasManifest();
     bool has_cloud_models = false;
-    for (const auto& m : fed->models()) {
-        if (m.source_connector != "local") { has_cloud_models = true; break; }
+    for (const auto& model : federation->models()) {
+        if (model.source_connector != "local") { has_cloud_models = true; break; }
     }
     if (!has_manifest && !has_cloud_models) {
         QMessageBox::information(&host, "Sync From Cloud",
@@ -388,7 +388,7 @@ bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
         return false;
     }
 
-    SceneLoader* loader = s.loader();
+    SceneLoader* loader = session.loader();
     if (loader && loader->isLoading()) {
         QMessageBox::information(&host, "Sync From Cloud",
             "Wait until the current model load finishes before syncing.");
@@ -399,23 +399,23 @@ bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     // skipped). Just refresh cloud-sourced models against the .ifcfed
     // already on disk. Federation state is preserved, so no dirty prompt.
     if (!has_manifest) {
-        s.setStatusMessage("Cloud", "Refreshing cloud models...");
-        resolveCloudModels(s, vp);
+        session.setStatusMessage("Cloud", "Refreshing cloud models...");
+        resolveCloudModels(session, viewport);
         return true;
     }
 
     // Manifest path: the .ifcfed itself may be replaced. Confirm dirty —
     // even though we'll attempt to preserve the session if the returned
     // .ifcfed is byte-equal, that's not known until after the round-trip.
-    if (!confirmDiscardIfDirty(s, host)) return false;
+    if (!confirmDiscardIfDirty(session, host)) return false;
 
-    const QString connector_id = fed->manifestConnectorId();
+    const QString connector_id = federation->manifestConnectorId();
     if (connector_id.isEmpty()) {
         QMessageBox::warning(&host, "Sync From Cloud",
             "The project's manifest does not name a connector.");
         return false;
     }
-    auto* registry = s.connectorRegistry();
+    auto* registry = session.connectorRegistry();
     auto* proc = registry->get(connector_id);
     if (!proc) {
         QMessageBox::warning(&host, "Sync From Cloud",
@@ -424,15 +424,15 @@ bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
         return false;
     }
 
-    s.beginProgress(QString("Syncing from %1...").arg(connector_id));
-    s.setStatusMessage("Cloud", QString("Syncing from %1...").arg(connector_id));
+    session.beginProgress(QString("Syncing from %1...").arg(connector_id));
+    session.setStatusMessage("Cloud", QString("Syncing from %1...").arg(connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
     QPointer<QWidget> hguard(&host);
-    QPointer<ViewportWindow> vguard(&vp);
-    const QString current_path = fed->filePath();
+    QPointer<ViewportWindow> vguard(&viewport);
+    const QString current_path = federation->filePath();
 
-    proc->call("pull_ifcfed", fed->manifest(),
+    proc->call("pull_ifcfed", federation->manifest(),
         [sguard, hguard, vguard, connector_id, current_path](const QJsonValue& result) {
             if (!sguard) return;
             sguard->endProgress();
@@ -475,13 +475,13 @@ bool syncCloudProject(SessionState& s, QWidget& host, ViewportWindow& vp) {
     return true;
 }
 
-bool saveProject(SessionState& s, QWidget& host) {
-    if (s.federation()->filePath().isEmpty()) return saveProjectAs(s, host);
-    return saveProjectTo(s, host, s.federation()->filePath());
+bool saveProject(SessionState& session, QWidget& host) {
+    if (session.federation()->filePath().isEmpty()) return saveProjectAs(session, host);
+    return saveProjectTo(session, host, session.federation()->filePath());
 }
 
-bool saveProjectAs(SessionState& s, QWidget& host) {
-    QString suggested = s.federation()->filePath();
+bool saveProjectAs(SessionState& session, QWidget& host) {
+    QString suggested = session.federation()->filePath();
     if (suggested.isEmpty()) suggested = "project.ifcfed";
 
     QFileDialog file_dialog(&host, "Save Project As", suggested);
@@ -494,7 +494,7 @@ bool saveProjectAs(SessionState& s, QWidget& host) {
     QString path = file_dialog.selectedFiles().value(0);
     if (path.isEmpty()) return false;
     if (!path.endsWith(".ifcfed", Qt::CaseInsensitive)) path += ".ifcfed";
-    return saveProjectTo(s, host, path);
+    return saveProjectTo(session, host, path);
 }
 
 namespace {
@@ -507,7 +507,7 @@ struct TempProjectFile {
     QString path;
 };
 
-TempProjectFile writeProjectToTemp(SessionState& s, QWidget& host, const QString& op_title) {
+TempProjectFile writeProjectToTemp(SessionState& session, QWidget& host, const QString& op_title) {
     TempProjectFile out;
     out.dir = std::make_shared<QTemporaryDir>();
     if (!out.dir->isValid()) {
@@ -517,12 +517,12 @@ TempProjectFile writeProjectToTemp(SessionState& s, QWidget& host, const QString
         out.dir.reset();
         return out;
     }
-    const QString name = s.federation()->filePath().isEmpty()
+    const QString name = session.federation()->filePath().isEmpty()
         ? "project.ifcfed"
-        : QFileInfo(s.federation()->filePath()).fileName();
+        : QFileInfo(session.federation()->filePath()).fileName();
     const QString tmp_path = QDir(out.dir->path()).filePath(name);
     QString err;
-    if (!s.federation()->writeCopyTo(tmp_path, &err)) {
+    if (!session.federation()->writeCopyTo(tmp_path, &err)) {
         QMessageBox::warning(&host, op_title,
             QString("Failed to write temporary project:\n%1").arg(err));
         out.dir.reset();
@@ -534,12 +534,12 @@ TempProjectFile writeProjectToTemp(SessionState& s, QWidget& host, const QString
 
 // Shared continuation for push_ifcfed[_interactive]: on success, repoint
 // Federation to the returned path and notify; on error, log + status.
-void onPushIfcfedResult(SessionState& s,
+void onPushIfcfedResult(SessionState& session,
                         QWidget& host,
                         const QString& op_title,
                         const QString& connector_id,
                         const QJsonValue& result) {
-    s.endProgress();
+    session.endProgress();
     const QString new_path = result.toObject().value("path").toString();
     if (new_path.isEmpty()) {
         QMessageBox::warning(&host, op_title,
@@ -547,24 +547,24 @@ void onPushIfcfedResult(SessionState& s,
         return;
     }
     QStringList warnings;
-    s.federation()->repointTo(new_path, &warnings);
-    s.setStatusMessage("Cloud",
+    session.federation()->repointTo(new_path, &warnings);
+    session.setStatusMessage("Cloud",
         QString("Saved to %1 via %2")
             .arg(QFileInfo(new_path).fileName(), connector_id));
-    s.notifyProjectSaved(new_path);
+    session.notifyProjectSaved(new_path);
 }
 
 } // namespace
 
-bool saveCloudProject(SessionState& s, QWidget& host) {
-    auto* fed = s.federation();
-    if (!fed->hasManifest()) {
+bool saveCloudProject(SessionState& session, QWidget& host) {
+    auto* federation = session.federation();
+    if (!federation->hasManifest()) {
         QMessageBox::information(&host, "Save To Cloud",
             "This project has no cloud target. Use \"Save As To Cloud\" first.");
         return false;
     }
-    const QString connector_id = fed->manifestConnectorId();
-    auto* registry = s.connectorRegistry();
+    const QString connector_id = federation->manifestConnectorId();
+    auto* registry = session.connectorRegistry();
     auto* proc = registry->get(connector_id);
     if (!proc) {
         QMessageBox::warning(&host, "Save To Cloud",
@@ -573,26 +573,26 @@ bool saveCloudProject(SessionState& s, QWidget& host) {
         return false;
     }
 
-    auto tmp = writeProjectToTemp(s, host, "Save To Cloud");
-    if (!tmp.dir) return false;
+    auto temporary_project = writeProjectToTemp(session, host, "Save To Cloud");
+    if (!temporary_project.dir) return false;
 
     QJsonObject params;
-    params["path"] = tmp.path;
-    params["manifest"] = fed->manifest();
+    params["path"] = temporary_project.path;
+    params["manifest"] = federation->manifest();
 
-    s.beginProgress(QString("Saving to %1...").arg(connector_id));
-    s.setStatusMessage("Cloud", QString("Saving to %1...").arg(connector_id));
+    session.beginProgress(QString("Saving to %1...").arg(connector_id));
+    session.setStatusMessage("Cloud", QString("Saving to %1...").arg(connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
     QPointer<QWidget> hguard(&host);
 
     proc->call("push_ifcfed", params,
-        [sguard, hguard, connector_id, tmp_keepalive = tmp.dir](const QJsonValue& result) {
+        [sguard, hguard, connector_id, tmp_keepalive = temporary_project.dir](const QJsonValue& result) {
             (void)tmp_keepalive;
             if (!sguard || !hguard) return;
             onPushIfcfedResult(*sguard, *hguard, "Save To Cloud", connector_id, result);
         },
-        [sguard, connector_id, tmp_keepalive = tmp.dir](int code, const QString& message) {
+        [sguard, connector_id, tmp_keepalive = temporary_project.dir](int code, const QString& message) {
             (void)tmp_keepalive;
             qWarning() << "push_ifcfed to" << connector_id
                        << "failed:" << code << message;
@@ -605,8 +605,8 @@ bool saveCloudProject(SessionState& s, QWidget& host) {
     return true;
 }
 
-bool saveAsCloudProject(SessionState& s, QWidget& host) {
-    auto* registry = s.connectorRegistry();
+bool saveAsCloudProject(SessionState& session, QWidget& host) {
+    auto* registry = session.connectorRegistry();
     const auto& manifests = registry->available();
     if (manifests.empty()) {
         QMessageBox::information(&host, "Save As To Cloud",
@@ -629,25 +629,25 @@ bool saveAsCloudProject(SessionState& s, QWidget& host) {
         return false;
     }
 
-    auto tmp = writeProjectToTemp(s, host, "Save As To Cloud");
-    if (!tmp.dir) return false;
+    auto temporary_project = writeProjectToTemp(session, host, "Save As To Cloud");
+    if (!temporary_project.dir) return false;
 
     QJsonObject params;
-    params["path"] = tmp.path;
+    params["path"] = temporary_project.path;
 
-    s.beginProgress(QString("Pushing to %1...").arg(connector_id));
-    s.setStatusMessage("Cloud", QString("Pushing to %1...").arg(connector_id));
+    session.beginProgress(QString("Pushing to %1...").arg(connector_id));
+    session.setStatusMessage("Cloud", QString("Pushing to %1...").arg(connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
     QPointer<QWidget> hguard(&host);
 
     proc->call("push_ifcfed_interactive", params,
-        [sguard, hguard, connector_id, tmp_keepalive = tmp.dir](const QJsonValue& result) {
+        [sguard, hguard, connector_id, tmp_keepalive = temporary_project.dir](const QJsonValue& result) {
             (void)tmp_keepalive;
             if (!sguard || !hguard) return;
             onPushIfcfedResult(*sguard, *hguard, "Save As To Cloud", connector_id, result);
         },
-        [sguard, connector_id, tmp_keepalive = tmp.dir](int code, const QString& message) {
+        [sguard, connector_id, tmp_keepalive = temporary_project.dir](int code, const QString& message) {
             (void)tmp_keepalive;
             qWarning() << "push_ifcfed_interactive to" << connector_id
                        << "failed:" << code << message;
@@ -660,14 +660,14 @@ bool saveAsCloudProject(SessionState& s, QWidget& host) {
     return true;
 }
 
-bool saveProjectDialog(SessionState& s, QWidget& host) {
-    SaveProjectDialog dialog(s.federation()->hasManifest(), &host);
+bool saveProjectDialog(SessionState& session, QWidget& host) {
+    SaveProjectDialog dialog(session.federation()->hasManifest(), &host);
     if (dialog.exec() != QDialog::Accepted) return false;
     switch (dialog.selectedTarget()) {
-    case SaveTarget::Local:   return saveProject(s, host);
-    case SaveTarget::LocalAs: return saveProjectAs(s, host);
-    case SaveTarget::Cloud:   return saveCloudProject(s, host);
-    case SaveTarget::CloudAs: return saveAsCloudProject(s, host);
+    case SaveTarget::Local:   return saveProject(session, host);
+    case SaveTarget::LocalAs: return saveProjectAs(session, host);
+    case SaveTarget::Cloud:   return saveCloudProject(session, host);
+    case SaveTarget::CloudAs: return saveAsCloudProject(session, host);
     case SaveTarget::None:    return false;
     }
     return false;

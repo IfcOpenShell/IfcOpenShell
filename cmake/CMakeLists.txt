@@ -721,12 +721,6 @@ if(BUILD_BONSAIVIEWER)
     add_subdirectory(../src/bonsaiviewer bonsaiviewer)
 endif()
 
-# Standalone wgpu diagnostic tool (no bonsai) — fast iteration on
-# wgpu-native probing without the full bonsai build.
-if(BUILD_BONSAIVIEWER_WGPU AND NOT BUILD_BONSAIVIEWER)
-    add_subdirectory(../src/wgpu-mem-probe wgpu-mem-probe)
-endif()
-
 # Cmake uninstall target
 if(NOT TARGET uninstall)
     configure_file(

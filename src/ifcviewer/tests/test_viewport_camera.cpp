@@ -143,6 +143,63 @@ TEST_CASE("toggleXray flips the active state", "[camera][xray]") {
     REQUIRE_FALSE(core.xrayActive());
 }
 
+TEST_CASE("section planes: add appends, clear drops all, capped at the max",
+          "[camera][section]") {
+    MockHost host; ViewportCore core(&host);
+    REQUIRE(core.sectionPlaneCount() == 0);
+
+    const Eigen::Vector3f pt(1, 2, 3), n(0, 0, 1);
+    REQUIRE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE(core.sectionPlaneCount() == 2);
+
+    // Fill to the cap (kMaxSectionPlanes == 6); further adds are rejected.
+    while (core.sectionPlaneCount() < 6) REQUIRE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE_FALSE(core.addSectionPlaneAtSurface(pt, n, 1.0f));
+    REQUIRE(core.sectionPlaneCount() == 6);
+
+    core.clearSectionPlanes();
+    REQUIRE(core.sectionPlaneCount() == 0);
+}
+
+TEST_CASE("setNavPreset maps names to the shared button bindings", "[camera][nav]") {
+    MockHost host; ViewportCore core(&host);
+    using B = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;
+
+    // Default is blender: orbit MMB, pan Shift+MMB, select LMB.
+    {
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Middle);  REQUIRE(b.orbit_mod == M::Plain);
+        REQUIRE(b.pan   == B::Middle);  REQUIRE(b.pan_mod   == M::Shift);
+        REQUIRE(b.select == B::Left);   REQUIRE(b.select_mod == M::Plain);
+    }
+    SECTION("web: orbit LMB, pan MMB, select RMB") {
+        core.setNavPreset("web");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Left);    REQUIRE(b.orbit_mod == M::Plain);
+        REQUIRE(b.pan   == B::Middle);  REQUIRE(b.pan_mod   == M::Plain);
+        REQUIRE(b.select == B::Right);  REQUIRE(b.select_mod == M::Plain);
+    }
+    SECTION("rhino: orbit RMB, pan Shift+RMB") {
+        core.setNavPreset("rhino");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Right);   REQUIRE(b.pan == B::Right);
+        REQUIRE(b.pan_mod == M::Shift); REQUIRE(b.select == B::Left);
+    }
+    SECTION("revit: orbit Shift+MMB, pan MMB") {
+        core.setNavPreset("revit");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Middle);  REQUIRE(b.orbit_mod == M::Shift);
+        REQUIRE(b.pan == B::Middle);    REQUIRE(b.pan_mod == M::Plain);
+    }
+    SECTION("unknown name falls back to blender") {
+        core.setNavPreset("web");
+        core.setNavPreset("nonsense");
+        const auto& b = core.navBindings();
+        REQUIRE(b.orbit == B::Middle);  REQUIRE(b.select == B::Left);
+    }
+}
+
 TEST_CASE("hideSelected hides the selection; showAll restores", "[camera][visibility]") {
     MockHost host; ViewportCore core(&host);
     REQUIRE(core.hiddenCount() == 0);
@@ -157,4 +214,26 @@ TEST_CASE("hideSelected hides the selection; showAll restores", "[camera][visibi
 
     core.showAll();
     REQUIRE(core.hiddenCount() == 0);
+}
+
+TEST_CASE("applyMarqueeToSelection: replace / add / remove", "[camera][selection]") {
+    MockHost host; ViewportCore core(&host);
+    // No public selection accessor, so verify via hideSelected → hiddenCount.
+    SECTION("plain marquee replaces the selection") {
+        core.applyMarqueeToSelection({1, 2, 3}, /*add*/false, /*remove*/false);
+        core.hideSelected();
+        REQUIRE(core.hiddenCount() == 3);
+    }
+    SECTION("add unions, remove subtracts") {
+        core.applyMarqueeToSelection({5},    false, false);  // replace → {5}
+        core.applyMarqueeToSelection({6, 7}, true,  false);  // add     → {5,6,7}
+        core.applyMarqueeToSelection({6},    false, true);   // remove  → {5,7}
+        core.hideSelected();
+        REQUIRE(core.hiddenCount() == 2);
+    }
+    SECTION("id 0 is ignored") {
+        core.applyMarqueeToSelection({0, 9, 0}, false, false);
+        core.hideSelected();
+        REQUIRE(core.hiddenCount() == 1);
+    }
 }

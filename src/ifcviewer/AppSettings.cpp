@@ -186,6 +186,16 @@ AppSettings::NavPreset AppSettings::navPreset() const {
     return nav_preset_;
 }
 
+const char* AppSettings::navPresetName(NavPreset preset) {
+    switch (preset) {
+        case NavPreset::Rhino:   return "rhino";
+        case NavPreset::Revit:   return "revit";
+        case NavPreset::Web:     return "web";
+        case NavPreset::Blender: break;
+    }
+    return "blender";
+}
+
 void AppSettings::setNavPreset(NavPreset value) {
     if (nav_preset_ == value) return;
     nav_preset_ = value;
@@ -220,7 +230,7 @@ void AppSettings::load() {
                                        static_cast<int>(NavPreset::Blender)).toInt();
         // Clamp to known values so a stale config doesn't drop us into
         // an undefined preset slot.
-        if (raw < 0 || raw > static_cast<int>(NavPreset::Revit)) {
+        if (raw < 0 || raw > static_cast<int>(NavPreset::Web)) {
             nav_preset_ = NavPreset::Blender;
         } else {
             nav_preset_ = static_cast<NavPreset>(raw);

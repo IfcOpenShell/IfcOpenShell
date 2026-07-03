@@ -46,7 +46,7 @@
 struct StreamingSidecar {
     // Everything except vertices + indices — same shape as SidecarData but
     // with empty vertices / indices vectors. The renderer uses meshes /
-    // instances / georef / chunks immediately (elements/strings deferred).
+    // instances / georef / chunks immediately (elements/strings are element metadata).
     SidecarData meta;
 
     // v16: the compressed geometry section starts here. Each chunk's two zstd
@@ -54,12 +54,13 @@ struct StreamingSidecar {
     // a per-chunk load fetches [that, +*_comp_size) and decompresses to *_raw_size.
     uint64_t geometry_section_offset = 0;
 
-    // v16 deferred (property) block locator: a single zstd frame at
-    // deferred_comp_offset of deferred_comp_size bytes → deferred_raw_size. The
-    // web loader fetches it on demand (elements/strings); desktop reads it up front.
-    uint64_t deferred_comp_offset = 0;
-    uint64_t deferred_comp_size   = 0;
-    uint64_t deferred_raw_size    = 0;
+    // v16 element metadata block locator: a single zstd frame at
+    // element_metadata_comp_offset of element_metadata_comp_size bytes →
+    // element_metadata_raw_size. The web loader fetches it on demand
+    // (elements/strings); desktop reads it up front.
+    uint64_t element_metadata_comp_offset = 0;
+    uint64_t element_metadata_comp_size   = 0;
+    uint64_t element_metadata_raw_size    = 0;
 
     // Resolved on-disk path so subsequent chunk reads can re-open / seek.
     std::string file_path;
@@ -104,18 +105,18 @@ inline constexpr std::size_t SIDECAR_HEAD_BYTES = 20;
 bool parseSidecarHead(const std::uint8_t* data, std::size_t n,
                       std::uint64_t& out_geom_bytes);
 
-// Parse the v15 render-CRITICAL metadata block (mesh dict, instance dict,
+// Parse the v15 geometry metadata block (mesh dict, instance dict,
 // georef, chunk TOC) — everything needed to set up + draw the scene. `data`
-// points at the first critical byte; `n` is critical_meta_bytes. Returns false
+// points at the first geometry metadata byte; `n` is geometry_metadata_bytes. Returns false
 // on any bounds overrun, leaving out_meta partially filled.
-bool parseSidecarCritical(const std::uint8_t* data, std::size_t n,
-                          SidecarData& out_meta);
+bool parseSidecarGeometryMetadata(const std::uint8_t* data, std::size_t n,
+                                  SidecarData& out_meta);
 
-// Parse the v15 DEFERRED metadata block (element table + string table — the
+// Parse the v15 element metadata block (element table + string table — the
 // IFC property tree, used for UI/picking, never for rendering). Fetched on
-// demand. `data` points at the first deferred byte; `n` is its length.
-bool parseSidecarDeferred(const std::uint8_t* data, std::size_t n,
-                          SidecarData& out_meta);
+// demand. `data` points at the first element metadata byte; `n` is its length.
+bool parseSidecarElementMetadata(const std::uint8_t* data, std::size_t n,
+                                 SidecarData& out_meta);
 
 // A coalesced read plan: a single contiguous source read whose bytes are
 // scattered into the destination at the recorded offsets. Merging adjacent

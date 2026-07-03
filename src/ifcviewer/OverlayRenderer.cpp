@@ -87,36 +87,6 @@ void packAxisUniform(uint8_t* dst,
     std::memcpy(dst + 92, &viewport_h,    sizeof(float));
 }
 
-// Pack the section uniform's 256-byte slot. Layout matches WGSL
-// SectionUniforms: mat4 + 4×(vec3 + scalar pad) + vec4 + vec2 + 8 B pad
-// = 160 B used, padded to 256.
-void packSectionUniform(uint8_t* dst,
-                        const Eigen::Matrix4f& mvp,
-                        const Eigen::Vector3f& origin, float half_size,
-                        const Eigen::Vector3f& tangent, float line_width_px,
-                        const Eigen::Vector3f& bitangent,
-                        const Eigen::Vector3f& normal,
-                        float r, float g, float b, float a,
-                        float viewport_w, float viewport_h) {
-    std::memset(dst, 0, 256);
-    std::memcpy(dst, mvp.data(), 16 * sizeof(float));
-    auto put_vec3_pad = [&](size_t off, const Eigen::Vector3f& v, float pad_val) {
-        float vx = v.x(), vy = v.y(), vz = v.z();
-        std::memcpy(dst + off + 0,  &vx, sizeof(float));
-        std::memcpy(dst + off + 4,  &vy, sizeof(float));
-        std::memcpy(dst + off + 8,  &vz, sizeof(float));
-        std::memcpy(dst + off + 12, &pad_val, sizeof(float));
-    };
-    put_vec3_pad(64,  origin,    half_size);
-    put_vec3_pad(80,  tangent,   line_width_px);
-    put_vec3_pad(96,  bitangent, 0.0f);
-    put_vec3_pad(112, normal,    0.0f);
-    float tint[4] = { r, g, b, a };
-    std::memcpy(dst + 128, tint, sizeof(tint));
-    std::memcpy(dst + 144, &viewport_w, sizeof(float));
-    std::memcpy(dst + 148, &viewport_h, sizeof(float));
-}
-
 }  // namespace
 
 // -----------------------------------------------------------------------------
@@ -181,46 +151,6 @@ fn vs_main(@location(0) start: vec3<f32>,
                                     u.viewport_size, u.line_width_px);
     out.color  = vec4<f32>(col, u.alpha);
     out.side_t = side;
-    return out;
-}
-)WGSL";
-
-static const std::string SECTION_WGSL = std::string(THICK_LINE_HELPERS_WGSL) + R"WGSL(
-struct SectionUniforms {
-    mvp:           mat4x4<f32>,
-    origin:        vec3<f32>,
-    half_size:     f32,
-    tangent:       vec3<f32>,
-    line_width_px: f32,
-    bitangent:     vec3<f32>,
-    _pad1:         f32,
-    normal:        vec3<f32>,
-    _pad2:         f32,
-    tint:          vec4<f32>,
-    viewport_size: vec2<f32>,
-    _pad3:         vec2<f32>,
-};
-
-@group(0) @binding(0) var<uniform> u: SectionUniforms;
-
-fn plane_to_world(p: vec3<f32>) -> vec3<f32> {
-    return u.origin + (u.tangent * p.x + u.bitangent * p.y + u.normal * p.z)
-                      * u.half_size;
-}
-
-@vertex
-fn vs_main(@location(0) start_local: vec3<f32>,
-           @location(1) end_local:   vec3<f32>,
-           @location(2) col:         vec3<f32>,
-           @location(3) t:           f32,
-           @location(4) side:        f32) -> VsOut {
-    let p_start = u.mvp * vec4<f32>(plane_to_world(start_local), 1.0);
-    let p_end   = u.mvp * vec4<f32>(plane_to_world(end_local),   1.0);
-    var out: VsOut;
-    out.clip_pos = thick_line_clip(p_start, p_end, t, side,
-                                    u.viewport_size, u.line_width_px);
-    out.color    = vec4<f32>(col * u.tint.xyz, u.tint.w);
-    out.side_t   = side;
     return out;
 }
 )WGSL";
@@ -454,7 +384,7 @@ bool OverlayRenderer::init(WGPUInstance instance, WGPUDevice device,
     surface_format_ = surface_format;
     sample_count_   = sample_count;
     if (!buildAxisIndicator())     return false;
-    if (!buildSectionVisualizer()) return false;
+    // Section-plane gizmos moved to the shared SectionGizmoRenderer (ViewportCore).
     if (!buildMarquee())           return false;
     if (!buildOverlayLines())      return false;
     if (!buildOverlayPoints())     return false;
@@ -476,13 +406,6 @@ void OverlayRenderer::destroy() {
     if (axis_vertex_buffer_)      { wgpuBufferRelease(axis_vertex_buffer_);              axis_vertex_buffer_ = nullptr; }
 
     // Section visualizer
-    if (section_bind_group_)      { wgpuBindGroupRelease(section_bind_group_);          section_bind_group_ = nullptr; }
-    if (section_pipeline_)        { wgpuRenderPipelineRelease(section_pipeline_);       section_pipeline_ = nullptr; }
-    if (section_shader_module_)   { wgpuShaderModuleRelease(section_shader_module_);    section_shader_module_ = nullptr; }
-    if (section_pipeline_layout_) { wgpuPipelineLayoutRelease(section_pipeline_layout_); section_pipeline_layout_ = nullptr; }
-    if (section_bgl_)             { wgpuBindGroupLayoutRelease(section_bgl_);           section_bgl_ = nullptr; }
-    if (section_uniform_buffer_)  { wgpuBufferRelease(section_uniform_buffer_);         section_uniform_buffer_ = nullptr; }
-    if (section_vertex_buffer_)   { wgpuBufferRelease(section_vertex_buffer_);          section_vertex_buffer_ = nullptr; }
 
     // Marquee
     if (marquee_bind_group_)         { wgpuBindGroupRelease(marquee_bind_group_);              marquee_bind_group_ = nullptr; }
@@ -823,198 +746,6 @@ void OverlayRenderer::encodeCornerAxis(WGPUCommandEncoder enc,
     wgpuRenderPassEncoderDraw(pass, 18, 1, 0, 0);
     wgpuRenderPassEncoderEnd(pass);
     wgpuRenderPassEncoderRelease(pass);
-}
-
-// -----------------------------------------------------------------------------
-// Section plane visualizer
-// -----------------------------------------------------------------------------
-
-bool OverlayRenderer::buildSectionVisualizer() {
-    struct Seg {
-        std::array<float, 3> s, e;
-        std::array<float, 3> c;
-    };
-    static constexpr std::array<float, 3> kSectionRed = {1.000f, 0.200f, 0.322f};
-    static const Seg segs[] = {
-        // ---- quad outline ----
-        { {-1, -1, 0}, { 1, -1, 0}, kSectionRed },
-        { { 1, -1, 0}, { 1,  1, 0}, kSectionRed },
-        { { 1,  1, 0}, {-1,  1, 0}, kSectionRed },
-        { {-1,  1, 0}, {-1, -1, 0}, kSectionRed },
-        // ---- arrow shaft along +n ----
-        { { 0, 0, 0}, { 0, 0, 1}, kSectionRed },
-        // ---- arrow head: 4 diagonals from tip to ring at z = 0.78 ----
-        { { 0, 0, 1}, {-0.18f,  0,     0.78f}, kSectionRed },
-        { { 0, 0, 1}, { 0.18f,  0,     0.78f}, kSectionRed },
-        { { 0, 0, 1}, { 0,     -0.18f, 0.78f}, kSectionRed },
-        { { 0, 0, 1}, { 0,      0.18f, 0.78f}, kSectionRed },
-    };
-    std::vector<float> verts;
-    verts.reserve(std::size(segs) * 6 * 11);
-    auto push_v = [&](const Seg& s, float t, float side) {
-        verts.insert(verts.end(), { s.s[0], s.s[1], s.s[2],
-                                     s.e[0], s.e[1], s.e[2],
-                                     s.c[0], s.c[1], s.c[2],
-                                     t, side });
-    };
-    for (const auto& s : segs) {
-        push_v(s, 0.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, -1.f);
-        push_v(s, 1.f, -1.f); push_v(s, 0.f, +1.f); push_v(s, 1.f, +1.f);
-    }
-    {
-        WGPUBufferDescriptor bdesc = {};
-        bdesc.usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst;
-        bdesc.size  = verts.size() * sizeof(float);
-        bdesc.label = svFromCStr("ifcviewer-wgpu.section_gizmo_vbo");
-        section_vertex_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
-        wgpuQueueWriteBuffer(queue_, section_vertex_buffer_, 0,
-                             verts.data(), verts.size() * sizeof(float));
-    }
-    {
-        WGPUBufferDescriptor bdesc = {};
-        bdesc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
-        bdesc.size  = uint64_t(kMaxSectionPlanes) * kSectionUniformSlotSize;
-        bdesc.label = svFromCStr("ifcviewer-wgpu.section_uniforms");
-        section_uniform_buffer_ = wgpuDeviceCreateBuffer(device_, &bdesc);
-    }
-    {
-        WGPUBindGroupLayoutEntry entry = {};
-        entry.binding    = 0;
-        entry.visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment;
-        entry.buffer.type             = WGPUBufferBindingType_Uniform;
-        entry.buffer.hasDynamicOffset = 1;
-        entry.buffer.minBindingSize   = 160;
-        WGPUBindGroupLayoutDescriptor bgl_desc = {};
-        bgl_desc.entryCount = 1;
-        bgl_desc.entries    = &entry;
-        bgl_desc.label      = svFromCStr("ifcviewer-wgpu.section_bgl");
-        section_bgl_ = wgpuDeviceCreateBindGroupLayout(device_, &bgl_desc);
-    }
-    {
-        WGPUPipelineLayoutDescriptor pl_desc = {};
-        pl_desc.bindGroupLayoutCount = 1;
-        pl_desc.bindGroupLayouts     = &section_bgl_;
-        pl_desc.label                = svFromCStr("ifcviewer-wgpu.section_pipeline_layout");
-        section_pipeline_layout_ = wgpuDeviceCreatePipelineLayout(device_, &pl_desc);
-    }
-    {
-        WGPUBindGroupEntry entry = {};
-        entry.binding = 0;
-        entry.buffer  = section_uniform_buffer_;
-        entry.offset  = 0;
-        entry.size    = kSectionUniformSlotSize;
-        WGPUBindGroupDescriptor bg_desc = {};
-        bg_desc.layout     = section_bgl_;
-        bg_desc.entryCount = 1;
-        bg_desc.entries    = &entry;
-        bg_desc.label      = svFromCStr("ifcviewer-wgpu.section_bind_group");
-        section_bind_group_ = wgpuDeviceCreateBindGroup(device_, &bg_desc);
-    }
-    {
-        WGPUShaderSourceWGSL wgsl_src = {};
-        wgsl_src.chain.sType = WGPUSType_ShaderSourceWGSL;
-        wgsl_src.code        = svFromCStr(SECTION_WGSL.c_str());
-        WGPUShaderModuleDescriptor sm_desc = {};
-        sm_desc.nextInChain = &wgsl_src.chain;
-        sm_desc.label       = svFromCStr("ifcviewer-wgpu.section_wgsl");
-        section_shader_module_ = wgpuDeviceCreateShaderModule(device_, &sm_desc);
-    }
-
-    WGPUVertexAttribute attribs[5] = {};
-    WGPUVertexBufferLayout vbl = thickLineVertexLayout(attribs);
-
-    WGPUBlendState blend = {};
-    blend.color.srcFactor = WGPUBlendFactor_SrcAlpha;
-    blend.color.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
-    blend.color.operation = WGPUBlendOperation_Add;
-    blend.alpha.srcFactor = WGPUBlendFactor_One;
-    blend.alpha.dstFactor = WGPUBlendFactor_OneMinusSrcAlpha;
-    blend.alpha.operation = WGPUBlendOperation_Add;
-
-    WGPUColorTargetState ct = {};
-    ct.format    = surface_format_;
-    ct.blend     = &blend;
-    ct.writeMask = WGPUColorWriteMask_All;
-
-    WGPUFragmentState frag = {};
-    frag.module      = section_shader_module_;
-    frag.entryPoint  = svFromCStr("fs_main");
-    frag.targetCount = 1;
-    frag.targets     = &ct;
-
-    WGPUDepthStencilState depth = {};
-    depth.format               = WGPUTextureFormat_Depth32Float;
-    depth.depthWriteEnabled    = WGPUOptionalBool_False;
-    depth.depthCompare         = WGPUCompareFunction_LessEqual;
-    depth.stencilFront.compare = WGPUCompareFunction_Always;
-    depth.stencilBack.compare  = WGPUCompareFunction_Always;
-
-    WGPURenderPipelineDescriptor rp_desc = {};
-    rp_desc.layout              = section_pipeline_layout_;
-    rp_desc.label               = svFromCStr("ifcviewer-wgpu.section_pipeline");
-    rp_desc.vertex.module       = section_shader_module_;
-    rp_desc.vertex.entryPoint   = svFromCStr("vs_main");
-    rp_desc.vertex.bufferCount  = 1;
-    rp_desc.vertex.buffers      = &vbl;
-    rp_desc.fragment            = &frag;
-    rp_desc.depthStencil        = &depth;
-    rp_desc.primitive.topology  = WGPUPrimitiveTopology_TriangleList;
-    rp_desc.primitive.cullMode  = WGPUCullMode_None;
-    rp_desc.multisample.count   = uint32_t(sample_count_);
-    rp_desc.multisample.mask    = 0xFFFFFFFFu;
-    section_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
-
-    return section_pipeline_ != nullptr;
-}
-
-void OverlayRenderer::encodeSectionGizmos(WGPURenderPassEncoder pass,
-                                              const OverlayFrame& f,
-                                              const std::vector<SectionPlane>& planes) {
-    if (!section_pipeline_ || planes.empty()) return;
-
-    wgpuRenderPassEncoderSetPipeline(pass, section_pipeline_);
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, section_vertex_buffer_, 0,
-                                         WGPU_WHOLE_SIZE);
-
-    const int n = std::min<int>(int(planes.size()), kMaxSectionPlanes);
-    for (int i = 0; i < n; ++i) {
-        const SectionPlane& p = planes[i];
-
-        // Stable in-plane basis: pick the world axis least parallel to n
-        // so the cross-product stays well-conditioned at any orientation.
-        Eigen::Vector3f nn = p.n.normalized();
-        const float ax = std::abs(nn.x()), ay = std::abs(nn.y()), az = std::abs(nn.z());
-        Eigen::Vector3f seed = (ax < ay && ax < az) ? Eigen::Vector3f(1, 0, 0)
-                       : (ay < az)             ? Eigen::Vector3f(0, 1, 0)
-                                               : Eigen::Vector3f(0, 0, 1);
-        Eigen::Vector3f tangent = nn.cross(seed);
-        if (tangent.squaredNorm() < 1e-12f) tangent = Eigen::Vector3f(1, 0, 0);
-        tangent.normalize();
-        Eigen::Vector3f bitangent = nn.cross(tangent).normalized();
-
-        // Fixed 1 m half-size matches GL's renderSectionPlanes constant.
-        const float half_size = 1.0f;
-        const float dpr       = float(std::max(1, f.device_pixel_ratio));
-        const float line_w    = 5.0f * dpr;
-        const float vw        = float(f.viewport_w_px);
-        const float vh        = float(f.viewport_h_px);
-
-        uint8_t slot[256];
-        // Neutral tint — actual colours come from the per-vertex VBO
-        // (red quad outline + red arrow). Tint stays available for a
-        // future "selected" multiplier.
-        packSectionUniform(slot, f.view_proj, p.origin, half_size,
-                           tangent, line_w, bitangent, nn,
-                           1.0f, 1.0f, 1.0f, 1.0f,
-                           vw, vh);
-        const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlotSize;
-        wgpuQueueWriteBuffer(queue_, section_uniform_buffer_,
-                             slot_offset, slot, sizeof(slot));
-
-        wgpuRenderPassEncoderSetBindGroup(pass, 0, section_bind_group_,
-                                          1, &slot_offset);
-        wgpuRenderPassEncoderDraw(pass, 54, 1, 0, 0);
-    }
 }
 
 // -----------------------------------------------------------------------------

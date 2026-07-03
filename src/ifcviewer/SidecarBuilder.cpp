@@ -37,14 +37,14 @@ SidecarBuilder::SidecarBuilder(QObject* parent)
 {
 }
 
-void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
-    if (chunk.vertices.empty() || chunk.indices.empty()) return;
+void SidecarBuilder::onMeshReady(const StreamedMesh& mesh) {
+    if (mesh.vertices.empty() || mesh.indices.empty()) return;
 
     // Streamer format: 7 floats/vertex (pos3 + normal3 + color-as-float).
-    const size_t n_verts = chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
+    const size_t n_verts = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 
     // Recompute a tight local AABB from the actual vertex positions, same
-    // way ViewportWindow::uploadMeshChunk does so the .ifcview byte layout
+    // way ViewportWindow::uploadStreamedMesh does so the .ifcview byte layout
     // matches the live-render path.
     float bmin[3] = {  std::numeric_limits<float>::infinity(),
                        std::numeric_limits<float>::infinity(),
@@ -53,10 +53,10 @@ void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
                       -std::numeric_limits<float>::infinity(),
                       -std::numeric_limits<float>::infinity() };
     for (size_t i = 0; i < n_verts; ++i) {
-        const float* v = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
+        const float* vertex = mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
         for (int a = 0; a < 3; ++a) {
-            if (v[a] < bmin[a]) bmin[a] = v[a];
-            if (v[a] > bmax[a]) bmax[a] = v[a];
+            if (vertex[a] < bmin[a]) bmin[a] = vertex[a];
+            if (vertex[a] > bmax[a]) bmax[a] = vertex[a];
         }
     }
     float extent_recip[3];
@@ -68,7 +68,7 @@ void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
     const size_t vb_offset = sidecar_data_.vertices.size();
     sidecar_data_.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
     for (size_t i = 0; i < n_verts; ++i) {
-        quantizeVertex(chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
+        quantizeVertex(mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
                        bmin, extent_recip,
                        sidecar_data_.vertices.data() + vb_offset
                            + i * INSTANCED_VERTEX_STRIDE_BYTES);
@@ -76,13 +76,13 @@ void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
 
     const size_t ib_offset = sidecar_data_.indices.size();
     sidecar_data_.indices.insert(sidecar_data_.indices.end(),
-                                 chunk.indices.begin(), chunk.indices.end());
+                                 mesh.indices.begin(), mesh.indices.end());
 
     MeshInfo info;
     info.vbo_byte_offset = static_cast<uint32_t>(vb_offset);
     info.vertex_count    = static_cast<uint32_t>(n_verts);
     info.ebo_byte_offset = static_cast<uint32_t>(ib_offset * sizeof(uint32_t));
-    info.index_count     = static_cast<uint32_t>(chunk.indices.size());
+    info.index_count     = static_cast<uint32_t>(mesh.indices.size());
     for (int a = 0; a < 3; ++a) {
         info.local_aabb_min[a] = bmin[a];
         info.local_aabb_max[a] = bmax[a];
@@ -92,32 +92,32 @@ void SidecarBuilder::onMeshReady(const MeshChunk& chunk) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (sidecar_data_.meshes.size() <= chunk.local_mesh_id) {
-        sidecar_data_.meshes.resize(chunk.local_mesh_id + 1);
+    if (sidecar_data_.meshes.size() <= mesh.local_mesh_id) {
+        sidecar_data_.meshes.resize(mesh.local_mesh_id + 1);
     }
-    sidecar_data_.meshes[chunk.local_mesh_id] = info;
+    sidecar_data_.meshes[mesh.local_mesh_id] = info;
 }
 
-void SidecarBuilder::onInstanceReady(const InstanceChunk& chunk) {
-    InstanceCpu inst;
-    inst.mesh_id              = chunk.local_mesh_id;
-    inst.object_id            = chunk.object_id;
-    inst.color_override_rgba8 = chunk.color_override_rgba8;
-    inst.model_id             = chunk.model_id;
+void SidecarBuilder::onInstanceReady(const StreamedInstance& instance_record) {
+    InstanceInfo instance;
+    instance.mesh_id              = instance_record.local_mesh_id;
+    instance.object_id            = instance_record.object_id;
+    instance.color_override_rgba8 = instance_record.color_override_rgba8;
+    instance.model_id             = instance_record.model_id;
 
-    // The streamer's chunk.transform is the double-precision
+    // The streamer's instance transform is the double-precision
     // placement_transformation.  The cached float transform/world_aabb is only
     // an identity-stage baseline; applyCachedModel recomposes from placement
     // against the consumer's stage matrices at load time.
-    std::memcpy(inst.placement_transformation, chunk.transform,
-                sizeof(inst.placement_transformation));
+    std::memcpy(instance.placement_transformation, instance_record.transform,
+                sizeof(instance.placement_transformation));
     for (int i = 0; i < 16; ++i) {
-        inst.transform[i] = static_cast<float>(chunk.transform[i]);
+        instance.transform[i] = static_cast<float>(instance_record.transform[i]);
     }
-    std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
-    std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
+    std::memcpy(instance.world_aabb_min, instance_record.world_aabb_min, sizeof(instance.world_aabb_min));
+    std::memcpy(instance.world_aabb_max, instance_record.world_aabb_max, sizeof(instance.world_aabb_max));
 
-    sidecar_data_.instances.push_back(inst);
+    sidecar_data_.instances.push_back(instance);
 }
 
 SidecarData SidecarBuilder::finalize(const ModelGeoref& georef,
@@ -140,11 +140,10 @@ SidecarData SidecarBuilder::finalize(const ModelGeoref& georef,
     sidecar_data_.map_unit_to_meters       = georef.units.map_unit_to_meters;
 
     for (const auto& info : elements) {
-        PackedElementInfo packed;
+        ElementTableRecord packed;
         packed.object_id = info.object_id;
         packed.model_id  = info.model_id;
         packed.ifc_id    = info.ifc_id;
-        packed.parent_id = info.parent_id;
 
         packed.guid_offset = static_cast<uint32_t>(sidecar_data_.string_table.size());
         packed.guid_length = static_cast<uint32_t>(info.guid.size());

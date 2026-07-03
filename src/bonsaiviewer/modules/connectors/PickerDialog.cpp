@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -60,9 +60,9 @@ ConnectorPickerDialog::ConnectorPickerDialog(const std::vector<ConnectorManifest
     row->setSpacing(components::style::metrics::padding);
 
     QList<QToolButton*> buttons;
-    for (const auto& m : manifests) {
-        auto* button = components::buttons::makeButton(m.name, ":/icons/cloud-square.svg", choices);
-        const QString id = m.id;
+    for (const auto& manifest : manifests) {
+        auto* button = components::buttons::makeButton(manifest.name, ":/icons/cloud-square.svg", choices);
+        const QString id = manifest.id;
         connect(button, &QToolButton::clicked, this, [this, id]() {
             selected_id_ = id;
             accept();

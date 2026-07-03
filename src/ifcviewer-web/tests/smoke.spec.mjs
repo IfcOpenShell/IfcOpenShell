@@ -261,7 +261,7 @@ test('click selects an object and the highlight renders (async pick)', async ({ 
   const cx = box.x + box.width / 2;
   const cy = box.y + box.height / 2;
   const before = await shot(page);
-  await page.mouse.click(cx, cy);
+  await page.mouse.click(cx, cy, { button: 'right' });  // Web preset: RMB selects
   await page.waitForTimeout(600);  // async pick result + flush + render
   const after = await shot(page);
   expect(
@@ -330,8 +330,8 @@ test('hide selected removes geometry after a pick', async ({ page }) => {
 
   const box = await page.locator('#viewer-canvas').boundingBox();
   const before = await shot(page);
-  // select whatever is under the centre, then hide it
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  // select whatever is under the centre (Web preset: RMB selects), then hide it
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
   await page.waitForTimeout(400);
   await page.evaluate(() => window.Module._hide_selected_c());
   await page.waitForTimeout(400);
@@ -341,5 +341,56 @@ test('hide selected removes geometry after a pick', async ({ page }) => {
   // show all brings it back
   await page.evaluate(() => window.Module._show_all_c());
   await page.waitForTimeout(400);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('RMB marquee drag box-selects (Web preset)', async ({ page }) => {
+  const gpuErrors = [];
+  page.on('console', (m) => { if (/Uncaptured WebGPU error|is invalid/i.test(m.text())) gpuErrors.push(m.text()); });
+  await ready(page);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  const before = await shot(page);
+  await page.mouse.move(cx - 120, cy - 90);
+  await page.mouse.down({ button: 'right' });
+  await page.mouse.move(cx - 40, cy - 30, { steps: 4 });
+  const midDragVisible = await page.evaluate(() => {
+    const m = document.getElementById('marquee');
+    return !!(m && getComputedStyle(m).display !== 'none');
+  });
+  await page.mouse.move(cx + 120, cy + 90, { steps: 6 });
+  await page.mouse.up({ button: 'right' });
+  await page.waitForTimeout(600);  // async box-pick + apply + render
+  const after = await shot(page);
+  const hiddenAfter = await page.evaluate(() => {
+    const m = document.getElementById('marquee');
+    return !!(m && getComputedStyle(m).display === 'none');
+  });
+  expect(midDragVisible, 'marquee rubber-band was not shown during the drag').toBe(true);
+  expect(Buffer.compare(before, after), 'box-select did not change the canvas').not.toBe(0);
+  expect(hiddenAfter, 'marquee was not hidden after release').toBe(true);
+  expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
+});
+
+test('section tool: click a surface cuts geometry, clear restores', async ({ page }) => {
+  const gpuErrors = [];
+  page.on('console', (m) => { if (/Uncaptured WebGPU error|is invalid/i.test(m.text())) gpuErrors.push(m.text()); });
+  await ready(page);
+
+  const box = await page.locator('#viewer-canvas').boundingBox();
+  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  const before = await shot(page);
+  await page.evaluate(() => window.Module._toggle_section_c());
+  expect(await page.evaluate(() => window.Module._section_is_active_c())).toBe(1);
+  // Section tool claims LMB: a left click on the model drops a cut.
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(700);  // async surface pick + add plane + render
+  const cut = await shot(page);
+  expect(Buffer.compare(before, cut), 'section cut did not change the render').not.toBe(0);
+  await page.evaluate(() => window.Module._clear_section_c());
+  await page.waitForTimeout(400);
+  const cleared = await shot(page);
+  expect(Buffer.compare(cleared, cut), 'clearing cuts did not change the render').not.toBe(0);
   expect(gpuErrors, gpuErrors.join('\n')).toEqual([]);
 });

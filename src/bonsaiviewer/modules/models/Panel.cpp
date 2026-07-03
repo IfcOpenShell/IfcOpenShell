@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -197,8 +197,9 @@ private:
             if (!target_index.isValid()) return true;
             if (kindOf(target_index) != ItemKind::Group) return false;
             if (group_id == target_group_id) return false;
-            for (QModelIndex cur = target_index; cur.isValid(); cur = cur.parent()) {
-                if (idOf(cur) == group_id) return false;
+            for (QModelIndex ancestor_index = target_index; ancestor_index.isValid();
+                 ancestor_index = ancestor_index.parent()) {
+                if (idOf(ancestor_index) == group_id) return false;
             }
             return true;
         }

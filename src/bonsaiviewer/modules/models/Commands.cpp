@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -91,24 +91,24 @@ QString formatElapsed(qint64 ms) {
 
 } // namespace
 
-void toggleVisibility(SessionState& s, ItemKind kind, const QString& id) {
-    Federation* fed = s.federation();
+void toggleVisibility(SessionState& session, ItemKind kind, const QString& id) {
+    Federation* federation = session.federation();
     if (kind == ItemKind::Group) {
-        const Federation::Group* group = fed->findGroupById(id);
+        const Federation::Group* group = federation->findGroupById(id);
         if (!group) return;
-        fed->setGroupVisible(id, !group->visible);
-        s.notifyVisibilityChanged();
-        s.setStatusMessage("Models", group->visible ? "Group hidden" : "Group shown");
+        federation->setGroupVisible(id, !group->visible);
+        session.notifyVisibilityChanged();
+        session.setStatusMessage("Models", group->visible ? "Group hidden" : "Group shown");
     } else {
-        const Federation::Model* model = fed->findById(id);
+        const Federation::Model* model = federation->findById(id);
         if (!model) return;
-        fed->setModelVisible(id, !model->visible);
-        s.notifyVisibilityChanged();
-        s.setStatusMessage("Models", model->visible ? "Model hidden" : "Model shown");
+        federation->setModelVisible(id, !model->visible);
+        session.notifyVisibilityChanged();
+        session.setStatusMessage("Models", model->visible ? "Model hidden" : "Model shown");
     }
 }
 
-void addGroup(SessionState& s, QWidget& host, const QString& parent_group_id) {
+void addGroup(SessionState& session, QWidget& host, const QString& parent_group_id) {
     bool ok = false;
     const QString name = QInputDialog::getText(
         &host, "New Group", "Group name:", QLineEdit::Normal, "Group", &ok);
@@ -116,13 +116,13 @@ void addGroup(SessionState& s, QWidget& host, const QString& parent_group_id) {
     const QString trimmed = name.trimmed();
     if (trimmed.isEmpty()) return;
 
-    s.federation()->addGroup(trimmed, parent_group_id);
-    s.notifyFederationChanged();
-    s.setStatusMessage("Models", "Group added");
+    session.federation()->addGroup(trimmed, parent_group_id);
+    session.notifyFederationChanged();
+    session.setStatusMessage("Models", "Group added");
 }
 
-void renameGroup(SessionState& s, QWidget& host, const QString& group_id) {
-    const Federation::Group* group = s.federation()->findGroupById(group_id);
+void renameGroup(SessionState& session, QWidget& host, const QString& group_id) {
+    const Federation::Group* group = session.federation()->findGroupById(group_id);
     if (!group) return;
 
     bool ok = false;
@@ -132,27 +132,27 @@ void renameGroup(SessionState& s, QWidget& host, const QString& group_id) {
     const QString trimmed = name.trimmed();
     if (trimmed.isEmpty()) return;
 
-    s.federation()->setGroupName(group_id, trimmed);
-    s.notifyFederationChanged();
-    s.setStatusMessage("Models", "Group renamed");
+    session.federation()->setGroupName(group_id, trimmed);
+    session.notifyFederationChanged();
+    session.setStatusMessage("Models", "Group renamed");
 }
 
-void moveGroup(SessionState& s, const QString& id, const QString& parent_group_id) {
-    s.federation()->setGroupParent(id, parent_group_id);
-    s.notifyFederationChanged();
-    s.setStatusMessage("Models", parent_group_id.isEmpty() ? "Group moved to root" : "Group moved");
+void moveGroup(SessionState& session, const QString& id, const QString& parent_group_id) {
+    session.federation()->setGroupParent(id, parent_group_id);
+    session.notifyFederationChanged();
+    session.setStatusMessage("Models", parent_group_id.isEmpty() ? "Group moved to root" : "Group moved");
 }
 
-void moveModels(SessionState& s, const QStringList& ids, const QString& parent_group_id) {
+void moveModels(SessionState& session, const QStringList& ids, const QString& parent_group_id) {
     for (const auto& id : ids) {
-        s.federation()->setModelGroup(id, parent_group_id);
+        session.federation()->setModelGroup(id, parent_group_id);
     }
-    s.notifyFederationChanged();
-    s.setStatusMessage("Models", parent_group_id.isEmpty() ? "Model(s) moved to root" : "Model(s) moved");
+    session.notifyFederationChanged();
+    session.setStatusMessage("Models", parent_group_id.isEmpty() ? "Model(s) moved to root" : "Model(s) moved");
 }
 
-void removeGroup(SessionState& s, QWidget& host, const QString& group_id) {
-    const Federation::Group* group = s.federation()->findGroupById(group_id);
+void removeGroup(SessionState& session, QWidget& host, const QString& group_id) {
+    const Federation::Group* group = session.federation()->findGroupById(group_id);
     if (!group) return;
 
     const auto choice = QMessageBox::question(
@@ -161,13 +161,13 @@ void removeGroup(SessionState& s, QWidget& host, const QString& group_id) {
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     if (choice != QMessageBox::Yes) return;
 
-    s.federation()->removeGroup(group_id);
-    s.notifyFederationChanged();
-    s.setStatusMessage("Models", "Group removed");
+    session.federation()->removeGroup(group_id);
+    session.notifyFederationChanged();
+    session.setStatusMessage("Models", "Group removed");
 }
 
-void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QString& fed_id) {
-    const Federation::Model* model = s.federation()->findById(fed_id);
+void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& fed_id) {
+    const Federation::Model* model = session.federation()->findById(fed_id);
     const QString label = model ? model->display_name : fed_id;
     const auto choice = QMessageBox::question(
         &host, "Remove Model",
@@ -175,41 +175,41 @@ void removeModel(SessionState& s, ViewportWindow& vp, QWidget& host, const QStri
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     if (choice != QMessageBox::Yes) return;
 
-    const uint32_t mid = s.modelIdForFedId(fed_id);
-    if (mid == 0) {
-        s.federation()->removeModel(fed_id);
-        s.notifyFederationChanged();
-        s.setStatusMessage("Models", "Model removed");
+    const uint32_t model_id = session.modelIdForFedId(fed_id);
+    if (model_id == 0) {
+        session.federation()->removeModel(fed_id);
+        session.notifyFederationChanged();
+        session.setStatusMessage("Models", "Model removed");
         return;
     }
-    if (s.loader()->isLoadingModel(mid)) return;
+    if (session.loader()->isLoadingModel(model_id)) return;
 
-    vp.setSelectedObjectId(0);
-    s.setSelectedObjectId(0);
-    s.federation()->removeModel(fed_id);
-    vp.removeModel(mid);
-    s.loader()->removeModel(mid);
-    s.elementRegistry()->removeModel(mid);
-    s.removeModelMappingByFedId(fed_id);
-    s.notifySelectionChanged();
-    s.notifyModelsChanged();
-    s.setStatusMessage("Models", "Model removed");
+    viewport.setSelectedObjectId(0);
+    session.setSelectedObjectId(0);
+    session.federation()->removeModel(fed_id);
+    viewport.removeModel(model_id);
+    session.loader()->removeModel(model_id);
+    session.elementRegistry()->removeModel(model_id);
+    session.removeModelMappingByFedId(fed_id);
+    session.notifySelectionChanged();
+    session.notifyModelsChanged();
+    session.setStatusMessage("Models", "Model removed");
 }
 
 namespace detail {
 
-void loadModels(SessionState& s, const QStringList& paths, const QStringList& fed_ids) {
+void loadModels(SessionState& session, const QStringList& paths, const QStringList& fed_ids) {
     if (paths.isEmpty()) return;
 
-    const auto ids = s.loader()->addFiles(paths);
-    for (int i = 0; i < paths.size() && i < static_cast<int>(ids.size()) && i < fed_ids.size(); ++i) {
-        s.setModelMapping(fed_ids[i], ids[i]);
+    const auto model_ids = session.loader()->addFiles(paths);
+    for (int i = 0; i < paths.size() && i < static_cast<int>(model_ids.size()) && i < fed_ids.size(); ++i) {
+        session.setModelMapping(fed_ids[i], model_ids[i]);
     }
 }
 
 } // namespace detail
 
-void addModel(SessionState& s, QWidget& host) {
+void addModel(SessionState& session, QWidget& host) {
     AddModelDialog dialog(&host);
     if (dialog.exec() != QDialog::Accepted) return;
 
@@ -253,13 +253,13 @@ void addModel(SessionState& s, QWidget& host) {
         break;
     }
     case SourceMode::CloudModel:
-        addModelFromCloud(s, host);
+        addModelFromCloud(session, host);
         return;
     case SourceMode::ConvertToDatabase:
-        convertIfcToDatabase(s, host);
+        convertIfcToDatabase(session, host);
         return;
     case SourceMode::ExportGeometryDatabase:
-        exportGeometryDatabase(s, host);
+        exportGeometryDatabase(session, host);
         return;
     case SourceMode::None:
         return;
@@ -270,24 +270,24 @@ void addModel(SessionState& s, QWidget& host) {
     // origin via ViewportView. Checked here (before federation->addModel)
     // because federation->addModel doesn't yet populate SessionState's
     // model mapping; modelIds() reflects pre-add state at this point.
-    if (s.modelIds().isEmpty()) {
+    if (session.modelIds().isEmpty()) {
         armFederatedFalseOriginGuess();
     }
 
     QStringList accepted_paths;
     QStringList accepted_fed_ids;
     for (const auto& path : paths) {
-        const QString fed_id = s.federation()->addModel(path);
+        const QString fed_id = session.federation()->addModel(path);
         if (fed_id.isEmpty()) continue;
         accepted_paths << path;
         accepted_fed_ids << fed_id;
     }
-    detail::loadModels(s, accepted_paths, accepted_fed_ids);
-    s.notifyModelsChanged();
+    detail::loadModels(session, accepted_paths, accepted_fed_ids);
+    session.notifyModelsChanged();
 }
 
-void addModelFromCloud(SessionState& s, QWidget& host) {
-    auto* registry = s.connectorRegistry();
+void addModelFromCloud(SessionState& session, QWidget& host) {
+    auto* registry = session.connectorRegistry();
     const auto& manifests = registry->available();
     if (manifests.empty()) {
         QMessageBox::information(&host, "Add From Cloud",
@@ -310,9 +310,9 @@ void addModelFromCloud(SessionState& s, QWidget& host) {
         return;
     }
 
-    s.setStatusMessage("Cloud", QString("Browsing %1...").arg(connector_id));
+    session.setStatusMessage("Cloud", QString("Browsing %1...").arg(connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
 
     proc->call("pull_models_interactive", QJsonValue(),
         [sguard, connector_id](const QJsonValue& result) {
@@ -327,9 +327,9 @@ void addModelFromCloud(SessionState& s, QWidget& host) {
             QStringList paths;
             QStringList fed_ids;
             int added = 0;
-            for (const QJsonValue& v : arr) {
-                if (v.isNull() || !v.isObject()) continue;
-                const QJsonObject entry = v.toObject();
+            for (const QJsonValue& value : arr) {
+                if (value.isNull() || !value.isObject()) continue;
+                const QJsonObject entry = value.toObject();
                 const QString display_name = entry.value("display_name").toString();
                 const QString path = entry.value("path").toString();
                 if (path.isEmpty()) continue;
@@ -368,35 +368,35 @@ void addModelFromCloud(SessionState& s, QWidget& host) {
 namespace {
 
 // Shared "local path on disk" lookup for the right-click cloud commands:
-// the loader keeps the path keyed by mid (set when a file or pull_models
+// the loader keeps the path keyed by model_id (set when a file or pull_models
 // path was queued). Both local-sourced and resolved cloud-sourced models
 // have one; only un-resolved cloud models (where pull_models hasn't
 // returned yet) won't.
-QString localPathForModel(SessionState& s, const QString& fed_id) {
-    const uint32_t mid = s.modelIdForFedId(fed_id);
-    if (mid == 0 || !s.loader()) return {};
-    return s.loader()->filePath(mid);
+QString localPathForModel(SessionState& session, const QString& fed_id) {
+    const uint32_t model_id = session.modelIdForFedId(fed_id);
+    if (model_id == 0 || !session.loader()) return {};
+    return session.loader()->filePath(model_id);
 }
 
 } // namespace
 
-void saveModelToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
-    auto* fed = s.federation();
-    const Federation::Model* model = fed->findById(fed_id);
+void saveModelToCloud(SessionState& session, QWidget& host, const QString& fed_id) {
+    auto* federation = session.federation();
+    const Federation::Model* model = federation->findById(fed_id);
     if (!model) return;
     if (model->source_connector == "local") {
         QMessageBox::information(&host, "Save Model To Cloud",
             "This model has no cloud target. Use \"Save As To Cloud\" first.");
         return;
     }
-    const QString local_path = localPathForModel(s, fed_id);
+    const QString local_path = localPathForModel(session, fed_id);
     if (local_path.isEmpty()) {
         QMessageBox::warning(&host, "Save Model To Cloud",
             "Cannot find a local copy of this model to push.");
         return;
     }
     const QString connector_id = model->source_connector;
-    auto* registry = s.connectorRegistry();
+    auto* registry = session.connectorRegistry();
     auto* proc = registry->get(connector_id);
     if (!proc) {
         QMessageBox::warning(&host, "Save Model To Cloud",
@@ -411,10 +411,10 @@ void saveModelToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
     params["path"] = local_path;
     params["source"] = source;
 
-    s.setStatusMessage("Cloud",
+    session.setStatusMessage("Cloud",
         QString("Saving %1 to %2...").arg(model->display_name, connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
     proc->call("push_model", params,
         [sguard, fed_id, connector_id](const QJsonValue& result) {
             if (!sguard) return;
@@ -438,17 +438,17 @@ void saveModelToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
         });
 }
 
-void saveModelAsToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
-    const Federation::Model* model = s.federation()->findById(fed_id);
+void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& fed_id) {
+    const Federation::Model* model = session.federation()->findById(fed_id);
     if (!model) return;
-    const QString local_path = localPathForModel(s, fed_id);
+    const QString local_path = localPathForModel(session, fed_id);
     if (local_path.isEmpty()) {
         QMessageBox::warning(&host, "Save Model As To Cloud",
             "Cannot find a local copy of this model to push.");
         return;
     }
 
-    auto* registry = s.connectorRegistry();
+    auto* registry = session.connectorRegistry();
     const auto& manifests = registry->available();
     if (manifests.empty()) {
         QMessageBox::information(&host, "Save Model As To Cloud",
@@ -475,10 +475,10 @@ void saveModelAsToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
     QJsonObject params;
     params["path"] = local_path;
 
-    s.setStatusMessage("Cloud",
+    session.setStatusMessage("Cloud",
         QString("Pushing %1 to %2...").arg(model->display_name, connector_id));
 
-    QPointer<SessionState> sguard(&s);
+    QPointer<SessionState> sguard(&session);
     proc->call("push_model_interactive", params,
         [sguard, fed_id, connector_id](const QJsonValue& result) {
             if (!sguard) return;
@@ -507,7 +507,7 @@ void saveModelAsToCloud(SessionState& s, QWidget& host, const QString& fed_id) {
         });
 }
 
-void convertIfcToDatabase(SessionState& s, QWidget& host) {
+void convertIfcToDatabase(SessionState& session, QWidget& host) {
     QFileDialog input_dialog(&host, "Select IFC File to Convert");
     input_dialog.setFileMode(QFileDialog::ExistingFile);
     input_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
@@ -545,10 +545,10 @@ void convertIfcToDatabase(SessionState& s, QWidget& host) {
         }
     }
 
-    s.beginProgress(QString("Converting %1 to %2…")
+    session.beginProgress(QString("Converting %1 to %2…")
                         .arg(QFileInfo(input_path).fileName(),
                              QFileInfo(output_path).fileName()));
-    s.setStatusMessage("Converting",
+    session.setStatusMessage("Converting",
         QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
 
     auto timer = std::make_shared<QElapsedTimer>();
@@ -583,20 +583,20 @@ void convertIfcToDatabase(SessionState& s, QWidget& host) {
     });
 
     QObject::connect(thread, &QThread::finished, &host,
-            [&s, host_ptr = &host, thread, timer, error_message, input_path, output_path]() {
+            [&session, host_ptr = &host, thread, timer, error_message, input_path, output_path]() {
         const qint64 elapsed = timer->elapsed();
 
-        s.endProgress();
+        session.endProgress();
         thread->deleteLater();
 
         if (!error_message->isEmpty()) {
-            s.setStatusMessage("Error", *error_message);
+            session.setStatusMessage("Error", *error_message);
             QMessageBox::warning(host_ptr, "Convert IFC to Database",
                                  QString("Conversion failed:\n%1").arg(*error_message));
             return;
         }
 
-        s.setStatusMessage(
+        session.setStatusMessage(
             "Converted",
             QString("%1 → %2 in %3")
                 .arg(QFileInfo(input_path).fileName(),
@@ -609,7 +609,7 @@ void convertIfcToDatabase(SessionState& s, QWidget& host) {
     thread->start();
 }
 
-void exportGeometryDatabase(SessionState& s, QWidget& host) {
+void exportGeometryDatabase(SessionState& session, QWidget& host) {
     QFileDialog input_dialog(&host, "Select IFC File to Export");
     input_dialog.setFileMode(QFileDialog::ExistingFile);
     input_dialog.setNameFilter("IFC Files (*.ifc);;All Files (*)");
@@ -637,10 +637,10 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
         output_path += ".rdbview";
     }
 
-    s.beginProgress(QString("Exporting %1 to %2…")
+    session.beginProgress(QString("Exporting %1 to %2…")
                         .arg(QFileInfo(input_path).fileName(),
                              QFileInfo(output_path).fileName()));
-    s.setStatusMessage("Exporting",
+    session.setStatusMessage("Exporting",
         QString("%1 → %2").arg(QFileInfo(input_path).fileName(), QFileInfo(output_path).fileName()));
 
     auto timer = std::make_shared<QElapsedTimer>();
@@ -695,13 +695,13 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
 
             // Write to a sibling `.tmp` then rename so a partial file never
             // appears at the destination (matters for cloud-sync folders).
-            const QString tmp_zip = output_path + ".tmp";
-            QFile::remove(tmp_zip);
+            const QString temporary_zip = output_path + ".tmp";
+            QFile::remove(temporary_zip);
             {
-                QZipWriter writer(tmp_zip);
+                QZipWriter writer(temporary_zip);
                 if (writer.status() != QZipWriter::NoError) {
                     throw ifcopenshell::exception(
-                        ("Failed to open " + tmp_zip + " for writing").toStdString());
+                        ("Failed to open " + temporary_zip + " for writing").toStdString());
                 }
                 writer.setCompressionPolicy(QZipWriter::AutoCompress);
 
@@ -731,15 +731,15 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
                 writer.close();
                 if (writer.status() != QZipWriter::NoError) {
                     throw ifcopenshell::exception(
-                        ("Failed to finalize " + tmp_zip).toStdString());
+                        ("Failed to finalize " + temporary_zip).toStdString());
                 }
             }
 
             QFile::remove(output_path);
-            if (!QFile::rename(tmp_zip, output_path)) {
-                QFile::remove(tmp_zip);
+            if (!QFile::rename(temporary_zip, output_path)) {
+                QFile::remove(temporary_zip);
                 throw ifcopenshell::exception(
-                    ("Failed to move " + tmp_zip + " to " + output_path).toStdString());
+                    ("Failed to move " + temporary_zip + " to " + output_path).toStdString());
             }
         } catch (const std::exception& e) {
             *error_message = QString::fromUtf8(e.what());
@@ -751,20 +751,20 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
     });
 
     QObject::connect(thread, &QThread::finished, &host,
-            [&s, host_ptr = &host, thread, timer, error_message, input_path, output_path]() {
+            [&session, host_ptr = &host, thread, timer, error_message, input_path, output_path]() {
         const qint64 elapsed = timer->elapsed();
 
-        s.endProgress();
+        session.endProgress();
         thread->deleteLater();
 
         if (!error_message->isEmpty()) {
-            s.setStatusMessage("Error", *error_message);
+            session.setStatusMessage("Error", *error_message);
             QMessageBox::warning(host_ptr, "Export Geometry Database",
                                  QString("Export failed:\n%1").arg(*error_message));
             return;
         }
 
-        s.setStatusMessage(
+        session.setStatusMessage(
             "Exported",
             QString("%1 → %2 in %3")
                 .arg(QFileInfo(input_path).fileName(),
@@ -777,8 +777,8 @@ void exportGeometryDatabase(SessionState& s, QWidget& host) {
     thread->start();
 }
 
-void openSettings(SessionState& s, QWidget& host) {
-    SettingsDialog dialog(&s, &host);
+void openSettings(SessionState& session, QWidget& host) {
+    SettingsDialog dialog(&session, &host);
     dialog.exec();
 }
 

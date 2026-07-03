@@ -122,8 +122,8 @@ public:
                           struct StreamingSidecar metadata);
 
     // Direct-IFC ingestion (mirrors GL ViewportWindow). The host (typically
-    // a GeometryStreamer running on a worker) calls uploadMeshChunk +
-    // uploadInstanceChunk once per representation / placement as the IFC
+    // a GeometryStreamer running on a worker) calls uploadStreamedMesh +
+    // uploadStreamedInstance once per representation / placement as the IFC
     // triangulates; finalizeModel commits when the iterator finishes.
     // Staged in CPU memory; finalizeModel runs the chunk planner over the
     // staged data, allocates pool slices, and uploads — same render path
@@ -131,8 +131,8 @@ public:
     // every chunk lands `is_resident=true` immediately. The streamer's
     // model_id is passed through unchanged; the viewport's globally-unique
     // object_id rebasing happens at finalize time.
-    void uploadMeshChunk(const struct MeshChunk& chunk);
-    void uploadInstanceChunk(const struct InstanceChunk& chunk);
+    void uploadStreamedMesh(const struct StreamedMesh& mesh);
+    void uploadStreamedInstance(const struct StreamedInstance& instance_record);
     void finalizeModel(uint32_t model_id);
 
     void removeModel(uint32_t model_id);
@@ -239,12 +239,15 @@ public:
 private:
     // Re-aim the orbit camera so the bounding sphere of [mn, mx] fits.
     void frameAabb(const float mn[3], const float mx[3], float padding);
-    // Resolve nav_preset_ env var to orbit/pan bindings.
-    void applyNavPreset(const char* name);
 
     // chunkScreenAreaPx moved to ViewportCore (#84-h).
 
 public:
+    // Apply a nav mouse preset by name ("blender"|"rhino"|"revit"|"web").
+    // Sources the shared binding table from ViewportCore; called from init
+    // (env / persisted setting) and live from the Settings dialog.
+    void applyNavPreset(const char* name);
+
 
     // Queue a one-shot framebuffer capture: the next rendered frame is
     // copied back to host memory and saved to `path` as PNG. If
@@ -393,7 +396,7 @@ public:
     // A point that actually lies on the model's first instance — the
     // first instance's mesh AABB centre transformed by that instance's
     // placement, in metres, pre-CoordinateOperation. Lookup only — the
-    // viewport already keeps the CPU-side MeshInfo + InstanceCpu around
+    // viewport already keeps the CPU-side MeshInfo + InstanceInfo around
     // for picking / measurement; the federation false-origin guess
     // (ViewportView::guessFederatedFalseOriginFromFirstModel) consumes
     // this lazily on modelGeometryReady. Returns false when the model
@@ -734,20 +737,9 @@ private:
     Qt::KeyboardModifiers      box_select_press_mods_ = Qt::NoModifier;
     static constexpr int       kBoxSelectThresholdPx  = 5;
     // box_pick_staging_buffer_/_capacity_ moved to ViewportCore (#84-t).
-    // Drag-to-move state for the arrow gizmo. While `section_drag_active_`
-    // is true, mouseMoveEvent calls updateSectionDrag instead of letting
-    // the press fall through to the orbit/pan handlers.
-    bool                      section_drag_active_  = false;
-    int                       section_drag_index_   = -1;
-    Eigen::Vector2i                    section_drag_start_mouse_;
-    Eigen::Vector3f                 section_drag_start_origin_;
-    // Mirrors GL ViewportWindow::hitTestSectionGizmo: returns the index of
-    // the plane whose arrow gizmo is within grab_px of (x, y), or -1.
-    int   hitTestSectionGizmo(int x, int y) const;
-    // Mirrors GL ViewportWindow::updateSectionDrag: projects the cursor
-    // delta onto the plane's normal in screen space and slides the plane
-    // along that direction.
-    void  updateSectionDrag(int x, int y);
+    // Section-gizmo drag state + hit-test/drag math moved to ViewportCore
+    // (shared with web; the mouse handlers call core_.begin/update/endSectionDrag
+    // and core_.hitTestSectionGizmo).
 
     // HiZ slot + pyramid aliases (storage in core_, #84-r). VW's render
     // loop reads hiz_valid_ / hiz_vp_ to gate the HizOccludedFn, and
@@ -800,10 +792,15 @@ private:
     // so the click-vs-drag distinction at mouseReleaseEvent's pick path keeps
     // working. Set at init from WGPU_NAV_PRESET=blender|rhino|revit (default
     // blender, matching GL's AppSettings::NavPreset::Blender default).
-    Qt::MouseButton       orbit_button_ = Qt::MiddleButton;
-    Qt::KeyboardModifiers orbit_mods_   = Qt::NoModifier;
-    Qt::MouseButton       pan_button_   = Qt::MiddleButton;
-    Qt::KeyboardModifiers pan_mods_     = Qt::ShiftModifier;
+    // Mirror of ViewportCore's preset bindings, mapped to Qt types by
+    // applyNavPreset (the core owns the preset table; these are the Qt-side
+    // cache the mouse handlers compare against).
+    Qt::MouseButton       orbit_button_  = Qt::MiddleButton;
+    Qt::KeyboardModifiers orbit_mods_    = Qt::NoModifier;
+    Qt::MouseButton       pan_button_    = Qt::MiddleButton;
+    Qt::KeyboardModifiers pan_mods_      = Qt::ShiftModifier;
+    Qt::MouseButton       select_button_ = Qt::LeftButton;
+    Qt::KeyboardModifiers select_mods_   = Qt::NoModifier;
     // Set by mousePressEvent based on which binding matched; consumed by
     // mouseMoveEvent so mid-drag modifier changes don't switch axes.
     enum class NavDrag : uint8_t { Inactive, Orbit, Pan };

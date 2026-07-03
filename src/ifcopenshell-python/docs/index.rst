@@ -12,7 +12,9 @@ Let's learn IfcOpenShell!
    ifcopenshell
    ifcopenshell-python
    ifcconvert
+   ifcviewer
    bonsai
+   bonsai-viewer
 
 .. toctree::
    :hidden:

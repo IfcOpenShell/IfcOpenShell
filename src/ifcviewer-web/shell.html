@@ -8,6 +8,10 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   #viewer-canvas { display: block; width: 100vw; height: 100vh; outline: none;
     background: #1a1d24; }
+  /* Marquee (box-select) rubber-band. Positioned in CSS px by main_web; never
+     eats pointer events so the drag keeps reaching the canvas. */
+  #marquee { position: fixed; display: none; z-index: 50; pointer-events: none;
+    border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
   /* Log overlay sits bottom-left and never eats pointer events (so it
      can't block orbit drags over the canvas). It auto-scrolls to the
      newest line. Capped small; collapses further once the app is live. */
@@ -63,6 +67,7 @@
 </head>
 <body>
 <canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<div id="marquee"></div>
 <div id="progress"><div id="progress-fill"></div></div>
 <div id="progress-panel">
   <div id="progress-summary"></div>
@@ -91,6 +96,9 @@
   <button data-act="isolate" title="Isolate selected (Shift+H)">Isolate</button>
   <button data-act="showall" title="Show all (Alt+H)">Show all</button>
   <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
+  <span class="sep"></span>
+  <button data-act="section" id="section-btn" title="Section tool — click a surface to cut (K)">Section</button>
+  <button data-act="clearcut" title="Clear all section cuts (Shift+K)">Clear cuts</button>
 </div>
 <div id="status">Starting…</div>
 <script>
@@ -170,6 +178,10 @@
           if (Module._xray_is_active_c) {
             var xb = document.getElementById('xray-btn');
             if (xb) xb.classList.toggle('active', !!Module._xray_is_active_c());
+          }
+          if (Module._section_is_active_c) {
+            var sb = document.getElementById('section-btn');
+            if (sb) sb.classList.toggle('active', !!Module._section_is_active_c());
           }
           Module._raf_tick_c(Module._app_ptr);
         }
@@ -302,6 +314,14 @@
   // the current scene (federation). Multiple files can be picked at once. Each
   // File is registered as its own byte-source (kept alive in __ifcvSources for
   // lazy Blob.slice reads) and streamed independently.
+  // RMB is the select/marquee button in the Web nav preset, so suppress the
+  // browser context menu over the canvas. (Firefox forces its native menu on
+  // Shift+RightClick regardless — a browser escape hatch pages can't override.)
+  var viewerCanvas = document.getElementById('viewer-canvas');
+  if (viewerCanvas) {
+    viewerCanvas.addEventListener('contextmenu', function(ev) { ev.preventDefault(); });
+  }
+
   var openBtn = document.getElementById('open-btn');
   var addBtn = document.getElementById('add-btn');
   var fileInput = document.getElementById('file-input');
@@ -351,6 +371,8 @@
       else if (act === 'isolate') Module._isolate_selected_c();
       else if (act === 'showall') Module._show_all_c();
       else if (act === 'xray')    Module._toggle_xray_c();
+      else if (act === 'section') Module._toggle_section_c();
+      else if (act === 'clearcut') Module._clear_section_c();
       else if (view !== null)   Module._standard_view_c(parseInt(view, 10));
     });
   });

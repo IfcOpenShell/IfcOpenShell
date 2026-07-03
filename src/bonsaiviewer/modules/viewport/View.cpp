@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -67,9 +67,9 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
     // first geometry-ready consumes the arm). refresh() stays terminal —
     // any federation mutation from the guess propagates through
     // SessionState's federatedFalseOriginChanged relay.
-    connect(session_state_, &SessionState::modelGeometryReady,     this, [this](uint32_t mid) {
+    connect(session_state_, &SessionState::modelGeometryReady,     this, [this](uint32_t model_id) {
         if (modules::models::consumeFederatedFalseOriginGuess()) {
-            guessFederatedFalseOriginFromFirstModel(mid);
+            guessFederatedFalseOriginFromFirstModel(model_id);
         }
         refresh();
     });
@@ -136,34 +136,34 @@ void ViewportView::refresh() {
     viewport_->setFederatedFalseOrigin(
         composeFederatedFalseOrigin(federation->federatedFalseOrigin(), federation->config()));
 
-    for (uint32_t mid : session_state_->modelIds()) {
-        applyCoordinateOperation(mid);
-        applyModelVisibility(mid);
+    for (uint32_t model_id : session_state_->modelIds()) {
+        applyCoordinateOperation(model_id);
+        applyModelVisibility(model_id);
     }
 }
 
-void ViewportView::applyCoordinateOperation(uint32_t mid) {
+void ViewportView::applyCoordinateOperation(uint32_t model_id) {
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
-    if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
+    if (const ModelGeoref* georef = loader->modelGeoref(model_id)) {
         if (georef->has_coordinate_operation) {
             matrix = georef->coordinate_operation_meters;
         }
     }
-    viewport_->setModelCoordinateOperation(mid, matrix);
-    applyModelTransformation(mid);
+    viewport_->setModelCoordinateOperation(model_id, matrix);
+    applyModelTransformation(model_id);
 }
 
-void ViewportView::applyModelTransformation(uint32_t mid) {
+void ViewportView::applyModelTransformation(uint32_t model_id) {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
-    const QString fed_id = session_state_->fedIdForModelId(mid);
+    const QString fed_id = session_state_->fedIdForModelId(model_id);
     if (!fed_id.isEmpty()) {
         if (const Federation::Model* model = federation->findById(fed_id)) {
             ModelUnits units;
             Eigen::Matrix4d coordinate_operation = Eigen::Matrix4d::Identity();
-            if (const ModelGeoref* georef = loader->modelGeoref(mid)) {
+            if (const ModelGeoref* georef = loader->modelGeoref(model_id)) {
                 units = georef->units;
                 if (georef->has_coordinate_operation) {
                     coordinate_operation = georef->coordinate_operation_meters;
@@ -173,18 +173,18 @@ void ViewportView::applyModelTransformation(uint32_t mid) {
                 model->model_transformation, federation->config(), units, coordinate_operation);
         }
     }
-    viewport_->setModelTransformation(mid, matrix);
+    viewport_->setModelTransformation(model_id, matrix);
 }
 
-void ViewportView::applyModelVisibility(uint32_t mid) {
+void ViewportView::applyModelVisibility(uint32_t model_id) {
     Federation* federation = session_state_->federation();
-    const QString fed_id = session_state_->fedIdForModelId(mid);
+    const QString fed_id = session_state_->fedIdForModelId(model_id);
     if (fed_id.isEmpty()) return;
 
     if (federation->isModelEffectivelyVisible(fed_id)) {
-        viewport_->showModel(mid);
+        viewport_->showModel(model_id);
     } else {
-        viewport_->hideModel(mid);
+        viewport_->hideModel(model_id);
     }
 }
 
@@ -209,7 +209,7 @@ void ViewportView::applyModelVisibility(uint32_t mid) {
 // mutation here propagates through SessionState's federation relay
 // (federatedFalseOriginChanged → notifyFederationChanged) without
 // re-entering this function.
-void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t mid) {
+void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t model_id) {
     Federation* federation = session_state_->federation();
     if (!federation->filePath().isEmpty()) return;
 
@@ -218,10 +218,10 @@ void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t mid) {
     if (current.xyz != defaults.xyz || current.rz_deg != defaults.rz_deg) return;
 
     Eigen::Vector3d first_geometry_point_m;
-    if (!viewport_->firstGeometryPointWorldM(mid, first_geometry_point_m)) return;
+    if (!viewport_->firstGeometryPointWorldM(model_id, first_geometry_point_m)) return;
 
     SceneLoader* loader = session_state_->loader();
-    const ModelGeoref* georef = loader->modelGeoref(mid);
+    const ModelGeoref* georef = loader->modelGeoref(model_id);
     if (georef == nullptr) return;
 
     federation->setFederatedFalseOrigin(::guessFederatedFalseOrigin(
@@ -236,42 +236,42 @@ void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t mid) {
     // (0,0,0) — the federated false origin in render space — capped at
     // 100 m so a model with crazy-coord geometry can't pull the camera
     // back into nothing.
-    viewport_->frameOnFederatedOrigin(mid, 100.0f);
+    viewport_->frameOnFederatedOrigin(model_id, 100.0f);
 }
 
 void ViewportView::updateVolumeReadout() {
     if (viewport_->toolMode() != ViewportWindow::ToolMode::Volume) return;
 
-    const auto& sel = viewport_->selection().selectionIds();
-    if (sel.empty()) {
+    const auto& selection_ids = viewport_->selection().selectionIds();
+    if (selection_ids.empty()) {
         viewport_->setHudText(std::string());
         viewport_->setOverlayLabels({});
         return;
     }
 
-    std::vector<uint32_t> ids(sel.begin(), sel.end());
-    const auto per_obj = volumesPerObject(*viewport_, ids);
+    std::vector<uint32_t> object_ids(selection_ids.begin(), selection_ids.end());
+    const auto volumes_by_object = volumesPerObject(*viewport_, object_ids);
 
     double total = 0.0;
     std::vector<OverlayRenderer::Label> labels;
-    labels.reserve(per_obj.size());
-    for (const auto& [oid, v] : per_obj) {
-        total += v;
+    labels.reserve(volumes_by_object.size());
+    for (const auto& [object_id, volume] : volumes_by_object) {
+        total += volume;
         Eigen::Vector3f mn, mx;
-        if (!viewport_->computeObjectAabb(oid, mn, mx)) continue;
+        if (!viewport_->computeObjectAabb(object_id, mn, mx)) continue;
         OverlayRenderer::Label lbl;
-        const Eigen::Vector3f c = (mn + mx) * 0.5f;
-        lbl.world_pos[0] = c.x();
-        lbl.world_pos[1] = c.y();
-        lbl.world_pos[2] = c.z();
-        lbl.text = QString::number(v, 'f', 4) + " m³";
+        const Eigen::Vector3f center = (mn + mx) * 0.5f;
+        lbl.world_pos[0] = center.x();
+        lbl.world_pos[1] = center.y();
+        lbl.world_pos[2] = center.z();
+        lbl.text = QString::number(volume, 'f', 4) + " m³";
         labels.push_back(std::move(lbl));
     }
 
     viewport_->setHudText(QString("Volume: %1 m³  (%2 object%3)")
         .arg(total, 0, 'f', 4)
-        .arg(per_obj.size())
-        .arg(per_obj.size() == 1 ? "" : "s").toStdString());
+        .arg(volumes_by_object.size())
+        .arg(volumes_by_object.size() == 1 ? "" : "s").toStdString());
     viewport_->setOverlayLabels(labels);
 }
 

@@ -274,7 +274,7 @@ void ViewportCore::recomposeAndUploadModel(uint32_t model_id) {
 
     std::vector<InstanceGpu> gpu(m.instances.size());
     for (size_t i = 0; i < m.instances.size(); ++i) {
-        InstanceCpu& inst = m.instances[i];
+        InstanceInfo& inst = m.instances[i];
         composeInstanceFromPlacement(inst, m);
 
         InstanceGpu& dst = gpu[i];
@@ -300,7 +300,7 @@ void ViewportCore::recomposeAndUploadModel(uint32_t model_id) {
             -std::numeric_limits<float>::infinity();
         for (uint32_t inst_idx : c.instance_ids) {
             if (inst_idx >= m.instances.size()) continue;
-            const InstanceCpu& inst = m.instances[inst_idx];
+            const InstanceInfo& inst = m.instances[inst_idx];
             for (int a = 0; a < 3; ++a) {
                 c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
                 c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
@@ -323,7 +323,7 @@ bool ViewportCore::firstGeometryPointWorldM(uint32_t model_id,
     const ModelGpuData& m = it->second;
     if (m.instances.empty()) return false;
 
-    const InstanceCpu& inst0 = m.instances[0];
+    const InstanceInfo& inst0 = m.instances[0];
     if (inst0.mesh_id >= m.meshes.size()) return false;
     const MeshInfo& mesh0 = m.meshes[inst0.mesh_id];
 
@@ -346,7 +346,7 @@ bool ViewportCore::firstGeometryPointWorldM(uint32_t model_id,
     return true;
 }
 
-void ViewportCore::composeInstanceFromPlacement(InstanceCpu& inst,
+void ViewportCore::composeInstanceFromPlacement(InstanceInfo& inst,
                                                 const ModelGpuData& m) const {
     if (inst.mesh_id < m.meshes.size()) {
         const MeshInfo& mi = m.meshes[inst.mesh_id];
@@ -461,6 +461,18 @@ void ViewportCore::setStandardView(StandardView view) {
     case StandardView::Top:    setStandardView(camera_yaw_deg_,  90.0f); break;
     case StandardView::Bottom: setStandardView(camera_yaw_deg_, -90.0f); break;
     }
+}
+
+void ViewportCore::setNavPreset(const char* name) {
+    using B = MouseBtn; using M = NavMod;
+    if (name && std::strcmp(name, "rhino") == 0)
+        nav_bindings_ = { B::Right,  M::Plain,  B::Right,  M::Shift, B::Left,  M::Plain };
+    else if (name && std::strcmp(name, "revit") == 0)
+        nav_bindings_ = { B::Middle, M::Shift, B::Middle, M::Plain,  B::Left,  M::Plain };
+    else if (name && std::strcmp(name, "web") == 0)
+        nav_bindings_ = { B::Left,   M::Plain,  B::Middle, M::Plain,  B::Right, M::Plain };
+    else  // blender (default)
+        nav_bindings_ = { B::Middle, M::Plain,  B::Middle, M::Shift, B::Left,  M::Plain };
 }
 
 bool ViewportCore::frameSelection() {
@@ -669,7 +681,7 @@ double ViewportCore::volumeOfObjects(
         for (const auto& [mid, m] : models_gpu_) {
             auto it = m.object_id_to_instance.find(oid);
             if (it == m.object_id_to_instance.end()) continue;
-            const InstanceCpu& inst = m.instances[it->second];
+            const InstanceInfo& inst = m.instances[it->second];
             if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
             const double v_local = m.mesh_local_volumes[inst.mesh_id];
             const double det = std::abs(det3OfPlacement(inst.placement_transformation));
@@ -690,7 +702,7 @@ ViewportCore::volumesPerObject(
         for (const auto& [mid, m] : models_gpu_) {
             auto it = m.object_id_to_instance.find(oid);
             if (it == m.object_id_to_instance.end()) continue;
-            const InstanceCpu& inst = m.instances[it->second];
+            const InstanceInfo& inst = m.instances[it->second];
             if (inst.mesh_id >= m.mesh_local_volumes.size()) break;
             const double v_local = m.mesh_local_volumes[inst.mesh_id];
             const double det = std::abs(det3OfPlacement(inst.placement_transformation));
@@ -975,6 +987,7 @@ struct VsOutPick {
 struct FsOutPick {
     @location(0) object_id: u32,
     @location(1) normal:    vec4<f32>,
+    @location(2) world_pos: vec4<f32>,
 };
 
 @vertex
@@ -1032,6 +1045,9 @@ fn fs_pick(in: VsOutPick) -> FsOutPick {
     out.object_id = in.object_id;
     // Pack signed normal into RGBA16F (unsigned-ish half range) as ×0.5+0.5.
     out.normal = vec4<f32>(normalize(in.normal) * 0.5 + vec3<f32>(0.5), 1.0);
+    // Exact surface world position (F32) so surface pick lands on the true face,
+    // not a ray-AABB approximation.
+    out.world_pos = vec4<f32>(in.world_pos, 1.0);
     return out;
 }
 )";
@@ -1193,6 +1209,9 @@ bool ViewportCore::buildPipelines() {
     // buffer to bind alongside the uniform — ensureSelectionFlagsBuffer
     // handles both the first creation and any subsequent resize.
 
+    // Section-plane gizmo (shared desktop + web). Optional — a failure just
+    // means no gizmo, not a dead viewport.
+    section_gizmo_.init(device_, queue_, surface_view_format_, kViewportSampleCount);
     return true;
 }
 
@@ -1774,6 +1793,7 @@ void ViewportCore::shutdown() {
     selection_flags_capacity_ = 0;
     if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
+    section_gizmo_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
     if (pipeline_layout_)      { wgpuPipelineLayoutRelease(pipeline_layout_);     pipeline_layout_ = nullptr; }
     if (model_bgl_)            { wgpuBindGroupLayoutRelease(model_bgl_);          model_bgl_ = nullptr; }
@@ -2840,8 +2860,8 @@ void ViewportCore::cullModelCpuUpload(ModelGpuData& m) {
 }
 
 // ===========================================================================
-// Sidecar / direct load (#84-q): applyCachedModel + uploadMeshChunk +
-// uploadInstanceChunk + finalizeModel
+// Sidecar / direct load (#84-q): applyCachedModel + uploadStreamedMesh +
+// uploadStreamedInstance + finalizeModel
 // ===========================================================================
 
 #include "ChunkPlanner.h"
@@ -2903,13 +2923,13 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         models_gpu_.erase(it);
     }
 
-    ModelGpuData m;
-    m.vertex_bytes   = 0;  // accumulated from chunks below (v16 has no section)
-    m.index_count    = 0;
-    m.mesh_count     = std::uint32_t(metadata.meta.meshes.size());
-    m.instance_count = std::uint32_t(metadata.meta.instances.size());
-    m.streaming_file_path      = metadata.file_path;
-    m.geometry_section_offset  = metadata.geometry_section_offset;
+    ModelGpuData model_gpu_data;
+    model_gpu_data.vertex_bytes   = 0;  // accumulated from chunks below (v16 has no section)
+    model_gpu_data.index_count    = 0;
+    model_gpu_data.mesh_count     = std::uint32_t(metadata.meta.meshes.size());
+    model_gpu_data.instance_count = std::uint32_t(metadata.meta.instances.size());
+    model_gpu_data.streaming_file_path      = metadata.file_path;
+    model_gpu_data.geometry_section_offset  = metadata.geometry_section_offset;
 
     // ---- Spatial chunk plan ----------------------------------------------
     // A sidecar carries a baked chunk TOC (v14): each chunk is a contiguous
@@ -2920,10 +2940,10 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     // would scatter the chunks. In-memory direct loads (finalizeModel) carry
     // no TOC, so they fall back to deriving the same Morton + greedy plan.
     const std::size_t n_meshes = metadata.meta.meshes.size();
-    m.mesh_chunk_idx.assign(n_meshes, 0);
-    m.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
-    m.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
-    m.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_idx.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_local_base_vertex.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_local_ebo_first_u32.assign(n_meshes, 0);
+    model_gpu_data.mesh_chunk_local_lod1_first_u32.assign(n_meshes, 0);
 
     std::vector<std::vector<std::uint32_t>> chunk_mesh_ids;
     std::vector<std::uint32_t>              instance_to_chunk;
@@ -2932,14 +2952,14 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     if (!metadata.meta.chunks.empty()) {
         // Baked TOC: chunk ci is meshes [first_mesh, first_mesh + mesh_count).
         chunk_mesh_ids.reserve(metadata.meta.chunks.size());
-        for (const auto& ch : metadata.meta.chunks) {
-            std::vector<std::uint32_t> ids;
-            ids.reserve(ch.mesh_count);
-            for (std::uint32_t k = 0; k < ch.mesh_count; ++k) {
-                const std::uint32_t mi = ch.first_mesh + k;
-                if (mi < n_meshes) ids.push_back(mi);
+        for (const auto& sidecar_chunk : metadata.meta.chunks) {
+            std::vector<std::uint32_t> mesh_ids;
+            mesh_ids.reserve(sidecar_chunk.mesh_count);
+            for (std::uint32_t k = 0; k < sidecar_chunk.mesh_count; ++k) {
+                const std::uint32_t mesh_index = sidecar_chunk.first_mesh + k;
+                if (mesh_index < n_meshes) mesh_ids.push_back(mesh_index);
             }
-            chunk_mesh_ids.push_back(std::move(ids));
+            chunk_mesh_ids.push_back(std::move(mesh_ids));
         }
     } else {
         // No TOC (direct load): derive the plan from mesh centroids.
@@ -2974,25 +2994,27 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
 
     {
         std::vector<std::uint32_t> mesh_to_chunk(n_meshes, 0);
-        for (std::size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-            for (std::uint32_t mi : chunk_mesh_ids[ci]) mesh_to_chunk[mi] = std::uint32_t(ci);
+        for (std::size_t chunk_index = 0; chunk_index < chunk_mesh_ids.size(); ++chunk_index) {
+            for (std::uint32_t mesh_index : chunk_mesh_ids[chunk_index]) {
+                mesh_to_chunk[mesh_index] = std::uint32_t(chunk_index);
+            }
         }
         for (std::size_t i = 0; i < metadata.meta.instances.size(); ++i) {
-            const std::uint32_t mi = metadata.meta.instances[i].mesh_id;
-            if (mi < n_meshes) instance_to_chunk[i] = mesh_to_chunk[mi];
+            const std::uint32_t mesh_index = metadata.meta.instances[i].mesh_id;
+            if (mesh_index < n_meshes) instance_to_chunk[i] = mesh_to_chunk[mesh_index];
         }
     }
 
     std::vector<std::uint32_t> chunk_instance_count(chunk_mesh_ids.size(), 0);
     for (std::size_t i = 0; i < instance_to_chunk.size(); ++i) {
-        const std::uint32_t ci = instance_to_chunk[i];
-        if (ci < chunk_instance_count.size()) ++chunk_instance_count[ci];
+        const std::uint32_t chunk_index = instance_to_chunk[i];
+        if (chunk_index < chunk_instance_count.size()) ++chunk_instance_count[chunk_index];
     }
 
     // ---- Allocate per-chunk state. NO pool slices yet (chunks are
     // non-resident); the per-frame loader brings them in as cull marks
     // them visible.
-    m.chunks.resize(chunk_mesh_ids.size());
+    model_gpu_data.chunks.resize(chunk_mesh_ids.size());
     struct MeshLocal {
         std::uint32_t base_vertex;
         std::uint32_t ebo_first;
@@ -3000,46 +3022,51 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     };
     std::vector<std::unordered_map<std::uint32_t, MeshLocal>>
         chunk_mesh_offsets(chunk_mesh_ids.size());
-    for (std::size_t ci = 0; ci < chunk_mesh_ids.size(); ++ci) {
-        ModelGpuData::Chunk& c = m.chunks[ci];
-        c.mesh_ids    = std::move(chunk_mesh_ids[ci]);
-        c.is_resident = false;
+    for (std::size_t chunk_index = 0; chunk_index < chunk_mesh_ids.size(); ++chunk_index) {
+        ModelGpuData::Chunk& chunk = model_gpu_data.chunks[chunk_index];
+        chunk.mesh_ids    = std::move(chunk_mesh_ids[chunk_index]);
+        chunk.is_resident = false;
 
-        std::uint32_t chunk_local_v = 0;
-        std::uint32_t chunk_local_i = 0;
-        for (std::uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = metadata.meta.meshes[mi];
-            m.mesh_chunk_idx[mi]                 = std::uint32_t(ci);
-            m.mesh_chunk_local_base_vertex[mi]   = chunk_local_v;
-            m.mesh_chunk_local_ebo_first_u32[mi] = chunk_local_i;
-            chunk_mesh_offsets[ci][mi] = MeshLocal{chunk_local_v, chunk_local_i, 0};
-            chunk_local_v += mesh.vertex_count;
-            chunk_local_i += mesh.index_count;
+        std::uint32_t chunk_local_vertex_count = 0;
+        std::uint32_t chunk_local_index_count = 0;
+        for (std::uint32_t mesh_index : chunk.mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mesh_index];
+            model_gpu_data.mesh_chunk_idx[mesh_index] = std::uint32_t(chunk_index);
+            model_gpu_data.mesh_chunk_local_base_vertex[mesh_index] = chunk_local_vertex_count;
+            model_gpu_data.mesh_chunk_local_ebo_first_u32[mesh_index] = chunk_local_index_count;
+            chunk_mesh_offsets[chunk_index][mesh_index] =
+                MeshLocal{chunk_local_vertex_count, chunk_local_index_count, 0};
+            chunk_local_vertex_count += mesh.vertex_count;
+            chunk_local_index_count += mesh.index_count;
         }
         std::uint32_t chunk_local_lod1 = 0;
-        for (std::uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = metadata.meta.meshes[mi];
+        for (std::uint32_t mesh_index : chunk.mesh_ids) {
+            const MeshInfo& mesh = metadata.meta.meshes[mesh_index];
             if (mesh.lod1_index_count == 0) continue;
-            m.mesh_chunk_local_lod1_first_u32[mi] = chunk_local_i + chunk_local_lod1;
-            chunk_mesh_offsets[ci][mi].lod1_first = chunk_local_i + chunk_local_lod1;
+            model_gpu_data.mesh_chunk_local_lod1_first_u32[mesh_index] =
+                chunk_local_index_count + chunk_local_lod1;
+            chunk_mesh_offsets[chunk_index][mesh_index].lod1_first =
+                chunk_local_index_count + chunk_local_lod1;
             chunk_local_lod1 += mesh.lod1_index_count;
         }
-        c.vertex_count     = chunk_local_v;
-        c.vertex_byte_size = std::uint64_t(chunk_local_v) * INSTANCED_VERTEX_STRIDE_BYTES;
-        c.index_count      = chunk_local_i + chunk_local_lod1;
-        c.lod1_index_count = chunk_local_lod1;
+        chunk.vertex_count     = chunk_local_vertex_count;
+        chunk.vertex_byte_size = std::uint64_t(chunk_local_vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+        chunk.index_count      = chunk_local_index_count + chunk_local_lod1;
+        chunk.lod1_index_count = chunk_local_lod1;
         // v16: compressed-blob locators from the baked TOC (streaming path).
-        if (ci < metadata.meta.chunks.size()) {
-            const SidecarChunk& sc = metadata.meta.chunks[ci];
-            c.v_comp_off = sc.v_comp_off; c.v_comp_size = sc.v_comp_size;
-            c.i_comp_off = sc.i_comp_off; c.i_comp_size = sc.i_comp_size;
+        if (chunk_index < metadata.meta.chunks.size()) {
+            const SidecarChunk& sidecar_chunk = metadata.meta.chunks[chunk_index];
+            chunk.v_comp_off = sidecar_chunk.v_comp_off;
+            chunk.v_comp_size = sidecar_chunk.v_comp_size;
+            chunk.i_comp_off = sidecar_chunk.i_comp_off;
+            chunk.i_comp_size = sidecar_chunk.i_comp_size;
         }
-        m.vertex_bytes += c.vertex_byte_size;
-        m.index_count  += std::uint32_t(c.index_count);
+        model_gpu_data.vertex_bytes += chunk.vertex_byte_size;
+        model_gpu_data.index_count  += std::uint32_t(chunk.index_count);
 
         // Small per-chunk buffers, allocated upfront so cull can write into
         // them. visible_draws_buffer cap = chunk's instance count.
-        const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[ci], 1);
+        const std::size_t chunk_inst = std::max<std::size_t>(chunk_instance_count[chunk_index], 1);
         const std::size_t draws_bytes = chunk_inst * sizeof(ModelGpuData::VisibleDrawGpu);
         const std::size_t ps_bytes    = (chunk_inst + 1) * sizeof(std::uint32_t);
 
@@ -3047,27 +3074,27 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         vd_desc.size  = std::max<std::uint64_t>(draws_bytes, 16);
         vd_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
         vd_desc.label = svFromCStr("model.chunk.visible_draws");
-        c.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
-        c.visible_draws_capacity = chunk_inst;
-        m.vram_bytes_ssbo += vd_desc.size;
+        chunk.visible_draws_buffer   = wgpuDeviceCreateBuffer(device_, &vd_desc);
+        chunk.visible_draws_capacity = chunk_inst;
+        model_gpu_data.vram_bytes_ssbo += vd_desc.size;
 
         WGPUBufferDescriptor ps_desc = {};
         ps_desc.size  = std::max<std::uint64_t>(ps_bytes, 16);
         ps_desc.usage = WGPUBufferUsage_Storage | WGPUBufferUsage_CopyDst;
         ps_desc.label = svFromCStr("model.chunk.prefix_sums");
-        c.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
-        c.prefix_sums_capacity = chunk_inst + 1;
-        m.vram_bytes_ssbo += ps_desc.size;
+        chunk.prefix_sums_buffer   = wgpuDeviceCreateBuffer(device_, &ps_desc);
+        chunk.prefix_sums_capacity = chunk_inst + 1;
+        model_gpu_data.vram_bytes_ssbo += ps_desc.size;
 
         WGPUBufferDescriptor mu_desc = {};
         mu_desc.size  = 16;
         mu_desc.usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst;
         mu_desc.label = svFromCStr("model.chunk.uniform");
-        c.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
-        m.vram_bytes_ssbo += 16;
+        chunk.per_chunk_uniform = wgpuDeviceCreateBuffer(device_, &mu_desc);
+        model_gpu_data.vram_bytes_ssbo += 16;
 
-        c.visible_draws_scratch.reserve(chunk_inst);
-        c.prefix_sums_scratch.reserve(chunk_inst + 1);
+        chunk.visible_draws_scratch.reserve(chunk_inst);
+        chunk.prefix_sums_scratch.reserve(chunk_inst + 1);
     }
 
     // Index section is NOT loaded upfront. Each chunk's index slice is
@@ -3076,115 +3103,116 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     // MeshGpu storage (per-mesh quant basis).
     std::vector<MeshGpu> mesh_gpu;
     mesh_gpu.reserve(metadata.meta.meshes.size());
-    for (const auto& mi : metadata.meta.meshes) {
-        MeshGpu mg = {};
-        mg.aabb_min[0] = mi.local_aabb_min[0];
-        mg.aabb_min[1] = mi.local_aabb_min[1];
-        mg.aabb_min[2] = mi.local_aabb_min[2];
-        mg.aabb_max[0] = mi.local_aabb_max[0];
-        mg.aabb_max[1] = mi.local_aabb_max[1];
-        mg.aabb_max[2] = mi.local_aabb_max[2];
-        mesh_gpu.push_back(mg);
+    for (const auto& mesh_info : metadata.meta.meshes) {
+        MeshGpu mesh_gpu_record = {};
+        mesh_gpu_record.aabb_min[0] = mesh_info.local_aabb_min[0];
+        mesh_gpu_record.aabb_min[1] = mesh_info.local_aabb_min[1];
+        mesh_gpu_record.aabb_min[2] = mesh_info.local_aabb_min[2];
+        mesh_gpu_record.aabb_max[0] = mesh_info.local_aabb_max[0];
+        mesh_gpu_record.aabb_max[1] = mesh_info.local_aabb_max[1];
+        mesh_gpu_record.aabb_max[2] = mesh_info.local_aabb_max[2];
+        mesh_gpu.push_back(mesh_gpu_record);
     }
     const std::size_t mesh_storage_bytes = mesh_gpu.size() * sizeof(MeshGpu);
-    m.mesh_storage = createBufferWithData(
+    model_gpu_data.mesh_storage = createBufferWithData(
         device_, queue_,
         mesh_gpu.data(), mesh_storage_bytes,
         WGPUBufferUsage_Storage,
         "model.mesh_storage");
-    m.vram_bytes_ssbo += mesh_storage_bytes;
+    model_gpu_data.vram_bytes_ssbo += mesh_storage_bytes;
 
     // InstanceGpu storage. Rebase object_ids globally.
     const std::uint32_t object_id_base = next_object_id_;
     std::uint32_t max_local_id = 0;
     std::vector<InstanceGpu> inst_gpu;
     inst_gpu.reserve(metadata.meta.instances.size());
-    for (auto& ic : metadata.meta.instances) {
-        if (ic.object_id > max_local_id) max_local_id = ic.object_id;
-        ic.object_id = object_id_base + ic.object_id;
-        InstanceGpu ig = {};
-        std::memcpy(ig.transform, ic.transform, sizeof(ig.transform));
-        ig.object_id            = ic.object_id;
-        ig.color_override_rgba8 = ic.color_override_rgba8;
-        ig.mesh_id              = ic.mesh_id;
-        inst_gpu.push_back(ig);
+    for (auto& instance_cpu : metadata.meta.instances) {
+        if (instance_cpu.object_id > max_local_id) max_local_id = instance_cpu.object_id;
+        instance_cpu.object_id = object_id_base + instance_cpu.object_id;
+        InstanceGpu instance_gpu = {};
+        std::memcpy(instance_gpu.transform, instance_cpu.transform, sizeof(instance_gpu.transform));
+        instance_gpu.object_id            = instance_cpu.object_id;
+        instance_gpu.color_override_rgba8 = instance_cpu.color_override_rgba8;
+        instance_gpu.mesh_id              = instance_cpu.mesh_id;
+        inst_gpu.push_back(instance_gpu);
     }
     next_object_id_ = object_id_base + max_local_id + 1;
-    m.object_id_base = object_id_base;  // deferred elements rebase to match
+    model_gpu_data.object_id_base = object_id_base;  // element metadata records rebase to match
     const std::size_t inst_storage_bytes = inst_gpu.size() * sizeof(InstanceGpu);
-    m.instance_storage = createBufferWithData(
+    model_gpu_data.instance_storage = createBufferWithData(
         device_, queue_,
         inst_gpu.data(), inst_storage_bytes,
         WGPUBufferUsage_Storage,
         "model.instance_storage");
-    m.vram_bytes_ssbo += inst_storage_bytes;
+    model_gpu_data.vram_bytes_ssbo += inst_storage_bytes;
 
     // Hand off CPU mirrors.
-    m.meshes    = std::move(metadata.meta.meshes);
-    m.instances = std::move(metadata.meta.instances);
+    model_gpu_data.meshes    = std::move(metadata.meta.meshes);
+    model_gpu_data.instances = std::move(metadata.meta.instances);
 
     // Streaming defers per-mesh vertex data until the owning chunk is
     // loaded. Both volumes + Area-tool CPU shadow fill in per-chunk
     // inside applyStreamedChunk as the bytes arrive.
-    m.mesh_local_volumes.assign(m.meshes.size(), 0.0);
-    m.mesh_triangles_cache.assign(m.meshes.size(), ModelGpuData::MeshTriangles{});
-    m.mesh_has_alpha.assign(m.meshes.size(), std::uint8_t(0));
+    model_gpu_data.mesh_local_volumes.assign(model_gpu_data.meshes.size(), 0.0);
+    model_gpu_data.mesh_triangles_cache.assign(model_gpu_data.meshes.size(), ModelGpuData::MeshTriangles{});
+    model_gpu_data.mesh_has_alpha.assign(model_gpu_data.meshes.size(), std::uint8_t(0));
 
     // object_id → instance index lookup. Volume tool reads it on every
     // selection mutation; per-pick latency stays O(K) instead of O(K*N).
-    m.object_id_to_instance.clear();
-    m.object_id_to_instance.reserve(m.instances.size());
-    for (std::uint32_t i = 0; i < std::uint32_t(m.instances.size()); ++i) {
-        m.object_id_to_instance.emplace(m.instances[i].object_id, i);
+    model_gpu_data.object_id_to_instance.clear();
+    model_gpu_data.object_id_to_instance.reserve(model_gpu_data.instances.size());
+    for (std::uint32_t i = 0; i < std::uint32_t(model_gpu_data.instances.size()); ++i) {
+        model_gpu_data.object_id_to_instance.emplace(model_gpu_data.instances[i].object_id, i);
     }
 
     // Per-chunk world AABBs + instance-id lists from instance_to_chunk.
-    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        m.chunks[ci].instance_ids.reserve(m.instances.size() / m.chunks.size() + 4);
+    for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
+        model_gpu_data.chunks[chunk_index].instance_ids.reserve(
+            model_gpu_data.instances.size() / model_gpu_data.chunks.size() + 4);
     }
-    for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
-        const auto& inst = m.instances[inst_idx];
-        const std::uint32_t ci = instance_to_chunk[inst_idx];
-        if (ci >= m.chunks.size()) continue;
-        auto& c = m.chunks[ci];
+    for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(model_gpu_data.instances.size()); ++inst_idx) {
+        const auto& inst = model_gpu_data.instances[inst_idx];
+        const std::uint32_t chunk_index = instance_to_chunk[inst_idx];
+        if (chunk_index >= model_gpu_data.chunks.size()) continue;
+        auto& chunk = model_gpu_data.chunks[chunk_index];
         for (int a = 0; a < 3; ++a) {
-            c.aabb_min[a] = std::min(c.aabb_min[a], inst.world_aabb_min[a]);
-            c.aabb_max[a] = std::max(c.aabb_max[a], inst.world_aabb_max[a]);
+            chunk.aabb_min[a] = std::min(chunk.aabb_min[a], inst.world_aabb_min[a]);
+            chunk.aabb_max[a] = std::max(chunk.aabb_max[a], inst.world_aabb_max[a]);
         }
-        c.instance_ids.push_back(inst_idx);
+        chunk.instance_ids.push_back(inst_idx);
     }
 
     // Populate per-instance arrays from the per-chunk per-mesh offsets
     // computed during chunk construction.
     {
-        const std::size_t n_inst = m.instances.size();
-        m.instance_chunk_idx.assign(n_inst, 0);
-        m.instance_base_vertex.assign(n_inst, 0);
-        m.instance_ebo_first_u32.assign(n_inst, 0);
-        m.instance_lod1_first_u32.assign(n_inst, 0);
+        const std::size_t n_inst = model_gpu_data.instances.size();
+        model_gpu_data.instance_chunk_idx.assign(n_inst, 0);
+        model_gpu_data.instance_base_vertex.assign(n_inst, 0);
+        model_gpu_data.instance_ebo_first_u32.assign(n_inst, 0);
+        model_gpu_data.instance_lod1_first_u32.assign(n_inst, 0);
         for (std::size_t i = 0; i < n_inst; ++i) {
-            const std::uint32_t ci = instance_to_chunk[i];
-            const std::uint32_t mi = m.instances[i].mesh_id;
-            if (ci >= chunk_mesh_offsets.size()) continue;
-            auto it_off = chunk_mesh_offsets[ci].find(mi);
-            if (it_off == chunk_mesh_offsets[ci].end()) continue;
-            m.instance_chunk_idx[i]      = ci;
-            m.instance_base_vertex[i]    = it_off->second.base_vertex;
-            m.instance_ebo_first_u32[i]  = it_off->second.ebo_first;
-            m.instance_lod1_first_u32[i] = it_off->second.lod1_first;
+            const std::uint32_t chunk_index = instance_to_chunk[i];
+            const std::uint32_t mesh_index = model_gpu_data.instances[i].mesh_id;
+            if (chunk_index >= chunk_mesh_offsets.size()) continue;
+            auto it_off = chunk_mesh_offsets[chunk_index].find(mesh_index);
+            if (it_off == chunk_mesh_offsets[chunk_index].end()) continue;
+            model_gpu_data.instance_chunk_idx[i]      = chunk_index;
+            model_gpu_data.instance_base_vertex[i]    = it_off->second.base_vertex;
+            model_gpu_data.instance_ebo_first_u32[i]  = it_off->second.ebo_first;
+            model_gpu_data.instance_lod1_first_u32[i] = it_off->second.lod1_first;
         }
     }
 
-    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(m));
-    ModelGpuData& mref = inserted->second;
+    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(model_gpu_data));
+    ModelGpuData& inserted_model = inserted->second;
 
     Log::info()
         << "[wgpu stream] applyCachedModel mid=" << model_id
-        << " verts=" << mref.vertex_bytes << "B (deferred)"
-        << " idx="   << mref.index_count
-        << " meshes=" << mref.mesh_count
-        << " instances=" << mref.instance_count
-        << " chunks=" << mref.chunks.size();
+        << " verts=" << inserted_model.vertex_bytes << "B (deferred)"
+        << " idx="   << inserted_model.index_count
+        << " meshes=" << inserted_model.mesh_count
+        << " instances=" << inserted_model.instance_count
+        << " chunks=" << inserted_model.chunks.size();
 
     if (!initial_view_applied_) {
         viewAll();
@@ -3194,14 +3222,14 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     host_->requestFrame();
 }
 
-void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
-    if (chunk.vertices.empty() || chunk.indices.empty()) return;
-    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
+void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
+    if (mesh.vertices.empty() || mesh.indices.empty()) return;
+    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, mesh.model_id);
 
     // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
     // Same quantisation as SidecarBuilder::onMeshReady so direct-load and
     // sidecar-load produce byte-identical GPU buffers.
-    const std::size_t n_verts = chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
+    const std::size_t n_verts = mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS;
 
     float bmin[3] = {  std::numeric_limits<float>::infinity(),
                        std::numeric_limits<float>::infinity(),
@@ -3210,10 +3238,10 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
                       -std::numeric_limits<float>::infinity(),
                       -std::numeric_limits<float>::infinity() };
     for (std::size_t i = 0; i < n_verts; ++i) {
-        const float* v = chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
+        const float* vertex = mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS;
         for (int a = 0; a < 3; ++a) {
-            if (v[a] < bmin[a]) bmin[a] = v[a];
-            if (v[a] > bmax[a]) bmax[a] = v[a];
+            if (vertex[a] < bmin[a]) bmin[a] = vertex[a];
+            if (vertex[a] > bmax[a]) bmax[a] = vertex[a];
         }
     }
     float extent_recip[3];
@@ -3225,7 +3253,7 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
     const std::size_t vb_offset = s.vertices.size();
     s.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
     for (std::size_t i = 0; i < n_verts; ++i) {
-        quantizeVertex(chunk.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
+        quantizeVertex(mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
                        bmin, extent_recip,
                        s.vertices.data() + vb_offset
                            + i * INSTANCED_VERTEX_STRIDE_BYTES);
@@ -3233,13 +3261,13 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
 
     const std::size_t ib_offset = s.indices.size();
     s.indices.insert(s.indices.end(),
-                     chunk.indices.begin(), chunk.indices.end());
+                     mesh.indices.begin(), mesh.indices.end());
 
     MeshInfo info{};
     info.vbo_byte_offset = std::uint32_t(vb_offset);
     info.vertex_count    = std::uint32_t(n_verts);
     info.ebo_byte_offset = std::uint32_t(ib_offset * sizeof(std::uint32_t));
-    info.index_count     = std::uint32_t(chunk.indices.size());
+    info.index_count     = std::uint32_t(mesh.indices.size());
     for (int a = 0; a < 3; ++a) {
         info.local_aabb_min[a] = bmin[a];
         info.local_aabb_max[a] = bmax[a];
@@ -3249,29 +3277,29 @@ void ViewportCore::uploadMeshChunk(const MeshChunk& chunk) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (s.meshes.size() <= chunk.local_mesh_id) {
-        s.meshes.resize(chunk.local_mesh_id + 1);
+    if (s.meshes.size() <= mesh.local_mesh_id) {
+        s.meshes.resize(mesh.local_mesh_id + 1);
     }
-    s.meshes[chunk.local_mesh_id] = info;
+    s.meshes[mesh.local_mesh_id] = info;
 }
 
-void ViewportCore::uploadInstanceChunk(const InstanceChunk& chunk) {
-    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, chunk.model_id);
+void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_record) {
+    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, instance_record.model_id);
 
-    InstanceCpu inst{};
-    inst.mesh_id              = chunk.local_mesh_id;
-    inst.object_id            = chunk.object_id;
-    inst.color_override_rgba8 = chunk.color_override_rgba8;
-    inst.model_id             = chunk.model_id;
-    std::memcpy(inst.placement_transformation, chunk.transform,
-                sizeof(inst.placement_transformation));
+    InstanceInfo instance{};
+    instance.mesh_id              = instance_record.local_mesh_id;
+    instance.object_id            = instance_record.object_id;
+    instance.color_override_rgba8 = instance_record.color_override_rgba8;
+    instance.model_id             = instance_record.model_id;
+    std::memcpy(instance.placement_transformation, instance_record.transform,
+                sizeof(instance.placement_transformation));
     for (int i = 0; i < 16; ++i) {
-        inst.transform[i] = float(chunk.transform[i]);
+        instance.transform[i] = float(instance_record.transform[i]);
     }
-    std::memcpy(inst.world_aabb_min, chunk.world_aabb_min, sizeof(inst.world_aabb_min));
-    std::memcpy(inst.world_aabb_max, chunk.world_aabb_max, sizeof(inst.world_aabb_max));
+    std::memcpy(instance.world_aabb_min, instance_record.world_aabb_min, sizeof(instance.world_aabb_min));
+    std::memcpy(instance.world_aabb_max, instance_record.world_aabb_max, sizeof(instance.world_aabb_max));
 
-    s.instances.push_back(inst);
+    s.instances.push_back(instance);
 }
 
 std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
@@ -3537,30 +3565,45 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                 Log::warn() << "loadSidecarMetadataWeb: metadata past EOF";
                 return;
             }
-            // Critical block on disk: [comp u64][raw u64][zstd frame].
+            // Geometry metadata block on disk: [comp u64][raw u64][zstd frame].
             webReadRangesAsync(source_id, 0, {{meta_off, 16}},
                 [this, fsize, meta_off, source_id, source_label]
                 (bool ok2, std::vector<std::uint8_t>&& h) {
-                    if (!ok2 || h.size() < 16) { Log::warn() << "loadSidecarMetadataWeb: short crit header"; return; }
-                    std::uint64_t crit_comp = 0, crit_raw = 0;
-                    std::memcpy(&crit_comp, h.data(), 8);
-                    std::memcpy(&crit_raw, h.data() + 8, 8);
-                    const std::uint64_t crit_off = meta_off + 16;
-                    if (double(crit_off + crit_comp + 16) > fsize) { Log::warn() << "loadSidecarMetadataWeb: crit past EOF"; return; }
-                    webReadRangesAsync(source_id, 0, {{crit_off, crit_comp}},
-                        [this, crit_off, crit_comp, crit_raw, source_id, source_label]
+                    if (!ok2 || h.size() < 16) {
+                        Log::warn() << "loadSidecarMetadataWeb: short geometry metadata header";
+                        return;
+                    }
+                    std::uint64_t geometry_metadata_comp = 0, geometry_metadata_raw = 0;
+                    std::memcpy(&geometry_metadata_comp, h.data(), 8);
+                    std::memcpy(&geometry_metadata_raw, h.data() + 8, 8);
+                    const std::uint64_t geometry_metadata_off = meta_off + 16;
+                    if (double(geometry_metadata_off + geometry_metadata_comp + 16) > fsize) {
+                        Log::warn() << "loadSidecarMetadataWeb: geometry metadata past EOF";
+                        return;
+                    }
+                    webReadRangesAsync(source_id, 0,
+                        {{geometry_metadata_off, geometry_metadata_comp}},
+                        [this, geometry_metadata_off, geometry_metadata_comp,
+                         geometry_metadata_raw, source_id, source_label]
                         (bool ok3, std::vector<std::uint8_t>&& cz) {
-                            if (!ok3) { Log::warn() << "loadSidecarMetadataWeb: critical read failed"; return; }
-                            std::vector<std::uint8_t> crit(static_cast<std::size_t>(crit_raw));
-                            if (!SidecarCompress::decompress(cz.data(), cz.size(), crit.data(), crit.size())) {
-                                Log::warn() << "loadSidecarMetadataWeb: critical decompress failed";
+                            if (!ok3) {
+                                Log::warn() << "loadSidecarMetadataWeb: geometry metadata read failed";
+                                return;
+                            }
+                            std::vector<std::uint8_t> geometry_metadata(
+                                static_cast<std::size_t>(geometry_metadata_raw));
+                            if (!SidecarCompress::decompress(cz.data(), cz.size(),
+                                                             geometry_metadata.data(),
+                                                             geometry_metadata.size())) {
+                                Log::warn() << "loadSidecarMetadataWeb: geometry metadata decompress failed";
                                 return;
                             }
                             StreamingSidecar sc;
                             sc.file_path               = source_label;
                             sc.geometry_section_offset = SIDECAR_HEAD_BYTES;
-                            if (!parseSidecarCritical(crit.data(), crit.size(), sc.meta)) {
-                                Log::warn() << "loadSidecarMetadataWeb: bad critical metadata";
+                            if (!parseSidecarGeometryMetadata(geometry_metadata.data(),
+                                                              geometry_metadata.size(), sc.meta)) {
+                                Log::warn() << "loadSidecarMetadataWeb: bad geometry metadata";
                                 return;
                             }
                             const std::size_t n_meshes    = sc.meta.meshes.size();
@@ -3569,7 +3612,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                             applyCachedModel(mid, std::move(sc));
                             // Mark web-streamed + set the source IMMEDIATELY — the
                             // model now has non-resident chunks and the RAF loop's
-                            // driveStreamingLoads will run before the deferred-header
+                            // driveStreamingLoads will run before the element metadata header
                             // read below returns. If streaming_from_web weren't set
                             // yet it would take the sync fopen path and fail
                             // ("failed to read/decompress chunk 0").
@@ -3577,11 +3620,13 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                 m0->second.streaming_from_web = true;
                                 m0->second.web_source_id      = source_id;
                             }
-                            // Read the deferred block header to record its locator
+                            // Read the element metadata block header to record its locator
                             // (the property block is fetched on demand later).
-                            const std::uint64_t def_hdr_off = crit_off + crit_comp;
-                            webReadRangesAsync(source_id, 0, {{def_hdr_off, 16}},
-                                [this, mid, def_hdr_off, source_id, source_label, n_meshes, n_instances]
+                            const std::uint64_t element_metadata_hdr_off =
+                                geometry_metadata_off + geometry_metadata_comp;
+                            webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
+                                [this, mid, element_metadata_hdr_off, source_id, source_label,
+                                 n_meshes, n_instances]
                                 (bool ok4, std::vector<std::uint8_t>&& dh) {
                                     auto mit = models_gpu_.find(mid);
                                     if (mit != models_gpu_.end()) {
@@ -3589,9 +3634,9 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                             std::uint64_t dc = 0, dr = 0;
                                             std::memcpy(&dc, dh.data(), 8);
                                             std::memcpy(&dr, dh.data() + 8, 8);
-                                            mit->second.deferred_comp_offset = def_hdr_off + 16;
-                                            mit->second.deferred_comp_size   = dc;
-                                            mit->second.deferred_raw_size    = dr;
+                                            mit->second.element_metadata_comp_offset = element_metadata_hdr_off + 16;
+                                            mit->second.element_metadata_comp_size   = dc;
+                                            mit->second.element_metadata_raw_size    = dr;
                                         }
                                     }
                                     // NOTE: no viewAll() here — applyCachedModel
@@ -3609,23 +3654,24 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
         });
 }
 
-void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
-                                           std::function<void(bool)> done) {
-    // On-demand fetch of the v15 deferred block (element tree + string table)
-    // for a web-streamed model — the property data a UI needs (tree, selected-
+void ViewportCore::loadElementMetadataWeb(std::uint32_t model_id,
+                                          std::function<void(bool)> done) {
+    // On-demand fetch of the v15 element metadata block (elements + string table)
+    // for a web-streamed model — the property data a UI needs (selected-
     // object name, search) but rendering doesn't. Fetches at most once. Reads
     // from the model's own registered byte-source, so it works per-model even
     // with several federated files loaded.
     auto it = models_gpu_.find(model_id);
     if (it == models_gpu_.end()) { if (done) done(false); return; }
     ModelGpuData& m = it->second;
-    if (m.deferred_meta_loaded || m.deferred_comp_size == 0) {
-        m.deferred_meta_loaded = true;
+    if (m.element_metadata_loaded || m.element_metadata_comp_size == 0) {
+        m.element_metadata_loaded = true;
         if (done) done(true);
         return;
     }
-    const std::uint64_t raw_size = m.deferred_raw_size;
-    webReadRangesAsync(m.web_source_id, 0, {{m.deferred_comp_offset, m.deferred_comp_size}},
+    const std::uint64_t raw_size = m.element_metadata_raw_size;
+    webReadRangesAsync(m.web_source_id, 0,
+        {{m.element_metadata_comp_offset, m.element_metadata_comp_size}},
         [this, model_id, raw_size, done](bool ok, std::vector<std::uint8_t>&& cz) {
             auto mit = models_gpu_.find(model_id);
             if (mit == models_gpu_.end()) { if (done) done(false); return; }
@@ -3633,8 +3679,8 @@ void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
             SidecarData tmp;
             if (!ok ||
                 !SidecarCompress::decompress(cz.data(), cz.size(), buf.data(), buf.size()) ||
-                !parseSidecarDeferred(buf.data(), buf.size(), tmp)) {
-                Log::warn() << "loadDeferredMetadataWeb: read/decompress/parse failed";
+                !parseSidecarElementMetadata(buf.data(), buf.size(), tmp)) {
+                Log::warn() << "loadElementMetadataWeb: read/decompress/parse failed";
                 if (done) done(false);
                 return;
             }
@@ -3644,8 +3690,8 @@ void ViewportCore::loadDeferredMetadataWeb(std::uint32_t model_id,
             // match the (already-rebased) instance ids used by pick/selection.
             const std::uint32_t base = mit->second.object_id_base;
             for (auto& e : mit->second.elements) e.object_id += base;
-            mit->second.deferred_meta_loaded = true;
-            Log::info() << "ifcviewer-web: loaded deferred metadata ("
+            mit->second.element_metadata_loaded = true;
+            Log::info() << "ifcviewer-web: loaded element metadata ("
                         << mit->second.elements.size() << " elements)";
             if (done) done(true);
         });
@@ -3655,9 +3701,9 @@ void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
     InstanceCompose::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
     const std::uint32_t model_id = lk.model_id;
-    loadDeferredMetadataWeb(model_id, [this, object_id, model_id](bool ok) {
+    loadElementMetadataWeb(model_id, [this, object_id, model_id](bool ok) {
         if (!ok) {
-            Log::warn() << "pick: deferred property fetch failed for object " << object_id;
+            Log::warn() << "pick: element metadata fetch failed for object " << object_id;
             return;
         }
         auto it = models_gpu_.find(model_id);
@@ -3748,16 +3794,16 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     }
     std::unique_ptr<SidecarData> staging_ptr = std::move(it->second);
     pending_direct_loads_.erase(it);
-    SidecarData& s = *staging_ptr;
+    SidecarData& sidecar_data = *staging_ptr;
 
     if (!device_ || !queue_) {
         Log::warn() << "[wgpu direct] finalizeModel without an initialised device";
         return;
     }
-    if (s.meshes.empty() || s.instances.empty()) {
+    if (sidecar_data.meshes.empty() || sidecar_data.instances.empty()) {
         Log::info() << "[wgpu direct] finalizeModel(" << model_id
-                    << "): empty staging (meshes=" << s.meshes.size()
-                    << " instances=" << s.instances.size() << ")";
+                    << "): empty staging (meshes=" << sidecar_data.meshes.size()
+                    << " instances=" << sidecar_data.instances.size() << ")";
         return;
     }
 
@@ -3767,7 +3813,7 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     // that to skip these chunks (they're already resident after the
     // applyStreamedChunk loop below).
     StreamingSidecar metadata;
-    metadata.meta = std::move(s);
+    metadata.meta = std::move(sidecar_data);
     // Direct load: geometry is already in memory (uploaded below), streamed
     // from nothing — leave file_path empty so the streaming worker skips it.
     metadata.geometry_section_offset = 0;
@@ -3785,38 +3831,40 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
             << "): applyCachedModel produced no model entry";
         return;
     }
-    ModelGpuData& m = model_it->second;
+    ModelGpuData& model_gpu_data = model_it->second;
 
     // Gather each chunk's vertex + index bytes from the staged buffers.
     std::size_t chunks_uploaded = 0;
-    for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
-        auto& c = m.chunks[ci];
-        if (c.mesh_ids.empty()) continue;
+    for (std::size_t chunk_index = 0; chunk_index < model_gpu_data.chunks.size(); ++chunk_index) {
+        auto& chunk = model_gpu_data.chunks[chunk_index];
+        if (chunk.mesh_ids.empty()) continue;
 
-        std::vector<std::uint8_t>  vbytes(c.vertex_byte_size);
-        std::vector<std::uint32_t> idx;
-        idx.reserve(c.index_count);
+        std::vector<std::uint8_t>  vbytes(chunk.vertex_byte_size);
+        std::vector<std::uint32_t> indices;
+        indices.reserve(chunk.index_count);
 
-        for (std::uint32_t mi : c.mesh_ids) {
-            const MeshInfo& mesh = m.meshes[mi];
-            const std::size_t vsz = std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
-            if (vsz > 0) {
-                const std::size_t dst_off = std::size_t(m.mesh_chunk_local_base_vertex[mi])
+        for (std::uint32_t mesh_index : chunk.mesh_ids) {
+            const MeshInfo& mesh = model_gpu_data.meshes[mesh_index];
+            const std::size_t vertex_byte_count =
+                std::size_t(mesh.vertex_count) * INSTANCED_VERTEX_STRIDE_BYTES;
+            if (vertex_byte_count > 0) {
+                const std::size_t destination_vertex_offset =
+                    std::size_t(model_gpu_data.mesh_chunk_local_base_vertex[mesh_index])
                                           * INSTANCED_VERTEX_STRIDE_BYTES;
-                std::memcpy(vbytes.data() + dst_off,
-                            raw_vertices.data() + mesh.vbo_byte_offset, vsz);
+                std::memcpy(vbytes.data() + destination_vertex_offset,
+                            raw_vertices.data() + mesh.vbo_byte_offset, vertex_byte_count);
             }
             if (mesh.index_count > 0) {
                 const std::uint32_t* src = raw_indices.data()
                                          + (mesh.ebo_byte_offset / sizeof(std::uint32_t));
-                idx.insert(idx.end(), src, src + mesh.index_count);
+                indices.insert(indices.end(), src, src + mesh.index_count);
             }
         }
 
-        if (!applyStreamedChunk(m, ci, vbytes, idx)) {
+        if (!applyStreamedChunk(model_gpu_data, chunk_index, vbytes, indices)) {
             Log::warn()
                 << "[wgpu direct] finalizeModel(" << model_id
-                << "): applyStreamedChunk failed on chunk " << ci
+                << "): applyStreamedChunk failed on chunk " << chunk_index
                 << " (pool OOM?)";
             continue;
         }
@@ -3825,9 +3873,9 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
 
     Log::info()
         << "[wgpu direct] finalizeModel mid=" << model_id
-        << " meshes=" << m.meshes.size()
-        << " instances=" << m.instances.size()
-        << " chunks=" << chunks_uploaded << "/" << m.chunks.size()
+        << " meshes=" << model_gpu_data.meshes.size()
+        << " instances=" << model_gpu_data.instances.size()
+        << " chunks=" << chunks_uploaded << "/" << model_gpu_data.chunks.size()
         << " verts=" << raw_vertices.size() << "B"
         << " idx=" << raw_indices.size();
 }
@@ -4673,19 +4721,21 @@ bool rayAABBHit(const Eigen::Vector3f& origin, const Eigen::Vector3f& dir,
 } // namespace
 
 bool ViewportCore::buildPickPipeline() {
-    // Two color attachments: R32UInt for object_id, RGBA16F for the
-    // packed world-space normal so the section tool can drop
-    // perpendicular cuts at the picked pixel.
-    WGPUColorTargetState color_targets[2] = {};
+    // Three color attachments: R32UInt object_id, RGBA16F packed normal, and
+    // RGBA32F exact world position (so surface pick lands on the true face, not
+    // a ray-AABB approximation).
+    WGPUColorTargetState color_targets[3] = {};
     color_targets[0].format    = WGPUTextureFormat_R32Uint;
     color_targets[0].writeMask = WGPUColorWriteMask_All;
     color_targets[1].format    = WGPUTextureFormat_RGBA16Float;
     color_targets[1].writeMask = WGPUColorWriteMask_All;
+    color_targets[2].format    = WGPUTextureFormat_RGBA32Float;
+    color_targets[2].writeMask = WGPUColorWriteMask_All;
 
     WGPUFragmentState frag = {};
     frag.module      = main_shader_module_;
     frag.entryPoint  = svFromCStr("fs_pick");
-    frag.targetCount = 2;
+    frag.targetCount = 3;
     frag.targets     = color_targets;
 
     WGPUDepthStencilState depth = {};
@@ -4725,6 +4775,8 @@ void ViewportCore::ensurePickAttachments(int w, int h) {
     if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
     if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
     if (pick_normal_texture_) { wgpuTextureRelease(pick_normal_texture_); pick_normal_texture_ = nullptr; }
+    if (pick_position_view_)    { wgpuTextureViewRelease(pick_position_view_); pick_position_view_ = nullptr; }
+    if (pick_position_texture_) { wgpuTextureRelease(pick_position_texture_); pick_position_texture_ = nullptr; }
     if (pick_depth_view_)     { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
     if (pick_depth_texture_)  { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
 
@@ -4746,6 +4798,12 @@ void ViewportCore::ensurePickAttachments(int w, int h) {
     ndesc.label  = svFromCStr("ifcviewer-wgpu.pick_normal");
     pick_normal_texture_ = wgpuDeviceCreateTexture(device_, &ndesc);
     pick_normal_view_    = wgpuTextureCreateView(pick_normal_texture_, nullptr);
+
+    WGPUTextureDescriptor pdesc = cdesc;
+    pdesc.format = WGPUTextureFormat_RGBA32Float;
+    pdesc.label  = svFromCStr("ifcviewer-wgpu.pick_position");
+    pick_position_texture_ = wgpuDeviceCreateTexture(device_, &pdesc);
+    pick_position_view_    = wgpuTextureCreateView(pick_position_texture_, nullptr);
 
     WGPUTextureDescriptor ddesc = {};
     ddesc.usage         = WGPUTextureUsage_RenderAttachment;
@@ -4781,6 +4839,13 @@ void ViewportCore::ensurePickAttachments(int w, int h) {
         sb.label = svFromCStr("ifcviewer-wgpu.pick_normal_staging");
         pick_normal_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
     }
+    if (!pick_position_staging_buffer_) {
+        WGPUBufferDescriptor sb = {};
+        sb.size  = 256;
+        sb.usage = WGPUBufferUsage_CopyDst | WGPUBufferUsage_MapRead;
+        sb.label = svFromCStr("ifcviewer-wgpu.pick_position_staging");
+        pick_position_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
+    }
     pick_w_ = w;
     pick_h_ = h;
 }
@@ -4790,12 +4855,18 @@ void ViewportCore::releasePickResources() {
     if (pick_color_texture_)  { wgpuTextureRelease(pick_color_texture_);  pick_color_texture_ = nullptr; }
     if (pick_normal_view_)    { wgpuTextureViewRelease(pick_normal_view_); pick_normal_view_ = nullptr; }
     if (pick_normal_texture_) { wgpuTextureRelease(pick_normal_texture_); pick_normal_texture_ = nullptr; }
+    if (pick_position_view_)    { wgpuTextureViewRelease(pick_position_view_); pick_position_view_ = nullptr; }
+    if (pick_position_texture_) { wgpuTextureRelease(pick_position_texture_); pick_position_texture_ = nullptr; }
     if (pick_depth_view_)     { wgpuTextureViewRelease(pick_depth_view_); pick_depth_view_ = nullptr; }
     if (pick_depth_texture_)  { wgpuTextureRelease(pick_depth_texture_);  pick_depth_texture_ = nullptr; }
     if (pick_staging_buffer_) { wgpuBufferRelease(pick_staging_buffer_);  pick_staging_buffer_ = nullptr; }
     if (pick_normal_staging_buffer_) {
         wgpuBufferRelease(pick_normal_staging_buffer_);
         pick_normal_staging_buffer_ = nullptr;
+    }
+    if (pick_position_staging_buffer_) {
+        wgpuBufferRelease(pick_position_staging_buffer_);
+        pick_position_staging_buffer_ = nullptr;
     }
     if (pick_pipeline_)            { wgpuRenderPipelineRelease(pick_pipeline_); pick_pipeline_ = nullptr; }
     if (box_pick_staging_buffer_)  {
@@ -4817,7 +4888,7 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     // by the last render's cullModelCpuUpload). Encode a one-shot pass.
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
-    WGPURenderPassColorAttachment color[2] = {};
+    WGPURenderPassColorAttachment color[3] = {};
     color[0].view       = pick_color_view_;
     color[0].loadOp     = WGPULoadOp_Clear;
     color[0].storeOp    = WGPUStoreOp_Store;
@@ -4828,6 +4899,11 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     color[1].storeOp    = WGPUStoreOp_Store;
     color[1].clearValue = { 0.5, 0.5, 0.5, 0.0 };
     color[1].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    color[2].view       = pick_position_view_;
+    color[2].loadOp     = WGPULoadOp_Clear;
+    color[2].storeOp    = WGPUStoreOp_Store;
+    color[2].clearValue = { 0.0, 0.0, 0.0, 0.0 };
+    color[2].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
     WGPURenderPassDepthStencilAttachment depth = {};
     depth.view              = pick_depth_view_;
@@ -4839,7 +4915,7 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     depth.stencilReadOnly   = true;
 
     WGPURenderPassDescriptor pass_desc = {};
-    pass_desc.colorAttachmentCount   = 2;
+    pass_desc.colorAttachmentCount   = 3;
     pass_desc.colorAttachments       = color;
     pass_desc.depthStencilAttachment = &depth;
     pass_desc.label                  = svFromCStr("ifcviewer-wgpu.pick_pass");
@@ -4890,6 +4966,13 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
         ndst.layout.rowsPerImage = 1;
 
         wgpuCommandEncoderCopyTextureToBuffer(enc, &nsrc, &ndst, &extent);
+
+        // Exact world position too (surface pick wants both).
+        WGPUTexelCopyTextureInfo psrc = nsrc;
+        psrc.texture = pick_position_texture_;
+        WGPUTexelCopyBufferInfo pdst = ndst;
+        pdst.buffer  = pick_position_staging_buffer_;
+        wgpuCommandEncoderCopyTextureToBuffer(enc, &psrc, &pdst, &extent);
     }
 
     WGPUCommandBuffer cmd = wgpuCommandEncoderFinish(enc, nullptr);
@@ -4941,46 +5024,61 @@ std::uint32_t ViewportCore::pickObjectAt(int x_pixels, int y_pixels,
         wgpuBufferMapAsync(pick_normal_staging_buffer_, WGPUMapMode_Read, 0, 256, ncb);
         while (!nreq.done) waitTickInstance(instance_);
         if (nreq.ok) {
-            const std::uint16_t* halves = static_cast<const std::uint16_t*>(
-                wgpuBufferGetConstMappedRange(pick_normal_staging_buffer_, 0, 256));
-            if (halves) {
-                // IEEE 754 half → float. Standard bit-fiddle (no STL
-                // helper in pre-C++23).
-                auto h2f = [](std::uint16_t h) -> float {
-                    const std::uint32_t sign     = std::uint32_t(h & 0x8000u) << 16;
-                    std::uint32_t       exponent = std::uint32_t(h & 0x7C00u) >> 10;
-                    std::uint32_t       mantissa = std::uint32_t(h & 0x03FFu);
-                    if (exponent == 0) {
-                        if (mantissa == 0) {
-                            union { std::uint32_t u; float f; } v{ sign };
-                            return v.f;
-                        }
-                        while ((mantissa & 0x0400u) == 0) {
-                            mantissa <<= 1;
-                            --exponent;
-                        }
-                        ++exponent;
-                        mantissa &= 0x03FFu;
-                    } else if (exponent == 0x1Fu) {
-                        exponent = 0xFFu;
-                    } else {
-                        exponent += (127u - 15u);
-                    }
-                    const std::uint32_t bits = sign | (exponent << 23) | (mantissa << 13);
-                    union { std::uint32_t u; float f; } v{ bits };
-                    return v.f;
-                };
-                const float nx = h2f(halves[0]) * 2.0f - 1.0f;
-                const float ny = h2f(halves[1]) * 2.0f - 1.0f;
-                const float nz = h2f(halves[2]) * 2.0f - 1.0f;
-                Eigen::Vector3f n(nx, ny, nz);
-                if (n.squaredNorm() > 1e-6f) *normal_out = n.normalized();
-            }
-            wgpuBufferUnmap(pick_normal_staging_buffer_);
+            Eigen::Vector3f n;
+            if (decodeMappedPickNormal(n)) *normal_out = n;  // decodeMapped… unmaps
         }
     }
 
     return object_id;
+}
+
+bool ViewportCore::decodeMappedPickPosition(Eigen::Vector3f& out) {
+    const float* p = static_cast<const float*>(
+        wgpuBufferGetConstMappedRange(pick_position_staging_buffer_, 0, 256));
+    bool ok = false;
+    if (p && p[3] > 0.5f) {  // w == 1.0 for a real fragment, 0 for a cleared miss
+        out = Eigen::Vector3f(p[0], p[1], p[2]);
+        ok = true;
+    }
+    wgpuBufferUnmap(pick_position_staging_buffer_);
+    return ok;
+}
+
+bool ViewportCore::decodeMappedPickNormal(Eigen::Vector3f& out) {
+    const std::uint16_t* halves = static_cast<const std::uint16_t*>(
+        wgpuBufferGetConstMappedRange(pick_normal_staging_buffer_, 0, 256));
+    bool ok = false;
+    if (halves) {
+        // IEEE 754 half → float. Standard bit-fiddle (no STL helper pre-C++23).
+        auto h2f = [](std::uint16_t h) -> float {
+            const std::uint32_t sign     = std::uint32_t(h & 0x8000u) << 16;
+            std::uint32_t       exponent = std::uint32_t(h & 0x7C00u) >> 10;
+            std::uint32_t       mantissa = std::uint32_t(h & 0x03FFu);
+            if (exponent == 0) {
+                if (mantissa == 0) {
+                    union { std::uint32_t u; float f; } v{ sign };
+                    return v.f;
+                }
+                while ((mantissa & 0x0400u) == 0) { mantissa <<= 1; --exponent; }
+                ++exponent;
+                mantissa &= 0x03FFu;
+            } else if (exponent == 0x1Fu) {
+                exponent = 0xFFu;
+            } else {
+                exponent += (127u - 15u);
+            }
+            const std::uint32_t bits = sign | (exponent << 23) | (mantissa << 13);
+            union { std::uint32_t u; float f; } v{ bits };
+            return v.f;
+        };
+        const float nx = h2f(halves[0]) * 2.0f - 1.0f;
+        const float ny = h2f(halves[1]) * 2.0f - 1.0f;
+        const float nz = h2f(halves[2]) * 2.0f - 1.0f;
+        Eigen::Vector3f n(nx, ny, nz);
+        if (n.squaredNorm() > 1e-6f) { out = n.normalized(); ok = true; }
+    }
+    wgpuBufferUnmap(pick_normal_staging_buffer_);
+    return ok;
 }
 
 // Route a pick result through the selection state machine. Mirrors the
@@ -4996,6 +5094,17 @@ void ViewportCore::applyPickToSelection(std::uint32_t object_id, bool add, bool 
     if (remove)      selection_.remove(object_id);
     else if (add)    selection_.add(object_id);
     else             selection_.replace(object_id);
+}
+
+void ViewportCore::applyMarqueeToSelection(const std::vector<std::uint32_t>& ids,
+                                           bool add, bool remove) {
+    if (!add && !remove) selection_.clear();   // plain marquee replaces
+    for (std::uint32_t id : ids) {
+        if (id == 0) continue;
+        if (remove) selection_.remove(id);
+        else        selection_.add(id);        // replace (post-clear) or add
+    }
+    host_->requestFrame();
 }
 
 void ViewportCore::hideSelected() {
@@ -5015,7 +5124,7 @@ void ViewportCore::isolateSelected() {
     const auto& sel_ids = selection_.selectionIds();
     for (const auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
-        for (const InstanceCpu& inst : m.instances) {
+        for (const InstanceInfo& inst : m.instances) {
             if (inst.object_id == 0) continue;
             if (sel_ids.find(inst.object_id) == sel_ids.end())
                 visibility_.hide(inst.object_id);
@@ -5090,19 +5199,20 @@ void ViewportCore::pickObjectAtAsync(int x_pixels, int y_pixels,
 }
 #endif  // __EMSCRIPTEN__
 
-std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
-    std::vector<std::uint32_t> out;
-    if (w <= 0 || h <= 0) return out;
-    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return out;
-    if (configured_w_ <= 0 || configured_h_ <= 0) return out;
+bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
+                                          std::uint64_t& padded_bpr_out,
+                                          std::uint64_t& needed_bytes_out) {
+    if (w <= 0 || h <= 0) return false;
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) return false;
+    if (configured_w_ <= 0 || configured_h_ <= 0) return false;
     if (x < 0) { w += x; x = 0; }
     if (y < 0) { h += y; y = 0; }
     if (x + w > configured_w_) w = configured_w_ - x;
     if (y + h > configured_h_) h = configured_h_ - y;
-    if (w <= 0 || h <= 0) return out;
+    if (w <= 0 || h <= 0) return false;
 
     ensurePickAttachments(configured_w_, configured_h_);
-    if (!pick_color_view_ || !pick_depth_view_) return out;
+    if (!pick_color_view_ || !pick_depth_view_) return false;
 
     // Padded bytes-per-row. R32UInt = 4 B/texel; align to 256 B.
     constexpr std::uint64_t kWgpuBytesPerRowAlign = 256;
@@ -5124,11 +5234,11 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
         box_pick_staging_buffer_ = wgpuDeviceCreateBuffer(device_, &sb);
         box_pick_staging_capacity_ = cap;
     }
-    if (!box_pick_staging_buffer_) return out;
+    if (!box_pick_staging_buffer_) return false;
 
     WGPUCommandEncoder enc = wgpuDeviceCreateCommandEncoder(device_, nullptr);
 
-    WGPURenderPassColorAttachment color[2] = {};
+    WGPURenderPassColorAttachment color[3] = {};
     color[0].view       = pick_color_view_;
     color[0].loadOp     = WGPULoadOp_Clear;
     color[0].storeOp    = WGPUStoreOp_Store;
@@ -5139,6 +5249,11 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
     color[1].storeOp    = WGPUStoreOp_Store;
     color[1].clearValue = { 0.5, 0.5, 0.5, 0 };
     color[1].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
+    color[2].view       = pick_position_view_;   // rendered (pipeline outputs 3), not read here
+    color[2].loadOp     = WGPULoadOp_Clear;
+    color[2].storeOp    = WGPUStoreOp_Store;
+    color[2].clearValue = { 0, 0, 0, 0 };
+    color[2].depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 
     WGPURenderPassDepthStencilAttachment depth = {};
     depth.view            = pick_depth_view_;
@@ -5150,7 +5265,7 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
     depth.stencilReadOnly = true;
 
     WGPURenderPassDescriptor pass_desc = {};
-    pass_desc.colorAttachmentCount   = 2;
+    pass_desc.colorAttachmentCount   = 3;
     pass_desc.colorAttachments       = color;
     pass_desc.depthStencilAttachment = &depth;
     pass_desc.label                  = svFromCStr("ifcviewer-wgpu.box_pick_pass");
@@ -5192,22 +5307,14 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
     wgpuCommandBufferRelease(cmd);
     wgpuCommandEncoderRelease(enc);
 
-    struct MapReq { bool done = false; bool ok = false; };
-    MapReq req;
-    WGPUBufferMapCallbackInfo mcb = {};
-    mcb.mode = kAsyncCbMode;
-    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
-                      void* ud1, void* /*ud2*/) {
-        auto* r = static_cast<MapReq*>(ud1);
-        r->done = true;
-        r->ok   = (status == WGPUMapAsyncStatus_Success);
-    };
-    mcb.userdata1 = &req;
-    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read,
-                       0, needed_bytes, mcb);
-    while (!req.done) waitTickInstance(instance_);
-    if (!req.ok) return out;
+    padded_bpr_out   = padded_bpr;
+    needed_bytes_out = needed_bytes;
+    return true;
+}
 
+std::vector<std::uint32_t> ViewportCore::collectMappedBoxPickIds(
+        std::uint64_t padded_bpr, int w, int h, std::uint64_t needed_bytes) {
+    std::vector<std::uint32_t> out;
     const std::uint8_t* mapped = static_cast<const std::uint8_t*>(
         wgpuBufferGetConstMappedRange(box_pick_staging_buffer_, 0, needed_bytes));
     std::unordered_set<std::uint32_t> seen;
@@ -5222,21 +5329,78 @@ std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h)
         }
     }
     wgpuBufferUnmap(box_pick_staging_buffer_);
-
     out.reserve(seen.size());
     for (std::uint32_t id : seen) out.push_back(id);
     return out;
 }
 
-bool ViewportCore::pickSurfaceAt(int x_pixels, int y_pixels,
-                                 std::uint32_t& object_id_out,
-                                 Eigen::Vector3f& world_pos_out,
-                                 Eigen::Vector3f& world_normal_out,
-                                 float* aabb_radius_out) {
-    if (aabb_radius_out) *aabb_radius_out = 0.0f;
-    Eigen::Vector3f picked_normal(0, 0, 1);
-    const std::uint32_t id = pickObjectAt(x_pixels, y_pixels, &picked_normal);
-    if (id == 0) return false;
+std::vector<std::uint32_t> ViewportCore::picksInRect(int x, int y, int w, int h) {
+    std::uint64_t padded_bpr = 0, needed_bytes = 0;
+    if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) return {};
+
+    struct MapReq { bool done = false; bool ok = false; };
+    MapReq req;
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* r = static_cast<MapReq*>(ud1);
+        r->done = true;
+        r->ok   = (status == WGPUMapAsyncStatus_Success);
+    };
+    mcb.userdata1 = &req;
+    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read, 0, needed_bytes, mcb);
+    while (!req.done) waitTickInstance(instance_);
+    if (!req.ok) return {};
+    return collectMappedBoxPickIds(padded_bpr, w, h, needed_bytes);
+}
+
+#if defined(__EMSCRIPTEN__)
+void ViewportCore::picksInRectAsync(int x, int y, int w, int h,
+                                    std::function<void(std::vector<std::uint32_t>)> cb) {
+    auto miss = [&cb]() { if (cb) cb({}); };
+    if (box_pick_async_in_flight_) { miss(); return; }
+    std::uint64_t padded_bpr = 0, needed_bytes = 0;
+    if (!encodeBoxPickToStaging(x, y, w, h, padded_bpr, needed_bytes)) { miss(); return; }
+
+    // Stash the (clamped) rect so the spontaneous map callback can walk the
+    // padded staging rows without recomputing.
+    box_pick_async_w_          = w;
+    box_pick_async_h_          = h;
+    box_pick_async_padded_bpr_ = padded_bpr;
+    box_pick_async_bytes_      = needed_bytes;
+    box_pick_async_in_flight_  = true;
+    box_pick_async_cb_         = std::move(cb);
+
+    WGPUBufferMapCallbackInfo mcb = {};
+    mcb.mode = kAsyncCbMode;  // AllowSpontaneous on web
+    mcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                      void* ud1, void* /*ud2*/) {
+        auto* self = static_cast<ViewportCore*>(ud1);
+        std::vector<std::uint32_t> ids;
+        if (status == WGPUMapAsyncStatus_Success) {
+            ids = self->collectMappedBoxPickIds(self->box_pick_async_padded_bpr_,
+                                                self->box_pick_async_w_,
+                                                self->box_pick_async_h_,
+                                                self->box_pick_async_bytes_);
+        }
+        auto cb = std::move(self->box_pick_async_cb_);
+        self->box_pick_async_cb_ = nullptr;
+        self->box_pick_async_in_flight_ = false;
+        if (cb) cb(std::move(ids));
+    };
+    mcb.userdata1 = this;
+    wgpuBufferMapAsync(box_pick_staging_buffer_, WGPUMapMode_Read, 0, needed_bytes, mcb);
+}
+#endif
+
+bool ViewportCore::raycastSurfaceForObject(std::uint32_t object_id, int x_pixels, int y_pixels,
+                                           const Eigen::Vector3f& mrt_normal,
+                                           Eigen::Vector3f& world_pos_out,
+                                           Eigen::Vector3f& world_normal_out,
+                                           float& aabb_radius_out) {
+    aabb_radius_out = 0.0f;
+    if (object_id == 0) return false;
 
     // WebGPU forbids partial copies of Depth32Float, so ray-cast against
     // each instance carrying the picked object_id rather than reading
@@ -5267,7 +5431,7 @@ bool ViewportCore::pickSurfaceAt(int x_pixels, int y_pixels,
     for (const auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& inst : m.instances) {
-            if (inst.object_id != id) continue;
+            if (inst.object_id != object_id) continue;
             float t = 0.0f;
             Eigen::Vector3f n;
             if (!rayAABBHit(eye, ray_dir,
@@ -5287,15 +5451,153 @@ bool ViewportCore::pickSurfaceAt(int x_pixels, int y_pixels,
     }
     if (!found) return false;
 
-    if (aabb_radius_out) *aabb_radius_out = best_radius;
-
+    aabb_radius_out  = best_radius;
     world_pos_out    = best_point;
     // Prefer per-fragment normal from the pick MRT; fall back to AABB face.
-    world_normal_out = (picked_normal.squaredNorm() > 1e-3f)
-                         ? picked_normal : best_normal;
-    object_id_out    = id;
+    world_normal_out = (mrt_normal.squaredNorm() > 1e-3f) ? mrt_normal : best_normal;
     return true;
 }
+
+bool ViewportCore::pickSurfaceAt(int x_pixels, int y_pixels,
+                                 std::uint32_t& object_id_out,
+                                 Eigen::Vector3f& world_pos_out,
+                                 Eigen::Vector3f& world_normal_out,
+                                 float* aabb_radius_out) {
+    if (aabb_radius_out) *aabb_radius_out = 0.0f;
+    Eigen::Vector3f picked_normal(0, 0, 1);
+    // pickObjectAt encodes + reads id + normal, and (now) stages the exact world
+    // position into pick_position_staging_buffer_ in the same pass.
+    const std::uint32_t id = pickObjectAt(x_pixels, y_pixels, &picked_normal);
+    if (id == 0) return false;
+
+    // Read the exact surface position from the pick MRT (sync map — desktop
+    // path). This lands the hit on the true face rather than a ray-AABB point.
+    if (pick_position_staging_buffer_) {
+        struct MapReq { bool done = false; bool ok = false; };
+        MapReq req;
+        WGPUBufferMapCallbackInfo mcb = {};
+        mcb.mode = kAsyncCbMode;
+        mcb.callback = [](WGPUMapAsyncStatus s, WGPUStringView, void* u, void*) {
+            auto* r = static_cast<MapReq*>(u); r->done = true;
+            r->ok = (s == WGPUMapAsyncStatus_Success);
+        };
+        mcb.userdata1 = &req;
+        wgpuBufferMapAsync(pick_position_staging_buffer_, WGPUMapMode_Read, 0, 256, mcb);
+        while (!req.done) waitTickInstance(instance_);
+        Eigen::Vector3f mrt_pos;
+        if (req.ok && decodeMappedPickPosition(mrt_pos)) {
+            world_pos_out    = mrt_pos;
+            world_normal_out = picked_normal;
+            object_id_out    = id;
+            return true;
+        }
+    }
+
+    // Fallback: ray-AABB (e.g. if the position read failed).
+    float radius = 0.0f;
+    if (!raycastSurfaceForObject(id, x_pixels, y_pixels, picked_normal,
+                                 world_pos_out, world_normal_out, radius)) return false;
+    if (aabb_radius_out) *aabb_radius_out = radius;
+    object_id_out = id;
+    return true;
+}
+
+#if defined(__EMSCRIPTEN__)
+void ViewportCore::finishSurfaceAsync(SurfaceHit hit) {
+    auto cb = std::move(surface_async_cb_);
+    surface_async_cb_ = nullptr;
+    pick_async_in_flight_ = false;
+    if (cb) cb(hit);
+}
+
+void ViewportCore::pickSurfaceAtAsync(int x_pixels, int y_pixels,
+                                      std::function<void(SurfaceHit)> cb) {
+    auto miss = [&cb]() { if (cb) cb(SurfaceHit{}); };
+    if (!pick_pipeline_ || !device_ || !queue_ || models_gpu_.empty()) { miss(); return; }
+    if (configured_w_ <= 0 || configured_h_ <= 0) { miss(); return; }
+    if (x_pixels < 0 || y_pixels < 0 ||
+        x_pixels >= configured_w_ || y_pixels >= configured_h_) { miss(); return; }
+    ensurePickAttachments(configured_w_, configured_h_);
+    if (!pick_color_view_ || !pick_depth_view_ ||
+        !pick_staging_buffer_ || !pick_normal_staging_buffer_) { miss(); return; }
+    // Shares the single-pick staging buffers → shares the in-flight guard.
+    if (pick_async_in_flight_) { miss(); return; }
+    pick_async_in_flight_ = true;
+    surface_async_x_  = x_pixels;
+    surface_async_y_  = y_pixels;
+    surface_async_id_ = 0;
+    surface_async_cb_ = std::move(cb);
+
+    // Render pick + normal MRTs, copy both texels to their staging buffers.
+    encodePickReadbackToStaging(x_pixels, y_pixels, /*want_normal=*/true);
+
+    // Map the object-id texel; then (chained) the normal texel; then raycast.
+    WGPUBufferMapCallbackInfo idcb = {};
+    idcb.mode = kAsyncCbMode;
+    idcb.callback = [](WGPUMapAsyncStatus status, WGPUStringView /*msg*/,
+                       void* ud1, void* /*ud2*/) {
+        auto* self = static_cast<ViewportCore*>(ud1);
+        std::uint32_t id = 0;
+        if (status == WGPUMapAsyncStatus_Success) {
+            const std::uint32_t* mapped = static_cast<const std::uint32_t*>(
+                wgpuBufferGetConstMappedRange(self->pick_staging_buffer_, 0, 256));
+            id = mapped ? mapped[0] : 0u;
+            wgpuBufferUnmap(self->pick_staging_buffer_);
+        }
+        if (id == 0) { self->finishSurfaceAsync(SurfaceHit{}); return; }
+        self->surface_async_id_ = id;
+
+        // Chain: normal texel → then the exact-position texel → then deliver.
+        WGPUBufferMapCallbackInfo ncb = {};
+        ncb.mode = kAsyncCbMode;
+        ncb.callback = [](WGPUMapAsyncStatus s2, WGPUStringView /*msg*/,
+                          void* u1, void* /*u2*/) {
+            auto* self = static_cast<ViewportCore*>(u1);
+            self->surface_async_normal_ = Eigen::Vector3f::Zero();
+            if (s2 == WGPUMapAsyncStatus_Success)
+                self->decodeMappedPickNormal(self->surface_async_normal_);
+
+            WGPUBufferMapCallbackInfo pcb = {};
+            pcb.mode = kAsyncCbMode;
+            pcb.callback = [](WGPUMapAsyncStatus s3, WGPUStringView /*msg*/,
+                              void* u2, void* /*u3*/) {
+                auto* self = static_cast<ViewportCore*>(u2);
+                Eigen::Vector3f pos;
+                const bool have_pos = (s3 == WGPUMapAsyncStatus_Success)
+                                      && self->decodeMappedPickPosition(pos);
+                const bool have_n   = self->surface_async_normal_.squaredNorm() > 1e-3f;
+                SurfaceHit hit;
+                if (have_pos && have_n) {
+                    // True surface point + MRT normal — no ray-AABB.
+                    hit.found        = true;
+                    hit.object_id    = self->surface_async_id_;
+                    hit.world_pos    = pos;
+                    hit.world_normal = self->surface_async_normal_.normalized();
+                } else {
+                    // Fallback: ray-AABB (prefers the MRT position if we had it).
+                    float radius = 0.0f;
+                    Eigen::Vector3f p, n;
+                    if (self->raycastSurfaceForObject(self->surface_async_id_,
+                                                      self->surface_async_x_, self->surface_async_y_,
+                                                      self->surface_async_normal_, p, n, radius)) {
+                        hit.found        = true;
+                        hit.object_id    = self->surface_async_id_;
+                        hit.world_pos    = have_pos ? pos : p;
+                        hit.world_normal = n;
+                    }
+                }
+                self->finishSurfaceAsync(hit);
+            };
+            pcb.userdata1 = self;
+            wgpuBufferMapAsync(self->pick_position_staging_buffer_, WGPUMapMode_Read, 0, 256, pcb);
+        };
+        ncb.userdata1 = self;
+        wgpuBufferMapAsync(self->pick_normal_staging_buffer_, WGPUMapMode_Read, 0, 256, ncb);
+    };
+    idcb.userdata1 = this;
+    wgpuBufferMapAsync(pick_staging_buffer_, WGPUMapMode_Read, 0, 256, idcb);
+}
+#endif
 
 bool ViewportCore::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     std::uint32_t obj_id = 0;
@@ -5303,11 +5605,11 @@ bool ViewportCore::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
 
     // Use the OUTER mid (the live map key) rather than inst.model_id —
-    // InstanceCpu::model_id is stale across sessions.
+    // InstanceInfo::model_id is stale across sessions.
     for (const auto& [mid, m] : models_gpu_) {
         auto it = m.object_id_to_instance.find(obj_id);
         if (it == m.object_id_to_instance.end()) continue;
-        const InstanceCpu& inst = m.instances[it->second];
+        const InstanceInfo& inst = m.instances[it->second];
 
         const Eigen::Matrix4f T = Eigen::Map<const Eigen::Matrix4f>(inst.transform);
         Eigen::Matrix4f Ti;
@@ -5445,7 +5747,7 @@ bool ViewportCore::raycast(const float origin[3], const float dir[3],
     for (const auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
         for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
-            const InstanceCpu& inst = m.instances[inst_idx];
+            const InstanceInfo& inst = m.instances[inst_idx];
             if (!rayAabbSlab(origin, inv_d, inst.world_aabb_min, inst.world_aabb_max)) {
                 continue;
             }
@@ -6119,8 +6421,13 @@ void ViewportCore::render() {
     overlay_frame.viewport_h_px      = viewport_h_px;
     overlay_frame.device_pixel_ratio = dpr_int;
 
-    // In-pass overlays (section gizmos, highlight triangles, pivot,
-    // overlay lines/points). QtViewportHost forwards to overlays_.X().
+    // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
+    // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
+    section_gizmo_.encode(pass, vp_this_frame, section_planes_,
+                          viewport_w_px, viewport_h_px, dpr_int);
+
+    // Remaining in-pass overlays (highlight triangles, pivot, overlay
+    // lines/points). QtViewportHost forwards to overlays_.X(); web host no-ops.
     host_->encodeOverlaysInMainPass(pass, overlay_frame);
 
     wgpuRenderPassEncoderEnd(pass);
@@ -6425,5 +6732,73 @@ void ViewportCore::clearSectionPlanes() {
     if (section_planes_.empty()) return;
     section_planes_.clear();
     Log::info() << "[wgpu section] cleared all planes";
+    host_->requestFrame();
+}
+
+// Logical (CSS-px) viewport from the host framebuffer + DPR.
+void ViewportCore::sectionLogicalViewport(int& w, int& h) const {
+    int fb_w = 0, fb_h = 0;
+    host_->framebufferSize(fb_w, fb_h);
+    const int dpr = std::max(1, int(host_->dpr()));
+    w = fb_w / dpr;
+    h = fb_h / dpr;
+}
+
+int ViewportCore::hitTestSectionGizmo(int x, int y) {
+    if (section_planes_.empty()) return -1;
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    int w = 0, h = 0;
+    sectionLogicalViewport(w, h);
+    if (w <= 0 || h <= 0) return -1;
+    return SectionGizmoRenderer::hitTest(x, y, section_planes_, view, proj, w, h);
+}
+
+bool ViewportCore::beginSectionDrag(int gizmo_index, int mouse_x, int mouse_y) {
+    if (gizmo_index < 0 || gizmo_index >= int(section_planes_.size())) return false;
+    section_drag_active_       = true;
+    section_drag_index_        = gizmo_index;
+    section_drag_start_origin_ = section_planes_[gizmo_index].origin;
+    section_drag_start_mx_     = mouse_x;
+    section_drag_start_my_     = mouse_y;
+    return true;
+}
+
+void ViewportCore::updateSectionDrag(int mouse_x, int mouse_y) {
+    if (!section_drag_active_) return;
+    if (section_drag_index_ < 0 || section_drag_index_ >= int(section_planes_.size())) return;
+    SectionPlane& p = section_planes_[section_drag_index_];
+
+    int w = 0, h = 0;
+    sectionLogicalViewport(w, h);
+    if (w <= 0 || h <= 0) return;
+    Eigen::Matrix4f view, proj;
+    buildViewProj(view, proj);
+    const Eigen::Matrix4f vp = proj * view;
+
+    // Reproject the PRESS-TIME origin (and origin + n) every frame so the slide
+    // stays smooth even if the camera moves mid-drag.
+    auto to_screen = [&](const Eigen::Vector3f& world, Eigen::Vector2f& out) -> bool {
+        const Eigen::Vector4f clip = vp * Eigen::Vector4f(world.x(), world.y(), world.z(), 1.0f);
+        if (clip.w() <= 0.0f) return false;
+        const float invw = 1.0f / clip.w();
+        out = Eigen::Vector2f((clip.x() * invw * 0.5f + 0.5f) * float(w),
+                              (1.0f - (clip.y() * invw * 0.5f + 0.5f)) * float(h));
+        return true;
+    };
+    Eigen::Vector2f s_origin, s_n;
+    if (!to_screen(section_drag_start_origin_, s_origin)) return;
+    if (!to_screen(section_drag_start_origin_ + p.n, s_n)) return;
+    const Eigen::Vector2f axis = s_n - s_origin;
+    const float len2 = axis.squaredNorm();
+    if (len2 < 1e-3f) return;  // arrow edge-on
+
+    // Project the pixel delta onto the screen-space normal axis; the axis is 1 m
+    // in world space, so (delta·axis)/|axis|² is the slide in metres.
+    const Eigen::Vector2f delta(float(mouse_x - section_drag_start_mx_),
+                                float(mouse_y - section_drag_start_my_));
+    const float meters = delta.dot(axis) / len2;
+    p.origin = section_drag_start_origin_ + p.n * meters;
+    p.d      = -p.n.dot(p.origin);
     host_->requestFrame();
 }

@@ -26,23 +26,23 @@ StreamingThread::~StreamingThread() {
 }
 
 void StreamingThread::start() {
-    std::unique_lock lk(mu_);
+    std::unique_lock lock(mu_);
     if (running_) return;
     shutdown_ = false;
     running_  = true;
-    lk.unlock();
+    lock.unlock();
     worker_ = std::thread(&StreamingThread::workerLoop, this);
 }
 
 void StreamingThread::stop() {
     {
-        std::unique_lock lk(mu_);
+        std::unique_lock lock(mu_);
         if (!running_) return;
         shutdown_ = true;
     }
     cv_.notify_all();
     if (worker_.joinable()) worker_.join();
-    std::unique_lock lk(mu_);
+    std::unique_lock lock(mu_);
     running_ = false;
     requests_.clear();
     results_.clear();
@@ -50,7 +50,7 @@ void StreamingThread::stop() {
 
 bool StreamingThread::enqueue(Request req) {
     {
-        std::unique_lock lk(mu_);
+        std::unique_lock lock(mu_);
         if (!running_ || shutdown_) return false;
         requests_.push_back(std::move(req));
     }
@@ -59,20 +59,20 @@ bool StreamingThread::enqueue(Request req) {
 }
 
 std::vector<StreamingThread::Result> StreamingThread::drainResults() {
-    std::vector<Result> out;
+    std::vector<Result> results;
     {
-        std::unique_lock lk(mu_);
-        out.reserve(results_.size());
+        std::unique_lock lock(mu_);
+        results.reserve(results_.size());
         while (!results_.empty()) {
-            out.push_back(std::move(results_.front()));
+            results.push_back(std::move(results_.front()));
             results_.pop_front();
         }
     }
-    return out;
+    return results;
 }
 
 std::size_t StreamingThread::inFlightApprox() const {
-    std::unique_lock lk(mu_);
+    std::unique_lock lock(mu_);
     return requests_.size() + (in_progress_ ? 1u : 0u);
 }
 
@@ -80,8 +80,8 @@ void StreamingThread::workerLoop() {
     for (;;) {
         Request req;
         {
-            std::unique_lock lk(mu_);
-            cv_.wait(lk, [this]() { return shutdown_ || !requests_.empty(); });
+            std::unique_lock lock(mu_);
+            cv_.wait(lock, [this]() { return shutdown_ || !requests_.empty(); });
             if (shutdown_ && requests_.empty()) return;
             req = std::move(requests_.front());
             requests_.pop_front();
@@ -94,18 +94,18 @@ void StreamingThread::workerLoop() {
         // us. The vbytes / idx buffers are allocated here on the worker
         // thread — they cross back to the main thread when the result
         // is drained and applied (pool.alloc + queueWriteBuffer).
-        Result res;
-        res.model_id  = req.model_id;
-        res.chunk_idx = req.chunk_idx;
-        res.success   = readChunkGeometryCompressed(
+        Result result;
+        result.model_id  = req.model_id;
+        result.chunk_idx = req.chunk_idx;
+        result.success   = readChunkGeometryCompressed(
             req.file_path, req.geometry_section_offset,
             req.v_comp_off, req.v_comp_size, req.v_raw_size,
             req.i_comp_off, req.i_comp_size, req.i_raw_size,
-            res.vbytes, res.idx);
+            result.vbytes, result.idx);
 
         {
-            std::unique_lock lk(mu_);
-            results_.push_back(std::move(res));
+            std::unique_lock lock(mu_);
+            results_.push_back(std::move(result));
             in_progress_ = false;
         }
     }

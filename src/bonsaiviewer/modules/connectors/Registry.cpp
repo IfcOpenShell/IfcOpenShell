@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -48,14 +48,14 @@ void ConnectorRegistry::refresh() {
     // exec changed under us. Surviving entries keep their running process.
     for (auto it = processes_.begin(); it != processes_.end();) {
         const QString id = it.key();
-        ConnectorProcess* p = it.value();
-        const ConnectorManifest* now = manifestFor(id);
-        const bool stale = !now || !p ||
-                           p->manifest().exec_path != now->exec_path;
+        ConnectorProcess* process = it.value();
+        const ConnectorManifest* current_manifest = manifestFor(id);
+        const bool stale = !current_manifest || !process ||
+                           process->manifest().exec_path != current_manifest->exec_path;
         if (stale) {
-            if (p) {
-                p->shutdown();
-                p->deleteLater();
+            if (process) {
+                process->shutdown();
+                process->deleteLater();
             }
             it = processes_.erase(it);
         } else {
@@ -65,8 +65,8 @@ void ConnectorRegistry::refresh() {
 }
 
 const ConnectorManifest* ConnectorRegistry::manifestFor(const QString& id) const {
-    for (const auto& m : manifests_) {
-        if (m.id == id) return &m;
+    for (const auto& manifest : manifests_) {
+        if (manifest.id == id) return &manifest;
     }
     return nullptr;
 }
@@ -90,7 +90,7 @@ ConnectorProcess* ConnectorRegistry::get(const QString& id) {
     processes_.insert(id, proc);
     connect(proc, &ConnectorProcess::crashed, this, [this, id](const QString& message) {
         qWarning() << "ifcviewer connectors:" << message;
-        if (auto* p = processes_.take(id)) p->deleteLater();
+        if (auto* process = processes_.take(id)) process->deleteLater();
     });
     return proc;
 }
@@ -99,9 +99,9 @@ void ConnectorRegistry::shutdownAll() {
     const auto procs = processes_;
     processes_.clear();
     for (auto it = procs.begin(); it != procs.end(); ++it) {
-        if (auto* p = it.value()) {
-            p->shutdown();
-            p->deleteLater();
+        if (auto* process = it.value()) {
+            process->shutdown();
+            process->deleteLater();
         }
     }
 }

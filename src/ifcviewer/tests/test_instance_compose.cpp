@@ -283,7 +283,7 @@ namespace {
 ModelGpuData make_model_with_one_instance(uint32_t object_id, uint32_t mesh_id,
                                           double placement_tx) {
     ModelGpuData m;
-    InstanceCpu inst{};
+    InstanceInfo inst{};
     inst.mesh_id   = mesh_id;
     inst.object_id = object_id;
     // Column-major identity with a tx for verification.

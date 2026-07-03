@@ -101,6 +101,11 @@ without repeating tessellation, packing, quantisation, and instance rebuilds.
 It is not a general interchange format or a full semantic storage backend. For
 model data, pair it with the original IFC file or with RocksDB.
 
+.. toctree::
+   :maxdepth: 1
+
+   ifcview_format
+
 RDBVIEW
 -------
 

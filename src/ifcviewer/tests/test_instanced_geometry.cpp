@@ -21,7 +21,7 @@
 // vertex quantization used to fill it.
 //
 // quantizeVertex / octEncodeNormal (VertexQuantization.h) are the shared
-// production helpers: ViewportWindow::uploadMeshChunk and SidecarBuilder both
+// production helpers: ViewportWindow::uploadStreamedMesh and SidecarBuilder both
 // route through them so the rendered VBO and the on-disk .ifcview record are
 // byte-identical.  The tests exercise that real implementation directly:
 //   - runtime size/alignment assertions (defense in depth for the static_asserts)
@@ -245,14 +245,14 @@ TEST_CASE("quantizeVertex passes the packed color through unchanged", "[instgeom
     REQUIRE(std::memcmp(dst + INSTANCED_VERTEX_COLOR_OFFSET, rgba, 4) == 0);
 }
 
-TEST_CASE("MeshChunk and InstanceChunk default-init to zeroed metadata", "[instgeom]") {
-    MeshChunk mc;
+TEST_CASE("StreamedMesh and StreamedInstance default-init to zeroed metadata", "[instgeom]") {
+    StreamedMesh mc;
     REQUIRE(mc.model_id == 0);
     REQUIRE(mc.local_mesh_id == 0);
     REQUIRE(mc.vertices.empty());
     REQUIRE(mc.indices.empty());
 
-    InstanceChunk ic;
+    StreamedInstance ic;
     REQUIRE(ic.model_id == 0);
     REQUIRE(ic.local_mesh_id == 0);
     REQUIRE(ic.object_id == 0);

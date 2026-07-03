@@ -83,7 +83,7 @@ SidecarData buildFixture() {
 
     sd.instances.resize(5);
     for (size_t i = 0; i < sd.instances.size(); ++i) {
-        InstanceCpu& inst = sd.instances[i];
+        InstanceInfo& inst = sd.instances[i];
         inst.mesh_id   = (i < 3) ? 0u : 1u;
         inst.object_id = uint32_t(100 + i);
         inst.color_override_rgba8 = uint32_t(0xAA000000u | (i * 0x010203u));
@@ -109,11 +109,10 @@ SidecarData buildFixture() {
     sd.string_table = std::string("\0Wall\0Slab\0", 11);  // includes embedded NULs
     sd.elements.resize(3);
     for (size_t i = 0; i < sd.elements.size(); ++i) {
-        PackedElementInfo& e = sd.elements[i];
+        ElementTableRecord& e = sd.elements[i];
         e.object_id = uint32_t(100 + i);
         e.model_id  = 1;
         e.ifc_id    = int32_t(1000 + i);
-        e.parent_id = (i == 0) ? -1 : int32_t(100);
         e.guid_offset = 0;  e.guid_length = 0;
         e.name_offset = 1;  e.name_length = 4;   // "Wall"
         e.type_offset = 6;  e.type_length = 4;   // "Slab"
@@ -136,10 +135,10 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
         if (std::memcmp(&a.meshes[i], &b.meshes[i], sizeof(MeshInfo)) != 0) return false;
     }
     for (size_t i = 0; i < a.instances.size(); ++i) {
-        if (std::memcmp(&a.instances[i], &b.instances[i], sizeof(InstanceCpu)) != 0) return false;
+        if (std::memcmp(&a.instances[i], &b.instances[i], sizeof(InstanceInfo)) != 0) return false;
     }
     for (size_t i = 0; i < a.elements.size(); ++i) {
-        if (std::memcmp(&a.elements[i], &b.elements[i], sizeof(PackedElementInfo)) != 0) return false;
+        if (std::memcmp(&a.elements[i], &b.elements[i], sizeof(ElementTableRecord)) != 0) return false;
     }
 
     // v11 georef block.
@@ -155,10 +154,12 @@ bool sidecarDataEqual(const SidecarData& a, const SidecarData& b) {
 
 } // namespace
 
-TEST_CASE("MeshInfo and InstanceCpu have stable layouts (sidecar wire format)", "[sidecar]") {
+TEST_CASE("MeshInfo and InstanceInfo have stable layouts (sidecar wire format)", "[sidecar]") {
     REQUIRE(sizeof(MeshInfo) == 56);
+    REQUIRE(sizeof(InstanceInfo) == 232);
     REQUIRE(sizeof(InstanceGpu) == 80);
-    REQUIRE(SIDECAR_VERSION == 16);
+    REQUIRE(sizeof(ElementTableRecord) == 36);
+    REQUIRE(SIDECAR_VERSION == 17);
     REQUIRE(sizeof(SidecarChunk) == 56);
     REQUIRE(SIDECAR_MAGIC == 0x49465657u);
 }

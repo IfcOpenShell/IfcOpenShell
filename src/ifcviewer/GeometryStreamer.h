@@ -41,7 +41,6 @@ struct ElementInfo {
     std::string guid;
     std::string name;
     std::string type;
-    int parent_id;
 };
 
 class GeometryStreamer : public QObject {
@@ -70,8 +69,8 @@ public:
 
 signals:
     void progressChanged(int percent);
-    void meshReady(MeshChunk chunk);
-    void instanceReady(InstanceChunk chunk);
+    void meshReady(StreamedMesh mesh);
+    void instanceReady(StreamedInstance instance_record);
     void finished();
     void cancelled();
     void errorOccurred(const QString& message);

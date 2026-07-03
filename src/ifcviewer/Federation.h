@@ -131,7 +131,7 @@ ModelGeoref computeModelGeoref(ifcopenshell::file* ifc_file);
 // Build a FederatedFalseOrigin guess so that a model lands near the
 // federation origin instead of out at its surveyor coordinates.  Designed
 // to work without an open IFC file so it's usable from sidecar-only loads
-// (the inputs are all derivable from the resident MeshInfo + InstanceCpu
+// (the inputs are all derivable from the resident MeshInfo + InstanceInfo
 // data + ModelGeoref).
 //
 // Position: `first_geometry_point_m` is a point that actually lies on the

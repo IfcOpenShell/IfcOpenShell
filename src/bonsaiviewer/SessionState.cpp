@@ -1,19 +1,19 @@
 // This file was generated with the assistance of an AI coding tool.
 /********************************************************************************
  *                                                                              *
- * This file is part of IfcOpenShell.                                           *
+ * This file is part of Bonsai.                                                 *
  *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
- * it under the terms of the Lesser GNU General Public License as published by  *
+ * Bonsai is free software: you can redistribute it and/or modify               *
+ * it under the terms of the GNU General Public License as published by         *
  * the Free Software Foundation, either version 3.0 of the License, or          *
  * (at your option) any later version.                                          *
  *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
+ * Bonsai is distributed in the hope that it will be useful,                    *
  * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
+ * GNU General Public License for more details.                                 *
  *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
+ * You should have received a copy of the GNU General Public License            *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
@@ -64,25 +64,25 @@ void SessionState::createLoader(ViewportWindow* viewport) {
     });
     connect(loader_, &SceneLoader::progressChanged, this, &SessionState::setProgress);
     connect(loader_, &SceneLoader::loadedFromSidecar, this,
-            [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
+            [this, format_elapsed](uint32_t model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 from cache in %2")
-                .arg(loader_->displayName(mid))
+                .arg(loader_->displayName(model_id))
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
-        emit modelGeometryReady(mid);
+        emit modelGeometryReady(model_id);
     });
     connect(loader_, &SceneLoader::loadedFromStream, this,
-            [this, format_elapsed](uint32_t mid, qint64 elapsed_ms) {
+            [this, format_elapsed](uint32_t model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 streamed in %2")
-                .arg(loader_->displayName(mid))
+                .arg(loader_->displayName(model_id))
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
-        emit modelGeometryReady(mid);
+        emit modelGeometryReady(model_id);
     });
-    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t mid) {
-        setStatusMessage("Cancelled", loader_->displayName(mid));
+    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t model_id) {
+        setStatusMessage("Cancelled", loader_->displayName(model_id));
         endProgress();
     });
     connect(loader_, &SceneLoader::loadError, this,

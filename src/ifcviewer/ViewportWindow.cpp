@@ -436,7 +436,8 @@ void ViewportWindow::encodeOverlaysInMainPass(WGPURenderPassEncoder pass,
     // — drawn inside the MSAA pass so depth-test correctly hides them
     // behind closer geometry. (Corner axis / marquee / labels run on the
     // resolved surface; see encodeOverlaysPostMain.)
-    overlays_.encodeSectionGizmos(pass, frame, section_planes_);
+    // NB: section-plane gizmos now draw from ViewportCore::render via the shared
+    // SectionGizmoRenderer (desktop + web), so they are NOT drawn here.
     overlays_.encodeHighlightTriangles(pass, frame);
     overlays_.encodePivot(pass, frame, pivot_indicator_visible_);
     overlays_.encodeOverlayLines(pass, frame);
@@ -558,17 +559,19 @@ void ViewportWindow::applyCachedModel(uint32_t model_id, StreamingSidecar metada
 }
 
 // -----------------------------------------------------------------------------
-// Direct-IFC ingestion (mirrors GL ViewportWindow::uploadMeshChunk /
-// uploadInstanceChunk / finalizeModel). Streamer pushes chunks; we stage
+// Direct-IFC ingestion (mirrors GL ViewportWindow::uploadStreamedMesh /
+// uploadStreamedInstance / finalizeModel). Streamer pushes transfer records; we stage
 // them into a SidecarData-shaped buffer and commit at finalize via the
 // same chunk planner the sidecar load uses.
 // -----------------------------------------------------------------------------
 
 // getOrCreateDirectStaging moved to ViewportCore (anon namespace) (#84-q).
 
-void ViewportWindow::uploadMeshChunk(const MeshChunk& chunk) { core_.uploadMeshChunk(chunk); }
+void ViewportWindow::uploadStreamedMesh(const StreamedMesh& mesh) { core_.uploadStreamedMesh(mesh); }
 
-void ViewportWindow::uploadInstanceChunk(const InstanceChunk& chunk) { core_.uploadInstanceChunk(chunk); }
+void ViewportWindow::uploadStreamedInstance(const StreamedInstance& instance_record) {
+    core_.uploadStreamedInstance(instance_record);
+}
 
 void ViewportWindow::finalizeModel(uint32_t model_id) { core_.finalizeModel(model_id); }
 
@@ -1047,11 +1050,11 @@ bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
                                            double global_out[3]) const {
     // Find the instance via the per-model object_id_to_instance map.
     // Use the live map key (`mid`) — see pickMeshLocalAt comment about
-    // stale InstanceCpu::model_id from sidecar writes.
+    // stale InstanceInfo::model_id from sidecar writes.
     for (const auto& [mid, m] : models_gpu_) {
         auto it = m.object_id_to_instance.find(object_id);
         if (it == m.object_id_to_instance.end()) continue;
-        const InstanceCpu& inst = m.instances[it->second];
+        const InstanceInfo& inst = m.instances[it->second];
         // CoordinateOperation · placement · local — gives the IFC's own
         // georeferenced world frame (ENH). Excludes FederatedFalseOrigin
         // and ModelTransformation, matching the GL meshLocalToGlobal
@@ -1147,7 +1150,7 @@ void ViewportWindow::invertElementVisibility() {
     to_hide.reserve(1024);
     for (const auto& [mid, m] : models_gpu_) {
         if (m.hidden) continue;
-        for (const InstanceCpu& inst : m.instances) {
+        for (const InstanceInfo& inst : m.instances) {
             if (inst.object_id == 0) continue;
             if (!visibility_.isHidden(inst.object_id)) {
                 to_hide.push_back(inst.object_id);
@@ -1243,7 +1246,7 @@ void ViewportWindow::updateVolumeReadout() {
         total += v;
         if (!show_labels) continue;
         // O(1) instance lookup via object_id_to_instance, then read the
-        // world AABB from the cached InstanceCpu directly — same data
+        // world AABB from the cached InstanceInfo directly — same data
         // computeObjectAabb's linear scan would have produced for the
         // first matching instance. For label placement at the AABB
         // centre this is identical-looking; only the rare multi-
@@ -1251,7 +1254,7 @@ void ViewportWindow::updateVolumeReadout() {
         for (const auto& [mid, m] : models_gpu_) {
             auto it = m.object_id_to_instance.find(oid);
             if (it == m.object_id_to_instance.end()) continue;
-            const InstanceCpu& inst = m.instances[it->second];
+            const InstanceInfo& inst = m.instances[it->second];
             OverlayRenderer::Label lbl;
             lbl.world_pos[0] = (inst.world_aabb_min[0] + inst.world_aabb_max[0]) * 0.5f;
             lbl.world_pos[1] = (inst.world_aabb_min[1] + inst.world_aabb_max[1]) * 0.5f;
@@ -1274,93 +1277,12 @@ void ViewportWindow::updateVolumeReadout() {
     overlays_.setOverlayLabels(labels);
 }
 
-// Project a world point to LOGICAL pixel coords (Qt's mouse-event units).
-// Returns false if behind the camera.
-static bool projectWorldToLogicalScreen(const Eigen::Matrix4f& vp,
-                                        const Eigen::Vector3f& world,
-                                        int win_w, int win_h,
-                                        Eigen::Vector2f& out) {
-    const Eigen::Vector4f clip = vp * Eigen::Vector4f(world.x(), world.y(), world.z(), 1.0f);
-    if (clip.w() <= 0.0f) return false;
-    const float invw = 1.0f / clip.w();
-    out = Eigen::Vector2f(
-        (clip.x() * invw * 0.5f + 0.5f) * float(win_w),
-        (1.0f - (clip.y() * invw * 0.5f + 0.5f)) * float(win_h));
-    return true;
-}
+// projectWorldToLogicalScreen moved to SectionGizmoRenderer (its only users,
+// the section hit-test + drag, now live in ViewportCore).
 
-int ViewportWindow::hitTestSectionGizmo(int x, int y) const {
-    if (section_planes_.empty()) return -1;
-    const int w = width();
-    const int h = height();
-    if (w <= 0 || h <= 0) return -1;
-    Eigen::Matrix4f view, proj;
-    core_.buildViewProj(view, proj);
-    const Eigen::Matrix4f vp = proj * view;
-    const float grab_px = 12.0f;
-    int   best    = -1;
-    float best_d2 = grab_px * grab_px;
-    for (int i = 0; i < int(section_planes_.size()); ++i) {
-        const SectionPlane& p = section_planes_[i];
-        Eigen::Vector2f s_origin, s_tip;
-        if (!projectWorldToLogicalScreen(vp, p.origin,
-                                         w, h, s_origin)) continue;
-        // The gizmo's arrow extends along +n by exactly 1 m in world
-        // space — OverlayRenderer::encodeSectionGizmos uses
-        // half_size = 1.0 to scale a plane-local arrow tip at z = 1.
-        // Mirror that here.
-        if (!projectWorldToLogicalScreen(vp, p.origin + p.n * 1.0f,
-                                         w, h, s_tip)) continue;
-        const Eigen::Vector2f q{float(x), float(y)};
-        const Eigen::Vector2f ab = s_tip - s_origin;
-        const float ab_len2 = ab.squaredNorm();
-        if (ab_len2 < 1e-3f) continue;
-        float t = (q - s_origin).dot(ab) / ab_len2;
-        t = std::clamp(t, 0.0f, 1.0f);
-        const Eigen::Vector2f proj_pt = s_origin + ab * t;
-        const float d2 = (q - proj_pt).squaredNorm();
-        if (d2 < best_d2) { best_d2 = d2; best = i; }
-    }
-    return best;
-}
-
-void ViewportWindow::updateSectionDrag(int x, int y) {
-    if (!section_drag_active_) return;
-    if (section_drag_index_ < 0
-        || section_drag_index_ >= int(section_planes_.size())) return;
-    SectionPlane& p = section_planes_[section_drag_index_];
-
-    const int w = width();
-    const int h = height();
-    if (w <= 0 || h <= 0) return;
-    Eigen::Matrix4f view, proj;
-    core_.buildViewProj(view, proj);
-    const Eigen::Matrix4f vp = proj * view;
-
-    // Re-project the press-time origin and origin + n to screen space.
-    // The press-time origin is what `start` should be relative to — so the
-    // plane slides smoothly even as the camera moves (we re-project every
-    // frame to handle mid-drag camera rotation cleanly).
-    Eigen::Vector2f s_origin, s_n;
-    if (!projectWorldToLogicalScreen(vp, section_drag_start_origin_,
-                                     w, h, s_origin)) return;
-    if (!projectWorldToLogicalScreen(vp, section_drag_start_origin_ + p.n,
-                                     w, h, s_n)) return;
-    const Eigen::Vector2f screen_axis = s_n - s_origin;
-    const float screen_axis_len2 = screen_axis.squaredNorm();
-    if (screen_axis_len2 < 1e-3f) return;  // arrow is edge-on
-
-    // Project pixel delta onto the screen-space axis; convert to metres
-    // via (delta · axis) / |axis|² (axis is 1 m long in world space).
-    const Eigen::Vector2f delta_px(float(x - section_drag_start_mouse_.x()),
-                             float(y - section_drag_start_mouse_.y()));
-    const float meters = delta_px.dot(screen_axis)
-                         / screen_axis_len2;
-
-    p.origin = section_drag_start_origin_ + p.n * meters;
-    p.d      = -p.n.dot(p.origin);
-    requestUpdate();
-}
+// Section-gizmo hit-test + drag-to-move now live in ViewportCore (shared with
+// web, using SectionGizmoRenderer::hitTest). The mouse handlers call
+// core_.hitTestSectionGizmo / beginSectionDrag / updateSectionDrag / endSectionDrag.
 
 // buildHizPipeline moved to ViewportCore (#84-r).
 
@@ -1542,21 +1464,32 @@ void ViewportWindow::fpsIntegrate() {
 
 // chunkScreenAreaPx moved to ViewportCore (#84-h).
 
-void ViewportWindow::applyNavPreset(const char* name) {
-    // Matches GL AppSettings::NavPreset semantics exactly.
-    //   blender — Orbit MMB,        Pan Shift+MMB   (default)
-    //   rhino   — Orbit RMB,        Pan Shift+RMB
-    //   revit   — Orbit Shift+MMB,  Pan MMB
-    if (name && std::strcmp(name, "rhino") == 0) {
-        orbit_button_ = Qt::RightButton;  orbit_mods_ = Qt::NoModifier;
-        pan_button_   = Qt::RightButton;  pan_mods_   = Qt::ShiftModifier;
-    } else if (name && std::strcmp(name, "revit") == 0) {
-        orbit_button_ = Qt::MiddleButton; orbit_mods_ = Qt::ShiftModifier;
-        pan_button_   = Qt::MiddleButton; pan_mods_   = Qt::NoModifier;
-    } else {
-        orbit_button_ = Qt::MiddleButton; orbit_mods_ = Qt::NoModifier;
-        pan_button_   = Qt::MiddleButton; pan_mods_   = Qt::ShiftModifier;
+static Qt::MouseButton toQtBtn(ViewportCore::MouseBtn b) {
+    switch (b) {
+        case ViewportCore::MouseBtn::Left:   return Qt::LeftButton;
+        case ViewportCore::MouseBtn::Middle: return Qt::MiddleButton;
+        case ViewportCore::MouseBtn::Right:  return Qt::RightButton;
     }
+    return Qt::LeftButton;
+}
+static Qt::KeyboardModifiers toQtMod(ViewportCore::NavMod m) {
+    switch (m) {
+        case ViewportCore::NavMod::Plain:  return Qt::NoModifier;
+        case ViewportCore::NavMod::Shift: return Qt::ShiftModifier;
+        case ViewportCore::NavMod::Ctrl:  return Qt::ControlModifier;
+        case ViewportCore::NavMod::Alt:   return Qt::AltModifier;
+    }
+    return Qt::NoModifier;
+}
+
+void ViewportWindow::applyNavPreset(const char* name) {
+    // The preset table lives in ViewportCore (shared with web). Map its bindings
+    // to the Qt types the mouse handlers compare against.
+    core_.setNavPreset(name);
+    const auto& b = core_.navBindings();
+    orbit_button_  = toQtBtn(b.orbit);   orbit_mods_  = toQtMod(b.orbit_mod);
+    pan_button_    = toQtBtn(b.pan);      pan_mods_    = toQtMod(b.pan_mod);
+    select_button_ = toQtBtn(b.select);  select_mods_ = toQtMod(b.select_mod);
 }
 
 // -----------------------------------------------------------------------------
@@ -1615,13 +1548,9 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
         && event->button() == Qt::LeftButton
         && event->modifiers() == Qt::NoModifier) {
         const Eigen::Vector2i lp = toV2i(event->position().toPoint());
-        const int hit = hitTestSectionGizmo(lp.x(), lp.y());
-        if (hit >= 0) {
-            section_drag_active_       = true;
-            section_drag_index_        = hit;
-            section_drag_start_mouse_  = lp;
-            section_drag_start_origin_ = section_planes_[hit].origin;
-            nav_drag_kind_             = NavDrag::Inactive;
+        const int hit = core_.hitTestSectionGizmo(lp.x(), lp.y());
+        if (hit >= 0 && core_.beginSectionDrag(hit, lp.x(), lp.y())) {
+            nav_drag_kind_ = NavDrag::Inactive;
             Log::info().noquote().nospace()
                 << "[wgpu section] drag start: plane=" << hit;
             return;
@@ -1642,15 +1571,15 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
             && (mods & Qt::KeyboardModifierMask) == pan_mods_) {
         nav_drag_kind_ = NavDrag::Pan;
         setPivotIndicatorVisible(true);
-    } else if (event->button() == Qt::LeftButton
+    } else if (event->button() == select_button_
             && !section_tool_active_
             && tool_mode_ != ToolMode::Area
             && tool_mode_ != ToolMode::Length
             && nav_drag_kind_ == NavDrag::Inactive) {
-        // Arm marquee box-select. Plain / Shift / Ctrl LMB without a tool
-        // intercepting the click; if the cursor never moves past the
-        // threshold this stays armed-only and the release falls through
-        // to single-pick.
+        // Arm marquee box-select. Plain / Shift / Ctrl on the select button
+        // (Shift/Ctrl = add/remove) without a tool intercepting the click; if
+        // the cursor never moves past the threshold this stays armed-only and
+        // the release falls through to single-pick.
         box_select_armed_      = true;
         box_select_active_     = false;
         box_select_start_pos_  = nav_press_pos_;
@@ -1660,16 +1589,15 @@ void ViewportWindow::mousePressEvent(QMouseEvent* event) {
 }
 
 void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
-    if (section_drag_active_ && event->button() == Qt::LeftButton) {
-        section_drag_active_ = false;
-        section_drag_index_  = -1;
+    if (core_.sectionDragActive() && event->button() == Qt::LeftButton) {
+        core_.endSectionDrag();
         nav_active_button_   = Qt::NoButton;
         return;
     }
     // Marquee finalisation: only commit when the drag actually became
     // active (cursor moved past threshold). Press-time mods decide the
     // set op so a mid-drag Shift release doesn't flip the behaviour.
-    if (box_select_armed_ && event->button() == Qt::LeftButton) {
+    if (box_select_armed_ && event->button() == select_button_) {
         const bool was_active = box_select_active_;
         box_select_armed_  = false;
         box_select_active_ = false;
@@ -1711,7 +1639,7 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
         // LMB-click without drag → pick the object under the cursor and
         // route through the selection state. Shift = add, Ctrl = remove,
         // no modifier = replace. Empty-space click clears.
-        if (event->button() == Qt::LeftButton && !nav_dragged_) {
+        if (event->button() == select_button_ && !nav_dragged_) {
             const Eigen::Vector2i pos = toV2i(event->position().toPoint());
             const int px = int(pos.x() * devicePixelRatio());
             const int py = int(pos.y() * devicePixelRatio());
@@ -1861,9 +1789,9 @@ void ViewportWindow::mouseMoveEvent(QMouseEvent* event) {
     // Section drag intercepts the move handler entirely: the orbit/pan
     // classification already declined this drag in mousePressEvent, so all
     // we have to do is slide the plane along its normal.
-    if (section_drag_active_) {
+    if (core_.sectionDragActive()) {
         const Eigen::Vector2i pos = toV2i(event->position().toPoint());
-        updateSectionDrag(pos.x(), pos.y());
+        core_.updateSectionDrag(pos.x(), pos.y());
         return;
     }
 

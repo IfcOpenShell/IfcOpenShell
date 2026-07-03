@@ -146,6 +146,7 @@ set(IFCVIEWER_CORE_SOURCES
     SidecarCompress.cpp
     StreamingLoader.cpp
     StreamingThread.cpp
+    SectionGizmoRenderer.cpp
     ViewportCore.cpp
 )
 # Web needs a zstd DECODER (Emscripten has no zstd port; the desktop links the
@@ -195,6 +196,7 @@ set(IFCVIEWER_CORE_HEADERS
     ModelGpuData.h
     FrameStats.h
     OverlayFrame.h
+    SectionGizmoRenderer.h
     SectionPlane.h
     SelectionState.h
     SidecarCache.h

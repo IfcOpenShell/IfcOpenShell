@@ -42,29 +42,29 @@ struct MaterialInfo {
 };
 
 static MaterialInfo materialFromStyle(const ifcopenshell::geometry::taxonomy::style::ptr& style) {
-    MaterialInfo m;
-    if (!style) return m;
+    MaterialInfo material;
+    if (!style) return material;
     const auto& color = style->get_color();
     if (color) {
-        m.r = static_cast<float>(color.r());
-        m.g = static_cast<float>(color.g());
-        m.b = static_cast<float>(color.b());
+        material.r = static_cast<float>(color.r());
+        material.g = static_cast<float>(color.g());
+        material.b = static_cast<float>(color.b());
     }
     if (!std::isnan(style->transparency)) {
-        m.a = 1.0f - static_cast<float>(style->transparency);
+        material.a = 1.0f - static_cast<float>(style->transparency);
     }
-    return m;
+    return material;
 }
 
-static inline uint32_t packRGBA8(const MaterialInfo& m) {
-    auto to_byte = [](float v) -> uint32_t {
-        float c = std::clamp(v, 0.0f, 1.0f);
-        return static_cast<uint32_t>(c * 255.0f + 0.5f);
+static inline uint32_t packRGBA8(const MaterialInfo& material) {
+    auto to_byte = [](float channel_value) -> uint32_t {
+        float clamped_value = std::clamp(channel_value, 0.0f, 1.0f);
+        return static_cast<uint32_t>(clamped_value * 255.0f + 0.5f);
     };
-    uint32_t r = to_byte(m.r);
-    uint32_t g = to_byte(m.g);
-    uint32_t b = to_byte(m.b);
-    uint32_t a = to_byte(m.a);
+    uint32_t r = to_byte(material.r);
+    uint32_t g = to_byte(material.g);
+    uint32_t b = to_byte(material.b);
+    uint32_t a = to_byte(material.a);
     // Little-endian byte layout [r,g,b,a] for GL_UNSIGNED_BYTE * 4 normalized.
     return r | (g << 8) | (b << 16) | (a << 24);
 }
@@ -144,7 +144,7 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
     return result;
 }
 
-// Build a mesh chunk (local coords, 28-byte interleaved vertices) from a
+// Build a streamed mesh record (local coords, 28-byte interleaved vertices) from a
 // TriangulationElement. Per-vertex color is baked from material_ids so that
 // triangulations with per-face materials still render correctly.
 // Vertex rebasing: when `offset` is non-zero, every vertex position is
@@ -153,13 +153,13 @@ std::vector<ElementInfo> GeometryStreamer::drainElements() {
 // compensates by post-multiplying each instance's PlacementTransformation
 // by T(+offset), which is mathematically the identity overall but moves
 // the magnitude off the float-precision-sensitive vertex column.
-static MeshChunk buildMeshChunk(uint32_t model_id,
+static StreamedMesh buildStreamedMesh(uint32_t model_id,
                                 uint32_t local_mesh_id,
                                 const IfcGeom::TriangulationElement* elem,
                                 const Eigen::Vector3d& offset) {
-    MeshChunk chunk;
-    chunk.model_id = model_id;
-    chunk.local_mesh_id = local_mesh_id;
+    StreamedMesh mesh;
+    mesh.model_id = model_id;
+    mesh.local_mesh_id = local_mesh_id;
 
     const auto& geom = elem->geometry();
     const auto& verts = geom.verts();
@@ -168,7 +168,7 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
     const auto& materials = geom.materials();
     const auto& material_ids = geom.material_ids();
 
-    if (verts.empty() || faces.empty()) return chunk;
+    if (verts.empty() || faces.empty()) return mesh;
 
     const size_t num_verts_src = verts.size() / 3;
     const size_t num_tris = faces.size() / 3;
@@ -184,16 +184,16 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
     std::unordered_map<uint64_t, uint32_t> remap;
     remap.reserve(num_verts_src);
 
-    chunk.vertices.reserve(num_verts_src * INSTANCED_VERTEX_STRIDE_FLOATS);
-    chunk.indices.reserve(faces.size());
+    mesh.vertices.reserve(num_verts_src * INSTANCED_VERTEX_STRIDE_FLOATS);
+    mesh.indices.reserve(faces.size());
 
     // Track local AABB as we emit vertices.
-    float amin[3] = { std::numeric_limits<float>::max(),
-                      std::numeric_limits<float>::max(),
-                      std::numeric_limits<float>::max() };
-    float amax[3] = { -std::numeric_limits<float>::max(),
-                      -std::numeric_limits<float>::max(),
-                      -std::numeric_limits<float>::max() };
+    float local_aabb_min[3] = { std::numeric_limits<float>::max(),
+                                std::numeric_limits<float>::max(),
+                                std::numeric_limits<float>::max() };
+    float local_aabb_max[3] = { -std::numeric_limits<float>::max(),
+                                -std::numeric_limits<float>::max(),
+                                -std::numeric_limits<float>::max() };
 
     auto emit_vertex = [&](uint32_t orig_idx, int mat_id) -> uint32_t {
         const uint64_t key = make_key(orig_idx, mat_id);
@@ -201,28 +201,31 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
         if (it != remap.end()) return it->second;
 
         const uint32_t new_idx = static_cast<uint32_t>(
-            chunk.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
+            mesh.vertices.size() / INSTANCED_VERTEX_STRIDE_FLOATS);
 
         // Subtract in double, narrow to float — preserves precision when
         // verts are far from origin and offset cancels the magnitude.
         float px = static_cast<float>(verts[orig_idx * 3 + 0] - offset.x());
         float py = static_cast<float>(verts[orig_idx * 3 + 1] - offset.y());
         float pz = static_cast<float>(verts[orig_idx * 3 + 2] - offset.z());
-        chunk.vertices.push_back(px);
-        chunk.vertices.push_back(py);
-        chunk.vertices.push_back(pz);
-        if (px < amin[0]) amin[0] = px; if (px > amax[0]) amax[0] = px;
-        if (py < amin[1]) amin[1] = py; if (py > amax[1]) amax[1] = py;
-        if (pz < amin[2]) amin[2] = pz; if (pz > amax[2]) amax[2] = pz;
+        mesh.vertices.push_back(px);
+        mesh.vertices.push_back(py);
+        mesh.vertices.push_back(pz);
+        if (px < local_aabb_min[0]) local_aabb_min[0] = px;
+        if (px > local_aabb_max[0]) local_aabb_max[0] = px;
+        if (py < local_aabb_min[1]) local_aabb_min[1] = py;
+        if (py > local_aabb_max[1]) local_aabb_max[1] = py;
+        if (pz < local_aabb_min[2]) local_aabb_min[2] = pz;
+        if (pz > local_aabb_max[2]) local_aabb_max[2] = pz;
 
         if (orig_idx * 3 + 2 < normals.size()) {
-            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 0]));
-            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 1]));
-            chunk.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 2]));
+            mesh.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 0]));
+            mesh.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 1]));
+            mesh.vertices.push_back(static_cast<float>(normals[orig_idx * 3 + 2]));
         } else {
-            chunk.vertices.push_back(0.0f);
-            chunk.vertices.push_back(1.0f);
-            chunk.vertices.push_back(0.0f);
+            mesh.vertices.push_back(0.0f);
+            mesh.vertices.push_back(1.0f);
+            mesh.vertices.push_back(0.0f);
         }
 
         MaterialInfo m;
@@ -232,7 +235,7 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
         uint32_t packed = packRGBA8(m);
         float packed_as_float;
         std::memcpy(&packed_as_float, &packed, sizeof(float));
-        chunk.vertices.push_back(packed_as_float);
+        mesh.vertices.push_back(packed_as_float);
 
         remap.emplace(key, new_idx);
         return new_idx;
@@ -240,19 +243,19 @@ static MeshChunk buildMeshChunk(uint32_t model_id,
 
     for (size_t t = 0; t < num_tris; ++t) {
         const int mat_id = have_per_tri_material ? material_ids[t] : -1;
-        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 0]), mat_id));
-        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 1]), mat_id));
-        chunk.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 2]), mat_id));
+        mesh.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 0]), mat_id));
+        mesh.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 1]), mat_id));
+        mesh.indices.push_back(emit_vertex(static_cast<uint32_t>(faces[t * 3 + 2]), mat_id));
     }
 
-    if (chunk.vertices.empty()) {
-        for (int a = 0; a < 3; ++a) amin[a] = amax[a] = 0.0f;
+    if (mesh.vertices.empty()) {
+        for (int a = 0; a < 3; ++a) local_aabb_min[a] = local_aabb_max[a] = 0.0f;
     }
     for (int a = 0; a < 3; ++a) {
-        chunk.local_aabb_min[a] = amin[a];
-        chunk.local_aabb_max[a] = amax[a];
+        mesh.local_aabb_min[a] = local_aabb_min[a];
+        mesh.local_aabb_max[a] = local_aabb_max[a];
     }
-    return chunk;
+    return mesh;
 }
 
 // Port of ifcopenshell.util.representation.get_prioritised_contexts: rank every
@@ -527,7 +530,6 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 emit errorOccurred(QString("Failed to create geometry iterator: %1").arg(e.what()));
                 return false;
             }
-
             if (!iterator->initialize()) {
                 // No geometry survived this context for the remaining ids.
                 // Subsequent contexts will pick them up; nothing to emit.
@@ -560,7 +562,6 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 info.guid = tri_elem->guid();
                 info.name = tri_elem->name();
                 info.type = tri_elem->type();
-                info.parent_id = tri_elem->parent_id();
                 {
                     std::lock_guard<std::mutex> lock(elements_mutex_);
                     pending_elements_.push_back(std::move(info));
@@ -602,19 +603,19 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                         }
                     }
 
-                    MeshChunk mesh_chunk =
-                        buildMeshChunk(model_id_, local_mesh_id, tri_elem, offset);
-                    MeshAabb ma;
+                    StreamedMesh streamed_mesh =
+                        buildStreamedMesh(model_id_, local_mesh_id, tri_elem, offset);
+                    MeshAabb mesh_aabb;
                     for (int a = 0; a < 3; ++a) {
-                        ma.lmin[a] = mesh_chunk.local_aabb_min[a];
-                        ma.lmax[a] = mesh_chunk.local_aabb_max[a];
-                        ma.offset[a] = offset[a];
+                        mesh_aabb.lmin[a] = streamed_mesh.local_aabb_min[a];
+                        mesh_aabb.lmax[a] = streamed_mesh.local_aabb_max[a];
+                        mesh_aabb.offset[a] = offset[a];
                     }
-                    ma.has_offset = (offset.squaredNorm() > 0.0);
+                    mesh_aabb.has_offset = (offset.squaredNorm() > 0.0);
                     if (mesh_aabbs.size() <= local_mesh_id) mesh_aabbs.resize(local_mesh_id + 1);
-                    mesh_aabbs[local_mesh_id] = ma;
-                    if (!mesh_chunk.indices.empty()) {
-                        emit meshReady(std::move(mesh_chunk));
+                    mesh_aabbs[local_mesh_id] = mesh_aabb;
+                    if (!streamed_mesh.indices.empty()) {
+                        emit meshReady(std::move(streamed_mesh));
                     }
                 }
 
@@ -626,14 +627,14 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                 Eigen::Matrix4d mat_d =
                     tri_elem->transformation().data()->ccomponents();
                 if (mesh_aabbs[local_mesh_id].has_offset) {
-                    const Eigen::Vector3d off(
+                    const Eigen::Vector3d mesh_rebase_offset(
                         mesh_aabbs[local_mesh_id].offset[0],
                         mesh_aabbs[local_mesh_id].offset[1],
                         mesh_aabbs[local_mesh_id].offset[2]);
-                    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * off;
+                    mat_d.block<3, 1>(0, 3) += mat_d.block<3, 3>(0, 0) * mesh_rebase_offset;
                 }
 
-                InstanceChunk inst;
+                StreamedInstance inst;
                 inst.model_id = model_id_;
                 inst.local_mesh_id = local_mesh_id;
                 inst.object_id = object_id;
@@ -642,25 +643,25 @@ void GeometryStreamer::run(const std::string& path, int num_threads) {
                     inst.transform[i] = mat_d.data()[i];
                 }
 
-                const MeshAabb& ma = mesh_aabbs[local_mesh_id];
+                const MeshAabb& mesh_aabb = mesh_aabbs[local_mesh_id];
                 float mat_f[16];
                 for (int i = 0; i < 16; ++i) {
                     mat_f[i] = static_cast<float>(inst.transform[i]);
                 }
-                worldAabbFromLocal(ma.lmin, ma.lmax, mat_f,
+                worldAabbFromLocal(mesh_aabb.lmin, mesh_aabb.lmax, mat_f,
                                    inst.world_aabb_min, inst.world_aabb_max);
 
                 emit instanceReady(std::move(inst));
                 total_shapes++;
                 yielded_count++;
 
-                const int p = total_count > 0
+                const int progress_percent = total_count > 0
                     ? static_cast<int>((100 * yielded_count) / total_count)
                     : 100;
-                if (p != last_emitted_progress) {
-                    last_emitted_progress = p;
-                    progress_ = p;
-                    emit progressChanged(p);
+                if (progress_percent != last_emitted_progress) {
+                    last_emitted_progress = progress_percent;
+                    progress_ = progress_percent;
+                    emit progressChanged(progress_percent);
                 }
             } while (iterator->next());
 

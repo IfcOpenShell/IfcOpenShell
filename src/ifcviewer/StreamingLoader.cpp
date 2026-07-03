@@ -25,9 +25,9 @@
 //   uint32 num_indices
 //   uint32[num_indices] index data                  <-- streaming skips
 //   uint32 num_meshes + MeshInfo[]                  <-- streaming reads
-//   uint32 num_instances + InstanceCpu[]            <-- streaming reads
+//   uint32 num_instances + InstanceInfo[]            <-- streaming reads
 //   uint32 has_coord_op + double[16] + 2× double    <-- streaming reads
-//   uint32 num_elements + PackedElementInfo[]       <-- streaming reads
+//   uint32 num_elements + ElementTableRecord[]       <-- streaming reads
 //   uint32 string_table_bytes + char[]              <-- streaming reads
 //
 // Streaming reader returns offsets to the two skipped sections so chunks
@@ -52,25 +52,25 @@ struct SidecarHeaderRaw {
 // walks the metadata tail through one of these so a truncated buffer fails
 // cleanly (return false) instead of reading out of bounds.
 struct BufCursor {
-    const uint8_t* p;
-    size_t remaining;
+    const uint8_t* cursor;
+    size_t remaining_bytes;
 
     bool take(void* dst, size_t bytes) {
-        if (bytes > remaining) return false;
-        std::memcpy(dst, p, bytes);
-        p += bytes;
-        remaining -= bytes;
+        if (bytes > remaining_bytes) return false;
+        std::memcpy(dst, cursor, bytes);
+        cursor += bytes;
+        remaining_bytes -= bytes;
         return true;
     }
 
     // Read a uint32 length prefix followed by length*sizeof(T) elements.
     template<typename T>
-    bool takeVec(std::vector<T>& v) {
+    bool takeVec(std::vector<T>& values) {
         uint32_t n;
         if (!take(&n, 4)) return false;
-        if (uint64_t(n) * sizeof(T) > remaining) return false;
-        v.resize(n);
-        if (n > 0 && !take(v.data(), size_t(n) * sizeof(T))) return false;
+        if (uint64_t(n) * sizeof(T) > remaining_bytes) return false;
+        values.resize(n);
+        if (n > 0 && !take(values.data(), size_t(n) * sizeof(T))) return false;
         return true;
     }
 };
@@ -100,8 +100,8 @@ bool parseSidecarHead(const uint8_t* data, size_t n, uint64_t& out_geom_bytes) {
     return true;
 }
 
-bool parseSidecarCritical(const uint8_t* data, size_t n, SidecarData& out) {
-    // v15 render-critical block: meshes, instances, georef, chunk TOC.
+bool parseSidecarGeometryMetadata(const uint8_t* data, size_t n, SidecarData& out) {
+    // v15 geometry metadata block: meshes, instances, georef, chunk TOC.
     BufCursor c{data, n};
     if (!c.takeVec(out.meshes))    return false;
     if (!c.takeVec(out.instances)) return false;
@@ -113,13 +113,13 @@ bool parseSidecarCritical(const uint8_t* data, size_t n, SidecarData& out) {
     return true;
 }
 
-bool parseSidecarDeferred(const uint8_t* data, size_t n, SidecarData& out) {
-    // v15 deferred block: element tree + string table (UI/picking, not rendered).
+bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out) {
+    // v15+ element metadata block: elements + string table (UI/picking, not rendered).
     BufCursor c{data, n};
     if (!c.takeVec(out.elements)) return false;
     uint32_t stbl_len = 0;
     if (!c.take(&stbl_len, 4))       return false;
-    if (stbl_len > c.remaining)      return false;
+    if (stbl_len > c.remaining_bytes) return false;
     out.string_table.resize(stbl_len);
     if (stbl_len > 0 && !c.take(out.string_table.data(), stbl_len)) return false;
     return true;
@@ -166,16 +166,18 @@ std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_p
         return SidecarCompress::decompress(z.data(), z.size(), raw.data(), raw.size());
     };
 
-    std::vector<uint8_t> crit, def;
-    if (!readBlock(crit)) return fail();
-    if (!readBlock(def, &out.deferred_comp_offset, &out.deferred_comp_size,
-                   &out.deferred_raw_size)) return fail();
+    std::vector<uint8_t> geometry_metadata, element_metadata;
+    if (!readBlock(geometry_metadata)) return fail();
+    if (!readBlock(element_metadata, &out.element_metadata_comp_offset, &out.element_metadata_comp_size,
+                   &out.element_metadata_raw_size)) return fail();
     std::fclose(f);
 
-    // Desktop reads both blocks up front; the web path reads only critical
-    // before painting and fetches the deferred block on demand.
-    if (!parseSidecarCritical(crit.data(), crit.size(), out.meta)) return std::nullopt;
-    if (!parseSidecarDeferred(def.data(), def.size(), out.meta))   return std::nullopt;
+    // Desktop reads both blocks up front; the web path reads only geometry
+    // metadata before painting and fetches the element metadata block on demand.
+    if (!parseSidecarGeometryMetadata(geometry_metadata.data(), geometry_metadata.size(), out.meta))
+        return std::nullopt;
+    if (!parseSidecarElementMetadata(element_metadata.data(), element_metadata.size(), out.meta))
+        return std::nullopt;
     return out;
 }
 

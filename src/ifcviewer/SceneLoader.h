@@ -102,7 +102,7 @@ signals:
     // packed element set.  Consumer is responsible for decoding + tree/
     // property-map population.  Moved arguments — avoid unnecessary copies.
     void sidecarElementsReady(uint32_t mid,
-                              std::vector<PackedElementInfo> elements,
+                              std::vector<ElementTableRecord> elements,
                               std::string string_table);
     void loadedFromSidecar(uint32_t mid, qint64 elapsed_ms);
 
@@ -128,8 +128,8 @@ signals:
 
 private slots:
     void onStreamerProgressChanged(int percent);
-    void onStreamerMeshReady(MeshChunk chunk);
-    void onStreamerInstanceReady(InstanceChunk chunk);
+    void onStreamerMeshReady(StreamedMesh mesh);
+    void onStreamerInstanceReady(StreamedInstance instance_record);
     void onStreamerFinished();
     void onStreamerCancelled();
     void onStreamerError(const QString& msg);

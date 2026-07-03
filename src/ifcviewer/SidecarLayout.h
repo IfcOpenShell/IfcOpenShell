@@ -42,7 +42,7 @@
 //
 // Pure transform (no Qt / no wgpu): meshes, vertices, indices (LOD0 + LOD1),
 // and instances are all rebuilt in the new order with vbo/ebo/lod1 offsets,
-// MeshInfo.first_instance, and InstanceCpu.mesh_id remapped consistently.
+// MeshInfo.first_instance, and InstanceInfo.mesh_id remapped consistently.
 // Index values are mesh-local, so they move unchanged. Element/georef/string
 // data is mesh-independent and untouched. No-op for < 2 meshes.
 //

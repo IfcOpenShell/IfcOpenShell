@@ -79,16 +79,16 @@ bool findInstanceInModels(
         const std::unordered_map<uint32_t, ModelGpuData>& models,
         InstanceLookup& out) {
     if (object_id == 0) return false;
-    for (const auto& [mid, m] : models) {
-        auto it = m.object_id_to_instance.find(object_id);
-        if (it == m.object_id_to_instance.end()) continue;
-        const uint32_t inst_idx = it->second;
-        if (inst_idx >= m.instances.size()) continue;
-        const InstanceCpu& inst = m.instances[inst_idx];
-        out.model_id = mid;
-        out.mesh_id  = inst.mesh_id;
+    for (const auto& [model_id, model_data] : models) {
+        auto it = model_data.object_id_to_instance.find(object_id);
+        if (it == model_data.object_id_to_instance.end()) continue;
+        const uint32_t instance_index = it->second;
+        if (instance_index >= model_data.instances.size()) continue;
+        const InstanceInfo& instance = model_data.instances[instance_index];
+        out.model_id = model_id;
+        out.mesh_id  = instance.mesh_id;
         std::memcpy(out.placement_transformation,
-                    inst.placement_transformation,
+                    instance.placement_transformation,
                     sizeof(out.placement_transformation));
         return true;
     }

@@ -37,12 +37,17 @@ public:
     //   Blender   — Orbit MMB,        Pan Shift+MMB   (current default)
     //   Rhino     — Orbit RMB,        Pan Shift+RMB
     //   Revit     — Orbit Shift+MMB,  Pan MMB
+    //   Web       — Orbit LMB,        Pan MMB,        Select RMB
     enum class NavPreset {
         Blender = 0,
         Rhino   = 1,
         Revit   = 2,
+        Web     = 3,
     };
     Q_ENUM(NavPreset)
+
+    // Preset → the lowercase name ViewportCore::setNavPreset / applyNavPreset take.
+    static const char* navPresetName(NavPreset preset);
 
     static AppSettings& instance();
 
