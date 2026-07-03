@@ -57,7 +57,7 @@ import shapely
 from bpy_extras.image_utils import load_image
 from bpy_extras.io_utils import ImportHelper
 from lxml import etree
-from mathutils import Color, Vector
+from mathutils import Color, Matrix, Vector
 
 import bonsai.bim.export_ifc
 import bonsai.bim.handler
@@ -602,6 +602,7 @@ class CreateDrawing(bpy.types.Operator):
         context_type: Literal["body", "annotation"],
         drawing_elements: set[ifcopenshell.entity_instance],
         target_view: str,
+        link_matrix: Optional[Matrix] = None,
     ) -> None:
         drawing_elements = drawing_elements.copy()
         contexts_: list[list[int]] = getattr(contexts, context_type)
@@ -613,9 +614,19 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
 
-                if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
+                is_plan = ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view
+                z_offset = (0.002 if target_view == "PLAN_VIEW" else -0.002) if is_plan else 0.0
+
+                if link_matrix is not None:
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+                    t = link_matrix.to_translation()
+                    offset = (t.x / unit_scale, t.y / unit_scale, t.z / unit_scale + z_offset)
+                    geom_settings.set("model-offset", offset)
+                    q = link_matrix.to_quaternion()
+                    geom_settings.set("model-rotation", (q.x, q.y, q.z, q.w))
+                elif z_offset:
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    geom_settings.set("model-offset", (0.0, 0.0, 0.002 if target_view == "PLAN_VIEW" else -0.002))
+                    geom_settings.set("model-offset", (0.0, 0.0, z_offset))
 
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
@@ -923,11 +934,16 @@ class CreateDrawing(bpy.types.Operator):
 
         bim_props = tool.Blender.get_bim_props()
         prefs = tool.Blender.get_addon_preferences()
-        files = {bim_props.ifc_file: tool.Ifc.get()}
+        # Map ifc_path → (ifc_file, link_matrix); main file has no link_matrix (None)
+        files: dict[str, tuple[ifcopenshell.file, Optional[Matrix]]] = {bim_props.ifc_file: (tool.Ifc.get(), None)}
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.filepath] = self.get_linked_file(link)
+            try:
+                link_matrix = tool.Project.calculate_link_matrix(link)
+            except Exception:
+                link_matrix = None
+            files[link.filepath] = (self.get_linked_file(link), link_matrix)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -935,7 +951,7 @@ class CreateDrawing(bpy.types.Operator):
         tree = ifcopenshell.geom.tree()
         tree.enable_face_styles(True)
 
-        for ifc_path, ifc in files.items():
+        for ifc_path, (ifc, link_matrix) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
@@ -949,8 +965,8 @@ class CreateDrawing(bpy.types.Operator):
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view)
+            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
