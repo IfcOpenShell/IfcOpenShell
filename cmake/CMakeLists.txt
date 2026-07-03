@@ -539,6 +539,10 @@ add_subdirectory(../src/plugin plugin)
 add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
 
+if(BUILD_EXAMPLES OR BUILD_BONSAIVIEWER)
+    add_subdirectory(../src/helpers helpers)
+endif()
+
 if(BUILD_IFCPARSE_EXPERIMENTAL_WRAPPER)
     add_subdirectory(../src/wrappergen wrappergen)
 endif()
@@ -708,11 +712,6 @@ if(BUILD_BONSAIVIEWER_TESTS)
 endif()
 
 if(BUILD_BONSAIVIEWER)
-    # helpers first — schema-agnostic helpers (Unit, Geolocation,
-    # Placement) that IfcViewer's Federation links against. Adding here
-    # before ifcviewer/ so the link target exists when IfcViewer's
-    # CMakeLists runs.
-    add_subdirectory(../src/helpers helpers)
     # IfcViewer is the unified scene + render lib since the wgpu/ifcviewer
     # merge — wgpu-native is fetched inside its CMakeLists.txt.
     add_subdirectory(../src/ifcviewer ifcviewer)

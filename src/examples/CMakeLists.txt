@@ -72,7 +72,7 @@ if("2x3" IN_LIST SCHEMA_VERSIONS)
     build_schema_example(faces 2x3)
     build_schema_example(ifc_curve_rebar 2x3)
     build_schema_example(profiles 2x3)
-    build_schema_example(IfcParseExamples 2x3)
+    build_schema_example(IfcParseExamples 2x3 helpers)
 
     if(WITH_OPENCASCADE)
         build_schema_example(IfcOpenHouse 2x3 geometry_serializer)
