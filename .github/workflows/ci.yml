@@ -55,7 +55,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely pyparsing
+          pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely pyparsing psutil
           pip install src/bcf --no-deps
           pip install pytest-xdist==3.8.0
 
