@@ -1038,3 +1038,27 @@ class TestAddReferenceImage(NewFile):
 
         uv_node = material_nodes["Texture Coordinate"]
         assert len(uv_node.outputs["Generated"].links[:]) == 1
+
+
+class TestIsDrawingActive(NewFile):
+    def test_no_active_camera(self):
+        bpy.context.scene.camera = None
+        assert subject.is_drawing_active() is False
+
+    def test_active_camera_without_ifc_definition(self):
+        bpy.context.scene.camera = subject.create_camera("Camera", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
+        assert subject.is_drawing_active() is False
+
+    def test_ifc_linked_camera_in_background_mode(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        camera_obj = subject.create_camera("Camera", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        tool.Ifc.link(drawing, camera_obj)
+        bpy.context.scene.camera = camera_obj
+
+        # The test suite itself runs Blender in background mode, where no
+        # VIEW_3D area can ever exist -- this is exactly the case the fix
+        # addresses, so this assertion documents that assumption.
+        assert bpy.app.background is True
+        assert subject.is_drawing_active() is True

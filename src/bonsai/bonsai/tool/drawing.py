@@ -2440,13 +2440,13 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def is_drawing_active(cls) -> bool:
         camera = bpy.context.scene.camera
-        area = tool.Blender.get_view3d_area()
-        return bool(
-            camera is not None
-            and camera.type == "CAMERA"
-            and tool.Blender.get_ifc_definition_id(camera)
-            and area is not None
-        )
+        if not (camera is not None and camera.type == "CAMERA" and tool.Blender.get_ifc_definition_id(camera)):
+            return False
+        # A VIEW_3D area is meaningless (and unobtainable) in background
+        # mode, but isn't otherwise required to generate a drawing.
+        if bpy.app.background:
+            return True
+        return tool.Blender.get_view3d_area() is not None
 
     @classmethod
     def is_camera_orthographic(cls) -> bool:
