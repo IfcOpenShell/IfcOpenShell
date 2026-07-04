@@ -10,9 +10,13 @@ on:
       - 'src/ifcgeomserver/**'
       - 'src/ifcjni/**'
       - 'src/ifcmax/**'
+      - 'src/ifc5d/**'
+      - 'src/ifcedit/**'
+      - 'src/ifcmcp/**'
       - 'src/ifcopenshell-python/**'
       - '!src/ifcopenshell-python/docs/**'
       - 'src/ifcparse/**'
+      - 'src/ifcquery/**'
       - 'src/ifcwrap/**'
       - 'src/qtviewer/**'
       - 'src/svgfill/**'
@@ -252,6 +256,16 @@ jobs:
           pip install deepdiff
           cd ../ifcdiff && make test || ERROR=1
           cd ../ifcpatch && make test || ERROR=1
+          pip install -e ../ifc5d --no-deps
+          pip install odfpy xlsxwriter
+          cd ../ifc5d && make test || ERROR=1
+          pip install -e ../ifcquery --no-deps
+          cd ../ifcquery && make test || ERROR=1
+          pip install -e ../ifcedit --no-deps
+          cd ../ifcedit && make test || ERROR=1
+          pip install mcp
+          pip install -e ../ifcmcp --no-deps
+          cd ../ifcmcp && make test || ERROR=1
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || ERROR=1
           make build-ids-docs || ERROR=1
