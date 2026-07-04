@@ -270,9 +270,12 @@ jobs:
           cd ../ifctester && make test || ERROR=1
           make build-ids-docs || ERROR=1
           # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
+          # mathutils only has pre-built wheels for Python 3.13+; skip on older versions.
           cd ../ifcopenshell-python
-          pip install mathutils
-          make test-mathutils || ERROR=1
+          if python -c "import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)"; then
+            pip install mathutils
+            make test-mathutils || ERROR=1
+          fi
           if [ $ERROR -ne 0 ]; then
             echo "One or more tests failed";
             exit 1;
