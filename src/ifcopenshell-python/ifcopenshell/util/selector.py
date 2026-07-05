@@ -869,11 +869,22 @@ def set_element_value(
                     pass
             return
         elif isinstance(element, (list, tuple, set)):  # If we use regex
-            if key.isnumeric():
+            if isinstance(key, str) and key.isnumeric():
                 try:
                     element = element[int(key)]
                 except IndexError:
                     return
+            elif isinstance(keys[-1], str) and keys[-1].isnumeric() and i != len(keys) - 1:
+                # get_element_value maps the remaining attribute keys over the
+                # list and applies a trailing numeric index to the mapped result
+                # (e.g. "item.Material.Name.0"). To stay consistent, select that
+                # element up front and set the attribute chain on it (#4687).
+                try:
+                    selected = list(element)[int(keys[-1])]
+                except IndexError:
+                    return
+                set_element_value(ifc_file, selected, keys[i:-1], value)
+                return
             else:
                 for v in element:
                     set_element_value(ifc_file, v, keys[i:], value)
