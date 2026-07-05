@@ -652,16 +652,23 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def get_representation_item_style(
-        cls, representation_item: ifcopenshell.entity_instance
+        cls, representation_item: ifcopenshell.entity_instance, ifc_class: str = "IfcPresentationStyle"
     ) -> Union[ifcopenshell.entity_instance, None]:
-        """Return IfcPresentationStyle associated with a representation item."""
+        """Return IfcPresentationStyle associated with a representation item.
+
+        :param ifc_class: Only consider styles of this class. An item can carry
+            several styles at once (e.g. DDScad writes an IfcCurveStyle and an
+            IfcSurfaceStyle on the same styled item), so callers that need a
+            specific kind should ask for it, e.g. "IfcSurfaceStyle".
+        """
         is_4x3 = representation_item.file.schema == "IFC4X3"
         for style in representation_item.StyledByItem:
             for style_or_assignment in style.Styles:
                 if not is_4x3 and style_or_assignment.is_a("IfcPresentationStyleAssignment"):
                     for assignment_style in style_or_assignment.Styles:
-                        return assignment_style
-                else:  # IfcPresentationStyle
+                        if assignment_style.is_a(ifc_class):
+                            return assignment_style
+                elif style_or_assignment.is_a(ifc_class):  # IfcPresentationStyle
                     return style_or_assignment
 
     @classmethod
