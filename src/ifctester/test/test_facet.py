@@ -266,6 +266,34 @@ class TestEntity:
         assert facet.filter(ifc) == []
         run("In IFC2X3 the type class is checked instead 2/2", facet=facet, inst=element, expected=False)
 
+    def test_ifc2x3_restriction_entity_requirement(self):
+        set_facet("entity")
+
+        ifc = ifcopenshell.file(schema="IFC2X3")
+        application = ifcopenshell.api.owner.add_application(ifc)
+        person = ifcopenshell.api.owner.add_person(
+            ifc, identification="LPARTEE", family_name="Partee", given_name="Leeable"
+        )
+        organisation = ifcopenshell.api.owner.add_organisation(
+            ifc, identification="AWB", name="Architects Without Ballpens"
+        )
+        user = ifcopenshell.api.owner.add_person_and_organisation(ifc, person=person, organisation=organisation)
+        ifcopenshell.api.owner.settings.get_user = lambda x: user
+        ifcopenshell.api.owner.settings.get_application = lambda x: application
+
+        element = ifcopenshell.api.root.create_entity(ifc, "IfcFlowTerminal")
+        element_type = ifcopenshell.api.root.create_entity(ifc, "IfcAirTerminalType")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=element_type)
+
+        # A failing xs:restriction entity requirement used to crash on IFC2X3
+        # because the type-inference branch called str methods on a Restriction.
+        facet = Entity(name=Restriction(options={"enumeration": ["IFCWALL"]}, base="string"))
+        run("Restriction entity requirement fails cleanly", facet=facet, inst=element, expected=False)
+
+        # The pass path still resolves via the IFC2X3 type mapping.
+        facet = Entity(name=Restriction(options={"enumeration": ["IFCAIRTERMINAL"]}, base="string"))
+        run("Restriction entity requirement passes via type mapping", facet=facet, inst=element, expected=True)
+
     def test_to_string_required_applicability(self):
         spec = ifctester.ids.Specification(name="Foo", minOccurs=1, maxOccurs="unbounded")
         facet = Entity(name="IFCWALL")
