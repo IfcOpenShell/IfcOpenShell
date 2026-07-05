@@ -226,6 +226,10 @@ class Usecase:
                 prop = self.update_existing_prop_single_value(prop)
                 if prop:
                     existing_props.append(prop)
+            elif prop.is_a("IfcPropertyListValue"):
+                prop = self.update_existing_prop_list_value(prop)
+                if prop:
+                    existing_props.append(prop)
             else:
                 raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
         return existing_props
@@ -310,6 +314,43 @@ class Usecase:
             )
             value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
             prop.NominalValue = self.file.create_entity(primary_measure_type, value)
+        if unit:
+            prop.Unit = unit
+        del self.settings["properties"][prop.Name]
+        return prop
+
+    def update_existing_prop_list_value(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        NOTE: Assumes the prop exists
+        """
+        value = self.settings["properties"][prop.Name]
+        unit, value = self.unpack_unit_value(value)
+        if value is None or (isinstance(value, (tuple, list)) and not value):
+            if self._try_purge(prop):
+                return
+            prop.ListValues = None
+        else:
+            if not isinstance(value, (tuple, list)):
+                value = [value]
+            # Reuse the measure type of the existing values, falling back to the
+            # template when the list was previously empty.
+            if existing_values := prop.ListValues:
+                primary_measure_type = existing_values[0].is_a()
+            else:
+                primary_measure_type = self.get_primary_measure_type(prop.Name, new_value=value[0])
+            list_values = []
+            for val in value:
+                if isinstance(val, ifcopenshell.entity_instance):
+                    list_values.append(val)
+                else:
+                    list_values.append(
+                        self.file.create_entity(
+                            primary_measure_type, self.cast_value_to_primary_measure_type(val, primary_measure_type)
+                        )
+                    )
+            prop.ListValues = tuple(list_values)
         if unit:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
