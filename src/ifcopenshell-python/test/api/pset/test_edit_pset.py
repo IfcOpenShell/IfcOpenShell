@@ -59,6 +59,19 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(pset.HasProperties) == 1
 
+    def test_an_empty_string_for_a_numeric_property_stores_no_value(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        # An empty string for a numeric measure (e.g. an unfilled bSDD property)
+        # must not crash on float(""); the property is stored without a value.
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"ThermalTransmittance": ""})
+        transmittance = next(p for p in pset.HasProperties if p.Name == "ThermalTransmittance")
+        assert transmittance.NominalValue is None
+        # An empty string for a string measure stays an empty string.
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Reference": ""})
+        reference = next(p for p in pset.HasProperties if p.Name == "Reference")
+        assert reference.NominalValue.wrappedValue == ""
+
     def test_not_adding_a_property_if_it_is_none_and_should_purge_is_true(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
