@@ -222,6 +222,9 @@ Valid keys are:
     "``easting``", "Gets the map easting of the element's placement"
     "``northing``", "Gets the map northing of the element's placement"
     "``elevation``", "Gets the map elevation of the element's placement"
+    "``rotation_x``", "Gets the X Euler rotation of the element's placement in degrees"
+    "``rotation_y``", "Gets the Y Euler rotation of the element's placement in degrees"
+    "``rotation_z``", "Gets the Z Euler rotation of the element's placement in degrees (e.g. plan rotation of a symbol)"
     "``count``", "If the previous key returns multiple things, count that list. Otherwise, return 1."
     "``{{number}}``", "If the previous key returns multiple things, fetch the ``{{number}}`` index (e.g. 0, 1, 2, 3, etc) item in that list."
 

@@ -36,6 +36,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.pset
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 
@@ -491,6 +492,13 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
                     value = enh[("easting", "northing", "elevation").index(key)]
             else:
                 value = None
+        elif key in ("rotation_x", "rotation_y", "rotation_z") and hasattr(value, "ObjectPlacement"):
+            if getattr(value, "ObjectPlacement", None):
+                matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)
+                euler = ifcopenshell.util.shape_builder.np_matrix_to_euler(matrix)
+                value = float(np.degrees(euler[("rotation_x", "rotation_y", "rotation_z").index(key)]))
+            else:
+                value = None
         elif isinstance(value, ifcopenshell.entity_instance):
             if key == "Name" and value.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
@@ -699,9 +707,9 @@ def set_element_value(
             return
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
-        elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
+        elif key in ("x", "y", "z", "easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z") and hasattr(element, "ObjectPlacement"):
             # TODO: add support
-            if key in ("easting", "northing", "elevation"):
+            if key in ("easting", "northing", "elevation", "rotation_x", "rotation_y", "rotation_z"):
                 return
 
             placement = element.ObjectPlacement

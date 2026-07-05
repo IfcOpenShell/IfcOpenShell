@@ -125,6 +125,22 @@ class TestGetElementValue(test.bootstrap.IFC4):
         element.Name = "Foobar"
         assert subject.get_element_value(element, "Name") == "Foobar"
 
+    def test_selecting_an_elements_rotation_using_a_query(self):
+        # Feature test for #6262: rotation_x/y/z value keys expose the
+        # placement's Euler angles in degrees, e.g. for GIS symbol placement.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(self.file)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        theta = np.radians(30)
+        matrix = np.eye(4)
+        matrix[:2, :2] = [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix, is_si=False)
+        assert subject.get_element_value(element, "rotation_x") == pytest.approx(0.0)
+        assert subject.get_element_value(element, "rotation_y") == pytest.approx(0.0)
+        assert subject.get_element_value(element, "rotation_z") == pytest.approx(30.0)
+        element_without_placement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        assert subject.get_element_value(element_without_placement, "rotation_z") is None
+
     def test_selecting_using_a_multiple_key_query(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file, name="CON01")
