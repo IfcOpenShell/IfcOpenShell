@@ -291,19 +291,21 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
             objects = [context.active_object] if context.active_object else []
         else:
             objects = context.selected_objects
-        all_parts = []
+        aggregates = {}
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             if element:
                 aggregate = ifcopenshell.util.element.get_aggregate(element)
                 if aggregate:
-                    all_parts.append(aggregate)
+                    aggregates[aggregate.id()] = aggregate
                     if not keep_current_selection:
                         obj.select_set(False)
                 else:
                     pass
             if not element and not keep_current_selection:
                 obj.select_set(False)
+
+        all_parts = list(aggregates.values())
 
         if self.select_parts:
             selected_parts = []

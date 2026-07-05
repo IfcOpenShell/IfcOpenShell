@@ -303,21 +303,40 @@ class SelectSimilarContainer(bpy.types.Operator):
 
     def execute(self, context):
         if self.container:
-            container = tool.Ifc.get().by_id(self.container)
-        elif element := tool.Ifc.get_entity(context.active_object):
-            container = ifcopenshell.util.element.get_container(element)
+            # Called from container manager panel with explicit container
+            ifc_container = tool.Ifc.get().by_id(self.container)
+            containers = {ifc_container.id(): ifc_container} if ifc_container else {}
         else:
+            # Called from 3D viewport — derive containers from the selected objects
+            # (active object only in remove/filter mode, so a single criteria source)
+            if self.remove_from_selection or self.filter_selection:
+                objects = [context.active_object] if context.active_object else []
+            else:
+                objects = context.selected_objects or [context.active_object]
+            containers = {}
+            for obj in objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
+                container = tool.Spatial.get_container(element)
+                if container:
+                    containers[container.id()] = container
+
+        if not containers:
             return {"CANCELLED"}
-        if not container:
-            return {"CANCELLED"}
-        core.select_similar_container(
-            tool.Spatial,
-            container=container,
-            is_recursive=self.is_recursive,
-            should_unhide=self.should_unhide,
-            remove_from_selection=self.remove_from_selection,
-            filter_selection=self.filter_selection,
-        )
+
+        for container in containers.values():
+            tool.Spatial.select_products(
+                tool.Spatial.get_decomposed_elements(container, self.is_recursive),
+                unhide=self.should_unhide,
+                remove=self.remove_from_selection,
+                filter_selection=self.filter_selection,
+            )
+
+        result = " + ".join(f'location = "{c.Name}"' for c in containers.values())
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         self.is_recursive = True  # <-- forcibly reset
         return {"FINISHED"}
 

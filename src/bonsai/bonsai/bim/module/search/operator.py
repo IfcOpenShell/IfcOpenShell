@@ -1297,7 +1297,6 @@ class SelectIfcClass(Operator):
                 if not element or not any(element.is_a(cls) for cls in classes):
                     obj.select_set(False)
             return {"FINISHED"}
-        result = ""
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -1314,13 +1313,10 @@ class SelectIfcClass(Operator):
                     else:
                         tool.Blender.select_object(obj)
 
-            # copy selection query to clipboard
-            if not result:
-                result = f"{cls}"
-            else:
-                result += f", {cls}"
-            bpy.context.window_manager.clipboard = result
-            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+        # copy selection query to clipboard
+        result = " + ".join(classes)
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
 
         return {"FINISHED"}
 
@@ -1541,7 +1537,7 @@ class SelectSimilar(Operator):
                     f"{verb} all objects that share the same ({self.key}) value(s) from {len(reference_values)} reference object(s).",
                 )
 
-            self._generate_clipboard_query(reference_values[0] if reference_values else None, key)
+            self._generate_clipboard_query(reference_values, key)
 
         return {"FINISHED"}
 
@@ -1601,17 +1597,22 @@ class SelectSimilar(Operator):
         bpy.context.window_manager.clipboard = str(total)
         self.report({"INFO"}, f"({total}) was copied to the clipboard.")
 
-    def _generate_clipboard_query(self, value, key):
+    def _generate_clipboard_query(self, values, key):
         key = "PredefinedType" if key == "predefined_type" else key
-        if value is True:
-            value = "TRUE"
-        elif value is False:
-            value = "FALSE"
+        if not values:
+            return
 
-        if isinstance(value, list) and value:
-            result = ", ".join(f'{key} = "{item}"' for item in value)
-        else:
-            result = f'{key} = "{value}"'
+        def format_value(value):
+            if value is True:
+                return f'{key} = "TRUE"'
+            elif value is False:
+                return f'{key} = "FALSE"'
+            elif isinstance(value, list) and value:
+                return ", ".join(f'{key} = "{item}"' for item in value)
+            else:
+                return f'{key} = "{value}"'
+
+        result = " + ".join(format_value(v) for v in values)
 
         bpy.context.window_manager.clipboard = result
         self.report({"INFO"}, f"({result}) was copied to the clipboard.")
