@@ -41,6 +41,19 @@ class TestAssignContainer(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_container(subelement2) == element
         assert rel.is_a("IfcRelContainedInSpatialStructure")
 
+    def test_raising_a_clear_error_for_non_containable_products(self):
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        beam_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBeamType")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.spatial.assign_container(self.file, products=[beam_type], relating_structure=storey)
+        # A type mixed into an otherwise valid selection must not be partially applied.
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        with pytest.raises(TypeError):
+            ifcopenshell.api.spatial.assign_container(
+                self.file, products=[wall, beam_type], relating_structure=storey
+            )
+        assert ifcopenshell.util.element.get_container(wall) is None
+
     def test_doing_nothing_if_the_container_is_already_assigned(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
