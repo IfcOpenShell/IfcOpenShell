@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
 import ifcopenshell.util.representation
 
@@ -76,6 +78,48 @@ class TestIfcDiff:
         assert ifc_diff.added_elements == set()
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
+
+    def test_unchanged_container_is_not_a_change(self):
+        ifc_file = setup_project()
+        storey = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Level 1")
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.assign_container(ifc_file, products=[wall], relating_structure=storey)
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+
+        # The container instances live in two different files and never compare
+        # equal, so the diff must compare them by GlobalId, not by identity.
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["container"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {}
+
+    def test_changed_container(self):
+        ifc_file = setup_project()
+        storey1 = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Level 1")
+        storey2 = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcBuildingStorey", name="Level 2")
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.assign_container(ifc_file, products=[wall], relating_structure=storey1)
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        wall_new = new_file.by_id(wall.id())
+        storey2_new = new_file.by_id(storey2.id())
+        ifcopenshell.api.spatial.assign_container(new_file, products=[wall_new], relating_structure=storey2_new)
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["container"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {wall.GlobalId: {"container_changed": True}}
+
+    def test_unchanged_aggregate_is_not_a_change(self):
+        ifc_file = setup_project()
+        assembly = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcElementAssembly")
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall")
+        ifcopenshell.api.aggregate.assign_object(ifc_file, products=[wall], relating_object=assembly)
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file, relationships=["aggregate"])
+        ifc_diff.diff()
+        assert ifc_diff.change_register == {}
 
     def test_changed_geometry(self):
         ifc_file = setup_project()

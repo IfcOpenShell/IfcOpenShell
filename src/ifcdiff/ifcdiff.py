@@ -323,11 +323,21 @@ class IfcDiff:
                     self.change_register.setdefault(new.GlobalId, {}).update({"properties_changed": diff})
                     return True
             elif relationship == "container":
-                if ifcopenshell.util.element.get_container(old) != ifcopenshell.util.element.get_container(new):
+                # The two containers come from different files, so their instances
+                # never compare equal. Compare by GlobalId, as the type branch does.
+                old_container = ifcopenshell.util.element.get_container(old)
+                new_container = ifcopenshell.util.element.get_container(new)
+                old_guid = old_container.GlobalId if old_container is not None else None
+                new_guid = new_container.GlobalId if new_container is not None else None
+                if old_guid != new_guid:
                     self.change_register.setdefault(new.GlobalId, {}).update({"container_changed": True})
                     return True
             elif relationship == "aggregate":
-                if ifcopenshell.util.element.get_aggregate(old) != ifcopenshell.util.element.get_aggregate(new):
+                old_aggregate = ifcopenshell.util.element.get_aggregate(old)
+                new_aggregate = ifcopenshell.util.element.get_aggregate(new)
+                old_guid = old_aggregate.GlobalId if old_aggregate is not None else None
+                new_guid = new_aggregate.GlobalId if new_aggregate is not None else None
+                if old_guid != new_guid:
                     self.change_register.setdefault(new.GlobalId, {}).update({"aggregate_changed": True})
                     return True
             elif relationship == "classification":
