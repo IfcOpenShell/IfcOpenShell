@@ -261,6 +261,19 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
 
+    def test_selecting_by_multivalue_property(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["NEW", "EXISTING"]})
+        # A value present in the list matches "=" and "*=".
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=NEW") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status*=NEW") == {element}
+        # Negated operators mean "none of the values match", not "some value differs".
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=NEW") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!*=NEW") == set()
+        # A value absent from the list is excluded by "=" and included by "!=".
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=DEMOLISH") == set()
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=DEMOLISH") == {element}
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")

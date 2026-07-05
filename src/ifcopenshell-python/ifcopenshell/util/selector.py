@@ -1222,6 +1222,14 @@ class FacetTransformer(lark.Transformer):
 
     def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
+            if comparison.startswith("!"):
+                # For a negated operator the intuitive meaning is "none of the
+                # values match", i.e. NOT (any value matches the positive form).
+                # Distributing the negation into `any` instead would return the
+                # list whenever it holds a single differing value, so "!=" and
+                # "!*=" wrongly matched a list that actually contained the value.
+                positive = comparison.lstrip("!")
+                return not any(self.compare(ev, positive, value) for ev in element_value)
             return any(self.compare(ev, comparison, value) for ev in element_value)
         elif isinstance(value, str):
             try:
