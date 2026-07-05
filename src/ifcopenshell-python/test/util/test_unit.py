@@ -19,6 +19,7 @@
 from math import pi
 
 import numpy as np
+import pytest
 
 import ifcopenshell.api.context
 import ifcopenshell.api.georeference
@@ -257,6 +258,23 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
         # there was some renumbering bug in the rocksdb rewrite this statement is to test for that
         assert max(i.id() for i in output) == len(output.wrapped_data.entity_names()) + 1
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
+
+    def test_precision_conversion(self):
+        # Regression test for #6127: IfcGeometricRepresentationContext.Precision
+        # is typed IfcReal but interpreted in the project length unit, so it must
+        # be scaled along with the length measures.
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        context.Precision = 0.01
+        # Subcontexts derive Precision from the parent and must be left alone.
+        ifcopenshell.api.context.add_context(
+            self.file, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
+        )
+        output = subject.convert_file_length_units(self.file, target_units="METER")
+        new_context = output.by_type("IfcGeometricRepresentationContext", include_subtypes=False)[0]
+        assert new_context.Precision == pytest.approx(0.00001)
 
     def test_attribute_conversion(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
