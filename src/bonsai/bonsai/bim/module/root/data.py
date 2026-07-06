@@ -42,7 +42,6 @@ class IfcClassData:
 
     @classmethod
     def load(cls):
-        cls.is_loaded = True
         cls.data = {}
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
@@ -57,6 +56,11 @@ class IfcClassData:
         cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
         cls.data["can_reassign_class"] = cls.can_reassign_class()
         cls.data["profile"] = cls.profile()
+        # Set only after every key is populated. If a populate call above raises
+        # (e.g. before a file is fully ready), is_loaded stays False so the next
+        # call retries load() instead of returning a half-built dict, which
+        # otherwise surfaced as KeyError 'ifc_products'. See #6398.
+        cls.is_loaded = True
 
     @classmethod
     def ifc_products(cls):
