@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <string>
 #include <iomanip>
+#include <charconv>
 
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
@@ -746,11 +747,16 @@ namespace {
         // the output of the C++ ostream formatting operation.
         // REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
         static std::string format_double(const double& d) {
+            // Use the shortest representation that round-trips exactly (like
+            // Python's repr) instead of max_digits10. max_digits10 padded clean
+            // values with noise digits (0.0174532925199433 -> 0.017453292519943299),
+            // which rewrote every REAL and produced huge diffs when a file was
+            // re-saved. See #7696.
+            char buf[64];
+            const auto res = std::to_chars(buf, buf + sizeof(buf), d);
+            const std::string str(buf, res.ptr);
             std::ostringstream oss;
             oss.imbue(std::locale::classic());
-            oss << std::setprecision(std::numeric_limits<double>::max_digits10) << d;
-            const std::string str = oss.str();
-            oss.str("");
             std::string::size_type e = str.find('e');
             if (e == std::string::npos) {
                 e = str.find('E');
