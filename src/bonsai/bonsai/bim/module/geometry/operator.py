@@ -1215,7 +1215,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return {"FINISHED"}
 
     @staticmethod
-    def execute_ifc_duplicate_operator(operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False):
+    def execute_ifc_duplicate_operator(
+        operator: bpy.types.Operator,
+        context: bpy.types.Context,
+        linked: bool = False,
+        copy_linked_aggregate: bool = True,
+    ):
         objects_to_remove: set[bpy.types.Object] = set()
 
         for obj in context.selected_objects:
@@ -1321,6 +1326,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
 
+        # A plain duplicate of an aggregate that belongs to a linked-aggregate set must keep
+        # that link; otherwise the BBIM_Linked_Aggregate group and pset are dropped from the
+        # copies (#8233). Duplicates re-join the original group so edits still propagate.
+        if copy_linked_aggregate:
+            copy_linked_aggregate_data(tool.Ifc.get(), old_to_new)
+
         return old_to_new
 
 
@@ -1354,6 +1365,51 @@ class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
 
 
 OldToNewType = dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+
+
+def copy_linked_aggregate_data(
+    ifc_file: ifcopenshell.file, old_to_new: OldToNewType, pset_name: str = "BBIM_Linked_Aggregate"
+) -> None:
+    """Carry BBIM_Linked_Aggregate group membership and pset from originals to duplicates.
+
+    Duplicates re-join the same linked-aggregate group as their originals so that edits
+    still propagate across the whole linked set.
+    """
+    for old, new in old_to_new.items():
+        if new[0].is_a("IfcElementAssembly"):
+            linked_aggregate_group = [
+                r.RelatingGroup
+                for r in getattr(old, "HasAssignments", []) or []
+                if r.is_a("IfcRelAssignsToGroup")
+                if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+            ]
+            if linked_aggregate_group:
+                ifcopenshell.api.group.assign_group(ifc_file, group=linked_aggregate_group[0], products=new)
+
+        pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
+        if pset:
+            new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=pset_name)
+            if pset["Index"] == 0:
+                group_elements = []
+                if new[0].is_a("IfcElementAssembly"):
+                    group_elements = next(
+                        (
+                            r.RelatedObjects
+                            for r in getattr(new[0], "HasAssignments", []) or []
+                            if r.is_a("IfcRelAssignsToGroup")
+                            and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                        ),
+                        [],
+                    )
+                properties = {
+                    "Index": pset["Index"],
+                    "Name": pset["Name"],
+                    "Aggregate_Index": len(group_elements) - 1 if group_elements else 0,
+                }
+            else:
+                properties = {"Index": pset["Index"]}
+
+            ifcopenshell.api.pset.edit_pset(ifc_file, pset=new_pset, properties=properties)
 
 
 class DuplicateMoveLinkedAggregate(bpy.types.Operator):
@@ -1446,47 +1502,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             else:
                 return 0
 
-        def copy_linked_aggregate_data(old_to_new):
-            for old, new in old_to_new.items():
-                if new[0].is_a("IfcElementAssembly"):
-                    linked_aggregate_group = [
-                        r.RelatingGroup
-                        for r in getattr(old, "HasAssignments", []) or []
-                        if r.is_a("IfcRelAssignsToGroup")
-                        if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-                    ]
-                    if linked_aggregate_group:
-                        ifcopenshell.api.group.assign_group(ifc_file, group=linked_aggregate_group[0], products=new)
-
-                pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
-                if pset:
-                    new_pset = ifcopenshell.api.pset.add_pset(ifc_file, product=new[0], name=self.pset_name)
-                    if pset["Index"] == 0:
-                        group_elements = []
-                        if new[0].is_a("IfcElementAssembly"):
-                            group_elements = next(
-                                (
-                                    r.RelatedObjects
-                                    for r in getattr(new[0], "HasAssignments", []) or []
-                                    if r.is_a("IfcRelAssignsToGroup")
-                                    and "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-                                ),
-                                [],
-                            )
-                        properties = {
-                            "Index": pset["Index"],
-                            "Name": pset["Name"],
-                            "Aggregate_Index": len(group_elements) - 1 if group_elements else 0,
-                        }
-                    else:
-                        properties = {"Index": pset["Index"]}
-
-                    ifcopenshell.api.pset.edit_pset(
-                        ifc_file,
-                        pset=new_pset,
-                        properties=properties,
-                    )
-
         def get_location_from_3d_cursor(old_to_new, aggregate):
             base_obj = tool.Ifc.get_object(aggregate)
             base_obj_location = base_obj.location.copy()
@@ -1528,14 +1543,16 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             select_objects_and_add_data(aggregate)
 
             # Duplicate the aggregate
-            old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
+            old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(
+                self, context, linked=True, copy_linked_aggregate=False
+            )
             all_old_to_new.update(old_to_new)  # Collect all duplicates
 
             # Recreate aggregate structure
             tool.Root.recreate_aggregate(old_to_new)
 
             # Copy linked aggregate data
-            copy_linked_aggregate_data(old_to_new)
+            copy_linked_aggregate_data(ifc_file, old_to_new)
 
             # Apply custom naming
             custom_incremental_naming_for_element_assembly(old_to_new)
