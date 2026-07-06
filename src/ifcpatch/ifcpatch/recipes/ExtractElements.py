@@ -87,12 +87,24 @@ class Patcher(ifcpatch.BasePatcher):
         self.new = ifcopenshell.file(schema_version=self.file.schema_version)
         self.owner_history = None
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
+        # Relationships reached via shared inverses (material, type, property sets)
+        # are deferred here and their member lists assigned once, avoiding the
+        # O(n^2) cost of re-assigning a growing list on every element append.
+        self.deferred_relationship_members: dict[
+            int, tuple[ifcopenshell.entity_instance, ifcopenshell.entity_instance]
+        ] = {}
+        # Maps a source element's step id to the entity it was appended as, so
+        # deferred relationship member lists can be resolved in one pass.
+        self.appended_elements: dict[int, ifcopenshell.entity_instance] = {}
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
         self.add_element(self.file.by_type("IfcProject")[0])
         for element in ifcopenshell.util.selector.filter_elements(self.file, self.query):
             self.add_element(element)
+        ifcopenshell.api.project.flush_deferred_relationship_members(
+            self.deferred_relationship_members, self.appended_elements
+        )
         self.create_spatial_tree()
         self.file = self.new
 
@@ -100,6 +112,7 @@ class Patcher(ifcpatch.BasePatcher):
         new_element = self.append_asset(element)
         if not new_element:
             return
+        self.appended_elements[element.id()] = new_element
         self.add_spatial_structures(element, new_element)
         self.add_decomposition_parents(element, new_element)
 
@@ -120,6 +133,7 @@ class Patcher(ifcpatch.BasePatcher):
             element=element,
             reuse_identities=self.reuse_identities,
             assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
+            deferred_relationship_members=self.deferred_relationship_members,
         )
 
     def add_spatial_structures(
