@@ -165,6 +165,29 @@ stay compatible.
   root empty first (filepath alone is ambiguous with several links per file). The
   element's IFC placement syncs to the moved location on save — intended.
 
+## Review round 1 (PR #8242, falken10vdl) — decisions
+
+- **Path-form mismatch → duplicate documents (confirmed bug, fixed).**
+  `get_linked_models_documents()` keyed documents by the *stored* `Location`, so
+  linking the same file first relative then absolute (or vice versa) created a second
+  `IfcDocumentInformation`. Both sides of the lookup now normalize through
+  `tool.Ifc.resolve_uri()` before matching.
+- **`Description` for the query — kept.** It is implementation metadata in an IFC
+  attribute, but consistent with the existing convention on these same references
+  (`Identification` stores the 4×4 transformation, a bigger stretch). References are
+  Bonsai-managed (`Scope="LINKED_MODEL"`), so user-description collisions are unlikely.
+  A cleaner consolidated convention (query + transform + options in one serialized
+  attribute) is a candidate follow-up, deliberately out of scope here.
+- **`md5(query)[:8]` — kept.** 32 bits ≈ birthday collision at ~65k distinct queries
+  *per file*; and a collision is not silent: the cache JSON stores the full query and
+  `should_clear_cache()` compares it, so a colliding cache is detected and rebuilt
+  (self-healing).
+- **Depsgraph autosave vs save-on-lock — autosave kept.** Save-on-lock alone loses the
+  "what you see is what's saved" guarantee (move + save project without locking =
+  silently dropped move) and loses undo tracking (undo fires a depsgraph update that
+  re-saves the reverted transform). The handler early-outs when no links exist and only
+  works on ticks containing an object-transform update while a link is unlocked.
+
 ## Status — implemented (verified in Blender, incl. headless + GUI repro runs)
 
 Six commits on `Linked_File_Features`:
@@ -179,6 +202,9 @@ Six commits on `Linked_File_Features`:
   append placement (`tool/project.py`, `project/operator.py`, `project/decorator.py`).
 - `c14592ec0a` per-query caches, Description persistence, SKIP_SAVE.
 
+Plus the review-round path normalization in `get_linked_models_documents` /
+`LinkIfc` (see Review round 1), committed together with this note update.
+
 End-to-end verified with a two-links-one-file kit (window/door, distinct queries):
 correct visuals on load, after save → reopen → reload, in both headless and windowed
 Blender.
@@ -188,7 +214,9 @@ Blender.
 - **IFC2X3 host**: `Description` doesn't exist — link queries silently not restored on
   reopen (legacy fallback only for single-link files). Acceptable? Warn?
 - **Relative-path links** (`use_relative_path`) through the whole cycle: cache paths,
-  reference `Location`, reload path change, query restore.
+  reference `Location`, reload path change, query restore. The duplicate-document case
+  (same file linked relative then absolute) is fixed — verify one document with two
+  references via `IfcDocumentInformation.HasDocumentReferences`.
 - Same file linked twice, **both moved differently**: Explore highlight and append
   placement per instance (root-empty matching), per-link visibility toggles.
 - External styles with **image textures**: paths relative to the style's source
