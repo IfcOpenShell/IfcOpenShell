@@ -842,8 +842,14 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         # Create shape of opening as a dissolved BMesh
                         settings = ifcopenshell.geom.settings()
                         shape = ifcopenshell.geom.create_shape(settings, opening)
+                        # get_vertices returns the opening's LOCAL geometry, so mat
+                        # (its placement, including translation) is what carries the
+                        # opening to its real position below. Zeroing the translation
+                        # collapsed every opening onto the origin, which is why
+                        # auto-generated window/door boundaries were misplaced while
+                        # the single-element path (create_element_boundary) was
+                        # correct. See #8237.
                         mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-                        mat.translation = (0, 0, 0)
                         opening_bm = bmesh.new()
                         verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
                         for vert in verts:
