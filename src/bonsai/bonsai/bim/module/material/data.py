@@ -307,18 +307,17 @@ class ObjectMaterialData:
                 else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
-        should_reverse = cls.material.is_a("IfcMaterialLayerSetUsage") and cls.material.DirectionSense == "POSITIVE"
+        # Present the layers in their stored order (ForLayerSet.MaterialLayers),
+        # which is the order the user manages directly. Previously the list was
+        # reversed for an IfcMaterialLayerSetUsage with a POSITIVE DirectionSense
+        # so the layer farthest from the reference line showed on top. That made
+        # a wall flip silently reorder the panel, because flip toggles
+        # DirectionSense, even though the stored layers never change (see #8240).
         last_i = len(results) - 1
         for i, result in enumerate(results):
             result["index"] = i
-            if should_reverse:
-                result["index_up"] = i + 1 if i != last_i else None
-                result["index_down"] = i - 1 if i != 0 else None
-            else:
-                result["index_down"] = i + 1 if i != last_i else None
-                result["index_up"] = i - 1 if i != 0 else None
-        if should_reverse:
-            return list(reversed(results))
+            result["index_down"] = i + 1 if i != last_i else None
+            result["index_up"] = i - 1 if i != 0 else None
         return results
 
     @classmethod
