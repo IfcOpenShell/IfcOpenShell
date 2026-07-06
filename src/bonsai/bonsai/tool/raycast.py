@@ -969,6 +969,18 @@ class Raycast(bonsai.core.tool.Raycast):
     def create_snap_obj(cls, obj):
         if obj.data is None or not isinstance(obj.data, bpy.types.Mesh):
             return None
+        # Drop cache entries whose Blender object has been deleted. Accessing the
+        # freed object below (and in the raycast passes) otherwise raises
+        # ReferenceError ("StructRNA ... has been removed") and aborts snapping.
+        # See #8207.
+        valid_snap_objs = []
+        for snap_obj in cls.snap_objs:
+            try:
+                snap_obj.obj.name
+            except ReferenceError:
+                continue
+            valid_snap_objs.append(snap_obj)
+        cls.snap_objs[:] = valid_snap_objs
         for i, snap_obj in enumerate(cls.snap_objs):
             if obj.name == snap_obj.obj.name:
                 # Handle objects modified while a modal operator is active.
