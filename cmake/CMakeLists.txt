@@ -27,13 +27,14 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(VERSION_OVERRIDE)
-    file(READ "../VERSION" "RELEASE_VERSION_")
-    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
-    message(STATUS "Detected version '${RELEASE_VERSION}'")
-else()
-    set(RELEASE_VERSION "0.8.0")
-endif()
+# The VERSION file in the repository root is the single source of truth for the
+# release version. Read it unconditionally so a plain source build reports the
+# real version through buildinfo.cpp instead of the stale hardcoded 0.8.0
+# fallback (see #8164). VERSION_OVERRIDE still controls the branch name used
+# when ADD_COMMIT_SHA embeds a commit sha.
+file(READ "../VERSION" "RELEASE_VERSION_")
+string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+message(STATUS "Detected version '${RELEASE_VERSION}'")
 
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
