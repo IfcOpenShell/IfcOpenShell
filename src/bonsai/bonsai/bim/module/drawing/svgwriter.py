@@ -1564,6 +1564,11 @@ class SvgWriter:
         offset = Vector([self.raw_width, self.raw_height]) / 2
         v0 = self.project_point_onto_camera(v0_global)
         v1 = self.project_point_onto_camera(v1_global)
+        if v0 is None or v1 is None:
+            # A dimension endpoint is parallel to the camera plane and cannot be
+            # projected. Skip this one annotation rather than aborting the whole
+            # drawing generation. See #8227.
+            return
         start = (offset + v0.xy * Vector((1, -1))) * self.svg_scale
         end = (offset + v1.xy * Vector((1, -1))) * self.svg_scale
         mid = ((end - start) / 2) + start
@@ -1683,14 +1688,19 @@ class SvgWriter:
 
         return text_tags
 
-    def project_point_onto_camera(self, point: Vector) -> Vector:
+    def project_point_onto_camera(self, point: Vector) -> Union[Vector, None]:
         # TODO is this needlessly complex?
-        return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
+        intersection = geometry.intersect_line_plane(
             point.xyz,
             point.xyz - self.camera_projection,
             self.camera.location,
             self.camera_projection,
         )
+        # intersect_line_plane returns None when the line is parallel to the
+        # camera plane; the point cannot be projected in that degenerate case.
+        if intersection is None:
+            return None
+        return self.camera.matrix_world.inverted() @ intersection
 
     def get_spline_points(self, spline: bpy.types.Spline) -> Union[SplineBezierPoints, SplinePoints]:
         return spline.bezier_points if spline.bezier_points else spline.points
