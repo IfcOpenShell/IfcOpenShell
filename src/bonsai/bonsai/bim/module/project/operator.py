@@ -1417,7 +1417,10 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
 
             new = props.links.add()
             if tool.Ifc.get():
-                if not (document := existing_links.get(filepath)):
+                # Look up by resolved absolute path so a file already linked
+                # with a relative Location (or vice versa) reuses its document.
+                resolved_filepath = Path(tool.Ifc.resolve_uri(filepath)).as_posix()
+                if not (document := existing_links.get(resolved_filepath)):
                     document = ifcopenshell.api.document.add_information(tool.Ifc.get())
                     document.Name = Path(filepath).name
                     document.Scope = "LINKED_MODEL"

@@ -391,11 +391,17 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_linked_models_documents(cls) -> dict[str, ifcopenshell.entity_instance]:
+        """Get linked model documents keyed by resolved absolute filepath (posix form).
+
+        Locations are stored either relative or absolute depending on how the
+        link was created - resolving before keying ensures both forms of the
+        same file match one document.
+        """
         linked_docs = {}
         for doc in tool.Ifc.get().by_type("IfcDocumentInformation"):
             if doc.Scope == "LINKED_MODEL":
                 for reference in tool.Drawing.get_document_references(doc):
-                    linked_docs[Path(reference.Location).as_posix()] = doc
+                    linked_docs[Path(tool.Ifc.resolve_uri(reference.Location)).as_posix()] = doc
                     break
         return linked_docs
 
