@@ -660,6 +660,11 @@ if(ADD_COMMIT_SHA)
     endif()
 endif(ADD_COMMIT_SHA)
 
+# Always expose the release version (from the VERSION file) to buildinfo.cpp so
+# that a build without commit-sha info reports the correct version instead of a
+# stale hardcoded fallback. See #8164.
+target_compile_definitions(IfcParse PRIVATE IFCOPENSHELL_VERSION_STRING=${RELEASE_VERSION})
+
 if(MSVC)
     # @todo still needs to be understood better, but the cgal and cgal-simple kernel cause multiply defined boost lambda placeholders _1 ... _3
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /FORCE:MULTIPLE")

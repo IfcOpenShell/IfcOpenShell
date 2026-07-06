@@ -30,6 +30,10 @@
 
 #if defined(IFCOPENSHELL_BRANCH) && defined(IFCOPENSHELL_COMMIT)
 const char *IFCOPENSHELL_VERSION = STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT);
+#elif defined(IFCOPENSHELL_VERSION_STRING)
+// Set from CMake's RELEASE_VERSION (the repository VERSION file) so a release
+// build without commit-sha info still reports the correct version. See #8164.
+const char *IFCOPENSHELL_VERSION = STRINGIFY(IFCOPENSHELL_VERSION_STRING);
 #else
 const char *IFCOPENSHELL_VERSION = "0.8.0";
 #endif
