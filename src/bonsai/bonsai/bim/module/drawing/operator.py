@@ -1486,6 +1486,10 @@ class CreateDrawing(bpy.types.Operator):
             old_paths = []
             has_open_paths = False
             for path in el.findall("{http://www.w3.org/2000/svg}path"):
+                # A generated <path> can lack a "d" attribute (no geometry);
+                # skip it instead of raising KeyError 'd'. See #6876.
+                if "d" not in path.attrib:
+                    continue
                 for subpath in path.attrib["d"].split("M")[1:]:
                     subpath = "M" + subpath.strip()
                     coords = [[float(o) for o in co[1:].split(",")] for co in subpath.split()]
