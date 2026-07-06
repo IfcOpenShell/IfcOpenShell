@@ -2830,6 +2830,10 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_sheet_references(cls, drawing: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         sheet_references: list[ifcopenshell.entity_instance] = []
         drawing_reference = cls.get_drawing_document(drawing)
+        if drawing_reference is None:
+            # A corrupt drawing with no associated document has no sheet
+            # references; return empty so it can still be removed (#8122).
+            return sheet_references
         for sheet in tool.Ifc.get().by_type("IfcDocumentInformation"):
             if not sheet.Scope == "SHEET":
                 continue
