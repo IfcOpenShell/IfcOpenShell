@@ -28,7 +28,13 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 
 import bonsai.bim.helper
-import bonsai.bim.schema
+# Bind the schema module directly rather than referencing it as
+# ``bonsai.bim.schema`` at call time: on a Blender restart / add-on reload the
+# ``bonsai.bim`` package can lose its ``schema`` attribute before the pset UI
+# draws, which raised ``AttributeError: module 'bonsai.bim' has no attribute
+# 'schema'`` and left the panels blank (see #8236). A directly bound reference
+# survives that, since it points at the module object itself.
+from bonsai.bim import schema as bim_schema
 import bonsai.core.tool
 import bonsai.tool as tool
 
@@ -142,7 +148,7 @@ class Pset(bonsai.core.tool.Pset):
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         return bool(
             pset_name
-            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(
+            in bim_schema.ifc.psetqto.get_applicable_names(
                 element.is_a(), predefined_type, pset_only=True, schema=tool.Ifc.get_schema()
             )
         )
@@ -444,7 +450,7 @@ class Pset(bonsai.core.tool.Pset):
 
     @classmethod
     def get_pset_template(cls, name: str) -> Union[ifcopenshell.entity_instance, None]:
-        return bonsai.bim.schema.ifc.psetqto.get_by_name(name)
+        return bim_schema.ifc.psetqto.get_by_name(name)
 
     @classmethod
     def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> Union[None, str]:
