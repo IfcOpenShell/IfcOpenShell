@@ -160,7 +160,11 @@ class Usecase:
                                 style_assignment = style_
                                 self.remove_same_type_styles(style_assignment, current_style_type, remove_item=False)
                             else:
-                                self.remove_same_type_styles(style_assignment, current_style_type, remove_item=True)
+                                # Operate on the assignment found in this iteration, not the
+                                # style_assignment accumulator, which is still None when the
+                                # file uses IfcPresentationStyleAssignment but we are not
+                                # reusing it (e.g. an IFC4 file authored by AVEVA E3D). See #7883.
+                                self.remove_same_type_styles(style_, current_style_type, remove_item=True)
 
                     if use_style_assignment:
                         if style_assignment:
