@@ -440,6 +440,8 @@ def get_part_of_product(
     if element.is_a("IfcProduct"):
         return element.Representation
     elif element.is_a("IfcTypeProduct") and element.file.schema != "IFX2X3":
+        if not element.RepresentationMaps:
+            return None
         if maps := [r for r in element.RepresentationMaps if r.MappedRepresentation.ContextOfItems == context]:
             return maps[0]
 
