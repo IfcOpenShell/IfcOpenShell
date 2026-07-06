@@ -978,10 +978,16 @@ class IfcImporter:
                 if unit.is_a("IfcSIUnit"):
                     bpy.context.scene.unit_settings.system = "METRIC"
                     if unit.Name == "METRE":
-                        if not unit.Prefix:
+                        try:
+                            if not unit.Prefix:
+                                bpy.context.scene.unit_settings.length_unit = "METERS"
+                            else:
+                                bpy.context.scene.unit_settings.length_unit = f"{unit.Prefix}METERS"
+                        except TypeError:
+                            # Blender's length_unit enum only supports a subset of SI
+                            # prefixes (KILO/CENTI/MILLI/MICRO). Others such as DECI
+                            # are not valid, so fall back to the base unit for display.
                             bpy.context.scene.unit_settings.length_unit = "METERS"
-                        else:
-                            bpy.context.scene.unit_settings.length_unit = f"{unit.Prefix}METERS"
                 else:
                     bpy.context.scene.unit_settings.system = "IMPERIAL"
                     name = unit.Name.lower()
