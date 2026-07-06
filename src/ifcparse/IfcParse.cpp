@@ -449,7 +449,14 @@ const std::string& TokenFunc::asStringRef(const Token& token) {
     }
     std::string& str = token.lexer->GetTempString();
     token.lexer->TokenString(token.startPos, str);
-    if ((isString(token) || isEnumeration(token) || isBinary(token)) && !str.empty()) {
+    // A well-formed string/enumeration/binary token has both delimiters (e.g.
+    // '...', .XXX., "...."), so at least two characters. Malformed input from a
+    // fuzzer can produce a single-character token (e.g. a bare '.' left by
+    // ".)" instead of ".PHYSICAL."); stripping both ends would then erase past
+    // the end of an already-empty string, which is undefined behaviour and
+    // aborts under hardened standard libraries (_GLIBCXX_ASSERTIONS). Require
+    // two characters before stripping. See #5683.
+    if ((isString(token) || isEnumeration(token) || isBinary(token)) && str.size() >= 2) {
         //remove start+end characters in-place
         str.erase(str.end() - 1);
         str.erase(str.begin());
