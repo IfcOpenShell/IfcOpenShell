@@ -633,6 +633,10 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
+        if extrusion is None:
+            # Not an extrusion-based (parametric) slab, so there is no extrusion
+            # profile to edit here; bail instead of crashing on None. See #6283.
+            return
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
 
@@ -685,6 +689,10 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
+        if extrusion is None:
+            # Not an extrusion-based (parametric) slab, so there is no extrusion
+            # profile to edit here; bail instead of crashing on None. See #6283.
+            return
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
 
