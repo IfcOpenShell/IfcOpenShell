@@ -759,25 +759,24 @@ namespace {
             // values with noise digits (0.0174532925199433 -> 0.017453292519943299),
             // which rewrote every REAL and produced huge diffs when a file was
             // re-saved. See #7696.
+            // std::to_chars is locale-independent, so no ostringstream/imbue is
+            // needed here.
             char buf[64];
             const auto res = std::to_chars(buf, buf + sizeof(buf), d);
             const std::string str(buf, res.ptr);
-            std::ostringstream oss;
-            oss.imbue(std::locale::classic());
             std::string::size_type e = str.find('e');
             if (e == std::string::npos) {
                 e = str.find('E');
             }
-            const std::string mantissa = str.substr(0, e);
-            oss << mantissa;
-            if (mantissa.find('.') == std::string::npos) {
-                oss << ".";
+            std::string result = str.substr(0, e);
+            if (result.find('.') == std::string::npos) {
+                result += '.';
             }
             if (e != std::string::npos) {
-                oss << "E";
-                oss << str.substr(e + 1);
+                result += 'E';
+                result += str.substr(e + 1);
             }
-            return oss.str();
+            return result;
         }
 
         static std::string format_binary(const boost::dynamic_bitset<>& b) {
