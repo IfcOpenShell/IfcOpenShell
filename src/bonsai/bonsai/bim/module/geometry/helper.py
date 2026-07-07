@@ -98,6 +98,29 @@ class Helper:
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
+        profile, extrusion = self.pick_arbitrary_closed_profile_and_extrusion(bm)
+
+        if extrusion is None:
+            # The mesh could not be read as an extrusion. This happens when the
+            # OCCT mesher emitted near-coincident duplicate corner vertices for a
+            # simple extrusion (#2851): the profile face is built from its own
+            # copies of the corner vertices and is topologically disconnected
+            # from the extrusion edges, so no extrusion edge can be found. Weld
+            # those coincident duplicates and try once more. Only vertices that
+            # are NOT joined by an edge are welded, so a genuinely thin extrusion
+            # (#3053) never has its short extrusion edges collapsed.
+            if self.merge_coincident_nonadjacent_verts(bm, self.get_coincidence_tolerance(bm)):
+                profile, extrusion = self.pick_arbitrary_closed_profile_and_extrusion(bm)
+
+        bm.to_mesh(mesh)
+        mesh.update()
+        bm.free()
+
+        return {"profile": profile, "extrusion": extrusion}
+
+    def pick_arbitrary_closed_profile_and_extrusion(
+        self, bm: bmesh.types.BMesh
+    ) -> tuple[list[int], Union[list[int], None]]:
         bm.faces.ensure_lookup_table()
         potential_faces = []
         for face in bm.faces:
@@ -114,12 +137,47 @@ class Helper:
 
         profile = [l.vert.index for l in face.loops]
         extrusion = self.detect_extrusion_edge(bm, face)
+        return profile, extrusion
 
-        bm.to_mesh(mesh)
-        mesh.update()
-        bm.free()
+    def get_coincidence_tolerance(self, bm: bmesh.types.BMesh) -> float:
+        # A relative tolerance for treating two vertices as the same point. It
+        # scales with the size of the mesh (a fraction of its bounding box
+        # diagonal) so it adapts to millimetre parts and to metre-scale ones
+        # alike, and is floored at the absolute tolerance already used by the
+        # remove_doubles calls above. Safety does not rely on this value being
+        # small: merge_coincident_nonadjacent_verts never welds vertices joined
+        # by an edge, so no real geometry is collapsed regardless of tolerance.
+        if not bm.verts:
+            return 1e-4
+        coords = [v.co for v in bm.verts]
+        min_c = Vector((min(c.x for c in coords), min(c.y for c in coords), min(c.z for c in coords)))
+        max_c = Vector((max(c.x for c in coords), max(c.y for c in coords), max(c.z for c in coords)))
+        return max(1e-4, (max_c - min_c).length * 1e-3)
 
-        return {"profile": profile, "extrusion": extrusion}
+    def merge_coincident_nonadjacent_verts(self, bm: bmesh.types.BMesh, tolerance: float) -> bool:
+        # Weld vertices that sit at the same location but are not connected by an
+        # edge. These are the duplicate points the OCCT mesher can emit when it
+        # tessellates a simple extrusion (see #2851). Vertices joined by an edge
+        # are deliberately left untouched: that edge is real geometry (e.g. the
+        # short extrusion edge of a thin part, #3053), and collapsing it would
+        # destroy the extrusion. Returns True if any weld happened.
+        bm.verts.ensure_lookup_table()
+        verts = bm.verts[:]
+        targetmap: dict[bmesh.types.BMVert, bmesh.types.BMVert] = {}
+        for i, va in enumerate(verts):
+            if va in targetmap:
+                continue
+            for vb in verts[i + 1 :]:
+                if vb in targetmap or vb is va:
+                    continue
+                if (va.co - vb.co).length > tolerance:
+                    continue
+                if any(edge.other_vert(va) is vb for edge in va.link_edges):
+                    continue  # real edge, never collapse (protects thin extrusions)
+                targetmap[vb] = va
+        if targetmap:
+            bmesh.ops.weld_verts(bm, targetmap=targetmap)
+        return bool(targetmap)
 
     # An arbitrary closed profile with voids is similar to one without voids.
     # We start the same way with any ngon (no tri), but instead of being the entire
@@ -337,8 +395,18 @@ class Helper:
                     return [edge.verts[1].index, edge.verts[0].index]
 
     def create_extruded_area_solid(
-        self, mesh: bpy.types.Mesh, extrusion_indices: list[int], profile_def: dict[str, Any]
-    ) -> ifcopenshell.entity_instance:
+        self, mesh: bpy.types.Mesh, extrusion_indices: Union[list[int], None], profile_def: dict[str, Any]
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        # extrusion_indices is None when detect_extrusion_edge() could not find a
+        # valid extrusion edge. This happens when the mesh cannot be cleanly
+        # interpreted as an extrusion, e.g. a triangular extrusion whose faces
+        # carry near-coincident (but not merged) vertices emitted by the OCCT
+        # mesher, so the profile face ends up disconnected from the extrusion
+        # edges (see #2851). Signal the failure to the caller instead of crashing
+        # on a None subscript in get_extrusion_direction(); the caller falls back
+        # to a tessellated mesh representation that preserves the geometry.
+        if extrusion_indices is None:
+            return None
         position = self.builder.create_axis2_placement_3d(
             self.convert_si_to_unit(profile_def["curve_ucs"]["center"]),
             profile_def["curve_ucs"]["z_axis"],
