@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import ifcopenshell.util.placement as subject
 import test.bootstrap
 
@@ -40,3 +41,43 @@ class TestGetStoreyElevationIFC4(test.bootstrap.IFC4):
         assert subject.get_storey_elevation(storey) == 0.0
         building = self.file.createIfcBuilding()
         assert subject.get_storey_elevation(building) == 0.0
+
+
+class TestGetAxis2PlacementIFC4(test.bootstrap.IFC4):
+    def test_getting_a_valid_placement(self):
+        placement = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((1.0, 2.0, 3.0)),
+            self.file.createIfcDirection((0.0, 0.0, 1.0)),
+            self.file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+        matrix = subject.get_axis2placement(placement)
+        assert np.allclose(matrix[:, 3], (1.0, 2.0, 3.0, 1.0))
+
+    def test_missing_axis_and_ref_direction_falls_back_to_defaults(self):
+        placement = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
+        )
+        assert np.allclose(subject.get_axis2placement(placement), np.eye(4))
+
+    def test_null_direction_ratios_falls_back_to_defaults(self):
+        # Axis and RefDirection entities exist but their DirectionRatios are null.
+        placement = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            self.file.createIfcDirection(),
+            self.file.createIfcDirection(),
+        )
+        assert np.allclose(subject.get_axis2placement(placement), np.eye(4))
+
+    def test_axis1_null_direction_ratios_falls_back_to_defaults(self):
+        placement = self.file.createIfcAxis1Placement(
+            self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+            self.file.createIfcDirection(),
+        )
+        assert np.allclose(subject.get_axis2placement(placement), np.eye(4))
+
+    def test_2d_null_ref_direction_ratios_falls_back_to_defaults(self):
+        placement = self.file.createIfcAxis2Placement2D(
+            self.file.createIfcCartesianPoint((0.0, 0.0)),
+            self.file.createIfcDirection(),
+        )
+        assert np.allclose(subject.get_axis2placement(placement), np.eye(4))

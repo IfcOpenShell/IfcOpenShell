@@ -62,8 +62,8 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     """
     ifc_class = placement.is_a()
     if ifc_class in ("IfcAxis2Placement3D", "IfcAxis2PlacementLinear"):
-        z = np.array(placement.Axis.DirectionRatios if placement.Axis else (0, 0, 1))
-        x = np.array(placement.RefDirection.DirectionRatios if placement.RefDirection else (1, 0, 0))
+        z = np.array((placement.Axis and placement.Axis.DirectionRatios) or (0, 0, 1))
+        x = np.array((placement.RefDirection and placement.RefDirection.DirectionRatios) or (1, 0, 0))
         location = placement.Location
         if coordinates := getattr(location, "Coordinates", None):
             o = coordinates
@@ -76,7 +76,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
             return np.array(shape.matrix).reshape((4, 4), order="F")
     elif ifc_class == "IfcAxis2Placement2D":
         z = np.array((0, 0, 1))
-        if placement.RefDirection:
+        if placement.RefDirection and placement.RefDirection.DirectionRatios:
             x = np.array(placement.RefDirection.DirectionRatios)
             x.resize(3)
         else:
@@ -85,7 +85,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
 
     elif ifc_class == "IfcAxis1Placement":
         axis = placement.Axis
-        z = np.array(axis.DirectionRatios if axis else (0, 0, 1))
+        z = np.array((axis and axis.DirectionRatios) or (0, 0, 1))
         x = np.array((1, 0, 0))
         o = placement.Location.Coordinates
 
