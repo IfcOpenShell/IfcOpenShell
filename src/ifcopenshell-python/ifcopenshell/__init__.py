@@ -197,7 +197,10 @@ def open(
     if logger is None and (logger_type := getattr(ifcopenshell_wrapper, "logger", None)):
         logger = logger_type.Root()
     if format == ".ifcXML":
-        f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()), *((logger,) if logger is not None else ()))
+        f = ifcopenshell_wrapper.parse_ifcxml(
+            str(path.absolute()),
+            *((logger,) if logger is not None else ()),  # ty: ignore[too-many-positional-arguments]
+        )
         if f:
             return file(f)
         raise OSError(f"Failed to parse .ifcXML file from {path}")
@@ -214,7 +217,11 @@ def open(
     if should_stream:
         return stream(path)
     if readonly:  # Temporary conditional see #7131. Remove once newer builds don't segfault on Linux.
-        f = ifcopenshell_wrapper.open(str(path.absolute()), readonly, *((logger,) if logger is not None else ()))
+        f = ifcopenshell_wrapper.open(
+            str(path.absolute()),
+            readonly,
+            *((logger,) if logger is not None else ()),  # ty: ignore[too-many-positional-arguments]
+        )
     elif bypass_types:
         f = ifcopenshell_wrapper.file(
             ifcopenshell_wrapper.uninitialized_tag(), *((logger,) if logger is not None else ())
@@ -231,9 +238,13 @@ def open(
         kwargs = {"mmap": mmap}
         if logger is not None:
             kwargs["logger"] = logger
-        f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)  # ty: ignore[unknown-argument]
+        f = ifcopenshell_wrapper.open(str(path.absolute()), **kwargs)
     else:
-        f = ifcopenshell_wrapper.open(str(path.absolute()), False, *((logger,) if logger is not None else ()))
+        f = ifcopenshell_wrapper.open(
+            str(path.absolute()),
+            False,
+            *((logger,) if logger is not None else ()),  # ty: ignore[too-many-positional-arguments]
+        )
     return file(f)
 
 

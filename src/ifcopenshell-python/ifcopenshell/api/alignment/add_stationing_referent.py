@@ -16,17 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
 
 import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell.api.alignment.update_fallback_position import update_fallback_position
 import ifcopenshell.api.pset
-import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
-from ifcopenshell import entity_instance, ifcopenshell_wrapper
+from ifcopenshell import entity_instance
 
 
 def add_stationing_referent(
