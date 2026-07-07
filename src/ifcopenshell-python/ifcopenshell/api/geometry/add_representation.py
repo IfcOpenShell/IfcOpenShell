@@ -577,6 +577,15 @@ class Usecase:
         tool.Blender.set_objects_selection(bpy.context, active_object, selected_objects)
         return curves
 
+    def create_loose_edge_curves(self, is_2d: bool = False) -> list[ifcopenshell.entity_instance]:
+        # Build curves straight from the mesh loose edges (edges not shared by any
+        # face), reusing the existing mesh curve emission. Goes directly to the mesh
+        # helpers rather than through create_curves() so the face edges are excluded
+        # and we do not fall back to the Blender curve-conversion path (issue #4593).
+        if self.file.schema == "IFC2X3":
+            return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=True, is_2d=is_2d)
+        return self.create_curves_from_mesh(should_exclude_faces=True, is_2d=is_2d)
+
     def create_curves_from_mesh(
         self, should_exclude_faces: bool = False, is_2d: bool = False
     ) -> list[ifcopenshell.entity_instance]:
@@ -589,7 +598,7 @@ class Usecase:
         edge_loop = []
         face_edges = set()
         if should_exclude_faces:
-            [face_edges.union([geom_data.edge_keys.index(ek) for ek in p.edge_keys]) for p in geom_data.polygons]
+            [face_edges.update([geom_data.edge_keys.index(ek) for ek in p.edge_keys]) for p in geom_data.polygons]
         for i, edge in enumerate(geom_data.edges):
             if should_exclude_faces and i in face_edges:
                 continue
@@ -601,7 +610,8 @@ class Usecase:
                 edge_loops.append(edge_loop)
                 edge_loop = [self.file.createIfcLineIndex((edge.vertices[0] + 1, edge.vertices[1] + 1))]
             previous_edge = edge
-        edge_loops.append(edge_loop)
+        if edge_loop:
+            edge_loops.append(edge_loop)
         for edge_loop in edge_loops:
             curves.append(self.file.createIfcIndexedPolyCurve(points, edge_loop))
         return curves
@@ -628,7 +638,7 @@ class Usecase:
         edge_loop = []
         face_edges = set()
         if should_exclude_faces:
-            [face_edges.union([geom_data.edge_keys.index(ek) for ek in p.edge_keys]) for p in geom_data.polygons]
+            [face_edges.update([geom_data.edge_keys.index(ek) for ek in p.edge_keys]) for p in geom_data.polygons]
         for i, edge in enumerate(geom_data.edges):
             if should_exclude_faces and i in face_edges:
                 continue
@@ -640,7 +650,8 @@ class Usecase:
                 edge_loops.append(edge_loop)
                 edge_loop = [edge.vertices]
             previous_edge = edge
-        edge_loops.append(edge_loop)
+        if edge_loop:
+            edge_loops.append(edge_loop)
         for edge_loop in edge_loops:
             loop_points = [points[p[0]] for p in edge_loop]
             loop_points.append(points[edge_loop[-1][1]])
@@ -932,6 +943,11 @@ class Usecase:
     def create_annotation2d_representation(self) -> ifcopenshell.entity_instance:
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
             items = self.create_annotation_fill_areas(is_2d=True)
+            # A mesh can mix faces and loose edges. Faces become fill areas above;
+            # keep the loose edges as curves too instead of dropping them (issue #4593).
+            loose_curves = self.create_loose_edge_curves(is_2d=True)
+            if loose_curves:
+                items.append(self.file.createIfcGeometricCurveSet(loose_curves))
         elif isinstance(self.settings["geometry"], bpy.types.Mesh) and not len(self.settings["geometry"].edges):
             return self.create_point_cloud_representation(is_2d=True)
         else:
@@ -947,6 +963,11 @@ class Usecase:
         items = []
         if isinstance(self.settings["geometry"], bpy.types.Mesh) and len(self.settings["geometry"].polygons):
             items = self.create_annotation_fill_areas(is_2d=False)
+            # A mesh can mix faces and loose edges. Faces become fill areas above;
+            # keep the loose edges as curves too instead of dropping them (issue #4593).
+            loose_curves = self.create_loose_edge_curves(is_2d=False)
+            if loose_curves:
+                items.append(self.file.createIfcGeometricCurveSet(loose_curves))
         else:
             items = [self.file.createIfcGeometricCurveSet(self.create_curves(is_2d=False))]
         # TODO Unsure when it is appropriate to use curve bounded planes
