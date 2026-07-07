@@ -708,6 +708,49 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_body_context(cls) -> ifcopenshell.entity_instance:
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
+    # Context the drawing camera's view volume is stored in. It must NOT be the
+    # Model/Body context: viewers (Solibri and others) render the camera's solid
+    # there as a box floating over the model. See #4800. "Clearance" keeps the
+    # camera out of the Body render path and out of the drawing annotation
+    # serialization path, while still routing through the camera-solid builder
+    # (add_representation dispatches Clearance to create_variable_representation)
+    # so the crop volume round-trips through the geometry kernel unchanged.
+    DRAWING_CAMERA_CONTEXT = ("Model", "Clearance", "MODEL_VIEW")
+
+    @classmethod
+    def get_drawing_camera_context(cls) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
+        context_type, context_identifier, target_view = cls.DRAWING_CAMERA_CONTEXT
+        context = ifcopenshell.util.representation.get_context(
+            ifc_file, context_type, context_identifier, target_view
+        )
+        if context is None:
+            parent = ifcopenshell.util.representation.get_context(ifc_file, context_type)
+            if parent is None:
+                parent = ifcopenshell.api.context.add_context(ifc_file, context_type=context_type)
+            context = ifcopenshell.api.context.add_context(
+                ifc_file,
+                context_type=context_type,
+                context_identifier=context_identifier,
+                target_view=target_view,
+                parent=parent,
+            )
+        return context
+
+    @classmethod
+    def get_drawing_camera_representation(
+        cls, drawing: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        # New drawings keep the camera view volume in the dedicated context
+        # (see #4800). Drawings created before that change keep it in Model/Body,
+        # so fall back to Body for backwards compatibility.
+        representation = ifcopenshell.util.representation.get_representation(drawing, *cls.DRAWING_CAMERA_CONTEXT)
+        if representation is None:
+            representation = ifcopenshell.util.representation.get_representation(
+                drawing, "Model", "Body", "MODEL_VIEW"
+            )
+        return representation
+
     @classmethod
     def get_document_uri(
         cls, document: ifcopenshell.entity_instance, description: Optional[str] = None
@@ -996,7 +1039,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_drawing(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
 
-        representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        representation = cls.get_drawing_camera_representation(drawing)
         assert representation
 
         shape = ifcopenshell.geom.create_shape(settings, drawing)
@@ -1018,7 +1061,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_temporary_drawing_camera(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
 
-        representation = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")
+        representation = cls.get_drawing_camera_representation(drawing)
         assert representation
 
         shape = ifcopenshell.geom.create_shape(settings, drawing)

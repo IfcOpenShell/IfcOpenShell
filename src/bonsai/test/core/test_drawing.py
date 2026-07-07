@@ -338,7 +338,7 @@ class TestAddDrawing:
         drawing.ensure_unique_drawing_name("drawing_name").should_be_called().will_return("name")
         drawing.generate_drawing_matrix("target_view", "location_hint").should_be_called().will_return("matrix")
         drawing.create_camera("name", "matrix", "location_hint", "target_view").should_be_called().will_return("obj")
-        drawing.get_body_context().should_be_called().will_return("context")
+        drawing.get_drawing_camera_context().should_be_called().will_return("context")
         drawing.run_root_assign_class(
             obj="obj",
             ifc_class="IfcAnnotation",

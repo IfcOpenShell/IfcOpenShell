@@ -299,7 +299,7 @@ def add_drawing(
         ifc_class="IfcAnnotation",
         predefined_type="DRAWING",
         should_add_representation=True,
-        context=drawing.get_body_context(),
+        context=drawing.get_drawing_camera_context(),
         ifc_representation_class=None,
     )
     
