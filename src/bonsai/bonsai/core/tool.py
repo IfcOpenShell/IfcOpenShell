@@ -804,7 +804,7 @@ class Profile:
 
 @interface
 class Parametric:
-    def get_geom_generation(cls) -> int: pass
+    def get_geom_generation(cls) -> int: pass  # ty: ignore[empty-body]  (@interface makes this abstract at runtime)
     def refresh_post_commit(cls, operator) -> None: pass
 
 
