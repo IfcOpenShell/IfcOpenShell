@@ -398,6 +398,121 @@ def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entit
     return entity_attrs
 
 
+def validate_instance(
+    inst: ifcopenshell.entity_instance,
+    logger: Union[Logger, json_logger],
+    schema: Optional[schema_definition] = None,
+) -> None:
+    """Validate the attributes and inverse attributes of a single entity instance.
+
+    This runs the same per-instance checks as :func:`validate` (abstract entity,
+    unreadable attribute values, attributes derived in a subtype, non-optional
+    attributes that are `None`, attribute type validity and inverse cardinality),
+    but for one instance only. It does not run the cross-instance checks (GlobalId
+    uniqueness) or the express rules.
+
+    It is factored out so that other tooling, e.g. :func:`diagnose`, can validate
+    a specific suspect instance without iterating the whole file.
+
+    :param inst: The entity instance to validate.
+    :param logger: A standard :class:`logging.Logger` or a :class:`json_logger`.
+    :param schema: The schema definition. Derived from `inst` when not supplied.
+    """
+    if schema is None:
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(inst.file.schema_identifier)
+
+    entity, attrs = get_entity_attributes(schema, inst.is_a())
+
+    if entity.is_abstract():
+        e = "Entity %s is abstract" % entity.name()
+        if isinstance(logger, json_logger):
+            logger.set_state("attribute", None)
+            logger.error(e)
+        else:
+            logger.error("For instance:\n    %s\n%s", inst, e)
+
+    has_invalid_value = False
+    values = [None] * len(attrs)
+    for i in range(len(attrs)):
+        try:
+            values[i] = inst[i]
+            pass
+        except:
+            if isinstance(logger, json_logger):
+                logger.set_state("attribute", f"{entity.name()}.{attrs[i].name()}")
+                logger.error("Invalid attribute value")
+            else:
+                logger.error(
+                    "For instance:\n    %s\n    %s\nInvalid attribute value for %s.%s",
+                    inst,
+                    annotate_inst_attr_pos(inst, i),
+                    entity,
+                    attrs[i],
+                )
+            has_invalid_value = True
+
+    if not has_invalid_value:
+        for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
+            if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
+                if isinstance(logger, json_logger):
+                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                    logger.error("Attribute is derived in subtype")
+                else:
+                    logger.error(
+                        "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nDerived in subtype\n",
+                        inst,
+                        annotate_inst_attr_pos(inst, i),
+                        attr,
+                    )
+
+            if val is None and not attr.optional() and not is_derived:
+                if isinstance(logger, json_logger):
+                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                    logger.error("Attribute not optional")
+                else:
+                    logger.error(
+                        "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nNot optional\n",
+                        inst,
+                        annotate_inst_attr_pos(inst, i),
+                        attr,
+                    )
+
+            if val is not None and not is_derived:
+                attr_type = attr.type_of_attribute()
+                try:
+                    assert_valid(attr_type, val, schema, attr=attr)
+                except ValidationError as e:
+                    if isinstance(logger, json_logger):
+                        logger.set_state("attribute", e.attribute)
+                        logger.error(str(e))
+                    else:
+                        logger.error(
+                            "For instance:\n    %s\n    %s\n%s",
+                            inst,
+                            annotate_inst_attr_pos(inst, i),
+                            e,
+                        )
+
+    for attr in entity.all_inverse_attributes():
+        try:
+            val = getattr(inst, attr.name())
+        except Exception as e:
+            if isinstance(logger, json_logger):
+                logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                logger.error(str(e))
+            else:
+                logger.error("For instance:\n    %s\n%s", inst, e)
+            continue
+        try:
+            assert_valid_inverse(attr, val, schema)
+        except ValidationError as e:
+            if isinstance(logger, json_logger):
+                logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                logger.error(str(e))
+            else:
+                logger.error("For instance:\n    %s\n%s", inst, e)
+
+
 def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger], express_rules=False) -> None:
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
@@ -502,96 +617,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
                             validation_error,
                         )
 
-        entity, attrs = get_entity_attributes(schema, inst.is_a())
-
-        if entity.is_abstract():
-            e = "Entity %s is abstract" % entity.name()
-            if isinstance(logger, json_logger):
-                logger.set_state("attribute", None)
-                logger.error(e)
-            else:
-                logger.error("For instance:\n    %s\n%s", inst, e)
-
-        has_invalid_value = False
-        values = [None] * len(attrs)
-        for i in range(len(attrs)):
-            try:
-                values[i] = inst[i]
-                pass
-            except:
-                if isinstance(logger, json_logger):
-                    logger.set_state("attribute", f"{entity.name()}.{attrs[i].name()}")
-                    logger.error("Invalid attribute value")
-                else:
-                    logger.error(
-                        "For instance:\n    %s\n    %s\nInvalid attribute value for %s.%s",
-                        inst,
-                        annotate_inst_attr_pos(inst, i),
-                        entity,
-                        attrs[i],
-                    )
-                has_invalid_value = True
-
-        if not has_invalid_value:
-            for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
-                if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
-                    if isinstance(logger, json_logger):
-                        logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                        logger.error("Attribute is derived in subtype")
-                    else:
-                        logger.error(
-                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nDerived in subtype\n",
-                            inst,
-                            annotate_inst_attr_pos(inst, i),
-                            attr,
-                        )
-
-                if val is None and not attr.optional() and not is_derived:
-                    if isinstance(logger, json_logger):
-                        logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                        logger.error("Attribute not optional")
-                    else:
-                        logger.error(
-                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nNot optional\n",
-                            inst,
-                            annotate_inst_attr_pos(inst, i),
-                            attr,
-                        )
-
-                if val is not None and not is_derived:
-                    attr_type = attr.type_of_attribute()
-                    try:
-                        assert_valid(attr_type, val, schema, attr=attr)
-                    except ValidationError as e:
-                        if isinstance(logger, json_logger):
-                            logger.set_state("attribute", e.attribute)
-                            logger.error(str(e))
-                        else:
-                            logger.error(
-                                "For instance:\n    %s\n    %s\n%s",
-                                inst,
-                                annotate_inst_attr_pos(inst, i),
-                                e,
-                            )
-
-        for attr in entity.all_inverse_attributes():
-            try:
-                val = getattr(inst, attr.name())
-            except Exception as e:
-                if isinstance(logger, json_logger):
-                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                    logger.error(str(e))
-                else:
-                    logger.error("For instance:\n    %s\n%s", inst, e)
-                continue
-            try:
-                assert_valid_inverse(attr, val, schema)
-            except ValidationError as e:
-                if isinstance(logger, json_logger):
-                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                    logger.error(str(e))
-                else:
-                    logger.error("For instance:\n    %s\n%s", inst, e)
+        validate_instance(inst, logger, schema)
 
     if filename:
         # IfcOpenShell uses lazy-loading, so entity instance
@@ -609,6 +635,194 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
             logger.set_state("instance", None)
             logger.set_state("attribute", None)
         ifcopenshell.express.rule_executor.run(f, logger)
+
+
+diagnostic_suspect = namedtuple("diagnostic_suspect", ("instance", "depth", "issues", "confidence"))
+
+
+def _iter_entity_instances(obj: Any, _max: int = 1000) -> Iterator[ifcopenshell.entity_instance]:
+    """Yield entity instances held directly by `obj` or one level inside a container."""
+    if isinstance(obj, ifcopenshell.entity_instance):
+        yield obj
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        for i, v in enumerate(obj):
+            if i >= _max:
+                break
+            if isinstance(v, ifcopenshell.entity_instance):
+                yield v
+    elif isinstance(obj, dict):
+        for i, v in enumerate(obj.values()):
+            if i >= _max:
+                break
+            if isinstance(v, ifcopenshell.entity_instance):
+                yield v
+
+
+class Diagnosis:
+    """A ranked, human-readable explanation of an exception raised while processing an IFC file.
+
+    The suspects are ordered most-likely-cause first. `str(diagnosis)` renders the
+    full report. `diagnosis.likely_cause` is the top suspect that failed validation,
+    or `None` when no schema-invalid entity was found among the traceback locals.
+    """
+
+    def __init__(self, exception: Optional[BaseException], suspects: list[diagnostic_suspect]):
+        self.exception = exception
+        self.suspects = suspects
+
+    @property
+    def likely_cause(self) -> Optional[diagnostic_suspect]:
+        for suspect in self.suspects:
+            if suspect.issues:
+                return suspect
+        return None
+
+    def _confidence_label(self) -> str:
+        # How near the raise the strongest invalid suspect sits. An invalid entity in
+        # the frame that raised (depth 0) is a strong bet; one merely in scope several
+        # frames up is a weak one, even if it is the only invalid entity found.
+        cause = self.likely_cause
+        if cause is None:
+            return "none"
+        if cause.depth == 0:
+            return "high"
+        if cause.depth <= 2:
+            return "medium"
+        return "low"
+
+    def __str__(self) -> str:
+        lines: list[str] = []
+        exc = self.exception
+        if exc is not None:
+            lines.append(f"IFC processing raised {type(exc).__name__}: {exc}")
+        cause = self.likely_cause
+        if cause is None:
+            lines.append(
+                "No schema-invalid entity was found among the entity instances in the traceback. "
+                "The failure may not be caused by an invalid entity."
+            )
+        else:
+            invalid = [s for s in self.suspects if s.issues]
+            share = f", {int(round(cause.confidence * 100))}% of {len(invalid)} suspects" if len(invalid) > 1 else ""
+            lines.append(f"Likely cause ({self._confidence_label()} confidence, frame depth {cause.depth}{share}): {cause.instance}")
+            for issue in cause.issues:
+                attr = issue.get("attribute")
+                msg = issue.get("message", "")
+                lines.append(f"    - {attr + ': ' if attr else ''}{msg}".rstrip())
+        others = [s for s in self.suspects if s is not cause]
+        if others:
+            lines.append("Other entity instances inspected from the traceback:")
+            for s in others:
+                status = f"{len(s.issues)} issue(s)" if s.issues else "no validation issues"
+                lines.append(f"    {s.instance}  (frame depth {s.depth}, {status})")
+        return "\n".join(lines)
+
+
+def diagnose(
+    exception: Optional[BaseException] = None,
+    ifc_file: Optional[ifcopenshell.file] = None,
+    tb: Optional[types.TracebackType] = None,
+) -> Diagnosis:
+    """Diagnose an exception raised while processing an IFC file.
+
+    Given an exception (or a traceback), this walks the traceback frames, collects
+    every :class:`ifcopenshell.entity_instance` found in the frames' local variables,
+    validates each one with :func:`validate_instance`, and ranks them by how likely
+    they are to be the cause of the failure. A schema-invalid entity found close to
+    where the exception was raised is the strongest suspect.
+
+    This is meant to be wired in at a high level (e.g. a root exception handler around
+    a file load) so that an obscure error like ``'NoneType' object has no attribute
+    'MappingOrigin'`` can be turned into a concrete report naming the offending entity,
+    instead of the individual code paths being made defensive against every possible
+    schema violation.
+
+    :param exception: The caught exception. If omitted, the current exception being
+        handled (``sys.exc_info()``) is used.
+    :param ifc_file: The IFC file being processed. If omitted, it is derived from the
+        suspect entity instances themselves.
+    :param tb: An explicit traceback. If omitted, the exception's own traceback (or the
+        current one) is used.
+    :return: A :class:`Diagnosis`. ``str()`` of it is a human-readable report.
+
+    Example:
+
+    .. code:: python
+
+        try:
+            ifcopenshell.util.shape.get_shape(element)
+        except Exception as e:
+            print(ifcopenshell.validate.diagnose(e, ifc_file))
+    """
+    if exception is None:
+        exception = sys.exc_info()[1]
+    if tb is None:
+        tb = getattr(exception, "__traceback__", None) or sys.exc_info()[2]
+
+    # Collect frames from outermost to innermost, then reverse so that depth 0 is the
+    # innermost frame (nearest to where the exception was raised).
+    frames = []
+    node = tb
+    while node is not None:
+        frames.append(node.tb_frame)
+        node = node.tb_next
+    frames.reverse()
+
+    # Gather candidate entity instances, keeping the smallest frame depth per instance.
+    candidates: dict[Any, tuple[int, ifcopenshell.entity_instance]] = {}
+    for depth, frame in enumerate(frames):
+        try:
+            local_values = list(frame.f_locals.values())
+        except Exception:
+            continue
+        for value in local_values:
+            for inst in _iter_entity_instances(value):
+                key = (id(inst.file), inst.id()) if inst.id() else id(inst)
+                if key not in candidates:
+                    candidates[key] = (depth, inst)
+
+    if ifc_file is None:
+        for _depth, inst in candidates.values():
+            try:
+                ifc_file = inst.file
+                break
+            except Exception:
+                continue
+
+    suspects: list[diagnostic_suspect] = []
+    if ifc_file is not None:
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
+        # validate_instance relies on this feature to tell NIL ($) from derived (*).
+        feature_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
+        ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", True)
+        try:
+            for depth, inst in candidates.values():
+                # Only real entities can be validated; skip defined/select type values.
+                try:
+                    if schema.declaration_by_name(inst.is_a()).as_entity() is None:
+                        continue
+                except Exception:
+                    continue
+                inst_logger = json_logger()
+                try:
+                    validate_instance(inst, inst_logger, schema)
+                except Exception:
+                    # A tool run on the error path must never raise itself.
+                    continue
+                suspects.append(diagnostic_suspect(inst, depth, list(inst_logger.statements), 0.0))
+        finally:
+            ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", feature_org)
+
+    # Confidence: an invalid entity closer to the raise is the stronger suspect.
+    invalid = [s for s in suspects if s.issues]
+    total_weight = sum(1.0 / (1 + s.depth) for s in invalid)
+    if total_weight:
+        suspects = [
+            s._replace(confidence=(1.0 / (1 + s.depth) / total_weight if s.issues else 0.0)) for s in suspects
+        ]
+    suspects.sort(key=lambda s: (bool(s.issues), s.confidence, -s.depth), reverse=True)
+
+    return Diagnosis(exception, suspects)
 
 
 def validate_guid(guid: str) -> Union[str, None]:
