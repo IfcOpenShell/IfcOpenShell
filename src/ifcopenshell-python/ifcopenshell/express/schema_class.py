@@ -363,24 +363,18 @@ class EarlyBoundCodeWriter:
             )
         )
 
-        self.statements[self.statements.index("{factory_placeholder}")] = (
-            """
+        self.statements[self.statements.index("{factory_placeholder}")] = """
 class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
     virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const {
         %(instance_mapping)s
     }
 };
-"""
-            % locals()
-        )
+""" % locals()
 
         ""
-        self.statements[self.statements.index("{string_pool_placeholder}")] = (
-            """
+        self.statements[self.statements.index("{string_pool_placeholder}")] = """
 const std::string strings[] = {%s};
-"""
-            % ",".join(map(lambda s: '"%s"s' % s, self.strings))
-        )
+""" % ",".join(map(lambda s: '"%s"s' % s, self.strings))
 
     def __str__(self):
         return "\n".join(self.statements)

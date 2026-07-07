@@ -146,7 +146,9 @@ def test_fit_flow_segments_with_single_segment_dispatches_obstruction():
         mep.tool.Model, "get_flow_segment_profile", return_value=segment_profile
     ), patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction, patch.object(
         mep.MEPAddBend, "_execute", return_value=None
-    ) as bend, patch.object(mep.MEPAddTransition, "_execute", return_value=None) as transition:
+    ) as bend, patch.object(
+        mep.MEPAddTransition, "_execute", return_value=None
+    ) as transition:
         mep.FitFlowSegments._execute(op, context=context)
 
     assert obstruction.call_count == 1
@@ -178,7 +180,9 @@ def test_fit_flow_segments_refuses_mixed_pipe_and_duct():
         mep.tool.Model, "get_flow_segment_profile", return_value=profile
     ), patch.object(mep.MEPAddObstruction, "_execute", return_value=None) as obstruction, patch.object(
         mep.MEPAddBend, "_execute", return_value=None
-    ) as bend, patch.object(mep.MEPAddTransition, "_execute", return_value=None) as transition:
+    ) as bend, patch.object(
+        mep.MEPAddTransition, "_execute", return_value=None
+    ) as transition:
         mep.FitFlowSegments._execute(op, context=context)
 
     obstruction.assert_not_called()

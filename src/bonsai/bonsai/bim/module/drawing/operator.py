@@ -981,7 +981,9 @@ class CreateDrawing(bpy.types.Operator):
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
             self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(
+                ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix
+            )
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
