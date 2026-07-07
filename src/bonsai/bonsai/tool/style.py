@@ -1090,6 +1090,11 @@ class Style(bonsai.core.tool.Style):
                 has_any_textures = True
             if shading_type == "SOLID":
                 props.active_style_type = "Shading"
+                shading = style_elements.get("IfcSurfaceStyleRendering") or style_elements.get("IfcSurfaceStyleShading")
+                if shading:
+                    d = tool.Loader.surface_style_to_dict(shading)
+                    alpha = 1.0 - (d.get("Transparency") or 0.0)
+                    material.diffuse_color = d["SurfaceColour"] + (alpha,)
             else:  # MATERIAL_PREVIEW or RENDERED
                 if cls.has_blender_external_style(style_elements) and not props.prefer_ifc_shading:
                     props.active_style_type = "External"
