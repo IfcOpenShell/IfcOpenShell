@@ -515,10 +515,14 @@ assign_matrix_access(revolve);
 	void set_(const std::string& name, const std::set<int>& val) {
 		return $self->set(name, val);
 	}
-	void set_(const std::string& name, const std::set<std::string>& val) {
+	void set_(const std::string& name, const std::vector<double>& val) {
 		return $self->set(name, val);
 	}
-	void set_(const std::string& name, const std::vector<double>& val) {
+	void set_(const std::string& name, const std::vector<std::string>& val) {
+		// Python sequences cannot distinguish std::vector<std::string> from std::set<std::string>.
+		if ($self->get_type(name) == "std::set<std::string>") {
+			return $self->set(name, std::set<std::string>(val.begin(), val.end()));
+		}
 		return $self->set(name, val);
 	}
 	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {

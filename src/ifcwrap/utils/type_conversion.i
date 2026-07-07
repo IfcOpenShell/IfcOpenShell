@@ -286,7 +286,7 @@
 			} else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::set<std::string>>) {
                 std::vector<std::string> vs(t.begin(), t.end());
                 return pythonize_vector(vs);
-            } else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::vector<double>>) {
+            } else if constexpr (is_std_vector_v<std::remove_cv_t<std::remove_reference_t<T>>>) {
                 return pythonize_vector(t);
             } else {
 				return pythonize(t);

@@ -10,6 +10,7 @@
 #include <type_traits>
 #include <optional>
 #include <variant>
+#include <vector>
 
 #include <boost/program_options.hpp>
 #include <boost/optional.hpp>
@@ -522,6 +523,11 @@ namespace ifcopenshell {
 			};
 
 			template <>
+			struct readable_name<std::vector<std::string>> {
+				static constexpr const char* name = "std::vector<std::string>";
+			};
+
+			template <>
 			struct readable_name<IteratorOutputOptions> {
 				static constexpr const char* name = "IteratorOutputOptions";
 			};
@@ -545,7 +551,9 @@ namespace ifcopenshell {
 		template <typename settings_t>
 		class SettingsContainer {
 		public:
-         typedef std::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
+			typedef std::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>,
+				std::vector<double>, std::vector<std::string>, IteratorOutputOptions, FunctionStepMethod,
+				OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
 
