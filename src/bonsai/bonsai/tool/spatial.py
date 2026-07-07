@@ -522,8 +522,26 @@ class Spatial(bonsai.core.tool.Spatial):
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
+        cls.sync_moved_spatial_placements()
         cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
         props.active_container_index = tool.Blender.get_valid_uilist_index(previous_container_index, props.containers)
+
+    @classmethod
+    def sync_moved_spatial_placements(cls) -> None:
+        """Write back any spatial element whose Blender object was moved but not yet
+        committed to IFC, so the container manager shows its current placement.
+
+        Elevations displayed here come from ``get_storey_elevation``, which reads the
+        element's ``ObjectPlacement``. Dragging a storey empty along Z updates the
+        Blender object but not the IFC placement until a sync point (e.g. project
+        save) runs, so the manager would otherwise show a stale elevation. This
+        mirrors the placement sync that runs on save, scoped to spatial elements."""
+        ifc_file = tool.Ifc.get()
+        spatial_class = "IfcSpatialStructureElement" if ifc_file.schema == "IFC2X3" else "IfcSpatialElement"
+        for element in ifc_file.by_type(spatial_class):
+            obj = tool.Ifc.get_object(element)
+            if isinstance(obj, bpy.types.Object):
+                tool.Geometry.commit_placement_if_moved(obj)
 
     @classmethod
     def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
