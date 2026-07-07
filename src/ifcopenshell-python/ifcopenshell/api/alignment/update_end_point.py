@@ -19,6 +19,7 @@
 import numpy as np
 
 import ifcopenshell
+import ifcopenshell.api.alignment
 import ifcopenshell.util.placement
 from ifcopenshell import entity_instance
 

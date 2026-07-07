@@ -344,10 +344,16 @@ class iterator(ifcopenshell_wrapper.Iterator):
                 include is not None,
                 num_threads,
             )
-            self.this = initializer(*args, *((logger,) if logger is not None else ()))
+            self.this = initializer(
+                *args,
+                *((logger,) if logger is not None else ()),  # ty: ignore[too-many-positional-arguments]
+            )
         else:
             args = (geometry_library, self.settings, file_or_filename, num_threads)
-            self.this = ifcopenshell_wrapper.construct_iterator(*args, *((logger,) if logger is not None else ()))
+            self.this = ifcopenshell_wrapper.construct_iterator(
+                *args,
+                *((logger,) if logger is not None else ()),  # ty: ignore[too-many-positional-arguments]
+            )
 
     if has_occ:
 

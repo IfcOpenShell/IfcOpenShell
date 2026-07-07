@@ -117,7 +117,7 @@ def assign_cost_item_quantity(
         "products": products or [],
         "prop_name": prop_name,
         "formula": formula,
-        "ifc_class" : ifc_class
+        "ifc_class": ifc_class,
     }
     return usecase.execute()
 
@@ -134,7 +134,7 @@ class Usecase:
                 continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
             if self.settings["formula"]:
-                tree = ast.parse(self.settings["formula"], mode = "eval")
+                tree = ast.parse(self.settings["formula"], mode="eval")
                 collector = VariableExtractor()
                 collector.visit(tree)
                 variables = collector.variables
@@ -144,10 +144,10 @@ class Usecase:
                     value = getter(product, variable)
 
                 if value is None:
-                        print(
-                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
-                            f"is missing (None). Check Pset/Qset or property name."
-                        )
+                    print(
+                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                        f"is missing (None). Check Pset/Qset or property name."
+                    )
                 elif value == 0:
                     print(
                         f"WARNING: Variable '{variable}' in product '{product.Name}' "
@@ -159,7 +159,9 @@ class Usecase:
 
                 new_quantity = None
                 for quantity in self.quantities:
-                    if quantity.Formula == self.settings["formula"] and len(self.settings["products"]) == 1: #Todo improve it
+                    if (
+                        quantity.Formula == self.settings["formula"] and len(self.settings["products"]) == 1
+                    ):  # Todo improve it
                         new_quantity = quantity
                         self.settings["ifc_class"] = quantity.is_a()
                         continue
@@ -184,23 +186,23 @@ class Usecase:
             self.update_cost_item_count()
 
     def get_value_from_pset(
-            self,
-            product:ifcopenshell.entity_instance,
-            v: str,
+        self,
+        product: ifcopenshell.entity_instance,
+        v: str,
     ) -> float:
         pset_name = v.split(".")[0]
         pset = ifcopenshell.util.element.get_pset(product, pset_name)
         pset_property_name = v.split(".")[1]
-        return (pset or {}).get(pset_property_name,None)
+        return (pset or {}).get(pset_property_name, None)
 
     def get_value_from_qset(
-            self,
-            product:ifcopenshell.entity_instance,
-            v: str,
+        self,
+        product: ifcopenshell.entity_instance,
+        v: str,
     ) -> float:
-        qtos = ifcopenshell.util.element.get_psets(product, qtos_only = True)
+        qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
         quantities = next(iter(qtos.values()), {})
-        return (quantities or {}).get(v,None)
+        return (quantities or {}).get(v, None)
 
     def assign_cost_control(
         self, related_object: ifcopenshell.entity_instance, cost_item: ifcopenshell.entity_instance
@@ -243,6 +245,7 @@ class Usecase:
                             count += 1
                 quantity[3] = count
 
+
 OPERATORS = {
     ast.Add: operator.add,
     ast.Sub: operator.sub,
@@ -252,17 +255,19 @@ OPERATORS = {
     ast.USub: operator.neg,
 }
 
+
 def build_full_name(node):
-    #used for variables with dots
+    # used for variables with dots
     parts = []
     while isinstance(node, ast.Attribute):
-            parts.append(node.attr)
-            node = node.value
+        parts.append(node.attr)
+        node = node.value
 
     if isinstance(node, ast.Name):
         parts.append(node.id)
 
     return ".".join(reversed(parts))
+
 
 class VariableExtractor(ast.NodeVisitor):
     def __init__(self):
@@ -274,6 +279,7 @@ class VariableExtractor(ast.NodeVisitor):
     def visit_Attribute(self, node):
         self.variables.add(build_full_name(node))
 
+
 class FormulaEvaluator(ast.NodeVisitor):
     def __init__(self, values):
         self.values = values
@@ -281,7 +287,9 @@ class FormulaEvaluator(ast.NodeVisitor):
     def visit_BinOp(self, node):
         left = self.visit(node.left)
         right = self.visit(node.right)
-        return OPERATORS[type(node.op)](left, right)
+        # OPERATORS mixes binary ops with the unary ast.USub (operator.neg); only
+        # binary ops reach this call, so ty's union-based arity check is a false positive.
+        return OPERATORS[type(node.op)](left, right)  # ty: ignore[too-many-positional-arguments]
 
     def visit_Name(self, node):
         return self.values[node.id]
