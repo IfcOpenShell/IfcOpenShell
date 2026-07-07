@@ -35,6 +35,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
+import numpy as np
 
 
 class Function(NamedTuple):
@@ -76,13 +77,26 @@ def entity_supertypes(schema_iden: str, entity_name: str):
     return list(visit(decl))
 
 
-def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
+def quantify(
+    ifc_file: ifcopenshell.file,
+    elements: set[ifcopenshell.entity_instance],
+    rules: dict,
+    *,
+    estimate_length_from_geometry: bool = False,
+) -> ResultsDict:
     """Quantify elements from a rules using preset quantification rules
 
     Rules placed as a JSON configuration file in the ``ifc5d`` folder will be
     autodetected and loaded with the module for convenience.
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
+    :param estimate_length_from_geometry: Opt-in fallback. When ``True``, a flow
+        segment stored as tessellated / Brep geometry (not a supported
+        extrusion) gets its ``get_segment_length`` estimated from the mesh
+        instead of yielding no Length quantity. Off by default because the
+        estimate is not exact for bent segments or for footprints whose
+        extrusion depth is not the longest dimension, and Qto is meant to stay
+        reliable. Only turn it on when an approximate length is acceptable.
     """
     results: ResultsDict = {}
     elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
@@ -104,7 +118,13 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
                 # check entity type and its supertypes for matching QTO rules
                 for sty in entity_supertypes(ifc_file.schema_identifier, ty):
                     if qtos := queries.get(casenorm.get(sty)):
-                        calculator.calculate(ifc_file, group_elements, qtos, results)
+                        calculator.calculate(
+                            ifc_file,
+                            group_elements,
+                            qtos,
+                            results,
+                            estimate_length_from_geometry=estimate_length_from_geometry,
+                        )
             continue  # Skip general path to avoid duplicate calculations
 
         # Fallback: per-query evaluation
@@ -122,7 +142,13 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
                 filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
 
             if filtered_elements:
-                calculator.calculate(ifc_file, filtered_elements, qtos, results)
+                calculator.calculate(
+                    ifc_file,
+                    filtered_elements,
+                    qtos,
+                    results,
+                    estimate_length_from_geometry=estimate_length_from_geometry,
+                )
 
     return results
 
@@ -227,6 +253,8 @@ class QtoCalculator:
         elements: set[ifcopenshell.entity_instance],
         qtos: dict[str, dict[str, Union[str, None]]],
         results: ResultsDict,
+        *,
+        estimate_length_from_geometry: bool = False,
     ) -> None:
         raise NotImplementedError
 
@@ -352,7 +380,7 @@ class IfcOpenShell(QtoCalculator):
     ) + footing_functions
 
     @classmethod
-    def calculate(cls, ifc_file, elements, qtos, results):
+    def calculate(cls, ifc_file, elements, qtos, results, *, estimate_length_from_geometry=False):
         formula_functions: dict[str, types.FunctionType] = {}
 
         cls.gross_settings = ifcopenshell.geom.settings()
@@ -405,7 +433,10 @@ class IfcOpenShell(QtoCalculator):
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
                             if formula == "get_segment_length":
-                                value = cls.get_segment_length(element)
+                                value = cls.get_segment_length(
+                                    element,
+                                    geometry if estimate_length_from_geometry else None,
+                                )
                                 if value is None:
                                     continue
                             elif formula == "get_weight":
@@ -474,12 +505,22 @@ class IfcOpenShell(QtoCalculator):
         return ifcopenshell.util.shape.get_side_area(geometry)
 
     @classmethod
-    def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+    def get_segment_length(
+        cls,
+        element: ifcopenshell.entity_instance,
+        geometry: Union[W.Triangulation, None] = None,
+    ) -> Union[float, None]:
         """Get segment length.
 
         :param element: IFC element entity.
+        :param geometry: Opt-in fallback geometry. When a tessellated body mesh
+            is passed and the element is not a supported extrusion, the length is
+            estimated from the mesh instead of returning ``None``. Pass ``None``
+            (the default) to keep the reliable extrusion-only behaviour. Callers
+            enable this through ``quantify(..., estimate_length_from_geometry=True)``.
         :return: ``float`` segment length in project units
-            or ``None`` if element doesn't have a representation or it's not supported.
+            or ``None`` if element doesn't have a representation, it's not a
+            supported extrusion, or no fallback geometry was provided.
         """
         rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
@@ -503,6 +544,28 @@ class IfcOpenShell(QtoCalculator):
             y = ifcopenshell.util.shape.get_y(area_shape) / cls.unit_scale
             z = item.Depth
             return max([x, y, z])
+
+        # Not a supported extrusion (e.g. a tessellated / Brep segment exported
+        # by some authoring tools). This estimate only runs when the caller
+        # opted in (geometry is passed); otherwise we return None and produce no
+        # Length, keeping the default Qto reliable.
+        #
+        # Fall back to the geometry's principal-axis extent. Straight and
+        # diagonal runs are measured correctly. Two cases are approximate and are
+        # why this is opt-in: a genuinely curved Brep under-reports because the
+        # routing curve is not kept in the mesh, and a footprint whose extrusion
+        # depth is not its longest dimension is over-reported because PCA returns
+        # the longest axis. A cap-face + connecting-edge arclength method would
+        # handle both; see the PR discussion for the planned follow-up.
+        if geometry is None:
+            return None
+        vertices = ifcopenshell.util.shape.get_vertices(geometry)
+        if len(vertices) < 2:
+            return None
+        centered = vertices - vertices.mean(axis=0)
+        _, axes = np.linalg.eigh(centered.T @ centered)
+        projection = centered @ axes[:, -1]
+        return float(projection.max() - projection.min()) / cls.unit_scale
 
     # Footings are authored two ways, so a single static axis rule cannot be correct for both.
     # Beam-like footings (STRIP_FOOTING, FOOTING_BEAM) are a profile extruded along the local Z
@@ -658,7 +721,10 @@ class Blender(QtoCalculator):
             cls.functions[function] = Function(old_function.measure, old_function.name, doc)
 
     @classmethod
-    def calculate(cls, ifc_file, elements, qtos, results):
+    def calculate(cls, ifc_file, elements, qtos, results, *, estimate_length_from_geometry=False):
+        # estimate_length_from_geometry is only meaningful for the IfcOpenShell
+        # calculator's extrusion fallback; the Blender calculator measures the
+        # loaded object directly, so the flag is accepted and ignored here.
         import bonsai.bim.module.qto.calculator as calculator
         import bonsai.tool as tool
 
