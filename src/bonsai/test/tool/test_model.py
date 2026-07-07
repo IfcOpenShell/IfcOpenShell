@@ -23,6 +23,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.api.type

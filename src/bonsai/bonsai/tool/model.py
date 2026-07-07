@@ -59,6 +59,7 @@ from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
 from mathutils import Matrix, Vector
 
 import bonsai.core.geometry
+import bonsai.core.model
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
