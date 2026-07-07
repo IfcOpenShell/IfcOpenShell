@@ -22,28 +22,11 @@ import numpy as np
 
 import ifcopenshell
 import ifcopenshell.api.alignment
-from ifcopenshell.api.alignment import _map_alignment_cant_segment
 from ifcopenshell.api.alignment._update_zero_length_segment_placement import _update_zero_length_segment_placement
 import ifcopenshell.api.nest
-import ifcopenshell.api.pset
-import ifcopenshell.geom
-import ifcopenshell.util.alignment
-import ifcopenshell.util.unit
-from ifcopenshell import entity_instance, ifcopenshell_wrapper
+from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment._add_segment_to_curve import _add_segment_to_curve
 from ifcopenshell.api.alignment._get_segment_endpoint import _get_segment_endpoint
-from ifcopenshell.api.alignment._get_segment_start_point_label import (
-    _get_segment_start_point_label,
-)
-from ifcopenshell.api.alignment._map_alignment_cant_segment import (
-    _map_alignment_cant_segment,
-)
-from ifcopenshell.api.alignment._map_alignment_horizontal_segment import (
-    _map_alignment_horizontal_segment,
-)
-from ifcopenshell.api.alignment._map_alignment_vertical_segment import (
-    _map_alignment_vertical_segment,
-)
 
 
 def _add_segment_to_layout(
