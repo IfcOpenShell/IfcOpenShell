@@ -245,6 +245,11 @@ namespace ifcopenshell {
 				static constexpr const char* const description = "Currently option has no effect.";
 			};
 
+			struct ContextPriorities : public SettingBase<ContextPriorities, std::vector<std::string>> {
+                static constexpr const char* const name = "context-priorities";
+                static constexpr const char* const description = "Selects a representation for product based on the following ordered context queries";
+            };
+
 			enum OutputDimensionalityTypes {
 				CURVES,
 				SURFACES_AND_SOLIDS,
@@ -282,6 +287,12 @@ namespace ifcopenshell {
 					"IfcOpeningElement Representations from their RelatingElements.";
 				static constexpr bool defaultvalue = false;
 			};
+
+			struct MaxVoidsPerElement : public SettingBase<MaxVoidsPerElement, int> {
+                static constexpr const char* const name = "max-voids-per-element";
+                static constexpr const char* const description = "Specifies the maximum number of voids that will be processed per element. 0 means unlimited. No voids will be processed for elements with more voids.";
+                static constexpr int defaultvalue = 0;
+            };
 
 			struct ApplyDefaultMaterials : public SettingBase<ApplyDefaultMaterials, bool> {
 				static constexpr const char* const name = "apply-default-materials";
@@ -661,7 +672,7 @@ namespace ifcopenshell {
 		};
 
 		class Settings : public SettingsContainer<
-                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
+                             std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, ContextPriorities, IteratorOutput, DisableOpeningSubtractions, MaxVoidsPerElement, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, CgalSmoothAngleDegrees, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes, DeferProcessingFirstElement, MaxOffset, MaxOffsetDeviation, ApplyOffset, MakeVolume>
 		>
 		{};
 }
