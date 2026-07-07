@@ -391,6 +391,11 @@ namespace {
 		}
 	};
 
+	// Representative radius used to size the polygonal approximation of a conic.
+	// For an ellipse the larger semi-axis is the conservative choice.
+	inline double conic_radius(const taxonomy::circle::ptr& c) { return c->radius; }
+	inline double conic_radius(const taxonomy::ellipse::ptr& e) { return e->radius > e->radius2 ? e->radius : e->radius2; }
+
 	struct cgal_curve_creation_visitor {
 		Settings& settings_;
 		parameter_range param;
@@ -425,7 +430,28 @@ namespace {
 			if (b <= a) {
 				b += 2 * M_PI;
 			}
-			int num_segments = (int)std::ceil(std::fabs(a - b) / (2 * M_PI) * settings_.get<settings::CircleSegments>().get());
+			const double span = std::fabs(a - b);
+			int num_segments = (int)std::ceil(span / (2 * M_PI) * settings_.get<settings::CircleSegments>().get());
+			// CircleSegments allocates segments as a fraction of the *full* circle and is
+			// radius-agnostic. A large-radius arc spanning a small angle therefore collapses
+			// to a single chord (issue #8051: curved curtain-wall mullions became straight in
+			// the CGAL kernels while OpenCascade, which meshes by deflection, kept them curved).
+			// Enforce a deflection-based floor so the chord deviation stays within the mesher's
+			// linear deflection, matching OpenCascade behaviour.
+			const double radius = conic_radius(t);
+			const double deflection = settings_.get<settings::MesherLinearDeflection>().get();
+			if (deflection > 0. && radius > deflection) {
+				const double max_segment_angle = 2.0 * std::acos(1.0 - deflection / radius);
+				if (max_segment_angle > 0.) {
+					const int num_segments_deflection = (int)std::ceil(span / max_segment_angle);
+					if (num_segments_deflection > num_segments) {
+						num_segments = num_segments_deflection;
+					}
+				}
+			}
+			if (num_segments < 1) {
+				num_segments = 1;
+			}
 			double du = (b - a) / num_segments;
 			taxonomy::point3 P;
 			// @nb for loop is not inclusive of the both end points
