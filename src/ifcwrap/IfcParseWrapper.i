@@ -117,8 +117,49 @@ PyObject* get_feature(const std::string& x) {
 
 %{
 
+#include <fstream>
+#include <random>
+
 static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
 	return decl->name();
+}
+
+// Atomic IFC/STEP write (issue #4797): serialize to a temporary file next to
+// the destination, then atomically rename it onto the destination. If the
+// process is interrupted mid-write, the destination is never truncated or
+// left with dangling STEP references; at most a stray temp file remains, which
+// the caller can safely ignore. Keeping the temp in the same directory means
+// the rename stays on a single filesystem and is therefore atomic. The temp
+// path never leaks into the FILE_NAME header, which is derived from the model
+// header, not the output path.
+template <typename T>
+static void helper_fn_atomic_write(T& file_obj, const std::string& fn) {
+	std::random_device rd;
+	const std::string temp_fn = fn + "." + std::to_string(rd()) + ".tmp";
+	{
+		// Same open mode as a plain write so the bytes are identical.
+		std::ofstream f(IfcUtil::path::from_utf8(temp_fn).c_str());
+		if (!f.good()) {
+			// The temp file could not be created (e.g. directory not
+			// writable). Nothing was touched; report as a normal write error.
+			throw std::runtime_error("Failed to write to path: '" + fn + "', check folder and file permissions.");
+		}
+		f << file_obj;
+		f.flush();
+		if (!f.good()) {
+			// Serialization failed (e.g. disk full). Clean up the partial temp
+			// and abort. The existing destination is left intact.
+			f.close();
+			IfcUtil::path::delete_file(temp_fn);
+			throw std::runtime_error("Failed to write to path: '" + fn + "', the file may be incomplete.");
+		}
+		// The ofstream destructor at the end of this scope closes the stream.
+		// On Windows the file must be closed before it can be renamed.
+	}
+	if (!IfcUtil::path::atomic_rename_file(temp_fn, fn)) {
+		IfcUtil::path::delete_file(temp_fn);
+		throw std::runtime_error("Failed to write to path: '" + fn + "', could not replace the existing file.");
+	}
 }
 
 static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClass* inst, unsigned i) {
@@ -219,11 +260,10 @@ private:
 	}
 
 	void write(const std::string& fn) {
-		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
-		if (!f.good()) {
-			throw std::runtime_error("Failed to write to path: '" + fn + "', check folder and file permissions.");
-		}
-		f << (*$self);
+		// Atomic write: serialize to a temp file next to the target, then
+		// atomically rename it into place, so an interrupted write can never
+		// corrupt the destination (issue #4797).
+		helper_fn_atomic_write(*$self, fn);
 	}
 
 	std::string to_string() {
