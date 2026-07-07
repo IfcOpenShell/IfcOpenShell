@@ -1579,10 +1579,13 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
         json_filepath = self.filepath_.with_suffix(".ifc.cache.json")
 
         def should_clear_cache() -> bool:
-            if not self.use_cache:
-                return True
+            # Nothing to clear if the cache file was never created (e.g. a
+            # fresh link). Check this first so os.remove below is never
+            # called on a non-existent path, regardless of use_cache.
             if not blend_filepath.exists():
                 return False
+            if not self.use_cache:
+                return True
             data = json.loads(json_filepath.read_text())
             # Empty 'query' - model loaded without custom query.
             # Missing 'query' - model was loaded before custom queries were introduced in Bonsai.
