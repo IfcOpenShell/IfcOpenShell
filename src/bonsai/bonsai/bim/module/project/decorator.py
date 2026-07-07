@@ -33,6 +33,7 @@ def toggle_decorations_on_load(*args):
     props = tool.Project.get_project_props()
     if props.clipping_planes:
         ClippingPlaneDecorator.install(bpy.context)
+        restart_clipping_planes_refresh()
     else:
         ClippingPlaneDecorator.uninstall()
 
@@ -40,6 +41,42 @@ def toggle_decorations_on_load(*args):
     # since selected_vertices and other data is stored in queried object's
     # custom attributes and they get purged after Blender session is closed
     # as queried object is linked from separate .blend file.
+
+
+def restart_clipping_planes_refresh() -> None:
+    """Restart the modal that keeps the viewport clip planes in sync.
+
+    See #4641. Clip planes are applied to the viewport by the modal
+    ``bim.refresh_clipping_planes`` operator. Modal operators do not survive a
+    ``.blend`` reload, so after reopening a saved file the clip is "stuck": the
+    model stays clipped by the last-applied planes (that viewport state is saved
+    in the .blend) but moving a plane no longer updates the view, until the user
+    creates a new clipping plane which relaunches the modal. Relaunch it here so
+    a saved clip works again on reopen without recreating a plane.
+
+    The operator is launched from a timer (not directly in the load_post
+    handler) because a modal operator needs a running event loop with a valid
+    window, which is not guaranteed inside a load_post handler.
+    """
+    if bpy.app.background:
+        return
+
+    def _launch() -> None:
+        if not tool.Project.get_project_props().clipping_planes:
+            return None
+        wm = bpy.context.window_manager
+        if not wm or not wm.windows:
+            return None
+        # The modal's refresh needs a 3D viewport to apply the clip planes.
+        if not any(a.type == "VIEW_3D" for w in wm.windows for a in w.screen.areas):
+            return None
+        try:
+            bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
+        except RuntimeError:
+            pass
+        return None
+
+    bpy.app.timers.register(_launch, first_interval=0.1)
 
 
 class ProjectDecorator:
