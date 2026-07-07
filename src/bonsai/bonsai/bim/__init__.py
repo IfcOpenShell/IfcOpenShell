@@ -300,6 +300,22 @@ def register():
         kmi = km.keymap_items.new("bim.switch_tab", "TAB", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
 
+        # Give the "Create Element" and "Annotation" workspace tools their own stable
+        # activation keys in the toolbar popup (Shift+Space). Without an explicit key,
+        # Blender assigns these tools number keys based on their position in the toolbar,
+        # and that position moves as the active tool changes. The same key then flip-flops
+        # between the two tools, making the shortcuts unpredictable (see #4694). This mirrors
+        # Blender's own "Toolbar Popup" keymap, where builtin tools get fixed letters.
+        km = wm.keyconfigs.addon.keymaps.new(
+            name="Toolbar Popup", space_type="EMPTY", region_type="TEMPORARY"
+        )
+        kmi = km.keymap_items.new("wm.tool_set_by_id", "C", "PRESS")
+        kmi.properties.name = "bim.bim_tool"
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("wm.tool_set_by_id", "A", "PRESS")
+        kmi.properties.name = "bim.annotation_tool"
+        addon_keymaps.append((km, kmi))
+
     global icons
 
     icons_dir = os.path.join(cwd, "data", "icons")
