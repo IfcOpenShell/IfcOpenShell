@@ -125,10 +125,20 @@ class DrawingsData:
     def location_hint(cls) -> list[tuple[tool.Drawing.LocationHintType, str, str]]:
         props = tool.Drawing.get_document_props()
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+            ifc = tool.Ifc.get()
             results = [("0", "Origin", "")]
             results.extend(
-                [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
+                [(str(s.id()), s.Name or "Unnamed", "") for s in ifc.by_type("IfcBuildingStorey")]
             )
+            # Also offer other spatial containers that directly contain elements
+            # (roads, facility parts, sites, ...). Without this, infrastructure
+            # models that have no IfcBuildingStorey only offer "Origin", forcing
+            # the plan camera to (0,0,0) away from the geometry, so the drawing
+            # comes up empty.
+            for s in ifc.by_type("IfcSpatialStructureElement"):
+                if s.is_a("IfcBuildingStorey") or not getattr(s, "ContainsElements", None):
+                    continue
+                results.append((str(s.id()), f"{s.Name or 'Unnamed'} ({s.is_a()})", ""))
             return results
         elif props.target_view in ["MODEL_VIEW"]:
             return [(h.upper(), h, "") for h in ["Orthographic", "Perspective"]]
