@@ -581,7 +581,11 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if has_openings and not self.apply_openings:
             # Meshlike things with openings can only be updated without openings applied.
             if self.from_ui:
-                self.report({"ERROR"}, f"Object '{obj.name}' has openings - representation cannot be updated.")
+                self.report(
+                    {"ERROR"},
+                    f"Object '{obj.name}' has openings. "
+                    "ALT+click the button to bake the openings into the new representation.",
+                )
             return
 
         if product.is_a("IfcGridAxis"):
