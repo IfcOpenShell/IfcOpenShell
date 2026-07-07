@@ -228,10 +228,10 @@ circle-segments
 +------+-----------------------+---------+
 | Type | IfcConvert Option     | Default |
 +======+=======================+=========+
-| INT  | ``--circle-segments`` | 16      |
+| INT  | ``--circle-segments`` | 0       |
 +------+-----------------------+---------+
 
-Number of segments to approximate full circles in CGAL kernel.
+Number of segments to approximate full circles in the CGAL kernel. When 0 (the default) the segment count is derived from mesher-linear-deflection instead, so curves stay within the deflection tolerance regardless of radius.
 
 context-identifiers
 ^^^^^^^^^^^^^^^^^^^
