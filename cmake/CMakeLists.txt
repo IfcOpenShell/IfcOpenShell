@@ -73,6 +73,8 @@ option(BUILD_IFCMAX "Build IfcMax, a 3ds Max plug-in, Windows-only." OFF)
 option(BUILD_QTVIEWER "Build IfcOpenShell Qt GUI Viewer" OFF) # QtViewer requires Qt6
 option(BUILD_IFCMODEL_UI "Build minimal Qt IFC model UI prototype" OFF)
 option(BUILD_BONSAIVIEWER "Build Bonsai Viewer" OFF) # Requires Qt6 + OpenGL 4.5
+option(BUILD_IFCOPENSHELL_PARSE_TESTS "Build C++ unit tests for IfcParse (fetches Catch2 v3)" OFF)
+option(BUILD_IFCOPENSHELL_GEOMETRY_TESTS "Build C++ unit tests for IfcGeom (fetches Catch2 v3)" OFF)
 option(BUILD_BONSAIVIEWER_TESTS "Build unit tests for Bonsai Viewer core (fetches Catch2 v3)" OFF)
 option(BUILD_BONSAIVIEWER_WGPU "Build the experimental wgpu backend (fetches wgpu-native binary release)" OFF)
 # IfcViewer (the GL static lib) now links against IfcViewerWgpu because
@@ -129,6 +131,23 @@ project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 # Make sure CMake modules in this project are found first
 list(PREPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
+
+# Catch2 is fetched only when an explicit C++ test family is enabled, so the
+# default build remains offline-capable.
+if(BUILD_IFCOPENSHELL_PARSE_TESTS OR BUILD_IFCOPENSHELL_GEOMETRY_TESTS OR BUILD_BONSAIVIEWER_TESTS)
+    include(FetchContent)
+    FetchContent_Declare(
+        Catch2
+        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+        GIT_TAG        v3.5.4
+        GIT_SHALLOW    TRUE
+    )
+    FetchContent_MakeAvailable(Catch2)
+    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+    include(CTest)
+    include(Catch)
+    enable_testing()
+endif()
 
 if(MINIMAL_BUILD)
     message(STATUS "Setting options for minimal build")
@@ -538,6 +557,9 @@ add_subdirectory(../src/plugin plugin)
 
 add_subdirectory(../src/ifcparse ifcparse)
 set(IFCOPENSHELL_LIBRARIES IfcParse)
+if(BUILD_IFCOPENSHELL_PARSE_TESTS)
+    add_subdirectory(../src/ifcparse/tests ifcparse/tests)
+endif()
 
 if(BUILD_EXAMPLES OR BUILD_BONSAIVIEWER)
     add_subdirectory(../src/helpers helpers)
@@ -567,6 +589,11 @@ if(BUILD_IFCGEOM)
     endif()
 
     add_subdirectory(../src/ifcgeom ifcgeom)
+    if(BUILD_IFCOPENSHELL_GEOMETRY_TESTS)
+        add_subdirectory(../src/ifcgeom/tests ifcgeom/tests)
+    endif()
+elseif(BUILD_IFCOPENSHELL_GEOMETRY_TESTS)
+    message(FATAL_ERROR "BUILD_IFCOPENSHELL_GEOMETRY_TESTS requires BUILD_IFCGEOM=ON.")
 endif(BUILD_IFCGEOM)
 
 if(BUILD_CONVERT OR BUILD_IFCPYTHON OR BUILD_BONSAIVIEWER)
@@ -693,24 +720,6 @@ if(BUILD_IFCGEOM)
 
     install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom)
 endif(BUILD_IFCGEOM)
-# Catch2 fetch hoisted out of BUILD_BONSAIVIEWER so the standalone wgpu
-# build can also enable BUILD_BONSAIVIEWER_TESTS. Test option is OFF by
-# default so the default build remains offline-capable.
-if(BUILD_BONSAIVIEWER_TESTS)
-    include(FetchContent)
-    FetchContent_Declare(
-        Catch2
-        GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-        GIT_TAG        v3.5.4
-        GIT_SHALLOW    TRUE
-    )
-    FetchContent_MakeAvailable(Catch2)
-    list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
-    include(CTest)
-    include(Catch)
-    enable_testing()
-endif()
-
 if(BUILD_BONSAIVIEWER)
     # IfcViewer is the unified scene + render lib since the wgpu/ifcviewer
     # merge — wgpu-native is fetched inside its CMakeLists.txt.
