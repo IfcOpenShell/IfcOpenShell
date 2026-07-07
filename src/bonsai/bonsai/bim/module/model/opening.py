@@ -693,6 +693,23 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             filled_element = filled_opening.VoidsElements[0].RelatingBuildingElement
             filled_object = tool.Ifc.get_object(filled_element)
 
+            # The flip derives its mirror pivot from the object bounding box, and
+            # `obj.bound_box` reflects whatever representation is currently active.
+            # A 2D representation (e.g. the plan symbol with its swing arc) has
+            # different extents than the 3D body, so flipping while it is active
+            # would corrupt the pivot and shift the fill out of its host (#4332).
+            # Flip against the Body representation so the result is invariant to
+            # the displayed representation, restoring the original one afterwards.
+            active_representation = tool.Geometry.get_active_representation(obj)
+            body_representation = tool.Geometry.get_body_representation(element)
+            restore_representation = None
+            if body_representation and active_representation != body_representation:
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=body_representation
+                )
+                context.view_layer.update()
+                restore_representation = active_representation
+
             if filled_element.is_a() in ["IfcWall", "IfcWallStandardCase"]:
                 # if the filled element is a wall, move the filling in such a way
                 # that it will have the same relative position, but to the other
@@ -725,6 +742,12 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.flip_object(obj, "XY")
             ifcopenshell.api.geometry.edit_object_placement(tool.Ifc.get(), filled_opening, obj.matrix_world)
             tool.Geometry.reload_representation(filled_object)
+
+            if restore_representation is not None:
+                bonsai.core.geometry.switch_representation(
+                    tool.Ifc, tool.Geometry, obj=obj, representation=restore_representation
+                )
+                context.view_layer.update()
 
         return {"FINISHED"}
 
