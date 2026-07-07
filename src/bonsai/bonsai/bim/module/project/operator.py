@@ -172,6 +172,32 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
+def load_library_file(filepath: str, target_schema_identifier: str) -> ifcopenshell.file:
+    """Open a project library, migrating it to the project's schema if needed.
+
+    Appending assets requires the library and the project to share a schema.
+    When they differ (e.g. a default IFC4 library loaded into an IFC4X3
+    project, or between IFC4X3 sub-versions), the library is migrated once here
+    at load time and the migrated copy is what gets cached and browsed, so
+    appending individual elements later never repeats the migration. See issue
+    #4766.
+
+    :raises RuntimeError: If the library cannot be migrated to the target
+        schema (the "Migrate" recipe reports the entities that could not be
+        translated).
+    """
+    library_file = ifcopenshell.open(filepath)
+    if library_file.schema_identifier == target_schema_identifier:
+        return library_file
+    import ifcpatch
+
+    migrated = ifcpatch.execute(
+        {"file": library_file, "recipe": "Migrate", "arguments": [target_schema_identifier]}
+    )
+    assert isinstance(migrated, ifcopenshell.file)
+    return migrated
+
+
 class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
@@ -215,11 +241,14 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
         filepath = self.get_filepath()
         ifc_file = tool.Ifc.get()
         library_file: ifcopenshell.file
-        library_file = ifcopenshell.open(filepath)
-        if library_file.schema_identifier != ifc_file.schema_identifier:
+        try:
+            # Migrate the library to the project schema if they differ, once,
+            # here at load time (see issue #4766).
+            library_file = load_library_file(filepath, ifc_file.schema_identifier)
+        except Exception as e:
             self.report(
                 {"ERROR"},
-                f"Schema of library file ({library_file.schema_identifier}) is not compatible with the current IFC file ({ifc_file.schema_identifier}).",
+                f"Could not load library file into schema {ifc_file.schema_identifier}: {e}",
             )
             return {"CANCELLED"}
 
@@ -237,14 +266,14 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     def rollback(self, data):
         if data["old_filepath"]:
             IfcStore.library_path = data["old_filepath"]
-            IfcStore.library_file = ifcopenshell.open(data["old_filepath"])
+            IfcStore.library_file = load_library_file(data["old_filepath"], tool.Ifc.get().schema_identifier)
         else:
             IfcStore.library_path = ""
             IfcStore.library_file = None
 
     def commit(self, data):
         IfcStore.library_path = data["filepath"]
-        IfcStore.library_file = ifcopenshell.open(data["filepath"])
+        IfcStore.library_file = load_library_file(data["filepath"], tool.Ifc.get().schema_identifier)
 
     def draw(self, context):
         self.layout.prop(self, "append_all", text="Append Entire Library")
