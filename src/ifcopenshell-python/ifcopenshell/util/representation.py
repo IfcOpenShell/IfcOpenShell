@@ -332,7 +332,10 @@ def resolve_items(
         if item.is_a("IfcMappedItem"):
             rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(item)
             if not np.allclose(rep_matrix, np.eye(4)):
-                rep_matrix = rep_matrix @ matrix.copy()
+                # ``matrix`` maps this representation into the top space, and
+                # ``rep_matrix`` maps the mapped geometry into this one, so the
+                # accumulated transform is M_outer @ M_inner (see #3019).
+                rep_matrix = matrix.copy() @ rep_matrix
             results.extend(resolve_items(item.MappingSource.MappedRepresentation, rep_matrix))
         else:
             results.append(ResolvedItemDict(matrix=matrix.copy(), item=item))

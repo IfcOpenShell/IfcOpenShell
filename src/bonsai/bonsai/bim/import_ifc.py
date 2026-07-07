@@ -440,7 +440,10 @@ class IfcImporter:
             if rep.Items and len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
                 rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
                 if not np.allclose(rep_matrix, np.eye(4)):
-                    matrix = rep_matrix @ matrix
+                    # We walk from the outer mapped item inwards, so the outer
+                    # transform is applied last. Post-multiply to keep the
+                    # nesting order M_outer @ M_inner (see #3019).
+                    matrix = matrix @ rep_matrix
                     if representation_id is None:
                         representation_id = rep.id()
                 rep = rep.Items[0].MappingSource.MappedRepresentation
