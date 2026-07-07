@@ -471,41 +471,66 @@ namespace {
 			gp_Vec V;
 			gp_Dir D;
 
-			if (IfcGeom::util::is_manifold(s)) {
-				size_t n_faces_included = 0, n_total = 0;
-				{
-					TopExp_Explorer exp(s, TopAbs_FACE);
-					for (; exp.More(); exp.Next(), n_total++) {
-						const auto& face = TopoDS::Face(exp.Current());
-						if (BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
-							BRepGProp_Face prop(face);
+			// The prefiltering analysis below (manifold test, face classification) runs OCCT
+			// routines that can throw on an unclean mesh. If building the filtered compound
+			// fails, fall back to adding the shape unfiltered so a single bad element cannot
+			// abort the drawing during HLR accumulation. See #3971.
+			bool is_manifold = false;
+			try {
+				is_manifold = IfcGeom::util::is_manifold(s);
+			} catch (...) {
+				is_manifold = false;
+			}
 
-							prop.Normal(0., 0., P, V);
-							if (V.SquareMagnitude() > 1.e-9) {
-								D = V;
-								// keep only front-facing
-								if (D.Dot(view_direction_.Direction()) > 1.e-3) {
-									BB.Add(C, face);
-									n_faces_included++;
+			std::list<std::pair<const IfcUtil::IfcBaseEntity*, TopoDS_Shape>>::iterator it;
+			if (is_manifold) {
+				try {
+					size_t n_faces_included = 0, n_total = 0;
+					{
+						TopExp_Explorer exp(s, TopAbs_FACE);
+						for (; exp.More(); exp.Next(), n_total++) {
+							const auto& face = TopoDS::Face(exp.Current());
+							if (BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+								BRepGProp_Face prop(face);
+
+								prop.Normal(0., 0., P, V);
+								if (V.SquareMagnitude() > 1.e-9) {
+									D = V;
+									// keep only front-facing
+									if (D.Dot(view_direction_.Direction()) > 1.e-3) {
+										BB.Add(C, face);
+										n_faces_included++;
+									}
 								}
+							} else {
+								BB.Add(C, face);
+								n_faces_included++;
 							}
-						} else {
-							BB.Add(C, face);
-							n_faces_included++;
 						}
 					}
+
+					logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
+
+					it = items_.insert(items_.end(), { product, C });
+				} catch (const std::exception& e) {
+					logger_.Warning("SER", 36, e, product);
+					items_.insert(items_.end(), { product, s });
+					return;
+				} catch (...) {
+					logger_.Warning("SER", 36, "Element added unfiltered to hidden line removal due to an unclean mesh", product);
+					items_.insert(items_.end(), { product, s });
+					return;
 				}
 
-				logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
-
-				auto it = items_.insert(items_.end(), { product, C });
-
-				{
+				// Best-effort large-orthogonal-face cache used for obscuration prefiltering.
+				// The shape is already accumulated above, so on failure just abandon the
+				// remaining cache entries rather than losing the element. See #3971.
+				try {
 					TopExp_Explorer exp(C, TopAbs_FACE);
 					for (; exp.More(); exp.Next()) {
 						const auto& face = TopoDS::Face(exp.Current());
 						if (BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
-							
+
 							// find large faces orthogonal to view dir
 							BRepGProp_Face prop(face);
 							prop.Normal(0., 0., P, V);
@@ -529,6 +554,8 @@ namespace {
 							}
 						}
 					}
+				} catch (...) {
+					logger_.Notice("SER", 34, "Incomplete prefiltering cache for element due to an unclean mesh");
 				}
 			} else {
 				items_.insert(items_.end(), { product, s });
@@ -538,10 +565,20 @@ namespace {
 		std::list<std::tuple<const IfcUtil::IfcBaseEntity*, std::string, TopoDS_Shape>> build() {
 			size_t n_included = 0;
 			for (auto it = items_.begin(); it != items_.end(); ++it) {
-				if (!use_prefiltering_ || !is_obscured_(&it->second)) {
-					hlr_writer vis(it->second);
-					boost::apply_visitor(vis, engine_);
-					n_included++;
+				// An unclean mesh (self-intersections, degeneracies, ...) can make the
+				// underlying OCCT routines (obscuration test, HLRBRep_Algo::Add / BRepMesh /
+				// Load) throw. Skip the offending element with a warning rather than aborting
+				// the whole drawing. See #3971.
+				try {
+					if (!use_prefiltering_ || !is_obscured_(&it->second)) {
+						hlr_writer vis(it->second);
+						boost::apply_visitor(vis, engine_);
+						n_included++;
+					}
+				} catch (const std::exception& e) {
+					logger_.Warning("SER", 36, e, it->first);
+				} catch (...) {
+					logger_.Warning("SER", 36, "Element skipped in hidden line removal due to an unclean mesh", it->first);
 				}
 			}
 			if (use_prefiltering_) {
@@ -553,7 +590,19 @@ namespace {
 				vis.set_product_shape(&items_);
 			}
 			vis.set_classified_shapes(&classified_items_);
-			return boost::apply_visitor(vis, engine_);
+			// The projection pass (HLRBRep_Algo::Update/Hide or the poly equivalent) can also
+			// throw on unclean accumulated input. Keep the drawing alive by emitting no
+			// projected linework for this drawing instead of propagating the failure out of
+			// finalize(). See #3971.
+			try {
+				return boost::apply_visitor(vis, engine_);
+			} catch (const std::exception& e) {
+				logger_.Error("SER", 37, e);
+				return {};
+			} catch (...) {
+				logger_.Error("SER", 37, "Projected linework skipped for this drawing due to an unclean mesh");
+				return {};
+			}
 		}
 	};
 }
