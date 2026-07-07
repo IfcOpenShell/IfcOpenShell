@@ -1537,11 +1537,14 @@ class Blender(bonsai.core.tool.Blender):
                 bpy.ops.bim.enable_editing_railing_path()
             elif feature := tool.Parametric.is_object_editing(obj):
                 tool.Parametric.run_bim_op(feature.finish_op)
-            elif tool.Parametric.is_wall(element):
-                # Placed after the generic finish dispatch so the TAB toggle splits:
-                # wall already editing → finish above; wall not editing → enter here.
-                bpy.ops.bim.enable_editing_wall()
             else:
+                # A fresh LAYER2 wall deliberately falls through here so the
+                # caller routes TAB to item mode (see issue #8330). Wall
+                # parametric edit is entered from the pen icon on the wall
+                # gizmo, not from TAB, so TAB stays the universal item/edit
+                # mode key it has always been across every element type. The
+                # finish leg above still fires when a wall is already editing,
+                # so TAB continues to close an in-progress parametric edit.
                 return False
             return True
 
