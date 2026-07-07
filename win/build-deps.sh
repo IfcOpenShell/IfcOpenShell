@@ -59,28 +59,38 @@ function git_clone_and_checkout_revision {
     popd
 }
 
-# Use a fixed revision in order to prevent introducing breaking changes
-git_clone_and_checkout_revision https://github.com/KhronosGroup/OpenCOLLADA.git "$DEPS_DIR/OpenCOLLADA" \
-    064a60b65c2c31b94f013820856bc84fb1937cc6
-pushd "$DEPS_DIR/OpenCOLLADA"
-[ -d $BUILD_DIR ] || mkdir -p $BUILD_DIR
-pushd $BUILD_DIR
-cmake .. -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR/OpenCOLLADA"
-make -j$IFCOS_NUM_BUILD_PROCS
-make install
-popd 
+# COLLADA support is optional. OpenCOLLADA is unmaintained (last updated in 2018)
+# and frequently fails to build on recent MinGW/ucrt toolchains (see issue #6568).
+# Set COLLADA_SUPPORT=0 to skip building it. IfcConvert still supports glTF output.
+# Pass the same COLLADA_SUPPORT value to run-cmake.sh so IfcOpenShell is configured
+# with -DCOLLADA_SUPPORT=OFF and does not look for the missing OpenCOLLADA library.
+COLLADA_SUPPORT="${COLLADA_SUPPORT:-1}"
+if [ "$COLLADA_SUPPORT" != "0" ] && [ "$COLLADA_SUPPORT" != "OFF" ] && [ "$COLLADA_SUPPORT" != "off" ]; then
+    # Use a fixed revision in order to prevent introducing breaking changes
+    git_clone_and_checkout_revision https://github.com/KhronosGroup/OpenCOLLADA.git "$DEPS_DIR/OpenCOLLADA" \
+        064a60b65c2c31b94f013820856bc84fb1937cc6
+    pushd "$DEPS_DIR/OpenCOLLADA"
+    [ -d $BUILD_DIR ] || mkdir -p $BUILD_DIR
+    pushd $BUILD_DIR
+    cmake .. -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX="$INSTALL_DIR/OpenCOLLADA"
+    make -j$IFCOS_NUM_BUILD_PROCS
+    make install
+    popd
+    popd
+else
+    echo "Skipping OpenCOLLADA build (COLLADA_SUPPORT=$COLLADA_SUPPORT). Configure IfcOpenShell with -DCOLLADA_SUPPORT=OFF."
+fi
 
 git_clone_or_pull https://github.com/tpaviot/oce.git "$DEPS_DIR/oce"
 git_clone_or_pull https://github.com/QbProg/oce-win-bundle.git "$DEPS_DIR/oce/oce-win-bundle"
 pushd "$DEPS_DIR/oce"
 [ -d $BUILD_DIR ] || mkdir -p $BUILD_DIR
 pushd $BUILD_DIR
-# -DOCE_BUILD_SHARED_LIB=0 
+# -DOCE_BUILD_SHARED_LIB=0
 cmake .. -G "MSYS Makefiles" -DOCE_INSTALL_PREFIX="$INSTALL_DIR/oce" -DOCE_TESTING=0
 make -j$IFCOS_NUM_BUILD_PROCS
 make install
-popd 
-
+popd
 popd
 
 echo IfcOpenShell dependencies installed and built
