@@ -57,7 +57,8 @@ class CsvHeader(TypedDict):
 
     # Formula
     Formula: NotRequired[str]
-    #QuantityClass: NotRequired[str]
+    # QuantityClass: NotRequired[str]
+
 
 # Currently we assume that if column is not part of the main header,
 # then it is a cost value category. So here we list any additional column
@@ -97,7 +98,8 @@ class CostItem(TypedDict):
     Query: Union[str, None]
 
     Formula: Union[str, None]
-    #QuantityClass: Union[str, None]
+    # QuantityClass: Union[str, None]
+
 
 class Csv2Ifc:
     # Inputs.
@@ -420,7 +422,7 @@ class Csv2Ifc:
                     products=results,
                     formula=cost_item["Formula"],
                     ifc_class=ifc_quantity_class,
-                    )
+                )
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
