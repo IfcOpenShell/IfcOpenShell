@@ -966,6 +966,17 @@ class CreateDrawing(bpy.types.Operator):
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
 
+            # The camera defines the drawing's view crop, it is not a drawn
+            # element. Keep it out of the context-specific linework passes below
+            # and instead always feed it to the serialiser through the
+            # context-agnostic iterator further down, so the crop/frustum is
+            # built regardless of which representation context the camera lives
+            # in. Otherwise a camera stored outside the Body context (see #4800)
+            # would never reach the serialiser and the whole drawing would come
+            # out empty.
+            if tool.Ifc.get() == ifc:
+                drawing_elements.discard(self.camera_element)
+
             if self.cprops.fill_mode == "SHAPELY":
                 for element in drawing_elements.copy():
                     if element.is_a("IfcAnnotation"):
@@ -983,9 +994,11 @@ class CreateDrawing(bpy.types.Operator):
             self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
             self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
 
-            if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
+            if tool.Ifc.get() == ifc:
                 with profile("Camera element"):
-                    # The camera must always be included, regardless of any include/exclude filters.
+                    # The camera must always be included, regardless of any include/exclude filters
+                    # and regardless of its representation context (see #4800). The default settings
+                    # here impose no context filter, so the camera's crop geometry is always built.
                     geom_settings = ifcopenshell.geom.settings()
                     geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
                     it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
