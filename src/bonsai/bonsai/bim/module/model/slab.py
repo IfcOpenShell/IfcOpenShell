@@ -636,8 +636,15 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
 
-        # TODO: review #7537 properly, this is a quick fix but something doesn't seem right.
-        original_rotation_x = 0
+        # LAYER3 slabs carry their slope in the object placement (rotation_euler.x), not in
+        # the extrusion direction, so get_existing_x_angle() reports ~0 for them. To let the
+        # user edit the true horizontal footprint we flatten the object to a plan view and
+        # project the profile onto the horizontal plane (restores the intent of #7537).
+        usage_type = tool.Model.get_usage_type(element)
+        is_layer3 = usage_type == "LAYER3"
+        # Capture the placement slope before we flatten it; reused on export.
+        layer3_x_angle = obj.rotation_euler.x if is_layer3 else 0.0
+
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
@@ -650,17 +657,35 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             tranlation_matrix = Matrix.Translation(rot_offset)
             position = position @ tranlation_matrix
 
-            # Restore Object rotation to zero
-            local_rot_mat = obj.rotation_euler.to_matrix()
-            rot_mat = Matrix.Rotation(-existing_x_angle, 4, "X")
-            new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
-            new_rot_euler = new_rot_mat.to_euler()
-            obj.rotation_euler = new_rot_euler
+            if not is_layer3:
+                # Wall-style slope lives in the extrusion direction; undo it on the object.
+                local_rot_mat = obj.rotation_euler.to_matrix()
+                rot_mat = Matrix.Rotation(-existing_x_angle, 4, "X")
+                new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
+                new_rot_euler = new_rot_mat.to_euler()
+                obj.rotation_euler = new_rot_euler
 
         else:
             position = Matrix()
 
-        tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, x_angle=existing_x_angle)
+        if is_layer3:
+            # Flatten to plan view: drop the X slope, keep any Z rotation. This must run even
+            # when extrusion.Position is None (common for slabs) — the previous code gated it
+            # behind `if extrusion.Position` and so left sloped slabs tilted during editing.
+            obj.rotation_euler.x = 0.0
+
+            # Import unscaled, then project Y onto the horizontal plane so the profile reads
+            # as a true footprint. Done on raw vertices to cover every curve type uniformly.
+            tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, x_angle=0)
+            scale_factor = abs(cos(layer3_x_angle))
+            if scale_factor > 1e-6:
+                for vert in obj.data.vertices:
+                    vert.co.y *= scale_factor
+            # Stash the slope on the profile mesh so exit can un-project it. It is discarded
+            # automatically when switch_representation swaps the mesh back on save or cancel.
+            obj.data["bim_profile_edit_x_angle"] = layer3_x_angle
+        else:
+            tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, x_angle=existing_x_angle)
 
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context))
@@ -688,6 +713,13 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
         layer_params = tool.Model.get_material_layer_parameters(element)
 
+        # Mirror of EnableEditingExtrusionProfile: LAYER3 slabs were flattened to a plan view
+        # for editing, so recover the stashed slope to un-project them on export.
+        usage_type = tool.Model.get_usage_type(element)
+        is_layer3 = usage_type == "LAYER3"
+        layer3_x_angle = obj.data.get("bim_profile_edit_x_angle", 0.0) if is_layer3 else 0.0
+        layer3_scale_factor = abs(cos(layer3_x_angle)) if is_layer3 else 1.0
+
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
@@ -700,19 +732,36 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             tranlation_matrix = Matrix.Translation(rot_offset)
             position = position @ tranlation_matrix
 
-            # Restore Object rotation to x_angle
-            local_rot_mat = obj.rotation_euler.to_matrix()
-            rot_mat = Matrix.Rotation(existing_x_angle, 4, "X")
-            new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
-            new_rot_euler = new_rot_mat.to_euler()
-            obj.rotation_euler = new_rot_euler
+            if not is_layer3:
+                # Restore Object rotation to x_angle
+                local_rot_mat = obj.rotation_euler.to_matrix()
+                rot_mat = Matrix.Rotation(existing_x_angle, 4, "X")
+                new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
+                new_rot_euler = new_rot_mat.to_euler()
+                obj.rotation_euler = new_rot_euler
 
         else:
             position = Matrix()
 
-        profile = tool.Model.export_profile(obj, position=position, x_angle=existing_x_angle)
+        if is_layer3:
+            # Restore the plan-view slope we removed on enter (runs regardless of Position).
+            obj.rotation_euler.x = layer3_x_angle
+            # Un-project the horizontal footprint back into the slab plane before export.
+            if layer3_scale_factor > 1e-6:
+                for vert in obj.data.vertices:
+                    vert.co.y /= layer3_scale_factor
+            profile = tool.Model.export_profile(obj, position=position, x_angle=0)
+        else:
+            profile = tool.Model.export_profile(obj, position=position, x_angle=existing_x_angle)
 
         if not profile:
+
+            if is_layer3:
+                # Re-flatten so the user can keep fixing the profile in plan view.
+                if layer3_scale_factor > 1e-6:
+                    for vert in obj.data.vertices:
+                        vert.co.y *= layer3_scale_factor
+                obj.rotation_euler.x = 0.0
 
             def msg(self, context):
                 self.layout.label(text="INVALID PROFILE")
