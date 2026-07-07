@@ -17,10 +17,12 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import math
 import os
 from typing import TYPE_CHECKING, Any, Literal, Union, assert_never, get_args
 
 import bpy
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from bpy.props import (
     BoolProperty,
@@ -260,6 +262,27 @@ def set_length_value(self: "Attribute", value: float) -> None:
     self.float_value = value / si_conversion
 
 
+def get_length_decimal_places(ifc_file: ifcopenshell.file) -> int:
+    """Number of decimal places implied by the model's geometric precision.
+
+    ``IfcGeometricRepresentationContext.Precision`` is a length tolerance
+    expressed in the project's length units. Length attribute values are stored
+    and exported in those same units, so any digits finer than the precision are
+    not meaningful. The number of meaningful decimal places is therefore
+    ``-log10(precision)``.
+
+    This lets us strip the float32 rounding noise that Blender introduces when it
+    stores a length in a single-precision ``FloatProperty`` (e.g. a clean 67.74
+    becomes 67.7399978637695), without discarding any real precision. See #3129.
+    """
+    context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+    precision = getattr(context, "Precision", None) if context else None
+    if not precision or precision <= 0:
+        # Same default Bonsai uses when it creates a Model context (add_context).
+        precision = 1e-5
+    return max(0, math.ceil(-math.log10(precision)))
+
+
 def get_display_name(self: "Attribute") -> str:
     DISPLAY_UNIT_TYPES = ("AREA", "VOLUME", "FORCE")
     name = self.name
@@ -392,6 +415,14 @@ class Attribute(PropertyGroup):
             value = tool.Blender.get_enum_safe(self, "enum_value")
         else:
             value = getattr(self, value_name, None)
+        if self.special_type == "LENGTH" and isinstance(value, float):
+            # Blender stores floats as single-precision (float32), so a length
+            # that is round in the model's units (e.g. 67.74) comes back with
+            # noise digits (67.7399978637695). Round to the model's geometric
+            # precision so it exports cleanly instead of exposing the artifact.
+            # See #3129.
+            if (ifc_file := tool.Ifc.get()) is not None:
+                value = round(value, get_length_decimal_places(ifc_file))
         if self.special_type == "LOGICAL" and value != "UNKNOWN":
             # IfcOpenShell expects bool if IfcLogical is True/False.
             value = value == "TRUE"
