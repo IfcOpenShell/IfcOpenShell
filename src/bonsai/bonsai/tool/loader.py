@@ -1039,12 +1039,20 @@ class Loader(bonsai.core.tool.Loader):
         if verts is None:
             verts = ifcopenshell.util.shape.get_vertices(geometry)
         faces = ifcopenshell.util.shape.get_faces(geometry)
-        if faces.shape[0] > 0:
+        material_style_ids = geometry.material_ids
+        num_faces = faces.shape[0]
+        # A single representation may mix faces/polygons and loose curves (e.g. an Annotation2D
+        # holding both an IfcAnnotationFillArea and an IfcGeometricCurveSet, see #4606). In that
+        # case IfcOpenShell packs material ids as [face materials, loose edge materials] and emits
+        # the loose edges after the face edges, so anything past num_faces belongs to loose edges.
+        num_loose_edges = len(material_style_ids) - num_faces
+        if num_faces > 0:
+            all_edges = ifcopenshell.util.shape.get_edges(geometry)
             # See bug 3546
             # ios_edges holds true edges that aren't triangulated.
             #
             # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
-            mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
+            mesh["ios_edges"] = list(set(tuple(e) for e in all_edges.tolist()))
             ios_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
             mesh["ios_item_ids"] = ios_item_ids
 
@@ -1059,7 +1067,24 @@ class Loader(bonsai.core.tool.Loader):
                     tool.Loader.load_indexed_colour_map(rep, mesh)
 
             tool.Blender.Attribute.fill_attribute(mesh, "ios_item_ids", "FACE", "INT", ios_item_ids)
-            tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", geometry.material_ids)
+            # Only the first num_faces material ids belong to the faces (the rest, if any, are for
+            # loose edges), so slice to keep the FACE attribute the right length (#4606).
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", material_style_ids[:num_faces])
+
+            if num_loose_edges > 0:
+                # Mixed representation: also import the loose curve edges so both the curves and the
+                # filled area end up in the same object (#4606). The loose edges are the last ones.
+                loose_edges = all_edges[-num_loose_edges:]
+                bm = bmesh.new()
+                bm.from_mesh(mesh)
+                bm.verts.ensure_lookup_table()
+                for v1, v2 in loose_edges.tolist():
+                    try:
+                        bm.edges.new((bm.verts[v1], bm.verts[v2]))
+                    except ValueError:
+                        pass  # Edge already exists (shared with a face).
+                bm.to_mesh(mesh)
+                bm.free()
         else:
             edges = ifcopenshell.util.shape.get_edges(geometry)
             mesh.from_pydata(verts.tolist(), edges.tolist(), [])
