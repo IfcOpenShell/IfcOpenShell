@@ -36,6 +36,7 @@ enum class ItemKind {
 
 struct TreeNode {
     QString name;
+    QString detail;  // secondary column: LongName, or the elevation for storeys
     ItemKind kind = ItemKind::Space;
     bool visible = true;
     QList<TreeNode> children;

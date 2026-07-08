@@ -27,6 +27,7 @@
 
 class QTreeWidget;
 class QTreeWidgetItem;
+class QShowEvent;
 
 namespace bonsaiviewer::modules::spatial_hierarchy {
 
@@ -40,12 +41,16 @@ public:
 signals:
     void visibilityToggleRequested(const NodePath& path);
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private:
     void addNode(QTreeWidgetItem* parent, const TreeNode& node);
     NodePath itemPath(QTreeWidgetItem* item) const;
     QString iconPath(ItemKind kind) const;
 
     QTreeWidget* tree_ = nullptr;
+    bool column_widths_initialized_ = false;
 };
 
 } // namespace bonsaiviewer::modules::spatial_hierarchy

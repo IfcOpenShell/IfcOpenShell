@@ -27,7 +27,8 @@
 #include "../../../ifcparse/file.h"
 #include "../../../ifcparse/schema.h"
 
-#include "element.h"  // helpers: get_spatial_children, get_string_attribute
+#include "element.h"    // helpers: get_spatial_children, get_string_attribute
+#include "placement.h"  // helpers: get_storey_elevation
 
 #include <QCollator>
 
@@ -79,6 +80,13 @@ TreeNode buildNode(const express::Base& element) {
     node.name = displayName(element);
     node.kind = kindOf(element);
     node.visible = true;
+    // Secondary column: the storey elevation, else the LongName when filled.
+    if (node.kind == ItemKind::Storey) {
+        node.detail = QString::number(get_storey_elevation(element));
+    } else if (auto long_name = get_string_attribute(element, "LongName");
+               long_name && !long_name->empty()) {
+        node.detail = QString::fromStdString(*long_name);
+    }
     for (const auto& child : get_spatial_children(element)) {
         node.children.append(buildNode(child));
     }

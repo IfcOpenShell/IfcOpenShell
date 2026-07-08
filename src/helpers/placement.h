@@ -47,4 +47,9 @@ Eigen::Matrix4d get_axis2_placement(const express::Base& placement);
 // identity for a null input.
 Eigen::Matrix4d get_local_placement(const express::Base& placement);
 
+// ifcopenshell.util.placement.get_storey_elevation: the Z elevation of an
+// IfcBuildingStorey in the project's length unit — the Z of its placement, or
+// the Elevation attribute as a fallback. 0 for a non-storey or null input.
+double get_storey_elevation(const express::Base& storey);
+
 #endif // PLACEMENT_H

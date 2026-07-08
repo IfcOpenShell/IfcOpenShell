@@ -20,8 +20,11 @@
 #include "placement.h"
 
 #include "../ifcparse/exception.h"
+#include "../ifcparse/instance_data.h"
+#include "../ifcparse/schema.h"
 #include "schema_dispatch.i"
 
+#include <cstddef>
 #include <type_traits>
 #include <vector>
 
@@ -125,6 +128,31 @@ Eigen::Matrix4d get_local_placement_s(const express::Base& placement) {
     return get_axis2_placement_s<Schema>(placement);
 }
 
+// ifcopenshell.util.placement.get_storey_elevation: the Z of the storey's
+// placement in project units, falling back to the Elevation attribute.
+template <typename Schema>
+double get_storey_elevation_s(const express::Base& storey) {
+    const auto typed = storey.template as<typename Schema::IfcBuildingStorey>();
+    if (!typed) {
+        return 0.0;
+    }
+    if (const auto placement = typed.ObjectPlacement()) {
+        return get_local_placement_s<Schema>(placement)(2, 3);
+    }
+    // Fallback: the optional Elevation attribute (read by name).
+    const ifcopenshell::entity* declaration = storey.declaration().as_entity();
+    if (declaration != nullptr) {
+        const std::ptrdiff_t index = declaration->attribute_index("Elevation");
+        if (index >= 0) {
+            const attribute_value value = storey.get_attribute_value(static_cast<std::size_t>(index));
+            if (!value.isNull() && value.type() == ifcopenshell::Argument_DOUBLE) {
+                return static_cast<double>(value);
+            }
+        }
+    }
+    return 0.0;
+}
+
 } // namespace
 
 Eigen::Matrix4d axes_to_placement(const Eigen::Vector3d& origin,
@@ -163,6 +191,19 @@ Eigen::Matrix4d get_local_placement(const express::Base& placement) {
 #define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
     if (name == Identifier)                       \
         return get_local_placement_s<Schema>(placement);
+    IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
+#undef IFCOPENSHELL_DISPATCH
+    unsupported_schema(name);
+}
+
+double get_storey_elevation(const express::Base& storey) {
+    if (!storey) {
+        return 0.0;
+    }
+    const auto name = storey.declaration().schema()->name();
+#define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
+    if (name == Identifier)                       \
+        return get_storey_elevation_s<Schema>(storey);
     IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
 #undef IFCOPENSHELL_DISPATCH
     unsupported_schema(name);
