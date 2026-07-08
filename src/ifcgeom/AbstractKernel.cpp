@@ -40,10 +40,39 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	auto without_exception_handling = [](auto fn) {
 		return fn();
 	};
+	// Kernel-agnostic approximation of a swept solid as a tessellated shell
+	// (Eigen only, see taxonomy::sweep_along_curve::as_shell). This lets kernels
+	// without a native sweep (cgal) consume it, and lets any kernel be forced onto
+	// the approximation for verification via the ApproximateSweptSolids setting.
+	auto try_sweep_approximation = [&]() -> boost::optional<bool> {
+		auto swp = taxonomy::dcast<taxonomy::sweep_along_curve>(item);
+		if (!swp) {
+			return boost::none;
+		}
+		auto shell = swp->as_shell(
+			settings_.get<settings::CircleSegments>().get(),
+			settings_.get<settings::MesherLinearDeflection>().get());
+		if (!shell) {
+			return boost::none;
+		}
+		return dispatch_conversion<0>::dispatch(this, shell->kind(), shell, results);
+	};
+
 	auto process_with_upgrade = [&]() {
+		// Forced approximation mode: applies to every kernel (including opencascade).
+		if (settings_.get<settings::ApproximateSweptSolids>().get()) {
+			if (auto res = try_sweep_approximation()) {
+				return *res;
+			}
+		}
 		try {
 			return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 		} catch (const not_implemented_error&) {
+			// The kernel has no native conversion for this item. If it is a swept
+			// solid, fall back to the tessellated-shell approximation before giving up.
+			if (auto res = try_sweep_approximation()) {
+				return *res;
+			}
 			return dispatch_with_upgrade<0>::dispatch(this, item, results);
 		}
 	};
