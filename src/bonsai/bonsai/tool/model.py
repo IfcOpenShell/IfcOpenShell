@@ -1404,7 +1404,7 @@ class Model(bonsai.core.tool.Model):
             tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
         )
 
-        parent_obj.select_set(True)
+        tool.Blender.set_object_selection(parent_obj, True)
 
     @classmethod
     def mirror_parent_void_fillings_to_children(

@@ -329,7 +329,7 @@ class _ArrayEditMixin(ParametricEditMixinBase):
         # Unhide the (possibly newly-regenerated) children so the user sees
         # the committed result. Mirrors the hide in ``_enable_one``.
         cls._set_children_visibility(element, hidden=False)
-        tool.Array.select_only_parent(obj, element, context)
+        tool.Array.select_only_parent(obj, context)
 
     @classmethod
     def _cancel_one(cls, obj: bpy.types.Object) -> None:
@@ -443,7 +443,7 @@ class RegenerateArray(bpy.types.Operator, tool.Ifc.Operator):
             tool.Model.regenerate_array(parent, arrays)
             tool.Array.constrain_children_to_parent(parent_element)
 
-        tool.Array.select_only_parent(parent, parent_element, context)
+        tool.Array.select_only_parent(parent, context)
 
 
 class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):

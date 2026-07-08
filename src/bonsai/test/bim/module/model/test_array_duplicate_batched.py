@@ -537,7 +537,7 @@ class TestSelectOnlyParent(NewFile):
             child_obj = tool.Ifc.get_object(child_element)
             child_obj.select_set(True)
 
-        tool.Array.select_only_parent(obj, element, bpy.context)
+        tool.Array.select_only_parent(obj, bpy.context)
 
         assert obj in bpy.context.selected_objects
         assert bpy.context.view_layer.objects.active is obj
