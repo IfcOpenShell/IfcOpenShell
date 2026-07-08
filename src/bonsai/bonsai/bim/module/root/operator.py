@@ -55,17 +55,12 @@ class EnableReassignClass(bpy.types.Operator):
         ifc_class = element.is_a()
         props = tool.Blender.get_object_bim_props(obj)
         props.is_reassigning_class = True
-        ifc_products = tool.Root.get_ifc_products()
-        schema = tool.Ifc.schema()
-        declaration = schema.declaration_by_name(ifc_class)
-        for ifc_product in ifc_products:
-            if ifcopenshell.util.schema.is_a(declaration, ifc_product):
-                rprops.ifc_product = ifc_product
-                break
-        else:
+        ifc_product = tool.Root.get_add_element_product(ifc_class)
+        if not ifc_product:
             self.report({"ERROR"}, f"Couldn't find matching IFC product for the selected object: '{element}'.")
             props.is_reassigning_class = False
             return {"CANCELLED"}
+        rprops.ifc_product = ifc_product
 
         element = self.file.by_id(tool.Blender.get_ifc_definition_id(obj))
         rprops.ifc_class = element.is_a()

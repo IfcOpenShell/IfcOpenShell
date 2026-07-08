@@ -490,6 +490,22 @@ class Root(bonsai.core.tool.Root):
         return products
 
     @classmethod
+    def get_element_type_extra_classes(cls, schema: str) -> tuple[str, ...]:
+        """Classes offered under the ``IfcElementType`` product that are not schema subtypes of it.
+
+        Single source of truth shared by the Type Manager enum (see
+        ``bonsai.bim.module.root.data.IfcClassData.ifc_classes``) and :func:`get_add_element_product`, so
+        the two cannot drift. ``IfcDoorStyle`` / ``IfcWindowStyle`` only exist in IFC2X3 and IFC4, so they
+        are only offered there; ``IfcTypeProduct`` exists in every schema.
+
+        :param schema: Schema identifier, e.g. ``tool.Ifc.get_schema()``.
+        """
+        classes = ["IfcTypeProduct"]
+        if schema in ("IFC2X3", "IFC4"):
+            classes.extend(("IfcDoorStyle", "IfcWindowStyle"))
+        return tuple(classes)
+
+    @classmethod
     def get_add_element_product(cls, ifc_class: str, fallback_product: str = "") -> str:
         """Return the ``ifc_product`` category (see :func:`get_ifc_products`) the ``ifc_class`` belongs to.
 
@@ -503,8 +519,9 @@ class Root(bonsai.core.tool.Root):
         :param fallback_product: Product to keep when it already contains ``ifc_class``, or to return when
             no better match is found.
         """
+        schema = tool.Ifc.get_schema()
         # Classes offered under the IfcElementType product that are not schema subtypes of it.
-        if ifc_class in ("IfcTypeProduct", "IfcDoorStyle", "IfcWindowStyle"):
+        if ifc_class in cls.get_element_type_extra_classes(schema):
             return "IfcElementType"
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
         if fallback_product and ifcopenshell.util.schema.is_a(declaration, fallback_product):
