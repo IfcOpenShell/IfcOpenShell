@@ -163,13 +163,21 @@ class Geometry(bonsai.core.tool.Geometry):
                 cls._host_update_queue = {}
                 cls._host_recut_queue = {}
                 for voided_obj in update_queue.values():
-                    if not voided_obj or not voided_obj.data:
+                    try:
+                        if not voided_obj or not voided_obj.data:
+                            continue
+                    except ReferenceError:
+                        # Blender object was deleted while the batch was open
+                        # (e.g. user removed it via the outliner mid-op).
                         continue
                     if tool.Ifc.get_entity(voided_obj) is None:
                         continue
                     bpy.ops.bim.update_representation(obj=voided_obj.name)
                 for voided_obj, _ in recut_queue.values():
-                    if not voided_obj or not voided_obj.data:
+                    try:
+                        if not voided_obj or not voided_obj.data:
+                            continue
+                    except ReferenceError:
                         continue
                     if tool.Ifc.get_entity(voided_obj) is None:
                         continue
@@ -2481,99 +2489,16 @@ class Geometry(bonsai.core.tool.Geometry):
         old_obj_name_to_new_obj_name: dict[str, str] = {}
 
         for obj in objects_to_duplicate:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                    tool.Blender.deselect_object(obj)
-                    continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
-                elif tool.Geometry.is_locked(element):
-                    tool.Blender.deselect_object(obj)
-                    continue
-            elif tool.Geometry.is_representation_item(obj):
-                cls.duplicate_ifc_item(obj)
-                continue
-
-            tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
-            is_tracked_opening = bool(tracked_opening_type)
-            keep_data_linked = linked and not element and not is_tracked_opening
-
-            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
-            cls.commit_placement_if_moved(obj, apply_scale=False)
-
-            new_obj = obj.copy()
-            temp_data = None
-
-            # Currently for optimization we do not apply pending changes (scale or changed .data)
-            # to the original and duplicated objects.
-            # Keep new object edited if original is.
-            if tool.Ifc.is_edited(obj, ignore_scale=True):
-                tool.Ifc.edit(new_obj)
-
-            if obj.data and not keep_data_linked:
-                # assure root.copy_class won't replace the previous mesh globally
-                temp_data = obj.data.copy()
-                new_obj.data = temp_data
-
-                # Unlink from previous boolean element
-                # and keep object tracked for decorations.
-                if is_tracked_opening:
-                    mprops = tool.Geometry.get_mesh_props(new_obj.data)
-                    mprops.ifc_boolean_id = 0
-                    tool.Root.add_tracked_opening(new_obj, tracked_opening_type)
-
-            if obj == active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-            old_obj_name_to_new_obj_name[obj.name] = new_obj.name
-
-            if not element:
-                continue
-
-            # clear object's collection so it will be able to have it's own
-            tool.Blender.get_object_bim_props(new_obj).collection = None
-            # copy the actual class
-            new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
-
-            # clean up the orphaned mesh with ifc id of the original object to avoid confusion
-            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
-            if new and temp_data and not new.is_a("IfcGridAxis"):
-                if new.is_a("IfcRelSpaceBoundary"):
-                    surface = new.ConnectionGeometry.SurfaceOnRelatingElement
-                    temp_data.name = f"0/{surface.id()}"
-                    tool.Ifc.link(surface, temp_data)
-                else:
-                    tool.Blender.remove_data_block(temp_data)
-
-            if new:
-                # TODO: handle array data for other cases of duplication
-                array_data = arrays_to_duplicate.get(obj, None)
-                tool.Model.handle_array_on_copied_element(new, array_data)
-                if array_data:
-                    for child in tool.Array.get_all_children_objects(new):
-                        child.select_set(True)
-
-                # TODO: add new array children to recreate their decomposition too
-                old_to_new[element] = [new]
-                if new.is_a("IfcRelSpaceBoundary"):
-                    tool.Boundary.decorate_boundary(new_obj)
-                # Slab-trim booleans (from extend_walls_to_underside) belong to
-                # the source wall's connection, not the copy. Strip them so the
-                # duplicate reverts to its pre-clip extrusion — mirrors the way
-                # filling rels are dropped while manual booleans persist on copy.
-                # Reload the body when something was stripped so the viewport
-                # immediately shows the unclipped geometry; otherwise the user
-                # sees a stale mesh until they Shift+G, which is easy to miss.
-                if new.is_a("IfcWall"):
-                    if tool.Model.strip_underside_booleans(new):
-                        tool.Model.reload_body_representation(new_obj)
-                    # HasOpenings rels don't follow object duplication, so
-                    # the duplicate's body must rebuild to match its current
-                    # opening set.
-                    else:
-                        tool.Model.regenerate_wall(new_obj)
+            new_active = cls._duplicate_ifc_object_once(
+                obj,
+                active_object,
+                linked,
+                arrays_to_duplicate,
+                old_to_new,
+                old_obj_name_to_new_obj_name,
+            )
+            if new_active is not None:
+                new_active_obj = new_active
 
         # Remap Blender parent relationships for duplicated objects
         for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():
@@ -2601,9 +2526,210 @@ class Geometry(bonsai.core.tool.Geometry):
         # Recreate decompositions
         tool.Duplicate.recreate_decompositions(decomposition_relationships, old_to_new)
         cls.remove_linked_aggregate_data(old_to_new)
+
+        # In-loop regenerate_wall runs before recreate_connections, so any new
+        # walls that just received an IfcRelConnectsPathElements have stale
+        # junction geometry — recalculate them now that their connection graph
+        # is complete.
+        cls._recalculate_walls_with_new_connections(old_to_new)
+
         bonsai.bim.handler.refresh_ui_data()
         tool.Root.reload_grid_decorator()
         return old_to_new, new_active_obj or active_object
+
+    @classmethod
+    def duplicate_ifc_object_n_times(
+        cls, source: bpy.types.Object, count: int
+    ) -> dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+        """N-way duplicate of a single source.
+
+        Same per-copy semantics as duplicate_ifc_objects (IFC class copy,
+        decomposition + connection recreation, body regen for walls), but
+        bypasses the set() dedupe and the arrays_to_duplicate pre-scan so
+        callers building a fresh array don't pay per-call overhead N times.
+        Returns the same old_to_new dict shape, with the source element
+        mapping to the N new entities."""
+        if count <= 0:
+            return {}
+
+        sources = {source}
+        decomposition_relationships = tool.Duplicate.get_decomposition_relationships(sources)
+        connection_relationships = tool.Duplicate.get_connection_relationships(sources)
+        port_connection_snapshot = tool.Duplicate.get_port_connection_relationships(sources)
+        old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
+        old_obj_name_to_new_obj_name: dict[str, str] = {}
+
+        for _ in range(count):
+            cls._duplicate_ifc_object_once(
+                source,
+                None,
+                False,
+                {},
+                old_to_new,
+                old_obj_name_to_new_obj_name,
+                keep_source_selected=True,
+            )
+
+        for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():
+            new_obj = bpy.data.objects.get(new_obj_name)
+            if new_obj and new_obj.parent and new_obj.parent.name in old_obj_name_to_new_obj_name:
+                world_matrix = new_obj.matrix_world.copy()
+                new_parent_name = old_obj_name_to_new_obj_name[new_obj.parent.name]
+                new_parent = bpy.data.objects.get(new_parent_name)
+                if new_parent:
+                    new_obj.parent = new_parent
+                    new_obj.matrix_world = world_matrix
+
+        for old in old_to_new.keys():
+            if old.is_a("IfcElementAssembly"):
+                tool.Root.recreate_aggregate(old_to_new)
+
+        cls.remove_old_connections(old_to_new)
+        tool.Duplicate.recreate_connections(connection_relationships, old_to_new)
+        tool.Duplicate.recreate_port_connections(port_connection_snapshot, old_to_new)
+        tool.Duplicate.recreate_decompositions(decomposition_relationships, old_to_new)
+        cls.remove_linked_aggregate_data(old_to_new)
+        cls._recalculate_walls_with_new_connections(old_to_new)
+        bonsai.bim.handler.refresh_ui_data()
+        tool.Root.reload_grid_decorator()
+        return old_to_new
+
+    @classmethod
+    def _duplicate_ifc_object_once(
+        cls,
+        obj: bpy.types.Object,
+        active_object: Optional[bpy.types.Object],
+        linked: bool,
+        arrays_to_duplicate: dict[bpy.types.Object, Any],
+        old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
+        old_obj_name_to_new_obj_name: dict[str, str],
+        keep_source_selected: bool = False,
+    ) -> Optional[bpy.types.Object]:
+        """Per-source body of the duplicate flow. Mutates old_to_new and
+        old_obj_name_to_new_obj_name in place. Returns new_obj when obj is
+        the active_object, else None.
+
+        keep_source_selected: when True, skip the source deselect so batched
+        callers can run N iterations without N×2 select flips and without
+        needing a post-loop restore on the source."""
+        new_active_obj: Optional[bpy.types.Object] = None
+        element = tool.Ifc.get_entity(obj)
+        if element:
+            if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                tool.Blender.deselect_object(obj)
+                return None  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+            elif tool.Geometry.is_locked(element):
+                tool.Blender.deselect_object(obj)
+                return None
+        elif tool.Geometry.is_representation_item(obj):
+            cls.duplicate_ifc_item(obj)
+            return None
+
+        tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
+        is_tracked_opening = bool(tracked_opening_type)
+        keep_data_linked = linked and not element and not is_tracked_opening
+
+        # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+        cls.commit_placement_if_moved(obj, apply_scale=False)
+
+        new_obj = obj.copy()
+        temp_data = None
+
+        # Currently for optimization we do not apply pending changes (scale or changed .data)
+        # to the original and duplicated objects.
+        # Keep new object edited if original is.
+        if tool.Ifc.is_edited(obj, ignore_scale=True):
+            tool.Ifc.edit(new_obj)
+
+        if obj.data and not keep_data_linked:
+            # assure root.copy_class won't replace the previous mesh globally
+            temp_data = obj.data.copy()
+            new_obj.data = temp_data
+
+            # Unlink from previous boolean element
+            # and keep object tracked for decorations.
+            if is_tracked_opening:
+                mprops = tool.Geometry.get_mesh_props(new_obj.data)
+                mprops.ifc_boolean_id = 0
+                tool.Root.add_tracked_opening(new_obj, tracked_opening_type)
+
+        if obj == active_object:
+            new_active_obj = new_obj
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+        if not keep_source_selected:
+            obj.select_set(False)
+        new_obj.select_set(True)
+        old_obj_name_to_new_obj_name[obj.name] = new_obj.name
+
+        if not element:
+            return new_active_obj
+
+        # clear object's collection so it will be able to have it's own
+        tool.Blender.get_object_bim_props(new_obj).collection = None
+        # copy the actual class
+        new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+
+        # clean up the orphaned mesh with ifc id of the original object to avoid confusion
+        # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+        if new and temp_data and not new.is_a("IfcGridAxis"):
+            if new.is_a("IfcRelSpaceBoundary"):
+                surface = new.ConnectionGeometry.SurfaceOnRelatingElement
+                temp_data.name = f"0/{surface.id()}"
+                tool.Ifc.link(surface, temp_data)
+            else:
+                tool.Blender.remove_data_block(temp_data)
+
+        if new:
+            # TODO: handle array data for other cases of duplication
+            array_data = arrays_to_duplicate.get(obj, None)
+            tool.Model.handle_array_on_copied_element(new, array_data)
+            if array_data:
+                for child in tool.Array.get_all_children_objects(new):
+                    child.select_set(True)
+
+            # TODO: add new array children to recreate their decomposition too
+            old_to_new.setdefault(element, []).append(new)
+            if new.is_a("IfcRelSpaceBoundary"):
+                tool.Boundary.decorate_boundary(new_obj)
+            # Slab-trim booleans (from extend_walls_to_underside) belong to
+            # the source wall's connection, not the copy. Strip them so the
+            # duplicate reverts to its pre-clip extrusion — mirrors the way
+            # filling rels are dropped while manual booleans persist on copy.
+            # Reload the body when something was stripped so the viewport
+            # immediately shows the unclipped geometry; otherwise the user
+            # sees a stale mesh until they Shift+G, which is easy to miss.
+            if new.is_a("IfcWall"):
+                if tool.Model.strip_underside_booleans(new):
+                    tool.Model.reload_body_representation(new_obj)
+                # HasOpenings rels don't follow object duplication, so
+                # the duplicate's body must rebuild to match its current
+                # opening set.
+                else:
+                    tool.Model.regenerate_wall(new_obj)
+
+        return new_active_obj
+
+    @classmethod
+    def _recalculate_walls_with_new_connections(
+        cls, old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+    ) -> None:
+        """Recalculate new IfcWall duplicates that just received an
+        ``IfcRelConnectsPathElements``. The in-loop ``regenerate_wall`` runs
+        before ``recreate_connections``, so wall body geometry doesn't reflect
+        the junction until this second pass."""
+        walls_to_recalc: list[bpy.types.Object] = []
+        for new_list in old_to_new.values():
+            for new_entity in new_list:
+                if not new_entity.is_a("IfcWall"):
+                    continue
+                if not (getattr(new_entity, "ConnectedTo", None) or getattr(new_entity, "ConnectedFrom", None)):
+                    continue
+                new_obj = tool.Ifc.get_object(new_entity)
+                if new_obj is not None:
+                    walls_to_recalc.append(new_obj)
+        if walls_to_recalc:
+            tool.Model.recalculate_walls(walls_to_recalc)
 
     @classmethod
     def duplicate_ifc_item(cls, obj: bpy.types.Object) -> None:
