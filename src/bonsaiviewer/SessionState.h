@@ -64,25 +64,25 @@ public:
     void setProgress(int percent);
     void endProgress();
 
-    void setModelMapping(const QString& fed_id, uint32_t model_id);
-    void removeModelMappingByFedId(const QString& fed_id);
+    void setModelMapping(const QString& model_id, uint32_t session_model_id);
+    void removeModelMappingByModelId(const QString& model_id);
     void clearModelMappings();
 
     // Per-session cloud metadata returned by connectors (revision/date/
     // author/...). Not persisted to the .ifcfed; display only. Lifetime
-    // is tied to the fed_id — removeModelMappingByFedId and
+    // is tied to the model_id — removeModelMappingByModelId and
     // clearModelMappings drop the matching entries.
-    void setCloudMetadata(const QString& fed_id, const QVariantMap& metadata);
-    QVariantMap cloudMetadata(const QString& fed_id) const;
-    uint32_t modelIdForFedId(const QString& fed_id) const;
-    QString fedIdForModelId(uint32_t model_id) const;
-    QList<uint32_t> modelIds() const;
+    void setCloudMetadata(const QString& model_id, const QVariantMap& metadata);
+    QVariantMap cloudMetadata(const QString& model_id) const;
+    uint32_t sessionModelIdForModelId(const QString& model_id) const;
+    QString modelIdForSessionModelId(uint32_t session_model_id) const;
+    QList<uint32_t> sessionModelIds() const;
 
     void notifySelectionChanged();
     void notifyModelsChanged();
     void notifyFederationChanged();
     void notifyVisibilityChanged();
-    void notifyModelGeometryReady(uint32_t model_id);
+    void notifyModelGeometryReady(uint32_t session_model_id);
     void notifyProjectOpened(const QString& path);
     void notifyProjectSaved(const QString& path);
     void notifyProjectReset();
@@ -100,7 +100,7 @@ signals:
     // Fires when a model's geometry has been pushed to the viewport. Fires
     // for both sidecar-cache and stream loads; subscribers that just need to
     // re-derive view state (e.g. ViewportView::refresh) listen to this.
-    void modelGeometryReady(uint32_t model_id);
+    void modelGeometryReady(uint32_t session_model_id);
     // Fires when SceneLoader reports a load failure. SessionState turns the
     // raw loader signal into a session-level one so views (e.g. the MessageBox)
     // can subscribe without touching the loader directly.
@@ -119,8 +119,8 @@ private:
     uint32_t selected_object_id_ = 0;
     QString status_mode_;
     QString status_detail_;
-    QHash<QString, uint32_t> fed_id_to_model_id_;
-    QHash<uint32_t, QString> model_id_to_fed_id_;
+    QHash<QString, uint32_t> model_id_to_session_model_id_;
+    QHash<uint32_t, QString> session_model_id_to_model_id_;
     QHash<QString, QVariantMap> cloud_metadata_;
 };
 

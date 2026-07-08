@@ -123,8 +123,14 @@ public:
     // A point that actually lies on the model's first instance — used
     // by the federation false-origin guess on first geometry. Pure
     // read of models_gpu_; no GPU touch.
-    bool firstGeometryPointWorldM(uint32_t model_id,
+    bool firstGeometryPointWorldM(uint32_t session_model_id,
                                   Eigen::Vector3d& out) const;
+
+    // The global-id base applyCachedModel added to this model's instance
+    // object_ids. Callers that hold the element table separately (the desktop
+    // sidecar path) rebase their element records by the same base so registry
+    // ids match the ids pick/selection return. 0 if the model is unknown.
+    uint32_t modelObjectIdBase(uint32_t session_model_id) const;
 
     // ---- Scene mutators -----------------------------------------------------
     //
@@ -133,26 +139,26 @@ public:
     // is responsible for coalescing those requests (Qt's requestUpdate
     // does it natively; the web host wraps requestAnimationFrame).
 
-    void removeModel(uint32_t model_id);
+    void removeModel(uint32_t session_model_id);
     void resetScene();
-    void hideModel(uint32_t model_id);
-    void showModel(uint32_t model_id);
+    void hideModel(uint32_t session_model_id);
+    void showModel(uint32_t session_model_id);
 
     // Federation matrix setters. Each writes to model state and posts
     // a recompose so per-instance world matrices stay consistent with
     // the configured georef + transformation pipeline.
     void setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters);
-    void setModelCoordinateOperation(uint32_t model_id,
+    void setModelCoordinateOperation(uint32_t session_model_id,
                                      const Eigen::Matrix4d& matrix_meters);
-    void setModelTransformation(uint32_t model_id,
+    void setModelTransformation(uint32_t session_model_id,
                                 const Eigen::Matrix4d& matrix_meters);
 
-    // Walk every instance of `model_id`, recompose its transform from
+    // Walk every instance of `session_model_id`, recompose its transform from
     // the current federation matrices, refresh per-chunk world AABBs,
     // and re-upload InstanceGpu[] into m.instance_storage. No-op if
     // the model is unknown, has no instances, or wgpu init hasn't
     // completed.
-    void recomposeAndUploadModel(uint32_t model_id);
+    void recomposeAndUploadModel(uint32_t session_model_id);
 
     // ---- Camera math --------------------------------------------------------
     //
@@ -384,7 +390,7 @@ public:
     // sidecar offsets. Pure function of model + chunk metadata; safe to
     // call from the main thread.
     static StreamingThread::Request makeChunkRequest(
-        const ModelGpuData& m, std::size_t chunk_idx, std::uint32_t model_id);
+        const ModelGpuData& m, std::size_t chunk_idx, std::uint32_t session_model_id);
 
     // Per-frame streaming driver. Called from render() after cull. Walks
     // every model's chunks once for residency bookkeeping, drains the
@@ -397,20 +403,20 @@ public:
     // ---- Sidecar / direct load (#84-q) -----------------------------------
     //
     // Apply a parsed sidecar's metadata + planned chunk layout to
-    // models_gpu_[model_id]. Builds the per-chunk small buffers
+    // models_gpu_[session_model_id]. Builds the per-chunk small buffers
     // (visible_draws / prefix_sums / per_chunk_uniform), the per-model
     // mesh + instance storage SSBOs, and the spatial chunk plan; chunk
     // vertex/index slices stay non-resident until the streaming loader
     // brings them in. Triggers an auto-viewAll on the first model (so a
     // freshly-loaded scene frames itself).
-    void applyCachedModel(std::uint32_t model_id, StreamingSidecar metadata);
+    void applyCachedModel(std::uint32_t session_model_id, StreamingSidecar metadata);
 
-    // Qt-free sidecar load: readSidecarMetadataOnly + applyCachedModel.
+    // Qt-free sidecar load: readSidecarMetadata + applyCachedModel.
     // Used by the web build (and any other non-Qt embedder) so the
     // public ViewportWindow::loadSidecar's QString + QFile triage
     // tilde-expansion doesn't have to be replicated. Returns 0 on
     // any failure (device not ready, file missing, magic / version
-    // mismatch) and the freshly-assigned model_id on success.
+    // mismatch) and the freshly-assigned session_model_id on success.
     std::uint32_t loadSidecarFromPath(const std::string& path);
 
 #if defined(__EMSCRIPTEN__)
@@ -431,7 +437,7 @@ public:
     // / search) needs, fetched only when asked so first paint never waits on
     // it. Populates ModelGpuData.elements/string_table; fires done(ok). At most
     // one fetch per model.
-    void loadElementMetadataWeb(std::uint32_t model_id,
+    void loadElementMetadataWeb(std::uint32_t session_model_id,
                                 std::function<void(bool)> done = {});
 
     // Demo consumer of the element metadata fetch: on pick, ensure the owning model's
@@ -444,7 +450,7 @@ public:
     // the active web source). applyStreamedChunk runs in the JS completion
     // callback; c.is_loading is held until then. No-op if the model/chunk
     // vanished mid-flight (e.g. a resetScene landed between issue and done).
-    void beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_idx);
+    void beginWebChunkLoad(std::uint32_t session_model_id, std::size_t chunk_idx);
 #endif
 
     // Streaming progress for a loading UI: resident vs total streaming chunks
@@ -454,7 +460,7 @@ public:
 
     // Per-model progress for a federation loading UI. count() is how many
     // models have metadata (are in the scene); progress(idx,…) gives the
-    // idx-th model's resident/total chunks, ordered by model_id (= load order)
+    // idx-th model's resident/total chunks, ordered by session_model_id (= load order)
     // so each model keeps a stable UI slot as it streams.
     int  streamingModelCount() const;
     void streamingModelProgress(int idx, int& resident_chunks,
@@ -474,7 +480,7 @@ public:
     // ViewportCore so both halves can share it.
     void uploadStreamedMesh(const StreamedMesh& mesh);
     void uploadStreamedInstance(const StreamedInstance& instance_record);
-    void finalizeModel(std::uint32_t model_id);
+    void finalizeModel(std::uint32_t session_model_id);
 
     // ---- Cross-chunk + screenshot capture (#84-v) -------------------------
     //
@@ -774,7 +780,7 @@ public:
     // round-trip from mesh-local back to world without re-deriving it.
     struct MeshLocalPick {
         std::uint32_t object_id   = 0;
-        std::uint32_t model_id    = 0;
+        std::uint32_t session_model_id    = 0;
         std::uint32_t mesh_id     = 0;
         float    mesh_local  [3]  = {0, 0, 0};
         float    world_pos   [3]  = {0, 0, 0};
@@ -1082,9 +1088,9 @@ private:
     // on subsequent frames.
     StreamingThread streaming_thread_;
 
-    // Per-model GPU + CPU state, keyed by viewport-assigned model_id.
+    // Per-model GPU + CPU state, keyed by viewport-assigned session_model_id.
     std::unordered_map<uint32_t, ModelGpuData> models_gpu_;
-    uint32_t next_model_id_  = 1;
+    uint32_t next_session_model_id_  = 1;
     // Globally-unique object_id allocator. Each applyCachedModel rebases
     // the sidecar's local object_ids by base_object_id_so_far so picks
     // are unambiguous across models.
@@ -1163,7 +1169,7 @@ private:
     std::string pending_screenshot_path_;
 
     // Bonsai direct-load staging map. uploadStreamedMesh +
-    // uploadStreamedInstance append into entries keyed by model_id; the
+    // uploadStreamedInstance append into entries keyed by session_model_id; the
     // finalizeModel call moves the entry out, hands it to
     // applyCachedModel, and uploads the chunk slices synchronously.
     std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>

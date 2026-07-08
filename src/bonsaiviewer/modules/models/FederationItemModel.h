@@ -58,27 +58,27 @@ private slots:
     void onGroupRemoved(const QString& group_id);
     void onGroupChanged(const QString& group_id);
     void onGroupVisibilityChanged(const QString& group_id, bool visible);
-    void onModelAdded(const QString& fed_id);
-    void onModelRemoved(const QString& fed_id);
-    void onModelVisibilityChanged(const QString& fed_id, bool visible);
-    void onModelGroupChanged(const QString& fed_id, const QString& new_group_id);
-    void onModelChanged(const QString& fed_id);
+    void onModelAdded(const QString& model_id);
+    void onModelRemoved(const QString& model_id);
+    void onModelVisibilityChanged(const QString& model_id, bool visible);
+    void onModelGroupChanged(const QString& model_id, const QString& new_group_id);
+    void onModelChanged(const QString& model_id);
 
 private:
     QStandardItem* makeGroupNameItem(const QString& group_id, const QString& display_name) const;
-    QStandardItem* makeModelNameItem(const QString& fed_id, const QString& display_name) const;
+    QStandardItem* makeModelNameItem(const QString& model_id, const QString& display_name) const;
     QStandardItem* makeVisibilityItem(ItemKind kind, bool visible) const;
     void styleRowVisibility(QStandardItem* name_item, bool visible) const;
 
     QStandardItem* findItem(const QString& id) const;
     QStandardItem* parentItemForGroup(const QString& parent_group_id) const;
 
-    void appendModelTo(QStandardItem* parent_item, const QString& fed_id);
+    void appendModelTo(QStandardItem* parent_item, const QString& model_id);
     void appendGroupSubtreeTo(QStandardItem* parent_item, const QString& group_id);
     void refreshSubtreeVisibility(QStandardItem* root);
 
     Federation* federation_ = nullptr;
-    QHash<QString, QStandardItem*> id_to_name_item_;  // both group_ids and fed_ids
+    QHash<QString, QStandardItem*> id_to_name_item_;  // both group_ids and model_ids
 };
 
 } // namespace bonsaiviewer::modules::models

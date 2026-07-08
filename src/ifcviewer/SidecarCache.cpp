@@ -254,7 +254,7 @@ struct BufReader {
 }  // namespace
 
 // Full read: reconstruct the whole SidecarData (test/tooling path — the runtime
-// streams via readSidecarMetadataOnly + per-chunk loads and never calls this).
+// streams via readSidecarMetadata + per-chunk loads and never calls this).
 // Decompresses the metadata blocks, then scatters each chunk's decompressed
 // geometry back into the whole-model vertex/index arrays using the mesh offsets.
 std::optional<SidecarData> readSidecar(const std::string& ifc_path) {

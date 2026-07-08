@@ -237,76 +237,76 @@ void Federation::setFederatedFalseOrigin(const FederatedFalseOrigin& o) {
     emit federatedFalseOriginChanged();
 }
 
-void Federation::setModelTransformation(const QString& fed_id,
+void Federation::setModelTransformation(const QString& model_id,
                                         const ModelTransformation& xf) {
-    for (auto& m : models_) {
-        if (m.id != fed_id) continue;
-        m.model_transformation = xf;
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        model.model_transformation = xf;
         setDirty(true);
-        emit modelTransformationChanged(fed_id);
+        emit modelTransformationChanged(model_id);
         return;
     }
 }
 
-void Federation::setModelVisible(const QString& fed_id, bool visible) {
-    for (auto& m : models_) {
-        if (m.id != fed_id) continue;
-        if (m.visible == visible) return;
-        m.visible = visible;
+void Federation::setModelVisible(const QString& model_id, bool visible) {
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        if (model.visible == visible) return;
+        model.visible = visible;
         setDirty(true);
-        emit modelVisibilityChanged(fed_id, visible);
+        emit modelVisibilityChanged(model_id, visible);
         return;
     }
 }
 
-void Federation::setModelGroup(const QString& fed_id, const QString& group_id) {
+void Federation::setModelGroup(const QString& model_id, const QString& group_id) {
     if (!group_id.isEmpty() && findGroupById(group_id) == nullptr) return;
-    for (auto& m : models_) {
-        if (m.id != fed_id) continue;
-        if (m.group_id == group_id) return;
-        m.group_id = group_id;
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        if (model.group_id == group_id) return;
+        model.group_id = group_id;
         setDirty(true);
-        emit modelGroupChanged(fed_id, group_id);
+        emit modelGroupChanged(model_id, group_id);
         return;
     }
 }
 
-void Federation::setModelDisplayName(const QString& fed_id, const QString& display_name) {
+void Federation::setModelDisplayName(const QString& model_id, const QString& display_name) {
     if (display_name.isEmpty()) return;
-    for (auto& m : models_) {
-        if (m.id != fed_id) continue;
-        if (m.display_name == display_name) return;
-        m.display_name = display_name;
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        if (model.display_name == display_name) return;
+        model.display_name = display_name;
         setDirty(true);
-        emit modelChanged(fed_id);
+        emit modelChanged(model_id);
         return;
     }
 }
 
-void Federation::setModelSource(const QString& fed_id,
+void Federation::setModelSource(const QString& model_id,
                                 const QString& connector_id,
                                 const QJsonObject& source_data) {
     if (connector_id.isEmpty()) return;
-    for (auto& m : models_) {
-        if (m.id != fed_id) continue;
-        m.source_connector = connector_id;
-        m.source_data = source_data;
-        m.source_data.remove("connector");
+    for (auto& model : models_) {
+        if (model.id != model_id) continue;
+        model.source_connector = connector_id;
+        model.source_data = source_data;
+        model.source_data.remove("connector");
         if (connector_id == "local") {
             // Round-trip the path through source_data when caller chooses
-            // to encode it there; otherwise leave m.source_path untouched.
+            // to encode it there; otherwise leave model.source_path untouched.
             const QString path_field = source_data.value("path").toString();
             if (!path_field.isEmpty()) {
-                m.source_path = QDir::cleanPath(QFileInfo(path_field).absoluteFilePath());
-                m.source_data.remove("path");
+                model.source_path = QDir::cleanPath(QFileInfo(path_field).absoluteFilePath());
+                model.source_data.remove("path");
             }
         } else {
             // Cloud sources don't track a source_path — local file lives in
             // the connector's cache, looked up via SceneLoader.
-            m.source_path.clear();
+            model.source_path.clear();
         }
         setDirty(true);
-        emit modelChanged(fed_id);
+        emit modelChanged(model_id);
         return;
     }
 }
@@ -319,14 +319,14 @@ QString Federation::addGroup(const QString& display_name,
         if (!parent) return {};
     }
 
-    auto g = std::make_unique<Group>();
-    g->id = generateId();
-    g->display_name = display_name.isEmpty() ? QString("Group") : display_name;
-    g->parent = parent;
-    const QString new_id = g->id;
+    auto group = std::make_unique<Group>();
+    group->id = generateId();
+    group->display_name = display_name.isEmpty() ? QString("Group") : display_name;
+    group->parent = parent;
+    const QString new_id = group->id;
 
-    if (parent) parent->children.push_back(std::move(g));
-    else        root_groups_.push_back(std::move(g));
+    if (parent) parent->children.push_back(std::move(group));
+    else        root_groups_.push_back(std::move(group));
 
     setDirty(true);
     emit groupAdded(new_id);
@@ -356,10 +356,10 @@ void Federation::removeGroup(const QString& group_id) {
 
     // Reparent direct child models up one level.
     std::vector<QString> moved_model_ids;
-    for (auto& m : models_) {
-        if (m.group_id == group_id) {
-            m.group_id = new_parent_id;
-            moved_model_ids.push_back(m.id);
+    for (auto& model : models_) {
+        if (model.group_id == group_id) {
+            model.group_id = new_parent_id;
+            moved_model_ids.push_back(model.id);
         }
     }
 
@@ -369,16 +369,16 @@ void Federation::removeGroup(const QString& group_id) {
 
     setDirty(true);
     for (const auto& cid : moved_child_ids) emit groupChanged(cid);
-    for (const auto& mid : moved_model_ids) emit modelGroupChanged(mid, new_parent_id);
+    for (const auto& model_id : moved_model_ids) emit modelGroupChanged(model_id, new_parent_id);
     emit groupRemoved(group_id);
 }
 
 void Federation::setGroupName(const QString& group_id,
                               const QString& display_name) {
-    Group* g = findGroupByIdMutable(group_id);
-    if (!g) return;
-    if (g->display_name == display_name) return;
-    g->display_name = display_name;
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+    if (group->display_name == display_name) return;
+    group->display_name = display_name;
     setDirty(true);
     emit groupChanged(group_id);
 }
@@ -411,10 +411,10 @@ void Federation::setGroupParent(const QString& group_id,
 }
 
 void Federation::setGroupVisible(const QString& group_id, bool visible) {
-    Group* g = findGroupByIdMutable(group_id);
-    if (!g) return;
-    if (g->visible == visible) return;
-    g->visible = visible;
+    Group* group = findGroupByIdMutable(group_id);
+    if (!group) return;
+    if (group->visible == visible) return;
+    group->visible = visible;
     setDirty(true);
     emit groupVisibilityChanged(group_id, visible);
 }
@@ -426,26 +426,26 @@ const Federation::Group* Federation::findGroupById(const QString& group_id) cons
 Federation::Group* Federation::findGroupByIdMutable(const QString& group_id) {
     if (group_id.isEmpty()) return nullptr;
     std::vector<Group*> stack;
-    for (auto& g : root_groups_) stack.push_back(g.get());
+    for (auto& group : root_groups_) stack.push_back(group.get());
     while (!stack.empty()) {
-        Group* g = stack.back();
+        Group* group = stack.back();
         stack.pop_back();
-        if (g->id == group_id) return g;
-        for (auto& c : g->children) stack.push_back(c.get());
+        if (group->id == group_id) return group;
+        for (auto& c : group->children) stack.push_back(c.get());
     }
     return nullptr;
 }
 
 std::vector<const Federation::Group*> Federation::allGroups() const {
     std::vector<const Group*> out;
-    for (const auto& g : root_groups_) appendDfs(g.get(), out);
+    for (const auto& group : root_groups_) appendDfs(group.get(), out);
     return out;
 }
 
-void Federation::appendDfs(const Group* g, std::vector<const Group*>& out) {
-    if (!g) return;
-    out.push_back(g);
-    for (const auto& c : g->children) appendDfs(c.get(), out);
+void Federation::appendDfs(const Group* group, std::vector<const Group*>& out) {
+    if (!group) return;
+    out.push_back(group);
+    for (const auto& c : group->children) appendDfs(c.get(), out);
 }
 
 std::unique_ptr<Federation::Group> Federation::detachGroup(Group* group) {
@@ -471,19 +471,19 @@ bool Federation::isDescendantOrSelf(const Group* group,
 
 bool Federation::isGroupChainVisible(const QString& group_id) const {
     if (group_id.isEmpty()) return true;
-    const Group* g = findGroupById(group_id);
-    while (g != nullptr) {
-        if (!g->visible) return false;
-        g = g->parent;
+    const Group* group = findGroupById(group_id);
+    while (group != nullptr) {
+        if (!group->visible) return false;
+        group = group->parent;
     }
     return true;
 }
 
-bool Federation::isModelEffectivelyVisible(const QString& fed_id) const {
-    const Model* m = findById(fed_id);
-    if (!m) return false;
-    if (!m->visible) return false;
-    return isGroupChainVisible(m->group_id);
+bool Federation::isModelEffectivelyVisible(const QString& model_id) const {
+    const Model* model = findById(model_id);
+    if (!model) return false;
+    if (!model->visible) return false;
+    return isGroupChainVisible(model->group_id);
 }
 
 void Federation::markClean() {
@@ -496,9 +496,9 @@ void Federation::setDirty(bool d) {
     emit dirtyChanged(d);
 }
 
-const Federation::Model* Federation::findById(const QString& fed_id) const {
-    for (const auto& m : models_) {
-        if (m.id == fed_id) return &m;
+const Federation::Model* Federation::findById(const QString& model_id) const {
+    for (const auto& model : models_) {
+        if (model.id == model_id) return &model;
     }
     return nullptr;
 }
@@ -508,14 +508,12 @@ QString Federation::addModel(const QString& source_path,
     if (source_path.isEmpty()) return {};
     if (isFederationPath(source_path)) return {};  // no nested federations
 
-    Model m;
-    m.id = generateId();
-    m.display_name = display_name.isEmpty()
-        ? QFileInfo(source_path).fileName()
-        : display_name;
-    m.source_connector = "local";
-    m.source_path = QDir::cleanPath(QFileInfo(source_path).absoluteFilePath());
-    models_.push_back(std::move(m));
+    Model model;
+    model.id = generateId();
+    model.display_name = display_name;
+    model.source_connector = "local";
+    model.source_path = QDir::cleanPath(QFileInfo(source_path).absoluteFilePath());
+    models_.push_back(std::move(model));
     const QString new_id = models_.back().id;
     setDirty(true);
     emit modelAdded(new_id);
@@ -527,25 +525,25 @@ QString Federation::addCloudModel(const QString& display_name,
                                   const QJsonObject& source_data) {
     if (connector_id.isEmpty() || connector_id == "local") return {};
 
-    Model m;
-    m.id = generateId();
-    m.display_name = display_name.isEmpty() ? m.id : display_name;
-    m.source_connector = connector_id;
-    m.source_data = source_data;
-    m.source_data.remove("connector");  // canonicalize: never duplicated
-    models_.push_back(std::move(m));
+    Model model;
+    model.id = generateId();
+    model.display_name = display_name.isEmpty() ? model.id : display_name;
+    model.source_connector = connector_id;
+    model.source_data = source_data;
+    model.source_data.remove("connector");  // canonicalize: never duplicated
+    models_.push_back(std::move(model));
     const QString new_id = models_.back().id;
     setDirty(true);
     emit modelAdded(new_id);
     return new_id;
 }
 
-void Federation::removeModel(const QString& fed_id) {
+void Federation::removeModel(const QString& model_id) {
     for (auto it = models_.begin(); it != models_.end(); ++it) {
-        if (it->id == fed_id) {
+        if (it->id == model_id) {
             models_.erase(it);
             setDirty(true);
-            emit modelRemoved(fed_id);
+            emit modelRemoved(model_id);
             return;
         }
     }
@@ -632,18 +630,18 @@ bool Federation::load(const QString& path,
                     continue;
                 }
                 QJsonObject go = arr[i].toObject();
-                auto g = std::make_unique<Group>();
-                g->id = go.value("id").toString();
-                if (g->id.isEmpty()) g->id = generateId();
-                g->display_name = go.value("display_name").toString();
+                auto group = std::make_unique<Group>();
+                group->id = go.value("id").toString();
+                if (group->id.isEmpty()) group->id = generateId();
+                group->display_name = go.value("display_name").toString();
                 if (QJsonValue vv = go.value("visible"); vv.isBool())
-                    g->visible = vv.toBool();
-                g->parent = parent;
+                    group->visible = vv.toBool();
+                group->parent = parent;
 
                 if (QJsonValue cv = go.value("groups"); cv.isArray()) {
-                    load_groups(cv.toArray(), g->children, g.get());
+                    load_groups(cv.toArray(), group->children, group.get());
                 }
-                sink.push_back(std::move(g));
+                sink.push_back(std::move(group));
             }
         };
         load_groups(root.value("groups").toArray(), root_groups_, nullptr);
@@ -657,60 +655,60 @@ bool Federation::load(const QString& path,
         }
         QJsonObject mo = arr[i].toObject();
 
-        Model m;
-        m.id = mo.value("id").toString();
-        if (m.id.isEmpty()) m.id = generateId();
-        m.display_name = mo.value("display_name").toString();
+        Model model;
+        model.id = mo.value("id").toString();
+        if (model.id.isEmpty()) model.id = generateId();
+        model.display_name = mo.value("display_name").toString();
 
         QJsonObject so = mo.value("source").toObject();
-        m.source_connector = so.value("connector").toString("local");
-        if (m.source_connector == "local") {
+        model.source_connector = so.value("connector").toString("local");
+        if (model.source_connector == "local") {
             QString stored = so.value("path").toString();
             if (stored.isEmpty()) {
                 if (warnings) *warnings << QString("models[%1]: missing source.path; skipping.").arg(i);
                 continue;
             }
-            m.source_path = resolvePath(fed_dir, stored);
-            if (m.display_name.isEmpty())
-                m.display_name = QFileInfo(m.source_path).fileName();
+            model.source_path = resolvePath(fed_dir, stored);
+            if (model.display_name.isEmpty())
+                model.display_name = QFileInfo(model.source_path).fileName();
         } else {
             // Cloud source: keep every key except "connector" itself; the
             // connector resolves these to a local path on demand.
             QJsonObject data = so;
             data.remove("connector");
-            m.source_data = data;
-            if (m.display_name.isEmpty())
-                m.display_name = m.id;
+            model.source_data = data;
+            if (model.display_name.isEmpty())
+                model.display_name = model.id;
         }
 
         if (QJsonValue tv = mo.value("model_transformation"); tv.isObject()) {
             QJsonObject to = tv.toObject();
             const QString af = to.value("a_frame").toString("ModelGlobal");
-            m.model_transformation.a_frame =
+            model.model_transformation.a_frame =
                 (af == "ModelLocal") ? AFrame::ModelLocal : AFrame::ModelGlobal;
             auto readVec3 = [](QJsonArray ja) {
                 if (ja.size() != 3) return Eigen::Vector3d::Zero().eval();
                 return Eigen::Vector3d(
                     ja[0].toDouble(), ja[1].toDouble(), ja[2].toDouble());
             };
-            m.model_transformation.a        = readVec3(to.value("a").toArray());
-            m.model_transformation.b        = readVec3(to.value("b").toArray());
-            m.model_transformation.rxyz_deg = readVec3(to.value("rxyz_deg").toArray());
-            m.model_transformation.pivot    = readVec3(to.value("pivot").toArray());
+            model.model_transformation.a        = readVec3(to.value("a").toArray());
+            model.model_transformation.b        = readVec3(to.value("b").toArray());
+            model.model_transformation.rxyz_deg = readVec3(to.value("rxyz_deg").toArray());
+            model.model_transformation.pivot    = readVec3(to.value("pivot").toArray());
         }
 
         QJsonValue vv = mo.value("visible");
-        if (vv.isBool()) m.visible = vv.toBool();
+        if (vv.isBool()) model.visible = vv.toBool();
 
-        m.group_id = mo.value("group_id").toString();
-        if (!m.group_id.isEmpty() && findGroupById(m.group_id) == nullptr) {
+        model.group_id = mo.value("group_id").toString();
+        if (!model.group_id.isEmpty() && findGroupById(model.group_id) == nullptr) {
             if (warnings)
                 *warnings << QString("models[%1]: unknown group_id '%2'; moved to root.")
-                                 .arg(i).arg(m.group_id);
-            m.group_id.clear();
+                                 .arg(i).arg(model.group_id);
+            model.group_id.clear();
         }
 
-        models_.push_back(std::move(m));
+        models_.push_back(std::move(model));
     }
 
     QJsonValue hv = root.value("home_view");
@@ -842,12 +840,12 @@ bool Federation::writeJsonAt(const QString& abs_path,
         std::function<QJsonArray(const std::vector<std::unique_ptr<Group>>&)> dump;
         dump = [&](const std::vector<std::unique_ptr<Group>>& src) {
             QJsonArray out;
-            for (const auto& g : src) {
+            for (const auto& group : src) {
                 QJsonObject go;
-                go["id"]           = g->id;
-                go["display_name"] = g->display_name;
-                if (!g->visible)   go["visible"] = false;
-                if (!g->children.empty()) go["groups"] = dump(g->children);
+                go["id"]           = group->id;
+                go["display_name"] = group->display_name;
+                if (!group->visible)   go["visible"] = false;
+                if (!group->children.empty()) go["groups"] = dump(group->children);
                 out.append(go);
             }
             return out;
@@ -856,18 +854,18 @@ bool Federation::writeJsonAt(const QString& abs_path,
     }
 
     QJsonArray arr;
-    for (const auto& m : models_) {
+    for (const auto& model : models_) {
         QJsonObject mo;
-        mo["id"] = m.id;
-        mo["display_name"] = m.display_name;
+        mo["id"] = model.id;
+        mo["display_name"] = model.display_name;
 
         QJsonObject so;
-        so["connector"] = m.source_connector;
-        if (m.source_connector == "local") {
-            so["path"] = relativizePath(fed_dir, m.source_path);
+        so["connector"] = model.source_connector;
+        if (model.source_connector == "local") {
+            so["path"] = relativizePath(fed_dir, model.source_path);
         } else {
             // Round-trip connector-specific keys verbatim.
-            for (auto it = m.source_data.begin(); it != m.source_data.end(); ++it) {
+            for (auto it = model.source_data.begin(); it != model.source_data.end(); ++it) {
                 so[it.key()] = it.value();
             }
         }
@@ -875,7 +873,7 @@ bool Federation::writeJsonAt(const QString& abs_path,
 
         // Skip model_transformation when it's at defaults (identity placement).
         const ModelTransformation def;
-        const ModelTransformation& xf = m.model_transformation;
+        const ModelTransformation& xf = model.model_transformation;
         const bool xf_is_default =
             xf.a_frame == def.a_frame && xf.a == def.a && xf.b == def.b &&
             xf.rxyz_deg == def.rxyz_deg && xf.pivot == def.pivot;
@@ -895,8 +893,8 @@ bool Federation::writeJsonAt(const QString& abs_path,
             mo["model_transformation"] = to;
         }
 
-        if (!m.visible) mo["visible"] = false;
-        if (!m.group_id.isEmpty()) mo["group_id"] = m.group_id;
+        if (!model.visible) mo["visible"] = false;
+        if (!model.group_id.isEmpty()) mo["group_id"] = model.group_id;
 
         arr.append(mo);
     }

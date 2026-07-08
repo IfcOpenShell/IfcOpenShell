@@ -313,16 +313,16 @@ void SectionGizmoRenderer::encode(WGPURenderPassEncoder pass, const Eigen::Matri
     const float vh     = float(viewport_h_px);
     const int   n      = std::min<int>(int(planes.size()), kMaxPlanes);
     for (int i = 0; i < n; ++i) {
-        const SectionPlane& p = planes[i];
+        const SectionPlane& plane = planes[i];
         Eigen::Vector3f nn, tangent, bitangent;
-        planeBasis(p.n, nn, tangent, bitangent);
+        planeBasis(plane.n, nn, tangent, bitangent);
         // Fixed 1 m gizmo (matches the desktop OverlayRenderer / GL constant).
         // NOT visual_radius: the normal is flipped toward the camera, so a large
         // arrow would shoot past the eye (clip.w<0) and vanish.
         const float half = 1.0f;
 
         uint8_t slot[256];
-        packSectionUniform(slot, view_proj, p.origin, half, tangent, line_w,
+        packSectionUniform(slot, view_proj, plane.origin, half, tangent, line_w,
                            bitangent, nn, 1.0f, 1.0f, 1.0f, 1.0f, vw, vh);
         const uint32_t slot_offset = uint32_t(i) * kSectionUniformSlot;
         wgpuQueueWriteBuffer(queue_, uniform_buffer_, slot_offset, slot, sizeof(slot));
@@ -340,12 +340,12 @@ int SectionGizmoRenderer::hitTest(int x, int y, const std::vector<SectionPlane>&
     float best_d = tolerance_px;
     const int n = std::min<int>(int(planes.size()), kMaxPlanes);
     for (int i = 0; i < n; ++i) {
-        const SectionPlane& p = planes[i];
+        const SectionPlane& plane = planes[i];
         // The arrow runs origin → origin + n * 1 m (visual radius scales the
         // gizmo, but hit-test the unit arrow to mirror the desktop).
         Eigen::Vector2f s_origin, s_tip;
-        if (!projectWorldToLogicalScreen(vp, p.origin, viewport_w_px, viewport_h_px, s_origin)) continue;
-        if (!projectWorldToLogicalScreen(vp, p.origin + p.n * 1.0f, viewport_w_px, viewport_h_px, s_tip)) continue;
+        if (!projectWorldToLogicalScreen(vp, plane.origin, viewport_w_px, viewport_h_px, s_origin)) continue;
+        if (!projectWorldToLogicalScreen(vp, plane.origin + plane.n * 1.0f, viewport_w_px, viewport_h_px, s_tip)) continue;
         const Eigen::Vector2f ab = s_tip - s_origin;
         const float ab_len2 = ab.squaredNorm();
         if (ab_len2 < 1e-3f) continue;

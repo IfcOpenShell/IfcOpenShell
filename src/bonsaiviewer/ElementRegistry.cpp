@@ -43,9 +43,9 @@ void ElementRegistry::clear() {
     elements_.clear();
 }
 
-void ElementRegistry::removeModel(uint32_t model_id) {
+void ElementRegistry::removeModel(uint32_t session_model_id) {
     for (auto it = elements_.begin(); it != elements_.end();) {
-        if (it->second.model_id == model_id) {
+        if (it->second.session_model_id == session_model_id) {
             it = elements_.erase(it);
         } else {
             ++it;
@@ -53,12 +53,12 @@ void ElementRegistry::removeModel(uint32_t model_id) {
     }
 }
 
-std::vector<BasicElementInfo> ElementRegistry::basicElementInfoForModel(uint32_t model_id) const {
+std::vector<BasicElementInfo> ElementRegistry::basicElementInfoForModel(uint32_t session_model_id) const {
     std::vector<BasicElementInfo> result;
     result.reserve(elements_.size());
     for (const auto& [object_id, info] : elements_) {
         (void)object_id;
-        if (info.model_id != model_id) continue;
+        if (info.session_model_id != session_model_id) continue;
         result.push_back(info);
     }
     return result;
@@ -76,7 +76,7 @@ std::optional<express::Base> ElementRegistry::findEntity(uint32_t object_id) con
     auto info = findBasicElementInfo(object_id);
     if (!info) return std::nullopt;
 
-    auto* file = loader_->ifcFile(info->model_id);
+    auto* file = loader_->ifcFile(info->session_model_id);
     if (!file) return std::nullopt;
 
     try {
@@ -88,7 +88,7 @@ std::optional<express::Base> ElementRegistry::findEntity(uint32_t object_id) con
     }
 }
 
-void ElementRegistry::onSidecarElementsReady(uint32_t /*model_id*/,
+void ElementRegistry::onSidecarElementsReady(uint32_t /*session_model_id*/,
                                              std::vector<ElementTableRecord> elements,
                                              std::string string_table) {
     auto string_from_table = [&](uint32_t offset, uint32_t length) -> QString {
@@ -99,7 +99,7 @@ void ElementRegistry::onSidecarElementsReady(uint32_t /*model_id*/,
     for (const auto& packed_element : elements) {
         BasicElementInfo info;
         info.object_id = packed_element.object_id;
-        info.model_id = packed_element.model_id;
+        info.session_model_id = packed_element.session_model_id;
         info.ifc_id = packed_element.ifc_id;
         info.guid = string_from_table(packed_element.guid_offset, packed_element.guid_length);
         info.name = string_from_table(packed_element.name_offset, packed_element.name_length);
@@ -108,11 +108,11 @@ void ElementRegistry::onSidecarElementsReady(uint32_t /*model_id*/,
     }
 }
 
-void ElementRegistry::onStreamedElementsReady(uint32_t /*model_id*/, std::vector<ElementInfo> elements) {
+void ElementRegistry::onStreamedElementsReady(uint32_t /*session_model_id*/, std::vector<ElementInfo> elements) {
     for (const auto& element : elements) {
         BasicElementInfo info;
         info.object_id = element.object_id;
-        info.model_id = element.model_id;
+        info.session_model_id = element.session_model_id;
         info.ifc_id = element.ifc_id;
         info.guid = QString::fromStdString(element.guid);
         info.name = QString::fromStdString(element.name);

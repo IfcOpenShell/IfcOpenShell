@@ -113,7 +113,7 @@ struct InstanceInfo {
     uint32_t mesh_id                  = 0;  // index into meshes array
     uint32_t object_id                = 0;
     uint32_t color_override_rgba8     = 0;
-    uint32_t model_id                 = 0;
+    uint32_t session_model_id                 = 0;
     double   placement_transformation[16]{};
     float    transform[16]{};
     float    world_aabb_min[3]{};
@@ -126,7 +126,7 @@ struct InstanceInfo {
 // geometry in local coords.  `local_mesh_id` is the streamer-assigned id
 // within this model.
 struct StreamedMesh {
-    uint32_t model_id      = 0;
+    uint32_t session_model_id      = 0;
     uint32_t local_mesh_id = 0;
     std::vector<float>    vertices;  // 7 floats * N_verts (pos3+norm3+color1_packed)
     std::vector<uint32_t> indices;
@@ -138,7 +138,7 @@ struct StreamedMesh {
 // iterator).  For the first instance of a mesh, the StreamedMesh is emitted
 // just before this.
 struct StreamedInstance {
-    uint32_t model_id             = 0;
+    uint32_t session_model_id             = 0;
     uint32_t local_mesh_id        = 0;
     uint32_t object_id            = 0;
     uint32_t color_override_rgba8 = 0;

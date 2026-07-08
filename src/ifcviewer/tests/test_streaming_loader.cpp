@@ -70,7 +70,7 @@ SidecarData buildFixture() {
     for (size_t i = 0; i < sd.instances.size(); ++i) {
         sd.instances[i].mesh_id   = (i < 2) ? 0u : 1u;
         sd.instances[i].object_id = uint32_t(100 + i);
-        sd.instances[i].model_id  = 1;
+        sd.instances[i].session_model_id  = 1;
     }
 
     sd.has_coordinate_operation = 1;
@@ -82,7 +82,7 @@ SidecarData buildFixture() {
     sd.elements.resize(2);
     for (size_t i = 0; i < sd.elements.size(); ++i) {
         sd.elements[i].object_id = uint32_t(100 + i);
-        sd.elements[i].model_id  = 1;
+        sd.elements[i].session_model_id  = 1;
         sd.elements[i].ifc_id    = int32_t(1000 + i);
     }
     // v16 stores geometry per-chunk (compressed); a fixture with geometry needs
@@ -93,14 +93,14 @@ SidecarData buildFixture() {
 
 }  // namespace
 
-TEST_CASE("readSidecarMetadataOnly returns metadata, skips bulk geometry",
+TEST_CASE("readSidecarMetadata returns metadata, skips bulk geometry",
           "[streaming]") {
     fs::path dir = makeScratchDir("metaonly");
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
     REQUIRE(writeSidecar(ifc.string(), sd));
 
-    auto meta = readSidecarMetadataOnly(ifc.string());
+    auto meta = readSidecarMetadata(ifc.string());
     REQUIRE(meta.has_value());
 
     // Bulk geometry is skipped, not loaded.
@@ -127,9 +127,9 @@ TEST_CASE("readSidecarMetadataOnly returns metadata, skips bulk geometry",
     REQUIRE(std::memcmp(&meta->meta.meshes[1], &sd.meshes[1], sizeof(MeshInfo)) == 0);
 }
 
-TEST_CASE("readSidecarMetadataOnly rejects missing / corrupt files", "[streaming]") {
+TEST_CASE("readSidecarMetadata rejects missing / corrupt files", "[streaming]") {
     fs::path dir = makeScratchDir("reject");
-    REQUIRE_FALSE(readSidecarMetadataOnly((dir / "absent.ifc").string()).has_value());
+    REQUIRE_FALSE(readSidecarMetadata((dir / "absent.ifc").string()).has_value());
 
     // Truncated head (under 16 bytes).
     fs::path bad = dir / "bad.ifc";
@@ -140,7 +140,7 @@ TEST_CASE("readSidecarMetadataOnly rejects missing / corrupt files", "[streaming
         std::fwrite(junk, 1, sizeof(junk), f);
         std::fclose(f);
     }
-    REQUIRE_FALSE(readSidecarMetadataOnly(bad.string()).has_value());
+    REQUIRE_FALSE(readSidecarMetadata(bad.string()).has_value());
 }
 
 TEST_CASE("readChunkGeometryCompressed decompresses a chunk's blobs", "[streaming]") {
@@ -148,7 +148,7 @@ TEST_CASE("readChunkGeometryCompressed decompresses a chunk's blobs", "[streamin
     fs::path ifc = dir / "model.ifc";
     SidecarData sd = buildFixture();
     REQUIRE(writeSidecar(ifc.string(), sd));
-    auto meta = readSidecarMetadataOnly(ifc.string());
+    auto meta = readSidecarMetadata(ifc.string());
     REQUIRE(meta.has_value());
     REQUIRE(meta->meta.chunks.size() == 2);
 
@@ -202,7 +202,7 @@ TEST_CASE("v16 element metadata block: fetch via locator, decompress, parse", "[
     SidecarData sd = buildFixture();
     REQUIRE(writeSidecar(ifc.string(), sd));
 
-    auto meta = readSidecarMetadataOnly(ifc.string());
+    auto meta = readSidecarMetadata(ifc.string());
     REQUIRE(meta.has_value());
     REQUIRE(meta->meta.meshes.size()   == sd.meshes.size());   // geometry metadata
     REQUIRE(meta->meta.chunks.size()   == sd.chunks.size());

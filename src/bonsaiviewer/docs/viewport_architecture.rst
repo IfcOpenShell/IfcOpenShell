@@ -84,7 +84,7 @@ The fast path starts when ``SceneLoader`` finds a readable ``.ifcview`` cache.
 The reader validates the sidecar header, skips the compressed geometry section,
 and reads the metadata blocks.
 
-For desktop loading, ``readSidecarMetadataOnly()`` returns a
+For desktop loading, ``readSidecarMetadata()`` returns a
 ``StreamingSidecar`` containing:
 
 - the sidecar file path

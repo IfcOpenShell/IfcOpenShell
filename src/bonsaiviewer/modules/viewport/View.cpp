@@ -67,9 +67,9 @@ ViewportView::ViewportView(bonsaiviewer::SessionState* session_state,
     // first geometry-ready consumes the arm). refresh() stays terminal —
     // any federation mutation from the guess propagates through
     // SessionState's federatedFalseOriginChanged relay.
-    connect(session_state_, &SessionState::modelGeometryReady,     this, [this](uint32_t model_id) {
+    connect(session_state_, &SessionState::modelGeometryReady,     this, [this](uint32_t session_model_id) {
         if (modules::models::consumeFederatedFalseOriginGuess()) {
-            guessFederatedFalseOriginFromFirstModel(model_id);
+            guessFederatedFalseOriginFromFirstModel(session_model_id);
         }
         refresh();
     });
@@ -136,34 +136,34 @@ void ViewportView::refresh() {
     viewport_->setFederatedFalseOrigin(
         composeFederatedFalseOrigin(federation->federatedFalseOrigin(), federation->config()));
 
-    for (uint32_t model_id : session_state_->modelIds()) {
-        applyCoordinateOperation(model_id);
-        applyModelVisibility(model_id);
+    for (uint32_t session_model_id : session_state_->sessionModelIds()) {
+        applyCoordinateOperation(session_model_id);
+        applyModelVisibility(session_model_id);
     }
 }
 
-void ViewportView::applyCoordinateOperation(uint32_t model_id) {
+void ViewportView::applyCoordinateOperation(uint32_t session_model_id) {
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
-    if (const ModelGeoref* georef = loader->modelGeoref(model_id)) {
+    if (const ModelGeoref* georef = loader->modelGeoref(session_model_id)) {
         if (georef->has_coordinate_operation) {
             matrix = georef->coordinate_operation_meters;
         }
     }
-    viewport_->setModelCoordinateOperation(model_id, matrix);
-    applyModelTransformation(model_id);
+    viewport_->setModelCoordinateOperation(session_model_id, matrix);
+    applyModelTransformation(session_model_id);
 }
 
-void ViewportView::applyModelTransformation(uint32_t model_id) {
+void ViewportView::applyModelTransformation(uint32_t session_model_id) {
     Federation* federation = session_state_->federation();
     SceneLoader* loader = session_state_->loader();
     Eigen::Matrix4d matrix = Eigen::Matrix4d::Identity();
-    const QString fed_id = session_state_->fedIdForModelId(model_id);
-    if (!fed_id.isEmpty()) {
-        if (const Federation::Model* model = federation->findById(fed_id)) {
+    const QString model_id = session_state_->modelIdForSessionModelId(session_model_id);
+    if (!model_id.isEmpty()) {
+        if (const Federation::Model* model = federation->findById(model_id)) {
             ModelUnits units;
             Eigen::Matrix4d coordinate_operation = Eigen::Matrix4d::Identity();
-            if (const ModelGeoref* georef = loader->modelGeoref(model_id)) {
+            if (const ModelGeoref* georef = loader->modelGeoref(session_model_id)) {
                 units = georef->units;
                 if (georef->has_coordinate_operation) {
                     coordinate_operation = georef->coordinate_operation_meters;
@@ -173,18 +173,18 @@ void ViewportView::applyModelTransformation(uint32_t model_id) {
                 model->model_transformation, federation->config(), units, coordinate_operation);
         }
     }
-    viewport_->setModelTransformation(model_id, matrix);
+    viewport_->setModelTransformation(session_model_id, matrix);
 }
 
-void ViewportView::applyModelVisibility(uint32_t model_id) {
+void ViewportView::applyModelVisibility(uint32_t session_model_id) {
     Federation* federation = session_state_->federation();
-    const QString fed_id = session_state_->fedIdForModelId(model_id);
-    if (fed_id.isEmpty()) return;
+    const QString model_id = session_state_->modelIdForSessionModelId(session_model_id);
+    if (model_id.isEmpty()) return;
 
-    if (federation->isModelEffectivelyVisible(fed_id)) {
-        viewport_->showModel(model_id);
+    if (federation->isModelEffectivelyVisible(model_id)) {
+        viewport_->showModel(session_model_id);
     } else {
-        viewport_->hideModel(model_id);
+        viewport_->hideModel(session_model_id);
     }
 }
 
@@ -209,7 +209,7 @@ void ViewportView::applyModelVisibility(uint32_t model_id) {
 // mutation here propagates through SessionState's federation relay
 // (federatedFalseOriginChanged → notifyFederationChanged) without
 // re-entering this function.
-void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t model_id) {
+void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t session_model_id) {
     Federation* federation = session_state_->federation();
     if (!federation->filePath().isEmpty()) return;
 
@@ -218,10 +218,10 @@ void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t model_id) {
     if (current.xyz != defaults.xyz || current.rz_deg != defaults.rz_deg) return;
 
     Eigen::Vector3d first_geometry_point_m;
-    if (!viewport_->firstGeometryPointWorldM(model_id, first_geometry_point_m)) return;
+    if (!viewport_->firstGeometryPointWorldM(session_model_id, first_geometry_point_m)) return;
 
     SceneLoader* loader = session_state_->loader();
-    const ModelGeoref* georef = loader->modelGeoref(model_id);
+    const ModelGeoref* georef = loader->modelGeoref(session_model_id);
     if (georef == nullptr) return;
 
     federation->setFederatedFalseOrigin(::guessFederatedFalseOrigin(
@@ -236,7 +236,7 @@ void ViewportView::guessFederatedFalseOriginFromFirstModel(uint32_t model_id) {
     // (0,0,0) — the federated false origin in render space — capped at
     // 100 m so a model with crazy-coord geometry can't pull the camera
     // back into nothing.
-    viewport_->frameOnFederatedOrigin(model_id, 100.0f);
+    viewport_->frameOnFederatedOrigin(session_model_id, 100.0f);
 }
 
 void ViewportView::updateVolumeReadout() {

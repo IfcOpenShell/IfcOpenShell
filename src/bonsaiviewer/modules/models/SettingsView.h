@@ -36,7 +36,7 @@ public:
     explicit SettingsView(SettingsDialog* widget,
                           bonsaiviewer::SessionState* session_state);
 
-    void refresh(const QString& fed_id) const;
+    void refresh(const QString& model_id) const;
 
 private:
     SettingsDialog* widget_ = nullptr;

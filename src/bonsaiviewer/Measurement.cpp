@@ -71,7 +71,7 @@ double volumeOfObjects(ViewportWindow& vp,
                        const std::vector<uint32_t>& object_ids) {
     if (object_ids.empty()) return 0.0;
 
-    // Group selected instances by (model_id, mesh_id) so each unique mesh
+    // Group selected instances by (session_model_id, mesh_id) so each unique mesh
     // is read back at most once per call.  Each entry stores the |det| of
     // every instance of that mesh in the request.
     std::unordered_map<uint64_t, std::vector<double>> by_mesh;
@@ -79,16 +79,16 @@ double volumeOfObjects(ViewportWindow& vp,
     for (uint32_t oid : object_ids) {
         ViewportWindow::InstanceLookup lk;
         if (!vp.findInstance(oid, lk)) continue;
-        const uint64_t key = (uint64_t(lk.model_id) << 32) | lk.mesh_id;
+        const uint64_t key = (uint64_t(lk.session_model_id) << 32) | lk.mesh_id;
         by_mesh[key].push_back(std::abs(det3(lk.placement_transformation)));
     }
 
     double total = 0.0;
     ViewportWindow::MeshTriangles tris;
     for (const auto& [key, dets] : by_mesh) {
-        const uint32_t model_id = uint32_t(key >> 32);
+        const uint32_t session_model_id = uint32_t(key >> 32);
         const uint32_t mesh_id  = uint32_t(key & 0xffffffffu);
-        if (!vp.readbackMeshTriangles(model_id, mesh_id, tris)) continue;
+        if (!vp.readbackMeshTriangles(session_model_id, mesh_id, tris)) continue;
         const double v = meshLocalVolume(tris);
         for (double d : dets) total += v * d;
     }
@@ -102,7 +102,7 @@ volumesPerObject(ViewportWindow& vp,
     if (object_ids.empty()) return out;
     out.reserve(object_ids.size());
 
-    // Cache the local-frame volume per unique (model_id, mesh_id) so each
+    // Cache the local-frame volume per unique (session_model_id, mesh_id) so each
     // mesh is read back at most once even when many instances share it
     // (common for repeated families like windows / columns).
     std::unordered_map<uint64_t, double> mesh_vol_local;
@@ -113,11 +113,11 @@ volumesPerObject(ViewportWindow& vp,
         ViewportWindow::InstanceLookup lk;
         if (!vp.findInstance(oid, lk)) continue;
 
-        const uint64_t key = (uint64_t(lk.model_id) << 32) | lk.mesh_id;
+        const uint64_t key = (uint64_t(lk.session_model_id) << 32) | lk.mesh_id;
         auto it = mesh_vol_local.find(key);
         double v_local = 0.0;
         if (it == mesh_vol_local.end()) {
-            if (vp.readbackMeshTriangles(lk.model_id, lk.mesh_id, tris)) {
+            if (vp.readbackMeshTriangles(lk.session_model_id, lk.mesh_id, tris)) {
                 v_local = meshLocalVolume(tris);
             }
             mesh_vol_local.emplace(key, v_local);
@@ -252,7 +252,7 @@ void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
     std::vector<float> world_xyz;
     world_xyz.reserve(selected_.size() * 9);
     for (const auto& [key, sel] : selected_) {
-        const uint64_t cache_key = (uint64_t(sel.model_id) << 32)
+        const uint64_t cache_key = (uint64_t(sel.session_model_id) << 32)
                                  | uint64_t(sel.mesh_id);
         auto cit = mesh_cache_.find(cache_key);
         if (cit == mesh_cache_.end()) continue;
@@ -292,7 +292,7 @@ void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
         if (sels.empty()) continue;
         // All tris belonging to one object share its mesh + transform.
         const SelectedTri& any = *sels[0];
-        const uint64_t cache_key = (uint64_t(any.model_id) << 32)
+        const uint64_t cache_key = (uint64_t(any.session_model_id) << 32)
                                  | uint64_t(any.mesh_id);
         auto cit = mesh_cache_.find(cache_key);
         if (cit == mesh_cache_.end()) continue;
@@ -362,14 +362,14 @@ void AreaMeasurement::rebuildHighlight(ViewportWindow& vp) {
 }
 
 AreaMeasurement::MeshCache* AreaMeasurement::meshCache(ViewportWindow& vp,
-                                                       uint32_t model_id,
+                                                       uint32_t session_model_id,
                                                        uint32_t mesh_id) {
-    const uint64_t key = (uint64_t(model_id) << 32) | uint64_t(mesh_id);
+    const uint64_t key = (uint64_t(session_model_id) << 32) | uint64_t(mesh_id);
     auto it = mesh_cache_.find(key);
     if (it != mesh_cache_.end()) return &it->second;
 
     ViewportWindow::MeshTriangles tris;
-    if (!vp.readbackMeshTriangles(model_id, mesh_id, tris)) return nullptr;
+    if (!vp.readbackMeshTriangles(session_model_id, mesh_id, tris)) return nullptr;
 
     MeshCache c;
     c.positions = std::move(tris.positions);
@@ -401,7 +401,7 @@ void AreaMeasurement::onPick(ViewportWindow& vp, int x, int y, bool alt) {
     ViewportWindow::MeshLocalPick pick;
     if (!vp.pickMeshLocalAt(x, y, pick)) return;
 
-    MeshCache* cache = meshCache(vp, pick.model_id, pick.mesh_id);
+    MeshCache* cache = meshCache(vp, pick.session_model_id, pick.mesh_id);
     if (!cache) return;
     const size_t n_tris = cache->indices.size() / 3;
     if (n_tris == 0) return;
@@ -471,7 +471,7 @@ void AreaMeasurement::onPick(ViewportWindow& vp, int x, int y, bool alt) {
             }
         } else {
             SelectedTri sel;
-            sel.model_id = pick.model_id;
+            sel.session_model_id = pick.session_model_id;
             sel.mesh_id  = pick.mesh_id;
             sel.tri      = t;
             std::memcpy(sel.composed_transform, pick.composed_transform,
@@ -876,7 +876,7 @@ void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
     ViewportWindow::MeshTriangles tris;
     bool have_extent = false;
     double min_t1 = 0.0, max_t1 = 0.0, min_t2 = 0.0, max_t2 = 0.0;
-    if (vp.readbackMeshTriangles(first_pick_.model_id, first_pick_.mesh_id, tris)) {
+    if (vp.readbackMeshTriangles(first_pick_.session_model_id, first_pick_.mesh_id, tris)) {
         const size_t n_verts = tris.positions.size() / 3;
         const size_t n_tris  = tris.indices.size() / 3;
         if (n_tris > 0) {

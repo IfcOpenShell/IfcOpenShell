@@ -84,7 +84,7 @@ SidecarData buildFixture() {
             InstanceInfo ic;
             ic.mesh_id   = uint32_t(i);        // authoritative
             ic.object_id = obj++;
-            ic.model_id  = 1;
+            ic.session_model_id  = 1;
             const float x = float((i * 13 + k * 5) % 11);
             const float y = float((i * 7  + k * 3) % 9);
             const float z = float((i * 5  + k * 2) % 7);

@@ -44,7 +44,7 @@
 class StreamingThread {
 public:
     struct Request {
-        uint32_t     model_id;
+        uint32_t     session_model_id;
         std::size_t  chunk_idx;
         std::string  file_path;
         // v16: the chunk's two zstd frames in the geometry section. The reader
@@ -56,7 +56,7 @@ public:
     };
 
     struct Result {
-        uint32_t              model_id;
+        uint32_t              session_model_id;
         std::size_t           chunk_idx;
         bool                  success;
         std::vector<uint8_t>  vbytes;

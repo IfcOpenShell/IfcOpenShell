@@ -64,25 +64,25 @@ void SessionState::createLoader(ViewportWindow* viewport) {
     });
     connect(loader_, &SceneLoader::progressChanged, this, &SessionState::setProgress);
     connect(loader_, &SceneLoader::loadedFromSidecar, this,
-            [this, format_elapsed](uint32_t model_id, qint64 elapsed_ms) {
+            [this, format_elapsed](uint32_t session_model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 from cache in %2")
-                .arg(loader_->displayName(model_id))
+                .arg(loader_->displayName(session_model_id))
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
-        emit modelGeometryReady(model_id);
+        emit modelGeometryReady(session_model_id);
     });
     connect(loader_, &SceneLoader::loadedFromStream, this,
-            [this, format_elapsed](uint32_t model_id, qint64 elapsed_ms) {
+            [this, format_elapsed](uint32_t session_model_id, qint64 elapsed_ms) {
         setStatusMessage("Loaded",
             QString("%1 streamed in %2")
-                .arg(loader_->displayName(model_id))
+                .arg(loader_->displayName(session_model_id))
                 .arg(format_elapsed(elapsed_ms)));
         endProgress();
-        emit modelGeometryReady(model_id);
+        emit modelGeometryReady(session_model_id);
     });
-    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t model_id) {
-        setStatusMessage("Cancelled", loader_->displayName(model_id));
+    connect(loader_, &SceneLoader::loadCancelled, this, [this](uint32_t session_model_id) {
+        setStatusMessage("Cancelled", loader_->displayName(session_model_id));
         endProgress();
     });
     connect(loader_, &SceneLoader::loadError, this,
@@ -118,44 +118,44 @@ void SessionState::endProgress() {
     emit progressEnded();
 }
 
-void SessionState::setModelMapping(const QString& fed_id, uint32_t model_id) {
-    fed_id_to_model_id_[fed_id] = model_id;
-    model_id_to_fed_id_[model_id] = fed_id;
+void SessionState::setModelMapping(const QString& model_id, uint32_t session_model_id) {
+    model_id_to_session_model_id_[model_id] = session_model_id;
+    session_model_id_to_model_id_[session_model_id] = model_id;
 }
 
-void SessionState::removeModelMappingByFedId(const QString& fed_id) {
-    cloud_metadata_.remove(fed_id);
-    auto it = fed_id_to_model_id_.find(fed_id);
-    if (it == fed_id_to_model_id_.end()) return;
-    model_id_to_fed_id_.remove(it.value());
-    fed_id_to_model_id_.erase(it);
+void SessionState::removeModelMappingByModelId(const QString& model_id) {
+    cloud_metadata_.remove(model_id);
+    auto it = model_id_to_session_model_id_.find(model_id);
+    if (it == model_id_to_session_model_id_.end()) return;
+    session_model_id_to_model_id_.remove(it.value());
+    model_id_to_session_model_id_.erase(it);
 }
 
 void SessionState::clearModelMappings() {
-    fed_id_to_model_id_.clear();
-    model_id_to_fed_id_.clear();
+    model_id_to_session_model_id_.clear();
+    session_model_id_to_model_id_.clear();
     cloud_metadata_.clear();
 }
 
-void SessionState::setCloudMetadata(const QString& fed_id, const QVariantMap& metadata) {
-    if (metadata.isEmpty()) cloud_metadata_.remove(fed_id);
-    else cloud_metadata_.insert(fed_id, metadata);
+void SessionState::setCloudMetadata(const QString& model_id, const QVariantMap& metadata) {
+    if (metadata.isEmpty()) cloud_metadata_.remove(model_id);
+    else cloud_metadata_.insert(model_id, metadata);
 }
 
-QVariantMap SessionState::cloudMetadata(const QString& fed_id) const {
-    return cloud_metadata_.value(fed_id);
+QVariantMap SessionState::cloudMetadata(const QString& model_id) const {
+    return cloud_metadata_.value(model_id);
 }
 
-uint32_t SessionState::modelIdForFedId(const QString& fed_id) const {
-    return fed_id_to_model_id_.value(fed_id, 0);
+uint32_t SessionState::sessionModelIdForModelId(const QString& model_id) const {
+    return model_id_to_session_model_id_.value(model_id, 0);
 }
 
-QString SessionState::fedIdForModelId(uint32_t model_id) const {
-    return model_id_to_fed_id_.value(model_id);
+QString SessionState::modelIdForSessionModelId(uint32_t session_model_id) const {
+    return session_model_id_to_model_id_.value(session_model_id);
 }
 
-QList<uint32_t> SessionState::modelIds() const {
-    return model_id_to_fed_id_.keys();
+QList<uint32_t> SessionState::sessionModelIds() const {
+    return session_model_id_to_model_id_.keys();
 }
 
 void SessionState::notifySelectionChanged() {
@@ -174,8 +174,8 @@ void SessionState::notifyVisibilityChanged() {
     emit visibilityChanged();
 }
 
-void SessionState::notifyModelGeometryReady(uint32_t model_id) {
-    emit modelGeometryReady(model_id);
+void SessionState::notifyModelGeometryReady(uint32_t session_model_id) {
+    emit modelGeometryReady(session_model_id);
 }
 
 void SessionState::notifyProjectOpened(const QString& path) {

@@ -95,7 +95,7 @@ void StreamingThread::workerLoop() {
         // thread — they cross back to the main thread when the result
         // is drained and applied (pool.alloc + queueWriteBuffer).
         Result result;
-        result.model_id  = req.model_id;
+        result.session_model_id  = req.session_model_id;
         result.chunk_idx = req.chunk_idx;
         result.success   = readChunkGeometryCompressed(
             req.file_path, req.geometry_section_offset,

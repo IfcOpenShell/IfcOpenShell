@@ -63,38 +63,38 @@ void SceneLoader::joinDataSourceThreads() {
     data_source_threads_.clear();
 }
 
-QString SceneLoader::filePath(uint32_t mid) const {
-    auto it = models_.find(mid);
+QString SceneLoader::filePath(uint32_t session_model_id) const {
+    auto it = models_.find(session_model_id);
     return it == models_.end() ? QString() : it->second.file_path;
 }
 
-QString SceneLoader::displayName(uint32_t mid) const {
-    auto it = models_.find(mid);
+QString SceneLoader::displayName(uint32_t session_model_id) const {
+    auto it = models_.find(session_model_id);
     return it == models_.end() ? QString() : it->second.display_name;
 }
 
-ifcopenshell::file* SceneLoader::ifcFile(uint32_t mid) const {
-    auto it = models_.find(mid);
+ifcopenshell::file* SceneLoader::ifcFile(uint32_t session_model_id) const {
+    auto it = models_.find(session_model_id);
     return it == models_.end() ? nullptr : it->second.streamer->ifcFile();
 }
 
-const ModelGeoref* SceneLoader::modelGeoref(uint32_t mid) {
-    auto it = models_.find(mid);
+const ModelGeoref* SceneLoader::modelGeoref(uint32_t session_model_id) {
+    auto it = models_.find(session_model_id);
     if (it == models_.end()) return nullptr;
-    auto& m = it->second;
-    if (m.has_georef) return &m.georef;
-    auto* file = m.streamer ? m.streamer->ifcFile() : nullptr;
+    auto& model = it->second;
+    if (model.has_georef) return &model.georef;
+    auto* file = model.streamer ? model.streamer->ifcFile() : nullptr;
     if (!file) return nullptr;
-    m.georef = computeModelGeoref(file);
-    m.has_georef = true;
-    return &m.georef;
+    model.georef = computeModelGeoref(file);
+    model.has_georef = true;
+    return &model.georef;
 }
 
-std::vector<uint32_t> SceneLoader::addFiles(const QStringList& paths) {
+std::vector<uint32_t> SceneLoader::queueModels(const QStringList& paths) {
     std::vector<uint32_t> assigned;
     assigned.reserve(paths.size());
     for (const auto& path : paths) {
-        uint32_t id = next_model_id_++;
+        uint32_t id = next_session_model_id_++;
         Model model;
         model.id = id;
         model.file_path = path;
@@ -105,7 +105,7 @@ std::vector<uint32_t> SceneLoader::addFiles(const QStringList& paths) {
         assigned.push_back(id);
     }
 
-    if (loading_model_id_ == 0) {
+    if (loading_session_model_id_ == 0) {
         QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
     }
     return assigned;
@@ -126,18 +126,18 @@ void SceneLoader::connectStreamer(GeometryStreamer* streamer) {
             this, &SceneLoader::onStreamerError, Qt::QueuedConnection);
 }
 
-void SceneLoader::removeModel(uint32_t mid) {
+void SceneLoader::removeModel(uint32_t session_model_id) {
     // Refuse while the model is the active load: the streamer thread is still
     // running and would race with the deleteLater().  UI gates Remove on
     // isLoading(), but guard here too.
-    if (loading_model_id_ == mid) return;
+    if (loading_session_model_id_ == session_model_id) return;
 
     for (auto it = load_queue_.begin(); it != load_queue_.end();) {
-        if (*it == mid) it = load_queue_.erase(it);
+        if (*it == session_model_id) it = load_queue_.erase(it);
         else            ++it;
     }
 
-    auto it = models_.find(mid);
+    auto it = models_.find(session_model_id);
     if (it == models_.end()) return;
     if (it->second.streamer) {
         it->second.streamer->deleteLater();
@@ -146,29 +146,29 @@ void SceneLoader::removeModel(uint32_t mid) {
 }
 
 void SceneLoader::cancelCurrentLoad() {
-    if (loading_model_id_ == 0) return;
-    auto it = models_.find(loading_model_id_);
+    if (loading_session_model_id_ == 0) return;
+    auto it = models_.find(loading_session_model_id_);
     if (it == models_.end() || it->second.streamer == nullptr) return;
     it->second.streamer->cancel();
 }
 
 void SceneLoader::startNextLoad() {
     if (load_queue_.empty()) {
-        loading_model_id_ = 0;
+        loading_session_model_id_ = 0;
         emit allLoadsFinished();
         return;
     }
 
-    loading_model_id_ = load_queue_.front();
+    loading_session_model_id_ = load_queue_.front();
     load_queue_.pop_front();
 
-    auto& model = models_[loading_model_id_];
+    auto& model = models_[loading_session_model_id_];
     model.load_timer.restart();
 
     emit loadStarted(model.id, model.display_name);
 
     std::string ifc_path = model.file_path.toStdString();
-    uint32_t mid = loading_model_id_;
+    uint32_t session_model_id = loading_session_model_id_;
     const bool is_sidecar_source =
         QFileInfo(model.file_path).suffix().compare("ifcview", Qt::CaseInsensitive) == 0;
 
@@ -176,24 +176,24 @@ void SceneLoader::startNextLoad() {
     // .ifcview file directly). Skip the background thread and go straight
     // to a stream load.
     if (!is_sidecar_source && !should_read_sidecar_) {
-        startStreamLoadFor(mid);
+        loadFromGeometryStreamer(session_model_id);
         return;
     }
 
     // Sidecar read on a background thread so the UI stays responsive.
     joinSidecarThread();
-    sidecar_read_thread_ = std::thread([this, ifc_path, mid, is_sidecar_source]() {
-        QElapsedTimer rt; rt.start();
-        auto cached = readSidecarMetadataOnly(ifc_path);
+    sidecar_read_thread_ = std::thread([this, ifc_path, session_model_id, is_sidecar_source]() {
+        QElapsedTimer read_timer; read_timer.start();
+        auto cached = readSidecarMetadata(ifc_path);
         std::fprintf(stderr, "[info]   Sidecar metadata read: %lld ms (%s)\n",
-                     (long long)rt.elapsed(), ifc_path.c_str());
+                     (long long)read_timer.elapsed(), ifc_path.c_str());
         auto result = std::make_shared<std::optional<StreamingSidecar>>(std::move(cached));
-        QMetaObject::invokeMethod(this, [this, mid, result, is_sidecar_source]() {
-            auto it = models_.find(mid);
+        QMetaObject::invokeMethod(this, [this, session_model_id, result, is_sidecar_source]() {
+            auto it = models_.find(session_model_id);
             if (*result && !(*result)->meta.instances.empty()) {
-                applySidecarData(mid, std::move(**result));
+                applySidecarData(session_model_id, std::move(**result));
                 if (!is_sidecar_source) {
-                    startDataSourceLoad(mid);
+                    startDataSourceLoad(session_model_id);
                 }
                 return;
             }
@@ -201,105 +201,102 @@ void SceneLoader::startNextLoad() {
             if (it == models_.end()) return;
 
             if (is_sidecar_source) {
-                loading_model_id_ = 0;
-                emit loadError(mid, QString("Failed to read IFC Viewer cache:\n%1").arg(it->second.file_path));
+                loading_session_model_id_ = 0;
+                emit loadError(session_model_id, QString("Failed to read IFC Viewer cache:\n%1").arg(it->second.file_path));
                 QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
                 return;
             }
 
-            startStreamLoadFor(mid);
+            loadFromGeometryStreamer(session_model_id);
         }, Qt::QueuedConnection);
     });
 }
 
-void SceneLoader::startStreamLoadFor(uint32_t mid) {
-    auto it = models_.find(mid);
+void SceneLoader::loadFromGeometryStreamer(uint32_t session_model_id) {
+    auto it = models_.find(session_model_id);
     if (it == models_.end()) return;
-    auto& m = it->second;
+    auto& model = it->second;
     // Accumulate sidecar data alongside the GPU upload so the first load
     // naturally produces a cache for the next one — no GPU readback at
     // finish time. Skipped when caching writes are off.
     if (should_write_sidecar_) {
-        m.sidecar_builder = std::make_unique<SidecarBuilder>();
-        m.streamed_elements.clear();
+        model.sidecar_builder = std::make_unique<SidecarBuilder>();
     }
-    connectStreamer(m.streamer);
+    // Elements are buffered here and emitted to the registry once at finalize,
+    // after applyCachedModel assigns this model's global object_id base.
+    model.streamed_elements.clear();
+    connectStreamer(model.streamer);
     element_poll_timer_.start();
-    m.streamer->loadFile(
-        m.file_path.toStdString(), next_object_id_, loading_model_id_);
+    model.streamer->loadFile(model.file_path.toStdString(), loading_session_model_id_);
 }
 
-void SceneLoader::applySidecarData(uint32_t mid, StreamingSidecar metadata) {
-    auto it = models_.find(mid);
+void SceneLoader::applySidecarData(uint32_t session_model_id, StreamingSidecar metadata) {
+    auto it = models_.find(session_model_id);
     if (it == models_.end()) return;
     auto& model = it->second;
-    SidecarData& d = metadata.meta;
+    SidecarData& sidecar = metadata.meta;
 
     std::fprintf(stderr,
         "[info] Sidecar hit: %s (%zu chunks, %zu meshes, %zu instances, %zu elements)\n",
         model.file_path.toStdString().c_str(),
-        d.chunks.size(),
-        d.meshes.size(),
-        d.instances.size(),
-        d.elements.size());
-
-    // Rebase object/model IDs onto the current session's ID space.  Two
-    // cached models both starting at object_id=1 would collide otherwise.
-    uint32_t min_oid = UINT32_MAX;
-    for (const auto& pe : d.elements) {
-        if (pe.object_id < min_oid) min_oid = pe.object_id;
-    }
-    uint32_t oid_offset = 0;
-    if (!d.elements.empty() && min_oid < UINT32_MAX) {
-        oid_offset = next_object_id_ - min_oid;
-    }
-    for (auto& pe : d.elements) {
-        pe.object_id += oid_offset;
-        pe.model_id   = mid;
-        if (pe.object_id >= next_object_id_)
-            next_object_id_ = pe.object_id + 1;
-    }
-    for (auto& inst : d.instances) {
-        inst.object_id += oid_offset;
-        inst.model_id   = mid;
-    }
+        sidecar.chunks.size(),
+        sidecar.meshes.size(),
+        sidecar.instances.size(),
+        sidecar.elements.size());
 
     // Restore the cached CoordinateOperation into the model so
-    // modelGeoref(mid) returns it without needing the IFC source.  Prevents
+    // modelGeoref(session_model_id) returns it without needing the IFC source.  Prevents
     // sidecar-loaded models from silently losing their georef when the
     // .ifc/.rdb sibling is absent.
     {
-        ModelGeoref& gr = model.georef;
-        gr.has_coordinate_operation = d.has_coordinate_operation != 0;
-        Eigen::Map<const Eigen::Matrix<double, 4, 4, Eigen::ColMajor>> M(
-            d.coordinate_operation_meters);
-        gr.coordinate_operation_meters     = M;
-        gr.units.project_length_to_meters  = d.project_length_to_meters;
-        gr.units.map_unit_to_meters        = d.map_unit_to_meters;
-        model.has_georef                   = true;
+        ModelGeoref& georef = model.georef;
+        georef.has_coordinate_operation = sidecar.has_coordinate_operation != 0;
+        Eigen::Map<const Eigen::Matrix<double, 4, 4, Eigen::ColMajor>> coord_op(
+            sidecar.coordinate_operation_meters);
+        georef.coordinate_operation_meters     = coord_op;
+        georef.units.project_length_to_meters  = sidecar.project_length_to_meters;
+        georef.units.map_unit_to_meters        = sidecar.map_unit_to_meters;
+        model.has_georef                       = true;
     }
 
-    std::vector<ElementTableRecord> elements = std::move(d.elements);
-    std::string stbl                        = std::move(d.string_table);
+    // Pull the element table out before applyCachedModel consumes the metadata.
+    // The geometry upload doesn't touch elements; it only reads/moves meshes and
+    // instances.
+    std::vector<ElementTableRecord> elements = std::move(sidecar.elements);
+    std::string string_table                 = std::move(sidecar.string_table);
 
-    viewport_->applyCachedModel(mid, std::move(metadata));
+    // applyCachedModel is the sole authority for the global object_id space: the
+    // sidecar stores model-LOCAL ids, and it assigns each instance's global id as
+    // base + local, storing the base on the model. The element table gets the
+    // same base below — one authority, two halves, no separate id assignment.
+    viewport_->applyCachedModel(session_model_id, std::move(metadata));
 
-    emit sidecarElementsReady(mid, std::move(elements), std::move(stbl));
+    // Stamp the element records with the same base applyCachedModel gave the
+    // instances, so registry ids match the ids pick/selection return. Mirrors
+    // ViewportCore::loadElementMetadataWeb and the live-stream path
+    // (onStreamerFinished).
+    const uint32_t base = viewport_->modelObjectIdBase(session_model_id);
+    for (auto& element : elements) {
+        element.object_id += base;
+        element.session_model_id = session_model_id;
+    }
 
-    qint64 ms = model.load_timer.elapsed();
-    emit loadedFromSidecar(mid, ms);
+    emit sidecarElementsReady(session_model_id, std::move(elements), std::move(string_table));
 
-    loading_model_id_ = 0;
+    qint64 elapsed_ms = model.load_timer.elapsed();
+    emit loadedFromSidecar(session_model_id, elapsed_ms);
+
+    loading_session_model_id_ = 0;
     QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
 }
 
-void SceneLoader::startDataSourceLoad(uint32_t mid) {
-    auto it = models_.find(mid);
+void SceneLoader::startDataSourceLoad(uint32_t session_model_id) {
+    auto it = models_.find(session_model_id);
     if (it == models_.end()) return;
 
     std::string data_path_std = it->second.file_path.toStdString();
-    data_source_threads_.emplace_back([this, mid, data_path_std]() {
-        QElapsedTimer t; t.start();
+    data_source_threads_.emplace_back([this, session_model_id, data_path_std]() {
+        QElapsedTimer timer; timer.start();
         std::unique_ptr<ifcopenshell::file> file;
         try {
             file = std::make_unique<ifcopenshell::file>(
@@ -310,11 +307,11 @@ void SceneLoader::startDataSourceLoad(uint32_t mid) {
             return;
         }
         std::fprintf(stderr, "[info]   Data source load: %lld ms (%s)\n",
-                     (long long)t.elapsed(), data_path_std.c_str());
+                     (long long)timer.elapsed(), data_path_std.c_str());
 
         auto shared = std::make_shared<std::unique_ptr<ifcopenshell::file>>(std::move(file));
-        QMetaObject::invokeMethod(this, [this, mid, shared]() {
-            auto it = models_.find(mid);
+        QMetaObject::invokeMethod(this, [this, session_model_id, shared]() {
+            auto it = models_.find(session_model_id);
             if (it == models_.end()) return;
             auto* streamer = it->second.streamer;
             if (streamer == nullptr) return;
@@ -322,7 +319,7 @@ void SceneLoader::startDataSourceLoad(uint32_t mid) {
             // path somehow populated it), don't clobber it.
             if (streamer->ifcFile() != nullptr) return;
             streamer->setIfcFile(std::move(*shared));
-            emit dataSourceReady(mid);
+            emit dataSourceReady(session_model_id);
         }, Qt::QueuedConnection);
     });
 }
@@ -333,8 +330,8 @@ void SceneLoader::onStreamerProgressChanged(int percent) {
 
 void SceneLoader::onStreamerMeshReady(StreamedMesh mesh) {
     viewport_->uploadStreamedMesh(mesh);
-    if (loading_model_id_ != 0) {
-        auto it = models_.find(loading_model_id_);
+    if (loading_session_model_id_ != 0) {
+        auto it = models_.find(loading_session_model_id_);
         if (it != models_.end() && it->second.sidecar_builder) {
             it->second.sidecar_builder->onMeshReady(mesh);
         }
@@ -342,8 +339,8 @@ void SceneLoader::onStreamerMeshReady(StreamedMesh mesh) {
 }
 
 void SceneLoader::onStreamerInstanceReady(StreamedInstance instance_record) {
-    if (loading_model_id_ != 0) {
-        auto it = models_.find(loading_model_id_);
+    if (loading_session_model_id_ != 0) {
+        auto it = models_.find(loading_session_model_id_);
         if (it != models_.end() && it->second.sidecar_builder) {
             it->second.sidecar_builder->onInstanceReady(instance_record);
         }
@@ -352,76 +349,86 @@ void SceneLoader::onStreamerInstanceReady(StreamedInstance instance_record) {
 }
 
 void SceneLoader::onElementPollTick() {
-    if (loading_model_id_ == 0) return;
-    auto it = models_.find(loading_model_id_);
+    if (loading_session_model_id_ == 0) return;
+    auto it = models_.find(loading_session_model_id_);
     if (it == models_.end()) return;
 
     auto batch = it->second.streamer->drainElements();
     if (batch.empty()) return;
 
-    // Mirror into the per-model accumulator so finalize() has the full set
-    // without re-draining (the streamer's queue is consumed by this drain).
-    if (it->second.sidecar_builder) {
-        auto& buf = it->second.streamed_elements;
-        buf.insert(buf.end(), batch.begin(), batch.end());
-    }
-    emit streamedElementsReady(loading_model_id_, std::move(batch));
+    // Buffer the whole set. The streamer stamps model-LOCAL object_ids, so we
+    // can't hand these to the registry yet — they're globalized and emitted
+    // once at finalize (onStreamerFinished), after applyCachedModel assigns
+    // this model's object_id base. The sidecar builder also reads this buffer.
+    auto& buf = it->second.streamed_elements;
+    buf.insert(buf.end(), batch.begin(), batch.end());
 }
 
 void SceneLoader::onStreamerFinished() {
     element_poll_timer_.stop();
     onElementPollTick();  // drain any remaining elements
 
-    uint32_t mid = loading_model_id_;
-    if (mid != 0) {
-        auto it = models_.find(mid);
+    uint32_t session_model_id = loading_session_model_id_;
+    if (session_model_id != 0) {
+        auto it = models_.find(session_model_id);
         if (it != models_.end()) {
-            auto& m = it->second;
-            next_object_id_ = m.streamer->lastObjectId();
-            viewport_->finalizeModel(mid);
+            auto& model = it->second;
+            viewport_->finalizeModel(session_model_id);
 
             // Sidecar finalize + disk write. Wgpu has no live LOD1 apply —
             // LOD1 indices land in the on-disk sidecar and are picked up
             // on the *next* open of this file; first-session view is
             // LOD0-only. Acceptable trade-off vs reallocating chunk index
             // slices live to splice LOD1 in.
-            if (m.sidecar_builder) {
+            //
+            // The sidecar is written from the LOCAL element/instance ids (the
+            // globalization below happens after), so a re-opened .ifcview
+            // stores model-local ids exactly like a freshly-streamed one.
+            if (model.sidecar_builder) {
                 ModelGeoref georef;
-                if (auto* file = m.streamer->ifcFile()) {
+                if (auto* file = model.streamer->ifcFile()) {
                     georef = computeModelGeoref(file);
                 }
-                QElapsedTimer wt; wt.start();
-                SidecarData data = m.sidecar_builder->finalize(georef, m.streamed_elements);
+                QElapsedTimer write_timer; write_timer.start();
+                SidecarData data = model.sidecar_builder->finalize(georef, model.streamed_elements);
                 // Lay geometry out in streaming-chunk order + bake the chunk TOC
                 // (v14) so it streams as one contiguous range per chunk.
                 reorderSidecarByMorton(data);
-                const bool ok = writeSidecar(m.file_path.toStdString(), data);
+                const bool ok = writeSidecar(model.file_path.toStdString(), data);
                 std::fprintf(stderr,
                     "[info]   Sidecar finalize + write: %lld ms (%s)\n",
-                    (long long)wt.elapsed(), ok ? "ok" : "FAILED");
-                m.sidecar_builder.reset();
-                m.streamed_elements.clear();
-                m.streamed_elements.shrink_to_fit();
+                    (long long)write_timer.elapsed(), ok ? "ok" : "FAILED");
+                model.sidecar_builder.reset();
             }
 
-            qint64 ms = m.load_timer.elapsed();
-            emit loadedFromStream(mid, ms);
+            // Globalize the buffered element ids by the base applyCachedModel
+            // assigned to this model's instances, then hand them to the
+            // registry — one emit, ids matching the GPU/pick space. Mirrors the
+            // sidecar-hit path (applySidecarData).
+            const uint32_t base = viewport_->modelObjectIdBase(session_model_id);
+            for (auto& element : model.streamed_elements) element.object_id += base;
+            emit streamedElementsReady(session_model_id, std::move(model.streamed_elements));
+            model.streamed_elements.clear();
+            model.streamed_elements.shrink_to_fit();
+
+            qint64 elapsed_ms = model.load_timer.elapsed();
+            emit loadedFromStream(session_model_id, elapsed_ms);
         }
     }
 
-    loading_model_id_ = 0;
+    loading_session_model_id_ = 0;
     startNextLoad();
 }
 
 void SceneLoader::onStreamerCancelled() {
     element_poll_timer_.stop();
 
-    const uint32_t mid = loading_model_id_;
-    loading_model_id_ = 0;
+    const uint32_t session_model_id = loading_session_model_id_;
+    loading_session_model_id_ = 0;
 
-    if (mid != 0) {
-        viewport_->removeModel(mid);
-        emit loadCancelled(mid);
+    if (session_model_id != 0) {
+        viewport_->removeModel(session_model_id);
+        emit loadCancelled(session_model_id);
     }
     QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
 }
@@ -429,12 +436,12 @@ void SceneLoader::onStreamerCancelled() {
 void SceneLoader::onStreamerError(const QString& msg) {
     element_poll_timer_.stop();
 
-    const uint32_t mid = loading_model_id_;
-    loading_model_id_ = 0;
+    const uint32_t session_model_id = loading_session_model_id_;
+    loading_session_model_id_ = 0;
 
-    if (mid != 0) {
-        viewport_->removeModel(mid);
+    if (session_model_id != 0) {
+        viewport_->removeModel(session_model_id);
     }
-    emit loadError(mid, msg);
+    emit loadError(session_model_id, msg);
     QTimer::singleShot(0, this, &SceneLoader::startNextLoad);
 }

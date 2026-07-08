@@ -55,7 +55,7 @@ protected:
 
 private:
     struct ModelRowWidgets {
-        QString fed_id;
+        QString model_id;
         QComboBox* frame = nullptr;
         QTableWidgetItem* from_point = nullptr;
         QTableWidgetItem* to_point = nullptr;

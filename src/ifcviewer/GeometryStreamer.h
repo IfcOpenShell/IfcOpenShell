@@ -36,7 +36,7 @@
 
 struct ElementInfo {
     uint32_t object_id;
-    uint32_t model_id;
+    uint32_t session_model_id;
     int ifc_id;
     std::string guid;
     std::string name;
@@ -49,7 +49,9 @@ public:
     explicit GeometryStreamer(QObject* parent = nullptr);
     ~GeometryStreamer();
 
-    void loadFile(const std::string& path, uint32_t start_object_id, uint32_t model_id, int num_threads = 0);
+    // Streamer stamps model-LOCAL object_ids (1..N, reset each load).
+    // ViewportCore::applyCachedModel assigns the session-global ids at install.
+    void loadFile(const std::string& path, uint32_t session_model_id, int num_threads = 0);
     void cancel();
 
     // Adopt an externally-opened ifcopenshell::file as the data source
@@ -59,8 +61,7 @@ public:
 
     bool isRunning() const { return running_.load(); }
     int progress() const { return progress_.load(); }
-    uint32_t lastObjectId() const { return next_object_id_; }
-    uint32_t modelId() const { return model_id_; }
+    uint32_t sessionModelId() const { return session_model_id_; }
 
     ifcopenshell::file* ifcFile() const { return ifc_file_.get(); }
 
@@ -89,7 +90,7 @@ private:
     std::vector<ElementInfo> pending_elements_;
 
     uint32_t next_object_id_ = 1;
-    uint32_t model_id_ = 0;
+    uint32_t session_model_id_ = 0;
 };
 
 #endif // GEOMETRYSTREAMER_H

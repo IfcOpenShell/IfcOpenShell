@@ -323,7 +323,7 @@ TEST_CASE("findInstanceInModels fills the correct lookup for an owned id", "[ins
 
     InstanceCompose::InstanceLookup out;
     REQUIRE(InstanceCompose::findInstanceInModels(8u, models, out));
-    REQUIRE(out.model_id == 2u);
+    REQUIRE(out.session_model_id == 2u);
     REQUIRE(out.mesh_id  == 4u);
     REQUIRE(out.placement_transformation[12] == 22.0);
     REQUIRE(out.placement_transformation[0]  == 1.0);

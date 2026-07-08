@@ -215,7 +215,7 @@ ViewportWindow::ViewportWindow(QWindow* parent)
       streaming_thread_(core_.streaming_thread_),
       streaming_frame_idx_(core_.streaming_frame_idx_),
       models_gpu_     (core_.models_gpu_),
-      next_model_id_  (core_.next_model_id_),
+      next_session_model_id_  (core_.next_session_model_id_),
       next_object_id_ (core_.next_object_id_),
       federated_false_origin_meters_(core_.federated_false_origin_meters_),
       wgpu_initialized_(core_.wgpu_initialized_),
@@ -511,7 +511,7 @@ uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
     // Metadata-only read: mesh dict + instance dict + georef. Per-chunk
     // vertex/index bytes are deferred to the per-frame loader as chunks
     // become frustum-visible.
-    auto meta_opt = readSidecarMetadataOnly(resolved.toStdString());
+    auto meta_opt = readSidecarMetadata(resolved.toStdString());
     if (!meta_opt) {
         // Triage: distinguish missing file from magic/version mismatch by
         // peeking the header ourselves, so users know which to fix.
@@ -549,13 +549,13 @@ uint32_t ViewportWindow::loadSidecar(const std::string& path_std) {
         return 0;
     }
 
-    const uint32_t mid = next_model_id_++;
-    applyCachedModel(mid, std::move(*meta_opt));
-    return mid;
+    const uint32_t session_model_id = next_session_model_id_++;
+    applyCachedModel(session_model_id, std::move(*meta_opt));
+    return session_model_id;
 }
 
-void ViewportWindow::applyCachedModel(uint32_t model_id, StreamingSidecar metadata) {
-    core_.applyCachedModel(model_id, std::move(metadata));
+void ViewportWindow::applyCachedModel(uint32_t session_model_id, StreamingSidecar metadata) {
+    core_.applyCachedModel(session_model_id, std::move(metadata));
 }
 
 // -----------------------------------------------------------------------------
@@ -573,7 +573,7 @@ void ViewportWindow::uploadStreamedInstance(const StreamedInstance& instance_rec
     core_.uploadStreamedInstance(instance_record);
 }
 
-void ViewportWindow::finalizeModel(uint32_t model_id) { core_.finalizeModel(model_id); }
+void ViewportWindow::finalizeModel(uint32_t session_model_id) { core_.finalizeModel(session_model_id); }
 
 // removeModel / resetScene / hideModel / showModel /
 // setFederatedFalseOrigin / setModelCoordinateOperation /
@@ -581,41 +581,45 @@ void ViewportWindow::finalizeModel(uint32_t model_id) { core_.finalizeModel(mode
 // ViewportCore (#84-f). The public-API entry points below forward
 // so existing bonsai-side callers don't have to change.
 
-void ViewportWindow::removeModel(uint32_t model_id)   { core_.removeModel(model_id); }
+void ViewportWindow::removeModel(uint32_t session_model_id)   { core_.removeModel(session_model_id); }
 void ViewportWindow::resetScene()                     { core_.resetScene(); }
-void ViewportWindow::hideModel(uint32_t model_id)     { core_.hideModel(model_id); }
-void ViewportWindow::showModel(uint32_t model_id)     { core_.showModel(model_id); }
+void ViewportWindow::hideModel(uint32_t session_model_id)     { core_.hideModel(session_model_id); }
+void ViewportWindow::showModel(uint32_t session_model_id)     { core_.showModel(session_model_id); }
 
 void ViewportWindow::setFederatedFalseOrigin(const Eigen::Matrix4d& m) {
     core_.setFederatedFalseOrigin(m);
 }
-void ViewportWindow::setModelCoordinateOperation(uint32_t mid,
+void ViewportWindow::setModelCoordinateOperation(uint32_t session_model_id,
                                                  const Eigen::Matrix4d& m) {
-    core_.setModelCoordinateOperation(mid, m);
+    core_.setModelCoordinateOperation(session_model_id, m);
 }
-void ViewportWindow::setModelTransformation(uint32_t mid,
+void ViewportWindow::setModelTransformation(uint32_t session_model_id,
                                             const Eigen::Matrix4d& m) {
-    core_.setModelTransformation(mid, m);
+    core_.setModelTransformation(session_model_id, m);
 }
-void ViewportWindow::recomposeAndUploadModel(uint32_t mid) {
-    core_.recomposeAndUploadModel(mid);
+void ViewportWindow::recomposeAndUploadModel(uint32_t session_model_id) {
+    core_.recomposeAndUploadModel(session_model_id);
 }
 
 bool ViewportWindow::findInstance(uint32_t object_id, InstanceLookup& out) const {
     return core_.findInstance(object_id, out);
 }
 
-bool ViewportWindow::firstGeometryPointWorldM(uint32_t model_id,
+bool ViewportWindow::firstGeometryPointWorldM(uint32_t session_model_id,
                                               Eigen::Vector3d& out) const {
-    return core_.firstGeometryPointWorldM(model_id, out);
+    return core_.firstGeometryPointWorldM(session_model_id, out);
 }
 
-void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
+uint32_t ViewportWindow::modelObjectIdBase(uint32_t session_model_id) const {
+    return core_.modelObjectIdBase(session_model_id);
+}
+
+void ViewportWindow::frameOnFederatedOrigin(uint32_t session_model_id,
                                                 float max_distance_m) {
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
-    const ModelGpuData& m = it->second;
-    if (m.instances.empty()) return;
+    const ModelGpuData& model = it->second;
+    if (model.instances.empty()) return;
 
     float mn[3] = {  std::numeric_limits<float>::infinity(),
                      std::numeric_limits<float>::infinity(),
@@ -623,7 +627,7 @@ void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
     float mx[3] = { -std::numeric_limits<float>::infinity(),
                     -std::numeric_limits<float>::infinity(),
                     -std::numeric_limits<float>::infinity() };
-    for (const auto& inst : m.instances) {
+    for (const auto& inst : model.instances) {
         for (int a = 0; a < 3; ++a) {
             mn[a] = std::min(mn[a], inst.world_aabb_min[a]);
             mx[a] = std::max(mx[a], inst.world_aabb_max[a]);
@@ -659,7 +663,7 @@ void ViewportWindow::frameOnFederatedOrigin(uint32_t model_id,
     }
 
     Log::info().noquote().nospace()
-        << "[wgpu] frameOnFederatedOrigin model=" << model_id
+        << "[wgpu] frameOnFederatedOrigin model=" << session_model_id
         << " distance=" << camera_distance_
         << " (cap=" << max_distance_m << "m, model radius=" << radius << ")";
 
@@ -1023,13 +1027,13 @@ void ViewportWindow::setHighlightTriangles(const std::vector<float>& world_xyz,
     if (isExposed()) requestUpdate();
 }
 
-bool ViewportWindow::readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+bool ViewportWindow::readbackMeshTriangles(uint32_t session_model_id, uint32_t mesh_id,
                                                MeshTriangles& out) const {
-    auto mit = models_gpu_.find(model_id);
+    auto mit = models_gpu_.find(session_model_id);
     if (mit == models_gpu_.end()) return false;
-    const ModelGpuData& m = mit->second;
-    if (mesh_id >= m.mesh_triangles_cache.size()) return false;
-    const auto& src = m.mesh_triangles_cache[mesh_id];
+    const ModelGpuData& model = mit->second;
+    if (mesh_id >= model.mesh_triangles_cache.size()) return false;
+    const auto& src = model.mesh_triangles_cache[mesh_id];
     if (src.indices.empty() || src.positions.empty()) return false;
     // Copy out — callers iterate freely without worrying about lifetime
     // (streaming may evict a chunk and rebuild the shadow on next load).
@@ -1049,12 +1053,12 @@ bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
                                            const float mesh_local[3],
                                            double global_out[3]) const {
     // Find the instance via the per-model object_id_to_instance map.
-    // Use the live map key (`mid`) — see pickMeshLocalAt comment about
-    // stale InstanceInfo::model_id from sidecar writes.
-    for (const auto& [mid, m] : models_gpu_) {
-        auto it = m.object_id_to_instance.find(object_id);
-        if (it == m.object_id_to_instance.end()) continue;
-        const InstanceInfo& inst = m.instances[it->second];
+    // Use the live map key (`session_model_id`) — see pickMeshLocalAt comment about
+    // stale InstanceInfo::session_model_id from sidecar writes.
+    for (const auto& [session_model_id, model] : models_gpu_) {
+        auto it = model.object_id_to_instance.find(object_id);
+        if (it == model.object_id_to_instance.end()) continue;
+        const InstanceInfo& inst = model.instances[it->second];
         // CoordinateOperation · placement · local — gives the IFC's own
         // georeferenced world frame (ENH). Excludes FederatedFalseOrigin
         // and ModelTransformation, matching the GL meshLocalToGlobal
@@ -1072,7 +1076,7 @@ bool ViewportWindow::meshLocalToGlobal(uint32_t object_id,
                                     static_cast<double>(mesh_local[2]),
                                     1.0);
         const Eigen::Vector3d global =
-            (m.coordinate_operation_meters * P * local).head<3>();
+            (model.coordinate_operation_meters * P * local).head<3>();
         global_out[0] = global.x();
         global_out[1] = global.y();
         global_out[2] = global.z();
@@ -1148,9 +1152,9 @@ void ViewportWindow::invertElementVisibility() {
     // don't mutate the set we're iterating over.
     std::vector<uint32_t> to_hide;
     to_hide.reserve(1024);
-    for (const auto& [mid, m] : models_gpu_) {
-        if (m.hidden) continue;
-        for (const InstanceInfo& inst : m.instances) {
+    for (const auto& [session_model_id, model] : models_gpu_) {
+        if (model.hidden) continue;
+        for (const InstanceInfo& inst : model.instances) {
             if (inst.object_id == 0) continue;
             if (!visibility_.isHidden(inst.object_id)) {
                 to_hide.push_back(inst.object_id);
@@ -1251,10 +1255,10 @@ void ViewportWindow::updateVolumeReadout() {
         // first matching instance. For label placement at the AABB
         // centre this is identical-looking; only the rare multi-
         // representation object_id sees a slightly smaller union.
-        for (const auto& [mid, m] : models_gpu_) {
-            auto it = m.object_id_to_instance.find(oid);
-            if (it == m.object_id_to_instance.end()) continue;
-            const InstanceInfo& inst = m.instances[it->second];
+        for (const auto& [session_model_id, model] : models_gpu_) {
+            auto it = model.object_id_to_instance.find(oid);
+            if (it == model.object_id_to_instance.end()) continue;
+            const InstanceInfo& inst = model.instances[it->second];
             OverlayRenderer::Label lbl;
             lbl.world_pos[0] = (inst.world_aabb_min[0] + inst.world_aabb_max[0]) * 0.5f;
             lbl.world_pos[1] = (inst.world_aabb_min[1] + inst.world_aabb_max[1]) * 0.5f;
@@ -1335,7 +1339,7 @@ void ViewportWindow::ensureSelectionFlagsBuffer() { core_.ensureSelectionFlagsBu
 // uploadSelectionFlagsIfDirty moved to ViewportCore (#84-k).
 void ViewportWindow::uploadSelectionFlagsIfDirty() { core_.uploadSelectionFlagsIfDirty(); }
 
-void ViewportWindow::buildModelBindGroup(ModelGpuData& m) { core_.buildModelBindGroup(m); }
+void ViewportWindow::buildModelBindGroup(ModelGpuData& model) { core_.buildModelBindGroup(model); }
 
 // buildChunkBindGroup moved to ViewportCore (#84-n).
 
@@ -1738,15 +1742,15 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                 std::set<std::pair<uint32_t, size_t>> seen;
                 Log::info().noquote().nospace()
                     << "[track] object " << id << " — enumerating chunks:";
-                for (auto& [mid, m] : models_gpu_) {
-                    for (const auto& inst : m.instances) {
+                for (auto& [session_model_id, model] : models_gpu_) {
+                    for (const auto& inst : model.instances) {
                         if (inst.object_id != id) continue;
-                        if (inst.mesh_id >= m.mesh_chunk_idx.size()) continue;
-                        const size_t ci = m.mesh_chunk_idx[inst.mesh_id];
-                        if (!seen.insert({mid, ci}).second) continue;
-                        const auto& c = m.chunks[ci];
+                        if (inst.mesh_id >= model.mesh_chunk_idx.size()) continue;
+                        const size_t ci = model.mesh_chunk_idx[inst.mesh_id];
+                        if (!seen.insert({session_model_id, ci}).second) continue;
+                        const auto& chunk = model.chunks[ci];
                         Log::info().noquote().nospace()
-                            << "  model " << mid << " chunk " << ci
+                            << "  model " << session_model_id << " chunk " << ci
                             << "  inst_aabb "
                             << QString::number(inst.world_aabb_max[0] - inst.world_aabb_min[0], 'f', 1)
                             << "×"
@@ -1754,17 +1758,17 @@ void ViewportWindow::mouseReleaseEvent(QMouseEvent* event) {
                             << "×"
                             << QString::number(inst.world_aabb_max[2] - inst.world_aabb_min[2], 'f', 1) << "m"
                             << "  chunk_aabb "
-                            << QString::number(c.aabb_max[0] - c.aabb_min[0], 'f', 1) << "×"
-                            << QString::number(c.aabb_max[1] - c.aabb_min[1], 'f', 1) << "×"
-                            << QString::number(c.aabb_max[2] - c.aabb_min[2], 'f', 1) << "m"
-                            << "  resident=" << (c.is_resident ? "Y" : "N");
+                            << QString::number(chunk.aabb_max[0] - chunk.aabb_min[0], 'f', 1) << "×"
+                            << QString::number(chunk.aabb_max[1] - chunk.aabb_min[1], 'f', 1) << "×"
+                            << QString::number(chunk.aabb_max[2] - chunk.aabb_min[2], 'f', 1) << "m"
+                            << "  resident=" << (chunk.is_resident ? "Y" : "N");
                         // First hit becomes the "primary" slot the
                         // eviction watcher uses. Good enough until we wire
                         // a multi-chunk watcher.
                         if (tracked_chunk_idx_ == SIZE_MAX) {
-                            tracked_chunk_mid_    = mid;
+                            tracked_chunk_mid_    = session_model_id;
                             tracked_chunk_idx_    = ci;
-                            tracked_was_resident_ = c.is_resident;
+                            tracked_was_resident_ = chunk.is_resident;
                         }
                     }
                 }

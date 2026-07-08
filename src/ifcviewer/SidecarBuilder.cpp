@@ -103,7 +103,7 @@ void SidecarBuilder::onInstanceReady(const StreamedInstance& instance_record) {
     instance.mesh_id              = instance_record.local_mesh_id;
     instance.object_id            = instance_record.object_id;
     instance.color_override_rgba8 = instance_record.color_override_rgba8;
-    instance.model_id             = instance_record.model_id;
+    instance.session_model_id             = instance_record.session_model_id;
 
     // The streamer's instance transform is the double-precision
     // placement_transformation.  The cached float transform/world_aabb is only
@@ -142,7 +142,7 @@ SidecarData SidecarBuilder::finalize(const ModelGeoref& georef,
     for (const auto& info : elements) {
         ElementTableRecord packed;
         packed.object_id = info.object_id;
-        packed.model_id  = info.model_id;
+        packed.session_model_id  = info.session_model_id;
         packed.ifc_id    = info.ifc_id;
 
         packed.guid_offset = static_cast<uint32_t>(sidecar_data_.string_table.size());
@@ -191,8 +191,7 @@ bool SidecarBuilder::build(const QString& ifc_path,
     });
 
     streamer.loadFile(ifc_path.toStdString(),
-                      /*start_object_id*/ 1,
-                      /*model_id*/ 1,
+                      /*session_model_id*/ 1,
                       num_threads);
 
     loop.exec();

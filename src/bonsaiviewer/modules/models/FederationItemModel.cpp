@@ -87,9 +87,9 @@ QStandardItem* FederationItemModel::makeGroupNameItem(const QString& group_id, c
     return item;
 }
 
-QStandardItem* FederationItemModel::makeModelNameItem(const QString& fed_id, const QString& display_name) const {
+QStandardItem* FederationItemModel::makeModelNameItem(const QString& model_id, const QString& display_name) const {
     auto* item = new QStandardItem(components::icons::makeSvgIcon(":/icons/cube.svg"), display_name);
-    item->setData(fed_id, IdRole);
+    item->setData(model_id, IdRole);
     item->setData(int(ItemKind::Model), KindRole);
     item->setEditable(false);
     return item;
@@ -129,14 +129,14 @@ QStandardItem* FederationItemModel::parentItemForGroup(const QString& parent_gro
     return found ? found : invisibleRootItem();
 }
 
-void FederationItemModel::appendModelTo(QStandardItem* parent_item, const QString& fed_id) {
-    const Federation::Model* model = federation_->findById(fed_id);
+void FederationItemModel::appendModelTo(QStandardItem* parent_item, const QString& model_id) {
+    const Federation::Model* model = federation_->findById(model_id);
     if (!model) return;
-    auto* name_item = makeModelNameItem(fed_id, model->display_name);
-    auto* vis_item = makeVisibilityItem(ItemKind::Model, federation_->isModelEffectivelyVisible(fed_id));
+    auto* name_item = makeModelNameItem(model_id, model->display_name);
+    auto* vis_item = makeVisibilityItem(ItemKind::Model, federation_->isModelEffectivelyVisible(model_id));
     parent_item->appendRow({name_item, vis_item});
-    id_to_name_item_.insert(fed_id, name_item);
-    styleRowVisibility(name_item, federation_->isModelEffectivelyVisible(fed_id));
+    id_to_name_item_.insert(model_id, name_item);
+    styleRowVisibility(name_item, federation_->isModelEffectivelyVisible(model_id));
 }
 
 void FederationItemModel::appendGroupSubtreeTo(QStandardItem* parent_item, const QString& group_id) {
@@ -228,38 +228,38 @@ void FederationItemModel::onGroupVisibilityChanged(const QString& group_id, bool
     refreshSubtreeVisibility(item);
 }
 
-void FederationItemModel::onModelAdded(const QString& fed_id) {
-    const Federation::Model* model = federation_->findById(fed_id);
+void FederationItemModel::onModelAdded(const QString& model_id) {
+    const Federation::Model* model = federation_->findById(model_id);
     if (!model) return;
     QStandardItem* parent_item = parentItemForGroup(model->group_id);
-    appendModelTo(parent_item, fed_id);
+    appendModelTo(parent_item, model_id);
 }
 
-void FederationItemModel::onModelRemoved(const QString& fed_id) {
-    QStandardItem* item = findItem(fed_id);
+void FederationItemModel::onModelRemoved(const QString& model_id) {
+    QStandardItem* item = findItem(model_id);
     if (!item) return;
-    id_to_name_item_.remove(fed_id);
+    id_to_name_item_.remove(model_id);
     QStandardItem* parent_item = item->parent();
     if (!parent_item) parent_item = invisibleRootItem();
     parent_item->removeRow(item->row());
 }
 
-void FederationItemModel::onModelVisibilityChanged(const QString& fed_id, bool /*visible*/) {
-    QStandardItem* item = findItem(fed_id);
+void FederationItemModel::onModelVisibilityChanged(const QString& model_id, bool /*visible*/) {
+    QStandardItem* item = findItem(model_id);
     if (!item) return;
     refreshSubtreeVisibility(item);
 }
 
-void FederationItemModel::onModelChanged(const QString& fed_id) {
-    QStandardItem* item = findItem(fed_id);
+void FederationItemModel::onModelChanged(const QString& model_id) {
+    QStandardItem* item = findItem(model_id);
     if (!item) return;
-    const Federation::Model* model = federation_->findById(fed_id);
+    const Federation::Model* model = federation_->findById(model_id);
     if (!model) return;
     item->setText(model->display_name);
 }
 
-void FederationItemModel::onModelGroupChanged(const QString& fed_id, const QString& new_group_id) {
-    QStandardItem* item = findItem(fed_id);
+void FederationItemModel::onModelGroupChanged(const QString& model_id, const QString& new_group_id) {
+    QStandardItem* item = findItem(model_id);
     if (!item) return;
     QStandardItem* current_parent = item->parent();
     if (!current_parent) current_parent = invisibleRootItem();

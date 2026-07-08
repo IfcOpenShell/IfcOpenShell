@@ -535,7 +535,7 @@ void LengthMeasurement::rebuildLaserOverlay(ViewportWindow& vp) {
     ViewportWindow::MeshTriangles tris;
     bool have_extent = false;
     double min_t1 = 0.0, max_t1 = 0.0, min_t2 = 0.0, max_t2 = 0.0;
-    if (vp.readbackMeshTriangles(first_pick_.model_id, first_pick_.mesh_id, tris)) {
+    if (vp.readbackMeshTriangles(first_pick_.session_model_id, first_pick_.mesh_id, tris)) {
         const size_t n_verts = tris.positions.size() / 3;
         const size_t n_tris  = tris.indices.size() / 3;
         if (n_tris > 0) {
