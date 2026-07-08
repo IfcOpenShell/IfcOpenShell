@@ -417,6 +417,7 @@ class Drawing:
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
     def setup_annotation_object(cls, obj, object_type): pass
+    def setup_annotation_object_type(cls, element, object_type): pass
     def setup_shading_styles_path(cls, resource_path): pass
     def show_decorations(cls): pass
     def sync_object_placement(cls, obj): pass
