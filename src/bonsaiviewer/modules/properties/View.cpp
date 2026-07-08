@@ -25,6 +25,8 @@
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
 
+#include "element.h"  // helpers: get_predefined_type
+
 namespace bonsaiviewer::modules::properties {
 
 PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
@@ -90,9 +92,17 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         return;
     }
 
+    // A real project is loaded — don't leak the placeholder predefined type.
+    // It's populated below from live IFC data, or set to "N/A" for
+    // geometry-only elements that have no data to read it from.
+    state.entity.predefined_type.clear();
+
     auto entity = registry->findEntity(object_id);
     if (entity) {
         state.entity.entity_class = QString::fromStdString(entity->declaration().name());
+        if (auto predefined_type = get_predefined_type(*entity)) {
+            state.entity.predefined_type = QString::fromStdString(*predefined_type);
+        }
         if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
             state.property_sets[1].rows[0].value = state.entity.entity_class;
         }
@@ -104,6 +114,8 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         auto info = registry->findBasicElementInfo(object_id);
         if (info && !info->type.isEmpty()) {
             state.entity.entity_class = info->type;
+            // Geometry only — no live IFC entity to read a predefined type from.
+            state.entity.predefined_type = "N/A";
             if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
                 state.property_sets[1].rows[0].value = info->type;
             }

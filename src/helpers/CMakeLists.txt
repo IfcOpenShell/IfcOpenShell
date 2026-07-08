@@ -32,6 +32,7 @@ message("Running CMakeLists.txt in /src/helpers")
 #                   (ifcopenshell.util.placement)
 #   * Pset        — property and quantity retrieval
 #                   (ifcopenshell.util.element)
+#   * Element     — get_predefined_type (ifcopenshell.util.element)
 
 find_package(Eigen3 REQUIRED)
 
