@@ -35,6 +35,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api.attribute
 import ifcopenshell.api.document
+import ifcopenshell.api.layer
 import ifcopenshell.api.nest
 import ifcopenshell.api.project
 import ifcopenshell.api.root
@@ -2056,6 +2057,14 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
         else:
             if not pprops.should_save_metadata_for_this_file:
                 tool.Project.remove_metadata_document_information()
+
+        # An IfcPresentationLayerAssignment requires AssignedItems SET [1:?], so an
+        # empty layer (e.g. one created but never assigned) is schema invalid and must
+        # not be written to disk. This mirrors unassign_layer, which already drops a
+        # layer once its last item is removed.
+        removed_layers = ifcopenshell.api.layer.remove_empty_layers(tool.Ifc.get())
+        layer_suffix = f" (removed {len(removed_layers)} empty presentation layer(s))" if removed_layers else ""
+        commit_suffix += layer_suffix
 
         ifc_exporter = export_ifc.IfcExporter(settings)
         print("Starting export")

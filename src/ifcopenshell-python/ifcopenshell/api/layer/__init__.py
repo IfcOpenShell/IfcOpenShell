@@ -30,6 +30,7 @@ from .add_layer import add_layer
 from .add_layer_with_style import add_layer_with_style
 from .assign_layer import assign_layer
 from .edit_layer import edit_layer
+from .remove_empty_layers import remove_empty_layers
 from .remove_layer import remove_layer
 from .unassign_layer import unassign_layer
 
@@ -40,6 +41,7 @@ __all__ = [
     "add_layer_with_style",
     "assign_layer",
     "edit_layer",
+    "remove_empty_layers",
     "remove_layer",
     "unassign_layer",
 ]
