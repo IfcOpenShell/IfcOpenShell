@@ -25,6 +25,7 @@ import ifc5d.qto
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import mathutils
 from mathutils import Matrix, Vector
 from mathutils.bvhtree import BVHTree
@@ -518,6 +519,136 @@ def get_side_area(o: bpy.types.Object) -> float:
     y = get_y(o)
     z = get_z(o)
     return max(x * z, y * z)
+
+
+# A quantity target is either a Blender object, the IFC element itself (used when
+# the element has no Blender object, e.g. a door/window whose mapped body
+# representation never produced a standalone mesh), or None.
+QtoTarget = Union[bpy.types.Object, ifcopenshell.entity_instance, None]
+
+
+def _resolve_element(o: QtoTarget) -> Union[ifcopenshell.entity_instance, None]:
+    """Resolve the IFC element from a quantity target.
+
+    The target may already be an IFC element (no Blender object case) or a
+    Blender object whose element is looked up, or None.
+    """
+    if o is None:
+        return None
+    if isinstance(o, ifcopenshell.entity_instance):
+        return o
+    return tool.Ifc.get_entity(o)
+
+
+def _resolve_object(o: QtoTarget) -> Union[bpy.types.Object, None]:
+    """Return the Blender object from a quantity target, or None.
+
+    When the target is the IFC element itself there is no object, so geometry
+    based fallbacks must be skipped.
+    """
+    if o is None or isinstance(o, ifcopenshell.entity_instance):
+        return None
+    return o
+
+
+def _get_overall_dimensions(o: QtoTarget) -> tuple[Union[float, None], Union[float, None]]:
+    """Return an element's ``(OverallWidth, OverallHeight)`` in SI metres.
+
+    Reads the ``OverallWidth`` / ``OverallHeight`` attributes of the underlying
+    IfcDoor/IfcWindow (or any element exposing them) and rescales them from
+    project units to SI metres so the result matches the bounding-box based
+    calculators. Works whether the target is a Blender object or the IFC element
+    itself, so it can quantify a door/window that has no Blender object. Missing
+    attributes are returned as ``None``.
+    """
+    element = _resolve_element(o)
+    if element is None:
+        return None, None
+    width = getattr(element, "OverallWidth", None)
+    height = getattr(element, "OverallHeight", None)
+    if width is None and height is None:
+        return None, None
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    if width is not None:
+        width *= unit_scale
+    if height is not None:
+        height *= unit_scale
+    return width, height
+
+
+def get_overall_width(o: QtoTarget) -> Union[float, None]:
+    """Width of a door or window from its ``OverallWidth`` attribute.
+
+    Matches the buildingSMART Qto_Door/WindowBaseQuantities "Width" (nominal
+    width of the outer lining). Falls back to the bounding box X dimension when
+    the attribute is not set and a Blender object is available, otherwise returns
+    ``None``.
+
+    :param o: Blender Object or IFC element
+    :return float: Overall width
+    """
+    width, _ = _get_overall_dimensions(o)
+    if width is not None:
+        return width
+    obj = _resolve_object(o)
+    return get_x(obj) if obj is not None else None
+
+
+def get_overall_height(o: QtoTarget) -> Union[float, None]:
+    """Height of a door or window from its ``OverallHeight`` attribute.
+
+    Matches the buildingSMART Qto_Door/WindowBaseQuantities "Height" (nominal
+    height of the outer lining). Falls back to the bounding box Z dimension when
+    the attribute is not set and a Blender object is available, otherwise returns
+    ``None``.
+
+    :param o: Blender Object or IFC element
+    :return float: Overall height
+    """
+    _, height = _get_overall_dimensions(o)
+    if height is not None:
+        return height
+    obj = _resolve_object(o)
+    return get_height(obj) if obj is not None else None
+
+
+def get_lining_area(o: QtoTarget) -> Union[float, None]:
+    """Outer lining area of a door or window (``OverallWidth * OverallHeight``).
+
+    Matches the buildingSMART Qto_Door/WindowBaseQuantities "Area" (total area
+    of the outer lining). Unlike the bounding-box or mesh-face calculators this
+    does not overshoot for doors whose lining or threshold extends past the
+    nominal opening. Falls back to :func:`get_side_area` when the
+    OverallWidth/OverallHeight attributes are not set and a Blender object is
+    available, otherwise returns ``None``.
+
+    :param o: Blender Object or IFC element
+    :return float: Lining area
+    """
+    width, height = _get_overall_dimensions(o)
+    if width is not None and height is not None:
+        return width * height
+    obj = _resolve_object(o)
+    return get_side_area(obj) if obj is not None else None
+
+
+def get_lining_perimeter(o: QtoTarget) -> Union[float, None]:
+    """Outer lining perimeter of a door or window (``2 * (width + height)``).
+
+    Matches the buildingSMART Qto_Door/WindowBaseQuantities "Perimeter"
+    (perimeter of the outer lining). Falls back to
+    :func:`get_rectangular_perimeter` when the OverallWidth/OverallHeight
+    attributes are not set and a Blender object is available, otherwise returns
+    ``None``.
+
+    :param o: Blender Object or IFC element
+    :return float: Lining perimeter
+    """
+    width, height = _get_overall_dimensions(o)
+    if width is not None and height is not None:
+        return (width + height) * 2
+    obj = _resolve_object(o)
+    return get_rectangular_perimeter(obj) if obj is not None else None
 
 
 def get_cross_section_area(obj: bpy.types.Object) -> float:

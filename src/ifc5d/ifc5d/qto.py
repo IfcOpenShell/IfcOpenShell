@@ -342,6 +342,28 @@ class IfcOpenShell(QtoCalculator):
         "get_footing_height",
     )
 
+    # Attribute based calculators. Unlike the geometry calculators above these
+    # read values straight off the IFC element (e.g. IfcDoor/IfcWindow
+    # OverallWidth/OverallHeight) and need no geometry, so they quantify elements
+    # whose body representation is mapped, missing, or otherwise not meshed.
+    attribute_functions = {
+        "get_overall_width": Function(
+            "IfcLengthMeasure", "Overall Width", "The door/window OverallWidth attribute (nominal outer lining width)"
+        ),
+        "get_overall_height": Function(
+            "IfcLengthMeasure",
+            "Overall Height",
+            "The door/window OverallHeight attribute (nominal outer lining height)",
+        ),
+        "get_lining_area": Function(
+            "IfcAreaMeasure", "Lining Area", "The door/window outer lining area (OverallWidth * OverallHeight)"
+        ),
+        "get_lining_perimeter": Function(
+            "IfcLengthMeasure", "Lining Perimeter", "The door/window outer lining perimeter (2 * (width + height))"
+        ),
+    }
+    functions.update(attribute_functions)
+
     internal_functions = (
         "get_segment_length",
         "get_weight",
@@ -350,6 +372,58 @@ class IfcOpenShell(QtoCalculator):
         "get_opening_depth",
         "get_opening_area",
     ) + footing_functions
+
+    @classmethod
+    def _overall_dimensions(
+        cls, element: ifcopenshell.entity_instance
+    ) -> tuple[Union[float, None], Union[float, None]]:
+        """Return ``(OverallWidth, OverallHeight)`` of an element in SI metres.
+
+        Reads the attributes directly and rescales them from project units to SI
+        so the result is consistent with the geometry based calculators. Missing
+        attributes are returned as ``None``.
+        """
+        width = getattr(element, "OverallWidth", None)
+        height = getattr(element, "OverallHeight", None)
+        if width is not None:
+            width *= cls.unit_scale
+        if height is not None:
+            height *= cls.unit_scale
+        return width, height
+
+    @classmethod
+    def get_overall_width(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window width from ``OverallWidth`` (SI metres), or ``None`` if unset."""
+        width, _ = cls._overall_dimensions(element)
+        return width
+
+    @classmethod
+    def get_overall_height(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window height from ``OverallHeight`` (SI metres), or ``None`` if unset."""
+        _, height = cls._overall_dimensions(element)
+        return height
+
+    @classmethod
+    def get_lining_area(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window outer lining area ``OverallWidth * OverallHeight`` (SI m2).
+
+        Returns ``None`` when either attribute is unset.
+        """
+        width, height = cls._overall_dimensions(element)
+        if width is None or height is None:
+            return None
+        return width * height
+
+    @classmethod
+    def get_lining_perimeter(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Door/window outer lining perimeter ``2 * (width + height)`` (SI metres).
+
+        Returns ``None`` when either attribute is unset.
+        """
+        width, height = cls._overall_dimensions(element)
+        if width is None or height is None:
+            return None
+        return (width + height) * 2
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
@@ -362,10 +436,16 @@ class IfcOpenShell(QtoCalculator):
 
         gross_qtos: QtosFormulas = {}
         net_qtos: QtosFormulas = {}
+        attribute_qtos: QtosFormulas = {}
 
         for name, quantities in qtos.items():
             for quantity, formula in quantities.items():
                 if not formula:
+                    continue
+                # Attribute based formulas are computed from the element directly
+                # and need no geometry, so keep them out of the iterator tasks.
+                if formula in cls.attribute_functions:
+                    attribute_qtos.setdefault(name, {})[quantity] = formula
                     continue
                 gross_or_net_qtos = gross_qtos if formula.startswith("gross_") else net_qtos
                 if formula.endswith(cls.internal_functions):
@@ -388,6 +468,17 @@ class IfcOpenShell(QtoCalculator):
                 tasks.append((iterator, net_qtos))
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
+
+        # Attribute based quantities: compute straight from the element, no
+        # geometry required, so mapped/unmeshed doors and windows still quantify.
+        for element in elements:
+            for name, quantities in attribute_qtos.items():
+                for quantity, formula in quantities.items():
+                    value = getattr(cls, formula)(element)
+                    if value is None:
+                        continue
+                    value = cls.unit_converter.convert(value, cls.attribute_functions[formula].measure)
+                    results.setdefault(element, {}).setdefault(name, {})[quantity] = value
 
         for iterator, qtos_ in tasks:
             if iterator.initialize():
@@ -604,6 +695,9 @@ class Blender(QtoCalculator):
         "get_length": Function("IfcLengthMeasure", "Length", ""),
         "get_opening_depth": Function("IfcLengthMeasure", "Opening Depth", ""),
         "get_opening_height": Function("IfcLengthMeasure", "Opening Height", ""),
+        "get_overall_height": Function("IfcLengthMeasure", "Overall Height", ""),
+        "get_overall_width": Function("IfcLengthMeasure", "Overall Width", ""),
+        "get_lining_perimeter": Function("IfcLengthMeasure", "Lining Perimeter", ""),
         "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
         "get_stair_length": Function("IfcLengthMeasure", "Stair Length", ""),
         "get_width": Function("IfcLengthMeasure", "Width", ""),
@@ -620,6 +714,8 @@ class Blender(QtoCalculator):
         "get_gross_stair_area": Function("IfcAreaMeasure", "Gross Stair Area", ""),
         "get_gross_surface_area": Function("IfcAreaMeasure", "Gross Surface Area", ""),
         "get_gross_top_area": Function("IfcAreaMeasure", "Gross Top Area", ""),
+        "get_lining_area": Function("IfcAreaMeasure", "Lining Area", ""),
+        "get_side_area": Function("IfcAreaMeasure", "Side Area", ""),
         "get_net_ceiling_area": Function("IfcAreaMeasure", "Net Ceiling Area", ""),
         "get_net_floor_area": Function("IfcAreaMeasure", "Net Floor Area", ""),
         "get_net_footprint_area": Function("IfcAreaMeasure", "Net Footprint Area", ""),
@@ -667,8 +763,13 @@ class Blender(QtoCalculator):
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
-            if not obj or obj.type != "MESH":
-                continue
+            # When the element has no Blender object (e.g. a door/window whose
+            # mapped body representation never produced a standalone mesh),
+            # attribute-based calculators can still quantify it from the IFC
+            # element directly. Pass the element itself as the calculation target
+            # in that case; geometry-only calculators raise on a non-object and
+            # are skipped below, so nothing crashes.
+            target = obj if obj is not None else element
             element_results = results.setdefault(element, {})
             for name, quantities in qtos.items():
                 qto_results = element_results.setdefault(name, {})
@@ -677,10 +778,19 @@ class Blender(QtoCalculator):
                         continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
-                    if (value := formula_function(obj)) is not None:
+                    # A calculator may raise on geometry it cannot handle (a
+                    # non-MESH object, or the element itself when there is no
+                    # object). Skip that quantity rather than aborting the whole
+                    # take-off.
+                    try:
+                        value = formula_function(target)
+                    except Exception:
+                        value = None
+                    if value is not None:
                         qto_results[quantity] = unit_converter.convert(value, Blender.functions[formula].measure)
-                if qto_results:
-                    element_results[name] = qto_results
+                # Avoid leaving an empty qset behind if nothing was calculated.
+                if not qto_results:
+                    del element_results[name]
             # Avoid adding empty qsets if nothing was calculated.
             if not element_results:
                 del results[element]
