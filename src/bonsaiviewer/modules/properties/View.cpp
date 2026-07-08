@@ -35,6 +35,10 @@ PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
     : QObject(parent), widget_(widget), session_state_(session_state)
 {
     connect(session_state_, &bonsaiviewer::SessionState::selectionChanged, this, [this](uint32_t object_id) {
+        // A deselect (click on empty space → object_id 0) leaves the panel
+        // showing the last active object rather than resetting to the empty
+        // placeholder. Project reset/open below still clear it explicitly.
+        if (object_id == 0) return;
         refresh(object_id);
     });
     connect(session_state_, &bonsaiviewer::SessionState::projectReset, this, [this]() {
@@ -92,10 +96,12 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         return;
     }
 
-    // A real project is loaded — don't leak the placeholder predefined type.
-    // It's populated below from live IFC data, or set to "N/A" for
-    // geometry-only elements that have no data to read it from.
+    // A real project is loaded — don't leak the placeholder attributes /
+    // relationships / predefined type. They're populated below from live IFC
+    // data, or from the cached basics for geometry-only elements.
     state.entity.predefined_type.clear();
+    state.attributes.clear();
+    state.relationships.clear();
 
     auto entity = registry->findEntity(object_id);
     if (entity) {
@@ -103,14 +109,32 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         if (auto predefined_type = get_predefined_type(*entity)) {
             state.entity.predefined_type = QString::fromStdString(*predefined_type);
         }
+        // Direct EXPRESS attributes, primitives only — lists / entity refs omitted.
+        for (const auto& [name, value] : get_scalar_attributes(*entity)) {
+            state.attributes.append({QString::fromStdString(name), QString::fromStdString(value)});
+        }
+        // Relationships: the construction type and the spatial container, shown
+        // by name (falling back to the entity class when unnamed).
+        auto display_name = [](const express::Base& related) -> QString {
+            if (auto name = get_string_attribute(related, "Name"); name && !name->empty()) {
+                return QString::fromStdString(*name);
+            }
+            return QString::fromStdString(related.declaration().name());
+        };
+        if (express::Base type = get_type(*entity)) {
+            state.relationships.append({"Type", display_name(type)});
+        }
+        if (express::Base container = get_container(*entity)) {
+            state.relationships.append({"Container", display_name(container)});
+        }
         if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
             state.property_sets[1].rows[0].value = state.entity.entity_class;
         }
     } else {
         // No live IFC source for this object — typical when a pure-geometry
-        // .ifcview sidecar was loaded without its .ifc/.rdb sibling.  Fall
-        // back to the basic info cached in the element registry so the
-        // panel still shows class / name / guid for visible elements.
+        // .ifcview sidecar was loaded without its .ifc/.rdb sibling.  Fall back
+        // to the basic info cached in the element registry so the panel still
+        // shows class / GlobalId / Name for visible elements.
         auto info = registry->findBasicElementInfo(object_id);
         if (info && !info->type.isEmpty()) {
             state.entity.entity_class = info->type;
@@ -120,14 +144,11 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
                 state.property_sets[1].rows[0].value = info->type;
             }
         }
-        if (info && !info->name.isEmpty()) {
-            state.attributes[1].value = info->name;
-            if (state.property_sets.size() > 1 && state.property_sets[1].rows.size() > 1) {
-                state.property_sets[1].rows[1].value = info->name;
-            }
-        }
         if (info && !info->guid.isEmpty()) {
-            state.attributes[0].value = info->guid;
+            state.attributes.append({"GlobalId", info->guid});
+        }
+        if (info && !info->name.isEmpty()) {
+            state.attributes.append({"Name", info->name});
         }
     }
     widget_->render(state);

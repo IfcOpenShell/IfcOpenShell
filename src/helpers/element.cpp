@@ -27,7 +27,10 @@
 #include "../ifcparse/schema.h"
 #include "schema_dispatch.i"
 
+#include <boost/logic/tribool.hpp>
+
 #include <cstddef>
+#include <sstream>
 #include <type_traits>
 
 namespace {
@@ -46,31 +49,36 @@ std::string schema_name(const express::Base& instance) {
     throw ifcopenshell::exception("No helper implementation was built for schema " + name);
 }
 
-// getattr(element, name) for a string- or enum-valued attribute. std::nullopt
-// when the attribute is not part of this entity's type (Python's absent
-// getattr) or when it is IFC null. Reads by name, so it works uniformly across
-// the various IfcElement / IfcType* subtypes that carry PredefinedType et al.
-std::optional<std::string> get_string_attribute(const express::Base& element,
-                                                const std::string& name) {
-    const ifcopenshell::entity* declaration = element.declaration().as_entity();
-    if (declaration == nullptr) {
-        return std::nullopt;
-    }
-    const std::ptrdiff_t index = declaration->attribute_index(name);
-    if (index < 0) {
-        return std::nullopt;
-    }
-    const attribute_value value = element.get_attribute_value(static_cast<std::size_t>(index));
+// A primitive scalar attribute value formatted for display, or std::nullopt for
+// IFC null and for non-primitive values (entity references, aggregates/lists,
+// binary) — which the properties UI omits.
+std::optional<std::string> format_scalar(const attribute_value& value) {
     if (value.isNull()) {
         return std::nullopt;
     }
     switch (value.type()) {
+    case ifcopenshell::Argument_STRING:
+        return static_cast<std::string>(value);
     case ifcopenshell::Argument_ENUMERATION: {
         const enumeration_reference enumeration = value;
         return enumeration.value() ? std::string(enumeration.value()) : std::string();
     }
-    case ifcopenshell::Argument_STRING:
-        return static_cast<std::string>(value);
+    case ifcopenshell::Argument_INT:
+        return std::to_string(static_cast<int>(value));
+    case ifcopenshell::Argument_DOUBLE: {
+        std::ostringstream stream;
+        stream << static_cast<double>(value);
+        return stream.str();
+    }
+    case ifcopenshell::Argument_BOOL:
+        return static_cast<bool>(value) ? std::string("True") : std::string("False");
+    case ifcopenshell::Argument_LOGICAL: {
+        const boost::logic::tribool logical = value;
+        if (boost::logic::indeterminate(logical)) {
+            return std::string("UNKNOWN");
+        }
+        return static_cast<bool>(logical) ? std::string("True") : std::string("False");
+    }
     default:
         return std::nullopt;
     }
@@ -129,6 +137,45 @@ std::optional<std::string> get_predefined_type_s(const express::Base& element) {
     return predefined_type;
 }
 
+// ifcopenshell.util.element.get_aggregate: the aggregate parent, via the
+// Decomposes inverse (IfcRelAggregates.RelatingObject).
+template <typename Schema>
+express::Base get_aggregate_s(const express::Base& element) {
+    const auto object = element.template as<typename Schema::IfcObjectDefinition>();
+    if (!object) {
+        return {};
+    }
+    const auto decomposes = object.Decomposes();
+    if (decomposes.empty()) {
+        return {};
+    }
+    const auto relationship = decomposes.front();
+    if constexpr (!is_ifc4_or_higher<Schema>::value) {
+        // IFC2X3 reuses Decomposes for both aggregates and nests.
+        if (!relationship.template as<typename Schema::IfcRelAggregates>()) {
+            return {};
+        }
+    }
+    return relationship.RelatingObject();
+}
+
+// ifcopenshell.util.element.get_container (should_get_direct=false, no
+// ifc_class): the directly containing spatial element, or the container of the
+// aggregate parent for an aggregated part.
+template <typename Schema>
+express::Base get_container_s(const express::Base& element) {
+    if (const auto product = element.template as<typename Schema::IfcElement>()) {
+        const auto relationships = product.ContainedInStructure();
+        if (!relationships.empty()) {
+            return relationships.front().RelatingStructure();
+        }
+    }
+    if (const express::Base aggregate = get_aggregate_s<Schema>(element)) {
+        return get_container_s<Schema>(aggregate);
+    }
+    return {};
+}
+
 } // namespace
 
 std::optional<std::string> get_predefined_type(const express::Base& element) {
@@ -143,4 +190,83 @@ std::optional<std::string> get_predefined_type(const express::Base& element) {
     IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
 #undef IFCOPENSHELL_DISPATCH
     unsupported_schema(name);
+}
+
+std::vector<std::pair<std::string, std::string>> get_scalar_attributes(const express::Base& element) {
+    std::vector<std::pair<std::string, std::string>> result;
+    if (!element) {
+        return result;
+    }
+    const ifcopenshell::entity* declaration = element.declaration().as_entity();
+    if (declaration == nullptr) {
+        return result;
+    }
+    // all_attributes() is supertype-first, matching get_attribute_value(index).
+    const auto& attributes = declaration->all_attributes();
+    for (std::size_t index = 0; index < attributes.size(); ++index) {
+        if (auto value = format_scalar(element.get_attribute_value(index))) {
+            result.emplace_back(attributes[index]->name(), std::move(*value));
+        }
+    }
+    return result;
+}
+
+express::Base get_type(const express::Base& element) {
+    if (!element) {
+        return {};
+    }
+    const std::string name = schema_name(element);
+#define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
+    if (name == Identifier) {                     \
+        return get_type_s<Schema>(element);       \
+    }
+    IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
+#undef IFCOPENSHELL_DISPATCH
+    unsupported_schema(name);
+}
+
+express::Base get_container(const express::Base& element) {
+    if (!element) {
+        return {};
+    }
+    const std::string name = schema_name(element);
+#define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
+    if (name == Identifier) {                     \
+        return get_container_s<Schema>(element);  \
+    }
+    IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
+#undef IFCOPENSHELL_DISPATCH
+    unsupported_schema(name);
+}
+
+// getattr(element, name) for a string- or enum-valued attribute. Reads by name,
+// so it works uniformly across the various subtypes that carry a given
+// attribute (PredefinedType, Name, ...).
+std::optional<std::string> get_string_attribute(const express::Base& element,
+                                                const std::string& name) {
+    if (!element) {
+        return std::nullopt;
+    }
+    const ifcopenshell::entity* declaration = element.declaration().as_entity();
+    if (declaration == nullptr) {
+        return std::nullopt;
+    }
+    const std::ptrdiff_t index = declaration->attribute_index(name);
+    if (index < 0) {
+        return std::nullopt;
+    }
+    const attribute_value value = element.get_attribute_value(static_cast<std::size_t>(index));
+    if (value.isNull()) {
+        return std::nullopt;
+    }
+    switch (value.type()) {
+    case ifcopenshell::Argument_ENUMERATION: {
+        const enumeration_reference enumeration = value;
+        return enumeration.value() ? std::string(enumeration.value()) : std::string();
+    }
+    case ifcopenshell::Argument_STRING:
+        return static_cast<std::string>(value);
+    default:
+        return std::nullopt;
+    }
 }
