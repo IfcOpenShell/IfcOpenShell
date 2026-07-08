@@ -78,6 +78,12 @@ public:
     QString modelIdForSessionModelId(uint32_t session_model_id) const;
     QList<uint32_t> sessionModelIds() const;
 
+    // The active model — the single model the spatial hierarchy (and other
+    // model-scoped views) operate on. Set by clicking a model in the models
+    // panel; defaults to the first loaded model. Empty when no model is loaded.
+    QString activeModelId() const { return active_model_id_; }
+    void setActiveModelId(const QString& model_id);
+
     void notifySelectionChanged();
     void notifyModelsChanged();
     void notifyFederationChanged();
@@ -101,6 +107,12 @@ signals:
     // for both sidecar-cache and stream loads; subscribers that just need to
     // re-derive view state (e.g. ViewportView::refresh) listen to this.
     void modelGeometryReady(uint32_t session_model_id);
+    // Fires when a model's live IFC data source (the .ifc/.rdb, opened in the
+    // background after a sidecar-cache hit) becomes available for queries —
+    // e.g. so the spatial hierarchy can be built once the file is loaded.
+    void modelDataSourceReady(uint32_t session_model_id);
+    // Fires when the active model changes (empty model_id when cleared).
+    void activeModelChanged(const QString& model_id);
     // Fires when SceneLoader reports a load failure. SessionState turns the
     // raw loader signal into a session-level one so views (e.g. the MessageBox)
     // can subscribe without touching the loader directly.
@@ -121,6 +133,7 @@ private:
     QString status_detail_;
     QHash<QString, uint32_t> model_id_to_session_model_id_;
     QHash<uint32_t, QString> session_model_id_to_model_id_;
+    QString active_model_id_;
     QHash<QString, QVariantMap> cloud_metadata_;
 };
 

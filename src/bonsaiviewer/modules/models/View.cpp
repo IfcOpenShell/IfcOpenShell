@@ -70,6 +70,9 @@ ModelsPanelView::ModelsPanelView(ModelsPanel* widget,
     connect(&bonsaiviewer::ViewerSettings::instance(),
             &bonsaiviewer::ViewerSettings::themeChanged,
             this, rebuild);
+    connect(session_state_, &SessionState::activeModelChanged, this, [this](const QString& model_id) {
+        model_->setActiveModelId(model_id);
+    });
 }
 
 } // namespace bonsaiviewer::modules::models

@@ -54,6 +54,11 @@ express::Base get_container(const express::Base& element);
 std::optional<std::string> get_string_attribute(const express::Base& element,
                                                 const std::string& name);
 
+// The spatial-structure elements aggregated directly under `element` (its
+// IsDecomposedBy → RelatedObjects, filtered to spatial elements). Used to walk
+// the IfcProject → IfcSite → IfcBuilding → IfcBuildingStorey → IfcSpace tree.
+std::vector<express::Base> get_spatial_children(const express::Base& element);
+
 // The element's direct EXPRESS attributes that have a primitive scalar value
 // (string / enum / integer / real / boolean / logical), as (name, formatted
 // value) pairs in declaration order. Attributes that are entity references,

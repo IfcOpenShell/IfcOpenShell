@@ -94,6 +94,15 @@ void SessionState::createLoader(ViewportWindow* viewport) {
     connect(loader_, &SceneLoader::allLoadsFinished, this, [this]() {
         setStatusMessage("Loaded", QString("%1 model(s)").arg(loader_->modelCount()));
     });
+    connect(loader_, &SceneLoader::dataSourceReady, this, [this](uint32_t session_model_id) {
+        emit modelDataSourceReady(session_model_id);
+    });
+    // First model to load becomes the active model by default.
+    connect(this, &SessionState::modelGeometryReady, this, [this](uint32_t session_model_id) {
+        if (active_model_id_.isEmpty()) {
+            setActiveModelId(modelIdForSessionModelId(session_model_id));
+        }
+    });
 }
 
 void SessionState::setSelectedObjectId(uint32_t object_id) {
@@ -129,12 +138,24 @@ void SessionState::removeModelMappingByModelId(const QString& model_id) {
     if (it == model_id_to_session_model_id_.end()) return;
     session_model_id_to_model_id_.remove(it.value());
     model_id_to_session_model_id_.erase(it);
+    if (model_id == active_model_id_) {
+        setActiveModelId(model_id_to_session_model_id_.isEmpty()
+                             ? QString()
+                             : model_id_to_session_model_id_.keys().first());
+    }
 }
 
 void SessionState::clearModelMappings() {
     model_id_to_session_model_id_.clear();
     session_model_id_to_model_id_.clear();
     cloud_metadata_.clear();
+    setActiveModelId(QString());
+}
+
+void SessionState::setActiveModelId(const QString& model_id) {
+    if (model_id == active_model_id_) return;
+    active_model_id_ = model_id;
+    emit activeModelChanged(active_model_id_);
 }
 
 void SessionState::setCloudMetadata(const QString& model_id, const QVariantMap& metadata) {

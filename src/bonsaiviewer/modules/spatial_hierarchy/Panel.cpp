@@ -24,17 +24,32 @@
 #include "../../components/SvgIcon.h"
 
 #include <QHeaderView>
+#include <QMenu>
+#include <QSizePolicy>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
 namespace bonsaiviewer::modules::spatial_hierarchy {
 
+namespace {
+
+void setSubtreeExpanded(QTreeWidgetItem* item, bool expanded) {
+    item->setExpanded(expanded);
+    for (int i = 0; i < item->childCount(); ++i) {
+        setSubtreeExpanded(item->child(i), expanded);
+    }
+}
+
+} // namespace
+
 SpatialHierarchyPanel::SpatialHierarchyPanel(QWidget* parent)
     : components::Panel("Spatial Hierarchy", nullptr, parent)
 {
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
+    section->setBodyExpanding(true);  // let the tree fill the panel's height
 
     tree_ = new QTreeWidget(section);
+    tree_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     tree_->setColumnCount(2);
     tree_->setHeaderLabels({"Spatial Item", ""});
     tree_->setIconSize(QSize(16, 16));
@@ -51,6 +66,20 @@ SpatialHierarchyPanel::SpatialHierarchyPanel(QWidget* parent)
     connect(tree_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
         if (!item || column != 1) return;
         emit visibilityToggleRequested(itemPath(item));
+    });
+
+    // Right-click: recursive expand/collapse of a subtree or the whole tree.
+    tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(tree_, &QTreeWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        QMenu menu(tree_);
+        if (QTreeWidgetItem* item = tree_->itemAt(pos); item && item->childCount() > 0) {
+            menu.addAction("Expand Subtree", tree_, [item]() { setSubtreeExpanded(item, true); });
+            menu.addAction("Collapse Subtree", tree_, [item]() { setSubtreeExpanded(item, false); });
+            menu.addSeparator();
+        }
+        menu.addAction("Expand All", tree_, [this]() { tree_->expandAll(); });
+        menu.addAction("Collapse All", tree_, [this]() { tree_->collapseAll(); });
+        menu.exec(tree_->viewport()->mapToGlobal(pos));
     });
 }
 

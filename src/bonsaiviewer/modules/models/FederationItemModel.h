@@ -53,6 +53,10 @@ public:
     // preserving anyway).
     void rebuildAll();
 
+    // The active model is drawn with an accent-coloured cube icon. Restyles the
+    // previously- and newly-active model rows.
+    void setActiveModelId(const QString& model_id);
+
 private slots:
     void onGroupAdded(const QString& group_id);
     void onGroupRemoved(const QString& group_id);
@@ -77,8 +81,11 @@ private:
     void appendGroupSubtreeTo(QStandardItem* parent_item, const QString& group_id);
     void refreshSubtreeVisibility(QStandardItem* root);
 
+    QIcon modelIcon(const QString& model_id) const;  // accent cube when active, else plain
+
     Federation* federation_ = nullptr;
     QHash<QString, QStandardItem*> id_to_name_item_;  // both group_ids and model_ids
+    QString active_model_id_;
 };
 
 } // namespace bonsaiviewer::modules::models

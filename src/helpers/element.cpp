@@ -159,6 +159,25 @@ express::Base get_aggregate_s(const express::Base& element) {
     return relationship.RelatingObject();
 }
 
+// The spatial-structure children aggregated under this element (IsDecomposedBy →
+// RelatedObjects, filtered to spatial elements).
+template <typename Schema>
+std::vector<express::Base> get_spatial_children_s(const express::Base& element) {
+    std::vector<express::Base> children;
+    const auto object = element.template as<typename Schema::IfcObjectDefinition>();
+    if (!object) {
+        return children;
+    }
+    for (const auto& relationship : object.IsDecomposedBy()) {
+        for (const auto& related : relationship.RelatedObjects()) {
+            if (related.template as<typename Schema::IfcSpatialStructureElement>()) {
+                children.push_back(related);
+            }
+        }
+    }
+    return children;
+}
+
 // ifcopenshell.util.element.get_container (should_get_direct=false, no
 // ifc_class): the directly containing spatial element, or the container of the
 // aggregate parent for an aggregated part.
@@ -233,6 +252,20 @@ express::Base get_container(const express::Base& element) {
 #define IFCOPENSHELL_DISPATCH(Schema, Identifier) \
     if (name == Identifier) {                     \
         return get_container_s<Schema>(element);  \
+    }
+    IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
+#undef IFCOPENSHELL_DISPATCH
+    unsupported_schema(name);
+}
+
+std::vector<express::Base> get_spatial_children(const express::Base& element) {
+    if (!element) {
+        return {};
+    }
+    const std::string name = schema_name(element);
+#define IFCOPENSHELL_DISPATCH(Schema, Identifier)       \
+    if (name == Identifier) {                           \
+        return get_spatial_children_s<Schema>(element); \
     }
     IFCOPENSHELL_HELPER_FOR_EACH_SCHEMA(IFCOPENSHELL_DISPATCH)
 #undef IFCOPENSHELL_DISPATCH

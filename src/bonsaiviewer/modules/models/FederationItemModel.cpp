@@ -87,12 +87,26 @@ QStandardItem* FederationItemModel::makeGroupNameItem(const QString& group_id, c
     return item;
 }
 
+QIcon FederationItemModel::modelIcon(const QString& model_id) const {
+    return model_id == active_model_id_
+        ? components::icons::makeAccentSvgIcon(":/icons/cube.svg")
+        : components::icons::makeSvgIcon(":/icons/cube.svg");
+}
+
 QStandardItem* FederationItemModel::makeModelNameItem(const QString& model_id, const QString& display_name) const {
-    auto* item = new QStandardItem(components::icons::makeSvgIcon(":/icons/cube.svg"), display_name);
+    auto* item = new QStandardItem(modelIcon(model_id), display_name);
     item->setData(model_id, IdRole);
     item->setData(int(ItemKind::Model), KindRole);
     item->setEditable(false);
     return item;
+}
+
+void FederationItemModel::setActiveModelId(const QString& model_id) {
+    if (model_id == active_model_id_) return;
+    const QString previous = active_model_id_;
+    active_model_id_ = model_id;
+    if (auto* item = id_to_name_item_.value(previous)) item->setIcon(modelIcon(previous));
+    if (auto* item = id_to_name_item_.value(active_model_id_)) item->setIcon(modelIcon(active_model_id_));
 }
 
 QStandardItem* FederationItemModel::makeVisibilityItem(ItemKind kind, bool visible) const {
