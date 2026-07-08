@@ -483,20 +483,10 @@ class BIM_PT_sheets(Panel):
             op = row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
 
             if active_sheet.reference_type == "DRAWING":
-                drawingnamesvg = active_sheet.name
-                drawingname = drawingnamesvg.split(".svg")[0]
-                ifc_file = tool.Ifc.get()
-                ifc_annotations = ifc_file.by_type("IfcAnnotation")
-                drawingid = None
-                for annotation in ifc_annotations:
-                    if annotation.ObjectType != "DRAWING":
-                        continue
-                    Annotation_Name = annotation.Name.replace(",", "")  # Remove commas
-                    if Annotation_Name == drawingname:
-                        drawingid = annotation.id()
-                        break
-                if drawingid is not None:
-                    op.drawing = drawingid
+                reference = tool.Ifc.get().by_id(active_sheet.ifc_definition_id)
+                drawing = tool.Drawing.get_drawing_from_sheet_reference(reference)
+                if drawing is not None:
+                    op.drawing = drawing.id()
 
             row3.separator(factor=0.5, type="SPACE")
 
