@@ -196,7 +196,10 @@ def format_distance(
                 "CENTIMETRE": "CENTIMETERS",
                 "MILLIMETRE": "MILLIMETERS",
             }
-            unit_length = unit_length_mapping[unit_length]
+            # Any valid IFC SI length unit that has no dedicated formatting branch
+            # below (for example KILOMETRE or MICROMETRE) falls through to the
+            # adaptive metric formatting instead of raising a KeyError.
+            unit_length = unit_length_mapping.get(unit_length, unit_length)
         # For now we only format area in IFC Units
         if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
             area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
