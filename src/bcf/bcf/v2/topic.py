@@ -271,11 +271,21 @@ class TopicHandler:
     def add_visinfo_handler(
         self, new_viewpoint: VisualizationInfoHandler, snapshot_filename: Optional[str] = None
     ) -> mdl.ViewPoint:
-        self.viewpoints[new_viewpoint.guid + ".bcfv"] = new_viewpoint
+        # The BCF 2.1 schema requires one viewpoint to be named "viewpoint.bcfv" (and its
+        # snapshot "snapshot.png"), even when a topic holds multiple viewpoints. Other tools
+        # (e.g. BimCollab) rely on these fixed names to load the topic's primary viewpoint.
+        # Use the fixed names for the first viewpoint and fall back to guid based names for
+        # any additional ones. See https://github.com/buildingSMART/BCF-XML/tree/release_2_1.
+        guid = new_viewpoint.guid
+        is_primary = "viewpoint.bcfv" not in self.viewpoints
+        viewpoint_filename = "viewpoint.bcfv" if is_primary else f"{guid}.bcfv"
+        if snapshot_filename is None and new_viewpoint.snapshot is not None:
+            snapshot_filename = "snapshot.png" if is_primary else f"{guid}.png"
+        self.viewpoints[viewpoint_filename] = new_viewpoint
         viewpoint = mdl.ViewPoint(
-            viewpoint=new_viewpoint.guid + ".bcfv",
+            viewpoint=viewpoint_filename,
             snapshot=snapshot_filename,
-            guid=new_viewpoint.guid,
+            guid=guid,
         )
         self.markup.viewpoints.append(viewpoint)
         return viewpoint
