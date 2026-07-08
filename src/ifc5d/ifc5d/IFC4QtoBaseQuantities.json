@@ -507,7 +507,7 @@
             },
             "IfcSlab": {
                 "Qto_SlabBaseQuantities": {
-                    "Depth": "net_get_z",
+                    "Depth": "net_get_y",
                     "GrossArea": "gross_get_footprint_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": "gross_get_weight",
@@ -516,7 +516,7 @@
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",
                     "Perimeter": "net_get_footprint_perimeter",
-                    "Width": "net_get_y"
+                    "Width": "net_get_z"
                 }
             },
             "IfcSolarDevice": {
