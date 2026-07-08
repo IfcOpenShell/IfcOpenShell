@@ -25,9 +25,59 @@
 #include "../../ElementRegistry.h"
 #include "../../SessionState.h"
 
-#include "element.h"  // helpers: get_predefined_type
+#include "element.h"  // helpers: get_predefined_type, get_type, get_container
+#include "pset.h"     // helpers: get_psets
+
+#include <cstdint>
+#include <optional>
 
 namespace bonsaiviewer::modules::properties {
+
+namespace {
+
+// A property/quantity value formatted for a single-line cell. std::nullopt for
+// IFC null and compound values (entity references, lists, maps), which are
+// omitted from the flat property table.
+std::optional<QString> formatPropertyValue(const property_value& value) {
+    if (const auto* text = value.get_if<std::string>()) {
+        return QString::fromStdString(*text);
+    }
+    if (const auto* flag = value.get_if<bool>()) {
+        return *flag ? QStringLiteral("True") : QStringLiteral("False");
+    }
+    if (const auto* integer = value.get_if<std::int64_t>()) {
+        return QString::number(static_cast<qlonglong>(*integer));
+    }
+    if (const auto* real = value.get_if<double>()) {
+        return QString::number(*real);
+    }
+    return std::nullopt;
+}
+
+// element_properties (set name -> {property name -> value}) into the panel's
+// PropertySet list, dropping the internal "id" key and non-scalar values, and
+// omitting sets that end up empty.
+QList<PropertySet> toPropertySets(const element_properties& sets) {
+    QList<PropertySet> result;
+    for (const auto& [set_name, properties] : sets) {
+        PropertySet set;
+        set.title = QString::fromStdString(set_name);
+        for (const auto& [property_name, value] : properties) {
+            if (property_name == "id") {
+                continue;  // definition instance id, not a real property
+            }
+            if (auto formatted = formatPropertyValue(value)) {
+                set.rows.append({QString::fromStdString(property_name), *formatted});
+            }
+        }
+        if (!set.rows.isEmpty()) {
+            result.append(set);
+        }
+    }
+    return result;
+}
+
+} // namespace
 
 PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
                                          bonsaiviewer::SessionState* session_state,
@@ -102,6 +152,8 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
     state.entity.predefined_type.clear();
     state.attributes.clear();
     state.relationships.clear();
+    state.property_sets.clear();
+    state.quantity_sets.clear();
 
     auto entity = registry->findEntity(object_id);
     if (entity) {
@@ -127,9 +179,10 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         if (express::Base container = get_container(*entity)) {
             state.relationships.append({"Container", display_name(container)});
         }
-        if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
-            state.property_sets[1].rows[0].value = state.entity.entity_class;
-        }
+        // Property sets (Pset_*) and quantity sets (Qto_* / BaseQuantities),
+        // occurrence values inheriting from the type.
+        state.property_sets = toPropertySets(get_psets(*entity, /*psets_only=*/true, /*qtos_only=*/false));
+        state.quantity_sets = toPropertySets(get_psets(*entity, /*psets_only=*/false, /*qtos_only=*/true));
     } else {
         // No live IFC source for this object — typical when a pure-geometry
         // .ifcview sidecar was loaded without its .ifc/.rdb sibling.  Fall back
@@ -140,9 +193,6 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
             state.entity.entity_class = info->type;
             // Geometry only — no live IFC entity to read a predefined type from.
             state.entity.predefined_type = "N/A";
-            if (!state.property_sets.isEmpty() && !state.property_sets[1].rows.isEmpty()) {
-                state.property_sets[1].rows[0].value = info->type;
-            }
         }
         if (info && !info->guid.isEmpty()) {
             state.attributes.append({"GlobalId", info->guid});
