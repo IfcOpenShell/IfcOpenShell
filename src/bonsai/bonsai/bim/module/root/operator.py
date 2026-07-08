@@ -510,10 +510,14 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 props.representation_template = "OBJ"
                 props.representation_obj = obj
         # For convenience, preselect IFC class
-        if self.ifc_product:
-            props.ifc_product = self.ifc_product
         if self.ifc_class:
+            # The ifc_class enum is built from the subtypes of ifc_product, so the product must be
+            # consistent with the class. Callers may pass a hardcoded product (e.g. IfcElementType) that
+            # does not contain the class (e.g. IfcSpaceType), which would raise a TypeError here. #7204
+            props.ifc_product = tool.Root.get_add_element_product(self.ifc_class, self.ifc_product)
             props.ifc_class = self.ifc_class
+        elif self.ifc_product:
+            props.ifc_product = self.ifc_product
         if self.skip_dialog:
             return self.execute(context)
         return context.window_manager.invoke_props_dialog(self)

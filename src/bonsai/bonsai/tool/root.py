@@ -29,6 +29,7 @@ import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.schema
 
 import bonsai.core.aggregate
 import bonsai.core.geometry
@@ -487,3 +488,28 @@ class Root(bonsai.core.tool.Root):
                 "IfcRelSpaceBoundary",
             )
         return products
+
+    @classmethod
+    def get_add_element_product(cls, ifc_class: str, fallback_product: str = "") -> str:
+        """Return the ``ifc_product`` category (see :func:`get_ifc_products`) the ``ifc_class`` belongs to.
+
+        ``bim.add_element`` builds its ``ifc_class`` enum from the subtypes of the selected
+        ``ifc_product``, so the product must be consistent with the class. Some classes are offered in
+        the Type Manager but are not subtypes of ``IfcElementType`` (e.g. ``IfcSpaceType``, which is an
+        ``IfcSpatialElementType``); passing a hardcoded product for those raises a ``TypeError`` when the
+        class is assigned to the enum. See https://github.com/IfcOpenShell/IfcOpenShell/issues/7204.
+
+        :param ifc_class: The IFC class that will be assigned to ``props.ifc_class``.
+        :param fallback_product: Product to keep when it already contains ``ifc_class``, or to return when
+            no better match is found.
+        """
+        # Classes offered under the IfcElementType product that are not schema subtypes of it.
+        if ifc_class in ("IfcTypeProduct", "IfcDoorStyle", "IfcWindowStyle"):
+            return "IfcElementType"
+        declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
+        if fallback_product and ifcopenshell.util.schema.is_a(declaration, fallback_product):
+            return fallback_product
+        for product in cls.get_ifc_products():
+            if ifcopenshell.util.schema.is_a(declaration, product):
+                return product
+        return fallback_product
