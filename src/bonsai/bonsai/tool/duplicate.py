@@ -248,32 +248,30 @@ class Duplicate(bonsai.core.tool.Duplicate):
         old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
     ) -> None:
         for element, data in relationship.items():
-            try:
-                new_relating_element = old_to_new.get(data.relating_element)[0]
-                new_related_element = old_to_new.get(data.related_element)[0]
-            except (KeyError, IndexError, TypeError):
-                continue
-            new_rel = tool.Ifc.run(
-                "geometry.connect_path",
-                relating_element=new_relating_element,
-                related_element=new_related_element,
-                relating_connection=data.relating_connection_type,
-                related_connection=data.related_connection_type,
-            )
+            new_relating_elements = old_to_new.get(data.relating_element) or []
+            new_related_elements = old_to_new.get(data.related_element) or []
             # connect_path hardcodes priorities to []; restore them post-hoc.
             priority_attrs: dict[str, Any] = {}
             if data.relating_priorities:
                 priority_attrs["RelatingPriorities"] = data.relating_priorities
             if data.related_priorities:
                 priority_attrs["RelatedPriorities"] = data.related_priorities
-            if new_rel is not None and priority_attrs:
-                try:
-                    tool.Ifc.run("attribute.edit_attributes", product=new_rel, attributes=priority_attrs)
-                except (RuntimeError, ifcopenshell.Error) as e:
-                    cls._emit_warning(
-                        f"connection priority restore failed for {new_rel}; "
-                        f"duplicate has empty RelatingPriorities/RelatedPriorities: {e}"
-                    )
+            for new_relating_element, new_related_element in zip(new_relating_elements, new_related_elements):
+                new_rel = tool.Ifc.run(
+                    "geometry.connect_path",
+                    relating_element=new_relating_element,
+                    related_element=new_related_element,
+                    relating_connection=data.relating_connection_type,
+                    related_connection=data.related_connection_type,
+                )
+                if new_rel is not None and priority_attrs:
+                    try:
+                        tool.Ifc.run("attribute.edit_attributes", product=new_rel, attributes=priority_attrs)
+                    except (RuntimeError, ifcopenshell.Error) as e:
+                        cls._emit_warning(
+                            f"connection priority restore failed for {new_rel}; "
+                            f"duplicate has empty RelatingPriorities/RelatedPriorities: {e}"
+                        )
 
     @classmethod
     def recreate_port_connections(
@@ -283,46 +281,43 @@ class Duplicate(bonsai.core.tool.Duplicate):
     ) -> None:
         """Recreate ``IfcRelConnectsPorts`` between duplicates; skip records whose duplicate's port count diverges from the snapshot."""
         for relating_element, records in snapshot.by_element.items():
+            new_relatings = old_to_new.get(relating_element) or []
+            expected_relating = snapshot.port_counts.get(relating_element)
             for record in records:
                 related_element = record.related_element
-                try:
-                    new_relating = old_to_new[relating_element][0]
-                    new_related = old_to_new[related_element][0]
-                except (KeyError, IndexError):
-                    continue
-
-                new_relating_ports = tool.System.get_ports(new_relating)
-                new_related_ports = tool.System.get_ports(new_related)
-
-                expected_relating = snapshot.port_counts.get(relating_element)
-                if expected_relating is not None and len(new_relating_ports) != expected_relating:
-                    cls._emit_warning(
-                        f"port reconnect skipped — duplicate has {len(new_relating_ports)} ports, "
-                        f"snapshot had {expected_relating}"
-                    )
-                    continue
+                new_relateds = old_to_new.get(related_element) or []
                 expected_related = snapshot.port_counts.get(related_element)
-                if expected_related is not None and len(new_related_ports) != expected_related:
-                    cls._emit_warning(
-                        f"port reconnect skipped — duplicate has {len(new_related_ports)} ports, "
-                        f"snapshot had {expected_related}"
-                    )
-                    continue
+                for new_relating, new_related in zip(new_relatings, new_relateds):
+                    new_relating_ports = tool.System.get_ports(new_relating)
+                    new_related_ports = tool.System.get_ports(new_related)
 
-                try:
-                    new_port_a = new_relating_ports[record.relating_port_index]
-                    new_port_b = new_related_ports[record.related_port_index]
-                except IndexError:
-                    cls._emit_warning(
-                        f"port reconnect skipped — record references port index past the duplicate's port list"
-                    )
-                    continue
-                try:
-                    tool.Ifc.run(
-                        "system.connect_port",
-                        port1=new_port_a,
-                        port2=new_port_b,
-                        direction=record.direction or "NOTDEFINED",
-                    )
-                except (RuntimeError, ifcopenshell.Error) as e:
-                    cls._emit_warning(f"port reconnect failed between duplicates: {e}")
+                    if expected_relating is not None and len(new_relating_ports) != expected_relating:
+                        cls._emit_warning(
+                            f"port reconnect skipped — duplicate has {len(new_relating_ports)} ports, "
+                            f"snapshot had {expected_relating}"
+                        )
+                        continue
+                    if expected_related is not None and len(new_related_ports) != expected_related:
+                        cls._emit_warning(
+                            f"port reconnect skipped — duplicate has {len(new_related_ports)} ports, "
+                            f"snapshot had {expected_related}"
+                        )
+                        continue
+
+                    try:
+                        new_port_a = new_relating_ports[record.relating_port_index]
+                        new_port_b = new_related_ports[record.related_port_index]
+                    except IndexError:
+                        cls._emit_warning(
+                            f"port reconnect skipped — record references port index past the duplicate's port list"
+                        )
+                        continue
+                    try:
+                        tool.Ifc.run(
+                            "system.connect_port",
+                            port1=new_port_a,
+                            port2=new_port_b,
+                            direction=record.direction or "NOTDEFINED",
+                        )
+                    except (RuntimeError, ifcopenshell.Error) as e:
+                        cls._emit_warning(f"port reconnect failed between duplicates: {e}")

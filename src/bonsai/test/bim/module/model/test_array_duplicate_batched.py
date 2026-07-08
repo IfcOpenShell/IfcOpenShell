@@ -374,3 +374,216 @@ class TestOrphanArrayChildPrune(NewFile):
             assert child_obj is not None, "every surviving child must have a live Blender object"
 
 
+class TestRecreateAggregateIteratesAllNew(NewFile):
+    """Pins the [0]-indexing sweep in tool/root.py recreate_aggregate. When the
+    new-list has N>1 entries (the batched-duplicate shape), every entry must be
+    aggregate-assigned, not just new[0]."""
+
+    def test_iterates_assign_object_per_new_entity_when_old_has_aggregate(self):
+        from unittest.mock import Mock
+
+        old_assembly = Mock()
+        old_assembly.is_a = lambda c: c == "IfcElementAssembly"
+        old_parent_aggregate = Mock()
+        old_parent_aggregate.is_a = lambda c: False
+
+        new_assemblies = [Mock(), Mock(), Mock()]
+        new_parent_aggregate = [Mock()]
+
+        old_to_new = {old_assembly: new_assemblies, old_parent_aggregate: new_parent_aggregate}
+
+        with patch(
+            "ifcopenshell.util.element.get_aggregate",
+            side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
+        ), patch("bonsai.core.aggregate.assign_object") as assign_mock, patch(
+            "ifcopenshell.util.element.get_pset", return_value=None
+        ), patch.object(
+            tool.Ifc, "get_object", side_effect=lambda e: Mock()
+        ), patch.object(
+            tool.Blender, "select_and_activate_single_object"
+        ):
+            tool.Root.recreate_aggregate(old_to_new)
+
+        assert (
+            assign_mock.call_count == 3
+        ), f"recreate_aggregate must assign each of N new entities (not just new[0]); got {assign_mock.call_count}"
+
+    def test_iterates_unassign_object_per_new_entity_when_aggregate_missing(self):
+        from unittest.mock import Mock
+
+        old_assembly = Mock()
+        old_assembly.is_a = lambda c: c == "IfcElementAssembly"
+        old_parent_aggregate = Mock()
+
+        new_assemblies = [Mock(), Mock(), Mock()]
+        old_to_new = {old_assembly: new_assemblies}  # parent aggregate NOT in old_to_new
+
+        with patch(
+            "ifcopenshell.util.element.get_aggregate",
+            side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
+        ), patch("bonsai.core.aggregate.unassign_object") as unassign_mock, patch.object(
+            tool.Ifc, "get_object", side_effect=lambda e: Mock()
+        ):
+            tool.Root.recreate_aggregate(old_to_new)
+
+        assert unassign_mock.call_count == 3, (
+            f"recreate_aggregate must unassign each of N new entities when parent aggregate is missing; "
+            f"got {unassign_mock.call_count}"
+        )
+
+
+class TestRecreateConnectionsZipsPairs(NewFile):
+    """Pins the [0]-indexing sweep in tool/duplicate.py recreate_connections. When
+    both sides of a connection are duplicated N times, zip-pair the N new
+    relating with N new related; when only one side is duplicated, skip."""
+
+    def _make_connection_data(self):
+        from unittest.mock import Mock
+
+        data = Mock()
+        data.relating_element = Mock()
+        data.related_element = Mock()
+        data.relating_connection_type = "ATSTART"
+        data.related_connection_type = "ATEND"
+        data.relating_priorities = []
+        data.related_priorities = []
+        return data
+
+    def test_zips_n_pairs_when_both_sides_duplicated(self):
+        from unittest.mock import Mock
+
+        data = self._make_connection_data()
+        old_to_new = {
+            data.relating_element: [Mock(), Mock(), Mock()],
+            data.related_element: [Mock(), Mock(), Mock()],
+        }
+        relationship = {Mock(): data}
+
+        with patch.object(tool.Ifc, "run", return_value=None) as run_mock:
+            tool.Duplicate.recreate_connections(relationship, old_to_new)
+
+        connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "geometry.connect_path"]
+        assert (
+            len(connect_calls) == 3
+        ), f"zip-pair must create 3 connect_path calls for 3-vs-3 batched duplicate; got {len(connect_calls)}"
+
+    def test_skips_when_other_side_not_duplicated(self):
+        from unittest.mock import Mock
+
+        data = self._make_connection_data()
+        # Only relating side is in old_to_new; related side was NOT duplicated.
+        old_to_new = {data.relating_element: [Mock(), Mock(), Mock()]}
+        relationship = {Mock(): data}
+
+        with patch.object(tool.Ifc, "run", return_value=None) as run_mock:
+            tool.Duplicate.recreate_connections(relationship, old_to_new)
+
+        connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "geometry.connect_path"]
+        assert (
+            connect_calls == []
+        ), "when only one side of a connection is in old_to_new, no connections should be recreated"
+
+    def test_single_pair_case_unchanged(self):
+        """Pre-sweep behavior (1 source -> 1 new) must still work — zip with two 1-element lists."""
+        from unittest.mock import Mock
+
+        data = self._make_connection_data()
+        old_to_new = {
+            data.relating_element: [Mock()],
+            data.related_element: [Mock()],
+        }
+        relationship = {Mock(): data}
+
+        with patch.object(tool.Ifc, "run", return_value=None) as run_mock:
+            tool.Duplicate.recreate_connections(relationship, old_to_new)
+
+        connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "geometry.connect_path"]
+        assert len(connect_calls) == 1
+
+
+class TestRecreatePortConnectionsZipsPairs(NewFile):
+    """Pins the [0]-indexing sweep in tool/duplicate.py recreate_port_connections.
+    When both sides of a port-to-port connection are duplicated N times, the
+    connection must be recreated on every pair of new siblings — not just the
+    first. Matters for arrayed MEP segments (pipes / ducts / cables) where each
+    child in the array should stay connected to its neighbour after regen."""
+
+    def _make_snapshot(self, relating_element, records, port_counts):
+        from bonsai.tool.duplicate import PortConnectionSnapshot
+
+        return PortConnectionSnapshot(
+            by_element={relating_element: records},
+            port_counts=port_counts,
+        )
+
+    def _make_record(self, related_element, relating_port_index=0, related_port_index=0, direction="SOURCE"):
+        from bonsai.tool.duplicate import PortConnectionRecord
+
+        return PortConnectionRecord(
+            relating_port_index=relating_port_index,
+            related_element=related_element,
+            related_port_index=related_port_index,
+            direction=direction,
+        )
+
+    def test_zips_n_pairs_when_both_sides_duplicated(self):
+        from unittest.mock import Mock
+
+        relating_old = Mock()
+        related_old = Mock()
+        record = self._make_record(related_old)
+        snapshot = self._make_snapshot(relating_old, [record], port_counts={})
+
+        old_to_new = {
+            relating_old: [Mock(), Mock(), Mock()],
+            related_old: [Mock(), Mock(), Mock()],
+        }
+
+        fake_ports = [Mock(), Mock()]
+        with patch.object(tool.System, "get_ports", return_value=fake_ports), patch.object(
+            tool.Ifc, "run", return_value=None
+        ) as run_mock:
+            tool.Duplicate.recreate_port_connections(snapshot, old_to_new)
+
+        connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "system.connect_port"]
+        assert (
+            len(connect_calls) == 3
+        ), f"zip-pair must create 3 connect_port calls for 3-vs-3 batched MEP duplicate; got {len(connect_calls)}"
+
+    def test_skips_when_other_side_not_duplicated(self):
+        from unittest.mock import Mock
+
+        relating_old = Mock()
+        related_old = Mock()
+        record = self._make_record(related_old)
+        snapshot = self._make_snapshot(relating_old, [record], port_counts={})
+
+        # Only relating side is in old_to_new.
+        old_to_new = {relating_old: [Mock(), Mock(), Mock()]}
+
+        with patch.object(tool.System, "get_ports", return_value=[Mock()]), patch.object(
+            tool.Ifc, "run", return_value=None
+        ) as run_mock:
+            tool.Duplicate.recreate_port_connections(snapshot, old_to_new)
+
+        connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "system.connect_port"]
+        assert connect_calls == [], "when only one side is in old_to_new, no port connections should be recreated"
+
+    def test_single_pair_case_unchanged(self):
+        """Pre-sweep behavior (1 source -> 1 new) must still work — zip with two 1-element lists."""
+        from unittest.mock import Mock
+
+        relating_old = Mock()
+        related_old = Mock()
+        record = self._make_record(related_old)
+        snapshot = self._make_snapshot(relating_old, [record], port_counts={})
+
+        old_to_new = {relating_old: [Mock()], related_old: [Mock()]}
+
+        with patch.object(tool.System, "get_ports", return_value=[Mock()]), patch.object(
+            tool.Ifc, "run", return_value=None
+        ) as run_mock:
+            tool.Duplicate.recreate_port_connections(snapshot, old_to_new)
+
+        connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "system.connect_port"]
+        assert len(connect_calls) == 1
