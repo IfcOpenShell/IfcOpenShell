@@ -1294,6 +1294,11 @@ class LoadProjectElements(bpy.types.Operator):
             if element.IsDecomposedBy:
                 for subelement in element.IsDecomposedBy[0].RelatedObjects:
                     decomposed_elements.add(subelement)
+            # IfcSurfaceFeature (e.g. road markings) adhere to a host element
+            # via IfcRelAdheresToElement, a [1:1] hierarchical relationship in
+            # the same family as aggregation, containment and nesting (IFC4.3).
+            for rel in getattr(element, "HasSurfaceFeatures", ()):
+                decomposed_elements.update(rel.RelatedSurfaceFeatures)
         if decomposed_elements:
             self.append_decomposed_elements(decomposed_elements)
         elements.update(decomposed_elements)
