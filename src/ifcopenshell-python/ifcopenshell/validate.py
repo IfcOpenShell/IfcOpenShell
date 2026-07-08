@@ -398,6 +398,139 @@ def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entit
     return entity_attrs
 
 
+def validate_instance(
+    inst: ifcopenshell.entity_instance,
+    logger: Union[Logger, json_logger],
+    schema: Optional[schema_definition] = None,
+    manage_feature: bool = True,
+) -> None:
+    """Validate the attribute values of a single entity instance against the schema.
+
+    This runs the per-instance checks that :func:`validate` performs for every
+    instance in a file: the entity is not abstract, every attribute value is of
+    the correct type, required attributes are present, and inverse attributes
+    have the correct cardinality. The GlobalId uniqueness check is not included
+    here because it needs the context of the whole file.
+
+    It is factored out of :func:`validate` so a single suspect instance can be
+    checked on its own, for example when diagnosing which entity caused a crash
+    (see :mod:`ifcopenshell.diagnostics`). Errors are reported through ``logger``
+    exactly like :func:`validate` does.
+
+    :param inst: The entity instance to validate.
+    :param logger: A standard :class:`logging.Logger` or a :class:`json_logger`.
+    :param schema: The schema to validate against. Derived from ``inst`` when omitted.
+    :param manage_feature: When True, toggle the ``use_attribute_value_derived``
+        feature for the duration of the call so derived attributes are detected
+        correctly. Callers that already manage this feature (such as
+        :func:`validate`) should pass False.
+    """
+    if schema is None:
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(inst.file.schema_identifier)
+
+    if manage_feature:
+        feature_org = ifcopenshell.ifcopenshell_wrapper.get_feature("use_attribute_value_derived")
+        ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", True)
+
+    if isinstance(logger, json_logger):
+        logger.set_state("instance", inst)
+
+    try:
+        entity, attrs = get_entity_attributes(schema, inst.is_a())
+
+        if entity.is_abstract():
+            e = "Entity %s is abstract" % entity.name()
+            if isinstance(logger, json_logger):
+                logger.set_state("attribute", None)
+                logger.error(e)
+            else:
+                logger.error("For instance:\n    %s\n%s", inst, e)
+
+        has_invalid_value = False
+        values = [None] * len(attrs)
+        for i in range(len(attrs)):
+            try:
+                values[i] = inst[i]
+                pass
+            except:
+                if isinstance(logger, json_logger):
+                    logger.set_state("attribute", f"{entity.name()}.{attrs[i].name()}")
+                    logger.error("Invalid attribute value")
+                else:
+                    logger.error(
+                        "For instance:\n    %s\n    %s\nInvalid attribute value for %s.%s",
+                        inst,
+                        annotate_inst_attr_pos(inst, i),
+                        entity,
+                        attrs[i],
+                    )
+                has_invalid_value = True
+
+        if not has_invalid_value:
+            for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
+                if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
+                    if isinstance(logger, json_logger):
+                        logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                        logger.error("Attribute is derived in subtype")
+                    else:
+                        logger.error(
+                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nDerived in subtype\n",
+                            inst,
+                            annotate_inst_attr_pos(inst, i),
+                            attr,
+                        )
+
+                if val is None and not attr.optional() and not is_derived:
+                    if isinstance(logger, json_logger):
+                        logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                        logger.error("Attribute not optional")
+                    else:
+                        logger.error(
+                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nNot optional\n",
+                            inst,
+                            annotate_inst_attr_pos(inst, i),
+                            attr,
+                        )
+
+                if val is not None and not is_derived:
+                    attr_type = attr.type_of_attribute()
+                    try:
+                        assert_valid(attr_type, val, schema, attr=attr)
+                    except ValidationError as e:
+                        if isinstance(logger, json_logger):
+                            logger.set_state("attribute", e.attribute)
+                            logger.error(str(e))
+                        else:
+                            logger.error(
+                                "For instance:\n    %s\n    %s\n%s",
+                                inst,
+                                annotate_inst_attr_pos(inst, i),
+                                e,
+                            )
+
+        for attr in entity.all_inverse_attributes():
+            try:
+                val = getattr(inst, attr.name())
+            except Exception as e:
+                if isinstance(logger, json_logger):
+                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                    logger.error(str(e))
+                else:
+                    logger.error("For instance:\n    %s\n%s", inst, e)
+                continue
+            try:
+                assert_valid_inverse(attr, val, schema)
+            except ValidationError as e:
+                if isinstance(logger, json_logger):
+                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
+                    logger.error(str(e))
+                else:
+                    logger.error("For instance:\n    %s\n%s", inst, e)
+    finally:
+        if manage_feature:
+            ifcopenshell.ifcopenshell_wrapper.set_feature("use_attribute_value_derived", feature_org)
+
+
 def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger], express_rules=False) -> None:
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
@@ -502,96 +635,10 @@ def validate(f: Union[ifcopenshell.file, str], logger: Union[Logger, json_logger
                             validation_error,
                         )
 
-        entity, attrs = get_entity_attributes(schema, inst.is_a())
-
-        if entity.is_abstract():
-            e = "Entity %s is abstract" % entity.name()
-            if isinstance(logger, json_logger):
-                logger.set_state("attribute", None)
-                logger.error(e)
-            else:
-                logger.error("For instance:\n    %s\n%s", inst, e)
-
-        has_invalid_value = False
-        values = [None] * len(attrs)
-        for i in range(len(attrs)):
-            try:
-                values[i] = inst[i]
-                pass
-            except:
-                if isinstance(logger, json_logger):
-                    logger.set_state("attribute", f"{entity.name()}.{attrs[i].name()}")
-                    logger.error("Invalid attribute value")
-                else:
-                    logger.error(
-                        "For instance:\n    %s\n    %s\nInvalid attribute value for %s.%s",
-                        inst,
-                        annotate_inst_attr_pos(inst, i),
-                        entity,
-                        attrs[i],
-                    )
-                has_invalid_value = True
-
-        if not has_invalid_value:
-            for i, (attr, val, is_derived) in enumerate(zip(attrs, values, entity.derived())):
-                if is_derived and not isinstance(val, ifcopenshell.ifcopenshell_wrapper.attribute_value_derived):
-                    if isinstance(logger, json_logger):
-                        logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                        logger.error("Attribute is derived in subtype")
-                    else:
-                        logger.error(
-                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nDerived in subtype\n",
-                            inst,
-                            annotate_inst_attr_pos(inst, i),
-                            attr,
-                        )
-
-                if val is None and not attr.optional() and not is_derived:
-                    if isinstance(logger, json_logger):
-                        logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                        logger.error("Attribute not optional")
-                    else:
-                        logger.error(
-                            "For instance:\n    %s\n    %s\nWith attribute:\n    %s\nNot optional\n",
-                            inst,
-                            annotate_inst_attr_pos(inst, i),
-                            attr,
-                        )
-
-                if val is not None and not is_derived:
-                    attr_type = attr.type_of_attribute()
-                    try:
-                        assert_valid(attr_type, val, schema, attr=attr)
-                    except ValidationError as e:
-                        if isinstance(logger, json_logger):
-                            logger.set_state("attribute", e.attribute)
-                            logger.error(str(e))
-                        else:
-                            logger.error(
-                                "For instance:\n    %s\n    %s\n%s",
-                                inst,
-                                annotate_inst_attr_pos(inst, i),
-                                e,
-                            )
-
-        for attr in entity.all_inverse_attributes():
-            try:
-                val = getattr(inst, attr.name())
-            except Exception as e:
-                if isinstance(logger, json_logger):
-                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                    logger.error(str(e))
-                else:
-                    logger.error("For instance:\n    %s\n%s", inst, e)
-                continue
-            try:
-                assert_valid_inverse(attr, val, schema)
-            except ValidationError as e:
-                if isinstance(logger, json_logger):
-                    logger.set_state("attribute", f"{entity.name()}.{attr.name()}")
-                    logger.error(str(e))
-                else:
-                    logger.error("For instance:\n    %s\n%s", inst, e)
+        # The feature toggle and json_logger instance state are already managed
+        # by this function around the whole loop, so the per-instance helper does
+        # not need to repeat them.
+        validate_instance(inst, logger, schema, manage_feature=False)
 
     if filename:
         # IfcOpenShell uses lazy-loading, so entity instance
