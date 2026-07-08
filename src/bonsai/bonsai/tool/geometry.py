@@ -1766,6 +1766,7 @@ class Geometry(bonsai.core.tool.Geometry):
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
 
         representation = None
+        geometric_sets: list[ifcopenshell.entity_instance] = []
         boolean_results_to_remove: set[ifcopenshell.entity_instance] = set()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
@@ -1773,6 +1774,12 @@ class Geometry(bonsai.core.tool.Geometry):
                     shape_aspects.append(inverse.OfShapeAspect[0])
                 else:
                     representation = inverse
+            elif inverse.is_a("IfcGeometricSet"):
+                # IfcGeometricSet/IfcGeometricCurveSet aggregate their items via
+                # .Elements and sit between the item and the IfcShapeRepresentation.
+                # The item must be pulled out of the set for a deletion to stick,
+                # otherwise the set keeps referencing it and it reappears (see #6591).
+                geometric_sets.append(inverse)
             elif inverse.is_a("IfcBooleanResult"):
                 if inverse.SecondOperand == representation_item:
                     other_operand = inverse.FirstOperand
@@ -1809,6 +1816,17 @@ class Geometry(bonsai.core.tool.Geometry):
             if not new_items:
                 return
             representation.Items = new_items
+
+        for geometric_set in geometric_sets:
+            new_elements = tuple(e for e in geometric_set.Elements if e != representation_item)
+            if new_elements:
+                geometric_set.Elements = new_elements
+            else:
+                # Removing the last element would make the set invalid, so remove
+                # the whole set instead, which cascades to this item.
+                cls.remove_representation_item(geometric_set, element)
+                return
+
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
