@@ -2515,7 +2515,17 @@ void ViewportCore::driveStreamingLoads() {
     for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.streaming_file_path.empty() || m.hidden) continue;
         for (const auto& c : m.chunks) {
-            if (!c.is_resident && (c.frustum_visible_count > 0 || c.is_loading)) {
+            if (c.is_resident) continue;
+            // Keep the loop alive only for chunks we're actually loading or that
+            // are eligible to enqueue — the same test the enqueue below uses
+            // (contribution-visible and not in a blocked cooldown). A chunk
+            // that's in the frustum but sub-pixel (contribution_visible_count
+            // == 0) is never fetched, so it must not keep the render loop
+            // spinning at idle; likewise a cooldown-blocked chunk only retries
+            // after real work (an eviction or camera move) requests a frame.
+            if (c.is_loading
+                || (c.contribution_visible_count > 0
+                    && c.blocked_cooldown_until_frame_idx <= streaming_frame_idx_)) {
                 visible_pending = true;
                 break;
             }
