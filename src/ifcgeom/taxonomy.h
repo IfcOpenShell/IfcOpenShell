@@ -1074,6 +1074,19 @@ typedef item const* ptr;
 				virtual loft* clone_() const { return new loft(*this); }
 				virtual kinds kind() const { return LOFT; }
 
+				// Kernel-agnostic faceted lofting (Eigen only). Mirrors the polyhedral
+				// branch of the opencascade loft, i.e. the path after the non_polygonal
+				// guard that does NOT use BRepOffsetAPI_ThruSections. Consecutive
+				// polygonal profile sections are stitched into a triangulated tube; for
+				// closed (face) sections begin/end caps are added and for open (loop)
+				// sections with availability tags a tag-driven triangulation is used.
+				// The result is a plain taxonomy::shell of planar faces in the loft-local
+				// coordinate system (the loft matrix is applied by the caller), so any
+				// kernel (opencascade as well as the lighter cgal) can consume it.
+				// Returns nullptr when a profile edge is non-linear, in which case the
+				// caller should fall back to the kernel's native (ThruSections) lofting.
+				shell::ptr as_shell() const;
+
 				virtual void print_impl(std::ostream& o, int indent) const {
                if (axis) {
                   o << std::string(indent, ' ') << "axis" << std::endl;

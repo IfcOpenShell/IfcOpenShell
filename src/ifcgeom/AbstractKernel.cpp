@@ -58,6 +58,22 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 		return dispatch_conversion<0>::dispatch(this, shell->kind(), shell, results);
 	};
 
+	// Kernel-agnostic faceted lofting (Eigen only, see taxonomy::loft::as_shell).
+	// The polyhedral loft logic no longer lives only in the opencascade kernel, so
+	// a kernel without a native loft (cgal) can consume the tessellated shell
+	// instead of dropping the item.
+	auto try_loft_approximation = [&]() -> boost::optional<bool> {
+		auto lft = taxonomy::dcast<taxonomy::loft>(item);
+		if (!lft) {
+			return boost::none;
+		}
+		auto shell = lft->as_shell();
+		if (!shell) {
+			return boost::none;
+		}
+		return dispatch_conversion<0>::dispatch(this, shell->kind(), shell, results);
+	};
+
 	auto process_with_upgrade = [&]() {
 		// Forced approximation mode: applies to every kernel (including opencascade).
 		if (settings_.get<settings::ApproximateSweptSolids>().get()) {
@@ -69,8 +85,12 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 			return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
 		} catch (const not_implemented_error&) {
 			// The kernel has no native conversion for this item. If it is a swept
-			// solid, fall back to the tessellated-shell approximation before giving up.
+			// solid or a loft, fall back to the tessellated-shell approximation
+			// before giving up.
 			if (auto res = try_sweep_approximation()) {
+				return *res;
+			}
+			if (auto res = try_loft_approximation()) {
 				return *res;
 			}
 			return dispatch_with_upgrade<0>::dispatch(this, item, results);
