@@ -1775,10 +1775,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 else:
                     representation = inverse
             elif inverse.is_a("IfcGeometricSet"):
-                # IfcGeometricSet/IfcGeometricCurveSet aggregate their items via
-                # .Elements and sit between the item and the IfcShapeRepresentation.
-                # The item must be pulled out of the set for a deletion to stick,
-                # otherwise the set keeps referencing it and it reappears (see #6591).
+                # The item is aggregated via .Elements and must be pulled out or it reappears (#6591).
                 geometric_sets.append(inverse)
             elif inverse.is_a("IfcBooleanResult"):
                 if inverse.SecondOperand == representation_item:
@@ -1822,8 +1819,7 @@ class Geometry(bonsai.core.tool.Geometry):
             if new_elements:
                 geometric_set.Elements = new_elements
             else:
-                # Removing the last element would make the set invalid, so remove
-                # the whole set instead, which cascades to this item.
+                # Removing the set's last element is invalid, so drop the whole set.
                 cls.remove_representation_item(geometric_set, element)
                 return
 
