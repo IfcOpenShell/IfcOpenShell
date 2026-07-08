@@ -41,7 +41,10 @@ void installUiFont() {
         }
     }
     if (!family.isEmpty()) {
-        QApplication::setFont(QFont(family, 10));
+        // Slightly smaller base font to fit more data. Panel titles keep their
+        // own explicit size (QLabel#panelTitleText in Style.cpp), so they're
+        // unaffected by this.
+        QApplication::setFont(QFont(family, 9));
     }
 }
 

@@ -143,6 +143,10 @@ QString buildAppStyleSheet() {
             font-size: ${font_small}px;
             font-weight: 600;
         }
+        QLabel#panelSectionEmptyLabel {
+            color: ${secondary_text};
+            padding: 4px 10px;
+        }
         QToolButton#panelTitleButton {
             border: none;
             background: transparent;

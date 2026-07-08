@@ -71,6 +71,12 @@ QWidget* makeRelationshipList(const QList<bonsaiviewer::modules::properties::Rel
     return new bonsaiviewer::components::KeyValueTable(table_rows, parent);
 }
 
+QLabel* makeEmptyStateLabel(const QString& text, QWidget* parent = nullptr) {
+    auto* label = new QLabel(text, parent);
+    label->setObjectName("panelSectionEmptyLabel");
+    return label;
+}
+
 QWidget* makeFilterWrapper(QLineEdit** field_out, QWidget* parent = nullptr) {
     auto* wrapper = new QWidget(parent);
     wrapper->setObjectName("panelSectionFilterWrapper");
@@ -176,6 +182,9 @@ void PropertiesPanel::render(const PropertiesPanelState& state) {
     });
     properties_section->addBodyWidget(properties_filter_wrapper);
     for (auto* widget : property_set_widgets) properties_section->addBodyWidget(widget);
+    if (property_set_widgets.isEmpty()) {
+        properties_section->addBodyWidget(makeEmptyStateLabel("No properties", this));
+    }
     properties_section->setExpanded(properties_expanded_);
     properties_filter_toggle->setChecked(properties_filter_visible_);
 
@@ -203,6 +212,9 @@ void PropertiesPanel::render(const PropertiesPanelState& state) {
     });
     quantities_section->addBodyWidget(quantities_filter_wrapper);
     for (auto* widget : quantity_set_widgets) quantities_section->addBodyWidget(widget);
+    if (quantity_set_widgets.isEmpty()) {
+        quantities_section->addBodyWidget(makeEmptyStateLabel("No quantities", this));
+    }
     quantities_section->setExpanded(quantities_expanded_);
     quantities_filter_toggle->setChecked(quantities_filter_visible_);
 

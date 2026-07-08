@@ -102,60 +102,14 @@ PropertiesPanelView::PropertiesPanelView(PropertiesPanel* widget,
 
 void PropertiesPanelView::refresh(uint32_t object_id) {
     auto* registry = session_state_->elementRegistry();
+
+    // Empty default: nothing selected → "No item selected" with empty sections.
+    // Real data is filled in below when an object resolves.
     PropertiesPanelState state;
-    state.entity = {"IfcWall", "SOLIDWALL"};
-    state.attributes = {
-        {"GlobalId", "2Q$n5SLPP9Q8B7wQKjKfUQ"},
-        {"Name", "Core-EXT-204"},
-        {"Description", "External load-bearing wall"},
-    };
-    state.relationships = {
-        {"Type", "Basic Wall: Exterior - 200mm"},
-        {"Container", "Level 02"},
-    };
-    state.property_sets = {
-        {"Pset_WallCommon",
-         {{"Reference", "Core-EXT-204"},
-          {"Status", "Reviewed"},
-          {"Fire Rating", "120 min"},
-          {"LoadBearing", "True"}}},
-        {"Identity Data",
-         {{"Type", "IfcWall"},
-          {"Name", "Core-EXT-204"},
-          {"Owner", "Architecture"},
-          {"Phase", "Construction"}}},
-        {"BIM Collaboration",
-         {{"Issue Count", "2 open"},
-          {"Last Review", "2026-04-30"},
-          {"Assigned To", "Design Coordination"}}},
-    };
-    state.quantity_sets = {
-        {"BaseQuantities",
-         {{"Length", "6.20 m"},
-          {"Height", "3.45 m"},
-          {"Width", "0.30 m"},
-          {"Volume", "6.42 m3"}}},
-        {"Finish Quantities",
-         {{"NetSideArea", "21.39 m2"},
-          {"GrossArea", "22.10 m2"},
-          {"Paint Coverage", "42.78 m2"}}},
-    };
+    state.entity = {"No item selected", ""};
 
-    if (!registry) {
-        widget_->render(state);
-        return;
-    }
-
-    // A real project is loaded — don't leak the placeholder attributes /
-    // relationships / predefined type. They're populated below from live IFC
-    // data, or from the cached basics for geometry-only elements.
-    state.entity.predefined_type.clear();
-    state.attributes.clear();
-    state.relationships.clear();
-    state.property_sets.clear();
-    state.quantity_sets.clear();
-
-    auto entity = registry->findEntity(object_id);
+    auto entity = registry ? registry->findEntity(object_id)
+                           : std::optional<express::Base>{};
     if (entity) {
         state.entity.entity_class = QString::fromStdString(entity->declaration().name());
         if (auto predefined_type = get_predefined_type(*entity)) {
@@ -183,7 +137,7 @@ void PropertiesPanelView::refresh(uint32_t object_id) {
         // occurrence values inheriting from the type.
         state.property_sets = toPropertySets(get_psets(*entity, /*psets_only=*/true, /*qtos_only=*/false));
         state.quantity_sets = toPropertySets(get_psets(*entity, /*psets_only=*/false, /*qtos_only=*/true));
-    } else {
+    } else if (registry) {
         // No live IFC source for this object — typical when a pure-geometry
         // .ifcview sidecar was loaded without its .ifc/.rdb sibling.  Fall back
         // to the basic info cached in the element registry so the panel still
