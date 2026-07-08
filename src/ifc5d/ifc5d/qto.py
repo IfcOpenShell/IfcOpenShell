@@ -265,6 +265,27 @@ class IfcOpenShell(QtoCalculator):
             "Opening Depth",
             "The depth of an opening (through the voided element), guessing the opening orientation",
         ),
+        "get_footing_length": Function(
+            "IfcLengthMeasure",
+            "Footing Length",
+            "The footing length. For beam-like footings (STRIP_FOOTING, FOOTING_BEAM) this is the "
+            "extruded run along the local Z axis. For slab-like footings (PAD_FOOTING, PILE_CAP) and "
+            "other predefined types it is the longer footprint side (the larger of local X or Y).",
+        ),
+        "get_footing_width": Function(
+            "IfcLengthMeasure",
+            "Footing Width",
+            "The footing width. For beam-like footings (STRIP_FOOTING, FOOTING_BEAM) this is the "
+            "cross section width along the local X axis. For slab-like footings (PAD_FOOTING, PILE_CAP) "
+            "and other predefined types it is the shorter footprint side (the smaller of local X or Y).",
+        ),
+        "get_footing_height": Function(
+            "IfcLengthMeasure",
+            "Footing Height",
+            "The footing height. For beam-like footings (STRIP_FOOTING, FOOTING_BEAM) this is the "
+            "cross section height along the local Y axis. For slab-like footings (PAD_FOOTING, PILE_CAP) "
+            "and other predefined types it is the thickness along the local Z axis.",
+        ),
         # IfcAreaMeasure
         "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
         "get_footprint_area": Function(
@@ -312,6 +333,15 @@ class IfcOpenShell(QtoCalculator):
         functions[f"gross_{k}"] = Function(v.measure, f"Gross {v.name}", v.description)
         functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
 
+    # Predefined-type-aware footing functions. They read the element's predefined type to
+    # pick the correct local axis, so they receive the element (not just the geometry) and
+    # cannot live in ifcopenshell.util.shape.
+    footing_functions = (
+        "get_footing_length",
+        "get_footing_width",
+        "get_footing_height",
+    )
+
     internal_functions = (
         "get_segment_length",
         "get_weight",
@@ -319,7 +349,7 @@ class IfcOpenShell(QtoCalculator):
         "get_opening_height",
         "get_opening_depth",
         "get_opening_area",
-    )
+    ) + footing_functions
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
@@ -386,6 +416,11 @@ class IfcOpenShell(QtoCalculator):
                             elif formula.startswith("get_opening_"):
                                 value = cls.get_opening_quantity(geometry, formula)
                                 value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            elif formula in cls.footing_functions:
+                                value = getattr(cls, formula)(element, geometry)
+                                if value is None:
+                                    continue
+                                value = cls.unit_converter.convert(value, cls.raw_functions[formula].measure)
                             else:
                                 value = formula_functions[formula](geometry)
                                 assert isinstance(value, (float, int))
@@ -469,6 +504,36 @@ class IfcOpenShell(QtoCalculator):
             z = item.Depth
             return max([x, y, z])
 
+    # Footings are authored two ways, so a single static axis rule cannot be correct for both.
+    # Beam-like footings (STRIP_FOOTING, FOOTING_BEAM) are a profile extruded along the local Z
+    # axis, so the run (Length) is local Z and the cross section sits on local X (Width) and
+    # local Y (Height). Slab-like footings (PAD_FOOTING, PILE_CAP) have their footprint on the
+    # local X/Y plane and their thickness (Height) on local Z. These functions branch on the
+    # predefined type to pick the right axis. This mirrors the Blender calculator's
+    # get_footing_length / get_footing_width / get_footing_height.
+    _beam_like_footings = ("STRIP_FOOTING", "FOOTING_BEAM")
+
+    @classmethod
+    def get_footing_length(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type in cls._beam_like_footings:
+            return ifcopenshell.util.shape.get_z(geometry)
+        return max(ifcopenshell.util.shape.get_x(geometry), ifcopenshell.util.shape.get_y(geometry))
+
+    @classmethod
+    def get_footing_width(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type in cls._beam_like_footings:
+            return ifcopenshell.util.shape.get_x(geometry)
+        return min(ifcopenshell.util.shape.get_x(geometry), ifcopenshell.util.shape.get_y(geometry))
+
+    @classmethod
+    def get_footing_height(cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType) -> float:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type in cls._beam_like_footings:
+            return ifcopenshell.util.shape.get_y(geometry)
+        return ifcopenshell.util.shape.get_z(geometry)
+
     @classmethod
     def get_weight(
         cls,
@@ -544,6 +609,7 @@ class Blender(QtoCalculator):
         "get_width": Function("IfcLengthMeasure", "Width", ""),
         "get_footing_height": Function("IfcLengthMeasure", "Height", ""),
         "get_footing_length": Function("IfcLengthMeasure", "Length", ""),
+        "get_footing_width": Function("IfcLengthMeasure", "Width", ""),
         # IfcAreaMeasure
         "get_covering_gross_area": Function("IfcAreaMeasure", "Covering Gross Area", ""),
         "get_covering_net_area": Function("IfcAreaMeasure", "Covering Net Area", ""),

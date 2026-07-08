@@ -318,12 +318,12 @@
                     "GrossSurfaceArea": null,
                     "GrossVolume": null,
                     "GrossWeight": "gross_get_weight",
-                    "Height": "net_get_z",
-                    "Length": "net_get_max_xy",
+                    "Height": "net_get_footing_height",
+                    "Length": "net_get_footing_length",
                     "NetVolume": "net_get_volume",
                     "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": null,
-                    "Width": null
+                    "Width": "net_get_footing_width"
                 }
             },
             "IfcHeatExchanger": {

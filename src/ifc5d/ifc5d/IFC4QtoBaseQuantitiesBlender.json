@@ -323,7 +323,7 @@
                     "NetVolume": "get_net_volume",
                     "NetWeight": "get_net_weight",
                     "OuterSurfaceArea": "get_outer_surface_area",
-                    "Width": "get_width"
+                    "Width": "get_footing_width"
                 }
             },
             "IfcHeatExchanger": {
