@@ -2714,7 +2714,18 @@ class Geometry(bonsai.core.tool.Geometry):
             # immediately shows the unclipped geometry; otherwise the user
             # sees a stale mesh until they Shift+G, which is easy to miss.
             if new.is_a("IfcWall"):
-                if tool.Model.strip_underside_booleans(new):
+                wall_type = tool.Root.get_element_type(new)
+                if wall_type and tool.Root.does_type_have_representations(wall_type):
+                    # Imported wall whose body is authored and backed by
+                    # type representation maps (e.g. ArchiCAD SweptSolid
+                    # walls), not generated from a Bonsai layer-set + axis.
+                    # regenerate_wall would discard the authored profile
+                    # (roof clips, per-wall heights) and collapse the
+                    # duplicate onto a default extrusion, so the copy pokes
+                    # through the roof. Keep the deep-copied body, exactly
+                    # like every other imported element (issue #7487).
+                    pass
+                elif tool.Model.strip_underside_booleans(new):
                     tool.Model.reload_body_representation(new_obj)
                 # HasOpenings rels don't follow object duplication, so
                 # the duplicate's body must rebuild to match its current
