@@ -243,137 +243,6 @@ class TestRegenerateArrayUIRefreshCoalesces(NewFile):
         assert reload_mock.call_count == 1
 
 
-class TestRecalculateWallsWithNewConnections(NewFile):
-    """Pins the post-connection wall recalc: after ``recreate_connections``
-    wires new IfcRelConnectsPathElements onto duplicated walls, the wall
-    bodies must be re-recalculated because the in-loop ``regenerate_wall``
-    fired before the connections existed. Otherwise the junction geometry
-    stays stale and the user has to manually regen."""
-
-    def test_walls_with_new_connections_are_recalculated(self):
-        from unittest.mock import Mock
-
-        wall_new = Mock()
-        wall_new.is_a = lambda c: c == "IfcWall"
-        wall_new.ConnectedTo = [Mock()]
-        wall_new.ConnectedFrom = []
-
-        wall_obj = Mock()
-        old_to_new = {Mock(): [wall_new]}
-
-        with patch.object(tool.Ifc, "get_object", return_value=wall_obj), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
-            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
-
-        assert recalc_mock.call_count == 1
-        assert recalc_mock.call_args.args[0] == [wall_obj]
-
-    def test_walls_without_connections_are_skipped(self):
-        from unittest.mock import Mock
-
-        wall_new = Mock()
-        wall_new.is_a = lambda c: c == "IfcWall"
-        wall_new.ConnectedTo = []
-        wall_new.ConnectedFrom = []
-
-        old_to_new = {Mock(): [wall_new]}
-
-        with patch.object(tool.Ifc, "get_object", return_value=Mock()), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
-            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
-
-        assert recalc_mock.call_count == 0, "walls with no new connections must not trigger a recalc pass"
-
-    def test_non_wall_entities_are_skipped(self):
-        from unittest.mock import Mock
-
-        actuator_new = Mock()
-        actuator_new.is_a = lambda c: c == "IfcActuator"
-        actuator_new.ConnectedTo = [Mock()]
-
-        old_to_new = {Mock(): [actuator_new]}
-
-        with patch.object(tool.Ifc, "get_object", return_value=Mock()), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
-            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
-
-        assert recalc_mock.call_count == 0
-
-    def test_multiple_new_walls_collected_into_one_call(self):
-        from unittest.mock import Mock
-
-        wall_a_new = Mock()
-        wall_a_new.is_a = lambda c: c == "IfcWall"
-        wall_a_new.ConnectedTo = [Mock()]
-        wall_a_new.ConnectedFrom = []
-        wall_b_new = Mock()
-        wall_b_new.is_a = lambda c: c == "IfcWall"
-        wall_b_new.ConnectedTo = []
-        wall_b_new.ConnectedFrom = [Mock()]
-
-        objs = {wall_a_new: Mock(), wall_b_new: Mock()}
-        old_to_new = {Mock(): [wall_a_new], Mock(): [wall_b_new]}
-
-        with patch.object(tool.Ifc, "get_object", side_effect=lambda e: objs.get(e)), patch.object(
-            tool.Model, "recalculate_walls"
-        ) as recalc_mock:
-            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
-
-        assert recalc_mock.call_count == 1
-        assert set(recalc_mock.call_args.args[0]) == {objs[wall_a_new], objs[wall_b_new]}
-
-
-class TestOrphanArrayChildPrune(NewFile):
-    """Outliner / keyboard delete of a Bonsai-managed array child bypasses
-    ``bim.delete``'s cascade, leaving the IFC entity and its opening / filling
-    refs behind. Regen must prune these orphans before the main loop or the
-    stale registry entry corrupts the ``batch_host_recut`` drain."""
-
-    def test_orphan_ifc_entity_pruned_from_children_list(self):
-        obj, element, parent_data = _build_actuator_with_array_pset(count=4)
-        bpy.context.view_layer.objects.active = obj
-        tool.Model.regenerate_array(obj, parent_data)
-        assert len(parent_data[0]["children"]) == 3
-
-        orphan_guid = parent_data[0]["children"][1]
-        orphan_element = tool.Ifc.get().by_guid(orphan_guid)
-        orphan_obj = tool.Ifc.get_object(orphan_element)
-        assert orphan_obj is not None
-        bpy.data.objects.remove(orphan_obj, do_unlink=True)
-
-        tool.Model.regenerate_array(obj, parent_data)
-
-        assert (
-            orphan_guid not in parent_data[0]["children"]
-        ), "orphan GUID must be pruned from array['children'] once its Blender object is dead"
-        try:
-            still_there = tool.Ifc.get().by_guid(orphan_guid)
-        except RuntimeError:
-            still_there = None
-        assert still_there is None, "orphan IFC entity must be cascade-removed, not left as a leak"
-
-    def test_regen_completes_when_child_deleted_outside_bim_cascade(self):
-        obj, element, parent_data = _build_actuator_with_array_pset(count=6)
-        bpy.context.view_layer.objects.active = obj
-        tool.Model.regenerate_array(obj, parent_data)
-
-        victim_guid = parent_data[0]["children"][2]
-        victim_element = tool.Ifc.get().by_guid(victim_guid)
-        victim_obj = tool.Ifc.get_object(victim_element)
-        bpy.data.objects.remove(victim_obj, do_unlink=True)
-
-        tool.Model.regenerate_array(obj, parent_data)
-
-        assert len(parent_data[0]["children"]) == 5, "regen must rebuild to the target count after pruning the orphan"
-        for guid in parent_data[0]["children"]:
-            child = tool.Ifc.get().by_guid(guid)
-            child_obj = tool.Ifc.get_object(child)
-            assert child_obj is not None, "every surviving child must have a live Blender object"
-
-
 class TestRecreateAggregateIteratesAllNew(NewFile):
     """Pins the [0]-indexing sweep in tool/root.py recreate_aggregate. When the
     new-list has N>1 entries (the batched-duplicate shape), every entry must be
@@ -499,6 +368,259 @@ class TestRecreateConnectionsZipsPairs(NewFile):
 
         connect_calls = [c for c in run_mock.call_args_list if c.args and c.args[0] == "geometry.connect_path"]
         assert len(connect_calls) == 1
+
+
+class TestRecalculateWallsWithNewConnections(NewFile):
+    """Pins the post-connection wall recalc: after ``recreate_connections``
+    wires new IfcRelConnectsPathElements onto duplicated walls, the wall
+    bodies must be re-recalculated because the in-loop ``regenerate_wall``
+    fired before the connections existed. Otherwise the junction geometry
+    stays stale and the user has to manually regen."""
+
+    def test_walls_with_new_connections_are_recalculated(self):
+        from unittest.mock import Mock
+
+        wall_new = Mock()
+        wall_new.is_a = lambda c: c == "IfcWall"
+        wall_new.ConnectedTo = [Mock()]
+        wall_new.ConnectedFrom = []
+
+        wall_obj = Mock()
+        old_to_new = {Mock(): [wall_new]}
+
+        with patch.object(tool.Ifc, "get_object", return_value=wall_obj), patch.object(
+            tool.Model, "recalculate_walls"
+        ) as recalc_mock:
+            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
+
+        assert recalc_mock.call_count == 1
+        assert recalc_mock.call_args.args[0] == [wall_obj]
+
+    def test_walls_without_connections_are_skipped(self):
+        from unittest.mock import Mock
+
+        wall_new = Mock()
+        wall_new.is_a = lambda c: c == "IfcWall"
+        wall_new.ConnectedTo = []
+        wall_new.ConnectedFrom = []
+
+        old_to_new = {Mock(): [wall_new]}
+
+        with patch.object(tool.Ifc, "get_object", return_value=Mock()), patch.object(
+            tool.Model, "recalculate_walls"
+        ) as recalc_mock:
+            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
+
+        assert recalc_mock.call_count == 0, "walls with no new connections must not trigger a recalc pass"
+
+    def test_non_wall_entities_are_skipped(self):
+        from unittest.mock import Mock
+
+        actuator_new = Mock()
+        actuator_new.is_a = lambda c: c == "IfcActuator"
+        actuator_new.ConnectedTo = [Mock()]
+
+        old_to_new = {Mock(): [actuator_new]}
+
+        with patch.object(tool.Ifc, "get_object", return_value=Mock()), patch.object(
+            tool.Model, "recalculate_walls"
+        ) as recalc_mock:
+            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
+
+        assert recalc_mock.call_count == 0
+
+    def test_multiple_new_walls_collected_into_one_call(self):
+        from unittest.mock import Mock
+
+        wall_a_new = Mock()
+        wall_a_new.is_a = lambda c: c == "IfcWall"
+        wall_a_new.ConnectedTo = [Mock()]
+        wall_a_new.ConnectedFrom = []
+        wall_b_new = Mock()
+        wall_b_new.is_a = lambda c: c == "IfcWall"
+        wall_b_new.ConnectedTo = []
+        wall_b_new.ConnectedFrom = [Mock()]
+
+        objs = {wall_a_new: Mock(), wall_b_new: Mock()}
+        old_to_new = {Mock(): [wall_a_new], Mock(): [wall_b_new]}
+
+        with patch.object(tool.Ifc, "get_object", side_effect=lambda e: objs.get(e)), patch.object(
+            tool.Model, "recalculate_walls"
+        ) as recalc_mock:
+            tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
+
+        assert recalc_mock.call_count == 1
+        assert set(recalc_mock.call_args.args[0]) == {objs[wall_a_new], objs[wall_b_new]}
+
+
+class TestMEPActionGuardsAgainstArrayChildren(NewFile):
+    """Pins the array-child guards on the three MEP-action visibility helpers.
+    Writable MEP actions (add fitting, remove terminal, join, re-edit bend)
+    applied to an array child get wiped by the next regen — gating the icons
+    at the visibility layer prevents that footgun."""
+
+    def test_active_is_flow_segment_returns_false_for_array_child(self):
+        from unittest.mock import Mock
+
+        from bonsai.bim.module.model.mep import _active_is_flow_segment
+
+        obj = Mock()
+        element = Mock()
+        element.is_a = lambda c: c == "IfcFlowSegment"
+
+        with patch.object(tool.Ifc, "get_entity", return_value=element), patch.object(
+            tool.Array, "is_array_child", return_value=True
+        ), patch.object(tool.System, "has_parametric_body", return_value=True):
+            assert _active_is_flow_segment(obj) is False
+
+    def test_active_is_flow_segment_true_for_non_array_parent(self):
+        from unittest.mock import Mock
+
+        from bonsai.bim.module.model.mep import _active_is_flow_segment
+
+        obj = Mock()
+        element = Mock()
+        element.is_a = lambda c: c == "IfcFlowSegment"
+
+        with patch.object(tool.Ifc, "get_entity", return_value=element), patch.object(
+            tool.Array, "is_array_child", return_value=False
+        ), patch.object(tool.System, "has_parametric_body", return_value=True):
+            assert _active_is_flow_segment(obj) is True
+
+    def test_active_is_bend_fitting_returns_false_for_array_child(self):
+        from unittest.mock import Mock
+
+        from bonsai.bim.module.model.mep import _active_is_bend_fitting
+
+        obj = Mock()
+        element = Mock()
+
+        with patch.object(tool.Ifc, "get_entity", return_value=element), patch(
+            "bonsai.bim.module.model.mep._is_bend_fitting", return_value=True
+        ), patch.object(tool.Array, "is_array_child", return_value=True):
+            assert _active_is_bend_fitting(obj) is False
+
+    def test_n_mep_selected_returns_false_when_any_selected_is_array_child(self):
+        from unittest.mock import Mock
+
+        from bonsai.bim.module.model.mep import _n_mep_selected
+
+        obj_a = Mock()
+        obj_b = Mock()
+        element_a = Mock()
+        element_b = Mock()
+
+        def is_array_child(el):
+            return el is element_b
+
+        with patch.object(tool.Blender, "get_selected_objects", return_value=[obj_a, obj_b]), patch.object(
+            tool.Ifc, "get_entity", side_effect=lambda o: element_a if o is obj_a else element_b
+        ), patch.object(tool.System, "is_mep_element", return_value=True), patch.object(
+            tool.Array, "is_array_child", side_effect=is_array_child
+        ):
+            assert _n_mep_selected(2) is False
+
+
+class TestSelectOnlyParent(NewFile):
+    """Pins ``tool.Array.select_only_parent`` — the shared helper wired into
+    both ``bim.regenerate_array`` and ``bim.finish_editing_array`` so the
+    grow / shrink / edit-commit paths converge on the same post-condition:
+    only the parent is selected + active."""
+
+    def test_deselects_children_selects_and_activates_parent(self):
+        obj, element, parent_data = _build_actuator_with_array_pset(count=4)
+        bpy.context.view_layer.objects.active = obj
+        obj.select_set(True)
+        tool.Model.regenerate_array(obj, parent_data)
+        for child_guid in parent_data[0]["children"]:
+            child_element = tool.Ifc.get().by_guid(child_guid)
+            child_obj = tool.Ifc.get_object(child_element)
+            child_obj.select_set(True)
+
+        tool.Array.select_only_parent(obj, element, bpy.context)
+
+        assert obj in bpy.context.selected_objects
+        assert bpy.context.view_layer.objects.active is obj
+        for child_guid in parent_data[0]["children"]:
+            child_element = tool.Ifc.get().by_guid(child_guid)
+            child_obj = tool.Ifc.get_object(child_element)
+            assert child_obj not in bpy.context.selected_objects
+
+
+class TestIsArrayChild(NewFile):
+    """Pins ``tool.Array.is_array_child`` — the light helper used by the port
+    decorator (and any future per-element guard) to skip array children."""
+
+    def test_returns_false_when_no_bbim_array_pset(self):
+        from unittest.mock import Mock
+
+        element = Mock()
+        with patch("ifcopenshell.util.element.get_pset", return_value=None):
+            assert tool.Array.is_array_child(element) is False
+
+    def test_returns_false_on_the_array_parent_itself(self):
+        from unittest.mock import Mock
+
+        element = Mock()
+        element.GlobalId = "PARENT_GUID"
+        with patch("ifcopenshell.util.element.get_pset", return_value={"Parent": "PARENT_GUID"}):
+            assert tool.Array.is_array_child(element) is False
+
+    def test_returns_true_when_parent_guid_points_elsewhere(self):
+        from unittest.mock import Mock
+
+        element = Mock()
+        element.GlobalId = "CHILD_GUID"
+        with patch("ifcopenshell.util.element.get_pset", return_value={"Parent": "PARENT_GUID"}):
+            assert tool.Array.is_array_child(element) is True
+
+
+class TestOrphanArrayChildPrune(NewFile):
+    """Outliner / keyboard delete of a Bonsai-managed array child bypasses
+    ``bim.delete``'s cascade, leaving the IFC entity and its opening / filling
+    refs behind. Regen must prune these orphans before the main loop or the
+    stale registry entry corrupts the ``batch_host_recut`` drain."""
+
+    def test_orphan_ifc_entity_pruned_from_children_list(self):
+        obj, element, parent_data = _build_actuator_with_array_pset(count=4)
+        bpy.context.view_layer.objects.active = obj
+        tool.Model.regenerate_array(obj, parent_data)
+        assert len(parent_data[0]["children"]) == 3
+
+        orphan_guid = parent_data[0]["children"][1]
+        orphan_element = tool.Ifc.get().by_guid(orphan_guid)
+        orphan_obj = tool.Ifc.get_object(orphan_element)
+        assert orphan_obj is not None
+        bpy.data.objects.remove(orphan_obj, do_unlink=True)
+
+        tool.Model.regenerate_array(obj, parent_data)
+
+        assert (
+            orphan_guid not in parent_data[0]["children"]
+        ), "orphan GUID must be pruned from array['children'] once its Blender object is dead"
+        try:
+            still_there = tool.Ifc.get().by_guid(orphan_guid)
+        except RuntimeError:
+            still_there = None
+        assert still_there is None, "orphan IFC entity must be cascade-removed, not left as a leak"
+
+    def test_regen_completes_when_child_deleted_outside_bim_cascade(self):
+        obj, element, parent_data = _build_actuator_with_array_pset(count=6)
+        bpy.context.view_layer.objects.active = obj
+        tool.Model.regenerate_array(obj, parent_data)
+
+        victim_guid = parent_data[0]["children"][2]
+        victim_element = tool.Ifc.get().by_guid(victim_guid)
+        victim_obj = tool.Ifc.get_object(victim_element)
+        bpy.data.objects.remove(victim_obj, do_unlink=True)
+
+        tool.Model.regenerate_array(obj, parent_data)
+
+        assert len(parent_data[0]["children"]) == 5, "regen must rebuild to the target count after pruning the orphan"
+        for guid in parent_data[0]["children"]:
+            child = tool.Ifc.get().by_guid(guid)
+            child_obj = tool.Ifc.get_object(child)
+            assert child_obj is not None, "every surviving child must have a live Blender object"
 
 
 class TestRecreatePortConnectionsZipsPairs(NewFile):

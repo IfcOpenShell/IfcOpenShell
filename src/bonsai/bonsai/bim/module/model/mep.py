@@ -1677,6 +1677,11 @@ def _n_mep_selected(n: int) -> bool:
         element = tool.Ifc.get_entity(selected_obj)
         if element is None or not tool.System.is_mep_element(element):
             return False
+        # Array children mirror their parent's port topology. Writable MEP
+        # actions on a child get wiped by the next array regen, so gate the
+        # icons out at the visibility layer.
+        if tool.Array.is_array_child(element):
+            return False
     return True
 
 
@@ -2555,6 +2560,8 @@ def _active_is_flow_segment(obj: bpy.types.Object) -> bool:
     element = tool.Ifc.get_entity(obj)
     if element is None or not element.is_a("IfcFlowSegment"):
         return False
+    if tool.Array.is_array_child(element):
+        return False
     return tool.System.has_parametric_body(element)
 
 
@@ -2583,6 +2590,8 @@ def _active_is_bend_fitting(obj: bpy.types.Object) -> bool:
     eligible."""
     element = tool.Ifc.get_entity(obj)
     if not _is_bend_fitting(element):
+        return False
+    if tool.Array.is_array_child(element):
         return False
     element_type = ifcopenshell.util.element.get_type(element)
     if element_type is None:
