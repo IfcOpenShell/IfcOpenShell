@@ -630,15 +630,15 @@ class TestUsingArrays(NewFile):
     def test_remove_array_first_to_last(self):
         self.setup_array(add_second_layer=True)
         bpy.ops.bim.remove_array(item=0)
-        assert len(bpy.context.selected_objects) == 3
+        assert len(self._array_objects()) == 3
         bpy.ops.bim.remove_array(item=0)
-        assert len(bpy.context.selected_objects) == 1
+        assert len(self._array_objects()) == 1
 
     def test_apply_array_1_layer(self):
         self.setup_array()
         bpy.ops.bim.apply_array()
 
-        objs = bpy.context.selected_objects
+        objs = self._array_objects()
         assert len(objs) == 4
         # check BBIM_Array psets are removed
         for obj in objs:
@@ -664,7 +664,7 @@ class TestUsingArrays(NewFile):
         self.setup_array(sync_children=True)
         bpy.ops.bim.apply_array()
 
-        objs = bpy.context.selected_objects
+        objs = self._array_objects()
         assert len(objs) == 4
         # check BBIM_Array psets are removed
         for obj in objs:

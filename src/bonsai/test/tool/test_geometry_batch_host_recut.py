@@ -164,6 +164,62 @@ def test_stale_element_skipped_at_drain():
     assert recut.call_count == 0
 
 
+class _DeadStructRNA:
+    """Simulates a Blender object whose StructRNA has been removed — every
+    attribute access raises ReferenceError. Enqueue this as voided_obj to
+    reproduce the outliner-mid-batch-delete crash."""
+
+    def __getattr__(self, name):
+        raise ReferenceError("StructRNA of type Object has been removed")
+
+    def __bool__(self):
+        raise ReferenceError("StructRNA of type Object has been removed")
+
+
+def test_dead_structrna_recut_skipped_at_drain():
+    """Blender object is deleted while the batch is open (outliner delete +
+    manual DEL bypass the bim.delete cascade). The drain must skip it silently
+    — not raise — so unrelated hosts in the same batch still get their recut."""
+    from bonsai import tool
+
+    dead_obj = _DeadStructRNA()
+    live_obj = _mock_voided_obj("LiveWall")
+    rep = Mock()
+
+    def get_entity(obj):
+        # Called only when the guard clears — for the dead ref, guard short-circuits first.
+        return _mock_element(2)
+
+    with patch("bonsai.core.geometry.switch_representation") as recut, patch.object(
+        tool.Ifc, "get_entity", side_effect=get_entity
+    ), patch.object(tool.Geometry, "get_active_representation", return_value=rep):
+        with tool.Geometry.batch_host_recut():
+            tool.Geometry._host_recut_queue[999] = (dead_obj, rep)
+            tool.Geometry.recut_host(live_obj, rep)
+
+    assert recut.call_count == 1, "live host must still get its recut despite a dead sibling in the queue"
+    drained_obj = recut.call_args.kwargs["obj"]
+    assert drained_obj is live_obj
+
+
+def test_dead_structrna_update_skipped_at_drain():
+    """Same guarantee for update_representation drain path."""
+    from bonsai import tool
+
+    dead_obj = _DeadStructRNA()
+    live_obj = _mock_voided_obj("LiveWall")
+    bpy_ops_mock = Mock()
+
+    with patch("bonsai.tool.geometry.bpy.ops", new=bpy_ops_mock), patch.object(
+        tool.Ifc, "get_entity", return_value=_mock_element(42)
+    ), patch.object(tool.Geometry, "get_active_representation", return_value=Mock()):
+        with tool.Geometry.batch_host_recut():
+            tool.Geometry._host_update_queue[999] = dead_obj
+            tool.Geometry.update_host_representation(live_obj)
+
+    assert bpy_ops_mock.bim.update_representation.call_count == 1
+
+
 def test_exception_inside_batch_still_resets_state():
     from bonsai import tool
 

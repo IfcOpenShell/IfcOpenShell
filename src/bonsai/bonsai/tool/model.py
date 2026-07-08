@@ -1248,6 +1248,35 @@ class Model(bonsai.core.tool.Model):
             cls._regenerate_array_body(parent_obj, data, array_layers_to_apply)
 
     @classmethod
+    def _prune_orphan_array_children(cls, array: dict[str, Any]) -> None:
+        """Drop GUIDs from ``array['children']`` whose IFC entity or Blender
+        object is no longer alive, and cascade-remove the orphan IFC entity
+        if it still exists. Outliner / keyboard delete of a Bonsai-managed
+        object bypasses ``bim.delete``'s cascade, leaving dangling opening
+        and filling references that later confuse regen and crash the
+        ``batch_host_recut`` drain."""
+        live_guids: list[str] = []
+        ifc_file = tool.Ifc.get()
+        for guid in array["children"]:
+            try:
+                element = ifc_file.by_guid(guid)
+            except RuntimeError:
+                continue
+            obj = tool.Ifc.get_object(element)
+            try:
+                is_live = obj is not None and obj.data is not None
+            except ReferenceError:
+                is_live = False
+            if is_live:
+                live_guids.append(guid)
+                continue
+            try:
+                ifcopenshell.api.root.remove_product(ifc_file, product=element)
+            except (RuntimeError, ifcopenshell.Error):
+                pass
+        array["children"] = live_guids
+
+    @classmethod
     def _regenerate_array_body(
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int]
     ) -> None:
@@ -1262,6 +1291,7 @@ class Model(bonsai.core.tool.Model):
         obj_stack = [parent_obj]
 
         for array_i, array in enumerate(data):
+            cls._prune_orphan_array_children(array)
             child_i = 0
             existing_children = set(array["children"])
             total_existing_children = len(array["children"])
@@ -1274,6 +1304,14 @@ class Model(bonsai.core.tool.Model):
                 base_offset = Vector([array["x"], array["y"], array["z"]]) / divider * unit_scale
             else:
                 base_offset = Vector([array["x"], array["y"], array["z"]]) * unit_scale
+
+            target_new_in_this_layer = (array["count"] - 1) * len(obj_stack)
+            missing_count = max(0, target_new_in_this_layer - total_existing_children)
+            new_entities_pool: list[ifcopenshell.entity_instance] = []
+            if missing_count > 0:
+                batch_old_to_new = tool.Geometry.duplicate_ifc_object_n_times(parent_obj, missing_count)
+                new_entities_pool = batch_old_to_new.get(parent_element, [])
+            new_entities_iter = iter(new_entities_pool)
 
             for i in range(array["count"]):
                 if i == 0:
@@ -1292,8 +1330,13 @@ class Model(bonsai.core.tool.Model):
                         child_obj = tool.Ifc.get_object(child_element)
                         assert child_obj
                     except (IndexError, RuntimeError, AssertionError):
-                        old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
-                        child_element = next(iter(old_to_new.values()))[0]
+                        try:
+                            child_element = next(new_entities_iter)
+                        except StopIteration:
+                            # Stale-GUID mid-list left the pool exhausted; fall back
+                            # to a one-off duplicate so the layer can still complete.
+                            old_to_new, _ = tool.Geometry.duplicate_ifc_objects([parent_obj])
+                            child_element = next(iter(old_to_new.values()))[0]
                         child_obj = tool.Ifc.get_object(child_element)
 
                     # add child pset
@@ -1361,13 +1404,6 @@ class Model(bonsai.core.tool.Model):
             tool.Ifc.get(), pset=pset, properties={"Data": json_data, "Parent": parent_element.GlobalId}
         )
 
-        # Post-condition: parent is selected on return. duplicate_ifc_objects
-        # deselects the source on every call inside the regen loop; without
-        # this restore, callers get a deselected parent for arrays with N >= 2.
-        # TODO: batch the per-child duplicate_ifc_objects([parent]) calls into
-        # a single N-way duplicate — N depsgraph churns + N select/deselect
-        # flips is wasteful, and a batched duplicate would also remove the
-        # need for this restore.
         parent_obj.select_set(True)
 
     @classmethod

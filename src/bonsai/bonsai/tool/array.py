@@ -179,6 +179,39 @@ class Array(bonsai.core.tool.Array):
         return [o for o in occurrences if cls.get_array_root_guid(o) == element_root]
 
     @classmethod
+    def select_only_parent(
+        cls,
+        parent_obj: bpy.types.Object,
+        parent_element: entity_instance,
+        context: bpy.types.Context,
+    ) -> None:
+        """Deselect every array child of ``parent_element``, then select and
+        activate ``parent_obj``. Post-condition for the user-facing regenerate
+        and finish-edit paths — grow and shrink otherwise diverge on which
+        objects stay selected, surfacing an inconsistency to the user."""
+        for child_obj in cls.get_all_objects(parent_element):
+            if child_obj is parent_obj:
+                continue
+            try:
+                child_obj.select_set(False)
+            except (ReferenceError, RuntimeError):
+                continue
+        parent_obj.select_set(True)
+        context.view_layer.objects.active = parent_obj
+
+    @classmethod
+    def is_array_child(cls, element: entity_instance) -> bool:
+        """True when ``element`` is a child of a parametric array — has a
+        BBIM_Array pset whose Parent GUID points to a different element.
+        Lighter than ``get_child_layer_index`` (no ``by_guid`` lookup, no
+        Data parse); suitable for per-element checks in draw handlers."""
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+        if not pset:
+            return False
+        parent_guid = pset.get("Parent")
+        return bool(parent_guid) and parent_guid != element.GlobalId
+
+    @classmethod
     def get_child_layer_index(cls, child_element: entity_instance) -> int | None:
         """Index of the layer that produced ``child_element``, or ``None``
         if the child is unparented, missing from the parent's data, or the
