@@ -267,7 +267,7 @@ class TestRecreateAggregateIteratesAllNew(NewFile):
         ), patch("bonsai.core.aggregate.assign_object") as assign_mock, patch(
             "ifcopenshell.util.element.get_pset", return_value=None
         ), patch.object(
-            tool.Ifc, "get_object", side_effect=lambda e: Mock()
+            tool.Ifc, "get_object", side_effect=lambda e: Mock(spec=bpy.types.Object)
         ), patch.object(
             tool.Blender, "select_and_activate_single_object"
         ):
@@ -291,7 +291,7 @@ class TestRecreateAggregateIteratesAllNew(NewFile):
             "ifcopenshell.util.element.get_aggregate",
             side_effect=lambda e: old_parent_aggregate if e is old_assembly else None,
         ), patch("bonsai.core.aggregate.unassign_object") as unassign_mock, patch.object(
-            tool.Ifc, "get_object", side_effect=lambda e: Mock()
+            tool.Ifc, "get_object", side_effect=lambda e: Mock(spec=bpy.types.Object)
         ):
             tool.Root.recreate_aggregate(old_to_new)
 
@@ -309,14 +309,17 @@ class TestRecreateConnectionsZipsPairs(NewFile):
     def _make_connection_data(self):
         from unittest.mock import Mock
 
-        data = Mock()
-        data.relating_element = Mock()
-        data.related_element = Mock()
-        data.relating_connection_type = "ATSTART"
-        data.related_connection_type = "ATEND"
-        data.relating_priorities = []
-        data.related_priorities = []
-        return data
+        from bonsai.tool.duplicate import ConnectionRecord
+
+        return ConnectionRecord(
+            type="path",
+            relating_element=Mock(),
+            related_element=Mock(),
+            relating_connection_type="ATSTART",
+            related_connection_type="ATEND",
+            relating_priorities=[],
+            related_priorities=[],
+        )
 
     def test_zips_n_pairs_when_both_sides_duplicated(self):
         from unittest.mock import Mock
@@ -385,7 +388,7 @@ class TestRecalculateWallsWithNewConnections(NewFile):
         wall_new.ConnectedTo = [Mock()]
         wall_new.ConnectedFrom = []
 
-        wall_obj = Mock()
+        wall_obj = Mock(spec=bpy.types.Object)
         old_to_new = {Mock(): [wall_new]}
 
         with patch.object(tool.Ifc, "get_object", return_value=wall_obj), patch.object(
@@ -406,7 +409,7 @@ class TestRecalculateWallsWithNewConnections(NewFile):
 
         old_to_new = {Mock(): [wall_new]}
 
-        with patch.object(tool.Ifc, "get_object", return_value=Mock()), patch.object(
+        with patch.object(tool.Ifc, "get_object", return_value=Mock(spec=bpy.types.Object)), patch.object(
             tool.Model, "recalculate_walls"
         ) as recalc_mock:
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
@@ -422,7 +425,7 @@ class TestRecalculateWallsWithNewConnections(NewFile):
 
         old_to_new = {Mock(): [actuator_new]}
 
-        with patch.object(tool.Ifc, "get_object", return_value=Mock()), patch.object(
+        with patch.object(tool.Ifc, "get_object", return_value=Mock(spec=bpy.types.Object)), patch.object(
             tool.Model, "recalculate_walls"
         ) as recalc_mock:
             tool.Geometry._recalculate_walls_with_new_connections(old_to_new)
@@ -441,7 +444,7 @@ class TestRecalculateWallsWithNewConnections(NewFile):
         wall_b_new.ConnectedTo = []
         wall_b_new.ConnectedFrom = [Mock()]
 
-        objs = {wall_a_new: Mock(), wall_b_new: Mock()}
+        objs = {wall_a_new: Mock(spec=bpy.types.Object), wall_b_new: Mock(spec=bpy.types.Object)}
         old_to_new = {Mock(): [wall_a_new], Mock(): [wall_b_new]}
 
         with patch.object(tool.Ifc, "get_object", side_effect=lambda e: objs.get(e)), patch.object(
@@ -464,7 +467,7 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
 
         from bonsai.bim.module.model.mep import _active_is_flow_segment
 
-        obj = Mock()
+        obj = Mock(spec=bpy.types.Object)
         element = Mock()
         element.is_a = lambda c: c == "IfcFlowSegment"
 
@@ -478,7 +481,7 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
 
         from bonsai.bim.module.model.mep import _active_is_flow_segment
 
-        obj = Mock()
+        obj = Mock(spec=bpy.types.Object)
         element = Mock()
         element.is_a = lambda c: c == "IfcFlowSegment"
 
@@ -492,7 +495,7 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
 
         from bonsai.bim.module.model.mep import _active_is_bend_fitting
 
-        obj = Mock()
+        obj = Mock(spec=bpy.types.Object)
         element = Mock()
 
         with patch.object(tool.Ifc, "get_entity", return_value=element), patch(
@@ -505,8 +508,8 @@ class TestMEPActionGuardsAgainstArrayChildren(NewFile):
 
         from bonsai.bim.module.model.mep import _n_mep_selected
 
-        obj_a = Mock()
-        obj_b = Mock()
+        obj_a = Mock(spec=bpy.types.Object)
+        obj_b = Mock(spec=bpy.types.Object)
         element_a = Mock()
         element_b = Mock()
 
