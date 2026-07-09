@@ -74,6 +74,10 @@ void convertIfcToDatabase(SessionState& session, QWidget& host);
 void exportGeometryDatabase(SessionState& session, QWidget& host);
 void openSettings(SessionState& session, QWidget& host);
 
+// Remove the scratch dir used to unzip .rdbview bundles for loading. Call once
+// at startup to clear extractions left over from previous sessions.
+void cleanupRdbviewCache();
+
 // Internal building blocks shared by commands here and by ProjectController.
 // These NEVER call notify*() — the caller is responsible for emitting once
 // at the end of its execution.

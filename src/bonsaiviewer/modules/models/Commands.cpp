@@ -56,6 +56,8 @@
 #include <QUuid>
 
 #include <QtCore/private/qzipwriter_p.h>
+#include <QtCore/private/qzipreader_p.h>
+#include <QCryptographicHash>
 
 #include <Eigen/Dense>
 
@@ -89,7 +91,55 @@ QString formatElapsed(qint64 ms) {
         : QString::number(ms) + " ms";
 }
 
+// Session-scoped scratch root where .rdbview bundles are unzipped for loading.
+QString rdbviewCacheRoot() {
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+        .filePath("ifcviewer-rdbview");
+}
+
+// A .rdbview is a zip of `model.rdb/` (the data DB) + `model.ifcview` (geometry
+// sidecar). Unzip it into a per-source subdir (hashed from path + mtime + size,
+// so a re-open reuses an existing extraction) and return the extracted
+// `model.rdb` path — from there it loads exactly like any pure .rdb (geometry
+// from the co-extracted sibling .ifcview). Returns empty on failure.
+QString extractRdbview(const QString& rdbview_path) {
+    const QFileInfo info(rdbview_path);
+    const QString key = rdbview_path + '|'
+        + QString::number(info.lastModified().toMSecsSinceEpoch()) + '|'
+        + QString::number(info.size());
+    const QString hash = QString::fromLatin1(
+        QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha1).toHex());
+    const QString dir = QDir(rdbviewCacheRoot()).filePath(hash);
+    const QString rdb = QDir(dir).filePath("model.rdb");
+
+    if (QFileInfo::exists(rdb)) return rdb;  // already extracted this session
+
+    QZipReader reader(rdbview_path);
+    if (reader.status() != QZipReader::NoError) return {};
+    QDir().mkpath(dir);
+    for (const QZipReader::FileInfo& entry : reader.fileInfoList()) {
+        if (!entry.isFile) continue;                 // dirs recreated below as needed
+        const QString out = QDir(dir).filePath(entry.filePath);
+        QDir().mkpath(QFileInfo(out).absolutePath());
+        QFile f(out);
+        if (!f.open(QIODevice::WriteOnly)) return {};
+        f.write(reader.fileData(entry.filePath));
+    }
+    return QFileInfo::exists(rdb) ? rdb : QString();  // empty if the bundle lacked model.rdb
+}
+
+// Map a source path to the path the loader should open: a .rdbview is unzipped
+// to its extracted .rdb; everything else passes through unchanged.
+QString resolveLoadPath(const QString& path) {
+    if (path.endsWith(".rdbview", Qt::CaseInsensitive)) return extractRdbview(path);
+    return path;
+}
+
 } // namespace
+
+void cleanupRdbviewCache() {
+    QDir(rdbviewCacheRoot()).removeRecursively();
+}
 
 void toggleVisibility(SessionState& session, ItemKind kind, const QString& id) {
     Federation* federation = session.federation();
@@ -201,9 +251,28 @@ namespace detail {
 void loadModels(SessionState& session, const QStringList& paths, const QStringList& model_ids) {
     if (paths.isEmpty()) return;
 
-    const auto session_model_ids = session.loader()->queueModels(paths);
-    for (int i = 0; i < paths.size() && i < static_cast<int>(session_model_ids.size()) && i < model_ids.size(); ++i) {
-        session.setModelMapping(model_ids[i], session_model_ids[i]);
+    // The Federation stores the source paths (e.g. a .rdbview); the loader gets
+    // the resolved load path (a .rdbview is unzipped at load time to its .rdb).
+    // Keep model_ids aligned with the paths that actually resolve.
+    QStringList load_paths;
+    QStringList load_model_ids;
+    for (int i = 0; i < paths.size(); ++i) {
+        const QString resolved = resolveLoadPath(paths[i]);
+        if (resolved.isEmpty()) {
+            session.setStatusMessage("Error",
+                QString("Could not open %1").arg(QFileInfo(paths[i]).fileName()));
+            continue;
+        }
+        load_paths.push_back(resolved);
+        load_model_ids.push_back(i < model_ids.size() ? model_ids[i] : QString());
+    }
+    if (load_paths.isEmpty()) return;
+
+    const auto session_model_ids = session.loader()->queueModels(load_paths);
+    for (int i = 0; i < load_paths.size()
+                 && i < static_cast<int>(session_model_ids.size())
+                 && i < load_model_ids.size(); ++i) {
+        session.setModelMapping(load_model_ids[i], session_model_ids[i]);
     }
 }
 
@@ -243,9 +312,11 @@ void addModel(SessionState& session, QWidget& host) {
         break;
     }
     case SourceMode::GeometryOnly: {
-        QFileDialog file_dialog(&host, "Add Geometry Only");
+        QFileDialog file_dialog(&host, "Add Geometry");
         file_dialog.setFileMode(QFileDialog::ExistingFiles);
-        file_dialog.setNameFilter("IFC Viewer Cache (*.ifcview);;All Files (*)");
+        file_dialog.setNameFilter(
+            "Viewer Model (*.ifcview *.rdbview);;IFC Viewer Cache (*.ifcview);;"
+            "Geometry Database (*.rdbview);;All Files (*)");
         file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
         if (file_dialog.exec() == QDialog::Accepted) {
             paths = file_dialog.selectedFiles();
