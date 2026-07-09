@@ -17,6 +17,7 @@
 # along with Ifc5D.  If not, see <http://www.gnu.org/licenses/>.
 
 import functools
+import heapq
 import itertools
 import json
 import multiprocessing
@@ -77,6 +78,216 @@ def entity_supertypes(schema_iden: str, entity_name: str):
     return list(visit(decl))
 
 
+def _measure_segment_length_from_mesh(
+    vertices: "np.ndarray", faces: "np.ndarray", edges: "np.ndarray"
+) -> Union[float, None]:
+    """Estimate the swept length of a tessellated or Brep flow segment.
+
+    The mesh is grouped back into flat facets, the extrusion basis faces (the
+    caps) are taken to be a congruent pair of facets that do not touch, and the
+    length is the average arclength of the mesh edges running from one cap to the
+    other. Measuring the arclength rather than the straight extent keeps a bent
+    segment correct. A non rectangular footprint leaves a single congruent pair,
+    so a short extrusion of such a footprint is measured correctly where a
+    principal axis extent would report the longer footprint dimension instead.
+
+    The function returns ``None`` when no congruent facet pair is found, so that
+    no unreliable Length quantity is produced.
+
+    :param vertices: Mesh vertices in mesh (SI) units, shape ``(n, 3)``.
+    :param faces: Triangulated faces as vertex indices, shape ``(m, 3)``.
+    :param edges: Original (untriangulated) polygon edges as vertex index pairs,
+        shape ``(k, 2)``. Used as the graph for the arclength measurement.
+    :return: The estimated length in mesh (SI) units, or ``None``.
+    """
+    if len(vertices) < 4 or len(faces) < 2:
+        return None
+
+    # Per triangle unit normal and area, used to group the triangulated mesh
+    # back into the flat faces of the solid.
+    v0, v1, v2 = vertices[faces[:, 0]], vertices[faces[:, 1]], vertices[faces[:, 2]]
+    cross = np.cross(v1 - v0, v2 - v0)
+    double_area = np.linalg.norm(cross, axis=1)  # twice the triangle area
+    valid = double_area > 1e-12
+    if not valid.any():
+        return None
+    normals = np.zeros_like(cross)
+    normals[valid] = cross[valid] / double_area[valid][:, None]
+
+    # Union find over triangles. Two triangles that share an edge and face the
+    # same way belong to one flat facet of the solid (a simple dual graph merge).
+    parent = list(range(len(faces)))
+
+    def find(a: int) -> int:
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+
+    def undirected(u: int, v: int) -> tuple[int, int]:
+        return (u, v) if u < v else (v, u)
+
+    edge_to_triangles: defaultdict[tuple[int, int], list[int]] = defaultdict(list)
+    for ti in range(len(faces)):
+        if not valid[ti]:
+            continue
+        a, b, c = faces[ti]
+        for u, v in ((a, b), (b, c), (c, a)):
+            edge_to_triangles[undirected(int(u), int(v))].append(ti)
+    for shared in edge_to_triangles.values():
+        for i in range(len(shared)):
+            for j in range(i + 1, len(shared)):
+                if float(np.dot(normals[shared[i]], normals[shared[j]])) > 1.0 - 1e-4:
+                    union(shared[i], shared[j])
+
+    facet_triangles: defaultdict[int, list[int]] = defaultdict(list)
+    for ti in range(len(faces)):
+        if valid[ti]:
+            facet_triangles[find(ti)].append(ti)
+    if len(facet_triangles) < 3:
+        return None
+
+    # Describe every flat facet by the numbers needed to spot the caps: its area,
+    # unit normal, the vertices it uses, its boundary edges and the sorted lengths
+    # of those boundary edges (a cheap congruence signature).
+    facets = []
+    for triangles in facet_triangles.values():
+        idx = np.array(triangles)
+        area = float(double_area[idx].sum() / 2.0)
+        if area <= 1e-12:
+            continue
+        normal = (normals[idx] * double_area[idx][:, None]).sum(axis=0)
+        normal_length = float(np.linalg.norm(normal))
+        if normal_length < 1e-12:
+            continue
+        normal = normal / normal_length
+        vertex_ids = np.unique(faces[idx].reshape(-1))
+        boundary_count: defaultdict[tuple[int, int], int] = defaultdict(int)
+        for ti in triangles:
+            a, b, c = faces[ti]
+            for u, v in ((a, b), (b, c), (c, a)):
+                boundary_count[undirected(int(u), int(v))] += 1
+        boundary_edges = {e for e, count in boundary_count.items() if count == 1}
+        boundary_lengths = np.sort([float(np.linalg.norm(vertices[u] - vertices[v])) for u, v in boundary_edges])
+        facets.append(
+            {
+                "area": area,
+                "normal": normal,
+                "vertex_ids": {int(x) for x in vertex_ids},
+                "boundary_edges": boundary_edges,
+                "boundary_lengths": boundary_lengths,
+            }
+        )
+    if len(facets) < 3:
+        return None
+
+    def congruent(f: dict, g: dict) -> bool:
+        if abs(f["area"] - g["area"]) > 1e-4 * max(f["area"], g["area"]):
+            return False
+        if len(f["boundary_lengths"]) != len(g["boundary_lengths"]):
+            return False
+        return bool(np.allclose(f["boundary_lengths"], g["boundary_lengths"], rtol=1e-3, atol=1e-6))
+
+    # Graph of the original polygon edges. A shortest path from a vertex of one
+    # cap to the nearest vertex of the other cap follows the side of the sweep,
+    # so it tracks a bend instead of cutting across it. Fall back to the triangle
+    # edges when the geometry carries no untriangulated edges.
+    if len(edges) == 0:
+        edges = np.array(
+            [undirected(int(faces[ti][k]), int(faces[ti][(k + 1) % 3])) for ti in range(len(faces)) for k in range(3)],
+            dtype=int,
+        )
+    graph: defaultdict[int, list[tuple[int, float]]] = defaultdict(list)
+    for u, v in edges:
+        u, v = int(u), int(v)
+        if u == v:
+            continue
+        weight = float(np.linalg.norm(vertices[u] - vertices[v]))
+        graph[u].append((v, weight))
+        graph[v].append((u, weight))
+
+    # A cap is left along its normal by the side (rail) edges of the sweep, so
+    # every edge leaving a cap vertex for a vertex outside the cap runs close to
+    # the cap normal and this score is near one. A long flat strip on the side of
+    # a segment bent within a plane is left within its own plane, so its score is
+    # lower and it loses to the real caps in the ranking below.
+    def leaves_along_normal(facet: dict) -> float:
+        members = facet["vertex_ids"]
+        normal = facet["normal"]
+        alignments = []
+        for v in members:
+            for neighbour, _ in graph[v]:
+                if neighbour in members:
+                    continue
+                direction = vertices[neighbour] - vertices[v]
+                length = float(np.linalg.norm(direction))
+                if length < 1e-12:
+                    continue
+                alignments.append(abs(float(np.dot(direction / length, normal))))
+        return float(np.mean(alignments)) if alignments else 0.0
+
+    alignment = [leaves_along_normal(f) for f in facets]
+
+    # The extrusion basis (the caps) is a congruent pair of facets that do not
+    # touch each other. Several such pairs exist on a symmetric solid, so rank
+    # them: first by how strongly the pair is left along its own normal (which
+    # separates the caps from a flat side strip of a planar bend), then by the
+    # higher vertex count (a footprint richer than a quad makes the profile the
+    # only face of that count, removing the ambiguity with the quad sides), and
+    # only then by the greater arclength, matching the convention of the
+    # supported extrusion path in get_segment_length which reports the largest
+    # dimension.
+    candidates = []
+    for i in range(len(facets)):
+        for j in range(i + 1, len(facets)):
+            if facets[i]["boundary_edges"] & facets[j]["boundary_edges"]:
+                continue
+            if congruent(facets[i], facets[j]):
+                candidates.append((i, j))
+    if not candidates:
+        return None
+
+    def average_arclength(sources: set[int], targets: set[int]) -> Union[float, None]:
+        if not sources or not targets or sources & targets:
+            return None
+        distance = {node: 0.0 for node in sources}
+        heap = [(0.0, node) for node in sources]
+        heapq.heapify(heap)
+        remaining = set(targets)
+        while heap and remaining:
+            dist, node = heapq.heappop(heap)
+            if dist > distance.get(node, float("inf")):
+                continue
+            remaining.discard(node)
+            for neighbour, weight in graph[node]:
+                nd = dist + weight
+                if nd < distance.get(neighbour, float("inf")):
+                    distance[neighbour] = nd
+                    heapq.heappush(heap, (nd, neighbour))
+        reached = [distance[t] for t in targets if t in distance]
+        if len(reached) != len(targets):
+            return None
+        return float(np.mean(reached))
+
+    best_key = None
+    best_length = None
+    for i, j in candidates:
+        length = average_arclength(facets[i]["vertex_ids"], facets[j]["vertex_ids"])
+        if length is None:
+            continue
+        pair_alignment = round(min(alignment[i], alignment[j]), 3)
+        key = (pair_alignment, len(facets[i]["vertex_ids"]), length)
+        if best_key is None or key > best_key:
+            best_key = key
+            best_length = length
+    return best_length
+
+
 def quantify(
     ifc_file: ifcopenshell.file,
     elements: set[ifcopenshell.entity_instance],
@@ -91,12 +302,14 @@ def quantify(
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
     :param estimate_length_from_geometry: Opt-in fallback. When ``True``, a flow
-        segment stored as tessellated / Brep geometry (not a supported
+        segment stored as tessellated or Brep geometry (not a supported
         extrusion) gets its ``get_segment_length`` estimated from the mesh
-        instead of yielding no Length quantity. Off by default because the
-        estimate is not exact for bent segments or for footprints whose
-        extrusion depth is not the longest dimension, and Qto is meant to stay
-        reliable. Only turn it on when an approximate length is acceptable.
+        instead of yielding no Length quantity. The estimate locates the
+        extrusion basis faces and averages the arclength of the edges joining
+        them, so a bent segment and a short non rectangular extrusion are both
+        measured correctly, and an ambiguous mesh yields no value. It is off by
+        default so that Qto stays a pure read of the modelled extrusion unless a
+        caller asks for the geometric estimate.
     """
     results: ResultsDict = {}
     elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
@@ -545,27 +758,24 @@ class IfcOpenShell(QtoCalculator):
             z = item.Depth
             return max([x, y, z])
 
-        # Not a supported extrusion (e.g. a tessellated / Brep segment exported
+        # Not a supported extrusion (e.g. a tessellated or Brep segment exported
         # by some authoring tools). This estimate only runs when the caller
         # opted in (geometry is passed); otherwise we return None and produce no
         # Length, keeping the default Qto reliable.
         #
-        # Fall back to the geometry's principal-axis extent. Straight and
-        # diagonal runs are measured correctly. Two cases are approximate and are
-        # why this is opt-in: a genuinely curved Brep under-reports because the
-        # routing curve is not kept in the mesh, and a footprint whose extrusion
-        # depth is not its longest dimension is over-reported because PCA returns
-        # the longest axis. A cap-face + connecting-edge arclength method would
-        # handle both; see the PR discussion for the planned follow-up.
+        # Locate the two extrusion basis faces (the caps) in the mesh and take
+        # the length as the average arclength of the edges connecting them. This
+        # stays correct for a bent segment and for a short extrusion of a non
+        # rectangular footprint, and returns None when the caps are ambiguous.
         if geometry is None:
             return None
         vertices = ifcopenshell.util.shape.get_vertices(geometry)
-        if len(vertices) < 2:
+        faces = ifcopenshell.util.shape.get_faces(geometry)
+        edges = ifcopenshell.util.shape.get_edges(geometry)
+        length = _measure_segment_length_from_mesh(vertices, faces, edges)
+        if length is None:
             return None
-        centered = vertices - vertices.mean(axis=0)
-        _, axes = np.linalg.eigh(centered.T @ centered)
-        projection = centered @ axes[:, -1]
-        return float(projection.max() - projection.min()) / cls.unit_scale
+        return length / cls.unit_scale
 
     # Footings are authored two ways, so a single static axis rule cannot be correct for both.
     # Beam-like footings (STRIP_FOOTING, FOOTING_BEAM) are a profile extruded along the local Z
