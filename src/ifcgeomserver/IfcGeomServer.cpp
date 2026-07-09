@@ -629,7 +629,7 @@ int main () {
 		}
 		case NEXT: {
 			Next n; n.read(std::cin);
-			has_more = iterator->next() != 0;
+			has_more = static_cast<bool>(iterator->next());
 			if (!has_more) {
 				delete file;
 				delete iterator;
