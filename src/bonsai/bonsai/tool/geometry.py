@@ -1775,7 +1775,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 else:
                     representation = inverse
             elif inverse.is_a("IfcGeometricSet"):
-                # The item is aggregated via .Elements and must be pulled out or it reappears (#6591).
+                # item sits in the set's .Elements; pull it out or it reappears on reload (#6591)
                 geometric_sets.append(inverse)
             elif inverse.is_a("IfcBooleanResult"):
                 if inverse.SecondOperand == representation_item:
@@ -1819,7 +1819,7 @@ class Geometry(bonsai.core.tool.Geometry):
             if new_elements:
                 geometric_set.Elements = new_elements
             else:
-                # Removing the set's last element is invalid, so drop the whole set.
+                # dropping the last element is invalid, so remove the whole set
                 cls.remove_representation_item(geometric_set, element)
                 return
 
