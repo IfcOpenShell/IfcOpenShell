@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IfcViewer (web) — fullscreen</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0f1117; color: #c8ccd6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  #viewer-canvas { display: block; width: 100vw; height: 100vh; outline: none;
+    background: #1a1d24; }
+  /* Marquee (box-select) rubber-band. Positioned in CSS px by main_web; never
+     eats pointer events so the drag keeps reaching the canvas. */
+  #marquee { position: fixed; display: none; z-index: 50; pointer-events: none;
+    border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
+  /* Log overlay sits bottom-left and never eats pointer events. */
+  #status { position: fixed; bottom: 8px; left: 12px;
+    max-width: min(60vw, 680px); max-height: 28vh; overflow-y: auto;
+    font-size: 11px;
+    font-family: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+    background: rgba(20,22,28,.78); padding: 6px 10px; border-radius: 4px;
+    white-space: pre-wrap; pointer-events: none; }
+  #status.ready { max-height: 4.5em; opacity: .5; }
+  #status.error { background: rgba(120,30,30,.85); color: #fff; }
+  #status.ready.error { max-height: 28vh; opacity: 1; }
+  #open-btn, #add-btn { position: fixed; top: 8px; z-index: 10;
+    background: #2b6cb0; color: #fff; border: none; padding: 6px 12px;
+    border-radius: 4px; font-size: 12px; cursor: pointer; }
+  #open-btn { right: 12px; }
+  #add-btn  { right: 120px; background: #2d3748; }
+  #open-btn:hover { background: #3182ce; }
+  #add-btn:hover  { background: #3b465c; }
+  #file-input { display: none; }
+  #nav-toolbar { position: fixed; bottom: 10px; left: 50%;
+    transform: translateX(-50%); z-index: 10; display: flex; gap: 4px;
+    background: rgba(20,22,28,.82); padding: 5px 6px; border-radius: 6px; }
+  #nav-toolbar button { background: #2d3748; color: #c8ccd6; border: none;
+    padding: 5px 9px; border-radius: 4px; font-size: 12px; cursor: pointer; }
+  #nav-toolbar button:hover { background: #3b465c; }
+  #nav-toolbar button.active { background: #2b6cb0; color: #fff; }
+  #nav-toolbar .sep { width: 1px; background: #3b465c; margin: 2px 3px; }
+  #progress { position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    background: rgba(43,108,176,.2); z-index: 20; display: none; }
+  #progress-fill { height: 100%; width: 0%; background: #3182ce;
+    transition: width .15s ease; }
+  #progress-panel { position: fixed; top: 10px; left: 50%;
+    transform: translateX(-50%); z-index: 20; font-size: 12px;
+    background: rgba(20,22,28,.9); padding: 8px 12px; border-radius: 6px;
+    pointer-events: none; display: none; min-width: 280px; max-width: 60vw; }
+  #progress-summary { margin-bottom: 6px; white-space: nowrap; }
+  #progress-track { position: relative; height: 8px; border-radius: 3px;
+    background: #232833; overflow: hidden; }
+  #progress-needed, #progress-loaded { position: absolute; left: 0; top: 0;
+    height: 100%; width: 0%; transition: width .2s ease; }
+  #progress-needed { background: #2b4a6b; }
+  #progress-loaded { background: #3182ce; }
+  #example-link { position: fixed; top: 8px; left: 12px; z-index: 10;
+    font-size: 12px; color: #7f9bd6; text-decoration: none; }
+</style>
+</head>
+<body>
+<canvas id="viewer-canvas" width="1280" height="800"></canvas>
+<div id="marquee"></div>
+<a id="example-link" href="embedded.html">↗ embedded / JS-integration example</a>
+<div id="progress"><div id="progress-fill"></div></div>
+<div id="progress-panel">
+  <div id="progress-summary"></div>
+  <div id="progress-track">
+    <div id="progress-needed"></div>
+    <div id="progress-loaded"></div>
+  </div>
+</div>
+<button id="add-btn" title="Add file(s) to the current scene (federation)">Add</button>
+<button id="open-btn">Open .ifcview…</button>
+<input id="file-input" type="file" accept=".ifcview" multiple>
+<div id="nav-toolbar">
+  <button data-act="fit"   title="Fit all (Home)">Fit</button>
+  <button data-act="focus" title="Zoom to selected (F)">Focus</button>
+  <button data-act="ortho" id="ortho-btn" title="Toggle orthographic / perspective (P)">Persp</button>
+  <button data-act="fly"   id="fly-btn" title="Fly / first-person — WASD+mouse (⇧F)">Fly</button>
+  <span class="sep"></span>
+  <button data-view="0" title="Front (X)">Front</button>
+  <button data-view="1" title="Back (Shift+X)">Back</button>
+  <button data-view="2" title="Left (Shift+Y)">Left</button>
+  <button data-view="3" title="Right (Y)">Right</button>
+  <button data-view="4" title="Top (Z)">Top</button>
+  <button data-view="5" title="Bottom (Shift+Z)">Bottom</button>
+  <span class="sep"></span>
+  <button data-act="hide"    title="Hide selected (H)">Hide</button>
+  <button data-act="isolate" title="Isolate selected (Shift+H)">Isolate</button>
+  <button data-act="showall" title="Show all (Alt+H)">Show all</button>
+  <button data-act="xray"    id="xray-btn" title="X-ray — translucent everything (Alt+X)">X-ray</button>
+  <span class="sep"></span>
+  <button data-act="section" id="section-btn" title="Section tool — click a surface to cut (K)">Section</button>
+  <button data-act="clearcut" title="Clear all section cuts (Shift+K)">Clear cuts</button>
+</div>
+<div id="status">Starting…</div>
+
+<script src="IfcViewerWeb.js"></script>
+<script src="ifcviewer.js"></script>
+<script>
+  var statusEl = document.getElementById('status');
+  function routeStatus(t, isErr) {
+    if (statusEl.textContent === 'Starting…') statusEl.textContent = '';
+    statusEl.textContent += t + '\n';
+    statusEl.scrollTop = statusEl.scrollHeight;
+    if (isErr || /fail|error|null/i.test(t)) statusEl.classList.add('error');
+  }
+
+  if (!navigator.gpu) {
+    statusEl.textContent = 'navigator.gpu is missing — open in a browser with WebGPU enabled';
+    statusEl.classList.add('error');
+  }
+
+  // RMB is the select/marquee button in the Web nav preset — suppress the
+  // browser context menu over the canvas.
+  var viewerCanvas = document.getElementById('viewer-canvas');
+  viewerCanvas.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+  // --- Streaming loading bar (driven off the C progress exports) ------------
+  var progEl    = document.getElementById('progress');
+  var fillEl    = document.getElementById('progress-fill');
+  var panelEl   = document.getElementById('progress-panel');
+  var summaryEl = document.getElementById('progress-summary');
+  var neededEl  = document.getElementById('progress-needed');
+  var loadedEl  = document.getElementById('progress-loaded');
+  var loadActive = false, expectedModels = 1, caughtUpAt = 0;
+  function beginLoadProgress(nModels) {
+    loadActive = true; expectedModels = Math.max(1, nModels || 1); caughtUpAt = 0;
+    progEl.style.display = 'block'; panelEl.style.display = 'block';
+    summaryEl.textContent = 'Loading ' + expectedModels +
+      ' model' + (expectedModels === 1 ? '' : 's') + '…';
+  }
+  function endLoadProgress() {
+    progEl.style.display = 'none'; panelEl.style.display = 'none'; loadActive = false;
+  }
+  function fmtMB(b) { return (b / 1e6).toFixed(b < 1e8 ? 1 : 0); }
+  function updateLoadProgress(viewer) {
+    var b = viewer.bytes();
+    var mc = viewer.modelCount();
+    var dlMB = (viewer.module.__ifcvBytesLoaded || 0) / 1e6;
+    var overhead  = b.total === 0;
+    var streaming = b.needed > b.loaded + 1;
+    if (overhead || streaming) { loadActive = true; caughtUpAt = 0; }
+    if (!loadActive) return;
+    progEl.style.display = 'block'; panelEl.style.display = 'block';
+    if (overhead) {
+      var frac = expectedModels > 0 ? mc / expectedModels : 0;
+      neededEl.style.width = '100%';
+      loadedEl.style.width = (100 * frac) + '%';
+      fillEl.style.width   = Math.max(4, 100 * frac) + '%';
+      summaryEl.textContent = 'Loading model data — ' + dlMB.toFixed(1) + ' MB · ' +
+        mc + ' / ' + expectedModels + ' models ready';
+      return;
+    }
+    neededEl.style.width = (100 * b.needed / b.total) + '%';
+    loadedEl.style.width = (100 * b.loaded / b.total) + '%';
+    fillEl.style.width   = (b.needed > 0 ? Math.round(100 * b.loaded / b.needed) : 100) + '%';
+    var pctNeeded = Math.round(100 * b.needed / b.total);
+    var more = (mc < expectedModels) ? ' · ' + mc + '/' + expectedModels + ' models' : '';
+    if (streaming) {
+      summaryEl.textContent = 'Loading ' + fmtMB(b.loaded) + ' / ' + fmtMB(b.needed) +
+        ' MB for this view · ' + pctNeeded + '% of ' + fmtMB(b.total) + ' MB total' + more;
+    } else {
+      summaryEl.textContent = (pctNeeded >= 99 ? 'Loaded ' : 'View loaded — ') +
+        fmtMB(b.loaded) + ' MB · ' + pctNeeded + '% of ' + fmtMB(b.total) + ' MB total' + more;
+      if (!caughtUpAt) caughtUpAt = performance.now();
+      if (performance.now() - caughtUpAt > 1500) endLoadProgress();
+    }
+  }
+
+  function syncButton(id, active) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('active', !!active);
+  }
+
+  IfcViewer.create({
+    canvas: viewerCanvas,
+    exposeAsModuleGlobal: true,          // window.Module — used by the smoke tests
+    print: function (t) { console.log(t); },
+    // The wasm logs (incl. [info]) come through stderr; only redden the status
+    // box on actual error/failure lines, not on every info message.
+    printErr: function (t) { console.warn(t); routeStatus(t); },
+    onReady: function (viewer) {
+      statusEl.classList.add('ready');
+
+      // Auto-load ?model= / ?models= sidecars as a federation (one-shot).
+      var qs = new URLSearchParams(location.search);
+      var urls = qs.getAll('model');
+      var csv = qs.get('models');
+      if (csv) urls = urls.concat(csv.split(',').map(function (s) { return s.trim(); }).filter(Boolean));
+      if (urls.length) {
+        beginLoadProgress(urls.length);
+        viewer.clearScene();               // replace the embedded sample once
+        urls.forEach(function (url) {
+          viewer.addUrl(url).catch(function (e) { routeStatus('url load failed (' + url + '): ' + e, true); });
+        });
+      }
+    },
+    onFrame: function (viewer) {
+      updateLoadProgress(viewer);
+      var M = viewer.module;
+      syncButton('fly-btn', M._fly_is_active_c && M._fly_is_active_c());
+      syncButton('xray-btn', M._xray_is_active_c && M._xray_is_active_c());
+      syncButton('section-btn', M._section_is_active_c && M._section_is_active_c());
+    },
+  }).then(function (viewer) {
+    // File open (replace) / add (append). Multiple files → a federation.
+    var openBtn = document.getElementById('open-btn');
+    var addBtn = document.getElementById('add-btn');
+    var fileInput = document.getElementById('file-input');
+    var pendingMode = 'replace';
+    openBtn.addEventListener('click', function () { pendingMode = 'replace'; fileInput.click(); });
+    addBtn.addEventListener('click',  function () { pendingMode = 'add';     fileInput.click(); });
+    fileInput.addEventListener('change', function (ev) {
+      var files = ev.target.files;
+      if (!files || !files.length) return;
+      var existing = pendingMode === 'add' ? viewer.modelCount() : 0;
+      if (pendingMode === 'replace') viewer.clearScene();
+      beginLoadProgress(existing + files.length);
+      for (var i = 0; i < files.length; i++) viewer.addFile(files[i]);
+      fileInput.value = '';
+    });
+
+    var orthoBtn = document.getElementById('ortho-btn');
+    document.querySelectorAll('#nav-toolbar button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var M = viewer.module;
+        var act = b.getAttribute('data-act');
+        var view = b.getAttribute('data-view');
+        if (act === 'fit')          viewer.viewAll();
+        else if (act === 'focus')   viewer.frameSelection();
+        else if (act === 'ortho') { M._toggle_projection_c(); orthoBtn.textContent = M._projection_is_ortho_c() ? 'Ortho' : 'Persp'; }
+        else if (act === 'fly')     M._toggle_fly_c();
+        else if (act === 'hide')    M._hide_selected_c();
+        else if (act === 'isolate') M._isolate_selected_c();
+        else if (act === 'showall') M._show_all_c();
+        else if (act === 'xray')    M._toggle_xray_c();
+        else if (act === 'section') M._toggle_section_c();
+        else if (act === 'clearcut') M._clear_section_c();
+        else if (view !== null)     M._standard_view_c(parseInt(view, 10));
+      });
+    });
+  });
+</script>
+</body>
+</html>

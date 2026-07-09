@@ -20,9 +20,9 @@
 // Web entry point. Wires a WebViewportHost to a ViewportCore, brings up
 // wgpu via emdawnwebgpu (the spec-compatible WebGPU header set that
 // shipped with Dawn), loads the embedded sample sidecar, and drives
-// render() per requestAnimationFrame from JS (shell.html).
+// render() per requestAnimationFrame from JS (the host page (web/ifcviewer.js)).
 //
-// The RAF loop lives in shell.html — NOT here — because any call into
+// The RAF loop lives in the host page (web/ifcviewer.js) — NOT here — because any call into
 // Emscripten's main-loop / RAF helpers (or even raw
 // requestAnimationFrame via EM_ASM) made from inside Dawn-web's wgpu
 // promise-resolution chain stalls the device callback. Having JS drive
@@ -44,7 +44,7 @@
 
 namespace {
 
-// CSS selector for the host <canvas>; must match shell.html + the
+// CSS selector for the host <canvas>; must match the host page (web/ifcviewer.js) + the
 // WebViewportHost selector below.
 constexpr const char* kCanvasSelector = "#viewer-canvas";
 
@@ -78,6 +78,13 @@ struct AppState {
     float nav_drag_px = 0.0f;
     long  down_x = 0;
     long  down_y = 0;
+    // The canvas's top-left in window coords, captured on mousedown. The
+    // mousemove/mouseup handlers are window-targeted (so a drag can leave the
+    // canvas), so their coords are window-relative; subtracting this maps them
+    // back to canvas-relative — the space down_x/down_y and the picker use.
+    // Zero for a fullscreen canvas pinned at (0,0); nonzero when embedded.
+    double canvas_origin_x = 0.0;
+    double canvas_origin_y = 0.0;
 
     // ---- Fly (first-person) mode ----
     // Shift+F enters (pointer-locks the canvas), Esc exits. While flying, held
@@ -118,7 +125,7 @@ int canvasCssHeight() {
     return (h > 1.0) ? int(h) : 1;
 }
 
-// Marquee rectangle overlay. The rubber-band is a plain DOM <div> (shell.html)
+// Marquee rectangle overlay. The rubber-band is a plain DOM <div> (the host page (web/ifcviewer.js))
 // positioned in CSS px — the canvas fills the viewport, so canvas-relative
 // coords are viewport coords. Cheaper + pixel-perfect vs a GPU overlay pass
 // (which the web lib doesn't have anyway).
@@ -136,6 +143,19 @@ void hideMarquee() {
     EM_ASM({ var m = document.getElementById('marquee'); if (m) m.style.display = 'none'; });
 }
 
+// The canvas's top-left in window (client) coords. Window-targeted mouse events
+// are window-relative; subtract this to convert them to canvas-relative.
+void canvasClientOrigin(double& left, double& top) {
+    left = EM_ASM_DOUBLE({
+        var c = document.getElementById('viewer-canvas');
+        return c ? c.getBoundingClientRect().left : 0;
+    });
+    top = EM_ASM_DOUBLE({
+        var c = document.getElementById('viewer-canvas');
+        return c ? c.getBoundingClientRect().top : 0;
+    });
+}
+
 NavKind classifyPress(const ViewportCore::NavBindings& b, int em_button,
                       bool shift, bool ctrl, bool alt) {
     using MB = ViewportCore::MouseBtn; using M = ViewportCore::NavMod;
@@ -151,6 +171,9 @@ EM_BOOL onMouseDown(int, const EmscriptenMouseEvent* e, void* user) {
     auto* app = static_cast<AppState*>(user);
     // In fly mode a click exits (matches the desktop app).
     if (app->fly_mode) { setFlyMode(app, false); return EM_TRUE; }
+    // Snapshot the canvas origin for this gesture so the window-targeted
+    // move/up handlers can map their coords back into canvas space.
+    canvasClientOrigin(app->canvas_origin_x, app->canvas_origin_y);
     // Section tool: LMB on a plane's gizmo arrow grabs it to slide (logical px).
     if (app->section_tool_active && e->button == 0) {
         const int hit = app->core.hitTestSectionGizmo(int(e->targetX), int(e->targetY));
@@ -181,7 +204,8 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     }
     // Section gizmo drag: slide the grabbed plane along its normal (logical px).
     if (app->section_dragging) {
-        app->core.updateSectionDrag(int(e->targetX), int(e->targetY));
+        app->core.updateSectionDrag(int(e->targetX - app->canvas_origin_x),
+                                    int(e->targetY - app->canvas_origin_y));
         return EM_TRUE;
     }
     if (!app->nav_active) return EM_FALSE;
@@ -192,12 +216,14 @@ EM_BOOL onMouseMove(int, const EmscriptenMouseEvent* e, void* user) {
     if (app->nav_kind == NavKind::Orbit)     app->core.orbitBy(dx, dy);
     else if (app->nav_kind == NavKind::Pan)  app->core.panBy(dx, dy, canvasCssHeight());
     else if (app->nav_kind == NavKind::Select && app->nav_drag_px > kClickDragThresholdPx) {
-        // Select-button drag → draw the marquee rubber-band (CSS px).
-        const long x0 = std::min<long>(app->down_x, e->targetX);
-        const long y0 = std::min<long>(app->down_y, e->targetY);
+        // Select-button drag → draw the marquee rubber-band (canvas-relative CSS px).
+        const long mx = long(e->targetX - app->canvas_origin_x);
+        const long my = long(e->targetY - app->canvas_origin_y);
+        const long x0 = std::min<long>(app->down_x, mx);
+        const long y0 = std::min<long>(app->down_y, my);
         showMarquee(int(x0), int(y0),
-                    int(std::labs(long(e->targetX) - app->down_x)),
-                    int(std::labs(long(e->targetY) - app->down_y)));
+                    int(std::labs(mx - app->down_x)),
+                    int(std::labs(my - app->down_y)));
     }
     return EM_TRUE;
 }
@@ -238,11 +264,13 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
         if (!no_drag) {
             // Marquee drag → box-pick the rect (device px) and apply to selection.
             hideMarquee();
-            const long x0 = std::min<long>(app->down_x, e->targetX);
-            const long y0 = std::min<long>(app->down_y, e->targetY);
+            const long mx = long(e->targetX - app->canvas_origin_x);
+            const long my = long(e->targetY - app->canvas_origin_y);
+            const long x0 = std::min<long>(app->down_x, mx);
+            const long y0 = std::min<long>(app->down_y, my);
             const int  rx = int(x0 * dpr), ry = int(y0 * dpr);
-            const int  rw = int(std::labs(long(e->targetX) - app->down_x) * dpr);
-            const int  rh = int(std::labs(long(e->targetY) - app->down_y) * dpr);
+            const int  rw = int(std::labs(mx - app->down_x) * dpr);
+            const int  rh = int(std::labs(my - app->down_y) * dpr);
             app->core.picksInRectAsync(rx, ry, rw, rh,
                 [app, add, remove](std::vector<std::uint32_t> ids) {
                     app->core.applyMarqueeToSelection(ids, add, remove);
@@ -253,8 +281,13 @@ EM_BOOL onMouseUp(int, const EmscriptenMouseEvent* e, void* user) {
             const int px = int(app->down_x * dpr), py = int(app->down_y * dpr);
             app->core.pickObjectAtAsync(px, py, [app, add, remove](std::uint32_t id) {
                 app->core.applyPickToSelection(id, add, remove);
-                // v15 on-demand element metadata fetch: log the picked object's IFC GUID.
-                if (id != 0) app->core.logSelectedObjectGuidWeb(id);
+                // Surface the pick to JS: resolve + emit the GUID for a real hit;
+                // emit an empty selection when a plain click deselects (id 0).
+                if (id != 0) {
+                    app->core.logSelectedObjectGuidWeb(id);
+                } else if (!add && !remove) {
+                    EM_ASM({ if (Module.__ifcvOnSelect) Module.__ifcvOnSelect(0, '', -1); });
+                }
                 app->host.requestFrame();
             });
         }
@@ -409,7 +442,7 @@ void installInputHandlers(AppState* app) {
 
 } // namespace
 
-// Called from shell.html's RAF tick (via Module._raf_tick_c). Exported
+// Called from the host page (web/ifcviewer.js)'s RAF tick (via Module._raf_tick_c). Exported
 // to JS by EXPORTED_FUNCTIONS in CMakeLists.txt; EMSCRIPTEN_KEEPALIVE
 // also keeps the symbol alive under -O*.
 extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
@@ -443,7 +476,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void raf_tick_c(void* user) {
 }
 
 // Stream a sidecar from a registered JS byte-source and APPEND it to the scene
-// (federation). shell.html registers the source first — a picked File or a
+// (federation). the host page (web/ifcviewer.js) registers the source first — a picked File or a
 // remote URL, sized up front — into Module.__ifcvSources[source_id], then calls
 // this. Byte-range: the file is never copied whole into the wasm heap; metadata
 // is read via ranges and chunks stream per-chunk, so a 500 MB sidecar stays in
@@ -454,14 +487,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE void load_sidecar_from_source_c(int source_id) {
     g_app->core.loadSidecarMetadataWeb(source_id, "source");
 }
 
-// Drop all loaded models (used by shell.html to replace the embedded sample /
+// Drop all loaded models (used by the host page (web/ifcviewer.js) to replace the embedded sample /
 // a prior federation before loading a fresh set).
 extern "C" EMSCRIPTEN_KEEPALIVE void clear_scene_c() {
     if (!g_app || !g_app->ready) return;
     g_app->core.resetScene();
 }
 
-// Viewport-navigation entry points for the shell.html toolbar (buttons that
+// Viewport-navigation entry points for the the host page (web/ifcviewer.js) toolbar (buttons that
 // mirror the keyboard hotkeys). Each schedules a frame.
 extern "C" EMSCRIPTEN_KEEPALIVE void view_all_c() {
     if (!g_app || !g_app->ready) return;
@@ -518,7 +551,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void standard_view_c(int id) {
     g_app->host.requestFrame();
 }
 
-// Streaming progress for the loading bar (shell.html polls these each frame).
+// Streaming progress for the loading bar (the host page (web/ifcviewer.js) polls these each frame).
 // total == 0 while still fetching metadata; resident climbs to total as
 // geometry chunks arrive.
 extern "C" EMSCRIPTEN_KEEPALIVE int ifcv_chunks_resident_c() {
@@ -613,7 +646,7 @@ int main(int /*argc*/, char** /*argv*/) {
         installInputHandlers(g_app);
 
         // Hand the app pointer to the JS-side RAF loop (set up in
-        // shell.html's onRuntimeInitialized). The loop polls for
+        // the host page (web/ifcviewer.js)'s onRuntimeInitialized). The loop polls for
         // Module._app_ptr before invoking _raf_tick_c.
         EM_ASM({ Module._app_ptr = $0; }, (void*)g_app);
     });

@@ -35,7 +35,7 @@
 class WebViewportHost final : public ViewportHost {
 public:
     // `canvas_selector` is the CSS selector for the host <canvas> (e.g.
-    // "#viewer-canvas" — matches shell.html). The string is stored;
+    // "#viewer-canvas" — matches the host page (web/ifcviewer.js)). The string is stored;
     // it must outlive the host.
     explicit WebViewportHost(std::string canvas_selector);
 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IfcOpenShell web viewer — examples</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; min-height: 100%; background: #0f1117; color: #c8ccd6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 40px; }
+  .wrap { max-width: 640px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.lead { color: #8a93a6; margin: 0 0 24px; font-size: 13px; }
+  a.card { display: block; text-decoration: none; color: inherit;
+    border: 1px solid #232833; border-radius: 8px; padding: 16px 18px;
+    background: #151821; margin-bottom: 14px; }
+  a.card:hover { border-color: #2b6cb0; }
+  a.card h2 { margin: 0 0 4px; font-size: 15px; color: #dfe4ee; }
+  a.card p  { margin: 0; font-size: 12px; color: #8a93a6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>IfcOpenShell web viewer</h1>
+  <p class="lead">Two examples of the same WebGPU viewer wasm (IfcViewerWeb.js),
+     loaded through the small <code>ifcviewer.js</code> integration helper.</p>
+
+  <a class="card" href="IfcViewerWeb.html">
+    <h2>Fullscreen viewer →</h2>
+    <p>The viewer fills the window with an overlay toolbar. Open/add .ifcview
+       files, or auto-load remote models with <code>?model=URL</code>.</p>
+  </a>
+
+  <a class="card" href="embedded.html">
+    <h2>Embedded viewer + JavaScript integration →</h2>
+    <p>The viewer is a sized page element. Plain DOM outside it adds models
+       (file or URL), lists the loaded models with streaming progress, and shows
+       the GlobalId of whatever you click in the scene.</p>
+  </a>
+</div>
+</body>
+</html>

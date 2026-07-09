@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IfcViewer (web) — embedded / JS integration</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: #0f1117; color: #c8ccd6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 12px 16px; border-bottom: 1px solid #232833; }
+  header h1 { margin: 0; font-size: 15px; font-weight: 600; }
+  header p  { margin: 4px 0 0; font-size: 12px; color: #8a93a6; }
+  header a  { color: #7f9bd6; }
+  .layout { display: flex; gap: 16px; padding: 16px; align-items: flex-start;
+    flex-wrap: wrap; }
+  /* The viewer is a normal, sized DOM box — NOT fullscreen. */
+  #viewer-box { position: relative; width: 640px; height: 460px; max-width: 100%;
+    border: 1px solid #232833; border-radius: 6px; overflow: hidden;
+    background: #1a1d24; }
+  #viewer-canvas { display: block; width: 100%; height: 100%; outline: none; }
+  #marquee { position: absolute; display: none; z-index: 5; pointer-events: none;
+    border: 1px solid #4a9eff; background: rgba(74, 158, 255, 0.15); }
+  .sidebar { flex: 1 1 300px; min-width: 280px; display: flex; flex-direction: column; gap: 14px; }
+  .card { border: 1px solid #232833; border-radius: 6px; background: #151821; }
+  .card h2 { margin: 0; padding: 9px 12px; font-size: 12px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; color: #8a93a6;
+    border-bottom: 1px solid #232833; }
+  .card .body { padding: 12px; }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row + .row { margin-top: 8px; }
+  input[type=text] { flex: 1; min-width: 0; background: #0f1117; color: #c8ccd6;
+    border: 1px solid #2b3244; border-radius: 4px; padding: 6px 8px; font-size: 12px; }
+  button { background: #2b6cb0; color: #fff; border: none; padding: 6px 12px;
+    border-radius: 4px; font-size: 12px; cursor: pointer; }
+  button.secondary { background: #2d3748; color: #c8ccd6; }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: .5; cursor: default; filter: none; }
+  ul#model-list { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+  ul#model-list li { padding: 7px 12px; border-bottom: 1px solid #1c202b; }
+  ul#model-list li:last-child { border-bottom: none; }
+  ul#model-list .name { display: flex; justify-content: space-between; gap: 8px; }
+  ul#model-list .name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  ul#model-list .pct { color: #8a93a6; flex: 0 0 auto; }
+  .bar { height: 4px; margin-top: 5px; border-radius: 2px; background: #232833; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0%; background: #3182ce; }
+  .empty { color: #6f7988; font-size: 12px; padding: 4px 0; }
+  .sel-field { display: flex; gap: 8px; font-size: 13px; }
+  .sel-field + .sel-field { margin-top: 6px; }
+  .sel-field label { flex: 0 0 70px; color: #8a93a6; }
+  #sel-guid { font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+  #sel-guid.none { color: #6f7988; }
+  #sel-model { word-break: break-all; }
+  .hint { font-size: 11px; color: #6f7988; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>IfcOpenShell web viewer — JavaScript integration</h1>
+  <p>The viewer is an ordinary page element; the model list and selected GUID are
+     plain DOM updated from JS. &nbsp;<a href="IfcViewerWeb.html">↗ fullscreen example</a></p>
+</header>
+
+<div class="layout">
+  <!-- The viewer. The canvas MUST be id="viewer-canvas" (the wasm hard-codes
+       that selector). #marquee is the box-select rubber-band the wasm draws. -->
+  <div>
+    <div id="viewer-box">
+      <canvas id="viewer-canvas" width="1280" height="920"></canvas>
+      <div id="marquee"></div>
+    </div>
+    <div class="hint">Drag to orbit · scroll to zoom · <b>right-click to select</b> (drag right-click to box-select)</div>
+  </div>
+
+  <div class="sidebar">
+    <div class="card">
+      <h2>Add model (.ifcview)</h2>
+      <div class="body">
+        <div class="row">
+          <button id="browse-btn" class="secondary" disabled>Browse file(s)…</button>
+          <input id="file-input" type="file" accept=".ifcview" multiple style="display:none">
+          <button id="clear-btn" class="secondary" disabled>Clear</button>
+        </div>
+        <div class="row">
+          <input id="url-input" type="text" placeholder="https://…/model.ifcview" disabled>
+          <button id="url-btn" disabled>Add URL</button>
+        </div>
+        <div class="hint" id="status-hint">Starting WebGPU…</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Models in scene</h2>
+      <ul id="model-list"><li class="empty">No models loaded.</li></ul>
+    </div>
+
+    <div class="card">
+      <h2>Selected object</h2>
+      <div class="body">
+        <div class="sel-field"><label>Model</label><span id="sel-model">—</span></div>
+        <div class="sel-field"><label>GlobalId</label><span id="sel-guid" class="none">Right-click an object in the viewer…</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="IfcViewerWeb.js"></script>
+<script src="ifcviewer.js"></script>
+<script>
+  // JS-side model list. The wasm orders models by load, so a model's array
+  // index here matches its index in the C progress exports.
+  var models = [];
+  var userAddedAny = false;   // once true, stop dropping the embedded sample
+  var listEl = document.getElementById('model-list');
+  var selGuidEl = document.getElementById('sel-guid');
+  var selModelEl = document.getElementById('sel-model');
+  var hintEl = document.getElementById('status-hint');
+
+  function renderList() {
+    if (!models.length) {
+      listEl.innerHTML = '<li class="empty">No models loaded.</li>';
+      return;
+    }
+    listEl.innerHTML = '';
+    models.forEach(function (m, i) {
+      var li = document.createElement('li');
+      var pct = m.total > 0 ? Math.round(100 * m.resident / m.total) : 0;
+      var label = m.total > 0 ? pct + '%' : '…';
+      li.innerHTML =
+        '<div class="name"><b title="' + m.name + '">' + m.name + '</b>' +
+        '<span class="pct">' + label + '</span></div>' +
+        '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+      listEl.appendChild(li);
+    });
+  }
+
+  function setSelection(guid, modelName) {
+    selModelEl.textContent = modelName || '—';
+    if (guid) { selGuidEl.textContent = guid; selGuidEl.classList.remove('none'); }
+    else { selGuidEl.textContent = 'Right-click an object in the viewer…'; selGuidEl.classList.add('none'); }
+  }
+
+  if (!navigator.gpu) hintEl.textContent = 'navigator.gpu missing — needs a WebGPU browser';
+
+  var canvas = document.getElementById('viewer-canvas');
+  canvas.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+  IfcViewer.create({
+    canvas: canvas,
+    // Per-frame: refresh each model's streaming progress in the list.
+    onFrame: function (viewer) {
+      // Start empty: drop the wasm's embedded sample cube (kept for the
+      // fullscreen page/tests) so it doesn't linger or skew the first fit-all.
+      // Keep clearing until it's gone; stop once the user adds their own model.
+      if (!userAddedAny && viewer.modelCount() > 0) viewer.clearScene();
+      if (!models.length) return;
+      var changed = false;
+      for (var i = 0; i < models.length; i++) {
+        var p = viewer.modelProgress(i);
+        if (p.resident !== models[i].resident || p.total !== models[i].total) {
+          models[i].resident = p.resident; models[i].total = p.total; changed = true;
+        }
+      }
+      if (changed) renderList();
+    },
+  }).then(function (viewer) {
+    // Report the picked object's model + IFC GlobalId in our own DOM (empty on
+    // deselect). sel.modelIndex indexes our JS model list (load order).
+    viewer.onSelect(function (sel) {
+      var name = (sel.modelIndex !== null && models[sel.modelIndex]) ? models[sel.modelIndex].name : null;
+      setSelection(sel.guid, name);
+    });
+
+    var browseBtn = document.getElementById('browse-btn');
+    var clearBtn = document.getElementById('clear-btn');
+    var fileInput = document.getElementById('file-input');
+    var urlInput = document.getElementById('url-input');
+    var urlBtn = document.getElementById('url-btn');
+
+    function addModelEntry(name) { models.push({ name: name, resident: 0, total: 0 }); renderList(); }
+
+    viewer.ready.then(function () {
+      hintEl.textContent = 'Ready — add a .ifcview model.';
+      [browseBtn, clearBtn, urlInput, urlBtn].forEach(function (el) { el.disabled = false; });
+    });
+
+    browseBtn.addEventListener('click', function () { fileInput.click(); });
+    fileInput.addEventListener('change', function (ev) {
+      if (ev.target.files.length) userAddedAny = true;
+      Array.prototype.forEach.call(ev.target.files, function (file) {
+        viewer.addFile(file).then(function () { addModelEntry(file.name); });
+      });
+      fileInput.value = '';
+    });
+
+    urlBtn.addEventListener('click', function () {
+      var url = urlInput.value.trim();
+      if (!url) return;
+      userAddedAny = true;
+      urlBtn.disabled = true;
+      viewer.addUrl(url).then(function () {
+        addModelEntry(url.split('/').pop() || url);
+        urlInput.value = '';
+      }).catch(function (e) {
+        hintEl.textContent = 'URL load failed: ' + e.message;
+      }).finally(function () { urlBtn.disabled = false; });
+    });
+
+    clearBtn.addEventListener('click', function () {
+      viewer.clearScene();
+      models = []; renderList(); setSelection(null);
+    });
+  });
+</script>
+</body>
+</html>

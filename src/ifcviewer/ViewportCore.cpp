@@ -31,7 +31,6 @@
 #include "InstanceCompose.h"
 #include "Log.h"
 
-#include <boost/math/constants/constants.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -47,7 +46,7 @@ namespace {
 // updateCamera convention so framing aligns between backends.
 Eigen::Vector3f orbitEye(const float target[3], float dist,
                          float yaw_deg, float pitch_deg) {
-    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
     const float yaw = yaw_deg   * kDeg2Rad;
     const float pit = pitch_deg * kDeg2Rad;
     const float cp = std::cos(pit), sp = std::sin(pit);
@@ -178,7 +177,7 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
                             : 1.0f;
     Eigen::Matrix4f p;
     if (projection_ortho_) {
-        constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+        constexpr float kDeg2Rad = kPiF / 180.0f;
         const float half_h = camera_distance_
             * std::tan(camera_fov_y_deg_ * 0.5f * kDeg2Rad);
         const float half_w = half_h * aspect;
@@ -387,7 +386,7 @@ void ViewportCore::composeInstanceFromPlacement(InstanceInfo& inst,
 
 void ViewportCore::frameAabb(const float mn[3], const float mx[3],
                              float padding) {
-    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
     const float cx = 0.5f * (mn[0] + mx[0]);
     const float cy = 0.5f * (mn[1] + mx[1]);
     const float cz = 0.5f * (mn[2] + mx[2]);
@@ -513,7 +512,7 @@ void ViewportCore::orbitBy(float dx_px, float dy_px) {
 }
 
 void ViewportCore::panBy(float dx_px, float dy_px, int viewport_height_px) {
-    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
 
     // Pan in the camera's screen-space plane. Within 1° of straight
     // up/down the world-Z up-reference degenerates (cross with forward
@@ -3732,6 +3731,20 @@ void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
                     ? m.string_table.substr(e.guid_offset, e.guid_length)
                     : std::string("(none)");
             Log::info() << "pick: object " << object_id << " GUID " << guid;
+            // Load-order index of the object's model (sorted by session id — the
+            // same order as streamingModelProgress and the JS model list); -1 if
+            // not found. Lets host pages show which model the pick belongs to.
+            std::vector<std::uint32_t> model_ids;
+            model_ids.reserve(models_gpu_.size());
+            for (const auto& [id, mm] : models_gpu_) model_ids.push_back(id);
+            std::sort(model_ids.begin(), model_ids.end());
+            const auto pos = std::find(model_ids.begin(), model_ids.end(), session_model_id);
+            const int model_index = (pos != model_ids.end()) ? int(pos - model_ids.begin()) : -1;
+            // Surface the selection to JS so host pages can react (e.g. show the
+            // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex).
+            EM_ASM({
+                if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
+            }, object_id, guid.c_str(), model_index);
             return;
         }
         Log::info() << "pick: object " << object_id << " not in element table";
@@ -6121,7 +6134,7 @@ namespace {
 // degrees → radians. Inline-only, used inside render() for the
 // focal-length derivation.
 constexpr float degreesToRadians(float deg) {
-    return deg * boost::math::constants::pi<float>() / 180.0f;
+    return deg * kPiF / 180.0f;
 }
 
 // Format a float with N decimals into the running Log line. Used to
