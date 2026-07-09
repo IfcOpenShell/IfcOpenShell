@@ -107,28 +107,27 @@ class Clasher:
             b = "a"
 
         mode = clash_set["mode"]
+        # These keys are NotRequired in ClashSet, so fall back to the same
+        # defaults as ifcopenshell.geom.tree instead of asserting presence.
         if mode == "intersection":
-            assert "tolerance" in clash_set and "check_all" in clash_set
             results = self.tree.clash_intersection_many(
                 list(self.groups["a"]["elements"].values()),
                 list(self.groups[b]["elements"].values()),
-                tolerance=clash_set["tolerance"],
-                check_all=clash_set["check_all"],
+                tolerance=clash_set.get("tolerance", 0.002),
+                check_all=clash_set.get("check_all", True),
             )
         elif mode == "collision":
-            assert "allow_touching" in clash_set
             results = self.tree.clash_collision_many(
                 list(self.groups["a"]["elements"].values()),
                 list(self.groups[b]["elements"].values()),
-                allow_touching=clash_set["allow_touching"],
+                allow_touching=clash_set.get("allow_touching", False),
             )
         elif mode == "clearance":
-            assert "clearance" in clash_set and "check_all" in clash_set
             results = self.tree.clash_clearance_many(
                 list(self.groups["a"]["elements"].values()),
                 list(self.groups[b]["elements"].values()),
-                clearance=clash_set["clearance"],
-                check_all=clash_set["check_all"],
+                clearance=clash_set.get("clearance", 0.05),
+                check_all=clash_set.get("check_all", False),
             )
         else:
             assert_never(mode)
