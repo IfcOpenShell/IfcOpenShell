@@ -1017,15 +1017,21 @@ class FacetTransformer(lark.Transformer):
 
         def filter_function(element: ifcopenshell.entity_instance) -> bool:
             materials = ifcopenshell.util.element.get_materials(element)
-            result = False if materials else None
-            for material in materials:
-                if self.compare(material.Name, comparison, value):
-                    result = True
-                if self.compare(getattr(material, "Category", None), comparison, value):
-                    result = True
-            if result is not None:
-                return result if comparison == "=" else not result
-            return self.compare(None, comparison, value)
+            positive = comparison.lstrip("!")
+            if value is None:
+                # NULL means the element has no materials at all.
+                result = not materials
+            else:
+                # Compare each material positively and negate the aggregate,
+                # so that != means "no material matches" (#6787).
+                result = any(
+                    self.compare(material.Name, positive, value)
+                    or self.compare(getattr(material, "Category", None), positive, value)
+                    for material in materials
+                )
+            if comparison.startswith("!"):
+                return not result
+            return result
 
         self.add_default_elements()
         self.elements = set(filter(filter_function, self.elements))

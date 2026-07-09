@@ -261,6 +261,14 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.material.assign_material(self.file, products=[element], material=material)
         assert subject.filter_elements(self.file, "IfcWall, material=CON01") == {element}
         assert subject.filter_elements(self.file, "IfcWall, material!=CON01") == {element2}
+        # != must also exclude elements with a different material, and NULL must
+        # mean "has no materials", even when other elements do have some (#6787).
+        material2 = ifcopenshell.api.material.add_material(self.file, name="STE01")
+        ifcopenshell.api.material.assign_material(self.file, products=[element2], material=material2)
+        assert subject.filter_elements(self.file, "IfcWall, material!=CON01") == {element2}
+        element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        assert subject.filter_elements(self.file, "IfcWall, material=NULL") == {element3}
+        assert subject.filter_elements(self.file, "IfcWall, material!=NULL") == {element, element2}
 
     def test_selecting_by_property(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
