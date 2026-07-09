@@ -27,7 +27,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangularTrimmedSurface& i
 
 	/*
 	if (!inst.BasisSurface()->declaration().is(IfcSchema::IfcPlane::Class())) {
-		logger::message(logger::LOG_ERROR, "Unsupported BasisSurface:", inst.BasisSurface());
+		::logger::root().message(::logger::LOG_ERROR, "Unsupported BasisSurface:", inst.BasisSurface());
 		return false;
 	}
 	gp_Pln pln;

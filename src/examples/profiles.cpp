@@ -33,10 +33,10 @@
 #define IfcSchema Ifc2x3
 #endif
 
-#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
-#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA(ifcparse/schemas, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
-#include "ifcparse/IfcHierarchyHelper.h"
+#include "ifcparse/hierarchy_helper.h"
 
 typedef std::string S;
 typedef IfcWrite::IfcGuidHelper guid;

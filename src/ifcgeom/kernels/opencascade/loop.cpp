@@ -130,8 +130,8 @@ namespace {
 				} else {
 					// @todo
 					const double precision_ = 1.e-5;
-					Logger::Root().Warning("GEO", 180, "Approximating BasisCurve due to possible discontinuities", e->instance);
-					const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+					::logger::root().warning("GEO", 180, "Approximating BasisCurve due to possible discontinuities", e->instance);
+					const auto& w = std::get<TopoDS_Wire>(crv_or_wire);
 #if OCC_VERSION_HEX < 0x70600
 					BRepAdaptor_CompCurve cc(w, true);
 					Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
@@ -284,7 +284,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	}
 
 	if (converted_segments.Extent() == 0) {
-		Logger::Root().Message(Logger::LOG_ERROR, "GEO", 181, "No segment successfully converted:", loop->instance);
+		::logger::root().message(::logger::LOG_ERROR, "GEO", 181, "No segment successfully converted:", loop->instance);
 		return false;
 	}
 
@@ -349,7 +349,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 
 				if (ang < 0.0314) {
 					edges_to_tesselate.Add(crv1->DynamicType() == STANDARD_TYPE(Geom_Circle) ? edges.First() : edges.Last());
-					Logger::Root().Notice("GEO", 182, "Sharp circular corner detecting, substituting with linear approximation");
+					::logger::root().notice("GEO", 182, "Sharp circular corner detecting, substituting with linear approximation");
 				}
 			}
 		}

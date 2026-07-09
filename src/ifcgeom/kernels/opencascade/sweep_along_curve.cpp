@@ -129,8 +129,8 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
     }
 	
 	auto w = convert_curve(scs->curve);
-	if (w.which() != 2) {
-		logger_.Error("UNS", 9, "Unsupported directrix");
+	if (w.index() != 2) {
+		logger_.error("UNS", 9, "Unsupported directrix");
 		return false;
 	}
 	TopoDS_Shape face_;
@@ -178,7 +178,7 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					logger_.Message(Logger::LOG_WARNING, "GEO", 202, "The Directrix does not lie on the ReferenceSurface", scs->instance);
+					logger_.message(::logger::LOG_WARNING, "GEO", 202, "The Directrix does not lie on the ReferenceSurface", scs->instance);
 					break;
 				}
 			}

@@ -32,7 +32,7 @@ namespace ifcopenshell {
 				ifcopenshell::geometry::abstract_mapping* mapping_;
 				ifcopenshell::file* file_;
 			public:
-				HybridKernel(const std::string& name, ifcopenshell::file* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels, Logger& logger = Logger::Root())
+				HybridKernel(const std::string& name, ifcopenshell::file* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels, ::logger& logger = ::logger::root())
 					: AbstractKernel(name, settings, logger)
 					, kernels_(std::move(kernels))
 					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings, logger))
@@ -127,7 +127,7 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual AbstractKernel* clone(Logger& logger) const
+				virtual AbstractKernel* clone(::logger& logger) const
 				{
 					std::vector<std::unique_ptr<AbstractKernel>> ks;
 					for (auto& k : kernels_) {

@@ -110,13 +110,13 @@ private:
 
 	double precision_;
 public:
-	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root())
+	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings, ::logger& logger = ::logger::root())
 		: AbstractKernel("opencascade", settings, logger)
 		, faceset_helper_(nullptr)
 		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
 	{}
 
-	virtual AbstractKernel* clone(Logger& logger) const {
+	virtual AbstractKernel* clone(::logger& logger) const {
 		return new OpenCascadeKernel(settings(), logger);
 	}
 

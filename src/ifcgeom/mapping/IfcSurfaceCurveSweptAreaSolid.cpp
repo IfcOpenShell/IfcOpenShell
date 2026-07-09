@@ -49,11 +49,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 	if (!is_plane) {
 		TopoDS_Shape surface_shell;
 		if (!convert_shape(inst.ReferenceSurface(), surface_shell)) {
-			logger::error("Failed to convert reference surface", l);
+			::logger::root().error("Failed to convert reference surface", l);
 			return false;
 		}
 		if (util::count(surface_shell, TopAbs_FACE) != 1) {
-			logger::error("Non-continuous reference surface", l);
+			::logger::root().error("Non-continuous reference surface", l);
 			return false;
 		}
 		surface_face = TopoDS::Face(TopExp_Explorer(surface_shell, TopAbs_FACE).Current());
@@ -76,7 +76,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid& 
 			for (TopExp_Explorer exp(wire, TopAbs_VERTEX); exp.More(); exp.Next()) {
 				if (pln.Distance(BRep_Tool::Pnt(TopoDS::Vertex(exp.Current()))) > ALMOST_ZERO) {
 					directrix_on_plane = false;
-					logger::message(logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
+					::logger::root().message(::logger::LOG_WARNING, "The Directrix does not lie on the ReferenceSurface", l);
 					break;
 				}
 			}

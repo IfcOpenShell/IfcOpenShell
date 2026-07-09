@@ -139,7 +139,8 @@ inline void append_ascii(std::u32string& builder, const char* bytes, size_t coun
 } // namespace SWAR
 
 template <typename Reader>
-character_decoder<Reader>::character_decoder(Reader* stream) {
+character_decoder<Reader>::character_decoder(Reader* stream, logger& logger)
+    : logger_(logger) {
     stream_ = stream;
     codepage_ = 0;
     builder_.reserve(1024);
@@ -151,7 +152,7 @@ character_decoder<Reader>::~character_decoder() {
 
 namespace {
     template <typename Reader>
-    std::string read_string(std::u32string& builder_, Reader& stream_, typename ifcopenshell::character_decoder<Reader>::ConversionMode mode, char substitution_character) {
+    std::string read_string(std::u32string& builder_, Reader& stream_, logger& logger_, typename ifcopenshell::character_decoder<Reader>::ConversionMode mode, char substitution_character) {
         unsigned int parse_state = 0;
         builder_.clear();
         // builder_.push_back('\'');
@@ -224,7 +225,7 @@ namespace {
                 parse_state += PAGE;
             } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
                 if (IS_LOWERCASE_HEX(current_char)) {
-                    logger.Warning("SYN", 2, "Lowercase hexadecimal character '" + std::string(1, current_char) +
+                    logger_.warning("SYN", 2, "Lowercase hexadecimal character '" + std::string(1, current_char) +
                                     "' found at offset " + std::to_string(stream_.tell()) +
                                     ". It is recommended to use uppercase for hexadecimal.");
                 }
@@ -299,14 +300,14 @@ namespace {
 
 template <typename Reader>
 character_decoder<Reader>::operator std::string() {
-    return read_string(builder_, *stream_, mode, substitution_character);
+    return read_string(builder_, *stream_, logger_, mode, substitution_character);
 }
 
 template <typename Reader>
 std::string character_decoder<Reader>::get(size_t& ptr) {
     auto local_stream = *stream_;
     local_stream.seek(ptr);
-    auto s = read_string(builder_, local_stream, mode, substitution_character);
+    auto s = read_string(builder_, local_stream, logger_, mode, substitution_character);
 	ptr = local_stream.tell();
     return s;
 }

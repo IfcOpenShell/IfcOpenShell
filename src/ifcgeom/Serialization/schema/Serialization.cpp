@@ -112,7 +112,7 @@ namespace {
 #endif
 
 template <>
-int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>& c, IfcSchema::IfcCurve*& curve, bool advanced) {
+int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>& c, IfcSchema::IfcCurve& curve, bool advanced) {
 	if (c->DynamicType() == STANDARD_TYPE(Geom_TrimmedCurve)) {
         opencascade::handle<Geom_TrimmedCurve> trim = opencascade::handle<Geom_TrimmedCurve>::DownCast(c);
 		const opencascade::handle<Geom_Curve> basis = trim->BasisCurve();
@@ -155,7 +155,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
 		IfcSchema::IfcAxis2Placement3D ax;
 
 		opencascade::handle<Geom_Ellipse> ellipse = opencascade::handle<Geom_Ellipse>::DownCast(c);
-		convert_to_ifc(ellipse.Position(), ax, advanced);
+		convert_to_ifc(f, ellipse->Position(), ax, advanced);
 
 		auto el = f.create<IfcSchema::IfcEllipse>();
         el.setPosition(ax);
@@ -208,6 +208,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
         bspl.setKnots(knots);
         bspl.setKnotSpec(knot_spec);
         bspl.setWeightsData(weights);
+		curve = bspl;
 
 		return 1;
 	}
@@ -277,6 +278,7 @@ int convert_to_ifc(ifcopenshell::file& f, const opencascade::handle<Geom_Curve>&
         bspl.setKnotMultiplicities(mults);
         bspl.setKnots(knots);
         bspl.setKnotSpec(knot_spec);
+		curve = bspl;
 
 		return 1;
 	}

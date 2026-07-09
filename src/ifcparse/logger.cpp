@@ -23,8 +23,6 @@
 #include "instance_data.h"
 
 #include <algorithm>
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/optional.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
@@ -33,9 +31,6 @@
 #include <ctime>
 #include <iomanip>
 #include <iostream>
-#include <mutex>
-
-static thread_local express::Base current_product_;
 
 namespace {
 
@@ -71,13 +66,23 @@ std::string format_code(const char (&code_prefix)[4], uint16_t code_number) {
 }
 
 template <typename T>
-void plain_text_message(T& out, const express::Base& current_product, Logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
+void write_code(T& out, const std::string& code) {
+    if (!code.empty()) {
+        out << "[" << code.c_str() << "] ";
+    }
+}
+
+template <typename T>
+void plain_text_message(T& out, const express::Base& current_product, logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
-    out << "[" << code.c_str() << "] ";
-    out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
+    write_code(out, code);
+    out << "[" << get_time(type <= logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
-        std::string global_id = current_product.as<express::Entity>().get("GlobalId");
-        out << "{" << global_id.c_str() << "} ";
+        express::Entity entity = current_product.as<express::Entity>();
+        if (entity) {
+            std::string global_id = entity.get("GlobalId");
+            out << "{" << global_id.c_str() << "} ";
+        }
     }
     out << message.c_str() << std::endl;
     if (instance) {
@@ -99,10 +104,9 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const express::Base* current_product, Logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
+void json_message(T& out, const express::Base& current_product, logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
-    // @todo this is crazy
     static const typename T::char_type time_string[] = {'t', 'i', 'm', 'e', 0};
     static const typename T::char_type level_string[] = {'l', 'e', 'v', 'e', 'l', 0};
     static const typename T::char_type code_string[] = {'c', 'o', 'd', 'e', 0};
@@ -111,7 +115,9 @@ void json_message(T& out, const express::Base* current_product, Logger::Severity
     static const typename T::char_type instance_string[] = {'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0};
 
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
-    property_tree.put(code_string, string_as<typename T::char_type>(code));
+    if (!code.empty()) {
+        property_tree.put(code_string, string_as<typename T::char_type>(code));
+    }
     if (current_product) {
         std::ostringstream oss;
         current_product.to_string(oss);
@@ -128,68 +134,63 @@ void json_message(T& out, const express::Base* current_product, Logger::Severity
 
     boost::property_tree::write_json(out, property_tree, false);
 
-    // Append a newline after the JSON object if the Boost version is 1.86 or higher
 #if BOOST_VERSION >= 108600
     out << '\n';
 #endif
-
 }
+
 } // namespace
 
 log_message::log_message(
     int severity,
-    const char (&code_prefix)[4],
-    uint16_t code_number,
+    const std::string& code,
     const std::string& timestamp,
     const std::string& message,
-    const IfcUtil::IfcBaseInterface* inst,
-    const IfcUtil::IfcBaseClass* current_product)
+    const express::Base& instance,
+    const express::Base& current_product)
     : severity(severity)
     , timestamp(timestamp)
     , message(message)
 {
-    snprintf(code, 7, "%s%03u", code_prefix, code_number);
-    if (inst) {
+    snprintf(this->code, sizeof(this->code), "%s", code.c_str());
+    if (instance) {
         std::ostringstream oss;
-        inst->as<IfcUtil::IfcBaseClass>()->toString(oss);
-        instance = oss.str();
+        instance.to_string(oss);
+        this->instance = oss.str();
     }
     if (current_product) {
         std::ostringstream oss;
-        current_product->toString(oss);
+        current_product.to_string(oss);
         product = oss.str();
     }
 }
 
-Logger& Logger::Root() {
-    static Logger logger;
-    return logger;
+logger& logger::root() {
+    static logger root_logger;
+    return root_logger;
 }
 
-const express::Base& Logger::current_product() const {
+const express::Base& logger::current_product() const {
     return current_product_;
 }
 
-void logger::set_product(std::optional<const express::Base> product) {
-    if (verbosity_ <= LOG_DEBUG && product) {
-        message(LOG_DEBUG, "Begin processing", *product);
-    }
+void logger::current_product(const express::Base& product) {
     current_product_ = product;
 }
 
-void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
+void logger::set_product(std::optional<express::Base> product) {
     if (verbosity_ <= LOG_DEBUG && product) {
-        Message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
+        message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
     }
     if (!product && print_perf_stats_on_element_) {
         print_performance_stats();
         performance_statistics_.clear();
     }
-    current_product_ = product.value_or(express::Base{});
+    current_product(product.value_or(express::Base{}));
 }
 
 void logger::set_output(std::ostream* stream1, std::ostream* stream2) {
-    wlog1_ = wlog2_ = 0;
+    wlog1_ = wlog2_ = nullptr;
     log1_ = stream1;
     log2_ = stream2;
     if (log2_ == nullptr) {
@@ -198,21 +199,33 @@ void logger::set_output(std::ostream* stream1, std::ostream* stream2) {
 }
 
 void logger::set_output(std::wostream* stream1, std::wostream* stream2) {
-    log1_ = log2_ = 0;
+    log1_ = log2_ = nullptr;
     wlog1_ = stream1;
     wlog2_ = stream2;
-    if (wlog2_ == nullptr) {
-        log2_ = &log_stream_;
-    }
 }
 
-void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::Base& instance) {
+void logger::message(logger::Severity type, const std::string& text, const express::Base& instance) {
+    message(type, std::string(), text, instance);
+}
+
+void logger::message(logger::Severity type, const std::exception& exception, const express::Base& instance) {
+    message(type, std::string(exception.what()), instance);
+}
+
+void logger::message(logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& text, const express::Base& instance) {
+    message(type, format_code(code_prefix, code_number), text, instance);
+}
+
+void logger::message(logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base& instance) {
+    message(type, code_prefix, code_number, std::string(exception.what()), instance);
+}
+
+void logger::message(logger::Severity type, const std::string& code, const std::string& text, const express::Base& instance) {
     if (type < verbosity_) {
         return;
     }
 
     std::lock_guard<std::mutex> lock(mutex_);
-    const std::string code = format_code(code_prefix, code_number);
 
     if (type == LOG_PERF) {
         if (!first_timepoint_) {
@@ -232,26 +245,22 @@ void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16
     }
 
     if (format_ == FMT_INMEMORY) {
-        log_messages_.emplace_back(type, code_prefix, code_number, get_time(), message, instance, current_product());
+        log_messages_.emplace_back(type, code, get_time(), text, instance, current_product());
     } else if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
-                plain_text_message(*log2_, current_product(), type, code, message, instance);
+                plain_text_message(*log2_, current_product(), type, code, text, instance);
             } else if (wlog2_ != nullptr) {
-                plain_text_message(*wlog2_, current_product(), type, code, message, instance);
+                plain_text_message(*wlog2_, current_product(), type, code, text, instance);
             }
         } else if (format_ == FMT_JSON) {
             if (log2_ != nullptr) {
-                json_message(*log2_, current_product(), type, code, message, instance);
+                json_message(*log2_, current_product(), type, code, text, instance);
             } else if (wlog2_ != nullptr) {
-                json_message(*wlog2_, current_product(), type, code, message, instance);
+                json_message(*wlog2_, current_product(), type, code, text, instance);
             }
         }
     }
-}
-
-void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base&) {
-    Message(type, code_prefix, code_number, std::string(exception.what()), instance);
 }
 
 template <typename T>
@@ -277,36 +286,32 @@ void logger::progress_bar(int progress) {
 }
 
 std::string logger::get_log() {
-    return log_stream_.str();
-}
-
-std::string Logger::GetLog() {
     std::lock_guard<std::mutex> lock(mutex_);
     return log_stream_.str();
 }
 
-void Logger::ClearLog() {
+void logger::clear() {
     std::lock_guard<std::mutex> lock(mutex_);
     log_stream_.str(std::string());
     log_stream_.clear();
     log_messages_.clear();
 }
 
-void Logger::Append(Logger& logger) {
-    if (&logger == this) {
+void logger::append(logger& other) {
+    if (&other == this) {
         return;
     }
 
-    std::scoped_lock lock(mutex_, logger.mutex_);
+    std::scoped_lock lock(mutex_, other.mutex_);
 
-    if (logger.max_severity_ > max_severity_) {
-        max_severity_ = logger.max_severity_;
+    if (other.max_severity_ > max_severity_) {
+        max_severity_ = other.max_severity_;
     }
 
     if (format_ == FMT_INMEMORY) {
-        log_messages_.insert(log_messages_.end(), logger.log_messages_.begin(), logger.log_messages_.end());
+        log_messages_.insert(log_messages_.end(), other.log_messages_.begin(), other.log_messages_.end());
     } else {
-        const std::string log = logger.log_stream_.str();
+        const std::string log = other.log_stream_.str();
         if (!log.empty()) {
             if (log2_ != nullptr) {
                 *log2_ << log;
@@ -318,9 +323,9 @@ void Logger::Append(Logger& logger) {
         }
     }
 
-    logger.log_stream_.str(std::string());
-    logger.log_stream_.clear();
-    logger.log_messages_.clear();
+    other.log_stream_.str(std::string());
+    other.log_stream_.clear();
+    other.log_messages_.clear();
 }
 
 void logger::print_performance_stats() {
@@ -340,15 +345,27 @@ void logger::print_performance_stats() {
     }
 
     for (auto& item : items) {
-        auto message = item.second + std::string(max_size - item.second.size(), ' ') + ": " + std::to_string(item.first);
-        Message(LOG_PERF, "SYS", 4, message);
+        auto text = item.second + std::string(max_size - item.second.size(), ' ') + ": " + std::to_string(item.first);
+        message(LOG_PERF, "SYS", 4, text);
     }
 }
 
-void Logger::Verbosity(Logger::Severity severity) { verbosity_ = severity; }
-Logger::Severity Logger::Verbosity() const { return verbosity_; }
+void logger::verbosity(logger::Severity severity) {
+    verbosity_ = severity;
+}
 
-Logger::Severity Logger::MaxSeverity() const { return max_severity_; }
+logger::Severity logger::verbosity() const {
+    return verbosity_;
+}
 
-void Logger::OutputFormat(Format format) { format_ = format; }
-Logger::Format Logger::OutputFormat() const { return format_; }
+logger::Severity logger::max_severity() const {
+    return max_severity_;
+}
+
+void logger::output_format(Format format) {
+    format_ = format;
+}
+
+logger::Format logger::output_format() const {
+    return format_;
+}

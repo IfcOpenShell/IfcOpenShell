@@ -46,19 +46,19 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		try {
 			success = convert(face, occ_face);
 		} catch (const std::exception& e) {
-			logger_.Error("GEO", 194, e);
+			logger_.error("GEO", 194, e);
 		} catch (const Standard_Failure& e) {
 			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				logger_.Error("GEO", 195, e.GetMessageString());
+				logger_.error("GEO", 195, e.GetMessageString());
 			} else {
-				logger_.Error("GEO", 196, "Unknown error creating face");
+				logger_.error("GEO", 196, "Unknown error creating face");
 			}
 		} catch (...) {
-			logger_.Error("GEO", 197, "Unknown error creating face");
+			logger_.error("GEO", 197, "Unknown error creating face");
 		}
 
 		if (!success) {
-			logger_.Message(Logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
+			logger_.message(::logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
 			continue;
 		}
 
@@ -71,7 +71,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 					if (face_area(triangle) > min_face_area) {
 						face_list.Append(triangle);
 					} else {
-						logger_.Message(Logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
+						logger_.message(::logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
 					}
 				}
 			}
@@ -79,7 +79,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 			if (face_area(occ_face) > min_face_area) {
 				face_list.Append(occ_face);
 			} else {
-				logger_.Message(Logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
+				logger_.message(::logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
 			}
 		}
 	}

@@ -20,7 +20,7 @@
 #ifndef CGAL_KERNEL_H
 #define CGAL_KERNEL_H
 
-#include "../../../ifcparse/IfcLogger.h"
+#include "../../../ifcparse/logger.h"
 
 /*
 #ifdef NO_CACHE
@@ -60,12 +60,12 @@ namespace ifcopenshell {
 		namespace utils {
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_cube(double d);
 			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_cube(const Kernel_::Point_3& lower, const Kernel_::Point_3& upper);
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false, Logger& logger = Logger::Root());
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(std::list<cgal_face_t> &face_list, bool stitch_borders = false, logger& logger = ::logger::root());
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron, Logger& logger = Logger::Root());
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list, Logger& logger = Logger::Root());
-			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron, Logger& logger = Logger::Root());
+			IFC_GEOMLIBRARY_API CGAL::Polyhedron_3<Kernel_> create_polyhedron(const CGAL::Nef_polyhedron_3<Kernel_> &nef_polyhedron, logger& logger = ::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(std::list<cgal_face_t> &face_list, logger& logger = ::logger::root());
+			IFC_GEOMLIBRARY_API CGAL::Nef_polyhedron_3<Kernel_> create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron, logger& logger = ::logger::root());
 #endif
 		}
 
@@ -93,11 +93,11 @@ namespace ifcopenshell {
 #endif
 			public:
 
-				CgalKernel(const Settings& settings, Logger& logger = Logger::Root())
+				CgalKernel(const Settings& settings, ::logger& logger = ::logger::root())
 					: AbstractKernel("cgal", settings, logger)
 				{}
 
-				virtual AbstractKernel* clone(Logger& logger) const {
+				virtual AbstractKernel* clone(::logger& logger) const {
 					return new CgalKernel(settings(), logger);
 				}
 

@@ -32,28 +32,23 @@ class file;
 class IFC_PARSE_API spf_header {
   private:
     ifcopenshell::file* file_;
-    std::reference_wrapper<Logger> logger_;
-	IfcParse::impl::in_memory_file_storage* storage_ = nullptr;
+    std::reference_wrapper<::logger> logger_;
 
     std::array<shared_pointer_type, 3> header_entities_;
 
   public:
-    explicit spf_header(ifcopenshell::file* file = nullptr, Logger& logger = Logger::Root());
-    explicit spf_header(spf_lexer* lexer, Logger& logger = Logger::Root());
+    explicit spf_header(ifcopenshell::file* file = nullptr, ::logger& logger = ::logger::root());
+    ~spf_header();
 
     void write(std::ostream& stream) const;
 
     ifcopenshell::file* owner_file() { return file_; }
     void owner_file(ifcopenshell::file* file);
-    Logger& logger() const { return logger_.get(); }
+    ::logger& logger() const { return logger_.get(); }
 
     void set_file_description(const shared_pointer_type& description_data);
     void set_file_name(const shared_pointer_type& name_data);
     void set_file_schema(const shared_pointer_type& schema_data);
-
-    void assign(const IfcSpfHeader& other);
-
-    void write(std::ostream& out) const;
 
     Header_section_schema::file_description file_description();
     Header_section_schema::file_name file_name();

@@ -136,9 +136,10 @@ bool svgfill::svg_to_polygons(
 bool svgfill::arrange_polygons(
 	arrange_polygon_settings settings,
 	const std::vector<polygon_2>& polygons,
-	std::vector<polygon_2>& arranged)
+	std::vector<polygon_2>& arranged,
+	logger& logger)
 {
-	return provider().api.arrange_polygons(settings, polygons, arranged);
+	return provider().api.arrange_polygons(settings, polygons, arranged, logger);
 }
 
 void svgfill::context::add(const std::vector<line_segment_2>& segments) {

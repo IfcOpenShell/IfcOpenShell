@@ -13,11 +13,11 @@ namespace kernels {
 
 class IFC_GEOMLIBRARY_API ManifoldKernel : public AbstractKernel {
 public:
-	ManifoldKernel(const Settings& settings)
-		: AbstractKernel("manifold", settings) {}
+	ManifoldKernel(const Settings& settings, ::logger& logger = ::logger::root())
+		: AbstractKernel("manifold", settings, logger) {}
 
-	virtual AbstractKernel* clone() const {
-		return new ManifoldKernel(settings());
+	virtual AbstractKernel* clone(::logger& logger) const {
+		return new ManifoldKernel(settings(), logger);
 	}
 
 	virtual bool supports_openings() const { return true; }

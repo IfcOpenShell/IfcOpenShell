@@ -216,7 +216,7 @@ struct cant_curve_segment_function {
 class curve_segment_evaluator {
   private:
     mapping* mapping_ = nullptr;
-    Logger& logger_;    
+    logger& logger_;    
     IfcSchema::IfcCurveSegment inst_;      // this curve segment instance
     double length_unit_;
     double start_;
@@ -260,10 +260,10 @@ class curve_segment_evaluator {
                     emit_next = true;
                 }
             } else {
-                mapping_->logger().Warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+                mapping_->logger().warning("GEO", 242, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
             }
         } else {
-            logger::warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+            ::logger::root().warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
         }
 
         bool is_horizontal = false;
@@ -283,7 +283,7 @@ class curve_segment_evaluator {
         if ((is_horizontal + is_vertical + is_cant) != 1) {
             // We have to choose the correct functor based on usage. We can't
             // support multiple, because we don't know the caller at this point.
-            mapping_->logger().Error("UNS", 10, std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
+            mapping_->logger().error("UNS", 10, std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
         }
 
         segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : is_cant  ? ST_CANT : ST_HORIZONTAL;
@@ -321,7 +321,7 @@ class curve_segment_evaluator {
                     end_point = segmented_reference_curve.EndPoint();
                 }
             } else {
-                mapping_->logger().Warning("GEO", 243, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the end point.");
+                mapping_->logger().warning("GEO", 243, "IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the end point.");
             }
             if (end_point) {
                 next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(end_point))->ccomponents();
@@ -343,7 +343,7 @@ class curve_segment_evaluator {
 
     taxonomy::ptr get_segment_curve_function() {
         if (!parent_curve_fn_ || !parent_curve_start_point_) {
-            mapping_->logger().Error("UNS", 11, std::runtime_error(inst_->ParentCurve()->declaration().name() + " not implemented"), inst_);
+            mapping_->logger().error("UNS", 11, std::runtime_error(inst_->ParentCurve()->declaration().name() + " not implemented"), inst_);
         }
 
         auto length = fabs(this->length());
@@ -476,13 +476,13 @@ class curve_segment_evaluator {
                 projected_length_ = length_;
             }
         } else if (segment_type_ == ST_CANT) {
-            mapping_->logger().Error("GEO", 244, std::runtime_error("Unexpected segment type encountered - cant is handled in set_cant_spiral_function - should never get here"));
+            mapping_->logger().error("GEO", 244, std::runtime_error("Unexpected segment type encountered - cant is handled in set_cant_spiral_function - should never get here"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
              );
         } else {
-            mapping_->logger().Error("GEO", 245, "Unexpected segment type encountered");
+            mapping_->logger().error("GEO", 245, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
@@ -643,13 +643,13 @@ class curve_segment_evaluator {
 
             set_cant_spiral_function(*super, *slope, cant);
         } else if (segment_type_ == ST_VERTICAL) {
-            mapping_->logger().Error("GEO", 246, "IfcCosineSpiral cannot be used for vertical alignment");
+            mapping_->logger().error("GEO", 246, "IfcCosineSpiral cannot be used for vertical alignment");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
             );
         } else {
-            mapping_->logger().Error("GEO", 247, "Unexpected segment type encountered");
+            mapping_->logger().error("GEO", 247, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
@@ -712,12 +712,12 @@ class curve_segment_evaluator {
 
             set_cant_spiral_function(*super, *slope, cant);
         } else if (segment_type_ == ST_VERTICAL) {
-            mapping_->logger().Error("GEO", 248, "IfcSineSpiral cannot be used for vertical alignment");
+            mapping_->logger().error("GEO", 248, "IfcSineSpiral cannot be used for vertical alignment");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
-            mapping_->logger().Error("GEO", 249, "Unexpected segment type encountered");
+            mapping_->logger().error("GEO", 249, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
@@ -978,12 +978,12 @@ class curve_segment_evaluator {
             }
 
         } else if (segment_type_ == ST_CANT) {
-            mapping_->logger().Warning("UNS", 12, "Use of IfcCircle for cant is not supported");
+            mapping_->logger().warning("UNS", 12, "Use of IfcCircle for cant is not supported");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
-            mapping_->logger().Error("GEO", 250, "Unexpected segment type encountered");
+            mapping_->logger().error("GEO", 250, "Unexpected segment type encountered");
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
@@ -1069,7 +1069,7 @@ class curve_segment_evaluator {
 
           parent_curve_start_point_ = (*parent_curve_fn_)(start_);
        } else {
-           mapping_->logger().Warning("GEO", 251, "Unexpected segment type encountered");
+           mapping_->logger().warning("GEO", 251, "Unexpected segment type encountered");
            parent_curve_fn_ = std::make_shared<parent_curve_function>(
                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
@@ -1083,7 +1083,7 @@ class curve_segment_evaluator {
         auto coeffY = pc.CoefficientsY().value_or(std::vector<double>());
         auto coeffZ = pc.CoefficientsZ().value_or(std::vector<double>());
         if (!coeffZ.empty()) {
-            mapping_->logger().Warning("GEO", 252, "Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", pc);
+            mapping_->logger().warning("GEO", 252, "Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", pc);
         }
 
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
@@ -1149,7 +1149,7 @@ class curve_segment_evaluator {
                     auto result = boost::math::tools::bracket_and_solve_root(f, x, 2.0, true, tol, max_iter);
                     x = result.first;
                 } catch (...) {
-                    logger_.Warning("GEO", 253, "root solver failed");
+                    logger_.warning("GEO", 253, "root solver failed");
                 }
                 return x;
             };
@@ -1210,12 +1210,12 @@ class curve_segment_evaluator {
 
             parent_curve_start_point_ = (*parent_curve_fn_)(0.0); // start is added to u in parent_curve_fn_, so use 0.0 here
         } else if (segment_type_ == ST_CANT) {
-            mapping_->logger().Warning("UNS", 13, std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+            mapping_->logger().warning("UNS", 13, std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
-            mapping_->logger().Error("GEO", 254, std::runtime_error("Unexpected segment type encountered"));
+            mapping_->logger().error("GEO", 254, std::runtime_error("Unexpected segment type encountered"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>(
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });

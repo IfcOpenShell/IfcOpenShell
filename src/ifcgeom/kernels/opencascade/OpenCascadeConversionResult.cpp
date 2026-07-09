@@ -68,7 +68,7 @@ IfcGeom::ConversionResultShape* ifcopenshell::geometry::OpenCascadeShape::clone(
 	return new OpenCascadeShape(shape_);
 }
 
-void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger) const {
+void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger) const {
 
 	// @todo remove duplication with OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& trsf);
 	// above can be static?
@@ -108,7 +108,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		try {
 			BRepMesh_IncrementalMesh(shape_, settings.get<settings::MesherLinearDeflection>().get(), false, settings.get<settings::MesherAngularDeflection>().get());
 		} catch (...) {
-			Logger::Root().Message(Logger::LOG_ERROR, "GEO", 183, "Failed to triangulate shape");
+			::logger::root().message(::logger::LOG_ERROR, "GEO", 183, "Failed to triangulate shape");
 			return;
 		}
 	}
@@ -134,7 +134,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		opencascade::handle<Poly_Triangulation> tri = BRep_Tool::Triangulation(face, loc);
 
 		if (tri.IsNull()) {
-			Logger::Root().Message(Logger::LOG_ERROR, "GEO", 184, "Triangulation missing for face");
+			::logger::root().message(::logger::LOG_ERROR, "GEO", 184, "Triangulation missing for face");
 		} else {
 			// Keep track of the number of times an edge is used
 			// Manifold edges (i.e. edges used twice) are deemed invisible
@@ -195,7 +195,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				else triangles(i).Get(n1, n2, n3);
 
 				if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
-					logger.Warning("GEO", 185, "Mesher generated a degenerate triangle, ignoring");
+					logger.warning("GEO", 185, "Mesher generated a degenerate triangle, ignoring");
 					continue;
 				}
 
@@ -640,7 +640,7 @@ namespace {
 					try {
 						BRepMesh_IncrementalMesh(s, tol);
 					} catch (...) {
-						Logger::Root().Message(Logger::LOG_ERROR, "GEO", 186, "Failed to triangulate shape");
+						::logger::root().message(::logger::LOG_ERROR, "GEO", 186, "Failed to triangulate shape");
 						return;
 					}
 					meshed = true;

@@ -4,7 +4,7 @@
 
 using namespace ifcopenshell::geometry;
 
-ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geometry::Settings& s, Logger& logger)
+ifcopenshell::geometry::Converter::Converter(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, ifcopenshell::file* file, ifcopenshell::geometry::Settings& s, ::logger& logger)
 	: kernel_(std::move(geometry_library))
 	, logger_(logger)
 {
@@ -18,7 +18,7 @@ ifcopenshell::geometry::Converter::~Converter() {
 }
 
 namespace {
-	void substitute_with_box_based_on_density(Logger& logger, IfcGeom::ConversionResults& items, double& density) {
+	void substitute_with_box_based_on_density(::logger& logger, IfcGeom::ConversionResults& items, double& density) {
 		int nv = 0;
 		void* box = nullptr;
 		double volume = 0.;
@@ -30,7 +30,7 @@ namespace {
 		if (density > 1e5) {
 			items[0].Shape()->set_box(box);
 			items.erase(items.begin() + 1, items.end());
-			logger.Notice("GEO", 30, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
+			logger.notice("GEO", 30, "Substituted element with " + boost::lexical_cast<std::string>(density) + " vertices / m3 with a bounding box");
 		}
 	}
 }
@@ -102,7 +102,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 						}
 
 						if (!success) {
-							logger::error("Failed processing layerset");
+							::logger::root().error("Failed processing layerset");
 						}
 					}
 				}
@@ -141,7 +141,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			}
 		}
 		if (some_items_without_style) {
-			logger_.Warning("GEO", 31, "No material and surface styles for:", product);
+			logger_.warning("GEO", 31, "No material and surface styles for:", product);
 		}
 	}
 
@@ -165,7 +165,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			parent_id = parent_object.id();
 		}
 	} catch (const std::exception& e) {
-		logger_.Error("GEO", 32, e);
+		logger_.error("GEO", 32, e);
 	}
 
 	const std::string name = product.get_value<std::string>("Name", "");
@@ -211,10 +211,10 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 				kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
 			}
 		} catch (const std::exception& e) {
-			logger_.Message(Logger::LOG_ERROR, "GEO", 33, std::string("Error processing openings for: ") + e.what() + ":", product);
+			logger_.message(::logger::LOG_ERROR, "GEO", 33, std::string("Error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
 		} catch (...) {
-			logger_.Message(Logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
+			logger_.message(::logger::LOG_ERROR, "GEO", 34, "Error processing openings for:", product);
 		}
 
 		if (!(caught_error && opened_shapes.size() < shapes.size())) {
@@ -242,7 +242,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 				std::swap(shapes, unified_shapes);
 			}
 		} catch (std::exception& e) {
-			logger_.Error("GEO", 35, e);
+			logger_.error("GEO", 35, e);
 		}
 	}
 
@@ -298,12 +298,12 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 								if (elem->geometry().calculate_surface_area(a_calc)) {
 									double diff = std::abs(a_calc - a_file);
 									if (diff / std::sqrt(a_file) > getValue(GV_PRECISION)) {
-										logger::error("Validation of surface area failed for:", product);
+										::logger::root().error("Validation of surface area failed for:", product);
 									} else {
-										logger::notice("Validation of surface area succeeded for:", product);
+										::logger::root().notice("Validation of surface area succeeded for:", product);
 									}
 								} else {
-									logger::error("Validation of surface area failed for:", product);
+									::logger::root().error("Validation of surface area failed for:", product);
 								}
 							} else if (q->as<IfcSchema::IfcQuantityVolume>() && q->Name() == "Volume") {
 								double v_calc;
@@ -311,12 +311,12 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 								if (elem->geometry().calculate_volume(v_calc)) {
 									double diff = std::abs(v_calc - v_file);
 									if (diff / std::sqrt(v_file) > getValue(GV_PRECISION)) {
-										logger::error("Validation of volume failed for:", product);
+										::logger::root().error("Validation of volume failed for:", product);
 									} else {
-										logger::notice("Validation of volume succeeded for:", product);
+										::logger::root().notice("Validation of volume succeeded for:", product);
 									}
 								} else {
-									logger::error("Validation of volume failed for:", product);
+									::logger::root().error("Validation of volume failed for:", product);
 								}
 							} else if (q->as<IfcSchema::IfcPhysicalComplexQuantity>() && q->Name() == "Shape Validation Properties") {
 								auto qs2 = q->as<IfcSchema::IfcPhysicalComplexQuantity>()->HasQuantities();
@@ -335,9 +335,9 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 									}
 								}
 								if (!all_succeeded) {
-									logger::error("Validation of surface genus failed for:", product);
+									::logger::root().error("Validation of surface genus failed for:", product);
 								} else {
-									logger::notice("Validation of surface genus succeeded for:", product);
+									::logger::root().notice("Validation of surface genus succeeded for:", product);
 								}
 							}
 						}
@@ -361,7 +361,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 			parent_id = parent_object.id();
 		}
 	} catch (const std::exception& e) {
-		logger_.Error("GEO", 36, e);
+		logger_.error("GEO", 36, e);
 	}
 
 	const std::string guid = product.get_value<std::string>("GlobalId");

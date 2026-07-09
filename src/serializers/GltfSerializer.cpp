@@ -53,7 +53,7 @@ static const uint32_t PRIM_TRIANGLE_FAN = 6;
 static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
 static const uint32_t ARRAY_BUFFER = 34962;
 
-GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
+GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger)
 	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
@@ -523,9 +523,9 @@ namespace {
 	}
 
 	void proj_log(void* data, int, const char* c) {
-		auto logger = static_cast<Logger*>(data);
+		auto logger = static_cast<::logger*>(data);
 		if (logger) {
-			logger->Error("SER", 1, "PROJ: " + std::string(c));
+			logger->error("SER", 1, "PROJ: " + std::string(c));
 		}
 	}
 }
@@ -655,7 +655,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 				NULL);
 
 			if (!P) {
-				logger_.Error("SER", 2, "Failed to create PROJ transformation object");
+				logger_.error("SER", 2, "Failed to create PROJ transformation object");
 				return;
 			}
 
@@ -667,7 +667,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 
 			wgs84_point = proj_trans(P, PJ_FWD, a);
 
-			logger_.Notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+			logger_.notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
 		}
 
 		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
@@ -692,7 +692,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
 
 		if (!ellipsoid_crs) {
-			logger_.Error("SER", 4, "Failed to create ellipsoid CRS");
+			logger_.error("SER", 4, "Failed to create ellipsoid CRS");
 			return;
 		}
 

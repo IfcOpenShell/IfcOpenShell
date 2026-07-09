@@ -11,7 +11,8 @@ using namespace ifcopenshell;
 
 namespace {
 
-shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopenshell::entity& decl, Logger& logger) {
+shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopenshell::entity& decl, ::logger& logger) {
+    static_cast<void>(logger);
     const bool in_memory = file == nullptr || std::visit([](auto& storage) {
         return std::is_same_v<std::decay_t<decltype(storage)>, ifcopenshell::impl::in_memory_file_storage>;
     }, file->storage_);
@@ -25,13 +26,14 @@ shared_pointer_type make_header_entity(ifcopenshell::file* file, const ifcopensh
 
 } // namespace
 
-ifcopenshell::spf_header::spf_header(ifcopenshell::file* file)
-    : file_(file) {
+ifcopenshell::spf_header::spf_header(ifcopenshell::file* file, ::logger& logger)
+    : file_(file)
+    , logger_(logger) {
     Header_section_schema::get_schema();
 
-    header_entities_[0] = make_header_entity(file_, Header_section_schema::file_description::Class());
-    header_entities_[1] = make_header_entity(file_, Header_section_schema::file_name::Class());
-    header_entities_[2] = make_header_entity(file_, Header_section_schema::file_schema::Class());
+    header_entities_[0] = make_header_entity(file_, Header_section_schema::file_description::Class(), logger_);
+    header_entities_[1] = make_header_entity(file_, Header_section_schema::file_name::Class(), logger_);
+    header_entities_[2] = make_header_entity(file_, Header_section_schema::file_schema::Class(), logger_);
 }
 
 ifcopenshell::spf_header::~spf_header() = default;

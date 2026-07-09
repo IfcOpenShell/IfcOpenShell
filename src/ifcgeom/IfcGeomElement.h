@@ -126,7 +126,7 @@ namespace IfcGeom {
 					oss << "product-" << ifcopenshell::global_id(guid).formatted();
 				} catch (const std::exception& e) {
 					oss << "product";
-					Logger::Root().Error("GEO", 39, e);
+					::logger::root().error("GEO", 39, e);
 				}
 			}
 

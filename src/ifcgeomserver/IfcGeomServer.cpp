@@ -629,7 +629,7 @@ int main () {
 		}
 		case NEXT: {
 			Next n; n.read(std::cin);
-			has_more = iterator->next() != 0;
+			has_more = static_cast<bool>(iterator->next());
 			if (!has_more) {
 				delete file;
 				delete iterator;
@@ -641,7 +641,7 @@ int main () {
 		}
 		case GET_LOG: {
 			get_log gl; gl.read(std::cin);
-			WriteLog(logger::Root().get_log()).write(std::cout);
+			WriteLog(logger::root().get_log()).write(std::cout);
 			continue;
 		}
 		case BYE: {

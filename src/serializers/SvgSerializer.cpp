@@ -288,13 +288,13 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std:
 				BRep_Tool::CurveOnSurface(edge, curve2d, surf, loc, u1, u2);
 
 				if (curve2d.IsNull()) {
-					logger_.Error("SER", 20, "Failed to obtain 2d and 3d curve from edge");
+					logger().error("SER", 20, "Failed to obtain 2d and 3d curve from edge");
 					continue;
 				}
 
 				Handle(Standard_Type) sty = surf->DynamicType();
 				if (sty != STANDARD_TYPE(Geom_Plane)) {
-					logger_.Error("SER", 21, "Non-planar p-curves are not supported by this serializer");
+					logger().error("SER", 21, "Non-planar p-curves are not supported by this serializer");
 					continue;
 				}
 
@@ -371,7 +371,7 @@ void SvgSerializer::write(path_object& p, const TopoDS_Shape& comp_or_wire, std:
 					std::stringstream ss;
 					ss << "Skipping full circle/ellipse inside aggregated <path> (id "
 						<< p.first << ")";
-					logger_.Warning("SER", 22, ss.str());
+					logger().warning("SER", 22, ss.str());
 				}
 			}
 
@@ -798,7 +798,7 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			BRepBndLib::AddOBB(compound_unmirrored, *view_box_3d_, false, false, false);
 #endif
 		} else {
-			logger_.Error("SER", 23, "Failed to box or edge from drawing annotation");
+			logger().error("SER", 23, "Failed to box or edge from drawing annotation");
 		}
 
 		std::vector<string_property> props;
@@ -945,7 +945,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		if (data.storey) {
 			section_heights_storage.push_back(horizontal_plan{ data.storey, data.storey_elevation,  +1. });
 		} else {
-			logger_.Warning("SER", 24, "No global section height and unable to determine building storey for:", data.product);
+			logger().warning("SER", 24, "No global section height and unable to determine building storey for:", data.product);
 			return;
 		}
 	}
@@ -960,7 +960,7 @@ void SvgSerializer::write(const geometry_data& data) {
 		Bnd_OBB obb;
 		BRepBndLib::AddOBB(compound_unmirrored, obb, false, false, false);
 		if (view_box_3d_->IsOut(obb)) {
-			logger_.Notice("SER", 25, "Not including element due to viewBox", data.product);
+			logger().notice("SER", 25, "Not including element due to viewBox", data.product);
 			return;
 		}
 	}
@@ -1007,7 +1007,7 @@ void SvgSerializer::write(const geometry_data& data) {
 				}
 			}
 		} catch (std::exception& e) {
-			logger_.Error("SER", 26, e);
+			logger().error("SER", 26, e);
 		}
 
 		if (operation_type && ((*operation_type == "SINGLE_SWING_LEFT") || (*operation_type == "SINGLE_SWING_RIGHT"))) {
@@ -1260,7 +1260,7 @@ void SvgSerializer::write(const geometry_data& data) {
 
 							compound_to_hlr = &subtracted_shape;
 						} catch (...) {
-							logger_.Error("SER", 27, "Failed to cut element for HLR", data.product);
+							logger().error("SER", 27, "Failed to cut element for HLR", data.product);
 						}
 					}
 				}
@@ -1352,11 +1352,11 @@ void SvgSerializer::write(const geometry_data& data) {
 					if (storey) {
 						auto it = storey_hlr.find(storey);
 						if (it == storey_hlr.end()) {
-							it = storey_hlr.insert({ storey, hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
+							it = storey_hlr.insert({ storey, hlr_t(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, projection_plane) }).first;
 						}
 						it->second.add(*compound_to_hlr, data.product);
 					} else {
-						logger_.Warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
+						logger().warning("SER", 28, "Unable to invoke HLR due to absence of storey containment", data.product);
 					}
 				} else if (hlr) {
 					hlr->add(*compound_to_hlr, data.product);
@@ -1834,7 +1834,7 @@ void SvgSerializer::write(const geometry_data& data) {
 	}
 
 	if (!emitted) {
-		logger_.Warning("SER", 29, "Element not written to SVG due to section heights", data.product);
+		logger().warning("SER", 29, "Element not written to SVG due to section heights", data.product);
 	}
 }
 
@@ -2014,7 +2014,7 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 			auto desc = (std::string) ds;
 
 			if (object_type == "Text") {
-				auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger_);
+				auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger());
 				auto item = mapping->map(pl);
 				auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
 				delete mapping;
@@ -2217,7 +2217,7 @@ void SvgSerializer::finalize() {
 
 			// @todo do we have always have pln here?
 			if (use_hlr && pln) {
-				hlr = new hlr_t(logger_, use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
+				hlr = new hlr_t(logger(), use_prefiltering_, use_hlr_poly_, segment_projection_, *pln);
 			}
 
 			section_data_ = std::vector<section_data>{ sd };
@@ -2479,7 +2479,7 @@ void SvgSerializer::setFile(ifcopenshell::file* f) {
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
 	if (storeys.empty()) {
-		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger_);
+		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_, logger());
 
 		std::vector<const ifcopenshell::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
@@ -2498,9 +2498,9 @@ void SvgSerializer::setFile(ifcopenshell::file* f) {
 #ifdef TAXONOMY_USE_NAKED_PTR
 						delete matrix;
 #endif
-							logger_.Warning("SER", 30, "No building storeys encountered, used for reference:", product);
-							return;
-						}
+						delete mapping;
+						logger().warning("SER", 30, "No building storeys encountered, used for reference:", product);
+						return;
 					}
 				}
 			}
@@ -2508,7 +2508,7 @@ void SvgSerializer::setFile(ifcopenshell::file* f) {
 
 		delete mapping;
 
-		logger_.Warning("SER", 31, "No building storeys encountered, output might be invalid or missing");
+		logger().warning("SER", 31, "No building storeys encountered, output might be invalid or missing");
 	}
 
 	apply_section_heights_from_storeys();
@@ -2521,7 +2521,7 @@ void SvgSerializer::setSectionHeight(double h, express::Base storey) {
 
 void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	if (!file) {
-		logger_.Error("SER", 32, "No file specified");
+		logger().error("SER", 32, "No file specified");
 		return;
 	}
 	with_section_heights_from_storey_ = true;
@@ -2536,7 +2536,7 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
                 try {
                     elev = attr_value;
                 } catch (std::exception& e) {
-                    logger_.Error("SER", 33, e);
+                    logger().error("SER", 33, e);
                     continue;
                 }
                 if (!section_data_->empty()) {

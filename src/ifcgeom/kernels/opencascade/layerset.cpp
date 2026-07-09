@@ -132,7 +132,7 @@ namespace {
 					}
 				}
 
-				Logger::Root().Error("GEO", 171, "Unable to map layer geometry to material index");
+				::logger::root().error("GEO", 171, "Unable to map layer geometry to material index");
 				return false;
 			}
 		}
@@ -237,7 +237,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 			if (s.ShapeType() == TopAbs_SHELL) {
 				shells.Append(TopoDS::Shell(s));
 			} else {
-				Logger::Root().Error("GEO", 172, "Expected shell type in layerset processing");
+				::logger::root().error("GEO", 172, "Expected shell type in layerset processing");
 				return false;
 			}
 		}
@@ -436,12 +436,12 @@ bool IfcGeom::util::split_solid_by_shell(const TopoDS_Shape& input, const TopoDS
 			}
 		} catch (const Standard_Failure& e) {
 			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				Logger::Root().Error("GEO", 173, e.GetMessageString());
+				::logger::root().error("GEO", 173, e.GetMessageString());
 			} else {
-				Logger::Root().Error("GEO", 174, "Unknown error performing fixes");
+				::logger::root().error("GEO", 174, "Unknown error performing fixes");
 			}
 		} catch (...) {
-			Logger::Root().Error("GEO", 175, "Unknown error performing fixes");
+			::logger::root().error("GEO", 175, "Unknown error performing fixes");
 		}
 		BRepCheck_Analyzer analyser(shape);
 		bool is_valid = analyser.IsValid() != 0;
@@ -451,7 +451,7 @@ bool IfcGeom::util::split_solid_by_shell(const TopoDS_Shape& input, const TopoDS
 	}
 
 	if (is_null[0] || is_null[1]) {
-		Logger::Root().Message(Logger::LOG_ERROR, "GEO", 176, "Null result obtained from layerset slicing");
+		::logger::root().message(::logger::LOG_ERROR, "GEO", 176, "Null result obtained from layerset slicing");
 		if (is_null[0] && is_null[1]) {
 			return false;
 		}

@@ -23,7 +23,7 @@ void ifcopenshell::geometry::impl::mapping_registry::bind(const std::string& sch
 	entry.module_ = module.meta().id.empty() ? plugin::module(mapping_plugin_metadata(schema_name)) : module;
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_registry::construct(ifcopenshell::file* file, Settings& s) {
+ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_registry::construct(ifcopenshell::file* file, Settings& s, ::logger& log) {
 	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
 	auto it = entries_.find(schema_name_lower);
 	if (it == entries_.end()) {
@@ -33,8 +33,13 @@ ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::mapping_
 	if (it == entries_.end()) {
 		throw ifcopenshell::exception("No geometry mapping registered for " + schema_name_lower);
 	}
-	auto new_mapping = it->second.fn_(file, s);
-	new_mapping->initialize_settings();
+	auto new_mapping = it->second.fn_(file, s, log);
+	try {
+		new_mapping->initialize_settings();
+	} catch (const std::exception& e) {
+		log.error("GEO", 400, e);
+		log.error("GEO", 401, "Unable to initialize conversion settings");
+	}
 	return new_mapping;
 }
 
@@ -51,19 +56,6 @@ void ifcopenshell::geometry::impl::MappingFactoryImplementation::bind(const std:
 	mapping_registry_instance().bind(schema_name, fn, plugin::module(mapping_plugin_metadata(schema_name)));
 }
 
-ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(ifcopenshell::file* file, Settings& s, Logger& logger) {
-	const std::string schema_name_lower = boost::to_lower_copy(file->schema()->name());
-	std::map<std::string, ifcopenshell::geometry::impl::mapping_fn>::const_iterator it;
-	it = this->find(schema_name_lower);
-	if (it == end()) {
-		throw IfcParse::IfcException("No geometry mapping registered for " + schema_name_lower);
-	}
-	auto new_mapping = it->second(file, s, logger);
-    try {
-        new_mapping->initialize_settings();
-    } catch (const std::exception& e) {
-        logger.Error("GEO", 400, e);
-        logger.Error("GEO", 401, "Unable to initialize conversion settings");
-	}
-	return new_mapping;
+ifcopenshell::geometry::abstract_mapping* ifcopenshell::geometry::impl::MappingFactoryImplementation::construct(ifcopenshell::file* file, Settings& s, ::logger& log) {
+	return mapping_registry_instance().construct(file, s, log);
 }

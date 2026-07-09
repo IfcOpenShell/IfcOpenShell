@@ -20,8 +20,8 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 		auto it = cache_.find(item);
 		if (it != cache_.end()) {
 			results = it->second;
-			logger_.Notice("SYS", 25, "Cache hit #" + std::to_string(item->instance->as<IfcUtil::IfcBaseEntity>()->id()) +
-				" -> #" + std::to_string(it->first->instance->as<IfcUtil::IfcBaseEntity>()->id()));
+			logger_.notice("SYS", 25, "Cache hit #" + std::to_string(item->instance.id()) +
+				" -> #" + std::to_string(it->first->instance.id()));
 			return true;
 		}
 	}
@@ -30,7 +30,7 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 		try {
 			return fn();
 		} catch (std::exception& e) {
-			logger_.Error("GEO", 27, e, item->instance);
+			logger_.error("GEO", 27, e, item->instance);
 			return false;
 		} catch (...) {
 			// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?

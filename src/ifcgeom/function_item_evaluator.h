@@ -23,7 +23,7 @@ static taxonomy::function_item::ptr convert_loop_to_function_item(taxonomy::loop
 
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct IFC_GEOM_API fn_evaluator {
-    fn_evaluator(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root()) : settings_(settings), logger_(logger) {
+    fn_evaluator(const ifcopenshell::geometry::Settings& settings, logger& logger = ::logger::root()) : settings_(settings), logger_(logger) {
     }
     fn_evaluator(const fn_evaluator& other) = default;
     virtual ~fn_evaluator() = default;
@@ -38,13 +38,13 @@ struct IFC_GEOM_API fn_evaluator {
     ifcopenshell::geometry::Settings settings_;
 
   protected:
-    Logger& logger_;
+    logger& logger_;
 };
 
 /// @brief utility class to evaluate function_item objects.
 class IFC_GEOM_API function_item_evaluator {
   public:
-    function_item_evaluator(const ifcopenshell::geometry::Settings& settings, taxonomy::function_item::const_ptr fn, Logger& logger = Logger::Root());
+    function_item_evaluator(const ifcopenshell::geometry::Settings& settings, taxonomy::function_item::const_ptr fn, logger& logger = ::logger::root());
     function_item_evaluator(const function_item_evaluator& other);
     ~function_item_evaluator();
 
@@ -80,7 +80,7 @@ class IFC_GEOM_API function_item_evaluator {
     fn_evaluator* fn_evaluator_ = nullptr;
 
     mutable std::optional<std::vector<double>> eval_points_; // cache evaluation points
-    Logger& logger_;
+    logger& logger_;
 };
 
 }}

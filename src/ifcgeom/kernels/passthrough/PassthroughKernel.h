@@ -11,11 +11,11 @@ namespace kernels {
 
 class IFC_GEOMLIBRARY_API PassthroughKernel : public AbstractKernel {
 public:
-	PassthroughKernel(const Settings& settings)
-		: AbstractKernel("passthrough", settings) {}
+	PassthroughKernel(const Settings& settings, ::logger& logger = ::logger::root())
+		: AbstractKernel("passthrough", settings, logger) {}
 
-	virtual AbstractKernel* clone() const {
-		return new PassthroughKernel(settings());
+	virtual AbstractKernel* clone(::logger& logger) const {
+		return new PassthroughKernel(settings(), logger);
 	}
 
 	virtual bool supports_boolean_operations() const { return false; }

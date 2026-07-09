@@ -33,7 +33,7 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst) {
     auto offset_values = inst.OffsetValues();
     if (offset_values.empty()) {
-        logger_.Error("GEO", 270, "IfcOffsetCurveByDistances must have at least one offset value");
+        logger_.error("GEO", 270, "IfcOffsetCurveByDistances must have at least one offset value");
     }
 
     auto& first_offset_value = offset_values.front();
@@ -56,7 +56,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
     auto basis_curve_fn = taxonomy::dcast<taxonomy::function_item>(map(basis_curve));
     if (!basis_curve_fn) {
         // Only implement on alignment curves
-        logger_.Warning("GEO", 271, "IfcOffsetCurveByDistances is only implemented for BasisCurves curves based on taxonomy::function_item", inst);
+        logger_.warning("GEO", 271, "IfcOffsetCurveByDistances is only implemented for BasisCurves curves based on taxonomy::function_item", inst);
         return nullptr;
     }
 
@@ -73,7 +73,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
    first_distance *= length_unit_;
 
    if (first_distance < 0.0) {
-        logger_.Warning("GEO", 272, "IfcOffsetCurveByDistance first offset value is before the start of the curve.");
+        logger_.warning("GEO", 272, "IfcOffsetCurveByDistance first offset value is before the start of the curve.");
    }
 
    if(0.0 < first_distance)
@@ -110,7 +110,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances& inst
 
         if (dn < dp) // next is before previous
         {
-            logger_.Warning("GEO", 273, "IfcOffsetCurveByDistance offset value is out of bounds.");
+            logger_.warning("GEO", 273, "IfcOffsetCurveByDistance offset value is out of bounds.");
             continue;
         }
 

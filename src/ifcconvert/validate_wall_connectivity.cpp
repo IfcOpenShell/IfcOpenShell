@@ -9,7 +9,7 @@
 
 using namespace ifcopenshell::geometry;
 
-void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
+void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
 	intersection_validator v(f, { "IfcWall" }, 1.e-3, no_progress, quiet, stderr_progress, logger);
 
 	ifcopenshell::geometry::Settings settings;
@@ -24,7 +24,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 	settings.get<ifcopenshell::geometry::settings::IncludeCurves>().value = true;
 	settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().value = false;
 	
-	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), &f, settings, logger);
+	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings), &f, settings, logger);
 
 	auto rels = f.instances_by_type("IfcRelConnectsPathElements");
 	std::map<std::set<const ifcopenshell::IfcBaseClass*>, const ifcopenshell::IfcBaseClass*> rel_by_elem;
@@ -169,11 +169,11 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 
 		if (a_type != atype_computed || b_type != btype_computed) {
 			if (rel) {
-				logger.Error("VAL", 5, std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
+				logger.error("VAL", 5, std::string("Connection type ") + atype_computed + " " + btype_computed + " for:", rel);
 			} else {
 				auto A_str = A->get_value<std::string>("GlobalId");
 				auto B_str = B->get_value<std::string>("GlobalId");
-				logger.Error("VAL", 6, "No connection for adjacent " + A_str + " " + B_str);
+				logger.error("VAL", 6, "No connection for adjacent " + A_str + " " + B_str);
 			}
 		}
 	});
@@ -183,7 +183,7 @@ void fix_wallconnectivity(ifcopenshell::file& f, bool no_progress, bool quiet, b
 			auto x = (ifcopenshell::IfcBaseEntity*)((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatingElement");
 			auto y = (ifcopenshell::IfcBaseEntity*)((ifcopenshell::IfcBaseEntity*)rel)->get_value<ifcopenshell::IfcBaseClass*>("RelatedElement");
 			if (v.successfully_processed.find(x) != v.successfully_processed.end() && v.successfully_processed.find(y) != v.successfully_processed.end()) {
-				logger.Error("VAL", 7, "Connection for non-adjacent walls", rel);
+				logger.error("VAL", 7, "Connection for non-adjacent walls", rel);
 			}
 		}
 	});

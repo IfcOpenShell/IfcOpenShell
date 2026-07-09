@@ -34,11 +34,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 	
 	for (auto& segment : segments) {
 		if (segment.as<IfcSchema::IfcCompositeCurveSegment>() && segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>()) {
-			logger_.Notice("GEO", 238, "Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
+			logger_.notice("GEO", 238, "Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
 			double u0 = 0.0;
 			double u1 = segment.as<IfcSchema::IfcCompositeCurveSegment>().ParentCurve().as<IfcSchema::IfcLine>().Dir().Magnitude() * length_unit_;
 			if (u1 < settings_.get<settings::Precision>().get()) {
-				logger_.Warning("GEO", 239, "Segment length below tolerance", segment);
+				logger_.warning("GEO", 239, "Segment length below tolerance", segment);
 			}
 
 			auto e = taxonomy::make<taxonomy::edge>();
@@ -70,7 +70,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve& inst) {
 					e->end = 2.0 * boost::math::constants::pi<double>();
 					loop->children.push_back(e);
 				} else {
-					logger_.Warning("GEO", 240, "Unexpected segment type", segment);
+					logger_.warning("GEO", 240, "Unexpected segment type", segment);
 					return nullptr;
 				}
 			}
@@ -128,7 +128,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 	for (auto it = segments->begin(); it != segments->end(); ++it) {
 
 		if (!(*it)->declaration().is(IfcSchema::IfcCompositeCurveSegment::Class())) {
-			logger::error("Not implemented", *it);
+			::logger::root().error("Not implemented", *it);
 			return false;
 		}
 
@@ -141,13 +141,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 		TopoDS_Wire segment;
 
 		if (curve->as<IfcSchema::IfcLine>()) {
-			logger::notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
+			::logger::root().notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", *it);
 			Handle_Geom_Curve handle;
 			convert_curve(curve, handle);
 			double u0 = 0.0;
 			double u1 = curve->as<IfcSchema::IfcLine>()->Dir()->Magnitude() * length_unit_;
 			if (u1 < getValue(GV_PRECISION)) {
-				logger::warning("Segment length below tolerance", *it);
+				::logger::root().warning("Segment length below tolerance", *it);
 			}
 			BRepBuilderAPI_MakeEdge me(handle, u0, u1);
 			if (me.IsDone()) {
@@ -157,7 +157,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 			}
 		} else if (!convert_wire(curve, segment)) {
 			const bool failed_on_purpose = curve->as<IfcSchema::IfcPolyline>() && !segment.IsNull();
-			logger::message(failed_on_purpose ? logger::LOG_WARNING : logger::LOG_ERROR, "Failed to convert curve:", curve);
+			::logger::root().message(failed_on_purpose ? ::logger::LOG_WARNING : ::logger::LOG_ERROR, "Failed to convert curve:", curve);
 			continue;
 		}
 
@@ -168,12 +168,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* l, TopoDS_Wi
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(segment, getValue(GV_PRECISION), TopAbs_WIRE);
 
-		converted_segments.Append(segment);
+		converted_segments.append(segment);
 
 	}
 
 	if (converted_segments.Extent() == 0) {
-		logger::message(logger::LOG_ERROR, "No segment successfully converted:", l);
+		::logger::root().message(::logger::LOG_ERROR, "No segment successfully converted:", l);
 		return false;
 	}
 

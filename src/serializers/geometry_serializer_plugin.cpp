@@ -159,7 +159,7 @@ std::vector<ifcopenshell::serializers::geometry_serializer_info> ifcopenshell::s
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			logger::error(e);
+			::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer) {
@@ -204,7 +204,7 @@ void ifcopenshell::serializers::load_geometry_serializer_plugins(geometry_serial
         try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-            logger::error(e);
+            ::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer) {
@@ -230,7 +230,7 @@ bool ifcopenshell::serializers::load_geometry_serializer_plugin(geometry_seriali
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			logger::error(e);
+			::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::geometry_serializer ||

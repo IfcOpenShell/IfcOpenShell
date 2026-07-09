@@ -39,7 +39,7 @@ private:
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 
 public:
-	POSTFIX_SCHEMA(XmlSerializer)(ifcopenshell::file* file, const std::string& xml_filename, Logger& logger = Logger::Root())
+	POSTFIX_SCHEMA(XmlSerializer)(ifcopenshell::file* file, const std::string& xml_filename, ::logger& logger = ::logger::root())
 		: XmlSerializer(0, "")
 		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings_, logger))
 	{

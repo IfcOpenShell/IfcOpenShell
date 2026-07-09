@@ -18,7 +18,7 @@ typedef CGAL::AABB_traits<Kernel_, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> Tree;
 typedef Tree::Point_and_primitive_id Point_and_primitive_id;
 
-void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
+void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
 	intersection_validator v(f, { "IfcWall", "IfcSpace", "IfcSlab", "IfcCovering" }, 1.e-5, no_progress, quiet, stderr_progress, logger);
 
 	auto rels = f.instances_by_type("IfcRelSpaceBoundary");
@@ -54,7 +54,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 	settings.get<ifcopenshell::geometry::settings::IteratorOutput>().value = ifcopenshell::geometry::settings::NATIVE;
 	settings.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().value = true;
 
-	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f2, "cgal", settings, logger), &f2, settings, logger);
+	ifcopenshell::geometry::Converter c(ifcopenshell::geometry::kernels::construct(&f2, "cgal", settings), &f2, settings, logger);
 
 	std::map<std::set<std::string>, std::vector<Kernel_::Point_3>> elem_to_space_boundary_coords;
 
@@ -128,7 +128,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 		auto itelem = elem_to_space_boundary_coords.find({ Aguid, Bguid });
 
 		if (itelem == elem_to_space_boundary_coords.end()) {
-			logger.Error("VAL", 1, "Missing space boundary relationship " + Aguid + " " + Bguid);
+			logger.error("VAL", 1, "Missing space boundary relationship " + Aguid + " " + Bguid);
 			return;
 		}
 
@@ -141,7 +141,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 		bool valid = *std::max_element(distances.begin(), distances.end()) < 0.4;
 
 		if (!valid) {
-			logger.Error("VAL", 2, "Wrong connection geometry " + Aguid + " " + Bguid);
+			logger.error("VAL", 2, "Wrong connection geometry " + Aguid + " " + Bguid);
 		}
 
 		/*{
@@ -178,7 +178,7 @@ void fix_spaceboundaries(ifcopenshell::file& f, bool no_progress, bool quiet, bo
 		auto g1 = n.substr(0, 22);
 		auto g2 = n.substr(23);
 		if (is_wall_space_or_slab(g1) && is_wall_space_or_slab(g2) && guid_pairs_visited.find({ g1, g2 }) == guid_pairs_visited.end()) {
-			logger.Error("VAL", 3, "Space boundary for non-bounding geometry " + g1 + " " + g2);
+			logger.error("VAL", 3, "Space boundary for non-bounding geometry " + g1 + " " + g2);
 		}
 	}
 }

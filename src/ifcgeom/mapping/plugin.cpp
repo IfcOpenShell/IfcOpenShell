@@ -29,8 +29,8 @@ namespace ifcopenshell {
 
 				namespace {
 					struct POSTFIX_SCHEMA(factory_t) {
-						abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings) const {
-							return new POSTFIX_SCHEMA(mapping)(file, settings);
+						abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings, ::logger& logger) const {
+							return new POSTFIX_SCHEMA(mapping)(file, settings, logger);
 						}
 					};
 				}

@@ -42,18 +42,14 @@ namespace ifcopenshell {
 
 		class IFC_GEOMLIBRARY_API OpenCascadeShape : public IfcGeom::ConversionResultShape {
 		public:
-            std::string type() const override { return "OpenCascadeShape"; }
-
-			OpenCascadeShape(const TopoDS_Shape& shape)
-				: shape_(shape) {}
-			OpenCascadeShape(TopoDS_Shape&& shape)
-				: shape_(std::move(shape)) {}
+			OpenCascadeShape(const TopoDS_Shape& shape);
+			OpenCascadeShape(TopoDS_Shape&& shape);
 
 			const TopoDS_Shape& shape() const;
 			operator const TopoDS_Shape& ();
 			virtual std::string_view backend_id() const;
 
-			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
+			virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
 			virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 			virtual IfcGeom::ConversionResultShape* clone() const;

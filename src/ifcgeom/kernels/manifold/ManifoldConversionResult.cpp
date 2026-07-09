@@ -11,7 +11,6 @@
 #include <unordered_map>
 
 using IfcGeom::ConversionResultShape;
-using IfcGeom::NumberNativeDouble;
 using IfcGeom::OpaqueCoordinate;
 using IfcGeom::OpaqueNumber;
 
@@ -216,7 +215,7 @@ std::optional<manifold::Manifold> ifcopenshell::geometry::ManifoldShape::as_mani
 	return manifold::Manifold::BatchBoolean(solids, manifold::OpType::Add);
 }
 
-void ifcopenshell::geometry::ManifoldShape::Triangulate(ifcopenshell::geometry::Settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
+void ifcopenshell::geometry::ManifoldShape::Triangulate(ifcopenshell::geometry::Settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger&) const {
 	for (const auto& part : parts_) {
 		auto mesh = transform_mesh(part.mesh, place);
 		std::vector<int> indices(mesh.NumVert());
@@ -346,13 +345,13 @@ std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> ifcopenshell::geometry::Mani
 	}
 	auto result = std::make_pair(
 		OpaqueCoordinate<3>(
-			new NumberNativeDouble(box->min[0]),
-			new NumberNativeDouble(box->min[1]),
-			new NumberNativeDouble(box->min[2])),
+			OpaqueNumber(box->min[0]),
+			OpaqueNumber(box->min[1]),
+			OpaqueNumber(box->min[2])),
 		OpaqueCoordinate<3>(
-			new NumberNativeDouble(box->max[0]),
-			new NumberNativeDouble(box->max[1]),
-			new NumberNativeDouble(box->max[2])));
+			OpaqueNumber(box->max[0]),
+			OpaqueNumber(box->max[1]),
+			OpaqueNumber(box->max[2])));
 	delete box;
 	return result;
 }
@@ -365,28 +364,28 @@ void ifcopenshell::geometry::ManifoldShape::set_box(void* box_ptr) {
 	parts_ = { make_box_part(*box) };
 }
 
-OpaqueNumber* ifcopenshell::geometry::ManifoldShape::length() {
+OpaqueNumber ifcopenshell::geometry::ManifoldShape::length() {
 	double total = 0.;
 	for (const auto& part : parts_) {
 		total += mesh_length(part.mesh);
 	}
-	return new NumberNativeDouble(total);
+	return OpaqueNumber(total);
 }
 
-OpaqueNumber* ifcopenshell::geometry::ManifoldShape::area() {
+OpaqueNumber ifcopenshell::geometry::ManifoldShape::area() {
 	double total = 0.;
 	for (const auto& part : parts_) {
 		total += part.solid ? part.solid->SurfaceArea() : mesh_area(part.mesh);
 	}
-	return new NumberNativeDouble(total);
+	return OpaqueNumber(total);
 }
 
-OpaqueNumber* ifcopenshell::geometry::ManifoldShape::volume() {
+OpaqueNumber ifcopenshell::geometry::ManifoldShape::volume() {
 	double total = 0.;
 	for (const auto& part : parts_) {
 		total += part.solid ? part.solid->Volume() : mesh_volume(part.mesh);
 	}
-	return new NumberNativeDouble(total);
+	return OpaqueNumber(total);
 }
 
 OpaqueCoordinate<3> ifcopenshell::geometry::ManifoldShape::position() {
@@ -494,11 +493,11 @@ ConversionResultShape* ifcopenshell::geometry::ManifoldShape::concat(ConversionR
 	return new ManifoldShape(std::move(parts));
 }
 
-void ifcopenshell::geometry::ManifoldShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geometry::ManifoldShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::ManifoldShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geometry::ManifoldShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 

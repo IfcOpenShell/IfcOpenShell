@@ -131,13 +131,13 @@ std::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_map
 }
 
 // Appends to a node with possibly existing attributes
-ptree* format_entity_instance(Logger& logger, ifcopenshell::geometry::abstract_mapping* mapping, const express::Base& instance, ptree& child, ptree& tree, bool as_link = false) {
+ptree* format_entity_instance(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const express::Base& instance, ptree& child, ptree& tree, bool as_link = false) {
 	const unsigned n = instance.declaration().as_entity()->attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
 		    instance.get_attribute_value(i);
 		} catch (const std::exception&) {
-		    logger.Error("SER", 9, "Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
+		    log.error("SER", 9, "Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
 		}		
 		auto argument = instance.get_attribute_value(i);
@@ -156,7 +156,7 @@ ptree* format_entity_instance(Logger& logger, ifcopenshell::geometry::abstract_m
 		try {
 			value = format_attribute(mapping, argument, argument_type, qualified_name);
 		} catch (const std::exception& e) {
-			logger.Error("SER", 10, e);
+			log.error("SER", 10, e);
 		}
 
 		if (value) {
@@ -176,9 +176,9 @@ ptree* format_entity_instance(Logger& logger, ifcopenshell::geometry::abstract_m
 
 // Formats an entity instances as a ptree node, and insert into the DOM. Recurses
 // over the entity attributes and writes them as xml attributes of the node.
-ptree* format_entity_instance(Logger& logger, ifcopenshell::geometry::abstract_mapping* mapping, const express::Base& instance, ptree& tree, bool as_link = false) {
+ptree* format_entity_instance(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const express::Base& instance, ptree& tree, bool as_link = false) {
     ptree child;
-    return format_entity_instance(logger, mapping, instance, child, tree, as_link);
+    return format_entity_instance(log, mapping, instance, child, tree, as_link);
 }
 
 std::string qualify_unrooted_instance(const express::Base& inst) {
@@ -188,18 +188,18 @@ std::string qualify_unrooted_instance(const express::Base& inst) {
 // A function to be called recursively. Template specialization is used 
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, A instance, ptree& tree, express::Base parent = express::Base()) {
+ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, A instance, ptree& tree, express::Base parent = express::Base()) {
 	if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
-		return descend(mapping, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
+		return descend(log, mapping, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
 	} else {
-		return format_entity_instance(logger, mapping, instance, tree);
+		return format_entity_instance(log, mapping, instance, tree);
 	}
 }
 
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-auto get_related(T t, F f, G g) {
+auto get_related(::logger& log, T t, F f, G g) {
 	auto li = (t.*f)();
     std::vector<V> acc;
     for (auto& u : li) {
@@ -221,7 +221,7 @@ auto get_related(T t, F f, G g) {
                 }
             }            
 		} catch (ifcopenshell::exception& e) {
-			logger::error(e);
+			log.error(e);
 		}
 	}
 	return acc;
@@ -230,7 +230,7 @@ auto get_related(T t, F f, G g) {
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::Base parent) {
+ptree* descend(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcObjectDefinition product, ptree& tree, express::Base parent) {
 	if (product.declaration().is(IfcSchema::IfcElement::Class())) {
 		auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
 		if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
@@ -239,65 +239,65 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 		}
 	}
 
-	ptree& child = *format_entity_instance(logger, mapping, product, tree);
+	ptree& child = *format_entity_instance(log, mapping, product, tree);
 
 	if (auto opening = product.as<IfcSchema::IfcOpeningElement>()) {
 		auto fills = get_related<IfcSchema::IfcOpeningElement, IfcSchema::IfcRelFillsElement, IfcSchema::IfcElement>(
-			opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
+			log, opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
 
 		for (auto& f : fills) {
-			descend(mapping, f, child, product);
+			descend(log, mapping, f, child, product);
 		}
 	}
 	
 	if (auto structure = product.as<IfcSchema::IfcSpatialStructureElement>()) {
 		auto elements = get_related
 			<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>
-			(logger, structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
+			(log, structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
 	
 		for (auto& el : elements) {
-			descend(mapping, el, child, product);
+			descend(log, mapping, el, child, product);
 		}
 	}
 
     if (auto element = product.as<IfcSchema::IfcElement>()) {
 		auto openings = get_related<IfcSchema::IfcElement, IfcSchema::IfcRelVoidsElement, IfcSchema::IfcOpeningElement>(
-            element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
+            log, element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
 
         for (auto& op : openings) {
-            descend(mapping, op, child, product);
+            descend(log, mapping, op, child, product);
         }
     }
 
 #ifdef SCHEMA_IfcRelDecomposes_HAS_RelatedObjects
 	auto structures = get_related
 		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>
-		(logger, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);
+		(log, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);
 #else
 	auto structures = get_related
 		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelAggregates, IfcSchema::IfcObjectDefinition>
-		(logger, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
+		(log, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
 
 	auto nested = get_related
 		<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelNests, IfcSchema::IfcObjectDefinition>
-		(product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects);
+		(log, product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects);
 
     structures.insert(structures.end(), nested.begin(), nested.end());
 #endif
 
 	for (auto& ob : structures) {
-		descend(mapping, ob, child, product);
+		descend(log, mapping, ob, child, product);
 	}
 
 	if (auto object = product.as<IfcSchema::IfcObject>()) {
 		auto property_sets = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
-			(logger, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+			(log, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
 #ifdef SCHEMAS_HAS_IfcPropertySetDefinitionSet
 		auto property_set_sets = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinitionSet>
-			(logger, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+			(log, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
 		for (auto& s : property_set_sets) {
             auto set_sets_value = (decltype(property_sets))s;
@@ -307,24 +307,24 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 
 		for (auto& pset : property_sets) {
 			if (pset.declaration().is(IfcSchema::IfcPropertySet::Class())) {
-				format_entity_instance(mapping, pset, child, true);
+				format_entity_instance(log, mapping, pset, child, true);
 			} else if (pset.declaration().is(IfcSchema::IfcElementQuantity::Class())) {
-				format_entity_instance(mapping, pset, child, true);
+				format_entity_instance(log, mapping, pset, child, true);
 			}
 		}
 
 #ifdef SCHEMA_IfcObject_HAS_IsTypedBy
 		auto types = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByType, IfcSchema::IfcTypeObject>
-			(logger, object, &IfcSchema::IfcObject::IsTypedBy, &IfcSchema::IfcRelDefinesByType::RelatingType);
+			(log, object, &IfcSchema::IfcObject::IsTypedBy, &IfcSchema::IfcRelDefinesByType::RelatingType);
 #else
         auto types = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByType, IfcSchema::IfcTypeObject>
-			(logger, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByType::RelatingType);
+			(log, object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByType::RelatingType);
 #endif
 
 		for (auto& type : types) {
-			format_entity_instance(mapping, type, child, true);
+			format_entity_instance(log, mapping, type, child, true);
 		}
 	}
 
@@ -336,7 +336,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
             // for the format_entity_instance() call.
             ptree node;
             node.put("<xmlattr>.xlink:href", "#" + p.first);
-            format_entity_instance(mapping, p.second, node, child, true);
+            format_entity_instance(log, mapping, p.second, node, child, true);
         }
 		
 		auto associations = product.HasAssociations();
@@ -345,7 +345,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
                 IfcSchema::IfcMaterialSelect mat = relmat.RelatingMaterial();
 				ptree node;
 				node.put("<xmlattr>.xlink:href", "#" + qualify_unrooted_instance(mat));
-                format_entity_instance(mapping, mat.concrete(), node, child, true);
+                format_entity_instance(log, mapping, mat.concrete(), node, child, true);
 			}
 		}
     }
@@ -353,7 +353,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 #if defined(SCHEMA_HAS_IfcAlignmentSegment) && defined(SCHEMA_IfcAlignmentSegment_HAS_DesignParameters)
 	if (auto als = product.as<IfcSchema::IfcAlignmentSegment>()) {
 		ptree node;
-		format_entity_instance(mapping, als.DesignParameters(), node, child, false);
+		format_entity_instance(log, mapping, als.DesignParameters(), node, child, false);
 	}
 #endif
 
@@ -361,17 +361,17 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 }
 
 // Format IfcProperty instances and insert into the DOM. IfcComplexProperties are flattened out.
-void format_properties(ifcopenshell::geometry::abstract_mapping* mapping, const std::vector<IfcSchema::IfcProperty>& properties, ptree& node) {
+void format_properties(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const std::vector<IfcSchema::IfcProperty>& properties, ptree& node) {
     for (auto& p : properties) {
         if (auto complex = p.as<IfcSchema::IfcComplexProperty>()) {
-			format_properties(mapping, complex.HasProperties(), node);
+			format_properties(log, mapping, complex.HasProperties(), node);
 		} else {
-			format_entity_instance(logger, mapping, p, node);
+			format_entity_instance(log, mapping, p, node);
 		}
 	}
 }
 
-void writeGroupToNode(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcGroup group, ptree& node, std::set<std::string> notRootGroups) {
+void writeGroupToNode(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcGroup group, ptree& node, std::set<std::string> notRootGroups) {
 	// @todo tfk: instead of a set<string> shouldn't we just have a set<IfcGroup>, the current approach
 	// might not work with non-unique or NIL group names.
 
@@ -384,44 +384,44 @@ void writeGroupToNode(ifcopenshell::geometry::abstract_mapping* mapping, IfcSche
         return;
     }
     // Write one group to root
-    ptree* node2 = descend(mapping, group, node);
+    ptree* node2 = descend(log, mapping, group, node);
     auto father = group.IsGroupedBy();
     for (auto& ii : father)
     {
         auto objs = ii.RelatedObjects();
         for (auto entity : objs) {
             if (entity.as<IfcSchema::IfcGroup>() && entity.Name()) {
-                writeGroupToNode(mapping, entity.as<IfcSchema::IfcGroup>(), *node2, notRootGroups);
+                writeGroupToNode(log, mapping, entity.as<IfcSchema::IfcGroup>(), *node2, notRootGroups);
                 notRootGroups.emplace(*entity.Name());
             }
             else {
                 // Write child to father group
-                descend(logger, mapping, entity, *node2);
+                descend(log, mapping, entity, *node2);
             }
         }
     }
 }
 
 // Format IfcElementQuantity instances and insert into the DOM.
-void format_quantities(ifcopenshell::geometry::abstract_mapping* mapping, const std::vector<IfcSchema::IfcPhysicalQuantity>& quantities, ptree& node) {
+void format_quantities(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, const std::vector<IfcSchema::IfcPhysicalQuantity>& quantities, ptree& node) {
 	for (auto& p : quantities) {
-		ptree* node2 = format_entity_instance(mapping, p, node);
+		ptree* node2 = format_entity_instance(log, mapping, p, node);
 		if (node2 && p.declaration().is(IfcSchema::IfcPhysicalComplexQuantity::Class())) {
-            format_quantities(mapping, p.as<IfcSchema::IfcPhysicalComplexQuantity>().HasQuantities(), *node2);
+            format_quantities(log, mapping, p.as<IfcSchema::IfcPhysicalComplexQuantity>().HasQuantities(), *node2);
 		}
 	}
 }
 
 // Format IfcTask instances and insert into the DOM.
-void format_tasks(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcTask task, ptree& node) {
-	ptree* ntask = format_entity_instance(mapping, task, node);
+void format_tasks(::logger& log, ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::IfcTask task, ptree& node) {
+	ptree* ntask = format_entity_instance(log, mapping, task, node);
 
 	if (ntask) {
 #ifdef SCHEMA_IfcTask_HAS_TaskTime
 		IfcSchema::IfcTaskTime task_time = task.TaskTime();
 		if (task_time)
 		{
-			format_entity_instance(logger, mapping, task_time, *ntask);
+			format_entity_instance(log, mapping, task_time, *ntask);
 		}
 #endif
 
@@ -449,14 +449,14 @@ void format_tasks(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::
 
 		auto property_sets = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
-			(logger, task, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+			(log, task, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
 		for (auto& pset : property_sets) {
 			if (pset.declaration().is(IfcSchema::IfcPropertySet::Class())) {
-				format_entity_instance(mapping, pset, *ntask, true);
+				format_entity_instance(log, mapping, pset, *ntask, true);
 			}
 			else if (pset.declaration().is(IfcSchema::IfcElementQuantity::Class())) {
-				format_entity_instance(mapping, pset, *ntask, true);
+				format_entity_instance(log, mapping, pset, *ntask, true);
 			}
 		}
 
@@ -512,7 +512,7 @@ void format_tasks(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::
 			for (auto& object : related_objects)
 			{
                 if (auto task2 = object.as<IfcSchema::IfcTask>()) {
-                    format_tasks(mapping, task2, *ntask);
+                    format_tasks(log, mapping, task2, *ntask);
                 }
 			}
 		}
@@ -524,21 +524,22 @@ void format_tasks(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::
 
 void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	POSTFIX_SCHEMA(argument_name_map).insert(std::make_pair("GlobalId", "id"));
+	auto& log = logger();
 
 	auto projects = file->instances_by_type<IfcSchema::IfcProject>();
 	if (projects.size() != 1) {
-		logger::message(logger::LOG_ERROR, "Expected a single IfcProject");
+		log.message(::logger::LOG_ERROR, "Expected a single IfcProject");
 		return;
 	}
     IfcSchema::IfcProject& project = projects.front();
 
 	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
 
-	auto catch_exceptions = [this](const auto& fn) {
+	auto catch_exceptions = [this, &log](const auto& fn) {
 		try {
 			return fn();
 		} catch(const std::exception& e) {
-			logger_.Error("SER", 13, e);
+			log.error("SER", 13, e);
 			static std::invoke_result_t<decltype(fn)> v;
 			return v;
 		}
@@ -563,7 +564,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	catch (const ifcopenshell::exception& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_description implementation_level, error: '" << ex.what() << "'";
-		logger_.Message(Logger::LOG_ERROR, "SER", 14, ss.str());
+		log.message(::logger::LOG_ERROR, "SER", 14, ss.str());
 	}
 	try {
 		header.put("file_name.name", file->header().file_name().name());
@@ -571,7 +572,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	catch (const ifcopenshell::exception& ex) {
 		std::stringstream ss;
 		ss << "Failed to get ifc file header file_name name, error: '" << ex.what() << "'";
-		logger_.Message(Logger::LOG_ERROR, "SER", 15, ss.str());
+		log.message(::logger::LOG_ERROR, "SER", 15, ss.str());
 	}
     try {
         header.put("file_name.time_stamp", file->header().file_name().time_stamp());
@@ -579,7 +580,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name time_stamp, error: '" << ex.what() << "'";
-        logger_.Message(Logger::LOG_ERROR, "SER", 16, ss.str());
+        log.message(::logger::LOG_ERROR, "SER", 16, ss.str());
     }
     try {
         header.put("file_name.preprocessor_version", file->header().file_name().preprocessor_version());
@@ -587,7 +588,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name preprocessor_version, error: '" << ex.what() << "'";
-        logger_.Message(Logger::LOG_ERROR, "SER", 17, ss.str());
+        log.message(::logger::LOG_ERROR, "SER", 17, ss.str());
     }
     try {
         header.put("file_name.originating_system", file->header().file_name().originating_system());
@@ -595,7 +596,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name originating_system, error: '" << ex.what() << "'";
-        logger_.Message(Logger::LOG_ERROR, "SER", 18, ss.str());
+        log.message(::logger::LOG_ERROR, "SER", 18, ss.str());
     }
     try {
 		// @nb inconsistent spelling
@@ -604,18 +605,18 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
     catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to get ifc file header file_name authorization, error: '" << ex.what() << "'";
-        logger_.Message(Logger::LOG_ERROR, "SER", 19, ss.str());
+        log.message(::logger::LOG_ERROR, "SER", 19, ss.str());
 	}
 
 	// Descend into the decomposition structure of the IFC file.
-	descend(logger_, mapping_, project, decomposition);
+	descend(log, mapping_, project, decomposition);
 
 	// Write all property sets and values as XML nodes.
 	auto psets = file->instances_by_type<IfcSchema::IfcPropertySet>();
 	for (auto& pset : psets) {
-		ptree* node = format_entity_instance(mapping_, pset, properties);
+		ptree* node = format_entity_instance(log, mapping_, pset, properties);
 		if (node) {
-			format_properties(mapping_, pset.HasProperties(), *node);
+			format_properties(log, mapping_, pset.HasProperties(), *node);
 		}
 	}
 
@@ -623,7 +624,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	auto gsets = file->instances_by_type<IfcSchema::IfcGroup>();
 	std::set<std::string> notRootGroups; //selfname, fathername
 	for (auto& g : gsets) {
-		writeGroupToNode(mapping_, g, groups, notRootGroups);
+		writeGroupToNode(log, mapping_, g, groups, notRootGroups);
 	}
 	for (auto it = groups.begin(); it != groups.end();) {
 		if (notRootGroups.find(it->second.get<std::string>("<xmlattr>.Name")) != notRootGroups.end()) {
@@ -636,9 +637,9 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	// Write all quantities and values as XML nodes.
 	auto qtosets = file->instances_by_type<IfcSchema::IfcElementQuantity>();
 	for (auto& qto : qtosets) {
-		ptree* node = format_entity_instance(mapping_, qto, quantities);
+		ptree* node = format_entity_instance(log, mapping_, qto, quantities);
 		if (node) {
-			format_quantities(mapping_, qto.Quantities(), *node);
+			format_quantities(log, mapping_, qto.Quantities(), *node);
 		}
 	}
 
@@ -646,7 +647,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	ptree pwork_schedules;
 	auto pschedules = file->instances_by_type<IfcSchema::IfcWorkSchedule>();
     for (auto& schedule : pschedules) {
-		ptree* nschedule = format_entity_instance(mapping_, schedule, pwork_schedules);
+		ptree* nschedule = format_entity_instance(log, mapping_, schedule, pwork_schedules);
 		
 		if(nschedule) {
 			auto controls = schedule.Controls();
@@ -655,7 +656,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 				for(auto& object : objects) {
 					if (object && object.declaration().is(IfcSchema::IfcTask::Class())) {
 						IfcSchema::IfcTask task = object.as<IfcSchema::IfcTask>();
-						format_tasks(mapping_, task, *nschedule);
+						format_tasks(log, mapping_, task, *nschedule);
 					}
 				}
 			}
@@ -667,7 +668,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	ptree pwork_plans;
 	auto pplans = file->instances_by_type<IfcSchema::IfcWorkPlan>();
 	for (auto& plan : pplans) {
-		ptree* nschedule = format_entity_instance(mapping_, plan, pwork_plans);
+		ptree* nschedule = format_entity_instance(log, mapping_, plan, pwork_plans);
 
 		if (nschedule) {
 #ifdef SCHEMA_IfcObjectDefinition_HAS_IsDecomposedBy
@@ -691,13 +692,13 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 #ifdef SCHEMA_HAS_IfcWorkCalendar
 	auto pcalendars = file->instances_by_type<IfcSchema::IfcWorkCalendar>();
     for (auto& calendar : pcalendars) {
-		ptree* ncalendar = format_entity_instance(mapping_, calendar, calendars);
+		ptree* ncalendar = format_entity_instance(log, mapping_, calendar, calendars);
 		
 		if (ncalendar) {
             auto working_times = calendar.WorkingTimes().value_or(std::vector<IfcSchema::IfcWorkTime>{});
             for (auto& working_time : working_times)
 			{
-				format_entity_instance(mapping_, working_time, *ncalendar);
+				format_entity_instance(log, mapping_, working_time, *ncalendar);
 			}
 		}
 	}
@@ -705,13 +706,13 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	
 	auto pconnections = file->instances_by_type<IfcSchema::IfcRelConnectsElements>();
     for (auto& connection : pconnections) {
-		ptree* nconnection = format_entity_instance(mapping_, connection, connections);
+		ptree* nconnection = format_entity_instance(log, mapping_, connection, connections);
 
 		ptree nrelatedElement;
 		ptree nrelatingElement;
 
-		format_entity_instance(mapping_,connection.RelatedElement(), nrelatedElement, true);
-		format_entity_instance(mapping_,connection.RelatingElement(), nrelatingElement, true);
+		format_entity_instance(log, mapping_, connection.RelatedElement(), nrelatedElement, true);
+		format_entity_instance(log, mapping_, connection.RelatingElement(), nrelatingElement, true);
 		
 		nconnection->add_child("RelatedElement",  nrelatedElement);
 		nconnection->add_child("RelatingElement", nrelatingElement);
@@ -720,13 +721,13 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	// Write all type objects as XML nodes.
 	auto type_objects = file->instances_by_type<IfcSchema::IfcTypeObject>();
     for (auto& type_object : type_objects) {
-		ptree* node = descend(mapping_, type_object, types);
+		ptree* node = descend(log, mapping_, type_object, types);
 		
 		if (node && type_object.HasPropertySets()) {
 			auto property_sets = *type_object.HasPropertySets();
 			for (auto& pset : property_sets) {
 				if (pset.declaration().is(IfcSchema::IfcPropertySet::Class())) {
-					format_entity_instance(mapping_, pset, *node, true);
+					format_entity_instance(log, mapping_, pset, *node, true);
 				}
 			}
 		}
@@ -736,12 +737,12 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 	auto unit_assignments = project.UnitsInContext().Units();
 	for (auto& unit : unit_assignments) {
         if (auto named_unit = unit.as<IfcSchema::IfcNamedUnit>()) {
-			ptree* node = format_entity_instance(mapping_, named_unit, units);
+			ptree* node = format_entity_instance(log, mapping_, named_unit, units);
 			if (node) {
 				node->put("<xmlattr>.SI_equivalent", ifcopenshell::get_SI_equivalent<IfcSchema>(named_unit));
 			}
         } else if (auto mon_unit = unit.as<IfcSchema::IfcMonetaryUnit>()) {
-            format_entity_instance(mapping_, mon_unit, units);
+            format_entity_instance(log, mapping_, mon_unit, units);
 		}
 	}
 
@@ -756,7 +757,7 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
             layer_names.insert(name);
             ptree node;
             node.put("<xmlattr>.id", name);
-            format_entity_instance(mapping_, assignment, node, layers);
+            format_entity_instance(log, mapping_, assignment, node, layers);
         }
     }
 
@@ -783,16 +784,16 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 					if (layer.Material()) {
                         subnode.put("<xmlattr>.Name", layer.Material());
 					}
-                    format_entity_instance(mapping_, layer, subnode, node);
+                    format_entity_instance(log, mapping_, layer, subnode, node);
 				}
 			} else if (auto matlist = mat.concrete().as<IfcSchema::IfcMaterialList>()) {
                 auto mats = matlist.Materials();
 				for (auto& mat : mats) {
 					ptree subnode;
-                    format_entity_instance(mapping_, mat, subnode, node);
+                    format_entity_instance(log, mapping_, mat, subnode, node);
 				}
 			}
-            format_entity_instance(mapping_, mat.concrete(), node, materials);
+            format_entity_instance(log, mapping_, mat.concrete(), node, materials);
 		}
 	}
 

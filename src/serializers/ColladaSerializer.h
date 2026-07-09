@@ -219,7 +219,7 @@ private:
 	std::string unit_name;
 	float unit_magnitude;
 public:
-    ColladaSerializer(const std::string& dae_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root())
+    ColladaSerializer(const std::string& dae_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root())
         : WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 		, exporter("IfcOpenShell", dae_filename, this, settings.get<ifcopenshell::geometry::settings::FloatingPointDigits>().get() >= 15)
     {

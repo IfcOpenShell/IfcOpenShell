@@ -83,12 +83,13 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 	if (non_polygonal) {
 		if (loft->children.size() < 2) {
-            Logger::Root().Error("GEO", 177, "Not enough sections to loft");
+            ::logger::root().error("GEO", 177, "Not enough sections to loft");
             return false;
         }
 
 
 		TopoDS_Shape f0, f1;
+		std::vector<std::vector<TopoDS_Wire>> sections;
 
         // Convert all children to vectors of wires
         for (const auto& child : loft->children) {
@@ -122,13 +123,19 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 		auto first_wire_count = sections.front().size();
         for (auto& section : sections) {
 			if (section.size() != first_wire_count) {
-				Logger::Root().Error("GEO", 178, "Inconsistent number of wires in sections");
+				::logger::root().error("GEO", 178, "Inconsistent number of wires in sections");
 				return false;
 			}
-			if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
-				return false;
-			}
+		}
 
+		if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
+			return false;
+		}
+
+		if (sections.size() == 2) {
+			TopoDS_Shell comp;
+			BRep_Builder BB;
+			BB.MakeShell(comp);
 			TopExp_Explorer exp1(f0, TopAbs_WIRE);
 			TopExp_Explorer exp2(f1, TopAbs_WIRE);
 			for (; exp1.More() && exp2.More(); exp1.Next(), exp2.Next()) {
@@ -153,7 +160,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 
 			return true;
 		} else {
-			logger::error("Lofting more than two sections is not supported");
+			::logger::root().error("Lofting more than two sections is not supported");
 			return false;
 		}
 	}
@@ -269,7 +276,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	*/
 
     if (shps.size() < 2) {
-        Logger::Root().Error("GEO", 179, "Not enough sections to loft");
+        ::logger::root().error("GEO", 179, "Not enough sections to loft");
         return false;
     }
 
@@ -309,11 +316,11 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			// When processing a sectioned *surface* there are no
 			// begin and end caps that need to be added.
 			if (it == shps.begin()) {
-				// faces.Append(shps[0]);
+				// faces.append(shps[0]);
 				BB.Add(comp, shps[0]);
 			}
             if (jt == shps.end() - 1) {
-				// faces.Append(shps[1]);
+				// faces.append(shps[1]);
 				BB.Add(comp, shps[1]);
 			}
 		}
@@ -428,7 +435,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 				fill.Add(e3, GeomAbs_C0);
 				fill.Add(e4, GeomAbs_C0);
 				fill.Build();
-				// faces.Append(fill.Face());
+				// faces.append(fill.Face());
 				BB.Add(comp, fill.Face());
 				*/
 

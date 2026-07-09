@@ -714,12 +714,12 @@ bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>
 		valid_shell &= util::count(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			Logger::Root().Error("GEO", 106, e.GetMessageString());
+			::logger::root().error("GEO", 106, e.GetMessageString());
 		} else {
-			Logger::Root().Error("GEO", 107, "Unknown error sewing shell");
+			::logger::root().error("GEO", 107, "Unknown error sewing shell");
 		}
 	} catch (...) {
-		Logger::Root().Error("GEO", 108, "Unknown error sewing shell");
+		::logger::root().error("GEO", 108, "Unknown error sewing shell");
 	}
 
 	if (valid_shell) {
@@ -747,22 +747,22 @@ bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>
 						}
 					} catch (const Standard_Failure& e) {
 						if (e.GetMessageString() && strlen(e.GetMessageString())) {
-							Logger::Root().Error("GEO", 109, e.GetMessageString());
+							::logger::root().error("GEO", 109, e.GetMessageString());
 						} else {
-							Logger::Root().Error("GEO", 110, "Unknown error classifying solid");
+							::logger::root().error("GEO", 110, "Unknown error classifying solid");
 						}
 					} catch (...) {
-						Logger::Root().Error("GEO", 111, "Unknown error classifying solid");
+						::logger::root().error("GEO", 111, "Unknown error classifying solid");
 					}
 				}
 			} catch (const Standard_Failure& e) {
 				if (e.GetMessageString() && strlen(e.GetMessageString())) {
-					Logger::Root().Error("GEO", 112, e.GetMessageString());
+					::logger::root().error("GEO", 112, e.GetMessageString());
 				} else {
-					Logger::Root().Error("GEO", 113, "Unknown error creating solid");
+					::logger::root().error("GEO", 113, "Unknown error creating solid");
 				}
 			} catch (...) {
-				Logger::Root().Error("GEO", 114, "Unknown error creating solid");
+				::logger::root().error("GEO", 114, "Unknown error creating solid");
 			}
 
 			if (complete_shape.IsNull()) {
@@ -774,7 +774,7 @@ bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>
 					B.MakeCompound(C);
 					B.Add(C, complete_shape);
 					complete_shape = C;
-					Logger::Root().Warning("GEO", 115, "Multiple components in IfcConnectedFaceSet");
+					::logger::root().warning("GEO", 115, "Multiple components in IfcConnectedFaceSet");
 				}
 				B.Add(complete_shape, result_shape);
 			}
@@ -789,7 +789,7 @@ bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>
 				B.MakeCompound(C);
 				B.Add(C, complete_shape);
 				complete_shape = C;
-				Logger::Root().Warning("GEO", 116, "Loose faces in IfcConnectedFaceSet");
+				::logger::root().warning("GEO", 116, "Loose faces in IfcConnectedFaceSet");
 			}
 			B.Add(complete_shape, loose_faces.Current());
 		}
@@ -797,7 +797,7 @@ bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>
 		shape = complete_shape;
 
 	} else {
-		Logger::Root().Error("GEO", 117, "Failed to sew faceset");
+		::logger::root().error("GEO", 117, "Failed to sew faceset");
 	}
 
 	return valid_shell;
@@ -901,7 +901,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 
 	dump(s);
 
-	Logger::Root().Warning("GEO", 118, str.str());
+	::logger::root().warning("GEO", 118, str.str());
 
 	return false;
 }

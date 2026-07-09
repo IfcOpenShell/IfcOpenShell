@@ -32,7 +32,7 @@ class SERIALIZERS_API TtlWktSerializer : public WriteOnlyGeometrySerializer {
 private:
 	stream_or_filename filename_;
 public:
-	TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root());
+	TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root());
 	virtual ~TtlWktSerializer() {}
 	bool ready();
 	void writeHeader();

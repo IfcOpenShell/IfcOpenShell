@@ -33,10 +33,10 @@
 #define IfcSchema Ifc2x3
 #endif
 
-#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
-#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA(ifcparse/schemas, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
-#include "ifcparse/IfcHierarchyHelper.h"
+#include "ifcparse/hierarchy_helper.h"
 
 #include <boost/math/constants/constants.hpp>
 const static double PI = boost::math::constants::pi<double>();
@@ -57,7 +57,7 @@ typedef IfcSchema::IfcCompositeCurveSegment curve_segment_t;
 #define IFC_REINFORCING_BAR_TYPE IfcSchema::IfcReinforcingBarRoleEnum::IfcReinforcingBarRole_LIGATURE
 #endif
 
-void create_curve_rebar(IfcHierarchyHelper<IfcSchema>& file)
+void create_curve_rebar(hierarchy_helper<IfcSchema>& file)
 {
 	int dia = 24;
 	int R = 3 * dia;

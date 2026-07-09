@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
+void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, bool stderr_progress, logger& logger = ::logger::root()) {
 	ifcopenshell::geometry::Settings settings;
 
 	settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
@@ -23,7 +23,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		IfcGeom::entity_filter(false, false, {"IfcOpeningElement", "IfcSpace"})
 	};
 
-	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), settings, &f, no_openings_and_spaces, 1, logger);
+	IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings), settings, &f, no_openings_and_spaces, 1, logger);
 
 	auto get_elevation = [](const ifcopenshell::IfcBaseClass* a) {
 		return ((const ifcopenshell::IfcBaseEntity*)a)->get_value<double>("Elevation", 0.);
@@ -198,7 +198,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 			auto s = geom_object->product()->get_value<std::string>("GlobalId");
 			auto s1 = ((IfcUtil::IfcBaseEntity*)storeys_sorted[calc_idx])->get_value<std::string>("GlobalId");
 			auto s2 = ((IfcUtil::IfcBaseEntity*)elem_to_storey[geom_object->product()])->get_value<std::string>("GlobalId");
-			logger.Error("VAL", 4, "Element " + s + " contained in " + s2 + " located on " + s1);
+			logger.error("VAL", 4, "Element " + s + " contained in " + s2 + " located on " + s1);
 		}
 
 		if (!no_progress) {
@@ -214,7 +214,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 					std::cerr << std::flush;
 			} else {
 				const int progress = context_iterator.progress() / 2;
-				if (old_progress != progress) logger.ProgressBar(progress);
+				if (old_progress != progress) logger.progress_bar(progress);
 				old_progress = progress;
 			}
 		}
@@ -230,7 +230,7 @@ void fix_storeycontainment(ifcopenshell::file& f, bool no_progress, bool quiet, 
 		if (stderr_progress)
 			std::cerr << std::flush;
 	} else {
-		logger.Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+		logger.status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 			" objects                                ");
 	}
 }

@@ -161,7 +161,7 @@ std::vector<ifcopenshell::serializers::document_serializer_info> ifcopenshell::s
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			logger::error(e);
+			::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer) {
@@ -214,7 +214,7 @@ void ifcopenshell::serializers::load_document_serializer_plugins(document_serial
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			logger::error(e);
+			::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer) {
@@ -246,7 +246,7 @@ bool ifcopenshell::serializers::load_document_serializer_plugin(document_seriali
 		try {
 			module = manager.load(path);
 		} catch (const std::exception& e) {
-			logger::error(e);
+			::logger::root().error(e);
 			continue;
 		}
 		if (module.meta().kind_ != ifcopenshell::plugin::kind::document_serializer ||

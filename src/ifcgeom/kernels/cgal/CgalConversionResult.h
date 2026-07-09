@@ -187,13 +187,8 @@ namespace ifcopenshell { namespace geometry {
 		mutable std::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
       public:
-#ifdef IFOPSH_SIMPLE_KERNEL
-        std::string type() const override { return "CgalSimpleShape"; }
-#else
-        std::string type() const override { return "CgalShape"; }
-#endif
 
-		CgalShape(const cgal_shape_t& shape, bool convex = false, Logger& logger = Logger::Root());
+		CgalShape(const cgal_shape_t& shape, bool convex = false, ::logger& logger = ::logger::root());
 		CgalShape(const cgal_point_t& point, bool convex = false);
 		CgalShape(const cgal_wire_t& wire, bool convex = false);
 
@@ -231,7 +226,7 @@ namespace ifcopenshell { namespace geometry {
 		const cgal_point_t& point() const { return std::get<cgal_point_t>(*shape_); }
 		const cgal_wire_t& wire() const { return std::get<cgal_wire_t>(*shape_); }
 
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual IfcGeom::ConversionResultShape* clone() const {
@@ -304,8 +299,6 @@ namespace ifcopenshell { namespace geometry {
 		std::list<CGAL::Plane_3<Kernel_>> planes_;
 
 	public:
-        std::string type() const override { return "CgalShapeHalfSpaceDecomposition"; }
-
 		CgalShapeHalfSpaceDecomposition(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool is_convex) {
 			if (is_convex) {
 				shape_ = std::move(build_halfspace_tree_is_decomposed(shape, planes_));
@@ -326,7 +319,7 @@ namespace ifcopenshell { namespace geometry {
 #endif
 		}
 
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, Logger& logger = Logger::Root()) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const;
 
 		virtual int surface_genus() const;

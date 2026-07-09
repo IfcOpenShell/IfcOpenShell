@@ -24,7 +24,7 @@ namespace rocksdb {
 #include "map_transformer.h"
 #include "set_to_map_transformer.h"
 #include "file_open_status.h"
-#include "IfcLogger.h"
+#include "logger.h"
 
 #include <functional>
 #include <variant>
@@ -412,8 +412,7 @@ namespace ifcopenshell {
                 return std::move(read_simple_type_instances);
             }
 
-            ifcopenshell::spf_lexer* tokens;
-            std::reference_wrapper<Logger> logger_;
+            std::reference_wrapper<::logger> logger_;
             // IfcParse::FileReader* stream;
 
             // Either one of these needs to be set
@@ -423,14 +422,14 @@ namespace ifcopenshell {
             unresolved_references* references_to_resolve = nullptr;
 
             typedef std::map<const ifcopenshell::declaration*, std::vector<express::Base>> entities_by_type_t;
-            typedef boost::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage_t;
+            typedef std::unordered_map<uint32_t, shared_pointer_type> entity_instance_by_name_storage_t;
             typedef map_transformer<entity_instance_by_name_storage_t, std::function<express::Base(shared_pointer_type)>> entity_instance_by_name_t;
-            typedef boost::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name_t;
+            typedef std::unordered_map<uint32_t, shared_pointer_type> type_instance_by_name_t;
             typedef std::map<std::string, express::Base> entity_instance_by_guid_t;
             typedef inverse_index entities_by_ref_t;
             typedef entity_instance_by_name_t::iterator iterator;
 
-            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, Logger& logger = Logger::Root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::Base(data); }) {};
+            in_memory_file_storage(ifcopenshell::file* owner_file = nullptr, ::logger& logger = ::logger::root()) : logger_(logger), file(owner_file), schema(nullptr), byid_read_(&byid_, [this](const shared_pointer_type& data) { return express::Base(data); }) {};
             in_memory_file_storage(const in_memory_file_storage& other) = delete;
             in_memory_file_storage(const in_memory_file_storage&& other) = delete;
 

@@ -41,11 +41,10 @@
 #define IfcSchema Ifc2x3
 #endif
 
-#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
-#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA(ifcparse/schemas, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse/schemas, IfcSchema)
 
-#include "ifcparse/IfcBaseClass.h"
-#include "ifcparse/IfcHierarchyHelper.h"
+#include "ifcparse/hierarchy_helper.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"
 

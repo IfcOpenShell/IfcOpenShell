@@ -55,6 +55,9 @@
 %ignore ifcopenshell::spf_header::file_description;
 %ignore ifcopenshell::spf_header::file_name;
 %ignore ifcopenshell::spf_header::file_schema;
+%ignore ifcopenshell::spf_header::set_file_description;
+%ignore ifcopenshell::spf_header::set_file_name;
+%ignore ifcopenshell::spf_header::set_file_schema;
 
 %ignore ifcopenshell::HeaderEntity::is;
 
@@ -129,7 +132,7 @@ static void helper_fn_atomic_write(T& file_obj, const std::string& fn) {
 	const std::string temp_fn = fn + "." + std::to_string(rd()) + ".tmp";
 	{
 		// Same open mode as a plain write so the bytes are identical.
-		std::ofstream f(IfcUtil::path::from_utf8(temp_fn).c_str());
+		std::ofstream f(ifcopenshell::path::from_utf8(temp_fn).c_str());
 		if (!f.good()) {
 			// The temp file could not be created (e.g. directory not
 			// writable). Nothing was touched; report as a normal write error.
@@ -141,14 +144,14 @@ static void helper_fn_atomic_write(T& file_obj, const std::string& fn) {
 			// Serialization failed (e.g. disk full). Clean up the partial temp
 			// and abort. The existing destination is left intact.
 			f.close();
-			IfcUtil::path::delete_file(temp_fn);
+			ifcopenshell::path::delete_file(temp_fn);
 			throw std::runtime_error("Failed to write to path: '" + fn + "', the file may be incomplete.");
 		}
 		// The ofstream destructor at the end of this scope closes the stream.
 		// On Windows the file must be closed before it can be renamed.
 	}
-	if (!IfcUtil::path::atomic_rename_file(temp_fn, fn)) {
-		IfcUtil::path::delete_file(temp_fn);
+	if (!ifcopenshell::path::atomic_rename_file(temp_fn, fn)) {
+		ifcopenshell::path::delete_file(temp_fn);
 		throw std::runtime_error("Failed to write to path: '" + fn + "', could not replace the existing file.");
 	}
 }
@@ -987,7 +990,7 @@ object = _old_object
 
 %include "../ifcparse/schema.h"
 %include "../serializers/RocksDbSerializer.h"
-%include "../ifcparse/IfcLogger.h"
+%include "../ifcparse/logger.h"
 
 // The file* returned by open() is to be freed by SWIG/Python
 %newobject open;
@@ -995,7 +998,7 @@ object = _old_object
 %newobject stream_from_string;
 
 %inline %{
-	ifcopenshell::file* open(const std::string& fn, bool readonly=false, Logger& logger=Logger::Root()) {
+	ifcopenshell::file* open(const std::string& fn, bool readonly=false, logger& logger=::logger::root()) {
 		ifcopenshell::file* f;
 		Py_BEGIN_ALLOW_THREADS;
 		f = new ifcopenshell::file(fn, ifcopenshell::FT_AUTODETECT, readonly, logger);
@@ -1156,7 +1159,7 @@ object = _old_object
 	static std::stringstream ifcopenshell_log_stream;
 %}
 %init %{
-	Logger::Root().SetOutput(0, &ifcopenshell_log_stream);
+	::logger::root().set_output(0, &ifcopenshell_log_stream);
 %}
 %inline %{
 	std::string get_log() {
@@ -1165,20 +1168,20 @@ object = _old_object
 		return log;
 	}
 	void turn_on_detailed_logging() {
-		Logger::Root().SetOutput(&std::cout, &std::cout);
-		Logger::Root().Verbosity(Logger::LOG_DEBUG);
+		::logger::root().set_output(&std::cout, &std::cout);
+		::logger::root().verbosity(::logger::LOG_DEBUG);
 	}
 	void turn_off_detailed_logging() {
-		Logger::Root().SetOutput(0, &ifcopenshell_log_stream);
-		Logger::Root().Verbosity(Logger::LOG_WARNING);
+		::logger::root().set_output(0, &ifcopenshell_log_stream);
+		::logger::root().verbosity(::logger::LOG_WARNING);
 	}
 	void set_log_format_json() {
 		ifcopenshell_log_stream.str("");
-		Logger::Root().OutputFormat(Logger::FMT_JSON);
+		::logger::root().output_format(::logger::FMT_JSON);
 	}
 	void set_log_format_text() {
 		ifcopenshell_log_stream.str("");
-		Logger::Root().OutputFormat(Logger::FMT_PLAIN);
+		::logger::root().output_format(::logger::FMT_PLAIN);
 	}
 %}
 
@@ -1489,7 +1492,7 @@ object = _old_object
 	}
 }
 
-%extend Logger {
+%extend logger {
 	%pythoncode %{
 		def __iter__(self):
 			return iter(self.log_messages())

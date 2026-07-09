@@ -99,7 +99,5 @@ install(FILES ${SERIALIZERS_H_FILES}
 install(FILES ${SERIALIZERS_S_H_FILES}
     DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
 )
-install(TARGETS Serializers EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
-
 set(document_serializer_libraries ${document_serializer_libraries} PARENT_SCOPE)
 set(geometry_serializer_libraries ${geometry_serializer_libraries} PARENT_SCOPE)

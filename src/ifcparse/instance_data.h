@@ -75,12 +75,12 @@ class IFC_PARSE_API empty_aggregate_of_aggregate_t {};
 
 namespace impl {
     template <>
-    struct VariantTypeName<Blank> {
+    struct VariantTypeName<blank> {
         static std::string get() { return "null"; }
     };
 
     template <>
-    struct VariantTypeName<Derived> {
+    struct VariantTypeName<derived> {
         static std::string get() { return "derived"; }
     };
 
@@ -115,12 +115,12 @@ namespace impl {
     };
 
     template <>
-    struct VariantTypeName<EnumerationReference> {
+    struct VariantTypeName<enumeration_reference> {
         static std::string get() { return "enumeration"; }
     };
 
     template <>
-    struct VariantTypeName<IfcUtil::IfcBaseClass*> {
+    struct VariantTypeName<express::Base> {
         static std::string get() { return "instance"; }
     };
 
@@ -135,18 +135,8 @@ namespace impl {
     };
 
     template <>
-    struct VariantTypeName<aggregate_of_instance::ptr> {
-        static std::string get() { return "aggregate of instance"; }
-    };
-
-    template <>
     struct VariantTypeName<empty_aggregate_of_aggregate_t> {
         static std::string get() { return "aggregate of aggregate"; }
-    };
-
-    template <>
-    struct VariantTypeName<aggregate_of_aggregate_of_instance::ptr> {
-        static std::string get() { return "aggregate of aggregate of instance"; }
     };
 }
 

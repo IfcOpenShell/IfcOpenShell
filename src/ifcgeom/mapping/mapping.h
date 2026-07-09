@@ -10,8 +10,8 @@
 #include <cstdint>
 #include <unordered_set>
 
-#include INCLUDE_SCHEMA(../../ifcparse, IfcSchema)
-#include INCLUDE_SCHEMA_DEFINITIONS(../../ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA(../../ifcparse/schemas, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(../../ifcparse/schemas, IfcSchema)
 
 namespace ifcopenshell {
 
@@ -71,19 +71,19 @@ namespace geometry {
 								}
 							}
 						} catch (const std::exception& e) {
-							logger_.Message(Logger::LOG_ERROR, "GEO", 325, std::string(e.what()) + "\nFailed to convert:", inst);
+							logger_.message(::logger::LOG_ERROR, "GEO", 325, std::string(e.what()) + "\nFailed to convert:", inst);
 						}
 					} else if (failed_on_purpose_.find(inst) == failed_on_purpose_.end()) {
-						logger_.Message(Logger::LOG_ERROR, "GEO", 326, "Failed to convert:", inst);
+						logger_.message(::logger::LOG_ERROR, "GEO", 326, "Failed to convert:", inst);
 					}
 				} catch (const std::exception& e) {
-					logger_.Message(Logger::LOG_ERROR, "GEO", 327, std::string(e.what()) + "\nFailed to convert:", inst);
+					logger_.message(::logger::LOG_ERROR, "GEO", 327, std::string(e.what()) + "\nFailed to convert:", inst);
 				}
 			}
 		}
 		IfcSchema::IfcStyledItem find_style(const IfcSchema::IfcRepresentationItem&);
 	public:
-		POSTFIX_SCHEMA(mapping)(ifcopenshell::file* file, Settings& settings, Logger& logger = Logger::Root()) : abstract_mapping(settings), file_(file), placement_rel_to_type_(nullptr) {
+		POSTFIX_SCHEMA(mapping)(ifcopenshell::file* file, Settings& settings, ::logger& logger = ::logger::root()) : abstract_mapping(settings, logger), file_(file), placement_rel_to_type_(nullptr) {
 			initialize_units_();
 		}
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const express::Base&);

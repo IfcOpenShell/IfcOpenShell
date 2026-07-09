@@ -233,7 +233,7 @@ namespace {
     }
 }
 
-TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
+TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger)
     : WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
     , filename_(filename)
 {
@@ -488,11 +488,11 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
             if ((polygons_by_area.rbegin()->first > (0.6 * rectangle_area)) || (height < (1. + 1.e-5))) {
                 // Found sufficiently large polygon
                 if (emitted_warning) {
-                    logger_.Warning("SER", 36, "Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
+                    logger().warning("SER", 36, "Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
                 }
                 break;
             } else if (!emitted_warning) {
-                logger_.Warning("SER", 37, "Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
+                logger().warning("SER", 37, "Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
                 emitted_warning = true;
             }
         }

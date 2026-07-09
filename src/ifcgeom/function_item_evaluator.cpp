@@ -76,7 +76,7 @@ struct piecewise_fn_evaluator : public fn_evaluator {
             span_start += fn->length();
         }
 
-        logger_.Error("GEO", 37, "piecewise span not found.");
+        logger_.error("GEO", 37, "piecewise span not found.");
         return {0, 0, nullptr};
     }
 
@@ -208,7 +208,7 @@ struct offset_fn_evaluator : public fn_evaluator {
 
 
 
-function_item_evaluator::function_item_evaluator(const ifcopenshell::geometry::Settings& settings,taxonomy::function_item::const_ptr fn, Logger& logger) : logger_(logger) {
+function_item_evaluator::function_item_evaluator(const ifcopenshell::geometry::Settings& settings,taxonomy::function_item::const_ptr fn, logger& logger) : logger_(logger) {
     auto kind = fn ? fn->kind() : taxonomy::kinds::NODE;
     if (kind == taxonomy::FUNCTOR_ITEM) {
         fn_evaluator_ = new functor_fn_evaluator(std::dynamic_pointer_cast<const taxonomy::functor_item>(fn),settings);
@@ -221,7 +221,7 @@ function_item_evaluator::function_item_evaluator(const ifcopenshell::geometry::S
     } else if (kind == taxonomy::OFFSET_FUNCTION) {
         fn_evaluator_ = new offset_fn_evaluator(std::dynamic_pointer_cast<const taxonomy::offset_function>(fn), settings);
     } else {
-        logger_.Error("GEO", 38, "Unexpected function type");
+        logger_.error("GEO", 38, "Unexpected function type");
     }
 }
 

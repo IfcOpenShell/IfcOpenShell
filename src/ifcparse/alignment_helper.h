@@ -45,10 +45,10 @@ IFC_SCHEMA_API Ifc4x3_add2::IfcAlignment addAlignment(hierarchy_helper<Ifc4x3_ad
 // Maps horizontal alignment business logic to geometry.
 // Bloss curves have two geometry elements for one horizontal alignment segment. That is the reason for returning a pair.
 // Typically the first element of the pair will have the geometry and the second element will be nullptr
-IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentSegment& segment, Logger& logger = Logger::Root());
-IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment, Logger& logger = Logger::Root());
-IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment, Logger& logger = Logger::Root());
-IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, Logger& logger = Logger::Root());
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentSegment& segment, logger& logger = ::logger::root());
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentHorizontalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentHorizontalSegment& segment, logger& logger = ::logger::root());
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentVerticalSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentVerticalSegment& segment, logger& logger = ::logger::root());
+IFC_SCHEMA_API std::pair<Ifc4x3_add2::IfcCurveSegment, Ifc4x3_add2::IfcCurveSegment> mapAlignmentCantSegment(hierarchy_helper<Ifc4x3_add2>& model, const Ifc4x3_add2::IfcAlignmentCantSegment& segment, logger& logger = ::logger::root());
 
 
 #endif

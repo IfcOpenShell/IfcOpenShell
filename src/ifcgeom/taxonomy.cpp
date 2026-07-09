@@ -861,7 +861,7 @@ std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_func
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else if (edge_->start.index() == 1 && edge_->end.index() == 1) {
 					if (edge_->basis && edge_->basis->kind() != LINE) {
-						Logger::Root().Message(Logger::Severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
+						::logger::root().message(::logger::Severity::LOG_WARNING, "UNS", 20, "Basis curve not supported - edge is treated as a straight line edge");
 					}
 					const auto& s = std::get<point3::ptr>(edge_->start)->ccomponents();
 					const auto& e = std::get<point3::ptr>(edge_->end)->ccomponents();
@@ -876,8 +876,8 @@ std::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_func
 					};
 					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 				} else {
-					Logger::Root().Message(Logger::Severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
-					return boost::none;
+					::logger::root().message(::logger::Severity::LOG_ERROR, "UNS", 21, "Basis curve not supported");
+					return std::nullopt;
 				}
 			}
 			fi_ = make<piecewise_function>(0.0,spans);

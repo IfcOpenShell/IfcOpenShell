@@ -233,9 +233,6 @@ namespace IfcGeom {
 		template <typename T>
 		struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 
-	// @todo this can simply be a template class, to remove the need for the NumberEpeck in CGAL kernel.
-#ifndef SWIG
-	class IFC_GEOM_API NumberNativeDouble : public OpaqueNumber {
 	private:
 		std::shared_ptr<const NumberConcept> data_;
 
@@ -352,23 +349,6 @@ namespace IfcGeom {
 			return negated();
 		}
 	};
-#else
-	class IFC_GEOM_API NumberNativeDouble : public OpaqueNumber {
-	public:
-		NumberNativeDouble(double v);
-		virtual double to_double() const;
-		virtual std::string to_string() const;
-		virtual OpaqueNumber* operator+(OpaqueNumber* other) const;
-		virtual OpaqueNumber* operator-(OpaqueNumber* other) const;
-		virtual OpaqueNumber* operator*(OpaqueNumber* other) const;
-		virtual OpaqueNumber* operator/(OpaqueNumber* other) const;
-		virtual bool operator==(OpaqueNumber* other) const;
-		virtual bool operator<(OpaqueNumber* other) const;
-		virtual OpaqueNumber* operator-() const;
-		virtual OpaqueNumber* clone() const;
-	};
-#endif
-
 #ifndef SWIG
 	template <size_t N>
 	struct IFC_GEOM_API OpaqueCoordinate {
@@ -514,8 +494,11 @@ namespace IfcGeom {
 		OpaqueCoordinate(const OpaqueCoordinate& other);
 		OpaqueCoordinate& operator=(const OpaqueCoordinate& other);
 		~OpaqueCoordinate();
-		OpaqueNumber* get(size_t i) const;
-		void set(size_t i, OpaqueNumber* n);
+		std::size_t size() const;
+		OpaqueNumber get(size_t i) const;
+		double get_double(size_t i) const;
+		void set(size_t i, const OpaqueNumber& n);
+		std::vector<double> to_double() const;
 	};
 #endif
 
@@ -526,8 +509,8 @@ namespace IfcGeom {
 #else
 		virtual std::string_view backend_id() const = 0;
 #endif
-		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int item_id, int surface_style_id) const = 0;
-		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root()) const;
+		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int item_id, int surface_style_id, ::logger& logger = ::logger::root()) const = 0;
+		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings, ::logger& logger = ::logger::root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;
 				
 		virtual int surface_genus() const = 0;

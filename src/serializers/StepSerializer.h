@@ -34,7 +34,7 @@ class StepSerializer : public OpenCascadeBasedSerializer
 private:
 	STEPControl_Writer writer;	
 public:
-	explicit StepSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& serializer_settings, Logger& logger = Logger::Root())
+	explicit StepSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& serializer_settings, ::logger& logger = ::logger::root())
 		: OpenCascadeBasedSerializer(out_filename, geometry_settings, serializer_settings, logger)
 	{}
 	virtual ~StepSerializer() {}

@@ -286,7 +286,7 @@ ifcopenshell::geometry::PassthroughShape::PassthroughShape(const std::vector<Pas
 ifcopenshell::geometry::PassthroughShape::PassthroughShape(std::vector<PassthroughPart>&& parts)
 	: parts_(normalize_parts(parts)) {}
 
-void ifcopenshell::geometry::PassthroughShape::Triangulate(ifcopenshell::geometry::Settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id) const {
+void ifcopenshell::geometry::PassthroughShape::Triangulate(ifcopenshell::geometry::Settings, const ifcopenshell::geometry::taxonomy::matrix4& place, IfcGeom::Representation::Triangulation* t, int item_id, int surface_style_id, ::logger&) const {
 	auto mesh = build_mesh(parts_, &place);
 	std::vector<int> indices(mesh.vertices.size());
 	for (size_t i = 0; i < mesh.vertices.size(); ++i) {
@@ -356,13 +356,13 @@ std::pair<IfcGeom::OpaqueCoordinate<3>, IfcGeom::OpaqueCoordinate<3>> ifcopenshe
 	}
 	auto result = std::make_pair(
 		IfcGeom::OpaqueCoordinate<3>(
-			new IfcGeom::NumberNativeDouble(box->min(0)),
-			new IfcGeom::NumberNativeDouble(box->min(1)),
-			new IfcGeom::NumberNativeDouble(box->min(2))),
+			IfcGeom::OpaqueNumber(box->min(0)),
+			IfcGeom::OpaqueNumber(box->min(1)),
+			IfcGeom::OpaqueNumber(box->min(2))),
 		IfcGeom::OpaqueCoordinate<3>(
-			new IfcGeom::NumberNativeDouble(box->max(0)),
-			new IfcGeom::NumberNativeDouble(box->max(1)),
-			new IfcGeom::NumberNativeDouble(box->max(2))));
+			IfcGeom::OpaqueNumber(box->max(0)),
+			IfcGeom::OpaqueNumber(box->max(1)),
+			IfcGeom::OpaqueNumber(box->max(2))));
 	delete box;
 	return result;
 }
@@ -375,16 +375,16 @@ void ifcopenshell::geometry::PassthroughShape::set_box(void* box_ptr) {
 	parts_ = { { make_box_shell(box->min, box->max), taxonomy::make<taxonomy::matrix4>(), true } };
 }
 
-IfcGeom::OpaqueNumber* ifcopenshell::geometry::PassthroughShape::length() {
-	return new IfcGeom::NumberNativeDouble(mesh_length(build_mesh(parts_)));
+IfcGeom::OpaqueNumber ifcopenshell::geometry::PassthroughShape::length() {
+	return IfcGeom::OpaqueNumber(mesh_length(build_mesh(parts_)));
 }
 
-IfcGeom::OpaqueNumber* ifcopenshell::geometry::PassthroughShape::area() {
-	return new IfcGeom::NumberNativeDouble(mesh_area(build_mesh(parts_)));
+IfcGeom::OpaqueNumber ifcopenshell::geometry::PassthroughShape::area() {
+	return IfcGeom::OpaqueNumber(mesh_area(build_mesh(parts_)));
 }
 
-IfcGeom::OpaqueNumber* ifcopenshell::geometry::PassthroughShape::volume() {
-	return new IfcGeom::NumberNativeDouble(is_manifold() ? mesh_volume(build_mesh(parts_)) : 0.);
+IfcGeom::OpaqueNumber ifcopenshell::geometry::PassthroughShape::volume() {
+	return IfcGeom::OpaqueNumber(is_manifold() ? mesh_volume(build_mesh(parts_)) : 0.);
 }
 
 IfcGeom::OpaqueCoordinate<3> ifcopenshell::geometry::PassthroughShape::position() {
@@ -465,11 +465,11 @@ IfcGeom::ConversionResultShape* ifcopenshell::geometry::PassthroughShape::concat
 	return new PassthroughShape(std::move(parts));
 }
 
-void ifcopenshell::geometry::PassthroughShape::map(IfcGeom::OpaqueCoordinate<4>&, IfcGeom::OpaqueCoordinate<4>&) {
+std::size_t ifcopenshell::geometry::PassthroughShape::map(IfcGeom::OpaqueCoordinate<4>&, IfcGeom::OpaqueCoordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::PassthroughShape::map(const std::vector<IfcGeom::OpaqueCoordinate<4>>&, const std::vector<IfcGeom::OpaqueCoordinate<4>>&) {
+std::size_t ifcopenshell::geometry::PassthroughShape::map(const std::vector<IfcGeom::OpaqueCoordinate<4>>&, const std::vector<IfcGeom::OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 

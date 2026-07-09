@@ -368,11 +368,11 @@ namespace {
 		std::multimap<double, face_info> large_ortho_faces_;
 		std::list<std::pair<express::Base, TopoDS_Shape>> items_;
 
-		Logger& logger_;
+		::logger& logger_;
 
 	public:
 
-		prefiltered_hlr(Logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
+		prefiltered_hlr(::logger& logger, bool use_prefiltering, bool use_hlr_poly, bool segment_projection, const gp_Pln& view_direction)
 			: logger_(logger)
 			, use_prefiltering_(use_prefiltering)
 			, use_hlr_poly_(use_hlr_poly)
@@ -471,7 +471,7 @@ namespace {
 					}
 				}
 
-				logger_.Notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
+				logger_.notice("SER", 34, "Included " + std::to_string(n_faces_included) + " faces out of " + std::to_string(n_total) + " after prefiltering");
 
 				auto it = items_.insert(items_.end(), { product, C });
 
@@ -520,7 +520,7 @@ namespace {
 				}
 			}
 			if (use_prefiltering_) {
-				logger_.Notice("SER", 35, "Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
+				logger_.notice("SER", 35, "Included " + std::to_string(n_included) + " elements out of " + std::to_string(items_.size()) + " after prefiltering");
 			}
 			
 			hlr_calc vis(projector_);
@@ -597,7 +597,7 @@ protected:
 	subtract_before_project subtraction_settings_;
 
 public:
-	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root())
+	SvgSerializer(const stream_or_filename& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root())
 		: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 		, svg_file(out_filename)
 		, xmin(+std::numeric_limits<double>::infinity())

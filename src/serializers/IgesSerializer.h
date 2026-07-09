@@ -40,7 +40,7 @@ private:
 public:
     /// @note IGESControl_Controller::Init() must be called prior to instantiating IgesSerializer.
     /// See http://tracker.dev.opencascade.org/view.php?id=23679 for more information.
-    IgesSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root())
+    IgesSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, ::logger& logger = ::logger::root())
         : OpenCascadeBasedSerializer(out_filename, geometry_settings, settings, logger)
 	{}
 	virtual ~IgesSerializer() {}
@@ -54,7 +54,7 @@ public:
 		const char* symbol = getSymbolForUnitMagnitude(magnitude);
 		if (symbol) {
 #ifdef HAVE_CONFIG_H
-			logger_.Warning("SER", 5, "Setting IGES units not supported on OCE");
+			logger_.warning("SER", 5, "Setting IGES units not supported on OCE");
 #else
 			Interface_Static::SetCVal("xstep.cascade.unit", symbol);
 			Interface_Static::SetCVal("write.iges.unit", symbol);

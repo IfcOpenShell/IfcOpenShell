@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if ( x < tol || y < tol || d < tol) {
-		logger_.Message(Logger::LOG_NOTICE, "GEO", 265, "Skipping zero sized profile:", inst);
+		logger_.message(::logger::LOG_NOTICE, "GEO", 265, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 
@@ -77,7 +77,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcLShapeProfileDef& inst) {
 		const double det = a1*b2 - a2*b1;
 
 		if (std::fabs(det) < 1.e-5) {
-			logger_.Message(Logger::LOG_NOTICE, "GEO", 266, "Legs do not intersect for:", inst);
+			logger_.message(::logger::LOG_NOTICE, "GEO", 266, "Legs do not intersect for:", inst);
 			return nullptr;
 		}
 

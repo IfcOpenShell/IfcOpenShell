@@ -32,7 +32,7 @@ const double PI = boost::math::constants::pi<double>();
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef& inst) {
     if (inst.ProfileType() != IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE) {
-        logger_.Warning("GEO", 274, "Expected IfcOpenCrossProfileDef.ProfileType to be CURVE", inst);
+        logger_.warning("GEO", 274, "Expected IfcOpenCrossProfileDef.ProfileType to be CURVE", inst);
         return nullptr;
     }
 
@@ -56,7 +56,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOpenCrossProfileDef& inst) {
     auto angles = inst.Slopes(); // these are actually angles, but the attribute is called Slopes
 
 	if (widths.size() != angles.size()) {
-        logger_.Warning("GEO", 275, "Expected Widths and Slopes to be equal length, but got " + std::to_string(widths.size()) + " and " + std::to_string(angles.size()) + " respectively", inst);
+        logger_.warning("GEO", 275, "Expected Widths and Slopes to be equal length, but got " + std::to_string(widths.size()) + " and " + std::to_string(angles.size()) + " respectively", inst);
         return nullptr;
     }
 

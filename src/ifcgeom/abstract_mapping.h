@@ -49,12 +49,12 @@ namespace geometry {
 	class IFC_GEOM_API abstract_mapping {
 	protected:
 		Settings settings_;
-		Logger& logger_;
+		::logger& logger_;
 
 		bool use_caching_ = true;
 
 	public:
-		abstract_mapping(Settings& s, Logger& logger = Logger::Root()) : settings_(s), logger_(logger) {}
+		abstract_mapping(Settings& s, ::logger& logger = ::logger::root()) : settings_(s), logger_(logger) {}
 		virtual ~abstract_mapping() {}
 
 		virtual ifcopenshell::geometry::taxonomy::ptr map(const express::Base&) = 0;
@@ -73,19 +73,19 @@ namespace geometry {
 
 		const Settings& settings() const { return settings_; }
 		Settings& settings() { return settings_; }
-		Logger& logger() const { return logger_; }
+		::logger& logger() const { return logger_; }
 
 		bool use_caching() const { return use_caching_; }
 		bool& use_caching() { return use_caching_; }
     };
 
 	namespace impl {
-		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, Settings&, Logger&> mapping_fn;
+		typedef boost::function3<abstract_mapping*, ifcopenshell::file*, Settings&, ::logger&> mapping_fn;
 
 		class IFC_GEOM_API mapping_registry {
 		public:
 			void bind(const std::string& schema_name, mapping_fn fn, const ifcopenshell::plugin::module& module = ifcopenshell::plugin::module());
-			abstract_mapping* construct(ifcopenshell::file* file, Settings& settings);
+			abstract_mapping* construct(ifcopenshell::file* file, Settings& settings, ::logger& logger = ::logger::root());
 
 		private:
 			struct entry {
@@ -102,7 +102,7 @@ namespace geometry {
 		public:
 			MappingFactoryImplementation();
 			void bind(const std::string& schema_name, mapping_fn);
-			abstract_mapping* construct(ifcopenshell::file*, Settings&, Logger& logger = Logger::Root());
+			abstract_mapping* construct(ifcopenshell::file*, Settings&, ::logger& logger = ::logger::root());
 		};
 
 		IFC_GEOM_API MappingFactoryImplementation& mapping_implementations();

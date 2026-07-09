@@ -1,5 +1,6 @@
 #include "instance_data.h"
 #include "express.h"
+#include "exception.h"
 #include "file.h"
 
 // @todo is size() still needed?
@@ -37,14 +38,14 @@ namespace {
             try {
                 return array_.storage_ptr->get<T>(index_);
             } catch (const impl::storage_type_mismatch& e) {
-                throw IfcParse::IfcException(
+                throw ifcopenshell::exception(
                     // entity_or_type not passed, but in v0.9 this is beginning to make sense
                     (entity_or_type
                     ? std::string("On instance #" + std::to_string(instance_name_) + " of " + entity_or_type->name() + ": ")
                     : std::string("")) +
                     "Requested type <" + e.requested() + "> does not match actual type <" + e.actual() + "> at index " + std::to_string(index_));
             } catch (const std::out_of_range& e) {
-                throw IfcParse::IfcException(
+                throw ifcopenshell::exception(
                     (entity_or_type
                     ? std::string("On instance #" + std::to_string(instance_name_) + " of " + entity_or_type->name() + ": ")
                     : std::string("")) +
@@ -70,7 +71,7 @@ namespace {
                 static_assert(
                     std::is_same_v<T, enumeration_reference> ||
                      std::is_same_v<std::remove_cv_t<T>, express::Base>,
-                    "RocksDB deserialization must be specialized for this enumeration_reference and IfcBaseClass*"
+                    "RocksDB deserialization must be specialized for this enumeration_reference and express::Base"
                 );
             }
             return val;

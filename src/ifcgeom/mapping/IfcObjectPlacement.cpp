@@ -47,13 +47,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 			// element we're ignoring, but we don't want to traverse the entire model.
 #ifdef SCHEMA_IfcObjectPlacement_HAS_ReferencedByPlacements
 			if (depth < 2) {
-				std::vector<IfcSchema::IfcObjectPlacement> refs = placement.ReferencedByPlacements();
+				auto refs = placement.ReferencedByPlacements();
 				for (auto& ref : refs) {
-					q.emplace_back(ref, depth + 1);
+					q.emplace_back(ref.template as<IfcSchema::IfcObjectPlacement>(), depth + 1);
 				}
 			}
 #else
-			logger::warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
+			::logger::root().warning("Using --site-local-placement or --building-local-placement on IFC4.2 might have issues");
 #endif
 		}
 	}
@@ -126,7 +126,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 	if (fallback) {
         auto mapped_fallback = taxonomy::cast<taxonomy::matrix4>(map(fallback));
         if (!result->ccomponents().isApprox(mapped_fallback->ccomponents())) {
-            logger::warning("Computed placement differs from fallback", inst);
+            ::logger::root().warning("Computed placement differs from fallback", inst);
         }
     }
 
@@ -134,7 +134,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement& inst) {
 
 	auto abs_det = std::abs(result->ccomponents().determinant());
 	if (abs_det < 1.e-7) {
-		logger::warning("Ignoring singular matrix:", inst);
+		::logger::root().warning("Ignoring singular matrix:", inst);
 		return nullptr;
 	}
 

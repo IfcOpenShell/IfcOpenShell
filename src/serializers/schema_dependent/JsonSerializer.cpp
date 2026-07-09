@@ -69,7 +69,7 @@ class get_type_visitor : public boost::static_visitor<std::string> {
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-auto get_related(T t, F f, G g) {
+auto get_related(::logger& log, T t, F f, G g) {
     auto li = (t.*f)();
     std::vector<V> acc;
     for (auto& u : li) {
@@ -91,13 +91,13 @@ auto get_related(T t, F f, G g) {
                 }
             }
         } catch (ifcopenshell::exception& e) {
-            logger::error(e);
+            log.error(e);
         }
     }
     return acc;
 }
 
-void format_entity_instance(express::Base instance, json& tree, express::Base parent = express::Base()) {
+void format_entity_instance(::logger& log, express::Base instance, json& tree, express::Base parent = express::Base()) {
     /*
     {
         "id" : string,            // Element GUID (IFC GloballyUniqueId)
@@ -151,7 +151,8 @@ void format_entity_instance(express::Base instance, json& tree, express::Base pa
     }
 
     if (auto obj = instance.as<IfcSchema::IfcObject>()) {
-        auto property_sets = get_related<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>(obj, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+        auto property_sets = get_related<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>(
+            log, obj, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
         if (!property_sets.empty()) {
             child["propertySetIds"] = json::array();
             for (auto& pset : property_sets) {
@@ -167,11 +168,11 @@ void format_entity_instance(express::Base instance, json& tree, express::Base pa
 // A function to be called recursively. Template specialization is used
 // to descend into decomposition, containment and property relationships.
 template <typename A>
-void descend(A instance, json& tree, express::Base parent = express::Base()) {
+void descend(::logger& log, A instance, json& tree, express::Base parent = express::Base()) {
     if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
-        descend(instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
+        descend(log, instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
     } else {
-        format_entity_instance(instance, tree, logger);
+        format_entity_instance(log, instance, tree);
     }
 }
 
@@ -180,7 +181,7 @@ void descend(A instance, json& tree, express::Base parent = express::Base()) {
 // Descends into the tree by recursing into IfcRelContainedInSpatialStructure,
 // IfcRelDecomposes, IfcRelDefinesByType, IfcRelDefinesByProperties relations.
 template <>
-void descend(IfcSchema::IfcObjectDefinition product, json& tree, express::Base parent) {
+void descend(::logger& log, IfcSchema::IfcObjectDefinition product, json& tree, express::Base parent) {
     if (product.declaration().is(IfcSchema::IfcElement::Class())) {
         auto voids = product.as<IfcSchema::IfcElement>().FillsVoids();
         if (voids.size() == 1 && voids.front().RelatingOpeningElement() != parent) {
@@ -189,46 +190,50 @@ void descend(IfcSchema::IfcObjectDefinition product, json& tree, express::Base p
         }
     }
 
-    format_entity_instance(product, tree, logger, parent);
+    format_entity_instance(log, product, tree, parent);
 
     if (auto opening = product.as<IfcSchema::IfcOpeningElement>()) {
         auto fills = get_related<IfcSchema::IfcOpeningElement, IfcSchema::IfcRelFillsElement, IfcSchema::IfcElement>(
-            opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
+            log, opening, &IfcSchema::IfcOpeningElement::HasFillings, &IfcSchema::IfcRelFillsElement::RelatedBuildingElement);
 
         for (auto& f : fills) {
-            descend(f, tree, product);
+            descend(log, f, tree, product);
         }
     }
 
     if (auto structure = product.as<IfcSchema::IfcSpatialStructureElement>()) {
-        auto elements = get_related<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>(structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
+        auto elements = get_related<IfcSchema::IfcSpatialStructureElement, IfcSchema::IfcRelContainedInSpatialStructure, IfcSchema::IfcObjectDefinition>(
+            log, structure, &IfcSchema::IfcSpatialStructureElement::ContainsElements, &IfcSchema::IfcRelContainedInSpatialStructure::RelatedElements);
 
         for (auto& el : elements) {
-            descend(el, tree, product);
+            descend(log, el, tree, product);
         }
     }
 
     if (auto element = product.as<IfcSchema::IfcElement>()) {
         auto openings = get_related<IfcSchema::IfcElement, IfcSchema::IfcRelVoidsElement, IfcSchema::IfcOpeningElement>(
-            element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
+            log, element, &IfcSchema::IfcElement::HasOpenings, &IfcSchema::IfcRelVoidsElement::RelatedOpeningElement);
 
         for (auto& op : openings) {
-            descend(op, tree, product);
+            descend(log, op, tree, product);
         }
     }
 
 #ifdef SCHEMA_IfcRelDecomposes_HAS_RelatedObjects
-    auto structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);
+    auto structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelDecomposes, IfcSchema::IfcObjectDefinition>(
+        log, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelDecomposes::RelatedObjects);
 #else
-    auto structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelAggregates, IfcSchema::IfcObjectDefinition>(product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
+    auto structures = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelAggregates, IfcSchema::IfcObjectDefinition>(
+        log, product, &IfcSchema::IfcObjectDefinition::IsDecomposedBy, &IfcSchema::IfcRelAggregates::RelatedObjects);
 
-    auto nested = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelNests, IfcSchema::IfcObjectDefinition>(product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects);
+    auto nested = get_related<IfcSchema::IfcObjectDefinition, IfcSchema::IfcRelNests, IfcSchema::IfcObjectDefinition>(
+        log, product, &IfcSchema::IfcObjectDefinition::IsNestedBy, &IfcSchema::IfcRelNests::RelatedObjects);
 
     structures.insert(structures.end(), nested.begin(), nested.end());
 #endif
 
     for (auto& ob : structures) {
-        descend(ob, tree, product);
+        descend(log, ob, tree, product);
     }
 
     // psets are handled as part of format_entity_instance()
@@ -262,7 +267,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
 
     auto projects = file->instances_by_type<IfcSchema::IfcProject>();
     if (projects.size() != 1) {
-        logger_.Message(Logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
+        logger().message(::logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
         return;
     }
     IfcSchema::IfcProject project = projects.front();
@@ -271,7 +276,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         try {
             return fn();
         } catch (const std::exception& e) {
-            logger_.Error("SER", 8, e);
+            logger().error("SER", 8, e);
             static std::invoke_result_t<decltype(fn)> v;
             return v;
         }
@@ -576,7 +581,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
     }
     */
 
-    descend(project, output["metaObjects"], logger_);
+    descend(logger(), project, output["metaObjects"]);
 
     std::ofstream f(ifcopenshell::path::from_utf8(json_filename).c_str());
     f << output.dump(4);

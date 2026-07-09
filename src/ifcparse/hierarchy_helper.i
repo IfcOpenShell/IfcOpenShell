@@ -174,7 +174,7 @@ void hierarchy_helper<Schema>::relatePlacements(typename Schema::IfcProduct pare
                 if (local_place != parent.ObjectPlacement()) {
                     local_place.setPlacementRelTo(parent.ObjectPlacement());
                 } else {
-                    logger::notice("Placement cannot be relative to self");
+                    ::logger::root().notice("Placement cannot be relative to self");
                 }
             }
         }

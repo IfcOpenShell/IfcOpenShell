@@ -41,7 +41,7 @@
 #include <optional>
 #include <functional>
 
-class Logger;
+class logger;
 
 namespace svgfill {
 	typedef std::array<double, 2> point_2;
@@ -134,7 +134,7 @@ namespace svgfill {
         double subdivision_factor = 16.;
     };
 
-	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged, Logger& logger);
+	SVGFILL_API bool arrange_polygons(arrange_polygon_settings settings, const std::vector<polygon_2>& polygons, std::vector<polygon_2>& arranged, logger& logger);
     }
 
 #endif
