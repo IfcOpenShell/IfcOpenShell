@@ -510,6 +510,15 @@ void MainWindow::setupStatus() {
                     vp->applyNavPreset(AppSettings::navPresetName(preset));
             });
 
+    // Backface culling: apply the persisted choice and re-apply live on change.
+    if (auto* vp = viewport_widget_->viewport())
+        vp->setBackfaceCulling(AppSettings::instance().backfaceCulling());
+    connect(&AppSettings::instance(), &AppSettings::backfaceCullingChanged, this,
+            [this](bool enabled) {
+                if (auto* vp = viewport_widget_->viewport())
+                    vp->setBackfaceCulling(enabled);
+            });
+
     connect(session_state_, &bonsaiviewer::SessionState::statusMessageChanged,
             this, [this](const QString& mode, const QString& detail) {
         status_mode_label_->setText(mode);

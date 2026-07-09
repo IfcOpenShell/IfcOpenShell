@@ -1499,6 +1499,10 @@ void ViewportWindow::applyNavPreset(const char* name) {
     select_button_ = toQtBtn(b.select);  select_mods_ = toQtMod(b.select_mod);
 }
 
+void ViewportWindow::setBackfaceCulling(bool enabled) {
+    core_.setBackfaceCulling(enabled);
+}
+
 // -----------------------------------------------------------------------------
 // One-shot framebuffer capture → PNG
 // -----------------------------------------------------------------------------

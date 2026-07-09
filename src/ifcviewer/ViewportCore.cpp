@@ -479,6 +479,12 @@ void ViewportCore::setNavPreset(const char* name) {
         nav_bindings_ = { B::Middle, M::Plain,  B::Middle, M::Shift, B::Left,  M::Plain };
 }
 
+void ViewportCore::setBackfaceCulling(bool enabled) {
+    if (backface_culling_ == enabled) return;
+    backface_culling_ = enabled;
+    host_->requestFrame();
+}
+
 bool ViewportCore::frameSelection() {
     if (selection_.count() == 0) return false;
     float lo[3] = {  std::numeric_limits<float>::infinity(),
@@ -1150,6 +1156,19 @@ bool ViewportCore::buildPipelines() {
         return false;
     }
 
+    // ---- Backface-culling-off variant of the opaque pipeline -----------
+    // The "Backface Culling" setting picks between this and main_pipeline_ at
+    // draw time (opaque pass). Identical but cullMode None, so single-sided
+    // IFC meshes show their back faces.
+    WGPURenderPipelineDescriptor rp_desc_nc = rp_desc;
+    rp_desc_nc.label = svFromCStr("ifcviewer-wgpu.main_pipeline_no_cull");
+    rp_desc_nc.primitive.cullMode = WGPUCullMode_None;
+    main_pipeline_no_cull_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc_nc);
+    if (!main_pipeline_no_cull_) {
+        Log::warn() << "wgpu main no-cull render pipeline creation failed";
+        return false;
+    }
+
     // ---- Transparent variant of the main pipeline ----------------------
     // Same shader, same layout, same vertex pulling, same depth test —
     // differs only in:
@@ -1796,6 +1815,7 @@ void ViewportCore::shutdown() {
     if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
     selection_flags_capacity_ = 0;
     if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
+    if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
@@ -6400,9 +6420,10 @@ void ViewportCore::render() {
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
 
     // Two-pass main render: opaque first, then transparent.
-    if (main_pipeline_ && main_pipeline_transparent_
+    if (main_pipeline_ && main_pipeline_no_cull_ && main_pipeline_transparent_
         && frame_bind_group_ && !models_gpu_.empty()) {
-        wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_);
+        wgpuRenderPassEncoderSetPipeline(pass,
+            backface_culling_ ? main_pipeline_ : main_pipeline_no_cull_);
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
         for (const auto& [session_model_id, m] : models_gpu_) {

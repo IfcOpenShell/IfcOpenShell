@@ -223,6 +223,12 @@ public:
     void setNavPreset(const char* name);
     const NavBindings& navBindings() const { return nav_bindings_; }
 
+    // Toggle backface culling of opaque geometry. Off draws back faces too
+    // (useful for single-sided IFC meshes). Switches the opaque pipeline at
+    // draw time — no rebuild.
+    void setBackfaceCulling(bool enabled);
+    bool backfaceCulling() const { return backface_culling_; }
+
     // Frame the current selection: union the selected objects' world AABBs and
     // fit the camera to them (same 1.30 padding as the desktop "F" hotkey).
     // No-op with an empty selection or no resolvable AABBs; returns whether it
@@ -909,7 +915,9 @@ private:
     WGPUBindGroupLayout model_bgl_                = nullptr;  // group 1
     WGPUPipelineLayout  pipeline_layout_          = nullptr;
     WGPURenderPipeline  main_pipeline_            = nullptr;
+    WGPURenderPipeline  main_pipeline_no_cull_    = nullptr;  // backface culling off
     WGPURenderPipeline  main_pipeline_transparent_ = nullptr;
+    bool                backface_culling_         = true;
     // Section-plane gizmo, shared by desktop + web (both render via render()).
     // Lifted out of the Qt-coupled OverlayRenderer so one identical gizmo draws
     // everywhere; the desktop's OverlayRenderer no longer draws it.

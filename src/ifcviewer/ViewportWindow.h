@@ -247,6 +247,7 @@ public:
     // Sources the shared binding table from ViewportCore; called from init
     // (env / persisted setting) and live from the Settings dialog.
     void applyNavPreset(const char* name);
+    void setBackfaceCulling(bool enabled);
 
 
     // Queue a one-shot framebuffer capture: the next rendered frame is
