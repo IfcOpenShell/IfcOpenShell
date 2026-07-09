@@ -263,7 +263,7 @@ struct ModelGpuData {
         // for chunks that were never evicted or were LRU-evicted (the
         // latter doesn't have an obvious "evictor" — just a slot
         // pressure event).
-        uint32_t last_evicted_by_model_id     = 0;
+        uint32_t last_evicted_by_session_model_id     = 0;
         uint32_t last_evicted_by_chunk_idx    = UINT32_MAX;
         float    last_evicted_by_priority     = 0.0f;
         // Frame at which this chunk was most recently evicted, so the

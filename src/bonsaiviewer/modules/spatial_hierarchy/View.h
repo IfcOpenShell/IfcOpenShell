@@ -38,6 +38,7 @@ public:
                                        QObject* parent = nullptr);
 
 private:
+    void rebuild();  // re-derive nodes_ from the loaded models' IFC spatial structure
     void reload();
     TreeNode* findNode(const NodePath& path);
 

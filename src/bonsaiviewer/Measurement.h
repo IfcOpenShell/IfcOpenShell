@@ -79,7 +79,7 @@ public:
 
 private:
     // Cached per-mesh data: triangles + edge→triangles adjacency.  Keyed
-    // by (model_id << 32) | mesh_id.  Filled lazily on first pick of that
+    // by (session_model_id << 32) | mesh_id.  Filled lazily on first pick of that
     // mesh, dropped on clear().
     struct MeshCache {
         std::vector<float>    positions;     // 3 * N_verts
@@ -89,14 +89,14 @@ private:
         // edge_key (min<<32 | max) → list of triangle indices touching it.
         std::unordered_map<uint64_t, std::vector<uint32_t>> edges;
     };
-    MeshCache* meshCache(ViewportWindow& vp, uint32_t model_id, uint32_t mesh_id);
+    MeshCache* meshCache(ViewportWindow& vp, uint32_t session_model_id, uint32_t mesh_id);
 
     // Per-selected-triangle record.  The composed transform is captured at
     // pick time so the overlay rebuild doesn't have to re-query the
     // viewport for it (and so the overlay keeps working if the picked
     // instance later goes hidden).
     struct SelectedTri {
-        uint32_t model_id;
+        uint32_t session_model_id;
         uint32_t mesh_id;
         uint32_t tri;
         float    composed_transform[16];

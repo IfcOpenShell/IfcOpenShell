@@ -37,7 +37,7 @@ namespace bonsaiviewer {
 
 struct BasicElementInfo {
     uint32_t object_id = 0;
-    uint32_t model_id = 0;
+    uint32_t session_model_id = 0;
     int ifc_id = 0;
     QString guid;
     QString name;
@@ -51,16 +51,16 @@ public:
 
     void bindLoader(SceneLoader* loader);
     void clear();
-    void removeModel(uint32_t model_id);
-    std::vector<BasicElementInfo> basicElementInfoForModel(uint32_t model_id) const;
+    void removeModel(uint32_t session_model_id);
+    std::vector<BasicElementInfo> basicElementInfoForModel(uint32_t session_model_id) const;
     std::optional<BasicElementInfo> findBasicElementInfo(uint32_t object_id) const;
     std::optional<express::Base> findEntity(uint32_t object_id) const;
 
 private:
-    void onSidecarElementsReady(uint32_t model_id,
+    void onSidecarElementsReady(uint32_t session_model_id,
                                 std::vector<ElementTableRecord> elements,
                                 std::string string_table);
-    void onStreamedElementsReady(uint32_t model_id, std::vector<ElementInfo> elements);
+    void onStreamedElementsReady(uint32_t session_model_id, std::vector<ElementInfo> elements);
 
     SceneLoader* loader_ = nullptr;
     std::unordered_map<uint32_t, BasicElementInfo> elements_;

@@ -55,6 +55,10 @@
 %ignore ifcopenshell::spf_header::file_description;
 %ignore ifcopenshell::spf_header::file_name;
 %ignore ifcopenshell::spf_header::file_schema;
+// The setters take a raw shared_pointer_type (an internal instance_data*
+// storage handle), not a Python-facing type. SWIG would emit the alias
+// unqualified into the global-scope wrapper (C2065 on MSVC), and these
+// aren't a usable Python API anyway — ignore them like the getters above.
 %ignore ifcopenshell::spf_header::set_file_description;
 %ignore ifcopenshell::spf_header::set_file_name;
 %ignore ifcopenshell::spf_header::set_file_schema;

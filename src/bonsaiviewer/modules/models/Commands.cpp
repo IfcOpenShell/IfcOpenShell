@@ -56,6 +56,8 @@
 #include <QUuid>
 
 #include <QtCore/private/qzipwriter_p.h>
+#include <QtCore/private/qzipreader_p.h>
+#include <QCryptographicHash>
 
 #include <Eigen/Dense>
 
@@ -89,7 +91,55 @@ QString formatElapsed(qint64 ms) {
         : QString::number(ms) + " ms";
 }
 
+// Session-scoped scratch root where .rdbview bundles are unzipped for loading.
+QString rdbviewCacheRoot() {
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+        .filePath("ifcviewer-rdbview");
+}
+
+// A .rdbview is a zip of `model.rdb/` (the data DB) + `model.ifcview` (geometry
+// sidecar). Unzip it into a per-source subdir (hashed from path + mtime + size,
+// so a re-open reuses an existing extraction) and return the extracted
+// `model.rdb` path — from there it loads exactly like any pure .rdb (geometry
+// from the co-extracted sibling .ifcview). Returns empty on failure.
+QString extractRdbview(const QString& rdbview_path) {
+    const QFileInfo info(rdbview_path);
+    const QString key = rdbview_path + '|'
+        + QString::number(info.lastModified().toMSecsSinceEpoch()) + '|'
+        + QString::number(info.size());
+    const QString hash = QString::fromLatin1(
+        QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha1).toHex());
+    const QString dir = QDir(rdbviewCacheRoot()).filePath(hash);
+    const QString rdb = QDir(dir).filePath("model.rdb");
+
+    if (QFileInfo::exists(rdb)) return rdb;  // already extracted this session
+
+    QZipReader reader(rdbview_path);
+    if (reader.status() != QZipReader::NoError) return {};
+    QDir().mkpath(dir);
+    for (const QZipReader::FileInfo& entry : reader.fileInfoList()) {
+        if (!entry.isFile) continue;                 // dirs recreated below as needed
+        const QString out = QDir(dir).filePath(entry.filePath);
+        QDir().mkpath(QFileInfo(out).absolutePath());
+        QFile f(out);
+        if (!f.open(QIODevice::WriteOnly)) return {};
+        f.write(reader.fileData(entry.filePath));
+    }
+    return QFileInfo::exists(rdb) ? rdb : QString();  // empty if the bundle lacked model.rdb
+}
+
+// Map a source path to the path the loader should open: a .rdbview is unzipped
+// to its extracted .rdb; everything else passes through unchanged.
+QString resolveLoadPath(const QString& path) {
+    if (path.endsWith(".rdbview", Qt::CaseInsensitive)) return extractRdbview(path);
+    return path;
+}
+
 } // namespace
+
+void cleanupRdbviewCache() {
+    QDir(rdbviewCacheRoot()).removeRecursively();
+}
 
 void toggleVisibility(SessionState& session, ItemKind kind, const QString& id) {
     Federation* federation = session.federation();
@@ -166,31 +216,31 @@ void removeGroup(SessionState& session, QWidget& host, const QString& group_id) 
     session.setStatusMessage("Models", "Group removed");
 }
 
-void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& fed_id) {
-    const Federation::Model* model = session.federation()->findById(fed_id);
-    const QString label = model ? model->display_name : fed_id;
+void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& model_id) {
+    const Federation::Model* model = session.federation()->findById(model_id);
+    const QString label = model ? model->display_name : model_id;
     const auto choice = QMessageBox::question(
         &host, "Remove Model",
         QString("Remove model '%1' from the federation?").arg(label),
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     if (choice != QMessageBox::Yes) return;
 
-    const uint32_t model_id = session.modelIdForFedId(fed_id);
-    if (model_id == 0) {
-        session.federation()->removeModel(fed_id);
+    const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+    if (session_model_id == 0) {
+        session.federation()->removeModel(model_id);
         session.notifyFederationChanged();
         session.setStatusMessage("Models", "Model removed");
         return;
     }
-    if (session.loader()->isLoadingModel(model_id)) return;
+    if (session.loader()->isLoadingModel(session_model_id)) return;
 
     viewport.setSelectedObjectId(0);
     session.setSelectedObjectId(0);
-    session.federation()->removeModel(fed_id);
-    viewport.removeModel(model_id);
-    session.loader()->removeModel(model_id);
-    session.elementRegistry()->removeModel(model_id);
-    session.removeModelMappingByFedId(fed_id);
+    session.federation()->removeModel(model_id);
+    viewport.removeModel(session_model_id);
+    session.loader()->removeModel(session_model_id);
+    session.elementRegistry()->removeModel(session_model_id);
+    session.removeModelMappingByModelId(model_id);
     session.notifySelectionChanged();
     session.notifyModelsChanged();
     session.setStatusMessage("Models", "Model removed");
@@ -198,12 +248,31 @@ void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host,
 
 namespace detail {
 
-void loadModels(SessionState& session, const QStringList& paths, const QStringList& fed_ids) {
+void loadModels(SessionState& session, const QStringList& paths, const QStringList& model_ids) {
     if (paths.isEmpty()) return;
 
-    const auto model_ids = session.loader()->addFiles(paths);
-    for (int i = 0; i < paths.size() && i < static_cast<int>(model_ids.size()) && i < fed_ids.size(); ++i) {
-        session.setModelMapping(fed_ids[i], model_ids[i]);
+    // The Federation stores the source paths (e.g. a .rdbview); the loader gets
+    // the resolved load path (a .rdbview is unzipped at load time to its .rdb).
+    // Keep model_ids aligned with the paths that actually resolve.
+    QStringList load_paths;
+    QStringList load_model_ids;
+    for (int i = 0; i < paths.size(); ++i) {
+        const QString resolved = resolveLoadPath(paths[i]);
+        if (resolved.isEmpty()) {
+            session.setStatusMessage("Error",
+                QString("Could not open %1").arg(QFileInfo(paths[i]).fileName()));
+            continue;
+        }
+        load_paths.push_back(resolved);
+        load_model_ids.push_back(i < model_ids.size() ? model_ids[i] : QString());
+    }
+    if (load_paths.isEmpty()) return;
+
+    const auto session_model_ids = session.loader()->queueModels(load_paths);
+    for (int i = 0; i < load_paths.size()
+                 && i < static_cast<int>(session_model_ids.size())
+                 && i < load_model_ids.size(); ++i) {
+        session.setModelMapping(load_model_ids[i], session_model_ids[i]);
     }
 }
 
@@ -243,9 +312,11 @@ void addModel(SessionState& session, QWidget& host) {
         break;
     }
     case SourceMode::GeometryOnly: {
-        QFileDialog file_dialog(&host, "Add Geometry Only");
+        QFileDialog file_dialog(&host, "Add Geometry");
         file_dialog.setFileMode(QFileDialog::ExistingFiles);
-        file_dialog.setNameFilter("IFC Viewer Cache (*.ifcview);;All Files (*)");
+        file_dialog.setNameFilter(
+            "Viewer Model (*.ifcview *.rdbview);;IFC Viewer Cache (*.ifcview);;"
+            "Geometry Database (*.rdbview);;All Files (*)");
         file_dialog.setOption(QFileDialog::DontUseNativeDialog, true);
         if (file_dialog.exec() == QDialog::Accepted) {
             paths = file_dialog.selectedFiles();
@@ -269,20 +340,21 @@ void addModel(SessionState& session, QWidget& host) {
     // models yet — the first model that finishes loading will set the
     // origin via ViewportView. Checked here (before federation->addModel)
     // because federation->addModel doesn't yet populate SessionState's
-    // model mapping; modelIds() reflects pre-add state at this point.
-    if (session.modelIds().isEmpty()) {
+    // model mapping; sessionModelIds() reflects pre-add state at this point.
+    if (session.sessionModelIds().isEmpty()) {
         armFederatedFalseOriginGuess();
     }
 
     QStringList accepted_paths;
-    QStringList accepted_fed_ids;
+    QStringList accepted_model_ids;
     for (const auto& path : paths) {
-        const QString fed_id = session.federation()->addModel(path);
-        if (fed_id.isEmpty()) continue;
+        const QString model_id =
+            session.federation()->addModel(path, QFileInfo(path).fileName());
+        if (model_id.isEmpty()) continue;
         accepted_paths << path;
-        accepted_fed_ids << fed_id;
+        accepted_model_ids << model_id;
     }
-    detail::loadModels(session, accepted_paths, accepted_fed_ids);
+    detail::loadModels(session, accepted_paths, accepted_model_ids);
     session.notifyModelsChanged();
 }
 
@@ -317,15 +389,15 @@ void addModelFromCloud(SessionState& session, QWidget& host) {
     proc->call("pull_models_interactive", QJsonValue(),
         [sguard, connector_id](const QJsonValue& result) {
             if (!sguard) return;
-            // Arm before the first addCloudModel — modelIds() reflects the
+            // Arm before the first addCloudModel — sessionModelIds() reflects the
             // session state at the moment the connector returns, which is
             // when the user's "add into empty session" intent applies.
-            if (sguard->modelIds().isEmpty()) {
+            if (sguard->sessionModelIds().isEmpty()) {
                 armFederatedFalseOriginGuess();
             }
             const QJsonArray arr = result.toArray();
             QStringList paths;
-            QStringList fed_ids;
+            QStringList model_ids;
             int added = 0;
             for (const QJsonValue& value : arr) {
                 if (value.isNull() || !value.isObject()) continue;
@@ -337,19 +409,19 @@ void addModelFromCloud(SessionState& session, QWidget& host) {
                 QString src_connector = source.value("connector").toString();
                 if (src_connector.isEmpty()) src_connector = connector_id;
 
-                const QString fed_id = sguard->federation()->addCloudModel(
+                const QString model_id = sguard->federation()->addCloudModel(
                     display_name, src_connector, source);
-                if (fed_id.isEmpty()) continue;
+                if (model_id.isEmpty()) continue;
 
                 const QJsonObject meta = entry.value("metadata").toObject();
-                sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+                sguard->setCloudMetadata(model_id, meta.toVariantMap());
 
                 paths << path;
-                fed_ids << fed_id;
+                model_ids << model_id;
                 ++added;
             }
             if (!paths.isEmpty()) {
-                detail::loadModels(*sguard, paths, fed_ids);
+                detail::loadModels(*sguard, paths, model_ids);
                 sguard->notifyModelsChanged();
             }
             sguard->setStatusMessage("Cloud",
@@ -368,28 +440,28 @@ void addModelFromCloud(SessionState& session, QWidget& host) {
 namespace {
 
 // Shared "local path on disk" lookup for the right-click cloud commands:
-// the loader keeps the path keyed by model_id (set when a file or pull_models
+// the loader keeps the path keyed by session_model_id (set when a file or pull_models
 // path was queued). Both local-sourced and resolved cloud-sourced models
 // have one; only un-resolved cloud models (where pull_models hasn't
 // returned yet) won't.
-QString localPathForModel(SessionState& session, const QString& fed_id) {
-    const uint32_t model_id = session.modelIdForFedId(fed_id);
-    if (model_id == 0 || !session.loader()) return {};
-    return session.loader()->filePath(model_id);
+QString localPathForModel(SessionState& session, const QString& model_id) {
+    const uint32_t session_model_id = session.sessionModelIdForModelId(model_id);
+    if (session_model_id == 0 || !session.loader()) return {};
+    return session.loader()->filePath(session_model_id);
 }
 
 } // namespace
 
-void saveModelToCloud(SessionState& session, QWidget& host, const QString& fed_id) {
+void saveModelToCloud(SessionState& session, QWidget& host, const QString& model_id) {
     auto* federation = session.federation();
-    const Federation::Model* model = federation->findById(fed_id);
+    const Federation::Model* model = federation->findById(model_id);
     if (!model) return;
     if (model->source_connector == "local") {
         QMessageBox::information(&host, "Save Model To Cloud",
             "This model has no cloud target. Use \"Save As To Cloud\" first.");
         return;
     }
-    const QString local_path = localPathForModel(session, fed_id);
+    const QString local_path = localPathForModel(session, model_id);
     if (local_path.isEmpty()) {
         QMessageBox::warning(&host, "Save Model To Cloud",
             "Cannot find a local copy of this model to push.");
@@ -416,15 +488,15 @@ void saveModelToCloud(SessionState& session, QWidget& host, const QString& fed_i
 
     QPointer<SessionState> sguard(&session);
     proc->call("push_model", params,
-        [sguard, fed_id, connector_id](const QJsonValue& result) {
+        [sguard, model_id, connector_id](const QJsonValue& result) {
             if (!sguard) return;
             const QJsonObject obj = result.toObject();
             const QJsonObject new_source = obj.value("source").toObject();
             QString new_connector = new_source.value("connector").toString();
             if (new_connector.isEmpty()) new_connector = connector_id;
-            sguard->federation()->setModelSource(fed_id, new_connector, new_source);
+            sguard->federation()->setModelSource(model_id, new_connector, new_source);
             const QJsonObject meta = obj.value("metadata").toObject();
-            sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+            sguard->setCloudMetadata(model_id, meta.toVariantMap());
             sguard->setStatusMessage("Cloud",
                 QString("Saved to %1").arg(new_connector));
         },
@@ -438,10 +510,10 @@ void saveModelToCloud(SessionState& session, QWidget& host, const QString& fed_i
         });
 }
 
-void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& fed_id) {
-    const Federation::Model* model = session.federation()->findById(fed_id);
+void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& model_id) {
+    const Federation::Model* model = session.federation()->findById(model_id);
     if (!model) return;
-    const QString local_path = localPathForModel(session, fed_id);
+    const QString local_path = localPathForModel(session, model_id);
     if (local_path.isEmpty()) {
         QMessageBox::warning(&host, "Save Model As To Cloud",
             "Cannot find a local copy of this model to push.");
@@ -480,20 +552,20 @@ void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& fed
 
     QPointer<SessionState> sguard(&session);
     proc->call("push_model_interactive", params,
-        [sguard, fed_id, connector_id](const QJsonValue& result) {
+        [sguard, model_id, connector_id](const QJsonValue& result) {
             if (!sguard) return;
             const QJsonObject obj = result.toObject();
             const QJsonObject new_source = obj.value("source").toObject();
             QString new_connector = new_source.value("connector").toString();
             if (new_connector.isEmpty()) new_connector = connector_id;
-            sguard->federation()->setModelSource(fed_id, new_connector, new_source);
+            sguard->federation()->setModelSource(model_id, new_connector, new_source);
 
             const QString new_name = obj.value("display_name").toString();
             if (!new_name.isEmpty()) {
-                sguard->federation()->setModelDisplayName(fed_id, new_name);
+                sguard->federation()->setModelDisplayName(model_id, new_name);
             }
             const QJsonObject meta = obj.value("metadata").toObject();
-            sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+            sguard->setCloudMetadata(model_id, meta.toVariantMap());
             sguard->setStatusMessage("Cloud",
                 QString("Pushed to %1").arg(new_connector));
         },

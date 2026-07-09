@@ -125,7 +125,7 @@ bool parseSidecarElementMetadata(const uint8_t* data, size_t n, SidecarData& out
     return true;
 }
 
-std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_path) {
+std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path) {
     const std::string path = sidecarPath(ifc_path);
     FILE* f = std::fopen(path.c_str(), "rb");
     if (!f) return std::nullopt;

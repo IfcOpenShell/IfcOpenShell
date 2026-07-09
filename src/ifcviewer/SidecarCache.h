@@ -115,7 +115,7 @@ struct SidecarChunk {
 // into a separate string table.
 struct ElementTableRecord {
     uint32_t object_id;
-    uint32_t model_id;
+    uint32_t session_model_id;
     int32_t  ifc_id;
     uint32_t guid_offset;
     uint32_t guid_length;

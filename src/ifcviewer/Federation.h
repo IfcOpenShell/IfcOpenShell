@@ -244,8 +244,10 @@ public:
 
     // Mutations
     void clear();
+    // display_name is stored verbatim — callers decide the label (typically
+    // QFileInfo(source_path).fileName() for local files). No implicit fallback.
     QString addModel(const QString& source_path,
-                     const QString& display_name = QString());
+                     const QString& display_name);
     // Add a model whose source is a cloud connector (anything other than
     // "local"). `source_data` holds the connector-specific keys; the
     // top-level "connector" field, if present, is overwritten with
@@ -253,28 +255,28 @@ public:
     QString addCloudModel(const QString& display_name,
                           const QString& connector_id,
                           const QJsonObject& source_data);
-    void removeModel(const QString& fed_id);
+    void removeModel(const QString& model_id);
     void setHomeView(const HomeView& hv);
     void clearHomeView();
 
     void setConfig(const FederationConfig&);
     void setFederatedFalseOrigin(const FederatedFalseOrigin&);
-    void setModelTransformation(const QString& fed_id, const ModelTransformation&);
-    void setModelVisible(const QString& fed_id, bool visible);
-    // Rename a model. No-op when fed_id is unknown, name is empty, or
+    void setModelTransformation(const QString& model_id, const ModelTransformation&);
+    void setModelVisible(const QString& model_id, bool visible);
+    // Rename a model. No-op when model_id is unknown, name is empty, or
     // name is unchanged.
-    void setModelDisplayName(const QString& fed_id, const QString& display_name);
+    void setModelDisplayName(const QString& model_id, const QString& display_name);
     // Replace a model's source. Used after push_model[_interactive] when
     // the connector reports a fresh source (e.g. a new version_id) or when
     // a previously-local model gets uploaded for the first time. The
     // top-level "connector" key in `source_data`, if any, is dropped —
     // it's expressed via `connector_id`.
-    void setModelSource(const QString& fed_id,
+    void setModelSource(const QString& model_id,
                         const QString& connector_id,
                         const QJsonObject& source_data);
     // Reassign a model to a group (or to root, when group_id is empty).
-    // No-op when fed_id is unknown or group_id is unknown-and-non-empty.
-    void setModelGroup(const QString& fed_id, const QString& group_id);
+    // No-op when model_id is unknown or group_id is unknown-and-non-empty.
+    void setModelGroup(const QString& model_id, const QString& group_id);
 
     // Group mutations.  All return / accept stable group ids.
     QString addGroup(const QString& display_name = QString(),
@@ -292,7 +294,7 @@ public:
 
     // Accessors
     const std::vector<Model>& models() const { return models_; }
-    const Model* findById(const QString& fed_id) const;
+    const Model* findById(const QString& model_id) const;
     // Top-level groups in insertion order; descend via Group::children.
     const std::vector<std::unique_ptr<Group>>& rootGroups() const { return root_groups_; }
     const Group* findGroupById(const QString& group_id) const;
@@ -304,7 +306,7 @@ public:
     bool isGroupChainVisible(const QString& group_id) const;
     // True iff the model exists, its own `visible` is true, and every
     // ancestor group is visible.
-    bool isModelEffectivelyVisible(const QString& fed_id) const;
+    bool isModelEffectivelyVisible(const QString& model_id) const;
     bool isDirty() const { return dirty_; }
     void markClean();
     QString filePath() const { return file_path_; }
@@ -332,14 +334,14 @@ signals:
     // to dirtyChanged from the corresponding setters.
     void configChanged();
     void federatedFalseOriginChanged();
-    void modelAdded(const QString& fed_id);
-    void modelRemoved(const QString& fed_id);
-    void modelTransformationChanged(const QString& fed_id);
-    void modelVisibilityChanged(const QString& fed_id, bool visible);
-    void modelGroupChanged(const QString& fed_id, const QString& group_id);
+    void modelAdded(const QString& model_id);
+    void modelRemoved(const QString& model_id);
+    void modelTransformationChanged(const QString& model_id);
+    void modelVisibilityChanged(const QString& model_id, bool visible);
+    void modelGroupChanged(const QString& model_id, const QString& group_id);
     // Emitted on rename / source change — anything that affects how the
     // model is displayed but is not covered by the other granular signals.
-    void modelChanged(const QString& fed_id);
+    void modelChanged(const QString& model_id);
 
     void groupAdded(const QString& group_id);
     void groupRemoved(const QString& group_id);

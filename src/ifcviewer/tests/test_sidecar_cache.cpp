@@ -87,7 +87,7 @@ SidecarData buildFixture() {
         inst.mesh_id   = (i < 3) ? 0u : 1u;
         inst.object_id = uint32_t(100 + i);
         inst.color_override_rgba8 = uint32_t(0xAA000000u | (i * 0x010203u));
-        inst.model_id  = 1;
+        inst.session_model_id  = 1;
         for (int k = 0; k < 16; ++k) {
             inst.placement_transformation[k] = double(i) * 0.25 + double(k);
             inst.transform[k]                = float(i) * 0.5f  + float(k);
@@ -111,7 +111,7 @@ SidecarData buildFixture() {
     for (size_t i = 0; i < sd.elements.size(); ++i) {
         ElementTableRecord& e = sd.elements[i];
         e.object_id = uint32_t(100 + i);
-        e.model_id  = 1;
+        e.session_model_id  = 1;
         e.ifc_id    = int32_t(1000 + i);
         e.guid_offset = 0;  e.guid_length = 0;
         e.name_offset = 1;  e.name_length = 4;   // "Wall"

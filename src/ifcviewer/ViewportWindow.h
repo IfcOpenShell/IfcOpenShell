@@ -108,7 +108,7 @@ public:
 
     // Synchronous metadata load + GPU upload. Requires wgpu init to have
     // completed (i.e. the window has been exposed at least once). Returns
-    // the assigned model_id, or 0 on failure. Reads metadata only (mesh
+    // the assigned session_model_id, or 0 on failure. Reads metadata only (mesh
     // dict + instance dict + georef); per-chunk vertex / index bytes are
     // read on demand by the per-frame loader as chunks become visible.
     uint32_t loadSidecar(const std::string& path);
@@ -118,7 +118,7 @@ public:
     // unclaimed and is_resident=false. The per-frame loader
     // (driveStreamingLoads) sub-allocates the chunk's vertex + index
     // ranges from pool_ on demand as cull flags them visible.
-    void applyCachedModel(uint32_t model_id,
+    void applyCachedModel(uint32_t session_model_id,
                           struct StreamingSidecar metadata);
 
     // Direct-IFC ingestion (mirrors GL ViewportWindow). The host (typically
@@ -129,20 +129,20 @@ public:
     // staged data, allocates pool slices, and uploads — same render path
     // as a sidecar load. Bytes are gathered from memory (no disk I/O), so
     // every chunk lands `is_resident=true` immediately. The streamer's
-    // model_id is passed through unchanged; the viewport's globally-unique
+    // session_model_id is passed through unchanged; the viewport's globally-unique
     // object_id rebasing happens at finalize time.
     void uploadStreamedMesh(const struct StreamedMesh& mesh);
     void uploadStreamedInstance(const struct StreamedInstance& instance_record);
-    void finalizeModel(uint32_t model_id);
+    void finalizeModel(uint32_t session_model_id);
 
-    void removeModel(uint32_t model_id);
+    void removeModel(uint32_t session_model_id);
     void resetScene();
 
     // Model-level visibility. Mirrors the GL ViewportWindow API — flips
     // ModelGpuData::hidden, which every render/pick/cull pass already
     // consults. requestUpdate() so the change is visible immediately.
-    void hideModel(uint32_t model_id);
-    void showModel(uint32_t model_id);
+    void hideModel(uint32_t session_model_id);
+    void showModel(uint32_t session_model_id);
 
     // Federation pipeline: composed instance transform =
     //   FederatedFalseOrigin · ModelTransformation · CoordinateOperation
@@ -153,9 +153,9 @@ public:
     // integration compiles against these signatures; visual georef parity
     // arrives with the recompose+SSBO-rewrite work tracked separately.
     void setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters);
-    void setModelCoordinateOperation(uint32_t model_id,
+    void setModelCoordinateOperation(uint32_t session_model_id,
                                      const Eigen::Matrix4d& matrix_meters);
-    void setModelTransformation(uint32_t model_id,
+    void setModelTransformation(uint32_t session_model_id,
                                 const Eigen::Matrix4d& matrix_meters);
 
     size_t modelCount() const { return models_gpu_.size(); }
@@ -247,6 +247,7 @@ public:
     // Sources the shared binding table from ViewportCore; called from init
     // (env / persisted setting) and live from the Settings dialog.
     void applyNavPreset(const char* name);
+    void setBackfaceCulling(bool enabled);
 
 
     // Queue a one-shot framebuffer capture: the next rendered frame is
@@ -378,11 +379,11 @@ public:
     // CPU mesh shadow: positions (3 floats/vert, mesh-local) + indices
     // (LOD0). Populated at applyCachedModel / applyStreamedChunk —
     // returns false if the mesh isn't loaded yet (streaming) or the
-    // (model_id, mesh_id) pair doesn't resolve. Matches the GL
+    // (session_model_id, mesh_id) pair doesn't resolve. Matches the GL
     // ViewportWindow::MeshTriangles + readbackMeshTriangles shape so
     // the measure tools port verbatim.
     using MeshTriangles = ModelGpuData::MeshTriangles;
-    bool  readbackMeshTriangles(uint32_t model_id, uint32_t mesh_id,
+    bool  readbackMeshTriangles(uint32_t session_model_id, uint32_t mesh_id,
                                 MeshTriangles& out) const;
 
     // Pure CPU lookup: object_id → owning model + mesh + raw placement
@@ -401,7 +402,8 @@ public:
     // (ViewportView::guessFederatedFalseOriginFromFirstModel) consumes
     // this lazily on modelGeometryReady. Returns false when the model
     // is unknown or has no instances.
-    bool firstGeometryPointWorldM(uint32_t model_id,
+    uint32_t modelObjectIdBase(uint32_t session_model_id) const;
+    bool firstGeometryPointWorldM(uint32_t session_model_id,
                                   Eigen::Vector3d& out) const;
 
     // Re-frame the camera onto the federated false origin in post-shift
@@ -421,7 +423,7 @@ public:
     // Unlike viewAll() this *never* iterates all loaded models — it
     // frames around the specific model the guess fired for, ignoring
     // models with bad coordinates elsewhere in the session.
-    void frameOnFederatedOrigin(uint32_t model_id, float max_distance_m);
+    void frameOnFederatedOrigin(uint32_t session_model_id, float max_distance_m);
 
     // Selection accessor. Exposed for callers (bonsai's volume readout)
     // that need to read selectionIds() / activeObjectId(). Mutation goes
@@ -578,11 +580,11 @@ private:
     // stayed during the move and forwards to core_ — once every internal
     // caller routes through ViewportCore directly the forwarder goes away.
 
-    // Walk every instance of `model_id`, recompose its transform from the
+    // Walk every instance of `session_model_id`, recompose its transform from the
     // current federation matrices, refresh per-chunk world AABBs, and
     // re-upload InstanceGpu[] into m.instance_storage. No-op if the model
     // is unknown, has no instances, or wgpu init hasn't completed.
-    void recomposeAndUploadModel(uint32_t model_id);
+    void recomposeAndUploadModel(uint32_t session_model_id);
 
     bool& wgpu_initialized_;
     int& configured_w_;
@@ -900,7 +902,7 @@ private:
 
     // Per-model state aliases (storage in core_).
     std::unordered_map<uint32_t, ModelGpuData>& models_gpu_;
-    uint32_t& next_model_id_;
+    uint32_t& next_session_model_id_;
     uint32_t& next_object_id_;
 
     // Sidecar paths queued before init completes.

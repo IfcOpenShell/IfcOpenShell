@@ -150,8 +150,8 @@ void AreaMeasurement::clear(ViewportWindow& vp) {
 
 AreaMeasurement::MeshAdj*
 AreaMeasurement::meshAdj(ViewportWindow& vp,
-                             uint32_t model_id, uint32_t mesh_id) {
-    const uint64_t key = (uint64_t(model_id) << 32) | uint64_t(mesh_id);
+                             uint32_t session_model_id, uint32_t mesh_id) {
+    const uint64_t key = (uint64_t(session_model_id) << 32) | uint64_t(mesh_id);
     auto it = mesh_cache_.find(key);
     if (it != mesh_cache_.end()) return &it->second;
 
@@ -160,7 +160,7 @@ AreaMeasurement::meshAdj(ViewportWindow& vp,
     // and live in the viewport already), so just look them up freshly
     // each time the user picks a brand-new mesh.
     ViewportWindow::MeshTriangles tris;
-    if (!vp.readbackMeshTriangles(model_id, mesh_id, tris)) return nullptr;
+    if (!vp.readbackMeshTriangles(session_model_id, mesh_id, tris)) return nullptr;
     if (tris.indices.size() < 3) return nullptr;
 
     MeshAdj a;
@@ -196,11 +196,11 @@ void AreaMeasurement::onPick(ViewportWindow& vp,
     if (!vp.pickMeshLocalAt(x_phys, y_phys, pick)) return;
 
     ViewportWindow::MeshTriangles tris;
-    if (!vp.readbackMeshTriangles(pick.model_id, pick.mesh_id, tris)) return;
+    if (!vp.readbackMeshTriangles(pick.session_model_id, pick.mesh_id, tris)) return;
     const size_t n_tris = tris.indices.size() / 3;
     if (n_tris == 0) return;
 
-    MeshAdj* adj = meshAdj(vp, pick.model_id, pick.mesh_id);
+    MeshAdj* adj = meshAdj(vp, pick.session_model_id, pick.mesh_id);
     if (!adj) return;
 
     // Seed: the triangle whose interior (or boundary) is closest to the
@@ -266,7 +266,7 @@ void AreaMeasurement::onPick(ViewportWindow& vp,
             }
         } else {
             SelectedTri sel;
-            sel.model_id = pick.model_id;
+            sel.session_model_id = pick.session_model_id;
             sel.mesh_id  = pick.mesh_id;
             sel.tri      = t;
             std::memcpy(sel.composed_transform, pick.composed_transform,
@@ -298,25 +298,25 @@ void AreaMeasurement::rebuildHighlightAndLabels(ViewportWindow& vp) {
     // to avoid repeated viewport lookups when many tris share a mesh.
     std::unordered_map<uint64_t, ViewportWindow::MeshTriangles> tris_cache;
 
-    auto get_tris = [&](uint32_t model_id, uint32_t mesh_id)
+    auto get_tris = [&](uint32_t session_model_id, uint32_t mesh_id)
                        -> ViewportWindow::MeshTriangles* {
-        const uint64_t k = (uint64_t(model_id) << 32) | uint64_t(mesh_id);
+        const uint64_t k = (uint64_t(session_model_id) << 32) | uint64_t(mesh_id);
         auto it = tris_cache.find(k);
         if (it != tris_cache.end()) return &it->second;
-        ViewportWindow::MeshTriangles t;
-        if (!vp.readbackMeshTriangles(model_id, mesh_id, t)) return nullptr;
-        return &tris_cache.emplace(k, std::move(t)).first->second;
+        ViewportWindow::MeshTriangles tris;
+        if (!vp.readbackMeshTriangles(session_model_id, mesh_id, tris)) return nullptr;
+        return &tris_cache.emplace(k, std::move(tris)).first->second;
     };
 
     for (const auto& [key, sel] : selected_) {
-        ViewportWindow::MeshTriangles* t = get_tris(sel.model_id, sel.mesh_id);
-        if (!t) continue;
-        if (size_t(sel.tri) * 3 + 2 >= t->indices.size()) continue;
+        ViewportWindow::MeshTriangles* tris = get_tris(sel.session_model_id, sel.mesh_id);
+        if (!tris) continue;
+        if (size_t(sel.tri) * 3 + 2 >= tris->indices.size()) continue;
         const float* M = sel.composed_transform;  // column-major
         for (int e = 0; e < 3; ++e) {
-            const uint32_t vi = t->indices[3 * sel.tri + e];
-            if (3 * vi + 2 >= t->positions.size()) continue;
-            const float* p = &t->positions[3 * vi];
+            const uint32_t vi = tris->indices[3 * sel.tri + e];
+            if (3 * vi + 2 >= tris->positions.size()) continue;
+            const float* p = &tris->positions[3 * vi];
             // World = M * (p, 1). Column-major: M[col*4 + row].
             const float wx = M[0]*p[0] + M[4]*p[1] + M[8]*p[2]  + M[12];
             const float wy = M[1]*p[0] + M[5]*p[1] + M[9]*p[2]  + M[13];
@@ -342,9 +342,9 @@ void AreaMeasurement::rebuildHighlightAndLabels(ViewportWindow& vp) {
     for (const auto& [obj_id, sels] : by_object) {
         if (sels.empty()) continue;
         const SelectedTri& any = *sels[0];
-        ViewportWindow::MeshTriangles* t = get_tris(any.model_id, any.mesh_id);
-        if (!t) continue;
-        MeshAdj* adj = meshAdj(vp, any.model_id, any.mesh_id);
+        ViewportWindow::MeshTriangles* tris = get_tris(any.session_model_id, any.mesh_id);
+        if (!tris) continue;
+        MeshAdj* adj = meshAdj(vp, any.session_model_id, any.mesh_id);
         if (!adj) continue;
 
         std::unordered_set<uint32_t> remaining;
@@ -360,10 +360,10 @@ void AreaMeasurement::rebuildHighlightAndLabels(ViewportWindow& vp) {
             while (!frontier.empty()) {
                 const uint32_t tri = frontier.front(); frontier.pop();
                 component.push_back(tri);
-                if (size_t(tri) * 3 + 2 >= t->indices.size()) continue;
+                if (size_t(tri) * 3 + 2 >= tris->indices.size()) continue;
                 for (int e = 0; e < 3; ++e) {
-                    const uint32_t ia = t->indices[3 * tri + e];
-                    const uint32_t ib = t->indices[3 * tri + (e + 1) % 3];
+                    const uint32_t ia = tris->indices[3 * tri + e];
+                    const uint32_t ib = tris->indices[3 * tri + (e + 1) % 3];
                     auto eit = adj->edges.find(edgeKey(ia, ib));
                     if (eit == adj->edges.end()) continue;
                     for (uint32_t nt : eit->second) {
@@ -380,12 +380,12 @@ void AreaMeasurement::rebuildHighlightAndLabels(ViewportWindow& vp) {
                 if (size_t(tri) >= adj->tri_areas.size()) continue;
                 const double a = adj->tri_areas[tri];
                 area += a;
-                const uint32_t ia = t->indices[3 * tri + 0];
-                const uint32_t ib = t->indices[3 * tri + 1];
-                const uint32_t ic = t->indices[3 * tri + 2];
-                const float* va = &t->positions[3 * ia];
-                const float* vb = &t->positions[3 * ib];
-                const float* vc = &t->positions[3 * ic];
+                const uint32_t ia = tris->indices[3 * tri + 0];
+                const uint32_t ib = tris->indices[3 * tri + 1];
+                const uint32_t ic = tris->indices[3 * tri + 2];
+                const float* va = &tris->positions[3 * ia];
+                const float* vb = &tris->positions[3 * ib];
+                const float* vc = &tris->positions[3 * ic];
                 cx += a * (double(va[0]) + vb[0] + vc[0]) / 3.0;
                 cy += a * (double(va[1]) + vb[1] + vc[1]) / 3.0;
                 cz += a * (double(va[2]) + vb[2] + vc[2]) / 3.0;

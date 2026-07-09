@@ -21,6 +21,7 @@
 #include "MainWindow.h"
 #include "ViewerSettings.h"
 #include "components/Style.h"
+#include "modules/models/Commands.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
@@ -41,7 +42,10 @@ void installUiFont() {
         }
     }
     if (!family.isEmpty()) {
-        QApplication::setFont(QFont(family, 10));
+        // Slightly smaller base font to fit more data. Panel titles keep their
+        // own explicit size (QLabel#panelTitleText in Style.cpp), so they're
+        // unaffected by this.
+        QApplication::setFont(QFont(family, 9));
     }
 }
 
@@ -51,6 +55,9 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     app.setApplicationName("Bonsai Viewer");
     app.setOrganizationName("IfcOpenShell");
+
+    // Clear any .rdbview extractions left in temp by a previous session.
+    bonsaiviewer::modules::models::commands::cleanupRdbviewCache();
 
     QSurfaceFormat fmt;
     fmt.setVersion(4, 5);

@@ -69,7 +69,7 @@ struct StreamingSidecar {
 // Read just the metadata + section offsets. Returns nullopt on any I/O or
 // version error (same failure modes as readSidecar). The file is closed
 // before return — callers re-open for per-chunk reads.
-std::optional<StreamingSidecar> readSidecarMetadataOnly(const std::string& ifc_path);
+std::optional<StreamingSidecar> readSidecarMetadata(const std::string& ifc_path);
 
 // Read + decompress one chunk's geometry (v16) from disk: the vertex zstd frame
 // at [geometry_section_offset + v_comp_off, +v_comp_size) → out_vbytes (v_raw

@@ -100,7 +100,7 @@ void AddModelDialog::setupUi() {
         {SourceMode::IfcDatabase, "Add IFC\nDatabase", ":/icons/database.svg",
          "Add IFC RDB databases for optimised performance"},
         {SourceMode::GeometryOnly, "Add Geometry", ":/icons/cube-bandage.svg",
-         "Add pure geometry for fast visualisation"},
+         "Add a viewer cache (.ifcview) or geometry database (.rdbview) for fast visualisation"},
     };
     const QList<Choice> cloud_choices = {
         {SourceMode::CloudModel, "Add From\nCloud", ":/icons/cloud-square.svg",

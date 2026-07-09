@@ -69,13 +69,13 @@ void composeInstance(
 // / ModelTransformation) — the same convention as InstanceInfo so the
 // measurement / picking tools can re-compose at need.
 struct InstanceLookup {
-    uint32_t model_id = 0;
+    uint32_t session_model_id = 0;
     uint32_t mesh_id  = 0;
     double   placement_transformation[16]{};
 };
 
 // Walk a map of models looking for the one that owns `object_id`,
-// fill `out` with that instance's (model_id, mesh_id, placement) and
+// fill `out` with that instance's (session_model_id, mesh_id, placement) and
 // return true. Returns false for object_id == 0 (the sentinel for
 // "no object") or when no model owns the id. Defensive: skips
 // instances whose stored index is out-of-range for the model's

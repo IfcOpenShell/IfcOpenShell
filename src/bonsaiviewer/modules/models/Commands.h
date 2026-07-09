@@ -58,7 +58,7 @@ void renameGroup(SessionState& session, QWidget& host, const QString& group_id);
 void moveGroup(SessionState& session, const QString& id, const QString& parent_group_id);
 void moveModels(SessionState& session, const QStringList& ids, const QString& parent_group_id);
 void removeGroup(SessionState& session, QWidget& host, const QString& group_id);
-void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& fed_id);
+void removeModel(SessionState& session, ViewportWindow& viewport, QWidget& host, const QString& model_id);
 void addModel(SessionState& session, QWidget& host);
 // Connector picker → pull_models_interactive → addCloudModel + load.
 // Reachable from AddModelDialog's CloudModel button; the underlying call
@@ -66,13 +66,17 @@ void addModel(SessionState& session, QWidget& host);
 void addModelFromCloud(SessionState& session, QWidget& host);
 // push_model: push a cloud-sourced model back to its existing target.
 // Only valid when model.source_connector != "local". Async.
-void saveModelToCloud(SessionState& session, QWidget& host, const QString& fed_id);
+void saveModelToCloud(SessionState& session, QWidget& host, const QString& model_id);
 // push_model_interactive: pick a connector and push to a fresh cloud
 // target. Valid for any model (local or already cloud-sourced). Async.
-void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& fed_id);
+void saveModelAsToCloud(SessionState& session, QWidget& host, const QString& model_id);
 void convertIfcToDatabase(SessionState& session, QWidget& host);
 void exportGeometryDatabase(SessionState& session, QWidget& host);
 void openSettings(SessionState& session, QWidget& host);
+
+// Remove the scratch dir used to unzip .rdbview bundles for loading. Call once
+// at startup to clear extractions left over from previous sessions.
+void cleanupRdbviewCache();
 
 // Internal building blocks shared by commands here and by ProjectController.
 // These NEVER call notify*() — the caller is responsible for emitting once
@@ -80,7 +84,7 @@ void openSettings(SessionState& session, QWidget& host);
 namespace detail {
 
 // Queues already-federated models on the loader and maps their federation-ids to mids.
-void loadModels(SessionState& session, const QStringList& paths, const QStringList& fed_ids);
+void loadModels(SessionState& session, const QStringList& paths, const QStringList& model_ids);
 
 } // namespace detail
 

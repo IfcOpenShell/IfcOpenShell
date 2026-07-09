@@ -31,9 +31,12 @@
 
 #include <Eigen/Dense>
 
-#include <boost/math/constants/constants.hpp>
-
 #include <cmath>
+
+// pi as float. A plain constant rather than boost::math::constants so this
+// header stays dependency-light and compiles under the Emscripten sysroot
+// (which has no Boost) — CameraMath is shared by the desktop and web builds.
+inline constexpr float kPiF = 3.14159265358979323846f;
 
 inline Eigen::Matrix4f lookAtRH(const Eigen::Vector3f& eye,
                                 const Eigen::Vector3f& target,
@@ -50,7 +53,7 @@ inline Eigen::Matrix4f lookAtRH(const Eigen::Vector3f& eye,
 
 inline Eigen::Matrix4f perspectiveYFovGL(float fovy_deg, float aspect,
                                          float near_plane, float far_plane) {
-    const float fovy_rad = fovy_deg * boost::math::constants::pi<float>() / 180.0f;
+    const float fovy_rad = fovy_deg * kPiF / 180.0f;
     const float t = std::tan(fovy_rad * 0.5f);
     Eigen::Matrix4f m = Eigen::Matrix4f::Zero();
     m(0, 0) = 1.0f / (aspect * t);

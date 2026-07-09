@@ -212,7 +212,7 @@ SettingsView::SettingsView(SettingsDialog* widget,
 {
 }
 
-void SettingsView::refresh(const QString& fed_id) const {
+void SettingsView::refresh(const QString& model_id) const {
     if (!widget_) {
         return;
     }
@@ -228,18 +228,18 @@ void SettingsView::refresh(const QString& fed_id) const {
         return;
     }
 
-    const uint32_t model_id = session_state_->modelIdForFedId(fed_id);
-    if (model_id == 0) {
+    const uint32_t session_model_id = session_state_->sessionModelIdForModelId(model_id);
+    if (session_model_id == 0) {
         widget_->renderSelectedModelGeoref(unknownState("Not loaded", "No live model"));
         return;
     }
 
-    if (auto* ifc_file = loader->ifcFile(model_id)) {
+    if (auto* ifc_file = loader->ifcFile(session_model_id)) {
         widget_->renderSelectedModelGeoref(stateFromLiveFile(ifc_file));
         return;
     }
 
-    const ModelGeoref* georef = loader->modelGeoref(model_id);
+    const ModelGeoref* georef = loader->modelGeoref(session_model_id);
     if (!georef) {
         widget_->renderSelectedModelGeoref(unknownState("Not available yet", "No data source"));
         return;

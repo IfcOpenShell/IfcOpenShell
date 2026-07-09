@@ -56,9 +56,9 @@ namespace {
 void clearScene(SessionState& session, ViewportWindow& viewport) {
     viewport.setSelectedObjectId(0);
     session.setSelectedObjectId(0);
-    for (uint32_t model_id : session.modelIds()) {
-        viewport.removeModel(model_id);
-        session.loader()->removeModel(model_id);
+    for (uint32_t session_model_id : session.sessionModelIds()) {
+        viewport.removeModel(session_model_id);
+        session.loader()->removeModel(session_model_id);
     }
     session.clearModelMappings();
     session.elementRegistry()->clear();
@@ -81,7 +81,7 @@ bool confirmDiscardIfDirty(SessionState& session, QWidget& host) {
 // Fire-and-forget async resolution of any non-local models in the
 // federation. Groups by source_connector and issues one pull_models per
 // group. For each returned entry:
-//   - if the fed_id already has a scene entry pointed at the same path,
+//   - if the model_id already has a scene entry pointed at the same path,
 //     just refresh cloud metadata (no reload, preserves view state);
 //   - if the path differs, tear down the stale scene entry and queue a
 //     fresh load (federation entry is preserved either way);
@@ -90,21 +90,21 @@ bool confirmDiscardIfDirty(SessionState& session, QWidget& host) {
 // has already shown its own UI.
 void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
     auto* federation = session.federation();
-    QHash<QString, QStringList> connector_to_fed_ids;
+    QHash<QString, QStringList> connector_to_model_ids;
     for (const auto& model : federation->models()) {
         if (model.source_connector == "local") continue;
-        connector_to_fed_ids[model.source_connector].push_back(model.id);
+        connector_to_model_ids[model.source_connector].push_back(model.id);
     }
-    if (connector_to_fed_ids.isEmpty()) return;
+    if (connector_to_model_ids.isEmpty()) return;
 
     auto* registry = session.connectorRegistry();
     QPointer<SessionState> sguard(&session);
     QPointer<ViewportWindow> vguard(&viewport);
 
-    for (auto it = connector_to_fed_ids.constBegin();
-              it != connector_to_fed_ids.constEnd(); ++it) {
+    for (auto it = connector_to_model_ids.constBegin();
+              it != connector_to_model_ids.constEnd(); ++it) {
         const QString connector_id = it.key();
-        const QStringList fed_ids = it.value();
+        const QStringList model_ids = it.value();
 
         auto* proc = registry->get(connector_id);
         if (!proc) {
@@ -114,8 +114,8 @@ void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
         }
 
         QJsonArray params;
-        for (const QString& fed_id : fed_ids) {
-            const Federation::Model* model = federation->findById(fed_id);
+        for (const QString& model_id : model_ids) {
+            const Federation::Model* model = federation->findById(model_id);
             if (!model) continue;
             QJsonObject source = model->source_data;
             source["connector"] = model->source_connector;
@@ -127,25 +127,25 @@ void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
         }
 
         proc->call("pull_models", params,
-            [sguard, vguard, fed_ids](const QJsonValue& result) {
+            [sguard, vguard, model_ids](const QJsonValue& result) {
                 if (!sguard) return;
                 const QJsonArray arr = result.toArray();
                 QStringList paths_to_load;
-                QStringList fed_ids_to_load;
+                QStringList model_ids_to_load;
                 bool any_detached = false;
-                for (int i = 0; i < arr.size() && i < fed_ids.size(); ++i) {
+                for (int i = 0; i < arr.size() && i < model_ids.size(); ++i) {
                     if (arr[i].isNull()) continue;
                     const QJsonObject obj = arr[i].toObject();
                     const QString new_path = obj.value("path").toString();
                     if (new_path.isEmpty()) continue;
-                    const QString fed_id = fed_ids[i];
+                    const QString model_id = model_ids[i];
                     const QJsonObject meta = obj.value("metadata").toObject();
 
-                    const uint32_t existing_mid = sguard->modelIdForFedId(fed_id);
+                    const uint32_t existing_mid = sguard->sessionModelIdForModelId(model_id);
                     if (existing_mid != 0 && sguard->loader()) {
                         const QString existing_path = sguard->loader()->filePath(existing_mid);
                         if (QDir::cleanPath(existing_path) == QDir::cleanPath(new_path)) {
-                            sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+                            sguard->setCloudMetadata(model_id, meta.toVariantMap());
                             continue;
                         }
                         // Path changed (new revision lives in a fresh cache dir).
@@ -153,13 +153,13 @@ void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
                         if (vguard) vguard->removeModel(existing_mid);
                         sguard->loader()->removeModel(existing_mid);
                         sguard->elementRegistry()->removeModel(existing_mid);
-                        sguard->removeModelMappingByFedId(fed_id);
+                        sguard->removeModelMappingByModelId(model_id);
                         any_detached = true;
                     }
 
-                    sguard->setCloudMetadata(fed_id, meta.toVariantMap());
+                    sguard->setCloudMetadata(model_id, meta.toVariantMap());
                     paths_to_load << new_path;
-                    fed_ids_to_load << fed_id;
+                    model_ids_to_load << model_id;
                 }
                 if (any_detached) {
                     if (vguard) vguard->setSelectedObjectId(0);
@@ -168,7 +168,7 @@ void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
                 }
                 if (!paths_to_load.isEmpty()) {
                     modules::models::commands::detail::loadModels(
-                        *sguard, paths_to_load, fed_ids_to_load);
+                        *sguard, paths_to_load, model_ids_to_load);
                     sguard->notifyModelsChanged();
                 }
             },
@@ -183,8 +183,8 @@ void resolveCloudModels(SessionState& session, ViewportWindow& viewport) {
     }
 
     int total = 0;
-    for (auto it = connector_to_fed_ids.constBegin();
-              it != connector_to_fed_ids.constEnd(); ++it) {
+    for (auto it = connector_to_model_ids.constBegin();
+              it != connector_to_model_ids.constEnd(); ++it) {
         total += it.value().size();
     }
     session.setStatusMessage("Cloud", QString("Resolving %1 model(s)...").arg(total));
@@ -224,7 +224,7 @@ bool openProjectAt(SessionState& session, QWidget& host, ViewportWindow& viewpor
     clearScene(session, viewport);
 
     QStringList paths;
-    QStringList fed_ids;
+    QStringList model_ids;
     for (const auto& model : session.federation()->models()) {
         if (model.source_connector != "local") continue;
         if (!QFileInfo::exists(model.source_path)) {
@@ -232,9 +232,9 @@ bool openProjectAt(SessionState& session, QWidget& host, ViewportWindow& viewpor
             continue;
         }
         paths << model.source_path;
-        fed_ids << model.id;
+        model_ids << model.id;
     }
-    modules::models::commands::detail::loadModels(session, paths, fed_ids);
+    modules::models::commands::detail::loadModels(session, paths, model_ids);
 
     if (!warnings.isEmpty()) {
         QMessageBox::warning(&host, "Open Project",

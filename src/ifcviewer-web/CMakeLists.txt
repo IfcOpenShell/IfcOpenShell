@@ -89,26 +89,32 @@ target_link_options(IfcViewerWeb PRIVATE
     # also instrument every function reachable from emscripten_sleep,
     # adding ~30% to wasm size for no win here.
     #
-    # EXIT_RUNTIME=0 + Module.noExitRuntime=true (set in shell.html)
+    # EXIT_RUNTIME=0 + Module.noExitRuntime=true (set in the host page (web/ifcviewer.js))
     # keeps wasm alive after main() returns so Dawn-web's
     # RequestAdapter/RequestDevice promise callbacks land. The
     # alternative — calling emscripten_set_main_loop_arg early in
     # main() to set noExitRuntime as a side effect — registers a RAF
     # that starves the device promise (observed: ~10s delay in Firefox).
     "-sEXIT_RUNTIME=0"
+    # Emit a reusable module factory (IfcViewerWeb.js) instead of a baked page,
+    # so multiple static example pages can load the same wasm. Each page does
+    #   createIfcViewer({ canvas, ... }).then(Module => …)
+    # (see web/ifcviewer.js, which wraps this into a small integration API).
+    "-sMODULARIZE=1"
+    "-sEXPORT_NAME=createIfcViewer"
     # Expose the C entry points to JS. _raf_tick_c drives the RAF loop
-    # (shell.html); _load_sidecar_from_blob_c loads a user-picked File via
+    # (the host page (web/ifcviewer.js)); _load_sidecar_from_blob_c loads a user-picked File via
     # byte-range Blob.slice reads; _load_sidecar_from_url_c streams a remote
     # sidecar via HTTP Range; _ifcv_on_range_done / _ifcv_source_ready are the
     # JS→C completion callbacks for a landed range / a resolved URL size.
     # EMSCRIPTEN_KEEPALIVE alone keeps the symbols in the binary but doesn't
-    # add them to Module. ccall lets shell.html pass a JS string (the ?model
+    # add them to Module. ccall lets the host page (web/ifcviewer.js) pass a JS string (the ?model
     # URL) to load_sidecar_from_url_c without manual heap marshalling.
     "-sEXPORTED_FUNCTIONS=['_main','_raf_tick_c','_load_sidecar_from_source_c','_clear_scene_c','_ifcv_on_range_done','_ifcv_chunks_resident_c','_ifcv_chunks_total_c','_ifcv_model_count_c','_ifcv_model_resident_c','_ifcv_model_total_c','_ifcv_bytes_total_c','_ifcv_bytes_needed_c','_ifcv_bytes_loaded_c','_view_all_c','_frame_selection_c','_toggle_projection_c','_projection_is_ortho_c','_standard_view_c','_toggle_fly_c','_fly_is_active_c','_hide_selected_c','_isolate_selected_c','_show_all_c','_toggle_xray_c','_xray_is_active_c','_toggle_section_c','_clear_section_c','_section_is_active_c']"
-    # ccall: shell.html passes the ?model URL string to load_sidecar_from_url_c.
+    # ccall: the host page (web/ifcviewer.js) passes the ?model URL string to load_sidecar_from_url_c.
     # HEAPU8: lets tooling/tests read the wasm heap size (e.g. to verify a large
     # sidecar streams by range instead of loading whole). Standard, zero-cost.
-    "-sEXPORTED_RUNTIME_METHODS=['ccall','HEAPU8']"
+    "-sEXPORTED_RUNTIME_METHODS=['ccall','HEAPU8','UTF8ToString']"
     # Streaming + chunked geometry want a heap that can grow as buffers
     # arrive. 256 MB initial, 2 GB ceiling (matches the wasm32 pointer
     # cap; --shared64 / MEMORY64 would lift this later if we need it).
@@ -124,7 +130,22 @@ target_link_options(IfcViewerWeb PRIVATE
     # mounts the file at the virtual path the wasm fopen()s. User-picked
     # files instead stream via Blob.slice byte ranges (load_sidecar_from_blob_c).
     "--embed-file=${CMAKE_CURRENT_SOURCE_DIR}/sample.ifcview@/sample.ifcview"
-    # Shell template wraps the JS output in our canvas page.
-    "--shell-file=${CMAKE_CURRENT_SOURCE_DIR}/shell.html"
 )
-set_target_properties(IfcViewerWeb PROPERTIES SUFFIX ".html")
+# MODULARIZE emits IfcViewerWeb.js (the createIfcViewer factory) + .wasm.
+set_target_properties(IfcViewerWeb PROPERTIES SUFFIX ".js")
+
+# Copy the static example pages + the JS integration helper next to the wasm so
+# a plain `python3 -m http.server --directory build-web` serves the whole demo:
+#   /IfcViewerWeb.html  fullscreen example
+#   /embedded.html      embedded viewer + DOM model list / selection (JS API)
+#   /index.html         links to both
+set(IFCVIEWERWEB_STATIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/ifcviewer.js"
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/IfcViewerWeb.html"
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/embedded.html"
+    "${CMAKE_CURRENT_SOURCE_DIR}/web/index.html"
+)
+add_custom_command(TARGET IfcViewerWeb POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${IFCVIEWERWEB_STATIC} "$<TARGET_FILE_DIR:IfcViewerWeb>"
+    COMMENT "Copying web example pages next to IfcViewerWeb.js")

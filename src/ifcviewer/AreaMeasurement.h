@@ -64,16 +64,16 @@ private:
         // edge_key (min<<32 | max) → list of triangle indices touching it.
         std::unordered_map<uint64_t, std::vector<uint32_t>> edges;
     };
-    // Keyed by (model_id << 32) | mesh_id.
+    // Keyed by (session_model_id << 32) | mesh_id.
     MeshAdj* meshAdj(ViewportWindow& vp,
-                     uint32_t model_id, uint32_t mesh_id);
+                     uint32_t session_model_id, uint32_t mesh_id);
 
     // Per-selected-triangle record. The composed transform is captured
     // at pick time so highlight rebuilds don't have to re-query the
     // viewport for it (and so the overlay keeps working if the picked
     // instance later goes hidden).
     struct SelectedTri {
-        uint32_t model_id;
+        uint32_t session_model_id;
         uint32_t mesh_id;
         uint32_t tri;
         float    composed_transform[16];

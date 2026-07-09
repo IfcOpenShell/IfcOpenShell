@@ -31,7 +31,6 @@
 #include "InstanceCompose.h"
 #include "Log.h"
 
-#include <boost/math/constants/constants.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -47,7 +46,7 @@ namespace {
 // updateCamera convention so framing aligns between backends.
 Eigen::Vector3f orbitEye(const float target[3], float dist,
                          float yaw_deg, float pitch_deg) {
-    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
     const float yaw = yaw_deg   * kDeg2Rad;
     const float pit = pitch_deg * kDeg2Rad;
     const float cp = std::cos(pit), sp = std::sin(pit);
@@ -102,8 +101,8 @@ void releaseWgpuModelGpuData(ModelGpuData& m, BufferPool& pool) {
 
 // ---- Scene mutators -------------------------------------------------------
 
-void ViewportCore::removeModel(uint32_t model_id) {
-    auto it = models_gpu_.find(model_id);
+void ViewportCore::removeModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     releaseWgpuModelGpuData(it->second, pool_);
     models_gpu_.erase(it);
@@ -111,7 +110,7 @@ void ViewportCore::removeModel(uint32_t model_id) {
 }
 
 void ViewportCore::resetScene() {
-    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
+    for (auto& [session_model_id, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
     // A fresh scene should auto-frame its first model. Without this the flag
     // stays set from the previous scene (on web, the embedded sample sets it at
@@ -121,15 +120,15 @@ void ViewportCore::resetScene() {
     host_->requestFrame();
 }
 
-void ViewportCore::hideModel(uint32_t model_id) {
-    auto it = models_gpu_.find(model_id);
+void ViewportCore::hideModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || it->second.hidden) return;
     it->second.hidden = true;
     host_->requestFrame();
 }
 
-void ViewportCore::showModel(uint32_t model_id) {
-    auto it = models_gpu_.find(model_id);
+void ViewportCore::showModel(uint32_t session_model_id) {
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end() || !it->second.hidden) return;
     it->second.hidden = false;
     host_->requestFrame();
@@ -141,22 +140,22 @@ void ViewportCore::setFederatedFalseOrigin(const Eigen::Matrix4d& matrix_meters)
     for (auto& kv : models_gpu_) recomposeAndUploadModel(kv.first);
 }
 
-void ViewportCore::setModelCoordinateOperation(uint32_t model_id,
+void ViewportCore::setModelCoordinateOperation(uint32_t session_model_id,
                                                const Eigen::Matrix4d& matrix_meters) {
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     if (it->second.coordinate_operation_meters == matrix_meters) return;
     it->second.coordinate_operation_meters = matrix_meters;
-    recomposeAndUploadModel(model_id);
+    recomposeAndUploadModel(session_model_id);
 }
 
-void ViewportCore::setModelTransformation(uint32_t model_id,
+void ViewportCore::setModelTransformation(uint32_t session_model_id,
                                           const Eigen::Matrix4d& matrix_meters) {
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     if (it->second.model_transformation_meters == matrix_meters) return;
     it->second.model_transformation_meters = matrix_meters;
-    recomposeAndUploadModel(model_id);
+    recomposeAndUploadModel(session_model_id);
 }
 
 // ---- Camera math ----------------------------------------------------------
@@ -178,7 +177,7 @@ void ViewportCore::buildViewProj(Eigen::Matrix4f& view_out,
                             : 1.0f;
     Eigen::Matrix4f p;
     if (projection_ortho_) {
-        constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+        constexpr float kDeg2Rad = kPiF / 180.0f;
         const float half_h = camera_distance_
             * std::tan(camera_fov_y_deg_ * 0.5f * kDeg2Rad);
         const float half_w = half_h * aspect;
@@ -199,7 +198,7 @@ bool ViewportCore::computeSceneAabb(float mn[3], float mx[3]) const {
         mn[i] =  std::numeric_limits<float>::infinity();
         mx[i] = -std::numeric_limits<float>::infinity();
     }
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& inst : m.instances) {
             for (int i = 0; i < 3; ++i) {
@@ -265,9 +264,9 @@ float ViewportCore::chunkScreenAreaPx(const ModelGpuData::Chunk& c,
     return (xmax - xmin) * (ymax - ymin);
 }
 
-void ViewportCore::recomposeAndUploadModel(uint32_t model_id) {
+void ViewportCore::recomposeAndUploadModel(uint32_t session_model_id) {
     if (!wgpu_initialized_) return;
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     ModelGpuData& m = it->second;
     if (m.instances.empty() || m.instance_storage == nullptr) return;
@@ -316,9 +315,14 @@ bool ViewportCore::findInstance(uint32_t object_id,
     return InstanceCompose::findInstanceInModels(object_id, models_gpu_, out);
 }
 
-bool ViewportCore::firstGeometryPointWorldM(uint32_t model_id,
+uint32_t ViewportCore::modelObjectIdBase(uint32_t session_model_id) const {
+    auto it = models_gpu_.find(session_model_id);
+    return it == models_gpu_.end() ? 0u : it->second.object_id_base;
+}
+
+bool ViewportCore::firstGeometryPointWorldM(uint32_t session_model_id,
                                             Eigen::Vector3d& out) const {
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return false;
     const ModelGpuData& m = it->second;
     if (m.instances.empty()) return false;
@@ -382,7 +386,7 @@ void ViewportCore::composeInstanceFromPlacement(InstanceInfo& inst,
 
 void ViewportCore::frameAabb(const float mn[3], const float mx[3],
                              float padding) {
-    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
     const float cx = 0.5f * (mn[0] + mx[0]);
     const float cy = 0.5f * (mn[1] + mx[1]);
     const float cz = 0.5f * (mn[2] + mx[2]);
@@ -475,6 +479,12 @@ void ViewportCore::setNavPreset(const char* name) {
         nav_bindings_ = { B::Middle, M::Plain,  B::Middle, M::Shift, B::Left,  M::Plain };
 }
 
+void ViewportCore::setBackfaceCulling(bool enabled) {
+    if (backface_culling_ == enabled) return;
+    backface_culling_ = enabled;
+    host_->requestFrame();
+}
+
 bool ViewportCore::frameSelection() {
     if (selection_.count() == 0) return false;
     float lo[3] = {  std::numeric_limits<float>::infinity(),
@@ -508,7 +518,7 @@ void ViewportCore::orbitBy(float dx_px, float dy_px) {
 }
 
 void ViewportCore::panBy(float dx_px, float dy_px, int viewport_height_px) {
-    constexpr float kDeg2Rad = boost::math::constants::pi<float>() / 180.0f;
+    constexpr float kDeg2Rad = kPiF / 180.0f;
 
     // Pan in the camera's screen-space plane. Within 1° of straight
     // up/down the world-Z up-reference degenerates (cross with forward
@@ -636,7 +646,7 @@ bool ViewportCore::computeObjectAabb(uint32_t object_id,
         mn[i] =  std::numeric_limits<float>::infinity();
         mx[i] = -std::numeric_limits<float>::infinity();
     }
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         for (const auto& inst : m.instances) {
             if (inst.object_id != object_id) continue;
             for (int i = 0; i < 3; ++i) {
@@ -678,7 +688,7 @@ double ViewportCore::volumeOfObjects(
     if (object_ids.empty()) return 0.0;
     double total = 0.0;
     for (uint32_t oid : object_ids) {
-        for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& [session_model_id, m] : models_gpu_) {
             auto it = m.object_id_to_instance.find(oid);
             if (it == m.object_id_to_instance.end()) continue;
             const InstanceInfo& inst = m.instances[it->second];
@@ -699,7 +709,7 @@ ViewportCore::volumesPerObject(
     if (object_ids.empty()) return out;
     out.reserve(object_ids.size());
     for (uint32_t oid : object_ids) {
-        for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& [session_model_id, m] : models_gpu_) {
             auto it = m.object_id_to_instance.find(oid);
             if (it == m.object_id_to_instance.end()) continue;
             const InstanceInfo& inst = m.instances[it->second];
@@ -842,11 +852,11 @@ fn find_draw(vid: u32) -> u32 {
     var lo: u32 = 0u;
     var hi: u32 = u_model.draw_count;
     while (lo + 1u < hi) {
-        let mid = (lo + hi) >> 1u;
-        if (prefix_sums[mid] <= vid) {
-            lo = mid;
+        let session_model_id = (lo + hi) >> 1u;
+        if (prefix_sums[session_model_id] <= vid) {
+            lo = session_model_id;
         } else {
-            hi = mid;
+            hi = session_model_id;
         }
     }
     return lo;
@@ -1143,6 +1153,19 @@ bool ViewportCore::buildPipelines() {
     main_pipeline_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc);
     if (!main_pipeline_) {
         Log::warn() << "wgpu main render pipeline creation failed";
+        return false;
+    }
+
+    // ---- Backface-culling-off variant of the opaque pipeline -----------
+    // The "Backface Culling" setting picks between this and main_pipeline_ at
+    // draw time (opaque pass). Identical but cullMode None, so single-sided
+    // IFC meshes show their back faces.
+    WGPURenderPipelineDescriptor rp_desc_nc = rp_desc;
+    rp_desc_nc.label = svFromCStr("ifcviewer-wgpu.main_pipeline_no_cull");
+    rp_desc_nc.primitive.cullMode = WGPUCullMode_None;
+    main_pipeline_no_cull_ = wgpuDeviceCreateRenderPipeline(device_, &rp_desc_nc);
+    if (!main_pipeline_no_cull_) {
+        Log::warn() << "wgpu main no-cull render pipeline creation failed";
         return false;
     }
 
@@ -1784,7 +1807,7 @@ void ViewportCore::shutdown() {
     // we've torn down model state. Worker drains its queue then joins.
     streaming_thread_.stop();
 
-    for (auto& [mid, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
+    for (auto& [session_model_id, m] : models_gpu_) releaseWgpuModelGpuData(m, pool_);
     models_gpu_.clear();
 
     if (frame_bind_group_)        { wgpuBindGroupRelease(frame_bind_group_);          frame_bind_group_ = nullptr; }
@@ -1792,6 +1815,7 @@ void ViewportCore::shutdown() {
     if (selection_flags_buffer_)  { wgpuBufferRelease(selection_flags_buffer_);       selection_flags_buffer_ = nullptr; }
     selection_flags_capacity_ = 0;
     if (main_pipeline_)              { wgpuRenderPipelineRelease(main_pipeline_);             main_pipeline_ = nullptr; }
+    if (main_pipeline_no_cull_)      { wgpuRenderPipelineRelease(main_pipeline_no_cull_);     main_pipeline_no_cull_ = nullptr; }
     if (main_pipeline_transparent_)  { wgpuRenderPipelineRelease(main_pipeline_transparent_); main_pipeline_transparent_ = nullptr; }
     section_gizmo_.destroy();
     if (main_shader_module_)   { wgpuShaderModuleRelease(main_shader_module_);    main_shader_module_ = nullptr; }
@@ -2035,10 +2059,10 @@ bool ViewportCore::applyStreamedChunk(
 
 StreamingThread::Request ViewportCore::makeChunkRequest(
         const ModelGpuData& m, std::size_t chunk_idx,
-        std::uint32_t model_id) {
+        std::uint32_t session_model_id) {
     const auto& c = m.chunks[chunk_idx];
     StreamingThread::Request req;
-    req.model_id                = model_id;
+    req.session_model_id                = session_model_id;
     req.chunk_idx               = chunk_idx;
     req.file_path               = m.streaming_file_path;
     // v16: one compressed vertex frame + one compressed index frame per chunk.
@@ -2130,7 +2154,7 @@ void ViewportCore::driveStreamingLoads() {
     // the chunk has *actually* contributed pixels (post-HiZ) over the
     // last ~30 frames.
     constexpr float HISTORY_ALPHA = 1.0f / 30.0f;
-    for (auto& [mid, m] : models_gpu_) {
+    for (auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (auto& c : m.chunks) {
             if (c.is_resident && c.frustum_visible_count > 0) {
@@ -2199,7 +2223,7 @@ void ViewportCore::driveStreamingLoads() {
         ModelGpuData* victim_m = nullptr;
         std::size_t   victim_ci = 0;
         std::uint64_t victim_lru = std::numeric_limits<std::uint64_t>::max();
-        for (auto& [mid, m] : models_gpu_) {
+        for (auto& [session_model_id, m] : models_gpu_) {
             for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
                 auto& c = m.chunks[ci];
                 if (!c.is_resident) continue;
@@ -2233,7 +2257,7 @@ void ViewportCore::driveStreamingLoads() {
         ModelGpuData* victim_m  = nullptr;
         std::size_t   victim_ci = 0;
         float         victim_priority = threshold;
-        for (auto& [mid, m] : models_gpu_) {
+        for (auto& [session_model_id, m] : models_gpu_) {
             for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
                 auto& c = m.chunks[ci];
                 if (!c.is_resident) continue;
@@ -2256,7 +2280,7 @@ void ViewportCore::driveStreamingLoads() {
             // 2-cycle detection: this victim was previously evicted by
             // THIS exact candidate — the smoking gun for a swap loop.
             const bool is_2_cycle =
-                   victim.last_evicted_by_model_id == cand_mid
+                   victim.last_evicted_by_session_model_id == cand_mid
                 && victim.last_evicted_by_chunk_idx == cand_ci
                 && victim.load_count > 1;
             Log::info()
@@ -2271,7 +2295,7 @@ void ViewportCore::driveStreamingLoads() {
                 << ", threshold=" << int(threshold) << ")";
         }
 
-        victim.last_evicted_by_model_id  = cand_mid;
+        victim.last_evicted_by_session_model_id  = cand_mid;
         victim.last_evicted_by_chunk_idx = cand_ci;
         victim.last_evicted_by_priority  = cand_priority;
         victim.last_evicted_frame_idx    = streaming_frame_idx_;
@@ -2287,7 +2311,7 @@ void ViewportCore::driveStreamingLoads() {
     {
         auto results = streaming_thread_.drainResults();
         for (auto& res : results) {
-            auto it = models_gpu_.find(res.model_id);
+            auto it = models_gpu_.find(res.session_model_id);
             if (it == models_gpu_.end()) continue;  // model unloaded
             auto& m = it->second;
             if (res.chunk_idx >= m.chunks.size()) continue;
@@ -2295,7 +2319,7 @@ void ViewportCore::driveStreamingLoads() {
             c.is_loading = false;
             if (!res.success) {
                 Log::warn() << "[wgpu stream] worker read failed for model "
-                            << res.model_id << " chunk " << res.chunk_idx;
+                            << res.session_model_id << " chunk " << res.chunk_idx;
                 continue;
             }
             if (!applyStreamedChunk(m, res.chunk_idx, res.vbytes, res.idx)) {
@@ -2330,12 +2354,12 @@ void ViewportCore::driveStreamingLoads() {
     struct Candidate {
         ModelGpuData* m;
         std::size_t   ci;
-        std::uint32_t mid;
+        std::uint32_t session_model_id;
         float         priority;
     };
     std::vector<Candidate> candidates;
     candidates.reserve(64);
-    for (auto& [mid, m] : models_gpu_) {
+    for (auto& [session_model_id, m] : models_gpu_) {
         if (m.streaming_file_path.empty() || m.hidden) continue;
         for (std::size_t ci = 0; ci < m.chunks.size(); ++ci) {
             auto& c = m.chunks[ci];
@@ -2348,7 +2372,7 @@ void ViewportCore::driveStreamingLoads() {
             // what's resolvable now; the rest stream in as you approach.
             if (c.contribution_visible_count == 0)   continue;
             if (c.blocked_cooldown_until_frame_idx > streaming_frame_idx_) continue;
-            candidates.push_back({&m, ci, mid, candidate_priority(c)});
+            candidates.push_back({&m, ci, session_model_id, candidate_priority(c)});
         }
     }
     streaming_candidates_this_frame_ = int(candidates.size());
@@ -2394,7 +2418,7 @@ void ViewportCore::driveStreamingLoads() {
             // once it exceeds the memory budget (highest-contribution chunks win).
             while (pool_.total_free_bytes() < streaming_web_inflight_bytes_ + need) {
                 if (evict_one_lru()) continue;
-                if (evict_lowest_priority_than(cand.mid, std::uint32_t(cand.ci),
+                if (evict_lowest_priority_than(cand.session_model_id, std::uint32_t(cand.ci),
                                                cand.priority)) continue;
                 break;
             }
@@ -2412,7 +2436,7 @@ void ViewportCore::driveStreamingLoads() {
                    && !pool_can_fit(c.index_count * sizeof(std::uint32_t)))
                || pool_.total_free_bytes() < need) {
             if (evict_one_lru())                                                continue;
-            if (evict_lowest_priority_than(cand.mid, std::uint32_t(cand.ci),
+            if (evict_lowest_priority_than(cand.session_model_id, std::uint32_t(cand.ci),
                                            cand.priority))                      continue;
             break;
         }
@@ -2474,7 +2498,7 @@ void ViewportCore::driveStreamingLoads() {
             c.is_loading = true;
             c.last_visible_frame_idx = streaming_frame_idx_;
             ++streaming_web_inflight_count_;
-            beginWebChunkLoad(cand.mid, cand.ci);
+            beginWebChunkLoad(cand.session_model_id, cand.ci);
             ++enqueued;
             continue;
         }
@@ -2490,7 +2514,7 @@ void ViewportCore::driveStreamingLoads() {
             continue;
         }
 
-        if (streaming_thread_.enqueue(makeChunkRequest(*cand.m, cand.ci, cand.mid))) {
+        if (streaming_thread_.enqueue(makeChunkRequest(*cand.m, cand.ci, cand.session_model_id))) {
             c.is_loading = true;
             ++enqueued;
         }
@@ -2507,10 +2531,20 @@ void ViewportCore::driveStreamingLoads() {
     // next few frames so an on-demand render loop doesn't stall before the
     // geometry actually appears. Bounded, so the loop still quiesces at idle.
     bool visible_pending = false;
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.streaming_file_path.empty() || m.hidden) continue;
         for (const auto& c : m.chunks) {
-            if (!c.is_resident && (c.frustum_visible_count > 0 || c.is_loading)) {
+            if (c.is_resident) continue;
+            // Keep the loop alive only for chunks we're actually loading or that
+            // are eligible to enqueue — the same test the enqueue below uses
+            // (contribution-visible and not in a blocked cooldown). A chunk
+            // that's in the frustum but sub-pixel (contribution_visible_count
+            // == 0) is never fetched, so it must not keep the render loop
+            // spinning at idle; likewise a cooldown-blocked chunk only retries
+            // after real work (an eviction or camera move) requests a frame.
+            if (c.is_loading
+                || (c.contribution_visible_count > 0
+                    && c.blocked_cooldown_until_frame_idx <= streaming_frame_idx_)) {
                 visible_pending = true;
                 break;
             }
@@ -2578,7 +2612,7 @@ void ViewportCore::driveStreamingLoads() {
                     << " ev_pri=" << streaming_evictions_pri_this_frame_
                     << " blocked=" << streaming_blocked_oom_this_frame_;
 
-                struct Stat { std::uint32_t mid; std::size_t ci; float area; };
+                struct Stat { std::uint32_t session_model_id; std::size_t ci; float area; };
                 std::vector<Stat> all;
                 all.reserve(64);
                 for (const auto& [mid2, m2] : models_gpu_) {
@@ -2594,7 +2628,7 @@ void ViewportCore::driveStreamingLoads() {
                 const std::size_t n = std::min<std::size_t>(5, all.size());
                 for (std::size_t i = 0; i < n; ++i) {
                     Log::info()
-                        << "  top cand #" << i << ": model " << all[i].mid
+                        << "  top cand #" << i << ": model " << all[i].session_model_id
                         << " chunk " << all[i].ci
                         << " area=" << int(all[i].area) << "px2";
                 }
@@ -2607,7 +2641,7 @@ void ViewportCore::driveStreamingLoads() {
         std::size_t resident = 0;
         std::uint32_t max_load_count = 0;
         std::size_t   cycled = 0;
-        for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& [session_model_id, m] : models_gpu_) {
             for (const auto& c : m.chunks) {
                 if (c.is_resident) ++resident;
                 if (c.load_count > max_load_count) max_load_count = c.load_count;
@@ -2897,11 +2931,11 @@ WGPUBuffer createBufferWithData(WGPUDevice device, WGPUQueue queue,
 // Holds a unique_ptr so address stability is preserved as the map grows.
 SidecarData& getOrCreateDirectStaging(
         std::unordered_map<std::uint32_t, std::unique_ptr<SidecarData>>& staging,
-        std::uint32_t model_id) {
-    auto it = staging.find(model_id);
+        std::uint32_t session_model_id) {
+    auto it = staging.find(session_model_id);
     if (it == staging.end()) {
         auto [it_new, _] = staging.emplace(
-            model_id, std::make_unique<SidecarData>());
+            session_model_id, std::make_unique<SidecarData>());
         return *it_new->second;
     }
     return *it->second;
@@ -2909,7 +2943,7 @@ SidecarData& getOrCreateDirectStaging(
 
 } // namespace
 
-void ViewportCore::applyCachedModel(std::uint32_t model_id,
+void ViewportCore::applyCachedModel(std::uint32_t session_model_id,
                                     StreamingSidecar metadata) {
     if (!device_ || !queue_) {
         Log::warn() << "applyCachedModel without an initialised device";
@@ -2917,7 +2951,7 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
     }
 
     // Replace any existing state for this id.
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it != models_gpu_.end()) {
         releaseWgpuModelGpuData(it->second, pool_);
         models_gpu_.erase(it);
@@ -3203,11 +3237,11 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
         }
     }
 
-    auto [inserted, _] = models_gpu_.emplace(model_id, std::move(model_gpu_data));
+    auto [inserted, _] = models_gpu_.emplace(session_model_id, std::move(model_gpu_data));
     ModelGpuData& inserted_model = inserted->second;
 
     Log::info()
-        << "[wgpu stream] applyCachedModel mid=" << model_id
+        << "[wgpu stream] applyCachedModel session_model_id=" << session_model_id
         << " verts=" << inserted_model.vertex_bytes << "B (deferred)"
         << " idx="   << inserted_model.index_count
         << " meshes=" << inserted_model.mesh_count
@@ -3224,7 +3258,7 @@ void ViewportCore::applyCachedModel(std::uint32_t model_id,
 
 void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     if (mesh.vertices.empty() || mesh.indices.empty()) return;
-    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, mesh.model_id);
+    SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, mesh.session_model_id);
 
     // Streamer format: 7 floats / vertex (pos3 + normal3 + color-as-float).
     // Same quantisation as SidecarBuilder::onMeshReady so direct-load and
@@ -3250,17 +3284,17 @@ void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
         extent_recip[a] = ext > 0.0f ? 1.0f / ext : 0.0f;
     }
 
-    const std::size_t vb_offset = s.vertices.size();
-    s.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
+    const std::size_t vb_offset = staging.vertices.size();
+    staging.vertices.resize(vb_offset + n_verts * INSTANCED_VERTEX_STRIDE_BYTES);
     for (std::size_t i = 0; i < n_verts; ++i) {
         quantizeVertex(mesh.vertices.data() + i * INSTANCED_VERTEX_STRIDE_FLOATS,
                        bmin, extent_recip,
-                       s.vertices.data() + vb_offset
+                       staging.vertices.data() + vb_offset
                            + i * INSTANCED_VERTEX_STRIDE_BYTES);
     }
 
-    const std::size_t ib_offset = s.indices.size();
-    s.indices.insert(s.indices.end(),
+    const std::size_t ib_offset = staging.indices.size();
+    staging.indices.insert(staging.indices.end(),
                      mesh.indices.begin(), mesh.indices.end());
 
     MeshInfo info{};
@@ -3277,20 +3311,20 @@ void ViewportCore::uploadStreamedMesh(const StreamedMesh& mesh) {
     info.lod1_ebo_byte_offset = 0;
     info.lod1_index_count     = 0;
 
-    if (s.meshes.size() <= mesh.local_mesh_id) {
-        s.meshes.resize(mesh.local_mesh_id + 1);
+    if (staging.meshes.size() <= mesh.local_mesh_id) {
+        staging.meshes.resize(mesh.local_mesh_id + 1);
     }
-    s.meshes[mesh.local_mesh_id] = info;
+    staging.meshes[mesh.local_mesh_id] = info;
 }
 
 void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_record) {
-    SidecarData& s = getOrCreateDirectStaging(pending_direct_loads_, instance_record.model_id);
+    SidecarData& staging = getOrCreateDirectStaging(pending_direct_loads_, instance_record.session_model_id);
 
     InstanceInfo instance{};
     instance.mesh_id              = instance_record.local_mesh_id;
     instance.object_id            = instance_record.object_id;
     instance.color_override_rgba8 = instance_record.color_override_rgba8;
-    instance.model_id             = instance_record.model_id;
+    instance.session_model_id             = instance_record.session_model_id;
     std::memcpy(instance.placement_transformation, instance_record.transform,
                 sizeof(instance.placement_transformation));
     for (int i = 0; i < 16; ++i) {
@@ -3299,7 +3333,7 @@ void ViewportCore::uploadStreamedInstance(const StreamedInstance& instance_recor
     std::memcpy(instance.world_aabb_min, instance_record.world_aabb_min, sizeof(instance.world_aabb_min));
     std::memcpy(instance.world_aabb_max, instance_record.world_aabb_max, sizeof(instance.world_aabb_max));
 
-    s.instances.push_back(instance);
+    staging.instances.push_back(instance);
 }
 
 std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
@@ -3307,14 +3341,14 @@ std::uint32_t ViewportCore::loadSidecarFromPath(const std::string& path) {
         Log::warn() << "loadSidecarFromPath: wgpu not initialised";
         return 0;
     }
-    auto meta_opt = readSidecarMetadataOnly(path);
+    auto meta_opt = readSidecarMetadata(path);
     if (!meta_opt) {
         Log::warn() << "loadSidecarFromPath: could not read sidecar metadata from " << path;
         return 0;
     }
-    const std::uint32_t mid = next_model_id_++;
-    applyCachedModel(mid, std::move(*meta_opt));
-    return mid;
+    const std::uint32_t session_model_id = next_session_model_id_++;
+    applyCachedModel(session_model_id, std::move(*meta_opt));
+    return session_model_id;
 }
 
 #if defined(__EMSCRIPTEN__)
@@ -3407,9 +3441,9 @@ void webIssueCurrentPlan(int id) {
         if (done) done(true, std::move(out));
         return;
     }
-    const SidecarReadPlan& p = r.plans[r.plan_idx];
-    r.scratch.assign(std::size_t(p.read_size), 0);
-    ifcvReadRangeInto(r.source_id, id, double(p.file_offset), double(p.read_size),
+    const SidecarReadPlan& plan = r.plans[r.plan_idx];
+    r.scratch.assign(std::size_t(plan.read_size), 0);
+    ifcvReadRangeInto(r.source_id, id, double(plan.file_offset), double(plan.read_size),
                       r.scratch.data());
 }
 
@@ -3456,8 +3490,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
         if (done) done(false, {});
         return;
     }
-    const SidecarReadPlan& p = r.plans[r.plan_idx];
-    for (const auto& s : p.slices) {
+    const SidecarReadPlan& plan = r.plans[r.plan_idx];
+    for (const auto& s : plan.slices) {
         std::memcpy(r.out.data() + s.dst_offset,
                     r.scratch.data() + s.src_offset, std::size_t(s.bytes));
     }
@@ -3465,8 +3499,8 @@ extern "C" EMSCRIPTEN_KEEPALIVE void ifcv_on_range_done(int reqId, int ok) {
     webIssueCurrentPlan(reqId);
 }
 
-void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_idx) {
-    auto it = models_gpu_.find(model_id);
+void ViewportCore::beginWebChunkLoad(std::uint32_t session_model_id, std::size_t chunk_idx) {
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) return;
     ModelGpuData& m = it->second;
     if (chunk_idx >= m.chunks.size()) return;
@@ -3493,13 +3527,13 @@ void ViewportCore::beginWebChunkLoad(std::uint32_t model_id, std::size_t chunk_i
     };
     auto join = std::make_shared<ChunkJoin>();
     std::function<void()> finish =
-        [this, model_id, chunk_idx, need, v_raw, i_raw, join]() {
+        [this, session_model_id, chunk_idx, need, v_raw, i_raw, join]() {
         if (!join->v_done || !join->i_done) return;  // wait for the other frame
         streaming_web_inflight_bytes_ -= std::min(streaming_web_inflight_bytes_, need);
         if (streaming_web_inflight_count_ > 0) --streaming_web_inflight_count_;
         host_->requestFrame();
 
-        auto mit = models_gpu_.find(model_id);
+        auto mit = models_gpu_.find(session_model_id);
         if (mit == models_gpu_.end()) return;
         ModelGpuData& mm = mit->second;
         if (chunk_idx >= mm.chunks.size()) return;
@@ -3608,15 +3642,15 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                             }
                             const std::size_t n_meshes    = sc.meta.meshes.size();
                             const std::size_t n_instances = sc.meta.instances.size();
-                            const std::uint32_t mid = next_model_id_++;
-                            applyCachedModel(mid, std::move(sc));
+                            const std::uint32_t session_model_id = next_session_model_id_++;
+                            applyCachedModel(session_model_id, std::move(sc));
                             // Mark web-streamed + set the source IMMEDIATELY — the
                             // model now has non-resident chunks and the RAF loop's
                             // driveStreamingLoads will run before the element metadata header
                             // read below returns. If streaming_from_web weren't set
                             // yet it would take the sync fopen path and fail
                             // ("failed to read/decompress chunk 0").
-                            if (auto m0 = models_gpu_.find(mid); m0 != models_gpu_.end()) {
+                            if (auto m0 = models_gpu_.find(session_model_id); m0 != models_gpu_.end()) {
                                 m0->second.streaming_from_web = true;
                                 m0->second.web_source_id      = source_id;
                             }
@@ -3625,10 +3659,10 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                             const std::uint64_t element_metadata_hdr_off =
                                 geometry_metadata_off + geometry_metadata_comp;
                             webReadRangesAsync(source_id, 0, {{element_metadata_hdr_off, 16}},
-                                [this, mid, element_metadata_hdr_off, source_id, source_label,
+                                [this, session_model_id, element_metadata_hdr_off, source_id, source_label,
                                  n_meshes, n_instances]
                                 (bool ok4, std::vector<std::uint8_t>&& dh) {
-                                    auto mit = models_gpu_.find(mid);
+                                    auto mit = models_gpu_.find(session_model_id);
                                     if (mit != models_gpu_.end()) {
                                         if (ok4 && dh.size() >= 16) {
                                             std::uint64_t dc = 0, dr = 0;
@@ -3646,7 +3680,7 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
                                     // as each federated model streams in.
                                     host_->requestFrame();
                                     Log::info() << "ifcviewer-web: loaded sidecar (" << source_label
-                                                << ", id " << mid << ", " << n_meshes << " meshes, "
+                                                << ", id " << session_model_id << ", " << n_meshes << " meshes, "
                                                 << n_instances << " instances)";
                                 });
                         });
@@ -3654,14 +3688,14 @@ void ViewportCore::loadSidecarMetadataWeb(int source_id, std::string source_labe
         });
 }
 
-void ViewportCore::loadElementMetadataWeb(std::uint32_t model_id,
+void ViewportCore::loadElementMetadataWeb(std::uint32_t session_model_id,
                                           std::function<void(bool)> done) {
     // On-demand fetch of the v15 element metadata block (elements + string table)
     // for a web-streamed model — the property data a UI needs (selected-
     // object name, search) but rendering doesn't. Fetches at most once. Reads
     // from the model's own registered byte-source, so it works per-model even
     // with several federated files loaded.
-    auto it = models_gpu_.find(model_id);
+    auto it = models_gpu_.find(session_model_id);
     if (it == models_gpu_.end()) { if (done) done(false); return; }
     ModelGpuData& m = it->second;
     if (m.element_metadata_loaded || m.element_metadata_comp_size == 0) {
@@ -3672,8 +3706,8 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t model_id,
     const std::uint64_t raw_size = m.element_metadata_raw_size;
     webReadRangesAsync(m.web_source_id, 0,
         {{m.element_metadata_comp_offset, m.element_metadata_comp_size}},
-        [this, model_id, raw_size, done](bool ok, std::vector<std::uint8_t>&& cz) {
-            auto mit = models_gpu_.find(model_id);
+        [this, session_model_id, raw_size, done](bool ok, std::vector<std::uint8_t>&& cz) {
+            auto mit = models_gpu_.find(session_model_id);
             if (mit == models_gpu_.end()) { if (done) done(false); return; }
             std::vector<std::uint8_t> buf(static_cast<std::size_t>(raw_size));
             SidecarData tmp;
@@ -3700,13 +3734,13 @@ void ViewportCore::loadElementMetadataWeb(std::uint32_t model_id,
 void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
     InstanceCompose::InstanceLookup lk;
     if (!findInstance(object_id, lk)) return;  // empty pick / unknown id
-    const std::uint32_t model_id = lk.model_id;
-    loadElementMetadataWeb(model_id, [this, object_id, model_id](bool ok) {
+    const std::uint32_t session_model_id = lk.session_model_id;
+    loadElementMetadataWeb(session_model_id, [this, object_id, session_model_id](bool ok) {
         if (!ok) {
             Log::warn() << "pick: element metadata fetch failed for object " << object_id;
             return;
         }
-        auto it = models_gpu_.find(model_id);
+        auto it = models_gpu_.find(session_model_id);
         if (it == models_gpu_.end()) return;
         const ModelGpuData& m = it->second;
         for (const auto& e : m.elements) {
@@ -3717,6 +3751,20 @@ void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
                     ? m.string_table.substr(e.guid_offset, e.guid_length)
                     : std::string("(none)");
             Log::info() << "pick: object " << object_id << " GUID " << guid;
+            // Load-order index of the object's model (sorted by session id — the
+            // same order as streamingModelProgress and the JS model list); -1 if
+            // not found. Lets host pages show which model the pick belongs to.
+            std::vector<std::uint32_t> model_ids;
+            model_ids.reserve(models_gpu_.size());
+            for (const auto& [id, mm] : models_gpu_) model_ids.push_back(id);
+            std::sort(model_ids.begin(), model_ids.end());
+            const auto pos = std::find(model_ids.begin(), model_ids.end(), session_model_id);
+            const int model_index = (pos != model_ids.end()) ? int(pos - model_ids.begin()) : -1;
+            // Surface the selection to JS so host pages can react (e.g. show the
+            // GUID + model). Fires Module.__ifcvOnSelect(object_id, guid, modelIndex).
+            EM_ASM({
+                if (Module.__ifcvOnSelect) Module.__ifcvOnSelect($0, UTF8ToString($1), $2);
+            }, object_id, guid.c_str(), model_index);
             return;
         }
         Log::info() << "pick: object " << object_id << " not in element table";
@@ -3727,7 +3775,7 @@ void ViewportCore::logSelectedObjectGuidWeb(std::uint32_t object_id) {
 void ViewportCore::streamingProgress(int& resident_chunks, int& total_chunks) const {
     resident_chunks = 0;
     total_chunks    = 0;
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         for (const auto& c : m.chunks) {
             ++total_chunks;
             if (c.is_resident) ++resident_chunks;
@@ -3744,11 +3792,11 @@ void ViewportCore::streamingModelProgress(int idx, int& resident_chunks,
     resident_chunks = 0;
     total_chunks    = 0;
     if (idx < 0 || idx >= int(models_gpu_.size())) return;
-    // Order by model_id (= load order) so a model keeps the same UI slot as it
+    // Order by session_model_id (= load order) so a model keeps the same UI slot as it
     // streams, instead of hopping with unordered_map iteration order.
     std::vector<std::uint32_t> ids;
     ids.reserve(models_gpu_.size());
-    for (const auto& [mid, m] : models_gpu_) ids.push_back(mid);
+    for (const auto& [session_model_id, m] : models_gpu_) ids.push_back(session_model_id);
     std::sort(ids.begin(), ids.end());
     auto it = models_gpu_.find(ids[std::size_t(idx)]);
     if (it == models_gpu_.end()) return;
@@ -3767,7 +3815,7 @@ void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
     // So loaded/needed = how done this view is; needed/total = how much of the
     // whole model this view even requires.
     total_bytes = needed_bytes = loaded_bytes = 0;
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& c : m.chunks) {
             // Report COMPRESSED bytes — what actually crosses the network. Fall
@@ -3784,11 +3832,11 @@ void ViewportCore::streamingByteProgress(std::uint64_t& total_bytes,
     }
 }
 
-void ViewportCore::finalizeModel(std::uint32_t model_id) {
-    auto it = pending_direct_loads_.find(model_id);
+void ViewportCore::finalizeModel(std::uint32_t session_model_id) {
+    auto it = pending_direct_loads_.find(session_model_id);
     if (it == pending_direct_loads_.end()) {
         Log::warn()
-            << "[wgpu direct] finalizeModel(" << model_id
+            << "[wgpu direct] finalizeModel(" << session_model_id
             << ") with no staged data; skipping";
         return;
     }
@@ -3801,7 +3849,7 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
         return;
     }
     if (sidecar_data.meshes.empty() || sidecar_data.instances.empty()) {
-        Log::info() << "[wgpu direct] finalizeModel(" << model_id
+        Log::info() << "[wgpu direct] finalizeModel(" << session_model_id
                     << "): empty staging (meshes=" << sidecar_data.meshes.size()
                     << " instances=" << sidecar_data.instances.size() << ")";
         return;
@@ -3822,12 +3870,12 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     std::vector<std::uint8_t>  raw_vertices = std::move(metadata.meta.vertices);
     std::vector<std::uint32_t> raw_indices  = std::move(metadata.meta.indices);
 
-    applyCachedModel(model_id, std::move(metadata));
+    applyCachedModel(session_model_id, std::move(metadata));
 
-    auto model_it = models_gpu_.find(model_id);
+    auto model_it = models_gpu_.find(session_model_id);
     if (model_it == models_gpu_.end()) {
         Log::warn()
-            << "[wgpu direct] finalizeModel(" << model_id
+            << "[wgpu direct] finalizeModel(" << session_model_id
             << "): applyCachedModel produced no model entry";
         return;
     }
@@ -3863,7 +3911,7 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
 
         if (!applyStreamedChunk(model_gpu_data, chunk_index, vbytes, indices)) {
             Log::warn()
-                << "[wgpu direct] finalizeModel(" << model_id
+                << "[wgpu direct] finalizeModel(" << session_model_id
                 << "): applyStreamedChunk failed on chunk " << chunk_index
                 << " (pool OOM?)";
             continue;
@@ -3872,7 +3920,7 @@ void ViewportCore::finalizeModel(std::uint32_t model_id) {
     }
 
     Log::info()
-        << "[wgpu direct] finalizeModel mid=" << model_id
+        << "[wgpu direct] finalizeModel session_model_id=" << session_model_id
         << " meshes=" << model_gpu_data.meshes.size()
         << " instances=" << model_gpu_data.instances.size()
         << " chunks=" << chunks_uploaded << "/" << model_gpu_data.chunks.size()
@@ -4923,7 +4971,7 @@ void ViewportCore::encodePickReadbackToStaging(int x_pixels, int y_pixels,
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
@@ -5122,7 +5170,7 @@ void ViewportCore::isolateSelected() {
     // objects stay model-hidden (element-level hiding on top is redundant), and
     // object_id 0 (unpickable) is skipped.
     const auto& sel_ids = selection_.selectionIds();
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const InstanceInfo& inst : m.instances) {
             if (inst.object_id == 0) continue;
@@ -5273,7 +5321,7 @@ bool ViewportCore::encodeBoxPickToStaging(int& x, int& y, int& w, int& h,
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
     wgpuRenderPassEncoderSetPipeline(pass, pick_pipeline_);
     wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& c : m.chunks) {
             if (!c.bind_group || c.total_visible_vertices == 0) continue;
@@ -5428,7 +5476,7 @@ bool ViewportCore::raycastSurfaceForObject(std::uint32_t object_id, int x_pixels
     Eigen::Vector3f best_normal;
     float           best_radius = 0.0f;
     bool found = false;
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (const auto& inst : m.instances) {
             if (inst.object_id != object_id) continue;
@@ -5604,9 +5652,9 @@ bool ViewportCore::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
     Eigen::Vector3f world_pos, world_normal;
     if (!pickSurfaceAt(x, y, obj_id, world_pos, world_normal)) return false;
 
-    // Use the OUTER mid (the live map key) rather than inst.model_id —
-    // InstanceInfo::model_id is stale across sessions.
-    for (const auto& [mid, m] : models_gpu_) {
+    // Use the OUTER session_model_id (the live map key) rather than inst.session_model_id —
+    // InstanceInfo::session_model_id is stale across sessions.
+    for (const auto& [session_model_id, m] : models_gpu_) {
         auto it = m.object_id_to_instance.find(obj_id);
         if (it == m.object_id_to_instance.end()) continue;
         const InstanceInfo& inst = m.instances[it->second];
@@ -5714,7 +5762,7 @@ bool ViewportCore::pickMeshLocalAt(int x, int y, MeshLocalPick& out) {
                                             refined_world_pos.z(), 1.0f);
 
         out.object_id     = obj_id;
-        out.model_id      = mid;
+        out.session_model_id      = session_model_id;
         out.mesh_id       = inst.mesh_id;
         out.mesh_local[0] = mp.x();
         out.mesh_local[1] = mp.y();
@@ -5744,7 +5792,7 @@ bool ViewportCore::raycast(const float origin[3], const float dir[3],
     std::uint32_t best_oid = 0;
     float         best_normal[3] = {0, 0, 0};
 
-    for (const auto& [mid, m] : models_gpu_) {
+    for (const auto& [session_model_id, m] : models_gpu_) {
         if (m.hidden) continue;
         for (std::uint32_t inst_idx = 0; inst_idx < std::uint32_t(m.instances.size()); ++inst_idx) {
             const InstanceInfo& inst = m.instances[inst_idx];
@@ -6106,7 +6154,7 @@ namespace {
 // degrees → radians. Inline-only, used inside render() for the
 // focal-length derivation.
 constexpr float degreesToRadians(float deg) {
-    return deg * boost::math::constants::pi<float>() / 180.0f;
+    return deg * kPiF / 180.0f;
 }
 
 // Format a float with N decimals into the running Log line. Used to
@@ -6275,10 +6323,10 @@ void ViewportCore::render() {
 #endif
             std::vector<std::pair<std::uint32_t, std::future<std::uint32_t>>> futures;
             futures.reserve(models_gpu_.size());
-            for (auto& [mid, m] : models_gpu_) {
+            for (auto& [session_model_id, m] : models_gpu_) {
                 if (m.hidden) continue;
                 auto& m_ref = m;
-                futures.emplace_back(mid, std::async(std::launch::async,
+                futures.emplace_back(session_model_id, std::async(std::launch::async,
                     [this, &m_ref, &planes, &eye_a, &fwd_a, &right_a, &up_a,
                      focal_px, effective_min_px, &hiz_occluded]() {
                         return cullModelCpuCompute(
@@ -6288,11 +6336,11 @@ void ViewportCore::render() {
                             hiz_occluded);
                     }));
             }
-            for (auto& [mid, fut] : futures) {
+            for (auto& [session_model_id, fut] : futures) {
                 hiz_reject_count_ += fut.get();
             }
         } else {
-            for (auto& [mid, m] : models_gpu_) {
+            for (auto& [session_model_id, m] : models_gpu_) {
                 if (m.hidden) continue;
                 hiz_reject_count_ += cullModelCpuCompute(
                     m, planes, eye_a, fwd_a, right_a, up_a, focal_px,
@@ -6304,7 +6352,7 @@ void ViewportCore::render() {
         const double cull_compute_ms = double(cull_timer.nsecsElapsed()) / 1e6;
         Stopwatch upload_timer;
         upload_timer.start();
-        for (auto& [mid, m] : models_gpu_) {
+        for (auto& [session_model_id, m] : models_gpu_) {
             if (m.hidden) continue;
             cullModelCpuUpload(m);
             for (const auto& c : m.chunks) {
@@ -6372,12 +6420,13 @@ void ViewportCore::render() {
     WGPURenderPassEncoder pass = wgpuCommandEncoderBeginRenderPass(enc, &pass_desc);
 
     // Two-pass main render: opaque first, then transparent.
-    if (main_pipeline_ && main_pipeline_transparent_
+    if (main_pipeline_ && main_pipeline_no_cull_ && main_pipeline_transparent_
         && frame_bind_group_ && !models_gpu_.empty()) {
-        wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_);
+        wgpuRenderPassEncoderSetPipeline(pass,
+            backface_culling_ ? main_pipeline_ : main_pipeline_no_cull_);
         wgpuRenderPassEncoderSetBindGroup(pass, 0, frame_bind_group_, 0, nullptr);
 
-        for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& [session_model_id, m] : models_gpu_) {
             if (m.hidden) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group || c.opaque_visible_vertices == 0) continue;
@@ -6388,7 +6437,7 @@ void ViewportCore::render() {
         }
 
         wgpuRenderPassEncoderSetPipeline(pass, main_pipeline_transparent_);
-        for (const auto& [mid, m] : models_gpu_) {
+        for (const auto& [session_model_id, m] : models_gpu_) {
             if (m.hidden) continue;
             for (const auto& c : m.chunks) {
                 if (!c.bind_group) continue;
@@ -6424,7 +6473,7 @@ void ViewportCore::render() {
     // Section-plane gizmo — shared renderer, drawn for desktop + web from here.
     // (The desktop's OverlayRenderer no longer draws it, to avoid doubling.)
     section_gizmo_.encode(pass, vp_this_frame, section_planes_,
-                          viewport_w_px, viewport_h_px, dpr_int);
+                          viewport_w_px, viewport_h_px, dpr_int, section_selected_index_);
 
     // Remaining in-pass overlays (highlight triangles, pivot, overlay
     // lines/points). QtViewportHost forwards to overlays_.X(); web host no-ops.
@@ -6477,7 +6526,7 @@ void ViewportCore::render() {
             : 0.0;
 
         std::uint32_t total_obj = 0, total_tri = 0, total_meshes = 0;
-        for (const auto& [mid, mm] : models_gpu_) {
+        for (const auto& [session_model_id, mm] : models_gpu_) {
             total_obj    += std::uint32_t(mm.instances.size());
             total_tri    += mm.index_count / 3;
             total_meshes += std::uint32_t(mm.meshes.size());
@@ -6492,7 +6541,7 @@ void ViewportCore::render() {
         stats.visible_triangles = last_visible_triangles_;
         stats.unique_meshes     = total_meshes;
         std::uint32_t draw_calls = 0;
-        for (const auto& [mid, mm] : models_gpu_) {
+        for (const auto& [session_model_id, mm] : models_gpu_) {
             if (mm.hidden) continue;
             for (const auto& c : mm.chunks) {
                 if (c.is_resident && c.total_visible_draws > 0) ++draw_calls;
@@ -6534,7 +6583,7 @@ void ViewportCore::render() {
         std::uint32_t total_instances = 0;
         std::size_t chunks_total = 0, chunks_resident = 0;
         std::size_t chunks_frustum_vis = 0, chunks_missing = 0;
-        for (const auto& [mid, mo] : models_gpu_) {
+        for (const auto& [session_model_id, mo] : models_gpu_) {
             total_vbo  += mo.vram_bytes_vbo;
             total_ebo  += mo.vram_bytes_ebo;
             total_ssbo += mo.vram_bytes_ssbo;
@@ -6610,7 +6659,7 @@ void ViewportCore::render() {
         if ((bench_count_ % 50) == 0) {
             std::uint64_t total_vbo = 0, total_ebo = 0, total_ssbo = 0;
             std::uint32_t total_instances = 0;
-            for (const auto& [mid, mo] : models_gpu_) {
+            for (const auto& [session_model_id, mo] : models_gpu_) {
                 total_vbo += mo.vram_bytes_vbo;
                 total_ebo += mo.vram_bytes_ebo;
                 total_ssbo += mo.vram_bytes_ssbo;
@@ -6713,6 +6762,8 @@ bool ViewportCore::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
     p.d             = -n.dot(point);
     p.visual_radius = (visual_radius > 0.0f) ? visual_radius : 1.0f;
     section_planes_.push_back(p);
+    // The freshly added plane becomes the selected one.
+    section_selected_index_ = int(section_planes_.size()) - 1;
     Log::info()
         << "[wgpu section] added plane #" << section_planes_.size() - 1
         << " origin=(" << point.x() << "," << point.y() << "," << point.z() << ")"
@@ -6721,9 +6772,23 @@ bool ViewportCore::addSectionPlaneAtSurface(const Eigen::Vector3f& point,
     return true;
 }
 
+void ViewportCore::setSelectedSectionPlane(int index) {
+    const int clamped = (index >= 0 && index < int(section_planes_.size())) ? index : -1;
+    if (clamped == section_selected_index_) return;
+    section_selected_index_ = clamped;
+    host_->requestFrame();
+}
+
 void ViewportCore::removeSectionPlane(int index) {
     if (index < 0 || index >= int(section_planes_.size())) return;
     section_planes_.erase(section_planes_.begin() + index);
+    // Keep the selection pointing at the same plane: clear it if it was the one
+    // removed, shift it down if it sat after the removed index.
+    if (section_selected_index_ == index) {
+        section_selected_index_ = -1;
+    } else if (section_selected_index_ > index) {
+        --section_selected_index_;
+    }
     Log::info() << "[wgpu section] removed plane " << index;
     host_->requestFrame();
 }
@@ -6731,6 +6796,7 @@ void ViewportCore::removeSectionPlane(int index) {
 void ViewportCore::clearSectionPlanes() {
     if (section_planes_.empty()) return;
     section_planes_.clear();
+    section_selected_index_ = -1;
     Log::info() << "[wgpu section] cleared all planes";
     host_->requestFrame();
 }

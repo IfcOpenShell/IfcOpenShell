@@ -24,34 +24,83 @@
 #include "../../components/SvgIcon.h"
 
 #include <QHeaderView>
+#include <QMenu>
+#include <QShowEvent>
+#include <QSizePolicy>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
 namespace bonsaiviewer::modules::spatial_hierarchy {
 
+namespace {
+
+void setSubtreeExpanded(QTreeWidgetItem* item, bool expanded) {
+    item->setExpanded(expanded);
+    for (int i = 0; i < item->childCount(); ++i) {
+        setSubtreeExpanded(item->child(i), expanded);
+    }
+}
+
+} // namespace
+
 SpatialHierarchyPanel::SpatialHierarchyPanel(QWidget* parent)
     : components::Panel("Spatial Hierarchy", nullptr, parent)
 {
     auto* section = new components::Section("", components::SectionHeaderMode::Hidden, this);
+    section->setBodyExpanding(true);  // let the tree fill the panel's height
 
     tree_ = new QTreeWidget(section);
-    tree_->setColumnCount(2);
-    tree_->setHeaderLabels({"Spatial Item", ""});
+    tree_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    tree_->setColumnCount(3);
+    tree_->setHeaderLabels({"Name", "Long Name", ""});
     tree_->setIconSize(QSize(16, 16));
     tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
     tree_->setUniformRowHeights(true);
+    // Name is drag-resizable, Long Name fills the rest, the eye is pinned to
+    // the right at a fixed width. Header stays visible so the Name/Long-Name
+    // divider can be dragged. Initial 20/80 split applied in showEvent once the
+    // real width is known.
     tree_->header()->setStretchLastSection(false);
-    tree_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
-    tree_->header()->setSectionResizeMode(1, QHeaderView::Fixed);
-    tree_->header()->resizeSection(1, 28);
-    tree_->header()->hide();
+    tree_->header()->setSectionsMovable(false);
+    tree_->header()->setSectionResizeMode(0, QHeaderView::Interactive);  // name
+    tree_->header()->setSectionResizeMode(1, QHeaderView::Stretch);      // LongName / elevation
+    tree_->header()->setSectionResizeMode(2, QHeaderView::Fixed);        // visibility
+    tree_->header()->resizeSection(2, 28);
     section->addBodyWidget(tree_);
     addBodyWidget(section);
 
     connect(tree_, &QTreeWidget::itemClicked, this, [this](QTreeWidgetItem* item, int column) {
-        if (!item || column != 1) return;
+        if (!item || column != 2) return;
         emit visibilityToggleRequested(itemPath(item));
     });
+
+    // Right-click: recursive expand/collapse of a subtree or the whole tree.
+    tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(tree_, &QTreeWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        QMenu menu(tree_);
+        if (QTreeWidgetItem* item = tree_->itemAt(pos); item && item->childCount() > 0) {
+            menu.addAction("Expand Subtree", tree_, [item]() { setSubtreeExpanded(item, true); });
+            menu.addAction("Collapse Subtree", tree_, [item]() { setSubtreeExpanded(item, false); });
+            menu.addSeparator();
+        }
+        menu.addAction("Expand All", tree_, [this]() { tree_->expandAll(); });
+        menu.addAction("Collapse All", tree_, [this]() { tree_->collapseAll(); });
+        menu.exec(tree_->viewport()->mapToGlobal(pos));
+    });
+}
+
+void SpatialHierarchyPanel::showEvent(QShowEvent* event) {
+    components::Panel::showEvent(event);
+    // Default the Name column to 20% of the width once the panel has a real
+    // layout size; Long Name (stretch) takes the rest. Left interactive after,
+    // so the user's own drag persists.
+    if (!column_widths_initialized_) {
+        const int available = tree_->viewport()->width();
+        if (available > 100) {
+            tree_->header()->resizeSection(0, available / 5);
+            column_widths_initialized_ = true;
+        }
+    }
 }
 
 void SpatialHierarchyPanel::setNodes(const QList<TreeNode>& nodes) {
@@ -63,11 +112,15 @@ void SpatialHierarchyPanel::setNodes(const QList<TreeNode>& nodes) {
 }
 
 void SpatialHierarchyPanel::addNode(QTreeWidgetItem* parent, const TreeNode& node) {
-    auto* item = new QTreeWidgetItem(parent, {node.name, ""});
-    item->setData(1, Qt::UserRole, node.visible);
+    auto* item = new QTreeWidgetItem(parent, {node.name, node.detail, ""});
+    item->setData(2, Qt::UserRole, node.visible);
     item->setSizeHint(0, QSize(0, 24));
     item->setIcon(0, components::icons::makeSvgIcon(iconPath(node.kind)));
-    item->setIcon(1, components::icons::makeSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
+    // Storey elevations read as right-aligned numbers; LongNames stay left.
+    if (node.kind == ItemKind::Storey) {
+        item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    }
+    item->setIcon(2, components::icons::makeSvgIcon(node.visible ? ":/icons/eye.svg" : ":/icons/eye-closed.svg"));
     for (const auto& child : node.children) {
         addNode(item, child);
     }

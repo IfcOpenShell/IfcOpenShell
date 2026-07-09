@@ -249,8 +249,15 @@ ModelsPanel::ModelsPanel(bonsaiviewer::SessionState* session_state,
     addBodyWidget(section);
 
     connect(tree_, &QTreeView::clicked, this, [this](const QModelIndex& index) {
-        if (!index.isValid() || index.column() != 1) return;
-        commands::toggleVisibility(*session_state_, kindOf(index), idOf(index));
+        if (!index.isValid()) return;
+        if (index.column() == 1) {
+            commands::toggleVisibility(*session_state_, kindOf(index), idOf(index));
+            return;
+        }
+        // Clicking a model (its cube icon / row) makes it the active model.
+        if (kindOf(index) == ItemKind::Model) {
+            session_state_->setActiveModelId(idOf(index));
+        }
     });
 
     connect(tree_, &QTreeView::customContextMenuRequested, this, [this](const QPoint& pos) {

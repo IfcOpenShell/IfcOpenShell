@@ -40,6 +40,16 @@
 #include <string>
 #include <iomanip>
 #include <charconv>
+#include <type_traits>
+
+// Apple clang's libc++ has no floating-point std::from_chars overload (it's
+// =deleted), so on macOS doubles are parsed via strtod_l with a cached "C"
+// locale — locale-independent, unlike strtod. Other platforms (libstdc++,
+// MSVC STL) have working float from_chars and are left unchanged.
+#if defined(__APPLE__)
+#include <xlocale.h>
+#include <locale.h>
+#endif
 
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
@@ -123,6 +133,13 @@ std::string& spf_lexer<Reader>::get_temp_string() const {
 
 namespace {
 
+#if defined(__APPLE__)
+double parse_double_c(const char* start, char** end) {
+    static const locale_t loc = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    return strtod_l(start, end, loc);
+}
+#endif
+
 template <typename T>
 bool parse_num_(const char* pStart, size_t size, T& val) {
     if (size == 0) {
@@ -135,11 +152,27 @@ bool parse_num_(const char* pStart, size_t size, T& val) {
             return false;
         }
     }
-    auto re = std::from_chars(pStart, pStart + size, val);
-    if (re.ec != std::errc() || re.ptr != pStart + size) {
-        return false;
+    if constexpr (std::is_floating_point_v<T>) {
+#if defined(__APPLE__)
+        // pStart is NUL-terminated at pStart + size (callers pass c_str()), so
+        // strtod_l stops exactly at the end of a well-formed number. from_chars
+        // is not instantiated for double here — its float overload is =deleted
+        // in Apple's libc++.
+        char* pEnd = nullptr;
+        const double result = parse_double_c(pStart, &pEnd);
+        if (pEnd != pStart + size) {
+            return false;
+        }
+        val = static_cast<T>(result);
+        return true;
+#else
+        auto re = std::from_chars(pStart, pStart + size, val);
+        return re.ec == std::errc() && re.ptr == pStart + size;
+#endif
+    } else {
+        auto re = std::from_chars(pStart, pStart + size, val);
+        return re.ec == std::errc() && re.ptr == pStart + size;
     }
-    return true;
 }
 
 } // namespace

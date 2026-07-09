@@ -60,6 +60,12 @@ QString writeStubFile(const QString& path) {
     return QDir::cleanPath(fi.absoluteFilePath());
 }
 
+// addModel with the filename as its label — mirrors how the app
+// (models/Commands.cpp) calls it now that addModel takes the label explicitly.
+QString addLocalModel(Federation& fed, const QString& path) {
+    return fed.addModel(path, QFileInfo(path).fileName());
+}
+
 QJsonObject readJsonFile(const QString& path) {
     QFile f(path);
     REQUIRE(f.open(QIODevice::ReadOnly));
@@ -88,7 +94,7 @@ TEST_CASE("addModel emits dirty=true; markClean clears it; remove re-dirties", "
     QSignalSpy spy(&fed, &Federation::dirtyChanged);
 
     QString abs = writeStubFile(tmp.filePath("a.ifc"));
-    QString id = fed.addModel(abs);
+    QString id = addLocalModel(fed, abs);
     REQUIRE_FALSE(id.isEmpty());
     REQUIRE(fed.isDirty());
     REQUIRE(spy.count() == 1);
@@ -108,9 +114,9 @@ TEST_CASE("addModel emits dirty=true; markClean clears it; remove re-dirties", "
 TEST_CASE("addModel rejects empty paths and nested .ifcfed sources", "[federation]") {
     ensureQApp();
     Federation fed;
-    REQUIRE(fed.addModel("").isEmpty());
-    REQUIRE(fed.addModel("nested.ifcfed").isEmpty());
-    REQUIRE(fed.addModel("nested.IfcFed").isEmpty());  // case-insensitive
+    REQUIRE(addLocalModel(fed, "").isEmpty());
+    REQUIRE(addLocalModel(fed, "nested.ifcfed").isEmpty());
+    REQUIRE(addLocalModel(fed, "nested.IfcFed").isEmpty());  // case-insensitive
     REQUIRE(fed.models().empty());
     REQUIRE_FALSE(fed.isDirty());
 }
@@ -152,7 +158,7 @@ TEST_CASE("setModelVisible toggles flag, dirty, and signal; idempotent", "[feder
     REQUIRE(tmp.isValid());
 
     Federation fed;
-    QString id = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    QString id = addLocalModel(fed, writeStubFile(tmp.filePath("a.ifc")));
     REQUIRE_FALSE(id.isEmpty());
     REQUIRE(fed.findById(id)->visible);  // visible by default
     fed.markClean();
@@ -176,7 +182,7 @@ TEST_CASE("setModelVisible toggles flag, dirty, and signal; idempotent", "[feder
     REQUIRE(dirty_spy.count() == 0);
     REQUIRE(vis_spy.count() == 0);
 
-    // Unknown fed_id is a no-op (no crash, no signal).
+    // Unknown model_id is a no-op (no crash, no signal).
     fed.setModelVisible("not-a-real-id", false);
     REQUIRE_FALSE(fed.isDirty());
     REQUIRE(vis_spy.count() == 0);
@@ -199,7 +205,7 @@ TEST_CASE("save then load round-trips models, transform, visibility, home view",
 
     Federation src;
     QString id1 = src.addModel(src1, "Wall");
-    QString id2 = src.addModel(src2);  // default display_name from filename
+    QString id2 = addLocalModel(src, src2);  // filename as label
     REQUIRE_FALSE(id1.isEmpty());
     REQUIRE_FALSE(id2.isEmpty());
 
@@ -261,8 +267,8 @@ TEST_CASE("save stores paths relative when under fed_dir, absolute otherwise", "
     QString outside = writeStubFile(root.filePath("elsewhere/outside.ifc"));
 
     Federation fed;
-    fed.addModel(inside);
-    fed.addModel(outside);
+    addLocalModel(fed, inside);
+    addLocalModel(fed, outside);
 
     QString err;
     REQUIRE(fed.save(fed_path, &err));
@@ -304,7 +310,7 @@ TEST_CASE("Save-As to a different directory recomputes path relativity", "[feder
     QString fed_b = fed_dir_b + "/proj.ifcfed";
 
     Federation fed;
-    fed.addModel(src);
+    addLocalModel(fed, src);
 
     QString err;
     REQUIRE(fed.save(fed_a, &err));
@@ -514,31 +520,31 @@ TEST_CASE("setModelGroup assigns and reassigns; rejects unknown group",
     ensureQApp();
     QTemporaryDir tmp;
     Federation fed;
-    QString mid = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    QString model_id = addLocalModel(fed, writeStubFile(tmp.filePath("a.ifc")));
     QString gid = fed.addGroup("G");
     fed.markClean();
 
     QSignalSpy spy(&fed, &Federation::modelGroupChanged);
-    fed.setModelGroup(mid, gid);
-    REQUIRE(fed.findById(mid)->group_id == gid);
+    fed.setModelGroup(model_id, gid);
+    REQUIRE(fed.findById(model_id)->group_id == gid);
     REQUIRE(fed.isDirty());
     REQUIRE(spy.count() == 1);
 
     // Idempotent.
     fed.markClean();
     spy.clear();
-    fed.setModelGroup(mid, gid);
+    fed.setModelGroup(model_id, gid);
     REQUIRE_FALSE(fed.isDirty());
     REQUIRE(spy.count() == 0);
 
     // Unknown group is rejected.
-    fed.setModelGroup(mid, "no-such-group");
-    REQUIRE(fed.findById(mid)->group_id == gid);
+    fed.setModelGroup(model_id, "no-such-group");
+    REQUIRE(fed.findById(model_id)->group_id == gid);
     REQUIRE_FALSE(fed.isDirty());
 
     // Reassign back to root.
-    fed.setModelGroup(mid, QString());
-    REQUIRE(fed.findById(mid)->group_id.isEmpty());
+    fed.setModelGroup(model_id, QString());
+    REQUIRE(fed.findById(model_id)->group_id.isEmpty());
     REQUIRE(spy.count() == 1);
 }
 
@@ -547,12 +553,12 @@ TEST_CASE("setGroupVisible affects effective visibility cascade",
     ensureQApp();
     QTemporaryDir tmp;
     Federation fed;
-    QString mid = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
+    QString model_id = addLocalModel(fed, writeStubFile(tmp.filePath("a.ifc")));
     QString outer = fed.addGroup("Outer");
     QString inner = fed.addGroup("Inner", outer);
-    fed.setModelGroup(mid, inner);
+    fed.setModelGroup(model_id, inner);
 
-    REQUIRE(fed.isModelEffectivelyVisible(mid));
+    REQUIRE(fed.isModelEffectivelyVisible(model_id));
     REQUIRE(fed.isGroupChainVisible(inner));
 
     // Hide the outer group: inner chain visibility flips, model effective
@@ -560,21 +566,21 @@ TEST_CASE("setGroupVisible affects effective visibility cascade",
     fed.setGroupVisible(outer, false);
     REQUIRE_FALSE(fed.isGroupChainVisible(outer));
     REQUIRE_FALSE(fed.isGroupChainVisible(inner));
-    REQUIRE_FALSE(fed.isModelEffectivelyVisible(mid));
-    REQUIRE(fed.findById(mid)->visible);
+    REQUIRE_FALSE(fed.isModelEffectivelyVisible(model_id));
+    REQUIRE(fed.findById(model_id)->visible);
 
     // Hiding a model directly while its group is also hidden — still
     // effectively hidden.
-    fed.setModelVisible(mid, false);
-    REQUIRE_FALSE(fed.isModelEffectivelyVisible(mid));
+    fed.setModelVisible(model_id, false);
+    REQUIRE_FALSE(fed.isModelEffectivelyVisible(model_id));
 
     // Re-show the outer group; model is still hidden by its own flag.
     fed.setGroupVisible(outer, true);
     REQUIRE(fed.isGroupChainVisible(inner));
-    REQUIRE_FALSE(fed.isModelEffectivelyVisible(mid));
+    REQUIRE_FALSE(fed.isModelEffectivelyVisible(model_id));
 
-    fed.setModelVisible(mid, true);
-    REQUIRE(fed.isModelEffectivelyVisible(mid));
+    fed.setModelVisible(model_id, true);
+    REQUIRE(fed.isModelEffectivelyVisible(model_id));
 }
 
 TEST_CASE("setGroupParent rejects cycles and self-parenting",
@@ -610,9 +616,9 @@ TEST_CASE("removeGroup reparents direct children + models up one level",
     QString mid_outer = fed.addGroup("MidOuter", outer);
     QString inner = fed.addGroup("Inner", mid_outer);
 
-    QString m_outer = fed.addModel(writeStubFile(tmp.filePath("a.ifc")));
-    QString m_mid   = fed.addModel(writeStubFile(tmp.filePath("b.ifc")));
-    QString m_inner = fed.addModel(writeStubFile(tmp.filePath("c.ifc")));
+    QString m_outer = addLocalModel(fed, writeStubFile(tmp.filePath("a.ifc")));
+    QString m_mid   = addLocalModel(fed, writeStubFile(tmp.filePath("b.ifc")));
+    QString m_inner = addLocalModel(fed, writeStubFile(tmp.filePath("c.ifc")));
     fed.setModelGroup(m_outer, outer);
     fed.setModelGroup(m_mid,   mid_outer);
     fed.setModelGroup(m_inner, inner);
@@ -653,8 +659,8 @@ TEST_CASE("groups + model.group_id round-trip through nested JSON save/load",
         Federation src;
         site_id = src.addGroup("Site");
         bldg_id = src.addGroup("Building 1", site_id);
-        m_root  = src.addModel(writeStubFile(tmp.filePath("root.ifc")));
-        m_bldg  = src.addModel(writeStubFile(tmp.filePath("bldg.ifc")));
+        m_root  = addLocalModel(src, writeStubFile(tmp.filePath("root.ifc")));
+        m_bldg  = addLocalModel(src, writeStubFile(tmp.filePath("bldg.ifc")));
         src.setModelGroup(m_bldg, bldg_id);
         src.setGroupVisible(bldg_id, false);
 

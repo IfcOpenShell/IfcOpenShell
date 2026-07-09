@@ -378,7 +378,7 @@ void SettingsDialog::populateModelTable() {
         model_table_->setItem(row, 0, model_item);
 
         ModelRowWidgets widgets;
-        widgets.fed_id = model.id;
+        widgets.model_id = model.id;
 
         widgets.frame = new QComboBox(model_table_);
         widgets.frame->addItem("Local", static_cast<int>(AFrame::ModelLocal));
@@ -448,7 +448,7 @@ void SettingsDialog::updateSelectedModelGeoref() {
         return;
     }
 
-    settings_view_->refresh(model_rows_[row].fed_id);
+    settings_view_->refresh(model_rows_[row].model_id);
 }
 
 void SettingsDialog::onAccepted() {
@@ -473,7 +473,7 @@ void SettingsDialog::onAccepted() {
             transformation.b = parseVector3(row.to_point->text());
             transformation.rxyz_deg = parseVector3(row.rotate->text());
             transformation.pivot = parseVector3(row.pivot->text());
-            federation_->setModelTransformation(row.fed_id, transformation);
+            federation_->setModelTransformation(row.model_id, transformation);
         }
         if (session_state_) {
             session_state_->notifyFederationChanged();
