@@ -6,7 +6,11 @@ on:
 jobs:
   build_ifcopenshell:
     runs-on: ubuntu-22.04-arm
-    container: arm64v8/rockylinux:9
+    # Rocky 10 (glibc 2.39) — aqt's official Qt6 ARM binaries are built
+    # against glibc 2.38, which Rocky 9 (glibc 2.34) can't run (moc fails to
+    # load). The legacy arm64v8/rockylinux Docker image stopped at 9; Rocky 10
+    # is published under the rockylinux/rockylinux namespace.
+    container: rockylinux/rockylinux:10
 
     steps:
       - name: Set up uv
@@ -25,10 +29,19 @@ jobs:
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
                          findutils xz byacc patchelf libxkbcommon-devel                 \
-                         python3.11 python3.11-pip python3.11-tkinter
+                         python3-tkinter
           python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
-          python3.11 -c "import tkinter; print('Tk', tkinter.TkVersion)"
+          python3 -c "import tkinter; print('Tk', tkinter.TkVersion)"
+
+      - name: Install Rust
+        # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
+        # .zip archives" step below runs `cargo build --release` via
+        # packaging/build.py. Match the dedicated connector workflow's stable
+        # toolchain (dtolnay/rust-toolchain@stable).
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Install aws cli
         run: |
@@ -60,7 +73,7 @@ jobs:
       - name: ccache
         uses: hendrikmuhs/ccache-action@v1.2.23
         with:
-          key: ubuntu-22.04-${{ runner.arch }}-rockylinux9
+          key: ubuntu-22.04-${{ runner.arch }}-rockylinux10
 
       - name: Run Build Script
         shell: bash
@@ -101,7 +114,7 @@ jobs:
           # connector.json into dist/autodesk/. Same on-disk shape as the
           # old PyInstaller flow so the symlink + zip steps below
           # continue to work unchanged.
-          python3.11 src/bonsaiviewer-autodesk/packaging/build.py
+          python3 src/bonsaiviewer-autodesk/packaging/build.py
           autodesk_connector_dir="$PWD/src/bonsaiviewer-autodesk/dist/autodesk"
           test -d "$autodesk_connector_dir"
 

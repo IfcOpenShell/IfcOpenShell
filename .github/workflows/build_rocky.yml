@@ -30,6 +30,15 @@ jobs:
           git config --global --add safe.directory '*'
           python3.11 -c "import tkinter; print('Tk', tkinter.TkVersion)"
 
+      - name: Install Rust
+        # The bonsaiviewer-autodesk connector is a Rust crate; the "Package
+        # .zip archives" step below runs `cargo build --release` via
+        # packaging/build.py. Match the dedicated connector workflow's stable
+        # toolchain (dtolnay/rust-toolchain@stable).
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
       - name: Install aws cli
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
