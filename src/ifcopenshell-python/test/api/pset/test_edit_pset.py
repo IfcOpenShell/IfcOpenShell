@@ -52,6 +52,24 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert pset.HasProperties[0].NominalValue.is_a("IfcThermalTransmittanceMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 42
 
+    def test_an_empty_string_for_a_numeric_property_is_treated_as_no_value(self):
+        # Regression test for #4112: an empty string assigned to a numeric
+        # property used to crash with "could not convert string to float: ''".
+        # It is now treated as no value, the same as None.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(
+            self.file, pset=pset, properties={"ThermalTransmittance": ""}, should_purge=False
+        )
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        prop = next(p for p in pset.HasProperties if p.Name == "ThermalTransmittance")
+        assert prop.NominalValue is None
+        # An empty string for a string property is still preserved, not dropped.
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Reference": ""}, should_purge=False)
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        reference = next(p for p in pset.HasProperties if p.Name == "Reference")
+        assert reference.NominalValue.wrappedValue == ""
+
     def test_adding_a_property_if_it_is_none(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
