@@ -261,6 +261,23 @@ class TestFilterElements(test.bootstrap.IFC4):
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
 
+    def test_selecting_by_boolean_property(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"LoadBearing": True})
+        pset2 = ifcopenshell.api.pset.add_pset(self.file, product=element2, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset2, properties={"LoadBearing": False})
+        # A boolean property must match every common spelling, not just "1"/"0".
+        for true_value in ("TRUE", "True", "true", "1"):
+            assert subject.filter_elements(self.file, f"IfcWall, Pset_WallCommon.LoadBearing={true_value}") == {
+                element
+            }, true_value
+        for false_value in ("FALSE", "False", "false", "0"):
+            assert subject.filter_elements(self.file, f"IfcWall, Pset_WallCommon.LoadBearing={false_value}") == {
+                element2
+            }, false_value
+
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
