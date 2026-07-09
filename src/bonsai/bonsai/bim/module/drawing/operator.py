@@ -682,6 +682,10 @@ class CreateDrawing(bpy.types.Operator):
             if "projection" in el.get("class", "").split():
                 continue
             element = self.get_element_by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            if element is None or element.file is not tool.Ifc.get():
+                # Linked model element - no Blender object to bisect, and its
+                # STEP id must not be resolved against the host session.
+                continue
             if not (obj := tool.Ifc.get_object(element)):
                 continue
             if not (material := ifcopenshell.util.element.get_material(element)):
@@ -1054,6 +1058,10 @@ class CreateDrawing(bpy.types.Operator):
             if self.cprops.generate_material_layers:
                 self.generate_material_layers(context, root)
             self.merge_linework_and_add_metadata(root)
+            # Bisect cut linework is appended after the projections, but the
+            # retained serializer cuts of linked models precede them - enforce
+            # the projection-under-cut convention like OPENCASCADE mode does.
+            self.move_projection_to_bottom(root)
             self.move_elements_to_top(root)
         elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
@@ -1449,9 +1457,21 @@ class CreateDrawing(bpy.types.Operator):
                     continue
 
     def remove_cut_linework(self, root):
+        """Remove host elements' cut linework so bisecting can regenerate it.
+
+        Linked model elements keep the serializer's cut geometry - bisect
+        linework is generated from Blender mesh objects, and linked models
+        are instanced collections without any.
+        """
+        ifc_file = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
-            if "projection" not in el.get("class", "").split():
-                el.getparent().remove(el)
+            if "projection" in el.get("class", "").split():
+                continue
+            try:
+                ifc_file.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            except RuntimeError:
+                continue  # Linked model element.
+            el.getparent().remove(el)
 
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
@@ -1486,7 +1506,9 @@ class CreateDrawing(bpy.types.Operator):
                 classes.append("cut")
                 el.set("class", " ".join(classes))
 
-            obj = tool.Ifc.get_object(element)
+            # Resolving a linked element's STEP id against the host session
+            # would return an arbitrary host object.
+            obj = tool.Ifc.get_object(element) if element is not None and element.file is tool.Ifc.get() else None
 
             if not obj:  # This is a linked model object. For now, do nothing.
                 continue
