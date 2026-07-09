@@ -49,16 +49,15 @@ If you forgot to select the wall before placing the door, you'll need to manuall
 3. Adjust Door Position (if needed):
    - With the door selected, use Blender's move tools to adjust its position along the wall.
 
-4. Regenerate the Wall Geometry:
-   - Select the wall.
-   - Press Shift+G to regenerate the wall geometry, incorporating the door opening.
+4. Update the Wall Opening:
+   - Select the door.
+   - Press Shift+G to move the wall opening to the door's new position.
 
    .. note::
-      This step ensures the wall geometry is updated to include the door opening.
-
-      Moving the Door using Blender tools doesn't actually change the IFC model.
-      Future versions need to improve UX in that regard.
-      Synchronisation between the Blender scene and IFC model is an issue that has the highest priority.
+      Moving the door with Blender's tools repositions the door, but the
+      opening in the wall does not follow on its own. Selecting the door and
+      pressing Regen repositions the opening to match. If Regen does not
+      update the opening, use Apply Void (Shift+O) instead.
 
 5. Change Door Swing Direction:
    - Select only the door.
@@ -81,10 +80,11 @@ Additional Notes
 
 - The Shift+F shortcut for flipping the door is not visible in the Door tool interface.
   This functionality may be added as a visible button in future updates.
-- Always use Shift+G (Regenerate) after making changes
+- Use Shift+G (Regenerate) after making changes
   to ensure the wall and door geometries are correctly updated.
-- Avoid using Shift+O (Apply Void) as it may cause issues
-  with the door's orientation.
+- Use Shift+O (Apply Void) when a door has no void relation with its wall,
+  or when Regen does not update the opening. Apply it before making further
+  changes to the door, as noted above.
 
 
 Modifying Doors
@@ -95,21 +95,21 @@ Modifying Doors
 
 You can modify doors using various tools:
 
-- Resize: Adjust the width and height parameters in the top bar.
+- Resize: Adjust the width and height parameters in the top bar. The opening in the wall updates automatically.
 - Move: Use Blender's standard move tools to reposition the door.
 - Flip: Change the opening direction using the flip tool (Shift+F).
 
 .. note::
-   After moving a door, you need to recalculate the void in the wall. To do this:
+   After moving a door, the opening in the wall does not follow on its own, so you need to recalculate it. To do this:
 
-- Select the wall containing the moved door.
-- Click on the "Regen" (:kbd:`Shift` + :kbd:`G`) button in the top bar or use the appropriate shortcut.
-- This ensures that the opening in the wall is correctly positioned after moving the door.
+   - Select the door you moved.
+   - Click the "Regen" (:kbd:`Shift` + :kbd:`G`) button in the top bar, or use the shortcut.
+   - The wall opening moves to match the door's new position.
 
-If Regen operation doesn't achive the required result, use Apply Void function:
+   If Regen does not achieve the required result, use Apply Void instead:
 
-- Click on the "Apply Void" (:kbd:`Shift` + :kbd:`O`) button in the top bar or use the appropriate shortcut.
-- This ensures that the opening is linked to the wall.
+   - Click the "Apply Void" (:kbd:`Shift` + :kbd:`O`) button in the top bar, or use the shortcut.
+   - This reconnects the opening to the wall.
 
 
 Door Properties
