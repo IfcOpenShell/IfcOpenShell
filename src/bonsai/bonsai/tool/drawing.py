@@ -2776,7 +2776,10 @@ class Drawing(bonsai.core.tool.Drawing):
         denominator = tool.Drawing.convert_scale_string(denominator_string)
         if not numerator or not denominator:
             return
-        scale = str(Fraction(numerator / denominator).limit_denominator(1000))  # Any ratio >1000 is stupid.
+        fraction = Fraction(numerator / denominator).limit_denominator(1000)  # Any ratio >1000 is stupid.
+        # str(Fraction(2, 1)) is "2" with no slash, but every consumer of
+        # "Scale" splits on "/", so keep the denominator explicit (#7957).
+        scale = f"{fraction.numerator}/{fraction.denominator}"
         if "'" in scale or '"' in scale:
             human_separator = "="  # Imperial scales use "=", like 1" = 1' - 0"
             # If for some crazy reason we mix metric and imperial, assume metric is SI units, like 1m = 1'
