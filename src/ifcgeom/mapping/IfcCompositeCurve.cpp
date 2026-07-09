@@ -53,6 +53,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
 			if (crv) {
 				if (!segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense()) {
+					// Clone before reversing so we do not corrupt the shared cached
+					// curve that map() may return for other segments.
+					crv.reset(crv->clone_());
 					crv->reverse();
 				}
 				if (crv->kind() == taxonomy::EDGE) {

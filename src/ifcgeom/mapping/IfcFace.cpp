@@ -26,18 +26,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFace* inst) {
 	auto bounds = inst->Bounds();
 	for (auto& bound : *bounds) {
 		if (auto r = taxonomy::cast<taxonomy::loop>(map(bound->Bound()))) {
+			// Clone before mutating so we do not corrupt the shared cached loop
+			// that map() may return for other faces referencing the same bound.
+			r.reset(r->clone_());
 			if (!bound->Orientation()) {
 				r->reverse();
 			}
 			// @todo check why loop sets external to true initially
 			r->external = bound->declaration().is(IfcSchema::IfcFaceOuterBound::Class());
-			/*
-			// Make a copy in case we need immutability later for e.g. caching
-			auto s = r->clone();
-			((taxonomy::loop*)s)->external = true;
-			delete r;
-			r = s;
-			*/
 			face->children.push_back(r);
 		}
 	}
