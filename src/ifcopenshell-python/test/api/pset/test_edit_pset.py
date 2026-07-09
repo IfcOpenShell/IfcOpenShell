@@ -52,6 +52,16 @@ class TestEditPsetIFC2X3(test.bootstrap.IFC2X3):
         assert pset.HasProperties[0].NominalValue.is_a("IfcThermalTransmittanceMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 42
 
+    def test_editing_a_logical_property_with_a_bool(self):
+        # Regression test for #7475: str(True) stored "True", which IfcLogical
+        # reads as UNKNOWN, so AboveGround could never be set.
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_BuildingStoreyCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"AboveGround": True})
+        prop = next(p for p in pset.HasProperties if p.Name == "AboveGround")
+        assert prop.NominalValue.is_a("IfcLogical")
+        assert prop.NominalValue.wrappedValue is True
+
     def test_adding_a_property_if_it_is_none(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")

@@ -467,6 +467,9 @@ class Usecase:
             "DOUBLE": float,
             "STRING": str,
         }[type_str]
+        if type_str == "LOGICAL" and isinstance(value, bool):
+            # str(True) would store "True", which IfcLogical reads as UNKNOWN.
+            return value
         if type_str == "AGGREGATE OF DOUBLE":
             return [float(i) for i in value]
         elif type_str == "AGGREGATE OF INT":
