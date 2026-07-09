@@ -81,7 +81,7 @@ def assign_resource(
     """
     if related_object.HasAssignments:
         for assignment in related_object.HasAssignments:
-            if assignment.is_a("IfclRelAssignsToResource") and assignment.RelatingResource == relating_resource:
+            if assignment.is_a("IfcRelAssignsToResource") and assignment.RelatingResource == relating_resource:
                 return assignment
 
     resource_of = None
