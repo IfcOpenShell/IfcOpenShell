@@ -112,8 +112,14 @@ def get_pset(
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
-                if definition.Name == name:
-                    pset = definition
+                # IfcPropertySetDefinitionSet is a defined type wrapping a list
+                # of property set definitions, so unpack it into its members.
+                if definition.is_a("IfcPropertySetDefinitionSet"):
+                    definitions = definition.wrappedValue
+                else:
+                    definitions = (definition,)
+                pset = next((d for d in definitions if d.Name == name), None)
+                if pset:
                     break
 
     if pset:
@@ -221,15 +227,22 @@ def get_psets(
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
-                if (
-                    psets_only
-                    and not definition.is_a("IfcPropertySet")
-                    and not definition.is_a("IfcPreDefinedPropertySet")
-                ):
-                    continue
-                if qtos_only and not definition.is_a("IfcElementQuantity"):
-                    continue
-                psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
+                # IfcPropertySetDefinitionSet is a defined type wrapping a list
+                # of property set definitions, so unpack it into its members.
+                if definition.is_a("IfcPropertySetDefinitionSet"):
+                    definitions = definition.wrappedValue
+                else:
+                    definitions = (definition,)
+                for definition in definitions:
+                    if (
+                        psets_only
+                        and not definition.is_a("IfcPropertySet")
+                        and not definition.is_a("IfcPreDefinedPropertySet")
+                    ):
+                        continue
+                    if qtos_only and not definition.is_a("IfcElementQuantity"):
+                        continue
+                    psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     return psets
 
 
