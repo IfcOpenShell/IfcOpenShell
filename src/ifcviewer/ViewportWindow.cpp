@@ -774,17 +774,20 @@ bool ViewportWindow::initWgpu() {
             Log::info() << "[wgpu fly] WGPU_FLY_DEBUG=1 — per-frame [fly] dt log enabled";
         }
     }
-    const char* nav_env = std::getenv("WGPU_NAV_PRESET");
-    applyNavPreset(nav_env ? nav_env : "blender");
+    // WGPU_NAV_PRESET is a dev override; apply it here. Otherwise leave the
+    // preset alone — MainWindow applies the persisted Settings choice before the
+    // window is exposed (initWgpu runs on the first expose), so forcing a
+    // default here would clobber it and desync the applied preset from Settings.
+    if (const char* nav_env = std::getenv("WGPU_NAV_PRESET")) {
+        applyNavPreset(nav_env);
+    }
     Log::info().noquote().nospace()
-        << "[wgpu nav] preset=" << (nav_env ? nav_env : "blender")
-        << " (orbit "
+        << "[wgpu nav] orbit "
         << (orbit_button_ == Qt::RightButton ? "RMB" : "MMB")
         << (orbit_mods_ & Qt::ShiftModifier ? "+Shift" : "")
         << ", pan "
         << (pan_button_ == Qt::RightButton ? "RMB" : "MMB")
-        << (pan_mods_ & Qt::ShiftModifier ? "+Shift" : "")
-        << ")";
+        << (pan_mods_ & Qt::ShiftModifier ? "+Shift" : "");
 
     // ---- ViewportCore handles instance/adapter/device/queue/pool/format -
     if (!core_.initWgpu(web_limits_)) return false;
