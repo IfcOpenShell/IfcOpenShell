@@ -1706,6 +1706,12 @@ class CreateDrawing(bpy.types.Operator):
             key=lambda a: (
                 tool.Drawing.get_annotation_z_index(a),
                 1 if ifcopenshell.util.element.get_predefined_type(a) == "TEXT" else 0,
+                # Deterministic tiebreaker so equal-priority annotations keep a
+                # stable order across sessions. Without it the order comes from
+                # the set union above, which depends on entity hashes (and thus
+                # the file pointer), shuffling annotations between Blender
+                # restarts. See #6608.
+                a.id(),
             ),
         )
 
