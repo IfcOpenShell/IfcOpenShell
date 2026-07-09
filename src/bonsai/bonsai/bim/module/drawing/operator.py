@@ -2931,6 +2931,20 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Remove currently selected sheet"
     sheet: bpy.props.IntProperty()
 
+    def invoke(self, context, event):
+        # Removing a sheet permanently deletes its layout, sheet and revision
+        # files from disk. Those files may be shared with other IFC files saved
+        # in the same folder, and the deletion cannot be undone, so confirm
+        # first to avoid unintentional data loss. See #5881.
+        return context.window_manager.invoke_confirm(
+            self,
+            event,
+            title="Remove Sheet",
+            message="This permanently deletes the sheet's layout files from disk and cannot be undone.",
+            confirm_text="Remove Sheet",
+            icon="WARNING",
+        )
+
     def _execute(self, context):
         core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
