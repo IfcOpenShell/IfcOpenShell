@@ -36,9 +36,12 @@ def update_fallback_position(file: ifcopenshell.file, lp: entity_instance):
 
     p = ifcopenshell.util.placement.get_local_placement(lp)
 
-    x = float(p[0, 3])
-    y = float(p[1, 3])
-    z = float(p[2, 3])
+
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+
+    x = float(p[0, 3])*unit_scale
+    y = float(p[1, 3])*unit_scale
+    z = float(p[2, 3])*unit_scale
 
     rx = float(p[0, 0])
     ry = float(p[1, 0])
