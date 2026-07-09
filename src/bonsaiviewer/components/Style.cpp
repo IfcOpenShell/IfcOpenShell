@@ -50,6 +50,29 @@ QString buildAppStyleSheet() {
             background: ${app_background};
             color: ${primary_text};
         }
+        QInputDialog,
+        QInputDialog QWidget {
+            background: ${app_background};
+            color: ${primary_text};
+        }
+        /* Generic tab bar — e.g. the QTabBar QMainWindow creates when docks are
+           tabbed together. appTabBar's #-selectors below are more specific and
+           still win for the app's own top tabs. */
+        QTabBar {
+            background: ${app_background};
+        }
+        QTabBar::tab {
+            background: ${tab_background};
+            color: ${secondary_text};
+            padding: 5px 12px;
+        }
+        QTabBar::tab:selected {
+            background: ${panel_background};
+            color: ${primary_text};
+        }
+        QTabBar::tab:hover {
+            color: ${hover_text};
+        }
         QTabBar#appTabBar {
             background: ${tab_bar_background};
         }
@@ -180,7 +203,9 @@ QString buildAppStyleSheet() {
             color: ${primary_text};
             border: none;
             border-bottom: 1px solid ${border};
-            padding: 7px 8px;
+            /* Match the body row height: same vertical padding as
+               QTreeView/QListView/QTableView::item (4px) below. */
+            padding: 4px 8px;
             font-weight: 600;
         }
         QTableCornerButton::section {
