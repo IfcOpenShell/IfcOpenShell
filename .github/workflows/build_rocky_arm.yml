@@ -10,7 +10,15 @@ jobs:
     # against glibc 2.38, which Rocky 9 (glibc 2.34) can't run (moc fails to
     # load). The legacy arm64v8/rockylinux Docker image stopped at 9; Rocky 10
     # is published under the rockylinux/rockylinux namespace.
-    container: rockylinux/rockylinux:10
+    container:
+      image: rockylinux/rockylinux:10
+      # The community rockylinux image omits PATH from its config (the old
+      # Docker Official arm64v8/rockylinux set it), so GitHub Actions `run:`
+      # steps fail with `exec: "sh": not found` — docker exec has no /usr/bin
+      # to resolve the shell. Restore a standard PATH; GITHUB_PATH prepends
+      # (uv, cargo) are still layered on top by the runner.
+      env:
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
     steps:
       - name: Set up uv
