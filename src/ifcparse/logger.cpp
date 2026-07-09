@@ -290,6 +290,15 @@ std::string logger::get_log() {
     return log_stream_.str();
 }
 
+std::size_t logger::count(const std::string& code) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::size_t count = 0;
+    for (const auto& message : log_messages_) {
+        count += code == message.code;
+    }
+    return count;
+}
+
 void logger::clear() {
     std::lock_guard<std::mutex> lock(mutex_);
     log_stream_.str(std::string());

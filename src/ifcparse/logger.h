@@ -24,6 +24,7 @@
 #include "express.h"
 
 #include <boost/scope_exit.hpp>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <map>
@@ -136,6 +137,7 @@ class IFC_PARSE_API logger {
 
     void progress_bar(int progress);
     std::string get_log();
+    std::size_t count(const std::string& code);
     void clear();
     void append(logger& other);
     void print_performance_stats();

@@ -177,7 +177,15 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	// Note that openings for IfcOpeningElements are not processed
 	auto openings = mapping_->find_openings(product);
 
-	if (!settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get() && !openings.empty()) {
+	const bool no_openings = openings.empty();
+    const bool disable_opening_subtractions = settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get();
+    const bool above_limit = settings_.get<ifcopenshell::geometry::settings::MaxVoidsPerElement>().has() && settings_.get<ifcopenshell::geometry::settings::MaxVoidsPerElement>().get() != 0 && openings.size() > settings_.get<ifcopenshell::geometry::settings::MaxVoidsPerElement>().get();
+
+	if (above_limit) {
+		logger_.warning("GEO", 403, "Element has more openings than the maximum allowed. Openings will not be processed for this element:", product);
+    }
+
+	if (!no_openings && !disable_opening_subtractions && !above_limit) {
 		representation_id_builder << "-openings";
         for (auto& op : openings) {
 			representation_id_builder << "-" << op.id();
