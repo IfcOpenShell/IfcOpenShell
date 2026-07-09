@@ -20,13 +20,18 @@ jobs:
         run: |
           dnf update -y
           dnf install -y epel-release
-          dnf install -y gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
+          # --enablerepo=crb: libstdc++-static (libsupc++.a, needed by the
+          # bundled FLTK link) lives in Rocky's CodeReady Builder repo, which
+          # is disabled by default.
+          dnf install -y --enablerepo=crb gcc gcc-c++ git autoconf automake bison make zip cmake python3 python3-pip \
                          bzip2 patch mesa-libGL-devel libffi-devel fontconfig-devel      \
                          sqlite-devel bzip2-devel zlib-devel openssl-devel xz-devel      \
                          readline-devel ncurses-devel libffi-devel libuuid-devel git-lfs \
                          findutils xz byacc patchelf libxkbcommon-devel                 \
                          python3.11 python3.11-pip python3.11-tkinter \
-                         dbus-devel
+                         dbus-devel \
+                         libXext-devel libXinerama-devel libXcursor-devel libXrender-devel \
+                         libXfixes-devel libXft-devel pango-devel cairo-devel libstdc++-static
           python3 -m pip install typing_extensions aqtinstall
           git config --global --add safe.directory '*'
           python3.11 -c "import tkinter; print('Tk', tkinter.TkVersion)"
