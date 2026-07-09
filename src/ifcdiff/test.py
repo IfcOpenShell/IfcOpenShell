@@ -77,6 +77,23 @@ class TestIfcDiff:
         assert ifc_diff.deleted_elements == set()
         assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
 
+    def test_changed_predefined_type_is_caught_by_default(self):
+        # Regression test for #8214: a plain diff (no relationships specified)
+        # must report a modified or removed PredefinedType. Previously the
+        # default only compared geometry, so attribute-only edits were missed.
+        ifc_file = setup_project()
+        wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
+        wall.PredefinedType = "SOLIDWALL"
+
+        new_file = ifc_file.from_string(ifc_file.to_string())
+        new_file.by_id(wall.id()).PredefinedType = "NOTDEFINED"
+
+        ifc_diff = ifcdiff.IfcDiff(ifc_file, new_file)
+        ifc_diff.diff()
+        assert ifc_diff.added_elements == set()
+        assert ifc_diff.deleted_elements == set()
+        assert ifc_diff.change_register == {wall.GlobalId: {"attributes_changed": True}}
+
     def test_changed_geometry(self):
         ifc_file = setup_project()
         wall = ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcWall", name="Foo")
