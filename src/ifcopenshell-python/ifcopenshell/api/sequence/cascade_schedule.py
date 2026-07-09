@@ -156,7 +156,10 @@ class Usecase:
                 finish = self.get_task_time_attribute(predecessor, "ScheduleFinish")
                 if not finish:
                     continue
-                days = 0 if predecessor_duration.days == 0 else 1
+                # A sub-day duration (e.g. PT5H) still occupies its day, so
+                # only true zero durations (milestones) start the same day.
+                is_milestone = predecessor_duration.days == 0 and not getattr(predecessor_duration, "seconds", 0)
+                days = 0 if is_milestone else 1
                 duration_type = "WORKTIME"
                 if rel.TimeLag:
                     # updated to handle IfcRatioMeasure as a TimeLag value
