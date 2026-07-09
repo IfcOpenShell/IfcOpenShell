@@ -625,6 +625,15 @@ class file:
         self.future = []
         self.transaction: Optional[Transaction] = None
 
+        if f is None:
+            # The C++ core stamps the header with its own compiled version
+            # constant, which may lag behind the released Python package (see
+            # issue #6678). Overwrite it here so a newly created file always
+            # reports the current ifcopenshell version.
+            file_name = self.header.file_name
+            file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
+            file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
+
         # we store a tuple of C++ file pointer address and creation time stamp so that
         # when memory addresses get recycled we do not run into collisions when the
         # address is used as a cache key.
