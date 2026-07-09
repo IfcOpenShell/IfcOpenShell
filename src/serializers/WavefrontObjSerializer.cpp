@@ -27,8 +27,8 @@
 #include <boost/lexical_cast.hpp>
 #include <iomanip>
 
-WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
-	: WriteOnlyGeometrySerializer(geometry_settings, settings)
+WaveFrontOBJSerializer::WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
+	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 	, obj_stream(obj_filename)
 	, mtl_stream(mtl_filename)
 	, vcount_total(1)

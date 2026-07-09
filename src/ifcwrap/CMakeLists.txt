@@ -17,6 +17,23 @@
 #                                                                              #
 ################################################################################
 
+cmake_minimum_required(VERSION 3.21)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    project(IfcOpenShellPython LANGUAGES CXX)
+    set(IFCOPENSHELL_IFCWRAP_STANDALONE ON)
+else()
+    set(IFCOPENSHELL_IFCWRAP_STANDALONE OFF)
+endif()
+
+if(NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+if(CMAKE_CXX_STANDARD LESS 17)
+    message(FATAL_ERROR "C++17 or newer is required.")
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 if(POLICY CMP0148) # 3.27
     cmake_policy(SET CMP0148 OLD)
 endif()
@@ -24,9 +41,38 @@ if(POLICY CMP0177) # 3.31
     cmake_policy(SET CMP0177 OLD)
 endif()
 
-FIND_PACKAGE(SWIG)
-IF(NOT SWIG_FOUND)
-	MESSAGE(
+set(_ifcwrap_feature_definitions "")
+if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+    get_filename_component(_ifcwrap_repo_root "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+    list(PREPEND CMAKE_MODULE_PATH "${_ifcwrap_repo_root}/cmake")
+
+    find_package(IfcOpenShell REQUIRED)
+
+    set(WITH_OPENCASCADE "${IFCOPENSHELL_WITH_OPENCASCADE}")
+    set(WITH_CGAL "${IFCOPENSHELL_WITH_CGAL}")
+    set(SWIG_DEFINES "")
+
+    if(IFCOPENSHELL_WITH_OPENCASCADE)
+        list(APPEND SWIG_DEFINES -DIFOPSH_WITH_OPENCASCADE)
+        list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_OPENCASCADE)
+    endif()
+    if(IFCOPENSHELL_WITH_CGAL)
+        list(APPEND SWIG_DEFINES -DIFOPSH_WITH_CGAL)
+        list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_CGAL)
+    endif()
+    if(IFCOPENSHELL_IFCXML)
+        list(APPEND SWIG_DEFINES -DWITH_IFCXML)
+        list(APPEND _ifcwrap_feature_definitions WITH_IFCXML)
+    endif()
+    if(IFCOPENSHELL_WITH_ROCKSDB)
+        list(APPEND SWIG_DEFINES -DIFOPSH_WITH_ROCKSDB)
+        list(APPEND _ifcwrap_feature_definitions IFOPSH_WITH_ROCKSDB)
+    endif()
+endif()
+
+find_package(SWIG)
+if(NOT SWIG_FOUND)
+    message(
         FATAL_ERROR
         "BUILD_IFCPYTHON enabled, but unable to find SWIG. Disable BUILD_IFCPYTHON or fix SWIG paths to proceed. "
         "Likely SWIG_EXECUTABLE is missing (current value - '${SWIG_EXECUTABLE}')."
@@ -64,7 +110,19 @@ INCLUDE_DIRECTORIES(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 
-SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
+if(WITH_CGAL)
+    if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+        if(TARGET IfcOpenShell::svgfill)
+            set(LIBSVGFILL IfcOpenShell::svgfill)
+        else()
+            message(FATAL_ERROR "IfcOpenShell was built with CGAL, but the exported svgfill target was not found.")
+        endif()
+    else()
+        set(LIBSVGFILL svgfill)
+    endif()
+endif()
+
+set_source_files_properties(IfcPython.i PROPERTIES CPLUSPLUS ON)
 # Rebuild on changes in other .i files.
 SET_PROPERTY(
 	SOURCE IfcPython.i
@@ -122,8 +180,23 @@ endif()
 if(WITH_ROCKSDB)
     target_link_libraries(ifcopenshell_wrapper PRIVATE document_serializer_rdb)
 endif()
-SET_PROPERTY(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
-if (WASM_BUILD)
+
+if(_ifcwrap_feature_definitions)
+    target_compile_definitions(ifcopenshell_wrapper PRIVATE ${_ifcwrap_feature_definitions})
+endif()
+if(IFCOPENSHELL_IFCWRAP_STANDALONE)
+    set(_ifcwrap_ifcopenshell_libraries ${IFCOPENSHELL_LIBRARIES})
+    set(_ifcwrap_geometry_libraries ${IFCOPENSHELL_GEOMETRY_LIBRARIES})
+    set(_ifcwrap_cgal_libraries "")
+    set(_ifcwrap_swig_depends "")
+else()
+    set(_ifcwrap_ifcopenshell_libraries ${IFCOPENSHELL_LIBRARIES})
+    set(_ifcwrap_geometry_libraries IfcGeom ${kernel_libraries})
+    set(_ifcwrap_cgal_libraries ${CGAL_LIBRARIES})
+    set(_ifcwrap_swig_depends ${IFCOPENSHELL_LIBRARIES})
+endif()
+set_property(TARGET ifcopenshell_wrapper PROPERTY SWIG_DEPENDS ${_ifcwrap_swig_depends})
+if(WASM_BUILD)
     # SIDE_MODULE=1 - add to .so all symbols from linked archives (default used by pyodide).
     # Since currently libIfcGeom.a seems to be linked twice it results in duplicated symbols and compilation errors.
     # Possibly in the future we can clean up linked libs and try `=1`.
@@ -147,7 +220,7 @@ target_link_libraries(ifcopenshell_wrapper PRIVATE IfcGeom IfcParse ${Boost_LIBR
 if(schema_libraries OR kernel_libraries OR tree_libraries OR mapping_libraries OR geometry_serializer_libraries OR document_serializer_libraries OR linework_processing_libraries)
     add_dependencies(ifcopenshell_wrapper ${schema_libraries} ${kernel_libraries} ${tree_libraries} ${mapping_libraries} ${geometry_serializer_libraries} ${document_serializer_libraries} ${linework_processing_libraries})
 endif()
-if(NOT WIN32)
+if((NOT WIN32) AND BUILD_SHARED_LIBS AND COMMAND SET_INSTALL_RPATHS)
     SET_INSTALL_RPATHS(ifcopenshell_wrapper "${IFCDIRS};${OCC_LIBRARY_DIR}")
 endif()
 
@@ -194,8 +267,17 @@ IF(Python_Interpreter_FOUND OR PYTHON_MODULE_INSTALL_DIR)
         MESSAGE(WARNING "Unable to locate Python site-package directory, unable to install the Python wrapper")
     ELSE()
         message(STATUS "Python wrapper will be installed to '${python_package_dir}'.")
-        FILE(GLOB_RECURSE sourcefiles
-            "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*"
+        file(GLOB_RECURSE sourcefiles "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/*")
+        foreach(file ${sourcefiles})
+            file(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
+            get_filename_component(dir "${relative}" DIRECTORY)
+            if(NOT IS_DIRECTORY "${file}")
+                install(FILES "${file}" DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+            endif()
+        endforeach()
+        install(
+            FILES "${CMAKE_CURRENT_BINARY_DIR}/ifcopenshell_wrapper.py"
+            DESTINATION "${python_package_dir}/ifcopenshell"
         )
         FOREACH(file ${sourcefiles})
             FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")

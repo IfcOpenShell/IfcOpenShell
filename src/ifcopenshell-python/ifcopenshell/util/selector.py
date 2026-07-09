@@ -39,7 +39,8 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 
-filter_elements_grammar = lark.Lark("""start: filter_group
+filter_elements_grammar = lark.Lark(
+    """start: filter_group
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
@@ -110,9 +111,11 @@ filter_elements_grammar = lark.Lark("""start: filter_group
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-""")
+"""
+)
 
-get_element_grammar = lark.Lark("""start: keys
+get_element_grammar = lark.Lark(
+    """start: keys
 
     keys: key ("." key)*
     key: quoted_string | regex_string | unquoted_string
@@ -127,9 +130,11 @@ get_element_grammar = lark.Lark("""start: keys
     WS: /[ \\t\\f\\r\\n]/+
 
     %ignore WS // Disregard spaces in text
- """)
+ """
+)
 
-format_grammar = lark.Lark("""start: expression
+format_grammar = lark.Lark(
+    """start: expression
 
     ?expression: add_sub
     ?add_sub: mul_div
@@ -188,7 +193,8 @@ format_grammar = lark.Lark("""start: expression
     NEWLINE: (CR? LF)+
 
     %ignore WS // Disregard spaces in text
-""")
+"""
+)
 
 
 class FormatTransformer(lark.Transformer):

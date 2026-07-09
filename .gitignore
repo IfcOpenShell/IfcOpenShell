@@ -28,6 +28,7 @@ venv
 !.vscode/launch.json
 !.vscode/tasks.json
 .vs
+/*.code-workspace
 
 # PyCharm files
 .idea

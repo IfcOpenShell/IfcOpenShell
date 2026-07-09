@@ -87,7 +87,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcIndexedPolyCurve& inst) {
 					e->basis = circ;
 					loop->children.push_back(e);
 				} else {
-					logger::warning("Ignoring segment on", inst);
+					logger_.Warning("GEO", 263, "Ignoring segment on", inst);
 				}
 			} else {
 				throw ifcopenshell::exception("Unexpected IfcIndexedPolyCurve segment of type " + segment.concrete().declaration().name());

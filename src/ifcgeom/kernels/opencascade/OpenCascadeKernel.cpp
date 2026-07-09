@@ -120,7 +120,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 
 		auto it3_shape = std::static_pointer_cast<OpenCascadeShape>(it3->Shape())->shape();
 		if (it3_shape.IsNull()) {
-			logger::error("Null operand");
+			logger_.Error("GEO", 187, "Null operand");
 			continue;
 		}
 
@@ -140,42 +140,40 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 
 			if (!is_manifold) {
 				// force sewing, edge identity might have been mudied by FixAdvFace.FixOrientation.MSG5 to fix interior loop winding order
-				TopTools_ListOfShape list;
-				IfcGeom::util::shape_to_face_list(entity_part, list);
-				IfcGeom::util::create_solid_from_faces(list, entity_part, settings_.get<settings::Precision>().get(), true);
-				is_manifold = util::is_manifold(entity_part);
-				if (is_manifold) {
-					logger::warning("Successfully sewed non-manifold first operand", entity);
-				}
+                NCollection_List<TopoDS_Shape> list;
+                IfcGeom::util::shape_to_face_list(entity_part, list);
+                IfcGeom::util::create_solid_from_faces(list, entity_part, settings_.get<settings::Precision>().get(), true);
+                is_manifold = util::is_manifold(entity_part);
+                if (is_manifold) {
+					logger_.Warning("GEO", 188, "Successfully sewed non-manifold first operand");
+                }
 			}
 
 			if (!is_manifold) {
-				if (settings_.get<settings::MakeVolume>().get()) {
-					BOPAlgo_MakerVolume mv;
-					mv.AddArgument(entity_part);
-					mv.SetAvoidInternalShapes(true);
-					// mv.SetFuzzyValue(settings_.get<settings::Precision>().get());
-					std::optional<std::string> failure;
-					try {
-						mv.Perform();
-						auto entity_part_2 = mv.Shape();
-						if (mv.HasErrors()) {
-							failure = "BOPAlgo_MakerVolume reported errors";
-						} else if (IfcGeom::util::count(entity_part_2, TopAbs_FACE) == 0) {
-							failure = "Empty result (no faces) for BOPAlgo_MakerVolume; original was " + std::to_string(IfcGeom::util::count(entity_part, TopAbs_FACE));
+                if (settings_.get<settings::MakeVolume>().get()) {
+                    BOPAlgo_MakerVolume mv;
+                    mv.AddArgument(entity_part);
+                    mv.SetAvoidInternalShapes(true);
+                    // mv.SetFuzzyValue(settings_.get<settings::Precision>().get());
+                    std::optional<std::string> failure;
+                    try {
+                        mv.Perform();
+                        auto entity_part_2 = mv.Shape();
+                        if (IfcGeom::util::count(entity_part_2, TopAbs_FACE) == 0) {
+                            failure = "Empty result (no faces) for BOPAlgo_MakerVolume; original was " + std::to_string(IfcGeom::util::count(entity_part, TopAbs_FACE));
 						} else {
-							is_manifold = util::is_manifold(entity_part_2);
-							logger::warning(std::string("Successfully detected exterior volume to non-manifold first operand; shape is now ") + (is_manifold ? std::string("manifold") : std::string("non-manifold")), entity);
-							entity_part = entity_part_2;
+                            is_manifold = util::is_manifold(entity_part_2);
+                            logger_.Warning("GEO", 189, std::string("Sucessfully detected exterior volume to non-manifold first operand; shape is now ") + (is_manifold ? std::string("manifold") : std::string("non-manifold")));
+                            entity_part = entity_part_2;
 						}
-					} catch (const Standard_Failure& e) {
-						failure.emplace(e.GetMessageString());
-					}
-					if (failure) {
-						logger::warning("MakeVolume failed: " + *failure, entity);
-					}
-				} else {
-					logger::warning("Non-manifold first operand, use --make-volume to try and make manifold", entity);
+                    } catch (const Standard_Failure& e) {
+                        failure.emplace(e.GetMessageString());
+                    }
+                    if (failure) {
+                        logger_.Warning("GEO", 190, "MakeVolume failed: " + *failure, entity);
+                    }
+                } else {
+                    logger_.Warning("GEO", 191, "Non-manifold first operand, use --make-volume to try and make manifold");
 				}
 			}
 
@@ -209,7 +207,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 				for (;; ++it) {
 					if (it == opening_vector.end() || jt->first / it->first > 10.) {
 
-						TopTools_ListOfShape opening_list;
+						NCollection_List<TopoDS_Shape> opening_list;
 						for (auto kt = jt; kt < it; ++kt) {
 							opening_list.Append(kt->second);
 						}
@@ -218,7 +216,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 						if (util::boolean_operation(bst, result, opening_list, BOPAlgo_CUT, intermediate_result)) {
 							result = intermediate_result;
 						} else {
-							logger::message(logger::LOG_ERROR, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
+							logger_.Message(Logger::LOG_ERROR, "GEO", 192, "Opening subtraction failed for " + boost::lexical_cast<std::string>(std::distance(jt, it)) + " openings", entity);
 						}
 
 						jt = it;
@@ -239,7 +237,7 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const express::Base& entity, c
 					// where we keep the first operand as is (a compound of faces probably,
 					// unless --orient-shells was activated in which case we're already lost).
 					if (!is_manifold) {
-						logger::warning("Retrying boolean operation on individual faces");
+						logger_.Warning("GEO", 193, "Retrying boolean operation on individual faces");
 					}
 					continue;
 				}

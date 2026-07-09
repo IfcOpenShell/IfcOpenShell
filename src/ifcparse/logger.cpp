@@ -29,6 +29,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/version.hpp>
 #include <chrono>
+#include <cstdio>
 #include <ctime>
 #include <iomanip>
 #include <iostream>
@@ -63,10 +64,17 @@ const std::array<std::basic_string<char>, 5> severity_strings<char>::value = {"P
 template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"notice", L"warning", L"error"};
 
+std::string format_code(const char (&code_prefix)[4], uint16_t code_number) {
+    std::ostringstream oss;
+    oss << code_prefix[0] << code_prefix[1] << code_prefix[2] << std::setfill('0') << std::setw(3) << code_number;
+    return oss.str();
+}
+
 template <typename T>
-void plain_text_message(T& out, const express::Base& current_product, logger::Severity type, const std::string& message, const express::Base& instance) {
+void plain_text_message(T& out, const express::Base& current_product, Logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
-    out << "[" << get_time(type <= logger::LOG_PERF).c_str() << "] ";
+    out << "[" << code.c_str() << "] ";
+    out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
         std::string global_id = current_product.as<express::Entity>().get("GlobalId");
         out << "{" << global_id.c_str() << "} ";
@@ -91,17 +99,19 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const express::Base& current_product, logger::Severity type, const std::string& message, const express::Base& instance) {
+void json_message(T& out, const express::Base* current_product, Logger::Severity type, const std::string& code, const std::string& message, const express::Base& instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     // @todo this is crazy
     static const typename T::char_type time_string[] = {'t', 'i', 'm', 'e', 0};
     static const typename T::char_type level_string[] = {'l', 'e', 'v', 'e', 'l', 0};
+    static const typename T::char_type code_string[] = {'c', 'o', 'd', 'e', 0};
     static const typename T::char_type product_string[] = {'p', 'r', 'o', 'd', 'u', 'c', 't', 0};
     static const typename T::char_type message_string[] = {'m', 'e', 's', 's', 'a', 'g', 'e', 0};
     static const typename T::char_type instance_string[] = {'i', 'n', 's', 't', 'a', 'n', 'c', 'e', 0};
 
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
+    property_tree.put(code_string, string_as<typename T::char_type>(code));
     if (current_product) {
         std::ostringstream oss;
         current_product.to_string(oss);
@@ -126,9 +136,50 @@ void json_message(T& out, const express::Base& current_product, logger::Severity
 }
 } // namespace
 
+log_message::log_message(
+    int severity,
+    const char (&code_prefix)[4],
+    uint16_t code_number,
+    const std::string& timestamp,
+    const std::string& message,
+    const IfcUtil::IfcBaseInterface* inst,
+    const IfcUtil::IfcBaseClass* current_product)
+    : severity(severity)
+    , timestamp(timestamp)
+    , message(message)
+{
+    snprintf(code, 7, "%s%03u", code_prefix, code_number);
+    if (inst) {
+        std::ostringstream oss;
+        inst->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        instance = oss.str();
+    }
+    if (current_product) {
+        std::ostringstream oss;
+        current_product->toString(oss);
+        product = oss.str();
+    }
+}
+
+Logger& Logger::Root() {
+    static Logger logger;
+    return logger;
+}
+
+const express::Base& Logger::current_product() const {
+    return current_product_;
+}
+
 void logger::set_product(std::optional<const express::Base> product) {
     if (verbosity_ <= LOG_DEBUG && product) {
         message(LOG_DEBUG, "Begin processing", *product);
+    }
+    current_product_ = product;
+}
+
+void Logger::SetProduct(boost::optional<const IfcUtil::IfcBaseClass*> product) {
+    if (verbosity_ <= LOG_DEBUG && product) {
+        Message(LOG_DEBUG, "SYS", 3, "Begin processing", *product);
     }
     if (!product && print_perf_stats_on_element_) {
         print_performance_stats();
@@ -155,13 +206,13 @@ void logger::set_output(std::wostream* stream1, std::wostream* stream2) {
     }
 }
 
-void logger::message(logger::Severity type, const std::string& text, const express::Base& instance) {
+void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const express::Base& instance) {
     if (type < verbosity_) {
         return;
     }
 
-    static std::mutex mtx;
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(mutex_);
+    const std::string code = format_code(code_prefix, code_number);
 
     if (type == LOG_PERF) {
         if (!first_timepoint_) {
@@ -179,25 +230,28 @@ void logger::message(logger::Severity type, const std::string& text, const expre
     if (type > max_severity_) {
         max_severity_ = type;
     }
-    if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
+
+    if (format_ == FMT_INMEMORY) {
+        log_messages_.emplace_back(type, code_prefix, code_number, get_time(), message, instance, current_product());
+    } else if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
-                plain_text_message(*log2_, current_product_, type, text, instance);
+                plain_text_message(*log2_, current_product(), type, code, message, instance);
             } else if (wlog2_ != nullptr) {
-                plain_text_message(*wlog2_, current_product_, type, text, instance);
+                plain_text_message(*wlog2_, current_product(), type, code, message, instance);
             }
         } else if (format_ == FMT_JSON) {
             if (log2_ != nullptr) {
-                json_message(*log2_, current_product_, type, text, instance);
+                json_message(*log2_, current_product(), type, code, message, instance);
             } else if (wlog2_ != nullptr) {
-                json_message(*wlog2_, current_product_, type, text, instance);
+                json_message(*wlog2_, current_product(), type, code, message, instance);
             }
         }
     }
 }
 
-void logger::message(logger::Severity type, const std::exception& exception, const express::Base& instance) {
-    message(type, std::string(exception.what()), instance);
+void Logger::Message(Logger::Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const express::Base&) {
+    Message(type, code_prefix, code_number, std::string(exception.what()), instance);
 }
 
 template <typename T>
@@ -226,6 +280,49 @@ std::string logger::get_log() {
     return log_stream_.str();
 }
 
+std::string Logger::GetLog() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return log_stream_.str();
+}
+
+void Logger::ClearLog() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    log_stream_.str(std::string());
+    log_stream_.clear();
+    log_messages_.clear();
+}
+
+void Logger::Append(Logger& logger) {
+    if (&logger == this) {
+        return;
+    }
+
+    std::scoped_lock lock(mutex_, logger.mutex_);
+
+    if (logger.max_severity_ > max_severity_) {
+        max_severity_ = logger.max_severity_;
+    }
+
+    if (format_ == FMT_INMEMORY) {
+        log_messages_.insert(log_messages_.end(), logger.log_messages_.begin(), logger.log_messages_.end());
+    } else {
+        const std::string log = logger.log_stream_.str();
+        if (!log.empty()) {
+            if (log2_ != nullptr) {
+                *log2_ << log;
+            } else if (wlog2_ != nullptr) {
+                *wlog2_ << string_as<wchar_t>(log);
+            } else {
+                log_stream_ << log;
+            }
+        }
+    }
+
+    logger.log_stream_.str(std::string());
+    logger.log_stream_.clear();
+    logger.log_messages_.clear();
+}
+
 void logger::print_performance_stats() {
     std::vector<std::pair<double, std::string>> items;
     for (auto& stat : performance_statistics_) {
@@ -243,28 +340,15 @@ void logger::print_performance_stats() {
     }
 
     for (auto& item : items) {
-        auto text = item.second + std::string(max_size - item.second.size(), ' ') + ": " + std::to_string(item.first);
-        logger::message(LOG_PERF, text);
+        auto message = item.second + std::string(max_size - item.second.size(), ' ') + ": " + std::to_string(item.first);
+        Message(LOG_PERF, "SYS", 4, message);
     }
 }
 
-void logger::verbosity(logger::Severity severity) { verbosity_ = severity; }
-logger::Severity logger::verbosity() { return verbosity_; }
+void Logger::Verbosity(Logger::Severity severity) { verbosity_ = severity; }
+Logger::Severity Logger::Verbosity() const { return verbosity_; }
 
-logger::Severity logger::max_severity() { return max_severity_; }
+Logger::Severity Logger::MaxSeverity() const { return max_severity_; }
 
-void logger::output_format(Format format) { format_ = format; }
-logger::Format logger::output_format() { return format_; }
-
-std::ostream* logger::log1_ = 0;
-std::ostream* logger::log2_ = 0;
-std::wostream* logger::wlog1_ = 0;
-std::wostream* logger::wlog2_ = 0;
-std::stringstream logger::log_stream_;
-logger::Severity logger::verbosity_ = logger::LOG_NOTICE;
-logger::Severity logger::max_severity_ = logger::LOG_NOTICE;
-logger::Format logger::format_ = logger::FMT_PLAIN;
-std::optional<long long> logger::first_timepoint_;
-std::map<std::string, double> logger::performance_statistics_;
-std::map<std::string, double> logger::performance_signal_start_;
-bool logger::print_perf_stats_on_element_ = false;
+void Logger::OutputFormat(Format format) { format_ = format; }
+Logger::Format Logger::OutputFormat() const { return format_; }

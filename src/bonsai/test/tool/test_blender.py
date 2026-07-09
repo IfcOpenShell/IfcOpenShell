@@ -42,6 +42,46 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), bonsai.core.tool.Blender)
 
 
+class TestTransparentColor(NewFile):
+    def test_default_alpha_overrides_to_zero_one(self):
+        assert subject.transparent_color([1.0, 0.5, 0.25, 1.0]) == [1.0, 0.5, 0.25, 0.1]
+
+    def test_explicit_alpha_is_applied(self):
+        assert subject.transparent_color([1.0, 0.5, 0.25, 1.0], alpha=0.5) == [1.0, 0.5, 0.25, 0.5]
+
+    def test_does_not_mutate_input(self):
+        original = [1.0, 0.5, 0.25, 1.0]
+        subject.transparent_color(original)
+        assert original == [1.0, 0.5, 0.25, 1.0]
+
+    def test_returns_new_list_instance(self):
+        original = [1.0, 0.5, 0.25, 1.0]
+        result = subject.transparent_color(original)
+        assert result is not original
+
+
+class TestViewportDecoratorDrawBatch(NewFile):
+    def test_empty_content_pos_skips_shader_calls(self):
+        from unittest.mock import MagicMock
+
+        decorator = subject.ViewportDecorator()
+        decorator.line_shader = MagicMock()
+        decorator.shader = MagicMock()
+        decorator.draw_batch("LINES", [], (1.0, 1.0, 1.0, 1.0))
+        decorator.line_shader.uniform_float.assert_not_called()
+        decorator.shader.uniform_float.assert_not_called()
+
+    def test_empty_indices_skips_shader_calls(self):
+        from unittest.mock import MagicMock
+
+        decorator = subject.ViewportDecorator()
+        decorator.line_shader = MagicMock()
+        decorator.shader = MagicMock()
+        decorator.draw_batch("LINES", [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0)], (1.0, 1.0, 1.0, 1.0), indices=[])
+        decorator.line_shader.uniform_float.assert_not_called()
+        decorator.shader.uniform_float.assert_not_called()
+
+
 class TestCopyNodeGraph(NewFile):
     def test_run(self):
         material_to = bpy.data.materials.new("material_to")
@@ -183,3 +223,16 @@ class TestNpFrombufferLegacy(NewFile):
         result = subject.np_frombuffer_legacy(data, n)
         assert result.shape == (n,)
         np.testing.assert_allclose(result, np.arange(n))
+
+
+class TestGetObjectFromGuidMissing(NewFile):
+    """``get_object_from_guid`` must honour its ``Optional[Object]`` return
+    contract: a GUID that does not resolve in the current IFC file yields
+    ``None``, not a ``RuntimeError``. Callers iterate stored GUID lists
+    (array children, library refs, …) and rely on the falsy return to
+    skip stale entries."""
+
+    def test_returns_none_when_guid_not_in_file(self):
+        bpy.ops.bim.create_project()
+        assert tool.Ifc.get() is not None
+        assert subject.get_object_from_guid("3iyt7r$Hf4_hQYNhBIDJI4") is None

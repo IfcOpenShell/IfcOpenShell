@@ -3,6 +3,7 @@
 #include "../ifcgeom/kernels/cgal/CgalKernel.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
+#include "../ifcgeom/hybrid_kernel.h"
 
 #include <CGAL/box_intersection_d.h>
 #include <CGAL/minkowski_sum_3.h>
@@ -445,7 +446,7 @@ struct intersection_validator {
 
 	std::set<const ifcopenshell::IfcBaseEntity*> successfully_processed;
 
-	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress) {
+	intersection_validator(ifcopenshell::file& f, std::initializer_list<std::string> entities, double eps, bool no_progress, bool quiet, bool stderr_progress, Logger& logger = Logger::Root()) {
 
 		ifcopenshell::geometry::Settings settings;
 		settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = false;
@@ -459,7 +460,7 @@ struct intersection_validator {
 			IfcGeom::entity_filter(true, false, entities)
 		};
 
-		IfcGeom::Iterator context_iterator("cgal", settings, &f, spaces_and_walls, 1);
+		IfcGeom::Iterator context_iterator(ifcopenshell::geometry::kernels::construct(&f, "cgal", settings, logger), settings, &f, spaces_and_walls, 1, logger);
 
 		if (!context_iterator.initialize()) {
 			return;
@@ -562,7 +563,7 @@ struct intersection_validator {
 						std::cerr << std::flush;
 				} else {
 					const int progress = context_iterator.progress() / 2;
-					if (old_progress != progress) logger::progress_bar(progress);
+					if (old_progress != progress) logger.ProgressBar(progress);
 					old_progress = progress;
 				}
 			}
@@ -578,7 +579,7 @@ struct intersection_validator {
 			if (stderr_progress)
 				std::cerr << std::flush;
 		} else {
-			logger::status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
+			logger.Status("\rDone fixing space boundaries for " + boost::lexical_cast<std::string>(num_created) +
 				" objects                                ");
 		}
 

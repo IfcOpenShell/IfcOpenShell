@@ -5,6 +5,8 @@
 #include "svgfill.h"
 #endif
 
+#include "../../ifcparse/IfcLogger.h"
+
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Boolean_set_operations_2.h>
 #include <CGAL/Polygon_2.h>
@@ -1602,7 +1604,8 @@ std::map<Point_2, std::vector<Point_2>> snap_points_to_box_axes(
     DebugWriter& debug,
     const CenterLineGraphData& graph,
     const std::vector<MergedBoxRecord>& boxes,
-    const K::FT& max_projection_distance) {
+    const K::FT& max_projection_distance,
+    Logger& logger) {
     std::vector<Point_2> snapped_points(graph.points.size());
 
     for (size_t i = 0; i < graph.points.size(); ++i) {
@@ -1685,7 +1688,11 @@ std::map<Point_2, std::vector<Point_2>> snap_points_to_box_axes(
             debug.write_segment(graph.points[i], best.projection, "snap_candidate_4");
         } else {
             snapped_points[i] = graph.points[i];
-            std::cout << "Warning: snapping distance exceeding distance: " << std::sqrt(CGAL::to_double((snapped_points[i] - best.projection).squared_length())) << " > " << max_projection_distance << std::endl;
+            std::ostringstream message;
+            message << "Snapping distance exceeds maximum distance: "
+                    << std::sqrt(CGAL::to_double((snapped_points[i] - best.projection).squared_length()))
+                    << " > " << max_projection_distance;
+            logger.Message(Logger::LOG_WARNING, "ARR", 1, message.str());
         }
     }
 
@@ -1711,7 +1718,8 @@ Graph2D<K> join_segment_runs(
     DebugWriter& debug,
     const std::map<Point_2, std::vector<Point_2>>& line_graph,
     const std::map<Point_2, std::pair<Point_2, Point_2>>& midpoint_to_segment,
-    const K::FT& max_projection_distance) {
+    const K::FT& max_projection_distance,
+    Logger& logger) {
     auto graph = make_center_line_graph_data(line_graph, midpoint_to_segment);
     auto runs = runs_from_graph(graph);
     runs.erase(std::remove_if(runs.begin(), runs.end(), [](const LineRun& run) {
@@ -1742,7 +1750,7 @@ Graph2D<K> join_segment_runs(
     }
     debug.write_polygons(run_polygons, "merged_boxes");
 
-    auto snapped_graph = snap_points_to_box_axes(debug, graph, boxes, max_projection_distance);
+    auto snapped_graph = snap_points_to_box_axes(debug, graph, boxes, max_projection_distance, logger);
     return Graph2D<K>(snapped_graph);
 }
 
@@ -2239,7 +2247,9 @@ extend_end_vertices_based_on_input_simple(
     DebugWriter& debug_output,
     const Graph2D<K>& G,
     const Polygon_list& outer_perimiter,
-    const K::FT& max_projection_distance, int pass)
+    const K::FT& max_projection_distance,
+    int pass,
+    Logger& logger)
 {
     auto max_intersection_distance = max_projection_distance / 4;
 
@@ -2389,9 +2399,9 @@ extend_end_vertices_based_on_input_simple(
             }
         }
         if (within_any_perimeter) {
-            std::cout << "Within boundary but still no solution given" << std::endl;
+            logger.Message(Logger::LOG_WARNING, "ARR", 2, "Within boundary but no projection or intersection solution was found");
         } else {
-            std::cout << "Outside of all boundaries" << std::endl;
+            logger.Message(Logger::LOG_WARNING, "ARR", 3, "Point is outside all boundaries");
         }
         return boost::optional<Point_2>{};
     };
@@ -2404,13 +2414,18 @@ extend_end_vertices_based_on_input_simple(
             auto& M = it->first;
             if (auto result = process_point(M, *it->second.begin())) {
                 if (*result == M) {
-                    std::cout << "Point already on perimeter (" << M.x() << " " << M.y() << ")" << std::endl;
+                    std::ostringstream message;
+                    message << "Point is already on perimeter (" << M.x() << " " << M.y() << ")";
+                    logger.Message(Logger::LOG_NOTICE, "ARR", 4, message.str());
                     continue;
                 }
                 auto d = (M - *result).squared_length();
                 solutions.emplace_back(d, M, *it->second.begin());
             } else {
-                std::cout << "Unable to find projection or intersection point for interior boundary pass " << pass << " [round 1] (" << M.x() << " " << M.y() << ")" << std::endl;
+                std::ostringstream message;
+                message << "Unable to find projection or intersection point for interior boundary pass "
+                        << pass << " [round 1] (" << M.x() << " " << M.y() << ")";
+                logger.Message(Logger::LOG_WARNING, "ARR", 5, message.str());
             }
         }
     }
@@ -2424,12 +2439,17 @@ extend_end_vertices_based_on_input_simple(
             debug_output.write_segment(point, *result, "exterior_constructed_segment");
 
             auto d = CGAL::squared_distance(point, *result);
-            std::cout << "Distance: " << std::sqrt(CGAL::to_double(d)) << std::endl;
+            std::ostringstream message;
+            message << "Projection or intersection distance: " << std::sqrt(CGAL::to_double(d));
+            logger.Message(Logger::LOG_DEBUG, "ARR", 6, message.str());
             validation_segments.emplace_back(to_3d(point), to_3d(*result));
             auto inserted_it = std::prev(validation_segments.end());
             validation_tree.insert(inserted_it, validation_segments.end());
         } else {
-            std::cout << "Unable to find projection or intersection point for interior boundary pass " << pass << " [round 2] (" << point.x() << " " << point.y() << ")" << std::endl;
+            std::ostringstream message;
+            message << "Unable to find projection or intersection point for interior boundary pass "
+                    << pass << " [round 2] (" << point.x() << " " << point.y() << ")";
+            logger.Message(Logger::LOG_WARNING, "ARR", 7, message.str());
         }
     }
 
@@ -2528,7 +2548,7 @@ class Segment_2_less {
     }
 };
 
-std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2& left, Arrangement_2& right) {
+std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2& left, Arrangement_2& right, Logger& logger) {
 
     using Walk_pl = CGAL::Arr_walk_along_line_point_location<Arrangement_2>;
     Walk_pl walk_pl(right);
@@ -2610,7 +2630,7 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
                     if (visited_faces_on_right.count(*v) > 0) {
                         // Maybe we should be more permissive, try some other points etc.
                         return_values.push_back(0);
-                        std::cout << "Already visited face on right, skipping point\n";
+                        logger.Message(Logger::LOG_WARNING, "ARR", 8, "Already visited face on right; skipping point");
                     } else {
                         // convert arr facet to polygon with holes
                         auto polygon_exterior = circ_to_poly((*v)->outer_ccb());
@@ -2648,7 +2668,7 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
                                 max_deviation_poly_pair = {pwh.outer_boundary(), pwh_right.outer_boundary()};
                             }
                         } else {
-                            std::cout << "No intersection, skipping point\n";
+                            logger.Message(Logger::LOG_WARNING, "ARR", 9, "No intersection; skipping point");
                             return_values.push_back(0);
                         }
                     }
@@ -2670,7 +2690,7 @@ std::vector<K::FT> arrangement_cell_iou(DebugWriter& debug_output, Arrangement_2
     return return_values;
 }
 
-void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLookup& segment_lookup, double& threshold) {
+void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLookup& segment_lookup, double& threshold, Logger& logger) {
     using SK = CGAL::Simple_cartesian<double>;
     CGAL::Cartesian_converter<K, SK> C{};
 
@@ -2886,7 +2906,7 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
                 }
             }
             if (!removed) {
-                std::cerr << "Warning: unable to locate edge for removal, skipping" << std::endl;
+                logger.Message(Logger::LOG_WARNING, "ARR", 10, "Unable to locate edge for removal; skipping");
             }
         }
 
@@ -2971,7 +2991,7 @@ void clean_noisy_paths(DebugWriter& debug_output, Arrangement_2& arr, SegmentLoo
 #else
         auto arr_copy = arr;
         process_modifications(arr_copy, to_remove_this_path, to_insert_this_path);
-        auto ious = arrangement_cell_iou(arr, arr_copy);
+        auto ious = arrangement_cell_iou(debug_output, arr, arr_copy, logger);
         for (auto& iou : ious) {
             std::cerr << " - cell iou: " << CGAL::to_double(iou) << std::endl;
         }
@@ -3303,28 +3323,36 @@ class timer {
   public:
     class entry {
       public:
-        entry() {}
+        entry() : logger_(nullptr) {}
 
-        entry(std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator start_it)
-            : start_it(start_it) {}
+        entry(
+            std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator start_it,
+            Logger& logger)
+            : start_it(start_it)
+            , logger_(&logger) {}
 
         void stop() {
-            if (start_it) {
+            if (start_it && logger_) {
                 auto end = std::chrono::high_resolution_clock::now();
                 auto duration = std::chrono::duration<double, std::milli>(end - start_it.value()->second).count();
-                std::cerr << "Timing for " << start_it.value()->first << ": " << duration << " ms" << std::endl;
+                std::ostringstream message;
+                message << "Timing for " << start_it.value()->first << ": " << duration << " ms";
+                logger_->Message(Logger::LOG_PERF, "ARR", 11, message.str());
             }     
         }
 
       private:
         std::optional<std::map<std::string, std::chrono::high_resolution_clock::time_point>::const_iterator> start_it;
+        Logger* logger_;
     };
 
-    timer(bool enabled = true) : enabled_(enabled) {}
+    timer(Logger& logger, bool enabled = true)
+        : logger_(logger)
+        , enabled_(enabled) {}
 
     entry start(const std::string& name) {
         if (enabled_) {
-            return entry(timings_.insert({name, std::chrono::high_resolution_clock::now()}).first);
+            return entry(timings_.insert({name, std::chrono::high_resolution_clock::now()}).first, logger_);
         } else {
             return entry();
         }
@@ -3336,6 +3364,7 @@ class timer {
         std::chrono::high_resolution_clock::time_point>
         timings_;
 
+    Logger& logger_;
     bool enabled_;
 };
 
@@ -3351,7 +3380,12 @@ size_t delete_same_facet_edge_pairs(Arrangement_2& arr) {
     return n_deleted;
 }
 
-void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std::vector<Polygon_2>& input_polygons_, std::vector<Polygon_2>& output_polygons, double polygon_offset_distance = -1.) {
+void arrange_cgal_polygons(
+    svgfill::arrange_polygon_settings settings,
+    const std::vector<Polygon_2>& input_polygons_,
+    std::vector<Polygon_2>& output_polygons,
+    Logger& logger,
+    double polygon_offset_distance = -1.) {
 
     static const double OVERLAP_RESOLUTION_DISTANCE = 1.e-1;
     // even larger amount of inset so that outer perimeter is safely within all input polygons even when overlap resolution is applied
@@ -3371,7 +3405,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
         debug_output = DebugWriter(false, "");
     }
 
-    timer timer(settings.debug_output);
+    timer timer(logger, settings.debug_output);
 
     auto t0 = timer.start("input");
 
@@ -3578,7 +3612,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
             for (int i = 0; i < 2; ++i) {
                 auto it = line_graph.find(e.first);
                 if (it == line_graph.end()) {
-                    std::cerr << "Warning: unable to locate vertex for elimination, skipping" << std::endl;
+                    logger.Message(Logger::LOG_WARNING, "ARR", 12, "Unable to locate vertex for elimination; skipping");
                     continue;
                 }
                 auto& neighbours = it->second;
@@ -3607,7 +3641,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     };
 
     if (settings.line_cleaning_algo == 0) {
-        G = join_segment_runs(debug_output, line_graph, midpoint_to_segment, subdivision_length * 4);
+        G = join_segment_runs(debug_output, line_graph, midpoint_to_segment, subdivision_length * 4, logger);
         Arrangement_2 arr;
         G.to_arrangement(arr);
         Graph2D<K> G2;
@@ -3629,8 +3663,8 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     bool fallback_to_line_cleaning_algo_1 = false;
     
     if (settings.line_cleaning_algo == 0) {
-        segments1 = extend_end_vertices_based_on_input_simple(debug_output, G, outer_perimiter, subdivision_length * 16, 0);
-        segments2 = extend_end_vertices_based_on_input_simple(debug_output, G_orig, outer_perimiter, subdivision_length * 16, 1);
+        segments1 = extend_end_vertices_based_on_input_simple(debug_output, G, outer_perimiter, subdivision_length * 16, 0, logger);
+        segments2 = extend_end_vertices_based_on_input_simple(debug_output, G_orig, outer_perimiter, subdivision_length * 16, 1, logger);
         
         Arrangement_2 arr_clean;
         G.to_arrangement(arr_clean);
@@ -3668,7 +3702,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
         debug_output.write_polygons(arr_clean, "iou_left");
         debug_output.write_polygons(arr_orig, "iou_right");
 
-        auto ious = arrangement_cell_iou(debug_output, arr_clean, arr_orig);
+        auto ious = arrangement_cell_iou(debug_output, arr_clean, arr_orig, logger);
         /*
         for (auto& iou : ious) {
             std::cout << " " << CGAL::to_double(iou - 1);
@@ -3679,7 +3713,10 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
         auto it = std::min_element(ious.begin(), ious.end());
 
         if (it != ious.end() && (*it < 0.45)) {
-            std::cerr << "Significant difference between cleaned and original arrangement, using original for topology reconstruction: " << *it << std::endl;
+            std::ostringstream message;
+            message << "Significant difference between cleaned and original arrangement; using original for topology reconstruction: "
+                    << *it;
+            logger.Message(Logger::LOG_WARNING, "ARR", 13, message.str());
             fallback_to_line_cleaning_algo_1 = true;
             apply_line_cleaning_algo_1();
         } else {
@@ -3754,7 +3791,7 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
     if (settings.perform_cleanup && settings.line_cleaning_algo != 0) {
         remove_colinear_vertices(arr);
         double threshold;
-        clean_noisy_paths(debug_output, arr, segment_lookup, threshold);
+        clean_noisy_paths(debug_output, arr, segment_lookup, threshold, logger);
         remove_colinear_vertices(arr);
         // clean_noisy_bounds(debug_output, arr, segment_lookup, threshold);
     }
@@ -3773,7 +3810,11 @@ void arrange_cgal_polygons(svgfill::arrange_polygon_settings settings, const std
 
 #ifndef SVGFILL_MAIN
 
-bool svgfill::arrange_polygons(arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, std::vector<svgfill::polygon_2>& arranged) {
+bool svgfill::arrange_polygons(
+    arrange_polygon_settings settings,
+    const std::vector<svgfill::polygon_2>& polygons,
+    std::vector<svgfill::polygon_2>& arranged,
+    Logger& logger) {
     std::vector<Polygon_2> cgal_polygons, cgal_polygons_out;
     std::transform(polygons.begin(), polygons.end(), std::back_inserter(cgal_polygons), [](auto& poly) {
         Polygon_2 result;
@@ -3782,7 +3823,7 @@ bool svgfill::arrange_polygons(arrange_polygon_settings settings, const std::vec
         });
         return result;
     });
-    arrange_cgal_polygons(settings, cgal_polygons, cgal_polygons_out);
+    arrange_cgal_polygons(settings, cgal_polygons, cgal_polygons_out, logger);
     std::transform(cgal_polygons_out.begin(), cgal_polygons_out.end(), std::back_inserter(arranged), [](auto& poly) {
         svgfill::polygon_2 result;
         std::transform(poly.begin(), poly.end(), std::back_inserter(result.boundary), [](auto& pt) {
@@ -3812,6 +3853,9 @@ Polygon_2 create_rectangle(T x_min, T y_min, T x_max, T y_max) {
 
 int main(int argc, char** argv) {
     std::vector<Polygon_2> input_polygons, output;
+    Logger logger;
+    logger.SetOutput(&std::cout, &std::cerr);
+    logger.Verbosity(Logger::LOG_PERF);
 
     if (argc == 2) {
         using json = nlohmann::json;
@@ -3820,7 +3864,7 @@ int main(int argc, char** argv) {
         file >> jsonData;
         size_t i = 0;
         for (const auto& item : jsonData.items()) {
-            std::cout << "i " << i << std::endl;
+            logger.Message(Logger::LOG_NOTICE, "ARR", 14, "Processing arrangement " + std::to_string(i));
             i++;
             input_polygons.clear();
             const auto& polygonsData = item.value();
@@ -3832,7 +3876,7 @@ int main(int argc, char** argv) {
                     input_polygons.back().push_back(CGAL::Point_2<K>(x, y));
                 }
             }
-            arrange_cgal_polygons(arrange_polygon_settings{}, input_polygons, output);
+            arrange_cgal_polygons(arrange_polygon_settings{}, input_polygons, output, logger);
             break;
         }
         return 0;
@@ -3845,7 +3889,7 @@ int main(int argc, char** argv) {
 
         input_polygons = { rect1, rect2, rect3, rect4, rect5 };
     }
-    arrange_cgal_polygons(arrange_polygon_settings{}, input_polygons, output);
+    arrange_cgal_polygons(arrange_polygon_settings{}, input_polygons, output, logger);
 
     return 0;
 }

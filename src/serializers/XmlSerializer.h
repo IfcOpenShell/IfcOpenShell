@@ -19,7 +19,7 @@ protected:
 	std::string xml_filename;
 
 public:
-	XmlSerializer(ifcopenshell::file* file, const std::string& xml_filename)
+	XmlSerializer(ifcopenshell::file* file, const std::string& xml_filename, Logger& logger = Logger::Root())
 		: xml_filename(xml_filename)
 	{
 		if (!file) {

@@ -35,7 +35,7 @@ private:
 	size_t vcount_total, ncount_total;
 	std::set<std::string> materials;
 public:
-	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings);
+	WaveFrontOBJSerializer(const stream_or_filename& obj_filename, const stream_or_filename& mtl_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root());
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();

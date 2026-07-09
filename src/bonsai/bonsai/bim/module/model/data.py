@@ -51,6 +51,10 @@ class AuthoringData:
 
     @classmethod
     def load(cls, ifc_element_type: Optional[str] = None):
+        # ``is_loaded`` is set first as a recursion guard: one of the data
+        # computations evaluates a PropertyGroup enum's ``items`` callback,
+        # which re-enters this method. Without the guard, load recurses to
+        # RecursionError.
         cls.is_loaded = True
         cls.props = tool.Model.get_model_props()
         cls.data["default_container"] = cls.default_container()

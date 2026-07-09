@@ -10,9 +10,13 @@ on:
       - 'src/ifcgeomserver/**'
       - 'src/ifcjni/**'
       - 'src/ifcmax/**'
+      - 'src/ifc5d/**'
+      - 'src/ifcedit/**'
+      - 'src/ifcmcp/**'
       - 'src/ifcopenshell-python/**'
       - '!src/ifcopenshell-python/docs/**'
       - 'src/ifcparse/**'
+      - 'src/ifcquery/**'
       - 'src/ifcwrap/**'
       - 'src/qtviewer/**'
       - 'src/svgfill/**'
@@ -51,7 +55,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely pyparsing
+          pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely pyparsing psutil
           pip install src/bcf --no-deps
           pip install pytest-xdist==3.8.0
 
@@ -252,13 +256,26 @@ jobs:
           pip install deepdiff
           cd ../ifcdiff && make test || ERROR=1
           cd ../ifcpatch && make test || ERROR=1
+          pip install -e ../ifc5d --no-deps
+          pip install odfpy xlsxwriter
+          cd ../ifc5d && make test || ERROR=1
+          pip install -e ../ifcquery --no-deps
+          cd ../ifcquery && make test || ERROR=1
+          pip install -e ../ifcedit --no-deps
+          cd ../ifcedit && make test || ERROR=1
+          pip install mcp
+          pip install -e ../ifcmcp --no-deps
+          cd ../ifcmcp && make test || ERROR=1
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test || ERROR=1
           make build-ids-docs || ERROR=1
           # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
+          # mathutils only has pre-built wheels for Python 3.13+; skip on older versions.
           cd ../ifcopenshell-python
-          pip install mathutils
-          make test-mathutils || ERROR=1
+          if python -c "import sys; sys.exit(0 if sys.version_info >= (3, 13) else 1)"; then
+            pip install mathutils
+            make test-mathutils || ERROR=1
+          fi
           if [ $ERROR -ne 0 ]; then
             echo "One or more tests failed";
             exit 1;

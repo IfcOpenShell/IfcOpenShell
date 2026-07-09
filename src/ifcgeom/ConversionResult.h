@@ -24,8 +24,19 @@
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/taxonomy.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <limits>
 #include <memory>
 #include <string_view>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
+#include <typeinfo>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 
@@ -113,85 +124,232 @@ namespace IfcGeom {
 #endif
 
 	class IFC_GEOM_API OpaqueNumber {
-	public:
-		virtual double to_double() const = 0;
-		virtual std::string to_string() const = 0;
+	protected:
+		struct NumberConcept {
+			virtual ~NumberConcept() {}
+			virtual double to_double() const = 0;
+			virtual std::string to_string() const = 0;
+			virtual std::shared_ptr<const NumberConcept> add(const NumberConcept& other) const = 0;
+			virtual std::shared_ptr<const NumberConcept> subtract(const NumberConcept& other) const = 0;
+			virtual std::shared_ptr<const NumberConcept> multiply(const NumberConcept& other) const = 0;
+			virtual std::shared_ptr<const NumberConcept> divide(const NumberConcept& other) const = 0;
+			virtual std::shared_ptr<const NumberConcept> negate() const = 0;
+			virtual std::shared_ptr<const NumberConcept> from_double(double value) const = 0;
+            virtual std::shared_ptr<const NumberConcept> from_int(int value) const = 0;
+            virtual bool equals(const NumberConcept& other) const = 0;
+			virtual bool less_than(const NumberConcept& other) const = 0;
+			virtual const std::type_info& type() const = 0;
+			virtual const void* value_ptr() const = 0;
+		};
 
-		virtual ~OpaqueNumber() {}
+#ifndef SWIG
+		template <typename T, typename = void>
+		struct has_exact : std::false_type {};
 
-		virtual OpaqueNumber* operator+(OpaqueNumber* other) const = 0;
-		virtual OpaqueNumber* operator-(OpaqueNumber* other) const = 0;
-		virtual OpaqueNumber* operator*(OpaqueNumber* other) const = 0;
-		virtual OpaqueNumber* operator/(OpaqueNumber* other) const = 0;
-		virtual bool operator==(OpaqueNumber* other) const = 0;
-		virtual bool operator<(OpaqueNumber* other) const = 0;
-		virtual OpaqueNumber* operator-() const = 0;
-		virtual OpaqueNumber* clone() const = 0;
-	};
+		template <typename T>
+		struct has_exact<T, std::void_t<decltype(std::declval<const T&>().exact())>> : std::true_type {};
+#endif
+
+		template <typename T>
+		struct NumberModel : NumberConcept {
+			T value;
+
+			NumberModel(const T& v)
+				: value(v) {}
+
+			static const NumberModel& as_same(const NumberConcept& other) {
+				auto same = dynamic_cast<const NumberModel*>(&other);
+				if (same == nullptr) {
+					throw std::runtime_error("Incompatible opaque number types");
+				}
+				return *same;
+			}
+
+			virtual double to_double() const {
+				return static_cast<double>(value);
+			}
+
+			virtual std::string to_string() const {
+				std::stringstream ss;
+				if constexpr (has_exact<T>::value) {
+					ss << value.exact();
+				} else {
+					if constexpr (std::is_floating_point<T>::value) {
+						ss << std::setprecision(std::numeric_limits<T>::digits10 + 1);
+					}
+					ss << value;
+				}
+				return ss.str();
+			}
+
+			virtual std::shared_ptr<const NumberConcept> add(const NumberConcept& other) const {
+				return std::make_shared<NumberModel>(value + as_same(other).value);
+			}
+
+			virtual std::shared_ptr<const NumberConcept> subtract(const NumberConcept& other) const {
+				return std::make_shared<NumberModel>(value - as_same(other).value);
+			}
+
+			virtual std::shared_ptr<const NumberConcept> multiply(const NumberConcept& other) const {
+				return std::make_shared<NumberModel>(value * as_same(other).value);
+			}
+
+			virtual std::shared_ptr<const NumberConcept> divide(const NumberConcept& other) const {
+				return std::make_shared<NumberModel>(value / as_same(other).value);
+			}
+
+			virtual std::shared_ptr<const NumberConcept> negate() const {
+				return std::make_shared<NumberModel>(-value);
+			}
+
+			virtual std::shared_ptr<const NumberConcept> from_double(double v) const {
+				return std::make_shared<NumberModel>(T(v));
+			}
+
+			virtual std::shared_ptr<const NumberConcept> from_int(int v) const {
+                return std::make_shared<NumberModel>(T(v));
+            }
+
+			virtual bool equals(const NumberConcept& other) const {
+				return value == as_same(other).value;
+			}
+
+			virtual bool less_than(const NumberConcept& other) const {
+				return value < as_same(other).value;
+			}
+
+			virtual const std::type_info& type() const {
+				return typeid(T);
+			}
+
+			virtual const void* value_ptr() const {
+				return &value;
+			}
+		};
+
+		template <typename T>
+		struct is_shared_ptr : std::false_type {};
+
+		template <typename T>
+		struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
 
 	// @todo this can simply be a template class, to remove the need for the NumberEpeck in CGAL kernel.
 #ifndef SWIG
 	class IFC_GEOM_API NumberNativeDouble : public OpaqueNumber {
 	private:
-		double value_;
+		std::shared_ptr<const NumberConcept> data_;
 
-		template <double (*Fn)(double, double)>
-		OpaqueNumber* binary_op(OpaqueNumber* other) const {
-			auto nnd = dynamic_cast<NumberNativeDouble*>(other);
-			if (nnd) {
-				return new NumberNativeDouble(Fn(value_, nnd->value_));
-			} else {
-				return nullptr;
+		const NumberConcept& data() const {
+			if (!data_) {
+				throw std::runtime_error("Empty opaque number");
 			}
+			return *data_;
 		}
 
-		template <bool(*Fn)(double, double)>
-		bool binary_op_bool(OpaqueNumber* other) const {
-			auto nnd = dynamic_cast<NumberNativeDouble*>(other);
-			if (nnd) {
-				return Fn(value_, nnd->value_);
-			} else {
-				return false;
-			}
-		}
+	protected:
+		OpaqueNumber(std::shared_ptr<const NumberConcept> data)
+			: data_(std::move(data)) {}
 
-		template <double(*Fn)(double)>
-		OpaqueNumber* unary_op() const {
-			return new NumberNativeDouble(Fn(value_));
-		}
 	public:
-		NumberNativeDouble(double v)
-			: value_(v) {}
+		OpaqueNumber() = default;
+		virtual ~OpaqueNumber() = default;
 
-		virtual double to_double() const {
-			return value_;
+#ifndef SWIG
+		template <
+			typename T,
+			typename Decayed = std::decay_t<T>,
+			typename = std::enable_if_t<!std::is_base_of<OpaqueNumber, Decayed>::value && !is_shared_ptr<Decayed>::value>>
+		explicit OpaqueNumber(T&& value)
+			: data_(std::make_shared<NumberModel<Decayed>>(std::forward<T>(value))) {}
+#endif
+
+		double to_double() const {
+			return data().to_double();
 		}
 
-		virtual std::string to_string() const;
+		std::string to_string() const {
+			return data().to_string();
+		}
 
-		virtual OpaqueNumber* operator+(OpaqueNumber* other) const {
-			return binary_op<add_<double>>(other);
+		bool empty() const {
+			return !data_;
 		}
-		virtual OpaqueNumber* operator-(OpaqueNumber* other) const {
-			return binary_op<subtract_<double>>(other);
+
+		template <typename T>
+		const T& value_as() const {
+			if (data().type() != typeid(T)) {
+				throw std::runtime_error("Unexpected opaque number type");
+			}
+			return *static_cast<const T*>(data().value_ptr());
 		}
-		virtual OpaqueNumber* operator*(OpaqueNumber* other) const {
-			return binary_op<multiply_<double>>(other);
+
+		OpaqueNumber add(const OpaqueNumber& other) const {
+			return OpaqueNumber(data().add(other.data()));
 		}
-		virtual OpaqueNumber* operator/(OpaqueNumber* other) const {
-			return binary_op<divide_<double>>(other);
+
+		OpaqueNumber subtract(const OpaqueNumber& other) const {
+			return OpaqueNumber(data().subtract(other.data()));
 		}
-		virtual bool operator==(OpaqueNumber* other) const {
-			return binary_op_bool<equals_<double>>(other);
+
+		OpaqueNumber multiply(const OpaqueNumber& other) const {
+			return OpaqueNumber(data().multiply(other.data()));
 		}
-		virtual bool operator<(OpaqueNumber* other) const {
-			return binary_op_bool<less_than_<double>>(other);
+
+		OpaqueNumber divide(const OpaqueNumber& other) const {
+			return OpaqueNumber(data().divide(other.data()));
 		}
-		virtual OpaqueNumber* operator-() const {
-			return unary_op<negate_<double>>();
+
+		OpaqueNumber negated() const {
+			return OpaqueNumber(data().negate());
 		}
-		virtual OpaqueNumber* clone() const {
-			return new NumberNativeDouble(value_);
+
+		OpaqueNumber abs() const {
+            auto zero = data().from_int(0);
+            return OpaqueNumber(data().less_than(*zero) ? data().negate() : *this);
+        }
+
+		OpaqueNumber same_type(double value) const {
+			return OpaqueNumber(data().from_double(value));
+		}
+
+		OpaqueNumber same_type(int value) const {
+            return OpaqueNumber(data().from_int(value));
+        }
+
+		bool equals(const OpaqueNumber& other) const {
+			return data().equals(other.data());
+		}
+
+		bool less_than(const OpaqueNumber& other) const {
+			return data().less_than(other.data());
+		}
+
+		OpaqueNumber operator+(const OpaqueNumber& other) const {
+			return add(other);
+		}
+
+		OpaqueNumber operator-(const OpaqueNumber& other) const {
+			return subtract(other);
+		}
+
+		OpaqueNumber operator*(const OpaqueNumber& other) const {
+			return multiply(other);
+		}
+
+		OpaqueNumber operator/(const OpaqueNumber& other) const {
+			return divide(other);
+		}
+
+		bool operator==(const OpaqueNumber& other) const {
+			return equals(other);
+		}
+
+		bool operator<(const OpaqueNumber& other) const {
+			return less_than(other);
+		}
+
+		OpaqueNumber operator-() const {
+			return negated();
 		}
 	};
 #else
@@ -215,61 +373,137 @@ namespace IfcGeom {
 	template <size_t N>
 	struct IFC_GEOM_API OpaqueCoordinate {
 	private:
-		std::array<OpaqueNumber*, N> values;
+		std::array<OpaqueNumber, N> values_;
 
-		static void copy_(std::array<OpaqueNumber*, N>& dest, const std::array<OpaqueNumber*, N>& src) {
-			for (size_t i = 0; i < N; ++i) {
-				dest[i] = (src[i] != nullptr) ? src[i]->clone() : nullptr;
-			}
+		static OpaqueNumber as_number(OpaqueNumber value) {
+			return value;
 		}
+
 	public:
-		template <typename... Args>
-		OpaqueCoordinate(Args... args) {
-			static_assert(sizeof...(args) == N, "Incorrect number of arguments provided");
-			init_<0>(args...);
+#ifndef SWIG
+		template <typename... Args, typename = std::enable_if_t<sizeof...(Args) == N>>
+		OpaqueCoordinate(Args&&... args) {
+			init_<0>(std::forward<Args>(args)...);
+		}
+#endif
+
+		OpaqueCoordinate() = default;
+
+		std::size_t size() const {
+			return N;
 		}
 
-		OpaqueCoordinate() {
-			for (auto it = values.begin(); it != values.end(); ++it) {
-				*it = nullptr;
-			}
-		}
-
-		OpaqueCoordinate(const OpaqueCoordinate& other) {
-			copy_(values, other.values);
-		}
-
-		OpaqueCoordinate& operator=(const OpaqueCoordinate& other) {
-			if (this != &other) {
-				copy_(values, other.values);
-			}
-			return *this;
-		}
-
-		~OpaqueCoordinate() {
-			for (auto it = values.begin(); it != values.end(); ++it) {
-				delete *it;
-			}
-		}
-
-		OpaqueNumber* get(size_t i) const {
+		OpaqueNumber get(size_t i) const {
 			if (i >= N) {
-				return nullptr;
+				return OpaqueNumber();
 			}
-			return values[i];
+			return values_[i];
 		}
 
-		void set(size_t i, OpaqueNumber* n) {
+		double get_double(size_t i) const {
+			return get(i).to_double();
+		}
+
+		void set(size_t i, const OpaqueNumber& n) {
 			if (i < N) {
-				values[i] = n->clone();
+				values_[i] = n;
 			}
 		}
+
+		std::vector<double> to_double() const {
+			std::vector<double> result;
+			result.reserve(N);
+			for (const auto& value : values_) {
+				result.push_back(value.to_double());
+			}
+			return result;
+		}
+
+		OpaqueCoordinate operator-() const {
+			OpaqueCoordinate result;
+			for (size_t i = 0; i < N; ++i) {
+				result.values_[i] = values_[i].negated();
+			}
+			return result;
+		}
+
+		OpaqueCoordinate operator+(const OpaqueCoordinate& other) const {
+			OpaqueCoordinate result;
+			for (size_t i = 0; i < N; ++i) {
+				result.values_[i] = values_[i].add(other.values_[i]);
+			}
+			return result;
+		}
+
+		OpaqueCoordinate operator-(const OpaqueCoordinate& other) const {
+			OpaqueCoordinate result;
+			for (size_t i = 0; i < N; ++i) {
+				result.values_[i] = values_[i].subtract(other.values_[i]);
+			}
+			return result;
+		}
+
+		OpaqueCoordinate operator*(const OpaqueNumber& scalar) const {
+			OpaqueCoordinate result;
+			for (size_t i = 0; i < N; ++i) {
+				result.values_[i] = values_[i].multiply(scalar);
+			}
+			return result;
+		}
+
+		OpaqueCoordinate operator/(const OpaqueNumber& scalar) const {
+			OpaqueCoordinate result;
+			for (size_t i = 0; i < N; ++i) {
+				result.values_[i] = values_[i].divide(scalar);
+			}
+			return result;
+		}
+
+		OpaqueCoordinate scale(double scalar) const {
+			return *this * values_[0].same_type(scalar);
+		}
+
+		OpaqueNumber dot(const OpaqueCoordinate& other) const {
+			if constexpr (N == 0) {
+				return OpaqueNumber(0.0);
+			} else {
+				OpaqueNumber result = values_[0].multiply(other.values_[0]);
+				for (size_t i = 1; i < N; ++i) {
+					result = result.add(values_[i].multiply(other.values_[i]));
+				}
+				return result;
+			}
+		}
+
+		double norm() const {
+			return std::sqrt(dot(*this).to_double());
+		}
+
+		OpaqueCoordinate normalized() const {
+			const double length = norm();
+			if (length == 0.0) {
+				return *this;
+			}
+			return *this / values_[0].same_type(length);
+		}
+
+		OpaqueCoordinate normalized_by_max_abs() const {
+			double max_abs = 0.0;
+			for (const auto& value : values_) {
+				max_abs = (std::max)(max_abs, std::fabs(value.to_double()));
+			}
+			if (max_abs == 0.0) {
+				return *this;
+			}
+			return *this / values_[0].same_type(max_abs);
+		}
+
 	private:
-		template <size_t Index, typename... Args>
-		void init_(OpaqueNumber* value, Args... args) {
-			values[Index] = value;
+		template <size_t Index, typename Arg, typename... Args>
+		void init_(Arg&& value, Args&&... args) {
+			values_[Index] = as_number(std::forward<Arg>(value));
 			if constexpr (Index + 1 < N) {
-				init_<Index + 1>(args...);
+				init_<Index + 1>(std::forward<Args>(args)...);
 			}
 		}
 	};
@@ -293,7 +527,7 @@ namespace IfcGeom {
 		virtual std::string_view backend_id() const = 0;
 #endif
 		virtual void Triangulate(ifcopenshell::geometry::Settings settings, const ifcopenshell::geometry::taxonomy::matrix4& place, Representation::Triangulation* t, int item_id, int surface_style_id) const = 0;
-		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings) const;
+		IfcGeom::Representation::Triangulation* Triangulate(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root()) const;
 		virtual void Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string&) const = 0;
 				
 		virtual int surface_genus() const = 0;
@@ -309,9 +543,9 @@ namespace IfcGeom {
 		virtual std::pair<OpaqueCoordinate<3>, OpaqueCoordinate<3>> bounding_box() const = 0;
 		virtual void set_box(void* b) = 0;
 		
-		virtual OpaqueNumber* length() = 0;
-		virtual OpaqueNumber* area() = 0;
-		virtual OpaqueNumber* volume() = 0;
+		virtual OpaqueNumber length() = 0;
+		virtual OpaqueNumber area() = 0;
+		virtual OpaqueNumber volume() = 0;
 
 		virtual OpaqueCoordinate<3> position() = 0;
 		virtual OpaqueCoordinate<3> axis() = 0;
@@ -332,8 +566,8 @@ namespace IfcGeom {
 		virtual ConversionResultShape* intersect(ConversionResultShape*) = 0;
 		virtual ConversionResultShape* concat(ConversionResultShape*) = 0;
 
-		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
-		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
+		virtual std::size_t map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) = 0;
+		virtual std::size_t map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) = 0;
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const = 0;
 		
 		virtual bool surface_area_along_direction(double tol, const ifcopenshell::geometry::taxonomy::matrix4::ptr&, double& along_x, double& along_y, double& along_z) const = 0;

@@ -346,8 +346,9 @@ class IFC_GEOM_API GeometrySerializer : public Serializer {
 public:
 	enum read_type { READ_BREP, READ_TRIANGULATION };
 
-    GeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
-		: geometry_settings_(geometry_settings)
+    GeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root())
+		: Serializer(logger)
+		, geometry_settings_(geometry_settings)
 		, settings_(settings)
 	{}
 	virtual ~GeometrySerializer() {} 
@@ -380,7 +381,7 @@ protected:
 
 class IFC_GEOM_API WriteOnlyGeometrySerializer : public GeometrySerializer {
 public:
-	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings) : GeometrySerializer(geometry_settings, settings) {}
+	WriteOnlyGeometrySerializer(const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger = Logger::Root()) : GeometrySerializer(geometry_settings, settings, logger) {}
 
 	virtual IfcGeom::Element* read(ifcopenshell::file&, const std::string&, const std::string&, read_type = READ_BREP) {
 		throw std::runtime_error("Not supported");

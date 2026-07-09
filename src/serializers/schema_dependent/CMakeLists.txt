@@ -18,6 +18,7 @@ foreach(schema ${SCHEMA_VERSIONS})
             target_link_options(document_serializer_json_ifc${schema} PRIVATE "SHELL:-s ERROR_ON_UNDEFINED_SYMBOLS=0")
         endif()
     endif()
+    install(TARGETS Serializers_ifc${schema} EXPORT ${IFCOPENSHELL_EXPORT_TARGETS})
 endforeach()
 
 set(document_serializer_libraries ${document_serializer_libraries} PARENT_SCOPE)

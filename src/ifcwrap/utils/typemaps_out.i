@@ -95,6 +95,7 @@ CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(ifcopenshell::declaration const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
+CREATE_VECTOR_TYPEMAP_OUT(log_message)
 
 %typemap(out) ifcopenshell::geometry::Settings::value_variant_t {
 	pythonizing_visitor vis;

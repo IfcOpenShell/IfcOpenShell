@@ -78,6 +78,7 @@
 #include <thread>
 #include <chrono>
 #include <atomic>
+#include <memory>
 
 namespace IfcGeom {
 
@@ -127,12 +128,14 @@ namespace IfcGeom {
 		std::vector<ifcopenshell::geometry::filter_t> filters_;
 		int num_threads_;
 		std::string geometry_library_;
+		Logger& logger_;
 
 		// When single-threaded
 		ifcopenshell::geometry::Converter* converter_;
 		
 		// When multi-threaded
 		std::vector<ifcopenshell::geometry::Converter*> kernel_pool;
+		std::vector<std::unique_ptr<Logger>> worker_loggers_;
 
 		// The object is fetched beforehand to be sure that get() returns a valid element
 		TriangulationElement* current_triangulation;
@@ -167,7 +170,10 @@ namespace IfcGeom {
 		IfcGeom::Element* process_based_on_settings(
 			ifcopenshell::geometry::Settings settings,
 			IfcGeom::BRepElement* elem,
+			Logger& logger,
 			IfcGeom::TriangulationElement* previous = nullptr);
+
+		void flush_worker_log(ifcopenshell::geometry::Converter* kernel);
 
 		bool wait_for_element();
 
@@ -177,32 +183,35 @@ namespace IfcGeom {
 		ifcopenshell::geometry::taxonomy::direction3::ptr remove_offset_();
 	public:
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, const std::vector<ifcopenshell::geometry::filter_t>& filters, int num_threads, Logger& logger = Logger::Root())
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library->geometry_library())
+			, logger_(logger)
 			// @todo verify whether settings are correctly passed on
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, Logger& logger = Logger::Root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(1)
 			, geometry_library_(geometry_library->geometry_library())
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
+			, logger_(logger)
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
-		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, int num_threads)
+		Iterator(std::unique_ptr<ifcopenshell::geometry::kernels::AbstractKernel>&& geometry_library, const ifcopenshell::geometry::Settings& settings, ifcopenshell::file* file, int num_threads, Logger& logger = Logger::Root())
 			: settings_(settings)
 			, ifc_file(file)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library->geometry_library())
-			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_))
+			, logger_(logger)
+			, converter_(new ifcopenshell::geometry::Converter(std::move(geometry_library), ifc_file, settings_, logger_))
 		{
 		}
 
@@ -255,7 +264,7 @@ namespace IfcGeom {
 
 		size_t processed_ = 0;
 
-		void process_finished_rep(geometry_conversion_result* rep);
+		void process_finished_rep(geometry_conversion_result* rep, ifcopenshell::geometry::Converter* kernel = nullptr);
 
 		void process_concurrently();
 
@@ -267,7 +276,7 @@ namespace IfcGeom {
 			return progress_;
 		}
 
-		std::string getLog() const { return logger::get_log(); }
+		std::string getLog() const { return logger_.GetLog(); }
 
 		ifcopenshell::file* file() const { return ifc_file; }
 

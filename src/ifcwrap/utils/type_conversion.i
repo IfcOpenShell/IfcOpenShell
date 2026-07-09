@@ -57,9 +57,19 @@
 		if (PySequence_Size(aggregate) == -1) return false;
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
 			PyObject* element = PySequence_GetItem(aggregate, i);
-			// This is equivalent to the PyFloat_CheckExact macro. This means
-			// that direct instances of int, float, str, etc. need to be used.
-			bool b = element->ob_type == type_obj;
+			// Accept the exact type or, for the numeric types, a subclass such
+			// as a numpy scalar (numpy.float64 subclasses float), so that numpy
+			// arrays can be assigned. The REAL vs INTEGER distinction is kept: a
+			// float is not accepted where an int is expected and vice versa, and
+			// bool (a subclass of int) is still rejected for INTEGER. See #5873.
+			bool b;
+			if (type_obj == static_cast<void*>(&PyFloat_Type)) {
+				b = PyFloat_Check(element);
+			} else if (type_obj == static_cast<void*>(&PyLong_Type)) {
+				b = PyLong_Check(element) && !PyBool_Check(element);
+			} else {
+				b = element->ob_type == type_obj;
+			}
 			Py_DECREF(element);
 			if (!b) {
 				return false;
@@ -249,6 +259,7 @@
 	PyObject* pythonize(const ifcopenshell::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__inverse_attribute, 0); }
 	PyObject* pythonize(const ifcopenshell::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_ifcopenshell__entity, 0);             }
 	PyObject* pythonize(const ifcopenshell::declaration* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), declaration_type_to_swig(t), 0);             }
+	PyObject* pythonize(const log_message& t)           { return SWIG_NewPointerObj(SWIG_as_voidptr(&t), SWIGTYPE_p_log_message, 0);                  }
 	// @nb ownership
 	PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, SWIG_POINTER_OWN); }
 	// PyObject* pythonize(const IfcGeom::ConversionResultShape* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcGeom__ConversionResultShape, 0); }

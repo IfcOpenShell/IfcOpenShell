@@ -37,8 +37,6 @@
 #include <TopoDS_Face.hxx>
 #include <Geom_Curve.hxx>
 #include <gp_Pln.hxx>
-#include <TColgp_SequenceOfPnt.hxx>
-#include <TopTools_ListOfShape.hxx>
 #include <BOPAlgo_Operation.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
@@ -105,21 +103,21 @@ private:
 		bool edge(int A, int B, TopoDS_Edge& e);
 
 		bool wire(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopoDS_Wire& wire);
-		bool wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, TopTools_ListOfShape& wires);
+		bool wires(const ifcopenshell::geometry::taxonomy::loop::ptr loop, NCollection_List<TopoDS_Shape>& wires);
 	};
 
 	faceset_helper* faceset_helper_;
 
 	double precision_;
 public:
-	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings)
-		: AbstractKernel("opencascade", settings)
+	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings, Logger& logger = Logger::Root())
+		: AbstractKernel("opencascade", settings, logger)
 		, faceset_helper_(nullptr)
 		, precision_(settings.get<ifcopenshell::geometry::settings::Precision>().get())
 	{}
 
-	virtual AbstractKernel* clone() const {
-		return new OpenCascadeKernel(settings());
+	virtual AbstractKernel* clone(Logger& logger) const {
+		return new OpenCascadeKernel(settings(), logger);
 	}
 
 	virtual bool supports_boolean_operations() const { return true; }

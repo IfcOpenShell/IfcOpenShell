@@ -36,7 +36,17 @@ else()
 endif()
 
 macro(build_example exe_name)
+    set(_target_schema "")
     set(additional_targets ${ARGN})
+    list(LENGTH additional_targets _argc)
+    if(_argc GREATER 0)
+        list(GET additional_targets 0 _first_arg)
+        if("${_first_arg}" IN_LIST SCHEMA_VERSIONS)
+            set(_target_schema ${_first_arg})
+            list(REMOVE_AT additional_targets 0)
+        endif()
+    endif()
+
     add_executable(${exe_name} ${exe_name}.cpp)
 
     if(STANDALONE_PROJECT)
@@ -50,6 +60,17 @@ macro(build_example exe_name)
         target_link_libraries(${exe_name} IfcParse ${additional_targets})
         set_target_properties(${exe_name} PROPERTIES FOLDER Examples)
     endif()
+
+    if(_target_schema)
+        set_target_properties(
+            ${exe_name}
+            PROPERTIES COMPILE_FLAGS "-DIfcSchema=Ifc${_target_schema}"
+        )
+    endif()
+
+    unset(_target_schema)
+    unset(_argc)
+    unset(_first_arg)
     install(TARGETS ${exe_name})
 endmacro()
 

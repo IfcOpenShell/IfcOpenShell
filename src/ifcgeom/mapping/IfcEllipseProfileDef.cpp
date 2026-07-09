@@ -26,7 +26,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef& inst) {
 	double ry = inst.SemiAxis2() * length_unit_;
 	const double tol = settings_.get<settings::Precision>().get();
 	if (rx < tol || ry < tol) {
-		logger::message(logger::LOG_ERROR, "Radius not greater than zero for:", inst);
+		logger_.Message(Logger::LOG_ERROR, "GEO", 258, "Radius not greater than zero for:", inst);
 		return nullptr;
 	}
 

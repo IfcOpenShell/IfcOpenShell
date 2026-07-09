@@ -36,7 +36,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrapeziumProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if (x1 < tol || w < tol || y < tol) {
-		logger::message(logger::LOG_NOTICE, "Skipping zero sized profile:", inst);
+		logger_.Message(Logger::LOG_NOTICE, "GEO", 294, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 

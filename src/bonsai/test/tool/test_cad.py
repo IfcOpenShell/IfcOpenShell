@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from mathutils import Vector
+import math
+
+from mathutils import Matrix, Vector
 
 from bonsai.tool.cad import Cad as subject
 from test.bim.bootstrap import NewFile
@@ -88,3 +90,87 @@ class TestClosestPoints(NewFile):
         edge1 = (V(0, 0, 0), V(0, 0, 0))
         edge2 = (V(1, 0, 1), V(2, 0, 2))
         assert subject.closest_points(edge1, edge2)[0] == (edge1[0], edge2[0])
+
+
+class TestObbWorldClipPlanes(NewFile):
+    def test_unit_box_at_origin_returns_axis_aligned_planes(self):
+        planes = subject.obb_world_clip_planes(
+            V(0, 0, 0),
+            (V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)),
+            V(1, 1, 1),
+        )
+        assert planes[0] == (-1.0, 0.0, 0.0, 1.0)
+        assert planes[1] == (1.0, 0.0, 0.0, 1.0)
+        assert planes[2] == (0.0, -1.0, 0.0, 1.0)
+        assert planes[3] == (0.0, 1.0, 0.0, 1.0)
+        assert planes[4] == (0.0, 0.0, -1.0, 1.0)
+        assert planes[5] == (0.0, 0.0, 1.0, 1.0)
+
+    def test_center_is_inside_all_planes(self):
+        center = V(5, -3, 2)
+        planes = subject.obb_world_clip_planes(
+            center,
+            (V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)),
+            V(2, 1, 0.5),
+        )
+        assert subject.point_is_inside_clip_planes(planes, center)
+
+    def test_point_just_outside_positive_x_face_rejected(self):
+        planes = subject.obb_world_clip_planes(
+            V(0, 0, 0),
+            (V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)),
+            V(1, 1, 1),
+        )
+        assert subject.point_is_inside_clip_planes(planes, V(0.5, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(1.5, 0, 0))
+
+    def test_rotated_obb_clips_along_rotated_axes(self):
+        s = math.sin(math.radians(45))
+        planes = subject.obb_world_clip_planes(
+            V(0, 0, 0),
+            (V(s, s, 0), V(-s, s, 0), V(0, 0, 1)),
+            V(1, 1, 1),
+        )
+        assert subject.point_is_inside_clip_planes(planes, V(1.2, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(1.42, 0, 0))
+
+    def test_zero_extent_axis_does_not_raise(self):
+        planes = subject.obb_world_clip_planes(
+            V(0, 0, 0),
+            (V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)),
+            V(1, 1, 0),
+        )
+        assert subject.point_is_inside_clip_planes(planes, V(0, 0, 0))
+
+
+class TestObbClipPlanesFromMatrix(NewFile):
+    def test_identity_matches_unit_box(self):
+        planes = subject.obb_clip_planes_from_matrix(Matrix.Identity(4))
+        assert subject.point_is_inside_clip_planes(planes, V(0, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(2, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(0, -2, 0))
+
+    def test_translated_host_shifts_clip_region(self):
+        translated = Matrix.Translation(V(10, 0, 0))
+        planes = subject.obb_clip_planes_from_matrix(translated)
+        assert not subject.point_is_inside_clip_planes(planes, V(0, 0, 0))
+        assert subject.point_is_inside_clip_planes(planes, V(10, 0, 0))
+
+    def test_z_rotation_rotates_box(self):
+        rot = Matrix.Rotation(math.radians(45), 4, "Z")
+        planes = subject.obb_clip_planes_from_matrix(rot)
+        assert subject.point_is_inside_clip_planes(planes, V(1.2, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(1.42, 0, 0))
+
+    def test_host_scale_scales_box_extents(self):
+        scaled = Matrix.Diagonal((2.0, 2.0, 2.0, 1.0))
+        planes = subject.obb_clip_planes_from_matrix(scaled)
+        assert subject.point_is_inside_clip_planes(planes, V(1.9, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(2.1, 0, 0))
+
+    def test_non_uniform_scale_axis_independent(self):
+        scaled = Matrix.Diagonal((3.0, 1.0, 1.0, 1.0))
+        planes = subject.obb_clip_planes_from_matrix(scaled)
+        assert subject.point_is_inside_clip_planes(planes, V(2.9, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(3.1, 0, 0))
+        assert not subject.point_is_inside_clip_planes(planes, V(0, 1.1, 0))

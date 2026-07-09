@@ -51,22 +51,29 @@ _IFC_CLASS_BY_KIND = {
     "slab": "IfcSlab",
     "roof": "IfcRoof",
     "plain": "IfcDiscreteAccessory",
+    "door": "IfcDoor",
+    "window": "IfcWindow",
+    "opening": "IfcOpeningElement",
+    "covering": "IfcCovering",
 }
 
 
 class _FakeIfcEntity:
     """Minimal stand-in for an ``ifcopenshell.entity_instance`` in poll tests.
 
-    Provides the two surfaces the gizmo's poll consults: ``is_a(type_name)``
-    (used directly by ``is_supported_host`` for slab/roof) and an optional
-    ``HasOpenings`` attribute (probed by the poll's ``hasattr`` guard)."""
+    Mirrors ``ifcopenshell.entity_instance.is_a``'s two call shapes:
+    ``is_a("Foo")`` returns True when the entity's class is ``Foo``, and
+    ``is_a()`` returns the class name as a string. ``HasOpenings`` is
+    optional so the poll's ``hasattr`` guard branch is reachable."""
 
     def __init__(self, ifc_class: str, has_openings: bool = True):
         self._ifc_class = ifc_class
         if has_openings:
             self.HasOpenings = ()
 
-    def is_a(self, type_name: str) -> bool:
+    def is_a(self, type_name: str | None = None):
+        if type_name is None:
+            return self._ifc_class
         return self._ifc_class == type_name
 
 
@@ -168,6 +175,40 @@ def test_poll_rejects_host_host_pairs(active_kind, other_kind, patched_tool):
     assert _run_poll(patched_tool, active_kind=active_kind, other_kind=other_kind) is False
 
 
+@pytest.mark.parametrize("filling_kind", ["door", "window", "opening", "mesh"])
+def test_poll_accepts_host_with_supported_filling(filling_kind, patched_tool):
+    """The apply-opening gizmo must activate when the secondary selection
+    is a class the operator can dispatch on: ``IfcDoor`` / ``IfcWindow``
+    (filled openings), ``IfcOpeningElement`` (existing opening reassigned
+    to a new host), or a raw Blender mesh (converted to an opening)."""
+    assert _run_poll(patched_tool, active_kind="wall", other_kind=filling_kind) is True
+
+
+@pytest.mark.parametrize("non_filling_kind", ["covering", "plain"])
+def test_poll_rejects_host_with_non_filling(non_filling_kind, patched_tool):
+    """An IFC entity whose class the apply-opening operator can't dispatch
+    on must keep the gizmo hidden — clicking it would otherwise dispatch
+    the operator on a class whose geometry the opening generator can't
+    derive, causing a deep traceback in the geometry kernel."""
+    assert _run_poll(patched_tool, active_kind="wall", other_kind=non_filling_kind) is False
+
+
+@pytest.mark.parametrize("filling_kind", ["door", "window", "opening", "mesh"])
+def test_poll_accepts_filling_active_with_host_other(filling_kind, patched_tool):
+    """The poll must be selection-order independent: the icon should appear
+    whether the user clicked the host first or the filling first. The
+    operator handles either order, so the gizmo should match."""
+    assert _run_poll(patched_tool, active_kind=filling_kind, other_kind="wall") is True
+
+
+@pytest.mark.parametrize("non_filling_kind", ["covering", "plain"])
+def test_poll_rejects_non_filling_active_with_host_other(non_filling_kind, patched_tool):
+    """The selection-order independence must not loosen the filling
+    predicate — covering + wall stays rejected regardless of which is
+    active."""
+    assert _run_poll(patched_tool, active_kind=non_filling_kind, other_kind="wall") is False
+
+
 def test_poll_rejects_active_host_without_has_openings(patched_tool):
     # Real-world equivalent: an IFC class that the active schema strips
     # ``HasOpenings`` from (e.g., a non-element subtype). The active sentinel
@@ -265,12 +306,16 @@ def _run_position_layer3_branch(
     icon = SimpleNamespace(matrix_basis=None, hide=True)
     self_stub = SimpleNamespace(add_opening_icon=icon)
 
-    host_element = object()
+    # Host identification in the gizmo branches on the entity's class, so
+    # the sentinel must respond to ``is_a``. The non-host selection has no
+    # IFC entity (mesh-like) and is accepted as a filling.
+    host_element = _FakeIfcEntity("IfcSlab")
+    entity_map = {id(host_obj): host_element, id(other): None}
     with contextlib.ExitStack() as stack:
         stack.enter_context(
             patched_tool(
                 selected_list=selected,
-                entity=host_element,
+                entity=lambda o: entity_map.get(id(o)),
                 modifier_predicates={"is_path_connectable_wall": is_path_connectable_wall},
             )
         )
@@ -292,6 +337,50 @@ def test_layer3_branch_always_parks_above_top_face(patched_tool, other_z):
     from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
 
     pos = _run_position_layer3_branch(patched_tool, host_world_z_range=(0.0, 0.2), other_z=other_z, other_xy=(0.7, 0.4))
+    assert pos.x == pytest.approx(0.7)
+    assert pos.y == pytest.approx(0.4)
+    assert pos.z == pytest.approx(0.2 + BaseParametricGizmoGroup.ICON_Z_OFFSET)
+
+
+def test_position_gizmos_identifies_host_by_class_when_selected_second(patched_tool):
+    """Host role in ``position_gizmos`` is resolved by IFC class, not by
+    active-object position — so a slab clicked SECOND (filling first,
+    host active or not) still anchors the icon correctly on the slab.
+    This pins the selection-order independence of the positioner (the
+    poll's independence is covered separately by the poll parametrize)."""
+    from bonsai.bim.module.drawing import gizmos as gizmo_module
+    from bonsai.bim.module.model.host_add_opening_gizmo import GizmoHostAddOpening
+
+    other = SimpleNamespace(matrix_world=Matrix.Translation(Vector((0.7, 0.4, 1.0))))
+    host_obj = SimpleNamespace(matrix_world=Matrix.Identity(4), bound_box=[(0.0, 0.0, 0.0), (0.0, 0.0, 0.2)] * 4)
+    # Host at index 1; the filling (no IFC entity) sits at index 0 as active.
+    selected = [other, host_obj]
+    context = SimpleNamespace(active_object=other)
+    icon = SimpleNamespace(matrix_basis=None, hide=True)
+    self_stub = SimpleNamespace(add_opening_icon=icon)
+
+    entity_map = {id(host_obj): _FakeIfcEntity("IfcSlab"), id(other): None}
+    with contextlib.ExitStack() as stack:
+        stack.enter_context(
+            patched_tool(
+                selected_list=selected,
+                entity=lambda o: entity_map.get(id(o)),
+                modifier_predicates={"is_path_connectable_wall": False},
+            )
+        )
+        stack.enter_context(patch.object(gizmo_module, "get_billboard_rotation", return_value=Matrix.Identity(4)))
+        stack.enter_context(
+            patch.object(
+                gizmo_module, "billboarded_at", side_effect=lambda pos, rot, scale=0.5: Matrix.Translation(pos)
+            )
+        )
+        GizmoHostAddOpening.position_gizmos(self_stub, context)
+
+    # Icon anchors on the host's top face (slab bound_box top-Z = 0.2) at
+    # the void's XY — same result as when the host was at index 0.
+    from bonsai.bim.module.drawing.gizmos import BaseParametricGizmoGroup
+
+    pos = icon.matrix_basis.translation
     assert pos.x == pytest.approx(0.7)
     assert pos.y == pytest.approx(0.4)
     assert pos.z == pytest.approx(0.2 + BaseParametricGizmoGroup.ICON_Z_OFFSET)

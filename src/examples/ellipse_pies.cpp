@@ -27,13 +27,26 @@
 #include <iostream>
 #include <fstream>
 
-#include "../ifcparse/schemas/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/hierarchy_helper.h"
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
+#define IfcSchema Ifc2x3
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef ifcopenshell::global_id guid;
 boost::none_t const null = boost::none;
+
+#ifdef SCHEMA_HAS_IfcSegment
+typedef IfcSchema::IfcSegment curve_segment_tt;
+#else
+typedef IfcSchema::IfcCompositeCurveSegment curve_segment_tt;
+#endif
 
 typedef struct {
 	double r1;
@@ -54,46 +67,46 @@ void create_testcase_for(hierarchy_helper& file, const EllipsePie& pie, Ifc2x3::
 	std::vector<double> coords2(flt2, flt2 + 2);
 	std::vector<double> coords3(flt3, flt3 + 2);
 	
-	Ifc2x3::IfcCartesianPoint* p1 = new Ifc2x3::IfcCartesianPoint(coords1);
-	Ifc2x3::IfcCartesianPoint* p2 = new Ifc2x3::IfcCartesianPoint(coords2);
-	Ifc2x3::IfcCartesianPoint* p3 = new Ifc2x3::IfcCartesianPoint(coords3);
+	IfcSchema::IfcCartesianPoint* p1 = new IfcSchema::IfcCartesianPoint(coords1);
+	IfcSchema::IfcCartesianPoint* p2 = new IfcSchema::IfcCartesianPoint(coords2);
+	IfcSchema::IfcCartesianPoint* p3 = new IfcSchema::IfcCartesianPoint(coords3);
 	
-	Ifc2x3::IfcCartesianPoint::list::ptr points(new Ifc2x3::IfcCartesianPoint::list());
+	IfcSchema::IfcCartesianPoint::list::ptr points(new IfcSchema::IfcCartesianPoint::list());
 	points->push(p3);
 	points->push(p1);
 	points->push(p2);
 	file.addEntities(points->generalize());
 
 	
-	Ifc2x3::IfcEllipse* ellipse = new Ifc2x3::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
-	file.add_entity(ellipse);
-	IfcEntityList::ptr trim1(new IfcEntityList);
-	IfcEntityList::ptr trim2(new IfcEntityList);
-	if (pref == Ifc2x3::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
-		trim1->push(new Ifc2x3::IfcParameterValue(pie.t1));
-		trim2->push(new Ifc2x3::IfcParameterValue(pie.t2));
+	IfcSchema::IfcEllipse* ellipse = new IfcSchema::IfcEllipse(file.addPlacement2d(), pie.r1, pie.r2);
+	file.addEntity(ellipse);
+	aggregate_of_instance::ptr trim1(new aggregate_of_instance);
+    aggregate_of_instance::ptr trim2(new aggregate_of_instance);
+	if (pref == IfcSchema::IfcTrimmingPreference::IfcTrimmingPreference_PARAMETER) {
+		trim1->push(new IfcSchema::IfcParameterValue(pie.t1));
+		trim2->push(new IfcSchema::IfcParameterValue(pie.t2));
 	} else {
 		trim1->push(p2);
 		trim2->push(p3);
 	}
-	Ifc2x3::IfcTrimmedCurve* trim = new Ifc2x3::IfcTrimmedCurve(ellipse, trim1, trim2, true, pref);
-	file.add_entity(trim);
+	IfcSchema::IfcTrimmedCurve* trim = new IfcSchema::IfcTrimmedCurve(ellipse, trim1->as<IfcSchema::IfcTrimmingSelect>(), trim2->as<IfcSchema::IfcTrimmingSelect>(), true, pref);
+	file.addEntity(trim);
 	
-	Ifc2x3::IfcCompositeCurveSegment::list::ptr segments(new Ifc2x3::IfcCompositeCurveSegment::list());
-	Ifc2x3::IfcCompositeCurveSegment* s2 = new Ifc2x3::IfcCompositeCurveSegment(Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, trim);
+	curve_segment_tt::list::ptr segments(new curve_segment_tt::list());
+	IfcSchema::IfcCompositeCurveSegment* s2 = new IfcSchema::IfcCompositeCurveSegment(IfcSchema::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, trim);
 	
-	Ifc2x3::IfcPolyline* poly = new Ifc2x3::IfcPolyline(points);	
-	file.add_entity(poly);
-	Ifc2x3::IfcCompositeCurveSegment* s1 = new Ifc2x3::IfcCompositeCurveSegment(Ifc2x3::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, poly);
+	IfcSchema::IfcPolyline* poly = new IfcSchema::IfcPolyline(points);
+	file.addEntity(poly);
+	IfcSchema::IfcCompositeCurveSegment* s1 = new IfcSchema::IfcCompositeCurveSegment(IfcSchema::IfcTransitionCode::IfcTransitionCode_CONTINUOUS, true, poly);
 	segments->push(s1);
 	
 	segments->push(s2);
 	file.addEntities(segments->generalize());
 	
-	Ifc2x3::IfcCompositeCurve* ccurve = new Ifc2x3::IfcCompositeCurve(segments, false);
-	Ifc2x3::IfcArbitraryClosedProfileDef* profile = new Ifc2x3::IfcArbitraryClosedProfileDef(Ifc2x3::IfcProfileTypeEnum::IfcProfileType_AREA, null, ccurve);
-	file.add_entity(ccurve);
-	file.add_entity(profile);
+	IfcSchema::IfcCompositeCurve* ccurve = new IfcSchema::IfcCompositeCurve(segments, false);
+	IfcSchema::IfcArbitraryClosedProfileDef* profile = new IfcSchema::IfcArbitraryClosedProfileDef(IfcSchema::IfcProfileTypeEnum::IfcProfileType_AREA, null, ccurve);
+	file.addEntity(ccurve);
+	file.addEntity(profile);
 
 	IfcSchema::IfcBuildingElementProxy* product = new IfcSchema::IfcBuildingElementProxy(
 		guid(), 0, S("profile"), null, null, 0, 0, null, null);

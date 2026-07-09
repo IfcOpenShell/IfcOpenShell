@@ -32,8 +32,8 @@ using namespace IfcGeom;
 
 namespace {
     struct POSTFIX_SCHEMA(factory_t) {
-        abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings) const {
-            ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file, settings);
+        abstract_mapping* operator()(ifcopenshell::file* file, Settings& settings, Logger& logger) const {
+            ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)* m = new ifcopenshell::geometry::POSTFIX_SCHEMA(mapping)(file, settings, logger);
             return m;
         }
     };
@@ -84,7 +84,7 @@ std::vector<IfcSchema::IfcProduct> mapping::products_represented_by(const IfcSch
                 try {
                     target = taxonomy::cast<taxonomy::matrix4>(map(item.MappingTarget()));
                 } catch (const std::exception& e) {
-                    logger::error(e);
+                    logger_.Error("GEO", 300, e);
                     continue;
                 }
                 if (!target->is_identity()) {
@@ -335,8 +335,8 @@ const express::Base mapping::get_single_material_association(const express::Base
 
         try {
             associated_material = associated_materials.front().RelatingMaterial().concrete();
-        } catch(ifcopenshell::exception& e) {
-            logger::error(e.what());
+        } catch(IfcParse::IfcException& e) {
+            logger_.Error("GEO", 301, e.what());
         }
 
         if (associated_material) {
@@ -349,7 +349,7 @@ const express::Base mapping::get_single_material_association(const express::Base
                     IfcSchema::IfcMaterialLayerSet layerset;
                     if (auto m = associated_material.as<IfcSchema::IfcMaterialLayerSetUsage>()) {
                         if (m.get("ForLayerSet").isNull()) {
-                            logger::warning("Missing ForLayerSet for:", m);
+                            logger_.Warning("GEO", 302, "Missing ForLayerSet for:", m);
                             return express::Base{};
                         }
                         layerset = m.ForLayerSet();
@@ -369,7 +369,7 @@ const express::Base mapping::get_single_material_association(const express::Base
                     IfcSchema::IfcMaterialProfileSet profileset;
                     if (auto m = associated_material.as<IfcSchema::IfcMaterialProfileSetUsage>()) {
                         if (m.get("ForProfileSet").isNull()) {
-                            logger::warning("Missing ForProfileSet for:", m);
+                            logger_.Warning("GEO", 303, "Missing ForProfileSet for:", m);
                             return express::Base{};
                         }
                         profileset = m.ForProfileSet();
@@ -414,7 +414,7 @@ IfcSchema::IfcRepresentation mapping::representation_mapped_to(const IfcSchema::
                 try {
                     target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item.MappingTarget()));
                 } catch (const std::exception& e) {
-                    logger::error(e);
+                    logger_.Error("GEO", 304, e);
                 }
                 if (target && target->is_identity()) {
                     IfcSchema::IfcRepresentationMap rmap = mapped_item.MappingSource();
@@ -587,7 +587,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial& material) {
                 failed_on_purpose_.insert(material);
                 return nullptr;
             }
-            logger::warning("Skipping unsupported material style for material: ", material);
+            logger_.Warning("UNS", 19, "Skipping unsupported material style for material: ", material);
         }
     }
 
@@ -620,7 +620,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem& inst) {
 
     if (!style) {
         // E.g. IfcCurveStyle is skipped as unsupported.
-        logger::warning("Only IfcSurfaceStyle is supported, couldn't find it in IfcStyledItem: ", inst);
+        logger_.Warning("GEO", 305, "Only IfcSurfaceStyle is supported, couldn't find it in IfcStyledItem: ", inst);
         failed_on_purpose_.insert(inst);
         return nullptr;
     }
@@ -714,6 +714,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle& style) {
 }
 
 taxonomy::ptr mapping::map(const express::Base& inst) {
+    if (!inst) {
+        logger_.Error("GEO", 306, "Warning nullptr passed to map() function");
+        return nullptr;
+    }
     auto iden = inst.identity();
     if (use_caching_) {
         std::lock_guard<std::mutex> guard(cache_guard_);
@@ -738,7 +742,7 @@ taxonomy::ptr mapping::map(const express::Base& inst) {
             cache_.insert({iden, item});
         }
     } else if (!matched) {
-        logger::message(logger::LOG_ERROR, "No operation defined for:", inst);
+        logger_.Message(Logger::LOG_ERROR, "GEO", 307, "No operation defined for:", inst);
     }
     return item;
 }
@@ -846,10 +850,10 @@ void mapping::initialize_units_() {
         auto& project = projects.front();
         unit_assignment = project.UnitsInContext();
     } else {
-        logger::warning("Not a single project or context in file");
+        logger_.Warning("GEO", 308, "Not a single project or context in file");
     }
     if (!unit_assignment) {
-        logger::warning("Unable to detect unit information");
+        logger_.Warning("GEO", 309, "Unable to detect unit information");
         return;
     }
 
@@ -858,7 +862,7 @@ void mapping::initialize_units_() {
     try {
         auto units = unit_assignment.Units();
         if (units.empty()) {
-            logger::warning("No unit information found");
+            logger_.Warning("GEO", 310, "No unit information found");
         } else {
             for (auto& base : units) {
                 if (auto named_unit = base.as<IfcSchema::IfcNamedUnit>()) {
@@ -891,15 +895,15 @@ void mapping::initialize_units_() {
     } catch (const ifcopenshell::exception& ex) {
         std::stringstream ss;
         ss << "Failed to determine unit information '" << ex.what() << "'";
-        logger::message(logger::LOG_ERROR, ss.str());
+        logger_.Message(Logger::LOG_ERROR, "GEO", 311, ss.str());
     }
 
     if (!length_unit_encountered) {
-        logger::warning("No length unit encountered");
+        logger_.Warning("GEO", 312, "No length unit encountered");
     }
 
     if (!angle_unit_encountered) {
-        logger::warning("No plane angle unit encountered");
+        logger_.Warning("GEO", 313, "No plane angle unit encountered");
     }
 
     // @todo move to a more descriptive function
@@ -916,7 +920,7 @@ void mapping::initialize_units_() {
         if (vs.size() == 3) {
             offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
         } else {
-            logger::error("Expected 3 values for model-offset setting");
+            logger_.Error("SYS", 31, "Expected 3 values for model-offset setting");
         }
     }
 
@@ -929,7 +933,7 @@ void mapping::initialize_units_() {
             m4 << m3;
             offset_and_rotation_ *= m4;
         } else {
-            logger::error("Expected 4 values for model-rotation setting");
+            logger_.Error("SYS", 32, "Expected 4 values for model-rotation setting");
         }
     }
 }
@@ -976,7 +980,7 @@ void mapping::initialize_settings() {
 
     if (any_precision_encountered) {
         if (lowest_precision_encountered < 1.e-7) {
-            logger::message(logger::LOG_WARNING, "Precision lower than 0.0000001 meter not enforced");
+            logger_.Message(Logger::LOG_WARNING, "SYS", 33, "Precision lower than 0.0000001 meter not enforced");
             precision_to_set = 1.e-7;
         } else {
             precision_to_set = lowest_precision_encountered;
@@ -1013,7 +1017,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
     IfcSchema::IfcRepresentation body_representation = find_representation(product, "Body");
 
     if (!body_representation) {
-        logger::warning("No body representation for product", product);
+        logger_.Warning("GEO", 314, "No body representation for product", product);
         return false;
     }
 
@@ -1027,7 +1031,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         IfcSchema::IfcRepresentation axis_representation = find_representation(product, "Axis");
 
         if (!axis_representation) {
-            logger::message(logger::LOG_WARNING, "No axis representation for:", product);
+            logger_.Message(Logger::LOG_WARNING, "GEO", 315, "No axis representation for:", product);
             return false;
         }
 
@@ -1102,7 +1106,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         }
 
         if (extrusions.size() != 1) {
-            logger::message(logger::LOG_WARNING, "No single extrusion found in body representation for:", product);
+            logger_.Message(Logger::LOG_WARNING, "GEO", 316, "No single extrusion found in body representation for:", product);
             return false;
         }
 
@@ -1117,7 +1121,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         if (has_position) {
             auto m4 = taxonomy::cast<taxonomy::matrix4>(map(extrusion.Position()));
             if (!m4) {
-                logger::message(logger::LOG_ERROR, "Failed to convert placement for extrusion of:", product);
+                logger_.Message(Logger::LOG_ERROR, "GEO", 317, "Failed to convert placement for extrusion of:", product);
                 return false;
             } else {
                 extrusion_position = m4;
@@ -1127,7 +1131,7 @@ bool mapping::get_layerset_information(const express::Base& p, layerset_informat
         taxonomy::direction3::ptr extrusion_direction = taxonomy::cast<taxonomy::direction3>(map(extrusion.ExtrudedDirection()));
 
         if (!extrusion_direction) {
-            logger::message(logger::LOG_ERROR, "Failed to convert direction for extrusion of:", product);
+            logger_.Message(Logger::LOG_ERROR, "GEO", 318, "Failed to convert direction for extrusion of:", product);
             return false;
         }
 
@@ -1199,13 +1203,13 @@ void mapping::addRepresentationsFromContextIds(std::vector<IfcSchema::IfcReprese
         IfcSchema::IfcGeometricRepresentationContext context;
         try {
             context = file_->instance_by_id(context_id).as<IfcSchema::IfcGeometricRepresentationContext>();
-        } catch (ifcopenshell::exception& e) {
-            logger::error(e);
+        } catch (IfcParse::IfcException& e) {
+            logger_.Error("GEO", 319, e);
             continue;
         }
 
         if (!context) {
-            logger::error("Failed to process context ID " + std::to_string(context_id));
+            logger_.Error("GEO", 320, "Failed to process context ID " + std::to_string(context_id));
             continue;
         }
 
@@ -1254,14 +1258,14 @@ void mapping::addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRe
                 boost::to_lower(context_type);
 
                 if (allowed_context_types.find(context_type) == allowed_context_types.end()) {
-                    logger::warning(std::string("ContextType '") + *context.ContextType() + "' not allowed:", context);
+                    logger_.Warning("GEO", 321, std::string("ContextType '") + *context->ContextType() + "' not allowed:", context);
                 }
                 if (context_types.find(context_type) != context_types.end()) {
                     filtered_contexts.push_back(context);
                 }
             }
         } catch (const std::exception& e) {
-            logger::error(e);
+            logger_.Error("GEO", 322, e);
         }
     }
 
@@ -1290,7 +1294,7 @@ void mapping::addRepresentationsFromDefaultContexts(std::vector<IfcSchema::IfcRe
     }
 
     if (representations.empty()) {
-        logger::warning("No representations encountered in relevant contexts, using all");
+        logger_.Warning("GEO", 323, "No representations encountered in relevant contexts, using all");
         auto all_reps = file_->instances_by_type<IfcSchema::IfcRepresentation>();
         representations = all_reps;
     }
@@ -1371,8 +1375,8 @@ express::Base mapping::representation_of(const express::Base& product) {
             }
             intersection_no_box.push_back(r);
         }
-        if (intersection_no_box.size() > 1) {
-            logger::warning("Multiple applicable representations found for element, selecting arbitrary");
+        if (intersection_no_box->size() > 1) {
+            logger_.Warning("GEO", 324, "Multiple applicable representations found for element, selecting arbitrary");
         }
         if (intersection_no_box.size()) {
             return intersection_no_box.front();

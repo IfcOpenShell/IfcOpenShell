@@ -25,10 +25,29 @@
 
 #include <boost/optional.hpp>
 #include <boost/scope_exit.hpp>
+#include <cstdint>
 #include <exception>
 #include <map>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <vector>
+
+class IFC_PARSE_API log_message {
+  public:
+    char code[7];
+    int severity;
+    std::string timestamp, message, instance, product;
+
+    log_message(
+        int severity,
+        const char (&code_prefix)[4],
+        uint16_t code_number,
+        const std::string& timestamp,
+        const std::string& message,
+        const IfcUtil::IfcBaseInterface* inst = 0,
+        const IfcUtil::IfcBaseClass* current_product = 0);
+};
 
 class IFC_PARSE_API logger {
   public:
@@ -39,76 +58,96 @@ class IFC_PARSE_API logger {
         LOG_WARNING,
         LOG_ERROR
     } Severity;
+
     typedef enum {
         FMT_PLAIN,
-        FMT_JSON
+        FMT_JSON,
+        FMT_INMEMORY
     } Format;
 
   private:
+    std::vector<log_message> log_messages_;
+
     // To both stream variants need to exist at runtime or should this be a
-    // template argument of logger or controlled using preprocessor directives?
-    static std::ostream* log1_;
-    static std::ostream* log2_;
+    // template argument of Logger or controlled using preprocessor directives?
+    std::ostream* log1_ = nullptr;
+    std::ostream* log2_ = nullptr;
 
-    static std::wostream* wlog1_;
-    static std::wostream* wlog2_;
+    std::wostream* wlog1_ = nullptr;
+    std::wostream* wlog2_ = nullptr;
 
-    static std::stringstream log_stream_;
+    std::stringstream log_stream_;
+    const IfcUtil::IfcBaseClass* current_product_ = nullptr;
 
-    static Severity verbosity_;
-    static Format format_;
-    static Severity max_severity_;
+    Severity verbosity_ = LOG_NOTICE;
+    Format format_ = FMT_PLAIN;
+    Severity max_severity_ = LOG_NOTICE;
 
-    static std::optional<long long> first_timepoint_;
-    static std::map<std::string, double> performance_statistics_;
-    static std::map<std::string, double> performance_signal_start_;
+    std::optional<long long> first_timepoint_;
+    std::map<std::string, double> performance_statistics_;
+    std::map<std::string, double> performance_signal_start_;
 
-    static bool print_perf_stats_on_element_;
+    bool print_perf_stats_on_element_ = false;
+    std::mutex mutex_;
+
+    const IfcUtil::IfcBaseClass* current_product() const;
+    void current_product(const IfcUtil::IfcBaseClass* product);
 
   public:
-    static void set_product(std::optional<const express::Base> product);
+    logger() = default;
+    logger(const logger&) = delete;
+    logger& operator=(const logger&) = delete;
+
+    static logger& Root();
+
+    void set_product(std::optional<const IfcUtil::IfcBaseClass*> product);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void set_output(std::wostream* progress_stream, std::wostream* error_stream);
+    void set_output(std::wostream* stream1, std::wostream* stream2);
 
     /// Determines to what stream respectively progress and errors are logged
-    static void set_output(std::ostream* progress_stream, std::ostream* error_stream);
+    void set_output(std::ostream* stream1, std::ostream* stream2);
 
     /// Determines the types of log messages to get logged
-    static void verbosity(Severity severity);
-    static Severity verbosity();
-    static Severity max_severity();
+    void verbosity(Severity severity);
+    Severity verbosity() const;
+    Severity max_severity() const;
 
     /// Determines output format: plain text or sequence of JSON objects
-    static void output_format(Format format);
-    static Format output_format();
+    void output_format(Format format);
+    Format output_format() const;
 
     /// Log a message to the output stream
-    static void message(Severity severity, const std::string& text, const express::Base& instance = express::Base());
-    static void message(Severity severity, const std::exception& exception, const express::Base& instance = express::Base());
+    void message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0);
+    void message(Severity type, const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0);
 
-    static void notice(const std::string& text, const express::Base& instance = express::Base()) { logger::message(LOG_NOTICE, text, instance); }
-    static void warning(const std::string& text, const express::Base& instance = express::Base()) { logger::message(LOG_WARNING, text, instance); }
-    static void error(const std::string& text, const express::Base& instance = express::Base()) { logger::message(LOG_ERROR, text, instance); }
+    void notice(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, code_prefix, code_number, message, instance); }
+    void warning(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, code_prefix, code_number, message, instance); }
+    void error(const char (&code_prefix)[4], uint16_t code_number, const std::string& message, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, code_prefix, code_number, message, instance); }
 
-    static void notice(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_NOTICE, exception, instance); }
-    static void warning(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_WARNING, exception, instance); }
-    static void error(const std::exception& exception, const express::Base& instance = express::Base()) { message(LOG_ERROR, exception, instance); }
+    void notice(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_NOTICE, code_prefix, code_number, exception, instance); }
+    void warning(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_WARNING, code_prefix, code_number, exception, instance); }
+    void error(const char (&code_prefix)[4], uint16_t code_number, const std::exception& exception, const IfcUtil::IfcBaseInterface* instance = 0) { Message(LOG_ERROR, code_prefix, code_number, exception, instance); }
 
-    static void status(const std::string& message, bool append_newline = true);
+    void status(const std::string& message, bool new_line = true);
 
-    static void progress_bar(int progress_percent);
-    static std::string get_log();
-    static void print_performance_stats();
-    static void print_performance_stats_on_element(bool enabled) { print_perf_stats_on_element_ = enabled; }
+    void progress_bar(int progress);
+    std::string get_log();
+    void clear();
+    void append(Logger& logger);
+    void print_performance_stats();
+    void print_performance_stats(bool b) { print_perf_stats_on_element_ = b; }
+    bool print_performance_stats() const { return print_perf_stats_on_element_; }
+
+    const std::vector<log_message>& log_messages() const { return log_messages_; }
 };
 
 #define PERF(x)                                                      \
                                                                      \
-    logger::message(logger::LOG_PERF, x);                            \
+    Logger::Root().Message(Logger::LOG_PERF, "SYS", 1, x);            \
                                                                      \
     BOOST_SCOPE_EXIT(void) {                                         \
-        logger::message(logger::LOG_PERF, "done " + std::string(x)); \
+        Logger::Root().Message(Logger::LOG_PERF, "SYS", 2, "done " + std::string(x)); \
     }                                                                \
     BOOST_SCOPE_EXIT_END
 

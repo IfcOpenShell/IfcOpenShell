@@ -39,21 +39,10 @@ from natsort import natsorted
 import bonsai.bim
 import bonsai.bim.helper
 import bonsai.tool as tool
+from bonsai.bim.ifc import is_cache_locked_by_other_process
 from bonsai.bim.module.bsdd.prop import BIMBSDDProperties, BSDDProperty
-from bonsai.bim.module.model.prop import (
-    BIMDoorProperties,
-    BIMRailingProperties,
-    BIMRoofProperties,
-    BIMStairProperties,
-    BIMWindowProperties,
-)
-from bonsai.bim.module.model.ui import (
-    draw_door_properties,
-    draw_railing_properties,
-    draw_roof_properties,
-    draw_stair_properties,
-    draw_window_properties,
-)
+from bonsai.bim.module.model import prop as _model_prop
+from bonsai.bim.module.model import ui as _model_ui
 from bonsai.bim.module.pset.prop import IfcProperty
 from bonsai.bim.prop import Attribute
 
@@ -278,34 +267,29 @@ class BIM_UL_panel_visibilities(bpy.types.UIList):
 class GizmoPreferences(bpy.types.PropertyGroup):
     """Aggregator for parametric gizmo visibility settings. One flat bool per
     parametric feature; controls whether that feature's gizmo group polls
-    visible in the viewport."""
+    visible in the viewport.
+
+    The per-feature ``<name>: BoolProperty`` fields are derived from
+    ``tool.Parametric.EDIT_TYPES`` at module load — adding a new parametric
+    type to the registry automatically surfaces its toggle here, with no
+    parallel hand-maintained list to keep in sync."""
 
     draw_gizmos_in_3d_viewport: BoolProperty(
         name="Draw Gizmos In 3D Viewport",
         default=True,
         description="Show interactive gizmos in the 3D viewport for parametric elements",
     )
-    door: BoolProperty(name="Door", default=True)
-    window: BoolProperty(name="Window", default=True)
-    stair: BoolProperty(name="Stair", default=True)
-    railing: BoolProperty(name="Railing", default=True)
-    roof: BoolProperty(name="Roof", default=True)
-    array: BoolProperty(name="Array", default=True)
-    pipe_segment: BoolProperty(name="Pipe Segment", default=True)
-    duct_segment: BoolProperty(name="Duct Segment", default=True)
-    wall: BoolProperty(name="Wall", default=True)
 
     if TYPE_CHECKING:
         draw_gizmos_in_3d_viewport: bool
-        door: bool
-        window: bool
-        stair: bool
-        railing: bool
-        roof: bool
-        array: bool
-        pipe_segment: bool
-        duct_segment: bool
-        wall: bool
+
+
+for _gizmo_pref_entry in tool.Parametric.EDIT_TYPES:
+    GizmoPreferences.__annotations__[_gizmo_pref_entry.name] = BoolProperty(
+        name=_gizmo_pref_entry.name.replace("_", " ").title(),
+        default=True,
+    )
+del _gizmo_pref_entry
 
 
 class DocPreferences(bpy.types.PropertyGroup):
@@ -401,11 +385,22 @@ class DocPreferences(bpy.types.PropertyGroup):
 
 
 class DefaultParameters(bpy.types.PropertyGroup):
-    door: bpy.props.PointerProperty(type=BIMDoorProperties)
-    window: bpy.props.PointerProperty(type=BIMWindowProperties)
-    railing: bpy.props.PointerProperty(type=BIMRailingProperties)
-    roof: bpy.props.PointerProperty(type=BIMRoofProperties)
-    stair: bpy.props.PointerProperty(type=BIMStairProperties)
+    """Per-type preset values used to seed new parametric instances.
+
+    The ``<name>: PointerProperty`` fields are derived from the subset of
+    ``tool.Parametric.EDIT_TYPES`` flagged ``has_default_parameters=True``,
+    each pointing at the matching ``BIM<Name>Properties`` class. Adding a
+    new entry with that flag automatically surfaces a preferences section
+    and gives the create operator a preset to copy from."""
+
+
+for _default_params_entry in tool.Parametric.EDIT_TYPES:
+    if not _default_params_entry.has_default_parameters:
+        continue
+    DefaultParameters.__annotations__[_default_params_entry.name] = bpy.props.PointerProperty(
+        type=getattr(_model_prop, _default_params_entry.props_attr),
+    )
+del _default_params_entry
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
@@ -516,6 +511,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         max=1.0,
         size=4,
         description="Color of not selected verts/edges (used in profile editing mode)",
+    )
+    clip_box_cap_color: bpy.props.FloatVectorProperty(
+        name="Clip Box Caps Color",
+        subtype="COLOR",
+        default=(0.0, 0.0, 0.0, 1.0),
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Fill color of clip-box cross-section caps",
     )
     decorator_color_special: bpy.props.FloatVectorProperty(
         name="Special Elements Color",
@@ -801,39 +805,29 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_special")
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
+        bonsai.bim.helper.draw_expandable_panel(
+            layout,
+            context,
+            "Clip Box",
+            self.draw_clip_box_colors,
+        )
+
+    def draw_clip_box_colors(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.row().prop(self, "clip_box_cap_color")
 
     def draw_default_parameters(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         box = layout.box()
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Door",
-            lambda _layout, _context: draw_door_properties(_layout, self.default_parameters.door),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Window",
-            lambda _layout, _context: draw_window_properties(_layout, self.default_parameters.window),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Railing",
-            lambda _layout, _context: draw_railing_properties(_layout, self.default_parameters.railing),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Roof",
-            lambda _layout, _context: draw_roof_properties(_layout, self.default_parameters.roof),
-        )
-        bonsai.bim.helper.draw_expandable_panel(
-            box,
-            context,
-            "Stair",
-            lambda _layout, _context: draw_stair_properties(_layout, self.default_parameters.stair),
-        )
+        for entry in tool.Parametric.EDIT_TYPES:
+            if not entry.has_default_parameters:
+                continue
+            props = getattr(self.default_parameters, entry.name)
+            draw_props = getattr(_model_ui, f"draw_{entry.name}_properties")
+            bonsai.bim.helper.draw_expandable_panel(
+                box,
+                context,
+                entry.name.replace("_", " ").title(),
+                lambda _layout, _context, _draw=draw_props, _props=props: _draw(_layout, _props),
+            )
 
     def draw_other_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "opening_focus_opacity")
@@ -949,6 +943,50 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
+
+        if is_cache_locked_by_other_process():
+            box = self.layout.box()
+            box.alert = True
+            row = box.row(align=True)
+            row.label(text="IFC Already Open in Another Blender Instance", icon="ERROR")
+            row.operator("bim.dismiss_multi_instance_warning", text="", icon="CANCEL")
+            draw_multiline_text(
+                box.column(align=True),
+                "This file is open in another Blender instance. Editing the same "
+                "IFC from two instances at once can lose your work or display "
+                "outdated geometry. Close the other Blender instances to continue safely.",
+                context=context,
+            )
+
+        pprops = tool.Project.get_project_props()
+        if pending := pprops.pending_opening_recut:
+            box = self.layout.box()
+            box.alert = True
+            box.label(text="Opening Cuts Skipped", icon="ERROR")
+            draw_multiline_text(
+                box.column(align=True),
+                f"{len(pending)} element(s) had too many openings to cut during load. "
+                f"Apply to recompute their meshes, or dismiss to leave them as they are.",
+                context=context,
+            )
+            row = box.row(align=True)
+            row.operator("bim.select_pending_opening_cuts", text="Select Elements", icon="RESTRICT_SELECT_OFF")
+            row.operator("bim.apply_pending_opening_cuts", text="Apply Openings", icon="PLAY")
+            row.operator("bim.dismiss_pending_opening_cuts", text="", icon="CANCEL")
+
+        if pending := pprops.pending_array_repair:
+            box = self.layout.box()
+            box.alert = True
+            box.label(text="Arrays With Missing Children", icon="ERROR")
+            draw_multiline_text(
+                box.column(align=True),
+                f"{len(pending)} array parent(s) reference child GUIDs that don't exist in this file. "
+                f"The arrays loaded incomplete. Select to inspect, or dismiss.",
+                context=context,
+            )
+            row = box.row(align=True)
+            row.operator("bim.select_pending_array_repair", text="Select Elements", icon="RESTRICT_SELECT_OFF")
+            row.operator("bim.dismiss_pending_array_repair", text="", icon="CANCEL")
 
         gprops = tool.Geometry.get_geometry_props()
         # Check that Blender mode and IFC Mode do match.
@@ -1901,6 +1939,7 @@ class BIM_PT_decorators_overlay(Panel):
         aggregate_props = tool.Aggregate.get_aggregate_props()
         nest_props = tool.Nest.get_nest_props()
         model_props = tool.Model.get_model_props()
+        system_props = tool.System.get_system_props()
         display_all = overlay.show_overlays
 
         col = layout.column()
@@ -1918,10 +1957,20 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
         row = col.row(align=True)
+        row.prop(model_props, "show_paths", text="Element Paths")
+        row.prop(system_props, "should_draw_decorations", text="System Decorations")
+        row = col.row(align=True)
         row.prop(model_props, "show_bounding_box", text="Bounding Box Dimensions")
         row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")
+        clip_box_props = tool.ClipBox.get_scene_props(context.scene)
+        row = col.row(align=True)
+        # Grey out the toggles when there is no clip box to act on, so the
+        # user can see the controls but can't flip a switch that does nothing.
+        row.enabled = bool(clip_box_props.clip_boxes)
+        row.prop(clip_box_props, "enabled", text="Enable Clipping")
+        row.prop(clip_box_props, "show_caps", text="Show Caps")
 
 
 class BIM_PT_snappping(Panel):

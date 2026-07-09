@@ -18,20 +18,21 @@
 TopoDS_Edge IfcGeom::util::first_edge(const TopoDS_Wire & w) {
 	TopoDS_Vertex v1, v2;
 	TopExp::Vertices(w, v1, v2);
-	TopTools_IndexedDataMapOfShapeListOfShape wm;
+    NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wm;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, wm);
 	return TopoDS::Edge(wm.FindFromKey(v1).First());
 }
 
 // Returns new wire with the edge replaced by a linear edge with the vertex v moved to p
 TopoDS_Wire IfcGeom::util::adjust(const TopoDS_Wire & w, const TopoDS_Vertex & v, const gp_Pnt & p) {
-	TopTools_IndexedDataMapOfShapeListOfShape map;
+	NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 	TopExp::MapShapesAndAncestors(w, TopAbs_VERTEX, TopAbs_EDGE, map);
 
 	bool all_linear = true, single_circle = false, first = true;
 
-	const TopTools_ListOfShape& edges = map.FindFromKey(v);
-	TopTools_ListIteratorOfListOfShape it(edges);
+	const NCollection_List<TopoDS_Shape>& edges = map.FindFromKey(v);
+
+	NCollection_List<TopoDS_Shape>::Iterator it(edges);
 	for (; it.More(); it.Next()) {
 		const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 		double _, __;
@@ -81,7 +82,7 @@ double IfcGeom::util::deflection_for_approximating_circle(double radius, double 
 	return -radius * std::cos(1. / 2. * param) * std::cos(param) - radius * std::sin(1. / 2. * param) * std::sin(param) + radius;
 }
 
-bool IfcGeom::util::create_edge_over_curve_with_log_messages(const Handle_Geom_Curve & crv, const double eps, const gp_Pnt & p1, const gp_Pnt & p2, TopoDS_Edge & result) {
+bool IfcGeom::util::create_edge_over_curve_with_log_messages(const opencascade::handle<Geom_Curve>& crv, const double eps, const gp_Pnt& p1, const gp_Pnt& p2, TopoDS_Edge& result) {
 	if (crv->IsClosed() && p1.Distance(p2) <= eps) {
 		BRepBuilderAPI_MakeEdge me(crv);
 		if (me.IsDone()) {
@@ -116,12 +117,12 @@ bool IfcGeom::util::create_edge_over_curve_with_log_messages(const Handle_Geom_C
 						}
 					}
 					if (dmin == std::numeric_limits<double>::infinity()) {
-						logger::error("No extrema for point");
+						Logger::Root().Error("GEO", 205, "No extrema for point");
 					} else if (dmin > eps2) {
-						logger::error("Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
+						Logger::Root().Error("GEO", 206, "Distance of " + boost::lexical_cast<std::string>(std::sqrt(dmin)) + " exceeds tolerance");
 					}
 				} else {
-					logger::error("Failed to calculate extrema for point");
+					Logger::Root().Error("GEO", 207, "Failed to calculate extrema for point");
 				}
 			}
 		}
@@ -171,19 +172,19 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS
 	if (dist > 1000. * p_) {
 		mw_.Add(w1);
 		mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-		logger::warning("Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+		Logger::Root().Warning("GEO", 208, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 		goto check;
 	}
 
 	{
-		TopTools_IndexedDataMapOfShapeListOfShape wmap1, wmap2;
+		NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> wmap1, wmap2;
 
 		// Find edges connected to end- and begin vertex
 		TopExp::MapShapesAndAncestors(w1, TopAbs_VERTEX, TopAbs_EDGE, wmap1);
 		TopExp::MapShapesAndAncestors(w2, TopAbs_VERTEX, TopAbs_EDGE, wmap2);
 
-		const TopTools_ListOfShape& last_edges = wmap1.FindFromKey(w12);
-		const TopTools_ListOfShape& first_edges = wmap2.FindFromKey(w21);
+		const NCollection_List<TopoDS_Shape>& last_edges = wmap1.FindFromKey(w12);
+		const NCollection_List<TopoDS_Shape>& first_edges = wmap2.FindFromKey(w21);
 
 		double _, __;
 		if (last_edges.Extent() == 1 && first_edges.Extent() == 1) {
@@ -199,28 +200,28 @@ void IfcGeom::util::wire_builder::operator()(const TopoDS_Shape& a, const TopoDS
 			// Preferably adjust the segment that is linear
 			if (is_line1 || (is_circle1 && !is_line2)) {
 				mw_.Add(adjust(w1, w12, p2));
-				logger::notice("Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+				Logger::Root().Notice("GEO", 209, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 			} else if ((is_line2 || is_circle2) && !last) {
 				mw_.Add(w1);
 				override_next_ = true;
 				next_override_ = p1;
-				logger::notice("Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
+				Logger::Root().Notice("GEO", 210, "Adjusted edge end-point with distance " + boost::lexical_cast<std::string>(dist) + " on:", inst_);
 			} else {
 				// In all other cases an edge is added
 				mw_.Add(w1);
 				mw_.Add(BRepBuilderAPI_MakeEdge(p1, p2));
-				logger::warning("Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
+				Logger::Root().Warning("GEO", 211, "Added additional segment to close gap with length " + boost::lexical_cast<std::string>(dist) + " to:", inst_);
 			}
 		} else {
-			logger::error("Internal error, inconsistent wire segments", inst_);
+			Logger::Root().Error("GEO", 212, "Internal error, inconsistent wire segments", inst_);
 			mw_.Add(w1);
 		}
 	}
 
 check:
 	if (mw_.Error() == BRepBuilderAPI_NonManifoldWire) {
-		logger::error("Non-manifold curve segments:", inst_);
+		Logger::Root().Error("GEO", 213, "Non-manifold curve segments:", inst_);
 	} else if (mw_.Error() == BRepBuilderAPI_DisconnectedWire) {
-		logger::error("Failed to join curve segments:", inst_);
+		Logger::Root().Error("GEO", 214, "Failed to join curve segments:", inst_);
 	}
 }

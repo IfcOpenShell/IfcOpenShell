@@ -32,10 +32,10 @@ namespace ifcopenshell {
 				ifcopenshell::geometry::abstract_mapping* mapping_;
 				ifcopenshell::file* file_;
 			public:
-				HybridKernel(const std::string& name, ifcopenshell::file* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels)
-					: AbstractKernel(name, settings)
+				HybridKernel(const std::string& name, ifcopenshell::file* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels, Logger& logger = Logger::Root())
+					: AbstractKernel(name, settings, logger)
 					, kernels_(std::move(kernels))
-					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings))
+					, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings, logger))
 					, file_(file)
 				{
 				}
@@ -127,14 +127,14 @@ namespace ifcopenshell {
 					}
 					return false;
 				}
-				virtual AbstractKernel* clone() const
+				virtual AbstractKernel* clone(Logger& logger) const
 				{
 					std::vector<std::unique_ptr<AbstractKernel>> ks;
 					for (auto& k : kernels_) {
-						ks.emplace_back(k->clone());
+						ks.emplace_back(k->clone(logger));
 					}
 					// @todo ugly
-					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks));
+					return new HybridKernel(geometry_library(), file_, const_cast<Settings&>(settings()), std::move(ks), logger);
 				}
 			};
 		}

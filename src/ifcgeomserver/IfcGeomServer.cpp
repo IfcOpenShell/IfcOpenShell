@@ -641,7 +641,7 @@ int main () {
 		}
 		case GET_LOG: {
 			get_log gl; gl.read(std::cin);
-			WriteLog(logger::get_log()).write(std::cout);
+			WriteLog(logger::Root().get_log()).write(std::cout);
 			continue;
 		}
 		case BYE: {

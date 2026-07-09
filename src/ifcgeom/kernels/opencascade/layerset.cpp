@@ -13,7 +13,10 @@
 #include <TopoDS_Shell.hxx>
 #include <TopoDS_Iterator.hxx>
 #include <TopExp_Explorer.hxx>
-#include <TopTools_ListOfShape.hxx>
+
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_List.hxx>
 
 #include <Bnd_Box.hxx>
 
@@ -43,14 +46,14 @@ namespace {
 	}
 
 #if OCC_VERSION_HEX >= 0x70200
-	bool split(const TopoDS_Shape& input, const TopTools_ListOfShape& operands, double eps, std::vector<TopoDS_Shape>& slices) {
+    bool split(const TopoDS_Shape& input, const NCollection_List<TopoDS_Shape>& operands, double eps, std::vector<TopoDS_Shape>& slices) {
 		if (operands.Extent() < 2) {
 			// Needs to have at least two cutting surfaces for the ordering based on surface containment to work.
 			return false;
 		}
 
 		BRepAlgoAPI_Splitter split;
-		TopTools_ListOfShape input_list;
+        NCollection_List<TopoDS_Shape> input_list;
 		input_list.Append(input);
 		split.SetArguments(input_list);
 		split.SetTools(operands);
@@ -66,7 +69,7 @@ namespace {
 
 			// NB 1, since first surface has been excluded
 			int i = 1;
-			for (TopTools_ListIteratorOfListOfShape it(operands); it.More(); it.Next(), ++i) {
+			for (NCollection_List<TopoDS_Shape>::Iterator it(operands); it.More(); it.Next(), ++i) {
 				TopExp_Explorer exp(it.Value(), TopAbs_FACE);
 				for (; exp.More(); exp.Next()) {
 					surfaces.insert(std::make_pair(BRep_Tool::Surface(TopoDS::Face(exp.Current())).get(), i));
@@ -129,7 +132,7 @@ namespace {
 					}
 				}
 
-				logger::error("Unable to map layer geometry to material index");
+				Logger::Root().Error("GEO", 171, "Unable to map layer geometry to material index");
 				return false;
 			}
 		}
@@ -164,21 +167,21 @@ namespace {
 }
 
 
-bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
+bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<opencascade::handle<Geom_Surface>>>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
 	flatten_shape_list(items, input, false, false, tol);
 
-	typedef std::vector< std::vector<Handle_Geom_Surface> > folded_surfaces_t;
+	typedef std::vector< std::vector<opencascade::handle<Geom_Surface>> > folded_surfaces_t;
 	typedef std::vector< std::pair< TopoDS_Face, std::pair<gp_Pnt, gp_Pnt> > > faces_with_mass_t;
 
-	TopTools_ListOfShape shells;
+	NCollection_List<TopoDS_Shape> shells;
 
 	for (folded_surfaces_t::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
 		if (it->empty()) {
 			continue;
 		} else if (it->size() == 1) {
-			const Handle_Geom_Surface& surface = (*it)[0];
+			const opencascade::handle<Geom_Surface>& surface = (*it)[0];
 			double u1, v1, u2, v2;
 			if (!project(surface, input, u1, v1, u2, v2)) {
 				continue;
@@ -187,7 +190,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 		} else {
 			faces_with_mass_t solids;
 			for (folded_surfaces_t::value_type::const_iterator jt = it->begin(); jt != it->end(); ++jt) {
-				const Handle_Geom_Surface& surface = *jt;
+				const opencascade::handle<Geom_Surface>& surface = *jt;
 				double u1, v1, u2, v2;
 				if (!project(surface, input, u1, v1, u2, v2)) {
 					continue;
@@ -234,7 +237,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 			if (s.ShapeType() == TopAbs_SHELL) {
 				shells.Append(TopoDS::Shell(s));
 			} else {
-				logger::error("Expected shell type in layerset processing");
+				Logger::Root().Error("GEO", 172, "Expected shell type in layerset processing");
 				return false;
 			}
 		}
@@ -281,7 +284,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 
 }
 
-bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<Handle_Geom_Surface>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
+bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::vector<opencascade::handle<Geom_Surface>>& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
 	if (surfaces.size() < 3) {
 
 		return false;
@@ -336,7 +339,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 			const TopoDS_Shape& s = std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape();
 			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
 
-			TopTools_ListOfShape operands;
+			NCollection_List<TopoDS_Shape> operands;
 			for (unsigned i = 1; i < surfaces.size() - 1; ++i) {
 				double u1, v1, u2, v2;
 				if (!project(surfaces[i], sld, u1, v1, u2, v2)) {
@@ -370,7 +373,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 }
 
 
-bool IfcGeom::util::split_solid_by_surface(const TopoDS_Shape& input, const Handle_Geom_Surface& surface, TopoDS_Shape& front, TopoDS_Shape& back, double tol) {
+bool IfcGeom::util::split_solid_by_surface(const TopoDS_Shape& input, const opencascade::handle<Geom_Surface>& surface, TopoDS_Shape& front, TopoDS_Shape& back, double tol) {
 	// Use an unbounded surface, that isolate part of the input shape,
 	// to split this shape into two parts. Make sure that the addition
 	// of the two result volumes matches that of the input.
@@ -406,7 +409,7 @@ bool IfcGeom::util::split_solid_by_shell(const TopoDS_Shape& input, const TopoDS
 	}
 
 #if OCC_VERSION_HEX >= 0x70300
-	TopTools_ListOfShape shapes;
+	NCollection_List<TopoDS_Shape> shapes;
 #else
 	BOPCol_ListOfShape shapes;
 #endif
@@ -433,12 +436,12 @@ bool IfcGeom::util::split_solid_by_shell(const TopoDS_Shape& input, const TopoDS
 			}
 		} catch (const Standard_Failure& e) {
 			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				logger::error(e.GetMessageString());
+				Logger::Root().Error("GEO", 173, e.GetMessageString());
 			} else {
-				logger::error("Unknown error performing fixes");
+				Logger::Root().Error("GEO", 174, "Unknown error performing fixes");
 			}
 		} catch (...) {
-			logger::error("Unknown error performing fixes");
+			Logger::Root().Error("GEO", 175, "Unknown error performing fixes");
 		}
 		BRepCheck_Analyzer analyser(shape);
 		bool is_valid = analyser.IsValid() != 0;
@@ -448,7 +451,7 @@ bool IfcGeom::util::split_solid_by_shell(const TopoDS_Shape& input, const TopoDS
 	}
 
 	if (is_null[0] || is_null[1]) {
-		logger::message(logger::LOG_ERROR, "Null result obtained from layerset slicing");
+		Logger::Root().Message(Logger::LOG_ERROR, "GEO", 176, "Null result obtained from layerset slicing");
 		if (is_null[0] && is_null[1]) {
 			return false;
 		}

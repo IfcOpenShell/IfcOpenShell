@@ -24,6 +24,7 @@ import multiprocessing
 import struct
 from collections import defaultdict
 from collections.abc import Generator, Iterable, Iterator
+from contextlib import contextmanager
 from math import pi, radians
 from typing import (
     TYPE_CHECKING,
@@ -65,6 +66,7 @@ from typing_extensions import TypeIs
 
 import bonsai.bim.helper
 import bonsai.bim.import_ifc
+import bonsai.core.connection
 import bonsai.core.drawing
 import bonsai.core.geometry
 import bonsai.core.root
@@ -73,6 +75,7 @@ import bonsai.core.style
 import bonsai.core.system
 import bonsai.core.tool
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore, get_cache_or_detect_lock
 
 if TYPE_CHECKING:
     from bonsai.bim.module.geometry.prop import (
@@ -123,6 +126,107 @@ class Geometry(bonsai.core.tool.Geometry):
         return False
 
     @classmethod
+    def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
+        # Cache acquisition can fail if the HDF5 file is locked by another
+        # process — degrade gracefully rather than aborting the caller's
+        # reimport flow. A stale cache entry is harmless; a raised exception
+        # prevents the actual mesh swap. The wrapper sets the project-panel
+        # warning flag on lock so the user sees one prominent notice instead
+        # of per-element log spam.
+        try:
+            cache = get_cache_or_detect_lock()
+        except Exception as exc:
+            print(f"clear_cache: skipping cache invalidation for {element} ({exc})")
+            return
+        if cache and hasattr(element, "GlobalId"):
+            cache.remove(element.GlobalId)
+
+    # Per-host work coalesced by `batch_host_recut`. Keys are voided element ifc ids;
+    # dict insertion preserves call ordering. Recut values store the representation at
+    # enqueue time, but the drain re-reads `get_active_representation` so the recut
+    # always reflects current IFC state.
+    _host_batch_depth: int = 0
+    _host_recut_queue: dict[int, tuple[bpy.types.Object, ifcopenshell.entity_instance]] = {}
+    _host_update_queue: dict[int, bpy.types.Object] = {}
+
+    @classmethod
+    @contextmanager
+    def batch_host_recut(cls) -> Generator[None, None, None]:
+        """Coalesce host body work — `recut_host` and `update_host_representation`
+        calls inside the with-block enqueue by voided element id. On the outermost
+        exit: every host's `update_representation` runs first (writes Blender mesh
+        back to IFC), then every host's `switch_representation` runs (reads IFC +
+        openings → Blender mesh). The two-phase order matters: a recut that ran
+        before the matching update_representation would re-tessellate against stale
+        IFC, losing the user's edits.
+
+        Nests safely — only the outermost exit drains. The depth counter and queues
+        are reset on exit even if the body raises."""
+        cls._host_batch_depth += 1
+        try:
+            yield
+        finally:
+            cls._host_batch_depth -= 1
+            if cls._host_batch_depth == 0:
+                update_queue = cls._host_update_queue
+                recut_queue = cls._host_recut_queue
+                cls._host_update_queue = {}
+                cls._host_recut_queue = {}
+                for voided_obj in update_queue.values():
+                    if not voided_obj or not voided_obj.data:
+                        continue
+                    if tool.Ifc.get_entity(voided_obj) is None:
+                        continue
+                    bpy.ops.bim.update_representation(obj=voided_obj.name)
+                for voided_obj, _ in recut_queue.values():
+                    if not voided_obj or not voided_obj.data:
+                        continue
+                    if tool.Ifc.get_entity(voided_obj) is None:
+                        continue
+                    current_rep = cls.get_active_representation(voided_obj)
+                    if current_rep is None:
+                        continue
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc, cls, obj=voided_obj, representation=current_rep
+                    )
+
+    @classmethod
+    def recut_host(cls, voided_obj: bpy.types.Object, representation: ifcopenshell.entity_instance) -> None:
+        """Recut a host's body representation. Inside `batch_host_recut`, enqueues
+        by voided element id; outside, fires `switch_representation` directly."""
+        if cls._host_batch_depth > 0:
+            element = tool.Ifc.get_entity(voided_obj)
+            if element is not None:
+                cls._host_recut_queue[element.id()] = (voided_obj, representation)
+            return
+        bonsai.core.geometry.switch_representation(tool.Ifc, cls, obj=voided_obj, representation=representation)
+
+    @classmethod
+    def update_host_representation(cls, voided_obj: bpy.types.Object) -> None:
+        """Run `bim.update_representation` on a host. Inside `batch_host_recut`,
+        enqueues by voided element id; outside, fires the operator directly."""
+        if cls._host_batch_depth > 0:
+            element = tool.Ifc.get_entity(voided_obj)
+            if element is not None:
+                cls._host_update_queue[element.id()] = voided_obj
+            return
+        bpy.ops.bim.update_representation(obj=voided_obj.name)
+
+    @classmethod
+    def has_axis_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        """True if the element carries a shape representation whose
+        RepresentationIdentifier is 'Axis'. Elements without one cannot be
+        projected to an unambiguous 1D path; callers that draw schematic axis
+        overlays must skip them rather than fall back to mesh-derived geometry."""
+        product_rep = getattr(element, "Representation", None)
+        if product_rep is None:
+            return False
+        for rep in product_rep.Representations:
+            if getattr(rep, "RepresentationIdentifier", None) == "Axis":
+                return True
+        return False
+
+    @classmethod
     def get_body_representation(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance | None:
         """The element's ``Model/Body/MODEL_VIEW`` representation, or ``None``.
         Single source for the ``(context, identifier, target_view)`` triple used
@@ -134,6 +238,112 @@ class Geometry(bonsai.core.tool.Geometry):
     def clear_modifiers(cls, obj: bpy.types.Object) -> None:
         for modifier in obj.modifiers:
             obj.modifiers.remove(modifier)
+
+    @classmethod
+    def _group_edges_into_loops(cls, edges) -> list[list]:
+        """Group an edge set into connected components by shared vertices.
+
+        Each returned group is a list of edges that share at least one
+        vertex chain. A hollow profile's bisect produces two disjoint
+        loops (outer ring + inner ring) — grouping splits them so each
+        can be filled independently as a separate cap face, rather than
+        ``contextual_create`` welding them into one solid outer face
+        with the inner loop demoted to interior decoration.
+        """
+        edge_set = set(edges)
+        visited: set = set()
+        groups: list[list] = []
+        for start in edges:
+            if start in visited:
+                continue
+            group: list = []
+            stack: list = [start]
+            while stack:
+                e = stack.pop()
+                if e in visited:
+                    continue
+                visited.add(e)
+                group.append(e)
+                for v in e.verts:
+                    for adj in v.link_edges:
+                        if adj in edge_set and adj not in visited:
+                            stack.append(adj)
+            groups.append(group)
+        return groups
+
+    @classmethod
+    def bisect_and_cap(
+        cls,
+        bm,
+        planes_local,
+        *,
+        tag_layer_name: str = "bbim_cap",
+        dist: float = 1e-4,
+        weld_dist: float = 1e-5,
+    ):
+        """Clip ``bm`` against each ``(plane_co, plane_no)`` and fill the cuts.
+
+        Per plane, ``bmesh.ops.bisect_plane(clear_outer=True)`` discards
+        the outside half-space and ``bmesh.ops.contextual_create`` fills
+        the resulting cut edges with cap faces tagged via a BMesh int
+        layer so the tag propagates to any split-children from subsequent
+        planes. After all planes, near-coincident vertices are welded
+        (``weld_dist``) so adjacent caps from the same cross-section
+        merge cleanly.
+
+        Callers are responsible for input mesh quality. Non-watertight
+        inputs (terrain, single-shell surfaces) may produce degenerate
+        cap faces; that's an accepted user-supplied data limitation.
+
+        Returns the cap-tag BMLayerItem, or ``None`` if ``bm`` is empty.
+        """
+        import bmesh
+
+        if not bm.faces:
+            return None
+
+        # Pre-weld nearby verts: T-junctions in messy IFC meshes (a third
+        # vertex sitting in the middle of an edge from a Boolean
+        # operation) make the bisect cut terminate early, leaving open
+        # loops that no fill op can close. Welding the T-junction's
+        # near-coincident vertex into the host edge before bisecting
+        # turns the cut into a closed loop.
+        bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=max(weld_dist, 1e-4))
+
+        cap_layer = bm.faces.layers.int.new(tag_layer_name)
+        for plane_co, plane_no in planes_local:
+            geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+            if not geom:
+                break
+            results = bmesh.ops.bisect_plane(
+                bm,
+                geom=geom,
+                dist=dist,
+                plane_co=plane_co,
+                plane_no=plane_no,
+                clear_outer=True,
+            )
+            cut_edges = [e for e in results["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+            if not cut_edges:
+                continue
+            # Group cut edges into connected components BEFORE filling.
+            # Feeding ``contextual_create`` all edges at once (outer +
+            # inner of a hollow profile) makes it create a SINGLE outer
+            # face and treat inner edges as decoration — collapsing the
+            # hole. Filling each connected loop separately produces one
+            # cap face per ring.
+            for loop_edges in cls._group_edges_into_loops(cut_edges):
+                try:
+                    fill = bmesh.ops.contextual_create(bm, geom=loop_edges)
+                except (RuntimeError, TypeError):
+                    continue
+                for f in fill.get("faces", []):
+                    if isinstance(f, bmesh.types.BMFace) and f.is_valid:
+                        f[cap_layer] = 1
+
+        if weld_dist > 0.0:
+            bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=weld_dist)
+        return cap_layer
 
     @classmethod
     def clear_scale(cls, obj: bpy.types.Object) -> None:
@@ -250,12 +460,38 @@ class Geometry(bonsai.core.tool.Geometry):
         bpy.data.objects.remove(obj)
 
     @classmethod
-    def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
+    def delete_ifc_object(
+        cls,
+        obj: bpy.types.Object,
+        batch_being_deleted_ids: Optional[set[int]] = None,
+    ) -> None:
         ifc_file = tool.Ifc.get()
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
-        elif element.is_a("IfcAnnotation"):
+        # Cascade connection-rel teardown — symmetric to bim.disconnect_elements.
+        # When a slab connected to a wall via IfcRelConnectsElements(TOP) is deleted,
+        # the wall's trim booleans + BBIM_Boolean pset would otherwise be orphaned.
+        # skip_elem_recreate is always True here because we're inside delete: the
+        # element is about to vanish, so re-extruding it would be wasted work.
+        # skip_partner_recreate fires only when the partner is also queued in the
+        # same OverrideDelete batch.
+        if element.is_a("IfcRoot"):
+            skip_ids = batch_being_deleted_ids or set()
+            for subject, kind, partner in tool.Connection.find_rels_for_element(element):
+                bonsai.core.connection.disconnect_rel(
+                    tool.Ifc,
+                    tool.Geometry,
+                    tool.Model,
+                    tool.Connection,
+                    subject=subject,
+                    kind=kind,
+                    elem=element,
+                    partner=partner,
+                    skip_elem_recreate=True,
+                    skip_partner_recreate=(partner.id() in skip_ids),
+                )
+        if element.is_a("IfcAnnotation"):
             if element.ObjectType == "DRAWING":
                 return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
             elif tool.Drawing.is_auto_annotation(element):
@@ -620,7 +856,13 @@ class Geometry(bonsai.core.tool.Geometry):
             and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
             and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
         ):
-            return tool.Ifc.get().by_id(ifc_id)
+            try:
+                return tool.Ifc.get().by_id(ifc_id)
+            except RuntimeError:
+                # Stale id: a representation rebuild freed the old entity
+                # while obj.data still tracks its id. Treated as "no active
+                # representation" — same contract as a mesh with id 0.
+                return None
 
     @classmethod
     def get_data_representation(cls, data: bpy.types.ID) -> ifcopenshell.entity_instance | None:
@@ -2326,6 +2568,21 @@ class Geometry(bonsai.core.tool.Geometry):
                 old_to_new[element] = [new]
                 if new.is_a("IfcRelSpaceBoundary"):
                     tool.Boundary.decorate_boundary(new_obj)
+                # Slab-trim booleans (from extend_walls_to_underside) belong to
+                # the source wall's connection, not the copy. Strip them so the
+                # duplicate reverts to its pre-clip extrusion — mirrors the way
+                # filling rels are dropped while manual booleans persist on copy.
+                # Reload the body when something was stripped so the viewport
+                # immediately shows the unclipped geometry; otherwise the user
+                # sees a stale mesh until they Shift+G, which is easy to miss.
+                if new.is_a("IfcWall"):
+                    if tool.Model.strip_underside_booleans(new):
+                        tool.Model.reload_body_representation(new_obj)
+                    # HasOpenings rels don't follow object duplication, so
+                    # the duplicate's body must rebuild to match its current
+                    # opening set.
+                    else:
+                        tool.Model.regenerate_wall(new_obj)
 
         # Remap Blender parent relationships for duplicated objects
         for old_obj_name, new_obj_name in old_obj_name_to_new_obj_name.items():
@@ -2408,7 +2665,10 @@ class Geometry(bonsai.core.tool.Geometry):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
             if not pset:
                 continue
-            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+            try:
+                array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+            except RuntimeError:
+                continue
 
         for array_parent in array_parents:
             array_parent_obj = tool.Ifc.get_object(array_parent)

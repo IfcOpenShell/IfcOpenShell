@@ -82,16 +82,47 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 	}
 
 	if (non_polygonal) {
-		if (loft->children.size() == 2) {
-			BRep_Builder BB;
-			TopoDS_Shell comp;
-			BB.MakeShell(comp);
+		if (loft->children.size() < 2) {
+            Logger::Root().Error("GEO", 177, "Not enough sections to loft");
+            return false;
+        }
 
 
-			TopoDS_Shape f0, f1;
-			if (!convert(std::static_pointer_cast<taxonomy::face>(loft->children.front()), f0) ||
-				!convert(std::static_pointer_cast<taxonomy::face>(loft->children.back()), f1))
-			{
+		TopoDS_Shape f0, f1;
+
+        // Convert all children to vectors of wires
+        for (const auto& child : loft->children) {
+            TopoDS_Shape shape;
+            if (!convert(std::static_pointer_cast<taxonomy::face>(child), shape)) {
+                return false;
+            }
+            if (shape.ShapeType() != TopAbs_FACE) {
+                return false;
+            }
+			// At least make sure to have outer wire consistent, but in reality
+			// this is probably not a concern given how to build up these faces
+            auto f = TopoDS::Face(shape);
+
+			if (child == loft->children.front()) {
+                f0 = f;
+            } else if (child == loft->children.back()) {
+				f1 = f;
+            }
+
+            auto outer = BRepTools::OuterWire(f);
+            sections.emplace_back();
+            sections.back().push_back(outer);
+            for (TopoDS_Iterator it(f); it.More(); it.Next()) {
+                if (outer != it.Value()) {
+                    sections.back().push_back(TopoDS::Wire(it.Value()));
+                }
+            }
+        }
+
+		auto first_wire_count = sections.front().size();
+        for (auto& section : sections) {
+			if (section.size() != first_wire_count) {
+				Logger::Root().Error("GEO", 178, "Inconsistent number of wires in sections");
 				return false;
 			}
 			if (f0.ShapeType() != TopAbs_FACE || f1.ShapeType() != TopAbs_FACE) {
@@ -127,7 +158,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 		}
 	}
 	
-	TopTools_ListOfShape faces;
+	NCollection_List<TopoDS_Shape> faces;
 	TopoDS_Compound comp;
 	BRep_Builder BB;
 	BB.MakeCompound(comp);
@@ -237,6 +268,18 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
     return true;
 	*/
 
+    if (shps.size() < 2) {
+        Logger::Root().Error("GEO", 179, "Not enough sections to loft");
+        return false;
+    }
+
+    if (shps[0].ShapeType() == TopAbs_FACE) {
+        // When processing a sectioned *surface* there are no
+        // begin and end caps that need to be added.
+        BB.Add(comp, shps.front().Reversed());
+        BB.Add(comp, shps.back());
+    }
+
 	// @todo this approach is
     // potentially incorrect as there is no guarantee that the wires for
     // subsequently placed profiles are traversed from an equivalent start vertex.
@@ -284,7 +327,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
                 all_tags.begin() + std::distance(shps.begin(), jt)};
             
 			for (size_t i = 0; i < 2; ++i) {
-                TopTools_IndexedDataMapOfShapeListOfShape ancestors;
+                NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> ancestors;
 				const auto& wire = wp[i];
                 auto& result = profile_points[i];
 
@@ -305,9 +348,9 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
                         break;
                     }
 
-                    const TopTools_ListOfShape& incidentEdges = ancestors.FindFromKey(curr);
+                    const NCollection_List<TopoDS_Shape>& incidentEdges = ancestors.FindFromKey(curr);
 
-                    for (TopTools_ListIteratorOfListOfShape it(incidentEdges); it.More(); it.Next()) {
+                    for (NCollection_List<TopoDS_Shape>::Iterator it(incidentEdges); it.More(); it.Next()) {
                         const TopoDS_Edge& e = TopoDS::Edge(it.Value());
 						
 						TopoDS_Vertex ev0, ev1;

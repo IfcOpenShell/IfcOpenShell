@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.api.cost
+import ifcopenshell.api.control
+import ast
+import operator
 from typing import Any
 
 import ifcopenshell.api.control
 import ifcopenshell.api.cost
+import ifcopenshell.util.element
 
 
 def assign_cost_item_quantity(
@@ -27,6 +32,8 @@ def assign_cost_item_quantity(
     cost_item: ifcopenshell.entity_instance,
     products: list[ifcopenshell.entity_instance],
     prop_name: str = "",
+    formula: str = "",
+    ifc_class: str = "IfcQuantityLength",
 ) -> None:
     """Adds a cost item quantity that is parametrically connected to a product
 
@@ -57,6 +64,12 @@ def assign_cost_item_quantity(
     :param prop_name: The name of the quantity. If this is not specified,
         then it is assumed that there is no calculated quantity, and the
         number of objects are counted instead.
+    :param formula: The string that contains the formula
+    :param ifc_class: The quantity class of the calculated value if the formula is
+        specified. Can be ['IfcQuantityCount', 'IfcQuantityNumber',
+        'IfcQuantityLength', 'IfcQuantityArea', 'IfcQuantityVolume',
+        'IfcQuantityWeight', 'IfcQuantityTime']. Check
+        ifcopenshell.util.unit.QUANTITY_CLASS for more info.
     :return: None
 
     Example:
@@ -84,6 +97,18 @@ def assign_cost_item_quantity(
         # item.
         ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[slab], prop_name="NetVolume")
+
+        # Now let's use the formula in order to calculate the quantity value.
+        # For example, let's say that a IfcWall has the reinfocement volume ratio
+        # stored in the Pset_ConcreteElementGeneral.ReinforcementVolumeRatio
+        # and of course it has also the gross volume stored in the
+        # Qto_WallBaseQuantities.GrossVolume. So we can add an IfcQuantity that stores the
+        # reinforcement volume calculated with reinfocement volume ratio * gross volume.
+        ifcopenshell.api.cost.assign_cost_item_quantity(model,
+            cost_item=item, products=[wall],
+            formula="Pset_ConcreteElementGeneral.ReinforcementVolumeRatio * NetVolume"
+            ifc_class="IfcQuantityVolume")
+
     """
     usecase = Usecase()
     usecase.file = file
@@ -91,6 +116,8 @@ def assign_cost_item_quantity(
         "cost_item": cost_item,
         "products": products or [],
         "prop_name": prop_name,
+        "formula": formula,
+        "ifc_class" : ifc_class
     }
     return usecase.execute()
 
@@ -100,12 +127,50 @@ class Usecase:
     settings: dict[str, Any]
 
     def execute(self):
-        if self.settings["prop_name"]:
+        if self.settings["prop_name"] or self.settings["formula"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
         for product in self.settings["products"]:
             if product.is_a("IfcSpatialElement"):
                 continue
             self.assign_cost_control(related_object=product, cost_item=self.settings["cost_item"])
+            if self.settings["formula"]:
+                tree = ast.parse(self.settings["formula"], mode = "eval")
+                collector = VariableExtractor()
+                collector.visit(tree)
+                variables = collector.variables
+
+                for variable in variables:
+                    getter = self.get_value_from_pset if "." in variable else self.get_value_from_qset
+                    value = getter(product, variable)
+
+                if value is None:
+                        print(
+                            f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                            f"is missing (None). Check Pset/Qset or property name."
+                        )
+                elif value == 0:
+                    print(
+                        f"WARNING: Variable '{variable}' in product '{product.Name}' "
+                        f"has value 0. Verify if this is correct."
+                    )
+
+                evaluator = FormulaEvaluator(values)
+                result = evaluator.visit(tree.body)
+
+                new_quantity = None
+                for quantity in self.quantities:
+                    if quantity.Formula == self.settings["formula"] and len(self.settings["products"]) == 1: #Todo improve it
+                        new_quantity = quantity
+                        self.settings["ifc_class"] = quantity.is_a()
+                        continue
+                if new_quantity is None:
+                    new_quantity = self.file.create_entity(self.settings["ifc_class"], Name="Unnamed")
+                    new_quantity.Formula = self.settings["formula"]
+                    self.quantities.add(new_quantity)
+
+                new_quantity[3] = result
+                continue
+
             if self.settings["prop_name"]:
                 if (
                     self.settings["cost_item"].CostQuantities
@@ -113,10 +178,29 @@ class Usecase:
                 ):
                     continue
                 self.add_quantity_from_related_object(product)
-        if self.settings["prop_name"]:
+        if self.settings["prop_name"] or self.settings["formula"]:
             self.settings["cost_item"].CostQuantities = list(self.quantities)
         else:
             self.update_cost_item_count()
+
+    def get_value_from_pset(
+            self,
+            product:ifcopenshell.entity_instance,
+            v: str,
+    ) -> float:
+        pset_name = v.split(".")[0]
+        pset = ifcopenshell.util.element.get_pset(product, pset_name)
+        pset_property_name = v.split(".")[1]
+        return (pset or {}).get(pset_property_name,None)
+
+    def get_value_from_qset(
+            self,
+            product:ifcopenshell.entity_instance,
+            v: str,
+    ) -> float:
+        qtos = ifcopenshell.util.element.get_psets(product, qtos_only = True)
+        quantities = next(iter(qtos.values()), {})
+        return (quantities or {}).get(v,None)
 
     def assign_cost_control(
         self, related_object: ifcopenshell.entity_instance, cost_item: ifcopenshell.entity_instance
@@ -158,3 +242,55 @@ class Usecase:
                         if not obj.is_a("IfcConstructionResource"):
                             count += 1
                 quantity[3] = count
+
+OPERATORS = {
+    ast.Add: operator.add,
+    ast.Sub: operator.sub,
+    ast.Mult: operator.mul,
+    ast.Div: operator.truediv,
+    ast.Pow: operator.pow,
+    ast.USub: operator.neg,
+}
+
+def build_full_name(node):
+    #used for variables with dots
+    parts = []
+    while isinstance(node, ast.Attribute):
+            parts.append(node.attr)
+            node = node.value
+
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+
+    return ".".join(reversed(parts))
+
+class VariableExtractor(ast.NodeVisitor):
+    def __init__(self):
+        self.variables = set()
+
+    def visit_Name(self, node):
+        self.variables.add(node.id)
+
+    def visit_Attribute(self, node):
+        self.variables.add(build_full_name(node))
+
+class FormulaEvaluator(ast.NodeVisitor):
+    def __init__(self, values):
+        self.values = values
+
+    def visit_BinOp(self, node):
+        left = self.visit(node.left)
+        right = self.visit(node.right)
+        return OPERATORS[type(node.op)](left, right)
+
+    def visit_Name(self, node):
+        return self.values[node.id]
+
+    def visit_Attribute(self, node):
+        return self.values[build_full_name(node)]
+
+    def visit_Constant(self, node):
+        return node.value
+
+    def generic_visit(self, node):
+        raise ValueError(f"Operation not permitted: {type(node).__name__}")

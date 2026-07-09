@@ -92,7 +92,7 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 				throw std::runtime_error("Unexpected configuration of subshapes");
 			}
 		} else {
-			logger::warning("Ignored shell", s->instance);
+			logger_.Warning("GEO", 201, "Ignored shell", s->instance);
 		}
 	}
 	if (!S.IsNull()) {

@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from math import cos, pi, radians, sin, tan
 from typing import Any, Literal, NamedTuple
 
@@ -43,6 +44,7 @@ from mathutils import Matrix, Quaternion, Vector
 
 import bonsai.core.geometry
 import bonsai.tool as tool
+from bonsai.bim.decorator_cache import TokenCache
 from bonsai.bim.module.drawing.gizmos import (
     ARC_SEGMENTS,
     DOOR_SWING_ANGLE_MAX,
@@ -51,15 +53,44 @@ from bonsai.bim.module.drawing.gizmos import (
 from bonsai.bim.module.drawing.helper import format_distance
 
 
-def transparent_color(color, alpha=0.1):
-    color = [i for i in color]
-    color[3] = alpha
-    return color
-
-
 def highlight_color(color, alpha=0.1):
     color = [i + (1 - i) * 0.5 for i in color]
     return color
+
+
+def _stroke_lines_alpha(
+    context: bpy.types.Context,
+    segments: list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+    color_rgb: tuple[float, float, float],
+    line_width: float,
+    line_alpha: float,
+) -> None:
+    """Render ``segments`` (a list of (start, end) tuples) as one anti-aliased
+    LINES batch in world space. Early-returns when ``context.region`` is
+    unavailable (e.g. when called from a ``_RestrictContext``)."""
+    if not segments:
+        return
+    verts: list[tuple[float, float, float]] = []
+    indices: list[tuple[int, int]] = []
+    for start, end in segments:
+        base = len(verts)
+        verts.append(tuple(start))
+        verts.append(tuple(end))
+        indices.append((base, base + 1))
+    if not tool.Blender.validate_shader_batch_data(verts, indices):
+        return
+    region = getattr(context, "region", None)
+    if region is None:
+        return
+    shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+    shader.bind()
+    shader.uniform_float("viewportSize", (region.width, region.height))
+    shader.uniform_float("lineWidth", line_width)
+    shader.uniform_float("color", (*color_rgb, line_alpha))
+    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=indices)
+    gpu.state.blend_set("ALPHA")
+    batch.draw(shader)
+    gpu.state.blend_set("NONE")
 
 
 class ProfileDecorator:
@@ -96,7 +127,7 @@ class ProfileDecorator:
 
     def draw_faces(self, bm, vertices_coords):
         """Submit a non-mutating beauty-triangulated TRIS batch over ``bm``'s faces."""
-        faces_color = transparent_color(self.addon_prefs.decorator_color_special)
+        faces_color = tool.Blender.transparent_color(self.addon_prefs.decorator_color_special)
         tool.Blender.draw_bmesh_face_tris(bm, vertices_coords, faces_color, self.draw_batch)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
@@ -226,7 +257,7 @@ class ProfileDecorator:
         self.draw_batch("LINES", all_vertices, unselected_elements_color, unselected_edges)
         self.draw_batch("LINES", all_vertices, selected_elements_color, selected_edges)
 
-        self.draw_batch("POINTS", unselected_vertices, transparent_color(unselected_elements_color, 0.5))
+        self.draw_batch("POINTS", unselected_vertices, tool.Blender.transparent_color(unselected_elements_color, 0.5))
         self.draw_batch("POINTS", error_vertices, error_elements_color)
         self.draw_batch("POINTS", special_vertices, special_elements_color)
         self.draw_batch("POINTS", selected_vertices, selected_elements_color)
@@ -317,9 +348,11 @@ class ProfileDecorator:
         return points, listEdg
 
 
-class PolylineDecorator:
-    is_installed = False
-    handlers = []
+class PolylineDecorator(tool.Blender.ViewportDecorator):
+    # draw_methods declares only the always-bound handler so the base's
+    # __init_subclass__ validation passes; the override install below
+    # conditionally registers up to four more handlers based on ui_only.
+    draw_methods = (("draw_input_ui", "POST_PIXEL"),)
     event = None
     input_type = None
     input_ui = None
@@ -354,15 +387,6 @@ class PolylineDecorator:
             )
             cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
 
     @classmethod
     def update(
@@ -421,14 +445,6 @@ class PolylineDecorator:
         bm.free()
 
         return {"verts": verts, "edges": edges, "tris": tris}
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
 
     def shader_config(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -697,7 +713,9 @@ class PolylineDecorator:
             if self.polyline_data.measurement_type == "POLY_AREA" and area:
                 if float(area) > 0:
                     tris = self.calculate_polygon(polyline_verts)["tris"]
-                    self.draw_batch("TRIS", polyline_verts, transparent_color(self.decorator_color_special), tris)
+                    self.draw_batch(
+                        "TRIS", polyline_verts, tool.Blender.transparent_color(self.decorator_color_special), tris
+                    )
 
         # Draw polyline with selected points
         self.line_shader.uniform_float("lineWidth", 2.0)
@@ -950,9 +968,8 @@ class PolylineDecorator:
             self.draw_batch("LINES", polyline_verts, decorator_color_unselected, polyline_edges)
 
 
-class ProductDecorator:
-    is_installed = False
-    handlers = []
+class ProductDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_product_preview"
     preview_mode: Literal["PROFILE_VERTICAL", "PROFILE_HORIZONTAL", "LAYER2", "LAYER3", "GENERIC"]
     relating_type = None
     obj_data: dict[str, list] = {}
@@ -995,29 +1012,7 @@ class ProductDecorator:
         )
         cls.is_installed = True
 
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
-
     def draw_product_preview(self, context):
-        def transparent_color(color, alpha=0.1):
-            color = [i for i in color]
-            color[3] = alpha
-            return color
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -1049,7 +1044,7 @@ class ProductDecorator:
             data = self.get_generic_preview_data()
         if data:
             self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
-            self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color), data["tris"])
+            self.draw_batch("TRIS", data["verts"], tool.Blender.transparent_color(decorator_color), data["tris"])
 
     def get_wall_preview_data(self):
         relating_type = self.relating_type
@@ -1582,34 +1577,8 @@ class ProductDecorator:
         return data
 
 
-class WallAxisDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class WallAxisDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_wall_axis"
 
     def draw_wall_axis(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -1628,7 +1597,7 @@ class WallAxisDecorator:
         self.line_shader.uniform_float("lineWidth", 2.0)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
-            if element.is_a("IfcWall"):
+            if element and element.is_a("IfcWall"):
                 layers = tool.Model.get_material_layer_parameters(element)
                 axis = tool.Model.get_wall_axis(obj, layers)
                 side = [tuple(list(v) + [obj.location.z]) for v in axis["side"]]
@@ -1648,34 +1617,8 @@ class WallAxisDecorator:
                 self.draw_batch("LINES", arrow, unselected_elements_color, [(0, 1), (1, 2), (1, 3)])
 
 
-class SlabDirectionDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_wall_axis, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class SlabDirectionDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_wall_axis"
 
     def draw_wall_axis(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
@@ -1705,41 +1648,10 @@ class SlabDirectionDecorator:
             self.draw_batch("LINES", base, selected_elements_color, [(0, 1)])
 
 
-class FaceAreaDecorator:
-    is_installed = False
-    handlers = []
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_face_area, (context,), "WINDOW", "POST_VIEW"))
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except ValueError:
-                pass
-        cls.is_installed = False
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
+class FaceAreaDecorator(tool.Blender.ViewportDecorator):
+    draw_method = "draw_face_area"
 
     def draw_face_area(self, context):
-        def transparent_color(color, alpha=0.1):
-            color = [i for i in color]
-            color[3] = alpha
-            return color
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()  # required to be able to change uniforms of the shader
@@ -1760,12 +1672,16 @@ class FaceAreaDecorator:
             if data:
                 self.draw_batch("POINTS", data["verts"], decorator_color)
                 self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
-                self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color, alpha=0.5), data["tris"])
+                self.draw_batch(
+                    "TRIS", data["verts"], tool.Blender.transparent_color(decorator_color, alpha=0.5), data["tris"]
+                )
 
 
-class BoundingBoxDecorator:
-    is_installed = False
-    handlers = []
+class BoundingBoxDecorator(tool.Blender.ViewportDecorator):
+    draw_methods = (
+        ("draw_bounding_box_wire_cube", "POST_VIEW"),
+        ("draw_dimension_text", "POST_PIXEL"),
+    )
 
     def __init__(self):
         context = bpy.context
@@ -1775,31 +1691,6 @@ class BoundingBoxDecorator:
         self.decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
         self.decorator_color_wire = (*theme.view_3d.bone_solid, 1)
         self.decorator_color_special = tool.Blender.get_addon_preferences().decorator_color_special
-
-    @classmethod
-    def install(cls, context):
-        if cls.is_installed:
-            cls.uninstall()
-        handler = cls()
-        cls.handlers.append(
-            bpy.types.SpaceView3D.draw_handler_add(
-                handler.draw_bounding_box_wire_cube, (context,), "WINDOW", "POST_VIEW"
-            )
-        )
-        cls.handlers.append(
-            bpy.types.SpaceView3D.draw_handler_add(handler.draw_dimension_text, (context,), "WINDOW", "POST_PIXEL")
-        )
-        cls.is_installed = True
-
-    @classmethod
-    def uninstall(cls):
-        for handler in cls.handlers:
-            try:
-                bpy.types.SpaceView3D.draw_handler_remove(handler, "WINDOW")
-            except Exception:
-                pass
-        cls.handlers.clear()
-        cls.is_installed = False
 
     @staticmethod
     def get_combined_bounding_box_corners(objects):
@@ -1872,14 +1763,6 @@ class BoundingBoxDecorator:
             {"X": (7, 3), "Y": (7, 4), "Z": (7, 6)},
         ]
         return trihedron[best_origin]
-
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
-        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
-            return
-        shader = self.line_shader if shader_type == "LINES" else self.shader
-        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
-        shader.uniform_float("color", color)
-        batch.draw(shader)
 
     def draw_text_background(self, context, coords_dim, text_dim):
         padding = 5
@@ -2030,46 +1913,6 @@ class BoundingBoxDecorator:
                         else:
                             co1.y += y_overlap / 2 + min_spacing
                             co2.y -= y_overlap / 2 + min_spacing
-
-
-def _fill_quads_alpha(
-    context: bpy.types.Context,
-    quads: list[
-        tuple[
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
-            tuple[float, float, float],
-        ]
-    ],
-    color_rgb: tuple[float, float, float],
-    alpha: float,
-) -> None:
-    """Render ``quads`` (each a 4-tuple of world-space corner verts in CCW
-    order) as one TRIS batch with two triangles per quad."""
-    if not quads:
-        return
-    verts: list[tuple[float, float, float]] = []
-    indices: list[tuple[int, int, int]] = []
-    for quad in quads:
-        if len(quad) != 4:
-            continue
-        base = len(verts)
-        verts.extend(tuple(v) for v in quad)
-        indices.append((base, base + 1, base + 2))
-        indices.append((base, base + 2, base + 3))
-    if not tool.Blender.validate_shader_batch_data(verts, indices):
-        return
-    region = getattr(context, "region", None)
-    if region is None:
-        return
-    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-    shader.bind()
-    shader.uniform_float("color", (*color_rgb, alpha))
-    batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=indices)
-    gpu.state.blend_set("ALPHA")
-    batch.draw(shader)
-    gpu.state.blend_set("NONE")
 
 
 def compute_mep_join_location():
@@ -2529,3 +2372,481 @@ def draw_polyline_segments(
 
 _BBOX_HIGHLIGHT_LINE_WIDTH = 1.8
 _BBOX_HIGHLIGHT_LINE_ALPHA = 0.8
+
+
+class _ConnectedNetworkPathDecorator(tool.Blender.ViewportDecorator):
+    """Shared scaffolding for "BFS-walk a connected IFC network from a selected
+    seed and overlay its schematic path" viewport decorators.
+
+    Subclasses implement three hooks:
+
+        ``_is_seed_element(element)``: True if ``element`` can seed a walk
+        ``_walk(start_element)``: list of network elements reachable from the seed
+        ``_build_geometry(connected)``: ``(lines, free_points, connection_points)``
+          for one walk pass; free dots render in the base selected color,
+          connection dots in the "special" slot so junctions stand out
+
+    Lifecycle each redraw: gate on ``BIMModelProperties.show_paths`` (the
+    shared toggle for all network-path overlays), find the first selected
+    seed element, walk the network (cached per seed-GUID per IFC file), and
+    render lines + connection-node dots. Geometry is memoised through a
+    ``TokenCache`` keyed on the decorator-cache token, so depsgraph / undo /
+    redo / load all invalidate the resolved world-space pass without
+    re-walking.
+
+    Install / uninstall is driven by the central addon-load handler and
+    by the toggle's ``update`` callback, so flipping the property takes
+    effect immediately without a Blender restart."""
+
+    # Network-path lines + junction dots render in ``decorator_color_selected``
+    # (Bonsai's palette slot for "what the user is currently inspecting"); free
+    # endpoints (dangling chain tips) switch to ``decorator_color_special`` so
+    # the end of the line stands apart from interior junctions at a glance.
+    LINE_WIDTH = 1.3
+    LINE_ALPHA = 0.85
+    # Sized larger than LINE_WIDTH so connection nodes read as discrete
+    # points rather than line thickenings.
+    DOT_SIZE = 4.0
+    # Squared distance under which two emitted dots are treated as the same
+    # connection node. In Blender units (typically meters), 1e-4 m ≈ 0.1 mm
+    # — below the precision at which two IFC reference-line endpoints would
+    # ever be authored as "the same join" but not so tight that float drift
+    # from coordinate composition misses a real coincidence.
+    CONNECTION_EPS_SQ = 1e-4 * 1e-4
+
+    def __init__(self) -> None:
+        # Walk cache keyed on (start_guid, ifc_file, geom_gen). Stores STEP
+        # integer ids rather than ``entity_instance`` references — re-resolved
+        # via ``ifc_file.by_id`` on each cache hit. Structurally rules out
+        # the dangling-SWIG-handle class of bug: an entity removed between
+        # frames either bumps geom_gen (cache miss → re-walk) or fails to
+        # re-resolve (handled below by re-walking). Compare ``ifc_file`` with
+        # ``is`` (not id()) so a GC-recycled id() can't produce a false hit.
+        self._cached_start_guid: str | None = None
+        self._cached_ifc_file: Any = None
+        self._cached_geom_gen: int = -1
+        self._cached_walk_ids: list[int] = []
+        # Geometry cache: shared TokenCache. Key folds in geom_gen so IFC
+        # mutations that don't surface via the depsgraph still flush the
+        # resolved world-space lines and dots.
+        self._geom_cache: TokenCache[
+            tuple[
+                list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+                list[tuple[float, float, float]],
+                list[tuple[float, float, float]],
+            ]
+        ] = TokenCache()
+        # One-shot guards so a corrupted walk or build surfaces in the console
+        # once per decorator instance instead of every redraw.
+        self._walk_failure_logged: bool = False
+        self._build_failure_logged: bool = False
+        # Short-circuit re-running a known-broken walk or build for the same
+        # seed every frame; cleared the moment the user picks a different seed.
+        self._failed_seed_guid: str | None = None
+
+    _ABSTRACT_HOOKS = ("_is_seed_element", "_walk", "_build_geometry")
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Pin the template-method contract at class-definition time, mirroring
+        # ViewportDecorator's draw_method check: a subclass that forgets to
+        # override one of the three hooks would otherwise pass class creation
+        # and only raise NotImplementedError on the first walk — deferred long
+        # past the offending declaration.
+        missing = [
+            name for name in cls._ABSTRACT_HOOKS if getattr(cls, name) is getattr(_ConnectedNetworkPathDecorator, name)
+        ]
+        if missing:
+            raise TypeError(f"{cls.__name__}: must override abstract hook(s) {sorted(missing)}")
+
+    def _is_seed_element(self, element: Any) -> bool:
+        raise NotImplementedError
+
+    def _walk(self, start_element: Any) -> list[Any]:
+        raise NotImplementedError
+
+    def _build_geometry(
+        self,
+        connected: list[Any],
+    ) -> tuple[
+        list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+        list[tuple[float, float, float]],
+        list[tuple[float, float, float]],
+    ]:
+        """Resolve world-space line segments + dots for one walk pass. Returns
+        ``(lines, free_points, connection_points)`` — free dots get the base
+        selected color, connection dots get the special color so junctions
+        between two consecutive elements pop out. Never raises; skips
+        degenerate elements."""
+        raise NotImplementedError
+
+    @classmethod
+    def _partition_points_by_coincidence(
+        cls,
+        points: list[tuple[float, float, float]],
+        lines: Sequence[tuple[tuple[float, float, float], tuple[float, float, float]]] = (),
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[float, float, float]]]:
+        """Split ``points`` into ``(free, connection)``. A point is "connection"
+        when (a) at least one other point in the list lies within
+        ``CONNECTION_EPS_SQ`` (corner / end-to-end joins), or (b) it lies within
+        ``CONNECTION_EPS_SQ`` of the interior of any segment in ``lines``
+        (T-junctions / ATPATH joins, where one wall's end lands on another
+        wall's axis interior rather than its endpoint). Connection points
+        dedupe to one representative each so coincident dots don't stack the
+        same color."""
+        eps_sq = cls.CONNECTION_EPS_SQ
+        n = len(points)
+        shared = [False] * n
+        for i in range(n):
+            xi, yi, zi = points[i]
+            for j in range(i + 1, n):
+                xj, yj, zj = points[j]
+                dx, dy, dz = xi - xj, yi - yj, zi - zj
+                if dx * dx + dy * dy + dz * dz <= eps_sq:
+                    shared[i] = True
+                    shared[j] = True
+        for i, point in enumerate(points):
+            if shared[i]:
+                continue
+            if cls._point_touches_any_segment_interior(point, lines, eps_sq):
+                shared[i] = True
+        free: list[tuple[float, float, float]] = []
+        connection: list[tuple[float, float, float]] = []
+        seen_connection: list[tuple[float, float, float]] = []
+        for i, point in enumerate(points):
+            if not shared[i]:
+                free.append(point)
+                continue
+            for existing in seen_connection:
+                dx, dy, dz = point[0] - existing[0], point[1] - existing[1], point[2] - existing[2]
+                if dx * dx + dy * dy + dz * dz <= eps_sq:
+                    break
+            else:
+                seen_connection.append(point)
+                connection.append(point)
+        return free, connection
+
+    @staticmethod
+    def _point_touches_any_segment_interior(
+        point: tuple[float, float, float],
+        lines: Sequence[tuple[tuple[float, float, float], tuple[float, float, float]]],
+        eps_sq: float,
+    ) -> bool:
+        """True iff ``point`` lies within ``sqrt(eps_sq)`` of the interior of
+        any segment in ``lines``. Endpoints are excluded so a point cannot
+        match its own owning segment via either of that segment's tips — the
+        endpoint-coincidence pass already handles those cases. The qualifying
+        projection must land strictly inside the segment (``0 < t < 1``) AND
+        sit further than ``eps`` from either tip, catching ATPATH/T-junction
+        joins without false-flagging walls that share a corner."""
+        px, py, pz = point
+        for (ax, ay, az), (bx, by, bz) in lines:
+            dxa, dya, dza = px - ax, py - ay, pz - az
+            if dxa * dxa + dya * dya + dza * dza <= eps_sq:
+                continue
+            dxb, dyb, dzb = px - bx, py - by, pz - bz
+            if dxb * dxb + dyb * dyb + dzb * dzb <= eps_sq:
+                continue
+            ex, ey, ez = bx - ax, by - ay, bz - az
+            seg_len_sq = ex * ex + ey * ey + ez * ez
+            if seg_len_sq <= eps_sq:
+                continue
+            t = (dxa * ex + dya * ey + dza * ez) / seg_len_sq
+            if t <= 0.0 or t >= 1.0:
+                continue
+            qx, qy, qz = ax + t * ex, ay + t * ey, az + t * ez
+            dx, dy, dz = px - qx, py - qy, pz - qz
+            if dx * dx + dy * dy + dz * dz <= eps_sq:
+                return True
+        return False
+
+    def draw(self, context: bpy.types.Context) -> None:
+        model_props = tool.Model.get_model_props()
+        if not getattr(model_props, "show_paths", False):
+            return
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return
+
+        start_element = None
+        active = context.active_object
+        if active is not None:
+            element = tool.Ifc.get_entity(active)
+            if element is not None and self._is_seed_element(element):
+                start_element = element
+        if start_element is None:
+            for obj in context.selected_objects or []:
+                if obj is active:
+                    continue
+                element = tool.Ifc.get_entity(obj)
+                if element is None or not self._is_seed_element(element):
+                    continue
+                start_element = element
+                break
+        if start_element is None:
+            self._cached_start_guid = None
+            self._cached_walk = []
+            return
+
+        start_guid = start_element.GlobalId
+        if start_guid == self._failed_seed_guid:
+            return
+        current_geom_gen = tool.Parametric.get_geom_generation()
+        connected: list[Any] | None = None
+        if (
+            start_guid == self._cached_start_guid
+            and ifc_file is self._cached_ifc_file
+            and current_geom_gen == self._cached_geom_gen
+            and self._cached_walk_ids
+        ):
+            try:
+                connected = [ifc_file.by_id(eid) for eid in self._cached_walk_ids]
+            except RuntimeError:
+                # An entity was removed without bumping geom_gen — rare but
+                # possible from non-operator code paths. Force a re-walk
+                # rather than feeding a stale handle to _build_geometry.
+                connected = None
+        if connected is None:
+            try:
+                connected = self._walk(start_element)
+            except Exception:
+                if not self._walk_failure_logged:
+                    import traceback
+
+                    traceback.print_exc()
+                    self._walk_failure_logged = True
+                self._cached_walk_ids = []
+                self._failed_seed_guid = start_guid
+                return
+            self._cached_start_guid = start_guid
+            self._cached_ifc_file = ifc_file
+            self._cached_geom_gen = current_geom_gen
+            self._cached_walk_ids = [e.id() for e in connected]
+        if not connected:
+            return
+
+        prefs = tool.Blender.get_addon_preferences()
+        line_color = tuple(prefs.decorator_color_selected[:3])
+        # Junction dots get the "selected" palette slot (green by default) so
+        # they read as the currently-inspected network's spine; free endpoints
+        # get the "special" slot (blue by default) so dangling line ends stand
+        # apart from junctions at a glance.
+        connection_color = line_color
+        free_color = tuple(prefs.decorator_color_special[:3])
+
+        try:
+            lines, free_points, connection_points = self._geom_cache.get_or_compute(
+                (start_guid, id(ifc_file), current_geom_gen),
+                lambda: self._build_geometry(connected),
+            )
+        except Exception:
+            if not self._build_failure_logged:
+                import traceback
+
+                traceback.print_exc()
+                self._build_failure_logged = True
+            self._failed_seed_guid = start_guid
+            return
+
+        if lines:
+            _stroke_lines_alpha(context, lines, line_color, self.LINE_WIDTH, self.LINE_ALPHA)
+
+        if free_points or connection_points:
+            # POINTS via UNIFORM_COLOR; point_size_set only affects the next batch.
+            point_shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+            point_shader.bind()
+            gpu.state.point_size_set(self.DOT_SIZE)
+            gpu.state.blend_set("ALPHA")
+            if free_points:
+                point_shader.uniform_float("color", (*free_color, self.LINE_ALPHA))
+                batch = batch_for_shader(point_shader, "POINTS", {"pos": free_points})
+                batch.draw(point_shader)
+            if connection_points:
+                point_shader.uniform_float("color", (*connection_color, self.LINE_ALPHA))
+                batch = batch_for_shader(point_shader, "POINTS", {"pos": connection_points})
+                batch.draw(point_shader)
+            gpu.state.blend_set("NONE")
+
+
+class MEPSystemPathDecorator(_ConnectedNetworkPathDecorator):
+    """Schematic-path overlay for the selected MEP element's connected
+    distribution system.
+
+    Walk: BFS through ``IfcRelConnectsPorts`` from the first selected MEP
+    element. Segments render as one axis line + endpoint dots. Fittings
+    render as:
+
+    - 2-port (transition, coupler, bend): one line port-to-port, keeping
+      the schematic continuous through the fitting. The "spider from
+      origin" pattern produces V-shaped flares when the fitting's local
+      origin is offset from its ports.
+    - 3+-port (tee, cross, branching): spider from origin to each port.
+      Drawing all N*(N-1)/2 port pairs would clutter the view at high N
+      (N=4 → 6 lines); the spider gives one line per port.
+    - 0-port / 1-port: degenerate, no lines (dots still emit)."""
+
+    def _is_seed_element(self, element: Any) -> bool:
+        return tool.System.is_mep_element(element)
+
+    def _walk(self, start_element: Any) -> list[Any]:
+        return tool.System.walk_connected_mep_elements(start_element)
+
+    def _build_geometry(
+        self,
+        connected: list[Any],
+    ) -> tuple[
+        list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+        list[tuple[float, float, float]],
+        list[tuple[float, float, float]],
+    ]:
+        lines: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+        port_positions: list[tuple[float, float, float]] = []
+        for element in connected:
+            if element and element.is_a("IfcFlowSegment"):
+                if not tool.Geometry.has_axis_representation(element):
+                    continue
+                obj = tool.Ifc.get_object(element)
+                if obj is None:
+                    continue
+                start_world, end_world = tool.Model.get_flow_segment_axis(obj)
+                lines.append((tuple(start_world), tuple(end_world)))
+                # Segment ports sit at the two axis endpoints — emit dots so
+                # the connection node is visible whether the neighbour is a
+                # fitting (also emits) or another segment (doesn't).
+                port_positions.append(tuple(start_world))
+                port_positions.append(tuple(end_world))
+            elif element.is_a("IfcFlowFitting"):
+                obj = tool.Ifc.get_object(element)
+                if obj is None:
+                    continue
+                ports = tool.System.get_ports(element)
+                port_world_positions = [tool.System.get_port_world_position(p) for p in ports]
+                if len(port_world_positions) == 2:
+                    lines.append((tuple(port_world_positions[0]), tuple(port_world_positions[1])))
+                elif len(port_world_positions) >= 3:
+                    origin = obj.matrix_world.translation
+                    for port_pos in port_world_positions:
+                        lines.append((tuple(origin), tuple(port_pos)))
+                for port_pos in port_world_positions:
+                    port_positions.append(tuple(port_pos))
+        free_points, connection_points = self._partition_points_by_coincidence(port_positions)
+        return lines, free_points, connection_points
+
+
+class WallSystemPathDecorator(_ConnectedNetworkPathDecorator):
+    """Schematic-path overlay for the selected wall's connected wall network.
+
+    Walk: BFS through ``IfcRelConnectsPathElements`` from the first selected
+    wall. Each wall renders as one reference-line segment + a dot at each
+    axis endpoint. Endpoints are classified by IFC topology — every wall in
+    the walked set inspects its ``IfcRelConnectsPathElements`` rels filtered
+    to walls in the same set, and uses ``Relating*``/``Related*ConnectionType``
+    (ATSTART / ATEND / ATPATH) to decide which endpoint participates. ATPATH
+    rels also emit a connection dot at the canonical join location (a T-meets
+    point sits on the through-wall's interior, not at any endpoint). The
+    framework's geometric classifier is bypassed for walls because authoring
+    tolerance and post-edit float drift commonly exceed the 0.1 mm coincidence
+    threshold, so T-junctions otherwise fell into the free bucket."""
+
+    def _is_seed_element(self, element: Any) -> bool:
+        return element.is_a("IfcWall") and tool.Geometry.has_axis_representation(element)
+
+    def _walk(self, start_element: Any) -> list[Any]:
+        return tool.Wall.walk_connected_walls(start_element)
+
+    def _build_geometry(
+        self,
+        connected: list[Any],
+    ) -> tuple[
+        list[tuple[tuple[float, float, float], tuple[float, float, float]]],
+        list[tuple[float, float, float]],
+        list[tuple[float, float, float]],
+    ]:
+        lines: list[tuple[tuple[float, float, float], tuple[float, float, float]]] = []
+        refs: dict[int, tuple[tuple[float, float, float], tuple[float, float, float]]] = {}
+        for element in connected:
+            obj = tool.Ifc.get_object(element)
+            if obj is None:
+                continue
+            ref = tool.Wall.get_world_reference_line(obj)
+            if ref is None:
+                continue
+            p1, p2 = tuple(ref[0]), tuple(ref[1])
+            refs[element.id()] = (p1, p2)
+            lines.append((p1, p2))
+
+        free_points, connection_points = self._classify_endpoints_from_rels(connected, refs)
+        connection_points = self._dedupe_close_points(connection_points, self.CONNECTION_EPS_SQ)
+        return lines, free_points, connection_points
+
+    @staticmethod
+    def _classify_endpoints_from_rels(
+        connected: Sequence[Any],
+        refs: dict[int, tuple[tuple[float, float, float], tuple[float, float, float]]],
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[float, float, float]]]:
+        """For each wall in ``connected`` with a reference line in ``refs``,
+        classify its endpoints by walking its ``IfcRelConnectsPathElements``
+        rels filtered to walls also in ``refs``. ATSTART side present →
+        reference-line start is a connection; ATEND side present → reference-
+        line end is a connection; otherwise free. ATPATH side present → emit
+        an extra connection dot at the canonical join via
+        ``tool.Wall.path_connection_location_world``. Returns
+        ``(free, connection)`` un-deduped."""
+        free_points: list[tuple[float, float, float]] = []
+        connection_points: list[tuple[float, float, float]] = []
+        for element in connected:
+            self_seg = refs.get(element.id())
+            if self_seg is None:
+                continue
+            sides: set[str] = set()
+            atpath_dots: list[tuple[float, float, float]] = []
+            for rel in getattr(element, "ConnectedTo", []) or ():
+                if not rel.is_a("IfcRelConnectsPathElements"):
+                    continue
+                other = rel.RelatedElement
+                other_seg = refs.get(other.id()) if other is not None else None
+                if other_seg is None:
+                    continue
+                self_type = rel.RelatingConnectionType
+                other_type = rel.RelatedConnectionType
+                sides.add(self_type)
+                if self_type == "ATPATH":
+                    join = tool.Wall.path_connection_location_world(self_seg, self_type, other_seg, other_type)
+                    atpath_dots.append(tuple(join))
+            for rel in getattr(element, "ConnectedFrom", []) or ():
+                if not rel.is_a("IfcRelConnectsPathElements"):
+                    continue
+                other = rel.RelatingElement
+                other_seg = refs.get(other.id()) if other is not None else None
+                if other_seg is None:
+                    continue
+                self_type = rel.RelatedConnectionType
+                other_type = rel.RelatingConnectionType
+                sides.add(self_type)
+                if self_type == "ATPATH":
+                    join = tool.Wall.path_connection_location_world(self_seg, self_type, other_seg, other_type)
+                    atpath_dots.append(tuple(join))
+            p1, p2 = self_seg
+            (connection_points if "ATSTART" in sides else free_points).append(p1)
+            (connection_points if "ATEND" in sides else free_points).append(p2)
+            connection_points.extend(atpath_dots)
+        return free_points, connection_points
+
+    @staticmethod
+    def _dedupe_close_points(
+        points: Sequence[tuple[float, float, float]],
+        eps_sq: float,
+    ) -> list[tuple[float, float, float]]:
+        """Drop later occurrences of points within ``sqrt(eps_sq)`` of an
+        earlier one. Used to collapse overlapping connection dots so an ATPATH
+        join computed at the same point as a neighbour's wall endpoint
+        renders once."""
+        result: list[tuple[float, float, float]] = []
+        for point in points:
+            for existing in result:
+                dx, dy, dz = point[0] - existing[0], point[1] - existing[1], point[2] - existing[2]
+                if dx * dx + dy * dy + dz * dz <= eps_sq:
+                    break
+            else:
+                result.append(point)
+        return result

@@ -240,6 +240,15 @@ def _store_batch_in_cache(cache_key: tuple[int, str], batch: "gpu.types.GPUBatch
     _batch_cache[cache_key] = (epoch, batch)
 
 
+def is_filling_supported(element) -> bool:
+    """True when Bonsai's opening generator can derive an opening from this
+    element. IFC's schema permits any IfcElement as a filling; Bonsai
+    currently supports only IfcDoor and IfcWindow because those are the
+    classes with OverallWidth/OverallHeight attributes (or their types'
+    ELEVATION_VIEW profiles) that the generator can consume."""
+    return element is not None and element.is_a() in ("IfcDoor", "IfcWindow")
+
+
 class FilledOpeningGenerator:
     def generate(
         self,
@@ -409,18 +418,16 @@ class FilledOpeningGenerator:
                 representation = tool.Geometry.get_representation_by_context(voided_element, context)
                 assert representation
 
-                bonsai.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=voided_obj,
-                    representation=representation,
-                )
+                tool.Geometry.recut_host(voided_obj, representation)
 
     def regenerate_from_type(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
         relating_type = settings["relating_type"]
 
-        for related_object in settings["related_objects"]:
-            self._regenerate_from_type(related_object)
+        # Filling type-switch on an array of fillings fans out N host recuts —
+        # one per related object — without batching. Coalesce them.
+        with tool.Geometry.batch_host_recut():
+            for related_object in settings["related_objects"]:
+                self._regenerate_from_type(related_object)
 
     def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
         filling = related_object
@@ -469,12 +476,7 @@ class FilledOpeningGenerator:
             representation = tool.Geometry.get_active_representation(voided_obj)
             if not representation:
                 continue
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=voided_obj,
-                representation=representation,
-            )
+            tool.Geometry.recut_host(voided_obj, representation)
 
     def generate_opening_from_filling(
         self,
@@ -609,6 +611,31 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
         return context.selected_objects
 
     def _execute(self, context):
+        # N selected fillings × M voided host parts would fire N×M host recuts
+        # without batching. Coalesce per host.
+        with tool.Geometry.batch_host_recut():
+            return self._recalculate_fills(context)
+
+    def _recalculate_fills(self, context):
+        # Refresh each selected filling's mapped opening source before
+        # recutting the host. Dedup by source id covers the common shared-
+        # source case in one rewrite while leaving unrelated sibling sources
+        # untouched.
+        seen_source_ids: set[int] = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not element.FillsVoids:
+                continue
+            opening = element.FillsVoids[0].RelatingOpeningElement
+            body = tool.Geometry.get_body_representation(opening)
+            if body is None:
+                continue
+            source = tool.Geometry.resolve_mapped_representation(body)
+            if source.id() in seen_source_ids:
+                continue
+            seen_source_ids.add(source.id())
+            tool.Model.regenerate_filling_opening_body(element)
+
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.FillsVoids:
@@ -637,12 +664,7 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                 if building_obj and building_obj.data:
                     representation = tool.Geometry.get_active_representation(building_obj)
                     if representation:
-                        bonsai.core.geometry.switch_representation(
-                            tool.Ifc,
-                            tool.Geometry,
-                            obj=building_obj,
-                            representation=representation,
-                        )
+                        tool.Geometry.recut_host(building_obj, representation)
 
         # Refresh cut decorator
         DecoratorData.cut_cache.clear()
@@ -964,27 +986,29 @@ class EditOpenings(Operator, tool.Ifc.Operator):
         for opening_element in opening_elements:
             opening_obj = tool.Ifc.get_object(opening_element)
 
-            similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening_element)
-            similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
-                tool.Ifc, similar_openings
-            )
-            building_objs.update(similar_openings_building_objs)
-
             if opening_obj:
-                if tool.Ifc.is_edited(opening_obj):
-                    tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                opening_edited = tool.Ifc.is_edited(opening_obj)
+                opening_moved = tool.Ifc.is_moved(opening_obj)
+                # Sibling walls only need a viewport-level refresh when the
+                # opening's shape or placement actually changed — a pure
+                # show/hide toggle leaves them in their existing state.
+                if opening_edited or opening_moved:
+                    similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening_element)
+                    similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
+                        tool.Ifc, similar_openings
+                    )
+                    building_objs.update(similar_openings_building_objs)
+                    if opening_edited:
+                        tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    else:
+                        bonsai.core.geometry.edit_object_placement(
+                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
+                        )
                     bonsai.core.geometry.edit_similar_opening_placement(
                         tool.Geometry, opening_element, similar_openings
                     )
-                elif tool.Ifc.is_moved(opening_obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj)
-                    bonsai.core.geometry.edit_similar_opening_placement(
-                        tool.Geometry, opening_element, similar_openings
-                    )
+                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening_element))
 
-                building_objs.update(
-                    self.get_all_building_objects_of_similar_openings(opening_element)
-                )  # NB this has nothing to do with clone similar_opening
                 tool.Ifc.unlink(element=opening_element)
                 if props.representation_obj == opening_obj:
                     props.representation_obj = None
@@ -1022,6 +1046,12 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
+        # The voided host may be an aggregate whose parts each get recut.
+        # Coalesce per host so a many-parts aggregate doesn't fan out.
+        with tool.Geometry.batch_host_recut():
+            return self._clone_opening(context)
+
+    def _clone_opening(self, context):
         # NOTE: Operator displayed in UI only with IfcOpeningElement being active.
         ifc_file = tool.Ifc.get()
         objects = bpy.context.selected_objects
@@ -1051,12 +1081,7 @@ class CloneOpening(Operator, tool.Ifc.Operator):
                 continue
             representation = tool.Geometry.get_active_representation(obj)
             assert representation
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-            )
+            tool.Geometry.recut_host(obj, representation)
 
         return {"FINISHED"}
 

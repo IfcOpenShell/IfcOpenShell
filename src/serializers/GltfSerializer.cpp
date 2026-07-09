@@ -53,8 +53,8 @@ static const uint32_t PRIM_TRIANGLE_FAN = 6;
 static const uint32_t ELEMENT_ARRAY_BUFFER = 34963;
 static const uint32_t ARRAY_BUFFER = 34962;
 
-GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
-	: WriteOnlyGeometrySerializer(geometry_settings, settings)
+GltfSerializer::GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
+	: WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
 	, filename_(filename)
 	, tmp_filename1_(filename + ".indices.tmp")
 	, tmp_filename2_(filename + ".vertices.tmp")
@@ -108,9 +108,13 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style:
 		base[3] = 1. - style->transparency;
 	}
 
-	if (style->has_specularity())
-		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}, {"roughnessFactor", 1.0 / style->specularity}}}});
-	else
+	if (style->has_specularity()) {
+		// glTF requires roughnessFactor in [0, 1]. A specular exponent of 0
+		// previously produced 1/0 = inf, which nlohmann::json serialises as
+		// null and makes the file invalid; exponents below 1 exceeded 1. #8073
+		const double roughness = style->specularity > 1.0 ? 1.0 / style->specularity : 1.0;
+		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}, {"roughnessFactor", roughness}}}});
+	} else
 		json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}}});
 	
 	if (style->transparency == style->transparency && style->transparency > 1.e-9) {
@@ -518,8 +522,11 @@ namespace {
 		result[2] = v1[0] * v2[1] - v1[1] * v2[0];
 	}
 
-	void proj_log(void *, int, const char* c) {
-		logger::error("PROJ: " + std::string(c));
+	void proj_log(void* data, int, const char* c) {
+		auto logger = static_cast<Logger*>(data);
+		if (logger) {
+			logger->Error("SER", 1, "PROJ: " + std::string(c));
+		}
 	}
 }
 
@@ -626,7 +633,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 		PJ_COORD wgs84_point;
 
 		auto C = proj_context_create();
-		proj_log_func(C, nullptr, proj_log);
+		proj_log_func(C, &logger_, proj_log);
 
 		// @todo a bit ugly we assume a proj.db in current working directory.
 		// a very simplistic but at least portable solution.
@@ -648,7 +655,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 				NULL);
 
 			if (!P) {
-				logger::error("Failed to create PROJ transformation object");
+				logger_.Error("SER", 2, "Failed to create PROJ transformation object");
 				return;
 			}
 
@@ -660,7 +667,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 
 			wgs84_point = proj_trans(P, PJ_FWD, a);
 
-			logger::notice("Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
+			logger_.Notice("SER", 3, "Calculated latitude: " + std::to_string(wgs84_point.lp.lam) + " longitude: " + std::to_string(wgs84_point.lp.phi));
 		}
 
 		std::swap(wgs84_point.lp.phi, wgs84_point.lp.lam);
@@ -685,7 +692,7 @@ void GltfSerializer::setFile(ifcopenshell::file* f) {
 		PJ *ellipsoid_crs = proj_create(C, ellipsoid_def);
 
 		if (!ellipsoid_crs) {
-			logger::error("Failed to create ellipsoid CRS");
+			logger_.Error("SER", 4, "Failed to create ellipsoid CRS");
 			return;
 		}
 

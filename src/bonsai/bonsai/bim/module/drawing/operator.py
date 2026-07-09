@@ -56,7 +56,7 @@ import shapely
 from bpy_extras.image_utils import load_image
 from bpy_extras.io_utils import ImportHelper
 from lxml import etree
-from mathutils import Color, Vector
+from mathutils import Color, Matrix, Vector
 
 import bonsai.bim.export_ifc
 import bonsai.bim.handler
@@ -601,6 +601,7 @@ class CreateDrawing(bpy.types.Operator):
         context_type: Literal["body", "annotation"],
         drawing_elements: set[ifcopenshell.entity_instance],
         target_view: str,
+        link_matrix: Optional[Matrix] = None,
     ) -> None:
         drawing_elements = drawing_elements.copy()
         contexts_: list[list[int]] = getattr(contexts, context_type)
@@ -612,9 +613,19 @@ class CreateDrawing(bpy.types.Operator):
                 geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
 
-                if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
+                is_plan = ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view
+                z_offset = (0.002 if target_view == "PLAN_VIEW" else -0.002) if is_plan else 0.0
+
+                if link_matrix is not None:
+                    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc)
+                    t = link_matrix.to_translation()
+                    offset = (t.x / unit_scale, t.y / unit_scale, t.z / unit_scale + z_offset)
+                    geom_settings.set("model-offset", offset)
+                    q = link_matrix.to_quaternion()
+                    geom_settings.set("model-rotation", (q.x, q.y, q.z, q.w))
+                elif z_offset:
                     # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                    geom_settings.set("model-offset", (0.0, 0.0, 0.002 if target_view == "PLAN_VIEW" else -0.002))
+                    geom_settings.set("model-offset", (0.0, 0.0, z_offset))
 
                 geom_settings.set("context-ids", context)
                 it = ifcopenshell.geom.iterator(
@@ -918,11 +929,17 @@ class CreateDrawing(bpy.types.Operator):
         cached_linework -= edited_guids
 
         bim_props = tool.Blender.get_bim_props()
-        files = {bim_props.ifc_file: tool.Ifc.get()}
+        prefs = tool.Blender.get_addon_preferences()
+        # Map ifc_path → (ifc_file, link_matrix); main file has no link_matrix (None)
+        files: dict[str, tuple[ifcopenshell.file, Optional[Matrix]]] = {bim_props.ifc_file: (tool.Ifc.get(), None)}
 
         props = tool.Project.get_project_props()
         for link in props.get_loaded_links_for_drawings():
-            files[link.filepath] = self.get_linked_file(link)
+            try:
+                link_matrix = tool.Project.calculate_link_matrix(link)
+            except Exception:
+                link_matrix = None
+            files[link.filepath] = (self.get_linked_file(link), link_matrix)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -930,18 +947,33 @@ class CreateDrawing(bpy.types.Operator):
         tree = ifcopenshell.geom.tree()
         tree.enable_face_styles(True)
 
-        for ifc in files.values():
+        # Accumulated across every file in the loop below (main model plus any
+        # linked models) so the SHAPELY fill pass after the loop covers all of
+        # them, not just whichever file happened to be processed last.
+        raycast_objs = set()
+        elements_with_faces = set()
+
+        for ifc_path, (ifc, link_matrix) in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
+
+            if self.cprops.fill_mode == "SHAPELY":
+                for element in drawing_elements.copy():
+                    if element.is_a("IfcAnnotation"):
+                        continue
+                    obj = tool.Ifc.get_object(element)
+                    if obj and obj.type == "MESH" and len(obj.data.polygons):
+                        elements_with_faces.add(element.GlobalId)
+                        raycast_objs.add(obj)
 
             # Get all representation contexts to see what we're dealing with.
             # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
             contexts = self.get_linework_contexts(ifc, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view)
-            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view)
+            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view, link_matrix)
+            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view, link_matrix)
 
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
@@ -1007,16 +1039,6 @@ class CreateDrawing(bpy.types.Operator):
         if self.cprops.fill_mode == "SHAPELY":
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
-
-            raycast_objs = set()
-            elements_with_faces = set()
-            for element in drawing_elements.copy():
-                if element.is_a("IfcAnnotation"):
-                    continue
-                obj = tool.Ifc.get_object(element)
-                if obj and obj.type == "MESH" and len(obj.data.polygons):
-                    elements_with_faces.add(element.GlobalId)
-                    raycast_objs.add(obj)
 
             projections = root.xpath(
                 ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
@@ -2310,7 +2332,8 @@ class ActivateDrawingBase(tool.Ifc.Operator):
     bl_description = (
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK to load a quick preview of the drawing view"
+        + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
     )
 
     drawing: bpy.props.IntProperty()
@@ -2326,13 +2349,23 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         default=False,
         options={"SKIP_SAVE"},
     )
+    load_selected_annotations: bpy.props.BoolProperty(
+        name="Load Selected Annotations",
+        description="Load the annotations of all selected drawings without switching the active view.",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     if TYPE_CHECKING:
         drawing: int
         should_view_from_camera: bool
         use_quick_preview: bool
+        load_selected_annotations: bool
 
     def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
+        if event.type == "LEFTMOUSE" and event.shift and event.ctrl:
+            self.load_selected_annotations = True
+            return self.execute(context)
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
         if event.type == "LEFTMOUSE" and event.shift:
@@ -2344,6 +2377,18 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         if props.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()
+
+        if self.load_selected_annotations:
+            for d in props.drawings:
+                if not (d.is_drawing and d.is_selected):
+                    continue
+                selected_drawing = tool.Ifc.get().by_id(d.ifc_definition_id)
+                # Importing the camera (if missing) ensures the drawing's
+                # collection exists so the annotations get collected into it.
+                if not tool.Ifc.get_object(selected_drawing):
+                    tool.Drawing.import_drawing(selected_drawing)
+                tool.Drawing.import_annotations_in_group(tool.Drawing.get_drawing_group(selected_drawing))
+            return {"FINISHED"}
 
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = tool.Drawing.get_document_props()
@@ -2430,7 +2475,8 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
     bl_description = (
         "Activates the selected drawing view.\n\n"
         + "ALT+CLICK to keep the viewport position.\n\n"
-        + "SHIFT+CLICK to load a quick preview of the drawing view"
+        + "SHIFT+CLICK to load a quick preview of the drawing view.\n\n"
+        + "SHIFT+CTRL+CLICK to load the annotations of all selected drawings without switching views"
     )
 
 

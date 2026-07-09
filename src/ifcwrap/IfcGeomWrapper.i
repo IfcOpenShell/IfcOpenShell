@@ -81,16 +81,9 @@
 %newobject IfcGeom::ConversionResultShape::moved;
 %newobject IfcGeom::ConversionResultShape::wrap_in_compound;
 
-%newobject IfcGeom::ConversionResultShape::area;
-%newobject IfcGeom::ConversionResultShape::volume;
-%newobject IfcGeom::ConversionResultShape::length;
 
 %newobject nary_union;
 
-%newobject IfcGeom::OpaqueNumber::operator+;
-%newobject IfcGeom::OpaqueNumber::operator-;
-%newobject IfcGeom::OpaqueNumber::operator*;
-%newobject IfcGeom::OpaqueNumber::operator/;
 
 %inline %{
 template <typename T>
@@ -716,25 +709,31 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, num_threads);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads) {
-		std::set<std::string> elems_set(elems.begin(), elems.end());
-		IfcGeom::entity_filter ef{ include, false, elems_set };
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {ef}, num_threads);
+	// I couldn't get the vector<string> typemap to be applied when %extending Iterator constructor.
+	// anyway it does not matter as SWIG generates C code without actual constructors
+	IfcGeom::Iterator* construct_iterator(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, int num_threads, Logger& logger = Logger::Root()) {
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, num_threads, logger);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, Logger& logger = Logger::Root()) {
+		std::set<std::string> elems_set(elems.begin(), elems.end());
+		IfcGeom::entity_filter ef{ include, false, elems_set };
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, {ef}, num_threads, logger);
+	}
+
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_globalid(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<std::string> elems, bool include, int num_threads, Logger& logger = Logger::Root()) {
 		std::set<std::string> elems_set(elems.begin(), elems.end());
 		IfcGeom::attribute_filter af;
 		af.attribute_name = "GlobalId";
 		af.populate(elems_set);
 		af.include = include;
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, {af}, num_threads, logger);
 	}
 
-	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<int> elems, bool include, int num_threads) {
+	IfcGeom::Iterator* construct_iterator_with_include_exclude_id(const std::string& geometry_library, ifcopenshell::geometry::Settings settings, ifcopenshell::file* file, std::vector<int> elems, bool include, int num_threads, Logger& logger = Logger::Root()) {
 		std::set<int> elems_set(elems.begin(), elems.end());
 		IfcGeom::instance_id_filter af(include, false, elems_set);
-		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings), settings, file, {af}, num_threads);
+		return new IfcGeom::Iterator(ifcopenshell::geometry::kernels::construct(file, geometry_library, settings, logger), settings, file, {af}, num_threads, logger);
 	}
 %}
 
@@ -956,7 +955,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return oss.str();
 	}
 
-	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, const express::Base& instance, const express::Base& representation = express::Base()) {
+	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(Logger& logger, const std::string& geometry_library, ifcopenshell::geometry::Settings& st, const express::Base& instance, const express::Base& representation = express::Base()) {
 		ifcopenshell::file* file = instance.file();
 
 		ifcopenshell::geometry::Converter kernel(ifcopenshell::geometry::kernels::construct(file, geometry_library, st), file, st);
@@ -1070,12 +1069,12 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %}
 
 %inline %{
-	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const express::Base& representation, const char* const geometry_library="opencascade") {
+	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const express::Base& representation, const char* const geometry_library="opencascade", Logger& logger = Logger::Root()) {
 		return helper_fn_create_shape(geometry_library, settings, instance, representation);
 	}
 
 	// Manual definition of overload without representation argument
-	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const char* const geometry_library="opencascade") {
+	static std::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, const express::Base& instance, const char* const geometry_library="opencascade", Logger& logger = Logger::Root()) {
 		return create_shape(settings, instance, express::Base(), geometry_library);
 	}
 %}
@@ -1209,6 +1208,95 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 %template(svg_loop) std::vector<std::array<double, 2>>;
 %template(svg_loops) std::vector<std::vector<std::array<double, 2>>>;
 
+%extend IfcGeom::OpaqueCoordinate {
+	%pythoncode %{
+		__len__ = size
+		def __iter__(self):
+			yield from (self.get(i) for i in range(len(self)))
+	%}
+}
+
+%extend IfcGeom::OpaqueNumber {
+	%pythoncode %{
+		__abs__ = abs
+	%}
+}
+
+%template(OpaqueCoordinate_3) IfcGeom::OpaqueCoordinate<3>;
+%template(OpaqueCoordinate_4) IfcGeom::OpaqueCoordinate<4>;
+
+%inline %{
+	IfcGeom::OpaqueNumber create_epeck(int i) {
+		return ifcopenshell::geometry::NumberEpeck(i);
+	}
+	IfcGeom::OpaqueNumber create_epeck(double d) {
+		return ifcopenshell::geometry::NumberEpeck(d);
+	}
+	IfcGeom::OpaqueNumber create_epeck(const std::string& s) {
+		return ifcopenshell::geometry::NumberEpeck(typename CGAL::Epeck::FT::ET(s));
+	}
+%}
+
+%inline %{
+	IfcGeom::ConversionResultShape* nary_union(PyObject* sequence) {
+		std::vector<const CGAL::Nef_polyhedron_3<CGAL::Epeck>*> nefs;
+		for(Py_ssize_t i = 0; i < PySequence_Size(sequence); ++i) {
+			PyObject* element = PySequence_GetItem(sequence, i);
+			void* argp1 = nullptr;
+			auto res1 = SWIG_ConvertPtr(element, &argp1, SWIGTYPE_p_IfcGeom__ConversionResultShape, 0);
+			if (SWIG_IsOK(res1)) {
+				auto arg1 = reinterpret_cast<IfcGeom::ConversionResultShape*>(argp1);
+				auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>(arg1);
+				if (cgs) {
+					nefs.push_back(&cgs->nef());
+				}
+			}
+		}
+		ifcopenshell::geometry::CgalShape* shp;
+		Py_BEGIN_ALLOW_THREADS;
+		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<CGAL::Epeck> > accum;
+		for (auto& n : nefs) {
+			accum.add_polyhedron(*n);
+		}
+		shp = new ifcopenshell::geometry::CgalShape(accum.get_union());
+		Py_END_ALLOW_THREADS;
+		return shp;
+	}
+%}
+
+%extend IfcGeom::ConversionResultShape {
+	std::string serialize_obj() {
+		std::ostringstream result;
+		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>($self);
+		if (cgs) {
+			write_to_obj(cgs->nef(), result, std::numeric_limits<size_t>::max());
+		}		
+		return result.str();
+	}
+
+	void convex_tag(bool b) {
+		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>($self);
+		if (cgs) {
+			cgs->convex_tag() = b;
+		}		
+	}
+
+	std::string serialize() {
+		std::string result;
+		ifcopenshell::geometry::taxonomy::matrix4 iden;
+		$self->Serialize(iden, result);
+		return result;
+	}
+
+	ConversionResultShape* solid_mt() {
+		IfcGeom::ConversionResultShape* r;
+		Py_BEGIN_ALLOW_THREADS;
+		r = $self->solid();
+		Py_END_ALLOW_THREADS;
+		return r;
+	}
+}
+
 %naturalvar svgfill::polygon_2::boundary;
 %naturalvar svgfill::polygon_2::inner_boundaries;
 %naturalvar svgfill::polygon_2::point_inside;
@@ -1243,9 +1331,9 @@ ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type
 		}	
 	}
 
-	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons) {
+	std::vector<svgfill::polygon_2> arrange_polygons(svgfill::arrange_polygon_settings settings, const std::vector<svgfill::polygon_2>& polygons, Logger& logger = Logger::Root()) {
 		std::vector<svgfill::polygon_2> r;
-		if (svgfill::arrange_polygons(settings, polygons, r)) {
+		if (svgfill::arrange_polygons(settings, polygons, r, logger)) {
 			return r;
 		} else {
 			throw std::runtime_error("Failed to arrange polygons");

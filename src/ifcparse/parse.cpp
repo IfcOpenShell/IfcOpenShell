@@ -601,20 +601,21 @@ void warn_attribute_count(
     const ifcopenshell::declaration* declaration,
     std::optional<size_t> instance_name,
     size_t expected_size,
-    size_t actual_size
+    size_t actual_size,
+    ::Logger& logger
 ) {
     if (!declaration || expected_size == actual_size) {
         return;
     }
     if (declaration->schema() == &Header_section_schema::get_schema()) {
-        logger::warning("Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + " for header entity " + declaration->name());
+        logger.Warning("VAL", 15, "Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + " for header entity " + declaration->name());
     } else {
-        logger::warning("Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + (instance_name ? std::string(" for instance #" + std::to_string(*instance_name)) : std::string("")));
+        logger.Warning("VAL", 16, "Expected " + std::to_string(expected_size) + " attribute values, found " + std::to_string(actual_size) + (instance_name ? std::string(" for instance #" + std::to_string(*instance_name)) : std::string("")));
     }
 }
 
 template <typename Fn>
-void dispatch_token_direct(ifcopenshell::token token, ifcopenshell::declaration* declaration, int attribute_index, Fn&& fn) {
+void dispatch_token_direct(ifcopenshell::token token, ifcopenshell::declaration* declaration, int attribute_index, Logger& logger, Fn&& fn) {
     if (token.is_binary()) {
         fn(token.as_binary());
     } else if (token.is_bool()) {
@@ -627,10 +628,10 @@ void dispatch_token_direct(ifcopenshell::token token, ifcopenshell::declaration*
             try {
                 fn(enumeration_reference(declaration->as_enumeration_type(), declaration->as_enumeration_type()->lookup_enum_offset(value)));
             } catch (ifcopenshell::exception&) {
-                logger::error("An enumeration literal '" + value + "' is not valid for type '" + declaration->name() + "' at offset " + std::to_string(token.start_pos));
+                logger.Error("VAL", 12, "An enumeration literal '" + value + "' is not valid for type '" + declaration->name() + "' at offset " + std::to_string(token.start_pos));
             }
         } else {
-            logger::error("An enumeration literal '" + value + "' is not expected at attribute index '" + std::to_string(attribute_index) + "' at offset " + std::to_string(token.start_pos));
+            logger.Error("VAL", 13, "An enumeration literal '" + value + "' is not expected at attribute index '" + std::to_string(attribute_index) + "' at offset " + std::to_string(token.start_pos));
         }
     } else if (token.is_int()) {
         fn(token.as_int());
@@ -663,6 +664,7 @@ struct direct_aggregate {
     direct_aggregate_storage storage;
     size_t pending_empty_aggregates = 0;
     size_t values = 0;
+    Logger& logger;
 
     template <typename T>
     void append(const T& value) {
@@ -679,7 +681,7 @@ struct direct_aggregate {
                 }
             }
             if (pending_empty_aggregates) {
-                logger::error("Inconsistent aggregate valuation while attempting to append " + std::string(typeid(T).name()) + " after an empty nested aggregate");
+                logger.Error("VAL", 14, "Inconsistent aggregate valuation while attempting to append " + std::string(typeid(T).name()) + " after an empty nested aggregate");
                 pending_empty_aggregates = 0;
             }
             if (storage.index() == 0) {
@@ -690,7 +692,7 @@ struct direct_aggregate {
                 append_promoted(value);
             }
         } else {
-            logger::error(std::string("Aggregates of ") + typeid(T).name() + " are not supported in the IfcOpenShell parser");
+            logger.Error("UNS", 31, std::string("Aggregates of ") + typeid(T).name() + " are not supported in the IfcOpenShell parser");
         }
     }
 
@@ -872,7 +874,8 @@ direct_aggregate read_direct_aggregate(
     std::optional<size_t> entity_instance_name,
     const ifcopenshell::entity* entity,
     int attribute_index,
-    const ifcopenshell::aggregation_type* aggregate_type
+    const ifcopenshell::aggregation_type* aggregate_type,
+    ::Logger& logger
 ) {
     direct_aggregate aggregate;
     token next = tokens->next();
@@ -900,7 +903,7 @@ direct_aggregate read_direct_aggregate(
                 storage.read_simple_type_instances.push_back(data);
                 aggregate.append(ifcopenshell::reference_or_simple_type{express::Base(data)});
             } catch (exception& e) {
-                logger::message(logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
+                logger.error("SYN", 123, std::string(e.what()) + " at offset " + std::to_string(next.start_pos));
             }
         } else {
             if (next.is_identifier() && entity && entity_instance_name) {

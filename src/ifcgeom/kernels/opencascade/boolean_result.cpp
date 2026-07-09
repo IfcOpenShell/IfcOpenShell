@@ -23,7 +23,7 @@ namespace {
 		for (;; ++it) {
 			if (it == opening_vector.end() || jt->first / it->first > 10.) {
  
-				TopTools_ListOfShape opening_list;
+				NCollection_List<TopoDS_Shape> opening_list;
 				for (auto kt = jt; kt < it; ++kt) {
 					opening_list.Append(kt->second);
 				}
@@ -90,7 +90,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 	const double tol = settings_.get<settings::Precision>().get();
 
 	TopoDS_Shape a;
-	TopTools_ListOfShape b;
+	NCollection_List<TopoDS_Shape> b;
 
 	taxonomy::style::ptr first_item_style;
 
@@ -118,14 +118,14 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			const double first_operand_volume = util::shape_volume(a);
 			if (first_operand_volume <= ALMOST_ZERO) {
-				logger::message(logger::LOG_WARNING, "Empty solid for:", c->instance);
+				Logger::Root().Message(Logger::LOG_WARNING, "GEO", 119, "Empty solid for:", c->instance);
 			}
 		} else {
 
 			for (auto& r : cr) {
 				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
 				if (S.IsNull()) {
-					logger::error("Null operand");
+					Logger::Root().Error("GEO", 120, "Null operand");
 					continue;
 				}
 				gp_GTrsf trsf;
@@ -140,7 +140,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 					// #2665 we also set a precision-independent threshold, because in the boolean op routine
 					// the working fuzziness might still be increased.
 					if (d < tol * 20. || d < 0.00002) {
-						logger::message(logger::LOG_WARNING, "Halfspace subtraction yields unchanged volume:", c->instance);
+						Logger::Root().Message(Logger::LOG_WARNING, "GEO", 121, "Halfspace subtraction yields unchanged volume:", c->instance);
 						continue;
 					} else {
 						S = result;

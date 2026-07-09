@@ -24,7 +24,7 @@ class JsonSerializer : public Serializer {
     Dialect dialect_;
 
   public:
-    JsonSerializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX)
+    JsonSerializer(ifcopenshell::file* file, const std::string& json_filename, Dialect dialect = Dialect::JSON_DIALECT_CREOOX, Logger& logger = Logger::Root())
         : json_filename(json_filename)
         , dialect_(dialect)
     {

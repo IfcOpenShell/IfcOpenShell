@@ -82,6 +82,7 @@ if TYPE_CHECKING:
         BIMPolylineProperties,
         BIMRailingProperties,
         BIMRoofProperties,
+        BIMSlabProperties,
         BIMStairProperties,
         BIMSverchokProperties,
         BIMWallProperties,
@@ -117,6 +118,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
         return obj.BIMRailingProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_slab_props(cls, obj: bpy.types.Object) -> BIMSlabProperties:
+        return obj.BIMSlabProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_pipe_segment_props(cls, obj: bpy.types.Object) -> BIMPipeSegmentProperties:
@@ -809,7 +814,7 @@ class Model(bonsai.core.tool.Model):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_params = tool.Model.get_material_layer_parameters(element)
         layer_offset = layer_params["offset"]
-        thickness = layer_params["thickness"] / unit_scale
+        thickness = layer_params["thickness"]
         props = tool.Material.get_object_material_props(obj)
 
         # Try to load from pset if not already in props
@@ -817,7 +822,7 @@ class Model(bonsai.core.tool.Model):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_MaterialLayer")
             if pset and pset.get("UseCustomOffset", False):
                 # Load from pset
-                custom_offset = pset.get("CustomOffset", 0.0)
+                custom_offset = pset.get("CustomOffset", 0.0) * unit_scale
                 usage_type = tool.Model.get_usage_type(element)
 
                 if usage_type == "LAYER2":
@@ -830,7 +835,7 @@ class Model(bonsai.core.tool.Model):
                 return None
         else:
             # Use current props
-            custom_offset = props.custom_offset / unit_scale
+            custom_offset = props.custom_offset
             if tool.Model.get_usage_type(element) == "LAYER2":
                 custom_offset_reference = props.custom_wall_reference
             elif tool.Model.get_usage_type(element) == "LAYER3":
@@ -841,17 +846,17 @@ class Model(bonsai.core.tool.Model):
         direction_sense = layer_params["direction_sense"]
 
         if direction_sense == "POSITIVE" and custom_offset_reference in {"INTERIOR", "TOP"}:
-            layer_offset = custom_offset - thickness * unit_scale
+            layer_offset = custom_offset - thickness
         if direction_sense == "POSITIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-            layer_offset = custom_offset - (thickness / 2) * unit_scale
+            layer_offset = custom_offset - (thickness / 2)
         if (direction_sense == "POSITIVE" and custom_offset_reference in {"EXTERIOR", "BOTTOM"}) or (
             direction_sense == "NEGATIVE" and custom_offset_reference in {"EXTERIOR", "TOP"}
         ):
             layer_offset = custom_offset
         if direction_sense == "NEGATIVE" and custom_offset_reference in {"CENTER", "MIDDLE"}:
-            layer_offset = custom_offset + (thickness / 2) * unit_scale
+            layer_offset = custom_offset + (thickness / 2)
         if direction_sense == "NEGATIVE" and custom_offset_reference in {"INTERIOR", "BOTTOM"}:
-            layer_offset = custom_offset + thickness * unit_scale
+            layer_offset = custom_offset + thickness
 
         return layer_offset / unit_scale
 
@@ -903,6 +908,46 @@ class Model(bonsai.core.tool.Model):
     def has_underside_connection(cls, element: ifcopenshell.entity_instance) -> bool:
         """Return True if element has an IfcRelConnectsElements(TOP) relationship."""
         return any(rel.is_a("IfcRelConnectsElements") and rel.Description == "TOP" for rel in element.ConnectedFrom)
+
+    @classmethod
+    def strip_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> bool:
+        """Remove slab-trim ``IfcBooleanResult`` items from a wall's body chain.
+
+        Returns ``True`` if any boolean was removed, so the caller knows whether
+        a Blender-side body reload is needed to surface the geometry change.
+
+        Hook for the duplicate path (Shift+D): the source wall's clip booleans
+        don't make sense on a copy pulled away from the slab. Booleans whose
+        ``SecondOperand.is_a("IfcTessellatedFaceSet")`` are removed — same
+        imprecise discriminator the rest of the wall-to-underside machinery
+        uses (manual cuts authored from tessellated meshes would also be
+        stripped, but most manual cuts use ``IfcExtrudedAreaSolid`` / CSG
+        primitives and are unaffected).
+
+        Cannot reuse ``remove_wall_to_underside_booleans`` here because the
+        duplicate's ``BBIM_Boolean.Data`` holds the source wall's stale ids —
+        ``get_manual_booleans`` returns empty on the copy and the helper
+        early-returns. The duplicate hook works directly off the chain.
+        """
+        representation = tool.Geometry.get_body_representation(wall)
+        if not representation:
+            return False
+        chain = cls.get_booleans(wall, representation)
+        to_remove = [b for b in chain if (sec := b.SecondOperand) is not None and sec.is_a("IfcTessellatedFaceSet")]
+        for b in to_remove:
+            tool.Geometry.remove_representation_item(b.SecondOperand, wall)
+        # Sweep the now-stale BBIM_Boolean entries on the copy (their ids point
+        # at booleans that were never in this wall's chain — they survived the
+        # ifcopenshell deep copy as JSON text in the pset payload).
+        pset_data = ifcopenshell.util.element.get_pset(wall, "BBIM_Boolean")
+        if pset_data:
+            representation = tool.Geometry.get_body_representation(wall)
+            chain_ids = {b.id() for b in cls.get_booleans(wall, representation)} if representation else set()
+            stored_ids = set(json.loads(pset_data["Data"]))
+            stale_ids = stored_ids - chain_ids
+            if stale_ids:
+                cls.unmark_manual_booleans(wall, list(stale_ids))
+        return bool(to_remove)
 
     @classmethod
     def remove_wall_to_underside_booleans(cls, wall: ifcopenshell.entity_instance) -> None:
@@ -1199,6 +1244,13 @@ class Model(bonsai.core.tool.Model):
         cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
     ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
+        with tool.Geometry.batch_host_recut():
+            cls._regenerate_array_body(parent_obj, data, array_layers_to_apply)
+
+    @classmethod
+    def _regenerate_array_body(
+        cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int]
+    ) -> None:
         parent_element = tool.Ifc.get_entity(parent_obj)
 
         if pset := ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array"):
@@ -1275,7 +1327,10 @@ class Model(bonsai.core.tool.Model):
             # handle elements unused in the array after regeneration
             removed_children = set(existing_children) - set(array["children"])
             for removed_child in removed_children:
-                element = tool.Ifc.get().by_guid(removed_child)
+                try:
+                    element = tool.Ifc.get().by_guid(removed_child)
+                except RuntimeError:
+                    continue
                 # Strip any wall/slab opening cut by this child before deletion,
                 # so the host's HasOpenings shrinks symmetrically with count.
                 if getattr(element, "FillsVoids", None):
@@ -1394,9 +1449,7 @@ class Model(bonsai.core.tool.Model):
             representation = tool.Geometry.get_representation_by_context(voided_element, context)
             if representation is None:
                 continue
-            bonsai.core.geometry.switch_representation(
-                tool.Ifc, tool.Geometry, obj=voided_obj, representation=representation
-            )
+            tool.Geometry.recut_host(voided_obj, representation)
 
     @classmethod
     def unshare_opening_representation(cls, filling: ifcopenshell.entity_instance) -> None:
@@ -2007,47 +2060,86 @@ class Model(bonsai.core.tool.Model):
         return (vertices, edges, faces)
 
     @classmethod
-    def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+    def regenerate_filling_opening_body(cls, filling: ifcopenshell.entity_instance) -> Optional[bpy.types.Object]:
+        """Regenerate only the mapped source used by ``filling``'s opening so
+        it matches ``filling``'s current parametric dimensions.
+
+        Returns the voided host Blender object so the caller can recut it,
+        or ``None`` if ``filling`` has no opening to refresh or the host is
+        an aggregate (no mesh data to recut against)."""
         from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
-        ifc_file = tool.Ifc.get()
-        fillings = {e: tool.Ifc.get_object(e) for e in tool.Array.get_parametric_propagation_targets(element)}
+        if not filling.FillsVoids:
+            return None
 
-        voided_objs = set()
-        has_replaced_opening_representation = False
+        ifc_file = tool.Ifc.get()
+        opening = filling.FillsVoids[0].RelatingOpeningElement
+        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+        if voided_obj is None or voided_obj.data is None:
+            return None
+
+        old_representation = tool.Geometry.get_body_representation(opening)
+        if old_representation is None:
+            return voided_obj
+        old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+
+        ifcopenshell.api.geometry.unassign_representation(ifc_file, product=opening, representation=old_representation)
+
+        filling_obj = tool.Ifc.get_object(filling)
+        new_representation = FilledOpeningGenerator().generate_opening_from_filling(
+            filling, filling_obj, voided_obj.dimensions[1]
+        )
+
+        for inverse in ifc_file.get_inverse(old_representation):
+            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+        ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
+
+        return voided_obj
+
+    @classmethod
+    def regenerate_simple_opening_bodies(cls, element: ifcopenshell.entity_instance) -> set:
+        """Regenerate every distinct mapped opening source within ``element``'s
+        type-occurrence family so each one matches the family's current
+        parametric dimensions.
+
+        Most occurrences share a single mapped source — refreshing it once
+        propagates to every filling via inverse-substitution. Some families,
+        especially those imported from foreign authoring tools, fragment into
+        several mapped sources for the same type; dedup is by source id so
+        every distinct source gets one refresh. Returns the set of Blender
+        objects whose host representation needs a viewport-level recut
+        (callers handle the recut themselves)."""
+        ifc_file = tool.Ifc.get()
+        fillings = list(tool.Array.get_parametric_propagation_targets(element))
+
+        voided_objs: set = set()
+        seen_source_ids: set[int] = set()
         for filling in fillings:
             if not filling.FillsVoids:
                 continue
 
             opening = filling.FillsVoids[0].RelatingOpeningElement
             voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
-            voided_objs.add(voided_obj)
+            if voided_obj is not None:
+                voided_objs.add(voided_obj)
 
-            # We assume all occurrences of the same element type (e.g. a window)
-            # will use openings of the same thickness.
-            # Generator we use by default will create a really thick opening representation
-            # to make sure it will fit for walls with different thickness.
-            if has_replaced_opening_representation:
+            body = tool.Geometry.get_body_representation(opening)
+            if body is None:
                 continue
+            source = tool.Geometry.resolve_mapped_representation(body)
+            if source.id() in seen_source_ids:
+                continue
+            seen_source_ids.add(source.id())
 
-            old_representation = ifcopenshell.util.representation.get_representation(
-                opening, "Model", "Body", "MODEL_VIEW"
-            )
-            old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
-            ifcopenshell.api.geometry.unassign_representation(
-                ifc_file, product=opening, representation=old_representation
-            )
+            cls.regenerate_filling_opening_body(filling)
 
-            new_representation = FilledOpeningGenerator().generate_opening_from_filling(
-                filling, fillings[filling], voided_obj.dimensions[1]
-            )
+        return voided_objs
 
-            for inverse in ifc_file.get_inverse(old_representation):
-                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-
-            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
-
-            has_replaced_opening_representation = True
+    @classmethod
+    def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+        voided_objs = cls.regenerate_simple_opening_bodies(element)
+        fillings = {e: tool.Ifc.get_object(e) for e in tool.Array.get_parametric_propagation_targets(element)}
 
         tool.Model.reload_body_representation(voided_objs)
         if fillings:
@@ -3010,6 +3102,9 @@ class Model(bonsai.core.tool.Model):
             regenerate_fillet_corner_wall(element, obj)
             return
         rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
+        if rep is None:
+            # Wall has no IfcMaterialLayerSet — layer-set rebuild not applicable.
+            return
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -3023,6 +3118,19 @@ class Model(bonsai.core.tool.Model):
         matrix[:, 3] *= unit_scale
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)
+
+    @classmethod
+    def regenerate_wall(cls, obj: bpy.types.Object) -> None:
+        """Rebuild a wall's body from current IFC state: extrusion + openings
+        first, then re-clip to any surviving ``IfcRelConnectsElements(TOP)``
+        slab. Safe on walls with no openings and no slab connection — both
+        steps no-op against their preconditions."""
+        element = tool.Ifc.get_entity(obj)
+        if element is None:
+            return
+        cls.recreate_wall(element, obj)
+        if cls.has_underside_connection(element):
+            bonsai.core.model.regenerate_wall_to_underside(tool.Ifc, tool.Geometry, cls, [obj])
 
     @classmethod
     def recalculate_walls(cls, walls: list[bpy.types.Object]) -> None:
@@ -3039,6 +3147,26 @@ class Model(bonsai.core.tool.Model):
                 obj = tool.Ifc.get_object(rel.RelatingElement)
                 tool.Geometry.commit_placement_if_moved(obj)
                 queue.add((rel.RelatingElement, obj))
+
+        # Sync filling and opening placements so subsequent wall recuts
+        # operate on the up-to-date opening positions — a filling moved
+        # along the wall's reference line otherwise stays cut at its old
+        # spot.
+        for element, wall in queue:
+            if not wall:
+                continue
+            for rel in getattr(element, "HasOpenings", []) or []:
+                opening = rel.RelatedOpeningElement
+                for fill_rel in getattr(opening, "HasFillings", []) or []:
+                    filling = fill_rel.RelatedBuildingElement
+                    filling_obj = tool.Ifc.get_object(filling)
+                    if filling_obj is None or not tool.Ifc.is_moved(filling_obj):
+                        continue
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
+                    ifcopenshell.api.geometry.edit_object_placement(
+                        tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
+                    )
+
         for element, wall in queue:
             if not wall:
                 continue

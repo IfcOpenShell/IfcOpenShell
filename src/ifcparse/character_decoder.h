@@ -28,6 +28,7 @@
 #define IFCCHARACTERDECODER_H
 
 #include "file_reader.h"
+#include "logger.h"
 
 #include <string>
 
@@ -43,6 +44,7 @@ template <typename Reader>
 class IFC_PARSE_API character_decoder {
   private:
     Reader* stream_;
+    Logger& logger_;
     int codepage_;
     std::u32string builder_;
 
@@ -55,7 +57,7 @@ class IFC_PARSE_API character_decoder {
     inline static ConversionMode mode = UTF8;
     inline static char substitution_character = '_';
 
-    character_decoder(Reader* stream);
+    character_decoder(Reader* stream, Logger& logger = Logger::Root());
     ~character_decoder();
     // Gets a decoded string representation at the token stream
     // read pointer and advances the underlying token stream.

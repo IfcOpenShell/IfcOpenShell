@@ -73,6 +73,83 @@ class TestCreateCamera(NewFile):
         assert obj.users_collection == tuple()
 
 
+class TestImportCameraProps(NewFile):
+    def test_imports_perspective_camera_shifts_from_drawing_pset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(
+            ifc,
+            pset=pset,
+            properties={"PerspectiveShiftX": 0.125, "PerspectiveShiftY": -0.375},
+        )
+        camera = bpy.data.cameras.new("Camera")
+        camera.type = "PERSP"
+
+        subject.import_camera_props(drawing, camera)
+
+        assert camera.shift_x == pytest.approx(0.125)
+        assert camera.shift_y == pytest.approx(-0.375)
+
+    def test_non_perspective_import_defaults_camera_shifts_to_zero(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(
+            ifc,
+            pset=pset,
+            properties={"PerspectiveShiftX": 0.125, "PerspectiveShiftY": -0.375},
+        )
+        camera = bpy.data.cameras.new("Camera")
+        camera.type = "ORTHO"
+        camera.shift_x = 1.0
+        camera.shift_y = -1.0
+
+        subject.import_camera_props(drawing, camera)
+
+        assert camera.shift_x == 0.0
+        assert camera.shift_y == 0.0
+
+
+class TestSyncPerspectiveCameraShifts(NewFile):
+    def test_round_trips_perspective_camera_shifts_through_drawing_pset(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        camera = bpy.data.cameras.new("Camera")
+        camera.type = "PERSP"
+        camera.shift_x = 0.25
+        camera.shift_y = -0.5
+
+        subject.sync_perspective_camera_shifts(drawing, camera)
+
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        assert pset["PerspectiveShiftX"] == pytest.approx(0.25)
+        assert pset["PerspectiveShiftY"] == pytest.approx(-0.5)
+
+        reloaded_camera = bpy.data.cameras.new("ReloadedCamera")
+        reloaded_camera.type = "PERSP"
+        subject.import_camera_props(drawing, reloaded_camera)
+
+        assert reloaded_camera.shift_x == pytest.approx(0.25)
+        assert reloaded_camera.shift_y == pytest.approx(-0.5)
+
+    def test_ignores_non_perspective_camera_shifts(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        camera = bpy.data.cameras.new("Camera")
+        camera.type = "ORTHO"
+        camera.shift_x = 0.25
+        camera.shift_y = -0.5
+
+        subject.sync_perspective_camera_shifts(drawing, camera)
+
+        assert ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing") is None
+
+
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -961,3 +1038,27 @@ class TestAddReferenceImage(NewFile):
 
         uv_node = material_nodes["Texture Coordinate"]
         assert len(uv_node.outputs["Generated"].links[:]) == 1
+
+
+class TestIsDrawingActive(NewFile):
+    def test_no_active_camera(self):
+        bpy.context.scene.camera = None
+        assert subject.is_drawing_active() is False
+
+    def test_active_camera_without_ifc_definition(self):
+        bpy.context.scene.camera = subject.create_camera("Camera", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
+        assert subject.is_drawing_active() is False
+
+    def test_ifc_linked_camera_in_background_mode(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        camera_obj = subject.create_camera("Camera", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
+        drawing = ifc.createIfcAnnotation(ObjectType="DRAWING")
+        tool.Ifc.link(drawing, camera_obj)
+        bpy.context.scene.camera = camera_obj
+
+        # The test suite itself runs Blender in background mode, where no
+        # VIEW_3D area can ever exist -- this is exactly the case the fix
+        # addresses, so this assertion documents that assumption.
+        assert bpy.app.background is True
+        assert subject.is_drawing_active() is True

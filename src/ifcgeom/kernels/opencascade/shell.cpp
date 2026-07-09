@@ -38,7 +38,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		? (faceset_helper_->epsilon() * faceset_helper_->epsilon() / 20.)
 		: minimal_face_area;
 
-	TopTools_ListOfShape face_list;
+	NCollection_List<TopoDS_Shape> face_list;
 	for (auto& face : l->children) {
 		bool success = false;
 		TopoDS_Face occ_face;
@@ -46,19 +46,19 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		try {
 			success = convert(face, occ_face);
 		} catch (const std::exception& e) {
-			logger::error(e);
+			logger_.Error("GEO", 194, e);
 		} catch (const Standard_Failure& e) {
 			if (e.GetMessageString() && strlen(e.GetMessageString())) {
-				logger::error(e.GetMessageString());
+				logger_.Error("GEO", 195, e.GetMessageString());
 			} else {
-				logger::error("Unknown error creating face");
+				logger_.Error("GEO", 196, "Unknown error creating face");
 			}
 		} catch (...) {
-			logger::error("Unknown error creating face");
+			logger_.Error("GEO", 197, "Unknown error creating face");
 		}
 
 		if (!success) {
-			logger::message(logger::LOG_WARNING, "Failed to convert face:", face->instance);
+			logger_.Message(Logger::LOG_WARNING, "GEO", 198, "Failed to convert face:", face->instance);
 			continue;
 		}
 
@@ -71,7 +71,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 					if (face_area(triangle) > min_face_area) {
 						face_list.Append(triangle);
 					} else {
-						logger::message(logger::LOG_WARNING, "Degenerate face:", face->instance);
+						logger_.Message(Logger::LOG_WARNING, "GEO", 199, "Degenerate face:", face->instance);
 					}
 				}
 			}
@@ -79,7 +79,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 			if (face_area(occ_face) > min_face_area) {
 				face_list.Append(occ_face);
 			} else {
-				logger::message(logger::LOG_WARNING, "Degenerate face:", face->instance);
+				logger_.Message(Logger::LOG_WARNING, "GEO", 200, "Degenerate face:", face->instance);
 			}
 		}
 	}
@@ -96,7 +96,7 @@ bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shap
 		BRep_Builder builder;
 		builder.MakeCompound(compound);
 
-		TopTools_ListIteratorOfListOfShape face_iterator;
+		NCollection_List<TopoDS_Shape>::Iterator face_iterator;
 		for (face_iterator.Initialize(face_list); face_iterator.More(); face_iterator.Next()) {
 			builder.Add(compound, face_iterator.Value());
 		}

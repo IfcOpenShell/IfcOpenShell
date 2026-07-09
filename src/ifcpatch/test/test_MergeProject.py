@@ -177,6 +177,28 @@ class TestMergeProjects(test.bootstrap.IFC4):
         assert np.any(np.all(np.isclose(np.array((17.847, 24.707, 3.0)), verts, atol=1e-3), axis=1))
         assert np.any(np.all(np.isclose(np.array((20.410, 25.902, 5.0)), verts, atol=1e-3), axis=1))
 
+    def test_merging_three_or_more_projects(self):
+        # Regression test for #7973: merging N>2 models must keep every
+        # project's elements and must not leave duplicated geometric contexts
+        # behind (which makes later disciplines appear "not merged" in viewers).
+        self.file = self.setup_project(self.file)
+        second_file = self.setup_project()
+        third_file = self.setup_project()
+        output = ifcpatch.execute(
+            {
+                "file": self.file,
+                "recipe": "MergeProjects",
+                "arguments": [[second_file, third_file]],
+            }
+        )
+        assert self.file == output
+        # Every model contributed exactly one wall.
+        assert len(output.by_type("IfcWall")) == 3
+        # A single merged project must remain.
+        assert len(output.by_type("IfcProject")) == 1
+        # Contexts must be reused, not accumulated: one Model + one Body.
+        assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
+
 
 class TestMergeProjectsIFC2X3(test.bootstrap.IFC2X3, TestMergeProjects):
     pass

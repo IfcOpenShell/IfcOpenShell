@@ -266,6 +266,17 @@ IFC_PARSE_API bool ifcopenshell::path::rename_file(const std::string& old_filena
     return success;
 }
 
+IFC_PARSE_API bool IfcUtil::path::atomic_rename_file(const std::string& old_filename, const std::string& new_filename) {
+    std::wstring old_filename_w = from_utf8(old_filename);
+    std::wstring new_filename_w = from_utf8(new_filename);
+    // MOVEFILE_REPLACE_EXISTING makes the replace atomic on NTFS (no unlink
+    // of the destination first). MOVEFILE_WRITE_THROUGH waits until the move
+    // is flushed to disk before returning.
+    const bool success = !!MoveFileExW(old_filename_w.c_str(), new_filename_w.c_str(),
+        MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH);
+    return success;
+}
+
 IFC_PARSE_API bool ifcopenshell::path::delete_file(const std::string& filename) {
     std::wstring filename_w = from_utf8(filename);
     const bool success = !!DeleteFileW(filename_w.c_str());
@@ -278,6 +289,12 @@ IFC_PARSE_API bool ifcopenshell::path::rename_file(const std::string& old_filena
     // Whether or not rename() replaces an existing file is implementation-specific,
     // so remove() possible existing file always.
     delete_file(new_filename);
+    return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
+}
+
+IFC_PARSE_API bool IfcUtil::path::atomic_rename_file(const std::string& old_filename, const std::string& new_filename) {
+    // POSIX rename() atomically replaces an existing destination on the same
+    // filesystem, so there is no window in which new_filename is missing.
     return std::rename(old_filename.c_str(), new_filename.c_str()) == 0;
 }
 

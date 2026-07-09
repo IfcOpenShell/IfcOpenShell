@@ -23,6 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.system
+import ifcopenshell.util.representation
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 import numpy as np
@@ -37,6 +38,132 @@ from test.bim.bootstrap import NewFile
 class TestImplementsTool(NewFile):
     def test_run(self):
         assert isinstance(subject(), bonsai.core.tool.System)
+
+
+class TestHasParametricBody(NewFile):
+    """The MEP-action gizmo predicates gate on ``has_parametric_body``;
+    fittings whose swept body lives on the type via ``IfcMappedItem`` must
+    return True so the pen-icon and lock-icon rows show on the occurrence."""
+
+    def _build_bend_occurrence_with_mapped_body(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        body_ctx = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+
+        placement = ifc_file.create_entity(
+            "IfcAxis2Placement3D",
+            Location=ifc_file.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+        )
+        line = ifc_file.create_entity(
+            "IfcLine",
+            Pnt=ifc_file.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+            Dir=ifc_file.create_entity(
+                "IfcVector",
+                Orientation=ifc_file.create_entity("IfcDirection", DirectionRatios=(1.0, 0.0, 0.0)),
+                Magnitude=1.0,
+            ),
+        )
+        trimmed = ifc_file.create_entity(
+            "IfcTrimmedCurve",
+            BasisCurve=line,
+            Trim1=(ifc_file.create_entity("IfcParameterValue", wrappedValue=0.0),),
+            Trim2=(ifc_file.create_entity("IfcParameterValue", wrappedValue=1.0),),
+            SenseAgreement=True,
+            MasterRepresentation="PARAMETER",
+        )
+        swept = ifc_file.create_entity("IfcSweptDiskSolid", Directrix=trimmed, Radius=0.05)
+        type_body = ifc_file.create_entity(
+            "IfcShapeRepresentation",
+            ContextOfItems=body_ctx,
+            RepresentationIdentifier="Body",
+            RepresentationType="AdvancedSweptSolid",
+            Items=(swept,),
+        )
+        rep_map = ifc_file.create_entity(
+            "IfcRepresentationMap", MappingOrigin=placement, MappedRepresentation=type_body
+        )
+        fitting_type = ifc_file.create_entity(
+            "IfcPipeFittingType",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="BendType",
+            PredefinedType="BEND",
+            RepresentationMaps=(rep_map,),
+        )
+        mapped_item = ifc_file.create_entity(
+            "IfcMappedItem",
+            MappingSource=rep_map,
+            MappingTarget=ifc_file.create_entity(
+                "IfcCartesianTransformationOperator3D",
+                LocalOrigin=ifc_file.create_entity("IfcCartesianPoint", Coordinates=(0.0, 0.0, 0.0)),
+            ),
+        )
+        occurrence_body = ifc_file.create_entity(
+            "IfcShapeRepresentation",
+            ContextOfItems=body_ctx,
+            RepresentationIdentifier="Body",
+            RepresentationType="MappedRepresentation",
+            Items=(mapped_item,),
+        )
+        fitting = ifc_file.create_entity(
+            "IfcPipeFitting",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="Bend",
+            PredefinedType="BEND",
+            Representation=ifc_file.create_entity("IfcProductDefinitionShape", Representations=(occurrence_body,)),
+        )
+        ifc_file.create_entity(
+            "IfcRelDefinesByType",
+            GlobalId=ifcopenshell.guid.new(),
+            RelatedObjects=(fitting,),
+            RelatingType=fitting_type,
+        )
+        return fitting
+
+    def test_returns_true_for_swept_disk_via_mapped_item(self):
+        """``traverse()`` follows the
+        ``IfcMappedItem.MappingSource.MappedRepresentation`` chain so the
+        ``IfcSweptDiskSolid`` on the type's body is reachable from the
+        occurrence's body representation. Bend fittings produced by the
+        bend-preview commit path use this exact representation shape."""
+        fitting = self._build_bend_occurrence_with_mapped_body()
+        assert subject.has_parametric_body(fitting) is True
+
+    def test_returns_false_for_tessellated_body(self):
+        """The bend creation path replaces the swept-disk body with an
+        ``IfcTriangulatedFaceSet`` as an upstream geometry-kernel
+        workaround. The traverse finds no extruded / swept solid, so the
+        predicate returns False — pinning the constraint that drives the
+        ``BBIM_Fitting`` pset fallback in the bend-icon visibility
+        predicate."""
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        body_ctx = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+
+        coords = ifc_file.create_entity(
+            "IfcCartesianPointList3D",
+            CoordList=((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)),
+        )
+        tessellation = ifc_file.create_entity(
+            "IfcTriangulatedFaceSet",
+            Coordinates=coords,
+            CoordIndex=((1, 2, 3),),
+        )
+        body = ifc_file.create_entity(
+            "IfcShapeRepresentation",
+            ContextOfItems=body_ctx,
+            RepresentationIdentifier="Body",
+            RepresentationType="Tessellation",
+            Items=(tessellation,),
+        )
+        fitting = ifc_file.create_entity(
+            "IfcPipeFitting",
+            GlobalId=ifcopenshell.guid.new(),
+            Name="TessellatedBend",
+            PredefinedType="BEND",
+            Representation=ifc_file.create_entity("IfcProductDefinitionShape", Representations=(body,)),
+        )
+
+        assert subject.has_parametric_body(fitting) is False
 
 
 class TestAddPorts(NewFile):

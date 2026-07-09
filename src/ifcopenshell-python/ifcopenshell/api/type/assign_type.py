@@ -24,6 +24,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.type
 import ifcopenshell.guid
 import ifcopenshell.util.element
+import ifcopenshell.util.type
 
 
 def assign_type(
@@ -188,6 +189,32 @@ class Usecase:
     ):
         if not related_objects:
             return
+
+        # The EXPRESS schema has no WHERE rule pairing RelatingType /
+        # RelatedObjects classes; the canonical class pairing per schema
+        # is a buildingSMART implementer agreement, enforced here.
+        allowed_occurrences = set(
+            ifcopenshell.util.type.get_applicable_entities(relating_type.is_a(), schema=self.file.schema)
+        )
+        # The implementer agreement map has no entry for the abstract
+        # IfcTypeProduct, which Bonsai uses for annotation types. The schema
+        # itself defines IfcTypeProduct.ApplicableOccurrence for exactly this
+        # purpose, so honor it when the leading class token is a valid entity.
+        if applicable_occurrence := getattr(relating_type, "ApplicableOccurrence", None):
+            occurrence_class = applicable_occurrence.split("/", 1)[0]
+            schema = ifcopenshell.schema_by_name(self.file.schema)
+            try:
+                schema.declaration_by_name(occurrence_class)
+                allowed_occurrences.add(occurrence_class)
+            except RuntimeError:
+                pass
+        mismatched_classes = sorted({o.is_a() for o in related_objects if o.is_a() not in allowed_occurrences})
+        if mismatched_classes:
+            raise TypeError(
+                f"{relating_type.is_a()} cannot type {', '.join(mismatched_classes)} "
+                f"in schema {self.file.schema} (allowed occurrence classes: "
+                f"{', '.join(sorted(allowed_occurrences)) or '<none>'})"
+            )
 
         ifc2x3 = self.file.schema == "IFC2X3"
         related_objects_set = set(related_objects)

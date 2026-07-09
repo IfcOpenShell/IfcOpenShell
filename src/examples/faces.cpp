@@ -23,9 +23,16 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/schemas/Ifc2x3.h"
-#include "../ifcparse/IfcUtil.h"
-#include "../ifcparse/hierarchy_helper.h"
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
+#define IfcSchema Ifc2x3
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
+#include "ifcparse/IfcHierarchyHelper.h"
 
 typedef std::string S;
 typedef ifcopenshell::global_id guid;

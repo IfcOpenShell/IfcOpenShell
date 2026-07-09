@@ -128,14 +128,14 @@ def test_port_connection_state_cached_across_frames_within_generation(_patched_v
     element = Mock()
     element.is_a = lambda c: c == "IfcFlowSegment"
 
-    call_counts = {"port_connection_state": 0, "find_fitting_between_segments": 0, "compute_mep_join_location": 0}
+    call_counts = {"port_connection_state": 0, "find_bridging_fitting": 0, "compute_mep_join_location": 0}
 
     def counting_port_state(elem, at_start):
         call_counts["port_connection_state"] += 1
         return "FREE"
 
     def counting_find_fitting(a, b):
-        call_counts["find_fitting_between_segments"] += 1
+        call_counts["find_bridging_fitting"] += 1
         return None
 
     def counting_join_location():
@@ -151,7 +151,7 @@ def test_port_connection_state_cached_across_frames_within_generation(_patched_v
             return_value=(Vector((0, 0, 0)), Vector((1, 0, 0))),
         ),
         patch("bonsai.bim.module.model.mep.port_connection_state", side_effect=counting_port_state),
-        patch("bonsai.bim.module.model.mep.find_fitting_between_segments", side_effect=counting_find_fitting),
+        patch("bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting),
         patch("bonsai.bim.module.model.decorator.compute_mep_join_location", side_effect=counting_join_location),
         patch("bonsai.bim.module.model.mep.gizmo.get_billboard_rotation", return_value=Mock()),
         patch("bonsai.bim.module.model.mep.gizmo.billboarded_at", return_value=Mock()),
@@ -164,7 +164,7 @@ def test_port_connection_state_cached_across_frames_within_generation(_patched_v
 
     # Second frame must reuse the cached values — no second IFC walk.
     assert call_counts["port_connection_state"] == first["port_connection_state"]
-    assert call_counts["find_fitting_between_segments"] == first["find_fitting_between_segments"]
+    assert call_counts["find_bridging_fitting"] == first["find_bridging_fitting"]
     assert call_counts["compute_mep_join_location"] == first["compute_mep_join_location"]
 
 
@@ -203,7 +203,7 @@ def test_generation_advance_invalidates_cache(_patched_visibility):
     ), patch(
         "bonsai.bim.module.model.mep.port_connection_state", side_effect=counting_port_state
     ), patch(
-        "bonsai.bim.module.model.mep.find_fitting_between_segments", side_effect=counting_find_fitting
+        "bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting
     ), patch(
         "bonsai.bim.module.model.decorator.compute_mep_join_location", return_value=Vector((0, 0, 0))
     ), patch(
@@ -218,9 +218,7 @@ def test_generation_advance_invalidates_cache(_patched_visibility):
         inst.position_gizmos(context)
 
     assert port_call_count["n"] > first_port, "port_connection_state must recompute after generation advance"
-    assert (
-        fitting_call_count["n"] > first_fitting
-    ), "find_fitting_between_segments must recompute after generation advance"
+    assert fitting_call_count["n"] > first_fitting, "find_bridging_fitting must recompute after generation advance"
 
 
 def test_selection_change_invalidates_cache(_patched_visibility):
@@ -252,7 +250,7 @@ def test_selection_change_invalidates_cache(_patched_visibility):
     ), patch(
         "bonsai.bim.module.model.mep.port_connection_state", return_value="FREE"
     ), patch(
-        "bonsai.bim.module.model.mep.find_fitting_between_segments", side_effect=counting_find_fitting
+        "bonsai.bim.module.model.mep.tool.System.find_bridging_fitting", side_effect=counting_find_fitting
     ), patch(
         "bonsai.bim.module.model.decorator.compute_mep_join_location", return_value=Vector((0, 0, 0))
     ), patch(
@@ -265,4 +263,4 @@ def test_selection_change_invalidates_cache(_patched_visibility):
         selection_state["selected"] = [active, other_b]
         inst.position_gizmos(context)
 
-    assert fitting_call_count["n"] > first, "find_fitting_between_segments must recompute after selection change"
+    assert fitting_call_count["n"] > first, "find_bridging_fitting must recompute after selection change"

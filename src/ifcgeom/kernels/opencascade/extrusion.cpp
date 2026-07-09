@@ -10,7 +10,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 	const double& height = extrusion->depth;
 
 	if (height < settings_.get<settings::Precision>().get()) {
-		logger::error("Non-positive extrusion height encountered for:", extrusion->instance);
+		Logger::Root().Error("GEO", 89, "Non-positive extrusion height encountered for:", extrusion->instance);
 		return false;
 	}
 

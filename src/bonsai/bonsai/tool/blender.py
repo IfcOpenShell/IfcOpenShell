@@ -30,7 +30,15 @@ import sys
 import tempfile
 import traceback
 import types
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence, Sized
+from collections.abc import (
+    Callable,
+    Generator,
+    Iterable,
+    Iterator,
+    Mapping,
+    Sequence,
+    Sized,
+)
 from datetime import datetime
 from functools import cache, lru_cache
 from pathlib import Path
@@ -47,9 +55,11 @@ from typing import (
 
 import bmesh
 import bpy
+import gpu
 import ifcopenshell.util.element
 import numpy as np
 import numpy.typing as npt
+from gpu_extras.batch import batch_for_shader
 from ifcopenshell import entity_instance
 from mathutils import Matrix, Vector
 
@@ -528,6 +538,19 @@ class Blender(bonsai.core.tool.Blender):
             cls.handlers.clear()
             cls.is_installed = False
 
+        def draw_batch(self, shader_type, content_pos, color, indices=None):
+            """Submit a GPU batch through ``self.line_shader`` (for ``"LINES"``)
+            or ``self.shader`` (for any other primitive). Skips empty batches
+            via ``validate_shader_batch_data`` so Blender 4.4+ doesn't crash on
+            empty ``indices``. Subclasses bind both shaders in their draw method
+            before calling this helper."""
+            if not Blender.validate_shader_batch_data(content_pos, indices):
+                return
+            shader = self.line_shader if shader_type == "LINES" else self.shader
+            batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+            shader.uniform_float("color", color)
+            batch.draw(shader)
+
         @staticmethod
         def _lookup_active_instance(gizmo_cls: type, context: bpy.types.Context) -> Optional[Any]:
             """Return the live ``GizmoGroup`` instance registered under
@@ -574,6 +597,120 @@ class Blender(bonsai.core.tool.Blender):
                     decorator_cls.install(context)
                 else:
                     decorator_cls.uninstall()
+
+    # Bonsai overrides Blender's default move/duplicate keymaps with macros
+    # that wrap TRANSFORM_OT_translate. While a macro is the outer modal
+    # entry, the inner TRANSFORM_OT_translate does not surface in
+    # window.modal_operators — the macro's own idname does. The ``BIM_OT_``
+    # prefix is what Blender returns from ``bl_idname`` at runtime (the
+    # class declaration uses the dotted ``bim.`` form).
+    BONSAI_TRANSFORM_MACROS: frozenset[str] = frozenset(
+        {
+            "BIM_OT_override_move_macro",  # G key
+            "BIM_OT_override_object_duplicate_move_macro",  # Shift+D
+            "BIM_OT_override_object_duplicate_move_linked_macro",  # Alt+D
+            "BIM_OT_object_duplicate_move_linked_aggregate_macro",  # Ctrl+Shift+D
+        }
+    )
+
+    @classmethod
+    def is_transform_modal_active(cls, context: bpy.types.Context) -> bool:
+        """True iff a Blender transform modal (G/R/S and siblings, including
+        Bonsai's macro overrides) is currently driving per-frame
+        ``matrix_world`` updates. Reads ``window.modal_operators`` — the
+        Blender 4.2+ collection of running modal operators. Callers gate
+        per-frame side effects (gizmo positioning, IFC persistence, etc.)
+        on this so they don't fire during the drag.
+
+        Falls back to scanning every window in the window manager when
+        ``context.window`` is ``None`` — depsgraph callbacks run with a
+        limited context where ``context.window`` is typically missing,
+        but the modal is still active on one of the WM's windows.
+        """
+        window = getattr(context, "window", None)
+        if window is not None and getattr(window, "modal_operators", None):
+            windows = [window]
+        else:
+            wm = getattr(context, "window_manager", None) or bpy.context.window_manager
+            if wm is None:
+                return False
+            windows = list(wm.windows)
+        for w in windows:
+            modal_ops = getattr(w, "modal_operators", None)
+            if not modal_ops:
+                continue
+            for op in modal_ops:
+                idname = op.bl_idname
+                if idname.startswith("TRANSFORM_OT_") or idname in cls.BONSAI_TRANSFORM_MACROS:
+                    return True
+        return False
+
+    @classmethod
+    def is_in_edit_mode(cls, context: Optional[bpy.types.Context] = None) -> bool:
+        """True iff the active object is in any edit-style mode.
+
+        Catches every ``EDIT_*`` variant (mesh, curve, armature,
+        metaball, lattice, surface, text, grease pencil). Defaults to
+        ``OBJECT`` when the mode attribute is missing so background-mode
+        callers (no UI context) don't false-positive.
+        """
+        ctx = context if context is not None else bpy.context
+        mode = getattr(ctx, "mode", "OBJECT")
+        return mode.startswith("EDIT_")
+
+    @classmethod
+    def iter_view3d_regions(cls) -> Iterator[tuple[bpy.types.Area, bpy.types.Region, bpy.types.RegionView3D]]:
+        """Yield ``(area, region, region_3d)`` for every WINDOW region in every 3D viewport.
+
+        Useful for features that need to act on every visible 3D viewport
+        (clip planes, draw handlers, region redraw fanout). Empty
+        generator when ``bpy.context.screen`` is unavailable (shutdown,
+        background mode without a screen).
+        """
+        screen = getattr(getattr(bpy, "context", None), "screen", None)
+        if screen is None:
+            return
+        for area in screen.areas:
+            if area.type != "VIEW_3D":
+                continue
+            for region in area.regions:
+                if region.type != "WINDOW":
+                    continue
+                region_3d = getattr(region, "data", None)
+                if region_3d is None:
+                    continue
+                yield area, region, region_3d
+
+    @classmethod
+    def get_or_create_collection(cls, scene: bpy.types.Scene, name: str) -> bpy.types.Collection:
+        """Return the named collection, creating + linking it to ``scene`` if absent."""
+        collection = bpy.data.collections.get(name)
+        if collection is None:
+            collection = bpy.data.collections.new(name)
+            scene.collection.children.link(collection)
+        return collection
+
+    @classmethod
+    def serialize_matrix(cls, matrix: Matrix) -> str:
+        """Serialize a 4x4 matrix as a 16-float comma-separated string.
+
+        Round-trip pair with :meth:`deserialize_matrix`. Used for storing
+        a matrix in an IFC pset string property without losing precision
+        (``%.9g`` carries ~9 significant digits, enough for ``float32``
+        round-trip).
+        """
+        return ",".join(f"{matrix[r][c]:.9g}" for r in range(4) for c in range(4))
+
+    @classmethod
+    def deserialize_matrix(cls, text: str) -> Matrix:
+        """Inverse of :meth:`serialize_matrix`."""
+        floats = [float(v) for v in text.split(",")]
+        return Matrix([tuple(floats[r * 4 : r * 4 + 4]) for r in range(4)])
+
+    @classmethod
+    def hash_matrix(cls, matrix: Matrix) -> int:
+        """Hash a 4x4 matrix by its 16 floats. Useful as a cache key."""
+        return hash(tuple(matrix[r][c] for r in range(4) for c in range(4)))
 
     @classmethod
     def is_view_top_down(cls, context: bpy.types.Context, threshold: float = 0.9659) -> bool:
@@ -1274,7 +1411,10 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_object_from_guid(cls, guid: str) -> Union[bpy.types.Object, None]:
-        element = tool.Ifc.get().by_guid(guid)
+        try:
+            element = tool.Ifc.get().by_guid(guid)
+        except RuntimeError:
+            return None
         obj = tool.Ifc.get_object(element)
         if obj:
             return obj
@@ -1397,6 +1537,10 @@ class Blender(bonsai.core.tool.Blender):
                 bpy.ops.bim.enable_editing_railing_path()
             elif feature := tool.Parametric.is_object_editing(obj):
                 tool.Parametric.run_bim_op(feature.finish_op)
+            elif tool.Parametric.is_wall(element):
+                # Placed after the generic finish dispatch so the TAB toggle splits:
+                # wall already editing → finish above; wall not editing → enter here.
+                bpy.ops.bim.enable_editing_wall()
             else:
                 return False
             return True
@@ -2259,6 +2403,149 @@ class Blender(bonsai.core.tool.Blender):
         if len(pos) == 0 or (indices is not None and len(indices) == 0):
             return False
         return True
+
+    @staticmethod
+    def transparent_color(color: Iterable[float], alpha: float = 0.1) -> list[float]:
+        """Copy an RGBA color with its alpha channel overridden."""
+        out = [c for c in color]
+        out[3] = alpha
+        return out
+
+    @classmethod
+    def draw_bmesh_face_tris(
+        cls,
+        bm: bmesh.types.BMesh,
+        world_vert_coords: list,
+        color: Any,
+        draw_batch: Callable[[str, list, Any, list], None],
+    ) -> None:
+        """Submit a non-mutating beauty-triangulated TRIS batch for ``bm``'s faces.
+
+        ``world_vert_coords`` must be indexed by ``bm.verts`` index. Never call
+        ``bmesh.ops.triangulate`` on a live bmesh to compute draw indices — it
+        mutates the input and produces ear-clip fans that render as visible
+        streaks at low alpha.
+        """
+        tris = [[loop.vert.index for loop in tri] for tri in bm.calc_loop_triangles()]
+        draw_batch("TRIS", world_vert_coords, color, tris)
+
+    @classmethod
+    def draw_quads(
+        cls,
+        context: bpy.types.Context,
+        quads: Sequence[
+            tuple[
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+                tuple[float, float, float],
+            ]
+        ],
+        *,
+        fill_color: Optional[tuple[float, float, float, float]] = None,
+        outline_color: Optional[tuple[float, float, float, float]] = None,
+        outline_width: float = 1.0,
+    ) -> None:
+        """Render ``quads`` (each a 4-tuple of CCW world-space corners) as
+        a filled TRIS batch, an outline LINES batch, or both.
+
+        Both colors are RGBA 4-tuples. Pass ``fill_color=None`` to skip
+        the fill pass and ``outline_color=None`` to skip the outline.
+        Skipping both is a no-op.
+
+        Replaces the per-decorator quad-fill helpers that used to live
+        inline in each feature module.
+        """
+        if not quads or (fill_color is None and outline_color is None):
+            return
+        region = getattr(context, "region", None)
+        if region is None:
+            return
+
+        verts: list[tuple[float, float, float]] = []
+        tri_indices: list[tuple[int, int, int]] = []
+        line_indices: list[tuple[int, int]] = []
+        for quad in quads:
+            if len(quad) != 4:
+                continue
+            base = len(verts)
+            verts.extend(tuple(v) for v in quad)
+            if fill_color is not None:
+                tri_indices.append((base, base + 1, base + 2))
+                tri_indices.append((base, base + 2, base + 3))
+            if outline_color is not None:
+                line_indices.append((base, base + 1))
+                line_indices.append((base + 1, base + 2))
+                line_indices.append((base + 2, base + 3))
+                line_indices.append((base + 3, base))
+
+        if not cls.validate_shader_batch_data(verts, None):
+            return
+
+        gpu.state.blend_set("ALPHA")
+        try:
+            if fill_color is not None and tri_indices:
+                shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                shader.bind()
+                shader.uniform_float("color", fill_color)
+                batch = batch_for_shader(shader, "TRIS", {"pos": verts}, indices=tri_indices)
+                batch.draw(shader)
+            if outline_color is not None and line_indices:
+                shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+                shader.bind()
+                shader.uniform_float("color", outline_color)
+                # Outline width: the UNIFORM_COLOR shader respects the
+                # GPU's current line-width state; restore on exit.
+                prev_width = gpu.state.line_width_get()
+                gpu.state.line_width_set(outline_width)
+                try:
+                    batch = batch_for_shader(shader, "LINES", {"pos": verts}, indices=line_indices)
+                    batch.draw(shader)
+                finally:
+                    gpu.state.line_width_set(prev_width)
+        finally:
+            gpu.state.blend_set("NONE")
+
+    @classmethod
+    def build_dashed_line_segments(
+        cls,
+        world_verts: Sequence[Sequence[float]],
+        edges_indices: Sequence[Sequence[int]],
+        dash_period: float,
+        dash_width: float,
+    ) -> tuple[list[tuple[float, float, float]], list[tuple[int, int]]]:
+        """Pre-segment edges into world-space dash chunks for a vanilla LINES batch.
+
+        Each input edge is sliced into segments of length ``dash_width`` spaced
+        ``dash_period`` apart (dash phase resets per-edge). The result is a fresh
+        ``(verts, edges)`` pair that draws as dashes through any standard line
+        shader — letting both passes of a visible/occluded outline reuse the
+        same shader so depth values match exactly across passes.
+        """
+        new_verts: list[tuple[float, float, float]] = []
+        new_edges: list[tuple[int, int]] = []
+        if dash_period <= 0 or dash_width <= 0:
+            return new_verts, new_edges
+        n = len(world_verts)
+        for i, j in edges_indices:
+            if not (0 <= i < n and 0 <= j < n) or i == j:
+                continue
+            v0 = world_verts[i]
+            v1 = world_verts[j]
+            dx, dy, dz = v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]
+            edge_length = math.sqrt(dx * dx + dy * dy + dz * dz)
+            if edge_length == 0.0:
+                continue
+            ux, uy, uz = dx / edge_length, dy / edge_length, dz / edge_length
+            t = 0.0
+            while t < edge_length:
+                t_end = min(t + dash_width, edge_length)
+                idx = len(new_verts)
+                new_verts.append((v0[0] + ux * t, v0[1] + uy * t, v0[2] + uz * t))
+                new_verts.append((v0[0] + ux * t_end, v0[1] + uy * t_end, v0[2] + uz * t_end))
+                new_edges.append((idx, idx + 1))
+                t += dash_period
+        return new_verts, new_edges
 
     @classmethod
     def draw_bmesh_face_tris(

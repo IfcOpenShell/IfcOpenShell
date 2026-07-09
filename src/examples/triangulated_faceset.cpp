@@ -23,8 +23,20 @@
  *                                                                              *
  ********************************************************************************/
 
-#include "../ifcparse/schemas/Ifc4.h"
-#include "../ifcparse/hierarchy_helper.h"
+#include <iostream>
+#include <fstream>
+#include <optional>
+
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
+#define IfcSchema Ifc4
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
+#include "ifcparse/IfcHierarchyHelper.h"
 
 #include "suzanne_geometry.h"
 
@@ -62,8 +74,12 @@ int main(int argc, char** argv) {
 	std::vector< std::vector< double > > vertices_vector = create_vector_from_array(vertices, sizeof(vertices) / sizeof(vertices[0]));
 	std::vector< std::vector< int > > indices_vector = create_vector_from_array(indices, sizeof(indices) / sizeof(indices[0]));
 
-	Ifc4::IfcCartesianPointList3D coordinates = file.create<Ifc4::IfcCartesianPointList3D>().initialize(vertices_vector);	
-	Ifc4::IfcTriangulatedFaceSet faceset = file.create<Ifc4::IfcTriangulatedFaceSet>().initialize(coordinates, std::nullopt, std::nullopt, indices_vector, std::nullopt);
+	IfcSchema::IfcCartesianPointList3D* coordinates = new IfcSchema::IfcCartesianPointList3D(vertices_vector
+#ifdef SCHEMA_IfcCartesianPointList3D_HAS_TagList
+		, boost::none
+#endif
+	);
+	IfcSchema::IfcTriangulatedFaceSet* faceset = new IfcSchema::IfcTriangulatedFaceSet(coordinates, null, null, indices_vector, null);
 		
 	Ifc4::IfcShapeRepresentation rep = file.create<Ifc4::IfcShapeRepresentation>().initialize(
         file.getRepresentationContext("Model"), "Body", "SurfaceModel", {faceset});

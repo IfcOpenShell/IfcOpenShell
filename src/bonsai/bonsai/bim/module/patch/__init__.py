@@ -21,6 +21,7 @@ import bpy
 from . import operator, prop, ui
 
 classes = (
+    operator.AddIfcPatchPreset,
     operator.ExecuteIfcPatch,
     operator.ExtractSelectedElements,
     operator.RunMigratePatch,
@@ -28,6 +29,7 @@ classes = (
     operator.SelectIfcPatchOutput,
     operator.UpdateIfcPatchArguments,
     prop.BIMPatchProperties,
+    ui.BIM_MT_ifc_patch_presets,
     ui.BIM_PT_patch,
 )
 

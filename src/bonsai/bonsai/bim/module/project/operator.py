@@ -281,9 +281,9 @@ class RefreshLibrary(bpy.types.Operator):
         elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
         self.props.add_library_project_library("Unassigned", len(elements), 0, False)
 
-        ifc_project = library_file.by_type("IfcProject")[0]
+        root_context = tool.Project.get_root_context(library_file)
         hierarchy = tool.Project.get_project_hierarchy(library_file)
-        tool.Project.load_project_libraries_to_ui(ifc_project, hierarchy)
+        tool.Project.load_project_libraries_to_ui(root_context, hierarchy)
         return {"FINISHED"}
 
 
@@ -763,7 +763,10 @@ class EditProjectLibrary(bpy.types.Operator):
         previous_parent_library = tool.Project.get_parent_library(project_library)
         new_parent_library = library_file.by_id(int(props.parent_library))
         if previous_parent_library != new_parent_library:
-            if previous_parent_library.is_a("IfcProject"):
+            if previous_parent_library is None:
+                # Edited library was a root in a library-only file; nest it under the new parent.
+                ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
+            elif previous_parent_library.is_a("IfcProject"):
                 # Then new one is IfcProjectLibrary.
                 ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
             else:  # Previous is IfcProjectLibrary.
@@ -804,9 +807,12 @@ class AddProjectLibrary(bpy.types.Operator):
         props = tool.Project.get_project_props()
         library_file = IfcStore.library_file
         assert library_file
-        project = library_file.by_type("IfcProject")[0]
+        root_context = tool.Project.get_root_context(library_file)
         project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
-        ifcopenshell.api.project.assign_declaration(library_file, [project_library], project)
+        if root_context.is_a("IfcProject"):
+            ifcopenshell.api.project.assign_declaration(library_file, [project_library], root_context)
+        else:
+            ifcopenshell.api.nest.assign_object(library_file, [project_library], root_context)
         ProjectLibraryData.load()  # Update enum.
         props.selected_project_library = str(project_library.id())
         props.is_editing_project_library = True
@@ -1113,6 +1119,14 @@ class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
                     f"Error loading IFC file from filepath '{filepath}'. See logs above in the system console for the details.",
                 )
                 return {"CANCELLED"}
+            if not tool.Ifc.get().by_type("IfcProject"):
+                self.report(
+                    {"ERROR"},
+                    "This file contains no IfcProject. It is likely an IFC project library — "
+                    "load it via Project Setup → Project Library → Select Library File instead.",
+                )
+                IfcStore.purge()
+                return {"CANCELLED"}
             props = tool.Project.get_project_props()
             props.is_loading = True
             props.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
@@ -1234,6 +1248,17 @@ class LoadProjectElements(bpy.types.Operator):
                 {"WARNING"},
                 f"{len(ifc_importer.gross_elements)} element(s) had too many openings and were loaded without cuts. "
                 f"Apply manually from the Project panel.",
+            )
+
+        props.pending_array_repair.clear()
+        if ifc_importer.broken_arrays:
+            for element in ifc_importer.broken_arrays:
+                item = props.pending_array_repair.add()
+                item.ifc_definition_id = element.id()
+            self.report(
+                {"WARNING"},
+                f"{len(ifc_importer.broken_arrays)} array parent(s) reference missing child GUIDs. "
+                f"Inspect from the Project panel.",
             )
 
         tool.Project.load_default_thumbnails()
@@ -1397,6 +1422,7 @@ class LinkIfc(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
                 new.ifc_definition_id = reference.id()
             new.name = filepath
             new.filepath = filepath
+            new.query = self.query
             bpy.ops.bim.load_link(link_index=-1, use_cache=self.use_cache, query=self.query)
 
 
@@ -1467,6 +1493,10 @@ class LoadLink(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.link = tool.Project.get_project_props().links[self.link_index]
+        # Fall back to the Link's stored query so callers that omit it
+        # still replay the filter the link was created with.
+        if not self.query and self.link.query:
+            self.query = self.link.query
         filepath = Path(tool.Ifc.resolve_uri(self.link.filepath))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
@@ -1633,13 +1663,36 @@ class ReloadLink(bpy.types.Operator):
     bl_description = "Reload the selected file"
 
     link_index: bpy.props.IntProperty(name="Link Index")
+    query: bpy.props.StringProperty(
+        name="Query",
+        description=(
+            "Custom selector query to use to load element from a linked model. E.g. 'IfcElement'.\n\n"
+            "Default query - IfcElement, but excluding IfcProxy, IfcSpatialStructureElement, IfcSpatialElement, IfcFeatureElement."
+        ),
+    )
 
     if TYPE_CHECKING:
         link_index: int
+        query: str
+
+    def invoke(self, context, event):
+        link = tool.Project.get_project_props().links[self.link_index]
+        self.query = link.query
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        assert self.layout
+        self.layout.prop(self, "query", placeholder="IfcElement")
 
     def execute(self, context):
+        link = tool.Project.get_project_props().links[self.link_index]
+        # An unset query means the operator was called without the dialog
+        # (e.g. from a script) - preserve the link's stored query instead
+        # of overwriting it with the empty default.
+        if self.properties.is_property_set("query"):
+            link.query = self.query
         bpy.ops.bim.unload_link(link_index=self.link_index)
-        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False) or {"FINISHED"}
+        return bpy.ops.bim.load_link(link_index=self.link_index, use_cache=False, query=link.query) or {"FINISHED"}
 
 
 class ToggleLinkSelectability(bpy.types.Operator):
@@ -3537,4 +3590,45 @@ class BIM_OT_select_pending_opening_cuts(bpy.types.Operator):
             return {"CANCELLED"}
         tool.Blender.set_objects_selection(context, active_object=objects[0], selected_objects=objects)
         self.report({"INFO"}, f"Selected {len(objects)} element(s).")
+        return {"FINISHED"}
+
+
+class BIM_OT_select_pending_array_repair(bpy.types.Operator):
+    bl_idname = "bim.select_pending_array_repair"
+    bl_label = "Select Array Parents With Missing Children"
+    bl_description = "Select the Blender objects of array parents whose BBIM_Array.Data references children that don't resolve in the file."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            self.report({"INFO"}, "No IFC file loaded.")
+            return {"CANCELLED"}
+        objects: list[bpy.types.Object] = []
+        for item in tool.Project.get_project_props().pending_array_repair:
+            try:
+                element = ifc_file.by_id(item.ifc_definition_id)
+            except RuntimeError:
+                continue
+            obj = tool.Ifc.get_object(element)
+            if obj is not None:
+                objects.append(obj)
+        if not objects:
+            self.report({"INFO"}, "No matching Blender objects found for the pending list.")
+            return {"CANCELLED"}
+        tool.Blender.set_objects_selection(context, active_object=objects[0], selected_objects=objects)
+        self.report({"INFO"}, f"Selected {len(objects)} array parent(s).")
+        return {"FINISHED"}
+
+
+class BIM_OT_dismiss_pending_array_repair(bpy.types.Operator):
+    bl_idname = "bim.dismiss_pending_array_repair"
+    bl_label = "Dismiss Pending Array Repair"
+    bl_description = (
+        "Clear the pending array-repair list without acting on it. The underlying BBIM_Array.Data stays unchanged."
+    )
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context: bpy.types.Context) -> set[str]:
+        tool.Project.get_project_props().pending_array_repair.clear()
         return {"FINISHED"}

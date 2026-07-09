@@ -26,6 +26,8 @@ Allow-list (gizmos intentionally outside the rule):
 
 - ``GizmoWallEdition`` — single-object parametric edit gizmo. Its base
   parametric poll already filters array children.
+- ``GizmoSlabEdition`` — same as ``GizmoWallEdition`` (inherits
+  ``BaseParametricGizmoGroup`` whose poll filters array children).
 - ``GizmoWallFilletPreview`` — the preview-owner whose poll must fire
   WHILE its own preview is active; routing it through the topology gate
   would self-block it.
@@ -47,9 +49,11 @@ pytestmark = pytest.mark.model
 
 # Wall gizmo groups intentionally outside the rule. Add a new entry only
 # with the in-code reasoning above.
-_ALLOWLIST = frozenset({"GizmoWallEdition", "GizmoWallFilletPreview"})
+_ALLOWLIST = frozenset({"GizmoSlabEdition", "GizmoWallEdition", "GizmoWallFilletPreview"})
 
-_REQUIRED_CALLEES = frozenset({"_wall_topology_gizmo_poll_gate", "any_selected_is_array_child"})
+_REQUIRED_CALLEES = frozenset(
+    {"_wall_topology_gizmo_poll_gate", "_slab_connection_gizmo_poll_gate", "any_selected_is_array_child"}
+)
 
 
 def _wall_module_source():

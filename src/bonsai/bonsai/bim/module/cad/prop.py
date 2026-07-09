@@ -27,6 +27,11 @@ class BIMCadProperties(PropertyGroup):
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
     radius: bpy.props.FloatProperty(name="Radius", default=0.1, subtype="DISTANCE")
     distance: bpy.props.FloatProperty(name="Distance", default=0.1, subtype="DISTANCE")
+    copy: bpy.props.BoolProperty(
+        name="Copy",
+        description="Create a new offset copy of the geometry. If disabled, move the existing edges to the offset location",
+        default=True,
+    )
     x: bpy.props.FloatProperty(name="X", default=0.2, subtype="DISTANCE")
     y: bpy.props.FloatProperty(name="Y", default=0.1, subtype="DISTANCE")
     gable_roof_edge_angle: bpy.props.FloatProperty(
@@ -37,6 +42,7 @@ class BIMCadProperties(PropertyGroup):
         resolution: int
         radius: float
         distance: float
+        copy: bool
         x: float
         y: float
         gable_roof_edge_angle: float

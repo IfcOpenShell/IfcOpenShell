@@ -22,7 +22,15 @@
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeConversionResult.h"
 
+#include <Standard_Version.hxx>
+#if OCC_VERSION_HEX >= 0x80000
+#include <Standard_Macro.hxx>
+#include <TopoDS_Shape.hxx>
+#include <NCollection_HSequence.hxx>
+#else
 #include <TopTools_HSequenceOfShape.hxx>
+#endif
+
 #include <BRepBuilderAPI_Transform.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepAlgoAPI_Section.hxx>
@@ -225,8 +233,8 @@ namespace {
     }
 }
 
-TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings)
-    : WriteOnlyGeometrySerializer(geometry_settings, settings)
+TtlWktSerializer::TtlWktSerializer(const stream_or_filename& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, Logger& logger)
+    : WriteOnlyGeometrySerializer(geometry_settings, settings, logger)
     , filename_(filename)
 {
     const auto& tri_setting = geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().get();
@@ -408,14 +416,21 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
     for (int iter = 0; iter < 10; ++iter) {
 
         gp_Pln pln(gp_Pnt(0, 0, zmin + section_height + iter * (height - 1.) / 10.), gp::DZ());
-
+#if OCC_VERSION_HEX >= 0x80000
+        opencascade::handle<NCollection_HSequence<TopoDS_Shape>> wires = new NCollection_HSequence<TopoDS_Shape>();
+#else
         Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
+#endif
 
         size_t N = 0;
         TopoDS_Iterator it(compound);
         // Iterate over components of compound to have better chance of matching section edges to closed wires
         for (; it.More(); it.Next()) {
+#if OCC_VERSION_HEX >= 0x80000
+            opencascade::handle<NCollection_HSequence<TopoDS_Shape>> edges = new NCollection_HSequence<TopoDS_Shape>();
+#else
             Handle(TopTools_HSequenceOfShape) edges = new TopTools_HSequenceOfShape();
+#endif
             TopoDS_Shape result = BRepAlgoAPI_Section(it.Value(), pln);
 
             {
@@ -473,11 +488,11 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
             if ((polygons_by_area.rbegin()->first > (0.6 * rectangle_area)) || (height < (1. + 1.e-5))) {
                 // Found sufficiently large polygon
                 if (emitted_warning) {
-                    logger::warning("Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
+                    logger_.Warning("SER", 36, "Found larger polygon area (" + std::to_string(polygons_by_area.rbegin()->first) + ").");
                 }
                 break;
             } else if (!emitted_warning) {
-                logger::warning("Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
+                logger_.Warning("SER", 37, "Section polygon area is small compared to bounding box area (" + std::to_string(polygons_by_area.rbegin()->first) + " < " + std::to_string(0.6 * rectangle_area) + "). Trying again with different section height.");
                 emitted_warning = true;
             }
         }

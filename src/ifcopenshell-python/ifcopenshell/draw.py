@@ -104,7 +104,10 @@ def main(
     iterators: Sequence[ifcopenshell.geom.iterator] = (),
     merge_projection: bool = True,
     progress_function: Callable = DO_NOTHING,
+    logger=None,
 ):
+    if logger is None and ifcopenshell.logger is not None:
+        logger = ifcopenshell.logger.Root()
 
     def by_guid(g):
         for f in files:
@@ -146,7 +149,7 @@ def main(
                 iterator_kwargs["include"] = list(
                     filter(has_selected_parent, sum((f.by_type(x) for x in iterator_kwargs["include"]), []))
                 )
-            return ifcopenshell.geom.iterator(geom_settings, f, **iterator_kwargs)
+            return ifcopenshell.geom.iterator(geom_settings, f, logger=logger, **iterator_kwargs)
 
         # We have to keep the iterator in memory because otherwise
         # the styles are cleared up.
@@ -448,7 +451,6 @@ def main(
             g1.appendChild(g2)
 
     if settings.arrange_spaces or settings.arrange_zones:
-
         if settings.storey_filter:
             # delete storey groups not selected by filter
             # sometimes happens in case of elements protruding multiple stories
@@ -531,6 +533,7 @@ def main(
             arranged = W.arrange_polygons(
                 *filter(None, (ARRANGE_POLYGON_SETTINGS,)),
                 polies,  # ty: ignore[too-many-positional-arguments]
+                *((logger,) if logger is not None else ()),
             )
             svg_data_3 = W.polygons_to_svg(arranged, False)
             dom3 = parseString(svg_data_3)

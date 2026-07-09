@@ -17,6 +17,12 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.element
+import ifcopenshell.util.shape_builder
+
+# Number of straight chords used to approximate one IfcArcIndex when flattening
+# an IfcIndexedPolyCurve to an IfcPolyline. Higher values track the true arc
+# more closely at the cost of file weight.
+ARC_SUBDIVISION = 16
 
 
 class Patcher:
@@ -34,6 +40,9 @@ class Patcher:
         an IFC4 model (IFC2X3 does not have this geometry type) to help
         compatibility in viewers like Navisworks.
 
+        Arc segments (``IfcArcIndex``) are approximated by a chord polyline
+        through ``ARC_SUBDIVISION`` evenly-spaced points along the arc.
+
         Example:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "DowngradeIndexedPolyCurve", "arguments": []})
@@ -47,19 +56,46 @@ class Patcher:
         curve_map = {}
 
         for curve in self.file.by_type("IfcIndexedPolyCurve"):
-            if "IfcArcIndex" in [s.is_a() for s in curve.Segments]:
-                print("Could not convert curve due to arcs", curve)
-                continue
             coordinates = curve.Points.CoordList
-            points = []
-            for i, segment in enumerate(curve.Segments):
-                segment = segment.wrappedValue
-                if i == 0:
-                    points.append(self.file.createIfcCartesianPoint(coordinates[segment[0] - 1]))
-                points.append(self.file.createIfcCartesianPoint(coordinates[segment[1] - 1]))
-            polyline = self.file.create_entity("IfcPolyline", points)
+            segments = curve.Segments
+            if segments is None:
+                # IFC4: an absent Segments list means the curve is a polyline
+                # through every CoordList point in declared order.
+                points = [tuple(c) for c in coordinates]
+            else:
+                points = self._segments_to_points(segments, coordinates)
+                if points is None:
+                    continue
+            ifc_points = [self.file.createIfcCartesianPoint(p) for p in points]
+            polyline = self.file.create_entity("IfcPolyline", ifc_points)
             curve_map[curve] = polyline
 
         for curve, polyline in curve_map.items():
-            for inverse in self.file.get_inverse(curve):
-                ifcopenshell.util.element.replace_attribute(inverse, curve, polyline)
+            ifcopenshell.util.element.replace_element(curve, polyline)
+
+    def _segments_to_points(self, segments, coordinates):
+        points: list[tuple[float, ...]] = []
+        for i, segment in enumerate(segments):
+            indices = segment.wrappedValue
+            if segment.is_a("IfcArcIndex"):
+                if len(indices) != 3:
+                    return None
+                arc_points = ifcopenshell.util.shape_builder.arc_to_polyline_points(
+                    coordinates[indices[0] - 1],
+                    coordinates[indices[1] - 1],
+                    coordinates[indices[2] - 1],
+                    ARC_SUBDIVISION,
+                )
+                if i == 0:
+                    points.append(tuple(arc_points[0]))
+                points.extend(tuple(p) for p in arc_points[1:])
+            else:
+                # IfcLineIndex is LIST [2:?] OF IfcPositiveInteger — a polyline
+                # through every listed index. Skip the first index on non-leading
+                # segments since it duplicates the previous segment's endpoint.
+                seg_points = [tuple(coordinates[idx - 1]) for idx in indices]
+                if i == 0:
+                    points.extend(seg_points)
+                else:
+                    points.extend(seg_points[1:])
+        return points

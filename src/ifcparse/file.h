@@ -27,6 +27,7 @@
 #include "storage.h"
 #include "file_open_status.h"
 
+#include <functional>
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/sequenced_index.hpp>
@@ -102,6 +103,7 @@ private:
     const ifcopenshell::schema_definition* schema_;
     ifcopenshell::impl::in_memory_file_storage storage_;
     ifcopenshell::file_open_status good_ = ifcopenshell::file_open_status::SUCCESS;
+    std::reference_wrapper<Logger> logger_;
     int progress_;
     ifcopenshell::unresolved_references references_to_resolve_;
     int yielded_header_instances_ = 0;
@@ -155,13 +157,13 @@ private:
 
     void push_page(const std::string& page_data);
 
-    instance_streamer(ifcopenshell::file* owner_file = nullptr);
+    instance_streamer(ifcopenshell::file* owner_file = nullptr, Logger& logger = Logger::Root());
 
-    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr);
+    instance_streamer(const std::string& path, bool use_mmap = false, ifcopenshell::file* owner_file = nullptr, Logger& logger = Logger::Root());
 
-    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr);
+    instance_streamer(void* data, int data_size, ifcopenshell::file* owner_file = nullptr, Logger& logger = Logger::Root());
 
-    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr);
+    instance_streamer(Reader* stream, ifcopenshell::file* owner_file = nullptr, Logger& logger = Logger::Root());
 
     void bypass_types(const std::set<std::string>& type_names);
 
@@ -209,6 +211,7 @@ public:
 
   private:
     file_open_status good_ = file_open_status::SUCCESS;
+    std::reference_wrapper<Logger> logger_;
 
     const ifcopenshell::schema_definition* schema_;
     const ifcopenshell::declaration* ifcroot_type_;
@@ -239,7 +242,7 @@ public:
     /// </summary>
     /// <param name="path">UTF-8 file path to an IFC-SPF file</param>
     /// <param name="mmap">Whether to use memory-mapped I/O</param>
-    file(const std::string& path, bool use_mmap);
+    file(const std::string& path, bool use_mmap, Logger& logger = Logger::Root());
 #endif
     /// <summary>
 	/// Constructs an file object from a file path, supports IFC-SPF and the IfcOpenShell-specific RocksDB format.
@@ -247,17 +250,17 @@ public:
     /// <param name="path">UTF-8 file path to an IFC-SPF file or RocksDB database directory</param>
     /// <param name="ty">File type of the path</param>
     /// <param name="readonly">Whether to open in read-only mode, only supported on RocksDB databases</param>
-    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
+    file(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false, Logger& logger = Logger::Root());
 
     /// <summary>
 	/// Constructs an file object from a stream containing IFC-SPF data.
     /// </summary>
-    file(std::istream& stream, int data_size);
+    file(std::istream& stream, int data_size, Logger& logger = Logger::Root());
 
     /// <summary>
 	/// Constructs an file object from a memory buffer containing IFC-SPF data.
     /// </summary>
-    file(void* data, int data_size);
+    file(void* data, int data_size, Logger& logger = Logger::Root());
 
     /// <summary>
     /// Constructs an file object with the specified schema, file type, and file path.
@@ -266,12 +269,12 @@ public:
     /// <param name="schema">Pointer to the schema definition to use. Defaults to the IFC4 schema if not specified.</param>
     /// <param name="ty">The file type to use for the file. Defaults to FT_AUTODETECT.</param>
     /// <param name="path">The file system path to the IFC file. Defaults to an empty string.</param>
-    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "");
+    file(const ifcopenshell::schema_definition* schema = ifcopenshell::schema_by_name("IFC4"), filetype type = FT_AUTODETECT, const std::string& path = "", Logger& logger = Logger::Root());
 
     /// <summary>
     /// Constructs an unitialized file object. Call initialize() later on. Allows to specify which types to bypass during load.
     /// </summary>
-    file(const uninitialized_tag& tag);
+    file(const uninitialized_tag& tag, Logger& logger = Logger::Root());
 
     bool initialize(const std::string& path, filetype type = FT_AUTODETECT, bool read_only = false);
 #ifdef USE_MMAP
@@ -285,6 +288,7 @@ public:
     ~file();
 
     ifcopenshell::file_open_status good() const { return good_; }
+    Logger& logger() const { return logger_.get(); }
 
     /// Returns the first entity in the range of instances contained in the model,
     /// in arbitrary order

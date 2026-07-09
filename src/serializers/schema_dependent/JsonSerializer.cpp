@@ -171,7 +171,7 @@ void descend(A instance, json& tree, express::Base parent = express::Base()) {
     if (instance.declaration().is(IfcSchema::IfcObjectDefinition::Class())) {
         descend(instance.template as<IfcSchema::IfcObjectDefinition>(), tree, parent);
     } else {
-        format_entity_instance(instance, tree);
+        format_entity_instance(instance, tree, logger);
     }
 }
 
@@ -189,7 +189,7 @@ void descend(IfcSchema::IfcObjectDefinition product, json& tree, express::Base p
         }
     }
 
-    format_entity_instance(product, tree, parent);
+    format_entity_instance(product, tree, logger, parent);
 
     if (auto opening = product.as<IfcSchema::IfcOpeningElement>()) {
         auto fills = get_related<IfcSchema::IfcOpeningElement, IfcSchema::IfcRelFillsElement, IfcSchema::IfcElement>(
@@ -262,7 +262,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
 
     auto projects = file->instances_by_type<IfcSchema::IfcProject>();
     if (projects.size() != 1) {
-        logger::message(logger::LOG_ERROR, "Expected a single IfcProject");
+        logger_.Message(Logger::LOG_ERROR, "SER", 7, "Expected a single IfcProject");
         return;
     }
     IfcSchema::IfcProject project = projects.front();
@@ -271,7 +271,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
         try {
             return fn();
         } catch (const std::exception& e) {
-            logger::error(e);
+            logger_.Error("SER", 8, e);
             static std::invoke_result_t<decltype(fn)> v;
             return v;
         }
@@ -576,7 +576,7 @@ void POSTFIX_SCHEMA(JsonSerializer)::finalize() {
     }
     */
 
-    descend(project, output["metaObjects"]);
+    descend(project, output["metaObjects"], logger_);
 
     std::ofstream f(ifcopenshell::path::from_utf8(json_filename).c_str());
     f << output.dump(4);

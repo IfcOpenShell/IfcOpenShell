@@ -9,7 +9,7 @@
 
 #include "../ifcparse/logger.h"
 
-RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes)
+RocksDbSerializer::RocksDbSerializer(const std::string& input_filename, const std::string& rocksdb_filename, const std::vector<std::string>& skip_supertypes, Logger& logger)
 	: input_filename_(input_filename)
 	, rocksdb_filename_(rocksdb_filename)
 	, skip_supertypes_(skip_supertypes)

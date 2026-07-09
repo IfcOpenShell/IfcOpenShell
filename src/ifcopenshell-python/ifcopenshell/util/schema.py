@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
 import json
 import os
 import time
@@ -148,6 +149,57 @@ def get_subtypes(
     return get_classes(declaration)
 
 
+def _enum_value_outside_target(attribute: ifcopenshell_wrapper.attribute, value: Any) -> bool:
+    """``True`` when ``attribute`` is an enumeration and the string ``value``
+    is not in its declared items. Used by the Migrator to silently skip enum
+    values that exist in the source schema but not the target — without
+    parsing C++ wrapper error strings."""
+    if not isinstance(value, str):
+        return False
+    try:
+        enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+    except (AssertionError, AttributeError):
+        return False
+    return value not in enum_items
+
+
+@functools.cache
+def geometry_classes_introduced_after(target_schema: IFC_SCHEMA, source_schema: IFC_SCHEMA = "IFC4") -> frozenset[str]:
+    """``IfcRepresentationItem`` subclasses present in ``source_schema`` but
+    missing in ``target_schema``.
+
+    Derived from the loaded schema declarations once per (source, target) pair
+    and cached. The result is the canonical set of geometry classes a
+    downgrade from ``source_schema`` to ``target_schema`` must convert
+    (``IfcPolygonalFaceSet``, ``IfcTriangulatedFaceSet``, ``IfcAdvancedBrep``,
+    B-splines, advanced surfaces, alignment curves on IFC4X3 → 2X3, …) or
+    purge. Defaults match the IFC4 → IFC2X3 case for backwards compatibility
+    with the original caller."""
+    source = ifcopenshell_wrapper.schema_by_name(source_schema)
+    target = ifcopenshell_wrapper.schema_by_name(target_schema)
+    target_names = {decl.name() for decl in target.entities()}
+    result: set[str] = set()
+    for decl in source.entities():
+        if decl.name() in target_names:
+            continue
+        cursor: Any = decl
+        while cursor is not None:
+            if cursor.name() == "IfcRepresentationItem":
+                result.add(decl.name())
+                break
+            cursor = cursor.supertype()
+    return frozenset(result)
+
+
+def ifc4_only_geometry_classes() -> frozenset[str]:
+    """Backwards-compatible alias for the IFC4 → IFC2X3 geometry-gap set.
+
+    New code should call :func:`geometry_classes_introduced_after` with the
+    explicit (target, source) pair so IFC4X3 → IFC2X3 downgrades pick up the
+    additional IFC4X3-only geometry classes."""
+    return geometry_classes_introduced_after("IFC2X3", "IFC4")
+
+
 def reassign_class(
     ifc_file: Union[ifcopenshell.file, None], element: ifcopenshell.entity_instance, new_class: str
 ) -> ifcopenshell.entity_instance:
@@ -263,7 +315,20 @@ class Migrator:
     migrated_ids: dict[int, int]
     attribute_overrides: dict[int, dict[int, str]]
 
-    def __init__(self):
+    def __init__(self, *, fallback_element_to_proxy: bool = False) -> None:
+        """Construct a schema migrator.
+
+        :param fallback_element_to_proxy: When ``True`` and the target schema is
+            IFC2X3, IFC4 entity classes that have no direct IFC2X3 equivalent
+            but inherit from ``IfcElement`` / ``IfcElementType`` are migrated as
+            ``IfcBuildingElementProxy`` / ``IfcBuildingElementProxyType``
+            respectively, instead of raising. Caller code is then responsible
+            for preserving the lost original class information out-of-band (the
+            ``Migrate`` ifcpatch recipe encodes it into ``ObjectType``).
+            Defaults to ``False`` so non-recipe callers keep the strict
+            failure-on-unmappable contract.
+        """
+        self.fallback_element_to_proxy = fallback_element_to_proxy
         self.migrated_ids = {}
         self.attribute_overrides = {}
         self.class_4_to_2x3 = json.load(open(os.path.join(cwd, "class_4_to_2x3.json"), "r"))
@@ -379,6 +444,17 @@ class Migrator:
         self.migrated_ids[element.id()] = new_element.id()
         return new_element
 
+    @staticmethod
+    def _is_subclass_of(ifc_class: str, ancestor: str, source_file: ifcopenshell.file) -> bool:
+        schema = ifcopenshell_wrapper.schema_by_name(source_file.schema_identifier)
+        try:
+            return is_a(schema.declaration_by_name(ifc_class), ancestor)
+        except RuntimeError:
+            # Class doesn't exist in the source schema — happens for cross-schema
+            # introspection of an entity created with a name the wrapper doesn't
+            # recognise. Treat as "not a subclass".
+            return False
+
     def migrate_class(
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
@@ -389,15 +465,44 @@ class Migrator:
             if isinstance(value, float):
                 ifc_class = "IfcQuantityNumber"
         try:
-            new_element = new_file.create_entity(ifc_class)
+            return new_file.create_entity(ifc_class)
         except:
-            # The element does not exist in this schema
-            # Complex migration is not yet supported (e.g. polygonal face set to faceted brep)
-            if new_file.schema == "IFC2X3":
-                new_element = new_file.create_entity(self.class_4_to_2x3[ifc_class])
-            elif new_file.schema == "IFC4":
-                new_element = new_file.create_entity(self.class_2x3_to_4[ifc_class])
-        return new_element
+            pass
+
+        # The class does not exist in the target schema — look up an equivalent.
+        # The lookup tables use empty-string as a sentinel meaning "no direct
+        # equivalent, needs geometric translation" (e.g. polygonal face set →
+        # faceted brep). Callers that want a clean downgrade are expected to
+        # preprocess such carriers before calling the Migrator; see the
+        # `Migrate` ifcpatch recipe.
+        if new_file.schema == "IFC2X3":
+            equivalent = self.class_4_to_2x3.get(ifc_class, None)
+        elif new_file.schema == "IFC4":
+            equivalent = self.class_2x3_to_4.get(ifc_class, None)
+        else:
+            equivalent = None
+
+        # IfcBuildingElementProxy fallback is opt-in (see constructor) — only
+        # the IfcElement / IfcElementType subtrees have a meaningful generic
+        # IFC2X3 stand-in; non-element IFC4-only classes (rels, geometry items,
+        # materials, times) still raise below.
+        if not equivalent and new_file.schema == "IFC2X3" and self.fallback_element_to_proxy:
+            if self._is_subclass_of(ifc_class, "IfcElement", element.wrapped_data.file):
+                equivalent = "IfcBuildingElementProxy"
+            elif self._is_subclass_of(ifc_class, "IfcElementType", element.wrapped_data.file):
+                equivalent = "IfcBuildingElementProxyType"
+
+        if not equivalent:
+            inverses = element.wrapped_data.file.get_inverse(element)
+            inverse_hint = ", ".join(f"#{i.id()}={i.is_a()}" for i in list(inverses)[:3])
+            if len(inverses) > 3:
+                inverse_hint += f", … (+{len(inverses) - 3} more)"
+            raise NotImplementedError(
+                f"Cannot migrate #{element.id()}={ifc_class} to schema "
+                f"{new_file.schema}: no direct equivalent exists. "
+                f"Referenced by: {inverse_hint or '(no inverses)'}."
+            )
+        return new_file.create_entity(equivalent)
 
     def migrate_attributes(
         self,
@@ -526,11 +631,40 @@ class Migrator:
                     new_value.append(self.migrate(item, new_file))
                 value = new_value
         if value is not None:
+            if _enum_value_outside_target(attribute, value):
+                # Enum value present in source schema but missing in target
+                # (typically a downgrade after a cross-class fallback, e.g.
+                # IfcLamp.PredefinedType=COMPACTFLUORESCENT copied onto
+                # IfcBuildingElementProxy.CompositionType whose enum is
+                # IfcElementCompositionEnum). Leave the attribute unset rather
+                # than abort the whole entity's migration. Detected
+                # structurally so other RuntimeError causes (type mismatches,
+                # invalid values) still propagate.
+                return
             setattr(new_element, attribute.name(), value)
 
     def generate_default_value(self, attribute: ifcopenshell_wrapper.attribute, new_file: ifcopenshell.file) -> Any:
         if attribute.name() in self.default_values:
             return self.default_values[attribute.name()]
+        elif attribute.name() == "Position":
+            # IFC4 relaxed Position to OPTIONAL for many profile defs; IFC2X3
+            # still requires it. Synthesize a unit placement at origin so
+            # IfcIShapeProfileDef and friends downgrade without crashing
+            # downstream validators.
+            try:
+                type_name = attribute.type_of_attribute().as_named_type().declared_type().name()
+            except Exception:
+                type_name = None
+            if type_name == "IfcAxis2Placement2D":
+                return new_file.create_entity(
+                    "IfcAxis2Placement2D",
+                    Location=new_file.create_entity("IfcCartesianPoint", (0.0, 0.0)),
+                )
+            if type_name == "IfcAxis2Placement3D":
+                return new_file.create_entity(
+                    "IfcAxis2Placement3D",
+                    Location=new_file.create_entity("IfcCartesianPoint", (0.0, 0.0, 0.0)),
+                )
         elif attribute.name() == "OwnerHistory":
             self.default_entities[attribute.name()] = new_file.create_entity(
                 "IfcOwnerHistory",

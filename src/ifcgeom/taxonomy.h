@@ -1629,25 +1629,19 @@ typedef item const* ptr;
 			for (auto& i : deep->children) {
 				// @todo Sad... now that we have templated collection members,
 				// we can't generally use collection_base anymore as a cast target.
-				if (auto s = taxonomy::dcast<taxonomy::collection>(i)) {
+				if (auto s = std::dynamic_pointer_cast<taxonomy::collection>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::collection>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::loop>(i)) {
+				} else if (auto s = std::dynamic_pointer_cast<taxonomy::loop>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::loop>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::face>(i)) {
+				} else if (auto s = std::dynamic_pointer_cast<taxonomy::face>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::face>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::shell>(i)) {
+				} else if (auto s = std::dynamic_pointer_cast<taxonomy::shell>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::shell>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::solid>(i)) {
+				} else if (auto s = std::dynamic_pointer_cast<taxonomy::solid>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::solid>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::loft>(i)) {
+				} else if (auto s = std::dynamic_pointer_cast<taxonomy::loft>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::loft>(s, fn);
-				}
-				else if (auto s = taxonomy::dcast<taxonomy::boolean_result>(i)) {
+				} else if (auto s = std::dynamic_pointer_cast<taxonomy::boolean_result>(i)) {
 					ifcopenshell::geometry::visit<taxonomy::boolean_result>(s, fn);
 				}
 				else {

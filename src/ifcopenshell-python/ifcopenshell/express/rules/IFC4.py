@@ -6331,7 +6331,7 @@ class IfcCurveStyle_MeasureOfWidth:
     @staticmethod
     def __call__(self):
         curvewidth = express_getattr(self, 'CurveWidth', INDETERMINATE)
-        assert (not exists(curvewidth) or 'ifc4.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc4.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'bylayer')) is not False
+        assert (not exists(curvewidth) or 'ifc4.ifcpositivelengthmeasure' in typeof(curvewidth) or ('ifc4.ifcdescriptivemeasure' in typeof(curvewidth) and curvewidth == 'by layer')) is not False
 
 class IfcCurveStyle_IdentifiableCurveStyle:
     SCOPE = 'entity'
@@ -6593,7 +6593,7 @@ class IfcDraughtingPreDefinedColour_PreDefinedColourNames:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['black', 'red', 'green', 'blue', 'yellow', 'magenta', 'cyan', 'white', 'by layer']) is not False
 
 class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
     SCOPE = 'entity'
@@ -6602,7 +6602,7 @@ class IfcDraughtingPreDefinedCurveFont_PreDefinedCurveFontNames:
 
     @staticmethod
     def __call__(self):
-        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chaindoubledash', 'dashed', 'dotted', 'bylayer']) is not False
+        assert (express_getattr(express_getattr(self, 'Name', INDETERMINATE), 'lower', INDETERMINATE)() in ['continuous', 'chain', 'chain double dash', 'dashed', 'dotted', 'by layer']) is not False
 
 class IfcDuctFitting_CorrectPredefinedType:
     SCOPE = 'entity'

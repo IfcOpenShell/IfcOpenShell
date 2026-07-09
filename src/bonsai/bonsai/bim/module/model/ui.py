@@ -22,6 +22,7 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import bpy
+import ifcopenshell.util.unit
 from bpy.types import Panel
 
 import ifcopenshell.util.unit

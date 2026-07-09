@@ -48,7 +48,9 @@
 
 #include <BRepAlgoAPI_Fuse.hxx>
 
-#include <TopTools_IndexedMapOfShape.hxx>
+#include <Standard_Macro.hxx>
+#include <TopTools_ShapeMapHasher.hxx>
+#include <NCollection_IndexedMap.hxx>
 
 #include <ShapeUpgrade_UnifySameDomain.hxx>
 
@@ -73,7 +75,7 @@ bool IfcGeom::util::axis_equal(const gp_Ax2d & a, const gp_Ax2d & b, double tole
 
 int IfcGeom::util::count(const TopoDS_Shape& s, TopAbs_ShapeEnum t, bool unique) {
 	if (unique) {
-		TopTools_IndexedMapOfShape map;
+		NCollection_IndexedMap<TopoDS_Shape, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapes(s, t, map);
 		return map.Extent();
 	} else {
@@ -108,7 +110,7 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 		}
 		return true;
 	} else {
-		TopTools_IndexedDataMapOfShapeListOfShape map;
+        NCollection_IndexedDataMap<TopoDS_Shape, NCollection_List<TopoDS_Shape>, TopTools_ShapeMapHasher> map;
 		TopExp::MapShapesAndAncestors(a, TopAbs_EDGE, TopAbs_FACE, map);
 
 		for (int i = 1; i <= map.Extent(); ++i) {
@@ -199,17 +201,17 @@ gp_Trsf IfcGeom::util::combine_offset_and_rotation(const gp_Vec & offset, const 
 }
 
 
-bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
+bool IfcGeom::util::project(const opencascade::handle<Geom_Surface>& srf, const TopoDS_Shape& shp, double& u1, double& v1, double& u2, double& v2, double widen) {
 	// @todo std::unique_ptr for C++11
 	ShapeAnalysis_Surface* sas = 0;
-	Handle(Geom_Plane) pln;
+	opencascade::handle<Geom_Plane> pln;
 
 	if (srf->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		// Optimize projection for specific cases
-		pln = Handle(Geom_Plane)::DownCast(srf);
-	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
+		pln = opencascade::handle<Geom_Plane>::DownCast(srf);
+	} else if (srf->DynamicType() == STANDARD_TYPE(Geom_OffsetSurface) && opencascade::handle<Geom_OffsetSurface>::DownCast(srf)->BasisSurface()->DynamicType() == STANDARD_TYPE(Geom_Plane)) {
 		// For an offset planar surface the projected UV coords are the same as the basis surface
-		pln = Handle(Geom_Plane)::DownCast(Handle(Geom_OffsetSurface)::DownCast(srf)->BasisSurface());
+		pln = opencascade::handle<Geom_Plane>::DownCast(opencascade::handle<Geom_OffsetSurface>::DownCast(srf)->BasisSurface());
 	} else {
 		sas = new ShapeAnalysis_Surface(srf);
 	}
@@ -246,7 +248,7 @@ bool IfcGeom::util::project(const Handle_Geom_Surface& srf, const TopoDS_Shape& 
 			const TopoDS_Edge& e = TopoDS::Edge(exp.Current());
 
 			double a, b;
-			Handle_Geom_Curve crv = BRep_Tool::Curve(e, a, b);
+			opencascade::handle<Geom_Curve> crv = BRep_Tool::Curve(e, a, b);
 			gp_Pnt p;
 			crv->D0((a + b) / 2., p);
 
@@ -449,24 +451,25 @@ bool IfcGeom::util::fit_halfspace(const TopoDS_Shape& a, const TopoDS_Shape& b, 
 }
 
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const Handle_Geom_Surface& b) {
+const opencascade::handle<Geom_Curve> IfcGeom::util::intersect(const opencascade::handle<Geom_Surface>& a, const opencascade::handle<Geom_Surface>& b) {
 	GeomAPI_IntSS x(a, b, 1.e-7);
 	if (x.IsDone() && x.NbLines() == 1) {
 		return x.Line(1);
 	} else {
-		return Handle_Geom_Curve();
+		return opencascade::handle<Geom_Curve>();
+
 	}
 }
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Face& b) {
+const opencascade::handle<Geom_Curve> IfcGeom::util::intersect(const opencascade::handle<Geom_Surface>& a, const TopoDS_Face& b) {
 	return intersect(a, BRep_Tool::Surface(b));
 }
 
-const Handle_Geom_Curve IfcGeom::util::intersect(const TopoDS_Face& a, const Handle_Geom_Surface& b) {
+const opencascade::handle<Geom_Curve> IfcGeom::util::intersect(const TopoDS_Face& a, const opencascade::handle<Geom_Surface>& b) {
 	return intersect(BRep_Tool::Surface(a), b);
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surface& b, gp_Pnt& p) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Curve>& a, const opencascade::handle<Geom_Surface>& b, gp_Pnt& p) {
 	GeomAPI_IntCS x(a, b);
 	if (x.IsDone() && x.NbPoints() == 1) {
 		p = x.Point(1);
@@ -476,11 +479,11 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const Handle_Geom_Surf
 	}
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Face& b, gp_Pnt &c) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Curve>& a, const TopoDS_Face& b, gp_Pnt &c) {
 	return intersect(a, BRep_Tool::Surface(b), c);
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Curve>& a, const TopoDS_Shape& b, std::vector<gp_Pnt>& out) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	gp_Pnt p;
 	for (; exp.More(); exp.Next()) {
@@ -491,12 +494,12 @@ bool IfcGeom::util::intersect(const Handle_Geom_Curve& a, const TopoDS_Shape& b,
 	return !out.empty();
 }
 
-bool IfcGeom::util::intersect(const Handle_Geom_Surface& a, const TopoDS_Shape& b, std::vector< std::pair<Handle_Geom_Surface, Handle_Geom_Curve> >& out) {
+bool IfcGeom::util::intersect(const opencascade::handle<Geom_Surface>& a, const TopoDS_Shape& b, std::vector< std::pair<opencascade::handle<Geom_Surface>, opencascade::handle<Geom_Curve> > >& out) {
 	TopExp_Explorer exp(b, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		const TopoDS_Face& f = TopoDS::Face(exp.Current());
-		const Handle_Geom_Surface& s = BRep_Tool::Surface(f);
-		Handle_Geom_Curve crv = intersect(a, s);
+		const opencascade::handle<Geom_Surface>& s = BRep_Tool::Surface(f);
+		opencascade::handle<Geom_Curve> crv = intersect(a, s);
 		if (!crv.IsNull()) {
 			out.push_back(std::make_pair(s, crv));
 		}
@@ -516,7 +519,7 @@ bool IfcGeom::util::closest(const gp_Pnt& a, const std::vector<gp_Pnt>& b, gp_Pn
 	return minimal_distance != std::numeric_limits<double>::infinity();
 }
 
-bool IfcGeom::util::project(const Handle_Geom_Curve& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
+bool IfcGeom::util::project(const opencascade::handle<Geom_Curve>& crv, const gp_Pnt& pt, gp_Pnt& p, double& u, double& d) {
 	ShapeAnalysis_Curve sac;
 	sac.Project(crv, pt, 1e-3, p, u, false);
 	d = pt.Distance(p);
@@ -589,10 +592,10 @@ TopoDS_Shape IfcGeom::util::halfspace_from_plane(const gp_Pln& pln, const gp_Pnt
 
 gp_Pln IfcGeom::util::plane_from_face(const TopoDS_Face& face) {
 	BRepGProp_Face prop(face);
-	Standard_Real u1, u2, v1, v2;
+	double u1, u2, v1, v2;
 	prop.Bounds(u1, u2, v1, v2);
-	Standard_Real u = (u1 + u2) / 2.0;
-	Standard_Real v = (v1 + v2) / 2.0;
+	double u = (u1 + u2) / 2.0;
+	double v = (v1 + v2) / 2.0;
 	gp_Pnt p;
 	gp_Vec n;
 	prop.Normal(u, v, p, n);
@@ -615,7 +618,7 @@ bool IfcGeom::util::is_compound_of_faces(const TopoDS_Shape& shape) {
 	return has_compounds && has_faces && !has_solids && !has_shells;
 }
 
-bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfShape& li) {
+bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, NCollection_List<TopoDS_Shape>& li) {
 	TopExp_Explorer exp(s, TopAbs_FACE);
 	for (; exp.More(); exp.Next()) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
@@ -625,7 +628,7 @@ bool IfcGeom::util::shape_to_face_list(const TopoDS_Shape& s, TopTools_ListOfSha
 }
 
 bool IfcGeom::util::create_solid_from_compound(const TopoDS_Shape& compound, TopoDS_Shape& shape, double tol) {
-	TopTools_ListOfShape face_list;
+	NCollection_List<TopoDS_Shape> face_list;
 	shape_to_face_list(compound, face_list);
 	if (face_list.Extent() == 0) {
 		return false;
@@ -633,7 +636,7 @@ bool IfcGeom::util::create_solid_from_compound(const TopoDS_Shape& compound, Top
 	return create_solid_from_faces(face_list, shape, tol);
 }
 
-bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_list, TopoDS_Shape& shape, double tol, bool force_sewing) {
+bool IfcGeom::util::create_solid_from_faces(const NCollection_List<TopoDS_Shape>& face_list, TopoDS_Shape& shape, double tol, bool force_sewing) {
 	bool valid_shell = false;
 
 	if (face_list.Extent() == 1) {
@@ -644,10 +647,10 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		return false;
 	}
 
-	TopTools_ListIteratorOfListOfShape face_iterator;
+	NCollection_List<TopoDS_Shape>::Iterator face_iterator;
 
 	bool has_shared_edges = false;
-	TopTools_MapOfShape edge_set;
+    NCollection_Map<TopoDS_Shape, TopTools_ShapeMapHasher> edge_set;
 
 	// In case there are wire intersections or failures in non-planar wire triangulations
 	// the idea is to let occt do an exhaustive search of edge partners. But we have not
@@ -711,12 +714,12 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		valid_shell &= util::count(shape, TopAbs_SHELL) > 0;
 	} catch (const Standard_Failure& e) {
 		if (e.GetMessageString() && strlen(e.GetMessageString())) {
-			logger::error(e.GetMessageString());
+			Logger::Root().Error("GEO", 106, e.GetMessageString());
 		} else {
-			logger::error("Unknown error sewing shell");
+			Logger::Root().Error("GEO", 107, "Unknown error sewing shell");
 		}
 	} catch (...) {
-		logger::error("Unknown error sewing shell");
+		Logger::Root().Error("GEO", 108, "Unknown error sewing shell");
 	}
 
 	if (valid_shell) {
@@ -744,22 +747,22 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 						}
 					} catch (const Standard_Failure& e) {
 						if (e.GetMessageString() && strlen(e.GetMessageString())) {
-							logger::error(e.GetMessageString());
+							Logger::Root().Error("GEO", 109, e.GetMessageString());
 						} else {
-							logger::error("Unknown error classifying solid");
+							Logger::Root().Error("GEO", 110, "Unknown error classifying solid");
 						}
 					} catch (...) {
-						logger::error("Unknown error classifying solid");
+						Logger::Root().Error("GEO", 111, "Unknown error classifying solid");
 					}
 				}
 			} catch (const Standard_Failure& e) {
 				if (e.GetMessageString() && strlen(e.GetMessageString())) {
-					logger::error(e.GetMessageString());
+					Logger::Root().Error("GEO", 112, e.GetMessageString());
 				} else {
-					logger::error("Unknown error creating solid");
+					Logger::Root().Error("GEO", 113, "Unknown error creating solid");
 				}
 			} catch (...) {
-				logger::error("Unknown error creating solid");
+				Logger::Root().Error("GEO", 114, "Unknown error creating solid");
 			}
 
 			if (complete_shape.IsNull()) {
@@ -771,7 +774,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 					B.MakeCompound(C);
 					B.Add(C, complete_shape);
 					complete_shape = C;
-					logger::warning("Multiple components in IfcConnectedFaceSet");
+					Logger::Root().Warning("GEO", 115, "Multiple components in IfcConnectedFaceSet");
 				}
 				B.Add(complete_shape, result_shape);
 			}
@@ -786,7 +789,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 				B.MakeCompound(C);
 				B.Add(C, complete_shape);
 				complete_shape = C;
-				logger::warning("Loose faces in IfcConnectedFaceSet");
+				Logger::Root().Warning("GEO", 116, "Loose faces in IfcConnectedFaceSet");
 			}
 			B.Add(complete_shape, loose_faces.Current());
 		}
@@ -794,7 +797,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 		shape = complete_shape;
 
 	} else {
-		logger::error("Failed to sew faceset");
+		Logger::Root().Error("GEO", 117, "Failed to sew faceset");
 	}
 
 	return valid_shell;
@@ -875,7 +878,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 	std::function<void(const TopoDS_Shape&)> dump;
 	dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
 		if (!ana.Result(s).IsNull()) {
-			BRepCheck_ListIteratorOfListOfStatus itl;
+            NCollection_List<BRepCheck_Status>::Iterator itl;
 			itl.Initialize(ana.Result(s)->Status());
 			for (; itl.More(); itl.Next()) {
 				if (itl.Value() != BRepCheck_NoError) {
@@ -898,7 +901,7 @@ bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
 
 	dump(s);
 
-	logger::warning(str.str());
+	Logger::Root().Warning("GEO", 118, str.str());
 
 	return false;
 }

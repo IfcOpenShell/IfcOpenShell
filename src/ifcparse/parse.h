@@ -52,6 +52,8 @@ template <typename Reader>
 class IFC_PARSE_API spf_lexer {
   private:
     character_decoder<Reader>* decoder_;
+    Logger& logger_;
+    
     size_t skip_whitespace() const;
     size_t skip_comment() const;
 
@@ -59,6 +61,7 @@ class IFC_PARSE_API spf_lexer {
     mutable size_t pool_index = 0;
 
   public:
+    
     spf_lexer(const spf_lexer&) = delete;
     spf_lexer& operator=(const spf_lexer&) = delete;
 
@@ -74,7 +77,7 @@ class IFC_PARSE_API spf_lexer {
 
     Reader* stream;
     // file* file;
-    spf_lexer(Reader* stream);
+    spf_lexer(Reader* stream, Logger& logger = Logger::Root());
     token next();
     ~spf_lexer();
     // void TokenString(size_t offset, std::string& result);

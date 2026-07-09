@@ -135,6 +135,37 @@ class TestGetRepresentationData(NewFile):
         assert subject.get_representation_data(representation) == data
 
 
+class TestGetActiveRepresentation(NewFile):
+    def test_returns_representation_for_live_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new("Object", mesh)
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
+        assert subject.get_active_representation(obj) == representation
+
+    def test_returns_none_when_mesh_has_no_id(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
+        assert subject.get_active_representation(obj) is None
+
+    def test_returns_none_when_id_is_stale(self):
+        """A representation rebuild can free the old entity while obj.data
+        still tracks its id. Returning ``None`` keeps every UI redraw alive
+        instead of spamming ``RuntimeError`` from the by_id lookup."""
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        representation = ifc.createIfcShapeRepresentation()
+        mesh = bpy.data.meshes.new("Mesh")
+        obj = bpy.data.objects.new("Object", mesh)
+        stale_id = representation.id()
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = stale_id
+        ifc.remove(representation)
+        assert subject.get_active_representation(obj) is None
+
+
 class TestGetRepresentationId(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()

@@ -38,10 +38,17 @@
 
 #include <Standard_Version.hxx>
 
+#include "ifcparse/macros.h"
+
+#ifndef IfcSchema
 #define IfcSchema Ifc2x3
-#include "../ifcparse/macros.h"
-#include "../ifcparse/schemas/Ifc2x3.h"
-#include "../ifcparse/hierarchy_helper.h"
+#endif
+
+#include INCLUDE_SCHEMA(ifcparse, IfcSchema)
+#include INCLUDE_SCHEMA_DEFINITIONS(ifcparse, IfcSchema)
+
+#include "ifcparse/IfcBaseClass.h"
+#include "ifcparse/IfcHierarchyHelper.h"
 
 #include "../ifcgeom/Serialization/Serialization.h"
 

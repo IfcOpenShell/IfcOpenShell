@@ -37,6 +37,13 @@ namespace path {
 IFC_PARSE_API bool delete_file(const std::string& filename);
 IFC_PARSE_API bool rename_file(const std::string& old_filename, const std::string& new_filename);
 
+/// Atomically renames old_filename onto new_filename, replacing an existing
+/// destination in a single filesystem operation. Unlike rename_file(), the
+/// destination is never unlinked before the rename, so an interruption can
+/// never leave the destination missing. This requires both paths to live on
+/// the same filesystem. Returns true on success.
+IFC_PARSE_API bool atomic_rename_file(const std::string& old_filename, const std::string& new_filename);
+
 #if defined(_MSC_VER) && defined(_UNICODE)
 
 /// Uses windows.h string conversion functions

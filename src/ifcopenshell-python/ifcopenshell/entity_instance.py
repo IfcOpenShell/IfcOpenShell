@@ -213,8 +213,11 @@ class entity_instance_mixin:
         return value
 
     def __eq__(self, other: entity_instance_mixin) -> bool:
-        if other is None or not isinstance(other, entity_instance_mixin):
-            return False
+        if not isinstance(other, entity_instance_mixin):
+            if not self.is_entity():
+                return self[0] == other
+            else:
+                return False
         else:
             raise NotImplementedError
 
@@ -305,7 +308,7 @@ class entity_instance_mixin:
             )
         )
 
-    def get_info(
+    def get_info_py(
         self,
         include_identifier: bool = True,
         recursive: bool = False,
@@ -382,64 +385,22 @@ class entity_instance_mixin:
 
     __dict__ = property(get_info)
 
-    def get_info_2(
+    def get_info(
         self,
         include_identifier: bool = True,
         recursive: bool = False,
         return_type: type[dict] = dict,
         ignore: Sequence[str] = (),
     ) -> dict[str, Any]:
-        """More perfomant version of `.get_info()` but with limited arguments values.\n
-        Method has exactly the same signature as `.get_info()` but it doesn't support getting information non-recursively.
-
-        Currently supported arguments values:
-            * recursive: `True` (will fail with default `False` value from `.get_info()`)
-            * return_type: `dict`
-            * ignore: `()` (empty tuple)
+        """More perfomant version of `.get_info()`.\n
+        Method has exactly the same signature as `.get_info()`, but the fast C++
+        path only implements ``recursive=True``, ``return_type=dict`` and
+        ``ignore=()``. Any other combination falls back to the pure Python
+        `.get_info()`, where no meaningful performance gain is possible anyway
+        as the cost is dominated by the recursive traversal.
         """
-
-        assert return_type is dict
-        assert len(ignore) == 0
-        return ifcopenshell_wrapper.get_info_cpp(self, recursive, include_identifier)
-
-
-# Alias for backwards compatibility — external code imports this name.
-entity_instance = entity_instance_mixin
-
-
-# Monkey-patch SWIG's __eq__, __ne__, __lt__ on the generated entity_instance
-# class to guard against None / non-entity arguments. SWIG generates these
-# directly on the class (overriding the mixin), and they pass arguments straight
-# to C++ which rejects null references.
-# Deferred until after ifcopenshell_wrapper finishes loading to avoid circular import.
-_swig_comparisons_patched = False
-
-
-def _patch_swig_comparisons():
-    global _swig_comparisons_patched
-    if _swig_comparisons_patched:
-        return
-    _swig_cls = ifcopenshell_wrapper.entity_instance
-    _orig_eq = _swig_cls.__eq__
-    _orig_ne = _swig_cls.__ne__
-    _orig_lt = _swig_cls.__lt__
-
-    def _safe_eq(self, other):
-        if other is None or not isinstance(other, _swig_cls):
-            return NotImplemented
-        return _orig_eq(self, other)
-
-    def _safe_ne(self, other):
-        if other is None or not isinstance(other, _swig_cls):
-            return NotImplemented
-        return _orig_ne(self, other)
-
-    def _safe_lt(self, other):
-        if other is None or not isinstance(other, _swig_cls):
-            return NotImplemented
-        return _orig_lt(self, other)
-
-    _swig_cls.__eq__ = _safe_eq
-    _swig_cls.__ne__ = _safe_ne
-    _swig_cls.__lt__ = _safe_lt
-    _swig_comparisons_patched = True
+        if recursive and return_type is dict and not ignore:
+            return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)
+        return self.get_info_py(
+            include_identifier=include_identifier, recursive=recursive, return_type=return_type, ignore=ignore
+        )

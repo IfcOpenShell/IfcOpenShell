@@ -24,8 +24,12 @@
 #include "../ifcparse/file.h"
 
 class IFC_GEOM_API Serializer {
+	Logger& logger_;
 public:
+	explicit Serializer(Logger& logger = Logger::Root()) : logger_(logger) {}
 	virtual ~Serializer() {}
+
+	Logger& logger() const { return logger_; }
 
 	virtual bool ready() = 0;
 	virtual bool is_streaming() const { return false; }

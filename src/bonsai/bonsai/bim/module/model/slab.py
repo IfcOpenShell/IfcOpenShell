@@ -271,7 +271,7 @@ class DumbSlabPlaner:
                 # For instances, a 30 degrees angled extrusion with positive direction has the same extrusion direction as a
                 # -150 degrees angled extrusion with negative direction. The difference lies in the object's rotation.
                 # This means that things can get messy if the user changes the object x angle somehow. We have to figure out an alternative approach.
-                existing_x_angle = obj.rotation_euler.x
+                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle
@@ -620,6 +620,14 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         obj = context.active_object
+
+        # Commit any in-progress parametric (gizmo) draft on this object
+        # before switching to profile-edit. Otherwise the in-memory draft
+        # state is overwritten when the profile mesh is imported below,
+        # silently discarding the user's pending dimension edits.
+        if feature := tool.Parametric.is_object_editing(obj):
+            tool.Parametric.commit_object_draft(obj, feature.finish_op)
+
         element = tool.Ifc.get_entity(obj)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -990,4 +998,75 @@ class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
                         walls.append(tool.Ifc.get_object(rel.RelatedElement))
 
         tool.Model.recalculate_walls(walls)
+        return {"FINISHED"}
+
+
+class EnableEditingSlab(bpy.types.Operator, tool.Ifc.Operator):
+    """Open the slab disconnect-access mode. Pure UI toggle: flips
+    ``obj.BIMSlabProperties.is_editing`` so the per-wall disconnect
+    gizmos surface on the slab. ``tool.Ifc.Operator`` base because the
+    parametric framework's universal dispatcher routes through
+    ``tool.Parametric.run_bim_op``, which only accepts that subclass for
+    undo-safe lifecycle. No IFC mutation."""
+
+    bl_idname = "bim.enable_editing_slab"
+    bl_label = "Edit Slab Connections"
+    bl_description = "Show disconnect icons for every wall clipped to this slab"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element is not None and element.is_a("IfcSlab")
+
+    def _execute(self, context):
+        context.active_object.BIMSlabProperties.is_editing = True
+        return {"FINISHED"}
+
+
+class CancelEditingSlab(bpy.types.Operator, tool.Ifc.Operator):
+    """Close the slab disconnect-access mode."""
+
+    bl_idname = "bim.cancel_editing_slab"
+    bl_label = "Close Slab Edit"
+    bl_description = "Hide the slab disconnect icons"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element is not None and element.is_a("IfcSlab")
+
+    def _execute(self, context):
+        context.active_object.BIMSlabProperties.is_editing = False
+        return {"FINISHED"}
+
+
+class FinishEditingSlab(bpy.types.Operator, tool.Ifc.Operator):
+    """Close the slab disconnect-access mode. Same body as Cancel — slab
+    edit is a pure UI gate with no IFC draft to commit; the framework
+    requires both ``bim.finish_editing_<name>`` and
+    ``bim.cancel_editing_<name>`` to exist by name convention."""
+
+    bl_idname = "bim.finish_editing_slab"
+    bl_label = "Finish Slab Edit"
+    bl_description = "Hide the slab disconnect icons"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.active_object
+        if obj is None:
+            return False
+        element = tool.Ifc.get_entity(obj)
+        return element is not None and element.is_a("IfcSlab")
+
+    def _execute(self, context):
+        context.active_object.BIMSlabProperties.is_editing = False
         return {"FINISHED"}

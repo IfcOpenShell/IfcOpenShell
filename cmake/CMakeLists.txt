@@ -27,6 +27,15 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # not necessary, but encouraged
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# The VERSION file in the repository root is the single source of truth for the
+# release version. Read it unconditionally so a plain source build reports the
+# real version through buildinfo.cpp instead of the stale hardcoded 0.8.0
+# fallback (see #8164). VERSION_OVERRIDE still controls the branch name used
+# when ADD_COMMIT_SHA embeds a commit sha.
+file(READ "../VERSION" "RELEASE_VERSION_")
+string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+message(STATUS "Detected version '${RELEASE_VERSION}'")
+
 add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 if(POLICY CMP0141) # 3.25+
@@ -288,11 +297,15 @@ if (WITH_ROCKSDB)
     endif()
 
     message(STATUS "RocksDB: found at '${RocksDB_DIR}'.")
+    add_library(IFCOPENSHELL_RocksDB INTERFACE)
+    set(ROCKSDB_LIBRARIES "IFCOPENSHELL_RocksDB")
+    target_compile_definitions(IFCOPENSHELL_RocksDB INTERFACE IFOPSH_WITH_ROCKSDB)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_ROCKSDB)
     # See https://github.com/facebook/rocksdb/issues/981.
     if(TARGET RocksDB::rocksdb)
-        set(IFCOPENSHELL_ROCKSDB_TARGET RocksDB::rocksdb)
+        target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE RocksDB::rocksdb)
     elseif(TARGET RocksDB::rocksdb-shared)
-        set(IFCOPENSHELL_ROCKSDB_TARGET RocksDB::rocksdb-shared)
+        target_link_libraries(IFCOPENSHELL_RocksDB INTERFACE RocksDB::rocksdb-shared)
     else()
         message(FATAL_ERROR "RocksDB found but neither RocksDB::rocksdb nor RocksDB::rocksdb-shared target exists")
     endif()
@@ -659,6 +672,11 @@ if(ADD_COMMIT_SHA)
         )
     endif()
 endif(ADD_COMMIT_SHA)
+
+# Always expose the release version (from the VERSION file) to buildinfo.cpp so
+# that a build without commit-sha info reports the correct version instead of a
+# stale hardcoded fallback. See #8164.
+target_compile_definitions(IfcParse PRIVATE IFCOPENSHELL_VERSION_STRING=${RELEASE_VERSION})
 
 if(MSVC)
     # @todo still needs to be understood better, but the cgal and cgal-simple kernel cause multiply defined boost lambda placeholders _1 ... _3

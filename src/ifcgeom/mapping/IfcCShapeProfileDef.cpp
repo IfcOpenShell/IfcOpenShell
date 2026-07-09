@@ -43,7 +43,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCShapeProfileDef& inst) {
 	const double tol = settings_.get<settings::Precision>().get();
 
 	if ( x < tol || y < tol || d1 < tol || d2 < tol) {
-		logger::message(logger::LOG_NOTICE," Skipping zero sized profile:", inst);
+		logger_.Message(Logger::LOG_NOTICE, "GEO", 241, "Skipping zero sized profile:", inst);
 		return nullptr;
 	}
 
