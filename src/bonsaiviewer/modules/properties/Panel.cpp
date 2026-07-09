@@ -33,6 +33,8 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <optional>
+
 namespace {
 
 QWidget* makePropertySetPanel(const bonsaiviewer::modules::properties::PropertySet& property_set, QWidget* parent = nullptr) {
@@ -48,6 +50,24 @@ QWidget* makePropertySetPanel(const bonsaiviewer::modules::properties::PropertyS
     }
     layout->addWidget(new bonsaiviewer::components::KeyValueTable(rows, group));
     return group;
+}
+
+void clearLayout(QLayout* layout) {
+    if (!layout) return;
+    while (QLayoutItem* item = layout->takeAt(0)) {
+        if (QWidget* w = item->widget()) delete w;
+        delete item;
+    }
+}
+
+// A container for a section's set widgets, laid out like the section body so it
+// can be swapped/rebuilt in one place without touching the filter field.
+QWidget* makeSetContainer(QWidget* parent) {
+    auto* container = new QWidget(parent);
+    auto* layout = new QVBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(bonsaiviewer::components::style::metrics::padding);
+    return container;
 }
 
 QWidget* makeAttributeList(const QList<bonsaiviewer::modules::properties::KeyValueRow>& rows, QWidget* parent = nullptr) {
@@ -136,16 +156,12 @@ PropertiesPanel::PropertiesPanel(QWidget* parent)
 
 void PropertiesPanel::render(const PropertiesPanelState& state) {
     clearBodyWidgets();
-
-    QList<QWidget*> property_set_widgets;
-    for (const auto& property_set : state.property_sets) {
-        property_set_widgets.append(makePropertySetPanel(property_set, this));
-    }
-
-    QList<QWidget*> quantity_set_widgets;
-    for (const auto& property_set : state.quantity_sets) {
-        quantity_set_widgets.append(makePropertySetPanel(property_set, this));
-    }
+    // The previous widgets were just deleted — drop the stale container pointers
+    // before rebuilding so a stray filter pass can't touch them.
+    property_sets_data_ = state.property_sets;
+    quantity_sets_data_ = state.quantity_sets;
+    properties_container_ = nullptr;
+    quantities_container_ = nullptr;
 
     auto* entity_section = new components::Section("", components::SectionHeaderMode::Hidden, this);
     entity_section->addBodyWidget(makeEntityBox(state.entity, this));
@@ -179,12 +195,12 @@ void PropertiesPanel::render(const PropertiesPanelState& state) {
     });
     connect(properties_filter_field, &QLineEdit::textChanged, this, [this](const QString& text) {
         properties_filter_text_ = text;
+        rebuildPropertyWidgets();
     });
     properties_section->addBodyWidget(properties_filter_wrapper);
-    for (auto* widget : property_set_widgets) properties_section->addBodyWidget(widget);
-    if (property_set_widgets.isEmpty()) {
-        properties_section->addBodyWidget(makeEmptyStateLabel("No properties", this));
-    }
+    properties_container_ = makeSetContainer(properties_section);
+    properties_section->addBodyWidget(properties_container_);
+    rebuildPropertyWidgets();
     properties_section->setExpanded(properties_expanded_);
     properties_filter_toggle->setChecked(properties_filter_visible_);
 
@@ -209,12 +225,12 @@ void PropertiesPanel::render(const PropertiesPanelState& state) {
     });
     connect(quantities_filter_field, &QLineEdit::textChanged, this, [this](const QString& text) {
         quantities_filter_text_ = text;
+        rebuildQuantityWidgets();
     });
     quantities_section->addBodyWidget(quantities_filter_wrapper);
-    for (auto* widget : quantity_set_widgets) quantities_section->addBodyWidget(widget);
-    if (quantity_set_widgets.isEmpty()) {
-        quantities_section->addBodyWidget(makeEmptyStateLabel("No quantities", this));
-    }
+    quantities_container_ = makeSetContainer(quantities_section);
+    quantities_section->addBodyWidget(quantities_container_);
+    rebuildQuantityWidgets();
     quantities_section->setExpanded(quantities_expanded_);
     quantities_filter_toggle->setChecked(quantities_filter_visible_);
 
@@ -244,6 +260,64 @@ void PropertiesPanel::render(const PropertiesPanelState& state) {
     addBodyWidget(relationships_section);
     addBodyWidget(properties_section);
     addBodyWidget(quantities_section);
+}
+
+namespace {
+
+// Filter one set: keep it if the filter is empty, or its name matches (then all
+// rows are kept), or some property name/value matches (then only those rows).
+// Returns nullopt when nothing in the set matches.
+std::optional<PropertySet> filterSet(const PropertySet& set, const QString& text) {
+    if (text.isEmpty() || set.title.contains(text, Qt::CaseInsensitive)) {
+        return set;
+    }
+    PropertySet filtered;
+    filtered.title = set.title;
+    for (const auto& row : set.rows) {
+        if (row.key.contains(text, Qt::CaseInsensitive) ||
+            row.value.contains(text, Qt::CaseInsensitive)) {
+            filtered.rows.append(row);
+        }
+    }
+    if (filtered.rows.isEmpty()) return std::nullopt;
+    return filtered;
+}
+
+// Rebuild a set container's contents from raw data under the current filter,
+// dropping non-matching rows, with a placeholder when nothing is shown.
+void rebuildSetContainer(QWidget* container,
+                         const QList<PropertySet>& sets,
+                         const QString& filter_text,
+                         const QString& empty_text,
+                         const QString& no_match_text) {
+    if (!container) return;
+    auto* layout = qobject_cast<QVBoxLayout*>(container->layout());
+    if (!layout) return;
+    clearLayout(layout);
+
+    const QString text = filter_text.trimmed();
+    int shown = 0;
+    for (const auto& set : sets) {
+        if (auto filtered = filterSet(set, text)) {
+            layout->addWidget(makePropertySetPanel(*filtered, container));
+            ++shown;
+        }
+    }
+    if (shown == 0) {
+        layout->addWidget(makeEmptyStateLabel(sets.isEmpty() ? empty_text : no_match_text, container));
+    }
+}
+
+} // namespace
+
+void PropertiesPanel::rebuildPropertyWidgets() {
+    rebuildSetContainer(properties_container_, property_sets_data_, properties_filter_text_,
+                        "No properties", "No matching properties");
+}
+
+void PropertiesPanel::rebuildQuantityWidgets() {
+    rebuildSetContainer(quantities_container_, quantity_sets_data_, quantities_filter_text_,
+                        "No quantities", "No matching quantities");
 }
 
 } // namespace bonsaiviewer::modules::properties

@@ -30,6 +30,7 @@
 class QLabel;
 class QLineEdit;
 class QToolButton;
+class QWidget;
 
 namespace bonsaiviewer::modules::properties {
 
@@ -41,6 +42,14 @@ public:
     void render(const PropertiesPanelState& state);
 
 private:
+    // Rebuild the set widgets inside their container, applying the current
+    // (case-insensitive) filter text: a set is shown only if its name or one of
+    // its property names/values matches, and — when it's a property/value match
+    // rather than a set-name match — only the matching rows are kept. Toggles a
+    // "No properties" / "No matching properties" placeholder.
+    void rebuildPropertyWidgets();
+    void rebuildQuantityWidgets();
+
     bool attributes_expanded_ = true;
     bool relationships_expanded_ = true;
     bool properties_expanded_ = true;
@@ -49,6 +58,14 @@ private:
     bool quantities_filter_visible_ = false;
     QString properties_filter_text_;
     QString quantities_filter_text_;
+
+    // Raw data + the container the set widgets live in, so a filter change can
+    // rebuild just the sets without disturbing the filter field. Recreated on
+    // each render(); the container is owned by its section.
+    QList<PropertySet> property_sets_data_;
+    QList<PropertySet> quantity_sets_data_;
+    QWidget* properties_container_ = nullptr;
+    QWidget* quantities_container_ = nullptr;
 };
 
 } // namespace bonsaiviewer::modules::properties
