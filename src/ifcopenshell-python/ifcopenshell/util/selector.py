@@ -82,8 +82,8 @@ filter_elements_grammar = lark.Lark(
     lessthan: "<"
     contains: "*="
     null: "NULL"
-    true: "TRUE"
-    false: "FALSE"
+    true: "true" | "True" | "TRUE"
+    false: "false" | "False" | "FALSE"
 
     // Embed common.lark for packaging
     DIGIT: "0".."9"

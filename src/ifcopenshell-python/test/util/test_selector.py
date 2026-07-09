@@ -254,6 +254,13 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Foobar./Fo.*/!=Bar") == {element2}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bar": False})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=FALSE") == {element}
+        # Boolean keywords are case-insensitive (#6116).
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=False") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Bar=false") == {element}
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Qux": True})
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=TRUE") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=True") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Foobar.Qux=true") == {element}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Baz": 123})
         assert subject.filter_elements(self.file, "IfcWall, Foobar.Baz=123") == {element}
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Bay": 123.3})
