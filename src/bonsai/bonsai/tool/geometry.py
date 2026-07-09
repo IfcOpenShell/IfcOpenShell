@@ -2259,6 +2259,10 @@ class Geometry(bonsai.core.tool.Geometry):
 
                 obj.matrix_world = item_matrix
                 obj.data.transform(transformation_i)
+
+        # Baseline movable items (swept solids and half spaces) so is_moved is
+        # accurate and sync_item_positions leaves untouched placements alone.
+        if cls.is_movable(item):
             cls.record_object_position(obj)
 
         # ADD THIS AT THE END - Store initial vertex order for annotations
