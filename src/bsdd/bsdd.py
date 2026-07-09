@@ -902,6 +902,31 @@ class Client:
         This version uses new naming and returns one Dictionary instead of a list with always one Dictionary.
         This API replaces SearchList.
         """
+        # The SearchInDictionary endpoint ignores RelatedIfcEntity server side and always returns zero
+        # Classes, so route IFC entity filtering through Dictionary/Classes, which honours it, and reshape
+        # the reply into the SearchInDictionary contract.
+        if related_ifc_entity:
+            classes = self.get_classes(
+                dictionary_uri=dictionary_uri,
+                use_nested_classes=False,
+                class_type="",
+                search_text=search_text,
+                related_ifc_entity=related_ifc_entity,
+                language_code=language_code,
+                version=version,
+                offset=offset,
+                limit=limit,
+            )
+            return {
+                "dictionary": {
+                    "name": classes.get("name", ""),
+                    "uri": classes.get("uri", ""),
+                    "classes": classes.get("classes", []),
+                },
+                "totalCount": classes.get("classesTotalCount", 0),
+                "offset": classes.get("classesOffset", 0),
+                "count": classes.get("classesCount", 0),
+            }
         endpoint = f"SearchInDictionary/v{version}"
         params = {
             "DictionaryUri": dictionary_uri,
