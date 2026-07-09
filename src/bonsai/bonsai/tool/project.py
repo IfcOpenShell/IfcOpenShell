@@ -134,6 +134,20 @@ class Project(bonsai.core.tool.Project):
         return Matrix(np.linalg.inv(local_matrix) @ global_matrix)
 
     @classmethod
+    def get_link_transformation_matrix(cls, link: Link) -> Union[npt.NDArray[np.float64], None]:
+        """Get the link's saved 4x4 transformation in model coordinates, or None when identity."""
+        if tool.Ifc.get():
+            transformation = tool.Ifc.get().by_id(link.ifc_definition_id)[1]  # Identification
+        else:
+            transformation = link.transformation
+        if not transformation:
+            return None
+        matrix = np.fromstring(transformation, sep=",", dtype=np.float64).reshape(4, 4)
+        if np.allclose(matrix, np.eye(4)):
+            return None
+        return matrix
+
+    @classmethod
     def calculate_link_delta_matrix(cls, link: Link) -> Matrix:
         """Get the matrix mapping the link's unmoved world positions to its moved ones.
 

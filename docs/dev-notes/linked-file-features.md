@@ -165,6 +165,31 @@ stay compatible.
   root empty first (filepath alone is ambiguous with several links per file). The
   element's IFC placement syncs to the moved location on save — intended.
 
+### Drawings (`create_drawing`) — moved links and per-link queries
+
+- The linework serializer opened linked IFCs raw, so a moved link's elements were
+  drawn at their *original* coordinates (usually outside the drawing extents —
+  "linked objects disappear from prints after moving the link").
+- The stored link transformation is already the **model-space** delta (that is how
+  `save_link_transformation` derives it), which is exactly the space the serializer
+  works in — so it can be baked straight into the geometry iterator via the existing
+  `model-offset`/`model-rotation` settings. The mapping composes
+  `Trans(model-offset) @ Rot(model-rotation)` (see `mapping.cpp`), matching the
+  `Trans(t) @ Rot(R)` decomposition of the rigid link matrix; `model-rotation` is a
+  quaternion passed as `(x, y, z, w)`. The pre-existing 2mm plan-view Z-offset simply
+  adds onto the translation (translations commute).
+- The serialization loop previously collected files in a dict keyed by filepath, which
+  **collapsed same-file links into one pass** (one transform — the last link's — and
+  no query awareness): with two links of one file, only one showed in the drawing.
+  It now iterates one entry per link (`(path, file, transform, query)` tuples), and
+  intersects each link's drawing elements with
+  `ifcopenshell.util.selector.filter_elements(ifc, link.query)` so the drawing shows
+  what that link actually displays in the viewport.
+- `tool.Project.get_link_transformation_matrix(link)` is the shared accessor for the
+  stored 4×4 (None when identity/absent).
+- Verified headless with the window/door kit: moved window offset in the SVG by
+  exactly 5m × scale; unmoved door at its native position; both links present.
+
 ## Review round 1 (PR #8242, falken10vdl) — decisions
 
 - **Path-form mismatch → duplicate documents (confirmed bug, fixed).**
@@ -202,8 +227,13 @@ Six commits on `Linked_File_Features`:
   append placement (`tool/project.py`, `project/operator.py`, `project/decorator.py`).
 - `c14592ec0a` per-query caches, Description persistence, SKIP_SAVE.
 
-Plus the review-round path normalization in `get_linked_models_documents` /
-`LinkIfc` (see Review round 1), committed together with this note update.
+Plus:
+
+- `ee43ed5526` review-round path normalization in `get_linked_models_documents` /
+  `LinkIfc` (see Review round 1).
+- Drawing support for moved links and per-link queries in `create_drawing`
+  (`drawing/operator.py`, `tool/project.py`) — committed together with this note
+  update.
 
 End-to-end verified with a two-links-one-file kit (window/door, distinct queries):
 correct visuals on load, after save → reopen → reload, in both headless and windowed
@@ -230,3 +260,12 @@ Blender.
   bakes the first element's slice — same as normal import, but worth a look with types.
 - `bim.select_link_filepath` round trip when the reload dialog was opened for a
   non-active link, and dialog-state carry-over after editing the query *then* browsing.
+- **Drawing SVG guid cache vs moved links**: `create_drawing` skips elements whose
+  guids already exist in the drawing's SVG (`cached_linework`, invalidated only for
+  *edited host objects*). Moving a link does not invalidate its elements, so a
+  regenerated drawing keeps their old positions until the SVG is deleted. Candidate
+  fix: subtract a moved link's guids from `cached_linework` (compare stored transform
+  against the one recorded at last generation).
+- Same element appearing in two links of one file (overlapping queries) serializes
+  twice with different transforms; the SVG guid cache keeps whichever came first on
+  regeneration. Degenerate case — probably fine to ignore, but note it.
