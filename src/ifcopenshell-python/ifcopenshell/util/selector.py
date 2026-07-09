@@ -1222,7 +1222,13 @@ class FacetTransformer(lark.Transformer):
 
     def compare(self, element_value, comparison, value) -> bool:
         if isinstance(element_value, (list, tuple)):
-            return any(self.compare(ev, comparison, value) for ev in element_value)
+            # Match if any item does, negating the aggregate rather than each
+            # item, so that e.g. != means "no item equals" and stays the
+            # complement of = (#8129).
+            result = any(self.compare(ev, comparison.lstrip("!"), value) for ev in element_value)
+            if comparison.startswith("!"):
+                return not result
+            return result
         elif isinstance(value, str):
             try:
                 if isinstance(element_value, int):

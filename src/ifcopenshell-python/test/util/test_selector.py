@@ -260,6 +260,12 @@ class TestFilterElements(test.bootstrap.IFC4):
         pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New"]})
         assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
+        # On multi-valued properties, != means "no value equals" and stays the
+        # complement of = (#8129).
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["New", "Demolish"]})
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status=New") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=New") == {element2}
+        assert subject.filter_elements(self.file, "IfcWall, Pset_WallCommon.Status!=Temporary") == {element, element2}
 
     def test_selecting_by_property_with_comparisons(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
